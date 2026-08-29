@@ -6,6 +6,8 @@ namespace Kumwe\App\BusinessReporting\Domain;
 
 use InvalidArgumentException;
 use Kumwe\App\BusinessDefinition\Domain\Expression;
+use Kumwe\Extension\Spi\BusinessReporting\Domain\ReportDefinitionGuard;
+use Kumwe\Extension\Spi\BusinessReporting\Domain\ReportValueType;
 
 /**
  * One bounded expression evaluated only over disclosure-safe report output aliases.

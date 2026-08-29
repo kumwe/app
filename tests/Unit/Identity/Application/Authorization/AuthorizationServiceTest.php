@@ -7,7 +7,7 @@ namespace Kumwe\App\Tests\Unit\Identity\Application\Authorization;
 use Kumwe\App\Identity\Application\Authorization\AuthorizationPolicy;
 use Kumwe\App\Identity\Application\Authorization\AuthorizationService;
 use Kumwe\App\Identity\Domain\AuthorizationDecision;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use Kumwe\App\Identity\Domain\EmailAddress;
 use Kumwe\App\Identity\Domain\GrantScope;
 use Kumwe\App\Identity\Domain\User;

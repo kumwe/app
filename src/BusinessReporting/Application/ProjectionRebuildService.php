@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Kumwe\App\BusinessReporting\Application;
 
+use Kumwe\Extension\Spi\BusinessReporting\Application\ProjectionBuilder;
+use Kumwe\Extension\Spi\BusinessReporting\Application\ProjectionEvent;
+use Kumwe\Extension\Spi\BusinessReporting\Domain\ProjectionDefinition;
 use RuntimeException;
 use Throwable;
-use Kumwe\App\BusinessReporting\Domain\ProjectionDefinition;
 
 /**
  * Replays a versioned event stream into an atomically replaceable derived generation.
@@ -18,16 +20,16 @@ final readonly class ProjectionRebuildService
     /**
      * Wire the deterministic event source, builder and replacement writer.
      *
-     * @param  ProjectionEventSource  $events   Ordered immutable source.
-     * @param  ProjectionBuilder      $builder  Pure event-to-row logic.
-     * @param  ProjectionWriter       $writer   Atomic replacement store.
+     * @param  ProjectionEventSource       $events   Ordered immutable source.
+     * @param  ProjectionBuilder           $builder  Canonical SDK event-to-row implementation.
+     * @param  ProjectionGenerationWriter  $writer   Host-owned atomic replacement store.
      *
      * @since  2.0.0
      */
     public function __construct(
         private ProjectionEventSource $events,
         private ProjectionBuilder $builder,
-        private ProjectionWriter $writer,
+        private ProjectionGenerationWriter $writer,
     ) {
     }
 
@@ -56,12 +58,12 @@ final readonly class ProjectionRebuildService
                     throw new RuntimeException('A projection event source exceeded its requested batch.');
                 }
                 foreach ($page as $event) {
-                    if (!$event instanceof ProjectionEvent || $event->sequence <= $sequence) {
+                    if (!$event instanceof ProjectionEvent || $event->sequence() <= $sequence) {
                         throw new RuntimeException('Projection events must be strictly sequence ordered.');
                     }
                     $this->assertDeclared($definition, $event);
                     $this->builder->apply($definition, $event, $this->writer);
-                    $sequence = $event->sequence;
+                    $sequence = $event->sequence();
                     ++$count;
                     $sourceChecksum = hash('sha256', $sourceChecksum . "\n" . $event->checksum());
                     $this->writer->checkpoint($sequence, $sourceChecksum);
@@ -93,8 +95,8 @@ final readonly class ProjectionRebuildService
     {
         foreach ($definition->sources as $source) {
             if (
-                $source->eventType === $event->type
-                && in_array($event->schemaVersion, $source->schemaVersions, true)
+                $source->eventType === $event->type()
+                && in_array($event->schemaVersion(), $source->schemaVersions, true)
             ) {
                 return;
             }

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Studio\Domain\Artifact;
 
 use JsonException;
-use Kumwe\App\Studio\Domain\Contract\CanonicalJson;
+use Kumwe\Producer\Canonical\CanonicalJson;
 use RuntimeException;
 use stdClass;
 

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessRecord\Application\Command;
 
 use Kumwe\App\Application\Authorization\ExecutionContext;
-use Kumwe\App\Application\Automation\IdempotencyKey;
+use Kumwe\Extension\Spi\Application\Automation\IdempotencyKey;
 use Kumwe\App\BusinessRecord\Application\RecordRequestGuard;
 
 /**

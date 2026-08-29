@@ -19,7 +19,7 @@ use Kumwe\App\Studio\Application\Projection\ContentProjectionBindingRepository;
 use Kumwe\App\Studio\Application\Projection\ContentStudioProjector;
 use Kumwe\App\Studio\Application\Projection\RecordAuthorizedStudioContentFieldDisclosure;
 use Kumwe\App\Studio\Application\Projection\StudioContentProjectionService;
-use Kumwe\App\Studio\Domain\Contract\StudioContractSchemas;
+use Kumwe\Producer\Schema\StudioDocumentSchemaRegistry;
 use Kumwe\App\Studio\Domain\Host\StudioHostSession;
 use Kumwe\App\Studio\Domain\Host\StudioResourceKind;
 use Kumwe\App\Studio\Domain\Host\StudioSessionMode;
@@ -151,7 +151,7 @@ final class ContentStudioPreviewBindingSourceTest extends TestCase
             ),
             $this->createStub(ContentProjectionBindingRepository::class),
             new ContentStudioProjector(
-                StudioContractSchemas::fromVendoredCorpus(),
+                StudioDocumentSchemaRegistry::fromVendoredCorpus(),
                 new RecordAuthorizedStudioContentFieldDisclosure(),
                 new JsonSchemaValidator(),
             ),

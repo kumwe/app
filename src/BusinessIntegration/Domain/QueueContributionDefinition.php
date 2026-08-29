@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Kumwe\App\BusinessIntegration\Domain;
 
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationContract;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationContractValidator;
 use InvalidArgumentException;
 
 /**

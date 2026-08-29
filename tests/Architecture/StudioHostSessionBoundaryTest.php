@@ -38,19 +38,21 @@ final class StudioHostSessionBoundaryTest extends TestCase
     }
 
     /**
-     * The envelope decoder has no path for client-supplied identity or capability evidence.
+     * Direct Producer authorization has no path for client-supplied identity or capability evidence.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    public function testTrustedIdentityIsReadOnlyFromExecutionContextAndNeverDecodedFromHostJson(): void
+    public function testTrustedIdentityComesOnlyFromExecutionContextAndLiveSessionAuthority(): void
     {
-        $decoder = $this->contents('src/Studio/Application/Host/StudioHostRequestDecoder.php');
+        $requestAuthority = $this->contents('src/Studio/Application/Host/StudioProducerRequestAuthority.php');
         $authority = $this->contents('src/Studio/Application/Host/StudioHostSessionAuthority.php');
 
-        self::assertStringNotContainsString('actorId', $decoder);
-        self::assertStringNotContainsString('capabilities', $decoder);
+        self::assertStringContainsString('private readonly ExecutionContext $context', $requestAuthority);
+        self::assertStringContainsString('$this->sessions->resolve(', $requestAuthority);
+        self::assertStringNotContainsString('actorId', $requestAuthority);
+        self::assertStringNotContainsString('capabilities', $requestAuthority);
         self::assertStringContainsString('$context->actorId()', $authority);
         self::assertStringContainsString('$context->site()->identifier()', $authority);
         self::assertStringContainsString('$context->approvalFingerprint()', $authority);
@@ -58,24 +60,35 @@ final class StudioHostSessionBoundaryTest extends TestCase
     }
 
     /**
-     * One normative route and dispatcher fence every operation; AP-5 adds only the media port.
+     * One normative route feeds Producer's complete host and every implemented canonical port.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    public function testEveryPortRouteHasOneDispatcherAndImplementedPortsRemainCanonical(): void
+    public function testEveryPortRouteUsesOneCompleteProducerHost(): void
     {
         $container = $this->contents('src/Kernel/ContainerFactory.php');
-        $dispatcher = $this->contents('src/Studio/Application/Host/StudioHostDispatcher.php');
+        $host = $this->contents('src/Studio/Application/Host/StudioProducerHost.php');
+        $handler = $this->contents('src/Administrator/Http/Handler/AdministratorStudioHostHandler.php');
 
         self::assertSame(1, substr_count($container, "'/administrator/studio/ports/{port}/{operation}'"));
-        self::assertStringContainsString('studio.operation/permission.explain', $dispatcher);
-        self::assertStringContainsString('studio.operation/permission.refresh', $dispatcher);
-        self::assertStringContainsString('studio.operation/media.authorize-upload', $dispatcher);
-        self::assertStringContainsString('studio.operation/media.import-external', $dispatcher);
-        self::assertStringContainsString('studio.host/stale-session-generation', $dispatcher);
-        self::assertStringContainsString('studio.host/operation-unavailable', $dispatcher);
+        self::assertStringContainsString('new Dispatcher(', $handler);
+        self::assertStringContainsString('implements HostAdapterInterface', $host);
+        $ports = [
+            'artifact',
+            'localization',
+            'media',
+            'model',
+            'permission',
+            'preview',
+            'recovery',
+            'resource',
+            'telemetry',
+        ];
+        foreach ($ports as $port) {
+            self::assertStringContainsString('function ' . $port . '()', $host);
+        }
     }
 
     /**

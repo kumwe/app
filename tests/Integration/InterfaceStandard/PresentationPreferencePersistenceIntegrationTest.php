@@ -6,7 +6,7 @@ namespace Kumwe\App\Tests\Integration\InterfaceStandard;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\DriverManager;
-use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Infrastructure\Persistence\Migration\InterfacePresentationPreferenceMigration;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\InterfaceStandard\CustomizationScope;

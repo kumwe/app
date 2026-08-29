@@ -40,31 +40,32 @@ final class StudioArtifactRecoveryBoundaryTest extends TestCase
     }
 
     /**
-     * One dispatcher exposes the complete AP-4 surface behind the common AP-3 generation fence.
+     * Producer receives complete direct ports behind the App's fresh request authority.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    public function testDispatcherDelegatesCompletePortsOnlyAfterItsSessionFence(): void
+    public function testProducerHostExposesCompletePortsBehindFreshRequestAuthority(): void
     {
-        $dispatcher = $this->contents('src/Studio/Application/Host/StudioHostDispatcher.php');
+        $host = $this->contents('src/Studio/Application/Host/StudioProducerHost.php');
+        $factory = $this->contents('src/Studio/Application/Host/StudioProducerHostFactory.php');
+        $authority = $this->contents('src/Studio/Application/Host/StudioProducerRequestAuthority.php');
         $artifact = $this->contents('src/Studio/Application/Host/StudioArtifactHostPort.php');
         $recovery = $this->contents('src/Studio/Application/Host/StudioRecoveryHostPort.php');
 
-        self::assertLessThan(
-            strpos($dispatcher, "\$port === 'artifact'"),
-            strpos($dispatcher, 'studio.host/stale-session-generation'),
-        );
+        self::assertStringContainsString('implements HostAdapterInterface', $host);
+        self::assertStringContainsString('new StudioProducerRequestAuthority', $factory);
+        self::assertStringContainsString('studio.host/stale-session-generation', $authority);
         foreach (['dependencies', 'load', 'publish', 'save', 'unpublish'] as $operation) {
-            self::assertStringContainsString("'" . $operation . "' =>", $artifact);
+            self::assertStringContainsString('function ' . $operation . '(', $artifact);
         }
         foreach (['discard', 'load', 'store'] as $operation) {
-            self::assertStringContainsString("'" . $operation . "' =>", $recovery);
+            self::assertStringContainsString('function ' . $operation . '(', $recovery);
         }
-        self::assertSame(2, substr_count($artifact, '$this->requireExpectedRevision($request)'));
-        self::assertStringContainsString("'publish' => \$this->setPublished", $artifact);
-        self::assertStringContainsString("'unpublish' => \$this->setPublished", $artifact);
+        self::assertSame(2, substr_count($artifact, '$this->requireExpectedRevision($context)'));
+        self::assertStringContainsString('$this->setPublished($arguments, $context, true)', $artifact);
+        self::assertStringContainsString('$this->setPublished($arguments, $context, false)', $artifact);
     }
 
     /**
@@ -81,7 +82,7 @@ final class StudioArtifactRecoveryBoundaryTest extends TestCase
 
         self::assertStringContainsString('implements', $adapter);
         self::assertStringContainsString('StudioArtifactRepository', $adapter);
-        self::assertStringContainsString('StudioIdempotencyRepository', $adapter);
+        self::assertStringContainsString('StudioMutationReplayRepository', $adapter);
         self::assertStringContainsString('StudioRecoveryRepository', $adapter);
         self::assertSame(1, substr_count($container, 'new DoctrineStudioHostStorage'));
         self::assertStringNotContainsString('new DoctrineStudioHostStorage', $this->source('src/Studio'));

@@ -5,7 +5,10 @@ import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const corpusPath = resolve(root, 'tests/Fixtures/Studio/testkit/fixtures/authoring-message-catalog.en.json');
+const testkitRoot = fileURLToPath(
+  new URL('../', import.meta.resolve('@kumwe/studio-testkit')),
+);
+const corpusPath = resolve(testkitRoot, 'fixtures/authoring-message-catalog.en.json');
 const cataloguePath = resolve(root, 'resources/localization/messages/en-GB.xlf');
 const releasePath = resolve(root, 'resources/studio-contract/studio-release.json');
 const begin = '  <!-- BEGIN GENERATED STUDIO AUTHORING MESSAGES -->';

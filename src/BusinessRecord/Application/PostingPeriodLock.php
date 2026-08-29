@@ -11,7 +11,7 @@ use Kumwe\App\BusinessDefinition\Domain\FieldDefinition;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordPostingPeriodClosed;
 use Kumwe\App\BusinessRecord\Domain\BusinessRecord;
 use Kumwe\App\BusinessRecord\Domain\RecordScope;
-use Kumwe\App\BusinessRecord\Domain\ZonedDateTimeValue;
+use Kumwe\Extension\Spi\BusinessRecord\Value\ZonedDateTimeValue;
 
 /**
  * The declarative temporal lock: refuses a mutation whose declared posting date is in a closed period.

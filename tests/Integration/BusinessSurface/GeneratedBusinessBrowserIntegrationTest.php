@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Integration\BusinessSurface;
 
+use ArrayObject;
 use DateTimeImmutable;
 use Kumwe\App\Application\Authorization\AuthenticatedSurface;
 use Kumwe\App\Application\Authorization\AuthenticationStrength;
@@ -13,21 +14,13 @@ use Kumwe\App\BusinessRecord\Application\Command\CreateRecordCommand;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordVersionConflict;
 use Kumwe\App\BusinessRecord\Application\Query\ReadRecordQuery;
+use Kumwe\App\BusinessRecord\Query\RecordQuerySpecification;
 use Kumwe\App\BusinessDefinition\Domain\DefinitionOwner;
 use Kumwe\App\BusinessSurface\Application\BusinessBulkMutation;
 use Kumwe\App\BusinessSurface\Application\BusinessOperationStatusService;
 use Kumwe\App\BusinessSurface\Application\BusinessSurface;
 use Kumwe\App\BusinessSurface\Application\BusinessSurfaceOperation;
 use Kumwe\App\BusinessSurface\Application\BusinessSurfaceService;
-use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionCommand;
-use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionContract;
-use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionHandler;
-use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionResult;
-use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessSchema;
-use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewContract;
-use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewHandler;
-use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewQuery;
-use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewResult;
 use Kumwe\App\BusinessSurface\Delivery\Administrator\AdministratorBusinessSurfaceHandler;
 use Kumwe\App\BusinessSurface\Delivery\Browser\GeneratedBusinessBrowserController;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
@@ -38,6 +31,14 @@ use Kumwe\App\Localization\Domain\LocaleTag;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\App\Tests\Support\NeutralBusinessFixture;
 use Kumwe\App\Tests\Support\TestKernelFactory;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionCommand;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionDeclaration;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionHandler;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionResult;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewDeclaration;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewHandler;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewQuery;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewResult;
 use Laminas\Diactoros\ServerRequestFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
@@ -441,18 +442,18 @@ final class GeneratedBusinessBrowserIntegrationTest extends TestCase
         $suffix = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), -10));
         $handlerReference = 'site.default.views.browser_summary_' . $suffix;
         $schemaReference = 'site.default.schemas.browser_summary_' . $suffix;
-        $contract = new CustomBusinessViewContract(
-            $handlerReference,
-            $schemaReference,
-            new CustomBusinessSchema([
+        $contract = CustomBusinessViewDeclaration::fromManifest([
+            'handler' => $handlerReference,
+            'schema' => $schemaReference,
+            'query_schema' => [
                 'type' => 'object',
                 'additionalProperties' => false,
                 'properties' => [
                     'term' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 40],
                 ],
                 'required' => ['term'],
-            ]),
-            new CustomBusinessSchema([
+            ],
+            'result_schema' => [
                 'type' => 'object',
                 'additionalProperties' => false,
                 'properties' => [
@@ -471,14 +472,26 @@ final class GeneratedBusinessBrowserIntegrationTest extends TestCase
                     ],
                 ],
                 'required' => ['title', 'items'],
-            ]),
-        );
+            ],
+        ]);
         $registries = $container->get(ExtensionContributionRegistrySet::class);
         self::assertInstanceOf(ExtensionContributionRegistrySet::class, $registries);
+        $observedQueries = new ArrayObject();
         $registries->customBusinessViewHandlers()->register(
             DefinitionOwner::site('default'),
             $contract,
-            new class implements CustomBusinessViewHandler {
+            new class ($observedQueries) implements CustomBusinessViewHandler {
+                /**
+                 * Retain the exact immutable queries that reached extension code.
+                 *
+                 * @param  ArrayObject<int, mixed>  $observed  Callback-capture ledger.
+                 *
+                 * @since  2.0.0
+                 */
+                public function __construct(private ArrayObject $observed)
+                {
+                }
+
                 /**
                  * Project one submitted term through the registered custom view contract.
                  *
@@ -492,6 +505,7 @@ final class GeneratedBusinessBrowserIntegrationTest extends TestCase
                  */
                 public function handle(CustomBusinessViewQuery $query): CustomBusinessViewResult
                 {
+                    $this->observed->append($query->records);
                     if ($query->parameters['term'] === 'trigger-failure') {
                         throw new \InvalidArgumentException(
                             'Extension database password: should-never-reach-the-browser.',
@@ -557,6 +571,50 @@ final class GeneratedBusinessBrowserIntegrationTest extends TestCase
             $result->data['data_projection']['entries'][1]['value']['items'][0]
                 ['value']['entries'][0]['value']['value'],
         );
+        self::assertCount(1, $observedQueries);
+        $observedQuery = $observedQueries[0] ?? null;
+        self::assertInstanceOf(RecordQuerySpecification::class, $observedQuery);
+        self::assertSame(['name', 'status'], $observedQuery->projection->fields);
+
+        $surface = $container->get(BusinessSurfaceService::class);
+        self::assertInstanceOf(BusinessSurfaceService::class, $surface);
+        $metadata = $surface->customViewMetadata(
+            $context,
+            BusinessSurface::Administrator,
+            $definition->handle,
+            'browser_summary',
+        );
+        self::assertContains(
+            'amount',
+            array_column($metadata['definition']['fields'], 'handle'),
+            'The hostile field must otherwise be policy-visible for this test to prove signed-view narrowing.',
+        );
+        $hostileQueries = [
+            ['projection' => ['fields' => ['name', 'amount']]],
+            ['filter' => [
+                'type' => 'comparison',
+                'field' => 'enabled',
+                'operator' => 'eq',
+                'value' => true,
+            ]],
+            ['search' => ['term' => 'north', 'fields' => ['enabled']]],
+            ['sorts' => [['field' => 'enabled', 'direction' => 'asc']]],
+        ];
+        foreach ($hostileQueries as $hostileQuery) {
+            try {
+                $surface->customView(
+                    $context,
+                    BusinessSurface::Administrator,
+                    $definition->handle,
+                    'browser_summary',
+                    $hostileQuery,
+                    ['term' => 'south'],
+                );
+                self::fail('An undeclared custom-view query field reached extension code.');
+            } catch (BusinessRecordDefinitionUnavailable) {
+                self::assertCount(1, $observedQueries);
+            }
+        }
 
         $invalidTerm = str_repeat('n', 41);
         $invalid = $browser->customView(
@@ -601,10 +659,10 @@ final class GeneratedBusinessBrowserIntegrationTest extends TestCase
         $suffix = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), -10));
         $handlerReference = 'site.default.actions.browser_nested_' . $suffix;
         $schemaReference = 'site.default.schemas.browser_nested_' . $suffix;
-        $contract = new CustomBusinessActionContract(
-            $handlerReference,
-            $schemaReference,
-            new CustomBusinessSchema([
+        $contract = CustomBusinessActionDeclaration::fromManifest([
+            'handler' => $handlerReference,
+            'schema' => $schemaReference,
+            'command_schema' => [
                 'type' => 'object',
                 'additionalProperties' => false,
                 'properties' => [
@@ -629,16 +687,16 @@ final class GeneratedBusinessBrowserIntegrationTest extends TestCase
                     ],
                 ],
                 'required' => ['criteria'],
-            ]),
-            new CustomBusinessSchema([
+            ],
+            'result_schema' => [
                 'type' => 'object',
                 'additionalProperties' => false,
                 'properties' => [
                     'received' => ['type' => 'string', 'maxLength' => 20],
                 ],
                 'required' => ['received'],
-            ]),
-        );
+            ],
+        ]);
         $registries = $container->get(ExtensionContributionRegistrySet::class);
         self::assertInstanceOf(ExtensionContributionRegistrySet::class, $registries);
         $registries->customBusinessActionHandlers()->register(

@@ -20,6 +20,7 @@ use Kumwe\App\BusinessDefinition\Domain\RelationshipKind;
 use Kumwe\App\BusinessDefinition\Domain\RelationshipDefinition;
 use Kumwe\App\BusinessDefinition\Domain\ScopeMode;
 use Kumwe\App\BusinessDefinition\Domain\Sensitivity;
+use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationConfiguration;
 use Ramsey\Uuid\Uuid;
 use Throwable;
 
@@ -108,6 +109,15 @@ final readonly class BusinessDefinitionValidator
                     throw new InvalidBusinessDefinition(
                         'A business field handle is reserved for immutable runtime revision evidence.',
                     );
+                }
+                try {
+                    FieldPresentationConfiguration::fromArray($field->configuration);
+                } catch (InvalidArgumentException $exception) {
+                    throw new InvalidBusinessDefinition(sprintf(
+                        'Business field %s has non-portable presentation configuration: %s',
+                        $field->handle,
+                        $exception->getMessage(),
+                    ), 0, $exception);
                 }
                 $fieldType = $this->fieldTypes->get($field->type);
                 $unknown = array_diff(array_keys($field->configuration), $fieldType->configurationKeys);

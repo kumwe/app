@@ -4,29 +4,27 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Unit\Studio\Application\Composition;
 
-use Kumwe\App\Extension\Contribution\CanonicalCompositionDocument;
-use Kumwe\App\Extension\Contribution\CanonicalCompositionKind;
-use Kumwe\App\Extension\Contribution\CapabilityDefinition;
-use Kumwe\App\Extension\Contribution\CompositionHostBinding;
-use Kumwe\App\Extension\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\CoreStudioCompositionContributions;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
-use Kumwe\App\Extension\Contribution\ManifestContributionSet;
 use Kumwe\App\Extension\Contribution\OwnedRuntimeContributionRegistry;
 use Kumwe\App\Extension\Contribution\StudioPreviewRendererContribution;
-use Kumwe\App\Extension\Runtime\ContributedStudioPreviewBlockRendererRegistry;
 use Kumwe\App\Studio\Application\Composition\StudioCompositionContributionCatalog;
 use Kumwe\App\Studio\Application\Composition\StudioCompositionContributionProjection;
 use Kumwe\App\Studio\Application\Composition\StudioCompositionLockMismatch;
-use Kumwe\App\Studio\Application\Preview\CoreStudioPreviewBlockRendererRegistry;
-use Kumwe\App\Studio\Application\Preview\StudioPreviewBindingResult;
-use Kumwe\App\Studio\Application\Preview\StudioPreviewBlock;
-use Kumwe\App\Studio\Application\Preview\StudioPreviewBlockFragment;
-use Kumwe\App\Studio\Application\Preview\StudioPreviewBlockRenderer;
-use Kumwe\App\Studio\Domain\Contract\CanonicalJson;
+use Kumwe\App\Studio\Application\Rendering\StudioBlockRendererRuntime;
+use Kumwe\App\Studio\Application\Rendering\StudioContentFieldBlockRenderer;
+use Kumwe\Extension\Spi\Contribution\CanonicalCompositionDocument;
+use Kumwe\Extension\Spi\Contribution\CanonicalCompositionKind;
+use Kumwe\Extension\Spi\Contribution\CompositionHostBinding;
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Producer\Canonical\CanonicalJson;
+use Kumwe\Producer\Render\BlockRenderer;
+use Kumwe\Producer\Render\RenderState;
+use Kumwe\Producer\Schema\StudioContractResources;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
+use stdClass;
 
 /**
  * Proves the authoring catalog retains trusted ownership and an exact immutable block lock.
@@ -42,8 +40,8 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(ExtensionContributionRegistrySet::class)]
 #[UsesClass(OwnedRuntimeContributionRegistry::class)]
 #[UsesClass(StudioPreviewRendererContribution::class)]
-#[UsesClass(ContributedStudioPreviewBlockRendererRegistry::class)]
-#[UsesClass(CoreStudioPreviewBlockRendererRegistry::class)]
+#[UsesClass(StudioBlockRendererRuntime::class)]
+#[UsesClass(StudioContentFieldBlockRenderer::class)]
 final class StudioCompositionContributionCatalogTest extends TestCase
 {
     /**
@@ -55,7 +53,7 @@ final class StudioCompositionContributionCatalogTest extends TestCase
      */
     public function testSupportedBlocksProduceADeterministicTrustedLock(): void
     {
-        $catalog = new StudioCompositionContributionCatalog(new ExtensionContributionRegistrySet());
+        $catalog = self::catalog(new ExtensionContributionRegistrySet());
 
         $first = $catalog->project([], ['core.renderer/field', 'core.renderer/layout']);
         $second = $catalog->project([], ['core.renderer/layout', 'core.renderer/field']);
@@ -93,7 +91,7 @@ final class StudioCompositionContributionCatalogTest extends TestCase
      */
     public function testExistingLocksIntersectBlocksAndPatternsExactly(): void
     {
-        $catalog = new StudioCompositionContributionCatalog(new ExtensionContributionRegistrySet());
+        $catalog = self::catalog(new ExtensionContributionRegistrySet());
         $exactSection = (object) [
             'type' => 'studio.core/section',
             'version' => '1.0.0',
@@ -114,7 +112,7 @@ final class StudioCompositionContributionCatalogTest extends TestCase
      */
     public function testAnActiveBlockWithAMismatchedLockedRevisionFailsProjection(): void
     {
-        $catalog = new StudioCompositionContributionCatalog(new ExtensionContributionRegistrySet());
+        $catalog = self::catalog(new ExtensionContributionRegistrySet());
 
         $this->expectException(StudioCompositionLockMismatch::class);
         $this->expectExceptionMessage('studio.core/section');
@@ -134,7 +132,7 @@ final class StudioCompositionContributionCatalogTest extends TestCase
      */
     public function testAnActiveBlockWithAMismatchedLockedVersionFailsProjection(): void
     {
-        $catalog = new StudioCompositionContributionCatalog(new ExtensionContributionRegistrySet());
+        $catalog = self::catalog(new ExtensionContributionRegistrySet());
 
         $this->expectException(StudioCompositionLockMismatch::class);
         $this->expectExceptionMessage('studio.core/section');
@@ -154,7 +152,7 @@ final class StudioCompositionContributionCatalogTest extends TestCase
      */
     public function testAMissingLockedDefinitionRemainsOmittedAndRepresentable(): void
     {
-        $catalog = new StudioCompositionContributionCatalog(new ExtensionContributionRegistrySet());
+        $catalog = self::catalog(new ExtensionContributionRegistrySet());
         $missing = $catalog->project([], ['core.renderer/field', 'core.renderer/layout'], [(object) [
             'type' => 'withdrawn.vendor/card',
             'version' => '1.0.0',
@@ -176,9 +174,7 @@ final class StudioCompositionContributionCatalogTest extends TestCase
     {
         $owner = ContributionOwner::extension('acme/shop');
         $document = json_decode(
-            (string) file_get_contents(
-                dirname(__DIR__, 4) . '/Fixtures/Studio/testkit/fixtures/block.grid.example.json',
-            ),
+            StudioContractResources::testkitBytes('fixtures/block.grid.example.json'),
             false,
             32,
             JSON_THROW_ON_ERROR,
@@ -208,24 +204,10 @@ final class StudioCompositionContributionCatalogTest extends TestCase
             'acme.shop.renderer.grid',
             'acme.shop.catalog.edit',
         );
-        $capability = new CapabilityDefinition(
-            'acme.shop.catalog.edit',
-            'Edit shop catalog',
-            'Offer the shop catalog composition blocks to an author.',
-        );
-        $declared = new ManifestContributionSet(
-            $owner,
-            spiVersion: ManifestContributionSet::CANONICAL_COMPOSITION_SPI_VERSION,
-            capabilities: [$capability],
-            canonicalDocuments: [$canonical],
-            compositionHostBindings: [$binding],
-        );
         $registries = new ExtensionContributionRegistrySet();
-        $registrar = $registries->registrar($owner, $declared);
-        $registrar->capability($capability);
-        $registrar->canonicalCompositionDocument($canonical);
-        $registrar->complete();
-        $withoutRuntime = new StudioCompositionContributionCatalog($registries);
+        $registries->canonicalCompositionDocuments()->register($owner, $canonical);
+        $registries->compositionHostBindings()->register($owner, $binding);
+        $withoutRuntime = self::catalog($registries);
         $unsupported = $withoutRuntime->project([], ['core.renderer/field', 'core.renderer/layout']);
         self::assertNotContains('acme.shop/grid', self::blockTypes($unsupported));
         self::assertArrayNotHasKey('acme.shop/grid', $unsupported->blockRenderers);
@@ -234,32 +216,16 @@ final class StudioCompositionContributionCatalogTest extends TestCase
         $registries->studioPreviewRenderers()->register(
             $owner,
             $runtimeDefinition,
-            new class implements StudioPreviewBlockRenderer {
-                /**
-                 * Return one inert safe fragment for the exact contributed block.
-                 *
-                 * @param   StudioPreviewBlock          $block     Admitted block input.
-                 * @param   StudioPreviewBindingResult  $binding   Authorized binding result.
-                 * @param   string                      $viewport  Active semantic viewport.
-                 *
-                 * @return  StudioPreviewBlockFragment  Closed safe fragment.
-                 *
-                 * @since   2.0.0
-                 */
-                public function render(
-                    StudioPreviewBlock $block,
-                    StudioPreviewBindingResult $binding,
-                    string $viewport,
-                ): StudioPreviewBlockFragment {
-                    return new StudioPreviewBlockFragment('div', 'acme-shop-grid', '');
+            new class implements BlockRenderer {
+                public function render(stdClass $node, string $scope, RenderState $state): string
+                {
+                    unset($node, $scope, $state);
+
+                    return '<div class="acme-shop-grid"></div>';
                 }
             },
         );
-        $runtime = new ContributedStudioPreviewBlockRendererRegistry(
-            new CoreStudioPreviewBlockRendererRegistry(),
-            $registries->studioPreviewRenderers(),
-        );
-        $catalog = new StudioCompositionContributionCatalog($registries, $runtime);
+        $catalog = self::catalog($registries);
 
         $restricted = $catalog->project([], [
             'core.renderer/field',
@@ -336,5 +302,13 @@ final class StudioCompositionContributionCatalogTest extends TestCase
                 static fn (\stdClass $document): bool => ($document->kind ?? null) === $kind,
             ),
         ));
+    }
+
+    private static function catalog(ExtensionContributionRegistrySet $registries): StudioCompositionContributionCatalog
+    {
+        return new StudioCompositionContributionCatalog(
+            $registries,
+            new StudioBlockRendererRuntime($registries, new StudioContentFieldBlockRenderer()),
+        );
     }
 }

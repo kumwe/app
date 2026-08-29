@@ -6,7 +6,7 @@ namespace Kumwe\App\BusinessIntegration\Application;
 
 use DateTimeImmutable;
 use Kumwe\App\Application\Automation\FailureClassification;
-use Kumwe\App\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationEvent;
 use Throwable;
 
 /**

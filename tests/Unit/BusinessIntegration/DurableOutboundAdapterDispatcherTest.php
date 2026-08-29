@@ -14,14 +14,15 @@ use Kumwe\App\BusinessIntegration\Application\EventContractRegistry;
 use Kumwe\App\BusinessIntegration\Application\InboxClaimResult;
 use Kumwe\App\BusinessIntegration\Application\InboxDisposition;
 use Kumwe\App\BusinessIntegration\Application\InboxStore;
-use Kumwe\App\BusinessIntegration\Application\IntegrationEventTransport;
+use Kumwe\Extension\Spi\BusinessIntegration\Application\IntegrationEventTransport;
 use Kumwe\App\BusinessIntegration\Application\TrustedRuntimeGenerationGuard;
-use Kumwe\App\BusinessIntegration\Domain\ConsumerIdempotency;
-use Kumwe\App\BusinessIntegration\Domain\EventConsumerDefinition;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\ConsumerIdempotency;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventConsumerDefinition;
 use Kumwe\App\BusinessIntegration\Domain\EventSchemaDefinition;
-use Kumwe\App\BusinessIntegration\Domain\EventSensitivity;
-use Kumwe\App\BusinessIntegration\Domain\IntegrationEvent;
-use Kumwe\App\BusinessIntegration\Domain\WebhookContributionDefinition;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventSensitivity;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\App\BusinessIntegration\Domain\RecordedIntegrationEvent;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\WebhookContributionDefinition;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
@@ -33,7 +34,7 @@ final class DurableOutboundAdapterDispatcherTest extends TestCase
 {
     public function testAggregateVersionIdempotencyCompilesToAnOrderedDurableReceipt(): void
     {
-        $event = new IntegrationEvent(
+        $event = new RecordedIntegrationEvent(
             'acme.record.changed',
             1,
             Uuid::uuid7()->toString(),
@@ -68,7 +69,6 @@ final class DurableOutboundAdapterDispatcherTest extends TestCase
             60,
         )->willReturn(new InboxClaimResult(InboxDisposition::DUPLICATE));
         $adapter = $this->createStub(IntegrationEventTransport::class);
-        $adapter->method('identifier')->willReturn($definition->identifier());
         $contracts = new EventContractRegistry([new EventSchemaDefinition(
             'acme.record.changed',
             1,
@@ -113,7 +113,7 @@ final class DurableOutboundAdapterDispatcherTest extends TestCase
 
     public function testQueueLeaseDefaultsAndSensitivityRejectionUseTheDurableReceipt(): void
     {
-        $event = new IntegrationEvent(
+        $event = new RecordedIntegrationEvent(
             'acme.record.changed',
             1,
             Uuid::uuid7()->toString(),
@@ -148,7 +148,6 @@ final class DurableOutboundAdapterDispatcherTest extends TestCase
             30,
         )->willReturn(new InboxClaimResult(InboxDisposition::UNAVAILABLE));
         $adapter = $this->createMock(IntegrationEventTransport::class);
-        $adapter->method('identifier')->willReturn($definition->identifier());
         $adapter->expects(self::never())->method('publish');
         $contracts = new EventContractRegistry([new EventSchemaDefinition(
             'acme.record.changed',

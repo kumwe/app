@@ -28,15 +28,17 @@ final class FieldPresenterBoundaryTest extends TestCase
         foreach (
             [
                 'FieldPresenter.php',
-                'FieldPresentation.php',
+                'FieldPresentationConfiguration.php',
                 'FieldPresentationContext.php',
-                'FieldPresentationCoverage.php',
-                'FieldPresentationRequest.php',
+                'FieldPresentationInput.php',
+                'FieldPresentationModel.php',
                 'FieldWidget.php',
             ] as $file
         ) {
-            $contracts .= $this->source('src/BusinessSurface/Presentation/Field/' . $file);
+            $contracts .= $this->source('vendor/kumwe/extension-sdk/src/Spi/BusinessSurface/Presentation/Field/' . $file);
         }
+        $contracts .= $this->source('src/BusinessSurface/Presentation/Field/FieldPresentationCoverage.php');
+        $contracts .= $this->source('src/BusinessSurface/Presentation/Field/FieldPresentationInputFactory.php');
 
         foreach (
             [
@@ -55,7 +57,7 @@ final class FieldPresenterBoundaryTest extends TestCase
             self::assertStringNotContainsString($forbidden, $contracts);
         }
         self::assertStringContainsString(
-            'present(FieldPresentationRequest $request): FieldPresentation',
+            'present(FieldPresentationInput $input): FieldPresentationModel',
             $contracts,
         );
     }

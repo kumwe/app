@@ -16,7 +16,7 @@ use Kumwe\App\Content\Domain\ContentTypeDefinition;
 use Kumwe\App\Content\Domain\JsonSchemaValidator;
 use Kumwe\App\Content\Domain\SchemaCompatibilityChecker;
 use Kumwe\App\Content\Domain\VersionConflict;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use Kumwe\App\Workflow\Domain\WorkflowDefinition;
 use Kumwe\App\Workflow\Domain\WorkflowStateDefinition;
 use Kumwe\App\Workflow\Domain\WorkflowTransitionDefinition;

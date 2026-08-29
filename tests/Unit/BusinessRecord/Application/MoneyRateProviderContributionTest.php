@@ -19,11 +19,12 @@ use Kumwe\App\BusinessRecord\Domain\MoneyRateProviderDefinition;
 use Kumwe\Conversion\Value\MoneyRoundingMode;
 use Kumwe\Conversion\Value\MoneyValue;
 use Kumwe\App\BusinessRecord\Infrastructure\RuntimeMoneyRateProviderCatalog;
-use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\Extension\Application\ExtensionExecutionGate;
-use Kumwe\App\Extension\Contribution\ManifestContributionSet;
-use Kumwe\App\Extension\Domain\ExtensionIdentifier;
+use Kumwe\App\Extension\Contribution\OwnedExtensionBindingRegistrar;
+use Kumwe\Extension\Manifest\ExtensionIdentifier;
+use Kumwe\Extension\Manifest\ManifestContributions;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
@@ -47,7 +48,7 @@ final class MoneyRateProviderContributionTest extends TestCase
     public function testAnExtensionSuppliesARateThroughTheContributionRegistrar(): void
     {
         $registries = new ExtensionContributionRegistrySet(withCore: false);
-        $this->contribute($registries, 'acme/rates', 'acme.rates.ecb', '0.04938240');
+        $this->activateProvider($registries, 'acme/rates', 'acme.rates.ecb', '0.04938240');
 
         $converted = $this->pipeline($registries)->convert($this->request());
 
@@ -89,9 +90,9 @@ final class MoneyRateProviderContributionTest extends TestCase
     public function testTwoPackagesConvertingTheSameAmountProduceTheSameShape(): void
     {
         $first = new ExtensionContributionRegistrySet(withCore: false);
-        $this->contribute($first, 'acme/rates', 'acme.rates.ecb', '0.04938240');
+        $this->activateProvider($first, 'acme/rates', 'acme.rates.ecb', '0.04938240');
         $second = new ExtensionContributionRegistrySet(withCore: false);
-        $this->contribute($second, 'zeta/treasury', 'zeta.treasury.contracted', '0.04938240');
+        $this->activateProvider($second, 'zeta/treasury', 'zeta.treasury.contracted', '0.04938240');
 
         $left = $this->pipeline($first)->convert($this->request())->toArray();
         $right = $this->pipeline($second)->convert($this->request())->toArray();
@@ -113,8 +114,8 @@ final class MoneyRateProviderContributionTest extends TestCase
     public function testDeclaredPriorityDecidesWhichPackageAnswers(): void
     {
         $registries = new ExtensionContributionRegistrySet(withCore: false);
-        $this->contribute($registries, 'acme/rates', 'acme.rates.ecb', '0.04938240', 10);
-        $this->contribute($registries, 'zeta/treasury', 'zeta.treasury.contracted', '0.05000000', -5);
+        $this->activateProvider($registries, 'acme/rates', 'acme.rates.ecb', '0.04938240', 10);
+        $this->activateProvider($registries, 'zeta/treasury', 'zeta.treasury.contracted', '0.05000000', -5);
 
         $converted = $this->pipeline($registries)->convert($this->request());
 
@@ -132,7 +133,7 @@ final class MoneyRateProviderContributionTest extends TestCase
     public function testAPackageCannotWidenItsReachAfterAdmission(): void
     {
         $undeclared = new ExtensionContributionRegistrySet(withCore: false);
-        $this->contribute($undeclared, 'acme/rates', 'acme.rates.ecb', '0.04938240', 0, ['ZAR', 'USD']);
+        $this->activateProvider($undeclared, 'acme/rates', 'acme.rates.ecb', '0.04938240', 0, ['ZAR', 'USD']);
         try {
             $this->pipeline($undeclared)->convert($this->request());
             self::fail('A provider priced a currency pair it never declared.');
@@ -141,7 +142,7 @@ final class MoneyRateProviderContributionTest extends TestCase
         }
 
         $impersonating = new ExtensionContributionRegistrySet(withCore: false);
-        $this->contribute(
+        $this->activateProvider(
             $impersonating,
             'acme/rates',
             'acme.rates.ecb',
@@ -158,20 +159,16 @@ final class MoneyRateProviderContributionTest extends TestCase
         }
 
         $registries = new ExtensionContributionRegistrySet(withCore: false);
-        $owner = ContributionOwner::extension('acme/rates');
         $definition = new MoneyRateProviderDefinition('acme.rates.ecb', ['ZAR', 'EUR']);
-        $registrar = $registries->registrar($owner, new ManifestContributionSet(
-            $owner,
-            moneyRateProviders: [$definition],
-        ));
+        $registrar = $this->registrar($registries, 'acme/rates', $definition);
         try {
             $registrar->moneyRateProvider(
-                $definition,
+                $definition->identifier(),
                 new FixedMoneyRateProvider('acme.rates.other', 'ZAR', 'EUR', '0.04938240'),
             );
             self::fail('An implementation answering under another identity was accepted.');
         } catch (InvalidArgumentException $exception) {
-            self::assertStringContainsString('contradicts its declaration', $exception->getMessage());
+            self::assertStringContainsString('contradicts its signed declaration', $exception->getMessage());
         }
     }
 
@@ -185,7 +182,7 @@ final class MoneyRateProviderContributionTest extends TestCase
     public function testRemovingThePackageWithdrawsItsRates(): void
     {
         $registries = new ExtensionContributionRegistrySet(withCore: false);
-        $this->contribute($registries, 'acme/rates', 'acme.rates.ecb', '0.04938240');
+        $this->activateProvider($registries, 'acme/rates', 'acme.rates.ecb', '0.04938240');
 
         $registries->remove(ContributionOwner::extension('acme/rates'));
 
@@ -203,18 +200,14 @@ final class MoneyRateProviderContributionTest extends TestCase
      */
     public function testStaleGenerationCannotEnterResidentRateProvider(): void
     {
-        $owner = ContributionOwner::extension('acme/rates');
         $definition = new MoneyRateProviderDefinition('acme.rates.ecb', ['ZAR', 'EUR']);
         $provider = $this->createMock(MoneyRateProvider::class);
         $provider->method('identifier')->willReturn('acme.rates.ecb');
         $provider->expects(self::never())->method('supports');
         $provider->expects(self::never())->method('rateFor');
         $registries = new ExtensionContributionRegistrySet(withCore: false);
-        $registrar = $registries->registrar($owner, new ManifestContributionSet(
-            $owner,
-            moneyRateProviders: [$definition],
-        ));
-        $registrar->moneyRateProvider($definition, $provider);
+        $registrar = $this->registrar($registries, 'acme/rates', $definition);
+        $registrar->moneyRateProvider($definition->identifier(), $provider);
         $registrar->complete();
         $execution = $this->createMock(ExtensionExecutionGate::class);
         $execution->expects(self::once())
@@ -239,32 +232,32 @@ final class MoneyRateProviderContributionTest extends TestCase
      */
     public function testADeclaredRateProviderRoundTripsThroughTheManifest(): void
     {
-        $owner = ContributionOwner::extension('acme/rates');
-        $declared = new ManifestContributionSet(
-            $owner,
-            spiVersion: ManifestContributionSet::CURRENT_SPI_VERSION,
-            moneyRateProviders: [new MoneyRateProviderDefinition('acme.rates.ecb', ['ZAR', 'EUR'], 3)],
-        );
-
-        $document = $declared->toArray();
-        self::assertSame(
-            [['provider_id' => 'acme.rates.ecb', 'currencies' => ['EUR', 'ZAR'], 'priority' => 3]],
-            $document['integration']['rate_providers'] ?? null,
-        );
-        $parsed = ManifestContributionSet::fromManifest(
+        $document = [
+            'version' => 2,
+            'integration' => [
+                'rate_providers' => [
+                    (new MoneyRateProviderDefinition('acme.rates.ecb', ['ZAR', 'EUR'], 3))->toArray(),
+                ],
+            ],
+        ];
+        $parsed = ManifestContributions::fromManifest(
             ExtensionIdentifier::fromString('acme/rates'),
             $document,
             4,
         );
-        self::assertSame($document, $parsed->toArray());
-        self::assertSame('acme.rates.ecb', $parsed->moneyRateProviders()[0]->identifier());
+        self::assertSame(
+            [['provider_id' => 'acme.rates.ecb', 'currencies' => ['EUR', 'ZAR'], 'priority' => 3]],
+            $parsed->declarations()['integration']['rate_providers'] ?? null,
+        );
 
-        $bare = new ManifestContributionSet($owner, spiVersion: ManifestContributionSet::CURRENT_SPI_VERSION);
-        self::assertArrayNotHasKey('rate_providers', $bare->toArray()['integration'] ?? []);
+        $bare = ManifestContributions::fromManifest(ExtensionIdentifier::fromString('acme/rates'), [
+            'version' => 2,
+        ], 4);
+        self::assertArrayNotHasKey('rate_providers', $bare->declarations()['integration'] ?? []);
     }
 
     /**
-     * Contribute one rate package into a registry set exactly as an installed extension would.
+     * Activate one rate provider against its signed manifest exactly as an installed extension would.
      *
      * @param   ExtensionContributionRegistrySet  $registries  Set the package contributes into.
      * @param   string                            $package     Package identifier in `vendor/name` form.
@@ -278,7 +271,7 @@ final class MoneyRateProviderContributionTest extends TestCase
      *
      * @since   2.0.0
      */
-    private function contribute(
+    private function activateProvider(
         ExtensionContributionRegistrySet $registries,
         string $package,
         string $provider,
@@ -287,17 +280,41 @@ final class MoneyRateProviderContributionTest extends TestCase
         ?array $currencies = null,
         ?string $attributed = null,
     ): void {
-        $owner = ContributionOwner::extension($package);
         $definition = new MoneyRateProviderDefinition($provider, $currencies ?? ['ZAR', 'EUR'], $priority);
-        $registrar = $registries->registrar($owner, new ManifestContributionSet(
-            $owner,
-            moneyRateProviders: [$definition],
-        ));
+        $registrar = $this->registrar($registries, $package, $definition);
         $registrar->moneyRateProvider(
-            $definition,
+            $definition->identifier(),
             new FixedMoneyRateProvider($provider, 'ZAR', 'EUR', $rate, $attributed),
         );
         $registrar->complete();
+    }
+
+    /**
+     * Open the real canonical binding sink for one signed rate-provider declaration.
+     *
+     * @param   ExtensionContributionRegistrySet  $registries  Host registry set receiving the binding.
+     * @param   string                            $package     Canonical package identifier.
+     * @param   MoneyRateProviderDefinition       $definition  Signed provider policy definition.
+     *
+     * @return  OwnedExtensionBindingRegistrar  Manifest-scoped executable sink.
+     *
+     * @since   2.0.0
+     */
+    private function registrar(
+        ExtensionContributionRegistrySet $registries,
+        string $package,
+        MoneyRateProviderDefinition $definition,
+    ): OwnedExtensionBindingRegistrar {
+        $manifest = ManifestContributions::fromManifest(
+            ExtensionIdentifier::fromString($package),
+            [
+                'version' => 2,
+                'integration' => ['rate_providers' => [$definition->toArray()]],
+            ],
+            4,
+        );
+
+        return new OwnedExtensionBindingRegistrar($manifest, $registries);
     }
 
     /**

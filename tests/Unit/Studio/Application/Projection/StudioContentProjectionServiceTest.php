@@ -23,16 +23,9 @@ use Kumwe\App\Content\Domain\ContentTypeDefinition;
 use Kumwe\App\Content\Domain\JsonSchemaValidator;
 use Kumwe\App\Content\Domain\PublicationWindow;
 use Kumwe\App\Content\Domain\SchemaCompatibilityChecker;
-use Kumwe\App\Extension\Contribution\CanonicalCompositionDocument;
-use Kumwe\App\Extension\Contribution\CanonicalCompositionKind;
-use Kumwe\App\Extension\Contribution\CapabilityDefinition;
-use Kumwe\App\Extension\Contribution\CompositionHostBinding;
-use Kumwe\App\Extension\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
-use Kumwe\App\Extension\Contribution\ManifestContributionSet;
 use Kumwe\App\Extension\Contribution\StudioPreviewRendererContribution;
 use Kumwe\App\Extension\Runtime\ActiveExtensionSet;
-use Kumwe\App\Extension\Runtime\ContributedStudioPreviewBlockRendererRegistry;
 use Kumwe\App\Presentation\Application\SitePresentation;
 use Kumwe\App\Site\Application\SiteSettings;
 use Kumwe\App\Studio\Application\Composition\ContentBlueprintBindingStore;
@@ -43,7 +36,6 @@ use Kumwe\App\Studio\Application\Composition\StudioCompositionContributionCatalo
 use Kumwe\App\Studio\Application\Composition\StudioPublishedTheme;
 use Kumwe\App\Studio\Application\Host\StudioArtifactAdmission;
 use Kumwe\App\Studio\Application\Host\StudioArtifactRepository;
-use Kumwe\App\Studio\Application\Host\StudioHostOperationRefused;
 use Kumwe\App\Studio\Application\Host\StudioHostSessionSnapshot;
 use Kumwe\App\Studio\Application\Host\StudioModelHostPort;
 use Kumwe\App\Studio\Application\Projection\ContentProjectionBindingRepository;
@@ -52,14 +44,18 @@ use Kumwe\App\Studio\Application\Projection\RecordAuthorizedStudioContentFieldDi
 use Kumwe\App\Studio\Application\Projection\StudioContentProjectionService;
 use Kumwe\App\Studio\Application\Projection\StudioProjectionRejected;
 use Kumwe\App\Studio\Application\Preview\ContentStudioPreviewBindingSource;
-use Kumwe\App\Studio\Application\Preview\CoreStudioPreviewBlockRendererRegistry;
-use Kumwe\App\Studio\Application\Preview\StudioPreviewBindingResult;
-use Kumwe\App\Studio\Application\Preview\StudioPreviewBlock;
-use Kumwe\App\Studio\Application\Preview\StudioPreviewBlockFragment;
-use Kumwe\App\Studio\Application\Preview\StudioPreviewBlockRenderer;
+use Kumwe\App\Studio\Application\Rendering\StudioBlockRendererRuntime;
+use Kumwe\App\Studio\Application\Rendering\StudioContentFieldBlockRenderer;
 use Kumwe\App\Studio\Application\Release\StudioReleaseRecord;
-use Kumwe\App\Studio\Domain\Contract\CanonicalJson;
-use Kumwe\App\Studio\Domain\Contract\StudioContractSchemas;
+use Kumwe\Extension\Spi\Contribution\CanonicalCompositionDocument;
+use Kumwe\Extension\Spi\Contribution\CanonicalCompositionKind;
+use Kumwe\Extension\Spi\Contribution\CompositionHostBinding;
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Producer\Canonical\CanonicalJson;
+use Kumwe\Producer\Render\BlockRenderer;
+use Kumwe\Producer\Render\RenderState;
+use Kumwe\Producer\Schema\StudioContractResources;
+use Kumwe\Producer\Schema\StudioDocumentSchemaRegistry;
 use Kumwe\App\Studio\Domain\Host\StudioHostSession;
 use Kumwe\App\Studio\Domain\Host\StudioResourceKind;
 use Kumwe\App\Studio\Domain\Host\StudioSessionMode;
@@ -67,9 +63,11 @@ use Kumwe\App\Studio\Domain\Preview\StudioPreviewDraft;
 use Kumwe\App\Studio\Domain\Projection\ContentBlueprintBinding;
 use Kumwe\App\Studio\Domain\Projection\EntryCompositionOverrides;
 use Kumwe\App\Studio\Domain\Projection\StudioProjectionRejection;
-use Kumwe\App\Studio\Domain\Host\StudioHostRequest;
+use Kumwe\Producer\Error\HostRefusal;
+use Kumwe\Producer\Wire\HostResult;
 use Kumwe\App\Tests\Support\AuthorizationContext;
 use Kumwe\App\Tests\Support\ImmediateTransactionManager;
+use Kumwe\App\Tests\Support\StudioProducerRequest;
 use Kumwe\App\Identity\Application\Administration\AdministratorSession;
 use Kumwe\App\Localization\Application\ActiveLocale;
 use Kumwe\App\Localization\Application\SupportedLocales;
@@ -107,18 +105,15 @@ use Twig\Loader\ArrayLoader;
 #[UsesClass(ContentRecord::class)]
 #[UsesClass(ContentBlueprintBinding::class)]
 #[UsesClass(CanonicalCompositionDocument::class)]
-#[UsesClass(CapabilityDefinition::class)]
 #[UsesClass(CompositionHostBinding::class)]
 #[UsesClass(ExtensionContributionRegistrySet::class)]
-#[UsesClass(ManifestContributionSet::class)]
 #[UsesClass(StudioPreviewRendererContribution::class)]
-#[UsesClass(ContributedStudioPreviewBlockRendererRegistry::class)]
-#[UsesClass(CoreStudioPreviewBlockRendererRegistry::class)]
-#[UsesClass(StudioPreviewBlockFragment::class)]
+#[UsesClass(StudioBlockRendererRuntime::class)]
+#[UsesClass(StudioContentFieldBlockRenderer::class)]
 #[UsesClass(EntryCompositionOverrides::class)]
 #[UsesClass(JsonSchemaValidator::class)]
 #[UsesClass(SchemaCompatibilityChecker::class)]
-#[UsesClass(StudioContractSchemas::class)]
+#[UsesClass(StudioDocumentSchemaRegistry::class)]
 #[UsesClass(Workflow::class)]
 #[UsesClass(WorkflowDefinition::class)]
 #[UsesClass(WorkflowStateDefinition::class)]
@@ -171,21 +166,10 @@ final class StudioContentProjectionServiceTest extends TestCase
             ->with(self::callback(self::isDefaultSite(...)), self::TYPE_ID, 4)
             ->willReturn($binding);
 
-        $port = new StudioModelHostPort($this->service($models, $content, $bindings));
-        $request = new StudioHostRequest(
-            'studio.operation/model.list',
-            '0.1.0-draft.2',
-            'requests/model-list-1',
-            'contexts/vector',
-            'session-r1',
-            new \stdClass(),
-            null,
-            null,
-            null,
-            null,
-        );
-        $snapshot = (new \ReflectionClass(StudioHostSessionSnapshot::class))->newInstanceWithoutConstructor();
-        $documents = $port->dispatch($this->allowedContext(), 'list', $request, $snapshot)->value;
+        $request = StudioProducerRequest::authorized('studio.operation/model.list', new \stdClass());
+        $port = (new StudioModelHostPort($this->service($models, $content, $bindings)))
+            ->forRequest($request->authority);
+        $documents = $port->list($request->arguments(), $request->context())->value;
 
         self::assertCount(1, $documents);
         self::assertSame('content-model:' . self::TYPE_ID, $documents[0]->id);
@@ -216,129 +200,81 @@ final class StudioContentProjectionServiceTest extends TestCase
             $this->createStub(ContentRepository::class),
             $bindings,
         ));
-        $request = new StudioHostRequest(
-            'studio.operation/model.get',
-            '0.1.0-draft.2',
-            'requests/model-get-1',
-            'contexts/vector',
-            'session-r1',
-            (object) ['reference' => (object) [
-                'id' => 'content-model:' . self::TYPE_ID,
-                'version' => '0.0.4',
-                'revision' => 'content-type-v4',
-            ]],
-            null,
-            null,
-            null,
-            null,
-        );
-        $snapshot = (new \ReflectionClass(StudioHostSessionSnapshot::class))->newInstanceWithoutConstructor();
-
-        $result = $port->dispatch($this->allowedContext(), 'get', $request, $snapshot);
+        $request = self::modelRequest((object) ['reference' => (object) [
+            'id' => 'content-model:' . self::TYPE_ID,
+            'version' => '0.0.4',
+            'revision' => 'content-type-v4',
+        ]]);
+        $result = $port->forRequest($request->authority)->get($request->arguments(), $request->context());
 
         self::assertSame('content-model:' . self::TYPE_ID, $result->value->id);
         self::assertSame('0.0.4', $result->value->version);
         self::assertSame($result->value->revision, $result->revision);
-        $context = $this->allowedContext();
         $validReference = (object) [
             'id' => 'content-model:' . self::TYPE_ID,
             'version' => '0.0.4',
         ];
         self::assertHostRefusal(
-            static fn () => $port->dispatch(
-                $context,
-                'unknown',
-                self::modelRequest(new \stdClass()),
-                $snapshot,
-            ),
-            'incompatible',
-            'studio.host/operation-unavailable',
-        );
-        self::assertHostRefusal(
-            static fn () => $port->dispatch(
-                $context,
-                'get',
-                self::modelRequest((object) ['reference' => (object) [
+            static fn () => self::modelGet($port, self::modelRequest((object) ['reference' => (object) [
                     'id' => 'not-a-content-model',
                     'version' => '0.0.4',
-                ]]),
-                $snapshot,
-            ),
+                ]])),
             'not-found',
             'studio.model/not-found',
         );
         self::assertHostRefusal(
-            static fn () => $port->dispatch($context, 'get', self::modelRequest(null), $snapshot),
+            static fn () => self::modelGet($port, self::modelRequest(null)),
             'invalid-request',
             'studio.host/invalid-arguments',
         );
         self::assertHostRefusal(
-            static fn () => $port->dispatch(
-                $context,
-                'get',
-                self::modelRequest((object) ['reference' => 'not-an-object']),
-                $snapshot,
-            ),
+            static fn () => self::modelGet($port, self::modelRequest((object) ['reference' => 'not-an-object'])),
             'invalid-request',
             'studio.host/invalid-arguments',
         );
         self::assertHostRefusal(
-            static fn () => $port->dispatch(
-                $context,
-                'get',
-                self::modelRequest((object) ['reference' => (object) [
+            static fn () => self::modelGet($port, self::modelRequest((object) ['reference' => (object) [
                     'extra' => true,
                     'id' => 'content-model:' . self::TYPE_ID,
                     'version' => '0.0.4',
-                ]]),
-                $snapshot,
-            ),
+                ]])),
             'invalid-request',
             'studio.host/invalid-arguments',
         );
         self::assertHostRefusal(
-            static fn () => $port->dispatch(
-                $context,
-                'get',
-                self::modelRequest((object) ['reference' => (object) ['id' => '', 'version' => '0.0.4']]),
-                $snapshot,
-            ),
+            static fn () => self::modelGet($port, self::modelRequest(
+                (object) ['reference' => (object) ['id' => '', 'version' => '0.0.4']],
+            )),
             'invalid-request',
             'studio.host/invalid-arguments',
         );
         self::assertHostRefusal(
-            static fn () => $port->dispatch(
-                $context,
-                'get',
-                self::modelRequest((object) ['reference' => (object) [
+            static fn () => self::modelGet($port, self::modelRequest((object) ['reference' => (object) [
                     'id' => $validReference->id,
                     'revision' => 'content-type-v999',
                     'version' => $validReference->version,
-                ]]),
-                $snapshot,
-            ),
+                ]])),
             'not-found',
             'studio.model/not-found',
         );
         self::assertHostRefusal(
-            static fn () => $port->dispatch(
-                $context,
-                'list',
-                self::modelRequest((object) ['unexpected' => true]),
-                $snapshot,
+            static fn () => self::modelList(
+                $port,
+                StudioProducerRequest::authorized(
+                    'studio.operation/model.list',
+                    (object) ['unexpected' => true],
+                ),
             ),
             'invalid-request',
             'studio.host/invalid-arguments',
         );
         self::assertHostRefusal(
-            static fn () => $port->dispatch(
-                $context,
-                'get',
+            static fn () => self::modelGet(
+                $port,
                 self::modelRequest(
                     (object) ['reference' => $validReference],
                     expectedRevision: 'revision/not-allowed',
                 ),
-                $snapshot,
             ),
             'invalid-request',
             'studio.host/invalid-context',
@@ -400,7 +336,7 @@ final class StudioContentProjectionServiceTest extends TestCase
             new ActiveExtensionSet(new ExtensionContributionRegistrySet(withCore: false)),
             new StudioBuiltInThemeRelease(str_repeat('a', 64)),
         );
-        $admission = new StudioArtifactAdmission(StudioContractSchemas::fromVendoredCorpus());
+        $admission = new StudioArtifactAdmission(StudioDocumentSchemaRegistry::fromVendoredCorpus());
         $service = new StudioContentCompositionService(
             $projection,
             $bindings,
@@ -973,7 +909,7 @@ final class StudioContentProjectionServiceTest extends TestCase
             ),
             $bindings,
             new ContentStudioProjector(
-                StudioContractSchemas::fromVendoredCorpus(),
+                StudioDocumentSchemaRegistry::fromVendoredCorpus(),
                 new RecordAuthorizedStudioContentFieldDisclosure(),
                 new JsonSchemaValidator(),
             ),
@@ -1167,9 +1103,7 @@ final class StudioContentProjectionServiceTest extends TestCase
     {
         $owner = ContributionOwner::extension('acme/shop');
         $document = json_decode(
-            (string) file_get_contents(
-                dirname(__DIR__, 4) . '/Fixtures/Studio/testkit/fixtures/block.grid.example.json',
-            ),
+            StudioContractResources::testkitBytes('fixtures/block.grid.example.json'),
             false,
             32,
             JSON_THROW_ON_ERROR,
@@ -1193,60 +1127,31 @@ final class StudioContentProjectionServiceTest extends TestCase
             CanonicalCompositionKind::BlockDefinition,
             CanonicalJson::stringify($document),
         );
-        $capability = new CapabilityDefinition(
-            'acme.shop.catalog.edit',
-            'Edit shop catalog',
-            'Offer the shop catalog composition blocks to an author.',
-        );
         $binding = new CompositionHostBinding(
             CanonicalCompositionKind::BlockDefinition,
             'acme.shop/grid',
             'acme.shop.renderer.grid',
-            $capability->id,
-        );
-        $declared = new ManifestContributionSet(
-            $owner,
-            spiVersion: ManifestContributionSet::CANONICAL_COMPOSITION_SPI_VERSION,
-            capabilities: [$capability],
-            canonicalDocuments: [$canonical],
-            compositionHostBindings: [$binding],
+            'acme.shop.catalog.edit',
         );
         $registries = new ExtensionContributionRegistrySet();
-        $registrar = $registries->registrar($owner, $declared);
-        $registrar->capability($capability);
-        $registrar->canonicalCompositionDocument($canonical);
-        $registrar->complete();
+        $registries->canonicalCompositionDocuments()->register($owner, $canonical);
+        $registries->compositionHostBindings()->register($owner, $binding);
         $registries->studioPreviewRenderers()->register(
             $owner,
             new StudioPreviewRendererContribution($owner, '1.0.0', $canonical, $binding),
-            new class implements StudioPreviewBlockRenderer {
-                /**
-                 * Return one inert safe fragment for the exact contributed block.
-                 *
-                 * @param   StudioPreviewBlock          $block     Admitted block input.
-                 * @param   StudioPreviewBindingResult  $binding   Authorized binding result.
-                 * @param   string                      $viewport  Active semantic viewport.
-                 *
-                 * @return  StudioPreviewBlockFragment  Closed safe fragment.
-                 *
-                 * @since   2.0.0
-                 */
-                public function render(
-                    StudioPreviewBlock $block,
-                    StudioPreviewBindingResult $binding,
-                    string $viewport,
-                ): StudioPreviewBlockFragment {
-                    return new StudioPreviewBlockFragment('div', 'acme-shop-grid', '');
+            new class implements BlockRenderer {
+                public function render(\stdClass $node, string $scope, RenderState $state): string
+                {
+                    unset($node, $scope, $state);
+
+                    return '<div class="acme-shop-grid"></div>';
                 }
             },
         );
 
         return new StudioCompositionContributionCatalog(
             $registries,
-            new ContributedStudioPreviewBlockRendererRegistry(
-                new CoreStudioPreviewBlockRendererRegistry(),
-                $registries->studioPreviewRenderers(),
-            ),
+            new StudioBlockRendererRuntime($registries, new StudioContentFieldBlockRenderer()),
         );
     }
 
@@ -1291,7 +1196,7 @@ final class StudioContentProjectionServiceTest extends TestCase
      * @param   string|null  $expectedRevision  Optional forbidden read revision.
      * @param   string|null  $idempotencyKey    Optional forbidden read idempotency key.
      *
-     * @return  StudioHostRequest  Model host request envelope.
+     * @return  StudioProducerRequest  Authorized Producer request scope.
      *
      * @since   2.0.0
      */
@@ -1299,19 +1204,25 @@ final class StudioContentProjectionServiceTest extends TestCase
         mixed $arguments,
         ?string $expectedRevision = null,
         ?string $idempotencyKey = null,
-    ): StudioHostRequest {
-        return new StudioHostRequest(
+    ): StudioProducerRequest {
+        return StudioProducerRequest::authorized(
             'studio.operation/model.get',
-            '0.1.0-draft.2',
-            'requests/model-negative-vector',
-            'contexts/vector',
-            'session-r1',
             $arguments,
             $expectedRevision,
             $idempotencyKey,
-            null,
-            null,
         );
+    }
+
+    /** Execute one direct model.get call. */
+    private static function modelGet(StudioModelHostPort $port, StudioProducerRequest $request): HostResult
+    {
+        return $port->forRequest($request->authority)->get($request->arguments(), $request->context());
+    }
+
+    /** Execute one direct model.list call. */
+    private static function modelList(StudioModelHostPort $port, StudioProducerRequest $request): HostResult
+    {
+        return $port->forRequest($request->authority)->list($request->arguments(), $request->context());
     }
 
     /**
@@ -1330,9 +1241,9 @@ final class StudioContentProjectionServiceTest extends TestCase
         try {
             $operation();
             self::fail('The malformed Studio model host request unexpectedly succeeded.');
-        } catch (StudioHostOperationRefused $refused) {
-            self::assertSame($category, $refused->category);
-            self::assertSame($code, $refused->diagnosticCode);
+        } catch (HostRefusal $refused) {
+            self::assertSame($category, $refused->error()->category());
+            self::assertSame($code, $refused->error()->diagnostics()[0]->code());
         }
     }
 

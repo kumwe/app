@@ -10,13 +10,14 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use Kumwe\App\Application\Automation\RetryPolicy;
 use Kumwe\App\BusinessIntegration\Application\EventContractRegistry;
-use Kumwe\App\BusinessIntegration\Application\IntegrationEventTransport;
+use Kumwe\App\BusinessIntegration\Application\IntegrationEventFanout;
 use Kumwe\App\BusinessIntegration\Application\OutboxDispatcher;
 use Kumwe\App\BusinessIntegration\Application\ProcessWorkDispatcher;
 use Kumwe\App\BusinessIntegration\Application\TrustedRuntimeGenerationGuard;
 use Kumwe\App\BusinessIntegration\Domain\EventSchemaDefinition;
-use Kumwe\App\BusinessIntegration\Domain\EventSensitivity;
-use Kumwe\App\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventSensitivity;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\App\BusinessIntegration\Domain\RecordedIntegrationEvent;
 use Kumwe\App\BusinessIntegration\Infrastructure\DoctrineOutboxStore;
 use Kumwe\App\Delivery\Console\Command\IntegrationWorkCommand;
 use Kumwe\App\Delivery\Console\Output;
@@ -145,7 +146,7 @@ final class HungEndpointDeadlineIntegrationTest extends TestCase
 
     private function event(): IntegrationEvent
     {
-        return new IntegrationEvent(
+        return new RecordedIntegrationEvent(
             'deadline.drill.raised',
             1,
             Uuid::uuid7()->toString(),
@@ -189,7 +190,7 @@ final class HungEndpointDeadlineIntegrationTest extends TestCase
  *
  * @since  2.0.0
  */
-final class HungOutboundEndpoint implements IntegrationEventTransport
+final class HungOutboundEndpoint implements IntegrationEventFanout
 {
     /**
      * Whether the drill actually reached the publish, so a skipped effect cannot read as a cut one.

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessRecord\Domain;
 
 use InvalidArgumentException;
-use Kumwe\App\Extension\Contribution\ContributionDefinition;
+use Kumwe\Extension\Spi\Contribution\ContributionDefinition;
 use Kumwe\Conversion\Contract\MoneyConversionRequest;
 
 /**

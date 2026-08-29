@@ -9,7 +9,9 @@ use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Application\Automation\QueueRuntimePolicyCatalog;
 use Kumwe\App\Application\Automation\RetryPolicy;
 use Kumwe\App\Application\Persistence\TransactionManager;
-use Kumwe\App\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\Extension\Spi\BusinessIntegration\Application\IntegrationEventHandler;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventConsumerDefinition;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationEvent;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -48,6 +50,7 @@ final readonly class IntegrationEventConsumerDispatcher
     /**
      * Offer an event to one handler, executing only when its durable receipt is claimed.
      *
+     * @param   EventConsumerDefinition  $definition         Exact signed consumer declaration.
      * @param   IntegrationEvent         $event              Event delivered at least once.
      * @param   IntegrationEventHandler  $handler            Exact trusted handler implementation.
      * @param   ExecutionContext         $context            Freshly authorised worker context.
@@ -61,6 +64,7 @@ final readonly class IntegrationEventConsumerDispatcher
      * @since   2.0.0
      */
     public function consume(
+        EventConsumerDefinition $definition,
         IntegrationEvent $event,
         IntegrationEventHandler $handler,
         ExecutionContext $context,
@@ -70,8 +74,8 @@ final readonly class IntegrationEventConsumerDispatcher
     ): InboxDisposition {
         $this->runtime->assertCurrent($runtimeGeneration);
         $this->contracts->assertEvent($event);
-        $registered = $this->contracts->consumer($handler->definition()->identifier());
-        if ($registered->toArray() !== $handler->definition()->toArray()) {
+        $registered = $this->contracts->consumer($definition->identifier());
+        if ($registered->toArray() !== $definition->toArray()) {
             throw new InvalidArgumentException('The executable consumer does not match its trusted declaration.');
         }
         $leaseSeconds = $this->leaseSeconds($registered->queue(), $leaseSeconds);
@@ -87,9 +91,15 @@ final readonly class IntegrationEventConsumerDispatcher
         }
         $lease = $result->lease;
         try {
-            $this->transactions->transactional(function () use ($lease, $handler, $event, $context): void {
+            $this->transactions->transactional(function () use (
+                $lease,
+                $handler,
+                $registered,
+                $event,
+                $context,
+            ): void {
                 $this->runtime->assertCurrent($lease->runtimeGeneration);
-                $handler->handle($event, $context);
+                $handler->handle($registered, $event, $context);
                 $this->inbox->complete($lease);
             });
             $this->logger->info('Integration event consumer completed.', [

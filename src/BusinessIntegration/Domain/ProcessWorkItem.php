@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\BusinessIntegration\Domain;
 
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationContractValidator;
 use DateTimeImmutable;
 use InvalidArgumentException;
 use Ramsey\Uuid\Uuid;
@@ -49,7 +50,11 @@ final readonly class ProcessWorkItem
             throw new InvalidArgumentException('A process work item ID must be a UUID.');
         }
         IntegrationContractValidator::identifier($name, 'Process work name');
-        IntegrationContractValidator::object($payload, 'Process work payload', EventEnvelope::MAX_PAYLOAD_BYTES);
+        IntegrationContractValidator::object(
+            $payload,
+            'Process work payload',
+            RecordedEventEnvelope::MAX_PAYLOAD_BYTES,
+        );
         if ($maximumAttempts < 1 || $maximumAttempts > 100) {
             throw new InvalidArgumentException('A process work attempt budget must be between 1 and 100.');
         }

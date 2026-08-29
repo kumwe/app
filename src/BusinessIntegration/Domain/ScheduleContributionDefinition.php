@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Kumwe\App\BusinessIntegration\Domain;
 
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationContract;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationContractValidator;
 use DateTimeZone;
 use InvalidArgumentException;
 use Kumwe\App\Automation\Domain\CronExpression;
@@ -55,7 +57,7 @@ final readonly class ScheduleContributionDefinition implements IntegrationContra
         if ($siteIdentifier !== null) {
             IntegrationContractValidator::token($siteIdentifier, 'Schedule site');
         }
-        IntegrationContractValidator::object($payload, 'Schedule payload', EventEnvelope::MAX_PAYLOAD_BYTES);
+        IntegrationContractValidator::object($payload, 'Schedule payload', RecordedEventEnvelope::MAX_PAYLOAD_BYTES);
         new CronExpression($cronExpression);
         try {
             new DateTimeZone($timezone);

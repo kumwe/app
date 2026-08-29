@@ -12,20 +12,22 @@ use Kumwe\App\Extension\Application\ExtensionManager;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\Extension\Contribution\StudioPreviewRendererContribution;
-use Kumwe\App\Extension\Domain\PackageChecksum;
+use Kumwe\Extension\Package\PackageChecksum;
 use Kumwe\App\Extension\Infrastructure\DoctrineExtensionManager;
 use Kumwe\App\Extension\Runtime\ActiveExtensionSet;
-use Kumwe\App\Extension\Runtime\ContributedStudioPreviewBlockRendererRegistry;
 use Kumwe\App\Extension\Runtime\ExtensionRuntimeMapCompiler;
 use Kumwe\App\Extension\Runtime\ExtensionRuntimeLoader;
 use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
 use Kumwe\App\Extension\Runtime\TrustEnforcingStudioPreviewBlockRenderer;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
-use Kumwe\App\Studio\Application\Preview\StudioCompositionMarkupRenderer;
-use Kumwe\App\Studio\Application\Preview\StudioPreviewBindingValues;
-use Kumwe\App\Studio\Application\Preview\StudioPreviewBlockReference;
-use Kumwe\App\Studio\Application\Preview\StudioPreviewBlockRendererRegistry;
+use Kumwe\App\Studio\Application\Rendering\StudioBlockRendererRuntime;
 use Kumwe\App\Tests\Support\TestKernelFactory;
+use Kumwe\Producer\Render\BlockCoordinate;
+use Kumwe\Producer\Render\BlockRenderer;
+use Kumwe\Producer\Render\CompositionRenderer;
+use Kumwe\Producer\Render\RenderContext;
+use Kumwe\Producer\Render\RenderException;
+use Kumwe\Producer\Render\RenderPolicy;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
@@ -38,7 +40,7 @@ use stdClass;
 use Throwable;
 use ZipArchive;
 
-#[CoversClass(ContributedStudioPreviewBlockRendererRegistry::class)]
+#[CoversClass(StudioBlockRendererRuntime::class)]
 #[CoversClass(StudioPreviewRendererContribution::class)]
 #[CoversClass(TrustEnforcingStudioPreviewBlockRenderer::class)]
 #[CoversClass(ActiveExtensionSet::class)]
@@ -116,8 +118,7 @@ final class ExtensionStudioPreviewRendererIntegrationTest extends TestCase
                     $runtimeTrust->enforceRuntimeEntryTrust($runtimeEntry);
                 },
             );
-            $renderer = self::service($runtime, StudioCompositionMarkupRenderer::class);
-            $rendererRegistry = self::service($runtime, StudioPreviewBlockRendererRegistry::class);
+            $blocks = self::service($runtime, StudioBlockRendererRuntime::class);
             $registries = self::service($runtime, ExtensionContributionRegistrySet::class);
             $definition = self::rendererDefinition($registries, $identifier);
             $namespace = str_replace('/', '.', $identifier);
@@ -128,42 +129,41 @@ final class ExtensionStudioPreviewRendererIntegrationTest extends TestCase
             self::assertSame($namespace . '.renderer.grid', $definition->renderer);
             self::assertSame($namespace . '/grid', $definition->previewCapability);
             self::assertSame('^1.0.0', $definition->previewCapabilityVersions);
-            $exactReference = new StudioPreviewBlockReference(
+            $exactCoordinate = new BlockCoordinate(
                 $namespace . '/grid',
                 '1.0.0',
                 'grid-block-r1',
             );
-            self::assertTrue($rendererRegistry->supports($exactReference));
+            $rendererRegistry = $blocks->registry();
+            self::assertTrue($rendererRegistry->supports($exactCoordinate));
+            self::assertSame(
+                self::rendererImplementation($registries, $identifier),
+                $rendererRegistry->rendererFor($exactCoordinate),
+            );
 
             $exact = self::document($namespace, '1.0.0', 'grid-block-r1');
             self::assertStringContainsString(
-                '<section class="studio-preview-extension-grid" data-studio-preview-marker="marker-grid">',
-                self::render($renderer, $exact),
+                'data-studio-preview-marker="marker-grid"',
+                self::render($blocks, $exact),
             );
             self::assertStringContainsString(
-                'Contributed grid: 3 columns (desktop)',
-                self::render($renderer, $exact),
+                '<p class="studio-preview-extension-grid"',
+                self::render($blocks, $exact),
+            );
+            self::assertStringContainsString(
+                'Contributed grid: 3 columns',
+                self::render($blocks, $exact),
             );
 
             $wrongRevision = self::document($namespace, '1.0.0', 'grid-block-r2');
-            self::assertFalse($rendererRegistry->supports(new StudioPreviewBlockReference(
+            self::assertFalse($rendererRegistry->supports(new BlockCoordinate(
                 $namespace . '/grid',
                 '1.0.0',
                 'grid-block-r2',
             )));
-            self::assertStringContainsString('class="studio-preview-unresolved"', self::render(
-                $renderer,
-                $wrongRevision,
-            ));
-            self::assertStringNotContainsString('studio-preview-extension-grid', self::render(
-                $renderer,
-                $wrongRevision,
-            ));
+            self::assertRenderRefused($blocks, $wrongRevision);
             $wrongVersion = self::document($namespace, '2.0.0', 'grid-block-r1');
-            self::assertStringContainsString('class="studio-preview-unresolved"', self::render(
-                $renderer,
-                $wrongVersion,
-            ));
+            self::assertRenderRefused($blocks, $wrongVersion);
 
             $archives[] = $upgradeArchive = $this->fixturePackage($identifier, '1.1.0', false);
             $upgraded = $manager->install(
@@ -173,36 +173,28 @@ final class ExtensionStudioPreviewRendererIntegrationTest extends TestCase
                 self::signature($upgradeArchive, $secretKey),
             );
             self::assertSame('1.1.0', $upgraded['installed_version'] ?? null);
-            self::assertFalse($rendererRegistry->supports($exactReference));
-            self::assertStringContainsString('class="studio-preview-unresolved"', self::render($renderer, $exact));
+            self::assertFalse($blocks->registry()->supports($exactCoordinate));
+            self::assertRenderRefused($blocks, $exact);
             if (($upgraded['status'] ?? null) !== 'active') {
                 $manager->activate($identifier, $context);
             }
             $trust->synchronizeRuntimeMaterialization();
             $upgradedRuntime = TestKernelFactory::create($environment);
-            $upgradedRenderer = self::service($upgradedRuntime, StudioCompositionMarkupRenderer::class);
-            $upgradedRendererRegistry = self::service(
-                $upgradedRuntime,
-                StudioPreviewBlockRendererRegistry::class,
-            );
+            $upgradedBlocks = self::service($upgradedRuntime, StudioBlockRendererRuntime::class);
             $upgradedRegistries = self::service($upgradedRuntime, ExtensionContributionRegistrySet::class);
             self::assertSame('1.1.0', self::rendererDefinition(
                 $upgradedRegistries,
                 $identifier,
             )->runtimeVersion);
-            self::assertTrue($upgradedRendererRegistry->supports($exactReference));
+            self::assertTrue($upgradedBlocks->registry()->supports($exactCoordinate));
             self::assertStringContainsString('studio-preview-extension-grid', self::render(
-                $upgradedRenderer,
+                $upgradedBlocks,
                 $exact,
             ));
 
             $manager->disable($identifier, $context);
-            self::assertFalse($upgradedRendererRegistry->supports($exactReference));
-            self::assertStringContainsString('class="studio-preview-unresolved"', self::render(
-                $upgradedRenderer,
-                $exact,
-            ));
-            self::assertStringNotContainsString('Contributed grid', self::render($upgradedRenderer, $exact));
+            self::assertFalse($upgradedBlocks->registry()->supports($exactCoordinate));
+            self::assertRenderRefused($upgradedBlocks, $exact);
 
             $archives[] = $missingArchive = $this->fixturePackage($missingIdentifier, '1.0.0', true);
             $manager->install($missingArchive, $context, $keyId, self::signature($missingArchive, $secretKey));
@@ -213,10 +205,10 @@ final class ExtensionStudioPreviewRendererIntegrationTest extends TestCase
             $missingRegistries = self::service($missingRuntime, ExtensionContributionRegistrySet::class);
             self::assertNull(self::optionalRendererDefinition($missingRegistries, $missingIdentifier));
             $missingNamespace = str_replace('/', '.', $missingIdentifier);
-            self::assertStringContainsString('class="studio-preview-unresolved"', self::render(
-                self::service($missingRuntime, StudioCompositionMarkupRenderer::class),
+            self::assertRenderRefused(
+                self::service($missingRuntime, StudioBlockRendererRuntime::class),
                 self::document($missingNamespace, '1.0.0', 'grid-block-r1'),
-            ));
+            );
         } finally {
             foreach (array_reverse($installed) as $identifierToRemove) {
                 try {
@@ -259,7 +251,8 @@ final class ExtensionStudioPreviewRendererIntegrationTest extends TestCase
         if ($zip->open($archive, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
             throw new RuntimeException('The Studio preview fixture archive cannot be opened.');
         }
-        $root = dirname(__DIR__, 3) . '/tests/Fixtures/ExtensionApi/generations/manifest-6';
+        $root = dirname(__DIR__, 3)
+            . '/vendor/kumwe/extension-sdk/resources/fixtures/generations/manifest-6';
         $dotted = str_replace('/', '.', $identifier);
         $phpNamespace = 'IntegrationStudioPreview\\R' . substr(hash('sha256', $identifier), 0, 12);
         $jsonNamespace = str_replace('\\', '\\\\', $phpNamespace);
@@ -397,22 +390,32 @@ final class ExtensionStudioPreviewRendererIntegrationTest extends TestCase
     /**
      * Render one-node preview input through the canonical structural composition path.
      *
-     * @param   StudioCompositionMarkupRenderer  $renderer  Runtime-composed renderer.
-     * @param   stdClass                         $document  Blueprint input.
+     * @param   StudioBlockRendererRuntime  $runtime   Live runtime-composed Producer registry.
+     * @param   stdClass                   $document  Blueprint input.
      *
      * @return  string  Safe structural markup.
      *
      * @since   2.0.0
      */
-    private static function render(StudioCompositionMarkupRenderer $renderer, stdClass $document): string
+    private static function render(StudioBlockRendererRuntime $runtime, stdClass $document): string
     {
-        return $renderer->render(
+        return (new CompositionRenderer($runtime->registry()))->renderDocument(
             $document,
-            ['marker-grid'],
-            ['marker-grid' => 'grid-node'],
-            new StudioPreviewBindingValues(new stdClass(), new stdClass()),
-            'desktop',
-        );
+            new RenderContext(
+                previewMarkerMap: ['marker-grid' => 'grid-node'],
+                policy: RenderPolicy::RequireRegistered,
+            ),
+        )->html;
+    }
+
+    private static function assertRenderRefused(StudioBlockRendererRuntime $runtime, stdClass $document): void
+    {
+        try {
+            self::render($runtime, $document);
+            self::fail('An unregistered exact Producer coordinate must be refused.');
+        } catch (RenderException $refused) {
+            self::assertInstanceOf(RenderException::class, $refused);
+        }
     }
 
     /**
@@ -433,6 +436,23 @@ final class ExtensionStudioPreviewRendererIntegrationTest extends TestCase
         self::assertInstanceOf(StudioPreviewRendererContribution::class, $definition);
 
         return $definition;
+    }
+
+    private static function rendererImplementation(
+        ExtensionContributionRegistrySet $registries,
+        string $identifier,
+    ): BlockRenderer {
+        foreach ($registries->studioPreviewRenderers()->executableEntries() as $entry) {
+            if ($entry['owner']->identifier() !== $identifier) {
+                continue;
+            }
+            $implementation = $entry['implementation'];
+            self::assertInstanceOf(BlockRenderer::class, $implementation);
+
+            return $implementation;
+        }
+
+        self::fail('The exact live Producer renderer implementation is unavailable.');
     }
 
     /**

@@ -22,7 +22,7 @@ use Kumwe\App\BusinessRecord\Domain\EncryptedEnvelope;
 use Kumwe\Conversion\Decimal\ExactDecimal;
 use Kumwe\Conversion\Value\MoneyValue;
 use Kumwe\Conversion\Value\QuantityValue;
-use Kumwe\App\BusinessRecord\Domain\ZonedDateTimeValue;
+use Kumwe\Extension\Spi\BusinessRecord\Value\ZonedDateTimeValue;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaEnvironment;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaService;
 use Kumwe\App\BusinessSchema\Application\PhysicalSchemaGateway;

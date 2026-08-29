@@ -8,10 +8,11 @@ use InvalidArgumentException;
 use Kumwe\App\Application\Automation\PermanentFailure;
 use Kumwe\App\Application\Automation\QueueRuntimePolicyCatalog;
 use Kumwe\App\Application\Automation\RetryPolicy;
-use Kumwe\App\BusinessIntegration\Domain\ConsumerIdempotency;
-use Kumwe\App\BusinessIntegration\Domain\EventConsumerDefinition;
-use Kumwe\App\BusinessIntegration\Domain\IntegrationEvent;
-use Kumwe\App\BusinessIntegration\Domain\WebhookContributionDefinition;
+use Kumwe\Extension\Spi\BusinessIntegration\Application\IntegrationEventTransport;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\ConsumerIdempotency;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventConsumerDefinition;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\WebhookContributionDefinition;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
@@ -77,10 +78,6 @@ final readonly class DurableOutboundAdapterDispatcher
         if (!in_array($event->eventType(), $definition->eventTypes(), true)) {
             throw new PermanentFailure('The outbound adapter does not declare this event type.');
         }
-        if ($adapter->identifier() !== $definition->identifier()) {
-            throw new PermanentFailure('The outbound adapter does not match its trusted declaration.');
-        }
-
         $receipt = new EventConsumerDefinition(
             $definition->identifier(),
             $event->eventType(),
@@ -112,7 +109,7 @@ final readonly class DurableOutboundAdapterDispatcher
 
         try {
             $this->runtime->assertCurrent($runtimeGeneration);
-            $adapter->publish($event);
+            $adapter->publish($definition, $event);
             $this->inbox->complete($result->lease);
             $this->logger->info('Durable outbound adapter completed.', [
                 'adapter_id' => $definition->identifier(),

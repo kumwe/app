@@ -12,15 +12,16 @@ use InvalidArgumentException;
 use JsonException;
 use Kumwe\App\Application\Persistence\TransactionManager;
 use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
-use Kumwe\App\BusinessIntegration\Domain\IntegrationEvent;
-use Kumwe\App\BusinessReporting\Application\ProjectionBuilder;
-use Kumwe\App\BusinessReporting\Application\ProjectionEvent;
+use Kumwe\App\BusinessIntegration\Domain\RecordedIntegrationEvent;
+use Kumwe\App\BusinessReporting\Application\JournalProjectionEvent;
 use Kumwe\App\BusinessReporting\Application\ProjectionEventSource;
-use Kumwe\App\BusinessReporting\Application\ProjectionWriter;
-use Kumwe\App\BusinessReporting\Domain\ProjectionDefinition;
-use Kumwe\App\BusinessReporting\Domain\ProjectionFieldDefinition;
+use Kumwe\App\BusinessReporting\Application\ProjectionGenerationWriter;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Shared\Domain\CanonicalJson;
+use Kumwe\Extension\Spi\BusinessReporting\Application\ProjectionBuilder;
+use Kumwe\Extension\Spi\BusinessReporting\Application\ProjectionEvent;
+use Kumwe\Extension\Spi\BusinessReporting\Domain\ProjectionDefinition;
+use Kumwe\Extension\Spi\BusinessReporting\Domain\ProjectionFieldDefinition;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
@@ -34,7 +35,7 @@ use RuntimeException;
  *
  * @since  2.0.0
  */
-final class DoctrineProjectionStore implements ProjectionEventSource, ProjectionWriter
+final class DoctrineProjectionStore implements ProjectionEventSource, ProjectionGenerationWriter
 {
     /**
      * Definition bound to the currently active writer session.
@@ -386,12 +387,12 @@ final class DoctrineProjectionStore implements ProjectionEventSource, Projection
                         break;
                     }
                     foreach ($page as $event) {
-                        if ($event->sequence > $untilSequence) {
+                        if ($event->sequence() > $untilSequence) {
                             $done = true;
                             break;
                         }
                         $builder->apply($definition, $event, $this);
-                        $sequence = $event->sequence;
+                        $sequence = $event->sequence();
                         $sourceChecksum = hash('sha256', $sourceChecksum . "\n" . $event->checksum());
                         $this->checkpoint($sequence, $sourceChecksum);
                     }
@@ -505,7 +506,7 @@ final class DoctrineProjectionStore implements ProjectionEventSource, Projection
         if (!hash_equals($expectedChecksum, CanonicalJson::digest($envelope))) {
             throw new RuntimeException('A projection source envelope checksum does not match.');
         }
-        $event = IntegrationEvent::fromArray($envelope);
+        $event = RecordedIntegrationEvent::fromArray($envelope);
         if (
             $event->eventId() !== ($row['event_id'] ?? null)
             || $event->eventType() !== ($row['event_type'] ?? null)
@@ -519,7 +520,7 @@ final class DoctrineProjectionStore implements ProjectionEventSource, Projection
             throw new RuntimeException('A projection source row contradicts its immutable envelope.');
         }
 
-        return new ProjectionEvent(
+        return new JournalProjectionEvent(
             $sequence,
             $event->eventId(),
             $event->eventType(),

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Architecture;
 
-use Kumwe\App\Extension\Domain\ExtensionManifest;
-use Kumwe\App\Extension\Domain\ExtensionType;
+use Kumwe\Extension\Manifest\ExtensionManifest;
+use Kumwe\Extension\Manifest\ExtensionType;
 use Kumwe\App\Presentation\Infrastructure\TwigThemePackageValidator;
 use Kumwe\App\Extension\Domain\ThemeSurface;
 use PHPUnit\Framework\Attributes\CoversNothing;

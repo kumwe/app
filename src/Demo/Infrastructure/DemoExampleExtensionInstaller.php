@@ -10,7 +10,7 @@ use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Extension\Application\ExtensionManager;
 use Kumwe\App\Extension\Contribution\ExtensionContributionSummary;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
-use Kumwe\App\Extension\Domain\PackageChecksum;
+use Kumwe\Extension\Package\PackageChecksum;
 use Psr\Clock\ClockInterface;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;

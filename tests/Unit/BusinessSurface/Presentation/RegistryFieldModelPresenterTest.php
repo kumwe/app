@@ -10,12 +10,12 @@ use Kumwe\App\BusinessDefinition\Domain\FieldTypeDefinition;
 use Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition;
 use Kumwe\App\BusinessSurface\Application\FieldModelContext;
 use Kumwe\App\BusinessSurface\Application\PresentedField;
-use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentation;
-use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationContext;
+use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationContext;
+use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationInput;
+use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationModel;
+use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresenter;
 use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationRegistry;
-use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationRequest;
-use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresenter;
-use Kumwe\App\BusinessSurface\Presentation\Field\FieldWidget;
+use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldWidget;
 use Kumwe\App\BusinessSurface\Presentation\Field\RegistryFieldModelPresenter;
 use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -169,7 +169,7 @@ final class RegistryFieldModelPresenterTest extends TestCase
     /**
      * Build a registry whose single strategy echoes each request and records what it received.
      *
-     * @param   list<FieldPresentationRequest>  $seen  Captured requests, appended in call order.
+     * @param   list<FieldPresentationInput>  $seen  Captured requests, appended in call order.
      *
      * @return  FieldPresentationRegistry  Registry covering every context for the fixture type.
      *
@@ -186,7 +186,7 @@ final class RegistryFieldModelPresenterTest extends TestCase
                 /**
                  * Record the capture buffer the fixture strategy appends to.
                  *
-                 * @param  list<FieldPresentationRequest>  $seen  Captured requests, appended in call order.
+                 * @param  list<FieldPresentationInput>  $seen  Captured requests, appended in call order.
                  *
                  * @since  2.0.0
                  */
@@ -197,26 +197,26 @@ final class RegistryFieldModelPresenterTest extends TestCase
                 /**
                  * Echo the request back as a minimal valid presentation while recording it.
                  *
-                 * @param   FieldPresentationRequest  $request  Typed declarative presentation input.
+                 * @param   FieldPresentationInput  $request  Typed declarative presentation input.
                  *
-                 * @return  FieldPresentation  Markup-free bounded semantic model.
+                 * @return  FieldPresentationModel  Markup-free bounded semantic model.
                  *
                  * @since   2.0.0
                  */
-                public function present(FieldPresentationRequest $request): FieldPresentation
+                public function present(FieldPresentationInput $request): FieldPresentationModel
                 {
                     $this->seen[] = $request;
                     $editable = $request->permitsEditing();
 
-                    return new FieldPresentation(
-                        $request->field->handle,
-                        $request->field->label,
+                    return new FieldPresentationModel(
+                        $request->handle,
+                        $request->label,
                         $request->context,
                         $editable ? FieldWidget::Text : FieldWidget::Output,
                         is_string($request->value) ? $request->value : '',
                         $editable ? $request->value : null,
                         $editable,
-                        $request->field->required,
+                        $request->required,
                         $request->errors,
                     );
                 }

@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace Kumwe\App\Studio\Application\Host;
 
 use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\Producer\Error\HostRefusal;
 use stdClass;
 
 /**
- * Fail-closed compatibility boundary invoked before an App-owned Blueprint becomes public.
+ * Fail-closed publication boundary invoked before an App-owned Blueprint becomes public.
  *
  * @since  2.0.0
  */
@@ -22,7 +23,7 @@ interface StudioArtifactPublicationGuard
      *
      * @return  void
      *
-     * @throws  StudioHostOperationRefused  When any immutable public dependency is unavailable.
+     * @throws  HostRefusal  When any immutable public dependency is unavailable.
      *
      * @since   2.0.0
      */

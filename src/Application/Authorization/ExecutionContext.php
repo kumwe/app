@@ -6,6 +6,7 @@ namespace Kumwe\App\Application\Authorization;
 
 use InvalidArgumentException;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\Extension\Spi\Application\ExecutionContext as ExtensionExecutionContext;
 
 /**
  * Immutable envelope naming who is acting, in which site, and under which request, for one unit of work.
@@ -20,7 +21,7 @@ use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
  *
  * @since  2.0.0
  */
-final readonly class ExecutionContext
+final readonly class ExecutionContext implements ExtensionExecutionContext
 {
     /**
      * PSR-7 request attribute the authentication middleware stores the active context under.
@@ -364,6 +365,30 @@ final readonly class ExecutionContext
     {
         return $this->principal?->subject() ?? $this->systemIdentity->value
             ?? throw new \LogicException('The execution context has no identity.');
+    }
+
+    /** @since 2.0.0 */
+    public function siteIdentifier(): string
+    {
+        return $this->site->identifier();
+    }
+
+    /** @since 2.0.0 */
+    public function organizationIdentifier(): ?string
+    {
+        return $this->organization()?->identifier();
+    }
+
+    /** @since 2.0.0 */
+    public function workspaceIdentifier(): ?string
+    {
+        return $this->workspace()?->identifier();
+    }
+
+    /** @since 2.0.0 */
+    public function deliverySurface(): string
+    {
+        return $this->surface->value;
     }
 
     /**

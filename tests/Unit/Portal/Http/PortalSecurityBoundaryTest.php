@@ -14,7 +14,7 @@ use Kumwe\App\Application\Authorization\AuthorizationResource;
 use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Application\Authorization\SiteContext;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use Kumwe\App\Identity\Domain\GrantScope;
 use Kumwe\App\Portal\Application\CreatedPortalSession;
 use Kumwe\App\Portal\Application\PortalExecutionContextFactory;

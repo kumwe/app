@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\InterfaceStandard;
 
 use InvalidArgumentException;
-use Kumwe\App\Extension\Contribution\ContributionDefinition;
-use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\Extension\Spi\Contribution\ContributionDefinition;
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\OwnedRuntimeContributionRegistry;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use Kumwe\App\InterfaceStandard\ConformanceDiagnostic;
 use Kumwe\App\InterfaceStandard\ConformanceSeverity;
 use Kumwe\App\InterfaceStandard\CustomizationPermission;

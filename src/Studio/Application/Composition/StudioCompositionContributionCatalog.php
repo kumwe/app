@@ -4,15 +4,14 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Studio\Application\Composition;
 
-use Kumwe\App\Extension\Contribution\CanonicalCompositionDocument;
-use Kumwe\App\Extension\Contribution\CanonicalCompositionKind;
-use Kumwe\App\Extension\Contribution\CompositionHostBinding;
-use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\Extension\Spi\Contribution\CanonicalCompositionDocument;
+use Kumwe\Extension\Spi\Contribution\CanonicalCompositionKind;
+use Kumwe\Extension\Spi\Contribution\CompositionHostBinding;
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\Extension\Contribution\StudioPreviewRendererContribution;
-use Kumwe\App\Studio\Application\Preview\CoreStudioPreviewBlockRendererRegistry;
-use Kumwe\App\Studio\Application\Preview\StudioPreviewBlockReference;
-use Kumwe\App\Studio\Application\Preview\StudioPreviewBlockRendererRegistry;
+use Kumwe\App\Studio\Application\Rendering\StudioBlockRendererRuntime;
+use Kumwe\Producer\Render\BlockCoordinate;
 use stdClass;
 
 /**
@@ -26,27 +25,17 @@ use stdClass;
 final readonly class StudioCompositionContributionCatalog
 {
     /**
-     * Live exact renderer support shared with preview and published rendering.
-     *
-     * @var    StudioPreviewBlockRendererRegistry
-     * @since  2.0.0
-     */
-    private StudioPreviewBlockRendererRegistry $runtime;
-
-    /**
      * Bind the catalogue to the owned live registries shared by core and extensions.
      *
-     * @param  ExtensionContributionRegistrySet         $registries  Owned live contribution lifecycle.
-     * @param  StudioPreviewBlockRendererRegistry|null  $runtime     Exact executable renderer registry. The
-     *         core-only default is retained for isolated tests and non-extension composition.
+     * @param  ExtensionContributionRegistrySet  $registries  Owned live contribution lifecycle.
+     * @param  StudioBlockRendererRuntime        $runtime     Fresh canonical Producer registry authority.
      *
      * @since  2.0.0
      */
     public function __construct(
         private ExtensionContributionRegistrySet $registries,
-        ?StudioPreviewBlockRendererRegistry $runtime = null,
+        private StudioBlockRendererRuntime $runtime,
     ) {
-        $this->runtime = $runtime ?? new CoreStudioPreviewBlockRendererRegistry();
     }
 
     /**
@@ -67,6 +56,7 @@ final readonly class StudioCompositionContributionCatalog
         array $renderers,
         ?array $lockedBlocks = null,
     ): StudioCompositionContributionProjection {
+        $runtime = $this->runtime->registry();
         $bindings = [];
         foreach ($this->registries->compositionHostBindings()->entries() as $entry) {
             $definition = $entry['definition'];
@@ -111,16 +101,17 @@ final readonly class StudioCompositionContributionCatalog
                 continue;
             }
             if ($definition->kind === CanonicalCompositionKind::BlockDefinition) {
-                $lock = self::blockLock($definition->document);
+                $document = $definition->document();
+                $lock = self::blockLock($document);
                 if ($lock === null || $binding->renderer === null) {
                     continue;
                 }
-                $reference = new StudioPreviewBlockReference(
+                $coordinate = new BlockCoordinate(
                     $lock['type'],
                     $lock['version'],
                     $lock['revision'],
                 );
-                if (!$this->runtime->supports($reference)) {
+                if (!$runtime->supports($coordinate)) {
                     continue;
                 }
                 $rendererCapability = $binding->renderer;
@@ -136,7 +127,7 @@ final readonly class StudioCompositionContributionCatalog
                         !$runtimeDefinition instanceof StudioPreviewRendererContribution
                         || !$runtimeOwner instanceof ContributionOwner
                         || $runtimeOwner->identifier() !== $entry['owner']->identifier()
-                        || !$runtimeDefinition->matches($reference)
+                        || !$runtimeDefinition->matches($coordinate)
                         || $runtimeDefinition->renderer !== $binding->renderer
                         || $runtimeDefinition->authoringCapability !== $binding->capability
                     ) {
@@ -168,11 +159,11 @@ final readonly class StudioCompositionContributionCatalog
             if (
                 $definition->kind === CanonicalCompositionKind::Pattern
                 && $lockMap !== null
-                && !self::patternIsLocked($definition->document, $lockMap)
+                && !self::patternIsLocked($definition->document(), $lockMap)
             ) {
                 continue;
             }
-            $documents[$definition->identifier()] = $definition->document;
+            $documents[$definition->identifier()] = $definition->document();
             $owners[$definition->identifier()] = $entry['owner']->identifier();
         }
         ksort($documents, SORT_STRING);

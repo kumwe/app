@@ -16,7 +16,7 @@ use Kumwe\App\Audit\Application\AuditRecorder;
 use Kumwe\App\Audit\Domain\AuditEvent;
 use Kumwe\App\Identity\Application\Security\PasswordHasher;
 use Kumwe\App\Identity\Application\StepUp\StepUpCredentialStore;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use Kumwe\App\Identity\Domain\EmailAddress;
 use Kumwe\App\Identity\Domain\GrantScope;
 use Kumwe\App\Identity\Domain\UserStatus;

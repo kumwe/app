@@ -13,7 +13,7 @@ use Kumwe\App\BusinessRecord\Application\Command\DocumentWriteIntent;
 use Kumwe\App\BusinessRecord\Application\Command\WriteDocumentCommand;
 use Kumwe\App\BusinessRecord\Application\Query\BrowseRecordsQuery;
 use Kumwe\App\BusinessRecord\Application\Query\ReadRecordQuery;
-use Kumwe\App\BusinessRecord\Query\RecordQuerySpecification;
+use Kumwe\Extension\Spi\BusinessRecord\Query\RecordQuerySpecification;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaInstallationRepository;
 use Kumwe\App\BusinessSchema\Infrastructure\Schema\CanonicalDefinitionPhysicalSchemaCompiler;
 use Kumwe\App\Infrastructure\Persistence\TableNames;

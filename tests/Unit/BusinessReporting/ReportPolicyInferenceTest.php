@@ -8,9 +8,9 @@ use DateTimeImmutable;
 use Kumwe\App\Application\Authorization\AuthorizationDecision;
 use Kumwe\App\Application\Authorization\AuthorizationGateway;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordView;
-use Kumwe\App\BusinessRecord\Application\Query\BusinessRecordQueryPurpose;
+use Kumwe\Extension\Spi\BusinessRecord\Application\BusinessRecordQueryPurpose;
 use Kumwe\App\BusinessRecord\Application\RecordBrowseResult;
-use Kumwe\App\BusinessRecord\Query\RecordQuerySpecification;
+use Kumwe\Extension\Spi\BusinessRecord\Query\RecordQuerySpecification;
 use Kumwe\App\BusinessReporting\Application\BusinessRecordReportReader;
 use Kumwe\App\BusinessReporting\Application\ReportDefinitionRegistry;
 use Kumwe\App\BusinessReporting\Application\ReportExecutionRequest;
@@ -27,14 +27,13 @@ use Kumwe\App\BusinessReporting\Domain\ReportGroupDefinition;
 use Kumwe\App\BusinessReporting\Domain\ReportParameterDefinition;
 use Kumwe\App\BusinessReporting\Domain\ReportSortDefinition;
 use Kumwe\App\BusinessReporting\Domain\ReportSortDirection;
-use Kumwe\App\BusinessReporting\Domain\ReportValueType;
+use Kumwe\Extension\Spi\BusinessReporting\Domain\ReportValueType;
 use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(ReportService::class)]
-#[CoversClass(ReportValueType::class)]
 final class ReportPolicyInferenceTest extends TestCase
 {
     public function testCanonicalUuidInspectionIdentifierReturnsSeededRiskScoreRow(): void

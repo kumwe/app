@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Kumwe\App\BusinessReporting\Domain;
 
+use Kumwe\Extension\Spi\BusinessReporting\Domain\ReportDefinitionGuard;
+
 /**
  * One typed output column used as a grouping key.
  *

@@ -7,12 +7,16 @@ namespace Kumwe\App\Administrator\Http\Handler;
 use JsonException;
 use Kumwe\App\Administrator\Http\AdministratorRequest;
 use Kumwe\App\Studio\Application\Host\StudioHostAccessRefused;
-use Kumwe\App\Studio\Application\Host\StudioHostDispatcher;
+use Kumwe\App\Studio\Application\Host\StudioProducerError;
 use Kumwe\App\Studio\Application\Host\StudioHostSessionAuthority;
 use Kumwe\App\Studio\Application\Preview\StudioPreviewTransportGuard;
 use Kumwe\App\Studio\Domain\Host\StudioResourceKind;
 use Kumwe\App\Studio\Domain\Host\StudioSessionMode;
+use Kumwe\Producer\Error\HostError;
+use Kumwe\Producer\Wire\RequestEnvelope;
+use Kumwe\Producer\Wire\StrictResponder;
 use Laminas\Diactoros\Response\JsonResponse;
+use Laminas\Diactoros\Response\TextResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
@@ -54,7 +58,7 @@ final readonly class AdministratorStudioSessionHandler implements RequestHandler
         try {
             $body = json_decode((string) $request->getBody(), false, 32, JSON_THROW_ON_ERROR);
         } catch (JsonException) {
-            return self::response(StudioHostDispatcher::refusal('invalid-request', 'studio.host/invalid-request'));
+            return self::response(StudioProducerError::error('invalid-request', 'studio.host/invalid-request'));
         }
         $members = $body instanceof stdClass ? array_keys(get_object_vars($body)) : [];
         sort($members, SORT_STRING);
@@ -65,7 +69,7 @@ final readonly class AdministratorStudioSessionHandler implements RequestHandler
             || !is_string($body->resourceId)
             || !is_string($body->resourceKind)
         ) {
-            return self::response(StudioHostDispatcher::refusal('invalid-request', 'studio.host/invalid-request'));
+            return self::response(StudioProducerError::error('invalid-request', 'studio.host/invalid-request'));
         }
 
         try {
@@ -76,12 +80,12 @@ final readonly class AdministratorStudioSessionHandler implements RequestHandler
                 $body->resourceId,
             );
         } catch (StudioHostAccessRefused $refused) {
-            return self::response(StudioHostDispatcher::refusal(
+            return self::response(StudioProducerError::error(
                 $refused->category,
                 $refused->diagnosticCode,
             ));
         } catch (ValueError | \InvalidArgumentException) {
-            return self::response(StudioHostDispatcher::refusal('invalid-request', 'studio.host/invalid-request'));
+            return self::response(StudioProducerError::error('invalid-request', 'studio.host/invalid-request'));
         }
 
         return new JsonResponse([
@@ -92,7 +96,7 @@ final readonly class AdministratorStudioSessionHandler implements RequestHandler
             ],
             'mode' => $snapshot->session->mode->value,
             'permissions' => $snapshot->permissions,
-            'protocolVersion' => StudioHostDispatcher::PROTOCOL_VERSION,
+            'protocolVersion' => RequestEnvelope::WIRE_PROTOCOL_VERSION,
             'preview' => [
                 'channelId' => $this->preview->channelId($snapshot->session),
                 'documentPath' => '/administrator/studio/preview',
@@ -108,14 +112,20 @@ final readonly class AdministratorStudioSessionHandler implements RequestHandler
     /**
      * Preserve a canonical application outcome at the administrator transport boundary.
      *
-     * @param   \Kumwe\App\Studio\Application\Host\StudioHostOutcome  $outcome  Application host outcome.
+     * @param   HostError  $error  Canonical Producer refusal.
      *
-     * @return  JsonResponse  No-store JSON response with the canonical status.
+     * @return  TextResponse  Exact canonical Producer response bytes and headers.
      *
      * @since   2.0.0
      */
-    private static function response(\Kumwe\App\Studio\Application\Host\StudioHostOutcome $outcome): JsonResponse
+    private static function response(HostError $error): TextResponse
     {
-        return new JsonResponse($outcome->document, $outcome->status, ['Cache-Control' => 'no-store']);
+        $response = (new StrictResponder())->refusal($error);
+
+        return new TextResponse(
+            $response->body,
+            StudioProducerError::status($error->category()),
+            $response->headers,
+        );
     }
 }

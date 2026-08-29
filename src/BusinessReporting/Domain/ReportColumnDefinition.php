@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessReporting\Domain;
 
 use InvalidArgumentException;
+use Kumwe\Extension\Spi\BusinessReporting\Domain\ReportDefinitionGuard;
+use Kumwe\Extension\Spi\BusinessReporting\Domain\ReportValueType;
 
 /**
  * One disclosure-safe report column sourced from a root or included relation field.

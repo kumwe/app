@@ -6,8 +6,8 @@ namespace Kumwe\App\Presentation\Infrastructure;
 
 use InvalidArgumentException;
 use Kumwe\App\Application\Presentation\ThemePackageValidator;
-use Kumwe\App\Extension\Domain\SemanticVersion;
-use Kumwe\App\Extension\Domain\TemplateKisCompatibility;
+use Kumwe\Extension\Manifest\SemanticVersion;
+use Kumwe\Extension\Manifest\TemplateKisCompatibility;
 use Kumwe\App\Extension\Domain\ThemeSurface;
 use Kumwe\App\Localization\Presentation\TranslationTwigExtension;
 use Kumwe\App\Presentation\Application\SitePresentation;

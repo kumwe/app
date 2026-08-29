@@ -9,9 +9,10 @@ use Kumwe\App\Application\Authorization\AuthorizationPolicyRegistry;
 use Kumwe\App\Application\Authorization\AuthorizationResource;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Extension\Contribution\CapabilityDefinitionRegistry;
-use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ContributionSurface;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Portal\Contribution\PortalNavigationDefinition;
 
 /**
  * Capability-, owner-, and live-trust-filtered portal navigation registry.

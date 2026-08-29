@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace KumweExample\AssetInspection\Delivery\Portal;
 
-use Kumwe\App\Portal\Contribution\PortalRouteHandlerFactory;
-use Kumwe\App\Portal\Presentation\PortalContributionRenderer;
+use Kumwe\Extension\Spi\Binding\Http\PortalRouteHandlerFactory;
+use Kumwe\Extension\Spi\Binding\Http\PortalRouteRenderer;
 use KumweExample\AssetInspection\Application\InspectionOverviewService;
 use Psr\Http\Server\RequestHandlerInterface;
 
@@ -30,13 +30,13 @@ final readonly class InspectionStatusHandlerFactory implements PortalRouteHandle
     /**
      * Create the contributed route handler with its fixed portal renderer capability.
      *
-     * @param   PortalContributionRenderer  $renderer  Owner-and-template-bound renderer.
+     * @param   PortalRouteRenderer  $renderer  Owner-and-template-bound renderer.
      *
      * @return  RequestHandlerInterface  Ready read-only portal handler.
      *
      * @since   2.0.0
      */
-    public function create(PortalContributionRenderer $renderer): RequestHandlerInterface
+    public function create(PortalRouteRenderer $renderer): RequestHandlerInterface
     {
         return new InspectionStatusHandler($this->overview, $renderer);
     }

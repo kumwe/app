@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Extension\Application\Trust;
 
-use Kumwe\App\Extension\Domain\PackageChecksum;
-use Kumwe\App\Extension\Domain\PackageSignature;
+use Kumwe\Extension\Package\PackageChecksum;
+use Kumwe\Extension\Package\PackageSignature;
 
 /**
  * Port that checks a package signature against a public key drawn from the extension trust store.

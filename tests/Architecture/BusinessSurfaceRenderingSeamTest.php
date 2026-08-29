@@ -7,7 +7,7 @@ namespace Kumwe\App\Tests\Architecture;
 use Kumwe\App\BusinessSurface\Application\FieldModelContext;
 use Kumwe\App\BusinessSurface\Application\FieldModelPresenter;
 use Kumwe\App\BusinessSurface\Application\PresentedField;
-use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationContext;
+use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationContext;
 use Kumwe\App\BusinessSurface\Presentation\Field\RegistryFieldModelPresenter;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;

@@ -15,7 +15,7 @@ use Kumwe\App\Audit\Domain\AuditEnforcementState;
 use Kumwe\App\Audit\Domain\AuditEventDigest;
 use Kumwe\App\Audit\Domain\AuditVerificationFinding;
 use Kumwe\App\Audit\Domain\AuditVerificationReport;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use RuntimeException;
 use Throwable;

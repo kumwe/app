@@ -13,8 +13,6 @@
     "properties": {"heading": {"type": "string", "default": "Announcements"}}
   },
   "permissions": ["kumwe.announcements-example.manage"],
-  "routes": [],
-  "events": [],
   "assets": [],
   "contributions": {
     "version": 2,

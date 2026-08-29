@@ -12,7 +12,7 @@ use Kumwe\App\Application\Authorization\SiteContext;
 use Kumwe\App\Identity\Application\Administration\AccessControlService;
 use Kumwe\App\Identity\Application\Administration\AdministratorIdentityGateway;
 use Kumwe\App\Identity\Application\Authentication\AccessTokenVerifier;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use Kumwe\App\Identity\Domain\UserStatus;
 use Kumwe\App\Identity\Infrastructure\Administration\DoctrineAccessControlRepository;
 use Kumwe\App\Infrastructure\Persistence\TableNames;

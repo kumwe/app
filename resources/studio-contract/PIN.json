@@ -1,5 +1,5 @@
 {
-    "note": "Exact coordinated Studio release pin per kumwe/app#104 and D16/ADR 0007. tools/verify-studio-corpus.php and tools/verify-studio-release.mjs recompute every digest against these vendored bytes; a re-pin changes this record, all eight tarballs, and both published contract trees atomically.",
+    "note": "Exact coordinated Studio release pin per kumwe/app#104 and D16/ADR 0007. Producer owns the PHP schema and testkit authorities; App retains this record and the eight npm tarballs its browser build consumes. A re-pin changes this record, all eight tarballs, and the Producer dependency atomically.",
     "release_record": {
         "release": "0.1.0-rc.1",
         "file": "studio-release.json",

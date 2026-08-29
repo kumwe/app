@@ -8,7 +8,7 @@ use InvalidArgumentException;
 use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Application\Authorization\SiteContext;
 use Kumwe\App\Application\Authorization\SystemIdentity;
-use Kumwe\App\Application\Automation\IdempotencyKey;
+use Kumwe\Extension\Spi\Application\Automation\IdempotencyKey;
 use Kumwe\App\BusinessRecord\Application\Command\DocumentLineInput;
 use Kumwe\App\BusinessRecord\Application\Command\DocumentWriteIntent;
 use Kumwe\App\BusinessRecord\Application\Command\WriteDocumentCommand;

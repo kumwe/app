@@ -455,7 +455,6 @@ final class DemoInstallCommandTest extends TestCase
         return [
             ['identifier' => 'kumwe/announcements-example', 'status' => 'active'],
             ['identifier' => 'kumwe/asset-inspection-example', 'status' => 'active'],
-            ['identifier' => 'kumwe/audit-listener-example', 'status' => 'active'],
             ['identifier' => 'kumwe/horizon-theme-example', 'status' => 'active'],
         ];
     }

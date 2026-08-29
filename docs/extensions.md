@@ -47,7 +47,6 @@ The repository contains small, inspectable packages under [`examples/extensions`
 | [`announcements`](../examples/extensions/announcements) | Schema-3 shell, entity and safe field-presenter contributions, injected service, and portable migration |
 | [`asset-inspection`](../examples/extensions/asset-inspection) | Schema-4 neutral proof with related entities, workflow, policies, durable events/jobs, projection/report, administrator UI, and opt-in portal |
 | [`horizon-theme`](../examples/extensions/horizon-theme) | Branded schema-1 site theme proving the complete template override boundary with its own palette, typography, and assets |
-| [`audit-listener`](../examples/extensions/audit-listener) | Plugin provider and Kumwe domain-event listener registration |
 | [`minimal-template`](../examples/extensions/minimal-template) | Complete site-template override and packaged public asset |
 | [`minimal-administrator-template`](../examples/extensions/minimal-administrator-template) | Installable KIS 1.0 administrator-shell contract and token-safe styling |
 
@@ -161,18 +160,18 @@ inert until the Gate B composition surface consumes them.
 ### Business-definition contributions
 
 The optional `contributions.business` object contains strict `field_types` and `definitions` lists. A schema-3
-manifest may additionally declare `field_presentations`, `view_handlers`, and `action_handlers`. A provider must
-register byte-equivalent typed objects through `ExtensionContributionRegistrar::fieldType()`,
-`fieldPresentation()`, `businessDefinition()`, `customBusinessViewHandler()`, and
-`customBusinessActionHandler()`; missing, additional, or changed runtime registrations reject the provider.
+manifest may additionally declare `field_presentations`, `view_handlers`, and `action_handlers`. The host admits
+the canonical SDK manifest graph directly. Provider code binds only executable field presenters and custom
+handlers to their exact signed identifiers through `ExtensionBindingRegistrar`; it cannot add or reconstruct
+declarations. Missing, foreign, wrong-kind, duplicate, or changed executable bindings reject activation.
 Field-type, entity, handler, and schema references use the package namespace. Published field types are
 immutable under their identifier, and entity upgrades advance `definition_version` by one.
 
 Each field-presentation declaration names one package-owned field type and a non-empty, duplicate-free subset of
-the closed presentation contexts. The provider supplies a `FieldPresenter` for exactly that signed declaration,
-after registering the field type. Presenters receive only `FieldPresentationRequest` and return a bounded semantic
-model: no HTML, Twig path, request, container, repository, connection, or SQL is admitted. Core types use this same
-registrar path. Activation, disable, quarantine, trust revocation, replacement, and uninstall inventory or remove
+the closed presentation contexts. The provider binds a canonical SDK `FieldPresenter` to exactly that signed
+identifier. Presenters receive only `FieldPresentationInput` and return a bounded `FieldPresentationModel`: no
+HTML, Twig path, request, container, repository, connection, or SQL is admitted. Activation, disable,
+quarantine, trust revocation, replacement, and uninstall inventory or remove
 presenters with their owner before the underlying field type is withdrawn.
 
 For example, a schema-3 component that owns `acme.announcements.priority` can sign the exact contexts its provider
@@ -208,7 +207,8 @@ A custom handler declaration pairs separate `handler` and `schema` references wi
 result JSON schemas. The schema subset rejects references, floats, open objects, unknown keywords, unsafe formats,
 and unbounded arrays. A definition view or action opts in by naming both references; definitions that name neither
 retain the generated behavior and their legacy canonical bytes. The runtime validates input before invoking the
-typed handler and validates its bounded result afterwards. Handlers receive `CustomBusinessViewQuery` or
+typed handler and validates its bounded result afterwards. Handlers implement the canonical
+`Kumwe\Extension\Spi\BusinessSurface\Application\Custom` interfaces and receive `CustomBusinessViewQuery` or
 `CustomBusinessActionCommand`, including `ExecutionContext`; they never receive PSR requests, a container, a DBAL
 connection, or a repository for core tables. Action commands also carry expected version, idempotency key,
 organization scope, and approval identity.
@@ -225,13 +225,16 @@ connection, and core repositories remain unavailable.
 
 Package definitions are synchronized transactionally on install and upgrade, become available only while the package is active and trusted, and preserve their catalog/version history through disable, quarantine, trust revocation, and uninstall. See [Business definitions](business-definitions.md) for the complete schema, compatibility, and lifecycle contract.
 
-Valid schema-1 manifests remain installable and retain their service registration, boot, legacy route, migration, event, asset, and permission behavior. Schema 1 cannot publish the new shell contribution surfaces. Move those packages to schema 2 and the contribution provider contract when adding workspace, navigation, guarded administrator route, or administrator view declarations.
+Valid schema-1 manifests remain installable for their declared service, migration, asset, and permission behavior.
+They do not open a second code-side route or event-registration path. Move packages to the current manifest
+schema when adding shell, business, integration, or other declarative surfaces.
 
 ## Provider and runtime contract
 
-Every provider implements `Kumwe\App\Extension\Application\ExtensionServiceProvider`, Kumwe's
-service-provider contract for the restricted extension container. A schema-2-or-newer contributor also implements `ExtensionContributionProvider`;
-legacy lifecycle hooks remain on `RuntimeExtension`:
+Every provider implements the package-owned
+`Kumwe\Extension\Spi\Application\ExtensionServiceProvider` contract for the restricted extension
+container. A package with executable behavior implements `ExtensionBindingProvider` and attaches code
+only to identifiers in its signed manifest. `BootableExtension` is an optional behavior-only phase.
 
 ```php
 <?php
@@ -240,47 +243,40 @@ declare(strict_types=1);
 
 namespace Acme\Announcements;
 
-use Kumwe\App\Extension\Contribution\AdministratorNavigationDefinition;
-use Kumwe\App\Extension\Contribution\CapabilityDefinition;
-use Kumwe\App\Extension\Contribution\ExtensionContributionProvider;
-use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrar;
-use Kumwe\App\Extension\Runtime\ExtensionContainer;
-use Kumwe\App\Extension\Runtime\ExtensionRouteRegistrar;
-use Kumwe\App\Extension\Runtime\RuntimeExtension;
+use Kumwe\Extension\Spi\Application\ExtensionServiceProvider;
+use Kumwe\Extension\Spi\Binding\ExtensionBindingProvider;
+use Kumwe\Extension\Spi\Binding\ExtensionBindingRegistrar;
+use Kumwe\Extension\Spi\Runtime\BootableExtension;
+use Kumwe\Extension\Spi\Runtime\ExtensionContainer;
 
-final class Provider implements RuntimeExtension, ExtensionContributionProvider
+final class Provider implements ExtensionServiceProvider, ExtensionBindingProvider, BootableExtension
 {
     public function register(ExtensionContainer $container): void
     {
         // Compose application services and typed handler factories.
     }
 
-    public function contribute(
-        ExtensionContributionRegistrar $contributions,
+    public function bind(
+        ExtensionBindingRegistrar $bindings,
         ExtensionContainer $container,
     ): void {
-        $contributions->capability(new CapabilityDefinition(
-            'acme.announcements.manage',
-            'Manage announcements',
-            'Open and manage the announcements workspace.',
-        ));
-        // Register every manifest-declared workspace, navigation item, view, and route exactly once.
-        // Register each field presenter and custom business handler with its exact signed declaration as well.
+        // Attach each executable implementation to its exact signed manifest identifier.
+        // Declarative capabilities, policies, views, and routes are activated from the manifest itself.
     }
 
     public function boot(ExtensionContainer $container): void
     {
-        // Attach typed Kumwe domain-event listeners.
-    }
-
-    public function registerRoutes(ExtensionRouteRegistrar $routes): void
-    {
-        // Schema-1 compatibility routes only; use typed contributions for administrator pages.
+        // Start behavior only after every provider has registered services and bindings are complete.
     }
 }
 ```
 
-The runtime order is service registration for every active provider, one owner-bound contribution phase, boot, and route compilation. A provider cannot retain or obtain a global registry. Its registrar closes after reconciliation and rejects duplicate, undeclared, omitted, foreign-owned, or changed definitions. Resolve infrastructure dependencies only while composing services. Inject dependencies into ordinary classes. Domain code must not read environment variables, obtain a container, or query Kumwe tables.
+The runtime order is service registration for every active provider, manifest declaration activation,
+owner-bound executable binding, completeness reconciliation, boot, and route compilation. A provider cannot
+retain or obtain a global registry. Its binding registrar closes after reconciliation and rejects duplicate,
+undeclared, omitted, foreign-owned, wrong-kind, or changed bindings. Resolve infrastructure dependencies only
+while composing services. Inject dependencies into ordinary classes. Domain code must not read environment
+variables, obtain a container, or query Kumwe tables.
 
 ## Custom generated-business views and actions
 

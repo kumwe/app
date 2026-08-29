@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace Kumwe\App\BusinessIntegration\Application;
 
-use Kumwe\App\Application\Authorization\ExecutionContext;
+use LogicException;
+use Kumwe\App\Application\Authorization\ExecutionContext as HostExecutionContext;
 use Kumwe\App\Application\Automation\JobQueue;
-use Kumwe\App\BusinessIntegration\Domain\EventConsumerDefinition;
-use Kumwe\App\BusinessIntegration\Domain\IntegrationContractValidator;
-use Kumwe\App\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\App\BusinessIntegration\Domain\RecordedEventEnvelope;
+use Kumwe\Extension\Spi\Application\ExecutionContext;
+use Kumwe\Extension\Spi\BusinessIntegration\Application\IntegrationEventHandler;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventConsumerDefinition;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationContractValidator;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationEvent;
 use Psr\Clock\ClockInterface;
 
 /**
@@ -22,17 +26,15 @@ use Psr\Clock\ClockInterface;
 final readonly class JobQueueIntegrationEventHandler implements IntegrationEventHandler
 {
     /**
-     * Configure the declared consumer and destination job type.
+     * Configure the destination job type.
      *
-     * @param  EventConsumerDefinition  $definition  Durable consumer contract.
-     * @param  JobQueue                 $jobs        Existing durable queue.
-     * @param  ClockInterface           $clock       Supplies immediate availability.
-     * @param  string                   $jobType     Registered target job handler type.
+     * @param  JobQueue        $jobs     Existing durable queue.
+     * @param  ClockInterface  $clock    Supplies immediate availability.
+     * @param  string          $jobType  Registered target job handler type.
      *
      * @since  2.0.0
      */
     public function __construct(
-        private EventConsumerDefinition $definition,
         private JobQueue $jobs,
         private ClockInterface $clock,
         private string $jobType,
@@ -41,36 +43,33 @@ final readonly class JobQueueIntegrationEventHandler implements IntegrationEvent
     }
 
     /**
-     * Return the signed contribution definition implemented by this handler.
-     *
-     * @return  EventConsumerDefinition  Consumer contract.
-     *
-     * @since   2.0.0
-     */
-    public function definition(): EventConsumerDefinition
-    {
-        return $this->definition;
-    }
-
-    /**
      * Enqueue the complete validated envelope with its stable event ID.
      *
-     * @param   IntegrationEvent  $event    Durable event being consumed.
-     * @param   ExecutionContext  $context  Freshly authorised worker context.
+     * @param   EventConsumerDefinition  $definition  Exact signed consumer declaration.
+     * @param   IntegrationEvent         $event       Durable event being consumed.
+     * @param   ExecutionContext         $context     Freshly authorised worker context.
      *
      * @return  void
      *
+     * @throws  LogicException  When a context not issued by this App reaches the host queue.
+     *
      * @since   2.0.0
      */
-    public function handle(IntegrationEvent $event, ExecutionContext $context): void
-    {
+    public function handle(
+        EventConsumerDefinition $definition,
+        IntegrationEvent $event,
+        ExecutionContext $context,
+    ): void {
+        if (!$context instanceof HostExecutionContext) {
+            throw new LogicException('An integration-event job requires an App-issued execution context.');
+        }
         $this->jobs->enqueue(
             $context,
             $this->jobType,
-            ['event_id' => $event->eventId(), 'event' => $event->toArray()],
+            ['event_id' => $event->eventId(), 'event' => RecordedEventEnvelope::document($event)],
             $this->clock->now(),
-            $this->definition->queue(),
-            maximumAttempts: $this->definition->maximumAttempts(),
+            $definition->queue(),
+            maximumAttempts: $definition->maximumAttempts(),
         );
     }
 }

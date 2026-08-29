@@ -7,7 +7,7 @@ namespace Kumwe\App\Workflow\Application;
 use Kumwe\App\Content\Domain\ContentStatus;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\App\Identity\Application\Authorization\InsufficientCapability;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 
 /**
  * Maps a built-in content status transition onto the one capability that authorizes it.

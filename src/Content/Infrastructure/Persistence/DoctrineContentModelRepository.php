@@ -15,7 +15,7 @@ use Kumwe\App\Application\Authorization\SiteContext;
 use Kumwe\App\Content\Application\ContentModelRepository;
 use Kumwe\App\Content\Domain\ContentTypeDefinition;
 use Kumwe\App\Content\Domain\VersionConflict;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Workflow\Domain\WorkflowDefinition;
 use Kumwe\App\Workflow\Domain\WorkflowStateDefinition;

@@ -16,13 +16,13 @@ use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\Extension\Application\Trust\TrustStoreRepository;
 use Kumwe\App\Extension\Application\Trust\UntrustedPackage;
-use Kumwe\App\Extension\Application\ExtensionServiceProvider;
+use Kumwe\Extension\Spi\Application\ExtensionServiceProvider;
 use Kumwe\App\Extension\Application\ExtensionRuntimeWithdrawal;
-use Kumwe\App\Extension\Domain\ExtensionIdentifier;
-use Kumwe\App\Extension\Domain\ExtensionManifest;
-use Kumwe\App\Extension\Domain\PackageChecksum;
-use Kumwe\App\Extension\Domain\PackageSignature;
-use Kumwe\App\Extension\Runtime\ExtensionContainer;
+use Kumwe\Extension\Manifest\ExtensionIdentifier;
+use Kumwe\Extension\Manifest\ExtensionManifest;
+use Kumwe\Extension\Package\PackageChecksum;
+use Kumwe\Extension\Package\PackageSignature;
+use Kumwe\Extension\Spi\Runtime\ExtensionContainer;
 use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use Kumwe\App\Extension\Runtime\ExtensionRuntimeLoader;
 use Kumwe\App\Extension\Runtime\RuntimeCanonicalJson;
@@ -268,7 +268,7 @@ final class TrustStoreTest extends TestCase
         ];
 
         $parsedManifest = ExtensionManifest::fromJson($manifest);
-        $expectedContributions = $parsedManifest->contributions()->toArray();
+        $expectedContributions = $parsedManifest->contributions()->declarations();
         $runtimeEntry = [
             'identifier' => 'acme/catalog',
             'version' => '1.0.0',

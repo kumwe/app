@@ -9,7 +9,7 @@ use Kumwe\App\Application\Authorization\AuthorizationGateway;
 use Kumwe\App\Application\Authorization\AuthorizationResource;
 use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Extension\Runtime\ExtensionRuntimeMapCompiler;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 
 /**
  * Scheduled job that recompiles the extension runtime map this replica serves requests from.

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Administrator\Http\Middleware;
 
+use Kumwe\Extension\Spi\Http\ExtensionRequest;
 use Kumwe\App\Application\Authorization\AuthenticationStrength;
 use Kumwe\App\Application\Authorization\AuthenticatedSurface;
 use Kumwe\App\Application\Authorization\AuthorizationDenied;
@@ -15,7 +16,7 @@ use Kumwe\App\Http\Middleware\RequestIdMiddleware;
 use Kumwe\App\Identity\Application\Administration\AdministratorSession;
 use Kumwe\App\Identity\Application\Administration\AdministratorSessionStore;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use Laminas\Diactoros\Response\JsonResponse;
 use Laminas\Diactoros\Response\RedirectResponse;
 use Psr\Http\Message\ResponseInterface;
@@ -134,7 +135,9 @@ final readonly class AdministratorSessionMiddleware implements MiddlewareInterfa
             $request
                 ->withAttribute(AdministratorSession::REQUEST_ATTRIBUTE, $session)
                 ->withAttribute(AuthenticatedPrincipal::REQUEST_ATTRIBUTE, $session->principal)
-                ->withAttribute(ExecutionContext::REQUEST_ATTRIBUTE, $context),
+                ->withAttribute(ExecutionContext::REQUEST_ATTRIBUTE, $context)
+                ->withAttribute(ExtensionRequest::CONTEXT, $context)
+                ->withAttribute(ExtensionRequest::CSRF_TOKEN, $session->csrfToken),
         );
     }
 

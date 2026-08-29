@@ -11,13 +11,13 @@ use Doctrine\DBAL\Types\Types;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Studio\Application\Host\StudioArtifactRepository;
 use Kumwe\App\Studio\Application\Host\StudioHostSessionSnapshot;
-use Kumwe\App\Studio\Application\Host\StudioIdempotencyRace;
-use Kumwe\App\Studio\Application\Host\StudioIdempotencyRepository;
+use Kumwe\App\Studio\Application\Host\StudioMutationReplayRace;
+use Kumwe\App\Studio\Application\Host\StudioMutationReplayRepository;
 use Kumwe\App\Studio\Application\Host\StudioPersistenceRace;
 use Kumwe\App\Studio\Application\Host\StudioRecoveryRepository;
 use Kumwe\App\Studio\Domain\Artifact\StoredStudioArtifact;
-use Kumwe\App\Studio\Domain\Host\StudioHostRequest;
-use Kumwe\App\Studio\Domain\Host\StudioIdempotencyRecord;
+use Kumwe\App\Studio\Domain\Host\StudioMutationReplayRecord;
+use Kumwe\Producer\Wire\RequestContext;
 use LogicException;
 use RuntimeException;
 
@@ -33,7 +33,7 @@ use RuntimeException;
  */
 final readonly class DoctrineStudioHostStorage implements
     StudioArtifactRepository,
-    StudioIdempotencyRepository,
+    StudioMutationReplayRepository,
     StudioRecoveryRepository
 {
     /**
@@ -166,11 +166,11 @@ final readonly class DoctrineStudioHostStorage implements
      *
      * @param   string  $scopeDigest  Actor/session/resource/operation/key scope digest.
      *
-     * @return  StudioIdempotencyRecord|null  Existing claim or null.
+     * @return  StudioMutationReplayRecord|null  Existing claim or null.
      *
      * @since   2.0.0
      */
-    public function find(string $scopeDigest): ?StudioIdempotencyRecord
+    public function findReplay(string $scopeDigest): ?StudioMutationReplayRecord
     {
         $row = $this->database->fetchAssociative(sprintf(
             'SELECT scope_digest, intent_digest, state, result_bytes FROM %s WHERE scope_digest = ?',
@@ -190,24 +190,24 @@ final readonly class DoctrineStudioHostStorage implements
             throw new RuntimeException('A stored Studio idempotency state is corrupt.');
         }
 
-        return new StudioIdempotencyRecord($scope, $intent, $result);
+        return new StudioMutationReplayRecord($scope, $intent, $result);
     }
 
     /**
      * Claim one durable idempotency scope inside the caller's transaction.
      *
-     * @param   StudioIdempotencyRecord    $record    New pending claim.
-     * @param   StudioHostSessionSnapshot  $snapshot  Trusted live host session.
-     * @param   StudioHostRequest          $request   Validated canonical request.
+     * @param   StudioMutationReplayRecord  $record    New pending claim.
+     * @param   StudioHostSessionSnapshot   $snapshot  Trusted live host session.
+     * @param   RequestContext               $request   Validated Producer request context.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    public function begin(
-        StudioIdempotencyRecord $record,
+    public function beginReplay(
+        StudioMutationReplayRecord $record,
         StudioHostSessionSnapshot $snapshot,
-        StudioHostRequest $request,
+        RequestContext $request,
     ): void {
         $this->assertTransaction();
         if ($request->idempotencyKey === null) {
@@ -222,7 +222,7 @@ final readonly class DoctrineStudioHostStorage implements
                 'resource_context_key' => $request->resourceContextKey,
                 'session_generation' => $request->sessionGeneration,
                 'operation_id' => $request->operationId,
-                'idempotency_key' => $request->idempotencyKey,
+                'idempotency_key' => hash('sha256', $request->idempotencyKey),
                 'state' => 'claimed',
                 'result_bytes' => null,
                 'created_at' => new \DateTimeImmutable('now', new \DateTimeZone('UTC')),
@@ -232,7 +232,7 @@ final readonly class DoctrineStudioHostStorage implements
                 'completed_at' => Types::DATETIME_IMMUTABLE,
             ]);
         } catch (UniqueConstraintViolationException $exception) {
-            throw new StudioIdempotencyRace('The Studio idempotency scope is already claimed.', 0, $exception);
+            throw new StudioMutationReplayRace('The Studio mutation replay scope is already claimed.', 0, $exception);
         }
     }
 
@@ -240,18 +240,18 @@ final readonly class DoctrineStudioHostStorage implements
      * Complete one pending idempotency claim exactly once.
      *
      * @param   string  $scopeDigest  Existing claim scope.
-     * @param   string  $resultBytes  Canonical completed-result bytes.
+     * @param   string  $protectedOutcome  Versioned authenticated logical outcome.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    public function complete(string $scopeDigest, string $resultBytes): void
+    public function completeReplay(string $scopeDigest, string $protectedOutcome): void
     {
         $this->assertTransaction();
         $affected = $this->database->update($this->tables->raw('studio_host_idempotency'), [
             'state' => 'completed',
-            'result_bytes' => $resultBytes,
+            'result_bytes' => $protectedOutcome,
             'completed_at' => new \DateTimeImmutable('now', new \DateTimeZone('UTC')),
         ], ['scope_digest' => $scopeDigest, 'state' => 'claimed'], [
             'completed_at' => Types::DATETIME_IMMUTABLE,

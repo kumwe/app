@@ -9,13 +9,14 @@ use Kumwe\App\Studio\Domain\Media\StudioMediaPolicyRejected;
 use Kumwe\App\Studio\Domain\Media\StudioMediaUploadPolicy;
 use Kumwe\App\Studio\Domain\Media\StudioMediaUploadRequest;
 use Kumwe\App\Studio\Domain\Media\StudioMediaUploadState;
+use Kumwe\Producer\Schema\StudioContractResources;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use stdClass;
 
 /**
- * Replays every vendored language-neutral Studio media policy and lifecycle vector.
+ * Replays every Producer-pinned language-neutral Studio media policy and lifecycle vector.
  *
  * @since  2.0.0
  */
@@ -25,38 +26,49 @@ use stdClass;
 final class StudioMediaPolicyVectorTest extends TestCase
 {
     /**
-     * Discover all eleven pinned media vectors directly from the vendored corpus.
+     * Name all eleven media vectors from Producer's closed testkit manifest.
      *
-     * @return  iterable<string, array{string}>  Vector ID to path argument.
+     * @return  iterable<string, array{string}>  Vector ID to exact verified bytes.
      *
      * @since  2.0.0
      */
     public static function vectors(): iterable
     {
-        $paths = glob(dirname(__DIR__, 4) . '/Fixtures/Studio/testkit/vectors/media/*.json');
-        self::assertIsArray($paths);
-        self::assertCount(11, $paths);
-        sort($paths, SORT_STRING);
-        foreach ($paths as $path) {
-            $vector = self::decode($path);
+        foreach (
+            [
+                'accept.plan-deterministic.json',
+                'accept.size-at-boundary.json',
+                'cancel.complete-noop.json',
+                'cancel.requested.json',
+                'cancel.transferring.json',
+                'cancel.verifying.json',
+                'reject.disallowed-kind.json',
+                'reject.filename-empty.json',
+                'reject.filename-path.json',
+                'reject.size-one-byte-over.json',
+                'retry.fresh-session.json',
+            ] as $filename
+        ) {
+            $bytes = StudioContractResources::testkitBytes('vectors/media/' . $filename);
+            $vector = self::decode($bytes);
             self::assertIsString($vector->id);
-            yield $vector->id => [$path];
+            yield $vector->id => [$bytes];
         }
     }
 
     /**
      * Drive policy, cancellation and retry identity expectations from each JSON vector.
      *
-     * @param   string  $path  Absolute vendored vector path.
+     * @param   string  $bytes  Exact Producer-owned vector bytes.
      *
      * @return  void
      *
      * @since  2.0.0
      */
     #[DataProvider('vectors')]
-    public function testVendoredMediaVector(string $path): void
+    public function testPinnedMediaVector(string $bytes): void
     {
-        $vector = self::decode($path);
+        $vector = self::decode($bytes);
         self::assertInstanceOf(stdClass::class, $vector->policy);
         self::assertInstanceOf(stdClass::class, $vector->request);
         self::assertInstanceOf(stdClass::class, $vector->expect);
@@ -141,15 +153,15 @@ final class StudioMediaPolicyVectorTest extends TestCase
     /**
      * Decode one required JSON vector as an object.
      *
-     * @param   string  $path  Absolute fixture path.
+     * @param   string  $bytes  Exact verified fixture bytes.
      *
      * @return  stdClass  Decoded vector.
      *
      * @since  2.0.0
      */
-    private static function decode(string $path): stdClass
+    private static function decode(string $bytes): stdClass
     {
-        $document = json_decode((string) file_get_contents($path), false, 32, JSON_THROW_ON_ERROR);
+        $document = json_decode($bytes, false, 32, JSON_THROW_ON_ERROR);
         self::assertInstanceOf(stdClass::class, $document);
 
         return $document;

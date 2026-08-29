@@ -7,8 +7,8 @@ namespace KumweExample\Announcements\Migration;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Schema\Table;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\App\Extension\Application\Migration\ExtensionMigration;
-use Kumwe\App\Extension\Application\Migration\ExtensionTableNames;
+use Kumwe\Extension\Spi\Migration\ExtensionMigration;
+use Kumwe\Extension\Spi\Migration\ExtensionTableNames;
 
 final class CreateAnnouncements implements ExtensionMigration
 {

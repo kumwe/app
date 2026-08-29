@@ -18,7 +18,9 @@ use Kumwe\App\Application\Persistence\TransactionManager;
 use Kumwe\App\BusinessIntegration\Application\EventContractRegistry;
 use Kumwe\App\BusinessIntegration\Application\OutboxLease;
 use Kumwe\App\BusinessIntegration\Application\OutboxStore;
-use Kumwe\App\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\App\BusinessIntegration\Domain\RecordedEventEnvelope;
+use Kumwe\App\BusinessIntegration\Domain\RecordedIntegrationEvent;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationEvent;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Shared\Domain\CanonicalJson;
 use Psr\Clock\ClockInterface;
@@ -110,7 +112,7 @@ final readonly class DoctrineOutboxStore implements OutboxStore
             'aggregate_id' => $event->aggregateId(),
             'aggregate_version' => $event->aggregateVersion(),
             'correlation_id' => $event->correlationId(),
-            'envelope' => $event->toArray(),
+            'envelope' => RecordedEventEnvelope::document($event),
             'status' => 'pending',
             'available_at' => $availableAt !== null && $availableAt > $now ? $availableAt : $now,
             'attempts' => 0,
@@ -148,7 +150,7 @@ final readonly class DoctrineOutboxStore implements OutboxStore
         ) {
             throw new RuntimeException('The projection source journal head is unavailable.');
         }
-        $envelope = $event->toArray();
+        $envelope = RecordedEventEnvelope::document($event);
         $this->database->insert($this->tables->raw('business_projection_source_events'), [
             'event_id' => $event->eventId(),
             'event_type' => $event->eventType(),
@@ -559,7 +561,7 @@ final readonly class DoctrineOutboxStore implements OutboxStore
             throw new RuntimeException('An outbox envelope must be a JSON object.');
         }
         /** @var array<string, mixed> $envelope */
-        $event = IntegrationEvent::fromArray($envelope);
+        $event = RecordedIntegrationEvent::fromArray($envelope);
         $this->contracts->assertEvent($event);
         return $event;
     }

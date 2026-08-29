@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace KumweExample\AssetInspection\Integration;
 
 use InvalidArgumentException;
-use Kumwe\App\Application\Authorization\ExecutionContext;
-use Kumwe\App\BusinessIntegration\Application\IntegrationEventHandler;
-use Kumwe\App\BusinessIntegration\Domain\EventConsumerDefinition;
-use Kumwe\App\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\Extension\Spi\Application\ExecutionContext;
+use Kumwe\Extension\Spi\BusinessIntegration\Application\IntegrationEventHandler;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventConsumerDefinition;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationEvent;
 
 /**
  * Handles durable, inbox-deduplicated inspection mutation events under the worker's site context.
@@ -18,36 +18,22 @@ use Kumwe\App\BusinessIntegration\Domain\IntegrationEvent;
 final readonly class InspectionMutationConsumer implements IntegrationEventHandler
 {
     /**
-     * Bind the executable consumer to its aggregate-ordered declaration and bounded diagnostics.
+     * Bind the executable consumer to bounded diagnostics.
      *
-     * @param  EventConsumerDefinition  $definition  Exact signed durable-consumer contract.
-     * @param  IntegrationLedger        $ledger      Process-local, non-authoritative evidence sink.
+     * @param  IntegrationLedger  $ledger  Process-local, non-authoritative evidence sink.
      *
      * @since  2.0.0
      */
-    public function __construct(
-        private EventConsumerDefinition $definition,
-        private IntegrationLedger $ledger,
-    ) {
-    }
-
-    /**
-     * Return the exact signed consumer contract implemented here.
-     *
-     * @return  EventConsumerDefinition  Aggregate-version idempotency and ordering declaration.
-     *
-     * @since   2.0.0
-     */
-    public function definition(): EventConsumerDefinition
+    public function __construct(private IntegrationLedger $ledger)
     {
-        return $this->definition;
     }
 
     /**
      * Validate worker scope and record only this component's inbox-processed inspection mutations.
      *
-     * @param   IntegrationEvent  $event    Durable core record mutation event.
-     * @param   ExecutionContext  $context  Fresh worker-owned site context.
+     * @param   EventConsumerDefinition  $definition  Exact signed durable-consumer declaration.
+     * @param   IntegrationEvent         $event       Durable core record mutation event.
+     * @param   ExecutionContext         $context     Fresh worker-owned site context.
      *
      * @return  void
      *
@@ -55,9 +41,19 @@ final readonly class InspectionMutationConsumer implements IntegrationEventHandl
      *
      * @since   2.0.0
      */
-    public function handle(IntegrationEvent $event, ExecutionContext $context): void
-    {
-        if ($context->site()->identifier() !== $event->siteIdentifier()) {
+    public function handle(
+        EventConsumerDefinition $definition,
+        IntegrationEvent $event,
+        ExecutionContext $context,
+    ): void {
+        if (
+            $definition->eventType() !== $event->eventType()
+            || !$definition->acceptsVersion($event->schemaVersion())
+            || !$event->sensitivity()->allowedBy($definition->sensitivityCeiling())
+        ) {
+            throw new InvalidArgumentException('The inspection consumer requires its declared event contract.');
+        }
+        if ($context->siteIdentifier() !== $event->siteIdentifier()) {
             throw new InvalidArgumentException('The inspection consumer requires the event-owning site context.');
         }
         if (InspectionMutation::belongsToInspection($event)) {

@@ -6,7 +6,7 @@ namespace Kumwe\App\BusinessSecurity\Application\Approval;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 
 /**
  * Scoped, redacted approval projection safe for administrator and portal presentation.

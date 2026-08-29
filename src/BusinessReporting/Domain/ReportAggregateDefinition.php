@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessReporting\Domain;
 
 use InvalidArgumentException;
+use Kumwe\Extension\Spi\BusinessReporting\Domain\ReportDefinitionGuard;
 
 /**
  * One bounded aggregate over an already-disclosed report column.

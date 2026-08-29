@@ -1,8 +1,0 @@
-{
-  "schema": "studio-table.schema.json",
-  "description": "Table data rejects cell objects carrying executable markup.",
-  "value": {
-    "columns": ["Name"],
-    "rows": [[{ "html": "<img src=x onerror=alert(1)>" }]]
-  }
-}

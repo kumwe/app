@@ -20,7 +20,7 @@ interface StudioPreviewActivityRecorder
      * @param   ExecutionContext           $context   Authenticated actor and request correlation.
      * @param   StudioHostSessionSnapshot  $snapshot  Trusted site and resource family.
      * @param   string                     $action    Closed action such as `render`, `document-claim`, or
-     *          `theme-stylesheet`.
+     *          `stylesheet`.
      * @param   string                     $outcome   Closed `accepted`, `completed`, or `refused` result.
      * @param   string                     $reason    Stable non-disclosing diagnostic code.
      *

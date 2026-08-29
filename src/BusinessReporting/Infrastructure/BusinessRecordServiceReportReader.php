@@ -7,9 +7,9 @@ namespace Kumwe\App\BusinessReporting\Infrastructure;
 use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordService;
 use Kumwe\App\BusinessRecord\Application\Query\BrowseRecordsQuery;
-use Kumwe\App\BusinessRecord\Application\Query\BusinessRecordQueryPurpose;
+use Kumwe\Extension\Spi\BusinessRecord\Application\BusinessRecordQueryPurpose;
 use Kumwe\App\BusinessRecord\Application\RecordBrowseResult;
-use Kumwe\App\BusinessRecord\Query\RecordQuerySpecification;
+use Kumwe\Extension\Spi\BusinessRecord\Query\RecordQuerySpecification;
 use Kumwe\App\BusinessReporting\Application\BusinessRecordReportReader;
 
 /**

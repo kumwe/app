@@ -9,14 +9,14 @@ use Doctrine\DBAL\Connection;
 use InvalidArgumentException;
 use Kumwe\App\Application\Persistence\TransactionManager;
 use Kumwe\App\BusinessIntegration\Application\TrustedRuntimeGenerationGuard;
-use Kumwe\App\BusinessIntegration\Domain\IntegrationEvent;
-use Kumwe\App\BusinessReporting\Application\ProjectionBuilder;
 use Kumwe\App\BusinessReporting\Application\ProjectionRebuildResult;
 use Kumwe\App\BusinessReporting\Application\ProjectionRebuildService;
 use Kumwe\App\BusinessReporting\Application\ProjectionRuntime;
-use Kumwe\App\BusinessReporting\Domain\ProjectionDefinition;
 use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\Extension\Spi\BusinessReporting\Application\ProjectionBuilder;
+use Kumwe\Extension\Spi\BusinessReporting\Domain\ProjectionDefinition;
 use Psr\Clock\ClockInterface;
 use RuntimeException;
 
@@ -47,7 +47,7 @@ final readonly class DoctrineProjectionRuntime implements ProjectionRuntime
      * @param   iterable<mixed>                $entries        Active registry entries containing definitions and
      *          builders.
      *
-     * @throws  InvalidArgumentException  When an entry is malformed, duplicated, or contradicts its builder.
+     * @throws  InvalidArgumentException  When an entry is malformed or duplicated.
      *
      * @since   2.0.0
      */
@@ -69,9 +69,6 @@ final readonly class DoctrineProjectionRuntime implements ProjectionRuntime
             $builder = $entry['implementation'] ?? $entry['builder'] ?? null;
             if (!$definition instanceof ProjectionDefinition || !$builder instanceof ProjectionBuilder) {
                 throw new InvalidArgumentException('A projection runtime entry is not executable.');
-            }
-            if ($definition->toArray() !== $builder->definition()->toArray()) {
-                throw new InvalidArgumentException('A projection builder contradicts its trusted definition.');
             }
             if (isset($indexed[$definition->identifier()])) {
                 throw new InvalidArgumentException('A projection runtime entry is duplicated.');

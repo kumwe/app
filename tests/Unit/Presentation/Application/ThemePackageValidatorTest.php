@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\Presentation\Application;
 
 use InvalidArgumentException;
-use Kumwe\App\Extension\Domain\ExtensionManifest;
-use Kumwe\App\Extension\Domain\TemplateKisCompatibility;
+use Kumwe\Extension\Manifest\ExtensionManifest;
+use Kumwe\Extension\Manifest\TemplateKisCompatibility;
 use Kumwe\App\Presentation\Infrastructure\TwigThemePackageValidator;
 use Kumwe\App\Extension\Domain\ThemeSurface;
 use PHPUnit\Framework\Attributes\CoversClass;

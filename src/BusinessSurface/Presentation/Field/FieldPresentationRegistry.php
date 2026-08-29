@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 namespace Kumwe\App\BusinessSurface\Presentation\Field;
 
+use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationContribution;
+use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationContext;
+use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationInput;
+use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationModel;
+use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresenter;
+
 use InvalidArgumentException;
 use Kumwe\App\BusinessDefinition\Domain\DefinitionOwner;
 use Kumwe\App\BusinessDefinition\Domain\DefinitionStatus;
@@ -89,9 +95,9 @@ final class FieldPresentationRegistry
     /**
      * Present one field through its exact type and context strategy.
      *
-     * @param   FieldPresentationRequest  $request  Validated field, type, context, value and errors.
+     * @param   FieldPresentationInput  $request  Validated field, type, context, value and errors.
      *
-     * @return  FieldPresentation  Bounded semantic view model.
+     * @return  FieldPresentationModel  Bounded semantic view model.
      *
      * @throws  InvalidBusinessDefinition  When no strategy covers the exact pair, it returns another field,
      *          it widens editability, or it drops the provenance of a converted amount.
@@ -100,9 +106,9 @@ final class FieldPresentationRegistry
      *
      * @since   2.0.0
      */
-    public function present(FieldPresentationRequest $request): FieldPresentation
+    public function present(FieldPresentationInput $request): FieldPresentationModel
     {
-        $registration = $this->presenters[$request->type->id][$request->context->value] ?? null;
+        $registration = $this->presenters[$request->fieldType][$request->context->value] ?? null;
         if ($registration === null) {
             throw new InvalidBusinessDefinition('No safe presenter is registered for this field context.');
         }
@@ -112,10 +118,10 @@ final class FieldPresentationRegistry
             throw new InvalidBusinessDefinition('A converted amount must be presented with its conversion provenance.');
         }
         if (
-            $presentation->handle !== $request->field->handle
+            $presentation->handle !== $request->handle
             || $presentation->context !== $request->context
-            || $presentation->label !== $request->field->label
-            || $presentation->required !== $request->field->required
+            || $presentation->label !== $request->label
+            || $presentation->required !== $request->required
             || $presentation->errors !== $request->errors
         ) {
             throw new InvalidBusinessDefinition('A field presenter returned metadata for another field.');

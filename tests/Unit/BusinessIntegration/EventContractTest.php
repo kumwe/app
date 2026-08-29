@@ -7,28 +7,27 @@ namespace Kumwe\App\Tests\Unit\BusinessIntegration;
 use DateTimeImmutable;
 use InvalidArgumentException;
 use Kumwe\App\BusinessIntegration\Application\EventContractRegistry;
-use Kumwe\App\BusinessIntegration\Domain\DomainEvent;
-use Kumwe\App\BusinessIntegration\Domain\ConsumerIdempotency;
-use Kumwe\App\BusinessIntegration\Domain\EventConsumerDefinition;
-use Kumwe\App\BusinessIntegration\Domain\EventEnvelope;
 use Kumwe\App\BusinessIntegration\Domain\EventSchemaDefinition;
-use Kumwe\App\BusinessIntegration\Domain\EventSensitivity;
-use Kumwe\App\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\App\BusinessIntegration\Domain\RecordedDomainEvent;
+use Kumwe\App\BusinessIntegration\Domain\RecordedEventEnvelope;
+use Kumwe\App\BusinessIntegration\Domain\RecordedIntegrationEvent;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventConsumerDefinition;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventSensitivity;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
 
-#[CoversClass(EventEnvelope::class)]
-#[CoversClass(DomainEvent::class)]
-#[CoversClass(IntegrationEvent::class)]
+#[CoversClass(RecordedEventEnvelope::class)]
+#[CoversClass(RecordedDomainEvent::class)]
+#[CoversClass(RecordedIntegrationEvent::class)]
 #[CoversClass(EventContractRegistry::class)]
 final class EventContractTest extends TestCase
 {
     public function testEnvelopeRoundTripsWithoutChangingTheEventIdentity(): void
     {
         $domain = $this->event(['record_id' => 'record-7', 'changed_fields' => ['name']]);
-        $integration = IntegrationEvent::fromDomain($domain);
-        $restored = IntegrationEvent::fromArray($integration->toArray());
+        $integration = RecordedIntegrationEvent::fromDomain($domain);
+        $restored = RecordedIntegrationEvent::fromArray($integration->toArray());
 
         self::assertSame($domain->eventId(), $integration->eventId());
         self::assertSame($integration->toArray(), $restored->toArray());
@@ -40,7 +39,7 @@ final class EventContractTest extends TestCase
     public function testEnvelopeRejectsAmbiguousIdentityAndListPayloads(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        new DomainEvent(
+        new RecordedDomainEvent(
             'business.record.changed',
             1,
             Uuid::uuid7()->toString(),
@@ -65,7 +64,7 @@ final class EventContractTest extends TestCase
         $stored['unexpected'] = true;
 
         $this->expectException(InvalidArgumentException::class);
-        IntegrationEvent::fromArray($stored);
+        RecordedIntegrationEvent::fromArray($stored);
     }
 
     public function testStoredEnvelopeRejectsNonCanonicalTimestamps(): void
@@ -74,7 +73,7 @@ final class EventContractTest extends TestCase
         $stored['occurred_at'] = '2026-08-10 10:00:00 UTC';
 
         $this->expectException(InvalidArgumentException::class);
-        IntegrationEvent::fromArray($stored);
+        RecordedIntegrationEvent::fromArray($stored);
     }
 
     public function testRegistryEnforcesExactSchemaAndPayloadContract(): void
@@ -94,25 +93,6 @@ final class EventContractTest extends TestCase
         $registry->assertEvent($this->event(['unknown' => true]));
     }
 
-    public function testDefinitionFactoriesRoundTripClosedManifestShapes(): void
-    {
-        $schema = $this->schema();
-        $consumer = new EventConsumerDefinition(
-            'acme.search-index',
-            'business.record.changed',
-            [1],
-            '1.0.0',
-            'integration.default',
-            true,
-            ConsumerIdempotency::AGGREGATE_VERSION,
-            7,
-            EventSensitivity::RESTRICTED,
-        );
-
-        self::assertSame($schema->toArray(), EventSchemaDefinition::fromArray($schema->toArray())->toArray());
-        self::assertSame($consumer->toArray(), EventConsumerDefinition::fromArray($consumer->toArray())->toArray());
-    }
-
     /** @return EventSchemaDefinition Test event contract. */
     private function schema(): EventSchemaDefinition
     {
@@ -129,10 +109,10 @@ final class EventContractTest extends TestCase
         );
     }
 
-    /** @param array<string, mixed> $payload @return DomainEvent Test event. */
-    private function event(array $payload): DomainEvent
+    /** @param array<string, mixed> $payload @return RecordedDomainEvent Test event. */
+    private function event(array $payload): RecordedDomainEvent
     {
-        return new DomainEvent(
+        return new RecordedDomainEvent(
             'business.record.changed',
             1,
             Uuid::uuid7()->toString(),

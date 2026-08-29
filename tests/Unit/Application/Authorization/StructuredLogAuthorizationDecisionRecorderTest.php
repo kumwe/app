@@ -7,7 +7,7 @@ namespace Kumwe\App\Tests\Unit\Application\Authorization;
 use Kumwe\App\Application\Authorization\AuthorizationDecision;
 use Kumwe\App\Application\Authorization\AuthorizationResource;
 use Kumwe\App\Application\Authorization\StructuredLogAuthorizationDecisionRecorder;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use Kumwe\App\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;

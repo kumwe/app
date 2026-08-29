@@ -8,8 +8,9 @@ use Doctrine\DBAL\DriverManager;
 use JsonException;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Studio\Application\Host\StudioHostSessionSnapshot;
-use Kumwe\App\Studio\Domain\Contract\CanonicalJson;
-use Kumwe\App\Studio\Domain\Contract\StudioContractSchemas;
+use Kumwe\Producer\Canonical\CanonicalJson;
+use Kumwe\Producer\Schema\StudioContractResources;
+use Kumwe\Producer\Schema\StudioDocumentSchemaRegistry;
 use Kumwe\App\Studio\Domain\Host\StudioHostSession;
 use Kumwe\App\Studio\Domain\Host\StudioResourceKind;
 use Kumwe\App\Studio\Domain\Host\StudioSessionMode;
@@ -73,7 +74,7 @@ final class StudioPreviewDraftSourceTest extends TestCase
         $source = new DoctrineStudioPreviewDraftSource(
             $database,
             $tables,
-            StudioContractSchemas::fromVendoredCorpus(),
+            StudioDocumentSchemaRegistry::fromVendoredCorpus(),
         );
 
         $draft = $source->find(self::snapshot($render->artifactId), StudioPreviewRenderRequest::fromPayload(
@@ -132,8 +133,12 @@ final class StudioPreviewDraftSourceTest extends TestCase
      */
     private static function vector(): stdClass
     {
-        $path = dirname(__DIR__, 2) . '/Fixtures/Studio/testkit/vectors/preview/canonical-preorder.json';
-        $vector = json_decode((string) file_get_contents($path), false, 64, JSON_THROW_ON_ERROR);
+        $vector = json_decode(
+            StudioContractResources::testkitBytes('vectors/preview/canonical-preorder.json'),
+            false,
+            64,
+            JSON_THROW_ON_ERROR,
+        );
         if (!$vector instanceof stdClass) {
             throw new RuntimeException('The Studio preview vector is invalid.');
         }

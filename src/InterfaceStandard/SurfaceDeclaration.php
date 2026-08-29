@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Kumwe\App\InterfaceStandard;
 
 use InvalidArgumentException;
-use Kumwe\App\Extension\Contribution\ContributionOwner;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 
 /**
  * Typed semantic candidate for one core, extension, or installable-template interface surface.

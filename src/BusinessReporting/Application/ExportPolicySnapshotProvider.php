@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessReporting\Application;
 
 use Kumwe\App\Application\Authorization\ExecutionContext;
-use Kumwe\App\BusinessRecord\Application\Query\BusinessRecordQueryPurpose;
+use Kumwe\Extension\Spi\BusinessRecord\Application\BusinessRecordQueryPurpose;
 use Kumwe\App\BusinessReporting\Domain\ReportDefinition;
 
 /**

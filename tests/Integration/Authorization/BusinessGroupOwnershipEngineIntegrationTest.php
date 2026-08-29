@@ -33,7 +33,7 @@ use Kumwe\App\Application\Authorization\SiteContext;
 use Kumwe\App\Application\Authorization\SiteGroup;
 use Kumwe\App\Application\Authorization\SiteGroupAdministration;
 use Kumwe\App\BusinessReporting\Application\ConsolidatedGroupReportScope;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use Kumwe\App\Infrastructure\Authorization\DoctrineGrantScopeOwnershipReferences;
 use Kumwe\App\Infrastructure\Authorization\DoctrineResourceSiteOwnership;
 use Kumwe\App\Infrastructure\Authorization\DoctrineResourceSiteOwnershipWriter;

@@ -32,7 +32,6 @@ final class ExtensionContributionBoundaryTest extends TestCase
             foreach ($this->phpFiles($directory) as $file) {
                 $source = $this->contents($file);
                 self::assertStringNotContainsString('ExtensionContributionRegistrySet', $source, $file);
-                self::assertStringNotContainsString('OwnedExtensionContributionRegistrar', $source, $file);
                 self::assertDoesNotMatchRegularExpression('/->(?:registerOwned|registrar)\s*\(/', $source, $file);
             }
         }
@@ -46,16 +45,19 @@ final class ExtensionContributionBoundaryTest extends TestCase
         }
     }
 
-    public function testExtensionsReceiveAnOwnerBoundRegistrarOnlyDuringContributionPhase(): void
+    public function testExtensionsReceiveOnlyAnOwnerBoundExecutableBindingPhase(): void
     {
         $loader = $this->contents('src/Extension/Runtime/ExtensionRuntimeLoader.php');
         $active = $this->contents('src/Extension/Runtime/ActiveExtensionSet.php');
         $container = $this->contents('src/Kernel/ContainerFactory.php');
 
-        self::assertStringContainsString('$active->contribute();', $loader);
+        self::assertStringContainsString('$active->activate();', $loader);
         self::assertStringContainsString('$active->boot();', $loader);
-        self::assertLessThan(strpos($loader, '$active->boot();'), strpos($loader, '$active->contribute();'));
-        self::assertStringContainsString('ContributionOwner::extension($extension[\'identifier\'])', $active);
+        self::assertLessThan(strpos($loader, '$active->boot();'), strpos($loader, '$active->activate();'));
+        self::assertStringContainsString('ManifestContributions::fromSchemaOne($extensionIdentifier)', $loader);
+        self::assertStringNotContainsString('->contribute(', $active);
+        self::assertStringContainsString('ExtensionBindingProvider', $active);
+        self::assertStringContainsString('$provider->bind($registrar, $extension[\'container\']);', $active);
         self::assertStringNotContainsString(
             'AdministratorNavigationRegistry::class =>',
             $this->runtimeAllowlist($container),

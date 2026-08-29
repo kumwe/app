@@ -12,7 +12,7 @@ Say it precisely, because the difference matters when an operator decides whethe
 
 | | |
 |---|---|
-| **What the boundary is** | An **API compatibility boundary**. `RestrictedExtensionContainer` decides which host *services* an extension may resolve, so an extension cannot reach the application container, cannot replace a host service, and cannot collide with another extension's identifiers. That keeps a well-behaved extension from depending on internals that move under it, and keeps two of them out of each other's way. |
+| **What the boundary is** | A **canonical package boundary**. An extension imports released SDK and library contracts, never `Kumwe\App\` classes. The SDK `ExtensionContainer` exposes only owner-scoped package services and neutral host ports. Signed manifest declarations and their exact executable bindings keep extensions from replacing host services or colliding with another owner's identifiers. |
 | **What the boundary is not** | A **sandbox**. Admitted PHP runs inside the request, worker and scheduler processes with the full ambient authority of the runtime user. Curating service resolution constrains what an extension is *handed*; it constrains nothing about what that code can *do* once it is running. |
 
 Signature verification, the trust store, the revocation feed and install-time admission answer **who
@@ -46,7 +46,10 @@ extension.
 
 ## Package boundary
 
-An extension is a versioned, checksummed package with a `kumwe.json` manifest. The manifest declares its identifier, type, compatibility, service provider, dependencies, routes, events, configuration, assets, and migrations. Packages are staged outside the public web root, inspected, signature-checked according to policy, migrated, and activated through a database-authoritative runtime publication.
+An extension is a versioned, checksummed package with a `kumwe.json` manifest. The manifest declares its identity,
+package requirements, provider, declarative contributions, executable binding identifiers, configuration, assets,
+and migrations. Packages are staged outside the public web root, inspected, signature-checked according to policy,
+migrated, and activated through a database-authoritative runtime publication.
 
 The runtime never scans arbitrary extension directories on each request. Each registry mutation commits an immutable generation, state checksum, publication checksum, versioned signing-key ID, signed payload, executable-tree/asset digests, and retirement intent in the same transaction. The container entrypoint materializes once before the long-lived application, worker, or scheduler starts; request handling never rewrites runtime state. The loader consumes that already verified immutable document without rereading the map. Readiness compares the generation actually loaded by the stable deployment/replica/process identity with the local artifact and current database state; a stale, missing, byte-modified, or untrusted runtime is never ready.
 
@@ -67,54 +70,41 @@ Runtime publication keys are independent from the application/session secret. A 
 
 ## Services and events
 
-Providers register services through a restricted adapter over the kernel container. After every active provider has registered
-services, the runtime runs a separate typed contribution phase with a registrar bound to the signed publication's
-extension identifier. The registrar reconciles concrete capability, administrator workspace/navigation, route,
-view, and business definitions against the inspected strict manifest before boot or route compilation. Schema 2
-retains the original contribution grammar; schema 3 adds signed field-presentation declarations and custom
-business handler contracts. Schema 4 adds contribution SPI 2 and signed durable events/consumers, jobs, schedules,
-queues, projections, reports, and outbound adapters. The registrar closes after that phase; delivery handlers and
-templates cannot mutate registries.
+The SDK `ExtensionServiceProvider` registers only extension-owned services in its owner-scoped
+`ExtensionContainer`. Neutral capabilities supplied by the host are SDK ports, not App classes or service IDs.
+Constructor-injected extension code can therefore be developed, conformance-tested, and installed without an App
+namespace dependency.
 
-Custom business views and actions use the same phase. The signed manifest publishes owner-scoped handler and schema
-references plus closed input/result contracts; the provider supplies a typed application handler, never a raw
-callable. Owner-aware registries validate decoded query or command DTOs before invocation, validate bounded result
-DTOs afterwards, and remove handler plus contract together on owner withdrawal. These application contracts have no
-PSR request, DBAL, repository, or container dependency. Extension code reaches business data and mutations through
-the same policy-aware application services as generated adapters rather than through core tables.
+The signed manifest is the sole declaration authority. It carries immutable declarations for administrator and
+portal surfaces, business definitions, field presentation, conversions, domain and integration events, jobs,
+projections, webhooks, composition, and Studio preview. After service registration, an optional SDK
+`ExtensionBindingProvider` receives an owner-scoped `ExtensionBindingRegistrar`. It can attach an executable
+implementation only to an exact identifier and kind already present in that manifest. It cannot add, rewrite, or
+alias a declaration, and activation fails unless every required executable has exactly one binding.
 
-Field-presentation strategies follow the same signed, owner-scoped lifecycle. A schema-3 declaration binds one
-package-owned field type to a closed context set, and the provider registers its `FieldPresenter` only after that
-field type. The presenter receives immutable definition metadata plus an already disclosed value and returns a
-markup-free semantic widget model rendered by core Twig. The registry keeps server editability, field identity,
-labels, required state, and validation errors authoritative, bounds retained input, and removes executable strategy
-objects before their field type during owner withdrawal.
-Manifest parsing derives the list/detail/create/update/relation coverage a published custom field can reach and
-rejects a release with a missing signed context before install persistence or activation evaluates provider code.
-The assembled-graph validation repeats this against active registries to cover cross-extension field-type use.
+Bindings use canonical SDK or extracted-library types: field presenters, conversion providers, custom business
+handlers, route handler factories, event handlers, job handlers, projection builders, transports, and preview
+renderers. Handler callbacks receive typed immutable declaration views and neutral execution context; they do not
+repeat signed identifier/type metadata as a second source of truth. Purely declarative contributions need no PHP
+binding and are interpreted directly by the host.
 
-The generated-business facade resolves the active installed definition, checks policy-filtered surface metadata,
-and calls `CustomBusinessSurfaceDispatcher`. The dispatcher requires the definition's exact owner/handler/schema
-tuple to be active and asserts each custom action's declared capability before invoking extension application code.
-Unknown declarations, inactive owners, absent handler registrations, and mismatched schemas share one
-non-enumerating unavailable-definition result. Contract schemas constrain data shape; they never replace record,
-field, approval, concurrency, audit, transaction, or idempotency enforcement in the application service a handler
-composes.
-
-ContainerFactory remains the composition root. It creates one registry family, sends core navigation through the
-same permission-aware path, and supplies only explicitly allowed application services to extension containers.
-The allowlist includes `BusinessRecordService`, so typed custom handlers can perform canonical policy, approval,
-concurrency, audit, transaction, and idempotency enforcement. It does not expose the application container, DBAL
-connection, or core repositories. Registries use typed definition objects and independent register/remove/inventory
-behavior, so another registry family can be introduced without a central callback switch.
+App registries remain owner-aware host implementation details. They validate callback inputs and bounded results,
+apply authentication, capability, disclosure, transaction, audit, concurrency, and idempotency policy, and remove
+declarations and implementations together when an owner leaves the active publication. Contract schemas constrain
+data shape; they never replace those application guarantees or make core tables an extension API.
 
 Contributed routes are compiled under `/administrator/extensions/{vendor}/{name}`, receive the normal administrator session/capability pipeline, add CSRF enforcement for mutations, and wrap execution in live trust enforcement. Views are resolved only through the contributor's registered name and isolated Twig namespace. Duplicate identifiers, route method/path collisions, missing owned references, and provider/manifest drift fail closed.
 
-Runtime extensions attach typed `ExtensionEvent` listeners during boot and may retain legacy namespaced routes during route compilation for schema-1 compatibility. Events describe completed facts or explicit lifecycle decisions; they are not an invisible replacement for application-service calls.
+Extensions declare lifecycle, event, job, projection, and route contributions in the signed manifest. After
+admission, an owner-scoped SDK binding provider may bind executable implementations only to those exact
+declaration identifiers. Event envelopes describe completed facts or explicit lifecycle decisions; they are
+not an invisible replacement for application-service calls.
 
-Event names and payload objects are public extension API. Document whether listeners may stop propagation, whether failure aborts the transaction, and whether delivery occurs before or after commit. Side effects that may be slow or retried should enqueue a versioned job or consume an outbox event rather than execute during the web transaction.
+Signed event declaration identifiers and canonical SDK envelope schemas are public package contract. Their delivery
+phase, transaction boundary, failure, and retry semantics must be explicit. Side effects that may be slow or
+retried should enqueue a versioned job or consume an outbox event rather than execute during the web transaction.
 
-Schema-4 synchronous domain listeners run inside the authoritative transaction and abort it on failure. The same
+Synchronous domain listeners run inside the authoritative transaction and abort it on failure. The same
 transaction appends the versioned integration envelope to the database outbox. Later delivery is leased and
 at-least-once; every consumer/outbound adapter therefore owns an inbox identity and declares event-ID or
 aggregate-version idempotency. Trusted runtime generation fences claims and settlement, so a stale worker cannot
@@ -125,17 +115,14 @@ complete work through an implementation that is no longer published. See
 
 Extensions use Doctrine DBAL or an ORM contained behind their own repository interfaces. They must use the configured database connection and pass MariaDB, MySQL, and PostgreSQL compatibility tests. Core tables are not an extension API. An extension owns its tables, migration history, cleanup policy, and downgrade compatibility.
 
-## Compatibility promise
+## Canonical author contract
 
-Kumwe treats extension manifests, the contribution SPI version, typed definition and provider interfaces, typed
-events, service IDs explicitly documented for extensions, capability names, API schemas, and migration contracts
-as versioned interfaces. Schema-1 packages continue to load but cannot opt into typed shell contributions without
-a schema-2 manifest; contributed field presenters and custom business handlers require schema 3 so schema 2
-remains a closed, unchanged grammar. Durable integration contributions require schema 4/SPI 2; schemas 1 through 3
-retain their existing bytes and behavior. Declarative composition contributions require schema 5/SPI 3; schema 5
-preserves every earlier grammar and opens only its closed composition section.
-Internal controller classes, registry implementations, template implementation details, and raw database tables
-are not stable APIs.
+Author packages depend on released `kumwe/extension-sdk`, `kumwe/conversion`, and other explicit library packages,
+and use the manifest grammar distributed by the SDK release. Those package namespaces, signed declaration schemas,
+neutral ports, capabilities, and migration contracts are the author surface. A contract change ships as a new
+library release and manifest grammar; the App does not preserve it with aliases, namespace remapping, or duplicate
+types. `Kumwe\App\` classes, App service IDs, internal controllers, registries, templates, and raw database tables
+are not author API.
 
 Recovery construction uses the same core contribution path but never evaluates the signed extension publication, instantiates providers, or adds extension template namespaces. Runtime generations that are stale, altered, disabled, uninstalled, quarantined, or no longer trusted cannot expose executable contributions.
 

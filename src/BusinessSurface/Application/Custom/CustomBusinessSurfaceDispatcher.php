@@ -6,6 +6,7 @@ namespace Kumwe\App\BusinessSurface\Application\Custom;
 
 use Kumwe\App\Application\Authorization\AuthorizationGateway;
 use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\BusinessDefinition\Domain\ActionDefinition;
 use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\App\BusinessDefinition\Domain\DefinitionOwner;
@@ -13,8 +14,12 @@ use Kumwe\App\BusinessDefinition\Domain\DefinitionOwnerType;
 use Kumwe\App\BusinessDefinition\Domain\ViewDefinition;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
 use Kumwe\App\BusinessSurface\Application\BusinessSurfaceOperation;
-use Kumwe\App\Identity\Domain\Capability;
 use Kumwe\App\Extension\Application\ExtensionExecutionGate;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionCommand;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionResult;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewQuery;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewResult;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 
 /**
  * Resolves custom declarations from one installed definition and dispatches their typed handlers.
@@ -216,6 +221,7 @@ final readonly class CustomBusinessSurfaceDispatcher
         CustomBusinessViewQuery $query,
     ): CustomBusinessViewResult {
         $this->assertCurrentOwner($definition->owner);
+        self::context($query->context);
         $view = $this->viewDefinition($definition, $query->view);
         $handler = (string) $view->handler;
         $schema = (string) $view->schema;
@@ -250,6 +256,7 @@ final readonly class CustomBusinessSurfaceDispatcher
         CustomBusinessActionCommand $command,
     ): CustomBusinessActionResult {
         $this->assertCurrentOwner($definition->owner);
+        $context = self::context($command->context);
         $action = $this->actionDefinition($definition, $command->action);
         $handler = (string) $action->handler;
         $schema = (string) $action->schema;
@@ -257,12 +264,33 @@ final readonly class CustomBusinessSurfaceDispatcher
             throw new BusinessRecordDefinitionUnavailable();
         }
         $this->authorization->assertAllowed(
-            $command->context,
+            $context,
             Capability::fromString($action->capability),
             AuthorizationResource::collection('business_record'),
         );
 
         return $this->actions->execute($definition->owner, $handler, $schema, $command);
+    }
+
+    /**
+     * Require the reusable SDK envelope to carry the App authority that minted the invocation.
+     *
+     * @param   \Kumwe\Extension\Spi\Application\ExecutionContext  $context  Canonical invocation identity.
+     *
+     * @return  ExecutionContext  Exact host authorization context.
+     *
+     * @throws  BusinessRecordDefinitionUnavailable  When a caller supplies a foreign context implementation.
+     *
+     * @since   2.0.0
+     */
+    private static function context(
+        \Kumwe\Extension\Spi\Application\ExecutionContext $context,
+    ): ExecutionContext {
+        if (!$context instanceof ExecutionContext) {
+            throw new BusinessRecordDefinitionUnavailable();
+        }
+
+        return $context;
     }
 
     /**

@@ -8,9 +8,9 @@ use Kumwe\App\Extension\Application\Install\AtomicInstallPlan;
 use Kumwe\App\Extension\Application\Install\InstallAction;
 use Kumwe\App\Extension\Application\Install\InstallState;
 use Kumwe\App\Extension\Application\Install\InvalidInstallTransition;
-use Kumwe\App\Extension\Domain\ExtensionIdentifier;
-use Kumwe\App\Extension\Domain\PackageChecksum;
-use Kumwe\App\Extension\Domain\SemanticVersion;
+use Kumwe\Extension\Manifest\ExtensionIdentifier;
+use Kumwe\Extension\Package\PackageChecksum;
+use Kumwe\Extension\Manifest\SemanticVersion;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

@@ -18,14 +18,14 @@ implementation moves outward, and any genuine exception is encoded as an exact i
 recorded decision and the dependency checker. The baseline carried fifteen such edges under
 `V2-ARC-003`, all expiring 2027-06-30.
 
-Two frozen surfaces constrain the mechanics:
+Two surfaces constrained the original mechanics:
 
 - **Published migrations are byte-immutable.** `ApplicationAuthorizationMigration` imports
   `SiteContext` by its full name; changing that name would either change frozen bytes or leave the
   migration referencing a class that no longer exists.
-- **The public extension SPI is hash-pinned.** `public-interfaces-v2.json` freezes the SPI-2
-  interface signatures, which name `ContributionOwner`; a namespace move would change the pinned
-  hash and break source compatibility for every published extension.
+- **The public extension SPI was App-owned and hash-pinned.** The pre-stable extraction deliberately
+  reset that authority before the first supported 2.0 alpha. The package-owned SDK contract and its
+  immutable release artifact now freeze the author surface instead.
 
 The layer graph already separates classification from physical namespace: `layers.json` resolves a
 class through longest-prefix rules before segment rules, and a full class name is a valid prefix.
@@ -45,15 +45,13 @@ of any frozen artifact.
 2. **`PortalContext` moves outward.** It pairs a site with a versioned membership authorization
    proof, produced by trusted portal resolution — application vocabulary, resolved by
    `Portal\Application` services. It now lives beside its resolvers in `Portal\Application`.
-3. **The manifest's contribution parse is the one approved exact interface.**
-   `ExtensionManifest` may use exactly `ManifestContributionSet::fromManifest()` and `::legacy()`
-   as its admission-time contribution parser, hold the resulting set as its typed contributions
-   member, and read `CapabilityDefinition` only to project declared capability identifiers into its
-   permission set. Refusing invalid contributions at manifest admission is pinned by six
-   generations of signed fixtures; moving the parse outward would change when packages are
-   refused. The approval is encoded in the dependency checker's `approved_interfaces` section,
-   carries no expiry, and fails the build if its edge disappears or widens beyond the recorded
-   members' namespace.
+3. **The SDK manifest graph is the sole contribution authority.** Package admission parses the
+   manifest once through `Kumwe\Extension\Manifest\ExtensionManifest` and consumes its immutable
+   `ManifestContributions` graph. Schema one receives the SDK's explicit inert `fromSchemaOne()`
+   graph; it has no code-side registration channel. The App may apply host admission policy and
+   construct host-domain values from the already validated declarations, but it may not decode the
+   document again, retain an App-owned declaration set, or translate historical author contracts.
+   Executable code binds only to identifiers in that signed graph through the SDK binding SPI.
 4. **A file's own namespace declaration is not a dependency.** The checker no longer records the
    declaration's name as a reference, which class-level classification would otherwise trip as a
    false self-edge.
@@ -61,8 +59,8 @@ of any frozen artifact.
 ## Consequences
 
 - The dependency baseline carries no Domain-to-Application edge; the `V2-ARC-003` family in the
-  baseline shrank by fifteen (thirteen resolved entries deleted, two converted to the approved
-  interface). The remaining recorded families — delivery-to-infrastructure,
+  baseline shrank by fifteen. The temporary manifest-parser exception was removed by the canonical
+  SDK extraction. The remaining recorded families — delivery-to-infrastructure,
   contribution-to-presentation and infrastructure-to-kernel — keep their owner, finding and expiry
   and belong to the seams that own them.
 - Any future Domain import of an Application type fails the build immediately: nothing may join

@@ -12,7 +12,7 @@ use Kumwe\App\BusinessReporting\Domain\ReportColumnDefinition;
 use Kumwe\App\BusinessReporting\Domain\ReportDefinition;
 use Kumwe\App\BusinessReporting\Domain\ReportDrillDownDefinition;
 use Kumwe\App\BusinessReporting\Domain\ReportParameterDefinition;
-use Kumwe\App\BusinessReporting\Domain\ReportValueType;
+use Kumwe\Extension\Spi\BusinessReporting\Domain\ReportValueType;
 use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;

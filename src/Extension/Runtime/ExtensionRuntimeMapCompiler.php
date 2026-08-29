@@ -11,7 +11,7 @@ use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
 use Kumwe\App\Extension\Application\Trust\TrustRuntimeInvalidator;
-use Kumwe\App\Extension\Domain\ExtensionManifest;
+use Kumwe\Extension\Manifest\ExtensionManifest;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Psr\Clock\ClockInterface;
 use Psr\Log\LoggerInterface;
@@ -1004,7 +1004,7 @@ final readonly class ExtensionRuntimeMapCompiler implements TrustRuntimeInvalida
                 ),
                 'autoload' => $manifest->autoload(),
                 'manifest_schema' => $manifest->schemaVersion(),
-                'contributions' => $manifest->contributions()->toArray(),
+                'contributions' => $manifest->contributions()->declarations(),
                 'theme_surfaces' => $themes[$identifier]['surfaces'] ?? [],
                 'theme_sites' => $themes[$identifier]['sites'] ?? [],
             ];

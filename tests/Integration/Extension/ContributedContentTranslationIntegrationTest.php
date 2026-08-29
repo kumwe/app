@@ -15,8 +15,8 @@ use Kumwe\App\Extension\Application\ExtensionManager;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Extension\Contribution\OwnedRuntimeContributionRegistry;
 use Kumwe\App\Extension\Contribution\TranslationGroupDeclaration;
-use Kumwe\App\Extension\Contribution\TranslationSetItemAssociation;
-use Kumwe\App\Extension\Domain\PackageChecksum;
+use Kumwe\Extension\Spi\Contribution\TranslationSetItemAssociation;
+use Kumwe\Extension\Package\PackageChecksum;
 use Kumwe\App\Kernel\Configuration\ApplicationConfiguration;
 use Kumwe\App\Kernel\ContainerFactory;
 use Kumwe\App\Localization\Domain\LocaleTag;
@@ -341,8 +341,9 @@ final class ContributedContentTranslationIntegrationTest extends TestCase
      * Package the fixture provider and manifest under a wholly per-run identity.
      *
      * The package is assembled from strings rather than a directory so this fixture carries exactly the
-     * two files the contract needs — a schema-4 manifest declaring one translation set, and a provider
-     * registering it — and nothing an unrelated example might grow later. The PHP namespace carries the
+     * two files the contract needs — a schema-4 manifest declaring one translation set, and its empty
+     * service-composition provider — and nothing an unrelated example might grow later. The signed
+     * manifest is the only declaration source. The PHP namespace carries the
      * per-run marker because a class name is process-global: a failed earlier run may leave its package
      * behind, and a repeated class name would hand this run the stale provider instead of its own.
      *
@@ -388,29 +389,13 @@ final class ContributedContentTranslationIntegrationTest extends TestCase
 
             namespace PROVIDER_NAMESPACE;
 
-            use Kumwe\App\Extension\Application\ExtensionServiceProvider;
-            use Kumwe\App\Extension\Contribution\ContentTranslationRegistrar;
-            use Kumwe\App\Extension\Contribution\ExtensionContributionProvider;
-            use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrar;
-            use Kumwe\App\Extension\Contribution\TranslationGroupDeclaration;
-            use Kumwe\App\Extension\Runtime\ExtensionContainer;
+            use Kumwe\Extension\Spi\Application\ExtensionServiceProvider;
+            use Kumwe\Extension\Spi\Runtime\ExtensionContainer;
 
-            final class Provider implements ExtensionServiceProvider, ExtensionContributionProvider
+            final class Provider implements ExtensionServiceProvider
             {
                 public function register(ExtensionContainer $container): void
                 {
-                }
-
-                public function contribute(
-                    ExtensionContributionRegistrar $contributions,
-                    ExtensionContainer $container,
-                ): void {
-                    if (!$contributions instanceof ContentTranslationRegistrar) {
-                        throw new \LogicException('The content translation registrar is unavailable.');
-                    }
-                    $contributions->contentTranslationGroup(
-                        new TranslationGroupDeclaration('DECLARED_SET', ['de', 'en-GB'], 'en-GB'),
-                    );
                 }
             }
             PHP;
@@ -421,11 +406,10 @@ final class ContributedContentTranslationIntegrationTest extends TestCase
         try {
             if (
                 !$zip->addFromString('kumwe.json', $manifest)
-                || !$zip->addFromString('src/Provider.php', str_replace(
-                    ['PROVIDER_NAMESPACE', 'DECLARED_SET'],
-                    [$namespace, $set],
-                    $provider,
-                ))
+                || !$zip->addFromString(
+                    'src/Provider.php',
+                    str_replace('PROVIDER_NAMESPACE', $namespace, $provider),
+                )
             ) {
                 throw new RuntimeException('A content translation fixture file cannot be packaged.');
             }

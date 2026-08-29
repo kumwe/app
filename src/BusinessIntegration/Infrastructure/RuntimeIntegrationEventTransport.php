@@ -10,13 +10,14 @@ use Kumwe\App\Application\Automation\PermanentFailure;
 use Kumwe\App\BusinessIntegration\Application\DurableOutboundAdapterDispatcher;
 use Kumwe\App\BusinessIntegration\Application\InboxDisposition;
 use Kumwe\App\BusinessIntegration\Application\IntegrationDeliveryBackpressure;
+use Kumwe\App\BusinessIntegration\Application\IntegrationEventFanout;
 use Kumwe\App\BusinessIntegration\Application\IntegrationEventConsumerDispatcher;
-use Kumwe\App\BusinessIntegration\Application\IntegrationEventHandler;
-use Kumwe\App\BusinessIntegration\Application\IntegrationEventTransport;
-use Kumwe\App\BusinessIntegration\Domain\EventConsumerDefinition;
-use Kumwe\App\BusinessIntegration\Domain\EventSensitivity;
-use Kumwe\App\BusinessIntegration\Domain\IntegrationEvent;
-use Kumwe\App\BusinessIntegration\Domain\WebhookContributionDefinition;
+use Kumwe\Extension\Spi\BusinessIntegration\Application\IntegrationEventHandler;
+use Kumwe\Extension\Spi\BusinessIntegration\Application\IntegrationEventTransport;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventConsumerDefinition;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventSensitivity;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\WebhookContributionDefinition;
 use Kumwe\App\BusinessReporting\Application\ProjectionRuntime;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
@@ -31,7 +32,7 @@ use RuntimeException;
  *
  * @since  2.0.0
  */
-final readonly class RuntimeIntegrationEventTransport implements IntegrationEventTransport
+final readonly class RuntimeIntegrationEventTransport implements IntegrationEventFanout
 {
     /**
      * Create the runtime integration event transport.
@@ -113,6 +114,7 @@ final readonly class RuntimeIntegrationEventTransport implements IntegrationEven
                 continue;
             }
             $disposition = $this->consumers->consume(
+                $definition,
                 $event,
                 $handler,
                 $context,

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\BusinessIntegration\Application;
 
-use Kumwe\App\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationEvent;
 use Kumwe\App\BusinessIntegration\Domain\ProcessInstance;
 use Kumwe\App\BusinessIntegration\Domain\ProcessTransition;
 

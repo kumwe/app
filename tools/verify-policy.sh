@@ -11,12 +11,10 @@ application_layer_files() {
     find src -type f -name '*.php' -path '*/Application/*' -print
 }
 
-# The extension migration SPI is the one admitted outward import. A contributed migration is handed
-# the connection it runs its own DDL on and the prefix helper that keeps it inside its own table
-# namespace, which is a published part of the extension contract rather than a layering slip. The
-# exception names the three files exactly, so a fourth one fails this gate instead of inheriting a
-# directory-wide waiver.
-application_layer_exceptions='^src/Extension/Application/Migration/(ExtensionMigration|ExtensionMigrationRunner|ExtensionTableNames)\.php:'
+# The migration runner is the one admitted outward import: it invokes canonical SDK migrations with
+# the DBAL connection the host owns. The SDK contract and the scoped table-name implementation do not
+# import infrastructure, so the exception stays pinned to the runner rather than its directory.
+application_layer_exceptions='^src/Extension/Application/Migration/ExtensionMigrationRunner\.php:'
 
 if command -v rg >/dev/null 2>&1; then
     product_name_matches() {
@@ -40,7 +38,6 @@ if command -v rg >/dev/null 2>&1; then
 
     joomla_reference_matches() {
         rg -nF 'Joomla\' src bootstrap bin public config examples tools tests \
-            --glob '!tests/Fixtures/ExtensionApi/generations/**' \
             --glob '!tools/verify-policy.sh' 2>/dev/null
     }
 
@@ -76,7 +73,6 @@ else
 
     joomla_reference_matches() {
         find src bootstrap bin public config examples tools tests \
-            -path tests/Fixtures/ExtensionApi/generations -prune -o \
             -type f ! -path tools/verify-policy.sh -print0 \
             | xargs -0 -r grep -I -nHF 'Joomla\'
     }
@@ -158,10 +154,12 @@ for legacy_root_file in index.php .htaccess robots.txt.dist web.config.txt; do
 done
 
 # Everything above is textual, and textual is all this gate used to be: four predicates that never
-# resolved a dependency edge and still printed "verified". The semantic half below reads the layer graph
-# in docs/architecture/layers.json, resolves every symbol each file under src/ actually references, and
+# resolved a dependency edge and still printed "verified". The package-boundary gate first refuses
+# runtime aliases in tracked App code and installed first-party packages. The semantic half then reads
+# docs/architecture/layers.json, resolves every symbol each file under src/ actually references, and
 # fails on any edge that points the wrong way and is not in the recorded baseline. The textual predicates
 # stay because the source text is the contract in those four cases; they are no longer the whole check.
+php "$project_root/tools/verify-package-boundaries.php"
 php "$project_root/tools/verify-dependency-graph.php"
 
-echo 'Kumwe architecture policy verified: textual predicates and the semantic dependency graph.'
+echo 'Kumwe architecture policy verified: textual predicates, package boundaries and dependency graph.'

@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use DomainException;
 use InvalidArgumentException;
 use Kumwe\App\Shared\Domain\CanonicalJson;
+use Kumwe\Extension\Spi\Application\Automation\IdempotencyKey;
 
 /**
  * One entry in the idempotency ledger: the request that claimed a key, and the answer it may replay.

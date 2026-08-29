@@ -9,10 +9,10 @@ use JsonException;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Studio\Application\Host\StudioHostSessionSnapshot;
 use Kumwe\App\Studio\Application\Preview\StudioPreviewDraftSource;
-use Kumwe\App\Studio\Domain\Contract\CanonicalJson;
-use Kumwe\App\Studio\Domain\Contract\StudioContractSchemas;
 use Kumwe\App\Studio\Domain\Preview\StudioPreviewDraft;
 use Kumwe\App\Studio\Domain\Preview\StudioPreviewRenderRequest;
+use Kumwe\Producer\Canonical\CanonicalJson;
+use Kumwe\Producer\Schema\StudioDocumentSchemaRegistry;
 use RuntimeException;
 use stdClass;
 
@@ -28,14 +28,14 @@ final readonly class DoctrineStudioPreviewDraftSource implements StudioPreviewDr
      *
      * @param  Connection             $database  Database containing immutable AP-4 revisions.
      * @param  TableNames             $tables    Prefix-aware table compiler.
-     * @param  StudioContractSchemas  $schemas   Exact vendored protocol schema registry.
+     * @param  StudioDocumentSchemaRegistry  $schemas   Producer's exact pinned schema registry.
      *
      * @since  2.0.0
      */
     public function __construct(
         private Connection $database,
         private TableNames $tables,
-        private StudioContractSchemas $schemas,
+        private StudioDocumentSchemaRegistry $schemas,
     ) {
     }
 
@@ -78,7 +78,7 @@ final readonly class DoctrineStudioPreviewDraftSource implements StudioPreviewDr
         }
         if (
             !$document instanceof stdClass
-            || !$this->schemas->validator('blueprint')->validate($document)
+            || !$this->schemas->validate('blueprint', $document)->valid()
             || !hash_equals($canonical, CanonicalJson::stringify($document))
         ) {
             throw new RuntimeException('A stored Studio preview draft is not canonical and schema-valid.');

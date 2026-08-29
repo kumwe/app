@@ -11,7 +11,8 @@ use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionRepository;
 use Kumwe\App\BusinessDefinition\Domain\DefinitionOwnerType;
 use Kumwe\App\BusinessDefinition\Domain\DefinitionStatus;
 use Kumwe\App\Extension\Application\Package\ExtensionActivationAdmission;
-use Kumwe\App\Extension\Domain\ExtensionManifest;
+use Kumwe\App\Extension\Contribution\CanonicalManifestInterpreter;
+use Kumwe\Extension\Manifest\ExtensionManifest;
 
 /**
  * Rejects extension-owned generated OpenAPI component collisions before lifecycle publication.
@@ -74,7 +75,7 @@ final readonly class OpenApiExtensionActivationAdmission implements ExtensionAct
                     throw new InvalidArgumentException('The candidate extension contract version is stale.');
                 }
             }
-            foreach ($manifest->contributions()->businessDefinitions() as $definition) {
+            foreach (CanonicalManifestInterpreter::fromManifest($manifest)->businessDefinitions() as $definition) {
                 if ($definition->siteIdentifier !== $site->identifier()) {
                     continue;
                 }

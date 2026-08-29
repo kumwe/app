@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\Extension\Contribution;
 
 use Kumwe\App\Extension\Contribution\ExtensionContributionSummary;
-use Kumwe\App\Extension\Domain\ExtensionManifest;
+use Kumwe\Extension\Manifest\ExtensionManifest;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
@@ -143,24 +143,6 @@ final class ExtensionContributionSummaryTest extends TestCase
         $listener = $byLabel['kumwe.asset-inspection-example.inspection-mutation-validator'];
         self::assertNull($listener['href']);
         self::assertStringContainsString('core.business_record.mutated', $listener['detail']);
-    }
-
-    /**
-     * A schema-one plugin's consumed event is listed as a background listener with no screen.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    public function testLegacyEventListenerIsNamedWithItsEvent(): void
-    {
-        $summary = ExtensionContributionSummary::project($this->manifest('audit-listener'), true);
-        $automation = $this->group($summary, 'automation');
-
-        self::assertSame('event listener', $automation['entries'][0]['noun']);
-        self::assertSame('onKumweExtensionAfterActivate', $automation['entries'][0]['label']);
-        self::assertNull($automation['entries'][0]['href']);
-        self::assertStringContainsString('no screen of its own', $automation['entries'][0]['detail']);
     }
 
     /**

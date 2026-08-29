@@ -5,13 +5,14 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\Studio\Application\Host;
 
 use Kumwe\App\Studio\Application\Host\StudioArtifactAdmission;
-use Kumwe\App\Studio\Application\Host\StudioHostOperationRefused;
 use Kumwe\App\Studio\Domain\Artifact\StoredStudioArtifact;
 use Kumwe\App\Studio\Domain\Artifact\StudioStoredDocumentPolicy;
 use Kumwe\App\Studio\Domain\Artifact\StudioStoredDocumentRejection;
 use Kumwe\App\Studio\Domain\Artifact\UnsafeStudioStoredDocument;
-use Kumwe\App\Studio\Domain\Contract\CanonicalJson;
-use Kumwe\App\Studio\Domain\Contract\StudioContractSchemas;
+use Kumwe\Producer\Canonical\CanonicalJson;
+use Kumwe\Producer\Schema\StudioContractResources;
+use Kumwe\Producer\Schema\StudioDocumentSchemaRegistry;
+use Kumwe\Producer\Error\HostRefusal;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -26,7 +27,6 @@ use stdClass;
 #[CoversClass(CanonicalJson::class)]
 #[CoversClass(StoredStudioArtifact::class)]
 #[CoversClass(StudioArtifactAdmission::class)]
-#[CoversClass(StudioHostOperationRefused::class)]
 #[CoversClass(StudioStoredDocumentPolicy::class)]
 #[CoversClass(StudioStoredDocumentRejection::class)]
 #[CoversClass(UnsafeStudioStoredDocument::class)]
@@ -178,9 +178,9 @@ final class StudioArtifactAdmissionTest extends TestCase
         try {
             self::admission()->admit('publisher-namibia', $document);
             self::fail('Unsafe artifact material must not be admitted.');
-        } catch (StudioHostOperationRefused $refused) {
-            self::assertSame('validation-failed', $refused->category);
-            self::assertSame($code, $refused->diagnosticCode);
+        } catch (HostRefusal $refused) {
+            self::assertSame('validation-failed', $refused->error()->category());
+            self::assertSame($code, $refused->error()->diagnostics()[0]->code());
         }
     }
 
@@ -197,14 +197,14 @@ final class StudioArtifactAdmissionTest extends TestCase
             try {
                 self::admission()->admit('publisher-namibia', $document);
                 self::fail('An unsupported or partial artifact must fail closed.');
-            } catch (StudioHostOperationRefused $refused) {
-                self::assertSame('validation-failed', $refused->category);
+            } catch (HostRefusal $refused) {
+                self::assertSame('validation-failed', $refused->error()->category());
             }
         }
     }
 
     /**
-     * Build artifact admission over the exact vendored Studio schemas.
+     * Build artifact admission over Producer's exact pinned Studio schemas.
      *
      * @return  StudioArtifactAdmission  Admission boundary under test.
      *
@@ -212,11 +212,11 @@ final class StudioArtifactAdmissionTest extends TestCase
      */
     private static function admission(): StudioArtifactAdmission
     {
-        return new StudioArtifactAdmission(StudioContractSchemas::fromVendoredCorpus());
+        return new StudioArtifactAdmission(StudioDocumentSchemaRegistry::fromVendoredCorpus());
     }
 
     /**
-     * Load one actual vendored protocol fixture as a decoded JSON object.
+     * Load one exact fixture from Producer's pinned testkit as a decoded JSON object.
      *
      * @param   string  $name  Fixture filename.
      *
@@ -227,7 +227,7 @@ final class StudioArtifactAdmissionTest extends TestCase
     private static function fixture(string $name): stdClass
     {
         $document = json_decode(
-            (string) file_get_contents(dirname(__DIR__, 4) . '/Fixtures/Studio/testkit/fixtures/' . $name),
+            StudioContractResources::testkitBytes('fixtures/' . $name),
             false,
             64,
             JSON_THROW_ON_ERROR,

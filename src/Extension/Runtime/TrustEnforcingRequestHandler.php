@@ -14,7 +14,7 @@ use Psr\Http\Server\RequestHandlerInterface;
  *
  * Extension and administrator routes are declared once while the application is composed and are never
  * withdrawn, so the router on its own cannot express that an extension was disabled or had its signing
- * key revoked afterwards. `MezzioExtensionRouteRegistrar` and `AdministratorRouteRegistry` therefore
+ * key revoked afterwards. The manifest-backed route registries therefore
  * wrap every contributed handler in this one, which takes the installation-wide lifecycle lock and
  * re-runs trust enforcement per request. The route stops answering from the next request onwards, with
  * no router rebuild and no redeployment, and the refusal is allowed to propagate so the request fails

@@ -9,7 +9,7 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
 use Kumwe\App\Kernel\Container;
 use Kumwe\App\Application\Authorization\ExecutionContext;
-use Kumwe\App\Application\Automation\IdempotencyKey;
+use Kumwe\Extension\Spi\Application\Automation\IdempotencyKey;
 use Kumwe\App\Application\Persistence\TransactionManager;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionService;
 use Kumwe\App\BusinessDefinition\Application\PackageDefinitionSynchronizer;

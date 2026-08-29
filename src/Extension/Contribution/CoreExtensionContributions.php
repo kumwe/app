@@ -4,17 +4,20 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Extension\Contribution;
 
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Extension\Spi\Contribution\AdministratorWorkspaceDefinition;
+use Kumwe\Extension\Spi\Contribution\AdministratorNavigationDefinition;
 use Kumwe\App\Application\Authorization\ResourcePolicyTarget;
 use Kumwe\App\Application\Authorization\SystemIdentity;
 use Kumwe\App\BusinessDefinition\Domain\BuiltInFieldTypes;
 use Kumwe\App\BusinessIntegration\Domain\EventSchemaDefinition;
-use Kumwe\App\BusinessIntegration\Domain\EventSensitivity;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventSensitivity;
 use Kumwe\App\BusinessSurface\Presentation\Field\CoreFieldPresenter;
-use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationContext;
-use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationContribution;
+use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationContext;
+use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationContribution;
 use Kumwe\App\InterfaceStandard\SurfaceDefinition;
-use Kumwe\App\Portal\Contribution\PortalNavigationDefinition;
-use Kumwe\App\Portal\Contribution\PortalWorkspaceDefinition;
+use Kumwe\Extension\Spi\Portal\Contribution\PortalNavigationDefinition;
+use Kumwe\Extension\Spi\Portal\Contribution\PortalWorkspaceDefinition;
 
 /**
  * Everything the CMS contributes to the contribution registries on its own behalf.
@@ -152,20 +155,15 @@ final class CoreExtensionContributions
      * title-cased — so the capability map only has to carry descriptions. Core is registered through
      * a non-strict registrar, so unlike an extension it is not matched against a manifest declaration.
      *
-     * @param   ExtensionContributionRegistrar  $registrar  Registrar bound to the core contribution owner.
+     * @param   CoreContributionRegistrar  $registrar  Concrete host helper for built-in declarations.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    public static function register(ExtensionContributionRegistrar $registrar): void
+    public static function register(CoreContributionRegistrar $registrar): void
     {
-        if (!$registrar instanceof InterfaceSurfaceRegistrar) {
-            throw new \LogicException('Core KIS surfaces require the additive interface-surface registrar.');
-        }
-        if ($registrar instanceof OwnedExtensionContributionRegistrar) {
-            CoreStudioCompositionContributions::register($registrar);
-        }
+        CoreStudioCompositionContributions::register($registrar);
         $registrar->eventSchema(new EventSchemaDefinition(
             'core.business_record.mutated',
             1,

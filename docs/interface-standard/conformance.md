@@ -28,9 +28,8 @@ authoring aid and package preflight, not the runtime trust boundary: `SurfaceDef
 strict parsing, owner-namespace validation, intent/pattern admission, state requirements, customization-scope
 rules, and responsive-priority checks. Extension manifests carry these declarations in their versioned
 contribution set. `npm run check:schemas` executes the Draft 2020-12 schemas against canonical and adversarial
-documents. Providers feature-detect the additive `InterfaceSurfaceRegistrar` and reconcile the identical
-typed definition through its owner-bound implementation; the frozen SPI-two registrar remains source
-compatible for existing providers.
+documents. The host consumes each typed surface directly from the canonical SDK manifest graph. Provider code
+cannot add, replace, or reinterpret a surface declaration.
 
 The portable schema and runtime share the same actor/area matrix and the complete slot/scope allowlist.
 Surface identifiers use a bounded lowercase dotted grammar that admits digit-led, underscored, and hyphenated

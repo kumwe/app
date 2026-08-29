@@ -21,7 +21,7 @@ final readonly class StudioPreviewRenderedDocument
      * @param   list<string>           $markers          Canonical preorder markers.
      * @param   array<string, string>  $markerMap        Marker to stable Blueprint node identity.
      * @param   list<stdClass>         $diagnostics      Safe canonical rendering diagnostics.
-     * @param   string|null            $themeStylesheet  Closed generated theme CSS, or null when absent.
+     * @param   string|null            $stylesheet       Exact combined Producer and generated theme CSS.
      *
      * @throws  InvalidArgumentException  When the document or inventory is incoherent.
      *
@@ -32,7 +32,7 @@ final readonly class StudioPreviewRenderedDocument
         public array $markers,
         public array $markerMap,
         public array $diagnostics = [],
-        public ?string $themeStylesheet = null,
+        public ?string $stylesheet = null,
     ) {
         if ($html === '' || strlen($html) > 16_777_215 || count($markers) !== count($markerMap)) {
             throw new InvalidArgumentException('The rendered Studio preview document is invalid.');
@@ -43,13 +43,14 @@ final readonly class StudioPreviewRenderedDocument
             }
         }
         if (
-            $themeStylesheet !== null
+            $stylesheet !== null
             && (
-                strlen($themeStylesheet) > 8_192
-                || preg_match('/^body\{(?:--[a-z0-9-]+:#[a-f0-9]{6};)+\}$/D', $themeStylesheet) !== 1
+                $stylesheet === ''
+                || strlen($stylesheet) > 16_777_215
+                || !mb_check_encoding($stylesheet, 'UTF-8')
             )
         ) {
-            throw new InvalidArgumentException('The rendered Studio preview theme stylesheet is invalid.');
+            throw new InvalidArgumentException('The rendered Studio preview stylesheet is invalid.');
         }
     }
 }

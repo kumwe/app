@@ -48,9 +48,10 @@ final class TransactionSeamBoundaryTest extends TestCase
      * @since  2.0.0
      */
     private const array PUBLISHED_MIGRATION_CONTRACT = [
-        'Kumwe\\App\\Extension\\Application\\Migration\\ExtensionMigration',
+        'Kumwe\\Extension\\Spi\\Migration\\ExtensionMigration',
         'Kumwe\\App\\Extension\\Application\\Migration\\ExtensionMigrationRunner',
-        'Kumwe\\App\\Extension\\Application\\Migration\\ExtensionTableNames',
+        'Kumwe\\App\\Extension\\Application\\Migration\\ScopedExtensionTableNames',
+        'Kumwe\\Extension\\Spi\\Migration\\ExtensionTableNames',
     ];
 
     /**

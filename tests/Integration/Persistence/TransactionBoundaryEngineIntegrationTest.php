@@ -23,8 +23,9 @@ use Kumwe\App\Audit\Domain\AuditEvent;
 use Kumwe\App\Audit\Infrastructure\Persistence\DoctrineAuditRecorder;
 use Kumwe\App\BusinessIntegration\Application\EventContractRegistry;
 use Kumwe\App\BusinessIntegration\Domain\EventSchemaDefinition;
-use Kumwe\App\BusinessIntegration\Domain\EventSensitivity;
-use Kumwe\App\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventSensitivity;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\App\BusinessIntegration\Domain\RecordedIntegrationEvent;
 use Kumwe\App\BusinessIntegration\Infrastructure\DoctrineOutboxStore;
 use Kumwe\App\BusinessRecord\Application\BusinessNumberSequenceAllocator;
 use Kumwe\App\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessNumberSequenceAllocator;
@@ -736,7 +737,7 @@ final class TransactionBoundaryEngineIntegrationTest extends TestCase
     {
         $aggregateId = 'boundary-' . bin2hex(random_bytes(8));
 
-        return new IntegrationEvent(
+        return new RecordedIntegrationEvent(
             'business.record.changed',
             1,
             Uuid::uuid7()->toString(),

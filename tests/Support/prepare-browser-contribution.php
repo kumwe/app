@@ -15,14 +15,13 @@ use Kumwe\App\BusinessRecord\Application\Command\RelateRecordsCommand;
 use Kumwe\App\BusinessSecurity\Infrastructure\Persistence\DoctrineBusinessSecurityAdministrationRepository;
 use Kumwe\App\Extension\Application\ExtensionManager;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
-use Kumwe\App\Extension\Domain\PackageChecksum;
+use Kumwe\Extension\Package\PackageChecksum;
 use Kumwe\App\Identity\Application\Administration\AccessControlRepository;
 use Kumwe\App\Identity\Application\Administration\AccessControlService;
 use Kumwe\App\Identity\Application\Administration\AdministratorIdentityGateway;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Tests\Support\BrowserProjectManifest;
 use Kumwe\App\Tests\Support\NeutralBusinessFixture;
-use KumweExample\AssetInspection\Application\InspectionPolicyProfile;
 use Ramsey\Uuid\Uuid;
 
 require dirname(__DIR__, 2) . '/vendor/autoload.php';
@@ -192,7 +191,8 @@ try {
     if (!is_string($manifestSixArchive)) {
         throw new RuntimeException('The browser manifest-six fixture package cannot be allocated.');
     }
-    $manifestSixRoot = dirname(__DIR__) . '/Fixtures/ExtensionApi/generations/manifest-6';
+    $manifestSixRoot = dirname(__DIR__, 2)
+        . '/vendor/kumwe/extension-sdk/resources/fixtures/generations/manifest-6';
     $zip = new ZipArchive();
     if ($zip->open($manifestSixArchive, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
         throw new RuntimeException('The browser manifest-six fixture package cannot be opened.');
@@ -663,41 +663,59 @@ try {
         recordId: $deniedAssetInspectionId,
     ));
 
-    if (!class_exists('KumweExample\\AssetInspection\\Definitions', false)) {
-        require_once $assetRoot . '/src/Definitions.php';
-    }
-    if (!class_exists(InspectionPolicyProfile::class, false)) {
-        require_once $assetRoot . '/src/Application/InspectionPolicyProfile.php';
-    }
     $profileJson = file_get_contents($assetRoot . '/policies/inspection-viewer.json');
     if (!is_string($profileJson)) {
         throw new RuntimeException('The browser report fixture policy profile is unavailable.');
     }
-    $profile = InspectionPolicyProfile::fromJson($profileJson);
-    if ($profile->checksum() !== '4111a514bab062215a032df003a3edd940f8b2648c8c20030567b6e46c1c220b') {
+    $profile = json_decode($profileJson, true, 16, JSON_THROW_ON_ERROR);
+    if (
+        !is_array($profile)
+        || array_is_list($profile)
+        || CanonicalDefinitionJson::checksum($profile)
+            !== '4111a514bab062215a032df003a3edd940f8b2648c8c20030567b6e46c1c220b'
+        || ($profile['format'] ?? null) !== 'kumwe-asset-inspection-policy-profile-v1'
+        || ($profile['definition_id'] ?? null) !== '019bc200-0000-7000-8000-000000000003'
+    ) {
         throw new RuntimeException('The browser report fixture policy profile checksum is invalid.');
     }
-    if (count($profile->records()->allows) !== 1 || $profile->records()->denies !== []) {
+    $rowPolicy = $profile['row_policy'] ?? null;
+    $fieldPolicy = $profile['field_policy'] ?? null;
+    $profileRequests = $profile['policy_requests'] ?? null;
+    if (
+        !is_array($rowPolicy)
+        || array_is_list($rowPolicy)
+        || !is_array($fieldPolicy)
+        || array_is_list($fieldPolicy)
+        || !is_array($profileRequests)
+        || !array_is_list($profileRequests)
+        || !is_array($rowPolicy['allows'] ?? null)
+        || count($rowPolicy['allows']) !== 1
+        || ($rowPolicy['denies'] ?? null) !== []
+    ) {
         throw new RuntimeException('The browser report fixture row-policy shape is invalid.');
     }
-    $predicate = $profile->records()->allows[0]->toArray();
-    $fieldRules = $profile->fields()->toArray() + ['actions' => []];
+    $predicate = $rowPolicy['allows'][0];
+    if (!is_array($predicate) || array_is_list($predicate)) {
+        throw new RuntimeException('The browser report fixture row-policy predicate is invalid.');
+    }
+    $fieldRules = $fieldPolicy + ['actions' => []];
     $policyRequests = [];
-    foreach ($profile->administrationRequests() as $request) {
-        $policyCode = $request['policyCode'] ?? null;
-        $operation = $request['operation'] ?? null;
-        $effect = $request['effect'] ?? null;
-        $organizationId = $request['organizationId'] ?? null;
-        $definitionId = $request['definitionId'] ?? null;
-        $requestFields = $request['fieldRules'] ?? null;
-        $priority = $request['priority'] ?? null;
+    foreach ($profileRequests as $request) {
+        $policyCode = is_array($request) ? ($request['policy_code'] ?? null) : null;
+        $operation = is_array($request) ? ($request['operation'] ?? null) : null;
+        $effect = is_array($request) ? ($request['effect'] ?? null) : null;
+        $priority = is_array($request) ? ($request['priority'] ?? null) : null;
         if (
-            !is_string($policyCode)
+            !is_array($request)
+            || array_is_list($request)
+            || !is_string($policyCode)
             || !is_string($operation)
             || $effect !== 'allow'
-            || $organizationId !== null
-            || $definitionId !== '019bc200-0000-7000-8000-000000000003'
-            || $requestFields !== $fieldRules
+            || ($request['predicate_type'] ?? null) !== 'comparison'
+            || ($request['field'] ?? null) !== 'risk_score'
+            || ($request['operator'] ?? null) !== 'greater_than_or_equal'
+            || ($request['value_type'] ?? null) !== 'integer'
+            || ($request['value'] ?? null) !== '70'
             || !is_int($priority)
         ) {
             throw new RuntimeException('A browser report fixture policy request is invalid.');

@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Extension\Contribution;
 
+use Kumwe\Extension\Spi\Contribution\ContributionDefinition;
+
 use InvalidArgumentException;
 use Kumwe\App\Application\Authorization\AuthorizationDefinitionLifecycle;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 
 /**
  * One capability a contributor adds to the permission vocabulary, with the wording an operator reads.

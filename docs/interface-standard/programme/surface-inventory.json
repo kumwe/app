@@ -363,9 +363,9 @@
         {"name": "administrator.studio.session", "methods": ["POST"], "path": "/administrator/studio/session", "source_anchor": "/administrator/studio/session"},
         {"name": "administrator.studio.host", "methods": ["POST"], "path": "/administrator/studio/ports/{port}/{operation}", "source_anchor": "/administrator/studio/ports/{port}/{operation}"},
         {"name": "administrator.studio.preview.document", "methods": ["GET"], "path": "/administrator/studio/preview", "source_anchor": "/administrator/studio/preview"},
-        {"name": "administrator.studio.preview.theme", "methods": ["GET"], "path": "/administrator/studio/preview/theme.css", "source_anchor": "/administrator/studio/preview/theme.css"}
+        {"name": "administrator.studio.preview.styles", "methods": ["GET"], "path": "/administrator/studio/preview/styles.css", "source_anchor": "/administrator/studio/preview/styles.css"}
       ],
-      "handler_sources": ["src/Administrator/Http/Handler/AdministratorStudioCompositionHandler.php", "src/Administrator/Http/Handler/AdministratorStudioSessionHandler.php", "src/Administrator/Http/Handler/AdministratorStudioHostHandler.php", "src/Administrator/Http/Handler/AdministratorStudioPreviewDocumentHandler.php", "src/Administrator/Http/Handler/AdministratorStudioPreviewThemeStylesheetHandler.php"],
+      "handler_sources": ["src/Administrator/Http/Handler/AdministratorStudioCompositionHandler.php", "src/Administrator/Http/Handler/AdministratorStudioSessionHandler.php", "src/Administrator/Http/Handler/AdministratorStudioHostHandler.php", "src/Administrator/Http/Handler/AdministratorStudioPreviewDocumentHandler.php", "src/Administrator/Http/Handler/AdministratorStudioPreviewStylesheetHandler.php"],
       "templates": ["templates/administrator/studio-composition.twig", "templates/administrator/layout.twig"],
       "navigation_ids": [],
       "capabilities": ["content.read", "studio.mode.blueprint"],

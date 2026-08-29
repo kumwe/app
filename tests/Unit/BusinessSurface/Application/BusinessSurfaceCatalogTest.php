@@ -31,7 +31,7 @@ use Kumwe\App\BusinessSurface\Application\BusinessSurface;
 use Kumwe\App\BusinessSurface\Application\BusinessSurfaceCatalog;
 use Kumwe\App\BusinessSurface\Application\BusinessSurfaceOperation;
 use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use Kumwe\App\Localization\Application\ActiveLocale;
 use Kumwe\App\Localization\Application\SupportedLocales;
 use Kumwe\App\Localization\Domain\LocaleTag;

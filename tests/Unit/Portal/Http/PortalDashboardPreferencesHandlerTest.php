@@ -8,17 +8,16 @@ use DateTimeImmutable;
 use Kumwe\App\Application\Authorization\AuthenticationStrength;
 use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Application\Authorization\SiteContext;
-use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
-use Kumwe\App\Extension\Contribution\ManifestContributionSet;
 use Kumwe\App\InterfaceStandard\CustomizationScope;
 use Kumwe\App\InterfaceStandard\CustomizationSlot;
 use Kumwe\App\InterfaceStandard\PresentationPreferenceKey;
 use Kumwe\App\InterfaceStandard\SurfaceId;
 use Kumwe\App\Portal\Application\PortalSession;
 use Kumwe\App\Portal\Application\PortalSessionIdentity;
-use Kumwe\App\Portal\Contribution\PortalNavigationDefinition;
-use Kumwe\App\Portal\Contribution\PortalWorkspaceDefinition;
+use Kumwe\Extension\Spi\Portal\Contribution\PortalNavigationDefinition;
+use Kumwe\Extension\Spi\Portal\Contribution\PortalWorkspaceDefinition;
 use Kumwe\App\Portal\Application\PortalContext;
 use Kumwe\App\Portal\Http\Handler\PortalDashboardPreferencesHandler;
 use Kumwe\App\Portal\Presentation\PortalNavigationVisibility;
@@ -153,8 +152,7 @@ final class PortalDashboardPreferencesHandlerTest extends TestCase
     {
         $registries = new ExtensionContributionRegistrySet();
         $owner = ContributionOwner::core();
-        $registrar = $registries->registrar($owner, new ManifestContributionSet($owner), false);
-        $registrar->portalWorkspace(new PortalWorkspaceDefinition(
+        $registries->portalWorkspaces()->register($owner, new PortalWorkspaceDefinition(
             'core.portal-dashboard-volume',
             'Dashboard volume',
             'Regression workflows for the bounded portal dashboard catalog.',
@@ -162,7 +160,7 @@ final class PortalDashboardPreferencesHandlerTest extends TestCase
         ));
         for ($index = 1; $index <= 500; $index++) {
             $suffix = str_pad((string) $index, 3, '0', STR_PAD_LEFT);
-            $registrar->portalNavigation(new PortalNavigationDefinition(
+            $registries->portalNavigation()->register($owner, new PortalNavigationDefinition(
                 'core.portal-dashboard-volume-' . $suffix,
                 'core.portal-dashboard-volume',
                 'Workflow ' . $suffix,

@@ -178,26 +178,15 @@ Schema 4 lets a package declare the translation-group inventory it expects to co
 }
 ```
 
-and register it in the provider through the additive `ContentTranslationRegistrar`, which the owner-bound
-registrar implements alongside every other contribution surface. Both types live in
-`Kumwe\App\Extension\Contribution`, beside the rest of the contribution contract:
-
-```php
-use Kumwe\App\Extension\Contribution\ContentTranslationRegistrar;
-use Kumwe\App\Extension\Contribution\TranslationGroupDeclaration;
-
-if ($registrar instanceof ContentTranslationRegistrar) {
-    $registrar->contentTranslationGroup(
-        new TranslationGroupDeclaration('acme.blog.articles', ['en-GB', 'af', 'de'], 'en-GB'),
-    );
-}
-```
+The signed manifest is the complete declaration. The host consumes the canonical
+`Kumwe\Extension\Manifest\ManifestContributions` graph directly; provider code neither reconstructs the
+translation group nor receives a declaration registrar. Translation groups have no executable binding.
 
 The declaration sits with the contract rather than in `Content\Domain` because it is admission and
 inventory metadata: nothing in the content model reads it, and what it describes is a promise a
 *package* makes when its contribution set is admitted.
 
-That boundary is important. The registrar validates and inventories the declaration, and no runtime
+That boundary is important. The canonical manifest parser validates and inventories the declaration, and no runtime
 item identifier is carried by it: content entries only come into existence after install, so the
 declaration cannot name them. Attaching a stored entry to a declared set is therefore its own
 **additive, versioned contract** — the frozen declaration is never reinterpreted after release.
@@ -210,7 +199,7 @@ individual contributed items by the association contract below.
 The registrar is a separate one-method interface, so a package that publishes in one language is source
 compatible and untouched. Its signature, the manifest section it is read from and the members a
 declaration carries are pinned in
-`tests/Fixtures/ExtensionApi/content-translation-registrar-v1.json`.
+`vendor/kumwe/extension-sdk/resources/fixtures/pins/content-translation-registrar-v1.json`.
 
 A manifest that declares no content set exports no `content` section at all, so an already-published
 package's bytes are the bytes it was admitted against.
@@ -249,7 +238,7 @@ fallback, `hreflang` and the language selector treat extension-contributed varia
 treat core content — and stored variants keep rendering after the contributing package is disabled,
 because content is content. The association class, its exported members, the derivation (down to a
 recorded byte-for-byte example) and the one `ContentService` method it travels through are pinned in
-`tests/Fixtures/ExtensionApi/content-translation-association-v1.json`; a future generation is added
+`vendor/kumwe/extension-sdk/resources/fixtures/pins/content-translation-association-v1.json`; a future generation is added
 beside generation one, never edited into it.
 
 ## The checks
@@ -258,9 +247,8 @@ beside generation one, never edited into it.
 |---|---|
 | `tests/Unit/Content/Domain/TranslationGroupTest.php` | One entry per locale, per-locale publication, fallback resolution, and that an untranslated entry's snapshot keys are unchanged |
 | `tests/Unit/BusinessDefinition/Domain/LocalizedDefinitionLabelTest.php` | An untranslated definition checksums to a hand-written pre-dimension document |
-| `tests/Unit/Content/Application/ExtensionContentTranslationTest.php` | Manifest/provider admission agrees and cannot widen the inventoried language declaration |
+| `tests/Unit/Content/Application/ExtensionContentTranslationTest.php` | Canonical manifest activation cannot widen the inventoried language declaration |
 | `tests/Unit/Content/Presentation/TranslationGroupPresenterTest.php` | Alternates list exactly the published locales, named in their own language |
-| `tests/Unit/Extension/Development/ContentTranslationRegistrarFixtureTest.php` | The additive contract's bytes are the released ones |
 | `tests/Unit/Extension/Development/ContentTranslationAssociationFixtureTest.php` | The association contract's bytes, members and group derivation are the released ones |
 | `tests/Unit/Extension/Contribution/TranslationSetItemAssociationTest.php` | The association claim is closed over owner, namespace and generation, and its derivation is a stable function |
 | `tests/Unit/Content/Application/ContributedContentTranslationTest.php` | The resolved declaration decides group and fallback, the refusals leave the store untouched, and the audit trail names the set |

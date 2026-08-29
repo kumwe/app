@@ -10,7 +10,7 @@ use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Http\Middleware\BearerAuthenticationMiddleware;
 use Kumwe\App\Identity\Application\Authentication\AccessTokenVerifier;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use Laminas\Diactoros\Response\TextResponse;
 use Laminas\Diactoros\ServerRequestFactory;
 use LogicException;

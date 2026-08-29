@@ -11,7 +11,7 @@ use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Administrator\Http\AdministratorRequest;
 use Kumwe\App\Administrator\Http\Middleware\AdministratorCsrfMiddleware;
 use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
-use Kumwe\App\BusinessRecord\Application\Query\BusinessRecordQueryPurpose;
+use Kumwe\Extension\Spi\BusinessRecord\Application\BusinessRecordQueryPurpose;
 use Kumwe\App\BusinessReporting\Application\ExportArtifactUnavailable;
 use Kumwe\App\BusinessReporting\Application\ExportService;
 use Kumwe\App\BusinessReporting\Application\ReportExecutionRequest;

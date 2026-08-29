@@ -69,7 +69,7 @@ if ($errors !== []) {
 
 $graph = readGraphDocument($layersPath);
 $layers = readLayerRules($graph);
-$classification = readClassification($graph);
+$classification = readClassification($graph, $layers);
 $violations = collectViolations($sourceRoot, $layers, $classification, $errors);
 
 if ($errors !== []) {
@@ -167,26 +167,49 @@ function readLayerRules(array $graph): array
 /**
  * Read the namespace-to-layer classification rules.
  *
- * @param   array<string, mixed>  $graph  Decoded layer document.
+ * @param   array<string, mixed>         $graph   Decoded layer document.
+ * @param   array<string, list<string>>  $layers  Declared layer permission table.
  *
- * @return  array{segments: array<string, string>, prefixes: array<string, string>}  Classification rules.
+ * @return  array{first_party: list<string>, segments: array<string, string>, prefixes: array<string, string>}
+ *          Classification rules.
  *
  * @since   2.0.0
  */
-function readClassification(array $graph): array
+function readClassification(array $graph, array $layers): array
 {
+    /** @var mixed $firstParty */
+    $firstParty = $graph['first_party_namespaces'] ?? null;
     /** @var mixed $segments */
     $segments = $graph['namespace_segments'] ?? null;
     /** @var mixed $prefixes */
     $prefixes = $graph['namespace_prefixes'] ?? null;
+    if (!is_array($firstParty) || !array_is_list($firstParty) || $firstParty === []) {
+        reportGraphFailure(['The layer graph must declare a non-empty "first_party_namespaces" array.']);
+    }
     if (!is_array($segments) || !is_array($prefixes)) {
         reportGraphFailure(['The layer graph must declare "namespace_segments" and "namespace_prefixes".']);
+    }
+
+    $roots = [];
+    foreach ($firstParty as $prefix) {
+        if (!is_string($prefix) || preg_match('/^Kumwe\\\\[A-Za-z][A-Za-z0-9]*$/D', $prefix) !== 1) {
+            reportGraphFailure([
+                'Every first_party_namespaces entry must be one top-level Kumwe package namespace.',
+            ]);
+        }
+        if (in_array($prefix, $roots, true)) {
+            reportGraphFailure([sprintf('First-party namespace "%s" is declared more than once.', $prefix)]);
+        }
+        $roots[] = $prefix;
     }
 
     $bySegment = [];
     foreach ($segments as $segment => $layer) {
         if (!is_string($segment) || !is_string($layer)) {
             reportGraphFailure(['Every namespace_segments entry maps a segment name to a layer name.']);
+        }
+        if (!isset($layers[$layer])) {
+            reportGraphFailure([sprintf('Namespace segment "%s" names undeclared layer "%s".', $segment, $layer)]);
         }
         $bySegment[$segment] = $layer;
     }
@@ -196,23 +219,61 @@ function readClassification(array $graph): array
         if (!is_string($prefix) || !is_string($layer)) {
             reportGraphFailure(['Every namespace_prefixes entry maps a namespace prefix to a layer name.']);
         }
+        if (!belongsToFirstPartyNamespace($prefix, $roots)) {
+            reportGraphFailure([sprintf(
+                'Namespace prefix "%s" belongs to no declared first-party package namespace.',
+                $prefix,
+            )]);
+        }
+        if (!isset($layers[$layer])) {
+            reportGraphFailure([sprintf('Namespace prefix "%s" names undeclared layer "%s".', $prefix, $layer)]);
+        }
         $byPrefix[$prefix] = $layer;
     }
 
-    return ['segments' => $bySegment, 'prefixes' => $byPrefix];
+    return ['first_party' => $roots, 'segments' => $bySegment, 'prefixes' => $byPrefix];
+}
+
+/**
+ * Decide whether a symbol belongs to one explicitly admitted first-party package namespace.
+ *
+ * A segment boundary is mandatory: declaring `Kumwe\\App` must not accidentally admit a package named
+ * `Kumwe\\Application`. Keeping package admission separate from layer inference means a foreign
+ * `Kumwe\\Unknown\\Domain` target cannot inherit the `domain` rule merely because its author chose a
+ * familiar segment name.
+ *
+ * @param   string        $class   Fully qualified symbol or namespace prefix.
+ * @param   list<string>  $prefixes  Admitted top-level package namespaces.
+ *
+ * @return  bool  True when the symbol is owned by an admitted first-party package.
+ *
+ * @since   2.0.0
+ */
+function belongsToFirstPartyNamespace(string $class, array $prefixes): bool
+{
+    foreach ($prefixes as $prefix) {
+        if ($class === $prefix || str_starts_with($class, $prefix . '\\')) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 /**
  * Resolve the layer a first-party class name belongs to.
  *
  * The longest declared prefix wins, so a module that places one subtree in a different layer than its
- * namespace segment would suggest can say so without disturbing the general rule. Otherwise the first
- * namespace segment that names a layer decides, which is what makes `BusinessRecord\Domain` a domain
- * namespace and `Extension\Application` an application one without either being listed by hand.
+ * namespace segment would suggest can say so without disturbing the general rule. App-owned code then
+ * falls back to the first namespace segment that names a layer, which is what makes
+ * `BusinessRecord\Domain` a domain namespace and `Extension\Application` an application one without either
+ * being listed by hand. Extracted packages never receive that fallback: each public namespace App imports
+ * must have an explicit prefix rule, so a newly published subtree cannot acquire a permission accidentally.
  *
  * @param   string                                                             $class           Fully
  *          qualified first-party class name.
- * @param   array{segments: array<string, string>, prefixes: array<string, string>}  $classification  Rules.
+ * @param   array{first_party: list<string>, segments: array<string, string>,
+ *          prefixes: array<string, string>}  $classification  Rules.
  *
  * @return  string|null  The layer name, or null when nothing classifies the namespace.
  *
@@ -223,7 +284,7 @@ function layerFor(string $class, array $classification): ?string
     $best = null;
     $bestLength = -1;
     foreach ($classification['prefixes'] as $prefix => $layer) {
-        if (!str_starts_with($class, $prefix)) {
+        if ($class !== $prefix && !str_starts_with($class, $prefix . '\\')) {
             continue;
         }
         $length = strlen($prefix);
@@ -234,6 +295,10 @@ function layerFor(string $class, array $classification): ?string
     }
     if ($best !== null) {
         return $best;
+    }
+
+    if ($class !== 'Kumwe\\App' && !str_starts_with($class, 'Kumwe\\App\\')) {
+        return null;
     }
 
     $segments = explode('\\', $class);
@@ -251,7 +316,8 @@ function layerFor(string $class, array $classification): ?string
  *
  * @param   string                       $sourceRoot      Absolute path to `src/`.
  * @param   array<string, list<string>>  $layers          Layer permission table.
- * @param   array{segments: array<string, string>, prefixes: array<string, string>}  $classification  Rules.
+ * @param   array{first_party: list<string>, segments: array<string, string>,
+ *          prefixes: array<string, string>}  $classification  Rules.
  * @param   list<string>                 $errors          Accumulated failures.
  *
  * @return  array<string, array{from: string, to: string, from_layer: string, to_layer: string,
@@ -263,6 +329,7 @@ function collectViolations(string $sourceRoot, array $layers, array $classificat
 {
     $violations = [];
     $unclassified = [];
+    $foreignPackages = [];
 
     /** @var iterable<string, SplFileInfo> $files */
     $files = new RecursiveIteratorIterator(
@@ -284,7 +351,11 @@ function collectViolations(string $sourceRoot, array $layers, array $classificat
         $owner = $references['namespace'] === ''
             ? ''
             : $references['namespace'] . '\\' . basename($path, '.php');
-        if ($owner === '' || !str_starts_with($owner, 'Kumwe\\App\\')) {
+        if ($owner === '' || !str_starts_with($owner, 'Kumwe\\')) {
+            continue;
+        }
+        if (!belongsToFirstPartyNamespace($owner, $classification['first_party'])) {
+            $foreignPackages[$references['namespace']] = true;
             continue;
         }
 
@@ -298,16 +369,24 @@ function collectViolations(string $sourceRoot, array $layers, array $classificat
             $errors[] = sprintf('%s resolves to layer "%s", which the graph does not declare.', $owner, $fromLayer);
             continue;
         }
-        if (in_array('*', $allowed, true)) {
-            continue;
-        }
-
         foreach ($references['targets'] as $target => $line) {
-            if (!str_starts_with($target, 'Kumwe\\App\\') || $target === $owner) {
+            if (!str_starts_with($target, 'Kumwe\\') || $target === $owner) {
+                continue;
+            }
+            if (!belongsToFirstPartyNamespace($target, $classification['first_party'])) {
+                $foreignPackages[$target] = true;
                 continue;
             }
             $toLayer = layerFor($target, $classification);
-            if ($toLayer === null || $toLayer === $fromLayer || in_array($toLayer, $allowed, true)) {
+            if ($toLayer === null) {
+                $unclassified[$target] = true;
+                continue;
+            }
+            if (
+                $toLayer === $fromLayer
+                || in_array('*', $allowed, true)
+                || in_array($toLayer, $allowed, true)
+            ) {
                 continue;
             }
             $key = $owner . ' -> ' . $target;
@@ -320,6 +399,16 @@ function collectViolations(string $sourceRoot, array $layers, array $classificat
                 'line' => $line,
             ];
         }
+    }
+
+    if ($foreignPackages !== []) {
+        $names = array_keys($foreignPackages);
+        sort($names, SORT_STRING);
+        $errors[] = sprintf(
+            'These first-party-looking namespaces belong to no admitted Kumwe package: %s. '
+            . 'Declare the package in first_party_namespaces and classify its public namespaces before use.',
+            implode(', ', $names),
+        );
     }
 
     if ($unclassified !== []) {

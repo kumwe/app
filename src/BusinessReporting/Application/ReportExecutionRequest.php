@@ -6,7 +6,7 @@ namespace Kumwe\App\BusinessReporting\Application;
 
 use InvalidArgumentException;
 use Kumwe\App\Application\Authorization\ExecutionContext;
-use Kumwe\App\BusinessRecord\Application\Query\BusinessRecordQueryPurpose;
+use Kumwe\Extension\Spi\BusinessRecord\Application\BusinessRecordQueryPurpose;
 
 /**
  * Authenticated input for an interactive report or queued export execution.

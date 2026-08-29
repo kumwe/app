@@ -11,7 +11,7 @@ use Kumwe\App\Application\Authorization\AuthorizationGateway;
 use Kumwe\App\Application\Authorization\AuthorizationResource;
 use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Application\Persistence\TransactionManager;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 
 /**
  * Applies the schema migrations this binary ships and records each one in the ledger.

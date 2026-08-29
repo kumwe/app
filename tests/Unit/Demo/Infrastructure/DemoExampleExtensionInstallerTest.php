@@ -41,7 +41,6 @@ final class DemoExampleExtensionInstallerTest extends TestCase
             [
                 'announcements',
                 'asset-inspection',
-                'audit-listener',
                 'horizon-theme',
                 'minimal-administrator-template',
                 'minimal-template',
@@ -108,18 +107,18 @@ final class DemoExampleExtensionInstallerTest extends TestCase
     {
         $manager = $this->createMock(ExtensionManager::class);
         $manager->method('installed')->willReturn([
-            ['identifier' => 'kumwe/audit-listener-example', 'status' => 'disabled'],
+            ['identifier' => 'kumwe/asset-inspection-example', 'status' => 'disabled'],
         ]);
         $manager->expects(self::never())->method('install');
         $manager->expects(self::once())->method('activate')
-            ->with('kumwe/audit-listener-example')
-            ->willReturn(['identifier' => 'kumwe/audit-listener-example', 'status' => 'active']);
+            ->with('kumwe/asset-inspection-example')
+            ->willReturn(['identifier' => 'kumwe/asset-inspection-example', 'status' => 'active']);
 
-        $result = $this->installer($manager)->install($this->context(), 'audit-listener');
+        $result = $this->installer($manager)->install($this->context(), 'asset-inspection');
 
         self::assertSame(
             [
-                'identifier' => 'kumwe/audit-listener-example',
+                'identifier' => 'kumwe/asset-inspection-example',
                 'installed' => false,
                 'activated' => true,
                 'contributions' => [],

@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Extension\Application\Trust;
 
+use Kumwe\Extension\Package\PackageSignatureVerifier;
+
 use InvalidArgumentException;
-use Kumwe\App\Extension\Domain\PackageChecksum;
-use Kumwe\App\Extension\Domain\PackageSignature;
+use Kumwe\Extension\Package\PackageChecksum;
+use Kumwe\Extension\Package\PackageSignature;
 
 /**
  * Signing policy for an installation whose set of trusted keys is fixed at wiring time.

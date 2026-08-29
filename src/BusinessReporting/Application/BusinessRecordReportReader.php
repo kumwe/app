@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessReporting\Application;
 
 use Kumwe\App\Application\Authorization\ExecutionContext;
-use Kumwe\App\BusinessRecord\Application\Query\BusinessRecordQueryPurpose;
+use Kumwe\Extension\Spi\BusinessRecord\Application\BusinessRecordQueryPurpose;
 use Kumwe\App\BusinessRecord\Application\RecordBrowseResult;
-use Kumwe\App\BusinessRecord\Query\RecordQuerySpecification;
+use Kumwe\Extension\Spi\BusinessRecord\Query\RecordQuerySpecification;
 
 /**
  * Policy-aware record-page seam used by reporting and export execution.

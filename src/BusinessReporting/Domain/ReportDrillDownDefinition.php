@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Kumwe\App\BusinessReporting\Domain;
 
+use Kumwe\Extension\Spi\BusinessReporting\Domain\ReportDefinitionGuard;
+
 /**
  * Declarative link from one output identity to a generated record view.
  *

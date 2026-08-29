@@ -14,7 +14,7 @@ use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\App\BusinessDefinition\Domain\ScopeMode;
 use Kumwe\App\BusinessIntegration\Application\BusinessRecordMutationEventPublisher;
 use Kumwe\App\BusinessIntegration\Application\OutboxStore;
-use Kumwe\App\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationEvent;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordMutationPublication;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordRevisionRepository;
 use Kumwe\App\BusinessRecord\Application\RecordFingerprint;

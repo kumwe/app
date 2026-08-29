@@ -98,7 +98,7 @@ final class ApprovalServiceTest extends TestCase
         $authorization->method('assertAllowed')->willReturnCallback(
             static function (
                 ExecutionContext $unusedContext,
-                \Kumwe\App\Identity\Domain\Capability $capability,
+                \Kumwe\Extension\Spi\Identity\Domain\Capability $capability,
             ) use (&$checked): void {
                 $checked[] = $capability->value();
             },
@@ -197,7 +197,7 @@ final class ApprovalServiceTest extends TestCase
         $authorization->method('assertAllowed')->willReturnCallback(
             static function (
                 ExecutionContext $unusedContext,
-                \Kumwe\App\Identity\Domain\Capability $capability,
+                \Kumwe\Extension\Spi\Identity\Domain\Capability $capability,
             ) use (&$checked): void {
                 $checked[] = $capability->value();
             },

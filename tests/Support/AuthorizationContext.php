@@ -23,7 +23,7 @@ use Kumwe\App\Application\Authorization\SystemPrincipal;
 use Kumwe\App\Application\Authorization\WorkspaceContext;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 
 final class AuthorizationContext
 {

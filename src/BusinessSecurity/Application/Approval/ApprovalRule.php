@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessSecurity\Application\Approval;
 
 use InvalidArgumentException;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 
 /**
  * Active maker-checker rule selected for a high-impact action.

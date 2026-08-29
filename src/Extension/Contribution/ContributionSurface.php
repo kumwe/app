@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Extension\Contribution;
 
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+
 /**
  * One kind of thing an extension can contribute, addressable by its owning extension.
  *

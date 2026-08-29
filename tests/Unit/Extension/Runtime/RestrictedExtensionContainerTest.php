@@ -9,7 +9,7 @@ use Kumwe\App\Content\Application\ContentRepository;
 use Kumwe\App\Extension\Application\ExtensionManager;
 use Kumwe\App\Extension\Application\Migration\ExtensionMigrationRunner;
 use Kumwe\App\Extension\Runtime\RestrictedExtensionContainer;
-use Kumwe\App\Extension\Runtime\ExtensionContainer;
+use Kumwe\Extension\Spi\Runtime\ExtensionContainer;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;

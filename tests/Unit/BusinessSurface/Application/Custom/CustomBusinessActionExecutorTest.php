@@ -9,7 +9,6 @@ use Kumwe\App\Application\Authorization\AuthenticationStrength;
 use Kumwe\App\Application\Authorization\AuthorizationGateway;
 use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Application\Authorization\SiteContext;
-use Kumwe\App\Application\Automation\IdempotencyKey;
 use Kumwe\App\Application\Persistence\TransactionManager;
 use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordCustomActionGuard;
@@ -17,6 +16,7 @@ use Kumwe\App\BusinessRecord\Application\BusinessRecordDefinitionResolver;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordIdempotencyRepository;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordMutationFence;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordMutationGeneration;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordIdempotencyConflict;
 use Kumwe\App\BusinessRecord\Application\RecordFingerprint;
 use Kumwe\App\BusinessRecord\Application\ResolvedBusinessDefinition;
@@ -30,20 +30,20 @@ use Kumwe\Extension\Spi\BusinessSecurity\Application\FieldDisclosurePlan;
 use Kumwe\App\BusinessSecurity\Policy\RecordPolicyConstant;
 use Kumwe\App\BusinessSecurity\Policy\RecordPolicySchema;
 use Kumwe\App\BusinessSecurity\Policy\RecordPolicySet;
-use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionCommand;
-use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionContract;
 use Kumwe\App\BusinessSurface\Application\CustomBusinessActionExecutor;
-use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionHandler;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionHandlerRegistry;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionLedgerResult;
-use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionResult;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessReferenceRegistry;
-use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessSchema;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessSurfaceDispatcher;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewHandlerRegistry;
 use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
 use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use Kumwe\App\Tests\Support\AuthorizationContext;
+use Kumwe\Extension\Spi\Application\Automation\IdempotencyKey;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionCommand;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionDeclaration;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionHandler;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionResult;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -149,6 +149,35 @@ final class CustomBusinessActionExecutorTest extends TestCase
             self::fail('A reused custom-action key with different input should fail.');
         } catch (BusinessRecordIdempotencyConflict $exception) {
             self::assertSame('business_record.idempotency_key_reused', $exception->stableCode());
+        }
+    }
+
+    /**
+     * Prove the reusable SDK command cannot substitute its own authorization context at the App boundary.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testRejectsACommandCarryingAForeignExecutionContext(): void
+    {
+        [$executor, $command] = $this->fixture(1);
+        $executor->execute($command);
+
+        try {
+            $executor->execute(new CustomBusinessActionCommand(
+                $this->createStub(\Kumwe\Extension\Spi\Application\ExecutionContext::class),
+                $command->definitionIdentifier,
+                $command->recordId,
+                $command->expectedVersion,
+                $command->action,
+                IdempotencyKey::fromString('operation:foreign-context-0001'),
+                $command->input,
+                $command->organizationIdentifier,
+            ));
+            self::fail('A foreign execution context entered the App mutation boundary.');
+        } catch (BusinessRecordDefinitionUnavailable) {
+            self::addToAssertionCount(1);
         }
     }
 
@@ -352,32 +381,32 @@ final class CustomBusinessActionExecutorTest extends TestCase
     /**
      * Build the signed custom action contract used for request and result validation.
      *
-     * @return  CustomBusinessActionContract  Closed command and result schemas.
+     * @return  CustomBusinessActionDeclaration  Closed command and result schemas.
      *
      * @since   2.0.0
      */
-    private static function contract(): CustomBusinessActionContract
+    private static function contract(): CustomBusinessActionDeclaration
     {
-        return new CustomBusinessActionContract(
-            'acme.editor.actions.recalculate',
-            'acme.editor.schemas.recalculate_v1',
-            new CustomBusinessSchema([
+        return CustomBusinessActionDeclaration::fromManifest([
+            'handler' => 'acme.editor.actions.recalculate',
+            'schema' => 'acme.editor.schemas.recalculate_v1',
+            'command_schema' => [
                 'type' => 'object',
                 'additionalProperties' => false,
                 'properties' => [
                     'mode' => ['type' => 'string', 'enum' => ['full', 'delta'], 'maxLength' => 5],
                 ],
                 'required' => ['mode'],
-            ]),
-            new CustomBusinessSchema([
+            ],
+            'result_schema' => [
                 'type' => 'object',
                 'additionalProperties' => false,
                 'properties' => [
                     'status' => ['type' => 'string', 'const' => 'done', 'maxLength' => 4],
                 ],
                 'required' => ['status'],
-            ]),
-        );
+            ],
+        ]);
     }
 
     /**

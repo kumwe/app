@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Extension\Contribution;
 
-use Kumwe\App\Extension\Domain\ExtensionManifest;
-use Kumwe\App\Extension\Domain\ExtensionType;
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Extension\Manifest\ExtensionManifest;
+use Kumwe\Extension\Manifest\ManifestContributions;
+use Kumwe\Extension\Manifest\ExtensionType;
 use Kumwe\App\Portal\Contribution\PortalRouteRegistry;
 
 /**
@@ -61,17 +63,19 @@ final readonly class ExtensionContributionSummary
         array $dressableSurfaces = [],
     ): array {
         $contributions = $manifest->contributions();
+        $host = new CanonicalManifestInterpreter($contributions);
         $owner = $contributions->owner;
         $groups = [
             self::group('administrator', 'Administrator screens', self::administratorEntries(
                 $contributions,
+                $host,
                 $owner,
                 $active,
             )),
-            self::group('portal', 'Portal views', self::portalEntries($contributions, $owner, $active)),
+            self::group('portal', 'Portal views', self::portalEntries($contributions, $host, $owner, $active)),
             self::group('automation', 'Automation and listeners', self::automationEntries(
-                $manifest,
                 $contributions,
+                $host,
                 $active,
             )),
             self::group('theme', 'Theme surfaces', self::themeEntries(
@@ -79,8 +83,8 @@ final readonly class ExtensionContributionSummary
                 $themeSurfaces,
                 $dressableSurfaces,
             )),
-            self::group('content', 'Content and definitions', self::contentEntries($contributions, $active)),
-            self::group('capabilities', 'Capabilities to grant', self::capabilityEntries($contributions, $active)),
+            self::group('content', 'Content and definitions', self::contentEntries($host, $active)),
+            self::group('capabilities', 'Capabilities to grant', self::capabilityEntries($host, $active)),
         ];
 
         return array_values(array_filter($groups, static fn (array $group): bool => $group['entries'] !== []));
@@ -161,29 +165,31 @@ final readonly class ExtensionContributionSummary
      * endpoint instead of linked. Administrator-visible reports are included here because that is
      * where an operator opens them.
      *
-     * @param   ManifestContributionSet  $contributions  Declared contribution set being summarized.
-     * @param   ContributionOwner        $owner          Package owning every declaration in the set.
-     * @param   bool                     $active         Whether the extension is currently active.
+     * @param   ManifestContributions         $contributions  Canonical SDK declaration graph.
+     * @param   CanonicalManifestInterpreter  $host           App-owned semantic interpretation.
+     * @param   ContributionOwner             $owner          Package owning every declaration in the set.
+     * @param   bool                          $active         Whether the extension is currently active.
      *
      * @return  list<SummaryEntry>  Administrator-facing entries; empty when none are declared.
      *
      * @since   2.0.0
      */
     private static function administratorEntries(
-        ManifestContributionSet $contributions,
+        ManifestContributions $contributions,
+        CanonicalManifestInterpreter $host,
         ContributionOwner $owner,
         bool $active,
     ): array {
         $workspaceLabels = [];
-        foreach ($contributions->workspaces() as $workspace) {
+        foreach ($contributions->administratorWorkspaces() as $workspace) {
             $workspaceLabels[$workspace->id] = $workspace->label;
         }
         $navigation = [];
-        foreach ($contributions->navigation() as $item) {
+        foreach ($contributions->administratorNavigation() as $item) {
             $navigation[$item->path . '|' . $item->capability] = $item;
         }
         $entries = [];
-        foreach ($contributions->routes() as $route) {
+        foreach ($contributions->administratorRoutes() as $route) {
             $mounted = AdministratorRouteRegistry::routePath($owner, $route);
             $item = $navigation[$route->path . '|' . $route->capability] ?? null;
             $workspace = $item === null ? null : ($workspaceLabels[$item->workspace] ?? null);
@@ -216,7 +222,7 @@ final readonly class ExtensionContributionSummary
                 'active' => $active,
             ];
         }
-        foreach ($contributions->reports() as $report) {
+        foreach ($host->reports() as $report) {
             if (!$report->administratorVisible) {
                 continue;
             }
@@ -239,16 +245,18 @@ final readonly class ExtensionContributionSummary
     /**
      * Describe the portal pages and portal-visible reports the package mounts.
      *
-     * @param   ManifestContributionSet  $contributions  Declared contribution set being summarized.
-     * @param   ContributionOwner        $owner          Package owning every declaration in the set.
-     * @param   bool                     $active         Whether the extension is currently active.
+     * @param   ManifestContributions         $contributions  Canonical SDK declaration graph.
+     * @param   CanonicalManifestInterpreter  $host           App-owned semantic interpretation.
+     * @param   ContributionOwner             $owner          Package owning every declaration in the set.
+     * @param   bool                          $active         Whether the extension is currently active.
      *
      * @return  list<SummaryEntry>  Portal-facing entries; empty when none are declared.
      *
      * @since   2.0.0
      */
     private static function portalEntries(
-        ManifestContributionSet $contributions,
+        ManifestContributions $contributions,
+        CanonicalManifestInterpreter $host,
         ContributionOwner $owner,
         bool $active,
     ): array {
@@ -282,7 +290,7 @@ final readonly class ExtensionContributionSummary
                 'active' => $active,
             ];
         }
-        foreach ($contributions->reports() as $report) {
+        foreach ($host->reports() as $report) {
             if (!$report->portalVisible) {
                 continue;
             }
@@ -310,34 +318,20 @@ final readonly class ExtensionContributionSummary
      * that drains it, and in-process listeners say plainly that they act when their event fires
      * rather than anywhere visitable.
      *
-     * @param   ExtensionManifest        $manifest       Manifest carrying legacy schema-1 event declarations.
-     * @param   ManifestContributionSet  $contributions  Typed integration declarations, when the schema has them.
-     * @param   bool                     $active         Whether the extension is currently active.
+     * @param   ManifestContributions         $contributions  Canonical typed integration declarations.
+     * @param   CanonicalManifestInterpreter  $host           App-owned schedule-policy interpretation.
+     * @param   bool                          $active         Whether the extension is currently active.
      *
      * @return  list<SummaryEntry>  Automation entries; empty when the package runs nothing in the background.
      *
      * @since   2.0.0
      */
     private static function automationEntries(
-        ExtensionManifest $manifest,
-        ManifestContributionSet $contributions,
+        ManifestContributions $contributions,
+        CanonicalManifestInterpreter $host,
         bool $active,
     ): array {
         $entries = [];
-        foreach ($manifest->events() as $event) {
-            $name = $event['name'] ?? null;
-            if (!is_string($name) || ($event['direction'] ?? 'consumes') !== 'consumes') {
-                continue;
-            }
-            $entries[] = [
-                'noun' => 'event listener',
-                'label' => $name,
-                'href' => null,
-                'detail' => 'Background listener with no screen of its own; it runs inside the application '
-                    . 'whenever this event is dispatched, so its effect is only what the listener itself records.',
-                'active' => $active,
-            ];
-        }
         foreach ($contributions->domainListeners() as $listener) {
             $entries[] = [
                 'noun' => 'event listener',
@@ -375,7 +369,7 @@ final readonly class ExtensionContributionSummary
                 'active' => $active,
             ];
         }
-        foreach ($contributions->schedules() as $schedule) {
+        foreach ($host->schedules() as $schedule) {
             $entries[] = [
                 'noun' => 'schedule',
                 'label' => $schedule->identifier(),
@@ -484,17 +478,17 @@ final readonly class ExtensionContributionSummary
     /**
      * Describe the record types, field types, and custom handlers the package defines.
      *
-     * @param   ManifestContributionSet  $contributions  Declared contribution set being summarized.
-     * @param   bool                     $active         Whether the extension is currently active.
+     * @param   CanonicalManifestInterpreter  $host    App-owned semantic interpretation.
+     * @param   bool                          $active  Whether the extension is currently active.
      *
      * @return  list<SummaryEntry>  Content-shaped entries; empty when the package defines no data.
      *
      * @since   2.0.0
      */
-    private static function contentEntries(ManifestContributionSet $contributions, bool $active): array
+    private static function contentEntries(CanonicalManifestInterpreter $host, bool $active): array
     {
         $entries = [];
-        foreach ($contributions->businessDefinitions() as $definition) {
+        foreach ($host->businessDefinitions() as $definition) {
             $detail = 'Structured records browsed under the Business workspaces screen.';
             if ($definition->portalExposure) {
                 $detail = sprintf(
@@ -513,7 +507,7 @@ final readonly class ExtensionContributionSummary
                 'active' => $active,
             ];
         }
-        foreach ($contributions->fieldTypes() as $fieldType) {
+        foreach ($host->fieldTypes() as $fieldType) {
             $entries[] = [
                 'noun' => 'field type',
                 'label' => $fieldType->label,
@@ -525,7 +519,7 @@ final readonly class ExtensionContributionSummary
                 'active' => $active,
             ];
         }
-        foreach ($contributions->customBusinessViews() as $view) {
+        foreach ($host->customBusinessViews() as $view) {
             $entries[] = [
                 'noun' => 'view handler',
                 'label' => $view->handler,
@@ -534,7 +528,7 @@ final readonly class ExtensionContributionSummary
                 'active' => $active,
             ];
         }
-        foreach ($contributions->customBusinessActions() as $action) {
+        foreach ($host->customBusinessActions() as $action) {
             $entries[] = [
                 'noun' => 'action handler',
                 'label' => $action->handler,
@@ -554,17 +548,17 @@ final readonly class ExtensionContributionSummary
      * declared screen stays invisible until an operator assigns them — this group is the pointer
      * from the package to that granting step.
      *
-     * @param   ManifestContributionSet  $contributions  Declared contribution set being summarized.
-     * @param   bool                     $active         Whether the extension is currently active.
+     * @param   CanonicalManifestInterpreter  $host    App-owned semantic interpretation.
+     * @param   bool                          $active  Whether the extension is currently active.
      *
      * @return  list<SummaryEntry>  One entry per declared capability; empty when none are declared.
      *
      * @since   2.0.0
      */
-    private static function capabilityEntries(ManifestContributionSet $contributions, bool $active): array
+    private static function capabilityEntries(CanonicalManifestInterpreter $host, bool $active): array
     {
         $entries = [];
-        foreach ($contributions->capabilities() as $capability) {
+        foreach ($host->capabilities() as $capability) {
             $entries[] = [
                 'noun' => 'capability',
                 'label' => $capability->id,

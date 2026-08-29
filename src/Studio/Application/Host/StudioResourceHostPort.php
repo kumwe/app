@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace Kumwe\App\Studio\Application\Host;
 
 use InvalidArgumentException;
-use Kumwe\App\Application\Authorization\ExecutionContext;
-use Kumwe\App\Studio\Domain\Host\StudioHostRequest;
+use Kumwe\Producer\Wire\HostResult;
+use Kumwe\Producer\Wire\Port\ResourcePortInterface;
+use Kumwe\Producer\Wire\RequestContext;
 use stdClass;
 
 /**
@@ -14,10 +15,10 @@ use stdClass;
  *
  * @since  2.0.0
  */
-final readonly class StudioResourceHostPort
+final readonly class StudioResourceHostPort implements ResourcePortInterface
 {
     /**
-     * Largest offset the bounded host-resource bridge can represent without crossing its page ceiling.
+     * Largest offset the bounded host resource port can represent without crossing its page ceiling.
      *
      * @var    int
      * @since  2.0.0
@@ -33,13 +34,21 @@ final readonly class StudioResourceHostPort
     private array $providers;
 
     /**
-     * Index exact provider ownership and reject ambiguous resource families at composition time.
-     *
-     * @param  iterable<StudioResourceSearchProvider>  $providers  App-owned resource projections.
+     * Authorized Producer request scope, when this port has been bound for dispatch.
      *
      * @since  2.0.0
      */
-    public function __construct(iterable $providers)
+    private ?StudioProducerRequestAuthority $authority;
+
+    /**
+     * Index exact provider ownership and reject ambiguous resource families at composition time.
+     *
+     * @param  iterable<StudioResourceSearchProvider>  $providers  App-owned resource projections.
+     * @param  StudioProducerRequestAuthority|null $authority Authorized Producer request scope, when bound.
+     *
+     * @since  2.0.0
+     */
+    public function __construct(iterable $providers, ?StudioProducerRequestAuthority $authority = null)
     {
         $indexed = [];
         foreach ($providers as $provider) {
@@ -51,40 +60,45 @@ final readonly class StudioResourceHostPort
         }
         ksort($indexed, SORT_STRING);
         $this->providers = $indexed;
+        $this->authority = $authority;
     }
 
     /**
-     * Dispatch the canonical resource search without accepting a write context or query language.
+     * Bind this App-owned port implementation to one successfully authorized Producer request.
      *
-     * @param   ExecutionContext           $context    Trusted actor and site.
-     * @param   string                     $operation  Canonical resource operation.
-     * @param   StudioHostRequest          $request    Validated host envelope.
-     * @param   StudioHostSessionSnapshot  $snapshot   Live trusted session snapshot.
+     * @param   StudioProducerRequestAuthority  $authority  Trusted evidence for one exact dispatch.
      *
-     * @return  StudioHostResult  Canonical resource page.
+     * @return  self  Request-scoped resource port.
      *
      * @since   2.0.0
      */
-    public function dispatch(
-        ExecutionContext $context,
-        string $operation,
-        StudioHostRequest $request,
-        StudioHostSessionSnapshot $snapshot,
-    ): StudioHostResult {
-        unset($snapshot);
-        if ($operation !== 'search') {
-            throw new StudioHostOperationRefused('incompatible', 'studio.host/operation-unavailable');
+    public function forRequest(StudioProducerRequestAuthority $authority): self
+    {
+        return new self(array_values($this->providers), $authority);
+    }
+
+    /**
+     * Execute canonical resource search without accepting a write context or query language.
+     *
+     * @param   mixed           $arguments  Validated Producer operation arguments.
+     * @param   RequestContext  $context    Validated Producer request context.
+     *
+     * @return  HostResult  Canonical resource page.
+     *
+     * @since   2.0.0
+     */
+    public function search(mixed $arguments, RequestContext $context): HostResult
+    {
+        $authority = $this->requestAuthority();
+        if ($context->expectedRevision !== null || $context->idempotencyKey !== null) {
+            StudioProducerError::refuse('invalid-request', 'studio.host/invalid-context');
         }
-        if ($request->expectedRevision !== null || $request->idempotencyKey !== null) {
-            throw new StudioHostOperationRefused('invalid-request', 'studio.host/invalid-context');
-        }
-        $arguments = $request->arguments;
         if (!$arguments instanceof stdClass || self::members($arguments) !== ['query']) {
-            throw new StudioHostOperationRefused('invalid-request', 'studio.host/invalid-arguments');
+            StudioProducerError::refuse('invalid-request', 'studio.host/invalid-arguments');
         }
         $query = $arguments->query;
         if (!$query instanceof stdClass) {
-            throw new StudioHostOperationRefused('invalid-request', 'studio.host/invalid-arguments');
+            StudioProducerError::refuse('invalid-request', 'studio.host/invalid-arguments');
         }
         $members = self::members($query);
         if (
@@ -95,7 +109,7 @@ final readonly class StudioResourceHostPort
             ['cursor', 'limit', 'resourceType', 'search'],
             ], true)
         ) {
-            throw new StudioHostOperationRefused('invalid-request', 'studio.host/invalid-arguments');
+            StudioProducerError::refuse('invalid-request', 'studio.host/invalid-arguments');
         }
         $limit = $query->limit ?? null;
         $resourceType = $query->resourceType ?? null;
@@ -111,26 +125,26 @@ final readonly class StudioResourceHostPort
             || mb_strlen($search) > 160
             || ($cursor !== null && !is_string($cursor))
         ) {
-            throw new StudioHostOperationRefused('invalid-request', 'studio.host/invalid-arguments');
+            StudioProducerError::refuse('invalid-request', 'studio.host/invalid-arguments');
         }
         $offset = self::decodeCursor($cursor);
         $provider = $this->providers[$resourceType] ?? null;
-        $page = $provider?->search($context, $search, $offset, $limit)
+        $page = $provider?->search($authority->context(), $search, $offset, $limit)
             ?? new StudioResourceSearchPage([], false);
         if (count($page->items) > $limit || ($page->hasNext && $page->items === [])) {
-            throw new StudioHostOperationRefused('internal', 'studio.resource/provider-invalid');
+            StudioProducerError::refuse('internal', 'studio.resource/provider-invalid');
         }
 
         $identifiers = [];
         foreach ($page->items as $item) {
             if (isset($identifiers[$item->id])) {
-                throw new StudioHostOperationRefused('internal', 'studio.resource/provider-invalid');
+                StudioProducerError::refuse('internal', 'studio.resource/provider-invalid');
             }
             $identifiers[$item->id] = true;
         }
         $nextOffset = $offset + count($page->items);
         if ($page->hasNext && $nextOffset > self::MAX_CURSOR_OFFSET) {
-            throw new StudioHostOperationRefused('internal', 'studio.resource/provider-invalid');
+            StudioProducerError::refuse('internal', 'studio.resource/provider-invalid');
         }
 
         $value = new stdClass();
@@ -149,7 +163,19 @@ final readonly class StudioResourceHostPort
             $value->nextCursor = self::encodeCursor($nextOffset);
         }
 
-        return new StudioHostResult($value);
+        return new HostResult($value);
+    }
+
+    /**
+     * Require the per-request authority installed by the Producer host factory.
+     *
+     * @return  StudioProducerRequestAuthority  Trusted evidence for this dispatch.
+     *
+     * @since   2.0.0
+     */
+    private function requestAuthority(): StudioProducerRequestAuthority
+    {
+        return $this->authority ?? throw new \LogicException('A Studio resource port requires request authority.');
     }
 
     /**
@@ -168,14 +194,14 @@ final readonly class StudioResourceHostPort
         }
         $decoded = base64_decode($cursor, true);
         if (!is_string($decoded) || !hash_equals(self::encodeCursorText($decoded), $cursor)) {
-            throw new StudioHostOperationRefused('invalid-request', 'studio.resource/invalid-cursor');
+            StudioProducerError::refuse('invalid-request', 'studio.resource/invalid-cursor');
         }
         if (preg_match('/^index:(0|[1-9][0-9]{0,6})$/D', $decoded, $matches) !== 1) {
-            throw new StudioHostOperationRefused('invalid-request', 'studio.resource/invalid-cursor');
+            StudioProducerError::refuse('invalid-request', 'studio.resource/invalid-cursor');
         }
         $offset = (int) $matches[1];
         if ($offset > self::MAX_CURSOR_OFFSET) {
-            throw new StudioHostOperationRefused('invalid-request', 'studio.resource/invalid-cursor');
+            StudioProducerError::refuse('invalid-request', 'studio.resource/invalid-cursor');
         }
 
         return $offset;

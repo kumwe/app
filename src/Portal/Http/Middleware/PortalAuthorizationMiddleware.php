@@ -9,7 +9,7 @@ use Kumwe\App\Application\Authorization\AuthorizationDenied;
 use Kumwe\App\Application\Authorization\AuthorizationGateway;
 use Kumwe\App\Application\Authorization\AuthorizationResource;
 use Kumwe\App\Application\Authorization\ExecutionContext;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use Kumwe\App\Portal\Application\PortalSession;
 use Laminas\Diactoros\Response\JsonResponse;
 use LogicException;

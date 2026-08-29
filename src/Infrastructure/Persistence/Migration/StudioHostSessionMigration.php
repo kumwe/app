@@ -11,7 +11,7 @@ use Doctrine\DBAL\Types\Types;
 use Kumwe\App\Application\Authorization\OwnershipScopeLevel;
 use Kumwe\App\Application\Authorization\SiteContext;
 use Kumwe\App\Extension\Contribution\ContributionDefinitionChecksum;
-use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\CoreExtensionContributions;
 use Kumwe\App\Extension\Runtime\RuntimeCanonicalJson;
 use Kumwe\App\Infrastructure\Persistence\TableNames;

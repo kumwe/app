@@ -8,7 +8,7 @@ use InvalidArgumentException;
 use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Application\Presentation\Dashboard\DashboardPreferenceQuery;
 use Kumwe\App\Application\Presentation\Preference\PresentationAccessGroupRepository;
-use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\InterfaceStandard\CustomizationSlot;
 use Kumwe\App\InterfaceStandard\SurfaceArea;
 use Kumwe\App\InterfaceStandard\SurfaceId;

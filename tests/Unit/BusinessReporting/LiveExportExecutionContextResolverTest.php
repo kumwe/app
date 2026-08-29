@@ -16,7 +16,7 @@ use Kumwe\App\BusinessReporting\Domain\ExportArtifactStatus;
 use Kumwe\App\BusinessReporting\Infrastructure\LiveExportExecutionContextResolver;
 use Kumwe\App\BusinessSecurity\Application\MembershipDirectory;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use Kumwe\App\Portal\Application\PortalPasswordIdentity;
 use Kumwe\App\Portal\Application\PortalPrincipalLoader;
 use Kumwe\App\Tests\Support\AuthorizationContext;

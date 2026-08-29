@@ -7,10 +7,13 @@ namespace Kumwe\App\Studio\Application\Host;
 use Kumwe\App\Application\Authorization\SiteContext;
 use Kumwe\App\Studio\Domain\Artifact\StoredStudioArtifact;
 use Kumwe\App\Studio\Domain\Artifact\StudioArtifactReference;
-use Kumwe\App\Studio\Domain\Contract\CanonicalJson;
-use Kumwe\App\Studio\Domain\Host\StudioHostRequest;
 use Kumwe\App\Studio\Domain\Host\StudioResourceKind;
 use Kumwe\App\Studio\Domain\Host\StudioSessionMode;
+use Kumwe\Producer\Canonical\CanonicalJson;
+use Kumwe\Producer\Error\HostRefusal;
+use Kumwe\Producer\Wire\HostResult;
+use Kumwe\Producer\Wire\Port\ArtifactPortInterface;
+use Kumwe\Producer\Wire\RequestContext;
 use stdClass;
 
 /**
@@ -18,153 +21,144 @@ use stdClass;
  *
  * @since  2.0.0
  */
-final readonly class StudioArtifactHostPort
+final readonly class StudioArtifactHostPort implements ArtifactPortInterface
 {
     /**
-     * Bind artifact admission and persistence to the shared mutation executor.
+     * Bind artifact admission and persistence to the App's direct Producer port.
      *
      * @param  StudioArtifactRepository        $artifacts    Versioned artifact persistence port.
      * @param  StudioArtifactAdmission         $admission    Schema and active-content boundary.
-     * @param  StudioMutationExecutor          $mutations    Atomic idempotency executor.
      * @param  StudioArtifactPublicationGuard  $publication  Exact public-runtime dependency guard.
+     * @param  StudioProducerRequestAuthority|null $authority Authorized Producer request scope, when bound.
      *
      * @since  2.0.0
      */
     public function __construct(
         private StudioArtifactRepository $artifacts,
         private StudioArtifactAdmission $admission,
-        private StudioMutationExecutor $mutations,
         private StudioArtifactPublicationGuard $publication,
+        private ?StudioProducerRequestAuthority $authority = null,
     ) {
     }
 
     /**
-     * Dispatch one artifact operation after the common host session fence has succeeded.
+     * Bind this App-owned port implementation to one successfully authorized Producer request.
      *
-     * @param   string                     $operation  Route operation segment.
-     * @param   StudioHostRequest          $request    Validated canonical request.
-     * @param   StudioHostSessionSnapshot  $snapshot   Trusted live host session.
+     * @param   StudioProducerRequestAuthority  $authority  Trusted evidence for one exact dispatch.
      *
-     * @return  StudioHostResult  Canonical port result.
+     * @return  self  Request-scoped artifact port.
      *
      * @since   2.0.0
      */
-    public function dispatch(
-        string $operation,
-        StudioHostRequest $request,
-        StudioHostSessionSnapshot $snapshot,
-    ): StudioHostResult {
-        return match ($operation) {
-            'dependencies' => $this->dependencies($request, $snapshot),
-            'load' => $this->load($request, $snapshot),
-            'publish' => $this->setPublished($request, $snapshot, true),
-            'save' => $this->save($request, $snapshot),
-            'unpublish' => $this->setPublished($request, $snapshot, false),
-            default => throw new StudioHostOperationRefused('incompatible', 'studio.host/operation-unavailable'),
-        };
+    public function forRequest(StudioProducerRequestAuthority $authority): self
+    {
+        return new self($this->artifacts, $this->admission, $this->publication, $authority);
     }
 
     /**
      * Return the admitted artifact's complete locked dependency set.
      *
-     * @param   StudioHostRequest          $request   Validated read request.
-     * @param   StudioHostSessionSnapshot  $snapshot  Trusted live host session.
+     * @param   mixed           $arguments  Validated Producer operation arguments.
+     * @param   RequestContext  $context    Validated Producer request context.
      *
-     * @return  StudioHostResult  Canonical dependency list.
+     * @return  HostResult  Canonical dependency list.
      *
      * @since   2.0.0
      */
-    private function dependencies(
-        StudioHostRequest $request,
-        StudioHostSessionSnapshot $snapshot,
-    ): StudioHostResult {
-        $this->requireReadContext($request);
-        $reference = $this->referenceArgument($request);
+    public function dependencies(mixed $arguments, RequestContext $context): HostResult
+    {
+        $snapshot = $this->requestAuthority()->snapshot();
+        $this->requireReadContext($context);
+        $reference = $this->referenceArgument($arguments);
         $artifact = $this->find($snapshot, $reference);
 
-        return new StudioHostResult($artifact->dependencies());
+        return new HostResult($artifact->dependencies());
     }
 
     /**
      * Load a current or immutable historical artifact revision.
      *
-     * @param   StudioHostRequest          $request   Validated read request.
-     * @param   StudioHostSessionSnapshot  $snapshot  Trusted live host session.
+     * @param   mixed           $arguments  Validated Producer operation arguments.
+     * @param   RequestContext  $context    Validated Producer request context.
      *
-     * @return  StudioHostResult  Canonical artifact document and revision.
+     * @return  HostResult  Canonical artifact document and revision.
      *
      * @since   2.0.0
      */
-    private function load(StudioHostRequest $request, StudioHostSessionSnapshot $snapshot): StudioHostResult
+    public function load(mixed $arguments, RequestContext $context): HostResult
     {
-        $this->requireReadContext($request);
-        $reference = $this->referenceArgument($request);
+        $snapshot = $this->requestAuthority()->snapshot();
+        $this->requireReadContext($context);
+        $reference = $this->referenceArgument($arguments);
         $artifact = $this->find($snapshot, $reference);
 
-        return new StudioHostResult($artifact->document(), $artifact->revision);
+        return new HostResult($artifact->document(), $artifact->revision);
     }
 
     /**
      * Append one schema-valid artifact revision under optimistic concurrency.
      *
-     * @param   StudioHostRequest          $request   Validated save request.
-     * @param   StudioHostSessionSnapshot  $snapshot  Trusted live host session.
+     * @param   mixed           $arguments  Validated Producer operation arguments.
+     * @param   RequestContext  $context    Validated Producer request context.
      *
-     * @return  StudioHostResult  Empty success value and generated revision.
+     * @return  HostResult  Empty success value and generated revision.
      *
      * @since   2.0.0
      */
-    private function save(StudioHostRequest $request, StudioHostSessionSnapshot $snapshot): StudioHostResult
+    public function save(mixed $arguments, RequestContext $context): HostResult
     {
+        $snapshot = $this->requestAuthority()->snapshot();
         $this->requirePermission($snapshot, 'studio.permission/save');
-        $expectedRevision = $this->requireExpectedRevision($request);
-        $arguments = $this->exactArguments($request, ['document']);
-        $document = $arguments->document;
+        $expectedRevision = $this->requireExpectedRevision($context);
+        $wrapper = $this->exactArguments($arguments, ['document']);
+        $document = $wrapper->document;
         $admitted = $this->admission->admit($snapshot->session->siteId, $document);
         $this->requireResource($snapshot, $admitted->id, $admitted->kind);
         if (!hash_equals($expectedRevision, $admitted->revision)) {
-            throw new StudioHostOperationRefused(
+            StudioProducerError::refuse(
                 'conflict',
                 'studio.artifact/revision-conflict',
                 $this->safeCurrentRevision($snapshot, $admitted->id, $admitted->version),
             );
         }
 
-        return $this->mutations->execute(
-            $snapshot,
-            $request,
-            $document,
-            function () use ($snapshot, $request, $admitted, $expectedRevision): StudioHostResult {
-                $current = $this->artifacts->current(
-                    $snapshot->session->siteId,
-                    $admitted->id,
-                    $admitted->version,
-                );
-                if ($current === null) {
-                    throw new StudioHostOperationRefused('not-found', 'studio.artifact/not-found');
-                }
-                $this->requireResource($snapshot, $current->id, $current->kind);
-                if (!hash_equals($current->revision, $expectedRevision)) {
-                    throw new StudioHostOperationRefused(
-                        'conflict',
-                        'studio.artifact/revision-conflict',
-                        $current->revision,
-                    );
-                }
-                $this->requireSaveContinuity($current, $admitted);
-                $nextRevision = $this->nextRevision($admitted, $request, $expectedRevision);
-                $next = $this->admission->revise($admitted, $nextRevision, $current->status);
-                if (!$this->artifacts->store($next, $current->revision)) {
-                    throw new StudioHostOperationRefused(
-                        'conflict',
-                        'studio.artifact/revision-conflict',
-                        $this->safeCurrentRevision($snapshot, $admitted->id, $admitted->version),
-                    );
-                }
-
-                return new StudioHostResult(null, $nextRevision);
-            },
+        $current = $this->artifacts->current(
+            $snapshot->session->siteId,
+            $admitted->id,
+            $admitted->version,
         );
+        if ($current === null) {
+            StudioProducerError::refuse('not-found', 'studio.artifact/not-found');
+        }
+        $this->requireResource($snapshot, $current->id, $current->kind);
+        if (!hash_equals($current->revision, $expectedRevision)) {
+            StudioProducerError::refuse(
+                'conflict',
+                'studio.artifact/revision-conflict',
+                $current->revision,
+            );
+        }
+        $this->requireSaveContinuity($current, $admitted);
+        $nextRevision = $this->nextRevision($admitted, $context, $expectedRevision);
+        $next = $this->admission->revise($admitted, $nextRevision, $current->status);
+        try {
+            $stored = $this->artifacts->store($next, $current->revision);
+        } catch (StudioPersistenceRace) {
+            StudioProducerError::refuse(
+                'unavailable',
+                'studio.host/concurrent-mutation',
+                retryable: true,
+            );
+        }
+        if (!$stored) {
+            StudioProducerError::refuse(
+                'conflict',
+                'studio.artifact/revision-conflict',
+                $this->safeCurrentRevision($snapshot, $admitted->id, $admitted->version),
+            );
+        }
+
+        return new HostResult(null, $nextRevision);
     }
 
     /**
@@ -187,21 +181,21 @@ final readonly class StudioArtifactHostPort
             || !hash_equals($current->version, $candidate->version)
             || !hash_equals($current->kind, $candidate->kind)
         ) {
-            throw new StudioHostOperationRefused(
+            StudioProducerError::refuse(
                 'conflict',
                 'studio.artifact/coordinate-conflict',
                 $current->revision,
             );
         }
         if ($current->status !== 'draft') {
-            throw new StudioHostOperationRefused(
+            StudioProducerError::refuse(
                 'conflict',
                 'studio.artifact/not-draft',
                 $current->revision,
             );
         }
         if (!hash_equals($current->status, $candidate->status)) {
-            throw new StudioHostOperationRefused(
+            StudioProducerError::refuse(
                 'conflict',
                 'studio.artifact/lifecycle-change-requires-publish',
                 $current->revision,
@@ -211,7 +205,7 @@ final readonly class StudioArtifactHostPort
             $current->kind === 'blueprint'
             && !hash_equals($this->blueprintLockBytes($current), $this->blueprintLockBytes($candidate))
         ) {
-            throw new StudioHostOperationRefused(
+            StudioProducerError::refuse(
                 'conflict',
                 'studio.artifact/blueprint-lock-conflict',
                 $current->revision,
@@ -240,80 +234,114 @@ final readonly class StudioArtifactHostPort
     }
 
     /**
-     * Append a publish or unpublish lifecycle revision.
+     * Append one publish lifecycle revision.
      *
-     * @param   StudioHostRequest          $request    Validated lifecycle request.
-     * @param   StudioHostSessionSnapshot  $snapshot   Trusted live host session.
-     * @param   bool                       $published  Whether the target status is published.
+     * @param   mixed           $arguments  Validated Producer operation arguments.
+     * @param   RequestContext  $context    Validated Producer request context.
      *
-     * @return  StudioHostResult  Empty success value and generated revision.
+     * @return  HostResult  Empty success value and generated revision.
      *
      * @since   2.0.0
      */
-    private function setPublished(
-        StudioHostRequest $request,
-        StudioHostSessionSnapshot $snapshot,
-        bool $published,
-    ): StudioHostResult {
+    public function publish(mixed $arguments, RequestContext $context): HostResult
+    {
+        return $this->setPublished($arguments, $context, true);
+    }
+
+    /**
+     * Append one unpublish lifecycle revision.
+     *
+     * @param   mixed           $arguments  Validated Producer operation arguments.
+     * @param   RequestContext  $context    Validated Producer request context.
+     *
+     * @return  HostResult  Empty success value and generated revision.
+     *
+     * @since   2.0.0
+     */
+    public function unpublish(mixed $arguments, RequestContext $context): HostResult
+    {
+        return $this->setPublished($arguments, $context, false);
+    }
+
+    /**
+     * Append a publish or unpublish lifecycle revision.
+     *
+     * @param   mixed           $arguments  Validated Producer operation arguments.
+     * @param   RequestContext  $context    Validated Producer request context.
+     * @param   bool            $published  Whether the target status is published.
+     *
+     * @return  HostResult  Empty success value and generated revision.
+     *
+     * @since   2.0.0
+     */
+    private function setPublished(mixed $arguments, RequestContext $context, bool $published): HostResult
+    {
+        $snapshot = $this->requestAuthority()->snapshot();
         $this->requireLifecyclePermission($snapshot, $published);
-        $expectedRevision = $this->requireExpectedRevision($request);
-        $reference = $this->referenceArgument($request);
+        $expectedRevision = $this->requireExpectedRevision($context);
+        $reference = $this->referenceArgument($arguments);
         $this->requireResourceId($snapshot, $reference->id);
 
-        return $this->mutations->execute(
-            $snapshot,
-            $request,
-            $reference->document(),
-            function () use ($snapshot, $request, $reference, $expectedRevision, $published): StudioHostResult {
-                $current = $this->artifacts->current(
-                    $snapshot->session->siteId,
-                    $reference->id,
-                    $reference->version,
-                );
-                if ($current === null) {
-                    throw new StudioHostOperationRefused('not-found', 'studio.artifact/not-found');
-                }
-                $this->requireResource($snapshot, $current->id, $current->kind);
-                if (!hash_equals($current->revision, $expectedRevision)) {
-                    throw new StudioHostOperationRefused(
-                        'conflict',
-                        'studio.artifact/revision-conflict',
-                        $current->revision,
-                    );
-                }
-                if ($current->status === 'retired') {
-                    throw new StudioHostOperationRefused('conflict', 'studio.artifact/retired');
-                }
-                if ($published && $this->isAppOwnedBlueprint($current)) {
-                    try {
-                        $this->publication->assertPublishable(
-                            SiteContext::fromString($current->siteIdentifier),
-                            $current->document(),
-                        );
-                    } catch (StudioHostOperationRefused $refused) {
-                        throw new StudioHostOperationRefused(
-                            $refused->category,
-                            $refused->diagnosticCode,
-                            $current->revision,
-                            $refused->retryable,
-                            $refused->retryAfterMilliseconds,
-                        );
-                    }
-                }
-                $status = $published ? 'published' : 'draft';
-                $nextRevision = $this->nextRevision($current, $request, $expectedRevision);
-                $next = $this->admission->revise($current, $nextRevision, $status);
-                if (!$this->artifacts->store($next, $current->revision)) {
-                    throw new StudioHostOperationRefused(
-                        'conflict',
-                        'studio.artifact/revision-conflict',
-                        $this->safeCurrentRevision($snapshot, $current->id, $current->version),
-                    );
-                }
-
-                return new StudioHostResult(null, $nextRevision);
-            },
+        $current = $this->artifacts->current(
+            $snapshot->session->siteId,
+            $reference->id,
+            $reference->version,
         );
+        if ($current === null) {
+            StudioProducerError::refuse('not-found', 'studio.artifact/not-found');
+        }
+        $this->requireResource($snapshot, $current->id, $current->kind);
+        if (!hash_equals($current->revision, $expectedRevision)) {
+            StudioProducerError::refuse(
+                'conflict',
+                'studio.artifact/revision-conflict',
+                $current->revision,
+            );
+        }
+        if ($current->status === 'retired') {
+            StudioProducerError::refuse('conflict', 'studio.artifact/retired');
+        }
+        if ($published && $this->isAppOwnedBlueprint($current)) {
+            try {
+                $this->publication->assertPublishable(
+                    SiteContext::fromString($current->siteIdentifier),
+                    $current->document(),
+                );
+            } catch (HostRefusal $refused) {
+                $error = $refused->error();
+                $diagnostics = $error->diagnostics();
+                StudioProducerError::refuse(
+                    $error->category(),
+                    isset($diagnostics[0])
+                        ? $diagnostics[0]->code()
+                        : 'studio.artifact/blueprint-incompatible',
+                    $current->revision,
+                    $error->retryable(),
+                    $error->retryAfterMilliseconds(),
+                );
+            }
+        }
+        $status = $published ? 'published' : 'draft';
+        $nextRevision = $this->nextRevision($current, $context, $expectedRevision);
+        $next = $this->admission->revise($current, $nextRevision, $status);
+        try {
+            $stored = $this->artifacts->store($next, $current->revision);
+        } catch (StudioPersistenceRace) {
+            StudioProducerError::refuse(
+                'unavailable',
+                'studio.host/concurrent-mutation',
+                retryable: true,
+            );
+        }
+        if (!$stored) {
+            StudioProducerError::refuse(
+                'conflict',
+                'studio.artifact/revision-conflict',
+                $this->safeCurrentRevision($snapshot, $current->id, $current->version),
+            );
+        }
+
+        return new HostResult(null, $nextRevision);
     }
 
     /**
@@ -369,7 +397,7 @@ final readonly class StudioArtifactHostPort
                 $reference->version,
             );
         if ($artifact === null) {
-            throw new StudioHostOperationRefused('not-found', 'studio.artifact/not-found');
+            StudioProducerError::refuse('not-found', 'studio.artifact/not-found');
         }
         $this->requireResource($snapshot, $artifact->id, $artifact->kind);
 
@@ -379,18 +407,18 @@ final readonly class StudioArtifactHostPort
     /**
      * Decode the exact published ArtifactReference HTTP wrapper member.
      *
-     * @param   StudioHostRequest  $request  Validated canonical request.
+     * @param   mixed  $arguments  Validated Producer operation arguments.
      *
      * @return  StudioArtifactReference  Strict canonical reference value.
      *
      * @since   2.0.0
      */
-    private function referenceArgument(StudioHostRequest $request): StudioArtifactReference
+    private function referenceArgument(mixed $arguments): StudioArtifactReference
     {
-        $arguments = $this->exactArguments($request, ['reference']);
-        $reference = $arguments->reference;
+        $wrapper = $this->exactArguments($arguments, ['reference']);
+        $reference = $wrapper->reference;
         if (!$reference instanceof stdClass) {
-            throw new StudioHostOperationRefused('invalid-request', 'studio.host/invalid-arguments');
+            StudioProducerError::refuse('invalid-request', 'studio.host/invalid-arguments');
         }
         $members = array_keys(get_object_vars($reference));
         sort($members, SORT_STRING);
@@ -402,7 +430,7 @@ final readonly class StudioArtifactHostPort
             ['id', 'integrity', 'revision', 'version'],
             ], true)
         ) {
-            throw new StudioHostOperationRefused('invalid-request', 'studio.host/invalid-arguments');
+            StudioProducerError::refuse('invalid-request', 'studio.host/invalid-arguments');
         }
         $id = $reference->id;
         $version = $reference->version;
@@ -414,7 +442,7 @@ final readonly class StudioArtifactHostPort
             || $revision !== null && (!is_string($revision) || $revision === '' || strlen($revision) > 200)
             || $integrity !== null && (!is_string($integrity) || $integrity === '' || strlen($integrity) > 500)
         ) {
-            throw new StudioHostOperationRefused('invalid-request', 'studio.host/invalid-arguments');
+            StudioProducerError::refuse('invalid-request', 'studio.host/invalid-arguments');
         }
 
         return new StudioArtifactReference($id, $version, $revision, $integrity);
@@ -423,60 +451,60 @@ final readonly class StudioArtifactHostPort
     /**
      * Require an exact closed HTTP wrapper shape.
      *
-     * @param   StudioHostRequest  $request  Validated canonical request.
-     * @param   list<string>       $members  Required member names.
+     * @param   mixed         $arguments  Validated Producer operation arguments.
+     * @param   list<string>  $members    Required member names.
      *
      * @return  stdClass  Exact argument wrapper.
      *
      * @since   2.0.0
      */
-    private function exactArguments(StudioHostRequest $request, array $members): stdClass
+    private function exactArguments(mixed $arguments, array $members): stdClass
     {
-        if (!$request->arguments instanceof stdClass) {
-            throw new StudioHostOperationRefused('invalid-request', 'studio.host/invalid-arguments');
+        if (!$arguments instanceof stdClass) {
+            StudioProducerError::refuse('invalid-request', 'studio.host/invalid-arguments');
         }
-        $actual = array_keys(get_object_vars($request->arguments));
+        $actual = array_keys(get_object_vars($arguments));
         sort($actual, SORT_STRING);
         sort($members, SORT_STRING);
         if ($actual !== $members) {
-            throw new StudioHostOperationRefused('invalid-request', 'studio.host/invalid-arguments');
+            StudioProducerError::refuse('invalid-request', 'studio.host/invalid-arguments');
         }
 
-        return $request->arguments;
+        return $arguments;
     }
 
     /**
      * Refuse mutation context fields on read-only artifact operations.
      *
-     * @param   StudioHostRequest  $request  Validated canonical request.
+     * @param   RequestContext  $context  Validated Producer request context.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    private function requireReadContext(StudioHostRequest $request): void
+    private function requireReadContext(RequestContext $context): void
     {
-        if ($request->expectedRevision !== null || $request->idempotencyKey !== null) {
-            throw new StudioHostOperationRefused('invalid-request', 'studio.host/invalid-context');
+        if ($context->expectedRevision !== null || $context->idempotencyKey !== null) {
+            StudioProducerError::refuse('invalid-request', 'studio.host/invalid-context');
         }
     }
 
     /**
      * Require the optimistic revision carried by every artifact mutation.
      *
-     * @param   StudioHostRequest  $request  Validated canonical request.
+     * @param   RequestContext  $context  Validated Producer request context.
      *
      * @return  string  Non-empty expected revision.
      *
      * @since   2.0.0
      */
-    private function requireExpectedRevision(StudioHostRequest $request): string
+    private function requireExpectedRevision(RequestContext $context): string
     {
-        if ($request->expectedRevision === null || $request->expectedRevision === '') {
-            throw new StudioHostOperationRefused('invalid-request', 'studio.artifact/expected-revision-required');
+        if ($context->expectedRevision === null || $context->expectedRevision === '') {
+            StudioProducerError::refuse('invalid-request', 'studio.artifact/expected-revision-required');
         }
 
-        return $request->expectedRevision;
+        return $context->expectedRevision;
     }
 
     /**
@@ -492,7 +520,7 @@ final readonly class StudioArtifactHostPort
     private function requirePermission(StudioHostSessionSnapshot $snapshot, string $permission): void
     {
         if (!in_array($permission, $snapshot->permissions, true)) {
-            throw new StudioHostOperationRefused('forbidden', 'studio.host/action-forbidden');
+            StudioProducerError::refuse('forbidden', 'studio.host/action-forbidden');
         }
     }
 
@@ -509,7 +537,7 @@ final readonly class StudioArtifactHostPort
     private function requireLifecyclePermission(StudioHostSessionSnapshot $snapshot, bool $published): void
     {
         if ($published ? !$snapshot->canPublish : !$snapshot->canUnpublish) {
-            throw new StudioHostOperationRefused('forbidden', 'studio.host/action-forbidden');
+            StudioProducerError::refuse('forbidden', 'studio.host/action-forbidden');
         }
     }
 
@@ -526,7 +554,7 @@ final readonly class StudioArtifactHostPort
     private function requireResourceId(StudioHostSessionSnapshot $snapshot, string $id): void
     {
         if (!hash_equals($snapshot->session->resourceId, $id)) {
-            throw new StudioHostOperationRefused('not-found', 'studio.artifact/not-found');
+            StudioProducerError::refuse('not-found', 'studio.artifact/not-found');
         }
     }
 
@@ -562,7 +590,7 @@ final readonly class StudioArtifactHostPort
             default => false,
         };
         if (!$fits) {
-            throw new StudioHostOperationRefused('forbidden', 'studio.host/session-refused');
+            StudioProducerError::refuse('forbidden', 'studio.host/session-refused');
         }
     }
 
@@ -593,7 +621,7 @@ final readonly class StudioArtifactHostPort
      * Derive one deterministic host revision from the admitted artifact and request.
      *
      * @param   StoredStudioArtifact  $artifact  Admitted mutation input.
-     * @param   StudioHostRequest     $request   Validated canonical request.
+     * @param   RequestContext        $context   Validated Producer request context.
      * @param   string                $previous  Optimistic predecessor revision.
      *
      * @return  string  Deterministic opaque revision.
@@ -602,16 +630,28 @@ final readonly class StudioArtifactHostPort
      */
     private function nextRevision(
         StoredStudioArtifact $artifact,
-        StudioHostRequest $request,
+        RequestContext $context,
         string $previous,
     ): string {
         return 'studio-r/' . hash('sha256', CanonicalJson::stringify((object) [
             'artifactDigest' => hash('sha256', $artifact->canonicalDocument),
             'id' => $artifact->id,
-            'operationId' => $request->operationId,
+            'operationId' => $context->operationId,
             'previousRevision' => $previous,
-            'requestId' => $request->requestId,
+            'requestId' => $context->requestId,
             'version' => $artifact->version,
         ]));
+    }
+
+    /**
+     * Require the per-request authority installed by the Producer host factory.
+     *
+     * @return  StudioProducerRequestAuthority  Trusted evidence for this dispatch.
+     *
+     * @since   2.0.0
+     */
+    private function requestAuthority(): StudioProducerRequestAuthority
+    {
+        return $this->authority ?? throw new \LogicException('A Studio artifact port requires request authority.');
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\BusinessIntegration\Domain;
 
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationContractValidator;
 use DateTimeImmutable;
 use InvalidArgumentException;
 use Ramsey\Uuid\Uuid;
@@ -83,7 +84,7 @@ final readonly class ProcessInstance
         if ($cancellationNote !== null && (trim($cancellationNote) === '' || mb_strlen($cancellationNote) > 1_000)) {
             throw new InvalidArgumentException('A process cancellation note must contain 1 to 1000 characters.');
         }
-        IntegrationContractValidator::object($state, 'Process state', EventEnvelope::MAX_PAYLOAD_BYTES);
+        IntegrationContractValidator::object($state, 'Process state', RecordedEventEnvelope::MAX_PAYLOAD_BYTES);
         $this->state = $state;
     }
 

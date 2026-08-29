@@ -17,13 +17,12 @@ use Kumwe\Conversion\Value\UnitConversionFactor;
 use Kumwe\Conversion\Contract\UnitConversionRequest;
 use Kumwe\App\BusinessReporting\Application\ReportCsvEncoder;
 use Kumwe\App\BusinessReporting\Application\ReportExecutionResult;
-use Kumwe\App\BusinessReporting\Domain\ReportValueType;
+use Kumwe\Extension\Spi\BusinessReporting\Domain\ReportValueType;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(ReportCsvEncoder::class)]
 #[CoversClass(ReportExecutionResult::class)]
-#[CoversClass(ReportValueType::class)]
 /**
  * Pins that a converted quantity keeps its provenance all the way into a downloaded artifact.
  *

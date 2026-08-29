@@ -8,9 +8,6 @@ use Kumwe\App\Tests\Support\TranslatesConsoleOutput;
 use ArrayObject;
 use FilesystemIterator;
 use InvalidArgumentException;
-use Kumwe\App\BusinessIntegration\Application\DomainEventHandler;
-use Kumwe\App\BusinessIntegration\Application\IntegrationEventHandler;
-use Kumwe\App\BusinessReporting\Application\ProjectionBuilder;
 use Kumwe\App\Delivery\Console\Command;
 use Kumwe\App\Delivery\Console\Command\BuildExtensionCommand;
 use Kumwe\App\Delivery\Console\Command\InspectExtensionCommand;
@@ -18,10 +15,12 @@ use Kumwe\App\Delivery\Console\Command\RunExtensionConformanceCommand;
 use Kumwe\App\Delivery\Console\Command\ScaffoldExtensionCommand;
 use Kumwe\App\Delivery\Console\Command\SignExtensionCommand;
 use Kumwe\App\Delivery\Console\Output;
-use Kumwe\App\Extension\Application\ExtensionServiceProvider;
-use Kumwe\App\Extension\Application\Migration\ExtensionMigration;
-use Kumwe\Extension\Package\PackageSafetyPolicy;
-use Kumwe\App\Extension\Contribution\ExtensionContributionProvider;
+use Kumwe\Extension\Spi\Application\ExtensionServiceProvider;
+use Kumwe\Extension\Spi\Binding\ExtensionBindingProvider;
+use Kumwe\Extension\Spi\BusinessIntegration\Application\DomainEventHandler;
+use Kumwe\Extension\Spi\BusinessIntegration\Application\IntegrationEventHandler;
+use Kumwe\Extension\Spi\BusinessReporting\Application\ProjectionBuilder;
+use Kumwe\Extension\Spi\Migration\ExtensionMigration;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\Extension\Toolchain\ComponentScaffolder;
 use Kumwe\Extension\Toolchain\ConformanceReport;
@@ -34,9 +33,8 @@ use Kumwe\Extension\Toolchain\ProtectedSigningKeyReader;
 use Kumwe\Extension\Toolchain\ScaffoldRequest;
 use Kumwe\Extension\Toolchain\SignatureDocument;
 use Kumwe\Extension\Toolchain\StaticConformanceRunner;
-use Kumwe\App\Extension\Domain\ExtensionManifest;
-use Kumwe\App\Extension\Domain\PackageSignature;
-use Kumwe\Extension\Package\ZipArchiveReader;
+use Kumwe\Extension\Manifest\ExtensionManifest;
+use Kumwe\Extension\Package\PackageSignature;
 use Kumwe\App\Extension\Runtime\RestrictedExtensionContainer;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
@@ -133,8 +131,14 @@ final class ExtensionDevelopmentSdkTest extends TestCase
         $first = $builder->build($source, $this->temporary . '/first.zip');
         $second = $builder->build($source, $this->temporary . '/second.zip');
 
-        self::assertSame((string) $first->inspection->checksum, (string) $second->inspection->checksum);
-        self::assertSame('acme/quality-component', $first->inspection->manifest->identifier()->value());
+        self::assertSame(
+            (string) $first->inspection->package->checksum,
+            (string) $second->inspection->package->checksum,
+        );
+        self::assertSame(
+            'acme/quality-component',
+            $first->inspection->package->manifest->identifier()->value(),
+        );
         $report = (new StaticConformanceRunner($inspector))->run($first->archive);
         self::assertTrue($report->conforms());
         self::assertFalse((new ConformanceReport($report->inspection, ['forced_failure' => false], []))->conforms());
@@ -189,19 +193,15 @@ final class ExtensionDevelopmentSdkTest extends TestCase
             require_once $file;
         }
 
-        $definitions = 'Acme\\QualityComponent\\Integration\\IntegrationDefinitions';
         $ledgerClass = 'Acme\\QualityComponent\\Integration\\IntegrationLedger';
         $listenerClass = 'Acme\\QualityComponent\\Integration\\ItemDomainListener';
         $consumerClass = 'Acme\\QualityComponent\\Integration\\ItemIntegrationConsumer';
         $projectionClass = 'Acme\\QualityComponent\\Integration\\ItemProjectionBuilder';
         $ledger = new $ledgerClass();
-        $listener = $definitions::domainListener();
-        $consumer = $definitions::consumer();
-        $projection = $definitions::projection();
 
-        self::assertInstanceOf(DomainEventHandler::class, new $listenerClass($listener, $ledger));
-        self::assertInstanceOf(IntegrationEventHandler::class, new $consumerClass($consumer, $ledger));
-        self::assertInstanceOf(ProjectionBuilder::class, new $projectionClass($projection));
+        self::assertInstanceOf(DomainEventHandler::class, new $listenerClass($ledger));
+        self::assertInstanceOf(IntegrationEventHandler::class, new $consumerClass($ledger));
+        self::assertInstanceOf(ProjectionBuilder::class, new $projectionClass());
 
         $manifestJson = file_get_contents($source . '/kumwe.json');
         self::assertIsString($manifestJson);
@@ -210,15 +210,15 @@ final class ExtensionDevelopmentSdkTest extends TestCase
         $migrationClass = 'Acme\\QualityComponent\\Migration\\CreateComponentRecords';
         $provider = new $providerClass();
         self::assertInstanceOf(ExtensionServiceProvider::class, $provider);
-        self::assertInstanceOf(ExtensionContributionProvider::class, $provider);
+        self::assertInstanceOf(ExtensionBindingProvider::class, $provider);
         self::assertInstanceOf(ExtensionMigration::class, new $migrationClass());
 
         $declarations = $manifest->contributions();
         $registries = new ExtensionContributionRegistrySet();
         $container = new RestrictedExtensionContainer($manifest->identifier()->value(), []);
         $provider->register($container);
-        $registrar = $registries->registrar($declarations->owner, $declarations);
-        $provider->contribute($registrar, $container);
+        $registrar = $registries->activateManifest($declarations);
+        $provider->bind($registrar, $container);
         $registrar->complete();
         $registries->validateBusinessDefinitions();
         $catalog = $registries->validateIntegrationContributions();
@@ -450,8 +450,8 @@ final class ExtensionDevelopmentSdkTest extends TestCase
         $builder = new DeterministicPackageBuilder($this->inspector());
         $result = $builder->build($source, $this->temporary . '/without-cache.zip');
 
-        self::assertNotContains('.gitignore', $result->inspection->paths);
-        self::assertNotContains('.phpunit.cache/results', $result->inspection->paths);
+        self::assertNotContains('.gitignore', $result->inspection->package->paths());
+        self::assertNotContains('.phpunit.cache/results', $result->inspection->package->paths());
         self::assertSame(13, file_put_contents($source . '/.env.production', "SECRET=value\n", LOCK_EX));
 
         $this->expectException(RuntimeException::class);
@@ -489,7 +489,7 @@ final class ExtensionDevelopmentSdkTest extends TestCase
         self::assertFalse($report->checks['strict_types']);
         self::assertContains(
             'PHP file src/Application/OverviewService.php must declare strict_types=1.',
-            $report->violations,
+            array_map(static fn ($finding): string => $finding->message, $report->findings),
         );
     }
 
@@ -702,6 +702,6 @@ final class ExtensionDevelopmentSdkTest extends TestCase
      */
     private function inspector(): PackageInspector
     {
-        return new PackageInspector(new ZipArchiveReader(), new PackageSafetyPolicy());
+        return new PackageInspector();
     }
 }

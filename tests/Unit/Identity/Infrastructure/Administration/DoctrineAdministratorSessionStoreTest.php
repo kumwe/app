@@ -17,7 +17,7 @@ use Kumwe\App\Application\Authorization\SiteContext;
 use Kumwe\App\Application\Authorization\WorkspaceContext;
 use Kumwe\App\Application\Persistence\TransactionManager;
 use Kumwe\App\BusinessSecurity\Application\MembershipDirectory;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use Kumwe\App\Identity\Infrastructure\Administration\DoctrineAdministratorSessionStore;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Tests\Support\AuthorizationContext;

@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Extension\Contribution;
 
+use Kumwe\Extension\Spi\Contribution\ContributionDefinition;
+
 use InvalidArgumentException;
 use Kumwe\App\Application\Authorization\AuthorizationDefinitionLifecycle;
 use Kumwe\App\Application\Authorization\ResourcePolicyTarget;
 use Kumwe\App\Application\Authorization\SystemIdentity;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 
 /**
  * Declarative contribution binding one owned capability to bounded resource selectors.

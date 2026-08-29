@@ -13,7 +13,7 @@ use Kumwe\App\Extension\Application\ExtensionRuntimeWithdrawal;
 use Kumwe\App\Extension\Application\Install\ExtensionInstallReconciler;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Infrastructure\Redis\RedisRuntime;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use Kumwe\App\Extension\Domain\ThemeSurface;
 use RuntimeException;
 use Throwable;

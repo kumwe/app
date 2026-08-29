@@ -16,7 +16,7 @@ use Kumwe\App\Application\Automation\QueueRuntimeOperations;
 use Kumwe\App\Application\Automation\QueueRuntimePolicy;
 use Kumwe\App\Application\Automation\QueueRuntimePolicyCatalog;
 use Kumwe\App\Application\Persistence\TransactionManager;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Psr\Clock\ClockInterface;
 use RuntimeException;

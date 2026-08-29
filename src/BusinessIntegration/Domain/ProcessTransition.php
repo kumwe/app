@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\BusinessIntegration\Domain;
 
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationContractValidator;
 use InvalidArgumentException;
 
 /**
@@ -42,7 +43,11 @@ final readonly class ProcessTransition
      */
     public function __construct(array $state, private ProcessStatus $status, iterable $work = [])
     {
-        IntegrationContractValidator::object($state, 'Process transition state', EventEnvelope::MAX_PAYLOAD_BYTES);
+        IntegrationContractValidator::object(
+            $state,
+            'Process transition state',
+            RecordedEventEnvelope::MAX_PAYLOAD_BYTES,
+        );
         $items = [];
         foreach ($work as $item) {
             if (isset($items[$item->id()])) {

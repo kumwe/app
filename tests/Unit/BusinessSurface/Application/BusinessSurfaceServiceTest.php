@@ -12,14 +12,18 @@ use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Application\Authorization\SiteContext;
 use Kumwe\App\Application\Persistence\TransactionManager;
 use Kumwe\App\BusinessDefinition\Application\FieldTypeDefinitionResolver;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordDefinitionResolver;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordNotFound;
+use Kumwe\App\BusinessRecord\Query\RecordCursor;
+use Kumwe\App\BusinessRecord\Query\RecordQuerySpecification;
 use Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessController;
 use Kumwe\App\BusinessSurface\Application\BusinessSurface;
 use Kumwe\App\BusinessSurface\Application\BusinessSurfaceCatalog;
 use Kumwe\App\BusinessSurface\Application\BusinessSurfaceService;
 use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
 use Kumwe\App\Tests\Support\AuthorizationContext;
+use Kumwe\App\Tests\Support\NeutralBusinessFixture;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
@@ -74,6 +78,41 @@ final class BusinessSurfaceServiceTest extends TestCase
         self::assertIsString($bounded);
         self::assertLessThanOrEqual(120, strlen($bounded));
         self::assertSame(1, preg_match('//u', $bounded));
+    }
+
+    /**
+     * Proves default projection narrowing keeps the opaque page-two cursor for final digest validation.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testCustomViewNarrowingCarriesCursorIntoTheFinalSignedProjection(): void
+    {
+        $document = NeutralBusinessFixture::document();
+        $document['views'][] = [
+            'handle' => 'summary',
+            'label' => 'Summary',
+            'kind' => 'list',
+            'fields' => ['name', 'status'],
+            'filters' => ['status'],
+            'sorts' => ['name'],
+            'administrator' => true,
+            'portal' => false,
+            'public' => false,
+            'handler' => 'site.default.views.summary',
+            'schema' => 'site.default.schemas.summary',
+        ];
+        $definition = EntityTypeDefinition::fromArray($document);
+        $cursor = RecordCursor::fromString(str_repeat('a', 16) . '.' . str_repeat('b', 16));
+        $query = new RecordQuerySpecification(after: $cursor);
+        $service = (new ReflectionClass(BusinessSurfaceService::class))->newInstanceWithoutConstructor();
+        $method = (new ReflectionClass(BusinessSurfaceService::class))->getMethod('customViewSpecification');
+        $narrowed = $method->invoke($service, $query, $definition->toArray(), $definition, 'summary');
+
+        self::assertInstanceOf(RecordQuerySpecification::class, $narrowed);
+        self::assertSame($cursor, $narrowed->after);
+        self::assertSame(['name', 'status'], $narrowed->projection->fields);
     }
 
     /**

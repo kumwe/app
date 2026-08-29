@@ -4,8 +4,13 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Extension\Contribution;
 
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Extension\Spi\Contribution\ContributionDefinition;
+use Kumwe\Extension\Spi\Contribution\CompositionHostBinding;
+use Kumwe\Extension\Spi\Contribution\CanonicalCompositionKind;
+use Kumwe\Extension\Spi\Contribution\CanonicalCompositionDocument;
 use InvalidArgumentException;
-use Kumwe\App\Studio\Application\Preview\StudioPreviewBlockReference;
+use Kumwe\Producer\Render\BlockCoordinate;
 use stdClass;
 
 /**
@@ -114,17 +119,18 @@ final readonly class StudioPreviewRendererContribution implements ContributionDe
         ) {
             throw new InvalidArgumentException('A Studio preview renderer binding is inconsistent.');
         }
-        $ownerDocument = $document->document->owner ?? null;
+        $canonicalDocument = $document->document();
+        $ownerDocument = $canonicalDocument->owner ?? null;
         if (!$ownerDocument instanceof stdClass) {
             throw new InvalidArgumentException('A Studio preview block owner is unavailable.');
         }
-        $this->blockType = self::member($document->document, 'type');
-        $this->blockVersion = self::member($document->document, 'version');
-        $this->blockRevision = self::member($document->document, 'revision');
+        $this->blockType = self::member($canonicalDocument, 'type');
+        $this->blockVersion = self::member($canonicalDocument, 'version');
+        $this->blockRevision = self::member($canonicalDocument, 'revision');
         $this->documentOwner = self::member($ownerDocument, 'id');
         $this->documentOwnerVersion = self::member($ownerDocument, 'version');
         $this->renderer = $binding->renderer;
-        [$this->previewCapability, $this->previewCapabilityVersions] = self::previewRequirement($document->document);
+        [$this->previewCapability, $this->previewCapabilityVersions] = self::previewRequirement($canonicalDocument);
         $this->authoringCapability = $binding->capability;
         $studioPrefix = ($owner->identifier() === ContributionOwner::CORE ? 'core' : $owner->namespace()) . '/';
         if ($this->blockType !== $document->identity() || !str_starts_with($this->documentOwner, $studioPrefix)) {
@@ -149,17 +155,29 @@ final readonly class StudioPreviewRendererContribution implements ContributionDe
     /**
      * Compare one dependency-lock coordinate with this derived executable definition.
      *
-     * @param   StudioPreviewBlockReference  $reference  Candidate dependency-lock coordinate.
+     * @param   BlockCoordinate  $coordinate  Candidate dependency-lock coordinate.
      *
      * @return  bool  True only for the exact type, version, and revision.
      *
      * @since   2.0.0
      */
-    public function matches(StudioPreviewBlockReference $reference): bool
+    public function matches(BlockCoordinate $coordinate): bool
     {
-        return $reference->type === $this->blockType
-            && $reference->version === $this->blockVersion
-            && $reference->revision === $this->blockRevision;
+        return $coordinate->type === $this->blockType
+            && $coordinate->version === $this->blockVersion
+            && $coordinate->revision === $this->blockRevision;
+    }
+
+    /**
+     * Return the exact canonical Producer coordinate derived from the signed block document.
+     *
+     * @return  BlockCoordinate  Immutable type, version and revision.
+     *
+     * @since   2.0.0
+     */
+    public function coordinate(): BlockCoordinate
+    {
+        return new BlockCoordinate($this->blockType, $this->blockVersion, $this->blockRevision);
     }
 
     /**

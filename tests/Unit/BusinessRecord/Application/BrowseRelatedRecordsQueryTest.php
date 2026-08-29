@@ -6,8 +6,8 @@ namespace Kumwe\App\Tests\Unit\BusinessRecord\Application;
 
 use InvalidArgumentException;
 use Kumwe\App\BusinessRecord\Application\Query\BrowseRelatedRecordsQuery;
-use Kumwe\App\BusinessRecord\Query\RecordProjection;
-use Kumwe\App\BusinessRecord\Query\RecordQuerySpecification;
+use Kumwe\Extension\Spi\BusinessRecord\Query\RecordProjection;
+use Kumwe\Extension\Spi\BusinessRecord\Query\RecordQuerySpecification;
 use Kumwe\App\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;

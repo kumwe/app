@@ -7,9 +7,9 @@ namespace Kumwe\App\Tests\Unit\BusinessSurface\Delivery\Browser;
 use InvalidArgumentException;
 use JsonException;
 use Kumwe\App\BusinessSurface\Delivery\Browser\BusinessFormInputMapper;
-use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentation;
-use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationContext;
-use Kumwe\App\BusinessSurface\Presentation\Field\FieldWidget;
+use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationModel;
+use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationContext;
+use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldWidget;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
@@ -375,7 +375,7 @@ final class BusinessFormInputMapperTest extends TestCase
      * @param   bool         $editable  Whether the server-produced schema admits an editor.
      * @param   bool         $required  Whether empty input is invalid for the field.
      *
-     * @return  FieldPresentation  Minimal valid presentation for the mapper's allow-list.
+     * @return  FieldPresentationModel  Minimal valid presentation for the mapper's allow-list.
      *
      * @since   2.0.0
      */
@@ -384,8 +384,8 @@ final class BusinessFormInputMapperTest extends TestCase
         FieldWidget $widget,
         bool $editable = true,
         bool $required = true,
-    ): FieldPresentation {
-        return new FieldPresentation(
+    ): FieldPresentationModel {
+        return new FieldPresentationModel(
             $handle,
             ucfirst($handle),
             FieldPresentationContext::Update,

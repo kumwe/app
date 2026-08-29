@@ -11,12 +11,12 @@ use Kumwe\App\BusinessRecord\Application\Command\CreateRecordCommand;
 use Kumwe\App\BusinessRecord\Application\Query\BrowseRecordsQuery;
 use Kumwe\App\BusinessRecord\Application\RecordBrowseResult;
 use Kumwe\App\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordReadRepository;
-use Kumwe\App\BusinessRecord\Query\AggregateFunction;
-use Kumwe\App\BusinessRecord\Query\RecordAggregate;
-use Kumwe\App\BusinessRecord\Query\RecordCursor;
-use Kumwe\App\BusinessRecord\Query\RecordProjection;
-use Kumwe\App\BusinessRecord\Query\RecordQuerySpecification;
-use Kumwe\App\BusinessRecord\Query\RecordSort;
+use Kumwe\Extension\Spi\BusinessRecord\Query\AggregateFunction;
+use Kumwe\Extension\Spi\BusinessRecord\Query\RecordAggregate;
+use Kumwe\Extension\Spi\BusinessRecord\Query\RecordCursor;
+use Kumwe\Extension\Spi\BusinessRecord\Query\RecordProjection;
+use Kumwe\Extension\Spi\BusinessRecord\Query\RecordQuerySpecification;
+use Kumwe\Extension\Spi\BusinessRecord\Query\RecordSort;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\App\Tests\Support\NeutralBusinessFixture;
 use Kumwe\App\Tests\Support\TestKernelFactory;
@@ -26,8 +26,6 @@ use Ramsey\Uuid\Uuid;
 
 #[CoversClass(BusinessRecordService::class)]
 #[CoversClass(DoctrineBusinessRecordReadRepository::class)]
-#[CoversClass(RecordQuerySpecification::class)]
-#[CoversClass(RecordCursor::class)]
 final class BusinessRecordLargeDatasetIntegrationTest extends TestCase
 {
     private const RECORD_COUNT = 225;

@@ -8,7 +8,7 @@ use DateTimeImmutable;
 use DateTimeZone;
 use Kumwe\App\Kernel\Container;
 use Kumwe\App\Application\Authorization\ExecutionContext;
-use Kumwe\App\Application\Automation\IdempotencyKey;
+use Kumwe\Extension\Spi\Application\Automation\IdempotencyKey;
 use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\App\BusinessDefinition\Domain\NumberSequenceFormat;
 use Kumwe\App\BusinessDefinition\Domain\NumberSequenceReset;

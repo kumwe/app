@@ -169,21 +169,16 @@ declare(strict_types=1);
 
 namespace KumweIntegration\OwnershipLifecycle;
 
-use Kumwe\App\Extension\Runtime\ExtensionContainer;
-use Kumwe\App\Extension\Runtime\ExtensionRouteRegistrar;
-use Kumwe\App\Extension\Runtime\RuntimeExtension;
+use Kumwe\Extension\Spi\Runtime\ExtensionContainer;
+use Kumwe\Extension\Spi\Runtime\BootableExtension;
 
-final class Provider implements RuntimeExtension
+final class Provider implements BootableExtension
 {
     public function register(ExtensionContainer $container): void
     {
     }
 
     public function boot(ExtensionContainer $container): void
-    {
-    }
-
-    public function registerRoutes(ExtensionRouteRegistrar $routes): void
     {
     }
 }

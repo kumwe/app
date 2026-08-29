@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Extension\Contribution;
 
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+
 use InvalidArgumentException;
 use Kumwe\App\Application\Authorization\AuthorizationPolicyRegistry;
 use Kumwe\App\Application\Authorization\CapabilityDefinition as AuthorizationCapabilityDefinition;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 
 /**
  * The capability identifiers the running process recognises, each held by exactly one owner.

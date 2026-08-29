@@ -7,11 +7,10 @@ namespace Kumwe\App\Tests\Unit\Content\Application;
 use InvalidArgumentException;
 use Kumwe\App\Content\Domain\TranslationGroup;
 use Kumwe\App\Extension\Contribution\TranslationGroupDeclaration;
-use Kumwe\App\Extension\Contribution\ContentTranslationRegistrar;
-use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
-use Kumwe\App\Extension\Contribution\ManifestContributionSet;
-use Kumwe\App\Extension\Domain\ExtensionIdentifier;
+use Kumwe\Extension\Manifest\ExtensionIdentifier;
+use Kumwe\Extension\Manifest\ManifestContributions;
 use Kumwe\App\Localization\Domain\LocaleTag;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
@@ -19,7 +18,6 @@ use PHPUnit\Framework\TestCase;
 
 #[CoversClass(TranslationGroupDeclaration::class)]
 #[UsesClass(ExtensionContributionRegistrySet::class)]
-#[UsesClass(ManifestContributionSet::class)]
 #[UsesClass(LocaleTag::class)]
 /**
  * Pins content translation as an extension contract, not a core-content feature.
@@ -40,18 +38,12 @@ final class ExtensionContentTranslationTest extends TestCase
      *
      * @since   2.0.0
      */
-    public function testAnExtensionDeclaresLocaleVariantsThroughTheContributionRegistrar(): void
+    public function testAnExtensionDeclaresLocaleVariantsThroughItsCanonicalManifest(): void
     {
         $registries = new ExtensionContributionRegistrySet(withCore: false);
         $owner = ContributionOwner::extension('acme/blog');
         $declaration = new TranslationGroupDeclaration('acme.blog.articles', ['en-GB', 'af', 'de'], 'en-GB');
-        $registrar = $registries->registrar($owner, new ManifestContributionSet(
-            $owner,
-            contentTranslationGroups: [$declaration],
-        ));
-        self::assertInstanceOf(ContentTranslationRegistrar::class, $registrar);
-
-        $registrar->contentTranslationGroup($declaration);
+        $registrar = $registries->activateManifest(self::manifest($declaration));
         $registrar->complete();
 
         self::assertSame(
@@ -91,30 +83,28 @@ final class ExtensionContentTranslationTest extends TestCase
      */
     public function testADeclaredContentSetRoundTripsThroughTheManifest(): void
     {
-        $owner = ContributionOwner::extension('acme/blog');
-        $declared = new ManifestContributionSet(
-            $owner,
-            spiVersion: ManifestContributionSet::CURRENT_SPI_VERSION,
-            contentTranslationGroups: [
-                new TranslationGroupDeclaration('acme.blog.articles', ['de', 'en-GB'], 'en-GB'),
+        $document = [
+            'version' => 2,
+            'content' => [
+                'translation_groups' => [
+                    (new TranslationGroupDeclaration('acme.blog.articles', ['de', 'en-GB'], 'en-GB'))->toArray(),
+                ],
             ],
-        );
-
-        $document = $declared->toArray();
-        self::assertSame(
-            [['group_id' => 'acme.blog.articles', 'locales' => ['de', 'en-GB'], 'fallback_locale' => 'en-GB']],
-            $document['content']['translation_groups'] ?? null,
-        );
-        $parsed = ManifestContributionSet::fromManifest(
+        ];
+        $parsed = ManifestContributions::fromManifest(
             ExtensionIdentifier::fromString('acme/blog'),
             $document,
             4,
         );
-        self::assertSame($document, $parsed->toArray());
-        self::assertSame('acme.blog.articles', $parsed->contentTranslationGroups()[0]->identifier());
+        self::assertSame(
+            [['group_id' => 'acme.blog.articles', 'locales' => ['de', 'en-GB'], 'fallback_locale' => 'en-GB']],
+            $parsed->declarations()['content']['translation_groups'] ?? null,
+        );
 
-        $bare = new ManifestContributionSet($owner, spiVersion: ManifestContributionSet::CURRENT_SPI_VERSION);
-        self::assertArrayNotHasKey('content', $bare->toArray());
+        $bare = ManifestContributions::fromManifest(ExtensionIdentifier::fromString('acme/blog'), [
+            'version' => 2,
+        ], 4);
+        self::assertArrayNotHasKey('translation_groups', $bare->declarations()['content'] ?? []);
     }
 
     /**
@@ -124,29 +114,20 @@ final class ExtensionContentTranslationTest extends TestCase
      *
      * @since   2.0.0
      */
-    public function testAPackageCannotWidenItsLanguageClaimAfterAdmission(): void
+    public function testManifestOwnershipRejectsAForeignContentGroup(): void
     {
-        $registries = new ExtensionContributionRegistrySet(withCore: false);
-        $owner = ContributionOwner::extension('acme/blog');
-        $registrar = $registries->registrar($owner, new ManifestContributionSet(
-            $owner,
-            contentTranslationGroups: [
-                new TranslationGroupDeclaration('acme.blog.articles', ['en-GB', 'de'], 'en-GB'),
-            ],
-        ));
-
-        try {
-            $registrar->contentTranslationGroup(
-                new TranslationGroupDeclaration('acme.blog.articles', ['en-GB', 'de', 'he'], 'en-GB'),
-            );
-            self::fail('A package registered a language set its manifest never declared.');
-        } catch (InvalidArgumentException $exception) {
-            self::assertStringContainsString('acme.blog.articles', $exception->getMessage());
-        }
-
         $this->expectException(InvalidArgumentException::class);
-        $registrar->contentTranslationGroup(
-            new TranslationGroupDeclaration('zeta.shop.products', ['en-GB'], 'en-GB'),
+        ManifestContributions::fromManifest(
+            ExtensionIdentifier::fromString('acme/blog'),
+            [
+                'version' => 2,
+                'content' => [
+                    'translation_groups' => [
+                        (new TranslationGroupDeclaration('zeta.shop.products', ['en-GB'], 'en-GB'))->toArray(),
+                    ],
+                ],
+            ],
+            4,
         );
     }
 
@@ -162,11 +143,7 @@ final class ExtensionContentTranslationTest extends TestCase
         $registries = new ExtensionContributionRegistrySet(withCore: false);
         $owner = ContributionOwner::extension('acme/blog');
         $declaration = new TranslationGroupDeclaration('acme.blog.articles', ['en-GB', 'de'], 'en-GB');
-        $registrar = $registries->registrar($owner, new ManifestContributionSet(
-            $owner,
-            contentTranslationGroups: [$declaration],
-        ));
-        $registrar->contentTranslationGroup($declaration);
+        $registrar = $registries->activateManifest(self::manifest($declaration));
         $registrar->complete();
 
         $registries->remove($owner);
@@ -272,5 +249,26 @@ final class ExtensionContentTranslationTest extends TestCase
 
         $this->expectExceptionMessage('A content translation group locale must be a string.');
         TranslationGroupDeclaration::fromArray([...$declared, 'locales' => ['en-GB', 42]]);
+    }
+
+    /**
+     * Parse one translation declaration through the canonical SDK manifest graph.
+     *
+     * @param   TranslationGroupDeclaration  $declaration  Signed content-language declaration.
+     *
+     * @return  ManifestContributions  Canonical package-owned graph.
+     *
+     * @since   2.0.0
+     */
+    private static function manifest(TranslationGroupDeclaration $declaration): ManifestContributions
+    {
+        return ManifestContributions::fromManifest(
+            ExtensionIdentifier::fromString('acme/blog'),
+            [
+                'version' => 2,
+                'content' => ['translation_groups' => [$declaration->toArray()]],
+            ],
+            4,
+        );
     }
 }

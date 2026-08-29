@@ -28,12 +28,11 @@ use Kumwe\App\BusinessSecurity\Application\Approval\StepUpProofConsumer;
 use Kumwe\Extension\Spi\BusinessSecurity\Application\FieldAccessUsage;
 use Kumwe\App\BusinessSecurity\Application\MembershipDirectory;
 use Kumwe\App\Extension\Contribution\CapabilityDefinition;
-use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
-use Kumwe\App\Extension\Contribution\ManifestContributionSet;
 use Kumwe\App\Extension\Contribution\ResourcePolicyDefinition;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use Kumwe\App\Identity\Domain\GrantScope;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
@@ -307,15 +306,8 @@ final class BusinessSecurityAdministrationServiceTest extends TestCase
             $capability->id,
             [new ResourcePolicyTarget('business_record')],
         );
-        $declared = new ManifestContributionSet(
-            $owner,
-            capabilities: [$capability],
-            resourcePolicies: [$policy],
-        );
-        $registrar = $registries->registrar($owner, $declared);
-        $registrar->capability($capability);
-        $registrar->resourcePolicy($policy);
-        $registrar->complete();
+        $registries->capabilities()->register($owner, $capability);
+        $registries->resourcePolicies()->register($owner, $policy);
 
         $repository = $this->createMock(BusinessSecurityAdministrationRepository::class);
         $repository->method('definitionFieldTypes')->willReturn(['owner_id' => 'string']);

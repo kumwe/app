@@ -6,7 +6,8 @@ namespace Kumwe\App\Studio\Domain\Projection;
 
 use InvalidArgumentException;
 use Kumwe\App\Application\Authorization\SiteContext;
-use Kumwe\App\Studio\Domain\Contract\CanonicalJson;
+use Kumwe\Producer\Canonical\CanonicalEncodingException;
+use Kumwe\Producer\Canonical\CanonicalJson;
 use stdClass;
 
 /**
@@ -38,7 +39,7 @@ final readonly class EntryCompositionOverrides
      * @param   int          $revision  Optimistic override revision, starting at one.
      *
      * @throws  InvalidArgumentException  When the entry, revision, key set, or byte budget is invalid.
-     * @throws  \Kumwe\App\Studio\Domain\Contract\CanonicalJsonRejected  When a value is not canonical JSON.
+     * @throws  CanonicalEncodingException  When a value is not representable as canonical JSON.
      *
      * @since   2.0.0
      */

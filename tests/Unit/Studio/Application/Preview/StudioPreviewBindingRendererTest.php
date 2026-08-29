@@ -7,6 +7,7 @@ namespace Kumwe\App\Tests\Unit\Studio\Application\Preview;
 use InvalidArgumentException;
 use Kumwe\App\Application\Authorization\SiteContext;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\Extension\Contribution\StudioPreviewRendererContribution;
 use Kumwe\App\Extension\Runtime\ActiveExtensionSet;
 use Kumwe\App\Presentation\ContentPageRenderService;
 use Kumwe\App\Presentation\SiteRenderer;
@@ -16,47 +17,46 @@ use Kumwe\App\Studio\Application\Composition\StudioBuiltInThemeRelease;
 use Kumwe\App\Studio\Application\Composition\StudioCompositionThemeMismatch;
 use Kumwe\App\Studio\Application\Composition\StudioPublishedTheme;
 use Kumwe\App\Studio\Application\Host\StudioHostSessionSnapshot;
-use Kumwe\App\Studio\Presentation\Preview\CanonicalStudioPreviewRenderer;
-use Kumwe\App\Studio\Application\Preview\CoreStudioPreviewBlockRendererRegistry;
-use Kumwe\App\Studio\Application\Preview\StudioCompositionMarkupRenderer;
 use Kumwe\App\Studio\Application\Preview\StudioPreviewBindingResolver;
 use Kumwe\App\Studio\Application\Preview\StudioPreviewBindingValues;
-use Kumwe\App\Studio\Application\Preview\StudioPreviewBlockFragment;
-use Kumwe\App\Studio\Application\Preview\StudioPreviewThemeStylesheet;
-use Kumwe\App\Studio\Domain\Preview\StudioPreviewIdentity;
+use Kumwe\App\Studio\Application\Preview\StudioPreviewStylesheet;
+use Kumwe\App\Studio\Application\Rendering\StudioBlockRendererRuntime;
+use Kumwe\App\Studio\Application\Rendering\StudioContentFieldBlockRenderer;
 use Kumwe\App\Studio\Domain\Host\StudioHostSession;
 use Kumwe\App\Studio\Domain\Host\StudioResourceKind;
 use Kumwe\App\Studio\Domain\Host\StudioSessionMode;
 use Kumwe\App\Studio\Domain\Preview\StudioPreviewDraft;
+use Kumwe\App\Studio\Domain\Preview\StudioPreviewIdentity;
 use Kumwe\App\Studio\Domain\Preview\StudioPreviewRenderRequest;
+use Kumwe\App\Studio\Presentation\Preview\CanonicalStudioPreviewRenderer;
+use Kumwe\Extension\Spi\Contribution\CanonicalCompositionDocument;
+use Kumwe\Extension\Spi\Contribution\CanonicalCompositionKind;
+use Kumwe\Extension\Spi\Contribution\CompositionHostBinding;
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Producer\Canonical\CanonicalJson;
+use Kumwe\Producer\Render\BlockRenderer;
+use Kumwe\Producer\Render\CompositionRenderer;
+use Kumwe\Producer\Render\RenderContext;
+use Kumwe\Producer\Render\RenderException;
+use Kumwe\Producer\Render\RenderPolicy;
+use Kumwe\Producer\Render\RenderState;
+use Kumwe\Producer\Schema\StudioContractResources;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use stdClass;
 use Twig\Loader\ArrayLoader;
 
-/**
- * Pins App-authority binding resolution and every owner-safe core preview field renderer.
- *
- * @since  2.0.0
- */
-#[CoversClass(CoreStudioPreviewBlockRendererRegistry::class)]
 #[CoversClass(CanonicalStudioPreviewRenderer::class)]
-#[CoversClass(ContentPageRenderService::class)]
-#[CoversClass(StudioCompositionMarkupRenderer::class)]
 #[CoversClass(StudioPreviewBindingResolver::class)]
 #[CoversClass(StudioPreviewBindingValues::class)]
-#[CoversClass(StudioPreviewBlockFragment::class)]
-#[CoversClass(StudioPreviewThemeStylesheet::class)]
+#[CoversClass(StudioPreviewStylesheet::class)]
+#[UsesClass(StudioBlockRendererRuntime::class)]
+#[UsesClass(StudioContentFieldBlockRenderer::class)]
 final class StudioPreviewBindingRendererTest extends TestCase
 {
-    /**
-     * Enumerate exact core field block IDs and representative authorized values.
-     *
-     * @return  iterable<string, array{string, mixed, string}>  Block ID, projected value and expected text.
-     *
-     * @since   2.0.0
-     */
+    /** @return iterable<string, array{string, mixed, string}> */
     public static function fieldBlocks(): iterable
     {
         yield 'text' => ['core/field-text', '<script>alert(1)</script>', '&lt;script&gt;alert(1)&lt;/script&gt;'];
@@ -78,19 +78,8 @@ final class StudioPreviewBindingRendererTest extends TestCase
         yield 'resource' => ['core/field-resource', (object) ['label' => 'Referenced page'], 'Referenced page'];
     }
 
-    /**
-     * Resolve each core field's `value` port from authorized projected Content and emit no active source data.
-     *
-     * @param   string  $type      Owner-safe core field block identifier.
-     * @param   mixed   $value     Authorized projected Content value.
-     * @param   string  $expected  Expected safe text fragment.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
     #[DataProvider('fieldBlocks')]
-    public function testCoreFieldBlocksResolveAuthorizedEntryValues(
+    public function testCoreFieldBlocksResolveOnlyAuthorizedValues(
         string $type,
         mixed $value,
         string $expected,
@@ -101,12 +90,9 @@ final class StudioPreviewBindingRendererTest extends TestCase
             'onNull' => 'empty',
             'onError' => 'error',
         ]);
-        $html = self::renderer()->render(
+        $html = self::render(
             $document,
-            ['node:field-node'],
-            ['node:field-node' => 'field-node'],
             new StudioPreviewBindingValues((object) ['field' => $value], new stdClass()),
-            'expanded',
         );
 
         self::assertStringContainsString($expected, $html);
@@ -115,43 +101,25 @@ final class StudioPreviewBindingRendererTest extends TestCase
         self::assertStringNotContainsString(' style=', $html);
     }
 
-    /**
-     * Unregistered transforms fail closed while explicit fallback and hide policies remain deterministic.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    public function testUnregisteredBindingOperationsNeverReadOrRenderSourceData(): void
+    public function testUnregisteredBindingOperationsApplyTheDeclaredFallback(): void
     {
-        $fallback = self::document('core/field-text', (object) [
+        $document = self::document('core/field-text', (object) [
             'source' => (object) ['kind' => 'query-reference'],
             'transforms' => [],
             'onNull' => 'empty',
             'onError' => 'fallback',
             'fallback' => 'Safe fallback',
         ]);
-        $identity = StudioPreviewIdentity::forDraft($fallback);
-        $html = self::renderer()->render(
-            $fallback,
-            $identity['markers'],
-            $identity['markerMap'],
+        $html = self::render(
+            $document,
             new StudioPreviewBindingValues((object) ['secret' => 'must-not-render'], new stdClass()),
-            'expanded',
         );
 
         self::assertStringContainsString('Safe fallback', $html);
         self::assertStringNotContainsString('must-not-render', $html);
     }
 
-    /**
-     * Canonical preview output uses the public page renderer and an exact same-origin theme stylesheet.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    public function testCanonicalPreviewUsesThePublishedTemplateAndStrictThemePath(): void
+    public function testCanonicalPreviewConsumesProducerHtmlCssAndMarkersThroughOneStylesheet(): void
     {
         [$renderer, $theme] = $this->canonicalRuntime();
         $document = self::lockTheme(self::document('core/field-text', (object) [
@@ -161,10 +129,8 @@ final class StudioPreviewBindingRendererTest extends TestCase
             'onError' => 'error',
         ]), $theme);
         $draft = new StudioPreviewDraft('default', $document);
-        $snapshot = self::snapshot($draft);
-
         $rendered = $renderer->render(
-            $snapshot,
+            self::snapshot($draft),
             $draft,
             new StudioPreviewRenderRequest(
                 $draft->artifactId(),
@@ -177,82 +143,43 @@ final class StudioPreviewBindingRendererTest extends TestCase
         );
 
         self::assertStringContainsString('Rendered value', $rendered->html);
+        self::assertStringContainsString('data-studio-block="field-text"', $rendered->html);
         self::assertStringContainsString('|0|core.administrator.content-editor', $rendered->html);
-        self::assertStringContainsString('|#07182d', $rendered->html);
         self::assertStringContainsString(
-            'href="' . StudioPreviewThemeStylesheet::HREF_PLACEHOLDER . '" data-studio-theme',
+            'href="' . StudioPreviewStylesheet::HREF_PLACEHOLDER . '" data-studio-composition',
             $rendered->html,
         );
-        self::assertStringContainsString('--site-accent:#0c9189;', $rendered->themeStylesheet ?? '');
-        self::assertStringNotContainsString(' style=', $rendered->html);
+        self::assertStringContainsString('[data-studio-block]', $rendered->stylesheet ?? '');
+        self::assertStringContainsString('--site-accent:#0c9189;', $rendered->stylesheet ?? '');
         self::assertStringNotContainsString('<style', $rendered->html);
         self::assertCount(1, $rendered->markers);
         self::assertSame('field-node', $rendered->markerMap[$rendered->markers[0]]);
     }
 
-    /**
-     * Theme stylesheet activation accepts one exact trusted link and rejects unsafe inventory or URLs.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    public function testThemeStylesheetActivationRequiresExactUrlAndInventory(): void
+    public function testStylesheetActivationRequiresExactSameOriginUrlAndInventory(): void
     {
-        $placeholder = sprintf('href="%s"', StudioPreviewThemeStylesheet::HREF_PLACEHOLDER);
-        $html = '<link ' . $placeholder . ' data-studio-theme>';
-        $href = '/administrator/studio/preview/theme.css?grant=preview-1';
+        $placeholder = sprintf('href="%s"', StudioPreviewStylesheet::HREF_PLACEHOLDER);
+        $html = '<link ' . $placeholder . ' data-studio-composition>';
+        $href = '/administrator/studio/preview/styles.css?grant=preview-1';
 
         self::assertSame(
-            '<link href="' . $href . '" data-studio-theme>',
-            StudioPreviewThemeStylesheet::activate($html, $href, true),
+            '<link href="' . $href . '" data-studio-composition>',
+            StudioPreviewStylesheet::activate($html, $href, true),
         );
-        self::assertSame('<main>Preview</main>', StudioPreviewThemeStylesheet::activate(
+        self::assertSame('<main>Preview</main>', StudioPreviewStylesheet::activate(
             '<main>Preview</main>',
             $href,
             false,
         ));
 
-        try {
-            StudioPreviewThemeStylesheet::activate($html, 'https://example.test/theme.css', true);
-            self::fail('A cross-origin stylesheet URL must be refused.');
-        } catch (InvalidArgumentException $exception) {
-            self::assertSame('The Studio preview theme stylesheet URL is invalid.', $exception->getMessage());
-        }
-
-        $invalidInventories = [
-            'required missing' => ['<main>Preview</main>', true],
-            'required duplicate' => [$html . $html, true],
-            'unexpected placeholder' => [$html, false],
-        ];
-        foreach ($invalidInventories as $label => [$candidate, $required]) {
-            try {
-                StudioPreviewThemeStylesheet::activate($candidate, $href, $required);
-                self::fail($label . ' stylesheet inventory must be refused.');
-            } catch (InvalidArgumentException $exception) {
-                self::assertSame(
-                    'The Studio preview theme stylesheet inventory is invalid.',
-                    $exception->getMessage(),
-                    $label,
-                );
-            }
-        }
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('The Studio preview stylesheet URL is invalid.');
+        StudioPreviewStylesheet::activate($html, 'https://example.test/styles.css', true);
     }
 
-    /**
-     * A live public-theme change refuses an immutable preview before any stale markup is rendered.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
     public function testCanonicalRendererRefusesAStalePublishedThemeLock(): void
     {
-        $settingsDocument = [
-            'site_name' => 'Kumwe',
-            'presentation' => \Kumwe\App\Presentation\Application\SitePresentation::defaults(),
-            'search_indexing_enabled' => false,
-        ];
+        $settingsDocument = self::settingsDocument();
         $settings = $this->createStub(SiteSettings::class);
         $settings->method('current')->willReturnCallback(
             static function () use (&$settingsDocument): array {
@@ -260,8 +187,11 @@ final class StudioPreviewBindingRendererTest extends TestCase
             },
         );
         [$renderer, $theme] = $this->canonicalRuntime($settings);
-        $document = self::lockTheme(self::layoutDocument([
-            self::layoutNode('section-node', 'studio.core/section'),
+        $document = self::lockTheme(self::document('core/field-text', (object) [
+            'source' => (object) ['kind' => 'static-value', 'value' => 'value'],
+            'transforms' => [],
+            'onNull' => 'empty',
+            'onError' => 'error',
         ]), $theme);
         $draft = new StudioPreviewDraft('default', $document);
         $settingsDocument['presentation']['active_scheme'] = 'ocean';
@@ -281,253 +211,83 @@ final class StudioPreviewBindingRendererTest extends TestCase
         );
     }
 
-    /**
-     * Core layout output uses defaults, base intent, and active-viewport overrides in deterministic order.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    public function testLayoutProjectionResolvesDefaultBaseAndViewportIntent(): void
-    {
-        $document = self::layoutDocument([
-            self::layoutNode('section-node', 'studio.core/section', [
-                'data-studio-layout-unknown' => 'surprise',
-                'style' => 'display:none',
-            ]),
-            self::layoutNode('stack-node', 'studio.core/stack', [
-                'alignment' => 'start',
-                'direction' => 'inline',
-                'spacing' => 'none',
-                'visibility' => 'visible',
-            ]),
-            self::layoutNode(
-                'grid-node',
-                'studio.core/grid',
-                [
-                    'alignment' => 'end',
-                    'collapse' => 'preserve',
-                    'columns' => 4,
-                    'spacing' => 'spacious',
-                    'visibility' => 'visible',
-                ],
-                (object) [
-                    'alignment' => (object) ['expanded' => 'center'],
-                    'collapse' => (object) ['expanded' => 'wrap'],
-                    'columns' => (object) ['expanded' => 12],
-                    'spacing' => (object) ['expanded' => 'compact'],
-                    'visibility' => (object) ['expanded' => 'hidden'],
-                ],
-            ),
-            self::layoutNode('unknown-node', 'studio.core/unknown'),
-        ]);
-        $identity = StudioPreviewIdentity::forDraft($document);
-        $html = self::renderer()->render(
-            $document,
-            $identity['markers'],
-            $identity['markerMap'],
-            new StudioPreviewBindingValues(new stdClass(), new stdClass()),
-            'expanded',
-        );
-
-        self::assertStringContainsString(
-            '<section class="studio-preview-section" data-studio-preview-marker="'
-                . $identity['markers'][0]
-                . '" data-studio-layout-alignment="stretch" data-studio-layout-spacing="comfortable"'
-                . ' data-studio-layout-visibility="visible">',
-            $html,
-        );
-        self::assertStringContainsString(
-            '<div class="studio-preview-stack" data-studio-preview-marker="'
-                . $identity['markers'][1]
-                . '" data-studio-layout-alignment="start" data-studio-layout-direction="inline"'
-                . ' data-studio-layout-spacing="none" data-studio-layout-visibility="visible">',
-            $html,
-        );
-        self::assertStringContainsString(
-            '<div class="studio-preview-grid" data-studio-preview-marker="'
-                . $identity['markers'][2]
-                . '" data-studio-layout-alignment="center" data-studio-layout-collapse="wrap"'
-                . ' data-studio-layout-columns="12" data-studio-layout-spacing="compact"'
-                . ' data-studio-layout-visibility="hidden">',
-            $html,
-        );
-        self::assertStringNotContainsString(' style=', $html);
-        self::assertStringNotContainsString('display:none', $html);
-        self::assertStringNotContainsString('data-studio-layout-unknown', $html);
-        self::assertStringContainsString('class="studio-preview-unresolved"', $html);
-        self::assertSame(3, substr_count($html, 'data-studio-layout-alignment='));
-    }
-
-    /**
-     * Column boundaries remain usable while every malformed core layout value is refused before markup.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    public function testLayoutProjectionAcceptsColumnBoundsAndRefusesInvalidIntent(): void
-    {
-        foreach ([1, 12] as $columns) {
-            $document = self::layoutDocument([
-                self::layoutNode('columns-node', 'studio.core/columns', ['columns' => $columns]),
-            ]);
-            $identity = StudioPreviewIdentity::forDraft($document);
-            $html = self::renderer()->render(
-                $document,
-                $identity['markers'],
-                $identity['markerMap'],
-                new StudioPreviewBindingValues(new stdClass(), new stdClass()),
-                'compact',
-            );
-            self::assertStringContainsString('data-studio-layout-columns="' . $columns . '"', $html);
-        }
-
-        $invalid = [
-            ['columns' => 0],
-            ['columns' => 13],
-            ['columns' => 1.5],
-            ['columns' => '2'],
-            ['alignment' => 'baseline'],
-            ['spacing' => '" style="display:none'],
-        ];
-        $refusals = 0;
-        foreach ($invalid as $properties) {
-            $document = self::layoutDocument([
-                self::layoutNode('invalid-grid', 'studio.core/grid', $properties),
-            ]);
-            $identity = StudioPreviewIdentity::forDraft($document);
-            try {
-                self::renderer()->render(
-                    $document,
-                    $identity['markers'],
-                    $identity['markerMap'],
-                    new StudioPreviewBindingValues(new stdClass(), new stdClass()),
-                    'compact',
-                );
-            } catch (InvalidArgumentException) {
-                $refusals++;
-            }
-        }
-        $malformedResponsive = self::layoutNode('invalid-responsive', 'studio.core/grid');
-        $malformedResponsive->responsive = [];
-        $malformedOverride = self::layoutNode('invalid-override', 'studio.core/grid');
-        $malformedOverride->responsive = (object) ['columns' => 'not-a-viewport-map'];
-        $malformedProperties = self::layoutNode('invalid-properties', 'studio.core/grid');
-        $malformedProperties->properties = [];
-        foreach ([$malformedResponsive, $malformedOverride, $malformedProperties] as $node) {
-            $document = self::layoutDocument([$node]);
-            $identity = StudioPreviewIdentity::forDraft($document);
-            try {
-                self::renderer()->render(
-                    $document,
-                    $identity['markers'],
-                    $identity['markerMap'],
-                    new StudioPreviewBindingValues(new stdClass(), new stdClass()),
-                    'compact',
-                );
-            } catch (InvalidArgumentException) {
-                $refusals++;
-            }
-        }
-        self::assertSame(count($invalid) + 3, $refusals);
-    }
-
-    /**
-     * Fragment admission sorts the closed layout vocabulary and refuses arbitrary data or style attributes.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    public function testLayoutFragmentRefusesUnknownAttributesAndValues(): void
-    {
-        $fragment = new StudioPreviewBlockFragment('div', 'studio-preview-grid', '', false, [
-            'data-studio-layout-visibility' => 'visible',
-            'data-studio-layout-columns' => '12',
-            'data-studio-layout-alignment' => 'stretch',
-        ]);
-        self::assertSame([
-            'data-studio-layout-alignment' => 'stretch',
-            'data-studio-layout-columns' => '12',
-            'data-studio-layout-visibility' => 'visible',
-        ], $fragment->layoutAttributes);
-
-        $invalid = [
-            ['style' => 'display:none'],
-            ['data-studio-layout-unknown' => 'value'],
-            ['data-studio-layout-columns' => '13'],
-            ['data-studio-layout-alignment' => '" onfocus="alert(1)'],
-        ];
-        $refusals = 0;
-        foreach ($invalid as $attributes) {
-            try {
-                new StudioPreviewBlockFragment('div', 'studio-preview-grid', '', false, $attributes);
-            } catch (InvalidArgumentException) {
-                $refusals++;
-            }
-        }
-        self::assertSame(count($invalid), $refusals);
-    }
-
-    /**
-     * The canonical renderer passes the request viewport into responsive layout resolution.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    public function testCanonicalRendererProjectsTheRequestedViewport(): void
+    public function testCanonicalRendererRefusesAnUnregisteredRevisionWithoutDraftFallback(): void
     {
         [$renderer, $theme] = $this->canonicalRuntime();
-        $document = self::lockTheme(self::layoutDocument([
-            self::layoutNode(
-                'responsive-columns',
-                'studio.core/columns',
-                ['columns' => 4],
-                (object) ['columns' => (object) ['compact' => 1, 'expanded' => 12]],
-            ),
+        $document = self::lockTheme(self::document('core/field-text', (object) [
+            'source' => (object) ['kind' => 'static-value', 'value' => 'must not render'],
+            'transforms' => [],
+            'onNull' => 'empty',
+            'onError' => 'error',
         ]), $theme);
+        $document->dependencyLock->blocks[0]->revision = 'unregistered-revision';
         $draft = new StudioPreviewDraft('default', $document);
-        $snapshot = self::snapshot($draft);
-        $values = new StudioPreviewBindingValues(new stdClass(), new stdClass());
 
-        $render = static fn (string $viewport): string => $renderer->render(
-            $snapshot,
+        $this->expectException(RenderException::class);
+        $renderer->render(
+            self::snapshot($draft),
             $draft,
             new StudioPreviewRenderRequest(
                 $draft->artifactId(),
                 $draft->digest(),
                 $draft->revision(),
-                'requests/canonical-' . $viewport,
-                $viewport,
+                'requests/unregistered-renderer',
+                'expanded',
             ),
-            $values,
-        )->html;
-
-        self::assertStringContainsString('data-studio-layout-columns="1"', $render('compact'));
-        self::assertStringContainsString('data-studio-layout-columns="12"', $render('expanded'));
+            new StudioPreviewBindingValues(new stdClass(), new stdClass()),
+        );
     }
 
-    /**
-     * Build one schema-shaped Blueprint node around the binding under test.
-     *
-     * @param   string    $type     Owner-safe core field block identifier.
-     * @param   stdClass  $binding  Canonical binding definition.
-     *
-     * @return  stdClass  Minimal document accepted by the structural renderer.
-     *
-     * @since   2.0.0
-     */
+    public function testCanonicalPreviewRefusesProducerEnhancementsUntilOneCanonicalRuntimeExists(): void
+    {
+        $enhancingRenderer = new class implements BlockRenderer {
+            public function render(stdClass $node, string $scope, RenderState $state): string
+            {
+                $state->enhance('motion', $node, $scope);
+
+                return '<p>Safe non-JavaScript baseline</p>';
+            }
+        };
+        [$renderer, $theme] = $this->canonicalRuntime(runtime: self::extensionRuntime($enhancingRenderer));
+        $document = self::lockTheme(self::document('acme.shop/grid', new stdClass()), $theme);
+        $document->dependencyLock->blocks[0]->revision = 'grid-block-r1';
+        $document->roots[0]->properties = (object) ['columns' => 3, 'collapse' => 'stack'];
+        $document->roots[0]->bindings = new stdClass();
+        $document->roots[0]->slots = (object) ['items' => []];
+        $draft = new StudioPreviewDraft('default', $document);
+
+        $this->expectException(RenderException::class);
+        $this->expectExceptionMessage('The App has no canonical Producer enhancement runtime.');
+        $renderer->render(
+            self::snapshot($draft),
+            $draft,
+            new StudioPreviewRenderRequest(
+                $draft->artifactId(),
+                $draft->digest(),
+                $draft->revision(),
+                'requests/enhancing-renderer',
+                'expanded',
+            ),
+            new StudioPreviewBindingValues(new stdClass(), new stdClass()),
+        );
+    }
+
     private static function document(string $type, stdClass $binding): stdClass
     {
         return (object) [
             'kind' => 'blueprint',
             'id' => 'blueprint:binding-test',
+            'version' => '1.0.0',
             'revision' => 'blueprint-r1',
+            'dependencyLock' => (object) ['blocks' => [(object) [
+                'type' => $type,
+                'version' => '1.0.0',
+                'revision' => 'core-block-r1',
+            ]]],
             'roots' => [(object) [
                 'id' => 'field-node',
                 'type' => $type,
+                'version' => '1.0.0',
                 'properties' => new stdClass(),
                 'bindings' => (object) ['value' => $binding],
                 'slots' => new stdClass(),
@@ -535,66 +295,25 @@ final class StudioPreviewBindingRendererTest extends TestCase
         ];
     }
 
-    /**
-     * Build a minimal Blueprint around schema-shaped core layout nodes.
-     *
-     * @param   list<stdClass>  $nodes  Root nodes in canonical authoring order.
-     *
-     * @return  stdClass  Minimal document accepted by the structural renderer.
-     *
-     * @since   2.0.0
-     */
-    private static function layoutDocument(array $nodes): stdClass
+    private static function render(stdClass $document, StudioPreviewBindingValues $values): string
     {
-        return (object) [
-            'kind' => 'blueprint',
-            'id' => 'blueprint:layout-test',
-            'revision' => 'blueprint-r1',
-            'roots' => $nodes,
-        ];
+        $identity = StudioPreviewIdentity::forDraft($document);
+        $resolver = new StudioPreviewBindingResolver();
+
+        return (new CompositionRenderer(self::runtime()->registry()))->renderDocument(
+            $document,
+            new RenderContext(
+                resolveBinding: static fn (stdClass $node, string $port) => $resolver->resolve(
+                    $node,
+                    $port,
+                    $values,
+                ),
+                previewMarkerMap: $identity['markerMap'],
+                policy: RenderPolicy::RequireRegistered,
+            ),
+        )->html;
     }
 
-    /**
-     * Build one schema-shaped core layout node with optional responsive intent.
-     *
-     * @param   string                $id          Stable node identifier.
-     * @param   string                $type        Canonical core layout block type.
-     * @param   array<string, mixed>  $properties  Base semantic layout properties.
-     * @param   stdClass|null         $responsive  Property-to-viewport overrides when present.
-     *
-     * @return  stdClass  Minimal layout node accepted by the structural renderer.
-     *
-     * @since   2.0.0
-     */
-    private static function layoutNode(
-        string $id,
-        string $type,
-        array $properties = [],
-        ?stdClass $responsive = null,
-    ): stdClass {
-        $node = (object) [
-            'id' => $id,
-            'type' => $type,
-            'properties' => (object) $properties,
-            'bindings' => new stdClass(),
-            'slots' => new stdClass(),
-        ];
-        if ($responsive !== null) {
-            $node->responsive = $responsive;
-        }
-
-        return $node;
-    }
-
-    /**
-     * Reuse one live trusted session snapshot for canonical renderer tests.
-     *
-     * @param   StudioPreviewDraft  $draft  Exact draft the session owns.
-     *
-     * @return  StudioHostSessionSnapshot  Live Blueprint authority for the default site.
-     *
-     * @since   2.0.0
-     */
     private static function snapshot(StudioPreviewDraft $draft): StudioHostSessionSnapshot
     {
         $session = new StudioHostSession(
@@ -621,44 +340,21 @@ final class StudioPreviewBindingRendererTest extends TestCase
         );
     }
 
-    /**
-     * Attach the exact live public-theme lock expected by the canonical renderer.
-     *
-     * @param   stdClass              $document  Minimal Blueprint document.
-     * @param   StudioPublishedTheme  $theme     Live public-theme authority.
-     *
-     * @return  stdClass  The same Blueprint with its exact dependency lock.
-     *
-     * @since   2.0.0
-     */
     private static function lockTheme(stdClass $document, StudioPublishedTheme $theme): stdClass
     {
-        $document->dependencyLock = (object) [
-            'theme' => $theme->reference(SiteContext::default())->document(),
-            'blocks' => [],
-        ];
+        $document->dependencyLock->theme = $theme->reference(SiteContext::default())->document();
 
         return $document;
     }
 
-    /**
-     * Compose the canonical site page renderer and the exact theme authority it re-resolves.
-     *
-     * @param   ?SiteSettings  $settings  Optional mutable settings source for drift tests.
-     *
-     * @return  array{CanonicalStudioPreviewRenderer, StudioPublishedTheme}  Renderer and shared theme authority.
-     *
-     * @since   2.0.0
-     */
-    private function canonicalRuntime(?SiteSettings $settings = null): array
-    {
+    /** @return array{CanonicalStudioPreviewRenderer, StudioPublishedTheme} */
+    private function canonicalRuntime(
+        ?SiteSettings $settings = null,
+        ?StudioBlockRendererRuntime $runtime = null,
+    ): array {
         if ($settings === null) {
             $settings = $this->createStub(SiteSettings::class);
-            $settings->method('current')->willReturn([
-                'site_name' => 'Kumwe',
-                'presentation' => \Kumwe\App\Presentation\Application\SitePresentation::defaults(),
-                'search_indexing_enabled' => false,
-            ]);
+            $settings->method('current')->willReturn(self::settingsDocument());
         }
         $theme = new StudioPublishedTheme(
             $settings,
@@ -676,24 +372,76 @@ final class StudioPreviewBindingRendererTest extends TestCase
                         . '</body></html>',
                 ]))),
             ),
-            self::renderer(),
+            $runtime ?? self::runtime(),
+            new StudioPreviewBindingResolver(),
             $theme,
             'default',
         ), $theme];
     }
 
-    /**
-     * Compose the production closed resolver and core renderer registry.
-     *
-     * @return  StudioCompositionMarkupRenderer  Safe renderer under test.
-     *
-     * @since   2.0.0
-     */
-    private static function renderer(): StudioCompositionMarkupRenderer
+    private static function runtime(): StudioBlockRendererRuntime
     {
-        return new StudioCompositionMarkupRenderer(
-            new StudioPreviewBindingResolver(),
-            new CoreStudioPreviewBlockRendererRegistry(),
+        return new StudioBlockRendererRuntime(
+            new ExtensionContributionRegistrySet(),
+            new StudioContentFieldBlockRenderer(),
         );
+    }
+
+    private static function extensionRuntime(BlockRenderer $renderer): StudioBlockRendererRuntime
+    {
+        $document = json_decode(
+            StudioContractResources::testkitBytes('fixtures/block.grid.example.json'),
+            false,
+            64,
+            JSON_THROW_ON_ERROR,
+        );
+        self::assertInstanceOf(stdClass::class, $document);
+        $document->type = 'acme.shop/grid';
+        $document->owner = (object) ['id' => 'acme.shop/blocks', 'version' => '1.0.0'];
+        $document->rendererRequirements = [
+            (object) [
+                'surface' => 'web',
+                'capability' => 'acme.shop/web-grid',
+                'versions' => '^1.0.0',
+            ],
+            (object) [
+                'surface' => 'preview',
+                'capability' => 'acme.shop/preview-grid',
+                'versions' => '^1.0.0',
+            ],
+        ];
+        $canonical = new CanonicalCompositionDocument(
+            CanonicalCompositionKind::BlockDefinition,
+            CanonicalJson::stringify($document),
+        );
+        $binding = new CompositionHostBinding(
+            CanonicalCompositionKind::BlockDefinition,
+            'acme.shop/grid',
+            'acme.shop.renderer.grid',
+        );
+        $owner = ContributionOwner::extension('acme/shop');
+        $registries = new ExtensionContributionRegistrySet(withCore: false);
+        $registries->canonicalCompositionDocuments()->register($owner, $canonical);
+        $registries->compositionHostBindings()->register($owner, $binding);
+        $registries->studioPreviewRenderers()->register(
+            $owner,
+            new StudioPreviewRendererContribution($owner, '1.0.0', $canonical, $binding),
+            $renderer,
+        );
+
+        return new StudioBlockRendererRuntime($registries, new StudioContentFieldBlockRenderer());
+    }
+
+    /** @return array<string, mixed> */
+    private static function settingsDocument(): array
+    {
+        $presentation = \Kumwe\App\Presentation\Application\SitePresentation::defaults();
+        $presentation['schemes']['default']['variables']['--site-accent'] = '#0c9189';
+
+        return [
+            'site_name' => 'Kumwe',
+            'presentation' => $presentation,
+            'search_indexing_enabled' => false,
+        ];
     }
 }

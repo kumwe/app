@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Kumwe\App\BusinessIntegration\Domain;
 
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationContract;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventSensitivity;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationContractValidator;
 use InvalidArgumentException;
 
 /**
@@ -39,13 +42,13 @@ final readonly class EventSchemaDefinition implements IntegrationContract
         private int $schemaVersion,
         private EventSensitivity $sensitivity,
         array $payloadSchema,
-        private int $maximumBytes = EventEnvelope::MAX_PAYLOAD_BYTES,
+        private int $maximumBytes = RecordedEventEnvelope::MAX_PAYLOAD_BYTES,
     ) {
         IntegrationContractValidator::identifier($eventType, 'Event type');
         if ($schemaVersion < 1 || $schemaVersion > 65_535) {
             throw new InvalidArgumentException('An event schema version is invalid.');
         }
-        if ($maximumBytes < 2 || $maximumBytes > EventEnvelope::MAX_PAYLOAD_BYTES) {
+        if ($maximumBytes < 2 || $maximumBytes > RecordedEventEnvelope::MAX_PAYLOAD_BYTES) {
             throw new InvalidArgumentException('An event schema payload ceiling is invalid.');
         }
         IntegrationContractValidator::object($payloadSchema, 'Event payload schema');

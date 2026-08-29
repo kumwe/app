@@ -6,11 +6,11 @@ namespace Kumwe\App\Extension\Runtime;
 
 use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use InvalidArgumentException;
-use Kumwe\App\Extension\Application\ExtensionServiceProvider;
+use Kumwe\Extension\Spi\Application\ExtensionServiceProvider;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
-use Kumwe\App\Extension\Domain\ExtensionIdentifier;
+use Kumwe\Extension\Manifest\ExtensionIdentifier;
+use Kumwe\Extension\Manifest\ManifestContributions;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
-use Kumwe\App\Extension\Contribution\ManifestContributionSet;
 use Kumwe\App\Extension\Domain\ThemeSurface;
 use RuntimeException;
 
@@ -24,7 +24,8 @@ use RuntimeException;
  * that root, and its provider instantiated against a container holding only the host services the caller
  * passed in. Anything that does not hold up raises instead of being skipped, because a half-loaded
  * runtime is worse than a boot that falls back to the recovery surfaces. Once every entry is in, the
- * loader drives the `contribute()` and `boot()` phases and hands back the finished set.
+ * loader activates the canonical SDK graph, binds executable identifiers, boots behavior, and hands
+ * back the finished set.
  *
  * @since  2.0.0
  */
@@ -140,14 +141,14 @@ final readonly class ExtensionRuntimeLoader
             $extensionIdentifier = ExtensionIdentifier::fromString($identifier);
             $identifier = $extensionIdentifier->value();
             $declared = $manifestSchema >= 2
-                ? ManifestContributionSet::fromManifest(
+                ? ManifestContributions::fromManifest(
                     $extensionIdentifier,
                     is_array($declaredContributions)
                         ? $declaredContributions
                         : throw new RuntimeException('Strict runtime contributions are unavailable.'),
                     $manifestSchema,
                 )
-                : ManifestContributionSet::legacy($extensionIdentifier, []);
+                : ManifestContributions::fromSchemaOne($extensionIdentifier);
             $root = $this->safeRoot($relativeRoot);
             $this->registerAutoload($root, $autoload);
 
@@ -165,24 +166,13 @@ final readonly class ExtensionRuntimeLoader
                 ));
             }
 
-            $services = $allowedServices;
-            $events = $services[ExtensionEventRegistrar::class] ?? null;
-            if ($events instanceof ExtensionEventRegistrar) {
-                $services[ExtensionEventRegistrar::class] = new TrustEnforcingExtensionEventRegistrar(
-                    $events,
-                    $this->trust,
-                    $identifier,
-                    $this->execution,
-                );
-            }
-            $container = new RestrictedExtensionContainer($identifier, $services);
+            $container = new RestrictedExtensionContainer($identifier, $allowedServices);
             $provider->register($container);
             $active->add(
                 $identifier,
                 $provider,
                 $container,
                 $declared,
-                $manifestSchema >= 2,
                 $version,
                 $treeDigest,
                 $extension,
@@ -230,7 +220,7 @@ final readonly class ExtensionRuntimeLoader
             }
         }
 
-        $active->contribute();
+        $active->activate();
         $active->boot();
 
         return $active;

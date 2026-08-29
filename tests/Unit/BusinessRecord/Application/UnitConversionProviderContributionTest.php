@@ -19,11 +19,12 @@ use Kumwe\Conversion\Value\UnitConversionFactor;
 use Kumwe\App\Extension\Contribution\UnitConversionProviderDefinition;
 use Kumwe\Conversion\Contract\UnitConversionRequest;
 use Kumwe\App\BusinessRecord\Infrastructure\RuntimeUnitConversionProviderCatalog;
-use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\Extension\Application\ExtensionExecutionGate;
-use Kumwe\App\Extension\Contribution\ManifestContributionSet;
-use Kumwe\App\Extension\Domain\ExtensionIdentifier;
+use Kumwe\App\Extension\Contribution\OwnedExtensionBindingRegistrar;
+use Kumwe\Extension\Manifest\ExtensionIdentifier;
+use Kumwe\Extension\Manifest\ManifestContributions;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
@@ -51,7 +52,7 @@ final class UnitConversionProviderContributionTest extends TestCase
     public function testAnExtensionSuppliesAFactorThroughTheContributionRegistrar(): void
     {
         $registries = new ExtensionContributionRegistrySet(withCore: false);
-        $this->contribute($registries, 'acme/units', 'acme.units.trade', '12.000000');
+        $this->activateProvider($registries, 'acme/units', 'acme.units.trade', '12.000000');
 
         $converted = $this->pipeline($registries)->convert($this->request());
 
@@ -98,9 +99,9 @@ final class UnitConversionProviderContributionTest extends TestCase
     public function testTwoPackagesConvertingTheSameQuantityProduceTheSameShape(): void
     {
         $first = new ExtensionContributionRegistrySet(withCore: false);
-        $this->contribute($first, 'acme/units', 'acme.units.trade', '12.000000');
+        $this->activateProvider($first, 'acme/units', 'acme.units.trade', '12.000000');
         $second = new ExtensionContributionRegistrySet(withCore: false);
-        $this->contribute($second, 'zeta/logistics', 'zeta.logistics.packing', '12.000000');
+        $this->activateProvider($second, 'zeta/logistics', 'zeta.logistics.packing', '12.000000');
 
         $left = $this->pipeline($first)->convert($this->request())->toArray();
         $right = $this->pipeline($second)->convert($this->request())->toArray();
@@ -122,8 +123,8 @@ final class UnitConversionProviderContributionTest extends TestCase
     public function testDeclaredPriorityDecidesWhichPackageAnswers(): void
     {
         $registries = new ExtensionContributionRegistrySet(withCore: false);
-        $this->contribute($registries, 'acme/units', 'acme.units.trade', '12.000000', 10);
-        $this->contribute($registries, 'zeta/logistics', 'zeta.logistics.packing', '10.000000', -5);
+        $this->activateProvider($registries, 'acme/units', 'acme.units.trade', '12.000000', 10);
+        $this->activateProvider($registries, 'zeta/logistics', 'zeta.logistics.packing', '10.000000', -5);
 
         $converted = $this->pipeline($registries)->convert($this->request());
 
@@ -141,7 +142,7 @@ final class UnitConversionProviderContributionTest extends TestCase
     public function testAPackageCannotWidenItsReachAfterAdmission(): void
     {
         $undeclared = new ExtensionContributionRegistrySet(withCore: false);
-        $this->contribute($undeclared, 'acme/units', 'acme.units.trade', '12.000000', 0, ['case', 'pallet']);
+        $this->activateProvider($undeclared, 'acme/units', 'acme.units.trade', '12.000000', 0, ['case', 'pallet']);
         try {
             $this->pipeline($undeclared)->convert($this->request());
             self::fail('A provider related a pair of units it never declared.');
@@ -150,7 +151,7 @@ final class UnitConversionProviderContributionTest extends TestCase
         }
 
         $impersonating = new ExtensionContributionRegistrySet(withCore: false);
-        $this->contribute(
+        $this->activateProvider(
             $impersonating,
             'acme/units',
             'acme.units.trade',
@@ -167,20 +168,16 @@ final class UnitConversionProviderContributionTest extends TestCase
         }
 
         $registries = new ExtensionContributionRegistrySet(withCore: false);
-        $owner = ContributionOwner::extension('acme/units');
         $definition = new UnitConversionProviderDefinition('acme.units.trade', ['case', 'unit']);
-        $registrar = $registries->registrar($owner, new ManifestContributionSet(
-            $owner,
-            unitConverters: [$definition],
-        ));
+        $registrar = $this->registrar($registries, 'acme/units', $definition);
         try {
             $registrar->unitConversionProvider(
-                $definition,
+                $definition->identifier(),
                 new FixedUnitConversionProvider('acme.units.other', 'case', 'unit', '12.000000'),
             );
             self::fail('An implementation answering under another identity was accepted.');
         } catch (InvalidArgumentException $exception) {
-            self::assertStringContainsString('contradicts its declaration', $exception->getMessage());
+            self::assertStringContainsString('contradicts its signed declaration', $exception->getMessage());
         }
     }
 
@@ -194,7 +191,7 @@ final class UnitConversionProviderContributionTest extends TestCase
     public function testRemovingThePackageWithdrawsItsFactors(): void
     {
         $registries = new ExtensionContributionRegistrySet(withCore: false);
-        $this->contribute($registries, 'acme/units', 'acme.units.trade', '12.000000');
+        $this->activateProvider($registries, 'acme/units', 'acme.units.trade', '12.000000');
 
         $registries->remove(ContributionOwner::extension('acme/units'));
 
@@ -212,18 +209,14 @@ final class UnitConversionProviderContributionTest extends TestCase
      */
     public function testStaleGenerationCannotEnterResidentUnitConversionProvider(): void
     {
-        $owner = ContributionOwner::extension('acme/units');
         $definition = new UnitConversionProviderDefinition('acme.units.trade', ['case', 'unit']);
         $provider = $this->createMock(UnitConversionProvider::class);
         $provider->method('identifier')->willReturn('acme.units.trade');
         $provider->expects(self::never())->method('supports');
         $provider->expects(self::never())->method('factorFor');
         $registries = new ExtensionContributionRegistrySet(withCore: false);
-        $registrar = $registries->registrar($owner, new ManifestContributionSet(
-            $owner,
-            unitConverters: [$definition],
-        ));
-        $registrar->unitConversionProvider($definition, $provider);
+        $registrar = $this->registrar($registries, 'acme/units', $definition);
+        $registrar->unitConversionProvider($definition->identifier(), $provider);
         $registrar->complete();
         $execution = $this->createMock(ExtensionExecutionGate::class);
         $execution->expects(self::once())
@@ -248,32 +241,32 @@ final class UnitConversionProviderContributionTest extends TestCase
      */
     public function testADeclaredConversionProviderRoundTripsThroughTheManifest(): void
     {
-        $owner = ContributionOwner::extension('acme/units');
-        $declared = new ManifestContributionSet(
-            $owner,
-            spiVersion: ManifestContributionSet::CURRENT_SPI_VERSION,
-            unitConverters: [new UnitConversionProviderDefinition('acme.units.trade', ['case', 'unit'], 3)],
-        );
-
-        $document = $declared->toArray();
-        self::assertSame(
-            [['provider_id' => 'acme.units.trade', 'units' => ['case', 'unit'], 'priority' => 3]],
-            $document['integration']['unit_converters'] ?? null,
-        );
-        $parsed = ManifestContributionSet::fromManifest(
+        $document = [
+            'version' => 2,
+            'integration' => [
+                'unit_converters' => [
+                    (new UnitConversionProviderDefinition('acme.units.trade', ['case', 'unit'], 3))->toArray(),
+                ],
+            ],
+        ];
+        $parsed = ManifestContributions::fromManifest(
             ExtensionIdentifier::fromString('acme/units'),
             $document,
             4,
         );
-        self::assertSame($document, $parsed->toArray());
-        self::assertSame('acme.units.trade', $parsed->unitConversionProviders()[0]->identifier());
+        self::assertSame(
+            [['provider_id' => 'acme.units.trade', 'units' => ['case', 'unit'], 'priority' => 3]],
+            $parsed->declarations()['integration']['unit_converters'] ?? null,
+        );
 
-        $bare = new ManifestContributionSet($owner, spiVersion: ManifestContributionSet::CURRENT_SPI_VERSION);
-        self::assertArrayNotHasKey('unit_converters', $bare->toArray()['integration'] ?? []);
+        $bare = ManifestContributions::fromManifest(ExtensionIdentifier::fromString('acme/units'), [
+            'version' => 2,
+        ], 4);
+        self::assertArrayNotHasKey('unit_converters', $bare->declarations()['integration'] ?? []);
     }
 
     /**
-     * Contribute one conversion package into a registry set exactly as an installed extension would.
+     * Activate one unit provider against its signed manifest exactly as an installed extension would.
      *
      * @param   ExtensionContributionRegistrySet  $registries  Set the package contributes into.
      * @param   string                            $package     Package identifier in `vendor/name` form.
@@ -287,7 +280,7 @@ final class UnitConversionProviderContributionTest extends TestCase
      *
      * @since   2.0.0
      */
-    private function contribute(
+    private function activateProvider(
         ExtensionContributionRegistrySet $registries,
         string $package,
         string $provider,
@@ -296,17 +289,41 @@ final class UnitConversionProviderContributionTest extends TestCase
         ?array $units = null,
         ?string $attributed = null,
     ): void {
-        $owner = ContributionOwner::extension($package);
         $definition = new UnitConversionProviderDefinition($provider, $units ?? ['case', 'unit'], $priority);
-        $registrar = $registries->registrar($owner, new ManifestContributionSet(
-            $owner,
-            unitConverters: [$definition],
-        ));
+        $registrar = $this->registrar($registries, $package, $definition);
         $registrar->unitConversionProvider(
-            $definition,
+            $definition->identifier(),
             new FixedUnitConversionProvider($provider, 'case', 'unit', $factor, $attributed),
         );
         $registrar->complete();
+    }
+
+    /**
+     * Open the real canonical binding sink for one signed unit-provider declaration.
+     *
+     * @param   ExtensionContributionRegistrySet  $registries  Host registry set receiving the binding.
+     * @param   string                            $package     Canonical package identifier.
+     * @param   UnitConversionProviderDefinition  $definition  Signed unit-provider policy definition.
+     *
+     * @return  OwnedExtensionBindingRegistrar  Manifest-scoped executable sink.
+     *
+     * @since   2.0.0
+     */
+    private function registrar(
+        ExtensionContributionRegistrySet $registries,
+        string $package,
+        UnitConversionProviderDefinition $definition,
+    ): OwnedExtensionBindingRegistrar {
+        $manifest = ManifestContributions::fromManifest(
+            ExtensionIdentifier::fromString($package),
+            [
+                'version' => 2,
+                'integration' => ['unit_converters' => [$definition->toArray()]],
+            ],
+            4,
+        );
+
+        return new OwnedExtensionBindingRegistrar($manifest, $registries);
     }
 
     /**

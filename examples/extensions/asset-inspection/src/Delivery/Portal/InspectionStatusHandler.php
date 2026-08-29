@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace KumweExample\AssetInspection\Delivery\Portal;
 
-use Kumwe\App\Portal\Http\PortalRequest;
-use Kumwe\App\Portal\Presentation\PortalContributionRenderer;
+use Kumwe\Extension\Spi\Binding\Http\PortalRouteRenderer;
+use Kumwe\Extension\Spi\Http\ExtensionRequest;
 use KumweExample\AssetInspection\Application\InspectionOverviewService;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Psr\Http\Message\ResponseInterface;
@@ -23,13 +23,13 @@ final readonly class InspectionStatusHandler implements RequestHandlerInterface
      * Bind portal request adaptation to shared policy and an owner-bound renderer capability.
      *
      * @param  InspectionOverviewService   $overview  Transport-neutral proof use case.
-     * @param  PortalContributionRenderer  $renderer  Renderer fixed to this owner and template.
+     * @param  PortalRouteRenderer         $renderer  Renderer fixed to this owner and template.
      *
      * @since  2.0.0
      */
     public function __construct(
         private InspectionOverviewService $overview,
-        private PortalContributionRenderer $renderer,
+        private PortalRouteRenderer $renderer,
     ) {
     }
 
@@ -44,15 +44,8 @@ final readonly class InspectionStatusHandler implements RequestHandlerInterface
      */
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
-        $session = PortalRequest::session($request);
-        $model = $this->overview->portal(PortalRequest::context($request));
+        $model = $this->overview->portal(ExtensionRequest::context($request));
 
-        return new HtmlResponse($this->renderer->render(
-            $model + [
-                'capabilities' => PortalRequest::capabilityMap($request),
-                'active_navigation' => 'kumwe.asset-inspection-example.portal.navigation',
-            ],
-            $session,
-        ), 200, ['Cache-Control' => 'no-store']);
+        return new HtmlResponse($this->renderer->render($model, $request), 200, ['Cache-Control' => 'no-store']);
     }
 }

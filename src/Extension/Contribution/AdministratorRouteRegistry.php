@@ -4,12 +4,17 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Extension\Contribution;
 
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+
+use Kumwe\Extension\Spi\Contribution\AdministratorRouteDefinition;
+
 use InvalidArgumentException;
 use Kumwe\App\Administrator\Http\Middleware\AdministratorAuthorizationMiddleware;
 use Kumwe\App\Administrator\Http\Middleware\AdministratorCsrfMiddleware;
 use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Extension\Runtime\TrustEnforcingRequestHandler;
+use Kumwe\Extension\Spi\Binding\Http\AdministratorRouteHandlerFactory;
 use Mezzio\Application;
 
 /**
@@ -139,7 +144,10 @@ final class AdministratorRouteRegistry implements ContributionSurface
             }
             $definition = $route['definition'];
             $handler = new TrustEnforcingRequestHandler(
-                $route['factory']->create($renderer),
+                $route['factory']->create($renderer->forExtensionRoute(
+                    $owner->identifier(),
+                    $definition->view,
+                )),
                 $trust,
                 $owner->identifier(),
             );

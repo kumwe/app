@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Application\Presentation\Preference;
 
-use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\InterfaceStandard\PresentationPreference;
 use Kumwe\App\InterfaceStandard\PresentationPreferenceKey;
 

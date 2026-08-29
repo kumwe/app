@@ -10,7 +10,7 @@ use Doctrine\DBAL\Platforms\MySQL84Platform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\App\Identity\Application\Authentication\PrincipalGrant;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use Kumwe\App\Identity\Domain\GrantScope;
 use Kumwe\App\Identity\Infrastructure\Authentication\DoctrineAccessTokenVerifier;
 use Kumwe\App\Infrastructure\Persistence\TableNames;

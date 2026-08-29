@@ -1,17 +1,12 @@
 <?php
 
 /**
- * Prove the vendored Studio contract corpus is exactly the pinned release.
+ * Prove App's deployment pin agrees with Producer's exact Studio authority.
  *
- * Decision D16 makes Kumwe App's composition declarations the published Studio schemas, and
- * kumwe/app#104 requires the exact `@kumwe/studio-protocol` schema set and the complete
- * `@kumwe/studio-testkit` corpus to be vendored at one released version and digest-verified before
- * any conformance run. This tool is that verification: it recomputes every SRI digest the two
- * published manifests declare against the vendored bytes under `resources/studio-contract/` (the runtime protocol schemas) and `tests/Fixtures/Studio/` (the testkit corpus), holds each
- * directory closed in both directions (a listed file must exist, an unlisted file must not), and
- * checks the vendored package versions against the pin record. A Studio contract fix reaches this
- * repository only as a deliberate re-pin: new tarballs, new digests, and a new `PIN.json` in one
- * change — never as a silent edit to vendored bytes.
+ * Producer owns and verifies the released PHP schema corpus and testkit resources. App retains only
+ * the coordinated release record and the eight npm tarballs its browser build consumes. This gate
+ * binds those App-owned bytes to Producer's typed release, compiles Producer's closed schema
+ * registry, and resolves every manifest-listed testkit member through Producer's safe resource API.
  *
  * Usage:
  *
@@ -22,8 +17,110 @@
 
 declare(strict_types=1);
 
-$protocolRoot = dirname(__DIR__) . '/resources/studio-contract';
-$testkitRoot = dirname(__DIR__) . '/tests/Fixtures/Studio';
+use Kumwe\Producer\Schema\StudioContractResources;
+use Kumwe\Producer\Schema\StudioDocumentSchemaRegistry;
+
+require dirname(__DIR__) . '/vendor/autoload.php';
+
+/**
+ * Read one required ordinary file.
+ *
+ * @param   string  $path  Absolute deployment-evidence path.
+ *
+ * @return  string  Exact file bytes.
+ *
+ * @throws  RuntimeException  When the file is absent or unreadable.
+ *
+ * @since   2.0.0
+ */
+$fileBytes = static function (string $path): string {
+    $bytes = is_file($path) ? file_get_contents($path) : false;
+    if (!is_string($bytes)) {
+        throw new RuntimeException(sprintf('Required Studio evidence %s is missing or unreadable.', $path));
+    }
+
+    return $bytes;
+};
+
+/**
+ * Decode exact object-shaped JSON bytes.
+ *
+ * @param   string  $bytes  JSON document bytes.
+ * @param   string  $label  Evidence label for diagnostics.
+ *
+ * @return  array<string, mixed>  Decoded object members.
+ *
+ * @throws  RuntimeException  When the bytes are not object-shaped JSON.
+ *
+ * @since   2.0.0
+ */
+$object = static function (string $bytes, string $label): array {
+    try {
+        $decoded = json_decode($bytes, true, 32, JSON_THROW_ON_ERROR);
+    } catch (JsonException $error) {
+        throw new RuntimeException($label . ' is not valid JSON.', 0, $error);
+    }
+    if (!is_array($decoded) || array_is_list($decoded)) {
+        throw new RuntimeException($label . ' must be a JSON object.');
+    }
+
+    return $decoded;
+};
+
+/**
+ * Admit an ordered string list from deployment evidence.
+ *
+ * @param   mixed   $value  Candidate list.
+ * @param   string  $label  Evidence label for diagnostics.
+ *
+ * @return  list<string>  Exact ordered values.
+ *
+ * @throws  RuntimeException  When the value is not an ordered string list.
+ *
+ * @since   2.0.0
+ */
+$stringList = static function (mixed $value, string $label): array {
+    if (!is_array($value) || !array_is_list($value)) {
+        throw new RuntimeException($label . ' must be an ordered list.');
+    }
+    foreach ($value as $entry) {
+        if (!is_string($entry)) {
+            throw new RuntimeException($label . ' must contain only strings.');
+        }
+    }
+
+    return $value;
+};
+
+/**
+ * Admit an object-shaped string map from deployment evidence.
+ *
+ * @param   mixed   $value  Candidate map.
+ * @param   string  $label  Evidence label for diagnostics.
+ *
+ * @return  array<string, string>  Exact named string values.
+ *
+ * @throws  RuntimeException  When the value is not a named string map.
+ *
+ * @since   2.0.0
+ */
+$stringMap = static function (mixed $value, string $label): array {
+    if (!is_array($value) || array_is_list($value)) {
+        throw new RuntimeException($label . ' must be an object.');
+    }
+    $strings = [];
+    foreach ($value as $key => $entry) {
+        if (!is_string($key) || !is_string($entry)) {
+            throw new RuntimeException($label . ' must contain only named strings.');
+        }
+        $strings[$key] = $entry;
+    }
+
+    return $strings;
+};
+
+$root = dirname(__DIR__);
+$contractRoot = $root . '/resources/studio-contract';
 $errors = [];
 $studioPackages = [
     '@kumwe/studio',
@@ -35,239 +132,122 @@ $studioPackages = [
     '@kumwe/studio-rich-text',
     '@kumwe/studio-testkit',
 ];
+$corpusCount = 0;
+$groupCount = 0;
 
-/**
- * Compute the SRI sha256 digest of one file.
- *
- * @param   string  $path  File whose bytes are digested.
- *
- * @return  string  Digest in the manifests' `sha256-<base64>` form.
- *
- * @since   2.0.0
- */
-function sriDigest(string $path): string
-{
-    return 'sha256-' . base64_encode(hash_file('sha256', $path, true) ?: '');
-}
+try {
+    $installed = StudioContractResources::releaseRecord();
+    StudioDocumentSchemaRegistry::fromVendoredCorpus();
+    $manifestBytes = StudioContractResources::testkitManifestBytes();
 
-/**
- * Compute the lower-case hexadecimal sha256 digest used by the package pin.
- *
- * @param   string  $path  File whose bytes are digested.
- *
- * @return  string  Digest in lower-case hexadecimal form.
- *
- * @since   2.0.0
- */
-function hexDigest(string $path): string
-{
-    return hash_file('sha256', $path) ?: '';
-}
-
-/**
- * Decode one JSON document or record why it could not be read.
- *
- * @param   string        $path    Document to decode.
- * @param   list<string>  $errors  Accumulated violations.
- *
- * @return  array<string, mixed>|null  Decoded document, or null when unreadable.
- *
- * @since   2.0.0
- */
-function decode(string $path, array &$errors): ?array
-{
-    if (!is_file($path)) {
-        $errors[] = sprintf('Missing manifest: %s', $path);
-
-        return null;
-    }
-    $decoded = json_decode((string) file_get_contents($path), true);
-    if (!is_array($decoded)) {
-        $errors[] = sprintf('Unreadable manifest: %s', $path);
-
-        return null;
-    }
-
-    return $decoded;
-}
-
-$pin = decode($protocolRoot . '/PIN.json', $errors);
-$protocolManifest = decode($protocolRoot . '/protocol/schemas/manifest.json', $errors);
-$corpusManifest = decode($testkitRoot . '/testkit/corpus-manifest.json', $errors);
-$releasePath = $protocolRoot . '/studio-release.json';
-$release = decode($releasePath, $errors);
-
-if ($pin !== null && $release !== null) {
-    $releaseName = $release['release'] ?? null;
-    $releasePackages = $release['packages'] ?? null;
+    $releaseBytes = $fileBytes($contractRoot . '/studio-release.json');
+    $release = $object($releaseBytes, 'App Studio release record');
+    $packages = $stringMap($release['packages'] ?? null, 'App Studio release packages');
+    $profiles = $stringList($release['claimedProfiles'] ?? null, 'App Studio release profiles');
+    $installedPackages = $installed->packages();
+    ksort($packages);
+    ksort($installedPackages);
     if (
         ($release['kind'] ?? null) !== 'studio-release'
-        || !is_string($releaseName)
-        || !is_array($releasePackages)
+        || ($release['contractVersion'] ?? null) !== $installed->contractVersion()
+        || ($release['release'] ?? null) !== $installed->release()
+        || ($release['protocolVersion'] ?? null) !== $installed->protocolVersion()
+        || ($release['corpusManifestDigest'] ?? null) !== $installed->corpusManifestDigest()
+        || $profiles !== $installed->claimedProfiles()
+        || $packages !== $installedPackages
+        || hash('sha256', $releaseBytes) !== $installed->recordSha256()
     ) {
-        $errors[] = 'The vendored Studio release record is malformed.';
-    } else {
-        $actualPackages = array_keys($releasePackages);
-        sort($actualPackages);
-        $expectedPackages = $studioPackages;
-        sort($expectedPackages);
-        if ($actualPackages !== $expectedPackages) {
-            $errors[] = 'The Studio release record does not name exactly the eight public packages.';
-        }
-        foreach ($studioPackages as $package) {
-            if (($releasePackages[$package] ?? null) !== $releaseName) {
-                $errors[] = sprintf('%s is not coordinated at Studio release %s.', $package, $releaseName);
-            }
-        }
+        throw new RuntimeException('App studio-release.json differs from Producer\'s coordinated release.');
     }
 
+    $pin = $object($fileBytes($contractRoot . '/PIN.json'), 'App Studio PIN');
     $releasePin = $pin['release_record'] ?? null;
+    $pinned = $pin['pinned'] ?? null;
     if (
         !is_array($releasePin)
         || ($releasePin['file'] ?? null) !== 'studio-release.json'
-        || ($releasePin['release'] ?? null) !== $releaseName
-        || ($releasePin['sha256'] ?? null) !== hexDigest($releasePath)
+        || ($releasePin['release'] ?? null) !== $installed->release()
+        || ($releasePin['sha256'] ?? null) !== $installed->recordSha256()
+        || !is_array($pinned)
+        || array_is_list($pinned)
     ) {
-        $errors[] = 'PIN.json does not identify the exact vendored Studio release-record bytes.';
+        throw new RuntimeException('App PIN.json does not bind Producer\'s exact release record.');
     }
 
-    foreach ([
-        $protocolRoot . '/protocol/studio-release.json',
-        $testkitRoot . '/testkit/studio-release.json',
-    ] as $copy) {
-        if (!is_file($copy) || file_get_contents($copy) !== file_get_contents($releasePath)) {
-            $errors[] = sprintf('Release-record copy %s is missing or differs byte-for-byte.', $copy);
-        }
-    }
-    $corpusManifestPath = $testkitRoot . '/testkit/corpus-manifest.json';
-    if (
-        !is_file($corpusManifestPath)
-        || ($release['corpusManifestDigest'] ?? null) !== sriDigest($corpusManifestPath)
-    ) {
-        $errors[] = 'The Studio release record does not bind the exact vendored corpus manifest bytes.';
-    }
-
-    $pinnedNames = array_keys((array) ($pin['pinned'] ?? []));
+    $expectedNames = $studioPackages;
+    sort($expectedNames);
+    $pinnedNames = array_keys($pinned);
     sort($pinnedNames);
-    $expectedPackages = $studioPackages;
-    sort($expectedPackages);
-    if ($pinnedNames !== $expectedPackages) {
-        $errors[] = 'PIN.json does not pin exactly the eight public Studio packages.';
+    $installedNames = array_keys($installedPackages);
+    sort($installedNames);
+    if ($pinnedNames !== $expectedNames || $installedNames !== $expectedNames) {
+        throw new RuntimeException('The Studio release must coordinate exactly the eight public packages.');
     }
 
+    $listedTarballs = [];
     foreach ($studioPackages as $package) {
-        $packagePin = $pin['pinned'][$package] ?? null;
+        $packagePin = $pinned[$package] ?? null;
         $file = is_array($packagePin) ? ($packagePin['file'] ?? null) : null;
         $digest = is_array($packagePin) ? ($packagePin['npm_tarball_sha256'] ?? null) : null;
-        $version = is_array($packagePin) ? ($packagePin['version'] ?? null) : null;
         if (
-            !is_string($file)
+            !is_array($packagePin)
+            || ($packagePin['version'] ?? null) !== ($installedPackages[$package] ?? null)
+            || !is_string($file)
             || basename($file) !== $file
+            || preg_match('/^[A-Za-z0-9._-]+\.tgz$/D', $file) !== 1
+            || isset($listedTarballs[$file])
             || !is_string($digest)
-            || $version !== ($releasePackages[$package] ?? null)
+            || preg_match('/^[0-9a-f]{64}$/D', $digest) !== 1
         ) {
-            $errors[] = sprintf('PIN.json has an invalid coordinated package pin for %s.', $package);
-            continue;
+            throw new RuntimeException(sprintf('App has a malformed package pin for %s.', $package));
         }
-        $tarball = $protocolRoot . '/packages/' . $file;
-        if (!is_file($tarball) || hexDigest($tarball) !== $digest) {
-            $errors[] = sprintf('Pinned tarball %s for %s is missing or has different bytes.', $file, $package);
+        $listedTarballs[$file] = true;
+        $actual = hash_file('sha256', $contractRoot . '/packages/' . $file);
+        if (!is_string($actual) || !hash_equals($digest, $actual)) {
+            throw new RuntimeException(sprintf('The pinned npm tarball for %s is missing or changed.', $package));
         }
     }
 
-    foreach ([
-        '@kumwe/studio-protocol' => $protocolRoot . '/protocol/package.json',
-        '@kumwe/studio-testkit' => $testkitRoot . '/testkit/package.json',
-    ] as $package => $packageFile) {
-        $declared = $pin['pinned'][$package]['version'] ?? null;
-        $vendored = decode($packageFile, $errors)['version'] ?? null;
-        if (!is_string($declared) || $declared !== $vendored) {
-            $errors[] = sprintf(
-                'Pin mismatch for %s: PIN.json declares %s, the vendored package.json says %s.',
-                $package,
-                var_export($declared, true),
-                var_export($vendored, true),
-            );
+    $packageDirectory = scandir($contractRoot . '/packages');
+    if (!is_array($packageDirectory)) {
+        throw new RuntimeException('App\'s pinned Studio package directory is unreadable.');
+    }
+    foreach ($packageDirectory as $entry) {
+        if ($entry === '.' || $entry === '..') {
+            continue;
+        }
+        if (!isset($listedTarballs[$entry]) || !is_file($contractRoot . '/packages/' . $entry)) {
+            throw new RuntimeException(sprintf('The Studio package directory contains unpinned entry %s.', $entry));
         }
     }
-}
 
-$schemaCount = 0;
-if ($protocolManifest !== null) {
-    $schemaDirectory = $protocolRoot . '/protocol/schemas';
-    $listed = ['manifest.json' => true];
-    foreach ((array) ($protocolManifest['schemas'] ?? []) as $schema) {
-        $file = is_array($schema) ? ($schema['file'] ?? null) : null;
-        $digest = is_array($schema) ? ($schema['digest'] ?? null) : null;
-        if (!is_string($file) || !is_string($digest)) {
-            $errors[] = 'A protocol manifest entry lacks its file or digest.';
-            continue;
-        }
-        $listed[$file] = true;
-        $path = $schemaDirectory . '/' . $file;
-        if (!is_file($path)) {
-            $errors[] = sprintf('Protocol schema %s is listed but not vendored.', $file);
-            continue;
-        }
-        if (sriDigest($path) !== $digest) {
-            $errors[] = sprintf('Protocol schema %s does not match its published digest.', $file);
-            continue;
-        }
-        $schemaCount++;
+    $manifest = $object($manifestBytes, 'Producer Studio testkit manifest');
+    $groups = $manifest['groups'] ?? null;
+    if (!is_array($groups) || !array_is_list($groups)) {
+        throw new RuntimeException('Producer\'s Studio testkit manifest has no ordered groups list.');
     }
-    foreach (scandir($schemaDirectory) ?: [] as $entry) {
-        if ($entry[0] !== '.' && !isset($listed[$entry])) {
-            $errors[] = sprintf('Protocol schema directory holds unlisted file %s.', $entry);
-        }
-    }
-}
-
-$corpusCount = 0;
-$groupCount = 0;
-if ($corpusManifest !== null) {
-    foreach ((array) ($corpusManifest['groups'] ?? []) as $group) {
-        $name = is_array($group) ? ($group['group'] ?? null) : null;
+    foreach ($groups as $group) {
         $path = is_array($group) ? ($group['path'] ?? null) : null;
-        if (!is_string($name) || !is_string($path)) {
-            $errors[] = 'A corpus manifest group lacks its name or path.';
-            continue;
+        $files = is_array($group) ? ($group['files'] ?? null) : null;
+        if (!is_string($path) || !is_array($files) || !array_is_list($files)) {
+            throw new RuntimeException('Producer\'s Studio testkit manifest contains a malformed group.');
         }
         $groupCount++;
-        $directory = $testkitRoot . '/testkit/' . $path;
-        $listed = [];
-        foreach ((array) ($group['files'] ?? []) as $entry) {
+        foreach ($files as $entry) {
             $file = is_array($entry) ? ($entry['file'] ?? null) : null;
-            $digest = is_array($entry) ? ($entry['digest'] ?? null) : null;
-            if (!is_string($file) || !is_string($digest)) {
-                $errors[] = sprintf('Group %s lists an entry without file or digest.', $name);
-                continue;
+            if (!is_string($file)) {
+                throw new RuntimeException('Producer\'s Studio testkit manifest contains a malformed member.');
             }
-            $listed[$file] = true;
-            $filePath = $directory . '/' . $file;
-            if (!is_file($filePath)) {
-                $errors[] = sprintf('Corpus file %s/%s is listed but not vendored.', $path, $file);
-                continue;
-            }
-            if (sriDigest($filePath) !== $digest) {
-                $errors[] = sprintf('Corpus file %s/%s does not match its published digest.', $path, $file);
-                continue;
-            }
+            StudioContractResources::testkitBytes($path . '/' . $file);
             $corpusCount++;
         }
-        if (is_dir($directory)) {
-            foreach (scandir($directory) ?: [] as $entry) {
-                if ($entry[0] !== '.' && is_file($directory . '/' . $entry) && !isset($listed[$entry])) {
-                    $errors[] = sprintf('Corpus directory %s holds unlisted file %s.', $path, $entry);
-                }
-            }
-        } else {
-            $errors[] = sprintf('Corpus directory %s is missing.', $path);
-        }
     }
+} catch (Throwable $error) {
+    $errors[] = $error->getMessage();
 }
 
 if ($errors !== []) {
-    fwrite(STDERR, "The vendored Studio corpus does not match its pinned release:\n");
+    fwrite(STDERR, "Studio dependency integration does not match the coordinated release:\n");
     foreach ($errors as $error) {
         fwrite(STDERR, ' - ' . $error . "\n");
     }
@@ -275,9 +255,10 @@ if ($errors !== []) {
 }
 
 printf(
-    "Kumwe studio corpus verified: %d coordinated packages, %d protocol schemas, %d corpus files in %d groups.\n",
+    "Kumwe Studio dependencies verified: %d coordinated npm packages, %d Producer document kinds, "
+        . "%d testkit files in %d groups.\n",
     count($studioPackages),
-    $schemaCount,
+    count(StudioDocumentSchemaRegistry::DOCUMENT_KINDS),
     $corpusCount,
     $groupCount,
 );

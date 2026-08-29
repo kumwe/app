@@ -6,7 +6,7 @@ namespace Kumwe\App\Portal\Http\Handler;
 
 use Kumwe\App\Application\Presentation\Dashboard\DashboardPreferenceService;
 use Kumwe\App\Delivery\Http\Dashboard\DashboardPreferenceQueryDecoder;
-use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\InterfaceStandard\SurfaceArea;
 use Kumwe\App\InterfaceStandard\SurfaceId;
 use Kumwe\App\Portal\Http\PortalRequest;

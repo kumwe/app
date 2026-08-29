@@ -30,7 +30,9 @@ settings go through `Site\Application\SiteSettings`. Secrets stay in the environ
 ## Layers
 
 Enforced by `composer architecture:policy` against `layers.json`. A namespace the
-graph cannot classify is itself a failure.
+graph cannot classify is itself a failure. This includes dependencies crossing into
+the extracted `Kumwe\Conversion`, `Kumwe\Extension`, and `Kumwe\Producer`
+packages: a `Kumwe\*` target is never treated as an opaque vendor dependency.
 
 ```
 shared → domain → application → {infrastructure, presentation} → delivery
@@ -47,13 +49,22 @@ kernel may see every layer
 | delivery | shared, domain, application, presentation | HTTP, console, worker, machine-surface entry |
 | kernel | everything | The composition root |
 
-Classification is the last namespace segment (`Domain`, `Application`, …) unless
-`layers.json` `namespace_prefixes` overrides it. Overrides that surprise people:
+App-owned classification is the last namespace segment (`Domain`, `Application`, …)
+unless `layers.json` `namespace_prefixes` overrides it. Extracted packages never
+inherit that shorthand: each public namespace App imports needs an explicit
+longest-prefix rule. Rules that surprise people:
 
+- extracted Conversion contracts, decimals, and values are shared while its provider
+  pipelines and registries are application mechanics; Extension SDK SPI types retain
+  their declared domain, application, or presentation role instead of gaining one
+  blanket permission. Automation/idempotency, BusinessRecord queries, custom-business
+  handlers, bindings, and host callbacks are application contracts, while its package
+  and author-toolchain services are application mechanics. Producer canonical and
+  schema types are shared while its error taxonomy, CSS, render, and wire engines are
+  application mechanics;
 - `Kumwe\App\Http` → delivery (public site + shared middleware)
 - `Kumwe\App\InterfaceStandard` → domain
 - `Kumwe\App\Extension\{Contribution,Runtime,Development}` → application
-- `Kumwe\App\BusinessRecord\Query` → application
 - `Kumwe\App\BusinessSecurity\Policy` → domain
 - `SiteContext` and `AuthenticatedSurface` → shared (classified in place per ADR 0012: a
   published migration freezes the one name and the SPI fixture the other)
@@ -147,7 +158,7 @@ grew later keep their own `Application/Domain/Infrastructure/Delivery` trees.
 | `Portal` | Ordinary-user surface | isolated session, membership, CSRF |
 | `Identity` | Users, roles, tokens, sessions, TOTP | `AuthorizationService` (grant combiner — not the gateway) |
 | `Content` | CMS entries, models, revisions | `ContentService` |
-| `Studio` | Host-side Studio contracts, authority, artifacts/recovery, media/resources, preview and published composition | `StudioHostDispatcher` |
+| `Studio` | Host-side Studio authority, artifacts/recovery, media/resources, preview and published composition | Producer `Dispatcher` with App `HostAdapterInterface` implementation |
 | `Workflow` | Content-type workflow definitions | `ContentTransitionAuthorizer` |
 | `Navigation` | Menus | `NavigationService` |
 | `Media` | Media library | filesystem storage |
@@ -224,18 +235,18 @@ Touch the right one.
    authoritative; there is no per-request directory scan.
 3. A signed runtime publication is materialized at process start
    (`extension:runtime:materialize`). Stale workers exit.
-4. Provider implements `ExtensionServiceProvider`. Typed contributions go through
-   `OwnedExtensionContributionRegistrar` during a closed phase.
+4. Provider implements `ExtensionServiceProvider`. The signed manifest owns contribution declarations;
+   an optional `ExtensionBindingProvider` binds owner-scoped executable implementations through the SDK
+   `ExtensionBindingRegistrar` during a closed activation phase.
 5. Custom business views and actions are typed handlers. No PSR request, no DBAL,
    no container. Dispatched by `CustomBusinessSurfaceDispatcher`.
-6. The public PHP surface is `docs/extension-contract/{classification,generations}.json`,
-   pinned by `composer extension:contract`. Everything else under `Kumwe\App\` is
-   internal.
+6. The public PHP surface is published by `kumwe/extension-sdk` and installed at
+   `vendor/kumwe/extension-sdk/resources/contract/{classification,generations}.json`,
+   pinned by `composer extension:contract`. Everything under `Kumwe\App\` is internal.
 
-Host services an extension may resolve (frozen): `BusinessRecordService`,
-`ContentService`, `ExtensionEventRegistrar`, `NavigationService`, `SiteSettings`.
-That list is an API compatibility boundary, **not a sandbox**. Admitted PHP has
-full process authority.
+No `Kumwe\App\` service is extension-author API. An extension receives only neutral SDK ports and may bind its
+own executable implementations to the exact owner-scoped declarations admitted from its signed manifest. That
+public boundary is **not a sandbox**: admitted PHP still has full process authority.
 
 Runtime volume: `extensions/` (empty in git). Examples: `examples/extensions/`.
 Scaffold templates and conformance toolchain: the `kumwe/extension-sdk` package.
@@ -254,7 +265,7 @@ Scaffold templates and conformance toolchain: the `kumwe/extension-sdk` package.
 | `resources/demo/` | VDM and content demo profiles |
 | `storage/` | Runtime state, not source |
 | `tests/Architecture/` | Boundary and gate-truth tests |
-| `tests/Fixtures/ExtensionApi/` | Immutable compatibility packages |
+| `vendor/kumwe/extension-sdk/resources/fixtures/` | Canonical signed extension generation fixtures |
 
 ---
 

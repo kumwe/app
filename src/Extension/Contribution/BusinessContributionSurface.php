@@ -4,17 +4,18 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Extension\Contribution;
 
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Closure;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionContributionRegistry;
 use Kumwe\App\BusinessDefinition\Application\FieldTypeRegistry;
 use Kumwe\App\BusinessDefinition\Domain\DefinitionOwner;
 use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\App\BusinessDefinition\Domain\FieldTypeDefinition;
-use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionContract;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionHandlerRegistry;
-use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewContract;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewHandlerRegistry;
-use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationContribution;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionDeclaration;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewDeclaration;
+use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationContribution;
 use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationRegistry;
 
 /**
@@ -124,7 +125,7 @@ final readonly class BusinessContributionSurface implements ContributionSurface
     {
         return new self(
             static fn (DefinitionOwner $owner): array => array_map(
-                static fn (CustomBusinessViewContract $contract): array => $contract->toArray(),
+                static fn (CustomBusinessViewDeclaration $contract): array => $contract->toArray(),
                 $registry->ownedBy($owner),
             ),
             static function (DefinitionOwner $owner) use ($registry): void {
@@ -146,7 +147,7 @@ final readonly class BusinessContributionSurface implements ContributionSurface
     {
         return new self(
             static fn (DefinitionOwner $owner): array => array_map(
-                static fn (CustomBusinessActionContract $contract): array => $contract->toArray(),
+                static fn (CustomBusinessActionDeclaration $contract): array => $contract->toArray(),
                 $registry->ownedBy($owner),
             ),
             static function (DefinitionOwner $owner) use ($registry): void {

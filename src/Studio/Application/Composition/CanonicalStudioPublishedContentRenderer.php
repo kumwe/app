@@ -7,11 +7,18 @@ namespace Kumwe\App\Studio\Application\Composition;
 use Kumwe\App\Application\Authorization\SiteContext;
 use Kumwe\App\Content\Application\ContentRecord;
 use Kumwe\App\Studio\Application\Host\StudioArtifactRepository;
-use Kumwe\App\Studio\Application\Preview\StudioCompositionMarkupRenderer;
+use Kumwe\App\Studio\Application\Preview\StudioPreviewBindingResolver;
 use Kumwe\App\Studio\Application\Preview\StudioPreviewBindingValues;
 use Kumwe\App\Studio\Application\Projection\ContentProjectionBindingRepository;
 use Kumwe\App\Studio\Application\Projection\ContentStudioProjector;
 use Kumwe\App\Studio\Application\Projection\StudioProjectionRejected;
+use Kumwe\App\Studio\Application\Rendering\StudioBlockRendererRuntime;
+use Kumwe\App\Studio\Application\Rendering\StudioRenderResultAdmission;
+use Kumwe\Producer\Render\CompositionRenderer;
+use Kumwe\Producer\Render\RenderContext;
+use Kumwe\Producer\Render\RenderPolicy;
+use Kumwe\Producer\Render\RenderResult;
+use Throwable;
 use stdClass;
 
 /**
@@ -32,7 +39,8 @@ final readonly class CanonicalStudioPublishedContentRenderer implements StudioPu
      * @param  StudioArtifactRepository            $artifacts  Current and immutable artifact store.
      * @param  StudioPublishedCompositionGuard     $guard      Shared publication dependency guard.
      * @param  ContentStudioProjector              $projector  Lossless public Content value projector.
-     * @param  StudioCompositionMarkupRenderer     $markup     Marker-free owner-safe block renderer.
+     * @param  StudioBlockRendererRuntime          $blocks     Fresh live Producer registry authority.
+     * @param  StudioPreviewBindingResolver        $resolver   Host-owned Content binding evaluator.
      *
      * @since  2.0.0
      */
@@ -41,7 +49,8 @@ final readonly class CanonicalStudioPublishedContentRenderer implements StudioPu
         private StudioArtifactRepository $artifacts,
         private StudioPublishedCompositionGuard $guard,
         private ContentStudioProjector $projector,
-        private StudioCompositionMarkupRenderer $markup,
+        private StudioBlockRendererRuntime $blocks,
+        private StudioPreviewBindingResolver $resolver,
     ) {
     }
 
@@ -50,7 +59,7 @@ final readonly class CanonicalStudioPublishedContentRenderer implements StudioPu
      *
      * @param   ContentRecord  $record  Published record selected by the public Content boundary.
      *
-     * @return  ?string  Safe marker-free HTML, or null for no binding, draft, or retired lifecycle state.
+     * @return  ?RenderResult  Canonical Producer output, or null for no binding, draft, or retired state.
      *
      * @throws  StudioPublishedBlueprintUnavailable  When a configured artifact cannot be loaded.
      * @throws  StudioPublishedBlueprintMismatch  When artifact identity, kind, schema, or ownership drifts.
@@ -61,7 +70,7 @@ final readonly class CanonicalStudioPublishedContentRenderer implements StudioPu
      *
      * @since   2.0.0
      */
-    public function render(ContentRecord $record): ?string
+    public function render(ContentRecord $record): ?RenderResult
     {
         $site = SiteContext::fromString($record->siteIdentifier);
         $binding = $this->bindings->blueprint($site, $record->contentTypeId, $record->contentTypeVersion);
@@ -120,10 +129,37 @@ final readonly class CanonicalStudioPublishedContentRenderer implements StudioPu
         } catch (StudioProjectionRejected) {
             throw new StudioPublishedModelMismatch();
         }
-        return $this->markup->renderPublished(
-            $document,
-            new StudioPreviewBindingValues($values, new stdClass()),
-        );
+        $bindingValues = new StudioPreviewBindingValues($values, new stdClass());
+        try {
+            $result = (new CompositionRenderer($this->blocks->registry()))->renderDocument(
+                $document,
+                new RenderContext(
+                    resolveBinding: fn (stdClass $node, string $port) => $this->resolver->resolve(
+                        $node,
+                        $port,
+                        $bindingValues,
+                    ),
+                    policy: RenderPolicy::RequireRegistered,
+                ),
+            );
+        } catch (Throwable) {
+            throw new \Kumwe\App\Studio\Application\Preview\StudioPublishedBlockRendererUnavailable(
+                'unavailable',
+                'unknown',
+                null,
+            );
+        }
+        try {
+            StudioRenderResultAdmission::assertSupported($result);
+        } catch (\Kumwe\Producer\Render\RenderException) {
+            throw new \Kumwe\App\Studio\Application\Preview\StudioPublishedBlockRendererUnavailable(
+                'enhancement',
+                'unknown',
+                null,
+            );
+        }
+
+        return $result;
     }
 
     /**

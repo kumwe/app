@@ -7,8 +7,9 @@ namespace Kumwe\App\Studio\Application\Host;
 use Kumwe\App\Studio\Domain\Artifact\StoredStudioArtifact;
 use Kumwe\App\Studio\Domain\Artifact\StudioStoredDocumentPolicy;
 use Kumwe\App\Studio\Domain\Artifact\UnsafeStudioStoredDocument;
-use Kumwe\App\Studio\Domain\Contract\CanonicalJson;
-use Kumwe\App\Studio\Domain\Contract\StudioContractSchemas;
+use Kumwe\Producer\Canonical\CanonicalJson;
+use Kumwe\Producer\Error\HostRefusal;
+use Kumwe\Producer\Schema\StudioDocumentSchemaRegistry;
 use stdClass;
 
 /**
@@ -19,13 +20,13 @@ use stdClass;
 final readonly class StudioArtifactAdmission
 {
     /**
-     * Bind artifact admission to the exact vendored Studio schema registry.
+     * Bind artifact admission to Producer's exact pinned Studio schema registry.
      *
-     * @param  StudioContractSchemas  $schemas  Exact contract schema interpreter.
+     * @param  StudioDocumentSchemaRegistry  $schemas  Exact contract schema interpreter.
      *
      * @since  2.0.0
      */
-    public function __construct(private StudioContractSchemas $schemas)
+    public function __construct(private StudioDocumentSchemaRegistry $schemas)
     {
     }
 
@@ -37,26 +38,26 @@ final readonly class StudioArtifactAdmission
      *
      * @return  StoredStudioArtifact  Admitted immutable artifact revision.
      *
-     * @throws  StudioHostOperationRefused  When the artifact is unsupported, lossy or unsafe.
+     * @throws  HostRefusal  When the artifact is unsupported, lossy or unsafe.
      *
      * @since   2.0.0
      */
     public function admit(string $siteIdentifier, mixed $document): StoredStudioArtifact
     {
         if (!$document instanceof stdClass || !property_exists($document, 'kind') || !is_string($document->kind)) {
-            throw new StudioHostOperationRefused('validation-failed', 'studio.artifact/invalid-document');
+            StudioProducerError::refuse('validation-failed', 'studio.artifact/invalid-document');
         }
         $kind = $document->kind;
         if (!in_array($kind, ['blueprint', 'content-model', 'entry'], true)) {
-            throw new StudioHostOperationRefused('validation-failed', 'studio.artifact/unsupported-kind');
+            StudioProducerError::refuse('validation-failed', 'studio.artifact/unsupported-kind');
         }
-        if (!$this->schemas->validator($kind)->validate($document)) {
-            throw new StudioHostOperationRefused('validation-failed', 'studio.artifact/schema-invalid');
+        if (!$this->schemas->validate($kind, $document)->valid()) {
+            StudioProducerError::refuse('validation-failed', 'studio.artifact/schema-invalid');
         }
         try {
             StudioStoredDocumentPolicy::assertSafe($document);
         } catch (UnsafeStudioStoredDocument $refused) {
-            throw new StudioHostOperationRefused(
+            StudioProducerError::refuse(
                 'validation-failed',
                 'studio.artifact/' . $refused->rejection->value,
             );
@@ -122,7 +123,7 @@ final readonly class StudioArtifactAdmission
             $dependencies[] = $this->reference($this->objectMember($lock, 'theme'));
             foreach ($this->listMember($lock, 'blocks') as $block) {
                 if (!$block instanceof stdClass) {
-                    throw new StudioHostOperationRefused(
+                    StudioProducerError::refuse(
                         'validation-failed',
                         'studio.artifact/invalid-document',
                     );
@@ -140,7 +141,7 @@ final readonly class StudioArtifactAdmission
             if (property_exists($lock, 'plugins')) {
                 foreach ($this->listMember($lock, 'plugins') as $plugin) {
                     if (!$plugin instanceof stdClass) {
-                        throw new StudioHostOperationRefused(
+                        StudioProducerError::refuse(
                             'validation-failed',
                             'studio.artifact/invalid-document',
                         );
@@ -151,7 +152,7 @@ final readonly class StudioArtifactAdmission
         } elseif ($document->kind === 'content-model') {
             foreach ($this->listMember($document, 'relationships') as $relationship) {
                 if (!$relationship instanceof stdClass) {
-                    throw new StudioHostOperationRefused(
+                    StudioProducerError::refuse(
                         'validation-failed',
                         'studio.artifact/invalid-document',
                     );
@@ -209,7 +210,7 @@ final readonly class StudioArtifactAdmission
     {
         $value = $object->{$member} ?? null;
         if (!$value instanceof stdClass) {
-            throw new StudioHostOperationRefused('validation-failed', 'studio.artifact/invalid-document');
+            StudioProducerError::refuse('validation-failed', 'studio.artifact/invalid-document');
         }
 
         return $value;
@@ -229,7 +230,7 @@ final readonly class StudioArtifactAdmission
     {
         $value = $object->{$member} ?? null;
         if (!is_array($value) || !array_is_list($value)) {
-            throw new StudioHostOperationRefused('validation-failed', 'studio.artifact/invalid-document');
+            StudioProducerError::refuse('validation-failed', 'studio.artifact/invalid-document');
         }
 
         return $value;
@@ -249,7 +250,7 @@ final readonly class StudioArtifactAdmission
     {
         $value = $object->{$member} ?? null;
         if (!is_string($value) || $value === '') {
-            throw new StudioHostOperationRefused('validation-failed', 'studio.artifact/invalid-document');
+            StudioProducerError::refuse('validation-failed', 'studio.artifact/invalid-document');
         }
 
         return $value;

@@ -18,7 +18,6 @@ use Kumwe\App\Site\Application\SiteSettings;
 use Kumwe\App\Studio\Application\Composition\StudioBuiltInThemeRelease;
 use Kumwe\App\Studio\Application\Composition\StudioPublishedTheme;
 use Kumwe\App\Studio\Application\Host\StudioHostAccessRefused;
-use Kumwe\App\Studio\Application\Host\StudioHostResult;
 use Kumwe\App\Studio\Application\Host\StudioHostSessionAuthority;
 use Kumwe\App\Studio\Application\Host\StudioHostSessionRepository;
 use Kumwe\App\Studio\Application\Host\StudioResourceContextKeyFactory;
@@ -37,7 +36,6 @@ use RuntimeException;
  * @since  2.0.0
  */
 #[CoversClass(StudioHostAccessRefused::class)]
-#[CoversClass(StudioHostResult::class)]
 #[CoversClass(StudioHostSession::class)]
 #[CoversClass(StudioHostSessionAuthority::class)]
 #[CoversClass(StudioResourceKind::class)]
@@ -293,39 +291,6 @@ final class StudioHostSessionAuthorityTest extends TestCase
 
         self::assertNotSame($opened->generation, $resolved->generation);
         self::assertNotSame($opened->session->sessionGeneration, $resolved->generation);
-    }
-
-    /**
-     * Canonical host results reject every malformed persisted wire shape through their public factory.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    public function testStoredHostResultRefusesMalformedAndNoncanonicalBytes(): void
-    {
-        $refusals = [
-            'invalid JSON' => ['{', 'A stored Studio host result is corrupt.'],
-            'missing value' => ['{}', 'A stored Studio host result is corrupt.'],
-            'unknown member' => [
-                '{"extra":true,"value":null}',
-                'A stored Studio host result is corrupt.',
-            ],
-            'empty revision' => [
-                '{"revision":"","value":null}',
-                'A stored Studio host result is corrupt.',
-            ],
-            'noncanonical bytes' => ['{"value":null }', 'A stored Studio host result is not canonical.'],
-        ];
-
-        foreach ($refusals as $label => [$bytes, $message]) {
-            try {
-                StudioHostResult::fromCanonicalBytes($bytes);
-                self::fail($label . ' must be refused.');
-            } catch (RuntimeException $exception) {
-                self::assertSame($message, $exception->getMessage(), $label);
-            }
-        }
     }
 
     /**

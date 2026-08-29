@@ -11,7 +11,7 @@ use Kumwe\App\Application\Presentation\Dashboard\DashboardPreferenceQuery;
 use Kumwe\App\Application\Presentation\Dashboard\DashboardPreferenceState;
 use Kumwe\App\Delivery\Http\Dashboard\DashboardPreferenceFormDecoder;
 use Kumwe\App\Application\Presentation\Preference\PresentationAccessGroup;
-use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\InterfaceStandard\CustomizationScope;
 use Kumwe\App\InterfaceStandard\CustomizationSlot;
 use Kumwe\App\InterfaceStandard\PresentationPreference;

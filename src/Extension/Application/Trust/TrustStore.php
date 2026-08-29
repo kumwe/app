@@ -14,12 +14,12 @@ use Kumwe\App\Audit\Application\AuditRecorder;
 use Kumwe\App\Audit\Domain\AuditEvent;
 use Kumwe\App\BusinessDefinition\Application\PackageDefinitionSynchronizer;
 use Kumwe\App\Extension\Application\ExtensionRuntimeWithdrawal;
-use Kumwe\App\Extension\Domain\ExtensionIdentifier;
-use Kumwe\App\Extension\Domain\ExtensionManifest;
-use Kumwe\App\Extension\Domain\PackageChecksum;
-use Kumwe\App\Extension\Domain\PackageSignature;
+use Kumwe\Extension\Manifest\ExtensionIdentifier;
+use Kumwe\Extension\Manifest\ExtensionManifest;
+use Kumwe\Extension\Package\PackageChecksum;
+use Kumwe\Extension\Package\PackageSignature;
 use Kumwe\App\Extension\Runtime\RuntimeCanonicalJson;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use Throwable;
@@ -723,7 +723,7 @@ final readonly class TrustStore
         if (($entry['manifest_schema'] ?? 1) !== $manifest->schemaVersion()) {
             throw new RuntimePublicationMismatch('The compiled extension manifest schema is not authoritative.');
         }
-        $expectedContributions = $manifest->contributions()->toArray();
+        $expectedContributions = $manifest->contributions()->declarations();
         $contributions = $entry['contributions'] ?? $expectedContributions;
         if (
             !is_array($contributions)

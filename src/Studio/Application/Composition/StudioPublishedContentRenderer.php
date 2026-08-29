@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Studio\Application\Composition;
 
 use Kumwe\App\Content\Application\ContentRecord;
+use Kumwe\Producer\Render\RenderResult;
 
 /**
  * Optional public rendering boundary for a Content record's exact Studio Blueprint binding.
@@ -18,9 +19,10 @@ interface StudioPublishedContentRenderer
      *
      * @param   ContentRecord  $record  Published record selected by the public Content boundary.
      *
-     * @return  ?string  Safe HTML fragment, or null when no published composition applies.
+     * @return  ?RenderResult  Canonical Producer HTML, complete CSS and zero enhancements, or null when no
+     *          published composition applies.
      *
      * @since   2.0.0
      */
-    public function render(ContentRecord $record): ?string;
+    public function render(ContentRecord $record): ?RenderResult;
 }

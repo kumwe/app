@@ -15,7 +15,7 @@ use Kumwe\Conversion\Value\ConvertedMoneyValue;
 use Kumwe\Conversion\Decimal\ExactDecimal;
 use Kumwe\Conversion\Value\MoneyValue;
 use Kumwe\Conversion\Value\QuantityValue;
-use Kumwe\App\BusinessRecord\Domain\ZonedDateTimeValue;
+use Kumwe\Extension\Spi\BusinessRecord\Value\ZonedDateTimeValue;
 
 /**
  * Projects business-record results into the one safe document shape shared by every adapter.

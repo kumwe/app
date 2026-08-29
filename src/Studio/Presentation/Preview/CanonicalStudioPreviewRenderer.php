@@ -10,14 +10,19 @@ use Kumwe\App\Presentation\ContentPageRenderService;
 use Kumwe\App\Studio\Application\Composition\StudioCompositionThemeMismatch;
 use Kumwe\App\Studio\Application\Composition\StudioPublishedTheme;
 use Kumwe\App\Studio\Application\Host\StudioHostSessionSnapshot;
-use Kumwe\App\Studio\Application\Preview\StudioCompositionMarkupRenderer;
+use Kumwe\App\Studio\Application\Preview\StudioPreviewBindingResolver;
 use Kumwe\App\Studio\Application\Preview\StudioPreviewBindingValues;
 use Kumwe\App\Studio\Application\Preview\StudioPreviewRenderer;
-use Kumwe\App\Studio\Application\Preview\StudioPreviewThemeStylesheet;
+use Kumwe\App\Studio\Application\Preview\StudioPreviewStylesheet;
+use Kumwe\App\Studio\Application\Rendering\StudioBlockRendererRuntime;
+use Kumwe\App\Studio\Application\Rendering\StudioRenderResultAdmission;
 use Kumwe\App\Studio\Domain\Preview\StudioPreviewDraft;
 use Kumwe\App\Studio\Domain\Preview\StudioPreviewIdentity;
 use Kumwe\App\Studio\Domain\Preview\StudioPreviewRenderedDocument;
 use Kumwe\App\Studio\Domain\Preview\StudioPreviewRenderRequest;
+use Kumwe\Producer\Render\CompositionRenderer;
+use Kumwe\Producer\Render\RenderContext;
+use Kumwe\Producer\Render\RenderPolicy;
 use stdClass;
 
 /**
@@ -30,16 +35,18 @@ final readonly class CanonicalStudioPreviewRenderer implements StudioPreviewRend
     /**
      * Bind preview projection to the same page renderer publication uses.
      *
-     * @param  ContentPageRenderService         $pages           Canonical content template/theme service.
-     * @param  StudioCompositionMarkupRenderer  $markup          Safe owner-aware Blueprint projector.
-     * @param  StudioPublishedTheme             $theme           Live trusted public-theme projection.
-     * @param  string                           $siteIdentifier  Site whose canonical theme is configured.
+     * @param  ContentPageRenderService      $pages           Canonical content template/theme service.
+     * @param  StudioBlockRendererRuntime    $blocks          Fresh live Producer renderer composition.
+     * @param  StudioPreviewBindingResolver  $bindings        Host-owned Content binding evaluator.
+     * @param  StudioPublishedTheme          $theme           Live trusted public-theme projection.
+     * @param  string                        $siteIdentifier  Site whose canonical theme is configured.
      *
      * @since  2.0.0
      */
     public function __construct(
         private ContentPageRenderService $pages,
-        private StudioCompositionMarkupRenderer $markup,
+        private StudioBlockRendererRuntime $blocks,
+        private StudioPreviewBindingResolver $bindings,
         private StudioPublishedTheme $theme,
         private string $siteIdentifier,
     ) {
@@ -80,26 +87,32 @@ final readonly class CanonicalStudioPreviewRenderer implements StudioPreviewRend
         $labelReference = $document->label ?? null;
         $label = $labelReference instanceof \stdClass ? $labelReference->defaultMessage ?? null : null;
         $title = is_string($label) && $label !== '' ? $label : $draft->artifactId();
-        $body = $this->markup->render(
+        $result = (new CompositionRenderer($this->blocks->registry()))->renderDocument(
             $document,
-            $identity['markers'],
-            $identity['markerMap'],
-            $values,
-            $request->viewport,
+            new RenderContext(
+                resolveBinding: fn (stdClass $node, string $port) => $this->bindings->resolve(
+                    $node,
+                    $port,
+                    $values,
+                ),
+                previewMarkerMap: $identity['markerMap'],
+                policy: RenderPolicy::RequireRegistered,
+            ),
         );
+        StudioRenderResultAdmission::assertSupported($result);
         $path = '/administrator/studio/preview';
         $page = $this->pages->renderPreview(
             'page',
             [
                 'title' => $title,
                 'data' => [],
-                'body_html' => $body,
+                'body_html' => $result->html,
             ],
             $path,
             $path,
             null,
             'core.administrator.content-editor',
-            StudioPreviewThemeStylesheet::HREF_PLACEHOLDER,
+            StudioPreviewStylesheet::HREF_PLACEHOLDER,
         );
 
         return new StudioPreviewRenderedDocument(
@@ -107,7 +120,7 @@ final readonly class CanonicalStudioPreviewRenderer implements StudioPreviewRend
             $identity['markers'],
             $identity['markerMap'],
             [],
-            $page['themeStylesheet'],
+            $result->css . "\n" . $page['themeStylesheet'],
         );
     }
 }

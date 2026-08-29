@@ -6,7 +6,7 @@ namespace Kumwe\App\BusinessSurface\Application;
 
 use InvalidArgumentException;
 use Kumwe\App\Application\Authorization\ExecutionContext;
-use Kumwe\App\Application\Automation\IdempotencyKey;
+use Kumwe\Extension\Spi\Application\Automation\IdempotencyKey;
 use Kumwe\App\Application\Persistence\TransactionManager;
 use Kumwe\App\BusinessDefinition\Application\FieldTypeDefinitionResolver;
 use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
@@ -30,18 +30,18 @@ use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordNotFound;
 use Kumwe\App\BusinessRecord\Application\Query\BrowseRecordsQuery;
 use Kumwe\App\BusinessRecord\Application\Query\BrowseOwnedLineFieldChoicesQuery;
 use Kumwe\App\BusinessRecord\Application\Query\BrowseRelatedRecordsQuery;
-use Kumwe\App\BusinessRecord\Application\Query\BusinessRecordQueryPurpose;
+use Kumwe\Extension\Spi\BusinessRecord\Application\BusinessRecordQueryPurpose;
 use Kumwe\App\BusinessRecord\Application\Query\OwnedLineFormQuery;
 use Kumwe\App\BusinessRecord\Application\Query\ReadRecordQuery;
 use Kumwe\App\BusinessRecord\Application\Query\RecordHistoryQuery;
 use Kumwe\App\BusinessRecord\Application\RecordExpressionValues;
 use Kumwe\App\BusinessRecord\Application\RelatedRecordBrowseResult;
-use Kumwe\App\BusinessRecord\Query\RecordProjection;
-use Kumwe\App\BusinessRecord\Query\RecordQuerySpecification;
-use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionCommand;
-use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessSchema;
+use Kumwe\Extension\Spi\BusinessRecord\Query\RecordProjection;
+use Kumwe\Extension\Spi\BusinessRecord\Query\RecordQuerySpecification;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessSurfaceDispatcher;
-use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewQuery;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionCommand;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessSchema;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewQuery;
 use Kumwe\App\Localization\Application\ActiveLocale;
 use Kumwe\App\Media\Application\MediaAsset;
 use Kumwe\App\Media\Application\MediaService;
@@ -152,9 +152,11 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
             $resolved->definition,
             $operation,
         );
-        $specification = $this->surfaceSpecification(
+        $specification = $this->customViewSpecification(
             $this->queries->create($query),
             $model['definition'],
+            $resolved->definition,
+            $view,
         );
         $result = $this->customBusiness->view($resolved->definition, new CustomBusinessViewQuery(
             $context,
@@ -1824,6 +1826,138 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
             $specification->includeArchived,
             $specification->includeDeleted,
         );
+    }
+
+    /**
+     * Narrow a custom-view query to the exact fields in its signed view definition.
+     *
+     * Policy-visible definition metadata is still the first disclosure boundary. The signed view then
+     * provides a stricter projection and filter/sort vocabulary: an extension cannot use its callback to
+     * read or select on another otherwise visible field or relationship. Every immutable query coordinate,
+     * including the opaque cursor, is carried into the final narrowed specification; the record boundary
+     * verifies that cursor against this final specification's digest before executing it.
+     *
+     * @param   RecordQuerySpecification  $specification  Bounded caller query before signed-view narrowing.
+     * @param   array<string, mixed>      $metadata       Policy- and surface-filtered definition metadata.
+     * @param   EntityTypeDefinition      $definition     Exact active definition carrying the signed view.
+     * @param   string                    $view           Custom view handle selected by the delivery use case.
+     *
+     * @return  RecordQuerySpecification  Equivalent query projected only onto signed, policy-visible fields.
+     *
+     * @throws  BusinessRecordDefinitionUnavailable  When the view is absent or requests disclosure outside it.
+     *
+     * @since   2.0.0
+     */
+    private function customViewSpecification(
+        RecordQuerySpecification $specification,
+        array $metadata,
+        EntityTypeDefinition $definition,
+        string $view,
+    ): RecordQuerySpecification {
+        $signedFields = null;
+        $signedFilters = null;
+        $signedSorts = null;
+        foreach ($definition->views() as $candidate) {
+            if ($candidate->handle === $view && $candidate->handler !== null && $candidate->schema !== null) {
+                $signedFields = $candidate->fields;
+                $signedFilters = $candidate->filters;
+                $signedSorts = $candidate->sorts;
+                break;
+            }
+        }
+        if ($signedFields === null || $signedFilters === null || $signedSorts === null) {
+            throw new BusinessRecordDefinitionUnavailable();
+        }
+
+        $requested = $specification->projection->fields;
+        if (
+            ($requested !== [] && array_diff($requested, $signedFields) !== [])
+            || $specification->projection->includes !== []
+        ) {
+            throw new BusinessRecordDefinitionUnavailable();
+        }
+        foreach ($specification->projection->aggregates as $aggregate) {
+            if ($aggregate->field !== null && !in_array($aggregate->field, $signedFields, true)) {
+                throw new BusinessRecordDefinitionUnavailable();
+            }
+        }
+        if (
+            array_diff($this->customViewFilterFields($specification->filter?->toArray()), $signedFilters) !== []
+            || ($specification->search !== null
+                && array_diff($specification->search->fields, $signedFields) !== [])
+        ) {
+            throw new BusinessRecordDefinitionUnavailable();
+        }
+        foreach ($specification->sorts as $sort) {
+            if (!in_array($sort->field, $signedSorts, true)) {
+                throw new BusinessRecordDefinitionUnavailable();
+            }
+        }
+
+        $policy = $this->surfaceSpecification($specification, $metadata);
+        $fields = $requested === []
+            ? array_values(array_intersect($signedFields, $policy->projection->fields))
+            : $requested;
+        if ($fields === []) {
+            throw new BusinessRecordDefinitionUnavailable();
+        }
+
+        return new RecordQuerySpecification(
+            $policy->filter,
+            $policy->search,
+            $policy->sorts,
+            $policy->after,
+            $policy->pageSize,
+            new RecordProjection($fields, [], $policy->projection->aggregates),
+            $policy->includeArchived,
+            $policy->includeDeleted,
+        );
+    }
+
+    /**
+     * Read field handles from the closed custom-view filter tree.
+     *
+     * Relationship filters are refused: a view signs fields on its own definition, not a target-field
+     * vocabulary for traversing another definition. The SDK query graph has no open node extension point.
+     *
+     * @param   array<string, mixed>|null  $node  Canonical filter node, or null for no filter.
+     *
+     * @return  list<string>  Referenced root-definition field handles.
+     *
+     * @throws  BusinessRecordDefinitionUnavailable  When the filter node is malformed or traverses a relation.
+     *
+     * @since   2.0.0
+     */
+    private function customViewFilterFields(?array $node): array
+    {
+        if ($node === null) {
+            return [];
+        }
+        $type = $node['type'] ?? null;
+        if (in_array($type, ['comparison', 'text', 'set', 'null'], true)) {
+            $field = $node['field'] ?? null;
+            if (!is_string($field)) {
+                throw new BusinessRecordDefinitionUnavailable();
+            }
+
+            return [$field];
+        }
+        if ($type !== 'boolean') {
+            throw new BusinessRecordDefinitionUnavailable();
+        }
+        $children = $node['children'] ?? null;
+        if (!is_array($children) || !array_is_list($children)) {
+            throw new BusinessRecordDefinitionUnavailable();
+        }
+        $fields = [];
+        foreach ($children as $child) {
+            if (!is_array($child)) {
+                throw new BusinessRecordDefinitionUnavailable();
+            }
+            $fields = [...$fields, ...$this->customViewFilterFields($child)];
+        }
+
+        return array_values(array_unique($fields));
     }
 
     /**

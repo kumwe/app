@@ -10,14 +10,15 @@ use Kumwe\App\Application\Automation\JitterSource;
 use Kumwe\App\Application\Automation\RetryPolicy;
 use Kumwe\App\BusinessIntegration\Application\EventContractRegistry;
 use Kumwe\App\BusinessIntegration\Application\IntegrationDeliveryBackpressure;
-use Kumwe\App\BusinessIntegration\Application\IntegrationEventTransport;
+use Kumwe\App\BusinessIntegration\Application\IntegrationEventFanout;
 use Kumwe\App\BusinessIntegration\Application\OutboxDispatcher;
 use Kumwe\App\BusinessIntegration\Application\OutboxLease;
 use Kumwe\App\BusinessIntegration\Application\OutboxStore;
 use Kumwe\App\BusinessIntegration\Application\TrustedRuntimeGenerationGuard;
 use Kumwe\App\BusinessIntegration\Domain\EventSchemaDefinition;
-use Kumwe\App\BusinessIntegration\Domain\EventSensitivity;
-use Kumwe\App\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventSensitivity;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\App\BusinessIntegration\Domain\RecordedIntegrationEvent;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
@@ -31,7 +32,7 @@ final class OutboxDispatcherTest extends TestCase
 {
     public function testQueueBackpressureDefersWithoutRecordingAFailedAttempt(): void
     {
-        $event = new IntegrationEvent(
+        $event = new RecordedIntegrationEvent(
             'acme.record.changed',
             1,
             Uuid::uuid7()->toString(),
@@ -165,7 +166,7 @@ final class BackpressuredOutboxStore implements OutboxStore
     }
 }
 
-final readonly class AlwaysBackpressuredTransport implements IntegrationEventTransport
+final readonly class AlwaysBackpressuredTransport implements IntegrationEventFanout
 {
     public function identifier(): string
     {

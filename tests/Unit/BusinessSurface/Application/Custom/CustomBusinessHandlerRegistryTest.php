@@ -9,45 +9,34 @@ use Kumwe\App\Application\Authorization\AuthorizationGateway;
 use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Application\Authorization\SiteContext;
 use Kumwe\App\Application\Authorization\SystemIdentity;
-use Kumwe\App\Application\Automation\IdempotencyKey;
 use Kumwe\App\BusinessDefinition\Domain\DefinitionOwner;
 use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\App\BusinessRecord\Query\RecordQuerySpecification;
-use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionCommand;
-use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionContract;
-use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionHandler;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionHandlerRegistry;
-use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionResult;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessHandlerFailed;
-use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessPayload;
-use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessReference;
-use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessSchema;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessSurfaceDispatcher;
-use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewContract;
-use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewHandler;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewHandlerRegistry;
-use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewQuery;
-use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewResult;
 use Kumwe\App\BusinessSurface\Application\BusinessSurfaceOperation;
 use Kumwe\App\Extension\Application\ExtensionExecutionGate;
+use Kumwe\Extension\Spi\Application\Automation\IdempotencyKey;
+use Kumwe\Extension\Spi\BusinessRecord\Query\RecordQuerySpecification;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionCommand;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionDeclaration;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionHandler;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionResult;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewDeclaration;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewHandler;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewQuery;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewResult;
 use LogicException;
 use RuntimeException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
-#[CoversClass(CustomBusinessActionCommand::class)]
-#[CoversClass(CustomBusinessActionContract::class)]
 #[CoversClass(CustomBusinessActionHandlerRegistry::class)]
-#[CoversClass(CustomBusinessActionResult::class)]
 #[CoversClass(CustomBusinessHandlerFailed::class)]
-#[CoversClass(CustomBusinessPayload::class)]
-#[CoversClass(CustomBusinessReference::class)]
-#[CoversClass(CustomBusinessSchema::class)]
 #[CoversClass(CustomBusinessSurfaceDispatcher::class)]
-#[CoversClass(CustomBusinessViewContract::class)]
 #[CoversClass(CustomBusinessViewHandlerRegistry::class)]
-#[CoversClass(CustomBusinessViewQuery::class)]
-#[CoversClass(CustomBusinessViewResult::class)]
 /**
  * Exercises custom-handler schema validation, owner isolation, replay evidence, and lifecycle removal.
  *
@@ -379,6 +368,34 @@ final class CustomBusinessHandlerRegistryTest extends TestCase
         self::assertSame('ready', $result->workflowState);
         self::assertTrue($result->operationId->equals($operation));
 
+        $foreignContext = $this->createStub(\Kumwe\Extension\Spi\Application\ExecutionContext::class);
+        try {
+            $dispatcher->view($definition, new CustomBusinessViewQuery(
+                $foreignContext,
+                $definition->handle,
+                'summary',
+                new RecordQuerySpecification(pageSize: 10),
+                ['term' => 'north'],
+            ));
+            self::fail('A foreign execution context entered a custom view handler.');
+        } catch (BusinessRecordDefinitionUnavailable) {
+            self::addToAssertionCount(1);
+        }
+        try {
+            $dispatcher->action($definition, new CustomBusinessActionCommand(
+                $foreignContext,
+                $definition->handle,
+                'asset-1',
+                1,
+                'recalculate',
+                IdempotencyKey::fromString('operation:foreign-dispatch-0001'),
+                ['mode' => 'full'],
+            ));
+            self::fail('A foreign execution context entered a custom action handler.');
+        } catch (BusinessRecordDefinitionUnavailable) {
+            self::addToAssertionCount(1);
+        }
+
         $inactive = new CustomBusinessSurfaceDispatcher(
             new CustomBusinessViewHandlerRegistry(),
             new CustomBusinessActionHandlerRegistry(),
@@ -446,72 +463,26 @@ final class CustomBusinessHandlerRegistryTest extends TestCase
     }
 
     /**
-     * Proves schemas reject executable or externally resolved keywords and inexact number types.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    public function testSchemaSubsetRejectsUnknownUnsafeAndUnboundedShapes(): void
-    {
-        foreach (
-            [
-            ['$ref' => 'https://example.test/schema'],
-            ['type' => 'number'],
-            ['type' => 'object', 'additionalProperties' => true],
-            [
-                'type' => 'object',
-                'additionalProperties' => false,
-                'properties' => [[
-                    'type' => 'array',
-                    'items' => ['type' => 'string'],
-                ]],
-            ],
-            [
-                'type' => 'object',
-                'additionalProperties' => false,
-                'properties' => [
-                    'result' => [
-                        'type' => 'object',
-                        'additionalProperties' => false,
-                        'properties' => [
-                            'record_key' => ['type' => 'string', 'maxLength' => 64],
-                        ],
-                    ],
-                ],
-            ],
-            ] as $schema
-        ) {
-            try {
-                new CustomBusinessSchema($schema);
-                self::fail('An unknown, inexact, open, or unbounded schema was accepted.');
-            } catch (InvalidArgumentException) {
-                self::addToAssertionCount(1);
-            }
-        }
-    }
-
-    /**
      * Build the signed custom view contract used by registry tests.
      *
-     * @return  CustomBusinessViewContract  Closed query and result schema pair.
+     * @return  CustomBusinessViewDeclaration  Closed query and result schema pair.
      *
      * @since   2.0.0
      */
-    private static function viewContract(): CustomBusinessViewContract
+    private static function viewContract(): CustomBusinessViewDeclaration
     {
-        return new CustomBusinessViewContract(
-            'acme.editor.views.summary',
-            'acme.editor.schemas.summary_v1',
-            new CustomBusinessSchema([
+        return CustomBusinessViewDeclaration::fromManifest([
+            'handler' => 'acme.editor.views.summary',
+            'schema' => 'acme.editor.schemas.summary_v1',
+            'query_schema' => [
                 'type' => 'object',
                 'additionalProperties' => false,
                 'properties' => [
                     'term' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 40],
                 ],
                 'required' => ['term'],
-            ]),
-            new CustomBusinessSchema([
+            ],
+            'result_schema' => [
                 'type' => 'object',
                 'additionalProperties' => false,
                 'properties' => [
@@ -529,39 +500,39 @@ final class CustomBusinessHandlerRegistryTest extends TestCase
                     ],
                 ],
                 'required' => ['items'],
-            ]),
-        );
+            ],
+        ]);
     }
 
     /**
      * Build the signed custom action contract used by registry tests.
      *
-     * @return  CustomBusinessActionContract  Closed command and result schema pair.
+     * @return  CustomBusinessActionDeclaration  Closed command and result schema pair.
      *
      * @since   2.0.0
      */
-    private static function actionContract(): CustomBusinessActionContract
+    private static function actionContract(): CustomBusinessActionDeclaration
     {
-        return new CustomBusinessActionContract(
-            'acme.editor.actions.recalculate',
-            'acme.editor.schemas.recalculate_v1',
-            new CustomBusinessSchema([
+        return CustomBusinessActionDeclaration::fromManifest([
+            'handler' => 'acme.editor.actions.recalculate',
+            'schema' => 'acme.editor.schemas.recalculate_v1',
+            'command_schema' => [
                 'type' => 'object',
                 'additionalProperties' => false,
                 'properties' => [
                     'mode' => ['type' => 'string', 'enum' => ['full', 'delta'], 'maxLength' => 5],
                 ],
                 'required' => ['mode'],
-            ]),
-            new CustomBusinessSchema([
+            ],
+            'result_schema' => [
                 'type' => 'object',
                 'additionalProperties' => false,
                 'properties' => [
                     'status' => ['type' => 'string', 'enum' => ['done'], 'maxLength' => 4],
                 ],
                 'required' => ['status'],
-            ]),
-        );
+            ],
+        ]);
     }
 
     /**

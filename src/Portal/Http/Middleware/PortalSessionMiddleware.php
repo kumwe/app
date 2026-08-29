@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Portal\Http\Middleware;
 
+use Kumwe\Extension\Spi\Http\ExtensionRequest;
 use Kumwe\App\Application\Authorization\AuthorizationDenied;
 use Kumwe\App\Application\Authorization\AuthorizationGateway;
 use Kumwe\App\Application\Authorization\AuthorizationResource;
 use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Http\Middleware\RequestIdMiddleware;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use Kumwe\App\Portal\Application\PortalExecutionContextFactory;
 use Kumwe\App\Portal\Application\PortalSession;
 use Kumwe\App\Portal\Application\PortalSessionStore;
@@ -96,7 +97,9 @@ final readonly class PortalSessionMiddleware implements MiddlewareInterface
             $request
                 ->withAttribute(PortalSession::REQUEST_ATTRIBUTE, $session)
                 ->withAttribute(AuthenticatedPrincipal::REQUEST_ATTRIBUTE, $session->identity->principal)
-                ->withAttribute(ExecutionContext::REQUEST_ATTRIBUTE, $context),
+                ->withAttribute(ExecutionContext::REQUEST_ATTRIBUTE, $context)
+                ->withAttribute(ExtensionRequest::CONTEXT, $context)
+                ->withAttribute(ExtensionRequest::CSRF_TOKEN, $session->csrfToken),
         );
     }
 

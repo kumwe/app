@@ -27,7 +27,7 @@ use Kumwe\App\Identity\Application\StepUp\StepUpRejected;
 use Kumwe\App\Identity\Application\StepUp\StepUpSessionRotator;
 use Kumwe\App\Identity\Domain\StepUp\RotatedStepUpSession;
 use Kumwe\App\Identity\Domain\StepUp\StepUpIntent;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;

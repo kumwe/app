@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessIntegration\Application;
 
 use InvalidArgumentException;
-use Kumwe\App\BusinessIntegration\Domain\EventConsumerDefinition;
-use Kumwe\App\BusinessIntegration\Domain\EventEnvelope;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventConsumerDefinition;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventEnvelope;
 use Kumwe\App\BusinessIntegration\Domain\EventSchemaDefinition;
 use Kumwe\App\Shared\Domain\CanonicalJson;
 

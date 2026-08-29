@@ -15,7 +15,7 @@ use Kumwe\App\Studio\Application\Preview\StudioPreviewGrantRepository;
 use Kumwe\App\Studio\Application\Preview\StudioPreviewRenderAdmission;
 use Kumwe\App\Studio\Application\Preview\StudioPreviewSequenceClaim;
 use Kumwe\App\Studio\Application\Preview\StudioPreviewSequenceRepository;
-use Kumwe\App\Studio\Domain\Contract\CanonicalJson;
+use Kumwe\Producer\Canonical\CanonicalJson;
 use Kumwe\App\Studio\Domain\Preview\StudioPreviewGrant;
 use Kumwe\App\Studio\Domain\Preview\StudioPreviewRenderedDocument;
 use Kumwe\App\Studio\Domain\Preview\StudioPreviewRenderRequest;
@@ -256,7 +256,7 @@ final readonly class DoctrineStudioPreviewRepository implements
         $affected = $this->database->update($this->tables->raw('studio_preview_grants'), [
             'state' => 'ready',
             'html_document' => $document->html,
-            'theme_stylesheet' => $document->themeStylesheet,
+            'theme_stylesheet' => $document->stylesheet,
             'markers_json' => CanonicalJson::stringify($document->markers),
             'marker_map_json' => CanonicalJson::stringify((object) $document->markerMap),
             'diagnostics_json' => CanonicalJson::stringify($document->diagnostics),

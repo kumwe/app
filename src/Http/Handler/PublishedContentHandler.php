@@ -11,6 +11,7 @@ use Kumwe\App\Presentation\ContentLayoutCatalog;
 use Kumwe\App\Presentation\ContentPresenter;
 use Kumwe\App\Site\Application\PublicPageLocator;
 use Kumwe\App\Studio\Application\Composition\StudioPublishedContentRenderer;
+use Kumwe\App\Studio\Application\Composition\StudioPublishedStylesheet;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Laminas\Diactoros\Response\RedirectResponse;
 use Psr\Http\Message\ResponseInterface;
@@ -112,7 +113,8 @@ final readonly class PublishedContentHandler implements RequestHandlerInterface
             $headers['X-Robots-Tag'] = 'noindex, nofollow, noarchive';
         }
         $binding = $this->pages->presentationBindingFor($record);
-        $studioBody = $this->studio?->render($record);
+        $studioResult = $this->studio?->render($record);
+        $studioBody = $studioResult?->html;
         $template = $studioBody === null
             ? $this->layouts->templateFor($record, $binding['template'])
             : 'page';
@@ -134,6 +136,10 @@ final readonly class PublishedContentHandler implements RequestHandlerInterface
                 'core.public.page',
                 $this->pages->navigation(),
                 $this->languages->alternates($record, $canonicalPath),
+                true,
+                $studioResult === null
+                    ? null
+                    : StudioPublishedStylesheet::href($record, $canonicalPath, $studioResult->css),
             ),
             200,
             $headers,

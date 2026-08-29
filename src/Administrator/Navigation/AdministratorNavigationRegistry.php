@@ -6,10 +6,10 @@ namespace Kumwe\App\Administrator\Navigation;
 
 use InvalidArgumentException;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
-use Kumwe\App\Extension\Contribution\AdministratorNavigationDefinition;
 use Kumwe\App\Extension\Contribution\AdministratorWorkspaceRegistry;
 use Kumwe\App\Extension\Contribution\CapabilityDefinitionRegistry;
-use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\Extension\Spi\Contribution\AdministratorNavigationDefinition;
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ContributionSurface;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 

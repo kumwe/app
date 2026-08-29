@@ -12,7 +12,7 @@ use Kumwe\App\Content\Application\ContentModelService;
 use Kumwe\App\Content\Application\ContentRecord;
 use Kumwe\App\Content\Application\ContentService;
 use Kumwe\App\Delivery\Http\Dashboard\DashboardPreferenceQueryDecoder;
-use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\InterfaceStandard\SurfaceArea;
 use Kumwe\App\InterfaceStandard\SurfaceId;
 use Kumwe\App\Presentation\Application\Dashboard\DashboardComposer;

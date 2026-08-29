@@ -296,7 +296,7 @@
     },
     {
       "from": "Kumwe\\App\\Extension\\Contribution\\BusinessContributionSurface",
-      "to": "Kumwe\\App\\BusinessSurface\\Presentation\\Field\\FieldPresentationContribution",
+      "to": "Kumwe\\Extension\\Spi\\BusinessSurface\\Presentation\\Field\\FieldPresentationContribution",
       "from_layer": "application",
       "to_layer": "presentation",
       "owner": "platform-architecture",
@@ -326,7 +326,7 @@
     },
     {
       "from": "Kumwe\\App\\Extension\\Contribution\\CoreExtensionContributions",
-      "to": "Kumwe\\App\\BusinessSurface\\Presentation\\Field\\FieldPresentationContext",
+      "to": "Kumwe\\Extension\\Spi\\BusinessSurface\\Presentation\\Field\\FieldPresentationContext",
       "from_layer": "application",
       "to_layer": "presentation",
       "owner": "platform-architecture",
@@ -336,27 +336,7 @@
     },
     {
       "from": "Kumwe\\App\\Extension\\Contribution\\CoreExtensionContributions",
-      "to": "Kumwe\\App\\BusinessSurface\\Presentation\\Field\\FieldPresentationContribution",
-      "from_layer": "application",
-      "to_layer": "presentation",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-C gives business-surface application code a rendering contract or a fully typed view model instead of importing the surface it feeds."
-    },
-    {
-      "from": "Kumwe\\App\\Extension\\Contribution\\ExtensionContributionRegistrar",
-      "to": "Kumwe\\App\\BusinessSurface\\Presentation\\Field\\FieldPresentationContribution",
-      "from_layer": "application",
-      "to_layer": "presentation",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-C gives business-surface application code a rendering contract or a fully typed view model instead of importing the surface it feeds."
-    },
-    {
-      "from": "Kumwe\\App\\Extension\\Contribution\\ExtensionContributionRegistrar",
-      "to": "Kumwe\\App\\BusinessSurface\\Presentation\\Field\\FieldPresenter",
+      "to": "Kumwe\\Extension\\Spi\\BusinessSurface\\Presentation\\Field\\FieldPresentationContribution",
       "from_layer": "application",
       "to_layer": "presentation",
       "owner": "platform-architecture",
@@ -377,46 +357,6 @@
     {
       "from": "Kumwe\\App\\Extension\\Contribution\\ExtensionContributionRegistrySet",
       "to": "Kumwe\\App\\BusinessSurface\\Presentation\\Field\\FieldPresentationRegistry",
-      "from_layer": "application",
-      "to_layer": "presentation",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-C gives business-surface application code a rendering contract or a fully typed view model instead of importing the surface it feeds."
-    },
-    {
-      "from": "Kumwe\\App\\Extension\\Contribution\\ManifestContributionSet",
-      "to": "Kumwe\\App\\BusinessSurface\\Presentation\\Field\\FieldPresentationContribution",
-      "from_layer": "application",
-      "to_layer": "presentation",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-C gives business-surface application code a rendering contract or a fully typed view model instead of importing the surface it feeds."
-    },
-    {
-      "from": "Kumwe\\App\\Extension\\Contribution\\ManifestContributionSet",
-      "to": "Kumwe\\App\\BusinessSurface\\Presentation\\Field\\FieldPresentationCoverage",
-      "from_layer": "application",
-      "to_layer": "presentation",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-C gives business-surface application code a rendering contract or a fully typed view model instead of importing the surface it feeds."
-    },
-    {
-      "from": "Kumwe\\App\\Extension\\Contribution\\OwnedExtensionContributionRegistrar",
-      "to": "Kumwe\\App\\BusinessSurface\\Presentation\\Field\\FieldPresentationContribution",
-      "from_layer": "application",
-      "to_layer": "presentation",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-C gives business-surface application code a rendering contract or a fully typed view model instead of importing the surface it feeds."
-    },
-    {
-      "from": "Kumwe\\App\\Extension\\Contribution\\OwnedExtensionContributionRegistrar",
-      "to": "Kumwe\\App\\BusinessSurface\\Presentation\\Field\\FieldPresenter",
       "from_layer": "application",
       "to_layer": "presentation",
       "owner": "platform-architecture",
@@ -765,20 +705,5 @@
       "justification": "P3-C: theme and package validation depends on a template-validation port rather than importing the presentation layer inward."
     }
   ],
-  "approved_interfaces": [
-    {
-      "from": "Kumwe\\App\\Extension\\Domain\\ExtensionManifest",
-      "to": "Kumwe\\App\\Extension\\Contribution\\ManifestContributionSet",
-      "decision": "ADR 0012",
-      "interface": "ManifestContributionSet::fromManifest() and ::legacy() as the manifest's one admission-time contribution parser, and the resulting set held as the typed contributions member.",
-      "justification": "The manifest is the frozen extension-contract artifact: refusing invalid contributions at manifest admission is pinned by six generations of signed fixtures, so the parse cannot move outward without changing when packages are refused. ADR 0012 records the exact interface instead."
-    },
-    {
-      "from": "Kumwe\\App\\Extension\\Domain\\ExtensionManifest",
-      "to": "Kumwe\\App\\Extension\\Contribution\\CapabilityDefinition",
-      "decision": "ADR 0012",
-      "interface": "CapabilityDefinition read only to project declared capability identifiers into the manifest's permission set.",
-      "justification": "Declared capabilities feed the manifest's permission vocabulary at the same admission boundary; the projection reads one identifier and nothing else. ADR 0012 records the exact interface instead."
-    }
-  ]
+  "approved_interfaces": []
 }

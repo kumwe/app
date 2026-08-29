@@ -13,10 +13,10 @@ use Kumwe\App\Content\Domain\ContentTypeDefinition;
 use Kumwe\App\Content\Domain\FieldDefinition;
 use Kumwe\App\Content\Domain\InvalidContentData;
 use Kumwe\App\Content\Domain\JsonSchemaValidator;
-use Kumwe\App\Studio\Domain\Contract\CanonicalJson;
-use Kumwe\App\Studio\Domain\Contract\StudioContractSchemas;
 use Kumwe\App\Studio\Domain\Projection\ContentBlueprintBinding;
 use Kumwe\App\Studio\Domain\Projection\EntryCompositionOverrides;
+use Kumwe\Producer\Canonical\CanonicalJson;
+use Kumwe\Producer\Schema\StudioDocumentSchemaRegistry;
 use Kumwe\App\Studio\Domain\Projection\StudioProjectionRejection;
 use Kumwe\App\Workflow\Domain\WorkflowDefinition;
 use stdClass;
@@ -26,7 +26,7 @@ use stdClass;
  *
  * The projector contains mapping rules only. Reads and authorization happen in
  * {@see StudioContentProjectionService}; policy-specific field omission is delegated to
- * {@see StudioContentFieldDisclosure}. Every result validates against the exact vendored Studio
+ * {@see StudioContentFieldDisclosure}. Every result validates against Producer's exact pinned Studio
  * schema before it leaves this class. Unsupported unions, dynamic object members, and ambiguous
  * values fail closed instead of being coerced into a superficially compatible field.
  *
@@ -78,14 +78,14 @@ final readonly class ContentStudioProjector
     /**
      * Bind the projection to the canonical schemas and the host's field-disclosure policy.
      *
-     * @param  StudioContractSchemas         $schemas        Exact vendored Studio schema interpreter.
+     * @param  StudioDocumentSchemaRegistry  $schemas        Producer's exact pinned schema interpreter.
      * @param  StudioContentFieldDisclosure  $disclosure     Field description and value policy.
      * @param  JsonSchemaValidator           $contentSchema  Authoritative Content schema validator.
      *
      * @since  2.0.0
      */
     public function __construct(
-        private StudioContractSchemas $schemas,
+        private StudioDocumentSchemaRegistry $schemas,
         private StudioContentFieldDisclosure $disclosure,
         private JsonSchemaValidator $contentSchema,
     ) {
@@ -901,7 +901,7 @@ final readonly class ContentStudioProjector
         }
         foreach (['minimum', 'maximum'] as $name) {
             if (is_int($schema[$name] ?? null) || is_float($schema[$name] ?? null)) {
-                $constraints->{$name} = CanonicalJson::encodeNumber($schema[$name]);
+                $constraints->{$name} = CanonicalJson::stringify($schema[$name]);
             }
         }
 
@@ -1240,7 +1240,7 @@ final readonly class ContentStudioProjector
     }
 
     /**
-     * Validate a completed projection against the exact vendored Studio schema.
+     * Validate a completed projection against Producer's exact pinned Studio schema.
      *
      * @param   string    $kind      `content-model` or `entry`.
      * @param   stdClass  $document  Completed projection.
@@ -1253,10 +1253,10 @@ final readonly class ContentStudioProjector
      */
     private function validated(string $kind, stdClass $document): stdClass
     {
-        $validator = $this->schemas->validator($kind);
-        if (!$validator->validate($document)) {
-            $diagnostics = $validator->diagnostics();
-            if ($diagnostics === null || $diagnostics === []) {
+        $validation = $this->schemas->validate($kind, $document);
+        if (!$validation->valid()) {
+            $diagnostics = $validation->diagnostics();
+            if ($diagnostics === []) {
                 throw new StudioProjectionRejected(StudioProjectionRejection::InvalidDocument, '');
             }
             $diagnostic = $diagnostics[0];

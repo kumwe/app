@@ -7,10 +7,11 @@ namespace Kumwe\App\Administrator\Presentation;
 use JsonException;
 use Kumwe\App\Administrator\Navigation\AdministratorNavigationRegistry;
 use Kumwe\App\Extension\Contribution\AdministratorViewRegistry;
-use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Presentation\Asset\ViteAssetManifest;
 use Kumwe\App\Presentation\Twig\AdministratorTwigEnvironment;
 use Kumwe\App\Presentation\Twig\IsolatedTwigEnvironmentFactory;
+use Kumwe\Extension\Spi\Binding\Http\AdministratorRouteRenderer;
 use Twig\Error\Error;
 
 /**
@@ -42,6 +43,8 @@ final readonly class AdministratorRenderer
      *         falls back to the unhashed administrator stylesheet and module.
      * @param  ?AdministratorViewRegistry        $extensionViews  Resolves an extension's view name to the
      *         template it registered; null leaves `renderExtension()` unusable.
+     * @param  ?object                           $extensionRequestProvenance Private composition-root authority
+     *         required to mint extension route renderer capabilities.
      *
      * @since  2.0.0
      */
@@ -51,6 +54,7 @@ final readonly class AdministratorRenderer
         private ?AdministratorNavigationRegistry $navigation = null,
         private ?ViteAssetManifest $assets = null,
         private ?AdministratorViewRegistry $extensionViews = null,
+        private ?object $extensionRequestProvenance = null,
     ) {
     }
 
@@ -122,6 +126,19 @@ final readonly class AdministratorRenderer
             '@' . IsolatedTwigEnvironmentFactory::extensionNamespace($extension) . '/' . $template,
             $data,
         );
+    }
+
+    /**
+     * Mint a renderer capability closed over one validated extension owner and signed view.
+     *
+     * @since 2.0.0
+     */
+    public function forExtensionRoute(string $extension, string $view): AdministratorRouteRenderer
+    {
+        $provenance = $this->extensionRequestProvenance
+            ?? throw new \LogicException('Extension route rendering requires the private host provenance.');
+
+        return new AdministratorContributionRenderer($this, $extension, $view, $provenance);
     }
 
     /**

@@ -6,8 +6,8 @@ namespace Kumwe\App\Tests\Unit\Studio\Domain\Projection;
 
 use InvalidArgumentException;
 use Kumwe\App\Application\Authorization\SiteContext;
-use Kumwe\App\Studio\Domain\Contract\CanonicalJsonRejected;
 use Kumwe\App\Studio\Domain\Projection\EntryCompositionOverrides;
+use Kumwe\Producer\Canonical\CanonicalEncodingException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
@@ -124,8 +124,8 @@ final class EntryCompositionOverridesTest extends TestCase
                     1,
                 );
                 self::fail('A non-canonical override object was accepted.');
-            } catch (CanonicalJsonRejected $failure) {
-                self::assertContains($failure->reason, ['forbidden-member', 'not-json']);
+            } catch (CanonicalEncodingException $failure) {
+                self::assertContains($failure->rejection(), ['forbidden-member', 'unrepresentable']);
             }
         }
     }

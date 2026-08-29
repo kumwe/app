@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\BusinessReporting\Application;
 
-use Kumwe\App\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationEvent;
 
 /**
  * Trusted runtime surface for live projection maintenance and operator rebuilds.

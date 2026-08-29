@@ -13,8 +13,6 @@
     "kumwe.asset-inspection-example.manage",
     "kumwe.asset-inspection-example.view"
   ],
-  "routes": [],
-  "events": [],
   "assets": ["policies/inspection-viewer.json"],
   "contributions": {
     "version": 2,
