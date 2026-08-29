@@ -292,8 +292,9 @@ final readonly class DoctrineExtensionManager
      * place, and the retained `.kumwe-package.zip` decides the rest. When that archive is present the
      * install is simply replayed from it. When it is gone the operation is recorded as committed if the
      * registry already carries that exact version and runtime path, and otherwise rolled back with both
-     * trees and the published assets removed. A replay that throws is deliberately swallowed so the row
-     * stays unresolved: readiness keeps failing closed and the next pass retries it.
+     * trees and the published assets removed. A replay failure is deliberately swallowed here: a proven
+     * pre-commit mismatch settles itself as rolled back, while every ambiguous failure leaves the row
+     * unresolved so readiness fails closed and the next pass retries it.
      *
      * @param   ExtensionRegistryLease  $lease  Held registry lease whose fence claims each operation row and
      *          gates every write made while settling it.
@@ -380,7 +381,18 @@ final readonly class DoctrineExtensionManager
                 );
                 ++$reconciled;
             } catch (Throwable) {
-                // The durable operation remains retryable and readiness will continue to fail closed.
+                $outcome = $this->database->fetchOne(sprintf(
+                    'SELECT transaction_outcome FROM %s WHERE operation_id = ?',
+                    $this->tables->quoted('extension_install_operations'),
+                ), [$operationId]);
+                if (
+                    in_array($outcome, [
+                        ExtensionInstallOutcome::Committed->value,
+                        ExtensionInstallOutcome::RolledBack->value,
+                    ], true)
+                ) {
+                    ++$reconciled;
+                }
             }
         }
 
@@ -539,10 +551,12 @@ final readonly class DoctrineExtensionManager
      *
      * The failure path is what makes the saga recoverable. Failing while extracting or retaining the
      * package rolls the operation back and removes the staging tree, because nothing can have taken
-     * effect yet. Failing after that records `Committed` only when the commit had been attempted and the
-     * registry can still be read to prove the release landed, and records `Unknown` in every other case —
-     * and either way the staged and published bytes are deliberately kept for
-     * `reconcileInstallOperations()` to judge. A failure after a successful commit is simply rethrown.
+     * effect yet. A published tree or retained archive that disagrees with the inspected package is also
+     * a known pre-commit rollback: unreferenced bytes are retired immediately, while a path already owned
+     * by the installed release is left for runtime trust enforcement. Failing after that records
+     * `Committed` only when the commit had been attempted and the registry can still be read to prove the
+     * release landed, and records `Unknown` in every ambiguous case so reconciliation can judge the kept
+     * bytes. A failure after a successful commit is simply rethrown.
      * On MySQL and MariaDB the migrations run before the transaction opens, because their DDL commits
      * implicitly; every other platform runs them inside it.
      *
@@ -589,6 +603,7 @@ final readonly class DoctrineExtensionManager
         $checksum = $package->checksum;
         $manifestJson = $package->manifestJson;
         $manifest = $package->manifest;
+        $this->assertNoReservedPackagePaths($package);
         $this->assertCompatible($manifest);
         $signature = $this->signature($signingKeyId, $base64Signature);
         $this->trust->assertTrusted($checksum, $signature, $manifest->identifier());
@@ -681,19 +696,22 @@ final readonly class DoctrineExtensionManager
         $this->dispatch('onKumweExtensionBeforeInstall', $manifest, $actorId, lease: $lease);
         $committed = false;
         $commitAttempted = false;
+        $publishedPackageVerificationFailed = false;
 
         try {
             $this->ensureBoundedDirectory($this->extensionRoot, dirname($relativeRuntime), 0700);
             if (!is_dir($finalDirectory) && !rename($stagingDirectory, $finalDirectory)) {
                 throw new RuntimeException('The staged extension could not be activated atomically.');
             }
-            $deployedTreeDigest = FilesystemExtensionArtifactVerifier::treeDigest($finalDirectory);
+            $publishedPackageVerificationFailed = true;
+            $deployedTreeDigest = $this->verifiedDeployedTreeDigest($package, $finalDirectory);
             $this->trust->assertArtifactIntegrity([
                 'runtime_path' => $relativeRuntime,
                 'package_sha256' => (string) $checksum,
                 'artifact_sha256' => (string) $checksum,
                 'deployed_tree_sha256' => $deployedTreeDigest,
             ]);
+            $publishedPackageVerificationFailed = false;
             $this->markInstallOperation($operationId, 'migrating', ExtensionInstallOutcome::Unknown, $lease);
             $this->publishAssets($manifest, $finalDirectory);
             $mysql = $this->database->getDatabasePlatform() instanceof AbstractMySQLPlatform;
@@ -768,9 +786,32 @@ final readonly class DoctrineExtensionManager
             if ($committed) {
                 throw $exception;
             }
-            $outcome = $commitAttempted
-                ? $this->resolveInstallOutcome($manifest, $relativeRuntime)
-                : ExtensionInstallOutcome::Unknown;
+            if ($publishedPackageVerificationFailed) {
+                try {
+                    $outcome = $this->retireMismatchedDeployment(
+                        $stagingDirectory,
+                        $finalDirectory,
+                        $relativeRuntime,
+                        $previous,
+                    );
+                } catch (Throwable $retirementFailure) {
+                    try {
+                        $this->markInstallFailure(
+                            $operationId,
+                            ExtensionInstallOutcome::Unknown,
+                            $retirementFailure,
+                            $lease,
+                        );
+                    } catch (Throwable) {
+                        // The unresolved operation remains a readiness blocker after failed retirement.
+                    }
+                    throw $retirementFailure;
+                }
+            } else {
+                $outcome = $commitAttempted
+                    ? $this->resolveInstallOutcome($manifest, $relativeRuntime)
+                    : ExtensionInstallOutcome::Unknown;
+            }
             try {
                 $this->markInstallFailure($operationId, $outcome, $exception, $lease);
             } catch (Throwable) {
@@ -2828,6 +2869,115 @@ final readonly class DoctrineExtensionManager
             }
             chmod($target, 0600);
         }
+    }
+
+    /**
+     * Refuse package ownership of the runtime's retained-archive path.
+     *
+     * The App writes the exact inspected archive to this name after expansion. Allowing an archive entry
+     * with the same path would make package content and recovery metadata compete for one file and would
+     * also hide that package entry from the deployed-tree digest, which deliberately excludes the retained
+     * archive. The refusal therefore happens before staging begins.
+     *
+     * @param   InspectedPackage  $package  Immutable package whose complete path table is checked.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When the package declares the App-reserved recovery path.
+     *
+     * @since   2.0.0
+     */
+    private function assertNoReservedPackagePaths(InspectedPackage $package): void
+    {
+        if (in_array(FilesystemExtensionArtifactVerifier::ARTIFACT, $package->paths(), true)) {
+            throw new InvalidArgumentException(sprintf(
+                'The extension package path %s is reserved by the App runtime.',
+                FilesystemExtensionArtifactVerifier::ARTIFACT,
+            ));
+        }
+    }
+
+    /**
+     * Settle a proven pre-commit package/deployment mismatch as a rollback.
+     *
+     * An unreferenced runtime path belongs only to this failed operation and is removed together with any
+     * stale staging or public-asset tree. A path named by the currently installed release is never removed:
+     * that tree may be a valid older release confronted with a different same-version package, and its own
+     * persisted trust record remains the authority that runtime enforcement checks. If any retirement is
+     * unsafe or fails, this method throws and the caller keeps the operation `Unknown` as a readiness block.
+     *
+     * @param   string                 $stagingDirectory  Private staging tree for this operation.
+     * @param   string                 $finalDirectory    Published private runtime tree under verification.
+     * @param   string                 $relativeRuntime   Runtime path the operation intended to publish.
+     * @param   ?array<string, mixed>  $previous          Installed registry row captured before this attempt.
+     *
+     * @return  ExtensionInstallOutcome  Deterministic rolled-back outcome after safe retirement.
+     *
+     * @throws  RuntimeException  When a failed tree cannot be retired within its configured storage root.
+     *
+     * @since   2.0.0
+     */
+    private function retireMismatchedDeployment(
+        string $stagingDirectory,
+        string $finalDirectory,
+        string $relativeRuntime,
+        ?array $previous,
+    ): ExtensionInstallOutcome {
+        if (is_dir($stagingDirectory) || is_link($stagingDirectory)) {
+            $this->removeTree($stagingDirectory);
+        }
+
+        if (($previous['runtime_path'] ?? null) === $relativeRuntime) {
+            return ExtensionInstallOutcome::RolledBack;
+        }
+
+        if (is_dir($finalDirectory) || is_link($finalDirectory)) {
+            $this->removeTree($finalDirectory);
+        }
+        $publicAssets = $this->publicAssetRoot . '/' . $relativeRuntime;
+        if (is_dir($publicAssets) || is_link($publicAssets)) {
+            $this->removeTree($publicAssets, $this->publicAssetRoot);
+        }
+
+        return ExtensionInstallOutcome::RolledBack;
+    }
+
+    /**
+     * Prove a deployed tree is the exact regular-file content of its inspected package snapshot.
+     *
+     * A durable install replay may encounter a final directory left by an interrupted attempt. Hashing
+     * that directory and immediately recording the resulting digest would only prove self-consistency;
+     * it would not prove that the files came from the package whose checksum and signature are being
+     * persisted. This comparison derives an independent expected digest from the same immutable package
+     * snapshot used for admission, then requires the deployed path map and bytes to match it exactly.
+     *
+     * @param   InspectedPackage  $package  Same immutable package snapshot used for admission and trust.
+     * @param   string            $root     Final deployed directory to compare with the package contents.
+     *
+     * @return  string  Verified deployed-tree digest safe to persist on the release.
+     *
+     * @throws  RuntimeException  When the deployed tree has a missing, added, renamed or changed file.
+     * @throws  JsonException  When a package path cannot be encoded in the canonical digest document.
+     *
+     * @since   2.0.0
+     */
+    private function verifiedDeployedTreeDigest(InspectedPackage $package, string $root): string
+    {
+        $expectedEntries = [];
+        foreach ($this->contents->contents($package) as $relative => $bytes) {
+            $expectedEntries[$relative] = hash('sha256', $bytes);
+        }
+        ksort($expectedEntries, SORT_STRING);
+        $expected = hash('sha256', json_encode(
+            $expectedEntries,
+            JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES,
+        ));
+        $actual = FilesystemExtensionArtifactVerifier::treeDigest($root);
+        if (!hash_equals($expected, $actual)) {
+            throw new RuntimeException('The deployed extension tree does not match its inspected package.');
+        }
+
+        return $actual;
     }
 
     /**
