@@ -16,6 +16,7 @@ use Kumwe\App\BusinessSecurity\Infrastructure\Persistence\DoctrineBusinessSecuri
 use Kumwe\App\Extension\Application\ExtensionManager;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\Extension\Package\PackageChecksum;
+use Kumwe\Extension\Package\PackageSignatureMessage;
 use Kumwe\App\Identity\Application\Administration\AccessControlRepository;
 use Kumwe\App\Identity\Application\Administration\AccessControlService;
 use Kumwe\App\Identity\Application\Administration\AdministratorIdentityGateway;
@@ -132,7 +133,10 @@ try {
         $archive,
         $context,
         $keyId,
-        base64_encode(sodium_crypto_sign_detached((string) $checksum, $secretKey)),
+        base64_encode(sodium_crypto_sign_detached(
+            PackageSignatureMessage::forChecksum($checksum),
+            $secretKey,
+        )),
     );
     $manager->activate('kumwe/announcements-example', $context);
     $trust->synchronizeRuntimeMaterialization();
@@ -182,7 +186,10 @@ try {
         $assetArchive,
         $context,
         $assetKeyId,
-        base64_encode(sodium_crypto_sign_detached((string) $assetChecksum, $assetSecretKey)),
+        base64_encode(sodium_crypto_sign_detached(
+            PackageSignatureMessage::forChecksum($assetChecksum),
+            $assetSecretKey,
+        )),
     );
     $manager->activate('kumwe/asset-inspection-example', $context);
     $trust->synchronizeRuntimeMaterialization();
@@ -235,7 +242,10 @@ try {
         $manifestSixArchive,
         $context,
         $manifestSixKeyId,
-        base64_encode(sodium_crypto_sign_detached((string) $manifestSixChecksum, $manifestSixSecretKey)),
+        base64_encode(sodium_crypto_sign_detached(
+            PackageSignatureMessage::forChecksum($manifestSixChecksum),
+            $manifestSixSecretKey,
+        )),
     );
     $manager->activate('kumwe/contract-manifest-six', $context);
     $trust->synchronizeRuntimeMaterialization();

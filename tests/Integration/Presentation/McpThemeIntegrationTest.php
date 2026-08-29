@@ -14,7 +14,7 @@ use Kumwe\App\Content\Application\ContentService;
 use Kumwe\App\Extension\Application\ExtensionManager;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Extension\Application\Trust\ExtensionArtifactVerifier;
-use Kumwe\App\Extension\Application\Trust\TrustKeySignatureVerifier;
+use Kumwe\Extension\Package\PublicKeyPackageSignatureVerifier;
 use Kumwe\App\Extension\Application\Trust\TrustRuntimeInvalidator;
 use Kumwe\App\Extension\Application\Trust\TrustStoreRepository;
 use Kumwe\App\Identity\Application\Administration\AccessControlService;
@@ -179,7 +179,7 @@ final class McpThemeIntegrationTest extends TestCase
         (new ApplicationAuthorizationMigration($tables))->up($database);
         (new JobRecoveryMigration($tables))->up($database);
         (new AuthorizationRecoveryIntegrationMigration($tables))->up($database);
-        (new TokenAndTrustLifecycleMigration($tables, sys_get_temp_dir()))->up($database);
+        (new TokenAndTrustLifecycleMigration($tables))->up($database);
         (new IsolateThemeSurfacesMigration($tables))->up($database);
         $clock = new SystemClock();
         $transactions = new DoctrineTransactionManager($database);
@@ -189,7 +189,7 @@ final class McpThemeIntegrationTest extends TestCase
         );
         $trust = new TrustStore(
             $repository,
-            $this->createStub(TrustKeySignatureVerifier::class),
+            $this->createStub(PublicKeyPackageSignatureVerifier::class),
             $this->createStub(ExtensionArtifactVerifier::class),
             $this->createStub(TrustRuntimeInvalidator::class),
             $transactions,

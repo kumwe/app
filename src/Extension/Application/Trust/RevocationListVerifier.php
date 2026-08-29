@@ -7,7 +7,7 @@ namespace Kumwe\App\Extension\Application\Trust;
 /**
  * Port that checks a revocation envelope's detached signature against the pinned feed key.
  *
- * It is a separate port from `TrustKeySignatureVerifier` because the two answer questions about
+ * It is separate from `PublicKeyPackageSignatureVerifier` because the two answer questions about
  * different trust domains. That one verifies a package against a key the installation administers and
  * can revoke; this one verifies a revocation list against a key the installation pins in configuration
  * and which nothing inside the application can withdraw — which is exactly the property that keeps a

@@ -78,26 +78,34 @@ final class ConfigurationFactoryTest extends TestCase
         $values = $this->values();
         $values['EXTENSIONS_CONFORMANCE_ADMISSION'] = 'off';
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('EXTENSIONS_CONFORMANCE_ADMISSION must be enforce or warn');
+        $this->expectExceptionMessage('EXTENSIONS_CONFORMANCE_ADMISSION must be scan');
 
         (new ConfigurationFactory())->create(new Environment($values));
     }
 
-    public function testConformanceAdmissionDefaultsToEnforceAndAcceptsWarn(): void
+    /**
+     * Proves the default scans authoring evidence while Off remains an explicit non-production choice.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testConformanceAdmissionDefaultsToScan(): void
     {
         $configuration = (new ConfigurationFactory())->create(new Environment($this->values()));
-        self::assertSame(PackageConformanceMode::Enforce, $configuration->packageConformanceAdmission);
+        self::assertSame(PackageConformanceMode::Scan, $configuration->packageConformanceAdmission);
 
         $values = $this->values();
-        $values['EXTENSIONS_CONFORMANCE_ADMISSION'] = 'warn';
-        $warned = (new ConfigurationFactory())->create(new Environment($values));
-        self::assertSame(PackageConformanceMode::Warn, $warned->packageConformanceAdmission);
+        $values['APP_ENV'] = 'testing';
+        $values['EXTENSIONS_CONFORMANCE_ADMISSION'] = 'off';
+        $off = (new ConfigurationFactory())->create(new Environment($values));
+        self::assertSame(PackageConformanceMode::Off, $off->packageConformanceAdmission);
     }
 
     public function testUnknownConformanceAdmissionModeIsRefusedRatherThanDefaulted(): void
     {
         $values = $this->values();
-        $values['EXTENSIONS_CONFORMANCE_ADMISSION'] = 'enforced';
+        $values['EXTENSIONS_CONFORMANCE_ADMISSION'] = 'warn';
         $this->expectException(InvalidArgumentException::class);
 
         (new ConfigurationFactory())->create(new Environment($values));

@@ -17,6 +17,7 @@ use Kumwe\App\Extension\Contribution\OwnedRuntimeContributionRegistry;
 use Kumwe\App\Extension\Contribution\TranslationGroupDeclaration;
 use Kumwe\Extension\Spi\Contribution\TranslationSetItemAssociation;
 use Kumwe\Extension\Package\PackageChecksum;
+use Kumwe\Extension\Package\PackageSignatureMessage;
 use Kumwe\App\Kernel\Configuration\ApplicationConfiguration;
 use Kumwe\App\Kernel\ContainerFactory;
 use Kumwe\App\Localization\Domain\LocaleTag;
@@ -84,7 +85,7 @@ final class ContributedContentTranslationIntegrationTest extends TestCase
             throw new RuntimeException('The content translation fixture package cannot be read.');
         }
         $signature = base64_encode(sodium_crypto_sign_detached(
-            (string) PackageChecksum::calculate($bytes),
+            PackageSignatureMessage::forChecksum(PackageChecksum::calculate($bytes)),
             sodium_crypto_sign_secretkey($keyPair),
         ));
         $installed = false;

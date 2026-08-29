@@ -117,7 +117,7 @@ final readonly class ApplicationConfiguration
         public DatabaseConfiguration $database,
         public RedisConfiguration $redis,
         public RecordEncryptionConfiguration $recordEncryption = new RecordEncryptionConfiguration(),
-        public PackageConformanceMode $packageConformanceAdmission = PackageConformanceMode::Enforce,
+        public PackageConformanceMode $packageConformanceAdmission = PackageConformanceMode::Scan,
         public RevocationFeedConfiguration $revocationFeed = new RevocationFeedConfiguration(),
         public ?string $logLevel = null,
         public ?bool $metricsEnabled = null,
@@ -145,9 +145,9 @@ final readonly class ApplicationConfiguration
             && $packageConformanceAdmission === PackageConformanceMode::Off
         ) {
             throw new InvalidArgumentException(
-                'EXTENSIONS_CONFORMANCE_ADMISSION must be enforce or warn when APP_ENV=production. Turning the '
-                . 'install-time static scan off would admit packaged PHP that has never been inspected; use warn '
-                . 'to record findings without refusing an install.',
+                'EXTENSIONS_CONFORMANCE_ADMISSION must be scan when APP_ENV=production. Off skips advisory '
+                . 'authoring checks and is available only in development or testing; mandatory archive, manifest, '
+                . 'PHP syntax, reference and attestation checks are never disabled.',
             );
         }
         SiteContext::fromString($publicSite);

@@ -44,7 +44,7 @@ x-kumwe-environment: &kumwe-environment
   # packages allowed, or with install-time conformance scanning turned off. They are spelled here so the
   # posture is visible in the deployment file rather than only in the failure message.
   EXTENSIONS_ALLOW_UNSIGNED_LOCAL: 'false'
-  EXTENSIONS_CONFORMANCE_ADMISSION: ${KUMWE_CONFORMANCE_ADMISSION:-enforce}
+  EXTENSIONS_CONFORMANCE_ADMISSION: ${KUMWE_CONFORMANCE_ADMISSION:-scan}
   EXTENSIONS_REVOCATION_FEED_URL: ${KUMWE_REVOCATION_FEED_URL:-}
   EXTENSIONS_REVOCATION_FEED_KEY: ${KUMWE_REVOCATION_FEED_KEY:-}
   APP_SECRET_FILE: /run/secrets/app_secret

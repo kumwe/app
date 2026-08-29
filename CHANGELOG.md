@@ -1216,6 +1216,15 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Changed
 
+- **Extension installation now consumes the Extension SDK 0.2 package and security authorities directly.**
+  One private, bounded `InspectedPackage` snapshot supplies archive identity, checksum, manifest, neutral
+  findings, attestations and extraction bytes; App policy maps coded facts without recreating SDK package
+  types. Mandatory archive, manifest/reference, PHP syntax, trust/signature and invalid attestation evidence
+  fail closed in both modes, while `scan` alone adds advisory author-quality checks and `off` remains a
+  non-production package-only inspection. Package signatures use the SDK's domain-separated message and
+  public-key verifier, oversized caller archives are capped before private copying, and the pre-stable token
+  migration no longer carries the removed legacy package transition. (#124)
+
 - **Kumwe 2.0 relicenses from GPL-2.0-only to Apache-2.0.** Both contributors work for Vast Development
   Method and agreed to the change; the copyright is held by the company's legal entity, so the line
   reads `Copyright 2022-2026 Vast Development Method Trading Pty Ltd`. LICENSE now carries the

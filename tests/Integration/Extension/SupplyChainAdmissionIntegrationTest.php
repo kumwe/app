@@ -12,7 +12,6 @@ use Kumwe\App\Extension\Application\ExtensionManager;
 use Kumwe\App\Extension\Application\Package\NonConformingPackage;
 use Kumwe\Extension\Package\PackageBillOfMaterials;
 use Kumwe\Extension\Package\PackageProvenance;
-use Kumwe\Extension\Package\PackageSafetyPolicy;
 use Kumwe\App\Extension\Application\Trust\RevocationFeedSource;
 use Kumwe\App\Extension\Application\Trust\RevocationFeedSynchronizer;
 use Kumwe\App\Extension\Application\Trust\RevocationList;
@@ -23,7 +22,7 @@ use Kumwe\Extension\Toolchain\DeterministicPackageBuilder;
 use Kumwe\Extension\Toolchain\PackageInspector;
 use Kumwe\Extension\Toolchain\ScaffoldRequest;
 use Kumwe\Extension\Package\PackageChecksum;
-use Kumwe\Extension\Package\ZipArchiveReader;
+use Kumwe\Extension\Package\PackageSignatureMessage;
 use Kumwe\App\Extension\Infrastructure\Trust\DoctrineRevocationFeedStateStore;
 use Kumwe\App\Extension\Infrastructure\Trust\SodiumRevocationListVerifier;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
@@ -169,7 +168,7 @@ final class SupplyChainAdmissionIntegrationTest extends TestCase
             ), [$identifier]);
             self::assertIsArray($stored);
             self::assertSame('verified', $stored['sbom_state']);
-            self::assertSame('enforce', $stored['conformance_mode']);
+            self::assertSame('scan', $stored['conformance_mode']);
 
             $edited = $this->buildPackage($identifier . '-edited', 'edited');
             $this->rewriteEntry($edited, 'README.md', "# Rewritten after the inventory was recorded\n");
@@ -398,7 +397,7 @@ final class SupplyChainAdmissionIntegrationTest extends TestCase
         ));
 
         return (new DeterministicPackageBuilder(
-            new PackageInspector(new ZipArchiveReader(), new PackageSafetyPolicy()),
+            new PackageInspector(),
         ))->build($source, $this->temporary . '/' . $label . '.zip')->archive;
     }
 
@@ -430,7 +429,7 @@ final class SupplyChainAdmissionIntegrationTest extends TestCase
      * @param   string  $archive    Absolute package path.
      * @param   string  $secretKey  Publisher secret key.
      *
-     * @return  string  Standard base64 detached signature over the package digest.
+     * @return  string  Standard base64 detached signature over the SDK package message.
      *
      * @since   2.0.0
      */
@@ -440,7 +439,10 @@ final class SupplyChainAdmissionIntegrationTest extends TestCase
         self::assertIsString($bytes);
 
         return base64_encode(
-            sodium_crypto_sign_detached((string) PackageChecksum::calculate($bytes), $secretKey),
+            sodium_crypto_sign_detached(
+                PackageSignatureMessage::forChecksum(PackageChecksum::calculate($bytes)),
+                $secretKey,
+            ),
         );
     }
 }

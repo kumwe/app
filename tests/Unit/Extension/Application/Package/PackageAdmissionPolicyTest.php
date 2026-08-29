@@ -9,7 +9,10 @@ use Kumwe\App\Extension\Application\Package\PackageAdmissionPolicy;
 use Kumwe\App\Extension\Application\Package\PackageAdmissionReport;
 use Kumwe\App\Extension\Application\Package\PackageConformanceMode;
 use Kumwe\Extension\Package\PackageAttestationState;
+use Kumwe\Extension\Package\PackageBillOfMaterials;
 use Kumwe\Extension\Package\PackageEvidenceReport;
+use Kumwe\Extension\Package\PackageEvidenceScope;
+use Kumwe\Extension\Package\PackageFinding;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
@@ -25,61 +28,91 @@ use PHPUnit\Framework\TestCase;
 final class PackageAdmissionPolicyTest extends TestCase
 {
     /**
-     * Warning mode admits code findings and retains SDK order while separating policy state.
+     * Scan mode retains coded authoring observations as advisory evidence.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    public function testWarningModePreservesNeutralFindings(): void
+    public function testScanModePreservesNeutralAdvisoryFindings(): void
     {
         $evidence = self::evidence(
-            integrity: ['PHP syntax failure in src/Broken.php.', 'Manifest reference Provider is absent.'],
-            quality: ['The package carries no README.md for operators to read.'],
+            findings: [
+                new PackageFinding('author.readme.missing', 'The package carries no README.', 'README.md'),
+                new PackageFinding('code.php.strict_types', 'A PHP file omits strict types.', 'src/Provider.php'),
+            ],
             checks: [
-                'static_php_syntax' => false,
-                'manifest_references' => false,
-                'strict_types' => true,
-                'complete_sources' => true,
+                'archive_safety' => true,
+                'static_php_syntax' => true,
+                'manifest_references' => true,
+                'strict_types' => false,
                 'authoring_readme' => false,
                 'sbom' => true,
                 'provenance' => true,
             ],
         );
 
-        $report = (new PackageAdmissionPolicy(PackageConformanceMode::Warn))->admit($evidence);
+        $policy = new PackageAdmissionPolicy();
+        $report = $policy->admit($evidence);
 
+        self::assertSame(PackageEvidenceScope::Authoring, $policy->evidenceScope());
         self::assertSame('warned', $report->conformanceState);
-        self::assertSame($evidence->integrityFindings, $report->blocking);
-        self::assertSame($evidence->qualityFindings, $report->advisory);
-        self::assertSame([
-            'static_php_syntax' => false,
-            'manifest_references' => false,
-            'strict_types' => true,
-            'complete_sources' => true,
-            'authoring_readme' => false,
-        ], $report->checks);
+        self::assertSame([], $report->blocking);
+        self::assertSame($evidence->findings, $report->advisory);
+        self::assertSame($evidence->checks, $report->checks);
+        self::assertSame('author.readme.missing', $report->toArray()['conformance']['advisory'][0]['code']);
     }
 
     /**
-     * Enforce mode refuses the same neutral integrity evidence warning mode records.
+     * PHP syntax and manifest-reference failures block under the complete scan.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    public function testEnforceModeRefusesCodeIntegrityFinding(): void
+    public function testScanModeRefusesMandatoryPackageFindings(): void
     {
-        $this->expectException(NonConformingPackage::class);
-        $this->expectExceptionMessage('failed install-time code conformance');
-
-        (new PackageAdmissionPolicy())->admit(self::evidence(
-            integrity: ['PHP syntax failure in src/Broken.php.'],
-        ));
+        self::assertRefused(
+            new PackageAdmissionPolicy(),
+            self::evidence(findings: [
+                new PackageFinding('code.php.syntax', 'PHP syntax failure in src/Broken.php.', 'src/Broken.php'),
+                new PackageFinding(
+                    'manifest.reference.class_missing',
+                    'Manifest class Provider is absent.',
+                    'src/Provider.php',
+                ),
+            ]),
+            '[code.php.syntax]',
+        );
     }
 
     /**
-     * Invalid inventory evidence fails closed even when code conformance is disabled.
+     * Off mode still blocks mandatory package evidence while omitting author-only checks.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testOffModeStillRefusesPhpSyntaxFailure(): void
+    {
+        $policy = new PackageAdmissionPolicy(PackageConformanceMode::Off);
+        self::assertSame(PackageEvidenceScope::Package, $policy->evidenceScope());
+        self::assertRefused(
+            $policy,
+            self::evidence(
+                scope: PackageEvidenceScope::Package,
+                findings: [new PackageFinding(
+                    'code.php.syntax',
+                    'PHP syntax failure in src/Broken.php.',
+                    'src/Broken.php',
+                )],
+            ),
+            '[code.php.syntax]',
+        );
+    }
+
+    /**
+     * Invalid inventory evidence fails closed when authoring checks are disabled.
      *
      * @return  void
      *
@@ -87,73 +120,155 @@ final class PackageAdmissionPolicyTest extends TestCase
      */
     public function testInvalidAttestationIsRefusedInOffMode(): void
     {
-        $this->expectException(NonConformingPackage::class);
-        $this->expectExceptionMessage('does not describe this package');
-
-        (new PackageAdmissionPolicy(PackageConformanceMode::Off))->admit(self::evidence(
-            sbomState: PackageAttestationState::Invalid,
-            integrity: ['The packaged bill of materials does not describe this package: digest mismatch.'],
-            checks: ['sbom' => false, 'provenance' => true],
-        ));
+        self::assertRefused(
+            new PackageAdmissionPolicy(PackageConformanceMode::Off),
+            self::evidence(
+                scope: PackageEvidenceScope::Package,
+                sbomState: PackageAttestationState::Invalid,
+                findings: [new PackageFinding(
+                    'attestation.sbom.mismatch',
+                    'The packaged bill of materials does not describe this package.',
+                    PackageBillOfMaterials::PATH,
+                )],
+                checks: ['sbom' => false, 'provenance' => false],
+            ),
+            '[attestation.sbom.mismatch]',
+        );
     }
 
     /**
-     * Off mode keeps verified evidence but asserts no code scan outcome.
+     * Off mode records mandatory evidence honestly as a package-only scan.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    public function testOffModeRecordsVerifiedEvidenceAsSkipped(): void
+    public function testOffModeRecordsVerifiedEvidenceAsPackageOnly(): void
     {
-        $report = (new PackageAdmissionPolicy(PackageConformanceMode::Off))->admit(self::evidence());
+        $checks = [
+            'archive_safety' => true,
+            'static_php_syntax' => true,
+            'manifest_references' => true,
+            'sbom' => true,
+            'provenance' => true,
+        ];
+        $report = (new PackageAdmissionPolicy(PackageConformanceMode::Off))->admit(self::evidence(
+            scope: PackageEvidenceScope::Package,
+            checks: $checks,
+        ));
 
         self::assertSame(PackageAttestationState::Verified, $report->sbomState);
         self::assertSame(PackageAttestationState::Verified, $report->provenanceState);
-        self::assertSame('skipped', $report->conformanceState);
-        self::assertSame([], $report->checks);
+        self::assertSame(PackageEvidenceScope::Package, $report->scope);
+        self::assertSame('package_only', $report->conformanceState);
+        self::assertSame($checks, $report->checks);
         self::assertSame([], $report->blocking);
         self::assertSame([], $report->advisory);
     }
 
     /**
+     * Proves absent attestations remain an honest admissible state rather than being reported as verified.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAbsentAttestationsRemainAdmissibleAndRecorded(): void
+    {
+        $report = (new PackageAdmissionPolicy())->admit(self::evidence(
+            sbomState: PackageAttestationState::Absent,
+            provenanceState: PackageAttestationState::Absent,
+        ));
+
+        self::assertSame(PackageAttestationState::Absent, $report->sbomState);
+        self::assertSame(PackageAttestationState::Absent, $report->provenanceState);
+        self::assertSame('passed', $report->conformanceState);
+    }
+
+    /**
+     * A new SDK finding blocks until App policy classifies it explicitly.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testUnknownFindingCodeFailsClosed(): void
+    {
+        self::assertRefused(
+            new PackageAdmissionPolicy(),
+            self::evidence(findings: [
+                new PackageFinding('future.package.fact', 'A new package fact needs host policy.'),
+            ]),
+            '[future.package.fact]',
+        );
+    }
+
+    /**
+     * Prove one evidence report is refused with a machine-addressable code in the explanation.
+     *
+     * @param   PackageAdmissionPolicy  $policy    App policy under test.
+     * @param   PackageEvidenceReport   $evidence  Neutral evidence offered to it.
+     * @param   string                  $code      Finding code expected in the refusal.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    private static function assertRefused(
+        PackageAdmissionPolicy $policy,
+        PackageEvidenceReport $evidence,
+        string $code,
+    ): void {
+        try {
+            $policy->admit($evidence);
+            self::fail('Mandatory package evidence was admitted.');
+        } catch (NonConformingPackage $failure) {
+            self::assertStringContainsString($code, $failure->getMessage());
+        }
+    }
+
+    /**
      * Build deterministic SDK evidence for host-policy tests.
      *
-     * @param   PackageAttestationState  $sbomState       Inventory state.
-     * @param   list<string>             $integrity       Neutral integrity findings.
-     * @param   list<string>             $quality         Neutral quality findings.
-     * @param   array<string, bool>      $checks          Neutral objective checks.
+     * @param   PackageEvidenceScope     $scope      Neutral evidence depth represented by the report.
+     * @param   PackageAttestationState  $sbomState  Inventory state.
+     * @param   PackageAttestationState  $provenanceState  Provenance state.
+     * @param   list<PackageFinding>     $findings   Neutral coded findings.
+     * @param   array<string, bool>      $checks     Neutral objective checks.
      *
      * @return  PackageEvidenceReport  Complete neutral evidence.
      *
      * @since   2.0.0
      */
     private static function evidence(
+        PackageEvidenceScope $scope = PackageEvidenceScope::Authoring,
         PackageAttestationState $sbomState = PackageAttestationState::Verified,
-        array $integrity = [],
-        array $quality = [],
+        PackageAttestationState $provenanceState = PackageAttestationState::Verified,
+        array $findings = [],
         array $checks = [
+            'archive_safety' => true,
             'static_php_syntax' => true,
             'manifest_references' => true,
             'strict_types' => true,
             'complete_sources' => true,
+            'text_encoding' => true,
             'authoring_readme' => true,
             'sbom' => true,
             'provenance' => true,
         ],
     ): PackageEvidenceReport {
         return new PackageEvidenceReport(
+            $scope,
             $sbomState,
             'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
             7,
             ['bomFormat' => 'CycloneDX'],
-            PackageAttestationState::Verified,
+            $provenanceState,
             'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
             'kumwe-extension-sdk@0.2.0',
             ['predicateType' => 'https://slsa.dev/provenance/v1'],
             $checks,
-            $integrity,
-            $quality,
+            $findings,
         );
     }
 }

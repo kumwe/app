@@ -16,15 +16,18 @@ use Kumwe\App\Audit\Application\AuditRecorder;
 use Kumwe\App\Audit\Domain\AuditEvent;
 use Kumwe\App\Extension\Application\Migration\ExtensionMigrationRunner;
 use Kumwe\App\Extension\Application\ExtensionRegistryLease;
-use Kumwe\Extension\Package\PackageSafetyPolicy;
 use Kumwe\App\Extension\Application\Package\ExtensionActivationAdmission;
+use Kumwe\App\Extension\Application\Package\PackageAdmissionPolicy;
 use Kumwe\App\Extension\Application\Trust\ExtensionArtifactVerifier;
-use Kumwe\App\Extension\Application\Trust\TrustKeySignatureVerifier;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Extension\Application\Trust\TrustStoreRepository;
 use Kumwe\App\Extension\Infrastructure\DoctrineExtensionManager;
 use Kumwe\App\Extension\Infrastructure\ExtensionRegistryFenceAllocator;
-use Kumwe\Extension\Package\ZipArchiveReader;
+use Kumwe\Extension\Package\PackageCodeConformance;
+use Kumwe\Extension\Package\PackageEvidenceInspector;
+use Kumwe\Extension\Package\PublicKeyPackageSignatureVerifier;
+use Kumwe\Extension\Package\ZipArchiveContentReader;
+use Kumwe\Extension\Toolchain\PackageInspector;
 use Kumwe\App\Extension\Infrastructure\Trust\FilesystemExtensionArtifactVerifier;
 use Kumwe\Extension\Manifest\ExtensionManifest;
 use Kumwe\App\Extension\Runtime\ExtensionRuntimeMapCompiler;
@@ -81,7 +84,7 @@ final class DoctrineThemeManagerIntegrationTest extends TestCase
             $schema = $this->database->createSchemaManager();
         }
         if (!$schema->introspectTable($this->tables->raw('extension_releases'))->hasColumn('trust_state')) {
-            (new TokenAndTrustLifecycleMigration($this->tables, $this->root . '/extensions'))->up(
+            (new TokenAndTrustLifecycleMigration($this->tables))->up(
                 $this->database,
             );
             $schema = $this->database->createSchemaManager();
@@ -655,7 +658,7 @@ final class DoctrineThemeManagerIntegrationTest extends TestCase
         );
         $trust = new TrustStore(
             $this->createStub(TrustStoreRepository::class),
-            $this->createStub(TrustKeySignatureVerifier::class),
+            $this->createStub(PublicKeyPackageSignatureVerifier::class),
             $this->createStub(ExtensionArtifactVerifier::class),
             $compiler,
             $transactions,
@@ -670,8 +673,10 @@ final class DoctrineThemeManagerIntegrationTest extends TestCase
             $this->tables,
             $this->root . '/extensions',
             $this->root . '/public',
-            new ZipArchiveReader(),
-            new PackageSafetyPolicy(),
+            new PackageInspector(),
+            new ZipArchiveContentReader(),
+            new PackageEvidenceInspector(new ZipArchiveContentReader(), new PackageCodeConformance()),
+            new PackageAdmissionPolicy(),
             new ExtensionMigrationRunner($this->database, $this->tables, $clock),
             $compiler,
             $transactions,

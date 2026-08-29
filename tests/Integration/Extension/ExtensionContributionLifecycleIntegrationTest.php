@@ -14,6 +14,7 @@ use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\Extension\Manifest\ExtensionIdentifier;
 use Kumwe\Extension\Package\PackageChecksum;
+use Kumwe\Extension\Package\PackageSignatureMessage;
 use Kumwe\App\Extension\Runtime\ActiveExtensionSet;
 use Kumwe\App\Extension\Infrastructure\DoctrineExtensionManager;
 use Kumwe\App\Extension\Infrastructure\RedisLockedExtensionManager;
@@ -69,7 +70,10 @@ final class ExtensionContributionLifecycleIntegrationTest extends TestCase
             throw new RuntimeException('The contribution fixture package cannot be read.');
         }
         $checksum = PackageChecksum::calculate($bytes);
-        $signature = base64_encode(sodium_crypto_sign_detached((string) $checksum, $secretKey));
+        $signature = base64_encode(sodium_crypto_sign_detached(
+            PackageSignatureMessage::forChecksum($checksum),
+            $secretKey,
+        ));
         $extensionTables = new ScopedExtensionTableNames(
             $database,
             $tables,

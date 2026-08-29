@@ -620,7 +620,7 @@ final class ThemePersistenceIntegrationTest extends TestCase
         $tables = new TableNames($database, 'kumwe_');
         (new CoreSchemaMigration($tables))->up($database);
         (new ApplicationAuthorizationMigration($tables))->up($database);
-        (new TokenAndTrustLifecycleMigration($tables, sys_get_temp_dir()))->up($database);
+        (new TokenAndTrustLifecycleMigration($tables))->up($database);
         (new IsolateThemeSurfacesMigration($tables))->up($database);
         (new BusinessDefinitionCatalogMigration($tables))->up($database);
         (new BusinessTransactionalRuntimeMigration($tables))->up($database);

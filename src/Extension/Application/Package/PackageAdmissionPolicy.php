@@ -4,30 +4,63 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Extension\Application\Package;
 
+use LogicException;
 use Kumwe\Extension\Package\PackageAttestationState;
 use Kumwe\Extension\Package\PackageEvidenceReport;
+use Kumwe\Extension\Package\PackageEvidenceScope;
+use Kumwe\Extension\Package\PackageFinding;
 
 /**
  * Applies App deployment policy to the SDK's neutral package evidence.
  *
  * The inspector remains reusable because it reports facts only. This class is the sole place the App
- * turns those facts into an install decision: malformed or contradictory attestations always fail
- * closed, while code-integrity findings follow the configured deployment posture. Finding strings and
- * ordering are retained exactly as produced by the SDK.
+ * turns those facts into an install decision. Archive, manifest, executable/reference and attestation
+ * findings always fail closed. Authoring-quality findings remain advisory and are collected only in
+ * scan mode. Coded findings and their deterministic order are retained exactly as produced by the SDK.
  *
  * @since  2.0.0
  */
 final readonly class PackageAdmissionPolicy
 {
     /**
-     * Select the App posture applied to code-integrity findings.
+     * SDK facts that are advisory authoring quality rather than package integrity.
      *
-     * @param  PackageConformanceMode  $mode  Deployment posture for code findings.
+     * Every unknown code fails closed. An SDK release that adds a fact therefore requires an explicit
+     * App policy decision instead of silently admitting it under a broad prefix.
+     *
+     * @var    array<string, true>
+     * @since  2.0.0
+     */
+    private const array ADVISORY_CODES = [
+        'author.readme.missing' => true,
+        'code.php.strict_types' => true,
+        'source.marker.unresolved' => true,
+        'source.text.encoding' => true,
+    ];
+
+    /**
+     * Select whether App also collects advisory authoring evidence.
+     *
+     * @param  PackageConformanceMode  $mode  Author-evidence collection posture.
      *
      * @since  2.0.0
      */
-    public function __construct(private PackageConformanceMode $mode = PackageConformanceMode::Enforce)
+    public function __construct(private PackageConformanceMode $mode = PackageConformanceMode::Scan)
     {
+    }
+
+    /**
+     * Select the neutral SDK evidence depth required by this deployment posture.
+     *
+     * @return  PackageEvidenceScope  Authoring evidence for scan mode; mandatory package evidence for off.
+     *
+     * @since   2.0.0
+     */
+    public function evidenceScope(): PackageEvidenceScope
+    {
+        return $this->mode === PackageConformanceMode::Scan
+            ? PackageEvidenceScope::Authoring
+            : PackageEvidenceScope::Package;
     }
 
     /**
@@ -37,25 +70,35 @@ final readonly class PackageAdmissionPolicy
      *
      * @return  PackageAdmissionReport  Admitted evidence plus the App policy outcome.
      *
-     * @throws  NonConformingPackage  When attestation evidence is invalid in any mode or integrity
-     *          findings are present under `Enforce`.
+     * @throws  NonConformingPackage  When any mandatory package or attestation finding is present.
+     * @throws  LogicException  When evidence was collected at a different depth than policy requested.
      *
      * @since   2.0.0
      */
     public function admit(PackageEvidenceReport $evidence): PackageAdmissionReport
     {
-        $this->assertAttestations($evidence);
+        if ($evidence->scope !== $this->evidenceScope()) {
+            throw new LogicException('Extension package evidence was collected at the wrong inspection depth.');
+        }
 
-        if ($evidence->integrityFindings !== [] && $this->mode === PackageConformanceMode::Enforce) {
+        [$blocking, $advisory] = $this->classify($evidence->findings);
+        $this->assertAttestations($evidence, $blocking);
+        if ($blocking !== []) {
             throw new NonConformingPackage(sprintf(
-                'The extension package failed install-time code conformance: %s',
-                implode(' ', $evidence->integrityFindings),
+                'The extension package failed mandatory admission: %s',
+                implode(' ', array_map(
+                    static fn (PackageFinding $finding): string => sprintf(
+                        '[%s] %s',
+                        $finding->code,
+                        $finding->message,
+                    ),
+                    $blocking,
+                )),
             ));
         }
 
-        $scanning = $this->mode !== PackageConformanceMode::Off;
-
         return new PackageAdmissionReport(
+            $evidence->scope,
             $evidence->sbomState,
             $evidence->sbomSha256,
             $evidence->sbomComponents,
@@ -65,10 +108,12 @@ final readonly class PackageAdmissionPolicy
             $evidence->builderReference,
             $evidence->provenance,
             $this->mode,
-            !$scanning ? 'skipped' : ($evidence->integrityFindings === [] ? 'passed' : 'warned'),
-            $scanning ? $this->codeChecks($evidence->checks) : [],
-            $scanning ? $evidence->integrityFindings : [],
-            $scanning ? $evidence->qualityFindings : [],
+            $this->mode === PackageConformanceMode::Off
+                ? 'package_only'
+                : ($advisory === [] ? 'passed' : 'warned'),
+            $evidence->checks,
+            [],
+            $advisory,
         );
     }
 
@@ -76,6 +121,7 @@ final readonly class PackageAdmissionPolicy
      * Refuse evidence documents that are present but invalid, independently of code posture.
      *
      * @param   PackageEvidenceReport  $evidence  SDK evidence to validate.
+     * @param   list<PackageFinding>   $blocking  Mandatory coded findings already classified.
      *
      * @return  void
      *
@@ -83,69 +129,41 @@ final readonly class PackageAdmissionPolicy
      *
      * @since   2.0.0
      */
-    private function assertAttestations(PackageEvidenceReport $evidence): void
+    private function assertAttestations(PackageEvidenceReport $evidence, array $blocking): void
     {
-        if (
-            $evidence->sbomState === PackageAttestationState::Absent
-            && $evidence->provenanceState === PackageAttestationState::Invalid
-        ) {
-            throw new NonConformingPackage(
-                'The extension package carries a provenance statement but no bill of materials to bind it to.',
-            );
-        }
-
-        if ($evidence->sbomState === PackageAttestationState::Invalid) {
-            throw new NonConformingPackage($this->attestationMessage(
-                $evidence->integrityFindings,
-                'The packaged bill of materials',
-                'The packaged bill of materials is invalid.',
-            ));
-        }
-
-        if ($evidence->provenanceState === PackageAttestationState::Invalid) {
-            throw new NonConformingPackage($this->attestationMessage(
-                $evidence->integrityFindings,
-                'The packaged provenance statement',
-                'The packaged provenance statement is invalid.',
-            ));
-        }
-    }
-
-    /**
-     * Select the SDK finding that explains one invalid attestation.
-     *
-     * @param   list<string>  $findings  Deterministically ordered SDK integrity findings.
-     * @param   string        $prefix    Stable attestation category prefix.
-     * @param   string        $fallback  Message used only when the SDK supplied no detailed finding.
-     *
-     * @return  string  Detailed refusal message without changing the SDK text.
-     *
-     * @since   2.0.0
-     */
-    private function attestationMessage(array $findings, string $prefix, string $fallback): string
-    {
-        foreach ($findings as $finding) {
-            if (str_starts_with($finding, $prefix)) {
-                return $finding;
+        foreach ([$evidence->sbomState, $evidence->provenanceState] as $state) {
+            if (in_array($state, [PackageAttestationState::Invalid, PackageAttestationState::NotInspected], true)) {
+                if ($blocking !== []) {
+                    return;
+                }
+                throw new NonConformingPackage(
+                    'The extension package attestation evidence is invalid or could not be inspected.',
+                );
             }
         }
-
-        return $fallback;
     }
 
     /**
-     * Keep attestation outcomes out of the host's code-conformance check group.
+     * Apply the App's explicit disposition to every neutral SDK finding.
      *
-     * @param   array<string, bool>  $checks  Full SDK objective check set.
+     * @param   list<PackageFinding>  $findings  Deterministically ordered SDK findings.
      *
-     * @return  array<string, bool>  Code and authoring checks in their original order.
+     * @return  array{list<PackageFinding>, list<PackageFinding>}  Blocking and advisory findings.
      *
      * @since   2.0.0
      */
-    private function codeChecks(array $checks): array
+    private function classify(array $findings): array
     {
-        unset($checks['sbom'], $checks['provenance']);
+        $blocking = [];
+        $advisory = [];
+        foreach ($findings as $finding) {
+            if (isset(self::ADVISORY_CODES[$finding->code])) {
+                $advisory[] = $finding;
+                continue;
+            }
+            $blocking[] = $finding;
+        }
 
-        return $checks;
+        return [$blocking, $advisory];
     }
 }

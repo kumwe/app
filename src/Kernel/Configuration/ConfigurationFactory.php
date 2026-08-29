@@ -116,10 +116,9 @@ final class ConfigurationFactory
     /**
      * Resolve how install-time admission treats the static conformance scan of packaged code.
      *
-     * Omitting the variable selects `Enforce`, so an installation that says nothing gets the scan and
-     * gets it as a gate. An unknown spelling is a configuration error rather than a silent fall back to
-     * the default, because the difference between `warn` and a typo is the difference between recording
-     * a finding and refusing an install.
+     * Omitting the variable selects `Scan`, so an installation that says nothing collects advisory
+     * authoring observations as well as mandatory evidence. An unknown spelling is a configuration
+     * error rather than a silent fall back to the default.
      *
      * @param   Environment  $environment  Allow-listed variables resolved from the process and dotenv file.
      *
@@ -131,10 +130,10 @@ final class ConfigurationFactory
      */
     private function packageConformanceAdmission(Environment $environment): PackageConformanceMode
     {
-        $mode = $environment->string('EXTENSIONS_CONFORMANCE_ADMISSION', PackageConformanceMode::Enforce->value);
+        $mode = $environment->string('EXTENSIONS_CONFORMANCE_ADMISSION', PackageConformanceMode::Scan->value);
 
         return PackageConformanceMode::tryFrom(strtolower($mode)) ?? throw new InvalidArgumentException(
-            'EXTENSIONS_CONFORMANCE_ADMISSION must be enforce, warn, or off.',
+            'EXTENSIONS_CONFORMANCE_ADMISSION must be scan or off.',
         );
     }
 

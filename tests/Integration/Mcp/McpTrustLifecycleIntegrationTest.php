@@ -14,6 +14,7 @@ use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\Extension\Manifest\ExtensionIdentifier;
 use Kumwe\Extension\Package\PackageChecksum;
 use Kumwe\Extension\Package\PackageSignature;
+use Kumwe\Extension\Package\PackageSignatureMessage;
 use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
 use Kumwe\App\Infrastructure\Mcp\KumweMcpHandlers;
 use Kumwe\App\Infrastructure\Mcp\McpMutationGuard;
@@ -82,7 +83,10 @@ final class McpTrustLifecycleIntegrationTest extends TestCase
         $checksum = PackageChecksum::calculate('mcp-race-package-' . $marker);
         $signature = PackageSignature::ed25519(
             $keyId,
-            base64_encode(sodium_crypto_sign_detached((string) $checksum, $secretKey)),
+            base64_encode(sodium_crypto_sign_detached(
+                PackageSignatureMessage::forChecksum($checksum),
+                $secretKey,
+            )),
         );
         $context = TestKernelFactory::administratorContext($container);
         $trust->add(
