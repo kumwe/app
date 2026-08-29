@@ -42,7 +42,6 @@ use RecursiveIteratorIterator;
 use SplFileInfo;
 
 #[CoversClass(ConvertedMoneySurface::class)]
-#[CoversClass(ConvertedMoneyValue::class)]
 #[CoversClass(CoreFieldPresenter::class)]
 #[CoversClass(FieldPresentation::class)]
 #[CoversClass(FieldPresentationRegistry::class)]

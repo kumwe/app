@@ -23,7 +23,6 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass(RecordPolicySet::class)]
 #[CoversClass(RecordPolicySchema::class)]
 #[CoversClass(RecordPolicyEvaluator::class)]
-#[CoversClass(RecordPolicyComparison::class)]
 #[CoversClass(RecordPolicyBoolean::class)]
 #[CoversClass(RecordPolicyNullCheck::class)]
 #[CoversClass(RecordPolicyConstant::class)]

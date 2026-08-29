@@ -34,9 +34,6 @@ use SplFileInfo;
 
 #[CoversClass(AtomicInstallPlan::class)]
 #[CoversClass(PackageTrustPolicy::class)]
-#[CoversClass(StaticConformanceRunner::class)]
-#[CoversClass(PackageSigner::class)]
-#[CoversClass(DeterministicPackageBuilder::class)]
 /**
  * Drives the signed compatibility package of every promised generation through the whole lifecycle.
  *

@@ -22,7 +22,6 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass(RedisConfiguration::class)]
 #[CoversClass(RuntimeEnvironment::class)]
 #[CoversClass(RevocationFeedConfiguration::class)]
-#[CoversClass(PackageConformanceMode::class)]
 final class ConfigurationFactoryTest extends TestCase
 {
     public function testCreatesProductionConfiguration(): void

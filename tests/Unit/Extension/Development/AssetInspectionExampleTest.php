@@ -91,11 +91,6 @@ use ReflectionMethod;
 #[CoversClass(PackageSafetyPolicy::class)]
 #[CoversClass(ExtensionContributionRegistrySet::class)]
 #[CoversClass(ManifestContributionSet::class)]
-#[CoversClass(DeterministicPackageBuilder::class)]
-#[CoversClass(PackageInspector::class)]
-#[CoversClass(PackageSigner::class)]
-#[CoversClass(ProtectedSigningKeyReader::class)]
-#[CoversClass(StaticConformanceRunner::class)]
 #[CoversClass(ExtensionManifest::class)]
 #[CoversClass(RestrictedExtensionContainer::class)]
 /**

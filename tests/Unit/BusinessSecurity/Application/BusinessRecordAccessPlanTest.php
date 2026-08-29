@@ -20,7 +20,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(BusinessRecordAccessPlan::class)]
-#[CoversClass(FieldDisclosurePlan::class)]
 final class BusinessRecordAccessPlanTest extends TestCase
 {
     public function testEmptyFieldSetsStayEmptyAndNeverMeanAllFields(): void
