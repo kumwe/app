@@ -10,7 +10,6 @@ use InvalidArgumentException;
 use Kumwe\Extension\Manifest\ExtensionManifest;
 use Kumwe\Extension\Spi\Migration\ExtensionMigration;
 use Kumwe\Extension\Spi\Migration\ExtensionTableNames;
-use Kumwe\App\Extension\Infrastructure\Trust\FilesystemExtensionArtifactVerifier;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Psr\Clock\ClockInterface;
 use RuntimeException;
@@ -24,8 +23,8 @@ use RuntimeException;
  * migration in the `extension_migrations` table alongside a SHA-256 over the migration's class name, its
  * ID and the bytes of its source file. On the next run that digest is re-derived and compared, so a
  * later release cannot quietly reuse an applied ID with different executable bytes; drift aborts the
- * install rather than skipping the step. Rows written before digests were recorded are back-filled from
- * the release already installed on disk, and only after that release's tree digest still matches.
+ * install rather than skipping the step. Every row must already carry that canonical digest; there is no
+ * compatibility backfill or alternate checksum authority.
  *
  * @since  2.0.0
  */
@@ -68,8 +67,6 @@ final readonly class ExtensionMigrationRunner
      *          ID is not a timestamped identifier.
      * @throws  RuntimeException  When an autoload root is unsafe or a declared class cannot be loaded, when a
      *          migration's source cannot be checksummed, or when the ledger disagrees with it.
-     * @throws  \JsonException  When back-filling a legacy ledger row and the installed release's stored
-     *          manifest is not valid JSON.
      *
      * @since   2.0.0
      */
@@ -94,7 +91,7 @@ final readonly class ExtensionMigrationRunner
                 throw new InvalidArgumentException('Extension migration IDs must be timestamped identifiers.');
             }
             $checksum = $this->checksum($migration, $id);
-            if ($this->wasApplied($manifest, $class, $extensionRoot, $id, $checksum)) {
+            if ($this->wasApplied($manifest, $id, $checksum)) {
                 continue;
             }
 
@@ -142,32 +139,20 @@ final readonly class ExtensionMigrationRunner
     /**
      * Decide whether this migration has already run here, and prove the ledger still agrees with it.
      *
-     * A row whose digest column is null predates digest recording; rather than trusting it, the runner
-     * reconstructs the digest from the release currently installed on disk and writes it back, so the
-     * comparison from then on is against a value anchored to real bytes.
-     *
-     * @param   ExtensionManifest  $manifest        Extension whose ledger is consulted.
-     * @param   string             $migrationClass  Fully qualified migration class, used to locate the
-     *          matching source inside the installed release when a legacy row must be back-filled.
-     * @param   string             $incomingRoot    Deployed directory of the package being applied; its
-     *          third-level parent is the extension deployment base legacy lookups resolve against.
-     * @param   string             $migrationId     Identifier the ledger row is keyed by.
-     * @param   string             $checksum        Digest derived from the incoming migration's source, which
+     * @param   ExtensionManifest  $manifest     Extension whose ledger is consulted.
+     * @param   string             $migrationId  Identifier the ledger row is keyed by.
+     * @param   string             $checksum     Digest derived from the incoming migration's source, which
      *          the stored digest must equal.
      *
      * @return  bool  True when the migration is already recorded and its digest matches, so `up()` must be
      *          skipped; false when this site has never applied it.
      *
-     * @throws  RuntimeException  When a back-filled legacy digest cannot be persisted, when the stored digest
-     *          does not match the incoming one, or when the installed release cannot anchor a legacy digest.
-     * @throws  \JsonException  When the installed release's stored manifest is not valid JSON.
+     * @throws  RuntimeException  When the stored digest is absent, malformed or does not match the incoming one.
      *
      * @since   2.0.0
      */
     private function wasApplied(
         ExtensionManifest $manifest,
-        string $migrationClass,
-        string $incomingRoot,
         string $migrationId,
         string $checksum,
     ): bool {
@@ -178,24 +163,6 @@ final readonly class ExtensionMigrationRunner
         if ($stored === false) {
             return false;
         }
-        if ($stored === null) {
-            $legacyChecksum = $this->legacyChecksum(
-                $manifest,
-                $migrationClass,
-                $incomingRoot,
-                $migrationId,
-            );
-            $affected = $this->database->update($this->tables->raw('extension_migrations'), [
-                'migration_sha256' => $legacyChecksum,
-            ], [
-                'extension_identifier' => $manifest->identifier()->value(),
-                'migration_id' => $migrationId,
-            ]);
-            if ($affected !== 1) {
-                throw new RuntimeException('The legacy extension migration checksum could not be persisted.');
-            }
-            $stored = $legacyChecksum;
-        }
         if (!is_string($stored) || !hash_equals($stored, $checksum)) {
             throw new RuntimeException(sprintf(
                 'Extension migration checksum drift detected for %s:%s.',
@@ -205,128 +172,6 @@ final readonly class ExtensionMigrationRunner
         }
 
         return true;
-    }
-
-    /**
-     * Reconstruct the digest a ledger row would have carried, from the release already installed on disk.
-     *
-     * The reconstruction is only trustworthy if the bytes it reads are the bytes that ran, so every step
-     * is checked before the file is hashed: the registry must name a well-formed runtime path and tree
-     * digest, the deployed tree must still hash to that digest, the release's own manifest must declare
-     * this migration class, and the source resolved through the longest matching PSR-4 prefix must be a
-     * regular file inside the release root reached without traversing a symbolic link. Any of those
-     * failing aborts rather than yielding a weaker digest.
-     *
-     * @param   ExtensionManifest  $incoming        Manifest of the package being applied; only its identifier
-     *          is used, to find the installed release.
-     * @param   string             $migrationClass  Class the legacy row was written for; the installed
-     *          release's manifest must declare it.
-     * @param   string             $incomingRoot    Deployed directory of the incoming package; its
-     *          third-level parent is the base the installed release's runtime path is resolved against.
-     * @param   string             $migrationId     Identifier mixed into the digest, matching the ledger row.
-     *
-     * @return  string  Hex SHA-256 over class name, migration ID and installed source bytes, built the same
-     *          way `checksum()` builds it so the two are comparable.
-     *
-     * @throws  RuntimeException  When no installed release is recorded, when its runtime path or tree digest
-     *          is malformed, when the deployed tree has changed, when its manifest is unusable or omits the
-     *          class, or when the migration source is unresolvable, outside the release, or unreadable.
-     * @throws  \JsonException  When the stored manifest document is not valid JSON.
-     *
-     * @since   2.0.0
-     */
-    private function legacyChecksum(
-        ExtensionManifest $incoming,
-        string $migrationClass,
-        string $incomingRoot,
-        string $migrationId,
-    ): string {
-        $release = $this->database->fetchAssociative(sprintf(
-            'SELECT e.runtime_path, r.manifest, r.deployed_tree_sha256 FROM %s e '
-            . 'INNER JOIN %s r ON r.extension_id = e.id AND r.version = e.installed_version '
-            . 'WHERE e.identifier = ?',
-            $this->tables->quoted('extensions'),
-            $this->tables->quoted('extension_releases'),
-        ), [$incoming->identifier()->value()]);
-        if ($release === false) {
-            throw new RuntimeException('A legacy extension migration has no installed release to verify.');
-        }
-        $runtimePath = $release['runtime_path'] ?? null;
-        $treeDigest = $release['deployed_tree_sha256'] ?? null;
-        if (
-            !is_string($runtimePath)
-            || preg_match('#^[a-z0-9][a-z0-9._-]*/[a-z0-9][a-z0-9._-]*/[0-9A-Za-z.+-]+$#D', $runtimePath) !== 1
-            || !is_string($treeDigest)
-            || preg_match('/^[a-f0-9]{64}$/D', $treeDigest) !== 1
-        ) {
-            throw new RuntimeException('The installed release cannot anchor a legacy migration checksum.');
-        }
-        $extensionRoot = dirname($incomingRoot, 3);
-        $base = realpath($extensionRoot);
-        $root = realpath($extensionRoot . '/' . $runtimePath);
-        if (!is_string($base) || !is_string($root) || !str_starts_with($root . '/', $base . '/')) {
-            throw new RuntimeException('The installed release root is missing or unsafe.');
-        }
-        if (!hash_equals($treeDigest, FilesystemExtensionArtifactVerifier::treeDigest($root))) {
-            throw new RuntimeException('The installed release tree changed before legacy migration verification.');
-        }
-
-        $document = $release['manifest'] ?? null;
-        if (is_string($document)) {
-            $document = json_decode($document, true, 64, JSON_THROW_ON_ERROR);
-        }
-        if (!is_array($document) || array_is_list($document)) {
-            throw new RuntimeException('The installed release manifest is invalid.');
-        }
-        $migrations = $document['migrations'] ?? [];
-        $autoloadDocument = $document['autoload'] ?? null;
-        $autoload = is_array($autoloadDocument) && !array_is_list($autoloadDocument)
-            ? ($autoloadDocument['psr-4'] ?? [])
-            : [];
-        if (
-            !is_array($migrations) || !in_array($migrationClass, $migrations, true)
-            || !is_array($autoload) || array_is_list($autoload)
-        ) {
-            throw new RuntimeException('The installed release does not declare the legacy migration class.');
-        }
-
-        $source = null;
-        $matchedPrefix = '';
-        foreach ($autoload as $prefix => $relativePath) {
-            if (
-                !is_string($prefix) || !is_string($relativePath)
-                || !str_starts_with($migrationClass, $prefix)
-                || strlen($prefix) <= strlen($matchedPrefix)
-            ) {
-                continue;
-            }
-            $relativeClass = str_replace('\\', '/', substr($migrationClass, strlen($prefix))) . '.php';
-            $source = $root . '/' . trim($relativePath, '/') . '/' . $relativeClass;
-            $matchedPrefix = $prefix;
-        }
-        if (!is_string($source)) {
-            throw new RuntimeException('The installed legacy migration source is not autoloadable.');
-        }
-        $resolved = realpath($source);
-        if (
-            !is_string($resolved) || !is_file($resolved) || is_link($source)
-            || !str_starts_with($resolved, $root . '/')
-        ) {
-            throw new RuntimeException('The installed legacy migration source is missing or unsafe.');
-        }
-        $candidate = $root;
-        foreach (explode('/', substr($resolved, strlen($root) + 1)) as $segment) {
-            $candidate .= '/' . $segment;
-            if (is_link($candidate)) {
-                throw new RuntimeException('The installed legacy migration source contains a symbolic link.');
-            }
-        }
-        $digest = hash_file('sha256', $resolved);
-        if (!is_string($digest)) {
-            throw new RuntimeException('The installed legacy migration source could not be checksummed.');
-        }
-
-        return hash('sha256', $migrationClass . ':' . $migrationId . ':' . $digest);
     }
 
     /**

@@ -17,6 +17,7 @@ use Kumwe\App\Extension\Application\ExtensionRuntimeWithdrawal;
 use Kumwe\Extension\Manifest\ExtensionIdentifier;
 use Kumwe\Extension\Manifest\ExtensionManifest;
 use Kumwe\Extension\Package\PackageChecksum;
+use Kumwe\Extension\Package\PublicKeyPackageSignatureVerifier;
 use Kumwe\Extension\Package\PackageSignature;
 use Kumwe\App\Extension\Runtime\RuntimeCanonicalJson;
 use Kumwe\Extension\Spi\Identity\Domain\Capability;
@@ -44,35 +45,35 @@ final readonly class TrustStore
     /**
      * Wire the trust boundary to its store, its verifiers, the runtime publisher and the audit trail.
      *
-     * @param  TrustStoreRepository            $repository                  Store holding the trust keys,
+     * @param  TrustStoreRepository               $repository                  Store holding the trust keys,
      *         the installed-release trust records and the lifecycle lock.
-     * @param  TrustKeySignatureVerifier       $verifier                    Verifier for a package
-     *         signature against a stored public key.
-     * @param  ExtensionArtifactVerifier       $artifacts                   Verifier that holds a release
+     * @param  PublicKeyPackageSignatureVerifier  $verifier                    SDK verifier for a package signature
+     *         against a host-selected stored public key.
+     * @param  ExtensionArtifactVerifier          $artifacts                   Verifier that holds a release
      *         record against the bytes actually deployed on disk.
-     * @param  TrustRuntimeInvalidator         $runtime                     Runtime publisher told to
+     * @param  TrustRuntimeInvalidator            $runtime                     Runtime publisher told to
      *         supersede the compiled map whenever trust changes.
-     * @param  TransactionManager              $transactions                Transaction scope every
+     * @param  TransactionManager                 $transactions                Transaction scope every
      *         mutation and enforcement check runs inside.
-     * @param  AuditRecorder                   $audit                       Sink each key mutation is
+     * @param  AuditRecorder                      $audit                       Sink each key mutation is
      *         recorded to, from inside its own transaction.
-     * @param  ClockInterface                  $clock                       Clock for expiry comparisons
+     * @param  ClockInterface                     $clock                       Clock for expiry comparisons
      *         and for the timestamps written to key, release and audit records.
-     * @param  AuthorizationGateway            $authorization               Gateway every administrative
+     * @param  AuthorizationGateway               $authorization               Gateway every administrative
      *         entry point checks `extensions.manage` against.
-     * @param  bool                            $allowUnsignedLocalPackages  Whether an unsigned package
+     * @param  bool                               $allowUnsignedLocalPackages  Whether an unsigned package
      *         is admitted at all; intended for local development only.
-     * @param  ?PackageDefinitionSynchronizer  $businessDefinitions         Synchronizer that deactivates
+     * @param  ?PackageDefinitionSynchronizer     $businessDefinitions         Synchronizer that deactivates
      *         business definitions owned by a quarantined extension, or null where the installation
      *         registers none.
-     * @param  ?ExtensionRuntimeWithdrawal     $runtimeWithdrawal           Removes resident contribution
+     * @param  ?ExtensionRuntimeWithdrawal        $runtimeWithdrawal           Removes resident contribution
      *         objects after a trust invalidation commits; null in isolated trust tests without a runtime.
      *
      * @since  2.0.0
      */
     public function __construct(
         private TrustStoreRepository $repository,
-        private TrustKeySignatureVerifier $verifier,
+        private PublicKeyPackageSignatureVerifier $verifier,
         private ExtensionArtifactVerifier $artifacts,
         private TrustRuntimeInvalidator $runtime,
         private TransactionManager $transactions,

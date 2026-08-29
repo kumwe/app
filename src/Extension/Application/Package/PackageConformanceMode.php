@@ -5,33 +5,25 @@ declare(strict_types=1);
 namespace Kumwe\App\Extension\Application\Package;
 
 /**
- * How strictly the host applies neutral SDK package findings during installation.
+ * Whether install-time evidence includes SDK authoring-quality checks.
  *
- * The SDK always reports the same evidence and never decides whether a package may be installed.
- * This App-owned posture is the deployment policy that interprets those findings. Attestation
- * discrepancies remain refusals in every mode because they mean signed package bytes disagree with
- * the evidence carried inside them.
+ * Archive safety, manifest integrity and references, PHP syntax, package trust, and attestation
+ * integrity are enforced in both modes. The toggle controls only strict-types, unfinished-marker,
+ * text-encoding and README observations, which are advisory when collected.
  *
  * @since  2.0.0
  */
 enum PackageConformanceMode: string
 {
     /**
-     * Refuse an install carrying an integrity finding.
+     * Collect mandatory package evidence and advisory authoring observations.
      *
      * @since  2.0.0
      */
-    case Enforce = 'enforce';
+    case Scan = 'scan';
 
     /**
-     * Admit code-integrity findings but record and surface them to operators.
-     *
-     * @since  2.0.0
-     */
-    case Warn = 'warn';
-
-    /**
-     * Skip host code-conformance policy while still validating any package attestations.
+     * Skip advisory authoring checks while retaining every mandatory package boundary.
      *
      * @since  2.0.0
      */

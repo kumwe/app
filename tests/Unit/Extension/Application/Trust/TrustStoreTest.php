@@ -9,7 +9,7 @@ use Kumwe\App\Application\Authorization\AuthorizationDenied;
 use Kumwe\App\Application\Persistence\TransactionManager;
 use Kumwe\App\Audit\Application\AuditRecorder;
 use Kumwe\App\Extension\Application\Trust\ExtensionArtifactVerifier;
-use Kumwe\App\Extension\Application\Trust\TrustKeySignatureVerifier;
+use Kumwe\Extension\Package\PublicKeyPackageSignatureVerifier;
 use Kumwe\App\Extension\Application\Trust\TrustRuntimeInvalidator;
 use Kumwe\App\Extension\Application\Trust\RuntimePublicationMismatch;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
@@ -358,7 +358,7 @@ final class TrustStoreTest extends TestCase
         ?MemoryRuntimeInvalidator $runtime = null,
         ?ExtensionRuntimeWithdrawal $withdrawal = null,
     ): TrustStore {
-        $verifier = new class implements TrustKeySignatureVerifier {
+        $verifier = new class implements PublicKeyPackageSignatureVerifier {
             public function verify(string $key, PackageChecksum $checksum, PackageSignature $signature): bool
             {
                 return true;

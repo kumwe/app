@@ -6,6 +6,8 @@ namespace Kumwe\App\Extension\Application\Package;
 
 use Kumwe\Extension\Package\PackageAttestationState;
 use Kumwe\Extension\Package\PackageBillOfMaterials;
+use Kumwe\Extension\Package\PackageEvidenceScope;
+use Kumwe\Extension\Package\PackageFinding;
 
 /**
  * App admission policy result persisted for operators after a package is admitted.
@@ -21,6 +23,7 @@ final readonly class PackageAdmissionReport
     /**
      * Record the admitted evidence and the App policy decision applied to it.
      *
+     * @param  PackageEvidenceScope     $scope             Neutral evidence depth that was executed.
      * @param  PackageAttestationState  $sbomState         Inventory verification state.
      * @param  ?string                  $sbomSha256        Inventory digest, or null when absent.
      * @param  int                      $sbomComponents    File components in the readable inventory.
@@ -30,14 +33,15 @@ final readonly class PackageAdmissionReport
      * @param  ?string                  $builderReference  Publisher-asserted builder identity, or null.
      * @param  ?array<string, mixed>    $provenance        Readable provenance document, or null.
      * @param  PackageConformanceMode   $conformanceMode   App posture applied to code findings.
-     * @param  string                   $conformanceState  `passed`, `warned`, or `skipped`.
+     * @param  string                   $conformanceState  `passed`, `warned`, or `package_only`.
      * @param  array<string, bool>      $checks            Named code-conformance outcomes.
-     * @param  list<string>             $blocking          Integrity findings admitted under warning mode.
-     * @param  list<string>             $advisory          Non-integrity authoring observations.
+     * @param  list<PackageFinding>     $blocking          Mandatory findings; empty for an admitted package.
+     * @param  list<PackageFinding>     $advisory          Non-integrity authoring observations.
      *
      * @since  2.0.0
      */
     public function __construct(
+        public PackageEvidenceScope $scope,
         public PackageAttestationState $sbomState,
         public ?string $sbomSha256,
         public int $sbomComponents,
@@ -55,45 +59,21 @@ final readonly class PackageAdmissionReport
     }
 
     /**
-     * Build the report of an installation for which no evidence inspector was wired.
-     *
-     * @return  self  A report asserting that no inspection or admission decision was taken.
-     *
-     * @since   2.0.0
-     */
-    public static function notTaken(): self
-    {
-        return new self(
-            PackageAttestationState::Absent,
-            null,
-            0,
-            null,
-            PackageAttestationState::Absent,
-            null,
-            null,
-            null,
-            PackageConformanceMode::Off,
-            'skipped',
-            [],
-            [],
-            [],
-        );
-    }
-
-    /**
      * Export the policy-bearing summary stored on the release row.
      *
-     * @return  array{format: string, sbom: array{state: string, sha256: ?string, components: int,
+     * @return  array{format: string, scope: string, sbom: array{state: string, sha256: ?string, components: int,
      *          format: string}, provenance: array{state: string, sha256: ?string, builder: ?string},
-     *          conformance: array{mode: string, state: string, checks: array<string, bool>,
-     *          blocking: list<string>, advisory: list<string>}}  JSON-compatible admission summary.
+     *          conformance: array{scope: string, mode: string, state: string, checks: array<string, bool>,
+     *          blocking: list<array{code: string, message: string, path?: string}>,
+     *          advisory: list<array{code: string, message: string, path?: string}>}}  JSON-compatible summary.
      *
      * @since   2.0.0
      */
     public function toArray(): array
     {
         return [
-            'format' => 'kumwe-extension-admission-v1',
+            'format' => 'kumwe-extension-admission-v2',
+            'scope' => $this->scope->value,
             'sbom' => [
                 'state' => $this->sbomState->value,
                 'sha256' => $this->sbomSha256,
@@ -106,11 +86,18 @@ final readonly class PackageAdmissionReport
                 'builder' => $this->builderReference,
             ],
             'conformance' => [
+                'scope' => $this->scope->value,
                 'mode' => $this->conformanceMode->value,
                 'state' => $this->conformanceState,
                 'checks' => $this->checks,
-                'blocking' => $this->blocking,
-                'advisory' => $this->advisory,
+                'blocking' => array_map(
+                    static fn (PackageFinding $finding): array => $finding->toArray(),
+                    $this->blocking,
+                ),
+                'advisory' => array_map(
+                    static fn (PackageFinding $finding): array => $finding->toArray(),
+                    $this->advisory,
+                ),
             ],
         ];
     }
@@ -118,14 +105,15 @@ final readonly class PackageAdmissionReport
     /**
      * Reduce the decision to concise audit metadata.
      *
-     * @return  array{sbom: string, provenance: string, conformance: string, conformance_mode: string,
-     *          blocking_findings: int, advisory_findings: int}  Flat audit metadata.
+     * @return  array{scope: string, sbom: string, provenance: string, conformance: string,
+     *          conformance_mode: string, blocking_findings: int, advisory_findings: int}  Flat audit metadata.
      *
      * @since   2.0.0
      */
     public function auditMetadata(): array
     {
         return [
+            'scope' => $this->scope->value,
             'sbom' => $this->sbomState->value,
             'provenance' => $this->provenanceState->value,
             'conformance' => $this->conformanceState,

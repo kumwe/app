@@ -45,8 +45,8 @@ interface ExtensionManager
      * @param   ExecutionContext  $context          Actor and site the install is authorized against and audited to.
      * @param   ?string           $signingKeyId     Trust-store key that vouches for the package, or null when the
      *          package is offered unsigned.
-     * @param   ?string           $base64Signature  Base64 detached signature over the package bytes, supplied
-     *          together with `$signingKeyId`.
+     * @param   ?string           $base64Signature  Base64 detached signature over the SDK's domain-separated
+     *          message for this package checksum, supplied together with `$signingKeyId`.
      *
      * @return  array<string, mixed>  The registry row for the extension as it now stands, including the version
      *          just installed and the runtime path its files were published to.

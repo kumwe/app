@@ -423,30 +423,27 @@ use Kumwe\App\Extension\Application\Install\ExtensionInstallReconciler;
 use Kumwe\App\Extension\Application\Migration\ExtensionMigrationRunner;
 use Kumwe\App\Extension\Application\Package\PackageAdmissionPolicy;
 use Kumwe\Extension\Package\ArchiveContentReader;
-use Kumwe\Extension\Package\ArchiveReader;
 use Kumwe\App\Extension\Application\Package\ExtensionActivationAdmission;
 use Kumwe\Extension\Package\PackageCodeConformance;
 use Kumwe\Extension\Package\PackageEvidenceInspector;
-use Kumwe\Extension\Package\PackageSafetyPolicy;
+use Kumwe\Extension\Package\PublicKeyPackageSignatureVerifier;
+use Kumwe\Extension\Package\SodiumPublicKeyPackageSignatureVerifier;
 use Kumwe\App\Extension\Application\Trust\ExtensionArtifactVerifier;
 use Kumwe\App\Extension\Application\Trust\RevocationFeedSource;
 use Kumwe\App\Extension\Application\Trust\RevocationFeedStateStore;
 use Kumwe\App\Extension\Application\Trust\RevocationFeedSynchronizer;
 use Kumwe\App\Extension\Application\Trust\RevocationListVerifier;
-use Kumwe\App\Extension\Application\Trust\TrustKeySignatureVerifier;
 use Kumwe\App\Extension\Application\Trust\TrustRuntimeInvalidator;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Extension\Application\Trust\TrustStoreRepository;
 use Kumwe\App\Extension\Infrastructure\DoctrineExtensionManager;
 use Kumwe\Extension\Package\ZipArchiveContentReader;
-use Kumwe\Extension\Package\ZipArchiveReader;
 use Kumwe\App\Extension\Infrastructure\ExtensionRegistryFenceAllocator;
 use Kumwe\App\Extension\Infrastructure\RedisLockedExtensionManager;
 use Kumwe\App\Extension\Infrastructure\Trust\DoctrineRevocationFeedStateStore;
 use Kumwe\App\Extension\Infrastructure\Trust\DoctrineTrustStoreRepository;
 use Kumwe\App\Extension\Infrastructure\Trust\FilesystemExtensionArtifactVerifier;
 use Kumwe\App\Extension\Infrastructure\Trust\SodiumRevocationListVerifier;
-use Kumwe\App\Extension\Infrastructure\Trust\SodiumTrustKeySignatureVerifier;
 use Kumwe\App\Extension\Infrastructure\Trust\StreamRevocationFeedSource;
 use Kumwe\Extension\Toolchain\ComponentScaffolder;
 use Kumwe\Extension\Toolchain\DeterministicPackageBuilder;
@@ -1467,7 +1464,11 @@ final class ContainerFactory
                 self::service($container, Connection::class),
                 self::service($container, TableNames::class),
             ), true);
-        $container->share(TrustKeySignatureVerifier::class, new SodiumTrustKeySignatureVerifier(), true);
+        $container->share(
+            PublicKeyPackageSignatureVerifier::class,
+            new SodiumPublicKeyPackageSignatureVerifier(),
+            true,
+        );
         $container->share(AdministratorIdentityGateway::class, static fn (
             Container $container,
         ): AdministratorIdentityGateway => new DoctrineAdministratorIdentityGateway(
@@ -2191,10 +2192,7 @@ final class ContainerFactory
                     new JobRecoveryMigration(self::service($container, TableNames::class)),
                     new IdempotencyLeaseNullabilityMigration(self::service($container, TableNames::class)),
                     new AuthorizationRecoveryIntegrationMigration(self::service($container, TableNames::class)),
-                    new TokenAndTrustLifecycleMigration(
-                        self::service($container, TableNames::class),
-                        $root . '/extensions',
-                    ),
+                    new TokenAndTrustLifecycleMigration(self::service($container, TableNames::class)),
                     new SiteAutomationContextMigration(self::service($container, TableNames::class)),
                     new IsolateThemeSurfacesMigration(self::service($container, TableNames::class)),
                     new InstallationGlobalAutomationMigration(self::service($container, TableNames::class)),
@@ -2614,9 +2612,7 @@ final class ContainerFactory
             ),
             true,
         );
-        $container->share(ArchiveReader::class, new ZipArchiveReader(), true);
         $container->share(ArchiveContentReader::class, new ZipArchiveContentReader(), true);
-        $container->share(PackageSafetyPolicy::class, new PackageSafetyPolicy(), true);
         $container->share(PackageCodeConformance::class, new PackageCodeConformance(), true);
         $container->share(PackageEvidenceInspector::class, static fn (
             Container $container,
@@ -2630,11 +2626,7 @@ final class ContainerFactory
             true,
         );
         $container->share(ComponentScaffolder::class, new ComponentScaffolder(), true);
-        $container->share(PackageInspector::class, static fn (Container $container): PackageInspector =>
-            new PackageInspector(
-                self::service($container, ArchiveReader::class),
-                self::service($container, PackageSafetyPolicy::class),
-            ), true);
+        $container->share(PackageInspector::class, new PackageInspector(), true);
         $container->share(DeterministicPackageBuilder::class, static fn (
             Container $container,
         ): DeterministicPackageBuilder => new DeterministicPackageBuilder(
@@ -2701,7 +2693,7 @@ final class ContainerFactory
         ), true);
         $container->share(TrustStore::class, static fn (Container $container): TrustStore => new TrustStore(
             self::service($container, TrustStoreRepository::class),
-            self::service($container, TrustKeySignatureVerifier::class),
+            self::service($container, PublicKeyPackageSignatureVerifier::class),
             self::service($container, ExtensionArtifactVerifier::class),
             self::service($container, TrustRuntimeInvalidator::class),
             self::service($container, TransactionManager::class),
@@ -3202,8 +3194,10 @@ final class ContainerFactory
                     self::service($container, TableNames::class),
                     $extensionRoot,
                     $publicAssetRoot,
-                    self::service($container, ArchiveReader::class),
-                    self::service($container, PackageSafetyPolicy::class),
+                    self::service($container, PackageInspector::class),
+                    self::service($container, ArchiveContentReader::class),
+                    self::service($container, PackageEvidenceInspector::class),
+                    self::service($container, PackageAdmissionPolicy::class),
                     self::service($container, ExtensionMigrationRunner::class),
                     self::service($container, ExtensionRuntimeMapCompiler::class),
                     self::service($container, TransactionManager::class),
@@ -3218,8 +3212,6 @@ final class ContainerFactory
                     self::service($container, ResourceSiteOwnershipWriter::class),
                     self::service($container, PackageDefinitionSynchronizer::class),
                     self::service($container, ExtensionActivationAdmission::class),
-                    self::service($container, PackageEvidenceInspector::class),
-                    self::service($container, PackageAdmissionPolicy::class),
                 ),
                 self::service($container, RedisRuntime::class),
                 self::service($container, AuthorizationGateway::class),

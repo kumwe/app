@@ -6,13 +6,23 @@ namespace Kumwe\App\Tests\Unit\Extension\Infrastructure;
 
 use Kumwe\Extension\Manifest\ExtensionManifest;
 use Kumwe\App\Extension\Infrastructure\DoctrineExtensionManager;
+use Kumwe\Extension\Package\PackageLimits;
+use Kumwe\Extension\Toolchain\PackageInspector;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
+use RuntimeException;
 
 #[CoversClass(DoctrineExtensionManager::class)]
 final class DoctrineExtensionManagerTest extends TestCase
 {
+    /**
+     * Proves later caller writes cannot change the private archive snapshot used for admission.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function testCallerMutationCannotChangePrivateArchiveSnapshot(): void
     {
         $root = sys_get_temp_dir() . '/kumwe-snapshot-' . bin2hex(random_bytes(8));
@@ -22,12 +32,40 @@ final class DoctrineExtensionManagerTest extends TestCase
         file_put_contents($source, $original);
         $reflection = new ReflectionClass(DoctrineExtensionManager::class);
         $manager = $reflection->newInstanceWithoutConstructor();
+        $reflection->getProperty('packages')->setValue($manager, new PackageInspector());
         $snapshot = $reflection->getMethod('snapshotArchive')->invoke($manager, $source, $root . '/operation');
         file_put_contents($source, 'attacker replacement after the snapshot boundary');
 
         self::assertIsString($snapshot);
         self::assertSame(hash('sha256', $original), hash_file('sha256', $snapshot));
         self::assertNotSame(hash_file('sha256', $source), hash_file('sha256', $snapshot));
+    }
+
+    /**
+     * Refuses an oversized caller archive before copying any of it into private staging.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testOversizedCallerArchiveIsRefusedBeforeSnapshotCopy(): void
+    {
+        $root = sys_get_temp_dir() . '/kumwe-snapshot-limit-' . bin2hex(random_bytes(8));
+        mkdir($root . '/operation', 0700, true);
+        $source = $root . '/caller.zip';
+        file_put_contents($source, str_repeat('x', 33));
+        $reflection = new ReflectionClass(DoctrineExtensionManager::class);
+        $manager = $reflection->newInstanceWithoutConstructor();
+        $reflection->getProperty('packages')->setValue($manager, new PackageInspector(new PackageLimits(
+            maximumArchiveBytes: 32,
+        )));
+
+        try {
+            $reflection->getMethod('snapshotArchive')->invoke($manager, $source, $root . '/operation');
+            self::fail('An oversized caller archive reached private snapshot copying.');
+        } catch (RuntimeException $failure) {
+            self::assertStringContainsString('exceeds the configured package-size limit', $failure->getMessage());
+        }
     }
 
     /**

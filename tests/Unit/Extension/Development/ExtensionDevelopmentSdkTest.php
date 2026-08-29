@@ -34,7 +34,10 @@ use Kumwe\Extension\Toolchain\ScaffoldRequest;
 use Kumwe\Extension\Toolchain\SignatureDocument;
 use Kumwe\Extension\Toolchain\StaticConformanceRunner;
 use Kumwe\Extension\Manifest\ExtensionManifest;
+use Kumwe\Extension\Package\PackageChecksum;
+use Kumwe\Extension\Package\PackageFinding;
 use Kumwe\Extension\Package\PackageSignature;
+use Kumwe\Extension\Package\PackageSignatureMessage;
 use Kumwe\App\Extension\Runtime\RestrictedExtensionContainer;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
@@ -348,7 +351,7 @@ final class ExtensionDevelopmentSdkTest extends TestCase
 
         self::assertTrue(sodium_crypto_sign_verify_detached(
             PackageSignature::ed25519($decoded->keyId, $decoded->base64Signature)->bytes(),
-            $decoded->packageSha256,
+            PackageSignatureMessage::forChecksum(PackageChecksum::sha256($decoded->packageSha256)),
             $public,
         ));
     }
@@ -489,7 +492,7 @@ final class ExtensionDevelopmentSdkTest extends TestCase
         self::assertFalse($report->checks['strict_types']);
         self::assertContains(
             'PHP file src/Application/OverviewService.php must declare strict_types=1.',
-            array_map(static fn ($finding): string => $finding->message, $report->findings),
+            array_map(static fn (PackageFinding $finding): string => $finding->message, $report->findings),
         );
     }
 

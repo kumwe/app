@@ -13,6 +13,7 @@ use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\Extension\Contribution\StudioPreviewRendererContribution;
 use Kumwe\Extension\Package\PackageChecksum;
+use Kumwe\Extension\Package\PackageSignatureMessage;
 use Kumwe\App\Extension\Infrastructure\DoctrineExtensionManager;
 use Kumwe\App\Extension\Runtime\ActiveExtensionSet;
 use Kumwe\App\Extension\Runtime\ExtensionRuntimeMapCompiler;
@@ -347,7 +348,7 @@ final class ExtensionStudioPreviewRendererIntegrationTest extends TestCase
         }
 
         return base64_encode(sodium_crypto_sign_detached(
-            (string) PackageChecksum::calculate($bytes),
+            PackageSignatureMessage::forChecksum(PackageChecksum::calculate($bytes)),
             $secretKey,
         ));
     }

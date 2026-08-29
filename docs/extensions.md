@@ -422,14 +422,26 @@ php bin/kumwe extension:uninstall acme/announcements \
   --token-file=/run/secrets/kumwe-extension-token
 ```
 
-The signature covers the lowercase SHA-256 package digest. Production requires an enabled Ed25519 trust key; development may explicitly allow unsigned local packages. That is now enforced rather than documented: a process started with `APP_ENV=production` and `EXTENSIONS_ALLOW_UNSIGNED_LOCAL=true` refuses to boot, and says which command to use to register a key instead. Use `APP_ENV=development` or `APP_ENV=testing` for the unsigned local workflow. Installation first snapshots caller-owned bytes into private staging, then verifies the immutable snapshot before migration, extraction, or public asset publication. It checks compatibility and dependencies, applies migrations under the lifecycle fence, persists the release, and stages an immutable signed runtime publication in the same registry operation. A failed local publication write cannot roll back or outrun committed registry state: startup reconciliation rematerializes the database generation, and readiness stays unhealthy until the process has loaded that exact trusted generation. A pre-commit failure compensates newly applied migrations and removes staging without replacing the active version; interrupted install records are reconciled to committed or rolled-back state on startup.
+The signature covers the SDK's domain-separated package-signature message, which binds the lowercase SHA-256
+package digest without treating that bare digest as a reusable signing payload. Production requires an enabled
+Ed25519 trust key; development may explicitly allow unsigned local packages. That is now enforced rather than
+documented: a process started with `APP_ENV=production` and `EXTENSIONS_ALLOW_UNSIGNED_LOCAL=true` refuses to
+boot, and says which command to use to register a key instead. Use `APP_ENV=development` or `APP_ENV=testing`
+for the unsigned local workflow. Installation first snapshots caller-owned bytes into private staging, then
+verifies the immutable snapshot before migration, extraction, or public asset publication. It checks
+compatibility and dependencies, applies migrations under the lifecycle fence, persists the release, and stages
+an immutable signed runtime publication in the same registry operation. A failed local publication write cannot
+roll back or outrun committed registry state: startup reconciliation rematerializes the database generation,
+and readiness stays unhealthy until the process has loaded that exact trusted generation. A pre-commit failure
+compensates newly applied migrations and removes staging without replacing the active version; interrupted
+install records are reconciled to committed or rolled-back state on startup.
 
 Active plugin and module upgrades keep the old version root until the replacement generation has converged and the retention lease expires. Disable and uninstall follow the same retained-root rule, so old replicas never point at prematurely deleted code. Restart workers and schedulers after installing, activating, disabling, or removing extension code.
 
 ## What a package says about itself
 
 `extension:build` writes two documents into every package it produces. They are ordinary archive
-entries, so the package digest covers them and the detached signature therefore vouches for them; there
+entries, so the package digest covers them and the domain-separated detached signature therefore vouches for them; there
 is no second signature format and no extra sidecar to move alongside the ZIP.
 
 `kumwe.sbom.json` is a **CycloneDX 1.6** bill of materials listing every other packaged file with its
@@ -453,25 +465,24 @@ cannot carry its own digest — and installation verifies that exclusion rather 
 
 ## Install-time admission
 
-Installation reads packaged bytes before it unpacks any of them, in one bounded pass, and there are two
-different failure semantics inside it.
+Installation creates one immutable package snapshot before it unpacks any bytes. The checksum, archive
+entry table, manifest, evidence scan, trust decision and bounded extraction all consume that same snapshot.
 
 **Attestations fail closed, in every mode.** Every packaged file must appear in the bill of materials
 with a matching digest, no listed component may be missing, and the provenance statement must name this
 manifest and this bill of materials. A package carrying neither document installs and is recorded as
-`absent` — packages built before attestations shipped must keep working — but a document that is present
-and does not reconcile refuses the install outright.
+`absent`; a document that is present and does not reconcile refuses the install outright.
 
-**The static code scan follows `EXTENSIONS_CONFORMANCE_ADMISSION`.** It runs the same checks
-`extension:conformance` reports, so what an author fixes is what an installation stops refusing. Exactly
-two findings block: PHP that does not parse, and a manifest naming a class, asset, or template the
-package does not carry. Both describe a package that is already broken and whose breakage would
-otherwise surface as a fatal error on a live request after publication. Everything else the scan finds —
-a missing `strict_types` declaration, an unresolved authoring marker, an absent README — is recorded as
-advisory, because refusing another vendor's package over house style is not a policy this project has
-standing to enforce. `warn` records the blocking findings and admits the package anyway; `off` skips the
-scan entirely and is refused under production rules, so the mode cannot become the silent bypass the
-signature flag once was.
+**Mandatory package evidence always fails closed.** Unsafe archive facts, malformed manifests, PHP that
+does not parse, a manifest naming a missing class, asset or template, and invalid or uninspectable
+attestations refuse installation in every mode. Unknown SDK finding codes also block until App policy
+classifies them explicitly.
+
+**`EXTENSIONS_CONFORMANCE_ADMISSION` controls only authoring observations.** `scan` adds strict-types,
+unfinished-marker, text-encoding and README checks; their findings are advisory because another vendor's
+house style is not an installation-integrity boundary. `off` skips those authoring checks but still runs
+every mandatory package check, and production refuses `off` so published installations retain the full
+evidence record.
 
 Both results are stored on the release and shown on the Extensions screen, per extension: bill of
 materials state, provenance state, scan outcome, inventory size, asserted builder, and the findings. A

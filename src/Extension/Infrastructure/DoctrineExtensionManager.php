@@ -8,6 +8,7 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
+use JsonException;
 use LogicException;
 use Kumwe\App\Application\Authorization\AuthorizationGateway;
 use Kumwe\App\Application\Authorization\AuthorizationResource;
@@ -23,10 +24,10 @@ use Kumwe\App\Extension\Application\Install\ExtensionInstallOutcome;
 use Kumwe\App\Extension\Application\Migration\ExtensionMigrationRunner;
 use Kumwe\App\Extension\Application\Package\PackageAdmissionPolicy;
 use Kumwe\App\Extension\Application\Package\PackageAdmissionReport;
-use Kumwe\Extension\Package\ArchiveReader;
 use Kumwe\App\Extension\Application\Package\ExtensionActivationAdmission;
+use Kumwe\Extension\Package\ArchiveContentReader;
+use Kumwe\Extension\Package\InspectedPackage;
 use Kumwe\Extension\Package\PackageEvidenceInspector;
-use Kumwe\Extension\Package\PackageSafetyPolicy;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Extension\Contribution\CanonicalManifestInterpreter;
 use Kumwe\App\Extension\Contribution\ContributionDefinitionChecksum;
@@ -37,6 +38,7 @@ use Kumwe\Extension\Manifest\ExtensionManifest;
 use Kumwe\Extension\Manifest\ExtensionType;
 use Kumwe\Extension\Package\PackageChecksum;
 use Kumwe\Extension\Package\PackageSignature;
+use Kumwe\Extension\Toolchain\PackageInspector;
 use Kumwe\Extension\Manifest\SemanticVersion;
 use Kumwe\App\Extension\Infrastructure\Trust\FilesystemExtensionArtifactVerifier;
 use Kumwe\App\Extension\Runtime\ExtensionRuntimeMapCompiler;
@@ -52,7 +54,6 @@ use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
 use Throwable;
-use ZipArchive;
 
 /**
  * Doctrine-backed extension registry: where installing, activating and removing an extension happens.
@@ -110,10 +111,12 @@ final readonly class DoctrineExtensionManager
      *         deployed packages, staging directories and archive snapshots live under.
      * @param  string                          $publicAssetRoot       Absolute path of the web-readable tree
      *         declared package assets are published into.
-     * @param  ArchiveReader                   $archives              Reader that lists an archive's entry
-     *         table without extracting it.
-     * @param  PackageSafetyPolicy             $safety                Policy that must accept that entry table
-     *         before anything is unpacked.
+     * @param  PackageInspector                $packages              Closed constructor for the one immutable
+     *         package snapshot used throughout an install.
+     * @param  ArchiveContentReader            $contents              Snapshot-bound, bounded content expansion.
+     * @param  PackageEvidenceInspector        $packageEvidence       Neutral SDK inspector reading packaged
+     *         code and attestations from the same snapshot before extraction.
+     * @param  PackageAdmissionPolicy          $packageAdmission      App policy interpreting neutral findings.
      * @param  ExtensionMigrationRunner        $migrations            Runner applying the manifest's declared
      *         migrations against the deployed tree.
      * @param  ExtensionRuntimeMapCompiler     $compiler              Compiler staged on every registry
@@ -142,10 +145,6 @@ final readonly class DoctrineExtensionManager
      *         business definitions a package contributes; null when the installation ships none.
      * @param  ?ExtensionActivationAdmission   $activationAdmission   Declarative public-contract admission
      *         run inside an activation/active-upgrade transaction before runtime publication is staged.
-     * @param  ?PackageEvidenceInspector       $packageEvidence       Neutral SDK inspector reading packaged
-     *         code and attestations before extraction; null leaves the release recorded as unscanned.
-     * @param  ?PackageAdmissionPolicy         $packageAdmission      App policy interpreting neutral findings;
-     *         null leaves the release recorded as unscanned.
      *
      * @since  2.0.0
      */
@@ -154,8 +153,10 @@ final readonly class DoctrineExtensionManager
         private TableNames $tables,
         private string $extensionRoot,
         private string $publicAssetRoot,
-        private ArchiveReader $archives,
-        private PackageSafetyPolicy $safety,
+        private PackageInspector $packages,
+        private ArchiveContentReader $contents,
+        private PackageEvidenceInspector $packageEvidence,
+        private PackageAdmissionPolicy $packageAdmission,
         private ExtensionMigrationRunner $migrations,
         private ExtensionRuntimeMapCompiler $compiler,
         private TransactionManager $transactions,
@@ -170,8 +171,6 @@ final readonly class DoctrineExtensionManager
         private ResourceSiteOwnershipWriter $ownership,
         private ?PackageDefinitionSynchronizer $businessDefinitions = null,
         private ?ExtensionActivationAdmission $activationAdmission = null,
-        private ?PackageEvidenceInspector $packageEvidence = null,
-        private ?PackageAdmissionPolicy $packageAdmission = null,
     ) {
     }
 
@@ -424,8 +423,8 @@ final readonly class DoctrineExtensionManager
      *          this install makes.
      * @param   ?string                 $signingKeyId     Trust-store key vouching for the package, or null
      *          when the package is offered unsigned.
-     * @param   ?string                 $base64Signature  Base64 detached signature over the package bytes,
-     *          supplied together with `$signingKeyId`.
+     * @param   ?string                 $base64Signature  Base64 detached signature over the SDK's domain-separated
+     *          message for this package checksum, supplied together with `$signingKeyId`.
      *
      * @return  array<string, mixed>  Registry row for the extension as it now stands, carrying the version
      *          just installed and the runtime path its files were published to.
@@ -478,8 +477,8 @@ final readonly class DoctrineExtensionManager
      *          this install makes.
      * @param   ?string                 $signingKeyId     Trust-store key vouching for the package, or null
      *          when the package is offered unsigned.
-     * @param   ?string                 $base64Signature  Base64 detached signature over the package bytes,
-     *          supplied together with `$signingKeyId`.
+     * @param   ?string                 $base64Signature  Base64 detached signature over the SDK's domain-separated
+     *          message for this package checksum, supplied together with `$signingKeyId`.
      *
      * @return  array<string, mixed>  Registry row for the extension as it now stands.
      *
@@ -557,8 +556,8 @@ final readonly class DoctrineExtensionManager
      *          each write and again immediately before publication.
      * @param   ?string                 $signingKeyId     Trust-store key vouching for the package, or null
      *          when the package is offered unsigned.
-     * @param   ?string                 $base64Signature  Base64 detached signature over the package bytes,
-     *          supplied together with `$signingKeyId`.
+     * @param   ?string                 $base64Signature  Base64 detached signature over the SDK's domain-separated
+     *          message for this package checksum, supplied together with `$signingKeyId`.
      *
      * @return  array<string, mixed>  Registry row for the extension after the release is persisted, or the
      *          row an earlier committed attempt already left when this call is a replay of it.
@@ -582,24 +581,18 @@ final readonly class DoctrineExtensionManager
     ): array {
         $this->assertFence($lease);
 
-        $package = $this->archives->inspect($archiveFile);
-        $this->safety->assertSafe($package);
-        $checksumValue = hash_file('sha256', $archiveFile);
-
-        if (!is_string($checksumValue)) {
-            throw new RuntimeException('The extension package checksum could not be calculated.');
-        }
-
-        $checksum = PackageChecksum::sha256($checksumValue);
-        $manifestJson = $this->manifestJson($archiveFile);
-        $manifest = ExtensionManifest::fromJson($manifestJson);
+        $package = $this->packages->inspect($archiveFile)->package;
+        $admission = $this->packageAdmission->admit($this->packageEvidence->inspect(
+            $package,
+            $this->packageAdmission->evidenceScope(),
+        ));
+        $checksum = $package->checksum;
+        $manifestJson = $package->manifestJson;
+        $manifest = $package->manifest;
         $this->assertCompatible($manifest);
         $signature = $this->signature($signingKeyId, $base64Signature);
         $this->trust->assertTrusted($checksum, $signature, $manifest->identifier());
         $this->assertDependencies($manifest);
-        $admission = $this->packageEvidence !== null && $this->packageAdmission !== null
-            ? $this->packageAdmission->admit($this->packageEvidence->inspect($archiveFile, $manifest))
-            : PackageAdmissionReport::notTaken();
 
         $relativeRuntime = $this->runtimePath($manifest);
         $this->ensureBoundedDirectory($this->extensionRoot, dirname($relativeRuntime), 0700);
@@ -663,9 +656,9 @@ final readonly class DoctrineExtensionManager
                 if (file_exists($stagingDirectory) || is_link($stagingDirectory)) {
                     $this->removeTree($stagingDirectory);
                 }
-                $this->extract($archiveFile, $stagingDirectory);
+                $this->extract($package, $stagingDirectory);
                 $this->assertProviderFileExists($manifest, $stagingDirectory);
-                if (!copy($archiveFile, $stagingDirectory . '/.kumwe-package.zip')) {
+                if (!copy($package->archive, $stagingDirectory . '/.kumwe-package.zip')) {
                     throw new RuntimeException('The extension package could not be retained for crash recovery.');
                 }
                 chmod($stagingDirectory . '/.kumwe-package.zip', 0600);
@@ -724,16 +717,14 @@ final readonly class DoctrineExtensionManager
                 $previous,
                 $lease,
                 $mysql,
-                $archiveFile,
+                $package,
                 $admission,
             ): array {
                 $this->assertFence($lease);
                 if (!$mysql) {
                     $this->migrations->apply($manifest, $finalDirectory);
                 }
-                if (!hash_equals((string) $checksum, (string) hash_file('sha256', $archiveFile))) {
-                    throw new RuntimeException('The extension archive changed before install finalization.');
-                }
+                $package->assertCurrentArchiveIdentity();
                 $this->trust->assertTrusted($checksum, $signature, $manifest->identifier(), true);
                 $this->assertProviderFileExists($manifest, $finalDirectory);
                 $this->assertCurrentFence($lease);
@@ -1400,27 +1391,35 @@ final readonly class DoctrineExtensionManager
     {
         if (is_resource($document)) {
             $document = stream_get_contents($document);
-        }
-        if (is_string($document) && $document !== '') {
-            try {
-                $document = json_decode($document, true, 16, JSON_THROW_ON_ERROR);
-            } catch (Throwable) {
-                return [];
+            if (!is_string($document)) {
+                throw new RuntimeException('The stored extension admission document could not be read.');
             }
         }
-        if (!is_array($document)) {
+        if (is_string($document) && $document !== '') {
+            $document = json_decode($document, true, 16, JSON_THROW_ON_ERROR);
+        }
+        if ($document === null) {
             return [];
+        }
+        if (!is_array($document)) {
+            throw new JsonException('The stored extension admission document is not a JSON object.');
         }
         $findings = [];
         foreach (['blocking', 'advisory'] as $class) {
             $entries = $document[$class] ?? null;
-            if (!is_array($entries)) {
-                continue;
+            if (!is_array($entries) || !array_is_list($entries)) {
+                throw new JsonException('The stored extension admission finding list is malformed.');
             }
             foreach ($entries as $entry) {
-                if (is_string($entry)) {
-                    $findings[] = $entry;
+                if (
+                    !is_array($entry)
+                    || !is_string($entry['code'] ?? null)
+                    || !is_string($entry['message'] ?? null)
+                ) {
+                    throw new JsonException('A stored extension admission finding is malformed.');
                 }
+                $path = is_string($entry['path'] ?? null) ? ' (' . $entry['path'] . ')' : '';
+                $findings[] = sprintf('[%s] %s%s', $entry['code'], $entry['message'], $path);
             }
         }
 
@@ -2693,9 +2692,11 @@ final readonly class DoctrineExtensionManager
      * An archive at a path the caller owns can be replaced between the safety check and the extraction,
      * and taking a copy is what closes that window. The source is opened and locked shared, then the
      * open descriptor's file type, device and inode are compared with the path's own stat, which catches
-     * a file swapped underneath between the two calls. The copy must be byte-complete and flushed — and
-     * fsynced where the runtime offers it — before it is made read-only and renamed, so the snapshot
-     * only ever appears at its final name fully written.
+     * a file swapped underneath between the two calls. The SDK archive-size ceiling is checked before
+     * copying and caps the copy at one byte beyond the ceiling, so a source that grows after `fstat()`
+     * cannot consume unbounded private storage. The copy must be byte-complete and flushed — and fsynced
+     * where the runtime offers it — before it is made read-only and renamed, so the snapshot only ever
+     * appears at its final name fully written.
      *
      * @param   string  $source         Absolute path of the caller-owned archive to snapshot.
      * @param   string  $operationRoot  Private directory the temporary copy and the finished snapshot are
@@ -2704,8 +2705,9 @@ final readonly class DoctrineExtensionManager
      * @return  string  Path of the finished snapshot, left read-only inside the private operation
      *          directory rather than at the caller's path.
      *
-     * @throws  RuntimeException  When the source cannot be locked, was swapped while being opened, could
-     *          not be copied completely, could not be synchronized, or could not be renamed into place.
+     * @throws  RuntimeException  When the source cannot be locked, was swapped while being opened, exceeds
+     *          the shared archive limit, could not be copied completely, could not be synchronized, or
+     *          could not be renamed into place.
      *
      * @since   2.0.0
      */
@@ -2732,6 +2734,12 @@ final readonly class DoctrineExtensionManager
             fclose($input);
             throw new RuntimeException('The extension archive changed before its private snapshot was opened.');
         }
+        $maximumArchiveBytes = $this->packages->limits()->maximumArchiveBytes;
+        if (!is_int($openStat['size']) || $openStat['size'] < 0 || $openStat['size'] > $maximumArchiveBytes) {
+            flock($input, LOCK_UN);
+            fclose($input);
+            throw new RuntimeException('The extension archive exceeds the configured package-size limit.');
+        }
         $output = fopen($temporary, 'xb');
         if ($output === false) {
             flock($input, LOCK_UN);
@@ -2739,7 +2747,13 @@ final readonly class DoctrineExtensionManager
             throw new RuntimeException('The private extension archive snapshot could not be created.');
         }
         try {
-            $copied = stream_copy_to_stream($input, $output);
+            $copyLimit = $maximumArchiveBytes === PHP_INT_MAX
+                ? PHP_INT_MAX
+                : $maximumArchiveBytes + 1;
+            $copied = stream_copy_to_stream($input, $output, $copyLimit);
+            if (is_int($copied) && $copied > $maximumArchiveBytes) {
+                throw new RuntimeException('The extension archive grew beyond the configured package-size limit.');
+            }
             if (!is_int($copied) || $copied !== $openStat['size'] || !fflush($output)) {
                 throw new RuntimeException('The extension archive snapshot could not be copied completely.');
             }
@@ -2760,75 +2774,59 @@ final readonly class DoctrineExtensionManager
     }
 
     /**
-     * Read `kumwe.json` out of the archive without unpacking anything.
+     * Materialize regular files from one inspected package into a private staging directory.
      *
-     * The read is bounded at one byte over one mebibyte, so an oversized manifest is caught by reading
-     * one byte too many rather than by trusting the size the entry table declares. The entry is read as
-     * stored, unaffected by any pending modification held on the archive handle.
+     * The SDK reader revalidates the snapshot checksum and every central-directory row while applying
+     * the same entry and total limits used during inspection. Staging is forced to `0700`, each target
+     * is created exclusively, and no archive-native extraction behavior can create a link or special file.
      *
-     * @param   string  $archiveFile  Path of the archive to read the manifest from.
-     *
-     * @return  string  The manifest document exactly as stored in the package, still unparsed.
-     *
-     * @throws  InvalidArgumentException  When the archive cannot be opened, or the manifest is absent or
-     *          larger than one mebibyte.
-     *
-     * @since   2.0.0
-     */
-    private function manifestJson(string $archiveFile): string
-    {
-        $zip = new ZipArchive();
-
-        if ($zip->open($archiveFile, ZipArchive::RDONLY) !== true) {
-            throw new InvalidArgumentException('The extension archive cannot be opened.');
-        }
-
-        try {
-            $manifest = $zip->getFromName('kumwe.json', 1_048_577, ZipArchive::FL_UNCHANGED);
-
-            if (!is_string($manifest) || strlen($manifest) > 1_048_576) {
-                throw new InvalidArgumentException('The extension manifest is missing or too large.');
-            }
-
-            return $manifest;
-        } finally {
-            $zip->close();
-        }
-    }
-
-    /**
-     * Unpack the archive into a private staging directory.
-     *
-     * Staging is forced to `0700`, so a partially unpacked tree is never readable by the web server or
-     * by other accounts on the host. Nothing here re-examines the entry table: the archive must already
-     * have been accepted by the safety policy, which is the only thing that makes extraction safe.
-     *
-     * @param   string  $archiveFile       Path of the archive to unpack.
-     * @param   string  $stagingDirectory  Directory to unpack into, created when it does not yet exist.
+     * @param   InspectedPackage  $package           Immutable package identity and entry table.
+     * @param   string            $stagingDirectory  Directory to populate, created when absent.
      *
      * @return  void
      *
-     * @throws  InvalidArgumentException  When the archive cannot be opened for extraction.
-     * @throws  RuntimeException  When staging cannot be created, or extraction fails part way.
+     * @throws  InvalidArgumentException  When an inspected path cannot be materialized safely.
+     * @throws  RuntimeException  When staging, package reading or a complete exclusive write fails.
      *
      * @since   2.0.0
      */
-    private function extract(string $archiveFile, string $stagingDirectory): void
+    private function extract(InspectedPackage $package, string $stagingDirectory): void
     {
         $this->ensureDirectory($stagingDirectory);
         chmod($stagingDirectory, 0700);
-        $zip = new ZipArchive();
-
-        if ($zip->open($archiveFile, ZipArchive::RDONLY) !== true) {
-            throw new InvalidArgumentException('The extension archive cannot be opened for extraction.');
-        }
-
-        try {
-            if (!$zip->extractTo($stagingDirectory)) {
-                throw new RuntimeException('The extension archive could not be extracted into staging.');
+        foreach ($this->contents->contents($package) as $relative => $bytes) {
+            $parent = dirname($relative);
+            if ($parent !== '.') {
+                $this->ensureBoundedDirectory($stagingDirectory, $parent, 0700);
             }
-        } finally {
-            $zip->close();
+            $target = $stagingDirectory . '/' . $relative;
+            $handle = fopen($target, 'xb');
+            if ($handle === false) {
+                throw new RuntimeException(sprintf('Extension package path %s could not be staged.', $relative));
+            }
+            try {
+                $offset = 0;
+                $length = strlen($bytes);
+                while ($offset < $length) {
+                    $written = fwrite($handle, substr($bytes, $offset));
+                    if (!is_int($written) || $written < 1) {
+                        throw new RuntimeException(sprintf(
+                            'Extension package path %s could not be written completely.',
+                            $relative,
+                        ));
+                    }
+                    $offset += $written;
+                }
+                if (!fflush($handle)) {
+                    throw new RuntimeException(sprintf(
+                        'Extension package path %s could not be flushed completely.',
+                        $relative,
+                    ));
+                }
+            } finally {
+                fclose($handle);
+            }
+            chmod($target, 0600);
         }
     }
 

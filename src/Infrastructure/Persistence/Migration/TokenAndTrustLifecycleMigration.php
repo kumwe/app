@@ -14,26 +14,17 @@ use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\DBAL\Schema\PrimaryKeyConstraint;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\Extension\Package\ArchiveEntryType;
-use Kumwe\Extension\Package\PackageSafetyPolicy;
-use Kumwe\Extension\Manifest\ExtensionManifest;
-use Kumwe\Extension\Package\PackageChecksum;
-use Kumwe\Extension\Package\PackageSignature;
-use Kumwe\Extension\Package\ZipArchiveReader;
-use Kumwe\App\Extension\Infrastructure\Trust\FilesystemExtensionArtifactVerifier;
-use Kumwe\App\Extension\Infrastructure\Trust\SodiumTrustKeySignatureVerifier;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
 use Throwable;
-use ZipArchive;
 
 /** Adds revocable token epochs and a managed, constrained extension trust store. */
 final readonly class TokenAndTrustLifecycleMigration implements Migration
 {
     public const ID = '20260805040000_token_and_trust_lifecycles';
 
-    public function __construct(private TableNames $tables, private string $extensionRoot)
+    public function __construct(private TableNames $tables)
     {
     }
 
@@ -256,7 +247,6 @@ final readonly class TokenAndTrustLifecycleMigration implements Migration
         ), [$now], [Types::DATETIME_IMMUTABLE]);
         $this->ensureTrustGenerationSingleton($database, $now);
         $this->createRuntimeOutbox($database, $platform, $now);
-        $this->transitionLegacyReleases($database, $now);
         $database->executeStatement(sprintf(
             "UPDATE %s SET lifecycle_state = 'ready', updated_at = ? WHERE singleton_key = 1",
             $this->tables->quoted('extension_trust_generation'),
@@ -330,7 +320,7 @@ final readonly class TokenAndTrustLifecycleMigration implements Migration
         if ($upgradeExists !== false) {
             return;
         }
-        // Advance even when every legacy release is valid: the publication schema itself changed.
+        // Advance even when every existing release is valid: the publication schema itself changed.
         $database->executeStatement(sprintf(
             'UPDATE %s SET generation = generation + 1, rebuilt_at = ? WHERE singleton_key = 1',
             $this->tables->quoted('extension_runtime_generation'),
@@ -382,208 +372,6 @@ final readonly class TokenAndTrustLifecycleMigration implements Migration
             }
             $database->update($this->tables->raw('idempotency'), $values, ['id' => $id]);
         }
-    }
-
-    private function transitionLegacyReleases(Connection $database, DateTimeImmutable $now): void
-    {
-        $postgres = $database->getDatabasePlatform() instanceof PostgreSQLPlatform;
-        $releaseExtensionId = $postgres ? 'CAST(r.extension_id AS VARCHAR)' : 'r.extension_id';
-        $extensionId = $postgres ? 'CAST(e.id AS VARCHAR)' : 'e.id';
-        $rows = $database->fetchAllAssociative(sprintf(
-            'SELECT r.id, r.version, r.package_sha256, r.signature_algorithm, r.signing_key_id, '
-            . 'r.signature_base64, e.identifier, e.extension_type, e.service_provider, e.runtime_path, '
-            . 'e.status FROM %s e '
-            . 'INNER JOIN %s r ON %s = %s AND r.version = e.installed_version '
-            . "WHERE r.trust_state = 'needs_reverification' ORDER BY e.identifier",
-            $this->tables->quoted('extensions'),
-            $this->tables->quoted('extension_releases'),
-            $releaseExtensionId,
-            $extensionId,
-        ));
-        $runtimeChanged = false;
-        foreach ($rows as $row) {
-            $releaseId = $row['id'] ?? null;
-            $runtimePath = $row['runtime_path'] ?? null;
-            $packageDigest = $row['package_sha256'] ?? null;
-            $identifier = $row['identifier'] ?? null;
-            $verified = false;
-            $treeDigest = null;
-            $artifactMatches = false;
-            if (is_string($runtimePath) && is_string($packageDigest)) {
-                try {
-                    $root = $this->legacyRuntimeRoot($runtimePath);
-                    $artifact = $root . '/' . FilesystemExtensionArtifactVerifier::ARTIFACT;
-                    $artifactDigest = is_file($artifact) && !is_link($artifact)
-                        ? hash_file('sha256', $artifact)
-                        : false;
-                    $treeDigest = FilesystemExtensionArtifactVerifier::treeDigest($root);
-                    $artifactMatches = is_string($artifactDigest) && hash_equals($packageDigest, $artifactDigest);
-                    if ($artifactMatches && is_string($identifier) && is_string($row['version'] ?? null)) {
-                        $archive = $this->legacyArchive($artifact);
-                        $manifest = $archive['manifest'];
-                        $verified = hash_equals($treeDigest, $archive['tree_digest'])
-                            && $manifest->identifier()->value() === $identifier
-                            && (string) $manifest->version() === $row['version']
-                            && $manifest->type()->value === ($row['extension_type'] ?? null)
-                            && $manifest->serviceProvider() === ($row['service_provider'] ?? null)
-                            && $this->legacySignatureIsTrusted($database, $row, $identifier, $packageDigest, $now);
-                    }
-                } catch (Throwable) {
-                    $verified = false;
-                }
-            }
-            if (is_string($releaseId)) {
-                $database->update($this->tables->raw('extension_releases'), [
-                    'artifact_sha256' => $artifactMatches ? $packageDigest : null,
-                    'deployed_tree_sha256' => $treeDigest,
-                    'trust_state' => $verified ? 'verified' : 'needs_reverification',
-                ], ['id' => $releaseId]);
-            }
-            if (!$verified && ($row['status'] ?? null) === 'active' && is_string($identifier)) {
-                $database->executeStatement(sprintf(
-                    "UPDATE %s SET status = 'needs_reverification', registry_version = registry_version + 1, "
-                    . 'updated_at = ? WHERE identifier = ?',
-                    $this->tables->quoted('extensions'),
-                ), [$now, $identifier], [Types::DATETIME_IMMUTABLE, Types::STRING]);
-                $runtimeChanged = true;
-            }
-        }
-        if ($runtimeChanged) {
-            $database->executeStatement(sprintf(
-                'UPDATE %s SET generation = generation + 1, rebuilt_at = ? WHERE singleton_key = 1',
-                $this->tables->quoted('extension_runtime_generation'),
-            ), [$now], [Types::DATETIME_IMMUTABLE]);
-            $generation = $database->fetchOne(sprintf(
-                'SELECT generation FROM %s WHERE singleton_key = 1',
-                $this->tables->quoted('extension_runtime_generation'),
-            ));
-            if (is_int($generation) || (is_string($generation) && ctype_digit($generation))) {
-                $database->insert($this->tables->raw('extension_runtime_outbox'), [
-                    'id' => Uuid::uuid7()->toString(),
-                    'generation' => (int) $generation,
-                    'event_type' => 'extension.runtime.legacy-transition',
-                    'extension_identifier' => null,
-                    'state' => 'pending',
-                    'created_at' => $now,
-                    'materialized_at' => null,
-                ], ['created_at' => Types::DATETIME_IMMUTABLE, 'materialized_at' => Types::DATETIME_IMMUTABLE]);
-            }
-        }
-    }
-
-    /** @return array{tree_digest: string, manifest: ExtensionManifest} */
-    private function legacyArchive(string $artifact): array
-    {
-        $package = (new ZipArchiveReader())->inspect($artifact);
-        (new PackageSafetyPolicy())->assertSafe($package);
-        $zip = new ZipArchive();
-        if ($zip->open($artifact, ZipArchive::RDONLY) !== true) {
-            throw new RuntimeException('A retained legacy package cannot be opened.');
-        }
-        try {
-            $digests = [];
-            foreach ($package->entries() as $index => $entry) {
-                if ($entry->type() === ArchiveEntryType::Directory) {
-                    continue;
-                }
-                $path = $entry->path()->value();
-                if ($path === FilesystemExtensionArtifactVerifier::ARTIFACT) {
-                    continue;
-                }
-                $bytes = $zip->getFromIndex($index, 67_108_865, ZipArchive::FL_UNCHANGED);
-                if (!is_string($bytes) || strlen($bytes) > 67_108_864) {
-                    throw new RuntimeException('A retained legacy package entry cannot be verified.');
-                }
-                $digests[$path] = hash('sha256', $bytes);
-            }
-            ksort($digests, SORT_STRING);
-            $manifestJson = $zip->getFromName('kumwe.json', 1_048_577, ZipArchive::FL_UNCHANGED);
-            if (!is_string($manifestJson) || strlen($manifestJson) > 1_048_576) {
-                throw new RuntimeException('A retained legacy package manifest cannot be verified.');
-            }
-            return [
-                'tree_digest' => hash('sha256', json_encode(
-                    $digests,
-                    JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES,
-                )),
-                'manifest' => ExtensionManifest::fromJson($manifestJson),
-            ];
-        } finally {
-            $zip->close();
-        }
-    }
-
-    /** @param array<string, mixed> $release */
-    private function legacySignatureIsTrusted(
-        Connection $database,
-        array $release,
-        string $identifier,
-        string $packageDigest,
-        DateTimeImmutable $now,
-    ): bool {
-        $keyId = $release['signing_key_id'] ?? null;
-        $signature = $release['signature_base64'] ?? null;
-        if (
-            ($release['signature_algorithm'] ?? null) !== 'ed25519'
-            || !is_string($keyId) || !is_string($signature)
-        ) {
-            return false;
-        }
-        $key = $database->fetchAssociative(sprintf(
-            'SELECT algorithm, public_key_base64, enabled, vendor_namespace, extension_pattern, expires_at, '
-            . 'revoked_at FROM %s WHERE key_id = ?',
-            $this->tables->quoted('extension_trust_keys'),
-        ), [$keyId]);
-        if (
-            $key === false || ($key['algorithm'] ?? null) !== 'ed25519'
-            || !in_array($key['enabled'] ?? null, [true, 1, '1', 't', 'true'], true)
-            || ($key['revoked_at'] ?? null) !== null || !is_string($key['public_key_base64'] ?? null)
-        ) {
-            return false;
-        }
-        $expiresAt = $key['expires_at'] ?? null;
-        if (!$expiresAt instanceof DateTimeImmutable && (!is_string($expiresAt) || $expiresAt === '')) {
-            return false;
-        }
-        try {
-            $expiresAt = $expiresAt instanceof DateTimeImmutable
-                ? $expiresAt
-                : new DateTimeImmutable($expiresAt);
-        } catch (Throwable) {
-            return false;
-        }
-        [$vendor, $name] = explode('/', $identifier, 2);
-        $keyVendor = $key['vendor_namespace'] ?? null;
-        $pattern = $key['extension_pattern'] ?? null;
-        if (
-            $expiresAt <= $now || !is_string($keyVendor) || !is_string($pattern)
-            || ($keyVendor !== '*' && $keyVendor !== $vendor)
-            || ($pattern !== '*' && $pattern !== $name)
-        ) {
-            return false;
-        }
-        try {
-            return (new SodiumTrustKeySignatureVerifier())->verify(
-                $key['public_key_base64'],
-                PackageChecksum::sha256($packageDigest),
-                PackageSignature::ed25519($keyId, $signature),
-            );
-        } catch (Throwable) {
-            return false;
-        }
-    }
-
-    private function legacyRuntimeRoot(string $runtimePath): string
-    {
-        if ($runtimePath === '' || str_starts_with($runtimePath, '/') || str_contains($runtimePath, '..')) {
-            throw new RuntimeException('A legacy extension runtime path is unsafe.');
-        }
-        $base = realpath($this->extensionRoot);
-        $root = realpath($this->extensionRoot . '/' . $runtimePath);
-        if (!is_string($base) || !is_string($root) || !str_starts_with($root . '/', $base . '/')) {
-            throw new RuntimeException('A legacy extension runtime path is missing or unsafe.');
-        }
-        return $root;
     }
 
     private function add(

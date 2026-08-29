@@ -139,8 +139,8 @@ final readonly class RedisLockedExtensionManager implements ExtensionManager, Ex
      *          audited to.
      * @param   ?string           $signingKeyId     Trust-store key vouching for the package, or null when
      *          the package is offered unsigned.
-     * @param   ?string           $base64Signature  Base64 detached signature over the package bytes,
-     *          supplied together with `$signingKeyId`.
+     * @param   ?string           $base64Signature  Base64 detached signature over the SDK's domain-separated
+     *          message for this package checksum, supplied together with `$signingKeyId`.
      *
      * @return  array<string, mixed>  Registry row for the extension as it now stands, carrying the
      *          version just installed and the runtime path its files were published to.

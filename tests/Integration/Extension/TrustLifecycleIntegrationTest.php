@@ -11,6 +11,7 @@ use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\Extension\Manifest\ExtensionIdentifier;
 use Kumwe\Extension\Package\PackageChecksum;
 use Kumwe\Extension\Package\PackageSignature;
+use Kumwe\Extension\Package\PackageSignatureMessage;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\App\Tests\Support\TestKernelFactory;
@@ -225,7 +226,10 @@ final class TrustLifecycleIntegrationTest extends TestCase
         $checksum = PackageChecksum::calculate('race-package');
         $signature = PackageSignature::ed25519(
             $keyId,
-            base64_encode(sodium_crypto_sign_detached((string) $checksum, $secretKey)),
+            base64_encode(sodium_crypto_sign_detached(
+                PackageSignatureMessage::forChecksum($checksum),
+                $secretKey,
+            )),
         );
         $context = TestKernelFactory::administratorContext($container);
         $trust->add($context, $keyId, base64_encode($publicKey), 'race', '*', new DateTimeImmutable('+1 year'));
