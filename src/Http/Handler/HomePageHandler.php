@@ -11,6 +11,7 @@ use Kumwe\App\Presentation\ContentLayoutCatalog;
 use Kumwe\App\Presentation\ContentPresenter;
 use Kumwe\App\Site\Application\PublicPageLocator;
 use Kumwe\App\Studio\Application\Composition\StudioPublishedContentRenderer;
+use Kumwe\App\Studio\Application\Composition\StudioPublishedStylesheet;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -89,7 +90,8 @@ final readonly class HomePageHandler implements RequestHandlerInterface
         $binding = $record === null
             ? ['template' => null, 'color_scheme' => null]
             : $this->pages->presentationBindingFor($record);
-        $studioBody = $record === null ? null : $this->studio?->render($record);
+        $studioResult = $record === null ? null : $this->studio?->render($record);
+        $studioBody = $studioResult?->html;
         $template = $record === null
             ? 'home'
             : ($studioBody === null ? $this->layouts->templateFor($record, $binding['template']) : 'page');
@@ -122,6 +124,10 @@ final readonly class HomePageHandler implements RequestHandlerInterface
             'core.public.home',
             $this->pages->navigation(),
             $languages,
+            true,
+            $record === null || $studioResult === null
+                ? null
+                : StudioPublishedStylesheet::href($record, '/', $studioResult->css),
         ), 200, $headers);
     }
 

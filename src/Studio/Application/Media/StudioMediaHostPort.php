@@ -6,211 +6,194 @@ namespace Kumwe\App\Studio\Application\Media;
 
 use InvalidArgumentException;
 use Kumwe\App\Application\Authorization\AuthorizationDenied;
-use Kumwe\App\Application\Authorization\ExecutionContext;
-use Kumwe\App\Studio\Application\Host\StudioHostDispatcher;
-use Kumwe\App\Studio\Application\Host\StudioHostOutcome;
-use Kumwe\App\Studio\Application\Host\StudioHostSessionSnapshot;
-use Kumwe\App\Studio\Domain\Host\StudioHostRequest;
+use Kumwe\App\Studio\Application\Host\StudioProducerError;
+use Kumwe\App\Studio\Application\Host\StudioProducerRequestAuthority;
 use Kumwe\App\Studio\Domain\Media\StudioMediaUploadRequest;
+use Kumwe\Producer\Wire\HostResult;
+use Kumwe\Producer\Wire\Port\MediaPortInterface;
+use Kumwe\Producer\Wire\RequestContext;
 use stdClass;
 
 /**
- * Exact HTTP-adapter argument binding for all seven canonical Studio media operations.
+ * Exact argument binding for all seven canonical Studio media operations.
  *
  * @since  2.0.0
  */
-final readonly class StudioMediaHostPort
+final readonly class StudioMediaHostPort implements MediaPortInterface
 {
     /**
-     * Compose the media use case with optional durable mutation replay.
+     * Compose the App-owned media use case for direct Producer invocation.
      *
-     * @param  StudioMediaOperations           $media        Complete media use case.
-     * @param  StudioMediaMutationIdempotency  $idempotency  Durable supplied-key replay boundary.
+     * @param  StudioMediaOperations                 $media      Complete media use case.
+     * @param  StudioProducerRequestAuthority|null  $authority  Authorized request scope, when bound.
      *
      * @since  2.0.0
      */
     public function __construct(
         private StudioMediaOperations $media,
-        private StudioMediaMutationIdempotency $idempotency,
+        private ?StudioProducerRequestAuthority $authority = null,
     ) {
     }
 
     /**
-     * Decode the exact `{request|uploadId|assetId|url|query}` wrapper and invoke its operation.
+     * Bind this App-owned port implementation to one successfully authorized Producer request.
      *
-     * @param   ExecutionContext           $context   Fresh authenticated App context.
-     * @param   StudioHostRequest          $request   Validated host envelope.
-     * @param   StudioHostSessionSnapshot  $snapshot  Current authority snapshot.
+     * @param   StudioProducerRequestAuthority  $authority  Trusted evidence for one exact dispatch.
      *
-     * @return  StudioHostOutcome  Canonical host result or safe host error.
+     * @return  self  Request-scoped media port.
      *
      * @since   2.0.0
      */
-    public function dispatch(
-        ExecutionContext $context,
-        StudioHostRequest $request,
-        StudioHostSessionSnapshot $snapshot,
-    ): StudioHostOutcome {
-        try {
-            $this->permission($request, $snapshot);
-            $value = match ($request->operationId) {
-                'studio.operation/media.abort-upload' => $this->mutation(
-                    $request,
-                    $snapshot,
-                    fn (): null => $this->media->abortUpload(
-                        $context,
-                        $snapshot,
-                        self::wrappedString($request->arguments, 'uploadId'),
-                    ),
-                ),
-                'studio.operation/media.authorize-upload' => $this->grantMutation(
-                    $request,
-                    $snapshot,
-                    function () use ($context, $request, $snapshot): stdClass {
-                        $wrapper = self::wrapper($request->arguments, 'request');
-                        try {
-                            $descriptor = StudioMediaUploadRequest::fromDocument($wrapper->request);
-                        } catch (InvalidArgumentException) {
-                            throw new StudioMediaPortRejected(
-                                'validation-failed',
-                                'studio.media/upload-failed',
-                            );
-                        }
-
-                        return $this->media->authorizeUpload($context, $snapshot, $descriptor);
-                    },
-                    fn (stdClass $stored): stdClass => $this->media->replayUploadGrant(
-                        $context,
-                        $snapshot,
-                        $stored,
-                    ),
-                ),
-                'studio.operation/media.complete-upload' => $this->mutation(
-                    $request,
-                    $snapshot,
-                    fn (): stdClass => $this->media->completeUpload(
-                        $context,
-                        $snapshot,
-                        self::wrappedString($request->arguments, 'uploadId'),
-                    ),
-                ),
-                'studio.operation/media.get' => $this->media->get(
-                    $context,
-                    self::wrappedString($request->arguments, 'assetId'),
-                ),
-                'studio.operation/media.import-external' => $this->mutation(
-                    $request,
-                    $snapshot,
-                    fn (): stdClass => $this->media->importExternal(
-                        $context,
-                        self::wrappedString($request->arguments, 'url', stable: false),
-                    ),
-                ),
-                'studio.operation/media.list' => $this->media->list(
-                    $context,
-                    self::wrappedObject($request->arguments, 'query'),
-                ),
-                'studio.operation/media.upload-status' => $this->media->uploadStatus(
-                    $context,
-                    self::wrappedString($request->arguments, 'assetId'),
-                ),
-                default => throw new StudioMediaPortRejected(
-                    'incompatible',
-                    'studio.host/operation-unavailable',
-                ),
-            };
-
-            return self::result($value);
-        } catch (AuthorizationDenied) {
-            return StudioHostDispatcher::refusal(
-                'forbidden',
-                'studio.media/permission-refused',
-            );
-        } catch (StudioMediaPortRejected $failure) {
-            return StudioHostDispatcher::refusal($failure->category, $failure->failureCode);
-        }
-    }
-
-    /**
-     * Replay a supplied mutation key under the exact current Studio scope.
-     *
-     * @param   StudioHostRequest          $request    Canonical envelope.
-     * @param   StudioHostSessionSnapshot  $snapshot   Trusted scope.
-     * @param   callable(): mixed          $operation  Mutation body.
-     *
-     * @return  mixed  Fresh or replayed canonical value.
-     *
-     * @since   2.0.0
-     */
-    private function mutation(
-        StudioHostRequest $request,
-        StudioHostSessionSnapshot $snapshot,
-        callable $operation,
-    ): mixed {
-        return $this->idempotency->run($request, $snapshot->session->actorId, $operation);
-    }
-
-    /**
-     * Replay upload authorization through a ledger projection that never stores its live capability.
-     *
-     * @param   StudioHostRequest             $request    Canonical envelope.
-     * @param   StudioHostSessionSnapshot     $snapshot   Trusted scope.
-     * @param   callable(): stdClass          $operation  Fresh authorization body.
-     * @param   callable(stdClass): stdClass  $restore    Restores only the verified grant token on replay.
-     *
-     * @return  stdClass  Fresh or safely restored canonical grant.
-     *
-     * @since   2.0.0
-     */
-    private function grantMutation(
-        StudioHostRequest $request,
-        StudioHostSessionSnapshot $snapshot,
-        callable $operation,
-        callable $restore,
-    ): stdClass {
-        $result = $this->idempotency->runGrant(
-            $request,
-            $snapshot->session->actorId,
-            $operation,
-            $restore,
-        );
-        if (!$result instanceof stdClass) {
-            throw new StudioMediaPortRejected('unavailable', 'studio.media/idempotency-corrupt');
-        }
-
-        return $result;
-    }
-
-    /**
-     * Require the session's read permission and upload permission for mutations.
-     *
-     * @param   StudioHostRequest          $request   Canonical envelope.
-     * @param   StudioHostSessionSnapshot  $snapshot  Current authority snapshot.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    private function permission(StudioHostRequest $request, StudioHostSessionSnapshot $snapshot): void
+    public function forRequest(StudioProducerRequestAuthority $authority): self
     {
-        if (!in_array('studio.permission/read', $snapshot->permissions, true)) {
-            throw new StudioMediaPortRejected('forbidden', 'studio.media/permission-refused');
-        }
-        if (
-            in_array($request->operationId, [
-                'studio.operation/media.abort-upload',
-                'studio.operation/media.authorize-upload',
-                'studio.operation/media.complete-upload',
-                'studio.operation/media.import-external',
-            ], true)
-            && !in_array('studio.permission/upload-media', $snapshot->permissions, true)
-        ) {
-            throw new StudioMediaPortRejected('forbidden', 'studio.media/permission-refused');
-        }
+        return new self($this->media, $authority);
     }
 
     /**
-     * Require an exact one-member HTTP adapter wrapper.
+     * Cancel one active upload inside Producer's host-atomic mutation boundary.
+     *
+     * @param   mixed           $arguments  Validated Producer operation arguments.
+     * @param   RequestContext  $context    Validated Producer request context.
+     *
+     * @return  HostResult  Canonical empty acknowledgement.
+     *
+     * @since   2.0.0
+     */
+    public function abortUpload(mixed $arguments, RequestContext $context): HostResult
+    {
+        unset($context);
+        return $this->result(fn (): null => $this->media->abortUpload(
+            $this->requestAuthority()->context(),
+            $this->requestAuthority()->snapshot(),
+            self::wrappedString($arguments, 'uploadId'),
+        ));
+    }
+
+    /**
+     * Authorize one upload; the mutation boundary removes its live capability before replay storage.
+     *
+     * @param   mixed           $arguments  Validated Producer operation arguments.
+     * @param   RequestContext  $context    Validated Producer request context.
+     *
+     * @return  HostResult  Canonical live upload grant.
+     *
+     * @since   2.0.0
+     */
+    public function authorizeUpload(mixed $arguments, RequestContext $context): HostResult
+    {
+        unset($context);
+        $wrapper = self::wrapper($arguments, 'request');
+        try {
+            $descriptor = StudioMediaUploadRequest::fromDocument($wrapper->request);
+        } catch (InvalidArgumentException) {
+            StudioProducerError::refuse('validation-failed', 'studio.media/upload-failed');
+        }
+
+        return $this->result(fn (): stdClass => $this->media->authorizeUpload(
+            $this->requestAuthority()->context(),
+            $this->requestAuthority()->snapshot(),
+            $descriptor,
+        ));
+    }
+
+    /**
+     * Verify and accept one completed upload.
+     *
+     * @param   mixed           $arguments  Validated Producer operation arguments.
+     * @param   RequestContext  $context    Validated Producer request context.
+     *
+     * @return  HostResult  Canonical accepted asset identity.
+     *
+     * @since   2.0.0
+     */
+    public function completeUpload(mixed $arguments, RequestContext $context): HostResult
+    {
+        unset($context);
+        return $this->result(fn (): stdClass => $this->media->completeUpload(
+            $this->requestAuthority()->context(),
+            $this->requestAuthority()->snapshot(),
+            self::wrappedString($arguments, 'uploadId'),
+        ));
+    }
+
+    /**
+     * Resolve one media asset visible to this trusted App request.
+     *
+     * @param   mixed           $arguments  Validated Producer operation arguments.
+     * @param   RequestContext  $context    Validated Producer request context.
+     *
+     * @return  HostResult  Canonical asset or explicit null.
+     *
+     * @since   2.0.0
+     */
+    public function get(mixed $arguments, RequestContext $context): HostResult
+    {
+        unset($context);
+        return $this->result(fn (): ?stdClass => $this->media->get(
+            $this->requestAuthority()->context(),
+            self::wrappedString($arguments, 'assetId'),
+        ));
+    }
+
+    /**
+     * Harden and import one external media candidate.
+     *
+     * @param   mixed           $arguments  Validated Producer operation arguments.
+     * @param   RequestContext  $context    Validated Producer request context.
+     *
+     * @return  HostResult  Canonical accepted asset identity.
+     *
+     * @since   2.0.0
+     */
+    public function importExternal(mixed $arguments, RequestContext $context): HostResult
+    {
+        unset($context);
+        return $this->result(fn (): stdClass => $this->media->importExternal(
+            $this->requestAuthority()->context(),
+            self::wrappedString($arguments, 'url', stable: false),
+        ));
+    }
+
+    /**
+     * Return one bounded canonical media page.
+     *
+     * @param   mixed           $arguments  Validated Producer operation arguments.
+     * @param   RequestContext  $context    Validated Producer request context.
+     *
+     * @return  HostResult  Canonical media page.
+     *
+     * @since   2.0.0
+     */
+    public function list(mixed $arguments, RequestContext $context): HostResult
+    {
+        unset($context);
+        return $this->result(fn (): stdClass => $this->media->list(
+            $this->requestAuthority()->context(),
+            self::wrappedObject($arguments, 'query'),
+        ));
+    }
+
+    /**
+     * Poll one previously accepted asset.
+     *
+     * @param   mixed           $arguments  Validated Producer operation arguments.
+     * @param   RequestContext  $context    Validated Producer request context.
+     *
+     * @return  HostResult  Canonical accepted asset state.
+     *
+     * @since   2.0.0
+     */
+    public function uploadStatus(mixed $arguments, RequestContext $context): HostResult
+    {
+        unset($context);
+        return $this->result(fn (): stdClass => $this->media->uploadStatus(
+            $this->requestAuthority()->context(),
+            self::wrappedString($arguments, 'assetId'),
+        ));
+    }
+
+    /**
+     * Require an exact one-member operation wrapper.
      *
      * @param   mixed   $arguments  Decoded operation arguments.
      * @param   string  $member     Required member name.
@@ -222,7 +205,7 @@ final readonly class StudioMediaHostPort
     private static function wrapper(mixed $arguments, string $member): stdClass
     {
         if (!$arguments instanceof stdClass || array_keys(get_object_vars($arguments)) !== [$member]) {
-            throw new StudioMediaPortRejected('invalid-request', 'studio.host/invalid-arguments');
+            StudioProducerError::refuse('invalid-request', 'studio.host/invalid-arguments');
         }
 
         return $arguments;
@@ -242,7 +225,7 @@ final readonly class StudioMediaHostPort
     {
         $wrapper = self::wrapper($arguments, $member);
         if (!$wrapper->{$member} instanceof stdClass) {
-            throw new StudioMediaPortRejected('invalid-request', 'studio.host/invalid-arguments');
+            StudioProducerError::refuse('invalid-request', 'studio.host/invalid-arguments');
         }
 
         return $wrapper->{$member};
@@ -269,23 +252,45 @@ final readonly class StudioMediaHostPort
             || strlen($value) > ($stable ? 240 : 2048)
             || ($stable && preg_match('/^[A-Za-z0-9][A-Za-z0-9._:\/-]*$/D', $value) !== 1)
         ) {
-            throw new StudioMediaPortRejected('invalid-request', 'studio.host/invalid-arguments');
+            StudioProducerError::refuse('invalid-request', 'studio.host/invalid-arguments');
         }
 
         return $value;
     }
 
     /**
-     * Wrap one canonical JSON value in a host result.
+     * Invoke one media use case and translate only its delivery-safe App refusal into Producer's error type.
      *
-     * @param   mixed  $value  Canonical operation value.
+     * @param   callable(): mixed  $operation  Media operation producing one canonical JSON value.
      *
-     * @return  StudioHostOutcome  Successful host result.
+     * @return  HostResult  Canonical Producer success.
      *
      * @since   2.0.0
      */
-    private static function result(mixed $value): StudioHostOutcome
+    private function result(callable $operation): HostResult
     {
-        return new StudioHostOutcome(200, (object) ['value' => $value]);
+        try {
+            return new HostResult($operation());
+        } catch (AuthorizationDenied) {
+            StudioProducerError::refuse('forbidden', 'studio.media/permission-refused');
+        } catch (StudioMediaPortRejected $failure) {
+            StudioProducerError::refuse(
+                $failure->category,
+                $failure->failureCode,
+                commitsState: $failure->commitsState,
+            );
+        }
+    }
+
+    /**
+     * Require the per-request authority installed by the Producer host factory.
+     *
+     * @return  StudioProducerRequestAuthority  Trusted evidence for this dispatch.
+     *
+     * @since   2.0.0
+     */
+    private function requestAuthority(): StudioProducerRequestAuthority
+    {
+        return $this->authority ?? throw new \LogicException('A Studio media port requires request authority.');
     }
 }

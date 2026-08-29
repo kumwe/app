@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessReporting\Domain;
 
 use InvalidArgumentException;
+use Kumwe\Extension\Spi\BusinessReporting\Domain\ReportDefinitionGuard;
 
 /**
  * Declarative binding from a typed report parameter to one query-AST predicate.

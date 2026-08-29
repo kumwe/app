@@ -9,13 +9,13 @@ use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Application\Authorization\SiteContext;
 use Kumwe\App\Application\Authorization\SystemIdentity;
 use Kumwe\App\BusinessIntegration\Application\BusinessRecordMutationEventPublisher;
-use Kumwe\App\BusinessIntegration\Application\DomainEventHandler;
+use Kumwe\Extension\Spi\BusinessIntegration\Application\DomainEventHandler;
 use Kumwe\App\BusinessIntegration\Application\OutboxStore;
-use Kumwe\App\BusinessIntegration\Domain\DomainEvent;
-use Kumwe\App\BusinessIntegration\Domain\DomainListenerDefinition;
-use Kumwe\App\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\DomainEvent;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\DomainListenerDefinition;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationEvent;
 use Kumwe\App\Extension\Application\ExtensionExecutionGate;
-use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
@@ -46,11 +46,17 @@ final class BusinessRecordMutationEventPublisherTest extends TestCase
             '1.0.0',
         );
         $handler = $this->createMock(DomainEventHandler::class);
-        $handler->method('definition')->willReturn($definition);
         $handler->expects(self::once())
             ->method('handle')
-            ->willReturnCallback(static function (DomainEvent $event) use (&$order): void {
+            ->willReturnCallback(static function (
+                DomainListenerDefinition $dispatched,
+                DomainEvent $event,
+            ) use (
+                $definition,
+                &$order
+            ): void {
                 $order[] = 'listener';
+                self::assertSame($definition, $dispatched);
                 self::assertSame('core.business_record.mutated', $event->eventType());
             });
         $contributions = new ExtensionContributionRegistrySet();

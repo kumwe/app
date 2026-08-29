@@ -1,12 +1,17 @@
 # ADR 0019 — Laminas ServiceManager and EventManager run composition and events behind Kumwe-owned seams
 
-**Status** Accepted
+**Status** Superseded for extension events by the pre-stable canonical SDK extraction
 **Decided by** Product owner
 **Findings** None; the preservation covenant requires a separately approved architecture decision before
 the platform stack moves, and this record is that decision
 **Gate** None — Gate A remains passed and untouched
 **Verified against** `670703a9` and `2821aaf0`, plus the change that removes `joomla/di` and
 `joomla/event` from `composer.json`
+
+> The application still uses Laminas EventManager for its private lifecycle notifications, but those
+> notifications are no longer extension-author API. Signed manifests are the sole declarative source and
+> extension executable behavior binds by manifest identifier through `kumwe/extension-sdk`; there is no
+> code-side event registrar or alternate package identity.
 
 ---
 
@@ -31,10 +36,10 @@ Two Kumwe surfaces constrain how the engines may move:
   in that vocabulary, every factory closure type-hints the container it receives, and the covenant
   forbids a second composition root. An engine change must not become a rewrite of the composition
   root's grammar.
-- **The extension SPI leaked the vendor.** `ExtensionEventRegistrar::listen()` typed its listener
-  callable against `Joomla\Event\EventInterface`, so every published extension listener named the engine
-  vendor in its own signature. The eight `onKumweExtension*` lifecycle events, their name-keyed dispatch
-  and their argument maps are versioned extension API and must carry over verbatim.
+- **The pre-stable extension listener surface leaked the vendor.** Its code-side listener callable named
+  `Joomla\Event\EventInterface`, so an author would have named the engine vendor in an executable signature.
+  The canonical SDK extraction removed that author-facing path: signed manifest declarations now own
+  extension behavior and owner-scoped SDK binding ports bind executable implementations by declaration ID.
 
 There is precedent. [Persistence](../../architecture/persistence.md) records that `joomla/database` left
 in favour of Doctrine DBAL behind application-owned repository and transaction interfaces: the engine
@@ -57,20 +62,15 @@ events, and it is the separately approved change the preservation covenant's pla
    boot inside `ContainerFactory`, so no legitimate path registers an identifier twice, and the stance
    exists so that a future second registration is an error rather than a silent replacement. `share()`
    keeps its `$protected` parameter for the registration vocabulary; every entry is protected alike.
-3. **Laminas EventManager is the dispatch engine, behind the Kumwe event contract.** Extension listeners
-   receive `Kumwe\App\Extension\Runtime\ExtensionEvent` — `getName()`, `getArgument()`, `isStopped()`,
-   `stopPropagation()` — which names no vendor type. That name-keyed, argument-map vocabulary is the same
-   surface the Joomla-typed generation promised, so the eight `onKumweExtension*` lifecycle events and
-   their payload keys carry over verbatim. `JoomlaExtensionEventRegistrar` becomes
-   `LaminasExtensionEventRegistrar` with the identical `onKumwe*` name filter, and
-   `TrustEnforcingExtensionEventRegistrar` still wraps it. The engine vendor never again appears in an
-   extension-facing signature: a future dispatch change re-implements `ExtensionEvent` and moves nothing
-   in the SPI.
-4. **PSR-14 is evaluated and deferred.** Laminas ships no PSR-14 implementation to stand on, and PSR-14
-   would force a class-keyed redesign onto the extension SPI — every name-keyed `onKumweExtension*`
-   subscription and argument map would become a typed event class, breaking versioned extension API for a
-   dispatch semantic Kumwe does not need. Deferred is not forbidden: `ExtensionEvent` is the seam a
-   future decision would change behind.
+3. **Laminas EventManager is a private host dispatch engine.** It carries App lifecycle notifications
+   behind infrastructure adapters and is not extension-author API. Extensions declare domain listeners,
+   integration consumers, jobs, projections, webhooks, and routes in signed manifests. After admission,
+   the host accepts only owner-scoped executable bindings for those exact declaration identifiers through
+   canonical SDK ports; no code-side App event registrar is published.
+4. **PSR-14 is evaluated and deferred for private host dispatch.** Laminas ships no PSR-14 implementation
+   to stand on, and the App needs no public dispatcher abstraction. A future host-engine change remains an
+   infrastructure decision because signed declarations and SDK executable binding ports, rather than the
+   private event engine, define the author contract.
 5. **The Joomla Framework leaves the requirement blocks, permanently.** `joomla/archive`,
    `joomla/filesystem`, `joomla/filter` and `joomla/registry` are removed as unused (`2821aaf0`);
    `joomla/di` and `joomla/event` follow once the test suite is retyped. `composer architecture:policy`
@@ -98,10 +98,10 @@ the registration grammar every line of the composition root already speaks, and 
 sharing and construction order. The vocabulary is the stable contract; the engine underneath it is what
 this decision changes.
 
-### Adopt PSR-14 class-keyed events now
+### Adopt PSR-14 class-keyed host events now
 
-Rejected, as decision point 4 records: no Laminas implementation to lean on, and the class-keyed redesign
-would break the name-keyed contract that is versioned extension API for every published listener.
+Rejected, as decision point 4 records: there is no Laminas implementation to lean on and no author-facing
+dispatcher contract that requires another event abstraction.
 
 ### Expose the Laminas event and container types in the SPI
 
@@ -121,9 +121,8 @@ capability in return.
   factory closure compile against the same `Kumwe\App\Kernel\Container` type they always named.
 - Overwrite protection is container-wide rather than per-key, so any future double registration fails at
   boot instead of silently replacing a service.
-- The extension SPI is vendor-free: `ExtensionEvent` is Kumwe-owned, the frozen generation fixtures stay
-  byte-immutable as history, and published schema-1 through schema-4 packages keep the exact event names
-  and argument maps they were promised.
+- The extension SPI is vendor-free because signed manifest declarations and canonical SDK binding ports
+  contain no App or engine type; private lifecycle dispatch can change without moving an author contract.
 - The preservation covenant's platform paragraph now names Laminas ServiceManager and Laminas
   EventManager behind the Kumwe seams, citing this record as the approving decision.
 - `composer.json` carries no `joomla/*` requirement and no `joomla-framework` keyword, and the

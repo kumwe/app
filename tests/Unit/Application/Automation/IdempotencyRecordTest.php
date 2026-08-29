@@ -7,7 +7,7 @@ namespace Kumwe\App\Tests\Unit\Application\Automation;
 use DateTimeImmutable;
 use DomainException;
 use InvalidArgumentException;
-use Kumwe\App\Application\Automation\IdempotencyKey;
+use Kumwe\Extension\Spi\Application\Automation\IdempotencyKey;
 use Kumwe\App\Application\Automation\IdempotencyRecord;
 use Kumwe\App\Application\Automation\IdempotencyResult;
 use Kumwe\App\Application\Automation\IdempotencyState;

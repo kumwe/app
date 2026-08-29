@@ -12,7 +12,7 @@ use Kumwe\App\Administrator\Presentation\RecoveryAdministratorRenderer;
 use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Identity\Application\Administration\AdministratorSession;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use Kumwe\App\Localization\Application\ActiveLocale;
 use Kumwe\App\Localization\Application\CatalogueTranslator;
 use Kumwe\App\Localization\Application\SupportedLocales;

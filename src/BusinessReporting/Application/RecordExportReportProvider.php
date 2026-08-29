@@ -16,7 +16,7 @@ use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnava
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable;
 use Kumwe\App\BusinessReporting\Domain\ReportColumnDefinition;
 use Kumwe\App\BusinessReporting\Domain\ReportDefinition;
-use Kumwe\App\BusinessReporting\Domain\ReportValueType;
+use Kumwe\Extension\Spi\BusinessReporting\Domain\ReportValueType;
 
 /**
  * Derives the record-set CSV export report for one installed business definition.

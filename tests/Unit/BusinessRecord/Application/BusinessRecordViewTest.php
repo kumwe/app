@@ -13,6 +13,7 @@ use Kumwe\App\BusinessRecord\Application\RecordFieldVisibility;
 use Kumwe\App\BusinessRecord\Domain\BusinessRecord;
 use Kumwe\App\BusinessRecord\Domain\RecordScope;
 use Kumwe\App\Tests\Unit\BusinessDefinition\Domain\EntityTypeDefinitionTest;
+use Kumwe\Extension\Spi\BusinessRecord\Application\BusinessRecordView as BusinessRecordViewContract;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
@@ -38,6 +39,7 @@ final class BusinessRecordViewTest extends TestCase
         $definition = self::conditionalDefinition();
         $hidden = self::record(false, true);
         $visible = self::record(true, true);
+        $visibleView = BusinessRecordView::fromRecord($visible, definition: $definition);
 
         self::assertArrayNotHasKey('conditional_note', BusinessRecordView::fromRecord(
             $hidden,
@@ -51,8 +53,18 @@ final class BusinessRecordViewTest extends TestCase
         )->values);
         self::assertSame(
             'Visible note',
-            BusinessRecordView::fromRecord($visible, definition: $definition)->values['conditional_note'],
+            $visibleView->values['conditional_note'],
         );
+        self::assertInstanceOf(BusinessRecordViewContract::class, $visibleView);
+        self::assertSame($visibleView->definitionId, $visibleView->definitionIdentifier());
+        self::assertSame($visibleView->definitionVersion, $visibleView->definitionVersion());
+        self::assertSame($visibleView->recordId, $visibleView->recordIdentifier());
+        self::assertSame($visibleView->version, $visibleView->version());
+        self::assertSame($visibleView->siteIdentifier, $visibleView->siteIdentifier());
+        self::assertSame($visibleView->organizationIdentifier, $visibleView->organizationIdentifier());
+        self::assertSame($visibleView->workflowState, $visibleView->workflowState());
+        self::assertSame($visibleView->values, $visibleView->values());
+        self::assertSame($visibleView->updatedAt, $visibleView->updatedAt());
     }
 
     /**

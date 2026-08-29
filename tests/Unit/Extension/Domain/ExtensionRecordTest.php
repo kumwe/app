@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\Extension\Domain;
 
 use InvalidArgumentException;
-use Kumwe\App\Extension\Domain\ExtensionIdentifier;
-use Kumwe\App\Extension\Domain\ExtensionManifest;
+use Kumwe\Extension\Manifest\ExtensionIdentifier;
+use Kumwe\Extension\Manifest\ExtensionManifest;
 use Kumwe\App\Extension\Domain\ExtensionRecord;
 use Kumwe\App\Extension\Domain\ExtensionStatus;
-use Kumwe\App\Extension\Domain\ExtensionType;
-use Kumwe\App\Extension\Domain\SemanticVersion;
-use Kumwe\App\Extension\Domain\VersionConstraint;
+use Kumwe\Extension\Manifest\ExtensionType;
+use Kumwe\Extension\Manifest\SemanticVersion;
+use Kumwe\Extension\Manifest\VersionConstraint;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

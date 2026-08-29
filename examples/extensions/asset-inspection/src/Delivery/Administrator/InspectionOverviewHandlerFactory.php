@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace KumweExample\AssetInspection\Delivery\Administrator;
 
-use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
-use Kumwe\App\Extension\Contribution\AdministratorRouteHandlerFactory;
+use Kumwe\Extension\Spi\Binding\Http\AdministratorRouteHandlerFactory;
+use Kumwe\Extension\Spi\Binding\Http\AdministratorRouteRenderer;
 use KumweExample\AssetInspection\Application\InspectionOverviewService;
 use Psr\Http\Server\RequestHandlerInterface;
 
@@ -30,13 +30,13 @@ final readonly class InspectionOverviewHandlerFactory implements AdministratorRo
     /**
      * Create the contributed route handler with an isolated administrator renderer.
      *
-     * @param   AdministratorRenderer  $renderer  Renderer supplied by the trusted contribution registry.
+     * @param   AdministratorRouteRenderer  $renderer  Route-bound renderer capability supplied by the host.
      *
      * @return  RequestHandlerInterface  Ready graphical route handler.
      *
      * @since   2.0.0
      */
-    public function create(AdministratorRenderer $renderer): RequestHandlerInterface
+    public function create(AdministratorRouteRenderer $renderer): RequestHandlerInterface
     {
         return new InspectionOverviewHandler($this->overview, $renderer);
     }

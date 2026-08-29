@@ -17,7 +17,7 @@ The implementation boundary is:
 
 | Concern | Owner |
 |---|---|
-| Studio document schemas and canonical JSON | `Studio\Domain\Contract` over the exact vendored corpus |
+| Studio document schemas and canonical JSON | Direct Producer registry and canonical types over its exact pinned corpus |
 | Authorized Content reads | `ContentModelService` and `ContentService` |
 | Projection rules and diagnostics | `Studio\Application\Projection` |
 | Blueprint bindings and entry overrides | host-owned Studio projection tables |
@@ -72,11 +72,10 @@ enum identifiers, or a value requiring coercion refuse the whole document. The r
 safe JSON Pointer and no source value. Stored data is revalidated against its exact pinned Content
 schema before mapping, so corruption cannot become a plausible partial Studio entry.
 
-Every completed projection is validated by `StudioContractSchemas` against the exact vendored
-`content-model` or `entry` schema before it leaves the application service. The same neutral registry
-continues to validate extension contribution documents. The former extension-internal helper names
-remain loadable aliases, and its registry remains a contribution-only compatibility adapter; new code
-uses `Studio\Domain\Contract`.
+Every completed projection is validated by Producer's `StudioDocumentSchemaRegistry` against its exact
+pinned `content-model` or `entry` schema before it leaves the application service. Extension contribution
+documents use that same dependency authority directly. App carries no schema compiler, copied corpus,
+alias, or compatibility registry.
 
 ## Blueprint bindings and entry overrides
 

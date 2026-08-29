@@ -14,13 +14,12 @@ use Kumwe\App\BusinessDefinition\Domain\CompatibilityPlan;
 use Kumwe\App\BusinessDefinition\Domain\DefinitionOwner;
 use Kumwe\App\BusinessDefinition\Domain\DefinitionStatus;
 use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\App\Extension\Contribution\ContributionOwner;
-use Kumwe\App\Extension\Contribution\ManifestContributionSet;
-use Kumwe\App\Extension\Domain\ExtensionIdentifier;
-use Kumwe\App\Extension\Domain\ExtensionManifest;
-use Kumwe\App\Extension\Domain\ExtensionType;
-use Kumwe\App\Extension\Domain\SemanticVersion;
-use Kumwe\App\Extension\Domain\VersionConstraint;
+use Kumwe\Extension\Manifest\ExtensionIdentifier;
+use Kumwe\Extension\Manifest\ExtensionManifest;
+use Kumwe\Extension\Manifest\ManifestContributions;
+use Kumwe\Extension\Manifest\ExtensionType;
+use Kumwe\Extension\Manifest\SemanticVersion;
+use Kumwe\Extension\Manifest\VersionConstraint;
 use Kumwe\App\OpenApi\Application\OpenApiComponentClaimAdmission;
 use Kumwe\App\OpenApi\Application\OpenApiExtensionActivationAdmission;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -141,7 +140,6 @@ final class OpenApiExtensionActivationAdmissionTest extends TestCase
     private static function manifest(string $identifier, string $handle, string $id): ExtensionManifest
     {
         $extension = ExtensionIdentifier::fromString($identifier);
-        $owner = ContributionOwner::extension($identifier);
         $definition = EntityTypeDefinition::fromArray([
             'id' => $id,
             'owner' => ['type' => 'extension', 'identifier' => $identifier],
@@ -185,7 +183,10 @@ final class OpenApiExtensionActivationAdmissionTest extends TestCase
             serviceProvider: 'Acme\\Extension\\Provider',
             kumweCompatibility: VersionConstraint::fromString('^2.0.0'),
             phpCompatibility: VersionConstraint::fromString('^8.5.0'),
-            contributions: new ManifestContributionSet($owner, businessDefinitions: [$definition]),
+            contributions: ManifestContributions::fromManifest($extension, [
+                'version' => 1,
+                'business' => ['definitions' => [$definition->toArray()]],
+            ]),
             schemaVersion: 3,
         );
     }

@@ -10,25 +10,26 @@ use Kumwe\App\Application\Authorization\ResourcePolicyTarget;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Extension\Contribution\CapabilityDefinition;
 use Kumwe\App\Extension\Contribution\CapabilityDefinitionRegistry;
-use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
-use Kumwe\App\Extension\Contribution\ManifestContributionSet;
 use Kumwe\App\Extension\Contribution\ResourcePolicyDefinition;
 use Kumwe\App\Extension\Contribution\ResourcePolicyDefinitionRegistry;
-use Kumwe\App\Extension\Domain\ExtensionIdentifier;
-use Kumwe\App\Portal\Contribution\PortalNavigationDefinition;
+use Kumwe\Extension\Manifest\ExtensionIdentifier;
+use Kumwe\Extension\Manifest\ManifestContributions;
+use Kumwe\Extension\Spi\Portal\Contribution\PortalNavigationDefinition;
 use Kumwe\App\Portal\Contribution\PortalNavigationRegistry;
-use Kumwe\App\Portal\Contribution\PortalRouteDefinition;
-use Kumwe\App\Portal\Contribution\PortalRouteHandlerFactory;
+use Kumwe\Extension\Spi\Portal\Contribution\PortalRouteDefinition;
 use Kumwe\App\Portal\Contribution\PortalRouteRegistry;
-use Kumwe\App\Portal\Contribution\PortalTemplateDefinition;
+use Kumwe\Extension\Spi\Portal\Contribution\PortalTemplateDefinition;
 use Kumwe\App\Portal\Contribution\PortalTemplateRegistry;
-use Kumwe\App\Portal\Contribution\PortalWorkspaceDefinition;
+use Kumwe\Extension\Spi\Portal\Contribution\PortalWorkspaceDefinition;
 use Kumwe\App\Portal\Contribution\PortalWorkspaceRegistry;
 use Kumwe\App\Portal\Http\Handler\PortalExtensionRootRedirectHandler;
 use Kumwe\App\Portal\Http\Middleware\PortalAuthorizationMiddleware;
-use Kumwe\App\Portal\Presentation\PortalContributionRenderer;
+use Kumwe\App\Portal\Presentation\PortalNavigationVisibility;
 use Kumwe\App\Portal\Presentation\PortalRenderer;
+use Kumwe\Extension\Spi\Binding\Http\PortalRouteHandlerFactory;
+use Kumwe\Extension\Spi\Binding\Http\PortalRouteRenderer;
 use Laminas\Diactoros\ServerRequestFactory;
 use Laminas\HttpHandlerRunner\RequestHandlerRunnerInterface;
 use Laminas\Stratigility\MiddlewarePipe;
@@ -44,6 +45,8 @@ use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use Twig\Environment;
+use Twig\Loader\ArrayLoader;
 
 #[CoversClass(PortalWorkspaceDefinition::class)]
 #[CoversClass(PortalNavigationDefinition::class)]
@@ -193,8 +196,13 @@ final class PortalContributionRegistryTest extends TestCase
         [$application, $router] = $this->routingApplication();
         /** @var TrustStore $trust */
         $trust = (new \ReflectionClass(TrustStore::class))->newInstanceWithoutConstructor();
-        /** @var PortalRenderer $renderer */
-        $renderer = (new \ReflectionClass(PortalRenderer::class))->newInstanceWithoutConstructor();
+        $renderer = new PortalRenderer(
+            new Environment(new ArrayLoader()),
+            new PortalNavigationRegistry(new PortalWorkspaceRegistry(), $capabilities, $authorization),
+            $templates,
+            $this->createStub(PortalNavigationVisibility::class),
+            extensionRequestProvenance: new \stdClass(),
+        );
         $routes->registerInto($application, $trust, $renderer);
         $application->get('/{path:.+}', new class implements RequestHandlerInterface {
             public function handle(ServerRequestInterface $request): ResponseInterface
@@ -318,24 +326,19 @@ final class PortalContributionRegistryTest extends TestCase
                 ]],
             ],
         ];
-        $declared = ManifestContributionSet::fromManifest(
+        $declared = ManifestContributions::fromManifest(
             ExtensionIdentifier::fromString('acme/orders'),
             $manifest,
         );
-        self::assertSame($declared->toArray(), ManifestContributionSet::fromManifest(
+        self::assertSame($declared->declarations(), ManifestContributions::fromManifest(
             ExtensionIdentifier::fromString('acme/orders'),
-            $declared->toArray(),
-        )->toArray());
+            $declared->declarations(),
+        )->declarations());
 
         $registries = new ExtensionContributionRegistrySet(withCore: false);
-        $registrar = $registries->registrar($declared->owner, $declared);
-        $registrar->capability($declared->capabilities()[0]);
-        $registrar->resourcePolicy($declared->resourcePolicies()[0]);
-        $registrar->portalWorkspace($declared->portalWorkspaces()[0]);
-        $registrar->portalNavigation($declared->portalNavigation()[0]);
-        $registrar->portalTemplate($declared->portalTemplates()[0]);
-        $registrar->portalRoute($declared->portalRoutes()[0], $this->factory());
-        $registrar->complete();
+        $bindings = $registries->activateManifest($declared);
+        $bindings->portalRoute('acme.orders.index', $this->factory());
+        $bindings->complete();
 
         self::assertSame('acme.orders.index', $registries->inventory(
             $declared->owner,
@@ -348,7 +351,7 @@ final class PortalContributionRegistryTest extends TestCase
     private function factory(): PortalRouteHandlerFactory
     {
         return new class implements PortalRouteHandlerFactory {
-            public function create(PortalContributionRenderer $renderer): RequestHandlerInterface
+            public function create(PortalRouteRenderer $renderer): RequestHandlerInterface
             {
                 return new class implements RequestHandlerInterface {
                     public function handle(ServerRequestInterface $request): ResponseInterface

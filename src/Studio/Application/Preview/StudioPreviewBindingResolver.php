@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Studio\Application\Preview;
 
 use stdClass;
+use Kumwe\Producer\Render\BindingResolution;
 
 /**
  * Closed evaluator for the safe binding sources AP-6 can resolve without taking Content authority.
@@ -21,18 +22,25 @@ final readonly class StudioPreviewBindingResolver
      * Resolve the canonical `value` port used by the core App field block set.
      *
      * @param   stdClass                    $node    Schema-admitted Blueprint node.
+     * @param   string                      $port    Exact port requested by the Producer renderer.
      * @param   StudioPreviewBindingValues  $values  Trusted host-owned value namespaces.
      *
-     * @return  StudioPreviewBindingResult  Plain JSON value, hidden result, or closed unresolved result.
+     * @return  BindingResolution  Plain JSON value, hidden result, or closed unresolved result.
      *
      * @since   2.0.0
      */
-    public function resolve(stdClass $node, StudioPreviewBindingValues $values): StudioPreviewBindingResult
-    {
+    public function resolve(
+        stdClass $node,
+        string $port,
+        StudioPreviewBindingValues $values,
+    ): BindingResolution {
+        if ($port !== 'value') {
+            return BindingResolution::unavailable();
+        }
         $bindings = $node->bindings ?? null;
         $binding = $bindings instanceof stdClass ? $bindings->value ?? null : null;
         if (!$binding instanceof stdClass) {
-            return StudioPreviewBindingResult::unavailable();
+            return BindingResolution::unavailable();
         }
         $transforms = $binding->transforms ?? null;
         if (!is_array($transforms) || $transforms !== []) {
@@ -57,7 +65,7 @@ final readonly class StudioPreviewBindingResolver
             return self::null($binding);
         }
 
-        return new StudioPreviewBindingResult(true, false, $value);
+        return BindingResolution::available($value);
     }
 
     /**
@@ -121,18 +129,18 @@ final readonly class StudioPreviewBindingResolver
      *
      * @param   stdClass  $binding  Schema-admitted binding and its explicit error policy.
      *
-     * @return  StudioPreviewBindingResult  Fallback, hidden, or unresolved result.
+     * @return  BindingResolution  Fallback, hidden, or unresolved result.
      *
      * @since   2.0.0
      */
-    private static function failed(stdClass $binding): StudioPreviewBindingResult
+    private static function failed(stdClass $binding): BindingResolution
     {
         return match ($binding->onError ?? null) {
             'fallback' => property_exists($binding, 'fallback')
-                ? new StudioPreviewBindingResult(true, false, $binding->fallback)
-                : StudioPreviewBindingResult::unavailable(),
-            'hide' => StudioPreviewBindingResult::hidden(),
-            default => StudioPreviewBindingResult::unavailable(),
+                ? BindingResolution::available($binding->fallback)
+                : BindingResolution::unavailable(),
+            'hide' => BindingResolution::hidden(),
+            default => BindingResolution::unavailable(),
         };
     }
 
@@ -141,19 +149,19 @@ final readonly class StudioPreviewBindingResolver
      *
      * @param   stdClass  $binding  Schema-admitted binding and its explicit null policy.
      *
-     * @return  StudioPreviewBindingResult  Empty, fallback, hidden, or unresolved result.
+     * @return  BindingResolution  Empty, fallback, hidden, or unresolved result.
      *
      * @since   2.0.0
      */
-    private static function null(stdClass $binding): StudioPreviewBindingResult
+    private static function null(stdClass $binding): BindingResolution
     {
         return match ($binding->onNull ?? null) {
-            'empty' => new StudioPreviewBindingResult(true, false, ''),
+            'empty' => BindingResolution::available(''),
             'fallback' => property_exists($binding, 'fallback')
-                ? new StudioPreviewBindingResult(true, false, $binding->fallback)
-                : StudioPreviewBindingResult::unavailable(),
-            'hide' => StudioPreviewBindingResult::hidden(),
-            default => StudioPreviewBindingResult::unavailable(),
+                ? BindingResolution::available($binding->fallback)
+                : BindingResolution::unavailable(),
+            'hide' => BindingResolution::hidden(),
+            default => BindingResolution::unavailable(),
         };
     }
 }

@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Unit\Extension\Application\Trust;
 
-use Kumwe\App\Extension\Application\Trust\PackageSignatureVerifier;
+use Kumwe\Extension\Package\PackageSignatureVerifier;
 use Kumwe\App\Extension\Application\Trust\PackageTrustPolicy;
 use Kumwe\App\Extension\Application\Trust\UntrustedPackage;
-use Kumwe\App\Extension\Domain\PackageChecksum;
-use Kumwe\App\Extension\Domain\PackageSignature;
+use Kumwe\Extension\Package\PackageChecksum;
+use Kumwe\Extension\Package\PackageSignature;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

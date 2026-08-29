@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Architecture;
 
-use Kumwe\App\Application\Authorization\ExecutionContext;
-use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionCommand;
-use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionHandler;
-use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionResult;
-use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewHandler;
-use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewQuery;
-use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewResult;
+use Kumwe\Extension\Spi\Application\ExecutionContext;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionCommand;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionHandler;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionResult;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewHandler;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewQuery;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewResult;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;

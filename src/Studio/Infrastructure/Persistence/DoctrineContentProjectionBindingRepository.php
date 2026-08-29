@@ -13,9 +13,9 @@ use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Studio\Application\Projection\ContentProjectionBindingRepository;
 use Kumwe\App\Studio\Application\Composition\ContentBlueprintBindingStore;
 use Kumwe\App\Studio\Application\Host\StudioPersistenceRace;
-use Kumwe\App\Studio\Domain\Contract\CanonicalJsonRejected;
 use Kumwe\App\Studio\Domain\Projection\ContentBlueprintBinding;
 use Kumwe\App\Studio\Domain\Projection\EntryCompositionOverrides;
+use Kumwe\Producer\Canonical\CanonicalEncodingException;
 use RuntimeException;
 use stdClass;
 
@@ -162,7 +162,7 @@ final readonly class DoctrineContentProjectionBindingRepository implements
                 $values,
                 self::integer($row, 'override_revision'),
             );
-        } catch (CanonicalJsonRejected | InvalidArgumentException $exception) {
+        } catch (CanonicalEncodingException | InvalidArgumentException $exception) {
             throw new RuntimeException('Stored Studio entry override metadata is invalid.', 0, $exception);
         }
     }

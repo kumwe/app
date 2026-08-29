@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Application\Presentation;
 
 use InvalidArgumentException;
-use Kumwe\App\Extension\Domain\TemplateKisCompatibility;
+use Kumwe\Extension\Manifest\TemplateKisCompatibility;
 use Kumwe\App\Extension\Domain\ThemeSurface;
 
 /**

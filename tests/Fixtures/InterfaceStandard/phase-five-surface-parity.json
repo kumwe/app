@@ -138,8 +138,8 @@
     {
       "path": "examples/extensions/announcements/src/Provider.php",
       "surface_ids": ["kumwe.announcements-example.index"],
-      "must_contain": ["InterfaceSurfaceRegistrar", "$contributions->interfaceSurface(", "ContributionOwner::extension('kumwe/announcements-example')", "new AdministratorNavigationDefinition("],
-      "must_not_contain": []
+      "must_contain": ["ExtensionBindingProvider", "$bindings->fieldPresenter(", "$bindings->administratorRoute("],
+      "must_not_contain": ["function contribute(", "Kumwe\\App\\"]
     },
     {
       "path": "examples/extensions/asset-inspection/templates/views/administrator/index.twig",

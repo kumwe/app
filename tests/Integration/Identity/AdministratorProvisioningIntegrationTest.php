@@ -11,7 +11,7 @@ use Kumwe\App\Delivery\Console\Command\CreateAdministratorCommand;
 use Kumwe\App\Delivery\Console\Command\MigrateCommand;
 use Kumwe\App\Delivery\Console\Output;
 use Kumwe\App\Identity\Application\Administration\AdministratorIdentityGateway;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use Kumwe\App\Identity\Infrastructure\Administration\DoctrineAdministratorIdentityGateway;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Kernel\ContainerFactory;

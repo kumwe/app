@@ -8,21 +8,23 @@ use InvalidArgumentException;
 use Kumwe\App\Application\Authorization\SiteContext;
 use Kumwe\App\Content\Application\ContentModelRepository;
 use Kumwe\App\Content\Domain\ContentTypeDefinition;
-use Kumwe\App\Extension\Contribution\CanonicalCompositionDocument;
-use Kumwe\App\Extension\Contribution\CanonicalCompositionKind;
-use Kumwe\App\Extension\Contribution\CompositionHostBinding;
-use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\Extension\Spi\Contribution\CanonicalCompositionDocument;
+use Kumwe\Extension\Spi\Contribution\CanonicalCompositionKind;
+use Kumwe\Extension\Spi\Contribution\CompositionHostBinding;
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\Studio\Application\Host\StudioArtifactAdmission;
 use Kumwe\App\Studio\Application\Host\StudioArtifactPublicationGuard;
-use Kumwe\App\Studio\Application\Host\StudioHostOperationRefused;
-use Kumwe\App\Studio\Application\Preview\StudioPreviewBlockReference;
-use Kumwe\App\Studio\Application\Preview\StudioPreviewBlockRendererRegistry;
+use Kumwe\App\Studio\Application\Host\StudioProducerError;
 use Kumwe\App\Studio\Application\Preview\StudioPublishedBlockRendererUnavailable;
 use Kumwe\App\Studio\Application\Projection\ContentStudioProjector;
-use Kumwe\App\Studio\Domain\Contract\SchemaProfileRejected;
-use Kumwe\App\Studio\Domain\Contract\SchemaPropertyProfile;
-use Kumwe\App\Studio\Domain\Contract\SchemaPropertyValidator;
+use Kumwe\App\Studio\Application\Rendering\StudioBlockRendererRuntime;
+use Kumwe\Producer\Error\HostRefusal;
+use Kumwe\Producer\Render\BlockCoordinate;
+use Kumwe\Producer\Render\BlockRendererRegistry;
+use Kumwe\Producer\Schema\SchemaAdmissionException;
+use Kumwe\Producer\Schema\SchemaPropertyProfile;
+use Kumwe\Producer\Schema\SchemaPropertyValidator;
 use stdClass;
 
 /**
@@ -42,7 +44,7 @@ final readonly class StudioPublishedCompositionGuard implements StudioArtifactPu
      * @param  StudioArtifactAdmission             $admission   Pinned schema and active-content admission.
      * @param  ContentModelRepository              $models      Exact published Content definition store.
      * @param  StudioPublishedTheme                $theme       Live exact public theme authority.
-     * @param  StudioPreviewBlockRendererRegistry  $blocks      Live exact core and signed renderer registry.
+     * @param  StudioBlockRendererRuntime          $blocks      Fresh live canonical Producer registry authority.
      * @param  ExtensionContributionRegistrySet    $registries  Live owner-bound canonical block definitions.
      *
      * @since  2.0.0
@@ -51,7 +53,7 @@ final readonly class StudioPublishedCompositionGuard implements StudioArtifactPu
         private StudioArtifactAdmission $admission,
         private ContentModelRepository $models,
         private StudioPublishedTheme $theme,
-        private StudioPreviewBlockRendererRegistry $blocks,
+        private StudioBlockRendererRuntime $blocks,
         private ExtensionContributionRegistrySet $registries,
     ) {
     }
@@ -64,7 +66,7 @@ final readonly class StudioPublishedCompositionGuard implements StudioArtifactPu
      *
      * @return  void
      *
-     * @throws  StudioHostOperationRefused  When the exact public runtime cannot reproduce the Blueprint.
+     * @throws  HostRefusal  When the exact public runtime cannot reproduce the Blueprint.
      *
      * @since   2.0.0
      */
@@ -73,13 +75,13 @@ final readonly class StudioPublishedCompositionGuard implements StudioArtifactPu
         try {
             $this->assertCompatible($site, $blueprint);
         } catch (StudioPublishedBlueprintMismatch) {
-            throw new StudioHostOperationRefused('conflict', 'studio.artifact/blueprint-incompatible');
+            StudioProducerError::refuse('conflict', 'studio.artifact/blueprint-incompatible');
         } catch (StudioPublishedModelMismatch) {
-            throw new StudioHostOperationRefused('conflict', 'studio.artifact/model-lock-mismatch');
+            StudioProducerError::refuse('conflict', 'studio.artifact/model-lock-mismatch');
         } catch (StudioCompositionThemeMismatch) {
-            throw new StudioHostOperationRefused('conflict', 'studio.artifact/theme-lock-mismatch');
+            StudioProducerError::refuse('conflict', 'studio.artifact/theme-lock-mismatch');
         } catch (StudioPublishedBlockRendererUnavailable) {
-            throw new StudioHostOperationRefused('conflict', 'studio.artifact/block-renderer-unavailable');
+            StudioProducerError::refuse('conflict', 'studio.artifact/block-renderer-unavailable');
         }
     }
 
@@ -102,7 +104,7 @@ final readonly class StudioPublishedCompositionGuard implements StudioArtifactPu
     {
         try {
             $admitted = $this->admission->admit($site->identifier(), $blueprint);
-        } catch (StudioHostOperationRefused | InvalidArgumentException) {
+        } catch (HostRefusal | InvalidArgumentException) {
             throw new StudioPublishedBlueprintMismatch();
         }
         if ($admitted->kind !== 'blueprint' || !self::appOwned($blueprint)) {
@@ -144,7 +146,12 @@ final readonly class StudioPublishedCompositionGuard implements StudioArtifactPu
             throw new StudioCompositionThemeMismatch();
         }
         $definitions = $this->liveDefinitions();
-        $locks = $this->liveLocks($dependencyLock, $definitions);
+        try {
+            $runtime = $this->blocks->registry();
+        } catch (\Throwable) {
+            throw new StudioPublishedBlockRendererUnavailable('unavailable', 'unknown', null);
+        }
+        $locks = $this->liveLocks($dependencyLock, $definitions, $runtime);
         $roots = $blueprint->roots ?? null;
         if (!is_array($roots)) {
             throw new StudioPublishedBlueprintMismatch();
@@ -186,14 +193,17 @@ final readonly class StudioPublishedCompositionGuard implements StudioArtifactPu
      * @param   array<string, array{document: stdClass, integrity: string}>  $definitions     Live exact block
      *          definitions and their canonical digests.
      *
-     * @return  array<string, StudioPreviewBlockReference>  Exact type/version lock map.
+     * @return  array<string, BlockCoordinate>  Exact type/version lock map.
      *
      * @throws  StudioPublishedBlockRendererUnavailable  When a lock is duplicate or unavailable.
      *
      * @since   2.0.0
      */
-    private function liveLocks(mixed $dependencyLock, array $definitions): array
-    {
+    private function liveLocks(
+        mixed $dependencyLock,
+        array $definitions,
+        BlockRendererRegistry $runtime,
+    ): array {
         $blocks = $dependencyLock instanceof stdClass ? $dependencyLock->blocks ?? null : null;
         if (!is_array($blocks)) {
             throw new StudioPublishedBlueprintMismatch();
@@ -208,24 +218,28 @@ final readonly class StudioPublishedCompositionGuard implements StudioArtifactPu
             ) {
                 throw new StudioPublishedBlueprintMismatch();
             }
-            $reference = new StudioPreviewBlockReference($block->type, $block->version, $block->revision);
-            $key = $reference->type . "\0" . $reference->version;
+            try {
+                $coordinate = new BlockCoordinate($block->type, $block->version, $block->revision);
+            } catch (InvalidArgumentException) {
+                throw new StudioPublishedBlueprintMismatch();
+            }
+            $key = $coordinate->versionKey();
             $definition = $definitions[$key] ?? null;
             $lockedIntegrity = $block->integrity ?? null;
             if (
                 isset($locks[$key])
                 || $definition === null
-                || ($definition['document']->revision ?? null) !== $reference->revision
+                || ($definition['document']->revision ?? null) !== $coordinate->revision
                 || ($lockedIntegrity !== null && $lockedIntegrity !== $definition['integrity'])
-                || !$this->blocks->supports($reference)
+                || !$runtime->supports($coordinate)
             ) {
                 throw new StudioPublishedBlockRendererUnavailable(
-                    $reference->type,
-                    $reference->version,
-                    $reference->revision,
+                    $coordinate->type,
+                    $coordinate->version,
+                    $coordinate->revision,
                 );
             }
-            $locks[$key] = $reference;
+            $locks[$key] = $coordinate;
         }
 
         return $locks;
@@ -235,7 +249,7 @@ final readonly class StudioPublishedCompositionGuard implements StudioArtifactPu
      * Prove one node and every descendant resolve through their exact immutable lock.
      *
      * @param   mixed                                                        $candidate    Candidate Blueprint node.
-     * @param   array<string, StudioPreviewBlockReference>                   $locks        Exact live lock map.
+     * @param   array<string, BlockCoordinate>                               $locks        Exact live lock map.
      * @param   array<string, array{document: stdClass, integrity: string}>  $definitions  Live exact definitions.
      * @param   array<string, true>                                          $fieldPaths   Exact projected Content
      *          field paths.
@@ -281,20 +295,24 @@ final readonly class StudioPublishedCompositionGuard implements StudioArtifactPu
         }
         $identifiers[$identifier] = true;
         $key = $type . "\0" . $version;
-        $reference = $locks[$key] ?? null;
+        $coordinate = $locks[$key] ?? null;
         $definition = $definitions[$key]['document'] ?? null;
-        if (!$reference instanceof StudioPreviewBlockReference || !$reference->matchesNode($candidate)) {
+        if (
+            !$coordinate instanceof BlockCoordinate
+            || $coordinate->type !== $type
+            || $coordinate->version !== $version
+        ) {
             throw new StudioPublishedBlockRendererUnavailable(
                 $type,
                 $version,
-                $reference?->revision,
+                $coordinate?->revision,
             );
         }
-        if (!$definition instanceof stdClass || ($definition->revision ?? null) !== $reference->revision) {
+        if (!$definition instanceof stdClass || ($definition->revision ?? null) !== $coordinate->revision) {
             throw new StudioPublishedBlockRendererUnavailable(
                 $type,
                 $version,
-                $reference->revision,
+                $coordinate->revision,
             );
         }
 
@@ -372,10 +390,9 @@ final readonly class StudioPublishedCompositionGuard implements StudioArtifactPu
             ) {
                 continue;
             }
-            $document = json_decode($canonical->canonical, false, 64, JSON_THROW_ON_ERROR);
+            $document = $canonical->document();
             if (
-                !$document instanceof stdClass
-                || !is_string($document->type ?? null)
+                !is_string($document->type ?? null)
                 || !is_string($document->version ?? null)
                 || !is_string($document->revision ?? null)
                 || !($document->propertySchema ?? null) instanceof stdClass
@@ -420,7 +437,7 @@ final readonly class StudioPublishedCompositionGuard implements StudioArtifactPu
     ): void {
         try {
             $validator = $validators[$key] ??= SchemaPropertyProfile::admit($definition->propertySchema);
-        } catch (SchemaProfileRejected) {
+        } catch (SchemaAdmissionException) {
             throw new StudioPublishedBlueprintMismatch();
         }
         if (!$validator->validate($properties)) {

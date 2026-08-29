@@ -16,13 +16,12 @@ use Kumwe\App\Application\Authorization\SiteGroupRegistry;
 use Kumwe\App\Application\Authorization\SiteGroupUnknown;
 use Kumwe\App\BusinessReporting\Application\ConsolidatedGroupReportScope;
 use Kumwe\App\Extension\Contribution\CapabilityDefinition;
-use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
-use Kumwe\App\Extension\Contribution\ManifestContributionSet;
 use Kumwe\App\Extension\Contribution\ResourcePolicyDefinition;
 use Kumwe\App\Application\Authorization\ResourcePolicyTarget;
 use Kumwe\App\Application\Authorization\StructuredLogAuthorizationDecisionRecorder;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use Kumwe\App\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
@@ -304,22 +303,19 @@ final class BusinessGroupOwnershipTest extends TestCase
     {
         $registries = new ExtensionContributionRegistrySet();
         $owner = ContributionOwner::extension('kumwe/payroll');
-        $registrar = $registries->registrar($owner, new ManifestContributionSet($owner), false);
         foreach ([self::READ => 'Read', self::WRITE => 'Change'] as $capability => $verb) {
-            $registrar->capability(new CapabilityDefinition(
+            $registries->capabilities()->register($owner, new CapabilityDefinition(
                 $capability,
                 $verb . ' payroll master data',
                 $verb . ' the people and books the payroll extension contributes.',
                 ['global', 'site', 'person', 'ledger'],
             ));
-            $registrar->resourcePolicy(new ResourcePolicyDefinition(
+            $registries->resourcePolicies()->register($owner, new ResourcePolicyDefinition(
                 $capability . '.master',
                 $capability,
                 [new ResourcePolicyTarget('person'), new ResourcePolicyTarget('ledger')],
             ));
         }
-        $registrar->complete();
-
         return $registries->authorizationPolicies();
     }
 

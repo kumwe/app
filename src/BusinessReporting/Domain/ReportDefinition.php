@@ -7,8 +7,10 @@ namespace Kumwe\App\BusinessReporting\Domain;
 use InvalidArgumentException;
 use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\App\BusinessDefinition\Domain\Expression;
-use Kumwe\App\Extension\Contribution\ContributionDefinition;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\BusinessReporting\Domain\ReportDefinitionGuard;
+use Kumwe\Extension\Spi\BusinessReporting\Domain\ReportValueType;
+use Kumwe\Extension\Spi\Contribution\ContributionDefinition;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 
 /**
  * Immutable, bounded and manifest-comparable business report definition.

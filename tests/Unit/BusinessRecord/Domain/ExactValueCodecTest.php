@@ -16,7 +16,7 @@ use Kumwe\App\BusinessRecord\Domain\EncryptedEnvelope;
 use Kumwe\Conversion\Decimal\ExactDecimal;
 use Kumwe\Conversion\Value\MoneyValue;
 use Kumwe\Conversion\Value\QuantityValue;
-use Kumwe\App\BusinessRecord\Domain\ZonedDateTimeValue;
+use Kumwe\Extension\Spi\BusinessRecord\Value\ZonedDateTimeValue;
 use Kumwe\App\BusinessRecord\Infrastructure\Security\SodiumSecretCipher;
 use Kumwe\App\BusinessSchema\Domain\PhysicalColumnBlueprint;
 use Kumwe\App\BusinessSchema\Domain\PhysicalTableBlueprint;
@@ -26,7 +26,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
-#[CoversClass(ZonedDateTimeValue::class)]
 #[CoversClass(EncryptedEnvelope::class)]
 #[CoversClass(PlannedFieldEncoding::class)]
 #[CoversClass(RecordColumnEncodingPlan::class)]

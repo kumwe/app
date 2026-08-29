@@ -4,27 +4,29 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Extension\Contribution;
 
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Extension\Spi\Contribution\ContributionDefinition;
 use ArrayObject;
 use Kumwe\App\Administrator\Navigation\AdministratorNavigationRegistry;
 use Kumwe\App\Application\Authorization\AuthorizationPolicyRegistry;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionContributionRegistry;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionValidator;
 use Kumwe\App\BusinessDefinition\Application\FieldTypeRegistry;
-use Kumwe\App\Application\Automation\JobHandler;
-use Kumwe\App\BusinessIntegration\Application\DomainEventHandler;
+use Kumwe\Extension\Spi\Application\Automation\JobHandler;
+use Kumwe\Extension\Spi\BusinessIntegration\Application\DomainEventHandler;
 use Kumwe\App\BusinessIntegration\Application\EventContractRegistry;
-use Kumwe\App\BusinessIntegration\Application\IntegrationEventHandler;
-use Kumwe\App\BusinessIntegration\Application\IntegrationEventTransport;
+use Kumwe\Extension\Spi\BusinessIntegration\Application\IntegrationEventHandler;
+use Kumwe\Extension\Spi\BusinessIntegration\Application\IntegrationEventTransport;
 use Kumwe\App\BusinessIntegration\Application\PayloadSchemaValidator;
-use Kumwe\App\BusinessIntegration\Domain\DomainListenerDefinition;
-use Kumwe\App\BusinessIntegration\Domain\EventConsumerDefinition;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\DomainListenerDefinition;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventConsumerDefinition;
 use Kumwe\App\BusinessIntegration\Domain\EventSchemaDefinition;
-use Kumwe\App\BusinessIntegration\Domain\WebhookContributionDefinition;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\WebhookContributionDefinition;
 use Kumwe\Conversion\Provider\MoneyRateProvider;
 use Kumwe\Conversion\Provider\UnitConversionProvider;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionHandlerRegistry;
-use Kumwe\App\BusinessReporting\Application\ProjectionBuilder;
-use Kumwe\App\BusinessReporting\Domain\ProjectionDefinition;
+use Kumwe\Extension\Spi\BusinessReporting\Application\ProjectionBuilder;
+use Kumwe\Extension\Spi\BusinessReporting\Domain\ProjectionDefinition;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessReferenceRegistry;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewHandlerRegistry;
 use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationRegistry;
@@ -33,7 +35,8 @@ use Kumwe\App\Portal\Contribution\PortalNavigationRegistry;
 use Kumwe\App\Portal\Contribution\PortalRouteRegistry;
 use Kumwe\App\Portal\Contribution\PortalTemplateRegistry;
 use Kumwe\App\Portal\Contribution\PortalWorkspaceRegistry;
-use Kumwe\App\Studio\Application\Preview\StudioPreviewBlockRenderer;
+use Kumwe\Extension\Manifest\ManifestContributions;
+use Kumwe\Producer\Render\BlockRenderer;
 
 /**
  * The one place every contribution registry in a process is created, wired together, and reached.
@@ -477,7 +480,7 @@ final readonly class ExtensionContributionRegistrySet
         $this->compositionHostBindings = new OwnedRuntimeContributionRegistry('composition_host_binding');
         $this->studioPreviewRenderers = new OwnedRuntimeContributionRegistry(
             'studio preview renderer',
-            StudioPreviewBlockRenderer::class,
+            BlockRenderer::class,
         );
         $this->surfaces = [
             'capabilities' => $this->capabilities,
@@ -524,57 +527,44 @@ final readonly class ExtensionContributionRegistrySet
             'composition.host_bindings' => $this->compositionHostBindings,
         ];
         if ($withCore) {
-            $registrar = $this->registrar(
-                ContributionOwner::core(),
-                new ManifestContributionSet(ContributionOwner::core()),
-                false,
-            );
-            CoreExtensionContributions::register($registrar);
-            $registrar->complete();
+            CoreExtensionContributions::register(new CoreContributionRegistrar($this));
         }
     }
 
     /**
-     * Open a contribution phase for one owner and hand back the only handle it gets on these registries.
+     * Activate one SDK-owned manifest graph and open only its executable binding phase.
      *
-     * The declaration set must belong to the owner being served, which is what stops one package's
-     * manifest being used to authorise another package's registrations. Each call opens an independent
-     * phase, so a second registrar for the same owner starts with an empty seen-set and its
-     * registrations collide inside the underlying registries rather than being reported here.
+     * Provider code never receives a declaration registrar. The canonical graph is installed directly,
+     * then the returned SDK registrar permits behavior to attach only to its exact executable inventory.
      *
-     * @param   ContributionOwner        $owner     Contributor the returned registrar is permanently bound to.
-     * @param   ManifestContributionSet  $declared  That owner's manifest declarations to reconcile against.
-     * @param   bool                     $strict    False accepts undeclared and skips omitted contributions,
-     *          as core and schema-1 packages require.
+     * @param ManifestContributions $manifest Canonical signed declaration graph.
+     * @param ?TrustStore $trust Live trust boundary for preview bindings.
+     * @param   ?\Kumwe\App\Extension\Application\ExtensionExecutionGate  $execution       Runtime generation fence.
+     * @param   ?string                                                   $runtimeVersion  Exact signed package version.
+     * @param array<string, mixed>|null $runtimeEntry Exact signed runtime-map entry.
      *
-     * @return  OwnedExtensionContributionRegistrar  A registrar valid until its `complete()` closes the phase.
-     *
-     * @throws  \InvalidArgumentException  When the declarations belong to a different owner.
+     * @return  OwnedExtensionBindingRegistrar  Owner-bound executable sink.
      *
      * @since   2.0.0
      */
-    public function registrar(
-        ContributionOwner $owner,
-        ManifestContributionSet $declared,
-        bool $strict = true,
-    ): OwnedExtensionContributionRegistrar {
-        if ($declared->owner->identifier() !== $owner->identifier()) {
-            throw new \InvalidArgumentException('Contribution declarations do not belong to this provider.');
-        }
-        $this->claimOwnerNamespace($owner);
-        foreach ($declared->compositionHostBindings() as $binding) {
-            $active = $this->compositionHostBindings->definition($owner, $binding->identifier());
-            if ($active === null) {
-                $this->compositionHostBindings->register($owner, $binding);
-                continue;
-            }
-            if ($active->toArray() !== $binding->toArray()) {
-                throw new \InvalidArgumentException(
-                    'An active composition host binding changed without lifecycle removal.',
-                );
-            }
-        }
-        return new OwnedExtensionContributionRegistrar($owner, $declared, $this, $strict);
+    public function activateManifest(
+        ManifestContributions $manifest,
+        ?TrustStore $trust = null,
+        ?\Kumwe\App\Extension\Application\ExtensionExecutionGate $execution = null,
+        ?string $runtimeVersion = null,
+        ?array $runtimeEntry = null,
+    ): OwnedExtensionBindingRegistrar {
+        $this->claimOwnerNamespace($manifest->owner);
+        (new CanonicalManifestActivator($this))->activate($manifest);
+
+        return new OwnedExtensionBindingRegistrar(
+            $manifest,
+            $this,
+            $trust,
+            $execution,
+            $runtimeVersion,
+            $runtimeEntry,
+        );
     }
 
     /**

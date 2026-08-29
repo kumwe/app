@@ -66,7 +66,7 @@ rm .admin-password
 
 `demo:install` provisions the VDM demonstration cast — five staff accounts and six portal client
 organizations with nine members — and installs the shipped example extensions (`announcements`,
-`asset-inspection`, `audit-listener`, and the `horizon-theme` site theme, which installs as
+`asset-inspection`, and the `horizon-theme` site theme, which installs as
 selectable and is never activated for you). Each new account receives a generated password written
 exactly twice: to the command output and to the owner-only credentials file, which lands on the host
 at `storage/private/demo-access-credentials.json`.

@@ -20,7 +20,7 @@ use Kumwe\App\BusinessSecurity\Application\MembershipDirectory;
 use Kumwe\App\BusinessSurface\Application\BusinessApprovalExposureCatalog;
 use Kumwe\App\BusinessSurface\Application\BusinessApprovalSurfaceService;
 use Kumwe\App\BusinessSurface\Application\BusinessSurface;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use Kumwe\App\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;

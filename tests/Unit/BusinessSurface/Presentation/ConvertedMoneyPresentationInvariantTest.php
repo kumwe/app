@@ -16,13 +16,13 @@ use Kumwe\Conversion\Contract\MoneyConverter;
 use Kumwe\Conversion\Value\MoneyExchangeRate;
 use Kumwe\Conversion\Value\MoneyRoundingMode;
 use Kumwe\Conversion\Value\MoneyValue;
-use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentation;
-use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationContext;
-use Kumwe\App\BusinessSurface\Presentation\Field\FieldWidget;
+use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationModel;
+use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationContext;
+use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldWidget;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
-#[CoversClass(FieldPresentation::class)]
+#[CoversClass(FieldPresentationModel::class)]
 #[CoversClass(ClientAssertedInstant::class)]
 /**
  * Pins the refusals that keep a converted figure and its evidence from coming apart in a presentation.
@@ -245,7 +245,7 @@ final class ConvertedMoneyPresentationInvariantTest extends TestCase
      * @param   bool                   $editable    Whether an editor is offered.
      * @param   ?array<string, mixed>  $provenance  Conversion evidence, or null.
      *
-     * @return  FieldPresentation  The constructed model.
+     * @return  FieldPresentationModel  The constructed model.
      *
      * @since   2.0.0
      */
@@ -255,8 +255,8 @@ final class ConvertedMoneyPresentationInvariantTest extends TestCase
         mixed $inputValue,
         bool $editable,
         ?array $provenance,
-    ): FieldPresentation {
-        return new FieldPresentation(
+    ): FieldPresentationModel {
+        return new FieldPresentationModel(
             'total',
             'Total',
             FieldPresentationContext::Detail,

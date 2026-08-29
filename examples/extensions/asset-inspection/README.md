@@ -33,28 +33,15 @@ non-filterable, non-sortable, non-reportable, and non-exportable. It is also con
 `raw_score >= 70`. Once the operator applies the signed field rules, core business-record policy omits its value
 from disclosed reads and refuses it as a query/report/export input.
 
-The manifest also signs `policies/inspection-viewer.json`. `InspectionPolicyProfile` parses it into Kumwe's real
-`RecordPolicySet` and `FieldDisclosurePlan`: only rows whose stored `risk_score >= 70` pass, and every field
-usage has an explicit allowlist that excludes `internal_note`. The administrator and portal proof pages execute
-that same typed policy over illustrative rows, in addition to filtering by `ExecutionContext::site()`.
+The manifest also signs `policies/inspection-viewer.json` as deployment evidence. The provider never parses or
+applies it: business-record row and field policy is operator-owned host authority, not an author SPI. Deployment
+acceptance validates the signed asset and applies it through the normal step-up protected business-security
+administration surface. The extension receives only the already constrained `BusinessRecordReader` port and
+cannot grant itself a core capability, widen a query, select a policy profile, or insert policy rows.
 
-Business-record row/field policies are operator-owned authority, not an extension contribution. A provider
-cannot grant itself `business.record.*` access or insert policy rows. After activation, deployment acceptance
-uses `InspectionPolicyProfile::administrationRequests()` as closed input to the normal step-up protected
-`BusinessSecurityAdministrationService::createResourcePolicy()` path for browse, read, report, and export.
-This preserves the separation between signed component intent and the site's decision to grant access.
-
-The request keys intentionally match that service's parameter names, so a deployment harness with a valid
-single-use step-up context can apply them without translating policy data:
-
-```php
-foreach (InspectionPolicyProfile::fromPackage()->administrationRequests() as $arguments) {
-    $security->createResourcePolicy($securityAdministratorContext, ...$arguments);
-}
-```
-
-Core rejects an allow policy that could affect the calling actor. Use a separately scoped security operator,
-and never weaken that self-escalation guard for this example.
+Core rejects an allow policy that could affect the calling actor. A separately scoped security operator must
+review and apply the profile (or a stricter site-owned replacement); the self-escalation guard is never weakened
+for this example.
 
 Granting either contributed capability grants nobody a core business-record operation. Operators still assign
 the appropriate core capabilities and apply the signed profile (or a stricter site-owned replacement) through
@@ -111,7 +98,7 @@ outbox/inbox evidence, job history, audit records, and export artifacts remain i
 the exact signed generation. Uninstall only after taking and restoring the normal installation backup in the
 deployment matrix.
 
-## Compatibility rules
+## Versioning rules
 
 The consumer accepts only `core.business_record.mutated@1`; a future version must be added explicitly alongside
 version-specific handler behavior. Keep the consumer identifier stable to preserve inbox idempotency and advance

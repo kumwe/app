@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\BusinessSurface\Application;
 
 use InvalidArgumentException;
-use Kumwe\App\BusinessRecord\Query\BooleanFilter;
-use Kumwe\App\BusinessRecord\Query\ComparisonFilter;
-use Kumwe\App\BusinessRecord\Query\RelationFilter;
+use Kumwe\Extension\Spi\BusinessRecord\Query\BooleanFilter;
+use Kumwe\Extension\Spi\BusinessRecord\Query\ComparisonFilter;
+use Kumwe\Extension\Spi\BusinessRecord\Query\RelationFilter;
 use Kumwe\App\BusinessSurface\Application\BusinessRecordQueryFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;

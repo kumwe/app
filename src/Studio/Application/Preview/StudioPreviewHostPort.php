@@ -9,10 +9,14 @@ use InvalidArgumentException;
 use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Studio\Application\Composition\StudioCompositionThemeMismatch;
 use Kumwe\App\Studio\Application\Host\StudioHostSessionSnapshot;
-use Kumwe\App\Studio\Domain\Host\StudioHostRequest;
+use Kumwe\App\Studio\Application\Host\StudioProducerError;
+use Kumwe\App\Studio\Application\Host\StudioProducerRequestAuthority;
 use Kumwe\App\Studio\Domain\Preview\StudioPreviewGrant;
 use Kumwe\App\Studio\Domain\Preview\StudioPreviewRenderRequest;
 use Kumwe\App\Studio\Domain\Preview\StudioPreviewTransport;
+use Kumwe\Producer\Wire\HostResult;
+use Kumwe\Producer\Wire\Port\PreviewPortInterface;
+use Kumwe\Producer\Wire\RequestContext;
 use Psr\Clock\ClockInterface;
 use stdClass;
 use Throwable;
@@ -22,7 +26,7 @@ use Throwable;
  *
  * @since  2.0.0
  */
-final readonly class StudioPreviewHostPort implements StudioPreviewDocumentClaimer
+final readonly class StudioPreviewHostPort implements PreviewPortInterface, StudioPreviewDocumentClaimer
 {
     /**
      * Maximum lifetime of an unpublished rendered document grant.
@@ -42,6 +46,7 @@ final readonly class StudioPreviewHostPort implements StudioPreviewDocumentClaim
      * @param  StudioPreviewTransportGuard    $guard     Origin/channel/source/sequence fence.
      * @param  StudioPreviewActivityRecorder  $activity  Bounded ephemeral security activity trail.
      * @param  ClockInterface                 $clock     Trusted expiry clock.
+     * @param  StudioProducerRequestAuthority|null $authority Authorized Producer request scope, when bound.
      *
      * @since  2.0.0
      */
@@ -53,56 +58,86 @@ final readonly class StudioPreviewHostPort implements StudioPreviewDocumentClaim
         private StudioPreviewTransportGuard $guard,
         private StudioPreviewActivityRecorder $activity,
         private ClockInterface $clock,
+        private ?StudioProducerRequestAuthority $authority = null,
     ) {
     }
 
     /**
-     * Dispatch one preview operation after the common host-session fence.
+     * Bind this App-owned port implementation to one successfully authorized Producer request.
      *
-     * @param   ExecutionContext           $context    Authenticated App request authority.
-     * @param   string                     $operation  Operation route segment.
-     * @param   StudioHostRequest          $request    Canonical host request.
-     * @param   StudioHostSessionSnapshot  $snapshot   Live trusted host authority.
-     * @param   StudioPreviewTransport     $transport  Browser transport evidence outside the payload.
+     * @param   StudioProducerRequestAuthority  $authority  Trusted evidence for one exact dispatch.
      *
-     * @return  mixed  Exact rendered payload or null for cancellation.
-     *
-     * @throws  StudioPreviewRefused  When shape, authority, identity, replay or rendering is refused.
+     * @return  self  Request-scoped preview port.
      *
      * @since   2.0.0
      */
-    public function dispatch(
-        ExecutionContext $context,
-        string $operation,
-        StudioHostRequest $request,
-        StudioHostSessionSnapshot $snapshot,
-        StudioPreviewTransport $transport,
-    ): mixed {
-        $action = match ($operation) {
-            'cancel', 'render' => $operation,
-            default => throw new StudioPreviewRefused('incompatible', 'studio.host/operation-unavailable'),
-        };
-        try {
-            $this->guard->authorize($snapshot, $transport, 'port');
-            $this->record($context, $snapshot, $action, 'accepted', 'studio.preview/transport-accepted');
-            $result = match ($operation) {
-                'render' => $this->render($context, $request, $snapshot, $transport),
-                'cancel' => $this->cancel($request, $snapshot, $transport),
-            };
-            $this->record($context, $snapshot, $action, 'completed', 'studio.preview/' . $action . '-completed');
+    public function forRequest(StudioProducerRequestAuthority $authority): self
+    {
+        return new self(
+            $this->drafts,
+            $this->bindings,
+            $this->renderer,
+            $this->grants,
+            $this->guard,
+            $this->activity,
+            $this->clock,
+            $authority,
+        );
+    }
 
-            return $result;
-        } catch (StudioPreviewRefused $refused) {
-            $this->record($context, $snapshot, $action, 'refused', $refused->diagnosticCode);
-            throw $refused;
-        }
+    /**
+     * Render one exact unpublished draft through the authenticated browser-preview channel.
+     *
+     * @param   mixed           $arguments  Validated Producer operation arguments.
+     * @param   RequestContext  $context    Validated Producer request context.
+     *
+     * @return  HostResult  Exact rendered payload.
+     *
+     * @since   2.0.0
+     */
+    public function render(mixed $arguments, RequestContext $context): HostResult
+    {
+        self::assertReadContext($context);
+
+        return $this->invoke(
+            'render',
+            fn (
+                ExecutionContext $execution,
+                StudioHostSessionSnapshot $snapshot,
+                StudioPreviewTransport $transport,
+            ): stdClass => $this->renderValue($execution, $arguments, $snapshot, $transport),
+        );
+    }
+
+    /**
+     * Cancel one matching unpublished render attempt through the authenticated preview channel.
+     *
+     * @param   mixed           $arguments  Validated Producer operation arguments.
+     * @param   RequestContext  $context    Validated Producer request context.
+     *
+     * @return  HostResult  Canonical empty cancellation acknowledgement.
+     *
+     * @since   2.0.0
+     */
+    public function cancel(mixed $arguments, RequestContext $context): HostResult
+    {
+        self::assertReadContext($context);
+
+        return $this->invoke(
+            'cancel',
+            fn (
+                ExecutionContext $execution,
+                StudioHostSessionSnapshot $snapshot,
+                StudioPreviewTransport $transport,
+            ): null => $this->cancelValue($arguments, $snapshot, $transport),
+        );
     }
 
     /**
      * Claim and render one exact unpublished draft, discarding late results after cancellation.
      *
      * @param   ExecutionContext           $context      Authenticated App request authority.
-     * @param   StudioHostRequest          $hostRequest  Canonical host request carrying exact `{payload}`.
+     * @param   mixed                      $arguments    Canonical operation arguments carrying exact `{payload}`.
      * @param   StudioHostSessionSnapshot  $snapshot     Live trusted host authority.
      * @param   StudioPreviewTransport     $transport    Accepted browser transport evidence.
      *
@@ -112,13 +147,13 @@ final readonly class StudioPreviewHostPort implements StudioPreviewDocumentClaim
      *
      * @since   2.0.0
      */
-    private function render(
+    private function renderValue(
         ExecutionContext $context,
-        StudioHostRequest $hostRequest,
+        mixed $arguments,
         StudioHostSessionSnapshot $snapshot,
         StudioPreviewTransport $transport,
     ): stdClass {
-        $arguments = self::exactArguments($hostRequest->arguments, ['payload']);
+        $arguments = self::exactArguments($arguments, ['payload']);
         try {
             $request = StudioPreviewRenderRequest::fromPayload($arguments->payload);
         } catch (InvalidArgumentException) {
@@ -174,7 +209,7 @@ final readonly class StudioPreviewHostPort implements StudioPreviewDocumentClaim
     /**
      * Cancel only the matching digest inside this trusted resource context.
      *
-     * @param   StudioHostRequest          $request    Canonical host request carrying exact `{draftDigest}`.
+     * @param   mixed                      $arguments  Canonical arguments carrying exact `{draftDigest}`.
      * @param   StudioHostSessionSnapshot  $snapshot   Live trusted host authority.
      * @param   StudioPreviewTransport     $transport  Accepted cancellation transport evidence.
      *
@@ -184,12 +219,12 @@ final readonly class StudioPreviewHostPort implements StudioPreviewDocumentClaim
      *
      * @since   2.0.0
      */
-    private function cancel(
-        StudioHostRequest $request,
+    private function cancelValue(
+        mixed $arguments,
         StudioHostSessionSnapshot $snapshot,
         StudioPreviewTransport $transport,
     ): null {
-        $arguments = self::exactArguments($request->arguments, ['draftDigest']);
+        $arguments = self::exactArguments($arguments, ['draftDigest']);
         if (!is_string($arguments->draftDigest) || preg_match('/^[a-f0-9]{64}$/D', $arguments->draftDigest) !== 1) {
             throw new StudioPreviewRefused('invalid-request', 'studio.preview/invalid-cancel-payload');
         }
@@ -200,6 +235,71 @@ final readonly class StudioPreviewHostPort implements StudioPreviewDocumentClaim
         );
 
         return null;
+    }
+
+    /**
+     * Apply the preview transport fence, activity trail and canonical Producer refusal translation.
+     *
+     * @param   string                                                                      $action     Closed action.
+     * @param   callable(ExecutionContext, StudioHostSessionSnapshot, StudioPreviewTransport): mixed $operation
+     *          Preview operation body.
+     *
+     * @return  HostResult  Canonical rendered value or cancellation acknowledgement.
+     *
+     * @since   2.0.0
+     */
+    private function invoke(string $action, callable $operation): HostResult
+    {
+        $authority = $this->requestAuthority();
+        $context = $authority->context();
+        $snapshot = $authority->snapshot();
+        $transport = $authority->previewTransport();
+        if ($transport === null) {
+            StudioProducerError::refuse('invalid-request', 'studio.preview/invalid-transport');
+        }
+        try {
+            $this->guard->authorize($snapshot, $transport, 'port');
+            $this->record($context, $snapshot, $action, 'accepted', 'studio.preview/transport-accepted');
+            $value = $operation($context, $snapshot, $transport);
+            $this->record($context, $snapshot, $action, 'completed', 'studio.preview/' . $action . '-completed');
+
+            return new HostResult($value);
+        } catch (StudioPreviewRefused $refused) {
+            try {
+                $this->record($context, $snapshot, $action, 'refused', $refused->diagnosticCode);
+            } catch (StudioPreviewRefused $activityFailure) {
+                $refused = $activityFailure;
+            }
+            StudioProducerError::refuse($refused->category, $refused->diagnosticCode);
+        }
+    }
+
+    /**
+     * Refuse mutation-only context on Producer's read-only preview operations.
+     *
+     * @param   RequestContext  $context  Validated Producer request context.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    private static function assertReadContext(RequestContext $context): void
+    {
+        if ($context->expectedRevision !== null || $context->idempotencyKey !== null) {
+            StudioProducerError::refuse('invalid-request', 'studio.host/invalid-context');
+        }
+    }
+
+    /**
+     * Require the per-request authority installed by the Producer host factory.
+     *
+     * @return  StudioProducerRequestAuthority  Trusted evidence for this dispatch.
+     *
+     * @since   2.0.0
+     */
+    private function requestAuthority(): StudioProducerRequestAuthority
+    {
+        return $this->authority ?? throw new \LogicException('A Studio preview port requires request authority.');
     }
 
     /**
@@ -273,7 +373,7 @@ final readonly class StudioPreviewHostPort implements StudioPreviewDocumentClaim
     }
 
     /**
-     * Read the closed theme stylesheet of one live, already-claimed preview document.
+     * Read the exact combined stylesheet of one live, already-claimed preview document.
      *
      * @param   ExecutionContext           $context    Authenticated App request authority.
      * @param   StudioHostSessionSnapshot  $snapshot   Live trusted host authority.
@@ -286,7 +386,7 @@ final readonly class StudioPreviewHostPort implements StudioPreviewDocumentClaim
      *
      * @since   2.0.0
      */
-    public function themeStylesheet(
+    public function stylesheet(
         ExecutionContext $context,
         StudioHostSessionSnapshot $snapshot,
         string $requestId,
@@ -297,25 +397,25 @@ final readonly class StudioPreviewHostPort implements StudioPreviewDocumentClaim
             $this->record(
                 $context,
                 $snapshot,
-                'theme-stylesheet',
+                'stylesheet',
                 'accepted',
                 'studio.preview/transport-accepted',
             );
             $grant = $this->grants->claimed($snapshot, $requestId, $transport, $this->clock->now());
-            $stylesheet = $grant?->document->themeStylesheet;
+            $stylesheet = $grant?->document->stylesheet;
             $this->record(
                 $context,
                 $snapshot,
-                'theme-stylesheet',
+                'stylesheet',
                 $stylesheet === null ? 'refused' : 'completed',
                 $stylesheet === null
-                    ? 'studio.preview/theme-stylesheet-unavailable'
-                    : 'studio.preview/theme-stylesheet-completed',
+                    ? 'studio.preview/stylesheet-unavailable'
+                    : 'studio.preview/stylesheet-completed',
             );
 
             return $stylesheet;
         } catch (StudioPreviewRefused $refused) {
-            $this->record($context, $snapshot, 'theme-stylesheet', 'refused', $refused->diagnosticCode);
+            $this->record($context, $snapshot, 'stylesheet', 'refused', $refused->diagnosticCode);
             throw $refused;
         }
     }

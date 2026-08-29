@@ -6,7 +6,8 @@ namespace Kumwe\App\Studio\Domain\Preview;
 
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\App\Studio\Domain\Contract\CanonicalJson;
+use Kumwe\Producer\Canonical\CanonicalEncodingException;
+use Kumwe\Producer\Canonical\CanonicalJson;
 use RuntimeException;
 use stdClass;
 
@@ -32,7 +33,7 @@ final readonly class StudioPreviewDraft
      * @param   stdClass  $document        Schema-admitted Blueprint object.
      *
      * @throws  InvalidArgumentException  When required Blueprint identity members disagree.
-     * @throws  \Kumwe\App\Studio\Domain\Contract\CanonicalJsonRejected  When bytes are not canonical JSON.
+     * @throws  CanonicalEncodingException  When the document is not representable as canonical JSON.
      *
      * @since   2.0.0
      */

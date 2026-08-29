@@ -13,9 +13,9 @@ use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordReferenceConfli
 use Kumwe\App\BusinessRecord\Application\Query\BrowseRecordsQuery;
 use Kumwe\App\BusinessRecord\Application\Query\ReadRecordQuery;
 use Kumwe\App\BusinessRecord\Application\Query\RecordHistoryQuery;
-use Kumwe\App\BusinessRecord\Query\ComparisonFilter;
-use Kumwe\App\BusinessRecord\Query\ComparisonOperator;
-use Kumwe\App\BusinessRecord\Query\RecordQuerySpecification;
+use Kumwe\Extension\Spi\BusinessRecord\Query\ComparisonFilter;
+use Kumwe\Extension\Spi\BusinessRecord\Query\ComparisonOperator;
+use Kumwe\Extension\Spi\BusinessRecord\Query\RecordQuerySpecification;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaService;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\App\Tests\Support\NeutralBusinessFixture;

@@ -12,7 +12,7 @@ use Kumwe\App\Application\Presentation\Preference\PresentationAccessGroup;
 use Kumwe\App\Application\Presentation\Preference\PresentationAccessGroupCatalog;
 use Kumwe\App\Application\Presentation\Preference\PresentationPreferencePolicy;
 use Kumwe\App\Application\Presentation\Preference\RegisteredPresentationPreferencePolicy;
-use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\OwnedRuntimeContributionRegistry;
 use Kumwe\App\InterfaceStandard\CustomizationScope;
 use Kumwe\App\InterfaceStandard\CustomizationSlot;

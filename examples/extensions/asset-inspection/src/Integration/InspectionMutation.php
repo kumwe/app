@@ -5,8 +5,7 @@ declare(strict_types=1);
 namespace KumweExample\AssetInspection\Integration;
 
 use InvalidArgumentException;
-use Kumwe\App\BusinessIntegration\Domain\EventEnvelope;
-use KumweExample\AssetInspection\Definitions;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventEnvelope;
 
 /**
  * Validates the exact safe core mutation payload used by every example integration handler.
@@ -15,6 +14,14 @@ use KumweExample\AssetInspection\Definitions;
  */
 final class InspectionMutation
 {
+    /**
+     * Stable UUID of the inspection definition selected by this executable behavior.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    public const string DEFINITION_ID = '019bc200-0000-7000-8000-000000000003';
+
     /**
      * Validate a core record mutation and report whether it belongs to the example inspection definition.
      *
@@ -55,7 +62,7 @@ final class InspectionMutation
             }
         }
 
-        return $payload['definition_id'] === Definitions::INSPECTION_DEFINITION_ID;
+        return $payload['definition_id'] === self::DEFINITION_ID;
     }
 
     /**

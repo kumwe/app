@@ -15,12 +15,13 @@ use Doctrine\DBAL\Types\Types;
 use JsonException;
 use Kumwe\App\Application\Authorization\SiteContext;
 use Kumwe\App\BusinessSchema\Domain\PhysicalSchemaBlueprint;
+use Kumwe\App\Extension\Contribution\CanonicalManifestInterpreter;
 use Kumwe\App\Extension\Contribution\ContributionDefinitionChecksum;
-use Kumwe\App\Extension\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\CoreExtensionContributions;
-use Kumwe\App\Extension\Domain\ExtensionManifest;
 use Kumwe\App\Extension\Runtime\RuntimeCanonicalJson;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\Extension\Manifest\ExtensionManifest;
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
 
@@ -878,7 +879,8 @@ final readonly class BusinessSecurityPortalMigration implements Migration
             }
             $owner = ContributionOwner::extension($identifier);
 
-            foreach ($manifest->contributions()->capabilities() as $definition) {
+            $contributions = CanonicalManifestInterpreter::fromManifest($manifest);
+            foreach ($contributions->capabilities() as $definition) {
                 $recordedOwner = $database->fetchOne(sprintf(
                     'SELECT extension_id FROM %s WHERE capability_code = ?',
                     $this->tables->quoted('extension_contribution_capabilities'),
@@ -905,7 +907,7 @@ final readonly class BusinessSecurityPortalMigration implements Migration
                 ]);
             }
 
-            foreach ($manifest->contributions()->resourcePolicies() as $definition) {
+            foreach ($contributions->resourcePolicies() as $definition) {
                 $values = [
                     'capability_code' => $definition->capability,
                     'definition' => $definition->toArray(),

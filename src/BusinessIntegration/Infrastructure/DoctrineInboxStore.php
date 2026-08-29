@@ -21,8 +21,9 @@ use Kumwe\App\BusinessIntegration\Application\InboxClaimResult;
 use Kumwe\App\BusinessIntegration\Application\InboxDisposition;
 use Kumwe\App\BusinessIntegration\Application\InboxLease;
 use Kumwe\App\BusinessIntegration\Application\InboxStore;
-use Kumwe\App\BusinessIntegration\Domain\EventConsumerDefinition;
-use Kumwe\App\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\App\BusinessIntegration\Domain\RecordedEventEnvelope;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventConsumerDefinition;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationEvent;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
@@ -367,7 +368,7 @@ final readonly class DoctrineInboxStore implements InboxStore
                     . "AND status IN ('pending', 'poison', 'reserved', 'unavailable')",
                     $this->tables->quoted('integration_inbox'),
                 ), [
-                    $consumer->queue(), $consumer->handlerVersion(), $event->toArray(), $attempts,
+                    $consumer->queue(), $consumer->handlerVersion(), RecordedEventEnvelope::document($event), $attempts,
                     $consumer->maximumAttempts(),
                     $now, $worker, $token, $now,
                     $now->add(new DateInterval(sprintf('PT%dS', $leaseSeconds))), $generation, $now,
@@ -681,7 +682,7 @@ final readonly class DoctrineInboxStore implements InboxStore
             'aggregate_type' => $event->aggregateType(),
             'aggregate_id' => $event->aggregateId(),
             'aggregate_version' => $event->aggregateVersion(),
-            'envelope' => $event->toArray(),
+            'envelope' => RecordedEventEnvelope::document($event),
             'status' => $status,
             'attempts' => $attempts,
             'maximum_attempts' => $consumer->maximumAttempts(),
@@ -746,7 +747,7 @@ final readonly class DoctrineInboxStore implements InboxStore
             'error_message' => $error,
             'completed_at' => $completedAt,
             'evidence_compacted_at' => null,
-            'envelope' => $event->toArray(),
+            'envelope' => RecordedEventEnvelope::document($event),
             'updated_at' => $now,
         ], ['consumer_id' => $consumer->identifier(), 'event_id' => $event->eventId()], [
             'completed_at' => Types::DATETIME_IMMUTABLE,

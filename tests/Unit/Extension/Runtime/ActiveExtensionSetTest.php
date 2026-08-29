@@ -4,16 +4,17 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Unit\Extension\Runtime;
 
-use Kumwe\App\Extension\Application\ExtensionServiceProvider;
-use Kumwe\App\Extension\Contribution\CapabilityDefinition;
-use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\Extension\Spi\Application\ExtensionServiceProvider;
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
-use Kumwe\App\Extension\Contribution\ManifestContributionSet;
 use Kumwe\App\Extension\Domain\ThemeSurface;
 use Kumwe\App\Extension\Runtime\ActiveExtensionSet;
 use Kumwe\App\Extension\Runtime\DeferredExtensionRuntimeWithdrawal;
-use Kumwe\App\Extension\Runtime\ExtensionContainer;
+use Kumwe\Extension\Manifest\ExtensionIdentifier;
+use Kumwe\Extension\Manifest\ManifestContributions;
+use Kumwe\Extension\Spi\Runtime\ExtensionContainer;
 use Kumwe\App\Extension\Runtime\RestrictedExtensionContainer;
+use LogicException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
@@ -26,6 +27,50 @@ use PHPUnit\Framework\TestCase;
  */
 final class ActiveExtensionSetTest extends TestCase
 {
+    /**
+     * A signed executable declaration cannot activate without the canonical SDK binding phase.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testExecutableManifestRequirementsCannotActivateWithoutABindingProvider(): void
+    {
+        $identifier = ExtensionIdentifier::fromString('acme/routes');
+        $manifest = ManifestContributions::fromManifest($identifier, [
+            'version' => 1,
+            'capabilities' => [[
+                'id' => 'acme.routes.view',
+                'label' => 'View routes',
+                'description' => 'Open the exact extension route.',
+            ]],
+            'administrator' => [
+                'views' => [[
+                    'name' => 'acme.routes.index',
+                    'template' => 'index.twig',
+                ]],
+                'routes' => [[
+                    'name' => 'acme.routes.index',
+                    'path' => '/',
+                    'methods' => ['GET'],
+                    'capability' => 'acme.routes.view',
+                    'view' => 'acme.routes.index',
+                ]],
+            ],
+        ], 2);
+        $active = new ActiveExtensionSet(new ExtensionContributionRegistrySet(withCore: false));
+        $active->add(
+            $identifier->value(),
+            new ActiveExtensionProviderProbe(),
+            new RestrictedExtensionContainer($identifier->value(), []),
+            $manifest,
+        );
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('must bind every executable identifier');
+        $active->activate();
+    }
+
     /**
      * Superseding one signed graph withdraws all owners without disturbing the core-free fixture shape.
      *
@@ -40,23 +85,23 @@ final class ActiveExtensionSetTest extends TestCase
         foreach (['acme/editor', 'vendor/rates'] as $identifier) {
             $owner = ContributionOwner::extension($identifier);
             $namespace = $owner->namespace();
-            $definition = new CapabilityDefinition(
-                $namespace . '.use',
-                'Use contribution',
-                'Use this extension contribution in the lifecycle fixture.',
+            $declared = ManifestContributions::fromManifest(
+                ExtensionIdentifier::fromString($identifier),
+                [
+                    'version' => 1,
+                    'capabilities' => [[
+                        'id' => $namespace . '.use',
+                        'label' => 'Use contribution',
+                        'description' => 'Use this extension contribution in the lifecycle fixture.',
+                    ]],
+                ],
+                2,
             );
-            $registrar = $registries->registrar(
-                $owner,
-                new ManifestContributionSet($owner, capabilities: [$definition]),
-            );
-            $registrar->capability($definition);
-            $registrar->complete();
             $active->add(
                 $identifier,
                 new ActiveExtensionProviderProbe(),
                 new RestrictedExtensionContainer($identifier, []),
-                new ManifestContributionSet($owner),
-                true,
+                $declared,
                 '1.2.3',
                 hash('sha256', $identifier),
             );
@@ -64,6 +109,7 @@ final class ActiveExtensionSetTest extends TestCase
             $active->addPortalTemplatePath($identifier, '/runtime/' . $namespace . '/portal');
             $active->addCatalogueDirectory($identifier, '/runtime/' . $namespace . '/messages');
         }
+        $active->activate();
         $active->setThemePath(ThemeSurface::Administrator, '/runtime/acme.editor/theme', 'acme/editor');
         $active->setSiteThemePath('default', '/runtime/acme.editor/site-theme', 'acme/editor');
 

@@ -10,9 +10,10 @@ use InvalidArgumentException;
  * App-owned qualification of one exact Studio deployment for the contextual PHP adapter.
  *
  * Filesystem records are evidence, not their own trust root. This value must therefore be created in
- * reviewed App wiring only when one coordinated Studio release, pin record, schema manifest, browser
- * runtime, and PHP adapter have passed qualification together. Until then the composition root passes
- * null and contextual mounting remains unavailable.
+ * reviewed App wiring only when one coordinated Studio release, pin record, browser runtime, and PHP
+ * host implementation have passed qualification together. Producer independently owns and verifies
+ * the schema corpus. Until then the composition root passes null and contextual mounting remains
+ * unavailable.
  *
  * @since  2.0.0
  */
@@ -24,7 +25,6 @@ final readonly class StudioContextualAuthoringQualification
      * @param   string  $release                Exact coordinated semantic version.
      * @param   string  $releaseRecordSha256    Hex SHA-256 of `studio-release.json`.
      * @param   string  $pinRecordSha256        Hex SHA-256 of App's complete `PIN.json`.
-     * @param   string  $schemaManifestSha256   Hex SHA-256 of the published schema manifest.
      * @param   string  $browserManifestSha256  Hex SHA-256 of the compiled Vite manifest.
      * @param   string  $browserEntrySha256     Hex SHA-256 of the contextual browser entry.
      *
@@ -36,7 +36,6 @@ final readonly class StudioContextualAuthoringQualification
         public string $release,
         public string $releaseRecordSha256,
         public string $pinRecordSha256,
-        public string $schemaManifestSha256,
         public string $browserManifestSha256,
         public string $browserEntrySha256,
     ) {
@@ -52,7 +51,6 @@ final readonly class StudioContextualAuthoringQualification
             [
                 $releaseRecordSha256,
                 $pinRecordSha256,
-                $schemaManifestSha256,
                 $browserManifestSha256,
                 $browserEntrySha256,
             ] as $digest

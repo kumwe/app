@@ -7,25 +7,29 @@ namespace Kumwe\App\Tests\Integration\BusinessIntegration;
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
+use InvalidArgumentException;
 use Kumwe\App\BusinessIntegration\Application\EventContractRegistry;
 use Kumwe\App\BusinessIntegration\Application\TrustedRuntimeGenerationGuard;
 use Kumwe\App\BusinessIntegration\Domain\EventSchemaDefinition;
-use Kumwe\App\BusinessIntegration\Domain\EventSensitivity;
-use Kumwe\App\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\App\BusinessIntegration\Domain\RecordedIntegrationEvent;
 use Kumwe\App\BusinessIntegration\Infrastructure\DoctrineOutboxStore;
-use Kumwe\App\BusinessReporting\Application\ProjectionBuilder;
-use Kumwe\App\BusinessReporting\Application\ProjectionEvent;
-use Kumwe\App\BusinessReporting\Application\ProjectionWriter;
-use Kumwe\App\BusinessReporting\Domain\ProjectionDefinition;
-use Kumwe\App\BusinessReporting\Domain\ProjectionFieldDefinition;
-use Kumwe\App\BusinessReporting\Domain\ProjectionSourceDefinition;
-use Kumwe\App\BusinessReporting\Domain\ReportValueType;
+use Kumwe\App\BusinessReporting\Application\JournalProjectionEvent;
+use Kumwe\App\BusinessReporting\Application\ProjectionRebuildService;
 use Kumwe\App\BusinessReporting\Infrastructure\DoctrineProjectionRuntime;
 use Kumwe\App\BusinessReporting\Infrastructure\DoctrineProjectionStore;
 use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
 use Kumwe\App\Infrastructure\Persistence\DoctrineTransactionManager;
 use Kumwe\App\Infrastructure\Persistence\Migration\BusinessIntegrationSdkMigration;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventSensitivity;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\Extension\Spi\BusinessReporting\Application\ProjectionBuilder;
+use Kumwe\Extension\Spi\BusinessReporting\Application\ProjectionEvent;
+use Kumwe\Extension\Spi\BusinessReporting\Application\ProjectionWriter;
+use Kumwe\Extension\Spi\BusinessReporting\Domain\ProjectionDefinition;
+use Kumwe\Extension\Spi\BusinessReporting\Domain\ProjectionFieldDefinition;
+use Kumwe\Extension\Spi\BusinessReporting\Domain\ProjectionSourceDefinition;
+use Kumwe\Extension\Spi\BusinessReporting\Domain\ReportValueType;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
@@ -34,6 +38,8 @@ use RuntimeException;
 
 #[CoversClass(DoctrineProjectionStore::class)]
 #[CoversClass(DoctrineProjectionRuntime::class)]
+#[CoversClass(JournalProjectionEvent::class)]
+#[CoversClass(ProjectionRebuildService::class)]
 final class ProjectionRuntimePersistenceTest extends TestCase
 {
     private Connection $database;
@@ -96,7 +102,8 @@ final class ProjectionRuntimePersistenceTest extends TestCase
 
     public function testLiveApplyIsIdempotentAndManualRebuildIsReproducible(): void
     {
-        $builder = new ProjectionRuntimeBuilder($this->definition);
+        $this->assertJournalProjectionEventContract();
+        $builder = new ProjectionRuntimeBuilder();
         $runtime = $this->runtime($builder);
         $first = $this->event(1, 'first');
         $this->append($first);
@@ -144,12 +151,12 @@ final class ProjectionRuntimePersistenceTest extends TestCase
         $second = $this->event(2, 'second');
         $this->append($first);
         $this->append($second);
-        $healthy = $this->runtime(new ProjectionRuntimeBuilder($this->definition));
+        $healthy = $this->runtime(new ProjectionRuntimeBuilder());
         $healthy->apply($second);
         $before = $healthy->inventory()[0]['active_generation'];
         self::assertIsArray($before);
 
-        $failing = $this->runtime(new ProjectionRuntimeBuilder($this->definition, 2));
+        $failing = $this->runtime(new ProjectionRuntimeBuilder(2));
         try {
             $failing->rebuild($this->definition->identifier());
             self::fail('A failed builder must abort its replacement generation.');
@@ -190,7 +197,7 @@ final class ProjectionRuntimePersistenceTest extends TestCase
 
     private function event(int $version, string $value): IntegrationEvent
     {
-        return new IntegrationEvent(
+        return new RecordedIntegrationEvent(
             'business.record.changed',
             1,
             Uuid::uuid7()->toString(),
@@ -224,21 +231,57 @@ final class ProjectionRuntimePersistenceTest extends TestCase
 
         return $decoded['value'];
     }
+
+    /**
+     * Pin the direct SDK event implementation before exercising it through durable rebuilds.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    private function assertJournalProjectionEventContract(): void
+    {
+        $event = new JournalProjectionEvent(
+            1,
+            '00000000-0000-7000-8000-000000000001',
+            'business.record.changed',
+            1,
+            $this->clock->now(),
+            ['record_id' => 'record-1'],
+        );
+        self::assertSame(1, $event->sequence());
+        self::assertSame('00000000-0000-7000-8000-000000000001', $event->id());
+        self::assertSame('business.record.changed', $event->type());
+        self::assertSame(1, $event->schemaVersion());
+        self::assertSame($this->clock->now(), $event->occurredAt());
+        self::assertSame(['record_id' => 'record-1'], $event->payload());
+        self::assertMatchesRegularExpression('/^[0-9a-f]{64}$/D', $event->checksum());
+        $payload = $event->payload();
+        $payload['record_id'] = 'changed';
+        self::assertSame(['record_id' => 'record-1'], $event->payload());
+
+        try {
+            new JournalProjectionEvent(
+                0,
+                '00000000-0000-7000-8000-000000000001',
+                'business.record.changed',
+                1,
+                $this->clock->now(),
+                [],
+            );
+            self::fail('A non-positive projection journal sequence was accepted.');
+        } catch (InvalidArgumentException $exception) {
+            self::assertSame('A projection event identity or version is invalid.', $exception->getMessage());
+        }
+    }
 }
 
 final class ProjectionRuntimeBuilder implements ProjectionBuilder
 {
     public int $applications = 0;
 
-    public function __construct(
-        private readonly ProjectionDefinition $definition,
-        private readonly ?int $failOnSequence = null,
-    ) {
-    }
-
-    public function definition(): ProjectionDefinition
+    public function __construct(private readonly ?int $failOnSequence = null)
     {
-        return $this->definition;
     }
 
     public function apply(
@@ -246,12 +289,13 @@ final class ProjectionRuntimeBuilder implements ProjectionBuilder
         ProjectionEvent $event,
         ProjectionWriter $writer,
     ): void {
-        if ($event->sequence === $this->failOnSequence) {
+        if ($event->sequence() === $this->failOnSequence) {
             throw new RuntimeException('projection builder failed');
         }
         ++$this->applications;
-        $recordId = $event->payload['record_id'] ?? null;
-        $value = $event->payload['value'] ?? null;
+        $payload = $event->payload();
+        $recordId = $payload['record_id'] ?? null;
+        $value = $payload['value'] ?? null;
         if (!is_string($recordId) || !is_string($value)) {
             throw new RuntimeException('projection event payload is invalid');
         }

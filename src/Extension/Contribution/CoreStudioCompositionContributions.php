@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Extension\Contribution;
 
-use Kumwe\App\Studio\Domain\Contract\CanonicalJson;
+use Kumwe\Extension\Spi\Contribution\CompositionHostBinding;
+use Kumwe\Extension\Spi\Contribution\CanonicalCompositionKind;
+use Kumwe\Extension\Spi\Contribution\CanonicalCompositionDocument;
+use Kumwe\Producer\Canonical\CanonicalJson;
 use stdClass;
 
 /**
@@ -48,13 +51,13 @@ final class CoreStudioCompositionContributions
     /**
      * Register canonical documents and binding metadata through core's owner-bound registrar.
      *
-     * @param   OwnedExtensionContributionRegistrar  $registrar  Trusted core-owned registrar.
+     * @param   CoreContributionRegistrar  $registrar  Trusted core-owned registrar.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    public static function register(OwnedExtensionContributionRegistrar $registrar): void
+    public static function register(CoreContributionRegistrar $registrar): void
     {
         foreach (self::LAYOUT_BLOCKS as $type => $local) {
             self::document($registrar, CanonicalCompositionKind::BlockDefinition, self::layoutBlock($type, $local));
@@ -84,16 +87,16 @@ final class CoreStudioCompositionContributions
     /**
      * Admit one canonical composition document through the owned registry path.
      *
-     * @param   OwnedExtensionContributionRegistrar  $registrar  Trusted core-owned registrar.
-     * @param   CanonicalCompositionKind             $kind       Canonical document kind.
-     * @param   stdClass                             $document   Canonical document value.
+     * @param   CoreContributionRegistrar  $registrar  Trusted core-owned registrar.
+     * @param   CanonicalCompositionKind   $kind       Canonical document kind.
+     * @param   stdClass                   $document   Canonical document value.
      *
      * @return  CanonicalCompositionDocument  The admitted canonical declaration.
      *
      * @since   2.0.0
      */
     private static function document(
-        OwnedExtensionContributionRegistrar $registrar,
+        CoreContributionRegistrar $registrar,
         CanonicalCompositionKind $kind,
         stdClass $document,
     ): CanonicalCompositionDocument {

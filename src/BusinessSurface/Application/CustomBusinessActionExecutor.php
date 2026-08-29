@@ -7,6 +7,7 @@ namespace Kumwe\App\BusinessSurface\Application;
 use DateInterval;
 use DateTimeImmutable;
 use InvalidArgumentException;
+use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Application\Persistence\TransactionManager;
 use Kumwe\App\BusinessDefinition\Domain\ActionDefinition;
 use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
@@ -28,11 +29,11 @@ use Kumwe\App\BusinessRecord\Domain\BusinessRecordIdempotency;
 use Kumwe\App\BusinessRecord\Domain\BusinessRecordIdempotencyState;
 use Kumwe\App\BusinessRecord\Domain\RecordScope;
 use Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessController;
-use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionCommand;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionLedgerResult;
-use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionResult;
-use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessSchema;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessSurfaceDispatcher;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionCommand;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionResult;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessSchema;
 use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
@@ -96,6 +97,7 @@ final readonly class CustomBusinessActionExecutor
      */
     public function execute(CustomBusinessActionCommand $command): CustomBusinessActionResult
     {
+        $context = self::context($command);
         if (
             !$this->runtime->trusted
             || $this->runtime->generation < 0
@@ -108,7 +110,7 @@ final readonly class CustomBusinessActionExecutor
         // here, ahead of the transaction the fence is taken in, through the same guard that later
         // proves the attempt under the fence.
         $this->guard->guardCustomActionPostingPeriod(new ExecuteRecordActionCommand(
-            $command->context,
+            $context,
             $command->definitionIdentifier,
             $command->recordId,
             $command->expectedVersion,
@@ -118,11 +120,11 @@ final readonly class CustomBusinessActionExecutor
             $command->organizationIdentifier,
             $command->approvalRequestId,
         ));
-        $authenticatedOrganization = $command->context->organization()?->identifier();
+        $authenticatedOrganization = $context->organization()?->identifier();
         $scopeDigest = $this->fingerprints->digest([
-            'site' => $command->context->site()->identifier(),
+            'site' => $context->site()->identifier(),
             'organization' => $authenticatedOrganization,
-            'actor' => $command->context->actorId(),
+            'actor' => $context->actorId(),
             'operation' => $operation,
             'key' => $command->idempotencyKey->value(),
         ]);
@@ -131,13 +133,14 @@ final readonly class CustomBusinessActionExecutor
             try {
                 return $this->transactions->transactional(function () use (
                     $command,
+                    $context,
                     $operation,
                     $scopeDigest,
                     $authenticatedOrganization,
                 ): CustomBusinessActionResult {
-                    $generation = $this->fence->lock($command->context, $command->definitionIdentifier);
+                    $generation = $this->fence->lock($context, $command->definitionIdentifier);
                     $resolved = $this->definitions->forCreate(
-                        $command->context,
+                        $context,
                         $command->definitionIdentifier,
                     );
                     $generation->assertMatches($resolved);
@@ -147,13 +150,13 @@ final readonly class CustomBusinessActionExecutor
                         $resolved->definition,
                         $action,
                     ));
-                    $scope = $this->scope($resolved, $command);
-                    $plan = $this->access->plan($command->context, $operation, $resolved, $scope);
+                    $scope = $this->scope($resolved, $command, $context);
+                    $plan = $this->access->plan($context, $operation, $resolved, $scope);
                     if (!$plan->allowsAction($command->action)) {
                         throw new BusinessRecordNotFound();
                     }
                     $authorizationFingerprint = $this->fingerprints->digest([
-                        'context' => $command->context->authorizationFingerprint(),
+                        'context' => $context->authorizationFingerprint(),
                         'record_access' => $plan->digest(),
                     ]);
                     $now = $this->clock->now();
@@ -172,9 +175,9 @@ final readonly class CustomBusinessActionExecutor
                     $entry = new BusinessRecordIdempotency(
                         Uuid::uuid7()->toString(),
                         $scopeDigest,
-                        $command->context->site()->identifier(),
+                        $context->site()->identifier(),
                         $authenticatedOrganization,
-                        $command->context->actorId(),
+                        $context->actorId(),
                         $operation,
                         $command->idempotencyKey->value(),
                         $requestFingerprint,
@@ -188,7 +191,7 @@ final readonly class CustomBusinessActionExecutor
                     );
                     $this->idempotency->begin($entry);
                     $this->guard->guardCustomAction(new ExecuteRecordActionCommand(
-                        $command->context,
+                        $context,
                         $command->definitionIdentifier,
                         $command->recordId,
                         $command->expectedVersion,
@@ -373,6 +376,7 @@ final readonly class CustomBusinessActionExecutor
      *
      * @param   ResolvedBusinessDefinition   $resolved  Definition and installation held by the fence.
      * @param   CustomBusinessActionCommand  $command   Authenticated typed command.
+     * @param   ExecutionContext             $context   Host-issued authorization context.
      *
      * @return  RecordScope  Exact installation/site/organization scope.
      *
@@ -383,21 +387,42 @@ final readonly class CustomBusinessActionExecutor
     private function scope(
         ResolvedBusinessDefinition $resolved,
         CustomBusinessActionCommand $command,
+        ExecutionContext $context,
     ): RecordScope {
         $requiresOrganization = in_array(
             $resolved->definition->scope,
             [ScopeMode::Organization, ScopeMode::SiteOrganization],
             true,
         );
-        $organization = $requiresOrganization ? $command->context->organization()?->identifier() : null;
+        $organization = $requiresOrganization ? $context->organization()?->identifier() : null;
         if ($organization !== $command->organizationIdentifier) {
             throw new BusinessRecordDefinitionUnavailable();
         }
 
         try {
-            return RecordScope::forDefinition($resolved->definition->scope, $command->context->site(), $organization);
+            return RecordScope::forDefinition($resolved->definition->scope, $context->site(), $organization);
         } catch (InvalidArgumentException) {
             throw new BusinessRecordDefinitionUnavailable();
         }
+    }
+
+    /**
+     * Recover the host-issued authorization context from the reusable SDK command envelope.
+     *
+     * @param   CustomBusinessActionCommand  $command  Canonical command received by the host boundary.
+     *
+     * @return  ExecutionContext  Exact App authority context originally placed in the command.
+     *
+     * @throws  BusinessRecordDefinitionUnavailable  When a caller supplies a foreign context implementation.
+     *
+     * @since   2.0.0
+     */
+    private static function context(CustomBusinessActionCommand $command): ExecutionContext
+    {
+        if (!$command->context instanceof ExecutionContext) {
+            throw new BusinessRecordDefinitionUnavailable();
+        }
+
+        return $command->context;
     }
 }

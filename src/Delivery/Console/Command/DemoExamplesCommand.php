@@ -38,7 +38,7 @@ final readonly class DemoExamplesCommand implements Command
      * @var    list<string>
      * @since  2.0.0
      */
-    private const array DEFAULT_EXAMPLES = ['announcements', 'asset-inspection', 'audit-listener', 'horizon-theme'];
+    private const array DEFAULT_EXAMPLES = ['announcements', 'asset-inspection', 'horizon-theme'];
 
     /**
      * Wire the command to configuration, authentication, and the example installer.

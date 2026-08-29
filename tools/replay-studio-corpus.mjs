@@ -35,8 +35,12 @@ import {
   projectRichText,
 } from "@kumwe/studio-rich-text";
 
-const repositoryRoot = fileURLToPath(new URL("../", import.meta.url));
-const corpusRoot = join(repositoryRoot, "tests/Fixtures/Studio/testkit");
+const corpusRoot = fileURLToPath(
+  new URL("../", import.meta.resolve("@kumwe/studio-testkit")),
+);
+const protocolRoot = fileURLToPath(
+  new URL("../", import.meta.resolve("@kumwe/studio-protocol")),
+);
 
 const positiveCount = await validatePositiveCorpus();
 const commandCount = await replayCommands();
@@ -398,10 +402,7 @@ async function schemaRegistry() {
   const ajv = new Ajv2020({ allErrors: true, strict: true });
   addFormats(ajv);
   const identifiers = new Map();
-  const schemaRoot = join(
-    repositoryRoot,
-    "resources/studio-contract/protocol/schemas",
-  );
+  const schemaRoot = join(protocolRoot, "schemas");
   const files = (await readdir(schemaRoot))
     .filter((name) => name.endsWith(".schema.json"))
     .sort();

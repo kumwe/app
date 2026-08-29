@@ -6,7 +6,7 @@ namespace Kumwe\App\Identity\Application\Authorization;
 
 use InvalidArgumentException;
 use Kumwe\App\Identity\Domain\AuthorizationDecision;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use Kumwe\App\Identity\Domain\CapabilityGrant;
 use Kumwe\App\Identity\Domain\GrantScope;
 use Kumwe\App\Identity\Domain\User;

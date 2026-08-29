@@ -233,6 +233,34 @@
             }
         },
         {
+            "id": "canonical-package-boundaries",
+            "title": "Canonical first-party package identities without runtime aliases",
+            "purpose": "Reject class aliases in tracked App runtime, resources, tests and examples and in installed Conversion, Extension SDK and Producer source/resources so an extracted type has exactly one canonical package identity.",
+            "owner": "platform-architecture",
+            "runner": "composer",
+            "composer_script": "architecture:boundaries",
+            "command": "composer architecture:boundaries",
+            "artifact": "console",
+            "in_qa": false,
+            "excluded_from_qa_reason": "It runs inside composer architecture:policy, which qa executes; the separate script exists so it can be run and read on its own.",
+            "invoked_by": "architecture-policy",
+            "cadence": [
+                "local",
+                "ci",
+                "nightly",
+                "release"
+            ],
+            "maximum_interval": "per-change",
+            "engines": [],
+            "workflows": {
+                "ci": {
+                    "file": ".github/workflows/ci.yml",
+                    "job": "quality",
+                    "contains": "composer architecture:policy"
+                }
+            }
+        },
+        {
             "id": "dependency-direction",
             "title": "Semantic dependency direction with an expiring violation baseline",
             "purpose": "Resolve every symbol reference in src/ to its layer and fail any edge the layer graph forbids; existing violations are held in a baseline with an owner and an expiry, and a new one fails immediately.",
@@ -492,6 +520,58 @@
             }
         },
         {
+            "id": "author-package-independence",
+            "title": "Author packages and examples never import the private App host",
+            "purpose": "Reject Kumwe\\App\\ namespaces in the SDK classification and generation ledgers, retained generation source, generated scaffold source, and installable examples; historical fixtures are regenerated and re-signed against canonical libraries instead of preserved through aliases or remapping.",
+            "owner": "platform-architecture",
+            "runner": "composer",
+            "composer_script": "extension:independence",
+            "command": "composer extension:independence",
+            "artifact": "tools/verify-author-package-independence.php",
+            "in_qa": true,
+            "cadence": [
+                "local",
+                "ci",
+                "nightly",
+                "release"
+            ],
+            "maximum_interval": "per-change",
+            "engines": [],
+            "workflows": {
+                "ci": {
+                    "file": ".github/workflows/ci.yml",
+                    "job": "quality",
+                    "contains": "composer extension:independence"
+                }
+            }
+        },
+        {
+            "id": "conversion-api-consumer",
+            "title": "Installed Conversion provider profile matches App consumer evidence",
+            "purpose": "Recompute extension-provider-v1 from the installed package-owned full type-shape manifest, prove its canonical ordered closure autoloads without aliases, and compare only its digest and count with App consumer evidence.",
+            "owner": "platform-architecture",
+            "runner": "composer",
+            "composer_script": "conversion:api",
+            "command": "composer conversion:api",
+            "artifact": "docs/architecture/conversion-api-profile.json",
+            "in_qa": true,
+            "cadence": [
+                "local",
+                "ci",
+                "nightly",
+                "release"
+            ],
+            "maximum_interval": "per-change",
+            "engines": [],
+            "workflows": {
+                "ci": {
+                    "file": ".github/workflows/ci.yml",
+                    "job": "quality",
+                    "contains": "composer conversion:api"
+                }
+            }
+        },
+        {
             "id": "cli-machine-contract",
             "title": "The retained CLI generation matches the live command graph",
             "purpose": "Fail when the live command names differ from the immutable CLI generation, when its executable input grammar, file-backed secret transport, or declared portable exits are violated, or when the deployed and documentation copies differ byte for byte. Output modes, exit meanings, and closed action-level risk remain compatibility-pinned metadata rather than claims that the dispatcher introspects command output.",
@@ -571,8 +651,8 @@
         },
         {
             "id": "studio-dependency-pins",
-            "title": "Studio contract dependencies are pinned to exact versions",
-            "purpose": "Fail on any non-exact specifier for kumwe/producer or an @kumwe/studio* package in composer.json or package.json: ADR 0007 and docs/roadmap/producer-adoption.md step 1 forbid a version range while the Studio contract is pre-release, because a range would take a contract change silently (V2-STU-002).",
+            "title": "Extracted libraries and Studio are pinned to exact reproducible coordinates",
+            "purpose": "Bind kumwe/conversion, kumwe/extension-sdk, and kumwe/producer to exact versions and official immutable Composer lock references; bind every @kumwe/studio* manifest entry to its exact package-lock version, local tarball or official registry URL, and integrity; and fail unless Producer's release, protocol, corpus digest, package family, claimed profiles, and release-record bytes equal App's coordinated Studio evidence (ADR 0007, V2-STU-002).",
             "owner": "platform-architecture",
             "runner": "composer",
             "composer_script": "studio:dependencies",

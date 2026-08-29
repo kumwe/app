@@ -1,8 +1,0 @@
-{
-  "schema": "studio-presentation.schema.json",
-  "description": "Presentation intent rejects arbitrary CSS and selectors.",
-  "value": {
-    "position": "fixed;inset:0",
-    "style": "background:url(javascript:alert(1))"
-  }
-}

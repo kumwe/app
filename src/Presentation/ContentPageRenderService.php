@@ -40,6 +40,7 @@ final readonly class ContentPageRenderService
      * @param   array<string, mixed>        $languages              Presented language alternates.
      * @param   bool                        $includeThemeVariables  Whether validated CSS variables may be emitted as
      *          the existing public theme attribute; preview documents set false under their stricter CSP.
+     * @param   string|null                 $studioStylesheetHref  Exact same-origin Producer stylesheet URL.
      *
      * @return  string  Complete themed HTML document.
      *
@@ -55,6 +56,7 @@ final readonly class ContentPageRenderService
         array $navigation = [],
         array $languages = [],
         bool $includeThemeVariables = true,
+        ?string $studioStylesheetHref = null,
     ): string {
         $settings = $this->settings->current();
         $presentation = SitePresentation::from(
@@ -78,7 +80,29 @@ final readonly class ContentPageRenderService
             $variables['entry'] = $entry;
         }
 
-        return $this->renderer->render($template, $variables);
+        $html = $this->renderer->render($template, $variables);
+        if ($studioStylesheetHref === null) {
+            return $html;
+        }
+        if (
+            preg_match(
+                '/^\/studio\/styles\/[a-f0-9]{64}\.css\?[A-Za-z0-9._~%=&-]{1,4096}$/D',
+                $studioStylesheetHref,
+            ) !== 1
+            || str_contains($studioStylesheetHref, '..')
+        ) {
+            throw new \InvalidArgumentException('The published Studio stylesheet URL is invalid.');
+        }
+        $offset = strripos($html, '</head>');
+        if ($offset === false) {
+            throw new \InvalidArgumentException('A themed content document must contain a closing head tag.');
+        }
+        $link = sprintf(
+            '<link rel="stylesheet" href="%s" data-studio-composition>',
+            htmlspecialchars($studioStylesheetHref, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8'),
+        );
+
+        return substr_replace($html, $link, $offset, 0);
     }
 
     /**
@@ -90,7 +114,7 @@ final readonly class ContentPageRenderService
      * @param   string                     $canonicalUrl         Canonical path or absolute URL.
      * @param   string|null                $schemeOverride       Optional menu-bound colour scheme.
      * @param   string                     $surfaceId            Stable interface surface identity.
-     * @param   string                     $themeStylesheetHref  Trusted root-relative stylesheet sentinel.
+     * @param   string                     $stylesheetHref       Trusted combined stylesheet sentinel.
      *
      * @return  array{html: string, themeStylesheet: string}  Complete HTML and its closed theme stylesheet.
      *
@@ -103,13 +127,13 @@ final readonly class ContentPageRenderService
         string $canonicalUrl,
         ?string $schemeOverride,
         string $surfaceId,
-        string $themeStylesheetHref,
+        string $stylesheetHref,
     ): array {
         if (
-            preg_match('/^\/[A-Za-z0-9._\/-]{1,255}$/D', $themeStylesheetHref) !== 1
-            || str_contains($themeStylesheetHref, '..')
+            preg_match('/^\/[A-Za-z0-9._\/-]{1,255}$/D', $stylesheetHref) !== 1
+            || str_contains($stylesheetHref, '..')
         ) {
-            throw new \InvalidArgumentException('The preview theme stylesheet path is invalid.');
+            throw new \InvalidArgumentException('The preview stylesheet path is invalid.');
         }
         $settings = $this->settings->current();
         $presentation = SitePresentation::from(
@@ -138,7 +162,7 @@ final readonly class ContentPageRenderService
         if ($offset === false) {
             throw new \InvalidArgumentException('A themed content document must contain a closing head tag.');
         }
-        $link = sprintf('<link rel="stylesheet" href="%s" data-studio-theme>', $themeStylesheetHref);
+        $link = sprintf('<link rel="stylesheet" href="%s" data-studio-composition>', $stylesheetHref);
         $html = substr_replace($html, $link, $offset, 0);
         $declarations = '';
         foreach ($themeVariables as $property => $value) {

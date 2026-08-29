@@ -6,7 +6,7 @@ namespace Kumwe\App\Tests\Unit\InterfaceStandard;
 
 use BackedEnum;
 use InvalidArgumentException;
-use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\InterfaceStandard\CustomizationScope;
 use Kumwe\App\InterfaceStandard\CustomizationSlot;
 use Kumwe\App\InterfaceStandard\ResponsivePriority;

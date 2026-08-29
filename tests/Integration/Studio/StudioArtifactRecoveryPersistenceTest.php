@@ -9,8 +9,9 @@ use Kumwe\App\Infrastructure\Persistence\DoctrineTransactionManager;
 use Kumwe\App\Infrastructure\Persistence\Migration\StudioArtifactRecoveryMigration;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Studio\Application\Host\StudioArtifactAdmission;
-use Kumwe\App\Studio\Domain\Contract\CanonicalJson;
-use Kumwe\App\Studio\Domain\Contract\StudioContractSchemas;
+use Kumwe\Producer\Canonical\CanonicalJson;
+use Kumwe\Producer\Schema\StudioContractResources;
+use Kumwe\Producer\Schema\StudioDocumentSchemaRegistry;
 use Kumwe\App\Studio\Infrastructure\Persistence\DoctrineStudioHostStorage;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
@@ -59,7 +60,7 @@ final class StudioArtifactRecoveryPersistenceTest extends TestCase
 
         $storage = new DoctrineStudioHostStorage($database, $tables);
         $transactions = new DoctrineTransactionManager($database);
-        $admission = new StudioArtifactAdmission(StudioContractSchemas::fromVendoredCorpus());
+        $admission = new StudioArtifactAdmission(StudioDocumentSchemaRegistry::fromVendoredCorpus());
         $first = $admission->admit('publisher-namibia', self::blueprint());
         self::assertTrue($transactions->transactional(fn (): bool => $storage->store($first, null)));
         $second = $admission->revise($first, 'product-card-r6', 'draft');
@@ -119,9 +120,7 @@ final class StudioArtifactRecoveryPersistenceTest extends TestCase
     private static function blueprint(): stdClass
     {
         $document = json_decode(
-            (string) file_get_contents(
-                dirname(__DIR__, 2) . '/Fixtures/Studio/testkit/fixtures/blueprint.product.example.json',
-            ),
+            StudioContractResources::testkitBytes('fixtures/blueprint.product.example.json'),
             false,
             64,
             JSON_THROW_ON_ERROR,

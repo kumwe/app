@@ -11,7 +11,7 @@ use Kumwe\App\Application\Authorization\AuthorizationResourceOwnershipUnknown;
 use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Application\Authorization\ResourceSiteOwnership;
 use Kumwe\App\Application\Authorization\SystemPrincipal;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use RuntimeException;
 use Throwable;
 

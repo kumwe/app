@@ -21,7 +21,7 @@ use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\App\Identity\Application\Administration\AccessControlRepository;
 use Kumwe\App\Identity\Application\Administration\TokenDelegationPreauthorizer;
 use Kumwe\App\Identity\Application\Administration\TokenRotationPreauthorizer;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use Kumwe\App\Infrastructure\Persistence\DoctrineIdempotencyLedger;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Tests\Support\AuthorizationContext;

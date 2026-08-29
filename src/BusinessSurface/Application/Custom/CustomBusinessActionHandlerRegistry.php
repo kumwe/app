@@ -6,6 +6,11 @@ namespace Kumwe\App\BusinessSurface\Application\Custom;
 
 use InvalidArgumentException;
 use Kumwe\App\BusinessDefinition\Domain\DefinitionOwner;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionCommand;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionDeclaration;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionHandler;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionResult;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessReference;
 use LogicException;
 use Throwable;
 
@@ -29,7 +34,7 @@ final class CustomBusinessActionHandlerRegistry
      *
      * @var    array<string, array{
      *             owner: DefinitionOwner,
-     *             contract: CustomBusinessActionContract,
+     *             contract: CustomBusinessActionDeclaration,
      *             handler: CustomBusinessActionHandler
      *         }>
      * @since  2.0.0
@@ -59,9 +64,9 @@ final class CustomBusinessActionHandlerRegistry
     /**
      * Register one provider-reconciled custom action handler and signed contract.
      *
-     * @param   DefinitionOwner               $owner     Core or extension owner claiming both references.
-     * @param   CustomBusinessActionContract  $contract  Signed command and result contract.
-     * @param   CustomBusinessActionHandler   $handler   Typed application handler implementation.
+     * @param   DefinitionOwner                  $owner     Core or extension owner claiming both references.
+     * @param   CustomBusinessActionDeclaration  $contract  Signed command and result contract.
+     * @param   CustomBusinessActionHandler      $handler   Typed application handler implementation.
      *
      * @return  void
      *
@@ -72,7 +77,7 @@ final class CustomBusinessActionHandlerRegistry
      */
     public function register(
         DefinitionOwner $owner,
-        CustomBusinessActionContract $contract,
+        CustomBusinessActionDeclaration $contract,
         CustomBusinessActionHandler $handler,
     ): void {
         if (isset($this->handlers[$contract->handler])) {
@@ -153,7 +158,7 @@ final class CustomBusinessActionHandlerRegistry
      * @param   string           $handlerReference  Handler reference the definition publishes.
      * @param   string           $schemaReference   Schema reference the definition publishes.
      *
-     * @return  CustomBusinessActionContract|null  Contract, or null for every absent or ownership mismatch.
+     * @return  CustomBusinessActionDeclaration|null  Contract, or null for every absent or ownership mismatch.
      *
      * @since   2.0.0
      */
@@ -161,7 +166,7 @@ final class CustomBusinessActionHandlerRegistry
         DefinitionOwner $owner,
         string $handlerReference,
         string $schemaReference,
-    ): ?CustomBusinessActionContract {
+    ): ?CustomBusinessActionDeclaration {
         $entry = $this->handlers[$handlerReference] ?? null;
         if (
             $entry === null
@@ -178,14 +183,14 @@ final class CustomBusinessActionHandlerRegistry
      *
      * @param   DefinitionOwner  $owner  Contributor whose contracts are being inventoried.
      *
-     * @return  list<CustomBusinessActionContract>  Contracts in handler-reference order.
+     * @return  list<CustomBusinessActionDeclaration>  Contracts in handler-reference order.
      *
      * @since   2.0.0
      */
     public function ownedBy(DefinitionOwner $owner): array
     {
         return array_values(array_map(
-            static fn (array $entry): CustomBusinessActionContract => $entry['contract'],
+            static fn (array $entry): CustomBusinessActionDeclaration => $entry['contract'],
             array_filter(
                 $this->handlers,
                 static fn (array $entry): bool => $entry['owner']->toArray() === $owner->toArray(),

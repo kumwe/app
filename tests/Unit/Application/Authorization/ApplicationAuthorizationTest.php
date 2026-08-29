@@ -32,11 +32,10 @@ use Kumwe\App\Delivery\Http\Api\Content\ContentCollectionHandler;
 use Kumwe\App\Delivery\Http\Api\ProblemDetailsResponseFactory;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\Extension\Contribution\CapabilityDefinition as ExtensionCapabilityDefinition;
-use Kumwe\App\Extension\Contribution\ContributionOwner;
-use Kumwe\App\Extension\Contribution\ManifestContributionSet;
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ResourcePolicyDefinition as ExtensionResourcePolicyDefinition;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use Kumwe\App\Identity\Domain\GrantScope;
 use Kumwe\App\Tests\Support\AuthorizationContext;
 use Kumwe\App\Workflow\Domain\Workflow;
@@ -159,18 +158,16 @@ final class ApplicationAuthorizationTest extends TestCase
     {
         $registries = new ExtensionContributionRegistrySet();
         $owner = ContributionOwner::extension('acme/inspection');
-        $registrar = $registries->registrar($owner, new ManifestContributionSet($owner), false);
-        $registrar->capability(new ExtensionCapabilityDefinition(
+        $registries->capabilities()->register($owner, new ExtensionCapabilityDefinition(
             'acme.inspection.view',
             'View inspections',
             'View policy-filtered inspection records.',
         ));
-        $registrar->resourcePolicy(new ExtensionResourcePolicyDefinition(
+        $registries->resourcePolicies()->register($owner, new ExtensionResourcePolicyDefinition(
             'acme.inspection.view-records',
             'acme.inspection.view',
             [new ResourcePolicyTarget('business_record')],
         ));
-        $registrar->complete();
         $gateway = new DenyByDefaultAuthorizationGateway(
             AuthorizationContext::provenance(),
             $registries->authorizationPolicies(),

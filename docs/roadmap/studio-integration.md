@@ -52,7 +52,9 @@ The App currently consumes the eight-package `0.1.0-rc.1` release-candidate fami
 eight exact tarballs are vendored and pinned:
 [`resources/studio-contract/PIN.json`](../../resources/studio-contract/PIN.json) is the authoritative
 record of their exact versions and tarball checksums, and `composer studio:corpus` fails when the
-vendored bytes and the pin disagree. App's contributor/release build consumes those release-bound bytes and emits
+App bytes, Producer's typed release, and the installed exact packages disagree. Producer owns the PHP schema
+registry and testkit resources; App does not copy either authority. App's contributor/release build consumes the
+release-bound npm tarballs and emits
 compiled browser assets. Production installation and operation consume the compiled result and never run npm,
 Node.js, Vite, a development server, or server-side JavaScript.
 
@@ -181,7 +183,7 @@ matrix:
 
 | Boundary | Authoritative evidence path | Direct local command |
 |---|---|---|
-| Exact Studio family, schemas and corpus | `resources/studio-contract/`, `tools/verify-studio-{release,corpus}.*` | `composer studio:corpus && npm run check:studio-release && npm run check:studio-corpus` |
+| Exact Studio family, schemas and corpus | Producer's typed registry/resources, App `PIN.json` and npm tarballs, `tools/verify-studio-{release,corpus}.*` | `composer studio:corpus && npm run check:studio-release && npm run check:studio-corpus` |
 | PHP contracts, policy and host ports | `tests/Unit/Studio/` plus Studio-named administrator and extension tests | `composer test:unit -- --filter Studio` |
 | Persistence and executable host integration | `tests/Integration/Studio/` | `composer test:integration -- --filter Studio` |
 | Layer and dependency ownership | `tests/Architecture/Studio*BoundaryTest.php` | `composer test -- --testsuite architecture --filter Studio` |
@@ -221,7 +223,7 @@ The mapping to mechanisms Kumwe already has:
 | Resource discovery | Provider-owned `resource.search` over existing authorized application services; the first Content provider owns `kumwe.app/content-entry` and exposes only stable entry references and localized labels |
 | Dynamic data | Typed model/entry reads and binding descriptors; App resolves them through its existing Content or business application service at preview/publication time after policy, scope and field-disclosure checks |
 | External media and embed sources | Studio's lexical URL policy plus the host runtime obligations its threat registry records: fetch hardening, redirect re-validation, response verification |
-| Preview | The AP-6 authenticated render, single-use document and grant-bound theme stylesheet endpoints behind the origin-pinned, replay-resistant preview channel |
+| Preview | Producer's exact-coordinate renderer behind the AP-6 authenticated render, single-use document and grant-bound combined stylesheet endpoints |
 | Localization | The Studio shell's host-overridable message catalog fed from the XLIFF-compiled catalogue chain, so wording and terminology overrides apply to the composition surface like any other |
 | Telemetry | The observability contract; Studio's telemetry port carries primitive-only attributes within the established cardinality discipline |
 
@@ -345,13 +347,12 @@ separately from the Blueprint; and authored JavaScript is never an input. Tabs, 
 navigation, countdowns, slideshows, lightboxes and motion retain useful HTML semantics without enhancement.
 Studio's self-hosted enhancer may add disposable behavior under the host CSP.
 
-App owns server delivery and therefore owns the Twig adapter. Studio does not generate, persist or execute
-Twig. The adapter receives the same canonical document, exact block locks, presentation intent and resolved
-host values and must reproduce the same semantic/fallback/security contract as renderer-web. The coordinated
-language-neutral renderer vectors are replayed against both implementations; canonical cases compare the
-contract's exact result, while browser-only behavior is assessed through its declared semantic fallback and
-enhancement outcomes. A Twig-only block interpretation, a browser-only policy exception, or a locally copied
-Editor.js renderer is conformance failure, not an integration technique.
+App owns server delivery but does not own a second rendering engine. It calls Producer's
+`CompositionRenderer` with a fresh exact-coordinate `BlockRendererRegistry`; Twig supplies only the outer
+site document. Producer returns the complete semantic HTML, opaque complete CSS and enhancement inventory.
+Preview and publication both require registered type/version/revision coordinates. App currently refuses any
+non-empty enhancement inventory until one canonical Producer enhancement runtime exists. A Twig-only block
+interpretation, draft fallback in an exact render, or locally copied renderer is conformance failure.
 
 ### Implemented S-F authenticated preview boundary
 
@@ -370,15 +371,15 @@ types `studio.core/{section,stack,grid,columns}` and these core-owned field bloc
 `core/field-text`, `core/field-rich-text`, `core/field-integer`, `core/field-decimal`,
 `core/field-boolean`, `core/field-date`, `core/field-date-time`, `core/field-media`, and
 `core/field-resource`. Media and resource fields render bounded labels or identifiers, never a client URL.
-Unknown types remain visible as inert diagnostics rather than executing or disappearing.
+Unknown, ambiguous or unregistered coordinates refuse the render before HTML exists.
 
 Schema-6 extension blocks use that same registry seam without treating their manifest renderer string as
-code. A verified provider must explicitly share a `StudioPreviewBlockRenderer` under the restricted
+code. A verified provider must explicitly share a Producer `BlockRenderer` under the restricted
 container identifier `extension.<owner-namespaced renderer binding>`. Core then binds that instance to the
 reconciled canonical block's exact type, version and revision and to the exact package/runtime publication
 that loaded it. Current-generation and live-trust checks run before every extension call; missing or
 incorrect services, dependency-lock drift, foreign document owners, package replacement, trust withdrawal,
-and renderer exceptions all produce the inert unresolved fragment. The runtime contribution keeps the
+duplicate coordinate claims and renderer exceptions all fail closed. The runtime contribution keeps the
 owner-local service binding separate from the canonical `preview` renderer capability: an authoring
 catalog advertises `kumwe.contract-manifest-six/grid`, never
 `kumwe.contract-manifest-six.renderer.grid`, and only while the exact executable entry reports support.
@@ -394,9 +395,9 @@ data attribute, style attribute, malformed responsive container or out-of-vocabu
 HTML exists; the draft never supplies CSS.
 
 Published and unpublished output share `ContentPageRenderService`, the canonical site template and exact
-validated theme values. Preview supplies composition markup as an already-presented entry, suppresses the
-public theme-variable attribute, and projects the same variables into a closed generated stylesheet stored
-with the grant. Claiming the document activates one authenticated same-origin no-store stylesheet link;
+validated theme values. Preview supplies Producer HTML as an already-presented entry, suppresses the public
+theme-variable attribute, and stores Producer's complete CSS plus the generated theme variables as one exact
+stylesheet with the grant. Claiming the document activates one authenticated same-origin no-store link;
 the subresource rechecks live authority and exact grant/channel/source coordinates without advancing either
 protocol sequence. Immediately before markup exists, the canonical renderer re-resolves the trusted
 published theme for the session's `SiteContext` and compares its exact identifier, version and revision
@@ -466,13 +467,13 @@ Content fields named by entry bindings. A stored artifact can therefore remain r
 change without becoming executable under a different declaration.
 `ContentStudioProjector::publishedValues()` reuses the schema-governed lossless value conversion without
 fabricating an authenticated actor, because the public Content boundary already made the publication
-decision. The structural renderer shares preview traversal, escaping, and the live core/signed-extension
-registry while omitting authoring markers. Its closed responsive output carries fixed compact, medium and
-expanded layout tokens whose bounded site styles reproduce visibility, direction, collapse, column,
-alignment and spacing intent without accepting stored CSS. Both the ordinary page route and nominated
-homepage then place that safe fragment in the internal canonical `page` template, retaining navigation,
-languages, canonical URLs, theme, cache, indexing, and site assets from the existing
-`ContentPageRenderService` path.
+decision. Producer shares preview traversal, escaping and the live core/signed-extension registry while
+omitting authoring markers. Both the ordinary page route and nominated homepage place its HTML in the
+internal canonical `page` template. Producer's complete CSS is served from a same-origin SHA-256-addressed
+URL. That handler re-resolves the published record, site, locale, canonical path, artifact and live renderer
+authority before returning bytes or a 304, so publication or trust withdrawal invalidates an already-held
+URL. Navigation, languages, canonical URLs, theme, cache, indexing and site assets remain on the existing
+`ContentPageRenderService` path; CSS is never copied into Twig or emitted inline.
 
 ## What an extension contributes, and why it is frozen first
 

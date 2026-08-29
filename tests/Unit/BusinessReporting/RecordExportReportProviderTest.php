@@ -14,7 +14,7 @@ use Kumwe\App\BusinessRecord\Application\ResolvedBusinessDefinition;
 use Kumwe\App\BusinessReporting\Application\RecordExportReportProvider;
 use Kumwe\App\BusinessReporting\Application\ReportUnavailable;
 use Kumwe\App\BusinessReporting\Domain\ReportColumnDefinition;
-use Kumwe\App\BusinessReporting\Domain\ReportValueType;
+use Kumwe\Extension\Spi\BusinessReporting\Domain\ReportValueType;
 use Kumwe\App\BusinessSchema\Domain\PhysicalColumnBlueprint;
 use Kumwe\App\BusinessSchema\Domain\PhysicalSchemaBlueprint;
 use Kumwe\App\BusinessSchema\Domain\PhysicalTableBlueprint;

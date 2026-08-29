@@ -22,8 +22,8 @@ use Kumwe\App\Application\Presentation\Preference\PresentationPreferenceReposito
 use Kumwe\App\Application\Presentation\Preference\PresentationPreferenceVersionConflict;
 use Kumwe\App\Audit\Application\AuditRecorder;
 use Kumwe\App\Audit\Domain\AuditEvent;
-use Kumwe\App\Extension\Contribution\ContributionOwner;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use Kumwe\App\InterfaceStandard\CustomizationScope;
 use Kumwe\App\InterfaceStandard\CustomizationSlot;
 use Kumwe\App\InterfaceStandard\PresentationPreference;

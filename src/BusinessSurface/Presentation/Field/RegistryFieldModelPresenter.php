@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Kumwe\App\BusinessSurface\Presentation\Field;
 
+use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationContext;
+
 use Kumwe\App\BusinessDefinition\Domain\FieldDefinition;
 use Kumwe\App\BusinessDefinition\Domain\FieldTypeDefinition;
 use Kumwe\App\BusinessSurface\Application\FieldModelContext;
@@ -16,8 +18,8 @@ use Kumwe\App\Extension\Application\ExtensionExecutionGate;
  *
  * The application facade names its context in its own `FieldModelContext` vocabulary and never sees a
  * presentation type; this adapter translates that context to the extension-facing
- * `FieldPresentationContext` by backing value, builds the validated `FieldPresentationRequest` the
- * registered strategies receive, and reduces the returned `FieldPresentation` to the typed
+ * `FieldPresentationContext` by backing value, builds the canonical `FieldPresentationInput` the
+ * registered strategies receive, and reduces the returned `FieldPresentationModel` to the typed
  * `PresentedField` the facade consumes. Every guarantee stays the registry's: fail-closed coverage,
  * editability that only narrows, and conversion provenance that cannot be dropped.
  *
@@ -70,7 +72,7 @@ final readonly class RegistryFieldModelPresenter implements FieldModelPresenter
         if (!str_starts_with($type->id, 'core.')) {
             $this->execution->assertCurrent();
         }
-        $presentation = $this->registry->present(new FieldPresentationRequest(
+        $presentation = $this->registry->present(FieldPresentationInputFactory::fromDefinition(
             $field,
             $type,
             FieldPresentationContext::from($context->value),

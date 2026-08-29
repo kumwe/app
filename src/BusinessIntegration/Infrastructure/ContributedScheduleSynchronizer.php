@@ -13,7 +13,7 @@ use Kumwe\App\Application\Persistence\TransactionManager;
 use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\App\BusinessIntegration\Application\PayloadSchemaValidator;
 use Kumwe\App\BusinessIntegration\Application\ScheduleRuntimeSynchronizer;
-use Kumwe\App\BusinessIntegration\Domain\JobContributionDefinition;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\JobContributionDefinition;
 use Kumwe\App\BusinessIntegration\Domain\ScheduleContributionDefinition;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;

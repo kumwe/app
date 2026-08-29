@@ -28,7 +28,7 @@ use Kumwe\App\Application\Automation\Scheduler;
 use Kumwe\App\Application\Automation\Job\ScheduleRepository;
 use Kumwe\App\Application\Persistence\TransactionManager;
 use Kumwe\App\BusinessIntegration\Application\ScheduleRuntimeSynchronizer;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;

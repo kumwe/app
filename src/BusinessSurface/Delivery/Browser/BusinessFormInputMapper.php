@@ -6,8 +6,8 @@ namespace Kumwe\App\BusinessSurface\Delivery\Browser;
 
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentation;
-use Kumwe\App\BusinessSurface\Presentation\Field\FieldWidget;
+use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationModel;
+use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldWidget;
 
 /**
  * Maps browser form input through the authorized field presentation rather than mass assignment.
@@ -33,7 +33,7 @@ final readonly class BusinessFormInputMapper
      * Map one decoded form values object against its authorized presentation list.
      *
      * @param   array<string, mixed>     $values  Parsed values under field handles.
-     * @param   list<FieldPresentation>  $fields  Server-produced fields for this exact actor and record.
+     * @param   list<FieldPresentationModel>  $fields  Server-produced fields for this exact actor and record.
      *
      * @return  array<string, mixed>  Typed patch safe to hand to a business-record command.
      *
@@ -53,7 +53,7 @@ final readonly class BusinessFormInputMapper
         }
         $allowed = [];
         foreach ($fields as $field) {
-            if (!$field instanceof FieldPresentation) {
+            if (!$field instanceof FieldPresentationModel) {
                 throw new InvalidArgumentException('A generated business form schema is invalid.');
             }
             if ($field->editable) {
@@ -142,7 +142,7 @@ final readonly class BusinessFormInputMapper
     /**
      * Normalize one browser representation according to its semantic widget.
      *
-     * @param   FieldPresentation  $field  Authorized field presentation.
+     * @param   FieldPresentationModel  $field  Authorized field presentation.
      * @param   mixed              $value  Parsed browser value.
      *
      * @return  mixed  Narrow typed value expected by the record value codec.
@@ -152,7 +152,7 @@ final readonly class BusinessFormInputMapper
      *
      * @since   2.0.0
      */
-    private function value(FieldPresentation $field, mixed $value): mixed
+    private function value(FieldPresentationModel $field, mixed $value): mixed
     {
         if ($value === '' && !$field->required && $field->widget !== FieldWidget::Secret) {
             return null;

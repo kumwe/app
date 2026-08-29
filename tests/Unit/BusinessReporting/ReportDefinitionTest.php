@@ -10,7 +10,7 @@ use Kumwe\App\BusinessReporting\Domain\ReportDefinition;
 use Kumwe\App\BusinessReporting\Domain\ReportFilterDefinition;
 use Kumwe\App\BusinessReporting\Domain\ReportFilterOperator;
 use Kumwe\App\BusinessReporting\Domain\ReportParameterDefinition;
-use Kumwe\App\BusinessReporting\Domain\ReportValueType;
+use Kumwe\Extension\Spi\BusinessReporting\Domain\ReportValueType;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

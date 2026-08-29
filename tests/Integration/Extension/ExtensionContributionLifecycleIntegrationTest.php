@@ -8,12 +8,12 @@ use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Extension\Application\ExtensionManager;
-use Kumwe\App\Extension\Application\Migration\ExtensionTableNames;
+use Kumwe\App\Extension\Application\Migration\ScopedExtensionTableNames;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
-use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
-use Kumwe\App\Extension\Domain\ExtensionIdentifier;
-use Kumwe\App\Extension\Domain\PackageChecksum;
+use Kumwe\Extension\Manifest\ExtensionIdentifier;
+use Kumwe\Extension\Package\PackageChecksum;
 use Kumwe\App\Extension\Runtime\ActiveExtensionSet;
 use Kumwe\App\Extension\Infrastructure\DoctrineExtensionManager;
 use Kumwe\App\Extension\Infrastructure\RedisLockedExtensionManager;
@@ -70,7 +70,7 @@ final class ExtensionContributionLifecycleIntegrationTest extends TestCase
         }
         $checksum = PackageChecksum::calculate($bytes);
         $signature = base64_encode(sodium_crypto_sign_detached((string) $checksum, $secretKey));
-        $extensionTables = new ExtensionTableNames(
+        $extensionTables = new ScopedExtensionTableNames(
             $database,
             $tables,
             ExtensionIdentifier::fromString($identifier),

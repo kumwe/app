@@ -11,18 +11,19 @@ use Kumwe\App\BusinessDefinition\Domain\FieldDefinition;
 use Kumwe\App\BusinessDefinition\Domain\FieldTypeDefinition;
 use Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition;
 use Kumwe\App\BusinessSurface\Presentation\Field\CoreFieldPresenter;
-use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentation;
-use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationContext;
-use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationContribution;
+use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationInputFactory;
+use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationContext;
+use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationContribution;
+use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationInput;
+use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationModel;
+use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresenter;
 use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationCoverage;
 use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationRegistry;
-use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationRequest;
-use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresenter;
-use Kumwe\App\BusinessSurface\Presentation\Field\FieldWidget;
-use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldWidget;
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
-use Kumwe\App\Extension\Contribution\ManifestContributionSet;
-use Kumwe\App\Extension\Domain\ExtensionIdentifier;
+use Kumwe\Extension\Manifest\ExtensionIdentifier;
+use Kumwe\Extension\Manifest\ManifestContributions;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
@@ -46,20 +47,15 @@ final class FieldPresentationRegistryTest extends TestCase
     public function testSignedPresentationRegistersAndLeavesNoExecutableLifecycleState(): void
     {
         $type = self::type();
-        $presentation = new FieldPresentationContribution(
-            $type->id,
-            [FieldPresentationContext::Update, FieldPresentationContext::Detail],
-        );
-        $declarations = new ManifestContributionSet(
-            ContributionOwner::extension('acme/editor'),
-            fieldTypes: [$type],
-            fieldPresentations: [$presentation],
+        $declarations = ManifestContributions::fromManifest(
+            ExtensionIdentifier::fromString('acme/editor'),
+            self::manifestDocument($type),
+            3,
         );
         $registries = new ExtensionContributionRegistrySet(withCore: false);
         $owner = ContributionOwner::extension('acme/editor');
-        $registrar = $registries->registrar($owner, $declarations);
-        $registrar->fieldType($type);
-        $registrar->fieldPresentation($presentation, new CoreFieldPresenter());
+        $registrar = $registries->activateManifest($declarations);
+        $registrar->fieldPresenter($type->id, new CoreFieldPresenter());
         $registrar->complete();
 
         self::assertSame(['detail', 'update'], $registries->fieldPresentations()->contexts($type->id));
@@ -81,24 +77,19 @@ final class FieldPresentationRegistryTest extends TestCase
      *
      * @since   2.0.0
      */
-    public function testStrictRegistrarRejectsAlteredPresentationCoverage(): void
+    public function testCanonicalBindingRejectsAnUndeclaredFieldType(): void
     {
         $type = self::type();
-        $declared = new FieldPresentationContribution($type->id, [FieldPresentationContext::Detail]);
         $registries = new ExtensionContributionRegistrySet(withCore: false);
-        $registrar = $registries->registrar(
-            ContributionOwner::extension('acme/editor'),
-            new ManifestContributionSet(
-                ContributionOwner::extension('acme/editor'),
-                fieldTypes: [$type],
-                fieldPresentations: [$declared],
-            ),
-        );
-        $registrar->fieldType($type);
+        $registrar = $registries->activateManifest(ManifestContributions::fromManifest(
+            ExtensionIdentifier::fromString('acme/editor'),
+            self::manifestDocument($type),
+            3,
+        ));
 
         $this->expectException(InvalidArgumentException::class);
-        $registrar->fieldPresentation(
-            new FieldPresentationContribution($type->id, [FieldPresentationContext::Create]),
+        $registrar->fieldPresenter(
+            'acme.editor.undeclared',
             new CoreFieldPresenter(),
         );
     }
@@ -110,29 +101,18 @@ final class FieldPresentationRegistryTest extends TestCase
      *
      * @since   2.0.0
      */
-    public function testFailedPresenterRegistrationRemainsOmitted(): void
+    public function testOmittedPresenterFailsExactManifestReconciliation(): void
     {
         $type = self::type();
-        $presentation = new FieldPresentationContribution($type->id, [FieldPresentationContext::Detail]);
-        $owner = ContributionOwner::extension('acme/editor');
-        $registrar = (new ExtensionContributionRegistrySet(withCore: false))->registrar(
-            $owner,
-            new ManifestContributionSet(
-                $owner,
-                fieldTypes: [$type],
-                fieldPresentations: [$presentation],
-            ),
-        );
-
-        try {
-            $registrar->fieldPresentation($presentation, new CoreFieldPresenter());
-            self::fail('A presenter cannot be registered before its field type.');
-        } catch (InvalidArgumentException) {
-        }
-        $registrar->fieldType($type);
+        $registries = new ExtensionContributionRegistrySet(withCore: false);
+        $registrar = $registries->activateManifest(ManifestContributions::fromManifest(
+            ExtensionIdentifier::fromString('acme/editor'),
+            self::manifestDocument($type),
+            3,
+        ));
 
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('omitted declared field_presentation');
+        $this->expectExceptionMessage('do not exactly satisfy');
         $registrar->complete();
     }
 
@@ -184,23 +164,23 @@ final class FieldPresentationRegistryTest extends TestCase
                 /**
                  * Return an internally valid editor while deliberately widening the request contract.
                  *
-                 * @param   FieldPresentationRequest  $request  Server-authorized presentation request.
+                 * @param   FieldPresentationInput  $request  Server-authorized presentation request.
                  *
-                 * @return  FieldPresentation  Maliciously writable semantic model.
+                 * @return  FieldPresentationModel  Maliciously writable semantic model.
                  *
                  * @since   2.0.0
                  */
-                public function present(FieldPresentationRequest $request): FieldPresentation
+                public function present(FieldPresentationInput $request): FieldPresentationModel
                 {
-                    return new FieldPresentation(
-                        $request->field->handle,
-                        $request->field->label,
+                    return new FieldPresentationModel(
+                        $request->handle,
+                        $request->label,
                         $request->context,
                         FieldWidget::Text,
                         '',
                         $request->value,
                         true,
-                        $request->field->required,
+                        $request->required,
                         $request->errors,
                     );
                 }
@@ -209,7 +189,7 @@ final class FieldPresentationRegistryTest extends TestCase
 
         $this->expectException(InvalidBusinessDefinition::class);
         $this->expectExceptionMessage('cannot widen server-side editability');
-        $registry->present(new FieldPresentationRequest(
+        $registry->present(FieldPresentationInputFactory::fromDefinition(
             $field,
             $type,
             FieldPresentationContext::Update,
@@ -229,12 +209,12 @@ final class FieldPresentationRegistryTest extends TestCase
     {
         $type = self::type();
         $document = self::manifestDocument($type);
-        $declared = ManifestContributionSet::fromManifest(
+        $declared = ManifestContributions::fromManifest(
             ExtensionIdentifier::fromString('acme/editor'),
             $document,
             3,
         );
-        $roundTrip = $declared->toArray();
+        $roundTrip = $declared->declarations();
 
         self::assertArrayHasKey('field_presentations', $roundTrip['business']);
         self::assertSame(
@@ -243,11 +223,11 @@ final class FieldPresentationRegistryTest extends TestCase
         );
         self::assertSame(
             $roundTrip,
-            ManifestContributionSet::fromManifest(
+            ManifestContributions::fromManifest(
                 ExtensionIdentifier::fromString('acme/editor'),
                 $roundTrip,
                 3,
-            )->toArray(),
+            )->declarations(),
         );
     }
 
@@ -263,7 +243,7 @@ final class FieldPresentationRegistryTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('unknown key field_presentations');
 
-        ManifestContributionSet::fromManifest(
+        ManifestContributions::fromManifest(
             ExtensionIdentifier::fromString('acme/editor'),
             self::manifestDocument(self::type()),
             2,
@@ -285,7 +265,7 @@ final class FieldPresentationRegistryTest extends TestCase
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('require signed presentation contexts');
-        ManifestContributionSet::fromManifest(
+        ManifestContributions::fromManifest(
             ExtensionIdentifier::fromString('acme/editor'),
             $document,
             3,
@@ -312,7 +292,7 @@ final class FieldPresentationRegistryTest extends TestCase
             'list',
         ];
 
-        $manifest = ManifestContributionSet::fromManifest(
+        $manifest = ManifestContributions::fromManifest(
             ExtensionIdentifier::fromString('acme/editor'),
             $document,
             3,
@@ -366,11 +346,11 @@ final class FieldPresentationRegistryTest extends TestCase
         $document = self::manifestDocument($type);
         unset($document['business']['field_presentations']);
 
-        $roundTrip = ManifestContributionSet::fromManifest(
+        $roundTrip = ManifestContributions::fromManifest(
             ExtensionIdentifier::fromString('acme/editor'),
             $document,
             2,
-        )->toArray();
+        )->declarations();
 
         self::assertSame([$type->toArray()], $roundTrip['business']['field_types']);
         self::assertArrayNotHasKey('field_presentations', $roundTrip['business']);

@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Portal\Contribution;
 
+use Kumwe\Extension\Spi\Portal\Contribution\PortalTemplateDefinition;
+
 use InvalidArgumentException;
-use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ContributionSurface;
 
 /**

@@ -34,6 +34,7 @@ use Kumwe\App\Presentation\Twig\SiteTwigEnvironment;
 use Kumwe\App\Site\Application\PublicPageLocator;
 use Kumwe\App\Site\Application\SiteSettings;
 use Kumwe\App\Studio\Application\Composition\StudioPublishedContentRenderer;
+use Kumwe\Producer\Render\RenderResult;
 use Kumwe\App\Tests\Support\AuthorizationContext;
 use Kumwe\App\Workflow\Domain\Workflow;
 use Laminas\Diactoros\ServerRequestFactory;
@@ -101,7 +102,8 @@ final class HomePageHandlerTest extends TestCase
 
         self::assertSame(200, $response->getStatusCode());
         self::assertSame(
-            'page|Ueber uns|de:true:/?locale=de en-GB:false:/?locale=en-GB |/?locale=de|Kumwe|'
+            '<!doctype html><head></head>page|Ueber uns|de:true:/?locale=de en-GB:false:/?locale=en-GB '
+                . '|/?locale=de|Kumwe|'
                 . '<p>Ueber uns</p>',
             (string) $response->getBody(),
         );
@@ -112,10 +114,17 @@ final class HomePageHandlerTest extends TestCase
             'de',
             studioBody: '<section class="studio-preview-section"><p>Studio home</p></section>',
         );
-        self::assertSame(
+        $studioHtml = (string) $studio->getBody();
+        self::assertStringContainsString(
             'page|Ueber uns|de:true:/?locale=de en-GB:false:/?locale=en-GB |/?locale=de|Kumwe|'
                 . '<section class="studio-preview-section"><p>Studio home</p></section>',
-            (string) $studio->getBody(),
+            $studioHtml,
+        );
+        self::assertStringContainsString(
+            '<link rel="stylesheet" href="/studio/styles/'
+                . hash('sha256', '[data-studio-block]{display:block}')
+                . '.css?page=%2F&amp;entry=' . self::GERMAN . '&amp;locale=de" data-studio-composition>',
+            $studioHtml,
         );
     }
 
@@ -186,7 +195,7 @@ final class HomePageHandlerTest extends TestCase
         $handler = new HomePageHandler(
             $locator,
             new ContentPageRenderService($settings, new SiteRenderer(new SiteTwigEnvironment(new ArrayLoader([
-                'page.twig' => 'page|{{ entry.title }}|'
+                'page.twig' => '<!doctype html><head></head>page|{{ entry.title }}|'
                     . '{% for a in languages.alternates %}{{ a.locale }}:{{ a.current ? "true" : "false" }}:'
                     . '{{ a.href }} {% endfor %}|{{ canonical_url }}|{{ site_name }}|'
                     . '{{ entry.body_html|default("")|raw }}',
@@ -210,7 +219,7 @@ final class HomePageHandlerTest extends TestCase
      *
      * @param   ?string  $body  Safe Studio body or null to preserve the legacy Content presenter.
      *
-     * @return  ?StudioPublishedContentRenderer  Configured renderer, or null for the legacy path.
+     * @return  ?StudioPublishedContentRenderer  Configured renderer, or null without a Studio composition.
      *
      * @since   2.0.0
      */
@@ -220,7 +229,11 @@ final class HomePageHandlerTest extends TestCase
             return null;
         }
         $studio = $this->createStub(StudioPublishedContentRenderer::class);
-        $studio->method('render')->willReturn($body);
+        $studio->method('render')->willReturn(new RenderResult(
+            $body,
+            '[data-studio-block]{display:block}',
+            [],
+        ));
 
         return $studio;
     }

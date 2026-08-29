@@ -10,7 +10,6 @@ use Kumwe\App\Application\Authorization\AuthorizationDecision;
 use Kumwe\App\Application\Authorization\AuthorizationGateway;
 use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Application\Authorization\SiteContext;
-use Kumwe\App\Application\Automation\IdempotencyKey;
 use Kumwe\App\Application\Persistence\TransactionManager;
 use Kumwe\App\BusinessDefinition\Application\FieldTypeDefinitionResolver;
 use Kumwe\App\BusinessDefinition\Domain\BuiltInFieldTypes;
@@ -32,13 +31,9 @@ use Kumwe\App\BusinessSurface\Application\BusinessOperationStatusRepository;
 use Kumwe\App\BusinessSurface\Application\BusinessOperationStatusService;
 use Kumwe\App\BusinessSurface\Application\BusinessRecordProjector;
 use Kumwe\App\BusinessSurface\Application\BusinessSurfaceCatalog;
-use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionContract;
-use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionHandler;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionHandlerRegistry;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionLedgerResult;
-use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionResult;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessReferenceRegistry;
-use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessSchema;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessSurfaceDispatcher;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewHandlerRegistry;
 use Kumwe\App\Delivery\Http\Api\Business\BusinessOperationStatusApiHandler;
@@ -47,6 +42,10 @@ use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
 use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\App\Tests\Support\AuthorizationContext;
+use Kumwe\Extension\Spi\Application\Automation\IdempotencyKey;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionDeclaration;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionHandler;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionResult;
 use Laminas\Diactoros\ServerRequestFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
@@ -588,32 +587,32 @@ final class BusinessOperationStatusApiHandlerTest extends TestCase
     /**
      * Build the closed command and result schemas used by the tagged status fixture.
      *
-     * @return  CustomBusinessActionContract  Exact registered custom-action contract.
+     * @return  CustomBusinessActionDeclaration  Exact registered custom-action contract.
      *
      * @since   2.0.0
      */
-    private function customContract(): CustomBusinessActionContract
+    private function customContract(): CustomBusinessActionDeclaration
     {
-        return new CustomBusinessActionContract(
-            'acme.editor.actions.recalculate',
-            'acme.editor.schemas.recalculate_v1',
-            new CustomBusinessSchema([
+        return CustomBusinessActionDeclaration::fromManifest([
+            'handler' => 'acme.editor.actions.recalculate',
+            'schema' => 'acme.editor.schemas.recalculate_v1',
+            'command_schema' => [
                 'type' => 'object',
                 'additionalProperties' => false,
                 'properties' => [
                     'mode' => ['type' => 'string', 'enum' => ['full', 'delta'], 'maxLength' => 5],
                 ],
                 'required' => ['mode'],
-            ]),
-            new CustomBusinessSchema([
+            ],
+            'result_schema' => [
                 'type' => 'object',
                 'additionalProperties' => false,
                 'properties' => [
                     'status' => ['type' => 'string', 'const' => 'done', 'maxLength' => 4],
                 ],
                 'required' => ['status'],
-            ]),
-        );
+            ],
+        ]);
     }
 
     /**

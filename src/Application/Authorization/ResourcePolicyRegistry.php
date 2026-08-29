@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Application\Authorization;
 
 use InvalidArgumentException;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 
 /**
  * Collision-safe owner-aware registry of capability-to-resource policy bindings.

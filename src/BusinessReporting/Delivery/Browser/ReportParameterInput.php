@@ -6,7 +6,7 @@ namespace Kumwe\App\BusinessReporting\Delivery\Browser;
 
 use InvalidArgumentException;
 use Kumwe\App\BusinessReporting\Domain\ReportParameterDefinition;
-use Kumwe\App\BusinessReporting\Domain\ReportValueType;
+use Kumwe\Extension\Spi\BusinessReporting\Domain\ReportValueType;
 
 /**
  * Maps native server-rendered report controls into the strict domain parameter vocabulary.

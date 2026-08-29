@@ -8,7 +8,7 @@ use InvalidArgumentException;
 use Kumwe\App\Application\Presentation\Preference\PresentationAccessGroupCatalog;
 use Kumwe\App\Application\Presentation\Preference\PresentationPreferencePolicy;
 use Kumwe\App\Application\Presentation\Preference\PresentationPreferenceRepository;
-use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\InterfaceStandard\CustomizationScope;
 use Kumwe\App\InterfaceStandard\CustomizationSlot;
 use Kumwe\App\InterfaceStandard\PresentationPreference;

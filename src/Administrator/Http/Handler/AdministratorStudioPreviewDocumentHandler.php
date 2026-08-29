@@ -8,13 +8,14 @@ use InvalidArgumentException;
 use Kumwe\App\Administrator\Http\AdministratorRequest;
 use Kumwe\App\Administrator\Http\StudioPreviewHttpTransport;
 use Kumwe\App\Studio\Application\Host\StudioHostAccessRefused;
-use Kumwe\App\Studio\Application\Host\StudioHostDispatcher;
+use Kumwe\App\Studio\Application\Host\StudioProducerError;
 use Kumwe\App\Studio\Application\Host\StudioHostSessionAuthority;
 use Kumwe\App\Studio\Application\Preview\StudioPreviewDocumentClaimer;
 use Kumwe\App\Studio\Application\Preview\StudioPreviewRefused;
-use Kumwe\App\Studio\Application\Preview\StudioPreviewThemeStylesheet;
+use Kumwe\App\Studio\Application\Preview\StudioPreviewStylesheet;
 use Laminas\Diactoros\Response\HtmlResponse;
-use Laminas\Diactoros\Response\JsonResponse;
+use Kumwe\Producer\Wire\StrictResponder;
+use Laminas\Diactoros\Response\TextResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
@@ -87,17 +88,17 @@ final readonly class AdministratorStudioPreviewDocumentHandler implements Reques
         }
 
         try {
-            $stylesheetHref = '/administrator/studio/preview/theme.css?' . http_build_query([
+            $stylesheetHref = '/administrator/studio/preview/styles.css?' . http_build_query([
                 'context' => $contextKey,
                 'render' => $requestId,
                 'generation' => $generation,
                 'channel' => $transport->channelId,
                 'source' => $transport->sourceId,
             ], '', '&', PHP_QUERY_RFC3986);
-            $html = StudioPreviewThemeStylesheet::activate(
+            $html = StudioPreviewStylesheet::activate(
                 $grant->document->html,
                 $stylesheetHref,
-                $grant->document->themeStylesheet !== null,
+                $grant->document->stylesheet !== null,
             );
         } catch (InvalidArgumentException) {
             return self::refusal('invalid-request', 'studio.preview/invalid-rendered-document');
@@ -117,17 +118,20 @@ final readonly class AdministratorStudioPreviewDocumentHandler implements Reques
      * @param   string  $category  Closed host-error category.
      * @param   string  $code      Stable non-disclosing diagnostic code.
      *
-     * @return  JsonResponse  No-store refusal.
+     * @return  TextResponse  Exact canonical Producer refusal.
      *
      * @since   2.0.0
      */
-    private static function refusal(string $category, string $code): JsonResponse
+    private static function refusal(string $category, string $code): TextResponse
     {
-        $outcome = StudioHostDispatcher::refusal($category, $code);
+        $response = (new StrictResponder())->refusal(StudioProducerError::error($category, $code));
 
-        return new JsonResponse($outcome->document, $outcome->status, [
+        return new TextResponse($response->body, StudioProducerError::status($category), [
             'Cache-Control' => 'no-store, private',
+            'Content-Length' => $response->headers['content-length'],
+            'Content-Type' => $response->headers['content-type'],
             'Referrer-Policy' => 'no-referrer',
+            'X-Content-Type-Options' => $response->headers['x-content-type-options'],
         ]);
     }
 }

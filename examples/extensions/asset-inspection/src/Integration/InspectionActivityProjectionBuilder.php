@@ -5,11 +5,10 @@ declare(strict_types=1);
 namespace KumweExample\AssetInspection\Integration;
 
 use InvalidArgumentException;
-use Kumwe\App\BusinessReporting\Application\ProjectionBuilder;
-use Kumwe\App\BusinessReporting\Application\ProjectionEvent;
-use Kumwe\App\BusinessReporting\Application\ProjectionWriter;
-use Kumwe\App\BusinessReporting\Domain\ProjectionDefinition;
-use KumweExample\AssetInspection\Definitions;
+use Kumwe\Extension\Spi\BusinessReporting\Application\ProjectionBuilder;
+use Kumwe\Extension\Spi\BusinessReporting\Application\ProjectionEvent;
+use Kumwe\Extension\Spi\BusinessReporting\Application\ProjectionWriter;
+use Kumwe\Extension\Spi\BusinessReporting\Domain\ProjectionDefinition;
 
 /**
  * Deterministically projects the latest inspection-definition mutation without authoritative reads.
@@ -18,29 +17,6 @@ use KumweExample\AssetInspection\Definitions;
  */
 final readonly class InspectionActivityProjectionBuilder implements ProjectionBuilder
 {
-    /**
-     * Bind the builder to its exact signed rebuild contract.
-     *
-     * @param  ProjectionDefinition  $definition  Active immutable projection declaration.
-     *
-     * @since  2.0.0
-     */
-    public function __construct(private ProjectionDefinition $definition)
-    {
-    }
-
-    /**
-     * Return the exact signed projection contract implemented here.
-     *
-     * @return  ProjectionDefinition  Rebuildable schema-one core mutation projection.
-     *
-     * @since   2.0.0
-     */
-    public function definition(): ProjectionDefinition
-    {
-        return $this->definition;
-    }
-
     /**
      * Replace the single inspection activity row from a sequence-ordered source event.
      *
@@ -60,13 +36,13 @@ final readonly class InspectionActivityProjectionBuilder implements ProjectionBu
         ProjectionWriter $writer,
     ): void {
         if (
-            $definition->checksum() !== $this->definition->checksum()
-            || $event->type !== 'core.business_record.mutated'
-            || $event->schemaVersion !== 1
+            $definition->identifier() !== 'kumwe.asset-inspection-example.inspection-activity'
+            || $event->type() !== 'core.business_record.mutated'
+            || $event->schemaVersion() !== 1
         ) {
             throw new InvalidArgumentException('The inspection projection received an undeclared source event.');
         }
-        $payload = $event->payload;
+        $payload = $event->payload();
         $definitionId = $payload['definition_id'] ?? null;
         $definitionVersion = $payload['definition_version'] ?? null;
         $operation = $payload['operation'] ?? null;
@@ -82,7 +58,7 @@ final readonly class InspectionActivityProjectionBuilder implements ProjectionBu
         ) {
             throw new InvalidArgumentException('The inspection projection source payload is invalid.');
         }
-        if ($definitionId !== Definitions::INSPECTION_DEFINITION_ID) {
+        if ($definitionId !== InspectionMutation::DEFINITION_ID) {
             return;
         }
         $writer->put(

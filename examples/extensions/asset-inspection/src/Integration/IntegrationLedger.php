@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace KumweExample\AssetInspection\Integration;
 
-use Kumwe\App\BusinessIntegration\Domain\EventEnvelope;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventEnvelope;
 
 /**
  * Keeps bounded, non-authoritative diagnostics for the example's executable integration handlers.

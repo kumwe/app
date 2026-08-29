@@ -6,6 +6,11 @@ namespace Kumwe\App\BusinessSurface\Application\Custom;
 
 use InvalidArgumentException;
 use Kumwe\App\BusinessDefinition\Domain\DefinitionOwner;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessReference;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewDeclaration;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewHandler;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewQuery;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewResult;
 use LogicException;
 use Throwable;
 
@@ -34,7 +39,7 @@ final class CustomBusinessViewHandlerRegistry
      *
      * @var    array<string, array{
      *             owner: DefinitionOwner,
-     *             contract: CustomBusinessViewContract,
+     *             contract: CustomBusinessViewDeclaration,
      *             handler: CustomBusinessViewHandler
      *         }>
      * @since  2.0.0
@@ -64,9 +69,9 @@ final class CustomBusinessViewHandlerRegistry
     /**
      * Register one provider-reconciled custom view handler and signed contract.
      *
-     * @param   DefinitionOwner             $owner     Core or extension owner claiming both references.
-     * @param   CustomBusinessViewContract  $contract  Signed query and result contract.
-     * @param   CustomBusinessViewHandler   $handler   Typed application handler implementation.
+     * @param   DefinitionOwner                $owner     Core or extension owner claiming both references.
+     * @param   CustomBusinessViewDeclaration  $contract  Signed query and result contract.
+     * @param   CustomBusinessViewHandler      $handler   Typed application handler implementation.
      *
      * @return  void
      *
@@ -77,7 +82,7 @@ final class CustomBusinessViewHandlerRegistry
      */
     public function register(
         DefinitionOwner $owner,
-        CustomBusinessViewContract $contract,
+        CustomBusinessViewDeclaration $contract,
         CustomBusinessViewHandler $handler,
     ): void {
         if (isset($this->handlers[$contract->handler])) {
@@ -156,7 +161,7 @@ final class CustomBusinessViewHandlerRegistry
      * @param   string           $handlerReference  Handler reference the definition publishes.
      * @param   string           $schemaReference   Schema reference the definition publishes.
      *
-     * @return  CustomBusinessViewContract|null  Contract, or null for every absent or ownership mismatch.
+     * @return  CustomBusinessViewDeclaration|null  Contract, or null for every absent or ownership mismatch.
      *
      * @since   2.0.0
      */
@@ -164,7 +169,7 @@ final class CustomBusinessViewHandlerRegistry
         DefinitionOwner $owner,
         string $handlerReference,
         string $schemaReference,
-    ): ?CustomBusinessViewContract {
+    ): ?CustomBusinessViewDeclaration {
         $entry = $this->handlers[$handlerReference] ?? null;
         if (
             $entry === null
@@ -181,14 +186,14 @@ final class CustomBusinessViewHandlerRegistry
      *
      * @param   DefinitionOwner  $owner  Contributor whose contracts are being inventoried.
      *
-     * @return  list<CustomBusinessViewContract>  Contracts in handler-reference order.
+     * @return  list<CustomBusinessViewDeclaration>  Contracts in handler-reference order.
      *
      * @since   2.0.0
      */
     public function ownedBy(DefinitionOwner $owner): array
     {
         return array_values(array_map(
-            static fn (array $entry): CustomBusinessViewContract => $entry['contract'],
+            static fn (array $entry): CustomBusinessViewDeclaration => $entry['contract'],
             array_filter(
                 $this->handlers,
                 static fn (array $entry): bool => $entry['owner']->toArray() === $owner->toArray(),

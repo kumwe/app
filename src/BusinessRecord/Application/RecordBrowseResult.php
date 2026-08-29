@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessRecord\Application;
 
 use InvalidArgumentException;
-use Kumwe\App\BusinessRecord\Query\RecordCursor;
+use Kumwe\Extension\Spi\BusinessRecord\Query\RecordCursor;
 
 /**
  * One page of a business-record browse: the projected rows, where to continue, and any totals asked for.

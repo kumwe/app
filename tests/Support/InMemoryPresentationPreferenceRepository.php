@@ -7,7 +7,7 @@ namespace Kumwe\App\Tests\Support;
 use InvalidArgumentException;
 use Kumwe\App\Application\Presentation\Preference\PresentationPreferenceRepository;
 use Kumwe\App\Application\Presentation\Preference\PresentationPreferenceVersionConflict;
-use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\InterfaceStandard\PresentationPreference;
 use Kumwe\App\InterfaceStandard\PresentationPreferenceKey;
 

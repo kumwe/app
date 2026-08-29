@@ -19,10 +19,13 @@ const repositoryRoot = fileURLToPath(new URL("../", import.meta.url));
 const contractRoot = join(repositoryRoot, "resources/studio-contract");
 const releasePath = join(contractRoot, "studio-release.json");
 const pinPath = join(contractRoot, "PIN.json");
-const corpusManifestPath = join(
-  repositoryRoot,
-  "tests/Fixtures/Studio/testkit/corpus-manifest.json",
+const protocolPackageRoot = fileURLToPath(
+  new URL("../", import.meta.resolve("@kumwe/studio-protocol")),
 );
+const testkitPackageRoot = fileURLToPath(
+  new URL("../", import.meta.resolve("@kumwe/studio-testkit")),
+);
+const corpusManifestPath = join(testkitPackageRoot, "corpus-manifest.json");
 const packagePath = join(repositoryRoot, "package.json");
 const lockPath = join(repositoryRoot, "package-lock.json");
 
@@ -139,22 +142,28 @@ function verifyReleaseRecord() {
   }
 }
 
-/** Prove the protocol, testkit, and host copied the same release bytes. */
+/** Prove the exact installed protocol, testkit, and host name the same release bytes. */
 async function verifyReleaseCopies() {
-  for (const relative of [
-    "resources/studio-contract/protocol/studio-release.json",
-    "tests/Fixtures/Studio/testkit/studio-release.json",
+  for (const [label, path] of [
+    [
+      "installed @kumwe/studio-protocol release record",
+      join(protocolPackageRoot, "studio-release.json"),
+    ],
+    [
+      "installed @kumwe/studio-testkit release record",
+      join(testkitPackageRoot, "studio-release.json"),
+    ],
   ]) {
     let bytes;
     try {
-      bytes = await readFile(join(repositoryRoot, relative));
+      bytes = await readFile(path);
     } catch {
-      errors.push(`${relative} is missing.`);
+      errors.push(`${label} is missing.`);
       continue;
     }
     if (!bytes.equals(releaseBytes)) {
       errors.push(
-        `${relative} is not byte-identical to the vendored release record.`,
+        `${label} is not byte-identical to the App release record.`,
       );
     }
   }

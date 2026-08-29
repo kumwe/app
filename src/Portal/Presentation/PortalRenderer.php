@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Portal\Presentation;
 
-use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\Extension\Spi\Binding\Http\PortalRouteRenderer;
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Portal\Application\PortalSession;
 use Kumwe\App\Portal\Contribution\PortalNavigationRegistry;
 use Kumwe\App\Portal\Contribution\PortalTemplateRegistry;
@@ -30,6 +31,8 @@ final readonly class PortalRenderer
      * @param  PortalTemplateRegistry      $templates   Explicit portal template authority.
      * @param  PortalNavigationVisibility  $visibility  Request-session navigation predicate.
      * @param  ?ViteAssetManifest          $assets      Built portal asset manifest, or null for fallbacks.
+     * @param  ?object                     $extensionRequestProvenance Private composition-root authority
+     *         required to mint extension route renderer capabilities.
      *
      * @since  2.0.0
      */
@@ -39,6 +42,7 @@ final readonly class PortalRenderer
         private PortalTemplateRegistry $templates,
         private PortalNavigationVisibility $visibility,
         private ?ViteAssetManifest $assets = null,
+        private ?object $extensionRequestProvenance = null,
     ) {
     }
 
@@ -93,6 +97,22 @@ final readonly class PortalRenderer
             '@' . IsolatedTwigEnvironmentFactory::extensionNamespace($extension) . '/' . $path,
             $this->shared($data, $session),
         );
+    }
+
+    /**
+     * Mint a renderer capability closed over one validated owner, template and active navigation item.
+     *
+     * @since 2.0.0
+     */
+    public function forExtensionRoute(
+        string $extension,
+        string $template,
+        string $activeNavigation,
+    ): PortalRouteRenderer {
+        $provenance = $this->extensionRequestProvenance
+            ?? throw new \LogicException('Extension route rendering requires the private host provenance.');
+
+        return new PortalContributionRenderer($this, $extension, $template, $activeNavigation, $provenance);
     }
 
     /**

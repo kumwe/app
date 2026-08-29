@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Kernel\Configuration;
 
 use Kumwe\App\BusinessRecord\Domain\BusinessRecordReplayWindow;
-use Kumwe\Extension\Package\PackageConformanceMode;
+use Kumwe\App\Extension\Application\Package\PackageConformanceMode;
 use Kumwe\App\Infrastructure\Observability\ObservabilityContract;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use JsonException;

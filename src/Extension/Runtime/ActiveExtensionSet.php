@@ -4,29 +4,27 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Extension\Runtime;
 
-use Kumwe\App\Extension\Application\ExtensionServiceProvider;
+use Kumwe\Extension\Spi\Runtime\BootableExtension;
+use Kumwe\Extension\Spi\Runtime\ExtensionContainer;
+use Kumwe\Extension\Spi\Application\ExtensionServiceProvider;
 use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
-use Kumwe\App\Extension\Contribution\CanonicalCompositionDocument;
-use Kumwe\App\Extension\Contribution\CanonicalCompositionKind;
-use Kumwe\App\Extension\Contribution\ContributionOwner;
-use Kumwe\App\Extension\Contribution\ExtensionContributionProvider;
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
-use Kumwe\App\Extension\Contribution\ManifestContributionSet;
-use Kumwe\App\Extension\Contribution\StudioPreviewRendererContribution;
 use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
 use Kumwe\App\Extension\Domain\ThemeSurface;
 use Kumwe\App\Portal\Presentation\PortalRenderer;
-use Kumwe\App\Studio\Application\Preview\StudioPreviewBlockRenderer;
+use Kumwe\Extension\Manifest\ManifestContributions;
+use Kumwe\Extension\Spi\Binding\ExtensionBindingProvider;
 use LogicException;
 use Mezzio\Application;
-use Throwable;
 
 /**
  * The extensions running in this process, together with the runtime surfaces they contributed.
  *
  * `ExtensionRuntimeLoader` fills one of these as it walks the compiled runtime map, then drives the two
- * phases that cannot run until every provider has registered its services: `contribute()` and `boot()`.
+ * phases that cannot run until every provider has registered its services: canonical activation,
+ * executable binding, and `boot()`.
  * Afterwards the container shares the set as the single answer to what is active right now — the HTTP
  * application asks it to declare extension routes, the Twig factory asks it for theme and extension view
  * directories, and its count and contribution inventory are how a caller checks what a boot really
@@ -40,15 +38,12 @@ final class ActiveExtensionSet
     /**
      * Every loaded extension with the collaborators its later phases need, in runtime map order.
      *
-     * `strict` records that the extension declared manifest schema 2 or newer, which decides whether it
-     * may contribute runtime surfaces at all.
-     *
      * @var    list<array{
      *             identifier: string,
      *             provider: ExtensionServiceProvider,
      *             container: ExtensionContainer,
-     *             declared: ManifestContributionSet,
-     *             strict: bool,
+     *             declared: ManifestContributions,
+     *             version: ?string,
      *             runtime_entry: array<string, mixed>|null
      *         }>
      * @since  2.0.0
@@ -114,7 +109,7 @@ final class ActiveExtensionSet
      * @param  ?TrustStore                       $trust          Trust boundary the routes declared here
      *         consult per request; null yields a set that holds extensions but cannot register routes.
      * @param  ?ExtensionExecutionGate           $execution      Exact runtime-generation fence used before
-     *         resident extension preview code executes; null keeps executable preview bindings inert.
+     *         resident extension preview code executes; null makes an executable preview binding fail.
      *
      * @since  2.0.0
      */
@@ -128,24 +123,21 @@ final class ActiveExtensionSet
     /**
      * Record an extension whose provider has registered its services and is ready for the later phases.
      *
-     * Nothing runs here. `contribute()`, `boot()` and `registerRoutes()` visit the recorded entries
-     * afterwards, each in the order the extensions were added.
+     * Nothing runs here. The manifest activation, executable binding and `boot()` phases visit the
+     * recorded entries afterwards, each in the order the extensions were added.
      *
-     * @param   string                     $identifier           Canonical `vendor/name` of the extension.
-     * @param   ExtensionServiceProvider   $provider             Provider instance whose `register()` has
+     * @param   string                     $identifier          Canonical `vendor/name` of the extension.
+     * @param   ExtensionServiceProvider   $provider            Provider instance whose `register()` has
      *          already run.
-     * @param   ExtensionContainer         $container            Restricted container that provider
+     * @param   ExtensionContainer         $container           Restricted container that provider
      *          registered into, handed back to it in the later phases.
-     * @param   ManifestContributionSet    $declared             Contributions the manifest declares, which
-     *          the registrar then holds the provider to.
-     * @param   bool                       $strictContributions  True when the manifest is schema 2 or newer, which
-     *          is what admits the extension to `contribute()`.
-     * @param   ?string                    $version              Verified installed package version, when this set
+     * @param   ManifestContributions      $declared            Canonical SDK graph declared by the manifest.
+     * @param   ?string                    $version             Verified installed package version, when this set
      *          was built from a signed runtime publication.
-     * @param   ?string                    $deployedTreeSha256   Verified deployed release-tree digest paired with
+     * @param   ?string                    $deployedTreeSha256  Verified deployed release-tree digest paired with
      *          `$version`.
-     * @param   array<string, mixed>|null  $runtimeEntry         Exact signed compiled entry that loaded this code,
-     *          or null for an isolated compatibility fixture that must not execute resident contributions.
+     * @param   array<string, mixed>|null  $runtimeEntry        Exact signed compiled entry that loaded this code,
+     *          or null for an isolated declarative fixture that cannot bind resident preview behavior.
      *
      * @return  void
      *
@@ -155,12 +147,14 @@ final class ActiveExtensionSet
         string $identifier,
         ExtensionServiceProvider $provider,
         ExtensionContainer $container,
-        ManifestContributionSet $declared,
-        bool $strictContributions,
+        ManifestContributions $declared,
         ?string $version = null,
         ?string $deployedTreeSha256 = null,
         ?array $runtimeEntry = null,
     ): void {
+        if ($declared->owner->identifier() !== $identifier) {
+            throw new LogicException('An active manifest contribution graph must belong to its provider.');
+        }
         if (($version === null) !== ($deployedTreeSha256 === null)) {
             throw new LogicException('Extension release coordinates must be supplied together.');
         }
@@ -178,7 +172,7 @@ final class ActiveExtensionSet
             'provider' => $provider,
             'container' => $container,
             'declared' => $declared,
-            'strict' => $strictContributions,
+            'version' => $version,
             'runtime_entry' => $runtimeEntry,
         ];
         if ($version !== null && $deployedTreeSha256 !== null) {
@@ -392,9 +386,9 @@ final class ActiveExtensionSet
     /**
      * Run the boot phase of every extension that takes part in the request runtime.
      *
-     * Providers that only publish services are skipped; only a `RuntimeExtension` has a boot phase. This
-     * is the last phase, after every provider registered and after `contribute()`, so an extension
-     * booting here sees its own container fully registered and registries nobody will add to any more.
+     * Providers that only publish services are skipped; only a `BootableExtension` has a boot phase. This
+     * is the last phase, after every provider registered and after canonical activation and binding, so an
+     * extension booting here sees its own container fully registered and closed contribution registries.
      *
      * @return  void
      *
@@ -403,141 +397,64 @@ final class ActiveExtensionSet
     public function boot(): void
     {
         foreach ($this->extensions as $extension) {
-            if ($extension['provider'] instanceof RuntimeExtension) {
+            if ($extension['provider'] instanceof BootableExtension) {
                 $extension['provider']->boot($extension['container']);
             }
         }
     }
 
     /**
-     * Collect the contributions of every loaded extension into the shared registries.
+     * Activate signed declarations directly and bind only their exact executable identifiers.
      *
-     * Runs after every provider registered services and before boot or route registration. Manifest
-     * schema and provider contract have to agree here: an extension on a strict schema must implement
-     * `ExtensionContributionProvider`, and one still on schema 1 may not contribute at all. Each provider
-     * registers through a registrar scoped to its own owner and to its manifest declarations, so it can
-     * neither claim an identifier outside its namespace nor register something it did not declare. The
-     * assembled business definitions are validated once at the end, when every contributor has been seen,
-     * because a definition may point at a field type or an entity another extension contributes.
+     * Provider code receives no declarative registrar. The SDK graph is installed first; a provider
+     * implementing `ExtensionBindingProvider` may then attach behavior by identifier, and completion
+     * refuses every missing, duplicate, foreign, or wrong-kind binding. Schema-one manifests carry the
+     * SDK's explicit empty graph and therefore have no alternate route or event execution channel.
      *
      * @return  void
      *
-     * @throws  LogicException  When a strict extension does not implement the contribution provider
-     *          contract, or a schema-1 extension does implement it and tries to contribute.
-     * @throws  \InvalidArgumentException  When a provider omits or repeats a contribution its manifest
-     *          declared, or claims an identifier it does not own.
+     * @throws  LogicException  When signed executable requirements have no binding provider.
+     * @throws  \InvalidArgumentException  When executable bindings do not exactly satisfy the manifest.
      * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the assembled
      *          business definition graph does not validate.
      *
      * @since   2.0.0
      */
-    public function contribute(): void
+    public function activate(): void
     {
         foreach ($this->extensions as $extension) {
             $provider = $extension['provider'];
-            if (!$provider instanceof ExtensionContributionProvider) {
-                if ($extension['strict']) {
+            $registrar = $this->contributions->activateManifest(
+                $extension['declared'],
+                $this->trust,
+                $this->execution,
+                $extension['version'],
+                $extension['runtime_entry'],
+            );
+            $required = $extension['declared']->executableBindingRequirements()->toArray();
+            if (!$provider instanceof ExtensionBindingProvider) {
+                if ($required !== []) {
                     throw new LogicException(sprintf(
-                        'Strict extension %s must implement the contribution provider contract.',
+                        'Extension %s must bind every executable identifier declared by its manifest.',
                         $extension['identifier'],
                     ));
                 }
+                $registrar->complete();
                 continue;
             }
-            if (!$extension['strict']) {
-                throw new LogicException(sprintf(
-                    'Extension %s must use manifest schema 2 or newer before contributing runtime surfaces.',
-                    $extension['identifier'],
-                ));
-            }
-            $registrar = $this->contributions->registrar(
-                ContributionOwner::extension($extension['identifier']),
-                $extension['declared'],
-            );
-            $provider->contribute($registrar, $extension['container']);
+            $provider->bind($registrar, $extension['container']);
             $registrar->complete();
-            $this->activateStudioPreviewRenderers($extension);
         }
         $this->contributions->validateBusinessDefinitions();
         $this->contributions->validateIntegrationContributions();
     }
 
     /**
-     * Activate only explicit owner-local services behind exact canonical block coordinates.
-     *
-     * A manifest renderer value is never treated as a class or factory. It can only address a service
-     * the already-verified provider shared under its restricted `extension.<owner>.` namespace. Missing,
-     * malformed, foreign, stale-test, or incorrectly typed registrations stay inert so a Gate-A package
-     * that shipped declarations before this execution seam continues to activate unchanged.
-     *
-     * @param   array{
-     *              identifier: string,
-     *              provider: ExtensionServiceProvider,
-     *              container: ExtensionContainer,
-     *              declared: ManifestContributionSet,
-     *              strict: bool,
-     *              runtime_entry: array<string, mixed>|null
-     *          }  $extension  Loaded extension and exact runtime provenance.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    private function activateStudioPreviewRenderers(array $extension): void
-    {
-        $runtimeEntry = $extension['runtime_entry'];
-        $runtimeVersion = is_array($runtimeEntry) ? $runtimeEntry['version'] ?? null : null;
-        if ($this->trust === null || $this->execution === null || !is_string($runtimeVersion)) {
-            return;
-        }
-        $owner = ContributionOwner::extension($extension['identifier']);
-        foreach ($extension['declared']->compositionHostBindings() as $binding) {
-            if ($binding->kind !== CanonicalCompositionKind::BlockDefinition || $binding->renderer === null) {
-                continue;
-            }
-            $registered = $this->contributions->canonicalCompositionDocuments()->definition(
-                $owner,
-                $binding->identifier(),
-            );
-            if (!$registered instanceof CanonicalCompositionDocument) {
-                continue;
-            }
-            try {
-                $definition = new StudioPreviewRendererContribution(
-                    $owner,
-                    $runtimeVersion,
-                    $registered,
-                    $binding,
-                );
-                $implementation = $extension['container']->get('extension.' . $binding->renderer);
-                if (!$implementation instanceof StudioPreviewBlockRenderer) {
-                    continue;
-                }
-                $this->contributions->studioPreviewRenderers()->register(
-                    $owner,
-                    $definition,
-                    new TrustEnforcingStudioPreviewBlockRenderer(
-                        $implementation,
-                        $this->trust,
-                        $this->execution,
-                        $extension['identifier'],
-                        $runtimeEntry,
-                    ),
-                );
-            } catch (Throwable) {
-                // An unavailable or contradictory executable binding remains an inert unresolved block.
-            }
-        }
-    }
-
-    /**
      * Declare every extension route on the HTTP application being composed.
      *
-     * Two kinds of route are mounted: those a `RuntimeExtension` declares itself, through a registrar
-     * that confines them to its own path and route-name namespace, and the administrator routes
-     * extensions contributed through the registries. Both are wrapped in a per-request trust check, so a
-     * route keeps answering only while its extension stays enabled and trusted — the router is composed
-     * once and never rebuilt when an extension is disabled.
+     * Routes come only from signed manifest declarations whose executable factories were bound by ID.
+     * The route registries retain the owner, declaration and factory together and mount every handler
+     * behind live trust and authorization checks.
      *
      * @param   Application            $application     Mezzio application the routes are declared on.
      * @param   AdministratorRenderer  $renderer        Renderer handed to each contributed administrator
@@ -557,21 +474,6 @@ final class ActiveExtensionSet
         AdministratorRenderer $renderer,
         ?PortalRenderer $portalRenderer = null,
     ): void {
-        foreach ($this->extensions as $extension) {
-            if ($extension['provider'] instanceof RuntimeExtension) {
-                $trust = $this->trust
-                    ?? throw new LogicException('Runtime extensions require an installed trust boundary.');
-                // The immutable, signed runtime publication is the request-bootstrap
-                // trust attestation. Route handlers are still wrapped in live trust
-                // enforcement by the registrar, but ordinary application bootstrap
-                // must not acquire the global lifecycle lock or hash the runtime tree.
-                $extension['provider']->registerRoutes(new MezzioExtensionRouteRegistrar(
-                    $application,
-                    $extension['identifier'],
-                    $trust,
-                ));
-            }
-        }
         $trust = $this->trust
             ?? throw new LogicException('Administrator extension routes require an installed trust boundary.');
         $this->contributions->routes()->registerInto($application, $trust, $renderer);

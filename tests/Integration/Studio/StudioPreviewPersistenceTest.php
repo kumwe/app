@@ -20,6 +20,7 @@ use Kumwe\App\Studio\Domain\Preview\StudioPreviewRenderedDocument;
 use Kumwe\App\Studio\Domain\Preview\StudioPreviewRenderRequest;
 use Kumwe\App\Studio\Domain\Preview\StudioPreviewTransport;
 use Kumwe\App\Studio\Infrastructure\Persistence\DoctrineStudioPreviewRepository;
+use Kumwe\Producer\Schema\StudioContractResources;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
@@ -88,7 +89,7 @@ final class StudioPreviewPersistenceTest extends TestCase
             new DateTimeImmutable('2026-08-24T12:00:30+00:00'),
         );
         self::assertNotNull($claimed);
-        self::assertSame('body{--site-accent:#0c9189;}', $claimed->document->themeStylesheet);
+        self::assertSame('body{--site-accent:#0c9189;}', $claimed->document->stylesheet);
         self::assertSame(
             'body{--site-accent:#0c9189;}',
             $repository->claimed(
@@ -96,7 +97,7 @@ final class StudioPreviewPersistenceTest extends TestCase
                 $request->requestId,
                 $transport,
                 new DateTimeImmutable('2026-08-24T12:00:31+00:00'),
-            )?->document->themeStylesheet,
+            )?->document->stylesheet,
         );
         self::assertNull($repository->claim(
             $contextA,
@@ -552,8 +553,12 @@ final class StudioPreviewPersistenceTest extends TestCase
      */
     private static function vector(string $filename): stdClass
     {
-        $path = dirname(__DIR__, 2) . '/Fixtures/Studio/testkit/vectors/host-sequence/' . $filename;
-        $vector = json_decode((string) file_get_contents($path), false, 64, JSON_THROW_ON_ERROR);
+        $vector = json_decode(
+            StudioContractResources::testkitBytes('vectors/host-sequence/' . $filename),
+            false,
+            64,
+            JSON_THROW_ON_ERROR,
+        );
         if (!$vector instanceof stdClass) {
             throw new RuntimeException('The Studio preview host-sequence vector is invalid.');
         }

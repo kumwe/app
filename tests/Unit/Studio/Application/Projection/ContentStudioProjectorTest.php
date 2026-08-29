@@ -18,7 +18,7 @@ use Kumwe\App\Content\Domain\PublicationWindow;
 use Kumwe\App\Studio\Application\Projection\ContentStudioProjector;
 use Kumwe\App\Studio\Application\Projection\StudioContentFieldDisclosure;
 use Kumwe\App\Studio\Application\Projection\StudioProjectionRejected;
-use Kumwe\App\Studio\Domain\Contract\StudioContractSchemas;
+use Kumwe\Producer\Schema\StudioDocumentSchemaRegistry;
 use Kumwe\App\Studio\Domain\Projection\ContentBlueprintBinding;
 use Kumwe\App\Studio\Domain\Projection\EntryCompositionOverrides;
 use Kumwe\App\Studio\Domain\Projection\StudioProjectionRejection;
@@ -39,7 +39,7 @@ use stdClass;
 #[UsesClass(ContentBlueprintBinding::class)]
 #[UsesClass(EntryCompositionOverrides::class)]
 #[UsesClass(JsonSchemaValidator::class)]
-#[UsesClass(StudioContractSchemas::class)]
+#[UsesClass(StudioDocumentSchemaRegistry::class)]
 final class ContentStudioProjectorTest extends TestCase
 {
     /**
@@ -143,7 +143,9 @@ final class ContentStudioProjectorTest extends TestCase
 
         $model = $this->projector()->contentModel($this->context(), $definition, $binding);
 
-        self::assertTrue(StudioContractSchemas::fromVendoredCorpus()->validator('content-model')->validate($model));
+        self::assertTrue(
+            StudioDocumentSchemaRegistry::fromVendoredCorpus()->validate('content-model', $model)->valid(),
+        );
         self::assertSame('0.1-draft', $model->contractVersion);
         self::assertSame('content-model', $model->kind);
         self::assertSame('content-model:' . self::TYPE_ID, $model->id);
@@ -255,7 +257,7 @@ final class ContentStudioProjectorTest extends TestCase
             $overrides,
         );
 
-        self::assertTrue(StudioContractSchemas::fromVendoredCorpus()->validator('entry')->validate($entry));
+        self::assertTrue(StudioDocumentSchemaRegistry::fromVendoredCorpus()->validate('entry', $entry)->valid());
         self::assertSame('content-entry:' . self::ENTRY_ID, $entry->id);
         self::assertSame('content-entry-v7', $entry->revision);
         self::assertSame('content-model:' . self::TYPE_ID, $entry->model->id);
@@ -1106,7 +1108,7 @@ final class ContentStudioProjectorTest extends TestCase
         );
 
         return new ContentStudioProjector(
-            StudioContractSchemas::fromVendoredCorpus(),
+            StudioDocumentSchemaRegistry::fromVendoredCorpus(),
             $disclosure,
             new JsonSchemaValidator(),
         );

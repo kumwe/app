@@ -15,12 +15,24 @@ final class BusinessRuntimeBoundaryTest extends TestCase
 {
     public function testBusinessRuntimeIsSeparateFromCmsContentAndHasNoUniversalRecordStore(): void
     {
+        $root = dirname(__DIR__, 2);
         $runtime = $this->source('src/BusinessSchema') . $this->source('src/BusinessRecord');
         $migration = $this->contents(
             'src/Infrastructure/Persistence/Migration/BusinessTransactionalRuntimeMigration.php',
         );
 
         self::assertStringNotContainsString('Kumwe\\App\\Content\\', $runtime);
+        self::assertStringNotContainsString('Kumwe\\App\\BusinessRecord\\Query\\', $runtime);
+        self::assertStringNotContainsString(
+            'Kumwe\\App\\BusinessRecord\\Application\\Query\\BusinessRecordQueryPurpose',
+            $runtime,
+        );
+        self::assertStringNotContainsString('Kumwe\\App\\BusinessRecord\\Domain\\ZonedDateTimeValue', $runtime);
+        self::assertDirectoryDoesNotExist($root . '/src/BusinessRecord/Query');
+        self::assertFileDoesNotExist(
+            $root . '/src/BusinessRecord/Application/Query/BusinessRecordQueryPurpose.php',
+        );
+        self::assertFileDoesNotExist($root . '/src/BusinessRecord/Domain/ZonedDateTimeValue.php');
         self::assertDoesNotMatchRegularExpression(
             '/(?:raw|quoted)\([\'\"]business_records[\'\"]\)|new\s+Table\([^\n]*business_records/i',
             $runtime . $migration,
@@ -35,7 +47,6 @@ final class BusinessRuntimeBoundaryTest extends TestCase
             . $this->source('src/BusinessSchema/Delivery')
             . $this->source('src/BusinessRecord/Application')
             . $this->source('src/BusinessRecord/Domain')
-            . $this->source('src/BusinessRecord/Query')
             . $this->source('src/BusinessSurface/Application')
             . $this->source('src/BusinessSurface/Delivery')
             . $this->source('src/BusinessSurface/Presentation');
@@ -54,12 +65,11 @@ final class BusinessRuntimeBoundaryTest extends TestCase
         $recordService = $this->contents('src/BusinessRecord/Application/BusinessRecordService.php');
         $recordApplicationContracts = $this->source('src/BusinessRecord/Application/Command')
             . $this->source('src/BusinessRecord/Application/Query');
-        $recordQuery = $this->source('src/BusinessRecord/Query');
         $schemaDelivery = $this->source('src/BusinessSchema/Delivery');
 
         self::assertDoesNotMatchRegularExpression(
             '/function\s+\w+\s*\([^)]*\$(?:sql|table|column|orderBy|expression)\b/i',
-            $recordService . $recordApplicationContracts . $recordQuery . $schemaDelivery,
+            $recordService . $recordApplicationContracts . $schemaDelivery,
             'Public business runtime boundaries must accept typed handles and specifications, never SQL tokens.',
         );
         self::assertDoesNotMatchRegularExpression(

@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Studio\Application\Host;
 
-use Kumwe\App\Studio\Domain\Contract\CanonicalJson;
-use Kumwe\App\Studio\Domain\Host\StudioHostRequest;
+use Kumwe\Producer\Canonical\CanonicalJson;
+use Kumwe\Producer\Wire\HostResult;
+use Kumwe\Producer\Wire\Port\TelemetryPortInterface;
+use Kumwe\Producer\Wire\RequestContext;
 use Psr\Log\LoggerInterface;
 use stdClass;
 
@@ -17,52 +19,62 @@ use stdClass;
  *
  * @since  2.0.0
  */
-final readonly class StudioTelemetryHostPort
+final readonly class StudioTelemetryHostPort implements TelemetryPortInterface
 {
     /**
      * Bind client telemetry to the existing structured observability sink.
      *
      * @param  LoggerInterface  $logger  Existing structured observability sink.
+     * @param  StudioProducerRequestAuthority|null $authority Authorized Producer request scope, when bound.
      *
      * @since  2.0.0
      */
-    public function __construct(private LoggerInterface $logger)
+    public function __construct(
+        private LoggerInterface $logger,
+        private ?StudioProducerRequestAuthority $authority = null,
+    ) {
+    }
+
+    /**
+     * Bind this App-owned port implementation to one successfully authorized Producer request.
+     *
+     * @param   StudioProducerRequestAuthority  $authority  Trusted evidence for one exact dispatch.
+     *
+     * @return  self  Request-scoped telemetry port.
+     *
+     * @since   2.0.0
+     */
+    public function forRequest(StudioProducerRequestAuthority $authority): self
     {
+        return new self($this->logger, $authority);
     }
 
     /**
      * Validate and emit one bounded primitive-only Studio telemetry event.
      *
-     * @param   string                     $operation  Canonical telemetry operation.
-     * @param   StudioHostRequest          $request    Validated host envelope.
-     * @param   StudioHostSessionSnapshot  $snapshot   Live trusted session snapshot.
+     * @param   mixed           $arguments  Validated Producer operation arguments.
+     * @param   RequestContext  $context    Validated Producer request context.
      *
-     * @return  StudioHostResult  Canonical empty acknowledgement.
+     * @return  HostResult  Canonical empty acknowledgement.
      *
      * @since   2.0.0
      */
-    public function dispatch(
-        string $operation,
-        StudioHostRequest $request,
-        StudioHostSessionSnapshot $snapshot,
-    ): StudioHostResult {
-        if ($operation !== 'emit') {
-            throw new StudioHostOperationRefused('incompatible', 'studio.host/operation-unavailable');
+    public function emit(mixed $arguments, RequestContext $context): HostResult
+    {
+        $snapshot = $this->requestAuthority()->snapshot();
+        if ($context->expectedRevision !== null) {
+            StudioProducerError::refuse('invalid-request', 'studio.host/invalid-context');
         }
-        if ($request->expectedRevision !== null || $request->idempotencyKey !== null) {
-            throw new StudioHostOperationRefused('invalid-request', 'studio.host/invalid-context');
-        }
-        $arguments = $request->arguments;
         if (!$arguments instanceof stdClass || self::members($arguments) !== ['event']) {
-            throw new StudioHostOperationRefused('invalid-request', 'studio.host/invalid-arguments');
+            StudioProducerError::refuse('invalid-request', 'studio.host/invalid-arguments');
         }
         $event = $arguments->event;
         if (!$event instanceof stdClass) {
-            throw new StudioHostOperationRefused('invalid-request', 'studio.host/invalid-arguments');
+            StudioProducerError::refuse('invalid-request', 'studio.host/invalid-arguments');
         }
         $members = self::members($event);
         if (!in_array($members, [['name'], ['attributes', 'name']], true)) {
-            throw new StudioHostOperationRefused('invalid-request', 'studio.host/invalid-arguments');
+            StudioProducerError::refuse('invalid-request', 'studio.host/invalid-arguments');
         }
         $name = $event->name ?? null;
         if (
@@ -70,24 +82,24 @@ final readonly class StudioTelemetryHostPort
             || strlen($name) > 120
             || preg_match('/^[a-z][a-z0-9.-]*\/[a-z][a-z0-9._-]*$/D', $name) !== 1
         ) {
-            throw new StudioHostOperationRefused('invalid-request', 'studio.telemetry/invalid-event');
+            StudioProducerError::refuse('invalid-request', 'studio.telemetry/invalid-event');
         }
         $attributes = $event->attributes ?? new stdClass();
         if (!$attributes instanceof stdClass || count(get_object_vars($attributes)) > 32) {
-            throw new StudioHostOperationRefused('invalid-request', 'studio.telemetry/invalid-attributes');
+            StudioProducerError::refuse('invalid-request', 'studio.telemetry/invalid-attributes');
         }
         $attributeNames = [];
         foreach (get_object_vars($attributes) as $key => $value) {
             if (strlen($key) > 64 || preg_match('/^[a-z][a-z0-9._-]*$/D', $key) !== 1 || !self::primitive($value)) {
-                throw new StudioHostOperationRefused('invalid-request', 'studio.telemetry/invalid-attributes');
+                StudioProducerError::refuse('invalid-request', 'studio.telemetry/invalid-attributes');
             }
             if (is_string($value) && strlen($value) > 200) {
-                throw new StudioHostOperationRefused('invalid-request', 'studio.telemetry/invalid-attributes');
+                StudioProducerError::refuse('invalid-request', 'studio.telemetry/invalid-attributes');
             }
             $attributeNames[] = $key;
         }
         if (strlen(CanonicalJson::stringify($event)) > 4096) {
-            throw new StudioHostOperationRefused('limit-exceeded', 'studio.telemetry/event-too-large');
+            StudioProducerError::refuse('limit-exceeded', 'studio.telemetry/event-too-large');
         }
         sort($attributeNames, SORT_STRING);
         $this->logger->info('Studio client telemetry event.', [
@@ -98,7 +110,19 @@ final readonly class StudioTelemetryHostPort
             'site_identifier' => $snapshot->session->siteId,
         ]);
 
-        return new StudioHostResult(null);
+        return new HostResult(null);
+    }
+
+    /**
+     * Require the per-request authority installed by the Producer host factory.
+     *
+     * @return  StudioProducerRequestAuthority  Trusted evidence for this dispatch.
+     *
+     * @since   2.0.0
+     */
+    private function requestAuthority(): StudioProducerRequestAuthority
+    {
+        return $this->authority ?? throw new \LogicException('A Studio telemetry port requires request authority.');
     }
 
     /**

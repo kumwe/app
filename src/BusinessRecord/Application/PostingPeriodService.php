@@ -15,7 +15,7 @@ use Kumwe\App\Audit\Domain\AuditEvent;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordPostingPeriodConflict;
 use Kumwe\App\BusinessRecord\Domain\PostingPeriod;
 use Kumwe\App\BusinessRecord\Domain\PostingPeriodStatus;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 

@@ -5,25 +5,25 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessSurface\Application;
 
 use InvalidArgumentException;
-use Kumwe\App\BusinessRecord\Query\AggregateFunction;
-use Kumwe\App\BusinessRecord\Query\BooleanFilter;
-use Kumwe\App\BusinessRecord\Query\BooleanOperator;
-use Kumwe\App\BusinessRecord\Query\ComparisonFilter;
-use Kumwe\App\BusinessRecord\Query\ComparisonOperator;
-use Kumwe\App\BusinessRecord\Query\NullFilter;
-use Kumwe\App\BusinessRecord\Query\RecordAggregate;
-use Kumwe\App\BusinessRecord\Query\RecordCursor;
-use Kumwe\App\BusinessRecord\Query\RecordFilter;
-use Kumwe\App\BusinessRecord\Query\RecordProjection;
-use Kumwe\App\BusinessRecord\Query\RecordQuerySpecification;
-use Kumwe\App\BusinessRecord\Query\RecordSearch;
-use Kumwe\App\BusinessRecord\Query\RecordSort;
-use Kumwe\App\BusinessRecord\Query\RelationFilter;
-use Kumwe\App\BusinessRecord\Query\RelationQuantifier;
-use Kumwe\App\BusinessRecord\Query\SetFilter;
-use Kumwe\App\BusinessRecord\Query\SortDirection;
-use Kumwe\App\BusinessRecord\Query\TextFilter;
-use Kumwe\App\BusinessRecord\Query\TextOperator;
+use Kumwe\Extension\Spi\BusinessRecord\Query\AggregateFunction;
+use Kumwe\Extension\Spi\BusinessRecord\Query\BooleanFilter;
+use Kumwe\Extension\Spi\BusinessRecord\Query\BooleanOperator;
+use Kumwe\Extension\Spi\BusinessRecord\Query\ComparisonFilter;
+use Kumwe\Extension\Spi\BusinessRecord\Query\ComparisonOperator;
+use Kumwe\Extension\Spi\BusinessRecord\Query\NullFilter;
+use Kumwe\Extension\Spi\BusinessRecord\Query\RecordAggregate;
+use Kumwe\Extension\Spi\BusinessRecord\Query\RecordCursor;
+use Kumwe\Extension\Spi\BusinessRecord\Query\RecordFilter;
+use Kumwe\Extension\Spi\BusinessRecord\Query\RecordProjection;
+use Kumwe\Extension\Spi\BusinessRecord\Query\RecordQuerySpecification;
+use Kumwe\Extension\Spi\BusinessRecord\Query\RecordSearch;
+use Kumwe\Extension\Spi\BusinessRecord\Query\RecordSort;
+use Kumwe\Extension\Spi\BusinessRecord\Query\RelationFilter;
+use Kumwe\Extension\Spi\BusinessRecord\Query\RelationQuantifier;
+use Kumwe\Extension\Spi\BusinessRecord\Query\SetFilter;
+use Kumwe\Extension\Spi\BusinessRecord\Query\SortDirection;
+use Kumwe\Extension\Spi\BusinessRecord\Query\TextFilter;
+use Kumwe\Extension\Spi\BusinessRecord\Query\TextOperator;
 
 /**
  * Compiles one transport-neutral record-query document into the bounded domain query tree.

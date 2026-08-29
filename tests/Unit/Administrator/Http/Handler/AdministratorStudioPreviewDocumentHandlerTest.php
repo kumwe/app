@@ -6,7 +6,7 @@ namespace Kumwe\App\Tests\Unit\Administrator\Http\Handler;
 
 use DateTimeImmutable;
 use Kumwe\App\Administrator\Http\Handler\AdministratorStudioPreviewDocumentHandler;
-use Kumwe\App\Administrator\Http\Handler\AdministratorStudioPreviewThemeStylesheetHandler;
+use Kumwe\App\Administrator\Http\Handler\AdministratorStudioPreviewStylesheetHandler;
 use Kumwe\App\Application\Authorization\AuthenticatedSurface;
 use Kumwe\App\Application\Authorization\AuthenticationStrength;
 use Kumwe\App\Application\Authorization\ExecutionContext;
@@ -17,7 +17,7 @@ use Kumwe\App\Studio\Application\Host\StudioHostSessionRepository;
 use Kumwe\App\Studio\Application\Host\StudioHostSessionSnapshot;
 use Kumwe\App\Studio\Application\Host\StudioResourceContextKeyFactory;
 use Kumwe\App\Studio\Application\Preview\StudioPreviewDocumentClaimer;
-use Kumwe\App\Studio\Application\Preview\StudioPreviewThemeStylesheet;
+use Kumwe\App\Studio\Application\Preview\StudioPreviewStylesheet;
 use Kumwe\App\Studio\Domain\Host\StudioHostSession;
 use Kumwe\App\Studio\Domain\Host\StudioResourceKind;
 use Kumwe\App\Studio\Domain\Host\StudioSessionMode;
@@ -36,8 +36,8 @@ use PHPUnit\Framework\TestCase;
  * @since  2.0.0
  */
 #[CoversClass(AdministratorStudioPreviewDocumentHandler::class)]
-#[CoversClass(AdministratorStudioPreviewThemeStylesheetHandler::class)]
-#[CoversClass(StudioPreviewThemeStylesheet::class)]
+#[CoversClass(AdministratorStudioPreviewStylesheetHandler::class)]
+#[CoversClass(StudioPreviewStylesheet::class)]
 final class AdministratorStudioPreviewDocumentHandlerTest extends TestCase
 {
     /**
@@ -93,8 +93,8 @@ final class AdministratorStudioPreviewDocumentHandlerTest extends TestCase
                 ),
                 new StudioPreviewRenderedDocument(
                     '<!doctype html><head><link rel="stylesheet" href="'
-                        . StudioPreviewThemeStylesheet::HREF_PLACEHOLDER
-                        . '" data-studio-theme></head>',
+                        . StudioPreviewStylesheet::HREF_PLACEHOLDER
+                        . '" data-studio-composition></head>',
                     [],
                     [],
                     [],
@@ -120,9 +120,9 @@ final class AdministratorStudioPreviewDocumentHandlerTest extends TestCase
 
         self::assertSame(200, $response->getStatusCode());
         $html = (string) $response->getBody();
-        self::assertStringNotContainsString(StudioPreviewThemeStylesheet::HREF_PLACEHOLDER, $html);
+        self::assertStringNotContainsString(StudioPreviewStylesheet::HREF_PLACEHOLDER, $html);
         self::assertStringContainsString(
-            'href="/administrator/studio/preview/theme.css?',
+            'href="/administrator/studio/preview/styles.css?',
             $html,
         );
         self::assertStringContainsString('render=renders%2Fdocument-test', $html);
@@ -134,13 +134,13 @@ final class AdministratorStudioPreviewDocumentHandlerTest extends TestCase
     }
 
     /**
-     * The theme subresource revalidates the claimed grant without consuming a protocol sequence.
+     * The combined Producer/theme subresource revalidates the grant without consuming a protocol sequence.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    public function testClaimedThemeStylesheetIsDeliveredFromTheSameOriginWithoutInlinePolicy(): void
+    public function testClaimedStylesheetIsDeliveredFromTheSameOriginWithoutInlinePolicy(): void
     {
         [$authority, $context] = $this->authority();
         $snapshot = $authority->open(
@@ -154,7 +154,7 @@ final class AdministratorStudioPreviewDocumentHandlerTest extends TestCase
         $source = 'sources/document-test';
         $preview = $this->createMock(StudioPreviewDocumentClaimer::class);
         $preview->expects(self::once())
-            ->method('themeStylesheet')
+            ->method('stylesheet')
             ->with(
                 self::identicalTo($context),
                 self::callback(static fn (StudioHostSessionSnapshot $live): bool =>
@@ -168,7 +168,7 @@ final class AdministratorStudioPreviewDocumentHandlerTest extends TestCase
             )
             ->willReturn('body{--site-accent:#0c9189;}');
         $request = (new ServerRequestFactory())
-            ->createServerRequest('GET', 'https://kumwe.test/administrator/studio/preview/theme.css')
+            ->createServerRequest('GET', 'https://kumwe.test/administrator/studio/preview/styles.css')
             ->withQueryParams([
                 'context' => $snapshot->session->resourceContextKey,
                 'render' => $requestId,
@@ -178,7 +178,7 @@ final class AdministratorStudioPreviewDocumentHandlerTest extends TestCase
             ])
             ->withAttribute(ExecutionContext::REQUEST_ATTRIBUTE, $context);
 
-        $response = (new AdministratorStudioPreviewThemeStylesheetHandler($authority, $preview))->handle($request);
+        $response = (new AdministratorStudioPreviewStylesheetHandler($authority, $preview))->handle($request);
 
         self::assertSame(200, $response->getStatusCode());
         self::assertSame('body{--site-accent:#0c9189;}', (string) $response->getBody());

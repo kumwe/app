@@ -7,9 +7,9 @@ namespace Kumwe\App\Tests\Unit\BusinessSurface\Presentation;
 use InvalidArgumentException;
 use Kumwe\App\BusinessDefinition\Domain\FieldDefinition;
 use Kumwe\App\BusinessDefinition\Domain\FieldTypeDefinition;
-use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationContext;
-use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationRequest;
-use Kumwe\App\BusinessSurface\Presentation\Field\FieldWidget;
+use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationContext;
+use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationInputFactory;
+use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldWidget;
 use KumweExample\Announcements\Presentation\SeverityFieldPresenter;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
@@ -44,7 +44,7 @@ final class SeverityFieldPresenterTest extends TestCase
      */
     public function testPresentsClosedSeveritySelectorWhenEditingIsPermitted(): void
     {
-        $presentation = (new SeverityFieldPresenter())->present(new FieldPresentationRequest(
+        $presentation = (new SeverityFieldPresenter())->present(FieldPresentationInputFactory::fromDefinition(
             self::field(),
             self::type(),
             FieldPresentationContext::Create,
@@ -76,7 +76,7 @@ final class SeverityFieldPresenterTest extends TestCase
      */
     public function testPresentsReadOnlySeverityWithoutRetainedInput(): void
     {
-        $presentation = (new SeverityFieldPresenter())->present(new FieldPresentationRequest(
+        $presentation = (new SeverityFieldPresenter())->present(FieldPresentationInputFactory::fromDefinition(
             self::field(),
             self::type(),
             FieldPresentationContext::Detail,
@@ -103,7 +103,7 @@ final class SeverityFieldPresenterTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('outside its declared options');
 
-        (new SeverityFieldPresenter())->present(new FieldPresentationRequest(
+        (new SeverityFieldPresenter())->present(FieldPresentationInputFactory::fromDefinition(
             self::field(),
             self::type(),
             FieldPresentationContext::Detail,

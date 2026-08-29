@@ -18,7 +18,7 @@ use Kumwe\App\Audit\Application\AuditRetentionService;
 use Kumwe\App\Audit\Application\AuditTrailExporter;
 use Kumwe\App\Audit\Domain\AuditAnchorDigest;
 use Kumwe\App\Audit\Domain\AuditEvent;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;

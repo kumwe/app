@@ -7,7 +7,9 @@ namespace Kumwe\App\Extension\Application\Migration;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
-use Kumwe\App\Extension\Domain\ExtensionManifest;
+use Kumwe\Extension\Manifest\ExtensionManifest;
+use Kumwe\Extension\Spi\Migration\ExtensionMigration;
+use Kumwe\Extension\Spi\Migration\ExtensionTableNames;
 use Kumwe\App\Extension\Infrastructure\Trust\FilesystemExtensionArtifactVerifier;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Psr\Clock\ClockInterface;
@@ -368,7 +370,7 @@ final readonly class ExtensionMigrationRunner
      */
     private function extensionTables(ExtensionManifest $manifest): ExtensionTableNames
     {
-        return new ExtensionTableNames($this->database, $this->tables, $manifest->identifier());
+        return new ScopedExtensionTableNames($this->database, $this->tables, $manifest->identifier());
     }
 
     /**

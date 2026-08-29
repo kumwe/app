@@ -273,18 +273,9 @@ The manifest declaration and provider reconciliation are deliberately explicit:
 ```
 
 The abbreviated surface above must contain every required field from
-[`surface-declaration.schema.json`](interface-standard/schemas/surface-declaration.schema.json). Provider
-code continues to accept the frozen `ExtensionContributionRegistrar`, then requires the additive feature
-only when its signed manifest publishes KIS surfaces:
-
-```php
-if (!$contributions instanceof InterfaceSurfaceRegistrar) {
-    throw new LogicException('The KIS surface registrar is unavailable.');
-}
-foreach ($declarations->interfaceSurfaces() as $surface) {
-    $contributions->interfaceSurface($surface);
-}
-```
+[`surface-declaration.schema.json`](interface-standard/schemas/surface-declaration.schema.json). The signed
+manifest is the only KIS declaration source. The host activates the canonical SDK graph directly; provider code
+does not receive a declaration registrar and cannot widen the admitted surfaces.
 
 An installable package with `type: template` also declares the KIS contract it consumes in a closed
 top-level `template` object:

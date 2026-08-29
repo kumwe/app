@@ -38,7 +38,7 @@ interface StudioPreviewDocumentClaimer
     ): ?StudioPreviewGrant;
 
     /**
-     * Read the exact theme stylesheet from one live, already-claimed preview grant.
+     * Read the exact combined Producer and theme stylesheet from one live, already-claimed preview grant.
      *
      * @param   ExecutionContext           $context    Authenticated App request authority.
      * @param   StudioHostSessionSnapshot  $snapshot   Fresh trusted Studio session.
@@ -51,7 +51,7 @@ interface StudioPreviewDocumentClaimer
      *
      * @since   2.0.0
      */
-    public function themeStylesheet(
+    public function stylesheet(
         ExecutionContext $context,
         StudioHostSessionSnapshot $snapshot,
         string $requestId,

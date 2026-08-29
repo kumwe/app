@@ -14,6 +14,7 @@ use Kumwe\App\Application\Authorization\AuthenticatedSurface;
 use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Application\Authorization\SiteContext;
 use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\App\BusinessDefinition\Domain\DefinitionOwner;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordNotFound;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordService;
 use Kumwe\App\BusinessRecord\Application\Query\ReadRecordQuery;
@@ -30,7 +31,7 @@ use Kumwe\App\BusinessSurface\Application\BusinessRecordProjector;
 use Kumwe\App\BusinessIntegration\Application\InboxStore;
 use Kumwe\App\BusinessIntegration\Application\OutboxDispatcher;
 use Kumwe\App\BusinessIntegration\Application\OutboxStore;
-use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
 use Kumwe\App\Identity\Application\Administration\AccessControlService;
@@ -41,8 +42,7 @@ use Kumwe\App\Identity\Application\StepUp\AuthorizationStepUpProofAdapter;
 use Kumwe\App\Identity\Domain\StepUp\StepUpIntent;
 use Kumwe\App\Identity\Domain\UserStatus;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
-use KumweExample\AssetInspection\Application\InspectionPolicyProfile;
-use KumweExample\AssetInspection\Definitions;
+use JsonException;
 use RuntimeException;
 use Throwable;
 
@@ -63,6 +63,9 @@ final class AssetInspectionDeploymentAcceptance
 
     /** Installed example package owner. @since 2.0.0 */
     private const string OWNER = 'kumwe/asset-inspection-example';
+
+    /** Stable inspection definition selected by the signed deployment profile. @since 2.0.0 */
+    private const string INSPECTION_DEFINITION_ID = '019bc200-0000-7000-8000-000000000003';
 
     /** Durable consumer whose deduplication receipt is replay-tested. @since 2.0.0 */
     private const string CONSUMER = 'kumwe.asset-inspection-example.inspection-mutation-indexer';
@@ -222,10 +225,9 @@ final class AssetInspectionDeploymentAcceptance
             'asset-inspection-policy-login',
             surface: AuthenticatedSurface::Administrator,
         ), 'kumwe-asset-inspection-policy-acceptance/2.0');
-        $profile = InspectionPolicyProfile::fromPackage();
-        $profileRequests = $profile->administrationRequests();
-        $seedRequests = self::seedPolicyRequests();
-        if ($profile->checksum() !== self::POLICY_PROFILE_CHECKSUM || count($profileRequests) !== 4) {
+        $profileRequests = self::policyProfileRequests();
+        $seedRequests = self::seedPolicyRequests($container);
+        if (count($profileRequests) !== 4) {
             throw new RuntimeException('The signed policy profile did not produce four closed requests.');
         }
         if (count($seedRequests) !== 14) {
@@ -379,7 +381,7 @@ final class AssetInspectionDeploymentAcceptance
             'asset-inspection-seed-policy-login',
             surface: AuthenticatedSurface::Administrator,
         ), 'kumwe-asset-inspection-seed-policy-acceptance/2.0');
-        $requests = array_slice(self::seedPolicyRequests(), 6);
+        $requests = array_slice(self::seedPolicyRequests($container), 6);
         if (count($requests) !== 8) {
             throw new RuntimeException('The secondary seed policy set is incomplete.');
         }
@@ -426,6 +428,94 @@ final class AssetInspectionDeploymentAcceptance
     }
 
     /**
+     * Read the signed deployment profile as host-owned policy-administration input.
+     *
+     * The author package does not parse, install or select policy. Deployment acceptance pins the exact
+     * canonical profile bytes, validates its closed request shape and submits them through the normal App
+     * administration boundary under a separately authenticated operator.
+     *
+     * @return  list<array<string, mixed>>  Four exact production policy-administration requests.
+     *
+     * @throws  RuntimeException  When the signed asset is absent, changed or structurally invalid.
+     *
+     * @since   2.0.0
+     */
+    private static function policyProfileRequests(): array
+    {
+        $path = dirname(__DIR__, 2) . '/examples/extensions/asset-inspection/policies/inspection-viewer.json';
+        $json = file_get_contents($path);
+        if (!is_string($json) || $json === '' || strlen($json) > 65_536) {
+            throw new RuntimeException('The signed asset-inspection policy profile is unavailable.');
+        }
+        try {
+            $profile = json_decode($json, true, 16, JSON_THROW_ON_ERROR);
+        } catch (JsonException $failure) {
+            throw new RuntimeException('The signed asset-inspection policy profile is invalid JSON.', 0, $failure);
+        }
+        if (
+            !is_array($profile)
+            || array_is_list($profile)
+            || CanonicalDefinitionJson::checksum($profile) !== self::POLICY_PROFILE_CHECKSUM
+            || ($profile['format'] ?? null) !== 'kumwe-asset-inspection-policy-profile-v1'
+            || ($profile['definition_id'] ?? null) !== self::INSPECTION_DEFINITION_ID
+        ) {
+            throw new RuntimeException('The signed asset-inspection policy profile identity changed.');
+        }
+        $fieldRules = $profile['field_policy'] ?? null;
+        $requests = $profile['policy_requests'] ?? null;
+        if (
+            !is_array($fieldRules)
+            || array_is_list($fieldRules)
+            || !is_array($requests)
+            || !array_is_list($requests)
+            || count($requests) !== 4
+        ) {
+            throw new RuntimeException('The signed asset-inspection policy request set is malformed.');
+        }
+
+        $result = [];
+        $operations = [
+            'business.record.browse',
+            'business.record.export',
+            'business.record.read',
+            'business.record.report',
+        ];
+        foreach ($requests as $offset => $request) {
+            if (
+                !is_array($request)
+                || array_is_list($request)
+                || !is_string($request['policy_code'] ?? null)
+                || ($request['operation'] ?? null) !== $operations[$offset]
+                || ($request['effect'] ?? null) !== 'allow'
+                || ($request['predicate_type'] ?? null) !== 'comparison'
+                || ($request['field'] ?? null) !== 'risk_score'
+                || ($request['operator'] ?? null) !== 'greater_than_or_equal'
+                || ($request['value_type'] ?? null) !== 'integer'
+                || ($request['value'] ?? null) !== '70'
+                || ($request['priority'] ?? null) !== 100
+            ) {
+                throw new RuntimeException('A signed asset-inspection policy request changed its closed contract.');
+            }
+            $result[] = [
+                'policyCode' => $request['policy_code'],
+                'operation' => $request['operation'],
+                'effect' => $request['effect'],
+                'organizationId' => null,
+                'definitionId' => self::INSPECTION_DEFINITION_ID,
+                'predicateType' => $request['predicate_type'],
+                'field' => $request['field'],
+                'operator' => $request['operator'],
+                'valueType' => $request['value_type'],
+                'value' => $request['value'],
+                'fieldRules' => $fieldRules + ['actions' => []],
+                'priority' => $request['priority'],
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
      * Build the exact operator-owned policies needed to seed and verify the neutral example graph.
      *
      * Each row binds one operation to one definition. Create fields follow immutable definition ceilings;
@@ -437,11 +527,16 @@ final class AssetInspectionDeploymentAcceptance
      *
      * @since   2.0.0
      */
-    private static function seedPolicyRequests(): array
+    private static function seedPolicyRequests(Container $container): array
     {
         $requests = [];
         $seen = [];
-        foreach (Definitions::businessDefinitions() as $definition) {
+        $registries = self::service($container, ExtensionContributionRegistrySet::class);
+        if (!$registries instanceof ExtensionContributionRegistrySet) {
+            throw new RuntimeException('The active extension contribution registry is unavailable.');
+        }
+        $definitions = $registries->businessDefinitions()->ownedBy(DefinitionOwner::extension(self::OWNER));
+        foreach ($definitions as $definition) {
             if ((self::DEFINITIONS[$definition->id] ?? null) !== $definition->handle) {
                 throw new RuntimeException('A seed policy definition is outside the signed example graph.');
             }
@@ -507,9 +602,9 @@ final class AssetInspectionDeploymentAcceptance
                 'business.record.relate',
                 $definition->id,
                 $short === 'location' ? ['actions' => []] : ['public_reference' => ['id'], 'actions' => []],
-                $definition->id === Definitions::INSPECTION_DEFINITION_ID,
+                $definition->id === self::INSPECTION_DEFINITION_ID,
             );
-            if ($definition->id !== Definitions::INSPECTION_DEFINITION_ID) {
+            if ($definition->id !== self::INSPECTION_DEFINITION_ID) {
                 $readRules = ['detail' => $readFields, 'actions' => []];
                 if ($short !== 'location') {
                     $readRules['include'] = $readFields;

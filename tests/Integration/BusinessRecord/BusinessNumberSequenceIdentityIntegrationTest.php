@@ -15,7 +15,7 @@ use Kumwe\App\Application\Authorization\OwnershipScopeNotPermitted;
 use Kumwe\App\Application\Authorization\OwnershipScopeRule;
 use Kumwe\App\Application\Authorization\ResourceOwnership;
 use Kumwe\App\Application\Authorization\ResourceOwnershipScopePolicy;
-use Kumwe\App\Application\Automation\IdempotencyKey;
+use Kumwe\Extension\Spi\Application\Automation\IdempotencyKey;
 use Kumwe\App\Application\Persistence\TransactionManager;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionCompatibilityAnalyzer;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionRepository;

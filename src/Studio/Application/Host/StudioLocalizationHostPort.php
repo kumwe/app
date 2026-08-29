@@ -13,7 +13,9 @@ use Kumwe\App\Localization\Domain\LocaleTag;
 use Kumwe\App\Localization\Domain\MessageCatalogue;
 use Kumwe\App\Localization\Domain\MessageCatalogueChain;
 use Kumwe\App\Localization\Domain\MessageCatalogueLayer;
-use Kumwe\App\Studio\Domain\Host\StudioHostRequest;
+use Kumwe\Producer\Wire\HostResult;
+use Kumwe\Producer\Wire\Port\LocalizationPortInterface;
+use Kumwe\Producer\Wire\RequestContext;
 use stdClass;
 
 /**
@@ -21,7 +23,7 @@ use stdClass;
  *
  * @since  2.0.0
  */
-final readonly class StudioLocalizationHostPort
+final readonly class StudioLocalizationHostPort implements LocalizationPortInterface
 {
     /**
      * Bind compiled catalogues, effective overrides, locale scope, and carried locale inventory.
@@ -30,6 +32,7 @@ final readonly class StudioLocalizationHostPort
      * @param  MessageOverrideRepository   $overrides   Site and organization wording.
      * @param  ActiveLocale                $active      Trusted request override scope.
      * @param  SupportedLocales            $supported   Exact carried-locale registry.
+     * @param  StudioProducerRequestAuthority|null $authority Authorized Producer request scope, when bound.
      *
      * @since  2.0.0
      */
@@ -38,35 +41,42 @@ final readonly class StudioLocalizationHostPort
         private MessageOverrideRepository $overrides,
         private ActiveLocale $active,
         private SupportedLocales $supported,
+        private ?StudioProducerRequestAuthority $authority = null,
     ) {
+    }
+
+    /**
+     * Bind this App-owned port implementation to one successfully authorized Producer request.
+     *
+     * @param   StudioProducerRequestAuthority  $authority  Trusted evidence for one exact dispatch.
+     *
+     * @return  self  Request-scoped localization port.
+     *
+     * @since   2.0.0
+     */
+    public function forRequest(StudioProducerRequestAuthority $authority): self
+    {
+        return new self($this->catalogues, $this->overrides, $this->active, $this->supported, $authority);
     }
 
     /**
      * Resolve a closed namespace request without formatting unresolved ICU parameters.
      *
-     * @param   string                     $operation  Canonical localization operation.
-     * @param   StudioHostRequest          $request    Validated host envelope.
-     * @param   StudioHostSessionSnapshot  $snapshot   Live trusted session snapshot.
+     * @param   mixed           $arguments  Validated Producer operation arguments.
+     * @param   RequestContext  $context    Validated Producer request context.
      *
-     * @return  StudioHostResult  Canonical localized message map.
+     * @return  HostResult  Canonical localized message map.
      *
      * @since   2.0.0
      */
-    public function dispatch(
-        string $operation,
-        StudioHostRequest $request,
-        StudioHostSessionSnapshot $snapshot,
-    ): StudioHostResult {
-        unset($snapshot);
-        if ($operation !== 'messages') {
-            throw new StudioHostOperationRefused('incompatible', 'studio.host/operation-unavailable');
+    public function messages(mixed $arguments, RequestContext $context): HostResult
+    {
+        $this->requestAuthority();
+        if ($context->expectedRevision !== null || $context->idempotencyKey !== null) {
+            StudioProducerError::refuse('invalid-request', 'studio.host/invalid-context');
         }
-        if ($request->expectedRevision !== null || $request->idempotencyKey !== null) {
-            throw new StudioHostOperationRefused('invalid-request', 'studio.host/invalid-context');
-        }
-        $arguments = $request->arguments;
         if (!$arguments instanceof stdClass || self::members($arguments) !== ['locale', 'namespaces']) {
-            throw new StudioHostOperationRefused('invalid-request', 'studio.host/invalid-arguments');
+            StudioProducerError::refuse('invalid-request', 'studio.host/invalid-arguments');
         }
         $localeValue = $arguments->locale;
         $namespaces = $arguments->namespaces;
@@ -77,7 +87,7 @@ final readonly class StudioLocalizationHostPort
             || $namespaces === []
             || count($namespaces) > 16
         ) {
-            throw new StudioHostOperationRefused('invalid-request', 'studio.host/invalid-arguments');
+            StudioProducerError::refuse('invalid-request', 'studio.host/invalid-arguments');
         }
         foreach ($namespaces as $namespace) {
             if (
@@ -85,16 +95,16 @@ final readonly class StudioLocalizationHostPort
                 || strlen($namespace) > 120
                 || preg_match('/^[a-z][a-z0-9.-]*$/D', $namespace) !== 1
             ) {
-                throw new StudioHostOperationRefused('invalid-request', 'studio.host/invalid-arguments');
+                StudioProducerError::refuse('invalid-request', 'studio.host/invalid-arguments');
             }
         }
         try {
             $locale = LocaleTag::fromString($localeValue);
         } catch (InvalidLocaleTag) {
-            throw new StudioHostOperationRefused('not-found', 'studio.localization/locale-not-found');
+            StudioProducerError::refuse('not-found', 'studio.localization/locale-not-found');
         }
         if (!$this->supported->carries($locale)) {
-            throw new StudioHostOperationRefused('not-found', 'studio.localization/locale-not-found');
+            StudioProducerError::refuse('not-found', 'studio.localization/locale-not-found');
         }
 
         $messages = new stdClass();
@@ -107,7 +117,19 @@ final readonly class StudioLocalizationHostPort
             }
         }
 
-        return new StudioHostResult($messages);
+        return new HostResult($messages);
+    }
+
+    /**
+     * Require the per-request authority installed by the Producer host factory.
+     *
+     * @return  StudioProducerRequestAuthority  Trusted evidence for this dispatch.
+     *
+     * @since   2.0.0
+     */
+    private function requestAuthority(): StudioProducerRequestAuthority
+    {
+        return $this->authority ?? throw new \LogicException('A Studio localization port requires request authority.');
     }
 
     /**

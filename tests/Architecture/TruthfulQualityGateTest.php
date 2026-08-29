@@ -316,6 +316,217 @@ PHP;
     }
 
     /**
+     * A Kumwe namespace from an undeclared package must fail even when the owner is the wildcard kernel.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAnUndeclaredKumwePackageCannotHideBehindTheKernelWildcard(): void
+    {
+        $result = $this->executeDependencyFixture(<<<'PHP'
+<?php
+
+namespace Kumwe\App\Kernel;
+
+use Kumwe\Unknown\Domain\ForeignType;
+
+final class Probe
+{
+    public function __construct(private ForeignType $foreign)
+    {
+    }
+}
+PHP);
+
+        self::assertSame(1, $result['status'], 'Every Kumwe package boundary must be admitted explicitly.');
+        self::assertStringContainsString('Kumwe\Unknown\Domain\ForeignType', $result['output']);
+        self::assertStringContainsString('no admitted Kumwe package', $result['output']);
+    }
+
+    /**
+     * An admitted package still needs a layer rule for every public namespace App imports.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAnUnclassifiedExtractedNamespaceCannotHideBehindTheKernelWildcard(): void
+    {
+        $result = $this->executeDependencyFixture(<<<'PHP'
+<?php
+
+namespace Kumwe\App\Kernel;
+
+use Kumwe\Extension\Unclassified\Domain\ForeignType;
+
+final class Probe
+{
+    public function __construct(private ForeignType $foreign)
+    {
+    }
+}
+PHP);
+
+        self::assertSame(1, $result['status'], 'Package admission must not imply a blanket layer permission.');
+        self::assertStringContainsString('Kumwe\Extension\Unclassified\Domain\ForeignType', $result['output']);
+        self::assertStringContainsString('nothing governs what they may depend on', $result['output']);
+    }
+
+    /**
+     * A classified extracted-library edge must still obey the App layer direction table.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAnExtractedLibraryEdgeIsEvaluatedAgainstLayerDirection(): void
+    {
+        $result = $this->executeDependencyFixture(<<<'PHP'
+<?php
+
+namespace Kumwe\App\Demo\Domain;
+
+use Kumwe\Extension\Toolchain\ComponentScaffolder;
+
+final class Probe
+{
+    public function __construct(private ComponentScaffolder $scaffolder)
+    {
+    }
+}
+PHP);
+
+        self::assertSame(1, $result['status'], 'External first-party edges must not be skipped as vendor code.');
+        self::assertStringContainsString(
+            'Kumwe\Extension\Toolchain\ComponentScaffolder (application)',
+            $result['output'],
+        );
+        self::assertStringContainsString('Kumwe\App\Demo\Domain\Probe (domain)', $result['output']);
+    }
+
+    /**
+     * Conversion provider pipelines remain application mechanics, not domain-safe value contracts.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testDomainCannotImportAConversionProvider(): void
+    {
+        $result = $this->executeDependencyFixture(<<<'PHP'
+<?php
+
+namespace Kumwe\App\Demo\Domain;
+
+use Kumwe\Conversion\Provider\MoneyConversionPipeline;
+
+final class Probe
+{
+    public function __construct(private MoneyConversionPipeline $pipeline)
+    {
+    }
+}
+PHP);
+
+        self::assertSame(1, $result['status'], 'Provider mechanics must not inherit shared-package access.');
+        self::assertStringContainsString(
+            'Kumwe\Conversion\Provider\MoneyConversionPipeline (application)',
+            $result['output'],
+        );
+        self::assertStringContainsString('Kumwe\App\Demo\Domain\Probe (domain)', $result['output']);
+    }
+
+    /**
+     * The SDK record reader is an application policy port, not a domain-safe record value.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testDomainCannotImportTheSdkBusinessRecordReader(): void
+    {
+        $result = $this->executeDependencyFixture(<<<'PHP'
+<?php
+
+namespace Kumwe\App\Demo\Domain;
+
+use Kumwe\Extension\Spi\BusinessRecord\Application\BusinessRecordReader;
+
+final class Probe
+{
+    public function __construct(private BusinessRecordReader $records)
+    {
+    }
+}
+PHP);
+
+        self::assertSame(1, $result['status'], 'Record authorization belongs to the application layer.');
+        self::assertStringContainsString(
+            'Kumwe\Extension\Spi\BusinessRecord\Application\BusinessRecordReader (application)',
+            $result['output'],
+        );
+        self::assertStringContainsString('Kumwe\App\Demo\Domain\Probe (domain)', $result['output']);
+    }
+
+    /**
+     * Typed projection definitions remain domain data even though builders execute in application code.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testDomainMayImportAnSdkProjectionDefinition(): void
+    {
+        $result = $this->executeDependencyFixture(<<<'PHP'
+<?php
+
+namespace Kumwe\App\Demo\Domain;
+
+use Kumwe\Extension\Spi\BusinessReporting\Domain\ProjectionDefinition;
+
+final class Probe
+{
+    public function __construct(private ProjectionDefinition $projection)
+    {
+    }
+}
+PHP);
+
+        self::assertSame(0, $result['status'], $result['output']);
+    }
+
+    /**
+     * The SDK's closed query graph and its typed values are domain contracts, not authorization ports.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testDomainMayImportSdkBusinessRecordQueryValues(): void
+    {
+        $result = $this->executeDependencyFixture(<<<'PHP'
+<?php
+
+namespace Kumwe\App\Demo\Domain;
+
+use Kumwe\Extension\Spi\BusinessRecord\Query\RecordQuerySpecification;
+use Kumwe\Extension\Spi\BusinessRecord\Value\ZonedDateTimeValue;
+
+final class Probe
+{
+    public function __construct(
+        private RecordQuerySpecification $query,
+        private ZonedDateTimeValue $instant,
+    ) {
+    }
+}
+PHP);
+
+        self::assertSame(0, $result['status'], $result['output']);
+    }
+
+    /**
      * The architecture policy gate must run the semantic check, not only the textual predicates.
      *
      * @return  void
@@ -1005,6 +1216,32 @@ PHP;
         $run($git . ' commit -qm refusal');
 
         return [$scaffold, $base];
+    }
+
+    /**
+     * Run the semantic dependency gate over one isolated source file and an empty baseline.
+     *
+     * @param   string  $source  Complete PHP source for the probe.
+     *
+     * @return  array{status: int, output: string}  Gate exit status and combined output.
+     *
+     * @since   2.0.0
+     */
+    private function executeDependencyFixture(string $source): array
+    {
+        $temporary = sys_get_temp_dir() . '/kumwe-first-party-edge-' . bin2hex(random_bytes(8));
+        self::assertTrue(mkdir($temporary . '/src', 0o700, true));
+        self::assertNotFalse(file_put_contents($temporary . '/src/Probe.php', $source));
+        self::assertNotFalse(file_put_contents($temporary . '/baseline.json', '{"violations": []}'));
+
+        try {
+            return $this->execute('tools/verify-dependency-graph.php', [
+                '--source=' . $temporary . '/src',
+                '--baseline=' . $temporary . '/baseline.json',
+            ]);
+        } finally {
+            $this->removeDirectory($temporary);
+        }
     }
 
     /**

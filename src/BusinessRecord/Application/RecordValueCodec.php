@@ -19,7 +19,7 @@ use Kumwe\Conversion\Decimal\ExactDecimal;
 use Kumwe\Conversion\Value\MoneyValue;
 use Kumwe\Conversion\Value\QuantityValue;
 use Kumwe\App\BusinessRecord\Domain\RecordValueGuard;
-use Kumwe\App\BusinessRecord\Domain\ZonedDateTimeValue;
+use Kumwe\Extension\Spi\BusinessRecord\Value\ZonedDateTimeValue;
 use Kumwe\App\BusinessSchema\Domain\PhysicalColumnBlueprint;
 use Kumwe\App\BusinessSchema\Domain\PhysicalTableBlueprint;
 use Normalizer;

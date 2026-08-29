@@ -14,11 +14,12 @@ use Doctrine\DBAL\Types\Types;
 use Kumwe\App\Kernel\Container;
 use Kumwe\App\BusinessIntegration\Application\EventContractRegistry;
 use Kumwe\App\BusinessIntegration\Application\InboxDisposition;
-use Kumwe\App\BusinessIntegration\Domain\ConsumerIdempotency;
-use Kumwe\App\BusinessIntegration\Domain\EventConsumerDefinition;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\ConsumerIdempotency;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventConsumerDefinition;
 use Kumwe\App\BusinessIntegration\Domain\EventSchemaDefinition;
-use Kumwe\App\BusinessIntegration\Domain\EventSensitivity;
-use Kumwe\App\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventSensitivity;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\App\BusinessIntegration\Domain\RecordedIntegrationEvent;
 use Kumwe\App\BusinessIntegration\Infrastructure\DoctrineInboxStore;
 use Kumwe\App\BusinessIntegration\Infrastructure\DoctrineOutboxStore;
 use Kumwe\App\Infrastructure\Persistence\DoctrineTransactionManager;
@@ -292,7 +293,7 @@ final class OutboxInboxClaimContentionIntegrationTest extends TestCase
     {
         $aggregateId ??= 'record-contention-' . $aggregateVersion;
 
-        return new IntegrationEvent(
+        return new RecordedIntegrationEvent(
             self::EVENT_TYPE,
             1,
             Uuid::uuid7()->toString(),

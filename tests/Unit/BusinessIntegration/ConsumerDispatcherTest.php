@@ -20,12 +20,14 @@ use Kumwe\App\BusinessIntegration\Application\InboxDisposition;
 use Kumwe\App\BusinessIntegration\Application\InboxLease;
 use Kumwe\App\BusinessIntegration\Application\InboxStore;
 use Kumwe\App\BusinessIntegration\Application\IntegrationEventConsumerDispatcher;
-use Kumwe\App\BusinessIntegration\Application\IntegrationEventHandler;
 use Kumwe\App\BusinessIntegration\Application\TrustedRuntimeGenerationGuard;
-use Kumwe\App\BusinessIntegration\Domain\EventConsumerDefinition;
+use Kumwe\Extension\Spi\Application\ExecutionContext as ExtensionExecutionContext;
+use Kumwe\Extension\Spi\BusinessIntegration\Application\IntegrationEventHandler;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventConsumerDefinition;
 use Kumwe\App\BusinessIntegration\Domain\EventSchemaDefinition;
-use Kumwe\App\BusinessIntegration\Domain\EventSensitivity;
-use Kumwe\App\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventSensitivity;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\App\BusinessIntegration\Domain\RecordedIntegrationEvent;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
@@ -48,7 +50,7 @@ final class ConsumerDispatcherTest extends TestCase
             'integration.default',
             false,
         );
-        $event = new IntegrationEvent(
+        $event = new RecordedIntegrationEvent(
             'business.record.changed',
             1,
             Uuid::uuid7()->toString(),
@@ -101,7 +103,7 @@ final class ConsumerDispatcherTest extends TestCase
                 7,
             )),
         );
-        $handler = new SuccessfulIntegrationHandler($definition);
+        $handler = new SuccessfulIntegrationHandler();
         $context = ExecutionContext::issueSystem(
             new \stdClass(),
             SystemIdentity::Worker,
@@ -110,6 +112,7 @@ final class ConsumerDispatcherTest extends TestCase
         );
 
         self::assertSame(InboxDisposition::DUPLICATE, $dispatcher->consume(
+            $definition,
             $event,
             $handler,
             $context,
@@ -117,7 +120,7 @@ final class ConsumerDispatcherTest extends TestCase
             '7',
         ));
         try {
-            $dispatcher->consume($event, $handler, $context, 'consumer-worker-1', '7', 31);
+            $dispatcher->consume($definition, $event, $handler, $context, 'consumer-worker-1', '7', 31);
             self::fail('An explicit consumer lease exceeded its signed queue policy.');
         } catch (\InvalidArgumentException $exception) {
             self::assertStringContainsString('signed policy', $exception->getMessage());
@@ -133,7 +136,7 @@ final class ConsumerDispatcherTest extends TestCase
             [1],
             '1.0.0',
         );
-        $event = new IntegrationEvent(
+        $event = new RecordedIntegrationEvent(
             'business.record.changed',
             1,
             Uuid::uuid7()->toString(),
@@ -176,7 +179,7 @@ final class ConsumerDispatcherTest extends TestCase
             $transactions,
             new NullLogger(),
         );
-        $handler = new FailingIntegrationHandler($definition);
+        $handler = new FailingIntegrationHandler();
         $context = ExecutionContext::issueSystem(
             new \stdClass(),
             SystemIdentity::Worker,
@@ -185,7 +188,7 @@ final class ConsumerDispatcherTest extends TestCase
         );
 
         try {
-            $dispatcher->consume($event, $handler, $context, 'consumer-worker-1', '7');
+            $dispatcher->consume($definition, $event, $handler, $context, 'consumer-worker-1', '7');
             self::fail('A failed durable consumer must force transport redelivery.');
         } catch (RuntimeException $exception) {
             self::assertSame('handler unavailable', $exception->getMessage());
@@ -247,34 +250,22 @@ final class RecordingInboxStore implements InboxStore
 
 final readonly class FailingIntegrationHandler implements IntegrationEventHandler
 {
-    public function __construct(private EventConsumerDefinition $definition)
-    {
-    }
-
-    public function definition(): EventConsumerDefinition
-    {
-        return $this->definition;
-    }
-
-    public function handle(IntegrationEvent $event, ExecutionContext $context): void
-    {
+    public function handle(
+        EventConsumerDefinition $definition,
+        IntegrationEvent $event,
+        ExtensionExecutionContext $context,
+    ): void {
         throw new RuntimeException('handler unavailable');
     }
 }
 
 final readonly class SuccessfulIntegrationHandler implements IntegrationEventHandler
 {
-    public function __construct(private EventConsumerDefinition $definition)
-    {
-    }
-
-    public function definition(): EventConsumerDefinition
-    {
-        return $this->definition;
-    }
-
-    public function handle(IntegrationEvent $event, ExecutionContext $context): void
-    {
+    public function handle(
+        EventConsumerDefinition $definition,
+        IntegrationEvent $event,
+        ExtensionExecutionContext $context,
+    ): void {
     }
 }
 

@@ -6,12 +6,13 @@ namespace Kumwe\App\BusinessIntegration\Application;
 
 use DateTimeImmutable;
 use Kumwe\App\Application\Authorization\ExecutionContext;
-use Kumwe\App\BusinessIntegration\Domain\DomainEvent;
-use Kumwe\App\BusinessIntegration\Domain\DomainListenerDefinition;
-use Kumwe\App\BusinessIntegration\Domain\EventSensitivity;
-use Kumwe\App\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\App\BusinessIntegration\Domain\RecordedDomainEvent;
+use Kumwe\App\BusinessIntegration\Domain\RecordedIntegrationEvent;
 use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\Extension\Spi\BusinessIntegration\Application\DomainEventHandler;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\DomainListenerDefinition;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventSensitivity;
 use Ramsey\Uuid\Uuid;
 
 /**
@@ -72,7 +73,7 @@ final readonly class BusinessRecordMutationEventPublisher
     ): string {
         sort($disclosedFields, SORT_STRING);
         $systemIdentity = $context->systemIdentity()?->value;
-        $event = new DomainEvent(
+        $event = new RecordedDomainEvent(
             'core.business_record.mutated',
             1,
             Uuid::uuid7()->toString(),
@@ -108,24 +109,16 @@ final readonly class BusinessRecordMutationEventPublisher
                 && $entry['implementation'] instanceof DomainEventHandler
             ) {
                 $handlers[] = [
-                    'priority' => $definition->priority(),
-                    'identifier' => $definition->identifier(),
+                    'definition' => $definition,
                     'handler' => $entry['implementation'],
                 ];
             }
         }
-        usort($handlers, static fn (array $left, array $right): int => [
-            $left['priority'],
-            $left['identifier'],
-        ] <=> [
-            $right['priority'],
-            $right['identifier'],
-        ]);
         (new DomainEventDispatcher(
             $this->contracts,
-            array_column($handlers, 'handler'),
+            $handlers,
         ))->dispatch($event);
-        $this->outbox->append(IntegrationEvent::fromDomain($event));
+        $this->outbox->append(RecordedIntegrationEvent::fromDomain($event));
 
         return $event->eventId();
     }

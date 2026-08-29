@@ -9,6 +9,7 @@ use InvalidArgumentException;
 use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\App\BusinessDefinition\Domain\Sensitivity;
 use Kumwe\App\BusinessRecord\Domain\BusinessRecord;
+use Kumwe\Extension\Spi\BusinessRecord\Application\BusinessRecordView as BusinessRecordViewContract;
 use Kumwe\Extension\Spi\BusinessSecurity\Application\FieldAccessUsage;
 use Kumwe\Extension\Spi\BusinessSecurity\Application\FieldDisclosurePlan;
 
@@ -25,7 +26,7 @@ use Kumwe\Extension\Spi\BusinessSecurity\Application\FieldDisclosurePlan;
  *
  * @since  2.0.0
  */
-final readonly class BusinessRecordView
+final readonly class BusinessRecordView implements BusinessRecordViewContract
 {
     /**
      * Field values the caller is allowed to see, keyed by field handle.
@@ -136,6 +137,114 @@ final readonly class BusinessRecordView
         }
         $this->values = $values;
         $this->includes = $includes;
+    }
+
+    /**
+     * Return the published definition identity carried by this host view.
+     *
+     * @return  string  Entity-type definition UUID.
+     *
+     * @since   2.0.0
+     */
+    public function definitionIdentifier(): string
+    {
+        return $this->definitionId;
+    }
+
+    /**
+     * Return the published definition version the record was written under.
+     *
+     * @return  int  Positive definition version.
+     *
+     * @since   2.0.0
+     */
+    public function definitionVersion(): int
+    {
+        return $this->definitionVersion;
+    }
+
+    /**
+     * Return the public record identity exposed to callers.
+     *
+     * @return  string  Public record identifier rather than the internal storage key.
+     *
+     * @since   2.0.0
+     */
+    public function recordIdentifier(): string
+    {
+        return $this->recordId;
+    }
+
+    /**
+     * Return the optimistic record version a mutation must echo.
+     *
+     * @return  int  Current optimistic version.
+     *
+     * @since   2.0.0
+     */
+    public function version(): int
+    {
+        return $this->version;
+    }
+
+    /**
+     * Return the site scope admitted for this view.
+     *
+     * @return  ?string  Site identifier, or null for a record without site scope.
+     *
+     * @since   2.0.0
+     */
+    public function siteIdentifier(): ?string
+    {
+        return $this->siteIdentifier;
+    }
+
+    /**
+     * Return the organization scope admitted for this view.
+     *
+     * @return  ?string  Organization identifier, or null for a record without organization scope.
+     *
+     * @since   2.0.0
+     */
+    public function organizationIdentifier(): ?string
+    {
+        return $this->organizationIdentifier;
+    }
+
+    /**
+     * Return the record's current workflow state.
+     *
+     * @return  ?string  Workflow state, or null when the definition declares no workflow.
+     *
+     * @since   2.0.0
+     */
+    public function workflowState(): ?string
+    {
+        return $this->workflowState;
+    }
+
+    /**
+     * Return only the field values admitted for disclosure.
+     *
+     * @return  array<string, mixed>  Policy-narrowed values keyed by field handle.
+     *
+     * @since   2.0.0
+     */
+    public function values(): array
+    {
+        return $this->values;
+    }
+
+    /**
+     * Return the instant of the most recent stored write.
+     *
+     * @return  DateTimeImmutable  Update instant carried by the projected record.
+     *
+     * @since   2.0.0
+     */
+    public function updatedAt(): DateTimeImmutable
+    {
+        return $this->updatedAt;
     }
 
     /**

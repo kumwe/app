@@ -8,7 +8,7 @@ use Kumwe\App\Application\Authorization\AuthenticatedSurface;
 use Kumwe\App\Application\Authorization\AuthorizationGateway;
 use Kumwe\App\Application\Authorization\AuthorizationResource;
 use Kumwe\App\Application\Authorization\ExecutionContext;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use Kumwe\App\Studio\Application\Composition\StudioPublishedTheme;
 use Kumwe\App\Studio\Domain\Host\StudioHostSession;
 use Kumwe\App\Studio\Domain\Host\StudioResourceKind;
@@ -310,8 +310,8 @@ final readonly class StudioHostSessionAuthority
     /**
      * Resolve exact target-specific publication authority without widening either transition into the other.
      *
-     * Studio's current public protocol exposes one lifecycle permission for both operations. The App retains
-     * that compatibility projection separately and authorizes each mutation from these private live decisions.
+     * Studio's current public protocol exposes one lifecycle permission for both operations. The App keeps
+     * that display projection separate and authorizes each mutation from these private live decisions.
      *
      * @param   ExecutionContext    $context      Fresh authenticated App context.
      * @param   StudioSessionMode   $mode         Stored exact authoring mode.

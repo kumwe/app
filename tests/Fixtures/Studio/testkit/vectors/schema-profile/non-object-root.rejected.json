@@ -1,9 +1,0 @@
-{
-  "contractVersion": "0.1-draft",
-  "kind": "schema-profile-vector",
-  "id": "schema-profile/non-object-root",
-  "description": "A boolean schema cannot be the property object root.",
-  "profile": "studio.profile/schema-property",
-  "schema": false,
-  "expect": { "outcome": "rejected", "code": "invalid-root", "schemaPath": "" }
-}

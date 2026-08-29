@@ -24,7 +24,7 @@ use Kumwe\App\BusinessSecurity\Policy\RecordPolicyNullCheck;
 use Kumwe\Extension\Spi\BusinessSecurity\Policy\RecordPolicyPredicate;
 use Kumwe\App\BusinessSecurity\Policy\RecordPolicySchema;
 use Kumwe\Extension\Spi\BusinessSecurity\Policy\RecordPolicyValueType;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 

@@ -17,13 +17,12 @@ use Kumwe\Conversion\Value\MoneyRoundingMode;
 use Kumwe\Conversion\Value\MoneyValue;
 use Kumwe\App\BusinessReporting\Application\ReportCsvEncoder;
 use Kumwe\App\BusinessReporting\Application\ReportExecutionResult;
-use Kumwe\App\BusinessReporting\Domain\ReportValueType;
+use Kumwe\Extension\Spi\BusinessReporting\Domain\ReportValueType;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(ReportCsvEncoder::class)]
 #[CoversClass(ReportExecutionResult::class)]
-#[CoversClass(ReportValueType::class)]
 /**
  * Pins that a converted figure keeps its provenance all the way into a downloaded artifact.
  *

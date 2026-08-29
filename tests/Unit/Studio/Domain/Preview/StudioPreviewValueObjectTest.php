@@ -120,11 +120,11 @@ final class StudioPreviewValueObjectTest extends TestCase
                 ['markers/one'],
                 ['markers/two' => 'nodes/one'],
             ),
-            'theme stylesheet' => static fn () => new StudioPreviewRenderedDocument(
+            'stylesheet' => static fn () => new StudioPreviewRenderedDocument(
                 '<!doctype html>',
                 [],
                 [],
-                themeStylesheet: 'body{color:red}',
+                stylesheet: '',
             ),
         ];
 

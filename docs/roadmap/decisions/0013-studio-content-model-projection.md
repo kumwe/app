@@ -1,7 +1,8 @@
 # ADR 0013 — Studio reads a lossless Content projection through an App-owned model port
 
 **Status** Accepted as the AP-2 read foundation for decision D16; its product-surface limitation is partially
-superseded by [ADR 0020](0020-studio-contextual-content-authoring.md)
+superseded by [ADR 0020](0020-studio-contextual-content-authoring.md), and its former App-local contract
+authority is superseded by the direct Producer dependency
 **Decided by** ADR 0007's fixed Studio/App division of labour and the approved AP-2 completion sequence
 **Findings** None; `V2-STU-002` remains open for the separate S-B release-pin and corpus-replay work
 **Gate** B foundation
@@ -23,10 +24,10 @@ published protocol already defines `content-model` and `entry` documents, but Ku
 model-port application surface. Studio could therefore describe generic fields without binding them to
 this platform's immutable `ContentTypeDefinition` versions or authorized `ContentEntry` values.
 
-The only canonical Studio schema interpreter lived under an extension-internal namespace and compiled
-only the six extension contribution roots. Reimplementing JSON Schema validation in a Content adapter
-would create two interpretations of the pinned protocol. Reusing the extension namespace from a new
-host adapter would give the extension bounded context ownership of a cross-context Studio contract.
+The initial Studio schema interpreter lived under an extension-internal namespace and compiled only the
+six extension contribution roots. Reimplementing JSON Schema validation in a Content adapter would create
+two interpretations of the pinned protocol. The extracted Producer library now supplies the reusable,
+host-neutral registry and canonical JSON types as the single authority.
 
 Kumwe also has a deliberately separate BusinessRecord runtime. Its definitions, field policy,
 relationships, exact numeric values, and generated surfaces are not Content concepts. Existing
@@ -34,12 +35,10 @@ architecture tests prohibit either context from importing the other.
 
 ## Decision
 
-1. **The pinned schema interpreter belongs to `Studio\Domain\Contract`.** Canonical JSON, the
-   schema-property profile, diagnostics, the interpreting validator, and the registry move together.
-   The registry compiles both extension contribution documents and the `content-model`/`entry` roots
-   from the vendored corpus. Extension contribution code is an adapter over that neutral contract; the
-   former helper names remain aliases and the former registry remains a contribution-only adapter for
-   source and behavioral compatibility.
+1. **The pinned schema interpreter belongs to Producer.** Canonical JSON, the schema-property profile,
+   diagnostics, the interpreting validator, and the exact-corpus registry move together in the reusable
+   library. App and Extension consumers import those public types directly; App keeps no copy, alias,
+   compatibility registry, custom corpus root, or second compiler.
 2. **Projection is read-only and application-owned.** `StudioContentProjectionService` obtains every
    definition, workflow, and entry through `ContentModelService` or `ContentService`. It has no write,
    command-session, artifact, or recovery operation. Repository access cannot bypass the existing
@@ -49,7 +48,7 @@ architecture tests prohibit either context from importing the other.
    locale, translation group, workflow coordinate, publication window, and optimistic version remain
    exact. Recursive closed JSON shapes are mapped; a union, open object, unrepresentable collection,
    unknown member, or coercion refuses the complete projection with a typed, non-disclosing
-   diagnostic. Every output validates against the vendored Studio schema.
+   diagnostic. Every output validates against Producer's pinned Studio schema.
 4. **Field policy is an explicit seam.** Model-description and entry-value decisions are separate.
    Refusal omits the member without naming it. The first implementation reflects Content's current
    record-level policy; a future per-field policy replaces it at the composition root.
@@ -95,8 +94,8 @@ belong to the later host-adapter packages.
   documents without owning or changing their definitions.
 - A malformed or lossy source never produces a plausible partial document, and denied fields do not
   become an existence oracle.
-- Existing extension validation keeps the same behavior and retains loadable internal names, while
-  new cross-context consumers have a neutral owner.
+- Existing extension validation keeps the same behavior through direct Producer types, with one neutral
+  reusable owner and no App-local legacy names.
 - The binding stores can be migrated and backed up now, but no caller can mutate them through this
   service until the later write contract is implemented.
 - AP-2 is usable independently of Studio's host-session release. S-D later completed under ADR 0015;

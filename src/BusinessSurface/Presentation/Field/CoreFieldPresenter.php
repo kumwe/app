@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Kumwe\App\BusinessSurface\Presentation\Field;
 
+use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationInput;
+use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationModel;
+use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresenter;
+use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldWidget;
 use DateTimeImmutable;
 use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition;
@@ -11,7 +15,7 @@ use Kumwe\Conversion\Value\ConvertedMoneyValue;
 use Kumwe\Conversion\Decimal\ExactDecimal;
 use Kumwe\Conversion\Value\MoneyValue;
 use Kumwe\Conversion\Value\QuantityValue;
-use Kumwe\App\BusinessRecord\Domain\ZonedDateTimeValue;
+use Kumwe\Extension\Spi\BusinessRecord\Value\ZonedDateTimeValue;
 
 /**
  * Semantic presenter for the complete core business field-type catalogue.
@@ -34,9 +38,9 @@ final readonly class CoreFieldPresenter implements FieldPresenter
     /**
      * Present one core field using an allow-listed semantic widget.
      *
-     * @param   FieldPresentationRequest  $request  Validated declarative field presentation input.
+     * @param   FieldPresentationInput  $request  Validated declarative field presentation input.
      *
-     * @return  FieldPresentation  Markup-free field view model.
+     * @return  FieldPresentationModel  Markup-free field view model.
      *
      * @throws  InvalidBusinessDefinition  When a structured disclosed value cannot be canonically encoded.
      * @throws  \InvalidArgumentException  When the resulting semantic model is malformed or unbounded, or
@@ -44,20 +48,19 @@ final readonly class CoreFieldPresenter implements FieldPresenter
      *
      * @since   2.0.0
      */
-    public function present(FieldPresentationRequest $request): FieldPresentation
+    public function present(FieldPresentationInput $request): FieldPresentationModel
     {
-        $field = $request->field;
         $converted = ConvertedMoneyValue::detect($request->value);
         if ($converted !== null) {
-            return new FieldPresentation(
-                $field->handle,
-                $field->label,
+            return new FieldPresentationModel(
+                $request->handle,
+                $request->label,
                 $request->context,
                 FieldWidget::Output,
                 $converted->toPortableString(),
                 null,
                 false,
-                $field->required,
+                $request->required,
                 $request->errors,
                 [],
                 [],
@@ -65,21 +68,21 @@ final readonly class CoreFieldPresenter implements FieldPresenter
             );
         }
         $editing = $request->permitsEditing();
-        $secret = $field->type === 'core.secret';
-        $widget = $editing ? $this->widget($field->type) : FieldWidget::Output;
+        $secret = $request->fieldType === 'core.secret';
+        $widget = $editing ? $this->widget($request->fieldType) : FieldWidget::Output;
         if ($secret && $editing) {
             $widget = FieldWidget::Secret;
         }
 
-        return new FieldPresentation(
-            $field->handle,
-            $field->label,
+        return new FieldPresentationModel(
+            $request->handle,
+            $request->label,
             $request->context,
             $widget,
-            $secret ? '' : $this->display($request->value, $field->type, $request->locale),
-            $secret ? null : $this->input($request->value, $field->type),
+            $secret ? '' : $this->display($request->value, $request->fieldType, $request->locale),
+            $secret ? null : $this->input($request->value, $request->fieldType),
             $editing,
-            $field->required,
+            $request->required,
             $request->errors,
             $this->options($request),
             $this->attributes($request),
@@ -221,18 +224,18 @@ final readonly class CoreFieldPresenter implements FieldPresenter
     /**
      * Map enum configuration onto safe selector options.
      *
-     * @param   FieldPresentationRequest  $request  Presentation input carrying field configuration.
+     * @param   FieldPresentationInput  $request  Presentation input carrying field configuration.
      *
      * @return  list<array{value: string, label: string}>  Bounded options, empty for non-enums.
      *
      * @since   2.0.0
      */
-    private function options(FieldPresentationRequest $request): array
+    private function options(FieldPresentationInput $request): array
     {
-        if ($request->field->type !== 'core.enum') {
+        if ($request->fieldType !== 'core.enum') {
             return [];
         }
-        $declared = $request->field->configuration['options'] ?? [];
+        $declared = $request->configuration->get('options') ?? [];
         if (!is_array($declared) || !array_is_list($declared)) {
             throw new \InvalidArgumentException('A generated enum field has invalid presentation options.');
         }
@@ -271,26 +274,26 @@ final readonly class CoreFieldPresenter implements FieldPresenter
     /**
      * Carry declarative input bounds to core templates.
      *
-     * @param   FieldPresentationRequest  $request  Presentation input carrying length and precision.
+     * @param   FieldPresentationInput  $request  Presentation input carrying length and precision.
      *
      * @return  array<string, int|string|bool>  Allow-listed widget attributes.
      *
      * @since   2.0.0
      */
-    private function attributes(FieldPresentationRequest $request): array
+    private function attributes(FieldPresentationInput $request): array
     {
         $attributes = [];
-        if ($request->field->length !== null) {
-            $attributes['maxlength'] = $request->field->length;
+        if ($request->length !== null) {
+            $attributes['maxlength'] = $request->length;
         }
-        if ($request->field->type === 'core.integer') {
+        if ($request->fieldType === 'core.integer') {
             $attributes['step'] = '1';
             $attributes['inputmode'] = 'numeric';
         }
-        if ($request->field->type === 'core.decimal') {
+        if ($request->fieldType === 'core.decimal') {
             $attributes['inputmode'] = 'decimal';
         }
-        if ($request->field->type === 'core.rich_text') {
+        if ($request->fieldType === 'core.rich_text') {
             $attributes['rows'] = 8;
         }
 

@@ -21,7 +21,7 @@ final readonly class OutboxDispatcher
      *
      * @param  OutboxStore                    $outbox     Durable event queue.
      * @param  EventContractRegistry          $contracts  Exact event contract catalog.
-     * @param  IntegrationEventTransport      $transport  One idempotent delivery adapter.
+     * @param  IntegrationEventFanout         $transport  Host-owned active runtime fan-out.
      * @param  RetryPolicy                    $retries    Failure classification and backoff.
      * @param  TrustedRuntimeGenerationGuard  $runtime    Runtime authority guard.
      * @param  LoggerInterface                $logger     Structured observability sink.
@@ -31,7 +31,7 @@ final readonly class OutboxDispatcher
     public function __construct(
         private OutboxStore $outbox,
         private EventContractRegistry $contracts,
-        private IntegrationEventTransport $transport,
+        private IntegrationEventFanout $transport,
         private RetryPolicy $retries,
         private TrustedRuntimeGenerationGuard $runtime,
         private LoggerInterface $logger,

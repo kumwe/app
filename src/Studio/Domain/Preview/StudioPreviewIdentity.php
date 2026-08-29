@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace Kumwe\App\Studio\Domain\Preview;
 
 use InvalidArgumentException;
-use Kumwe\App\Studio\Domain\Contract\CanonicalJson;
+use Kumwe\Producer\Canonical\CanonicalEncodingException;
+use Kumwe\Producer\Canonical\CanonicalJson;
 use stdClass;
 
 /**
@@ -27,7 +28,7 @@ final class StudioPreviewIdentity
      *          Exact digest and marker inventory.
      *
      * @throws  InvalidArgumentException  When a node, slot object, or node identity is malformed.
-     * @throws  \Kumwe\App\Studio\Domain\Contract\CanonicalJsonRejected  When the draft is not canonical JSON.
+     * @throws  CanonicalEncodingException  When the draft is not representable as canonical JSON.
      *
      * @since   2.0.0
      */

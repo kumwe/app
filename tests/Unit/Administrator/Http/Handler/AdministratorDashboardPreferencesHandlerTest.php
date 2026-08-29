@@ -12,11 +12,10 @@ use Kumwe\App\Administrator\Presentation\RecoveryAdministratorRenderer;
 use Kumwe\App\Application\Authorization\AuthenticationStrength;
 use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Application\Authorization\SiteContext;
-use Kumwe\App\Extension\Contribution\AdministratorNavigationDefinition;
-use Kumwe\App\Extension\Contribution\AdministratorWorkspaceDefinition;
-use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\Extension\Spi\Contribution\AdministratorNavigationDefinition;
+use Kumwe\Extension\Spi\Contribution\AdministratorWorkspaceDefinition;
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
-use Kumwe\App\Extension\Contribution\ManifestContributionSet;
 use Kumwe\App\Identity\Application\Administration\AdministratorSession;
 use Kumwe\App\InterfaceStandard\CustomizationScope;
 use Kumwe\App\InterfaceStandard\CustomizationSlot;
@@ -143,8 +142,7 @@ final class AdministratorDashboardPreferencesHandlerTest extends TestCase
     {
         $registries = new ExtensionContributionRegistrySet();
         $owner = ContributionOwner::core();
-        $registrar = $registries->registrar($owner, new ManifestContributionSet($owner), false);
-        $registrar->administratorWorkspace(new AdministratorWorkspaceDefinition(
+        $registries->workspaces()->register($owner, new AdministratorWorkspaceDefinition(
             'core.dashboard-volume',
             'Dashboard volume',
             'Regression workflows for the bounded administrator dashboard catalog.',
@@ -152,7 +150,7 @@ final class AdministratorDashboardPreferencesHandlerTest extends TestCase
         ));
         for ($index = 1; $index <= 500; $index++) {
             $suffix = str_pad((string) $index, 3, '0', STR_PAD_LEFT);
-            $registrar->administratorNavigation(new AdministratorNavigationDefinition(
+            $registries->navigation()->registerOwned($owner, new AdministratorNavigationDefinition(
                 'core.dashboard-volume-' . $suffix,
                 'core.dashboard-volume',
                 'Workflow ' . $suffix,

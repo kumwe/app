@@ -4,20 +4,18 @@ declare(strict_types=1);
 
 namespace KumweExample\AssetInspection\Application;
 
-use Kumwe\App\BusinessRecord\Application\BusinessRecordService;
-use Kumwe\App\BusinessRecord\Application\Query\BrowseRecordsQuery;
-use Kumwe\App\BusinessRecord\Query\RecordProjection;
-use Kumwe\App\BusinessRecord\Query\RecordQuerySpecification;
-use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewHandler;
-use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewQuery;
-use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewResult;
+use Kumwe\Extension\Spi\BusinessRecord\Application\BusinessRecordReader;
+use Kumwe\Extension\Spi\BusinessRecord\Application\BusinessRecordReadRequest;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewHandler;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewQuery;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewResult;
 
 /**
  * Projects a bounded inspection summary through the canonical record-service policy boundary.
  *
- * The handler narrows the caller's already-validated record query to the selected bounded row count and two
- * declared result fields. `BusinessRecordService` applies the generated surface's canonical browse capability,
- * scope, row, and field policy before any value reaches the extension, so denied records cannot enter it.
+ * The host dispatcher has already narrowed the canonical query to the signed view declaration. The handler
+ * passes that immutable query unchanged to `BusinessRecordReader`, which applies capability, scope, row and
+ * field policy before values cross the extension boundary, so denied records cannot enter the handler.
  *
  * @since  2.0.0
  */
@@ -26,12 +24,12 @@ final readonly class InspectionSummaryViewHandler implements CustomBusinessViewH
     /**
      * Bind the generated custom view to the canonical policy-enforcing record service.
      *
-     * @param  BusinessRecordService  $records  Canonical policy-enforcing record facade.
+     * @param  BusinessRecordReader  $records  Canonical policy-enforcing record port.
      *
      * @since  2.0.0
      */
     public function __construct(
-        private BusinessRecordService $records,
+        private BusinessRecordReader $records,
     ) {
     }
 
@@ -46,27 +44,17 @@ final readonly class InspectionSummaryViewHandler implements CustomBusinessViewH
      */
     public function handle(CustomBusinessViewQuery $query): CustomBusinessViewResult
     {
-        $requested = $query->records;
-        $specification = new RecordQuerySpecification(
-            $requested->filter,
-            $requested->search,
-            $requested->sorts,
-            null,
-            $requested->pageSize,
-            new RecordProjection(['reference', 'risk_score']),
-            $requested->includeArchived,
-            $requested->includeDeleted,
-        );
-        $page = $this->records->browse(new BrowseRecordsQuery(
+        $page = $this->records->readPage(new BusinessRecordReadRequest(
             $query->context,
             $query->definitionIdentifier,
-            $specification,
+            $query->records,
             $query->organizationIdentifier,
         ));
         $rows = [];
-        foreach ($page->records as $record) {
-            $reference = $record->values['reference'] ?? null;
-            $riskScore = $record->values['risk_score'] ?? null;
+        foreach ($page->records() as $record) {
+            $values = $record->values();
+            $reference = $values['reference'] ?? null;
+            $riskScore = $values['risk_score'] ?? null;
             if (is_string($reference) && is_int($riskScore)) {
                 $rows[] = ['reference' => $reference, 'risk_score' => $riskScore];
             }

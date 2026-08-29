@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Extension\Infrastructure;
 
-use InvalidArgumentException;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Types\Types;
+use InvalidArgumentException;
+use LogicException;
 use Kumwe\App\Application\Authorization\AuthorizationGateway;
 use Kumwe\App\Application\Authorization\AuthorizationResource;
 use Kumwe\App\Application\Authorization\ExecutionContext;
@@ -20,26 +21,27 @@ use Kumwe\App\BusinessDefinition\Application\PackageDefinitionSynchronizer;
 use Kumwe\App\Extension\Application\ExtensionRegistryLease;
 use Kumwe\App\Extension\Application\Install\ExtensionInstallOutcome;
 use Kumwe\App\Extension\Application\Migration\ExtensionMigrationRunner;
-use Kumwe\App\Extension\Application\Package\ArchiveReader;
+use Kumwe\App\Extension\Application\Package\PackageAdmissionPolicy;
+use Kumwe\App\Extension\Application\Package\PackageAdmissionReport;
+use Kumwe\Extension\Package\ArchiveReader;
 use Kumwe\App\Extension\Application\Package\ExtensionActivationAdmission;
-use Kumwe\Extension\Manifest\ExtensionManifest as PackagedExtensionManifest;
-use Kumwe\Extension\Package\PackageAdmissionReport;
-use Kumwe\Extension\Package\PackageAdmissionScanner;
-use Kumwe\App\Extension\Application\Package\PackageSafetyPolicy;
+use Kumwe\Extension\Package\PackageEvidenceInspector;
+use Kumwe\Extension\Package\PackageSafetyPolicy;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
+use Kumwe\App\Extension\Contribution\CanonicalManifestInterpreter;
 use Kumwe\App\Extension\Contribution\ContributionDefinitionChecksum;
-use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionSummary;
-use Kumwe\App\Extension\Domain\ExtensionIdentifier;
-use Kumwe\App\Extension\Domain\ExtensionManifest;
-use Kumwe\App\Extension\Domain\ExtensionType;
-use Kumwe\App\Extension\Domain\PackageChecksum;
-use Kumwe\App\Extension\Domain\PackageSignature;
-use Kumwe\App\Extension\Domain\SemanticVersion;
+use Kumwe\Extension\Manifest\ExtensionIdentifier;
+use Kumwe\Extension\Manifest\ExtensionManifest;
+use Kumwe\Extension\Manifest\ExtensionType;
+use Kumwe\Extension\Package\PackageChecksum;
+use Kumwe\Extension\Package\PackageSignature;
+use Kumwe\Extension\Manifest\SemanticVersion;
 use Kumwe\App\Extension\Infrastructure\Trust\FilesystemExtensionArtifactVerifier;
 use Kumwe\App\Extension\Runtime\ExtensionRuntimeMapCompiler;
-use Kumwe\App\Extension\Runtime\LaminasExtensionEvent;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\App\Extension\Runtime\LaminasLifecycleEvent;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Presentation\Application\ThemeActivationGuard;
 use Kumwe\App\Application\Presentation\ThemePackageValidator;
@@ -140,8 +142,10 @@ final readonly class DoctrineExtensionManager
      *         business definitions a package contributes; null when the installation ships none.
      * @param  ?ExtensionActivationAdmission   $activationAdmission   Declarative public-contract admission
      *         run inside an activation/active-upgrade transaction before runtime publication is staged.
-     * @param  ?PackageAdmissionScanner        $packageAdmission      Install-time scanner reading packaged
+     * @param  ?PackageEvidenceInspector       $packageEvidence       Neutral SDK inspector reading packaged
      *         code and attestations before extraction; null leaves the release recorded as unscanned.
+     * @param  ?PackageAdmissionPolicy         $packageAdmission      App policy interpreting neutral findings;
+     *         null leaves the release recorded as unscanned.
      *
      * @since  2.0.0
      */
@@ -166,7 +170,8 @@ final readonly class DoctrineExtensionManager
         private ResourceSiteOwnershipWriter $ownership,
         private ?PackageDefinitionSynchronizer $businessDefinitions = null,
         private ?ExtensionActivationAdmission $activationAdmission = null,
-        private ?PackageAdmissionScanner $packageAdmission = null,
+        private ?PackageEvidenceInspector $packageEvidence = null,
+        private ?PackageAdmissionPolicy $packageAdmission = null,
     ) {
     }
 
@@ -592,8 +597,9 @@ final readonly class DoctrineExtensionManager
         $signature = $this->signature($signingKeyId, $base64Signature);
         $this->trust->assertTrusted($checksum, $signature, $manifest->identifier());
         $this->assertDependencies($manifest);
-        $admission = $this->packageAdmission?->scan($archiveFile, PackagedExtensionManifest::fromJson($manifestJson))
-            ?? PackageAdmissionReport::notTaken();
+        $admission = $this->packageEvidence !== null && $this->packageAdmission !== null
+            ? $this->packageAdmission->admit($this->packageEvidence->inspect($archiveFile, $manifest))
+            : PackageAdmissionReport::notTaken();
 
         $relativeRuntime = $this->runtimePath($manifest);
         $this->ensureBoundedDirectory($this->extensionRoot, dirname($relativeRuntime), 0700);
@@ -1304,12 +1310,13 @@ final readonly class DoctrineExtensionManager
             if (($installed['status'] ?? null) === 'active' && $this->activationAdmission !== null) {
                 $this->activationAdmission->admit($manifest, $site, $this->activeManifests());
             }
+            $contributions = CanonicalManifestInterpreter::fromManifest($manifest);
             $this->businessDefinitions?->synchronize(
                 $identifier,
                 (string) $manifest->version(),
                 $site,
-                $manifest->contributions()->fieldTypes(),
-                $manifest->contributions()->businessDefinitions(),
+                $contributions->fieldTypes(),
+                $contributions->businessDefinitions(),
                 ($installed['status'] ?? null) === 'active',
                 $actorId,
             );
@@ -1494,14 +1501,15 @@ final readonly class DoctrineExtensionManager
     private function synchronizeContributionCapabilities(ExtensionManifest $manifest, string $extensionId): void
     {
         $contributionOwner = ContributionOwner::extension($manifest->identifier()->value());
+        $contributions = CanonicalManifestInterpreter::fromManifest($manifest);
         $definitions = [];
-        foreach ($manifest->contributions()->capabilities() as $definition) {
+        foreach ($contributions->capabilities() as $definition) {
             $definitions[$definition->id] = $definition;
         }
         ksort($definitions, SORT_STRING);
         $catalogName = $this->tables->raw('extension_contribution_capabilities');
         if (!$this->database->createSchemaManager()->tablesExist([$catalogName])) {
-            if ($definitions === [] && $manifest->contributions()->resourcePolicies() === []) {
+            if ($definitions === [] && $contributions->resourcePolicies() === []) {
                 return;
             }
             throw new RuntimeException(
@@ -1611,8 +1619,9 @@ final readonly class DoctrineExtensionManager
         string $extensionId,
     ): void {
         $owner = ContributionOwner::extension($manifest->identifier()->value());
+        $contributions = CanonicalManifestInterpreter::fromManifest($manifest);
         $definitions = [];
-        foreach ($manifest->contributions()->resourcePolicies() as $definition) {
+        foreach ($contributions->resourcePolicies() as $definition) {
             $definitions[$definition->id] = $definition;
         }
         ksort($definitions, SORT_STRING);
@@ -1732,37 +1741,49 @@ final readonly class DoctrineExtensionManager
      */
     private function contributionDiagnostics(ExtensionManifest $manifest, bool $active): array
     {
-        $contributions = $manifest->contributions()->toArray();
-        foreach ($contributions['capabilities'] as &$capability) {
+        $contributions = $manifest->contributions()->declarations();
+        foreach ($contributions['capabilities'] ?? [] as $index => $capability) {
+            if (!is_array($capability)) {
+                throw new LogicException('The canonical capability graph changed shape after SDK validation.');
+            }
             $capability['active'] = $active
                 && in_array($capability['lifecycle'] ?? null, ['active', 'deprecated'], true);
+            $contributions['capabilities'][$index] = $capability;
         }
-        unset($capability);
-        foreach ($contributions['resource_policies'] as &$policy) {
+        foreach ($contributions['resource_policies'] ?? [] as $index => $policy) {
+            if (!is_array($policy)) {
+                throw new LogicException('The canonical resource-policy graph changed shape after SDK validation.');
+            }
             $policy['active'] = $active
                 && in_array($policy['lifecycle'] ?? null, ['active', 'deprecated'], true);
+            $contributions['resource_policies'][$index] = $policy;
         }
-        unset($policy);
         foreach (['workspaces', 'navigation', 'routes', 'views'] as $kind) {
-            foreach ($contributions['administrator'][$kind] as &$item) {
+            foreach ($contributions['administrator'][$kind] ?? [] as $index => $item) {
+                if (!is_array($item)) {
+                    throw new LogicException('The canonical administrator graph changed shape after SDK validation.');
+                }
                 $item['active'] = $active;
+                $contributions['administrator'][$kind][$index] = $item;
             }
-            unset($item);
         }
         foreach (['field_types', 'definitions'] as $kind) {
-            foreach ($contributions['business'][$kind] as &$item) {
+            foreach ($contributions['business'][$kind] ?? [] as $index => $item) {
+                if (!is_array($item)) {
+                    throw new LogicException('The canonical business graph changed shape after SDK validation.');
+                }
                 $item['active'] = $active;
+                $contributions['business'][$kind][$index] = $item;
             }
-            unset($item);
         }
         foreach (['field_presentations', 'view_handlers', 'action_handlers'] as $kind) {
-            if (!isset($contributions['business'][$kind])) {
-                continue;
-            }
-            foreach ($contributions['business'][$kind] as &$item) {
+            foreach ($contributions['business'][$kind] ?? [] as $index => $item) {
+                if (!is_array($item)) {
+                    throw new LogicException('The canonical business graph changed shape after SDK validation.');
+                }
                 $item['active'] = $active;
+                $contributions['business'][$kind][$index] = $item;
             }
-            unset($item);
         }
         $contributions['active'] = $active;
         return $contributions;
@@ -3070,7 +3091,7 @@ final readonly class DoctrineExtensionManager
         array $result = [],
         ?ExtensionRegistryLease $lease = null,
     ): void {
-        $this->events->triggerEvent(new LaminasExtensionEvent($name, [
+        $this->events->triggerEvent(new LaminasLifecycleEvent($name, [
             'identifier' => $manifest->identifier()->value(),
             'version' => (string) $manifest->version(),
             'actor_id' => $actorId,

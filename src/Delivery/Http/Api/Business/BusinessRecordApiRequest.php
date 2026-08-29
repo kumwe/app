@@ -6,7 +6,7 @@ namespace Kumwe\App\Delivery\Http\Api\Business;
 
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\App\Application\Automation\IdempotencyKey as ApplicationIdempotencyKey;
+use Kumwe\Extension\Spi\Application\Automation\IdempotencyKey as ApplicationIdempotencyKey;
 use Kumwe\App\Delivery\Http\Api\Concurrency\EntityTag;
 use Kumwe\App\Delivery\Http\Api\Concurrency\IfMatch;
 use Kumwe\App\Delivery\Http\Api\Concurrency\RequireIfMatchMiddleware;

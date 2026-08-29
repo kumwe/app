@@ -24,17 +24,18 @@ use Kumwe\Conversion\Value\MoneyValue;
 use Kumwe\App\BusinessRecord\Domain\RecordValueGuard;
 use Kumwe\App\BusinessReporting\Application\ReportCsvEncoder;
 use Kumwe\App\BusinessReporting\Application\ReportExecutionResult;
-use Kumwe\App\BusinessReporting\Domain\ReportValueType;
+use Kumwe\Extension\Spi\BusinessReporting\Domain\ReportValueType;
 use Kumwe\App\BusinessSurface\Application\BusinessRecordProjector;
 use Kumwe\App\BusinessSurface\Delivery\Browser\BusinessDocumentPresenter;
 use Kumwe\App\BusinessSurface\Presentation\Field\ConvertedMoneySurface;
 use Kumwe\App\BusinessSurface\Presentation\Field\CoreFieldPresenter;
-use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentation;
-use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationContext;
+use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationInputFactory;
+use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationContext;
+use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationInput;
+use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationModel;
+use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresenter;
 use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationRegistry;
-use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationRequest;
-use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresenter;
-use Kumwe\App\BusinessSurface\Presentation\Field\FieldWidget;
+use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldWidget;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
@@ -43,7 +44,7 @@ use SplFileInfo;
 
 #[CoversClass(ConvertedMoneySurface::class)]
 #[CoversClass(CoreFieldPresenter::class)]
-#[CoversClass(FieldPresentation::class)]
+#[CoversClass(FieldPresentationModel::class)]
 #[CoversClass(FieldPresentationRegistry::class)]
 #[CoversClass(BusinessRecordProjector::class)]
 #[CoversClass(BusinessDocumentPresenter::class)]
@@ -198,7 +199,7 @@ final class ConvertedMoneySurfaceCoverageTest extends TestCase
                 FieldPresentationContext::Update,
             ] as $context
         ) {
-            $presentation = self::registry()->present(new FieldPresentationRequest(
+            $presentation = self::registry()->present(FieldPresentationInputFactory::fromDefinition(
                 self::field(),
                 self::moneyType(),
                 $context,
@@ -243,23 +244,23 @@ final class ConvertedMoneySurfaceCoverageTest extends TestCase
                 /**
                  * Present the figure alone, as a renderer written without the rule in mind would.
                  *
-                 * @param   FieldPresentationRequest  $request  Server-authorized presentation request.
+                 * @param   FieldPresentationInput  $request  Server-authorized presentation request.
                  *
-                 * @return  FieldPresentation  A bare figure carrying none of its provenance.
+                 * @return  FieldPresentationModel  A bare figure carrying none of its provenance.
                  *
                  * @since   2.0.0
                  */
-                public function present(FieldPresentationRequest $request): FieldPresentation
+                public function present(FieldPresentationInput $request): FieldPresentationModel
                 {
-                    return new FieldPresentation(
-                        $request->field->handle,
-                        $request->field->label,
+                    return new FieldPresentationModel(
+                        $request->handle,
+                        $request->label,
                         $request->context,
                         FieldWidget::Output,
                         '1234.56 EUR',
                         null,
                         false,
-                        $request->field->required,
+                        $request->required,
                         $request->errors,
                     );
                 }
@@ -268,7 +269,7 @@ final class ConvertedMoneySurfaceCoverageTest extends TestCase
 
         $this->expectException(InvalidBusinessDefinition::class);
         $this->expectExceptionMessage('must be presented with its conversion provenance');
-        $registry->present(new FieldPresentationRequest(
+        $registry->present(FieldPresentationInputFactory::fromDefinition(
             self::field(),
             self::moneyType(),
             FieldPresentationContext::Detail,

@@ -28,7 +28,7 @@ final readonly class StructuredLogStudioPreviewActivityRecorder implements Studi
      * @var    list<string>
      * @since  2.0.0
      */
-    private const array ACTIONS = ['cancel', 'document-claim', 'render', 'theme-stylesheet'];
+    private const array ACTIONS = ['cancel', 'document-claim', 'render', 'stylesheet'];
 
     /**
      * Closed outcome vocabulary.

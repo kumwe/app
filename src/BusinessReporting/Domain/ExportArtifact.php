@@ -8,8 +8,9 @@ use DateTimeImmutable;
 use InvalidArgumentException;
 use Kumwe\App\Application\Authorization\AuthenticatedSurface;
 use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
-use Kumwe\App\Identity\Domain\Capability;
 use Kumwe\App\Identity\Domain\GrantScope;
+use Kumwe\Extension\Spi\BusinessReporting\Domain\ReportDefinitionGuard;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use LogicException;
 
 /**

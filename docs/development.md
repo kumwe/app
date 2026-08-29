@@ -154,7 +154,7 @@ composer test -- tests/Unit/BusinessIntegration tests/Integration/BusinessIntegr
 composer test -- tests/Unit/BusinessReporting tests/Integration/BusinessReporting
 ```
 
-Compatibility fixtures in `tests/Fixtures/ExtensionApi` are immutable released inputs. Add a new schema/SPI fixture
+Compatibility fixtures in `vendor/kumwe/extension-sdk/resources/fixtures` are immutable released inputs. Add a new SDK schema/SPI fixture
 for a new revision; never rewrite an older fixture to make a breaking parser change pass. See
 [Business integrations and extension SDK](business-integrations.md#required-conformance-evidence).
 

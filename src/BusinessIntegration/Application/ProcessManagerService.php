@@ -6,7 +6,7 @@ namespace Kumwe\App\BusinessIntegration\Application;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\App\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationEvent;
 use Kumwe\App\BusinessIntegration\Domain\ProcessInstance;
 use Kumwe\App\BusinessIntegration\Domain\ProcessStatus;
 use Kumwe\App\BusinessIntegration\Domain\ProcessTransition;

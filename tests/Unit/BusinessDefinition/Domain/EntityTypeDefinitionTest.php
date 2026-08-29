@@ -15,6 +15,9 @@ use Kumwe\App\BusinessDefinition\Domain\FieldDefinition;
 use Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition;
 use Kumwe\App\BusinessDefinition\Domain\PortalOperation;
 use Kumwe\App\BusinessDefinition\Domain\RecordInvariantDefinition;
+use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationInputFactory;
+use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationConfiguration;
+use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
@@ -430,6 +433,98 @@ final class EntityTypeDefinitionTest extends TestCase
         $this->expectExceptionMessage('invalid unit');
         $definition = EntityTypeDefinition::fromArray($document);
         (new BusinessDefinitionValidator(new FieldTypeRegistry()))->validateGraph([$definition]);
+    }
+
+    /**
+     * Definition admission enforces the SDK's individual, list and total configuration budgets.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testFieldPresentationConfigurationBudgetsFailAtDefinitionAdmission(): void
+    {
+        $hostile = [
+            [
+                'handle' => 'oversized_unit',
+                'label' => 'Oversized unit',
+                'type' => 'core.quantity',
+                'precision' => 12,
+                'scale' => 3,
+                'configuration' => [
+                    'unit' => str_repeat('x', FieldPresentationConfiguration::MAXIMUM_STRING_BYTES + 1),
+                ],
+            ],
+            [
+                'handle' => 'oversized_options',
+                'label' => 'Oversized options',
+                'type' => 'core.enum',
+                'configuration' => [
+                    'options' => array_fill(
+                        0,
+                        FieldPresentationConfiguration::MAXIMUM_LIST_ITEMS + 1,
+                        'option',
+                    ),
+                ],
+            ],
+            [
+                'handle' => 'oversized_total',
+                'label' => 'Oversized total',
+                'type' => 'core.enum',
+                'configuration' => [
+                    'options' => array_fill(
+                        0,
+                        9,
+                        str_repeat('x', FieldPresentationConfiguration::MAXIMUM_STRING_BYTES),
+                    ),
+                ],
+            ],
+        ];
+
+        foreach ($hostile as $field) {
+            $document = self::document();
+            $document['fields'][] = $field;
+            try {
+                $definition = EntityTypeDefinition::fromArray($document);
+                (new BusinessDefinitionValidator(new FieldTypeRegistry()))->validateGraph([$definition]);
+                self::fail('An unbounded field presentation configuration reached publication.');
+            } catch (InvalidBusinessDefinition $exception) {
+                self::assertStringContainsString('configuration', $exception->getMessage());
+            }
+        }
+    }
+
+    /**
+     * A valid enum configuration survives admission and enters the canonical presenter input unchanged.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testValidFieldPresentationConfigurationRoundTripsIntoTheSdkInput(): void
+    {
+        $document = self::document();
+        $document['fields'][] = [
+            'handle' => 'status',
+            'label' => 'Status',
+            'type' => 'core.enum',
+            'configuration' => ['options' => ['draft', 'published']],
+        ];
+        $definition = EntityTypeDefinition::fromArray($document);
+        $types = new FieldTypeRegistry();
+        (new BusinessDefinitionValidator($types))->validateGraph([$definition]);
+        $field = array_values(array_filter(
+            $definition->fields(),
+            static fn (FieldDefinition $candidate): bool => $candidate->handle === 'status',
+        ))[0];
+
+        $input = FieldPresentationInputFactory::fromDefinition(
+            $field,
+            $types->get('core.enum'),
+            FieldPresentationContext::Detail,
+        );
+
+        self::assertSame(['options' => ['draft', 'published']], $input->configuration->toArray());
     }
 
     public function testNormalizersAndValidatorsMustMatchTheRuntimeValueFamily(): void

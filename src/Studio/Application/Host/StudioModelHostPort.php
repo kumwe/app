@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Studio\Application\Host;
 
-use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Studio\Application\Projection\StudioContentProjectionService;
 use Kumwe\App\Studio\Application\Projection\StudioProjectionRejected;
-use Kumwe\App\Studio\Domain\Host\StudioHostRequest;
+use Kumwe\Producer\Wire\HostResult;
+use Kumwe\Producer\Wire\Port\ModelPortInterface;
+use Kumwe\Producer\Wire\RequestContext;
 use stdClass;
 
 /**
@@ -15,73 +16,56 @@ use stdClass;
  *
  * @since  2.0.0
  */
-final readonly class StudioModelHostPort
+final readonly class StudioModelHostPort implements ModelPortInterface
 {
     /**
      * Bind the port to the sole authorized exact Content-model projection service.
      *
      * @param  StudioContentProjectionService  $models  Authorized exact Content-model projection.
+     * @param  StudioProducerRequestAuthority|null $authority Authorized Producer request scope, when bound.
      *
      * @since  2.0.0
      */
-    public function __construct(private StudioContentProjectionService $models)
-    {
+    public function __construct(
+        private StudioContentProjectionService $models,
+        private ?StudioProducerRequestAuthority $authority = null,
+    ) {
     }
 
     /**
-     * Dispatch `model.get` and `model.list` without exposing denied model coordinates.
+     * Bind this App-owned port implementation to one successfully authorized Producer request.
      *
-     * @param   ExecutionContext           $context    Trusted actor and site.
-     * @param   string                     $operation  Canonical model operation.
-     * @param   StudioHostRequest          $request    Validated host envelope.
-     * @param   StudioHostSessionSnapshot  $snapshot   Live trusted session snapshot.
+     * @param   StudioProducerRequestAuthority  $authority  Trusted evidence for one exact dispatch.
      *
-     * @return  StudioHostResult  Canonical model document or ordered list.
+     * @return  self  Request-scoped model port.
      *
      * @since   2.0.0
      */
-    public function dispatch(
-        ExecutionContext $context,
-        string $operation,
-        StudioHostRequest $request,
-        StudioHostSessionSnapshot $snapshot,
-    ): StudioHostResult {
-        unset($snapshot);
-        $this->assertReadContext($request);
-
-        try {
-            return match ($operation) {
-                'get' => $this->get($context, $request),
-                'list' => $this->list($context, $request),
-                default => throw new StudioHostOperationRefused(
-                    'incompatible',
-                    'studio.host/operation-unavailable',
-                ),
-            };
-        } catch (StudioProjectionRejected) {
-            throw new StudioHostOperationRefused('not-found', 'studio.model/not-found');
-        }
+    public function forRequest(StudioProducerRequestAuthority $authority): self
+    {
+        return new self($this->models, $authority);
     }
 
     /**
      * Resolve `model.get` for one exact trusted reference.
      *
-     * @param   ExecutionContext   $context  Trusted actor and site context.
-     * @param   StudioHostRequest  $request  Validated exact host envelope.
+     * @param   mixed           $arguments  Validated Producer operation arguments.
+     * @param   RequestContext  $context    Validated Producer request context.
      *
-     * @return  StudioHostResult  Exact canonical model document.
+     * @return  HostResult  Exact canonical model document.
      *
      * @since   2.0.0
      */
-    private function get(ExecutionContext $context, StudioHostRequest $request): StudioHostResult
+    public function get(mixed $arguments, RequestContext $context): HostResult
     {
-        $arguments = $request->arguments;
+        $authority = $this->requestAuthority();
+        $this->assertReadContext($context);
         if (!$arguments instanceof stdClass || self::members($arguments) !== ['reference']) {
-            throw new StudioHostOperationRefused('invalid-request', 'studio.host/invalid-arguments');
+            StudioProducerError::refuse('invalid-request', 'studio.host/invalid-arguments');
         }
         $reference = $arguments->reference;
         if (!$reference instanceof stdClass) {
-            throw new StudioHostOperationRefused('invalid-request', 'studio.host/invalid-arguments');
+            StudioProducerError::refuse('invalid-request', 'studio.host/invalid-arguments');
         }
         $members = self::members($reference);
         $allowedMembers = [
@@ -91,7 +75,7 @@ final readonly class StudioModelHostPort
             ['id', 'integrity', 'revision', 'version'],
         ];
         if (!in_array($members, $allowedMembers, true)) {
-            throw new StudioHostOperationRefused('invalid-request', 'studio.host/invalid-arguments');
+            StudioProducerError::refuse('invalid-request', 'studio.host/invalid-arguments');
         }
         $id = $reference->id ?? null;
         $version = $reference->version ?? null;
@@ -103,43 +87,53 @@ final readonly class StudioModelHostPort
             || $version === ''
             || ($revision !== null && !is_string($revision))
         ) {
-            throw new StudioHostOperationRefused('invalid-request', 'studio.host/invalid-arguments');
+            StudioProducerError::refuse('invalid-request', 'studio.host/invalid-arguments');
         }
-        $model = $this->models->model($context, $id, $version);
+        try {
+            $model = $this->models->model($authority->context(), $id, $version);
+        } catch (StudioProjectionRejected) {
+            StudioProducerError::refuse('not-found', 'studio.model/not-found');
+        }
         if (
             $revision !== null
             && (!isset($model->revision)
                 || !is_string($model->revision)
                 || !hash_equals($model->revision, $revision))
         ) {
-            throw new StudioHostOperationRefused('not-found', 'studio.model/not-found');
+            StudioProducerError::refuse('not-found', 'studio.model/not-found');
         }
 
-        return new StudioHostResult($model, is_string($model->revision ?? null) ? $model->revision : null);
+        return new HostResult($model, is_string($model->revision ?? null) ? $model->revision : null);
     }
 
     /**
      * Resolve `model.list` as a deterministic authorized model projection.
      *
-     * @param   ExecutionContext   $context  Trusted actor and site context.
-     * @param   StudioHostRequest  $request  Validated exact host envelope.
+     * @param   mixed           $arguments  Validated Producer operation arguments.
+     * @param   RequestContext  $context    Validated Producer request context.
      *
-     * @return  StudioHostResult  Ordered canonical model documents.
+     * @return  HostResult  Ordered canonical model documents.
      *
      * @since   2.0.0
      */
-    private function list(ExecutionContext $context, StudioHostRequest $request): StudioHostResult
+    public function list(mixed $arguments, RequestContext $context): HostResult
     {
-        if (!$request->arguments instanceof stdClass || get_object_vars($request->arguments) !== []) {
-            throw new StudioHostOperationRefused('invalid-request', 'studio.host/invalid-arguments');
+        $authority = $this->requestAuthority();
+        $this->assertReadContext($context);
+        if (!$arguments instanceof stdClass || get_object_vars($arguments) !== []) {
+            StudioProducerError::refuse('invalid-request', 'studio.host/invalid-arguments');
         }
-        $models = $this->models->models($context);
+        try {
+            $models = $this->models->models($authority->context());
+        } catch (StudioProjectionRejected) {
+            StudioProducerError::refuse('not-found', 'studio.model/not-found');
+        }
         usort($models, static fn (stdClass $left, stdClass $right): int => strcmp(
             self::modelSortKey($left),
             self::modelSortKey($right),
         ));
 
-        return new StudioHostResult($models);
+        return new HostResult($models);
     }
 
     /**
@@ -162,17 +156,29 @@ final readonly class StudioModelHostPort
     /**
      * Refuse write-context envelope members on the read-only model port.
      *
-     * @param   StudioHostRequest  $request  Validated exact host envelope.
+     * @param   RequestContext  $context  Validated Producer request context.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    private function assertReadContext(StudioHostRequest $request): void
+    private function assertReadContext(RequestContext $context): void
     {
-        if ($request->expectedRevision !== null || $request->idempotencyKey !== null) {
-            throw new StudioHostOperationRefused('invalid-request', 'studio.host/invalid-context');
+        if ($context->expectedRevision !== null || $context->idempotencyKey !== null) {
+            StudioProducerError::refuse('invalid-request', 'studio.host/invalid-context');
         }
+    }
+
+    /**
+     * Require the per-request authority installed by the Producer host factory.
+     *
+     * @return  StudioProducerRequestAuthority  Trusted evidence for this dispatch.
+     *
+     * @since   2.0.0
+     */
+    private function requestAuthority(): StudioProducerRequestAuthority
+    {
+        return $this->authority ?? throw new \LogicException('A Studio model port requires request authority.');
     }
 
     /**

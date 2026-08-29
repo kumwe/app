@@ -12,7 +12,7 @@ use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
 use Kumwe\App\Extension\Application\Trust\TrustStoreRepository;
-use Kumwe\App\Extension\Domain\ExtensionIdentifier;
+use Kumwe\Extension\Manifest\ExtensionIdentifier;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use RuntimeException;
 

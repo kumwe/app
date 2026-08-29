@@ -20,6 +20,7 @@ use Kumwe\App\Content\Domain\TranslationGroup;
 use Kumwe\App\Content\Domain\TranslationGroupMember;
 use Kumwe\App\Content\Presentation\TranslationGroupPresenter;
 use Kumwe\App\Http\Handler\PublishedContentHandler;
+use Kumwe\App\Http\Handler\StudioPublishedStylesheetHandler;
 use Kumwe\App\Localization\Application\ActiveLocale;
 use Kumwe\App\Localization\Application\SupportedLocales;
 use Kumwe\App\Localization\Application\Translator;
@@ -41,7 +42,9 @@ use Kumwe\App\Site\Application\PublicPageLocator;
 use Kumwe\App\Site\Application\SiteSettings;
 use Kumwe\App\Studio\Application\Composition\StudioPublishedBlueprintUnavailable;
 use Kumwe\App\Studio\Application\Composition\StudioPublishedContentRenderer;
+use Kumwe\App\Studio\Application\Composition\StudioPublishedStylesheet;
 use Kumwe\App\Tests\Support\AuthorizationContext;
+use Kumwe\Producer\Render\RenderResult;
 use Kumwe\App\Workflow\Domain\Workflow;
 use Laminas\Diactoros\ServerRequestFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -62,6 +65,8 @@ use Twig\Loader\ArrayLoader;
  * @since  2.0.0
  */
 #[CoversClass(PublishedContentHandler::class)]
+#[CoversClass(StudioPublishedStylesheetHandler::class)]
+#[CoversClass(StudioPublishedStylesheet::class)]
 #[UsesClass(ContentLayoutCatalog::class)]
 #[UsesClass(ContentPageRenderService::class)]
 #[UsesClass(ContentPresenter::class)]
@@ -119,19 +124,30 @@ final class PublishedContentHandlerTest extends TestCase
             ->method('render')
             ->with(self::callback(static fn (ContentRecord $record): bool =>
                 $record->entry->id() === self::ARABIC))
-            ->willReturn('<section data-studio-published><p>Composed roadmap</p></section>');
+            ->willReturn(new RenderResult(
+                '<section data-studio-published><p>Composed roadmap</p></section>',
+                '[data-studio-block]{display:block}',
+                [],
+            ));
         $active = null;
         $handler = $this->handler($studio, $active);
 
         $response = $handler->handle($this->request('/insights/roadmap'));
 
         self::assertSame(200, $response->getStatusCode());
-        self::assertSame(
+        self::assertStringContainsString(
             'page|ar|rtl|/insights/roadmap|https://public.kumwe.test/insights/roadmap|core.public.page|'
                 . 'Arabic roadmap|0|<section data-studio-published><p>Composed roadmap</p></section>|'
                 . 'ocean|#0777af|Roadmap=/insights/roadmap;Roadmap in English=/insights/roadmap-en;'
                 . 'Documentation=/documentation;|ar=/insights/roadmap:rtl:current;'
                 . 'en-GB=/insights/roadmap-en:ltr:other;|/insights/roadmap-en',
+            (string) $response->getBody(),
+        );
+        self::assertStringContainsString(
+            '<link rel="stylesheet" href="/studio/styles/'
+                . hash('sha256', '[data-studio-block]{display:block}')
+                . '.css?page=%2Finsights%2Froadmap&amp;entry=' . self::ARABIC
+                . '&amp;locale=ar" data-studio-composition>',
             (string) $response->getBody(),
         );
         self::assertSame(
@@ -237,6 +253,48 @@ final class PublishedContentHandlerTest extends TestCase
         self::assertSame('en-GB', $active->locale()->toString());
     }
 
+    public function testPublishedStylesheetRevalidatesLiveOutputBeforeBytesOrNotModified(): void
+    {
+        $css = '[data-studio-block]{display:block}';
+        $result = new RenderResult('<p>Published</p>', $css, []);
+        $studio = $this->createMock(StudioPublishedContentRenderer::class);
+        $studio->expects(self::exactly(2))->method('render')->willReturn($result);
+        $handler = $this->stylesheetHandler($studio);
+        $digest = StudioPublishedStylesheet::digest($css);
+        $request = $this->stylesheetRequest($digest);
+
+        $response = $handler->handle($request);
+        self::assertSame(200, $response->getStatusCode());
+        self::assertSame($css, (string) $response->getBody());
+        self::assertSame('"' . $digest . '"', $response->getHeaderLine('ETag'));
+        self::assertSame('public, no-cache, must-revalidate', $response->getHeaderLine('Cache-Control'));
+        self::assertSame('same-origin', $response->getHeaderLine('Cross-Origin-Resource-Policy'));
+
+        $notModified = $handler->handle($request->withHeader('If-None-Match', '"' . $digest . '"'));
+        self::assertSame(304, $notModified->getStatusCode());
+        self::assertSame('', (string) $notModified->getBody());
+    }
+
+    public function testPublishedStylesheetFailsClosedAfterWithdrawalOrCoordinateDrift(): void
+    {
+        $studio = $this->createMock(StudioPublishedContentRenderer::class);
+        $studio->expects(self::once())->method('render')->willReturn(null);
+        $handler = $this->stylesheetHandler($studio);
+        $digest = StudioPublishedStylesheet::digest('[data-studio-block]{display:block}');
+
+        $withdrawn = $handler->handle($this->stylesheetRequest($digest));
+        self::assertSame(404, $withdrawn->getStatusCode());
+        self::assertSame('private, no-store', $withdrawn->getHeaderLine('Cache-Control'));
+
+        $wrongLocale = $handler->handle($this->stylesheetRequest($digest)->withQueryParams([
+            'page' => '/insights/roadmap',
+            'entry' => self::ARABIC,
+            'locale' => 'en-GB',
+        ]));
+        self::assertSame(404, $wrongLocale->getStatusCode());
+        self::assertSame('private, no-store', $wrongLocale->getHeaderLine('Cache-Control'));
+    }
+
     /**
      * Build the real public collaborators around a controllable Studio rendering boundary.
      *
@@ -263,7 +321,7 @@ final class PublishedContentHandlerTest extends TestCase
         $active->begin(LocaleTag::fromString('en-GB'));
         $models = $this->createStub(ContentModelRepository::class);
         $twig = new SiteTwigEnvironment(new ArrayLoader([
-            'page.twig' => 'page|{{ locale_tag() }}|{{ text_direction() }}|'
+            'page.twig' => '<!doctype html><head></head>page|{{ locale_tag() }}|{{ text_direction() }}|'
                 . '{{ current_path }}|{{ canonical_url }}|{{ surface_id }}|'
                 . '{{ entry.title }}|{{ entry.data|length }}|{{ entry.body_html|raw }}|'
                 . '{{ presentation.active_scheme }}|'
@@ -294,6 +352,38 @@ final class PublishedContentHandlerTest extends TestCase
             $active,
             $studio,
         );
+    }
+
+    private function stylesheetHandler(
+        StudioPublishedContentRenderer $studio,
+    ): StudioPublishedStylesheetHandler {
+        $content = $this->content();
+        $pages = new PublicPageLocator(
+            $content,
+            $this->settings(),
+            $this->navigation(),
+            SiteContext::default(),
+        );
+        $active = new ActiveLocale(new SupportedLocales());
+        $active->begin(LocaleTag::fromString('ar'));
+
+        return new StudioPublishedStylesheetHandler(
+            $pages,
+            $this->languages($content, $pages, $active),
+            $studio,
+            SiteContext::default(),
+        );
+    }
+
+    private function stylesheetRequest(string $digest): \Psr\Http\Message\ServerRequestInterface
+    {
+        return $this->request('/studio/styles/' . $digest . '.css')
+            ->withAttribute('digest', $digest)
+            ->withQueryParams([
+                'page' => '/insights/roadmap',
+                'entry' => self::ARABIC,
+                'locale' => 'ar',
+            ]);
     }
 
     /**

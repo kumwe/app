@@ -9,13 +9,13 @@ use JsonException;
 use Kumwe\App\Application\Authorization\AuthorizationGateway;
 use Kumwe\App\Application\Authorization\AuthorizationResource;
 use Kumwe\App\Application\Authorization\ExecutionContext;
-use Kumwe\App\BusinessReporting\Domain\ReportDefinitionGuard;
+use Kumwe\Extension\Spi\BusinessReporting\Domain\ReportDefinitionGuard;
 use Kumwe\App\Content\Application\ContentService;
 use Kumwe\App\Content\Application\ContentModelRepository;
 use Kumwe\App\Identity\Application\Administration\AccessControlRepository;
 use Kumwe\App\Identity\Application\Administration\TokenDelegationPreauthorizer;
 use Kumwe\App\Identity\Application\Administration\TokenRotationPreauthorizer;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use Kumwe\App\Identity\Domain\GrantScope;
 use Psr\Http\Message\ServerRequestInterface;
 

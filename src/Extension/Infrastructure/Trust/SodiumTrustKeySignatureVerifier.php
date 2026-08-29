@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Kumwe\App\Extension\Infrastructure\Trust;
 
 use Kumwe\App\Extension\Application\Trust\TrustKeySignatureVerifier;
-use Kumwe\App\Extension\Domain\PackageChecksum;
-use Kumwe\App\Extension\Domain\PackageSignature;
+use Kumwe\Extension\Package\PackageChecksum;
+use Kumwe\Extension\Package\PackageSignature;
 
 /**
  * Verifies package signatures with libsodium's Ed25519 against a key handed over by the trust store.

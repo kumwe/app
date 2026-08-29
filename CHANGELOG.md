@@ -22,6 +22,15 @@ set of application services, one composition root, one authoritative relational 
 authorization decision in front of every read and every write. This block covers the whole of the 2.0
 development programme, from the architecture decision that opened it to the current head of `master`.
 
+> **Pre-stable extension ownership reset.** The extension manifest, package, runtime and author-facing SPI
+> contracts now belong directly to `kumwe/extension-sdk`; the App no longer owns or loads historical
+> `Kumwe\\App\\Extension` copies. This deliberately changes the self-checksums of
+> `20260805040000_token_and_trust_lifecycles`, `20260809010000_business_security_portal`,
+> `20260816010000_resource_ownership_scope`, `20260817010000_interface_message_overrides`,
+> `20260821010000_period_posting_lock`, and `20260824020000_studio_host_sessions`. Development installations
+> created before the 2.0 alpha baseline must reinstall from a clean schema and establish a new migration
+> ledger; there is no alias, remapping layer, historical-checksum allowlist, or compatibility loader.
+
 ### Added
 
 - **P4-B — Bulk persistence mechanics: a document's cost is decided up front, bounded by declaration, and
@@ -169,8 +178,7 @@ development programme, from the architecture decision that opened it to the curr
   ledger without implementing S-D write behavior. (`b456c484`)
 
 - **The App has a read-only, fail-closed Studio Content projection foundation.** Canonical JSON and
-  schema-profile interpretation now live in the neutral `Studio\Domain\Contract` namespace, while the
-  former Extension names remain compatible adapters over the same pinned corpus. Authorized Content
+  schema-profile interpretation now come directly from the reusable Producer dependency. Authorized Content
   models and entries project to schema-valid Studio documents with reversible identity, version,
   locale, workflow, status, recursive-field and exact-string mappings; unsupported or lossy shapes
   stop with typed non-disclosing diagnostics, and field policy can omit both descriptions and values.
@@ -233,12 +241,13 @@ development programme, from the architecture decision that opened it to the curr
   [`25c26883`](https://github.com/kumwe/app/commit/25c2688357f22e967511c75e4b8508210d4affe5); one
   invalid artifact rejects the owning contribution atomically. Renderer bindings, authority and
   host references live in the separate bounded `host_bindings` section, never inside the portable
-  document. The additive `CanonicalCompositionRegistrar` arrives beside the pinned SPI-3 registrar
-  — no method was added to it — and provider registration is reconciled against the signed manifest
-  by literal byte equivalence of each document's canonical string. Manifest 6 accepts only SPI 4,
-  earlier manifests refuse SPI 4, manifest 5 / SPI 3 stay frozen byte for byte, and the documented
-  `Manifest5CompositionAdapter` translates only complete, deterministic, lossless property mappings
-  while naming everything else — a host `reference` is reported, never widened. The signed
+  document. The canonical SDK manifest graph is the single declaration authority; provider code can
+  bind only the exact executable renderer identifiers required by that signed graph and cannot submit
+  another document. Manifest 6 accepts only SPI 4,
+  earlier manifests refuse SPI 4. The pre-stable App-owned generation fixtures and schema-5 translation
+  adapter were deliberately removed during the canonical SDK reset; affected pre-alpha installations
+  must reinstall and rebaseline against the package-owned contract; no prior App-owned execution path
+  remains. The signed
   `kumwe/contract-manifest-six` fixture declares every canonical kind and passes the complete
   install, activate, upgrade, disable, reactivate and uninstall lifecycle, and
   `classification.json` and `generations.json` record the generation with recomputed surface
@@ -274,19 +283,16 @@ development programme, from the architecture decision that opened it to the curr
   yet measure — concurrency and contention, write amplification, breakpoints and plan capture —
   which are the remaining `P2-I` stages.
 
-- **The Studio contract corpus is vendored at an exact released pin and digest-verified on every
-  build.** `tests/Fixtures/Studio/` now carries the complete `@kumwe/studio-protocol@0.1.0-alpha.6`
-  schema set (37 schemas with their published digest manifest) and the complete
-  `@kumwe/studio-testkit@0.1.0-alpha.8` corpus (260 files in 10 groups: fixtures, command, media,
-  host, host-sequence, preview, schema-profile and canonical vectors, invalid fixtures and the
-  rich-text conformance set), with `PIN.json` recording the exact versions and npm tarball
-  checksums. The new `composer studio:corpus` gate — a member of `composer qa`, the quality
-  contract and the CI quality and preflight jobs — recomputes every SRI digest against the vendored
-  bytes and holds each corpus directory closed in both directions, so composition work builds
-  against frozen contract bytes instead of a moving draft (S-B progress toward `V2-STU-002`,
-  decision D16). Finding `V2-STU-008` records the manifest-6 / SPI-4 canonical-generation
-  requirement from kumwe/app#104, and the Studio integration input document now names `PIN.json`
-  as the version authority for the vendored packages.
+- **The Studio contract is consumed at one exact released pin and digest-verified on every build.**
+  Producer owns the complete released schema and testkit corpus; App's `PIN.json` records the exact
+  coordinated release and checksums of the eight npm tarballs its browser build consumes. The
+  `composer studio:corpus` gate — a member of `composer qa`, the quality contract and the CI quality
+  and preflight jobs — compiles Producer's closed registry, resolves every released testkit member,
+  and binds the App release record and tarballs to Producer's typed release. Composition work therefore
+  builds against frozen dependency bytes without copying a second contract tree (S-B progress toward
+  `V2-STU-002`, decision D16). Finding `V2-STU-008` records the manifest-6 / SPI-4 canonical-generation
+  requirement from kumwe/app#104, and the Studio integration input document names `PIN.json` as the
+  version authority for App's packaged browser dependencies.
 
 - **One vendor-neutral environment bootstrap provisions every agent sandbox.**
   `tools/agent-setup.sh` is the single setup entry point for any coding agent or human
@@ -573,47 +579,13 @@ development programme, from the architecture decision that opened it to the curr
   [`docs/architecture/dependency-baseline.json`](docs/architecture/dependency-baseline.json) records the 157
   edges that already pointed the wrong way, each with the finding that removes it, an owner and an expiry.
   (`c72707b`)
-- **A frozen extension contract, written down as data instead of inferred from the code.** An author could
-  not tell which of the types under `Kumwe\App\` they were allowed to build against, which meant every
-  internal refactor was silently a compatibility decision and no generation could be called supported
-  except by assertion. [`docs/extension-contract/classification.json`](docs/extension-contract/classification.json)
-  now classifies **93 public types** — kind, the role a package plays with each, the manifest generation it
-  is reachable from, the contribution SPI it belongs to, and the compatibility fixture whose committed bytes
-  pin its member signatures. Everything else under `Kumwe\App\` is internal by default, so absence from
-  that file is the answer rather than an oversight, and internal code stays free to move. The surface is
-  closed over itself: nothing named in a promised signature is left unclassified, which is what stops an
-  interface an author implements from handing them an internal class. The five host services the restricted
-  container allowlists are part of the contract too, checked against the composition root itself. (`88463c6`)
-- **Every manifest and SPI generation still promised, stated and proved.**
-  [`docs/extension-contract/generations.json`](docs/extension-contract/generations.json) records what each
-  of the four manifest schemas and two contribution SPIs promises, which schema binds to which SPI, which
-  keys are interpreted — and, just as usefully, which three are accepted and do nothing, because a manifest
-  key that looks load-bearing and is not costs an author a day. Two extension-facing interfaces removed
-  earlier are kept as **withdrawal records** rather than deleted, so someone who built against them learns
-  where they went instead of finding a gap. (`88463c6`)
-- **A signed compatibility package per generation, driven through the whole lifecycle on every build.**
-  Schemas 2 and 3 had no package anywhere in the tree that ran; they were proved by a manifest that parsed.
-  Each of the four generations now ships one under
-  [`tests/Fixtures/ExtensionApi/generations`](tests/Fixtures/ExtensionApi/generations), declaring the
-  smallest thing its generation exists for — schema 1 contributes nothing at all, schema 4 declares one of
-  every durable integration surface with a real implementation behind it. Each is built twice and required
-  to produce the same bytes, passes the code-free conformance gate, is signed with `PackageSigner` and
-  admitted through `PackageTrustPolicy` over `SodiumEd25519Verifier` — the production trust path, not a
-  second scheme — then installed, activated, upgraded, disabled, reactivated and uninstalled, with the
-  contributed surface compared against the generation's promise at every step. The signing key is derived
-  from a written stem, so no key material is committed, not even the public half. (`55acd00`)
-- **A build check that fails when the frozen surface moves.** `composer extension:contract` holds both
-  documents to the tree — every classified type resolves to a file that declares it, every pinned fixture
-  actually pins the type citing it, every compatibility package is present and unchanged — and each
-  generation carries a digest over its own canonical bytes, so widening a frozen generation fails the build
-  until the change is recorded in the same commit that makes it. Adding a generation beside the frozen ones
-  needs nothing of anyone else's entry, which is the intended way forward. It is dependency-free and runs
-  inside `composer qa`. (`88463c6`)
-- **Extension-author documentation for all of it,** in
-  [`docs/extension-contract/README.md`](docs/extension-contract/README.md): what is public, what is
-  internal, what a generation guarantees, how to target one and why targeting the lowest that carries what
-  you need is the right instinct, how the two additive SPI-2 registrars are feature-detected, and why an
-  upgrade deliberately leaves an extension disabled. (`88463c6`)
+- **One package-owned extension contract instead of an App-owned compatibility surface.**
+  `kumwe/extension-sdk` now owns the canonical `Kumwe\Extension` classifications, manifest generations,
+  signed fixtures, scaffold, build/sign/inspection tools, and their resource PIN. The App verifies those
+  installed bytes through `composer extension:contract` and pins one immutable SDK release; it carries no
+  translated class-shape fixtures, historical namespace aliases, or second public-API ledger. App lifecycle
+  proof consumes the package-owned fixtures directly, while admission policy, authorization, persistence,
+  trust enforcement, and signed-manifest interpretation remain host responsibilities.
 
 - **A business-group installation: several businesses on one Kumwe, sharing what they choose to share.**
   A resource's owner is now held at a *level* — one site, a declared group of sites, or the installation —
@@ -1228,14 +1200,13 @@ development programme, from the architecture decision that opened it to the curr
   order cannot move a published checksum. (`cb5f482`)
 - **An extension can declare its translation-set intent at admission time.** A package declares
   `contributions.content.translation_groups` in its manifest — the content set, the languages it intends
-  to publish in, and the language it falls back to — and registers that inventory through an additive
-  one-method `ContentTranslationRegistrar` that the owner-bound registrar implements alongside every
-  other surface. The language list is a **closed admission claim** an operator can inspect before
-  installing, and a package cannot widen it after admission: registering a set the manifest never carried
-  is refused at contribution time, as is a fallback naming a language the package never publishes. A
+  to publish in, and the language it falls back to. The canonical SDK manifest graph is activated directly;
+  provider code cannot add or widen this declarative inventory. The language list is a **closed admission
+  claim** an operator can inspect before installing, and a fallback naming a language the package never
+  publishes is refused during manifest admission. A
   package declaring no content set exports no `content` section at all, so its bytes are unchanged. The
-  registrar signature, manifest section and declaration members are pinned in a compatibility fixture
-  without rewriting the frozen SPI-two baseline. This declaration is inventory, not yet the runtime link
+  manifest section and declaration members are pinned in the package-owned SDK contract. This declaration
+  is inventory, not yet the runtime link
   between an extension-owned item and a set; that additive frozen association remains `V2-LNG-012` in the
   roadmap rather than being claimed here as completed delivery. (`cb5f482`, `b539161`)
 - **[Content translation](docs/content-translation.md),** explaining the model to an editor, stating what
@@ -2239,6 +2210,10 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Removed
 
+- **The App-owned custom-business extension SPI copies.** Runtime registries, generated surfaces, examples,
+  delivery tests and contribution admission now consume the canonical command, query, declaration, handler,
+  result, payload, reference and schema types from `kumwe/extension-sdk` directly, with no alias, adapter or
+  namespace remapping. (#124)
 - **The `kumwe_token_rotate` MCP tool and its secret-once replay mode.** A machine tool that returns a newly
   issued credential contradicts the surface's rule that authentication secrets cross neither direction, even if
   its idempotency record redacts the replay. Token rotation remains available through the administrator, protected

@@ -6,8 +6,8 @@ namespace Kumwe\App\OpenApi\Application;
 
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\App\BusinessReporting\Domain\ReportValueType;
-use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessSchema;
+use Kumwe\Extension\Spi\BusinessReporting\Domain\ReportValueType;
+use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessSchema;
 use Kumwe\App\OpenApi\Infrastructure\CanonicalOpenApiJson;
 
 /**

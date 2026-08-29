@@ -58,6 +58,8 @@ jobs:
           composer baseline:check
           composer quality:contract
           composer extension:contract
+          composer extension:independence
+          composer conversion:api
           composer cli:contract
           composer mcp:contract
           composer studio:corpus
@@ -379,8 +381,11 @@ jobs:
       - name: Verify the quality contract
         run: composer quality:contract
 
-      - name: Verify the frozen extension contract
-        run: composer extension:contract
+      - name: Verify extracted-package contracts and author-package independence
+        run: |
+          composer extension:contract
+          composer extension:independence
+          composer conversion:api
 
       - name: Verify the retained CLI and MCP machine contracts
         run: |

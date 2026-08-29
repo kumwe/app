@@ -6,12 +6,12 @@ namespace Kumwe\App\Tests\Unit\Studio\Application\Composition;
 
 use FilesystemIterator;
 use Kumwe\App\Application\Authorization\SiteContext;
-use Kumwe\App\Extension\Application\ExtensionServiceProvider;
-use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\Extension\Spi\Application\ExtensionServiceProvider;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
-use Kumwe\App\Extension\Contribution\ManifestContributionSet;
 use Kumwe\App\Extension\Runtime\ActiveExtensionSet;
-use Kumwe\App\Extension\Runtime\ExtensionContainer;
+use Kumwe\Extension\Manifest\ExtensionIdentifier;
+use Kumwe\Extension\Manifest\ManifestContributions;
+use Kumwe\Extension\Spi\Runtime\ExtensionContainer;
 use Kumwe\App\Extension\Runtime\RestrictedExtensionContainer;
 use Kumwe\App\Extension\Runtime\RuntimeArtifactDigester;
 use Kumwe\App\Presentation\Application\SitePresentation;
@@ -209,13 +209,11 @@ final class StudioPublishedThemeTest extends TestCase
         );
         $registries = new ExtensionContributionRegistrySet(withCore: false);
         $extensions = new ActiveExtensionSet($registries);
-        $owner = ContributionOwner::extension('acme/public-theme');
         $extensions->add(
             'acme/public-theme',
             new StudioThemeProviderProbe(),
             new RestrictedExtensionContainer('acme/public-theme', []),
-            new ManifestContributionSet($owner),
-            true,
+            ManifestContributions::fromSchemaOne(ExtensionIdentifier::fromString('acme/public-theme')),
             '3.2.1',
             str_repeat('b', 64),
         );

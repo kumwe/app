@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Application\Presentation\Preference;
 
 use InvalidArgumentException;
-use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\OwnedRuntimeContributionRegistry;
 use Kumwe\App\InterfaceStandard\CustomizationScope;
 use Kumwe\App\InterfaceStandard\CustomizationSlot;

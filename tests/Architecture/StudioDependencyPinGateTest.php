@@ -6,22 +6,17 @@ namespace Kumwe\App\Tests\Architecture;
 
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
-use stdClass;
 
 /**
- * Holds the Studio dependency-pin gate to the exact-version rule ADR 0007 states.
+ * Holds first-party manifests and lockfiles to exact, official, immutable coordinates.
  *
- * Adoption step 1 in `docs/roadmap/producer-adoption.md` says a non-exact specifier for
- * `kumwe/producer` or any `@kumwe/studio` artifact fails the build, and finding V2-STU-002 names
- * the hole that rule closes: a range takes a contract change silently while Studio is pre-release.
- * `tools/verify-studio-dependencies.php` is that gate, so this slice proves the gate itself: it
- * passes the repository as committed, it refuses a synthetic range on either manifest before the
- * Producer pin ever lands, it accepts the exact pin the adoption sequence will introduce, and it
- * refuses a `file:` reference that escapes the digest-verified vendored tarball directory. It also
- * pins the wiring — the gate runs in `composer qa` beside `studio:corpus` — because an unwired
- * gate guards nothing.
+ * The extracted PHP libraries and Studio packages cross a trust boundary before any of their classes run.
+ * These tests exercise the dependency-free gate in both directions: the committed records pass, while
+ * ranges, branches, Composer aliases, npm aliases, mutable lock references, and foreign URLs all fail.
+ * Synthetic passing evidence supplies an aligned Producer release so a pin failure cannot be confused with
+ * the separate three-way Studio alignment decision.
  *
- * @since  2.0.0
+ * @since   2.0.0
  */
 #[CoversNothing]
 final class StudioDependencyPinGateTest extends TestCase
@@ -35,7 +30,7 @@ final class StudioDependencyPinGateTest extends TestCase
     private string $root;
 
     /**
-     * Synthetic manifests written by a test, removed again after it.
+     * Synthetic JSON records written by a test.
      *
      * @var    list<string>
      * @since  2.0.0
@@ -55,7 +50,7 @@ final class StudioDependencyPinGateTest extends TestCase
     }
 
     /**
-     * Remove every synthetic manifest a test wrote.
+     * Remove every synthetic record a test wrote.
      *
      * @return  void
      *
@@ -70,7 +65,7 @@ final class StudioDependencyPinGateTest extends TestCase
     }
 
     /**
-     * The committed manifests satisfy the gate: every guarded dependency is exactly pinned.
+     * The committed manifests, locks, and installed Producer form one reproducible dependency chain.
      *
      * @return  void
      *
@@ -81,104 +76,327 @@ final class StudioDependencyPinGateTest extends TestCase
         $result = $this->execute([]);
 
         self::assertSame(0, $result['status'], $result['output']);
-        self::assertStringContainsString('Kumwe studio dependencies verified', $result['output']);
+        self::assertStringContainsString('Kumwe first-party dependencies verified', $result['output']);
+        self::assertStringContainsString('Producer/Studio alignment verified', $result['output']);
     }
 
     /**
-     * A Composer range for kumwe/producer fails the gate and names the offending specifier.
+     * Exact manifests backed by official commit locks and an aligned Producer pass together.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    public function testAComposerRangeForProducerFailsTheGate(): void
+    public function testExactOfficialSyntheticRecordsPass(): void
     {
-        $result = $this->execute([
-            '--composer=' . $this->write(['require' => ['kumwe/producer' => '^0.1']]),
-            '--package=' . $this->write([]),
-        ]);
+        $result = $this->executeFixture($this->fixture());
 
-        self::assertSame(1, $result['status'], $result['output']);
-        self::assertStringContainsString('kumwe/producer as "^0.1"', $result['output']);
-        self::assertStringContainsString('ADR 0007', $result['output']);
+        self::assertSame(0, $result['status'], $result['output']);
+        self::assertStringContainsString('3 Composer pin(s), 8 Studio pin(s)', $result['output']);
     }
 
     /**
-     * An npm range for an @kumwe/studio* package fails the gate in any dependency section.
+     * A Composer range for Conversion fails before it can move the extracted value contract silently.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    public function testAnNpmRangeForAStudioPackageFailsTheGate(): void
+    public function testAComposerRangeForConversionFails(): void
     {
-        $result = $this->execute([
-            '--composer=' . $this->write([]),
-            '--package=' . $this->write(['devDependencies' => ['@kumwe/studio-core' => '~0.1.0']]),
-        ]);
+        $fixture = $this->fixture();
+        $fixture['composer']['require']['kumwe/conversion'] = '^0.1';
+        $result = $this->executeFixture($fixture);
 
-        self::assertSame(1, $result['status'], $result['output']);
+        self::assertSame(1, $result['status']);
+        self::assertStringContainsString('kumwe/conversion as "^0.1"', $result['output']);
+    }
+
+    /**
+     * A Composer development branch for Extension SDK fails the exact-release rule.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAComposerBranchForExtensionSdkFails(): void
+    {
+        $fixture = $this->fixture();
+        $fixture['composer']['require']['kumwe/extension-sdk'] = 'dev-main';
+        $result = $this->executeFixture($fixture);
+
+        self::assertSame(1, $result['status']);
+        self::assertStringContainsString('kumwe/extension-sdk as "dev-main"', $result['output']);
+    }
+
+    /**
+     * A Composer branch alias for Producer remains mutable and therefore fails.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAComposerAliasForProducerFails(): void
+    {
+        $fixture = $this->fixture();
+        $fixture['composer']['require']['kumwe/producer'] = 'dev-main as 0.1.0';
+        $result = $this->executeFixture($fixture);
+
+        self::assertSame(1, $result['status']);
+        self::assertStringContainsString('kumwe/producer as "dev-main as 0.1.0"', $result['output']);
+    }
+
+    /**
+     * A foreign Composer URL cannot replace a first-party package coordinate.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAForeignComposerSpecifierFails(): void
+    {
+        $fixture = $this->fixture();
+        $fixture['composer']['require']['kumwe/producer'] = 'https://packages.invalid/producer.zip';
+        $result = $this->executeFixture($fixture);
+
+        self::assertSame(1, $result['status']);
+        self::assertStringContainsString('packages.invalid/producer.zip', $result['output']);
+    }
+
+    /**
+     * An exact manifest cannot hide a branch-shaped reference in composer.lock.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAMutableComposerLockReferenceFails(): void
+    {
+        $fixture = $this->fixture();
+        $this->setComposerLockValue($fixture, 'kumwe/conversion', ['source', 'reference'], 'main');
+        $result = $this->executeFixture($fixture);
+
+        self::assertSame(1, $result['status']);
+        self::assertStringContainsString('immutable 40-character commit', $result['output']);
+        self::assertStringContainsString('"main"', $result['output']);
+    }
+
+    /**
+     * An exact manifest cannot redirect Extension SDK's lock to a foreign source repository.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAForeignComposerLockSourceFails(): void
+    {
+        $fixture = $this->fixture();
+        $this->setComposerLockValue(
+            $fixture,
+            'kumwe/extension-sdk',
+            ['source', 'url'],
+            'https://github.com/foreign/extension-sdk.git',
+        );
+        $result = $this->executeFixture($fixture);
+
+        self::assertSame(1, $result['status']);
+        self::assertStringContainsString(
+            'source URL must be https://github.com/kumwe/extension-sdk.git',
+            $result['output'],
+        );
+    }
+
+    /**
+     * An npm range for a Studio package fails in any dependency section.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAnNpmRangeForStudioFails(): void
+    {
+        $fixture = $this->fixture();
+        $fixture['package']['dependencies']['@kumwe/studio-core'] = '~0.1.0';
+        $result = $this->executeFixture($fixture);
+
+        self::assertSame(1, $result['status']);
         self::assertStringContainsString('@kumwe/studio-core as "~0.1.0"', $result['output']);
     }
 
     /**
-     * The exact Producer pin the adoption sequence introduces passes before the package publishes.
+     * An npm alias can redirect a trusted package name and therefore fails.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    public function testAnExactProducerPinPassesTheGate(): void
+    public function testAnNpmAliasForStudioFails(): void
     {
-        $result = $this->execute([
-            '--composer=' . $this->write(['require' => ['kumwe/producer' => '0.1.0']]),
-            '--package=' . $this->write([]),
-        ]);
+        $fixture = $this->fixture();
+        $fixture['package']['dependencies']['@kumwe/studio-core'] = 'npm:@foreign/studio-core@0.1.0';
+        $result = $this->executeFixture($fixture);
 
-        self::assertSame(0, $result['status'], $result['output']);
-        self::assertStringContainsString('1 exact pin(s)', $result['output']);
+        self::assertSame(1, $result['status']);
+        self::assertStringContainsString('npm:@foreign/studio-core@0.1.0', $result['output']);
     }
 
     /**
-     * A file: reference outside the digest-verified vendored tarball directory fails the gate.
+     * A file reference outside the digest-verified Studio package directory fails.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    public function testAForeignFileReferenceFailsTheGate(): void
+    public function testAForeignStudioFileReferenceFails(): void
     {
-        $result = $this->execute([
-            '--composer=' . $this->write([]),
-            '--package=' . $this->write([
-                'dependencies' => ['@kumwe/studio' => 'file:../studio/packages/kumwe-studio-0.1.0.tgz'],
-            ]),
-        ]);
+        $fixture = $this->fixture();
+        $fixture['package']['dependencies']['@kumwe/studio'] = 'file:../studio/kumwe-studio-0.1.0.tgz';
+        $result = $this->executeFixture($fixture);
 
-        self::assertSame(1, $result['status'], $result['output']);
-        self::assertStringContainsString('@kumwe/studio as "file:../studio', $result['output']);
+        self::assertSame(1, $result['status']);
+        self::assertStringContainsString('file:../studio/kumwe-studio-0.1.0.tgz', $result['output']);
     }
 
     /**
-     * The gate is wired where studio:corpus already runs, so qa cannot pass without it.
+     * package-lock cannot resolve an exact Studio declaration from a foreign URL.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    public function testTheGateRunsInTheLocalLaneBesideTheCorpusGate(): void
+    public function testAForeignStudioLockTargetFails(): void
     {
-        $composer = json_decode((string) file_get_contents($this->root . '/composer.json'), true);
-        self::assertIsArray($composer);
+        $fixture = $this->fixture();
+        $fixture['package_lock']['packages']['node_modules/@kumwe/studio']['resolved']
+            = 'https://packages.invalid/kumwe-studio.tgz';
+        $result = $this->executeFixture($fixture);
+
+        self::assertSame(1, $result['status']);
+        self::assertStringContainsString('@kumwe/studio resolved target must be', $result['output']);
+        self::assertStringContainsString('packages.invalid/kumwe-studio.tgz', $result['output']);
+    }
+
+    /**
+     * composer qa reaches both coordinate verification and Producer alignment through the existing gate.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheGateRemainsWiredIntoTheLocalLane(): void
+    {
+        $composer = $this->decode($this->root . '/composer.json');
         $scripts = $composer['scripts'] ?? null;
         self::assertIsArray($scripts);
         self::assertSame('php tools/verify-studio-dependencies.php', $scripts['studio:dependencies'] ?? null);
+        self::assertContains('@studio:dependencies', $scripts['qa'] ?? []);
 
-        $qa = $scripts['qa'] ?? null;
-        self::assertIsArray($qa);
-        $corpus = array_search('@studio:corpus', $qa, true);
-        self::assertIsInt($corpus, 'The corpus gate anchors the Studio slice of the local lane.');
-        self::assertContains('@studio:dependencies', $qa, 'The pin gate must run in composer qa.');
+        $tool = (string) file_get_contents($this->root . '/tools/verify-studio-dependencies.php');
+        self::assertStringContainsString("require_once __DIR__ . '/verify-producer-studio-alignment.php'", $tool);
+    }
+
+    /**
+     * Decode the committed manifests and locks into one independently mutable fixture.
+     *
+     * @return  array{composer: array<string, mixed>, composer_lock: array<string, mixed>,
+     *          package: array<string, mixed>, package_lock: array<string, mixed>}
+     *
+     * @since   2.0.0
+     */
+    private function fixture(): array
+    {
+        return [
+            'composer' => $this->decode($this->root . '/composer.json'),
+            'composer_lock' => $this->decode($this->root . '/composer.lock'),
+            'package' => $this->decode($this->root . '/package.json'),
+            'package_lock' => $this->decode($this->root . '/package-lock.json'),
+        ];
+    }
+
+    /**
+     * Replace one nested field in a named first-party composer.lock package.
+     *
+     * @param   array<string, mixed>  $fixture  Mutable fixture.
+     * @param   string                $name     Composer package name.
+     * @param   array{0: string, 1: string}  $path  Two-level field path.
+     * @param   string                $value    Replacement value.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    private function setComposerLockValue(array &$fixture, string $name, array $path, string $value): void
+    {
+        $packages = &$fixture['composer_lock']['packages'];
+        self::assertIsArray($packages);
+        foreach ($packages as &$package) {
+            if (is_array($package) && ($package['name'] ?? null) === $name) {
+                self::assertIsArray($package[$path[0]] ?? null);
+                $package[$path[0]][$path[1]] = $value;
+
+                return;
+            }
+        }
+        self::fail(sprintf('Fixture does not contain %s.', $name));
+    }
+
+    /**
+     * Write all synthetic records, supply a valid Producer alignment record, and execute the gate.
+     *
+     * @param   array{composer: array<string, mixed>, composer_lock: array<string, mixed>,
+     *          package: array<string, mixed>, package_lock: array<string, mixed>}  $fixture  Records.
+     *
+     * @return  array{status: int, output: string}  Exit status and combined output.
+     *
+     * @since   2.0.0
+     */
+    private function executeFixture(array $fixture): array
+    {
+        $releasePath = $this->root . '/resources/studio-contract/studio-release.json';
+
+        return $this->execute([
+            '--composer=' . $this->write($fixture['composer']),
+            '--composer-lock=' . $this->write($fixture['composer_lock']),
+            '--package=' . $this->write($fixture['package']),
+            '--package-lock=' . $this->write($fixture['package_lock']),
+            '--app-studio-pin=' . $this->root . '/resources/studio-contract/PIN.json',
+            '--app-studio-release=' . $releasePath,
+            '--producer-studio-pin=' . $this->write($this->alignedProducerPin()),
+            '--producer-studio-release=' . $releasePath,
+        ]);
+    }
+
+    /**
+     * Build Producer's corrected coordinated-release PIN from App's independently verified release evidence.
+     *
+     * @return  array<string, mixed>  Aligned Producer PIN.
+     *
+     * @since   2.0.0
+     */
+    private function alignedProducerPin(): array
+    {
+        $appPin = $this->decode($this->root . '/resources/studio-contract/PIN.json');
+        $releasePath = $this->root . '/resources/studio-contract/studio-release.json';
+        $release = $this->decode($releasePath);
+        $bytes = file_get_contents($releasePath);
+        self::assertIsString($bytes);
+
+        return [
+            'pin' => 'kumwe-producer-studio-contract',
+            'source' => [
+                'repository' => 'https://github.com/kumwe/studio',
+                'kind' => 'coordinated-release',
+                'release' => $release['release'],
+            ],
+            'release_record' => $appPin['release_record'],
+            'protocol_version' => $release['protocolVersion'],
+            'corpus_manifest_digest' => $release['corpusManifestDigest'],
+            'claimed_profiles' => $release['claimedProfiles'],
+            'packages' => $release['packages'],
+            'files' => [
+                ['file' => 'studio-release.json', 'sha256' => hash('sha256', $bytes)],
+            ],
+        ];
     }
 
     /**
@@ -209,20 +427,39 @@ final class StudioDependencyPinGateTest extends TestCase
     }
 
     /**
-     * Write one synthetic manifest for the gate to scan.
+     * Write one synthetic JSON record for the gate to scan.
      *
-     * @param   array<string, array<string, string>>  $manifest  Manifest content.
+     * @param   array<string, mixed>  $document  JSON document.
      *
-     * @return  string  Absolute path of the written manifest.
+     * @return  string  Absolute path of the written record.
      *
      * @since   2.0.0
      */
-    private function write(array $manifest): string
+    private function write(array $document): string
     {
-        $path = sys_get_temp_dir() . '/kumwe-studio-pins-' . bin2hex(random_bytes(8)) . '.json';
-        file_put_contents($path, json_encode($manifest === [] ? new stdClass() : $manifest));
+        $path = sys_get_temp_dir() . '/kumwe-dependency-gate-' . bin2hex(random_bytes(8)) . '.json';
+        $encoded = json_encode($document, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        self::assertIsString($encoded);
+        self::assertNotFalse(file_put_contents($path, $encoded . "\n"));
         $this->temporary[] = $path;
 
         return $path;
+    }
+
+    /**
+     * Decode one JSON record.
+     *
+     * @param   string  $path  Absolute path.
+     *
+     * @return  array<string, mixed>  Decoded object.
+     *
+     * @since   2.0.0
+     */
+    private function decode(string $path): array
+    {
+        $decoded = json_decode((string) file_get_contents($path), true);
+        self::assertIsArray($decoded, sprintf('%s is not well-formed JSON.', $path));
+
+        return $decoded;
     }
 }

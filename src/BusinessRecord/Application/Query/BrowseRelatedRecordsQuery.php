@@ -7,7 +7,7 @@ namespace Kumwe\App\BusinessRecord\Application\Query;
 use InvalidArgumentException;
 use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\BusinessRecord\Application\RecordRequestGuard;
-use Kumwe\App\BusinessRecord\Query\RecordQuerySpecification;
+use Kumwe\Extension\Spi\BusinessRecord\Query\RecordQuerySpecification;
 
 /**
  * Bounded request for policy-safe relationship or entity-reference choices.

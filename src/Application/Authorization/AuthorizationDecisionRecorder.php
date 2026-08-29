@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Application\Authorization;
 
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 
 /**
  * Port that receives every authorization decision the gateway reaches, allow or deny alike.

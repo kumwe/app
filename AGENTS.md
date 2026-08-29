@@ -137,7 +137,7 @@ nobody told the record. This is the hole.
 | Add a Domain → Application or Delivery → Infrastructure import | `composer architecture:policy` | Invert it (port inward). Do not grow `dependency-baseline.json` |
 | Add a CLI command and edit `cli-v1.json` in place | `composer cli:contract` | Additive successor generation; the pinned count lives in the contract, tests, tools and roadmap prose — a successor generation moves them together |
 | Add an MCP tool and edit `mcp-v1.json` in place | `composer mcp:contract` | Same freeze. 75 tools. |
-| Change a public extension type | `composer extension:contract` | New generation + new fixture. Never rewrite `tests/Fixtures/ExtensionApi/` |
+| Change a public extension type | `composer extension:contract` | Release a new `kumwe/extension-sdk` generation and update the App dependency pin. Never copy its fixtures into App. |
 | Edit XLIFF or a user-facing string | `translation:check` / `translation:strings` | `composer translation:compile` and commit compiled catalogues |
 | Rebuild front-end and leave `public/assets/build` dirty | CI frontend job | Commit the hashed build, or don't rebuild |
 | Add a graphical route or template without cataloguing it | `composer interface:programme` | Register it in `docs/interface-standard/programme/surface-inventory.json` |

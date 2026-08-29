@@ -5,16 +5,15 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\BusinessIntegration;
 
 use InvalidArgumentException;
-use Kumwe\App\Application\Automation\JobHandler;
-use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Application\Automation\QueueRuntimePolicy;
-use Kumwe\App\BusinessIntegration\Domain\JobContributionDefinition;
 use Kumwe\App\BusinessIntegration\Domain\QueueContributionDefinition;
 use Kumwe\App\BusinessIntegration\Infrastructure\ContributedQueueRuntimePolicyCatalog;
-use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
-use Kumwe\App\Extension\Contribution\ManifestContributionSet;
 use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
+use Kumwe\Extension\Spi\Application\Automation\JobHandler;
+use Kumwe\Extension\Spi\Application\ExecutionContext;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\JobContributionDefinition;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
@@ -26,9 +25,11 @@ final class QueueRuntimePolicyTest extends TestCase
     {
         $owner = ContributionOwner::extension('acme/example');
         $registries = new ExtensionContributionRegistrySet(withCore: false);
-        $registrar = $registries->registrar($owner, new ManifestContributionSet($owner), false);
-        $registrar->queue(new QueueContributionDefinition('acme.example.priority', 45, 3, 2, 14));
-        $registrar->jobHandler(new JobContributionDefinition(
+        $registries->queues()->register(
+            $owner,
+            new QueueContributionDefinition('acme.example.priority', 45, 3, 2, 14),
+        );
+        $registries->jobs()->register($owner, new JobContributionDefinition(
             'acme.example.reconcile',
             1,
             '1.0.0',
@@ -36,7 +37,6 @@ final class QueueRuntimePolicyTest extends TestCase
             'acme.example.priority',
             5,
         ), new QueuePolicyJobHandler());
-        $registrar->complete();
         $catalog = new ContributedQueueRuntimePolicyCatalog(
             $registries,
             new RuntimeMaterializationState('replica-one', 17, str_repeat('a', 64), 'proof', true),
@@ -65,12 +65,10 @@ final class QueueRuntimePolicyTest extends TestCase
 
 final class QueuePolicyJobHandler implements JobHandler
 {
-    public function type(): string
-    {
-        return 'acme.example.reconcile';
-    }
-
-    public function handle(array $payload, ExecutionContext $context): void
-    {
+    public function handle(
+        JobContributionDefinition $definition,
+        array $payload,
+        ExecutionContext $context,
+    ): void {
     }
 }

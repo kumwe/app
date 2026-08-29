@@ -9,7 +9,7 @@ use Kumwe\App\Application\Authorization\AuthorizationPolicyRegistry;
 use Kumwe\App\Application\Authorization\CapabilityDefinition;
 use Kumwe\App\Application\Authorization\ResourcePolicyDefinition;
 use Kumwe\App\Application\Authorization\ResourcePolicyTarget;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

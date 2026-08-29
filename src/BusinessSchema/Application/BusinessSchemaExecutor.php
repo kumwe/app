@@ -24,7 +24,7 @@ use Kumwe\App\BusinessSchema\Domain\SchemaPlan;
 use Kumwe\App\BusinessSchema\Domain\SchemaPlanStatus;
 use Kumwe\App\BusinessSchema\Domain\SchemaPlanStep;
 use Kumwe\App\BusinessSchema\Domain\SchemaStepStatus;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use Throwable;

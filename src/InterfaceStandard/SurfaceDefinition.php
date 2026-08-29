@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Kumwe\App\InterfaceStandard;
 
 use InvalidArgumentException;
-use Kumwe\App\Extension\Contribution\ContributionDefinition;
-use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\Extension\Spi\Contribution\ContributionDefinition;
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 
 /**
  * Conformant owner-bound KIS surface accepted by Kumwe's existing contribution architecture.

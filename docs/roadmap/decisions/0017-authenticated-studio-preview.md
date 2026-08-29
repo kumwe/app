@@ -35,18 +35,18 @@ must not move any of them into Studio or accept their values from the authoring 
    authenticated actor, scope, browser session, resource context, live generation, transport identity,
    draft identity and request. Cancellation and a later render supersede matching work. The GET endpoint
    re-resolves authority and atomically claims a ready row once; expiration, cancellation, replay,
-   cross-context use and stale generation fail closed. A generated theme stylesheet remains bound to that
-   claimed row and may be read only through a same-origin authenticated no-store subresource that rechecks
+   cross-context use and stale generation fail closed. Producer's complete CSS and the generated theme
+   stylesheet remain bound to that claimed row and may be read only through a same-origin authenticated
+   no-store subresource that rechecks
    its live authority and transport coordinates. Both grant and sequence tables are portable,
    prefix-aware and created by repeatable migration `20260824040000_studio_preview_grants`.
 4. **Published and unpublished presentation share one service.** `ContentPageRenderService` owns the site
    template, theme and presentation path used by the public handlers and the preview renderer. Preview
    resolves bindings through the existing authorized Content projection and supplies only presented values;
-   Content remains authoritative. The registry supports the released structural types and the core-owned
-   field block vocabulary. Structural renderers resolve base/default/responsive intent against the request
-   viewport and expose only the fixed core layout data-attribute vocabulary with columns bounded from one
-   through twelve; malformed values or arbitrary attributes fail before markup. An unknown type renders an
-   inert diagnostic instead of executing or being silently dropped.
+   Content remains authoritative. A fresh Producer registry admits only exact trusted block coordinates for
+   the released structural types, App-owned field vocabulary and signed extension renderers. Preview uses
+   `RequireRegistered`; an unknown, ambiguous, withdrawn or unregistered coordinate refuses before markup.
+   Non-empty Producer enhancements are refused until one canonical enhancement runtime is available.
 5. **The route gets an exact CSP delta.** Only `/administrator/studio/preview` permits same-origin frame
    source and ancestors. It removes style attributes and uses SAMEORIGIN/no-referrer hardening; script stays
    self-only. There is no inline script, inline style, eval, remote frame or remote connection allowance.

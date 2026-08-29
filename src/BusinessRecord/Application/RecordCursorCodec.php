@@ -6,8 +6,8 @@ namespace Kumwe\App\BusinessRecord\Application;
 
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\App\BusinessRecord\Query\CursorPosition;
-use Kumwe\App\BusinessRecord\Query\RecordCursor;
+use Kumwe\Extension\Spi\BusinessRecord\Query\CursorPosition;
+use Kumwe\Extension\Spi\BusinessRecord\Query\RecordCursor;
 
 /**
  * Signs and verifies the opaque page cursors a business-record browse hands back to its callers.

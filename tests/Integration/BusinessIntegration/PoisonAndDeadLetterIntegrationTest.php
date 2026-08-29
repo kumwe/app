@@ -18,13 +18,15 @@ use Kumwe\App\Application\Persistence\TransactionManager;
 use Kumwe\App\BusinessIntegration\Application\EventContractRegistry;
 use Kumwe\App\BusinessIntegration\Application\InboxDisposition;
 use Kumwe\App\BusinessIntegration\Application\IntegrationEventConsumerDispatcher;
-use Kumwe\App\BusinessIntegration\Application\IntegrationEventHandler;
 use Kumwe\App\BusinessIntegration\Application\TrustedRuntimeGenerationGuard;
-use Kumwe\App\BusinessIntegration\Domain\ConsumerIdempotency;
-use Kumwe\App\BusinessIntegration\Domain\EventConsumerDefinition;
+use Kumwe\Extension\Spi\Application\ExecutionContext as ExtensionExecutionContext;
+use Kumwe\Extension\Spi\BusinessIntegration\Application\IntegrationEventHandler;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\ConsumerIdempotency;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventConsumerDefinition;
 use Kumwe\App\BusinessIntegration\Domain\EventSchemaDefinition;
-use Kumwe\App\BusinessIntegration\Domain\EventSensitivity;
-use Kumwe\App\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventSensitivity;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\App\BusinessIntegration\Domain\RecordedIntegrationEvent;
 use Kumwe\App\BusinessIntegration\Infrastructure\DoctrineInboxStore;
 use Kumwe\App\Infrastructure\Automation\DoctrineJobQueue;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
@@ -80,23 +82,38 @@ final class PoisonAndDeadLetterIntegrationTest extends TestCase
         $generation = $this->generation($container);
         $event = $this->event($eventType);
 
-        $failing = new BudgetSpendingConsumer($this->consumer($consumerId, $eventType, '1.0.0'), true);
-        $dispatcher = $this->dispatcher($container, $eventType, $failing, $clock, $transactions, $guard);
+        $failingDefinition = $this->consumer($consumerId, $eventType, '1.0.0');
+        $failing = new BudgetSpendingConsumer(true);
+        $dispatcher = $this->dispatcher(
+            $container,
+            $eventType,
+            $failingDefinition,
+            $clock,
+            $transactions,
+            $guard,
+        );
         $context = TestKernelFactory::workerContext($container);
 
         self::assertSame(
             'failed',
-            $this->attemptDelivery($dispatcher, $event, $failing, $context, $generation),
+            $this->attemptDelivery($dispatcher, $failingDefinition, $event, $failing, $context, $generation),
             'The first attempt must run the handler and be recorded as a failure.',
         );
         self::assertSame(
             'failed',
-            $this->attemptDelivery($dispatcher, $event, $failing, $context, $generation),
+            $this->attemptDelivery($dispatcher, $failingDefinition, $event, $failing, $context, $generation),
             'The last attempt of the budget must also run.',
         );
         self::assertSame(2, $failing->runs);
 
-        $quarantined = $dispatcher->consume($event, $failing, $context, 'poison-worker', $generation);
+        $quarantined = $dispatcher->consume(
+            $failingDefinition,
+            $event,
+            $failing,
+            $context,
+            'poison-worker',
+            $generation,
+        );
         self::assertSame(InboxDisposition::POISON, $quarantined, 'A spent budget must quarantine the receipt.');
         self::assertSame(2, $failing->runs, 'A quarantined receipt must not reach the handler again.');
 
@@ -112,16 +129,38 @@ final class PoisonAndDeadLetterIntegrationTest extends TestCase
 
         // A signed handler revision is the audited way out of quarantine, and it is worth exactly one
         // delivery: the receipt is settled by the upgraded handler and duplicates from then on.
-        $upgraded = new BudgetSpendingConsumer($this->consumer($consumerId, $eventType, '2.0.0'), false);
-        $recovering = $this->dispatcher($container, $eventType, $upgraded, $clock, $transactions, $guard);
+        $upgradedDefinition = $this->consumer($consumerId, $eventType, '2.0.0');
+        $upgraded = new BudgetSpendingConsumer(false);
+        $recovering = $this->dispatcher(
+            $container,
+            $eventType,
+            $upgradedDefinition,
+            $clock,
+            $transactions,
+            $guard,
+        );
         self::assertSame(
             InboxDisposition::CLAIMED,
-            $recovering->consume($event, $upgraded, $context, 'poison-worker', $generation),
+            $recovering->consume(
+                $upgradedDefinition,
+                $event,
+                $upgraded,
+                $context,
+                'poison-worker',
+                $generation,
+            ),
         );
         self::assertSame(1, $upgraded->runs);
         self::assertSame(
             InboxDisposition::DUPLICATE,
-            $recovering->consume($event, $upgraded, $context, 'poison-worker', $generation),
+            $recovering->consume(
+                $upgradedDefinition,
+                $event,
+                $upgraded,
+                $context,
+                'poison-worker',
+                $generation,
+            ),
             'A settled receipt must stay settled however often the event is redelivered.',
         );
         self::assertSame(1, $upgraded->runs, 'A handler upgrade buys one delivery, not an open door.');
@@ -178,16 +217,19 @@ final class PoisonAndDeadLetterIntegrationTest extends TestCase
 
     /**
      * Run one delivery that is expected to fail, and report which way it went.
+     *
+     * @param  EventConsumerDefinition  $definition  Exact signed declaration paired with the handler.
      */
     private function attemptDelivery(
         IntegrationEventConsumerDispatcher $dispatcher,
+        EventConsumerDefinition $definition,
         IntegrationEvent $event,
         IntegrationEventHandler $handler,
         ExecutionContext $context,
         string $generation,
     ): string {
         try {
-            $dispatcher->consume($event, $handler, $context, 'poison-worker', $generation);
+            $dispatcher->consume($definition, $event, $handler, $context, 'poison-worker', $generation);
         } catch (Throwable) {
             return 'failed';
         }
@@ -198,14 +240,14 @@ final class PoisonAndDeadLetterIntegrationTest extends TestCase
     private function dispatcher(
         Container $container,
         string $eventType,
-        IntegrationEventHandler $handler,
+        EventConsumerDefinition $definition,
         ClockInterface $clock,
         TransactionManager $transactions,
         TrustedRuntimeGenerationGuard $guard,
     ): IntegrationEventConsumerDispatcher {
         $contracts = new EventContractRegistry(
             [$this->schema($eventType)],
-            [$handler->definition()],
+            [$definition],
         );
         $inbox = new DoctrineInboxStore(
             $this->connection($container),
@@ -256,7 +298,7 @@ final class PoisonAndDeadLetterIntegrationTest extends TestCase
 
     private function event(string $eventType): IntegrationEvent
     {
-        return new IntegrationEvent(
+        return new RecordedIntegrationEvent(
             $eventType,
             1,
             Uuid::uuid7()->toString(),
@@ -353,41 +395,32 @@ final class BudgetSpendingConsumer implements IntegrationEventHandler
     public int $runs = 0;
 
     /**
-     * Bind the handler to the declaration it must match, and decide whether it can cope.
+     * Decide whether this executable revision can cope with its canonical declaration.
      *
-     * @param  EventConsumerDefinition  $definition  Signed declaration this handler answers for.
-     * @param  bool                     $fails       Whether every delivery raises.
+     * @param  bool  $fails  Whether every delivery raises.
      *
      * @since  2.0.0
      */
-    public function __construct(private readonly EventConsumerDefinition $definition, private readonly bool $fails)
+    public function __construct(private readonly bool $fails)
     {
-    }
-
-    /**
-     * Report the declaration the dispatcher checks this handler against.
-     *
-     * @return  EventConsumerDefinition  Signed consumer declaration.
-     *
-     * @since   2.0.0
-     */
-    public function definition(): EventConsumerDefinition
-    {
-        return $this->definition;
     }
 
     /**
      * Consume one event, failing for as long as this revision is the one that cannot cope.
      *
-     * @param   IntegrationEvent  $event    Event being delivered.
-     * @param   ExecutionContext  $context  Context the consumer runs under.
+     * @param   EventConsumerDefinition  $definition  Exact signed consumer declaration.
+     * @param   IntegrationEvent         $event       Event being delivered.
+     * @param   ExtensionExecutionContext  $context   Context the consumer runs under.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    public function handle(IntegrationEvent $event, ExecutionContext $context): void
-    {
+    public function handle(
+        EventConsumerDefinition $definition,
+        IntegrationEvent $event,
+        ExtensionExecutionContext $context,
+    ): void {
         $this->runs++;
         if ($this->fails) {
             throw new RuntimeException('This event cannot be handled by this consumer revision.');

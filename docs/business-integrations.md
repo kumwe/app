@@ -54,8 +54,8 @@ runtime inventory; parsing a manifest or instantiating its provider alone is not
 The following are versioned extension-facing contracts in Kumwe 2.x:
 
 - manifest schemas 1 through 5 and contribution SPI revisions 1 through 3;
-- `ExtensionServiceProvider`, `RuntimeExtension`, `ExtensionContributionProvider`, `ExtensionContainer`, and
-  `ExtensionContributionRegistrar`;
+- `ExtensionServiceProvider`, optional `BootableExtension`, `ExtensionBindingProvider`,
+  `ExtensionBindingRegistrar`, and `ExtensionContainer`;
 - immutable definition and event DTOs in `BusinessIntegration\Domain` and `BusinessReporting\Domain`;
 - `DomainEventHandler`, `IntegrationEventHandler`, `IntegrationEventTransport`, `JobHandler`, and
   `ProjectionBuilder`/`ProjectionWriter`;
@@ -63,7 +63,7 @@ The following are versioned extension-facing contracts in Kumwe 2.x:
   CLI, and MCP contracts, and extension lifecycle/migration contracts;
 - the conformance SDK facades and lifecycle adapter.
 
-The compatibility fixtures under `tests/Fixtures/ExtensionApi` pin all five manifest grammars and the declared
+The package-owned fixtures under `vendor/kumwe/extension-sdk/resources/fixtures` pin every manifest grammar and the declared
 interface signatures. A change that removes a method, narrows an accepted manifest, changes a parameter or return
 type, removes an enum case, or changes an existing serialized definition requires a new manifest/SPI revision and
 an explicit compatibility path. Registry implementations, composition-root wiring, raw database tables,
@@ -350,10 +350,10 @@ whoever owns the rate. `MoneyConversionPipeline` asks each contributed provider 
 rate offered, and applies it through `MoneyConverter`. With no rate package installed it raises
 `MoneyRateUnavailable`; presenting the stored amount instead is the correct response to that.
 
-Implement `Kumwe\Conversion\Provider\MoneyRateProvider` and contribute it through
-`MoneyRateProviderRegistrar::moneyRateProvider()`, the additive registrar the owner-bound registrar also
-implements. The declaration is reconciled against the manifest like every other contribution, and three further
-rules apply to the runtime object:
+Implement `Kumwe\Conversion\Provider\MoneyRateProvider`, declare its identifier and closed currency inventory
+in the signed manifest, then bind the implementation by that exact identifier through
+`Kumwe\Extension\Spi\Binding\ExtensionBindingRegistrar::moneyRateProvider()`. The manifest is the sole
+declaration source; binding code supplies behavior only. Three further rules apply to the runtime object:
 
 - the currencies in the declaration are a closed claim. A conversion whose stored or target currency is outside
   the declared list is never offered to that provider, so a package cannot widen its reach after admission;
@@ -416,10 +416,10 @@ rounded to. `UnitConversionPipeline` asks each contributed provider in declared 
 offered, and applies it through `QuantityConverter`. With no conversion package installed it raises
 `UnitConversionUnavailable`; presenting the stored quantity in its own unit is the correct response to that.
 
-Implement `Kumwe\Conversion\Provider\UnitConversionProvider` and contribute it through
-`UnitConversionProviderRegistrar::unitConversionProvider()`, the additive registrar the owner-bound registrar
-also implements. The declaration is reconciled against the manifest like every other contribution, and the same
-three runtime rules apply as for rates:
+Implement `Kumwe\Conversion\Provider\UnitConversionProvider`, declare its identifier and closed unit inventory
+in the signed manifest, then bind the implementation by that exact identifier through
+`Kumwe\Extension\Spi\Binding\ExtensionBindingRegistrar::unitConversionProvider()`. The manifest remains the
+sole declaration source, and the same three runtime rules apply as for rates:
 
 - the units in the declaration are a closed claim. A conversion whose stored or target unit is outside the
   declared list is never offered to that provider, so a package cannot widen its reach after admission;

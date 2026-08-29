@@ -4,20 +4,22 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Portal\Contribution;
 
+use Kumwe\Extension\Spi\Portal\Contribution\PortalRouteDefinition;
+
 use InvalidArgumentException;
 use Kumwe\App\Application\Authorization\AuthorizationPolicyRegistry;
 use Kumwe\App\Application\Authorization\AuthorizationResource;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Extension\Contribution\CapabilityDefinitionRegistry;
-use Kumwe\App\Extension\Contribution\ContributionOwner;
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ContributionSurface;
 use Kumwe\App\Extension\Runtime\TrustEnforcingRequestHandler;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use Kumwe\App\Portal\Http\Handler\PortalExtensionRootRedirectHandler;
 use Kumwe\App\Portal\Http\Middleware\PortalAuthorizationMiddleware;
 use Kumwe\App\Portal\Http\Middleware\PortalCsrfMiddleware;
-use Kumwe\App\Portal\Presentation\PortalContributionRenderer;
 use Kumwe\App\Portal\Presentation\PortalRenderer;
+use Kumwe\Extension\Spi\Binding\Http\PortalRouteHandlerFactory;
 use LogicException;
 use Mezzio\Application;
 
@@ -135,10 +137,10 @@ final class PortalRouteRegistry implements ContributionSurface
             }
             $definition = $entry['definition'];
             $handler = new TrustEnforcingRequestHandler(
-                $entry['factory']->create(new PortalContributionRenderer(
-                    $renderer,
+                $entry['factory']->create($renderer->forExtensionRoute(
                     $owner->identifier(),
                     $definition->template,
+                    $definition->name,
                 )),
                 $trust,
                 $owner->identifier(),

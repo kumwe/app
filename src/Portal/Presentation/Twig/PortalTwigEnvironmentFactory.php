@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Portal\Presentation\Twig;
 
 use InvalidArgumentException;
-use Kumwe\App\Extension\Domain\ExtensionIdentifier;
+use Kumwe\Extension\Manifest\ExtensionIdentifier;
 use Kumwe\App\Localization\Presentation\TranslationTwigExtension;
 use Kumwe\App\Presentation\Twig\IsolatedTwigEnvironmentFactory;
 use Twig\Environment;

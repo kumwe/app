@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Application\Automation;
 
 use Kumwe\App\Application\Authorization\SystemIdentity;
-use Kumwe\App\BusinessIntegration\Domain\JobContributionDefinition;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\JobContributionDefinition;
 use LogicException;
 
 /**

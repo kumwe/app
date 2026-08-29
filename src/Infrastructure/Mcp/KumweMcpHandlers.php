@@ -24,7 +24,7 @@ use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\App\Identity\Application\Authentication\AccessTokenVerifier;
 use Kumwe\App\Identity\Application\Authentication\ScopedAccessTokenVerifier;
 use Kumwe\App\Identity\Application\Authorization\InsufficientCapability;
-use Kumwe\App\Identity\Domain\Capability;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use Kumwe\App\Navigation\Application\MenuRecord;
 use Kumwe\App\Navigation\Application\MenuItemRecord;
 use Kumwe\App\Navigation\Application\NavigationService;

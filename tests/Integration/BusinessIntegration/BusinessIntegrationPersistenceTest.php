@@ -13,11 +13,12 @@ use Kumwe\App\Application\Automation\QueueRuntimePolicy;
 use Kumwe\App\Application\Automation\QueueRuntimePolicyCatalog;
 use Kumwe\App\BusinessIntegration\Application\EventContractRegistry;
 use Kumwe\App\BusinessIntegration\Application\InboxDisposition;
-use Kumwe\App\BusinessIntegration\Domain\ConsumerIdempotency;
-use Kumwe\App\BusinessIntegration\Domain\EventConsumerDefinition;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\ConsumerIdempotency;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventConsumerDefinition;
 use Kumwe\App\BusinessIntegration\Domain\EventSchemaDefinition;
-use Kumwe\App\BusinessIntegration\Domain\EventSensitivity;
-use Kumwe\App\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventSensitivity;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\App\BusinessIntegration\Domain\RecordedIntegrationEvent;
 use Kumwe\App\BusinessIntegration\Domain\ProcessInstance;
 use Kumwe\App\BusinessIntegration\Domain\ProcessStatus;
 use Kumwe\App\BusinessIntegration\Domain\ProcessWorkItem;
@@ -561,7 +562,7 @@ final class BusinessIntegrationPersistenceTest extends TestCase
         string $siteIdentifier = 'default',
         ?string $organizationId = 'organization-1',
     ): IntegrationEvent {
-        return new IntegrationEvent(
+        return new RecordedIntegrationEvent(
             'business.record.changed',
             $schemaVersion,
             Uuid::uuid7()->toString(),

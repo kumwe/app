@@ -6,7 +6,7 @@ namespace Kumwe\App\BusinessIntegration\Application;
 
 use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Application\Automation\JobHandler;
-use Kumwe\App\BusinessIntegration\Domain\JobContributionDefinition;
+use Kumwe\Extension\Spi\BusinessIntegration\Domain\JobContributionDefinition;
 use LogicException;
 
 /**

@@ -13,12 +13,8 @@ use Kumwe\App\Content\Domain\ContentEntry;
 use Kumwe\App\Content\Domain\ContentStatus;
 use Kumwe\App\Content\Domain\ContentTypeDefinition;
 use Kumwe\App\Content\Domain\JsonSchemaValidator;
-use Kumwe\App\Extension\Contribution\CanonicalCompositionDocument;
-use Kumwe\App\Extension\Contribution\CanonicalCompositionKind;
-use Kumwe\App\Extension\Contribution\CompositionHostBinding;
-use Kumwe\App\Extension\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
-use Kumwe\App\Extension\Contribution\ManifestContributionSet;
+use Kumwe\App\Extension\Contribution\StudioPreviewRendererContribution;
 use Kumwe\App\Extension\Runtime\ActiveExtensionSet;
 use Kumwe\App\Presentation\Application\SitePresentation;
 use Kumwe\App\Site\Application\SiteSettings;
@@ -32,19 +28,24 @@ use Kumwe\App\Studio\Application\Composition\StudioPublishedModelMismatch;
 use Kumwe\App\Studio\Application\Composition\StudioPublishedTheme;
 use Kumwe\App\Studio\Application\Host\StudioArtifactAdmission;
 use Kumwe\App\Studio\Application\Host\StudioArtifactRepository;
-use Kumwe\App\Studio\Application\Host\StudioHostOperationRefused;
-use Kumwe\App\Studio\Application\Preview\CoreStudioPreviewBlockRendererRegistry;
-use Kumwe\App\Studio\Application\Preview\StudioCompositionMarkupRenderer;
 use Kumwe\App\Studio\Application\Preview\StudioPreviewBindingResolver;
-use Kumwe\App\Studio\Application\Preview\StudioPreviewBindingValues;
-use Kumwe\App\Studio\Application\Preview\StudioPreviewBlockRendererRegistry;
 use Kumwe\App\Studio\Application\Preview\StudioPublishedBlockRendererUnavailable;
 use Kumwe\App\Studio\Application\Projection\ContentProjectionBindingRepository;
 use Kumwe\App\Studio\Application\Projection\ContentStudioProjector;
 use Kumwe\App\Studio\Application\Projection\RecordAuthorizedStudioContentFieldDisclosure;
 use Kumwe\App\Studio\Domain\Artifact\StoredStudioArtifact;
-use Kumwe\App\Studio\Domain\Contract\CanonicalJson;
-use Kumwe\App\Studio\Domain\Contract\StudioContractSchemas;
+use Kumwe\App\Studio\Application\Rendering\StudioBlockRendererRuntime;
+use Kumwe\App\Studio\Application\Rendering\StudioContentFieldBlockRenderer;
+use Kumwe\Extension\Spi\Contribution\CanonicalCompositionDocument;
+use Kumwe\Extension\Spi\Contribution\CanonicalCompositionKind;
+use Kumwe\Extension\Spi\Contribution\CompositionHostBinding;
+use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Producer\Canonical\CanonicalJson;
+use Kumwe\Producer\Error\HostRefusal;
+use Kumwe\Producer\Render\BlockRenderer;
+use Kumwe\Producer\Render\RenderResult;
+use Kumwe\Producer\Render\RenderState;
+use Kumwe\Producer\Schema\StudioDocumentSchemaRegistry;
 use Kumwe\App\Studio\Domain\Projection\ContentBlueprintBinding;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
@@ -63,7 +64,8 @@ use stdClass;
 #[CoversClass(StudioPublishedModelMismatch::class)]
 #[CoversClass(StudioPublishedBlockRendererUnavailable::class)]
 #[UsesClass(ContentStudioProjector::class)]
-#[UsesClass(StudioCompositionMarkupRenderer::class)]
+#[UsesClass(StudioBlockRendererRuntime::class)]
+#[UsesClass(StudioContentFieldBlockRenderer::class)]
 final class StudioPublishedContentRendererTest extends TestCase
 {
     /**
@@ -104,31 +106,17 @@ final class StudioPublishedContentRendererTest extends TestCase
         self::assertNull($this->renderer($this->binding(), $draft, $theme)->render($this->record()));
         self::assertNull($this->renderer($this->binding(), $retired, $theme)->render($this->record()));
 
-        $markup = $this->renderer($this->binding(), $published, $theme)->render($this->record());
-        self::assertSame(
-            '<div class="studio-preview-field-text"><p>&lt;strong&gt;Exact &amp; safe&lt;/strong&gt;</p></div>',
-            $markup,
+        $result = $this->renderer($this->binding(), $published, $theme)->render($this->record());
+        self::assertInstanceOf(RenderResult::class, $result);
+        self::assertStringContainsString('data-studio-block="field-text"', $result->html);
+        self::assertStringContainsString(
+            '<p data-studio-part="value">&lt;strong&gt;Exact &amp; safe&lt;/strong&gt;</p>',
+            $result->html,
         );
-        self::assertStringNotContainsString('data-studio-preview-marker', $markup);
+        self::assertStringNotContainsString('data-studio-preview-marker', $result->html);
+        self::assertNotSame('', $result->css);
+        self::assertSame([], $result->enhancements);
         self::assertSame('content-type-v4', ContentStudioProjector::modelRevision(4));
-
-        $blocks = new CoreStudioPreviewBlockRendererRegistry();
-        $structural = new StudioCompositionMarkupRenderer(new StudioPreviewBindingResolver(), $blocks);
-        $values = new StudioPreviewBindingValues(
-            $this->projector()->publishedValues($this->record(), $this->definition()),
-            new stdClass(),
-        );
-        $preview = $structural->render(
-            $document,
-            ['body-marker'],
-            ['body-marker' => 'body-field'],
-            $values,
-            'expanded',
-        );
-        self::assertSame(
-            str_replace(' data-studio-preview-marker="body-marker"', '', $preview),
-            $structural->renderPublished($document, $values),
-        );
     }
 
     /**
@@ -153,11 +141,11 @@ final class StudioPublishedContentRendererTest extends TestCase
         );
         $this->assertThrows(
             StudioPublishedBlueprintMismatch::class,
-            fn (): ?string => $this->renderer($wrongBinding, null, $theme)->render($this->record()),
+            fn () => $this->renderer($wrongBinding, null, $theme)->render($this->record()),
         );
         $this->assertThrows(
             StudioPublishedBlueprintUnavailable::class,
-            fn (): ?string => $this->renderer($binding, null, $theme)->render($this->record()),
+            fn () => $this->renderer($binding, null, $theme)->render($this->record()),
         );
 
         $wrongKindDocument = (object) [
@@ -178,7 +166,7 @@ final class StudioPublishedContentRendererTest extends TestCase
         );
         $this->assertThrows(
             StudioPublishedBlueprintMismatch::class,
-            fn (): ?string => $this->renderer($binding, $wrongKind, $theme)->render($this->record()),
+            fn () => $this->renderer($binding, $wrongKind, $theme)->render($this->record()),
         );
 
         $incompatibleDocument = (object) [
@@ -200,7 +188,7 @@ final class StudioPublishedContentRendererTest extends TestCase
         );
         $this->assertThrows(
             StudioPublishedBlueprintMismatch::class,
-            fn (): ?string => $this->renderer($binding, $incompatible, $theme)->render($this->record()),
+            fn () => $this->renderer($binding, $incompatible, $theme)->render($this->record()),
         );
         $this->assertPublicationDiagnostic(
             $this->guard($theme),
@@ -223,7 +211,7 @@ final class StudioPublishedContentRendererTest extends TestCase
         );
         $this->assertThrows(
             StudioPublishedBlueprintMismatch::class,
-            fn (): ?string => $this->renderer($binding, $invalidStatus, $theme)->render($this->record()),
+            fn () => $this->renderer($binding, $invalidStatus, $theme)->render($this->record()),
         );
 
         $wrongDocumentIdentity = self::copy($this->blueprint($theme));
@@ -240,7 +228,7 @@ final class StudioPublishedContentRendererTest extends TestCase
         );
         $this->assertThrows(
             StudioPublishedBlueprintMismatch::class,
-            fn (): ?string => $this->renderer(
+            fn () => $this->renderer(
                 $binding,
                 $wrongDocumentIdentityArtifact,
                 $theme,
@@ -262,7 +250,7 @@ final class StudioPublishedContentRendererTest extends TestCase
         $modelDrift->model->revision = 'content-type-v3';
         $this->assertThrows(
             StudioPublishedModelMismatch::class,
-            fn (): ?string => $this->renderer(
+            fn () => $this->renderer(
                 $this->binding(),
                 self::admission()->admit(SiteContext::DEFAULT, $modelDrift),
                 $theme,
@@ -294,7 +282,7 @@ final class StudioPublishedContentRendererTest extends TestCase
         $themeDrift->dependencyLock->theme->revision = 'published-stale';
         $this->assertThrows(
             StudioCompositionThemeMismatch::class,
-            fn (): ?string => $this->renderer(
+            fn () => $this->renderer(
                 $this->binding(),
                 self::admission()->admit(SiteContext::DEFAULT, $themeDrift),
                 $theme,
@@ -319,7 +307,7 @@ final class StudioPublishedContentRendererTest extends TestCase
         $rendererDrift->roots[0]->type = 'example.extension/missing';
         $this->assertThrows(
             StudioPublishedBlockRendererUnavailable::class,
-            fn (): ?string => $this->renderer(
+            fn () => $this->renderer(
                 $this->binding(),
                 self::admission()->admit(SiteContext::DEFAULT, $rendererDrift),
                 $theme,
@@ -342,7 +330,7 @@ final class StudioPublishedContentRendererTest extends TestCase
         $projectionRejected = self::admission()->admit(SiteContext::DEFAULT, $this->blueprint($theme));
         $this->assertThrows(
             StudioPublishedModelMismatch::class,
-            fn (): ?string => $this->renderer(
+            fn () => $this->renderer(
                 $this->binding(),
                 $projectionRejected,
                 $theme,
@@ -413,14 +401,8 @@ final class StudioPublishedContentRendererTest extends TestCase
     public function testPublicationEnforcesSignedExtensionBlockSemanticsAndWithdrawal(): void
     {
         [$registries, $owner] = self::manifestSixRegistries();
-        $blocks = $this->createStub(StudioPreviewBlockRendererRegistry::class);
-        $blocks->method('supports')->willReturnCallback(
-            static fn ($reference): bool => $reference->type === 'kumwe.contract-manifest-six/grid'
-                && $reference->version === '1.0.0'
-                && $reference->revision === 'grid-block-r1',
-        );
         $theme = $this->theme();
-        $guard = $this->guard($theme, $blocks, $registries);
+        $guard = $this->guard($theme, registries: $registries);
         $valid = $this->extensionGridBlueprint($theme);
         $guard->assertPublishable(SiteContext::default(), $valid);
         self::addToAssertionCount(1);
@@ -455,7 +437,7 @@ final class StudioPublishedContentRendererTest extends TestCase
             },
         );
         $this->assertPublicationDiagnostic(
-            $this->guard($theme, $blocks, $minimumRegistries),
+            $this->guard($theme, registries: $minimumRegistries),
             $valid,
             'studio.artifact/blueprint-incompatible',
         );
@@ -473,7 +455,7 @@ final class StudioPublishedContentRendererTest extends TestCase
             },
         );
         $this->assertPublicationDiagnostic(
-            $this->guard($theme, $blocks, $duplicateSlotRegistries),
+            $this->guard($theme, registries: $duplicateSlotRegistries),
             $valid,
             'studio.artifact/blueprint-incompatible',
         );
@@ -483,6 +465,34 @@ final class StudioPublishedContentRendererTest extends TestCase
             $guard,
             $valid,
             'studio.artifact/block-renderer-unavailable',
+        );
+    }
+
+    public function testPublishedOutputRefusesProducerEnhancementsUntilOneCanonicalRuntimeExists(): void
+    {
+        $enhancingRenderer = new class implements BlockRenderer {
+            public function render(stdClass $node, string $scope, RenderState $state): string
+            {
+                $state->enhance('motion', $node, $scope);
+
+                return '<p>Safe non-JavaScript baseline</p>';
+            }
+        };
+        [$registries] = self::manifestSixRegistries(renderer: $enhancingRenderer);
+        $theme = $this->theme();
+        $artifact = self::admission()->admit(
+            SiteContext::DEFAULT,
+            $this->extensionGridBlueprint($theme),
+        );
+
+        $this->assertThrows(
+            StudioPublishedBlockRendererUnavailable::class,
+            fn () => $this->renderer(
+                $this->binding(),
+                $artifact,
+                $theme,
+                $registries,
+            )->render($this->record()),
         );
     }
 
@@ -508,13 +518,13 @@ final class StudioPublishedContentRendererTest extends TestCase
         }
         array_unshift($document->dependencyLock->blocks, (object) [
             'type' => 'studio.core/grid',
-            'version' => CoreStudioPreviewBlockRendererRegistry::BLOCK_VERSION,
-            'revision' => CoreStudioPreviewBlockRendererRegistry::revisionFor('studio.core/grid'),
+            'version' => '1.0.0',
+            'revision' => 'layout-grid-r1',
         ]);
         $document->roots = [(object) [
             'id' => 'layout-grid',
             'type' => 'studio.core/grid',
-            'version' => CoreStudioPreviewBlockRendererRegistry::BLOCK_VERSION,
+            'version' => '1.0.0',
             'properties' => (object) ['columns' => 4, 'collapse' => 'stack'],
             'bindings' => new stdClass(),
             'slots' => (object) ['items' => $items],
@@ -564,9 +574,12 @@ final class StudioPublishedContentRendererTest extends TestCase
      *
      * @since   2.0.0
      */
-    private static function manifestSixRegistries(?callable $mutate = null): array
-    {
-        $path = dirname(__DIR__, 5) . '/tests/Fixtures/ExtensionApi/generations/manifest-6/kumwe.json';
+    private static function manifestSixRegistries(
+        ?callable $mutate = null,
+        ?BlockRenderer $renderer = null,
+    ): array {
+        $path = dirname(__DIR__, 5)
+            . '/vendor/kumwe/extension-sdk/resources/fixtures/generations/manifest-6/kumwe.json';
         $manifest = json_decode((string) file_get_contents($path), true, 64, JSON_THROW_ON_ERROR);
         $canonical = $manifest['contributions']['composition']['documents'][0]['canonical'] ?? null;
         self::assertIsString($canonical);
@@ -575,24 +588,39 @@ final class StudioPublishedContentRendererTest extends TestCase
         if ($mutate !== null) {
             $mutate($definition);
             self::assertTrue(
-                StudioContractSchemas::fromVendoredCorpus()->validator('block-definition')->validate($definition),
+                StudioDocumentSchemaRegistry::fromVendoredCorpus()->validate('block-definition', $definition)->valid(),
             );
             $canonical = CanonicalJson::stringify($definition);
         }
 
         $owner = ContributionOwner::extension('kumwe/contract-manifest-six');
         $registries = new ExtensionContributionRegistrySet(withCore: false);
-        $registrar = $registries->registrar($owner, new ManifestContributionSet($owner), false);
-        $registrar->canonicalCompositionDocument(new CanonicalCompositionDocument(
+        $document = new CanonicalCompositionDocument(
             CanonicalCompositionKind::BlockDefinition,
             $canonical,
-        ));
-        $registrar->compositionHostBinding(new CompositionHostBinding(
+        );
+        $binding = new CompositionHostBinding(
             CanonicalCompositionKind::BlockDefinition,
             'kumwe.contract-manifest-six/grid',
             'kumwe.contract-manifest-six.renderer.grid',
-        ));
-        $registrar->complete();
+        );
+        $registries->canonicalCompositionDocuments()->register($owner, $document);
+        $registries->compositionHostBindings()->register($owner, $binding);
+        $renderer ??= new class implements BlockRenderer {
+            public function render(stdClass $node, string $scope, RenderState $state): string
+            {
+                unset($scope);
+
+                return '<div data-columns="'
+                    . (int) ($node->properties->columns ?? 0)
+                    . '">' . $state->renderChildren($node, 'items') . '</div>';
+            }
+        };
+        $registries->studioPreviewRenderers()->register(
+            $owner,
+            new StudioPreviewRendererContribution($owner, '1.0.0', $document, $binding),
+            $renderer,
+        );
 
         return [$registries, $owner];
     }
@@ -612,21 +640,24 @@ final class StudioPublishedContentRendererTest extends TestCase
         ?ContentBlueprintBinding $binding,
         ?StoredStudioArtifact $artifact,
         StudioPublishedTheme $theme,
+        ?ExtensionContributionRegistrySet $registries = null,
     ): CanonicalStudioPublishedContentRenderer {
         $bindings = $this->createStub(ContentProjectionBindingRepository::class);
         $bindings->method('blueprint')->willReturn($binding);
         $artifacts = $this->createStub(StudioArtifactRepository::class);
         $artifacts->method('current')->willReturn($artifact);
         $artifacts->method('revision')->willReturn($artifact);
-        $blocks = new CoreStudioPreviewBlockRendererRegistry();
-        $markup = new StudioCompositionMarkupRenderer(new StudioPreviewBindingResolver(), $blocks);
+        $registries ??= new ExtensionContributionRegistrySet();
+        $runtime = new StudioBlockRendererRuntime($registries, new StudioContentFieldBlockRenderer());
+        $resolver = new StudioPreviewBindingResolver();
 
         return new CanonicalStudioPublishedContentRenderer(
             $bindings,
             $artifacts,
-            $this->guard($theme),
+            $this->guard($theme, $runtime, $registries),
             $this->projector(),
-            $markup,
+            $runtime,
+            $resolver,
         );
     }
 
@@ -634,7 +665,7 @@ final class StudioPublishedContentRendererTest extends TestCase
      * Build the exact reusable compatibility guard used by publication and public rendering.
      *
      * @param   StudioPublishedTheme                     $theme       Deterministic live public theme.
-     * @param   StudioPreviewBlockRendererRegistry|null  $blocks      Live exact renderer registry override.
+     * @param   StudioBlockRendererRuntime|null           $blocks      Live exact renderer runtime override.
      * @param   ExtensionContributionRegistrySet|null    $registries  Live canonical contribution override.
      * @param   ContentModelRepository|null              $models      Content model authority override.
      *
@@ -644,7 +675,7 @@ final class StudioPublishedContentRendererTest extends TestCase
      */
     private function guard(
         StudioPublishedTheme $theme,
-        ?StudioPreviewBlockRendererRegistry $blocks = null,
+        ?StudioBlockRendererRuntime $blocks = null,
         ?ExtensionContributionRegistrySet $registries = null,
         ?ContentModelRepository $models = null,
     ): StudioPublishedCompositionGuard {
@@ -653,12 +684,14 @@ final class StudioPublishedContentRendererTest extends TestCase
             $models->method('contentType')->willReturn($this->definition());
         }
 
+        $registries ??= new ExtensionContributionRegistrySet();
+
         return new StudioPublishedCompositionGuard(
             self::admission(),
             $models,
             $theme,
-            $blocks ?? new CoreStudioPreviewBlockRendererRegistry(),
-            $registries ?? new ExtensionContributionRegistrySet(),
+            $blocks ?? new StudioBlockRendererRuntime($registries, new StudioContentFieldBlockRenderer()),
+            $registries,
         );
     }
 
@@ -681,10 +714,10 @@ final class StudioPublishedContentRendererTest extends TestCase
         try {
             $guard->assertPublishable(SiteContext::default(), $blueprint);
             self::fail(sprintf('Publication must refuse %s.', $diagnostic));
-        } catch (StudioHostOperationRefused $refused) {
-            self::assertSame('conflict', $refused->category);
-            self::assertSame($diagnostic, $refused->diagnosticCode);
-            self::assertNull($refused->revision);
+        } catch (HostRefusal $refused) {
+            self::assertSame('conflict', $refused->error()->category());
+            self::assertSame($diagnostic, $refused->error()->diagnostics()[0]->code());
+            self::assertNull($refused->error()->revision());
         }
     }
 
@@ -698,7 +731,7 @@ final class StudioPublishedContentRendererTest extends TestCase
     private function projector(): ContentStudioProjector
     {
         return new ContentStudioProjector(
-            StudioContractSchemas::fromVendoredCorpus(),
+            StudioDocumentSchemaRegistry::fromVendoredCorpus(),
             new RecordAuthorizedStudioContentFieldDisclosure(),
             new JsonSchemaValidator(),
         );
@@ -736,14 +769,14 @@ final class StudioPublishedContentRendererTest extends TestCase
                 'theme' => $theme->reference(SiteContext::default())->document(),
                 'blocks' => [(object) [
                     'type' => 'core/field-text',
-                    'version' => CoreStudioPreviewBlockRendererRegistry::BLOCK_VERSION,
-                    'revision' => CoreStudioPreviewBlockRendererRegistry::revisionFor('core/field-text'),
+                    'version' => '1.0.0',
+                    'revision' => 'core-block-r1',
                 ]],
             ],
             'roots' => [(object) [
                 'id' => 'body-field',
                 'type' => 'core/field-text',
-                'version' => CoreStudioPreviewBlockRendererRegistry::BLOCK_VERSION,
+                'version' => '1.0.0',
                 'properties' => new stdClass(),
                 'bindings' => (object) ['value' => (object) [
                     'source' => (object) ['kind' => 'entry-field', 'fieldPath' => ['data_body']],
@@ -860,7 +893,7 @@ final class StudioPublishedContentRendererTest extends TestCase
      */
     private static function admission(): StudioArtifactAdmission
     {
-        return new StudioArtifactAdmission(StudioContractSchemas::fromVendoredCorpus());
+        return new StudioArtifactAdmission(StudioDocumentSchemaRegistry::fromVendoredCorpus());
     }
 
     /**
