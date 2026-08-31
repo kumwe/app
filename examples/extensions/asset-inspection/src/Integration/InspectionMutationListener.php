@@ -30,8 +30,8 @@ final readonly class InspectionMutationListener implements DomainEventHandler
     /**
      * Validate each routed core mutation and retain bounded evidence only for this inspection definition.
      *
-     * @param   DomainListenerDefinition  $definition  Exact signed listener declaration.
-     * @param   DomainEvent              $event       Mutation event executing inside the authoritative transaction.
+     * @param   DomainListenerDefinition  $definition  Host-validated exact signed listener declaration.
+     * @param   DomainEvent               $event       Mutation event executing inside the authoritative transaction.
      *
      * @return  void
      *
@@ -39,6 +39,9 @@ final readonly class InspectionMutationListener implements DomainEventHandler
      */
     public function handle(DomainListenerDefinition $definition, DomainEvent $event): void
     {
+        if ($definition->identifier() !== 'kumwe.asset-inspection-example.inspection-mutation-validator') {
+            throw new InvalidArgumentException('The inspection listener received a foreign declaration.');
+        }
         if (!$definition->accepts($event->eventType(), $event->schemaVersion(), $event->sensitivity())) {
             throw new InvalidArgumentException('The inspection listener requires its declared event contract.');
         }
