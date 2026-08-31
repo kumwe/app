@@ -31,7 +31,7 @@ final readonly class InspectionMutationConsumer implements IntegrationEventHandl
     /**
      * Validate worker scope and record only this component's inbox-processed inspection mutations.
      *
-     * @param   EventConsumerDefinition  $definition  Exact signed durable-consumer declaration.
+     * @param   EventConsumerDefinition  $definition  Host-validated exact signed durable-consumer declaration.
      * @param   IntegrationEvent         $event       Durable core record mutation event.
      * @param   ExecutionContext         $context     Fresh worker-owned site context.
      *
@@ -46,6 +46,9 @@ final readonly class InspectionMutationConsumer implements IntegrationEventHandl
         IntegrationEvent $event,
         ExecutionContext $context,
     ): void {
+        if ($definition->identifier() !== 'kumwe.asset-inspection-example.inspection-mutation-indexer') {
+            throw new InvalidArgumentException('The inspection consumer received a foreign declaration.');
+        }
         if (
             $definition->eventType() !== $event->eventType()
             || !$definition->acceptsVersion($event->schemaVersion())
