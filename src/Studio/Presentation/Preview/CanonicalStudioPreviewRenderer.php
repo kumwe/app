@@ -87,7 +87,10 @@ final readonly class CanonicalStudioPreviewRenderer implements StudioPreviewRend
         $labelReference = $document->label ?? null;
         $label = $labelReference instanceof \stdClass ? $labelReference->defaultMessage ?? null : null;
         $title = is_string($label) && $label !== '' ? $label : $draft->artifactId();
-        $result = (new CompositionRenderer($this->blocks->registry()))->renderDocument(
+        $viewport = in_array($request->viewport, ['compact', 'medium', 'expanded'], true)
+            ? $request->viewport
+            : 'expanded';
+        $result = (new CompositionRenderer($this->blocks->registry($viewport)))->renderDocument(
             $document,
             new RenderContext(
                 resolveBinding: fn (stdClass $node, string $port) => $this->bindings->resolve(
