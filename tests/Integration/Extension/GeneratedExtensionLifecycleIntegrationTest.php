@@ -149,18 +149,23 @@ final class GeneratedExtensionLifecycleIntegrationTest extends TestCase
                 'values' => ['item_id' => 'generated-item', 'title' => 'Canonical lifecycle execution'],
             ]], $writer->writes);
 
-            $manager->disable($identifier, $context);
+            // Withdrawal is a per-process contract: the process that performs a lifecycle mutation
+            // observes its resident graph go stale and withdraws it, so the lifecycle tail runs
+            // through the runtime container's own manager rather than the pre-activation one.
+            $runtimeManager = $runtime->get(ExtensionManager::class);
+            self::assertInstanceOf(ExtensionManager::class, $runtimeManager);
+            $runtimeManager->disable($identifier, $context);
             $disabled = array_values(array_filter(
-                $manager->installed($context),
+                $runtimeManager->installed($context),
                 static fn (array $extension): bool => ($extension['identifier'] ?? null) === $identifier,
             ));
             self::assertCount(1, $disabled);
             self::assertSame('disabled', $disabled[0]['status'] ?? null);
             self::assertNull($registries->projections()->definition($owner, $projectionIdentifier));
-            $manager->uninstall($identifier, $context);
+            $runtimeManager->uninstall($identifier, $context);
             $installed = false;
             self::assertSame([], array_values(array_filter(
-                $manager->installed($context),
+                $runtimeManager->installed($context),
                 static fn (array $extension): bool => ($extension['identifier'] ?? null) === $identifier,
             )));
             $trust->revoke($context, $keyId, 'Generated lifecycle acceptance completed.');
