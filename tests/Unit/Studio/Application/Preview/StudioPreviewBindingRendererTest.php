@@ -327,6 +327,131 @@ final class StudioPreviewBindingRendererTest extends TestCase
     }
 
     /**
+     * Prove only the canonical value port with a structured binding object is resolvable at all.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testOnlyTheValuePortWithAStructuredBindingResolves(): void
+    {
+        $resolver = new StudioPreviewBindingResolver();
+        $values = new StudioPreviewBindingValues((object) ['field' => 'secret'], new stdClass());
+        $node = (object) ['bindings' => (object) ['value' => (object) [
+            'source' => (object) ['kind' => 'entry-field', 'fieldPath' => ['field']],
+            'transforms' => [],
+        ]]];
+
+        $foreignPort = $resolver->resolve($node, 'href', $values);
+        self::assertFalse($foreignPort->isAvailable());
+        self::assertFalse($foreignPort->isHidden());
+
+        $unstructured = $resolver->resolve(
+            (object) ['bindings' => (object) ['value' => 'not-a-binding-object']],
+            'value',
+            $values,
+        );
+        self::assertFalse($unstructured->isAvailable());
+        self::assertFalse($unstructured->isHidden());
+    }
+
+    /**
+     * Prove an unresolvable source with the explicit hide policy hides the node without a value leak.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAnUnresolvableSourceWithHidePolicyHidesTheNode(): void
+    {
+        $resolver = new StudioPreviewBindingResolver();
+        $node = (object) ['bindings' => (object) ['value' => (object) [
+            'source' => (object) ['kind' => 'query-reference'],
+            'transforms' => [],
+            'onError' => 'hide',
+        ]]];
+
+        self::assertTrue($resolver->resolve(
+            $node,
+            'value',
+            new StudioPreviewBindingValues(new stdClass(), new stdClass()),
+        )->isHidden());
+    }
+
+    /**
+     * Prove each declared null policy resolves exactly as declared and defaults to unresolved.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testEachDeclaredNullPolicyResolvesExactlyAsDeclared(): void
+    {
+        $resolver = new StudioPreviewBindingResolver();
+        $values = new StudioPreviewBindingValues(new stdClass(), new stdClass());
+        $resolve = static function (array $policy) use ($resolver, $values) {
+            $binding = (object) array_merge([
+                'source' => (object) ['kind' => 'static-value', 'value' => null],
+                'transforms' => [],
+            ], $policy);
+
+            return $resolver->resolve((object) ['bindings' => (object) ['value' => $binding]], 'value', $values);
+        };
+
+        $empty = $resolve(['onNull' => 'empty']);
+        self::assertTrue($empty->isAvailable());
+        self::assertSame('', $empty->value());
+
+        $fallback = $resolve(['onNull' => 'fallback', 'fallback' => 'Declared fallback']);
+        self::assertTrue($fallback->isAvailable());
+        self::assertSame('Declared fallback', $fallback->value());
+
+        $undeclaredFallback = $resolve(['onNull' => 'fallback']);
+        self::assertFalse($undeclaredFallback->isAvailable());
+        self::assertFalse($undeclaredFallback->isHidden());
+
+        self::assertTrue($resolve(['onNull' => 'hide'])->isHidden());
+
+        $error = $resolve(['onNull' => 'error']);
+        self::assertFalse($error->isAvailable());
+        self::assertFalse($error->isHidden());
+    }
+
+    /**
+     * Prove a declared viewport outside the closed semantic set renders as the expanded default.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAViewportOutsideTheClosedSetRendersAsTheExpandedDefault(): void
+    {
+        [$renderer, $theme] = $this->canonicalRuntime();
+        $document = self::lockTheme(self::document('core/field-text', (object) [
+            'source' => (object) ['kind' => 'static-value', 'value' => 'Viewport value'],
+            'transforms' => [],
+            'onNull' => 'empty',
+            'onError' => 'error',
+        ]), $theme);
+        $draft = new StudioPreviewDraft('default', $document);
+        $rendered = $renderer->render(
+            self::snapshot($draft),
+            $draft,
+            new StudioPreviewRenderRequest(
+                $draft->artifactId(),
+                $draft->digest(),
+                $draft->revision(),
+                'requests/foreign-viewport-renderer',
+                'desktop',
+            ),
+            new StudioPreviewBindingValues(new stdClass(), new stdClass()),
+        );
+
+        self::assertStringContainsString('Viewport value', $rendered->html);
+        self::assertCount(1, $rendered->markers);
+    }
+
+    /**
      * Build a one-node Blueprint document binding the value port of a single field block.
      *
      * @param   string    $type     Field block type placed at the document root.

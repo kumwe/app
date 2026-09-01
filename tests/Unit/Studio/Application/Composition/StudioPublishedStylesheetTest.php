@@ -69,6 +69,23 @@ final class StudioPublishedStylesheetTest extends TestCase
     }
 
     /**
+     * Prove the URL grammar is a closed static surface whose constructor holds no state.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheUrlGrammarIsAClosedStaticSurface(): void
+    {
+        $constructor = new \ReflectionMethod(StudioPublishedStylesheet::class, '__construct');
+        self::assertTrue($constructor->isPrivate());
+
+        $instance = (new \ReflectionClass(StudioPublishedStylesheet::class))->newInstanceWithoutConstructor();
+        $constructor->invoke($instance);
+        self::assertSame([], get_object_vars($instance));
+    }
+
+    /**
      * Build one published record the stylesheet can belong to.
      *
      * @return  ContentRecord  Minimal published record fixture.

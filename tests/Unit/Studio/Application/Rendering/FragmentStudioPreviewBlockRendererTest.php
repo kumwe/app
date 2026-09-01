@@ -260,6 +260,76 @@ final class FragmentStudioPreviewBlockRendererTest extends TestCase
     }
 
     /**
+     * Prove an empty fragment text yields no content paragraph while the wrapper still renders.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testEmptyFragmentTextRendersNoContentParagraph(): void
+    {
+        $inner = new class implements StudioPreviewBlockRenderer {
+            /**
+             * Emit one structural fragment carrying no text content at all.
+             *
+             * @param   StudioPreviewBlock          $block     Immutable copied contributed block input.
+             * @param   StudioPreviewBindingResult  $binding   Authorized binding projection.
+             * @param   string                      $viewport  Active semantic viewport.
+             *
+             * @return  StudioPreviewBlockFragment  Text-free structural fragment.
+             *
+             * @since   2.0.0
+             */
+            public function render(
+                StudioPreviewBlock $block,
+                StudioPreviewBindingResult $binding,
+                string $viewport,
+            ): StudioPreviewBlockFragment {
+                unset($block, $binding, $viewport);
+
+                return new StudioPreviewBlockFragment('div', 'acme-panel', '');
+            }
+        };
+        $html = self::render($inner, self::document(), 'expanded');
+
+        self::assertStringContainsString('<div class="acme-panel"></div>', $html);
+        self::assertStringNotContainsString('<p>', $html);
+    }
+
+    /**
+     * Prove the copied block exposes exactly its coordinates and freshly decoded properties.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testCopiedBlockExposesOnlyCoordinatesAndCopiedProperties(): void
+    {
+        $block = new ContributedStudioPreviewBlock('panel-root', self::TYPE, '1.0.0', ['columns' => 3]);
+
+        self::assertSame('panel-root', $block->id());
+        self::assertSame(self::TYPE, $block->type());
+        self::assertSame('1.0.0', $block->version());
+        self::assertSame(3, $block->property('columns'));
+        self::assertNull($block->property('missing'));
+    }
+
+    /**
+     * Prove properties outside canonical JSON are refused when the block copy is created.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testPropertiesOutsideCanonicalJsonAreRefusedAtCopyTime(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Studio preview block properties must stay inside canonical JSON.');
+
+        new ContributedStudioPreviewBlock('panel-root', self::TYPE, '1.0.0', ['ratio' => NAN]);
+    }
+
+    /**
      * Render one locked contributed document through the real Producer engine.
      *
      * @param   StudioPreviewBlockRenderer                          $inner     Contributed SDK fixture renderer.

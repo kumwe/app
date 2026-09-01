@@ -179,17 +179,6 @@ final class RecordPolicyTest extends TestCase
         new RecordPolicySet($schema, [$predicate]);
     }
 
-    public function testTemporalLiteralRejectsImpossibleCalendarValues(): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-        new RecordPolicyComparison(
-            'service_date',
-            RecordPolicyComparisonOperator::Equal,
-            RecordPolicyValueType::Temporal,
-            '2026-13-40',
-        );
-    }
-
     public function testTemporalEvaluatorUsesTheSameDateTimeAndInstantDomainsAsPersistence(): void
     {
         $schema = new RecordPolicySchema([

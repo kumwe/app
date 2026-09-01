@@ -46,7 +46,9 @@ use Kumwe\Extension\Spi\Studio\Application\Preview\StudioPreviewBindingResult;
 use Kumwe\Extension\Spi\Studio\Application\Preview\StudioPreviewBlock;
 use Kumwe\Extension\Spi\Studio\Application\Preview\StudioPreviewBlockFragment;
 use Kumwe\Extension\Spi\Studio\Application\Preview\StudioPreviewBlockRenderer;
+use Kumwe\Producer\Render\BlockCoordinate;
 use Kumwe\Producer\Render\BlockRenderer;
+use Kumwe\Producer\Render\BlockRendererRegistry;
 use Kumwe\Producer\Render\RenderResult;
 use Kumwe\Producer\Render\RenderState;
 use Kumwe\Producer\Schema\StudioDocumentSchemaRegistry;
@@ -54,6 +56,8 @@ use Kumwe\App\Studio\Domain\Projection\ContentBlueprintBinding;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
+use ReflectionMethod;
+use ReflectionProperty;
 use stdClass;
 
 /**
@@ -507,6 +511,187 @@ final class StudioPublishedContentRendererTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('requires an implementation of');
         self::manifestSixRegistries(renderer: $enhancingRenderer);
+    }
+
+    /**
+     * A trusted renderer that throws mid-render withholds the whole public composition, never a page.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testATrustedRendererThrowingMidRenderWithholdsPublicOutputCompletely(): void
+    {
+        $throwing = new class implements StudioPreviewBlockRenderer {
+            /**
+             * Fail exactly like a live extension renderer whose runtime collapses mid-render.
+             *
+             * @param   StudioPreviewBlock          $block     Immutable copied contributed grid input.
+             * @param   StudioPreviewBindingResult  $binding   Authorized binding projection.
+             * @param   string                      $viewport  Active semantic viewport.
+             *
+             * @return  StudioPreviewBlockFragment  Never returned: this double always collapses.
+             *
+             * @since   2.0.0
+             */
+            public function render(
+                StudioPreviewBlock $block,
+                StudioPreviewBindingResult $binding,
+                string $viewport,
+            ): StudioPreviewBlockFragment {
+                unset($block, $binding, $viewport);
+                throw new \RuntimeException('The live grid renderer collapsed mid-render.');
+            }
+        };
+        [$registries] = self::manifestSixRegistries(renderer: $throwing);
+        $theme = $this->theme();
+        $artifact = self::admission()->admit(SiteContext::DEFAULT, $this->extensionGridBlueprint($theme));
+
+        try {
+            $this->renderer($this->binding(), $artifact, $theme, $registries)->render($this->record());
+            self::fail('A collapsing live renderer must withhold the published composition.');
+        } catch (StudioPublishedBlockRendererUnavailable $refused) {
+            self::assertSame('unavailable', $refused->type);
+            self::assertSame('unknown', $refused->version);
+            self::assertNull($refused->revision);
+        }
+    }
+
+    /**
+     * A requested engine enhancement withholds public output while no canonical runtime services it.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testARequestedEngineEnhancementWithholdsPublicOutputCompletely(): void
+    {
+        [$registries] = self::manifestSixRegistries(static function (stdClass $definition): void {
+            $definition->propertySchema->properties->design = (object) ['type' => 'object'];
+        });
+        $theme = $this->theme();
+        $blueprint = $this->extensionGridBlueprint($theme);
+        $blueprint->roots[0]->properties->design = (object) ['animation' => 'fade'];
+        $artifact = self::admission()->admit(SiteContext::DEFAULT, $blueprint);
+
+        try {
+            $this->renderer($this->binding(), $artifact, $theme, $registries)->render($this->record());
+            self::fail('A requested Producer enhancement must withhold the published composition.');
+        } catch (StudioPublishedBlockRendererUnavailable $refused) {
+            self::assertSame('enhancement', $refused->type);
+            self::assertSame('unknown', $refused->version);
+            self::assertNull($refused->revision);
+        }
+    }
+
+    /**
+     * A registry composition failure refuses publication instead of publishing a partial dependency set.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testARegistryCompositionFailureRefusesPublication(): void
+    {
+        [$registries] = self::manifestSixRegistries();
+        $surface = $registries->canonicalCompositionDocuments();
+        $entriesProperty = new ReflectionProperty($surface, 'entries');
+        $entries = $entriesProperty->getValue($surface);
+        self::assertIsArray($entries);
+        $first = reset($entries);
+        self::assertIsArray($first);
+        $entries['hostile duplicate key'] = $first;
+        $entriesProperty->setValue($surface, $entries);
+        $theme = $this->theme();
+
+        $this->assertPublicationDiagnostic(
+            $this->guard($theme, registries: $registries),
+            $this->extensionGridBlueprint($theme),
+            'studio.artifact/block-renderer-unavailable',
+        );
+    }
+
+    /**
+     * A lock coordinate outside the Producer grammar is an incompatible Blueprint, not a crash.
+     *
+     * The schema-admitted public path pins lock members to the same grammar, so the guard's own
+     * coordinate fence is proved directly against the lock index it protects.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testALockCoordinateOutsideTheProducerGrammarIsIncompatible(): void
+    {
+        $liveLocks = new ReflectionMethod(StudioPublishedCompositionGuard::class, 'liveLocks');
+
+        $this->expectException(StudioPublishedBlueprintMismatch::class);
+        $liveLocks->invoke(
+            $this->guard($this->theme()),
+            (object) ['blocks' => [(object) [
+                'type' => 'core/field-text',
+                'version' => 'not-a-semantic-version',
+                'revision' => 'core-block-r1',
+            ]]],
+            [],
+            BlockRendererRegistry::withCoreCatalog(),
+        );
+    }
+
+    /**
+     * A node whose exact lock loses its live definition names only the immutable failed coordinate.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testANodeWhoseLockLosesItsLiveDefinitionNamesTheFailedCoordinate(): void
+    {
+        $assertNode = new ReflectionMethod(StudioPublishedCompositionGuard::class, 'assertNode');
+        $identifiers = [];
+        $validators = [];
+        $node = (object) [
+            'id' => 'orphaned-node',
+            'type' => 'core/field-text',
+            'version' => '1.0.0',
+            'properties' => new stdClass(),
+            'bindings' => new stdClass(),
+            'slots' => new stdClass(),
+        ];
+        $locks = ["core/field-text\x001.0.0" => new BlockCoordinate('core/field-text', '1.0.0', 'core-block-r1')];
+
+        try {
+            $assertNode->invokeArgs(
+                $this->guard($this->theme()),
+                [$node, $locks, [], [], &$identifiers, &$validators],
+            );
+            self::fail('A node without a live definition must fail closed.');
+        } catch (StudioPublishedBlockRendererUnavailable $refused) {
+            self::assertSame('core/field-text', $refused->type);
+            self::assertSame('1.0.0', $refused->version);
+            self::assertSame('core-block-r1', $refused->revision);
+        }
+    }
+
+    /**
+     * A live definition whose property schema leaves the closed profile refuses publication.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAnInadmissiblePropertySchemaRefusesPublication(): void
+    {
+        [$registries] = self::manifestSixRegistries(static function (stdClass $definition): void {
+            $definition->propertySchema = (object) ['type' => 'object'];
+        });
+        $theme = $this->theme();
+
+        $this->assertPublicationDiagnostic(
+            $this->guard($theme, registries: $registries),
+            $this->extensionGridBlueprint($theme),
+            'studio.artifact/blueprint-incompatible',
+        );
     }
 
     /**

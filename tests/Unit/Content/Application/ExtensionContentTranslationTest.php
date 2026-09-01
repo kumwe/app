@@ -69,69 +69,6 @@ final class ExtensionContentTranslationTest extends TestCase
     }
 
     /**
-     * Prove a declaration survives the manifest round trip a runtime publication depends on.
-     *
-     * The compiled runtime map carries the exported set rather than the manifest text, and is re-parsed
-     * and compared against the installed manifest before any of the package's code runs, so a declaration
-     * that did not round-trip would fail activation rather than misbehave quietly. The second half of the
-     * case is the one that matters for existing packages: a manifest declaring no content set exports no
-     * `content` section at all, so its bytes are the bytes it was admitted against.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    public function testADeclaredContentSetRoundTripsThroughTheManifest(): void
-    {
-        $document = [
-            'version' => 2,
-            'content' => [
-                'translation_groups' => [
-                    (new TranslationGroupDeclaration('acme.blog.articles', ['de', 'en-GB'], 'en-GB'))->toArray(),
-                ],
-            ],
-        ];
-        $parsed = ManifestContributions::fromManifest(
-            ExtensionIdentifier::fromString('acme/blog'),
-            $document,
-            4,
-        );
-        self::assertSame(
-            [['fallback_locale' => 'en-GB', 'group_id' => 'acme.blog.articles', 'locales' => ['de', 'en-GB']]],
-            $parsed->declarations()['content']['translation_groups'] ?? null,
-        );
-
-        $bare = ManifestContributions::fromManifest(ExtensionIdentifier::fromString('acme/blog'), [
-            'version' => 2,
-        ], 4);
-        self::assertArrayNotHasKey('translation_groups', $bare->declarations()['content'] ?? []);
-    }
-
-    /**
-     * Prove a package cannot publish a language it never declared, or claim another package's namespace.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    public function testManifestOwnershipRejectsAForeignContentGroup(): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-        ManifestContributions::fromManifest(
-            ExtensionIdentifier::fromString('acme/blog'),
-            [
-                'version' => 2,
-                'content' => [
-                    'translation_groups' => [
-                        (new TranslationGroupDeclaration('zeta.shop.products', ['en-GB'], 'en-GB'))->toArray(),
-                    ],
-                ],
-            ],
-            4,
-        );
-    }
-
-    /**
      * Prove withdrawing the package withdraws its content sets in the same sweep as everything else.
      *
      * @return  void

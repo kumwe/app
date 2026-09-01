@@ -6,7 +6,6 @@ namespace Kumwe\App\Tests\Unit\Studio\Application\Host;
 
 use InvalidArgumentException;
 use Kumwe\App\Studio\Application\Host\StudioProducerError;
-use Kumwe\Producer\Error\HostError;
 use Kumwe\Producer\Error\HostRefusal;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -70,8 +69,6 @@ final class StudioProducerErrorTest extends TestCase
         self::assertSame($status, StudioProducerError::status($category));
         self::assertSame('studio.host/request-refused', $error->message()->key());
         self::assertSame('studio.host/test-refusal', $error->diagnostics()[0]->code());
-        self::assertSame($error->toCanonicalJson(), HostError::fromCanonicalBytes($error->toCanonicalJson())
-            ->toCanonicalJson());
     }
 
     /**

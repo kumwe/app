@@ -91,6 +91,46 @@ final class StudioContentFieldBlockRendererTest extends TestCase
     }
 
     /**
+     * Prove rich text flattens strings, lists and node objects while refusing any other family.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testRichTextFlattensOnlyItsClosedCanonicalShapes(): void
+    {
+        self::assertSame(
+            '<article data-studio-part="value">Plain rich value</article>',
+            self::render('core/field-rich-text', BindingResolution::available('Plain rich value')),
+        );
+        self::assertSame(
+            '<article data-studio-part="value">First second</article>',
+            self::render('core/field-rich-text', BindingResolution::available([
+                'First ',
+                (object) ['text' => 'second'],
+            ])),
+        );
+        self::assertSame('', self::render('core/field-rich-text', BindingResolution::available(42)));
+    }
+
+    /**
+     * Prove references render a plain string label directly and refuse non-reference families.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testReferencesRenderOnlyPlainLabelsOrNothing(): void
+    {
+        self::assertSame(
+            '<p data-studio-part="value">Plain label</p>',
+            self::render('core/field-media', BindingResolution::available('Plain label')),
+        );
+        self::assertSame('', self::render('core/field-resource', BindingResolution::available(7)));
+        self::assertSame('', self::render('core/field-media', BindingResolution::available(['label' => 'x'])));
+    }
+
+    /**
      * Render one node directly with a fixed binding resolution.
      *
      * @param   string             $type        Candidate block type on the node.
