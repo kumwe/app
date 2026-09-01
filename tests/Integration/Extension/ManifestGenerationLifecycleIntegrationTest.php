@@ -6,6 +6,7 @@ namespace Kumwe\App\Tests\Integration\Extension;
 
 use DateTimeImmutable;
 use FilesystemIterator;
+use Kumwe\App\Application\Automation\JobHandlerRegistry;
 use Kumwe\App\Extension\Application\ExtensionManager;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
@@ -106,6 +107,8 @@ final class ManifestGenerationLifecycleIntegrationTest extends TestCase
             $runtime = TestKernelFactory::create($environment);
             $registries = $runtime->get(ExtensionContributionRegistrySet::class);
             self::assertInstanceOf(ExtensionContributionRegistrySet::class, $registries);
+            $worker = $runtime->get(JobHandlerRegistry::class);
+            self::assertInstanceOf(JobHandlerRegistry::class, $worker);
             foreach ($generations as $schema => $word) {
                 $identifier = sprintf('integration/gen%d-%s', $schema, $marker);
                 $dotted = str_replace('/', '.', $identifier);
@@ -114,7 +117,7 @@ final class ManifestGenerationLifecycleIntegrationTest extends TestCase
                     1 => self::assertSame([], $registries->inventory($owner)['capabilities']),
                     2 => self::assertGeneration2($registries, $owner, $dotted),
                     3 => self::assertGeneration3($registries, $owner, $dotted),
-                    4 => self::assertGeneration4($registries, $owner, $dotted),
+                    4 => self::assertGeneration4($registries, $worker, $owner, $dotted),
                     5 => self::assertGeneration5($registries, $owner),
                 };
             }
@@ -184,9 +187,11 @@ final class ManifestGenerationLifecycleIntegrationTest extends TestCase
     }
 
     /**
-     * The schema-4 component binds every integration executable its manifest declares.
+     * The schema-4 component binds every integration executable its manifest declares, and the worker
+     * registry composes its contributed job under the signed type.
      *
      * @param   ExtensionContributionRegistrySet  $registries  Loaded runtime contribution registries.
+     * @param   JobHandlerRegistry                $worker      Worker-facing job registry of the same kernel.
      * @param   ContributionOwner                 $owner       Re-owned package identity.
      * @param   string                            $dotted      Dotted contribution namespace.
      *
@@ -196,12 +201,14 @@ final class ManifestGenerationLifecycleIntegrationTest extends TestCase
      */
     private static function assertGeneration4(
         ExtensionContributionRegistrySet $registries,
+        JobHandlerRegistry $worker,
         ContributionOwner $owner,
         string $dotted,
     ): void {
         self::assertNotNull($registries->domainListeners()->definition($owner, $dotted . '.observe-now'));
         self::assertNotNull($registries->eventConsumers()->definition($owner, $dotted . '.observe-later'));
         self::assertNotNull($registries->jobs()->definition($owner, $dotted . '.summarize'));
+        self::assertNotNull($worker->find($dotted . '.summarize'));
         self::assertNotNull($registries->projections()->definition($owner, $dotted . '.activity'));
         self::assertNotNull($registries->reports()->definition($owner, $dotted . '.summary'));
         self::assertNotNull($registries->webhooks()->definition($owner, $dotted . '.observed-webhook'));

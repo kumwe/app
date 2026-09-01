@@ -83,4 +83,49 @@ final class StudioPermissionHostPortTest extends TestCase
         (new StudioPermissionHostPort($request->authority))
             ->explain((object) ['operation' => 'x', 'extra' => true], $request->context());
     }
+
+    /**
+     * Prove refresh accepts only an absent or exactly empty argument object.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testForeignRefreshArgumentsAreRefused(): void
+    {
+        $request = StudioProducerRequest::authorized('studio.operation/permission.refresh', null);
+
+        try {
+            (new StudioPermissionHostPort($request->authority))
+                ->refresh((object) ['extra' => true], $request->context());
+            self::fail('The foreign refresh arguments were unexpectedly accepted.');
+        } catch (HostRefusal $refused) {
+            self::assertSame('invalid-request', $refused->error()->category());
+            self::assertSame('studio.host/invalid-arguments', $refused->error()->diagnostics()[0]->code());
+        }
+    }
+
+    /**
+     * Prove mutation-only context coordinates are refused on the read-only permission port.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testMutationContextIsRefusedOnTheReadOnlyPort(): void
+    {
+        $request = StudioProducerRequest::authorized(
+            'studio.operation/permission.refresh',
+            null,
+            idempotencyKey: 'idempotency/permission-refresh',
+        );
+
+        try {
+            (new StudioPermissionHostPort($request->authority))->refresh(null, $request->context());
+            self::fail('The mutation-shaped context was unexpectedly accepted.');
+        } catch (HostRefusal $refused) {
+            self::assertSame('invalid-request', $refused->error()->category());
+            self::assertSame('studio.host/invalid-context', $refused->error()->diagnostics()[0]->code());
+        }
+    }
 }

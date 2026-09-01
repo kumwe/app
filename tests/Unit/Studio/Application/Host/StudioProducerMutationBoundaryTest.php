@@ -590,4 +590,566 @@ final class StudioProducerMutationBoundaryTest extends TestCase
 
         return [$sessions, $context, $snapshot];
     }
+
+    /**
+     * Half a replay coordinate is an internal contract breach and never reaches the transaction.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testMismatchedReplayCoordinatesAreRefusedBeforeAnyWork(): void
+    {
+        [$operation, $request, $authority] = $this->authorizedRequest(
+            'studio.operation/recovery.store',
+            (object) ['envelope' => (object) ['draft' => 'coordinates']],
+            'idempotency/coordinate-mismatch',
+        );
+        [$boundary, $transactions, $replays, $audit] = $this->boundary($authority);
+        $calls = 0;
+
+        try {
+            $boundary->execute(
+                $operation,
+                $request,
+                'scope/coordinate-mismatch',
+                null,
+                static function () use (&$calls): HostResult {
+                    $calls++;
+
+                    return new HostResult(null);
+                },
+            );
+            self::fail('A scope key without an intent digest must be refused.');
+        } catch (HostRefusal $refused) {
+            self::assertSame('internal', $refused->error()->category());
+        }
+
+        self::assertSame(0, $calls);
+        self::assertSame(0, $transactions->calls);
+        self::assertSame([], $replays->records);
+        self::assertCount(0, $audit->events);
+    }
+
+    /**
+     * A committed mutation that advances a revision records that revision in its audit metadata.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAnAuditedMutationRecordsTheAdvancedRevision(): void
+    {
+        [$operation, $request, $authority] = $this->authorizedRequest(
+            'studio.operation/telemetry.emit',
+            (object) ['event' => (object) ['name' => 'kumwe.app/revision']],
+        );
+        [$boundary, , , $audit] = $this->boundary($authority);
+
+        $result = $boundary->execute(
+            $operation,
+            $request,
+            null,
+            null,
+            static fn (): HostResult => new HostResult(null, 'entry-r2'),
+        );
+
+        $outcome = $result->outcome();
+        self::assertInstanceOf(HostResult::class, $outcome);
+        self::assertSame('entry-r2', $outcome->revision);
+        self::assertCount(1, $audit->events);
+        self::assertSame('success', $audit->events[0]->outcome());
+        $metadata = $audit->events[0]->metadata();
+        self::assertSame('entry-r2', $metadata['revision']);
+        self::assertFalse($metadata['idempotent']);
+    }
+
+    /**
+     * A scope claimed between the fast lookup and the transaction is served from the store, not re-run.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAReplayClaimedBetweenLookupAndTransactionIsServedFromTheStore(): void
+    {
+        [$operation, $request, $authority] = $this->authorizedRequest(
+            'studio.operation/recovery.store',
+            (object) ['envelope' => (object) ['draft' => 'raced']],
+            'idempotency/claimed-in-between',
+        );
+        $intent = CanonicalJson::digest((object) ['intent' => 'claimed-in-between']);
+        $record = $this->protectedRecord(
+            'scope/claimed-in-between',
+            $intent,
+            new HostResult((object) ['replayed' => true]),
+        );
+        $replays = $this->scriptedReplays([null, $record]);
+        [$boundary, $transactions] = $this->scriptedBoundary($authority, $replays);
+        $calls = 0;
+
+        $result = $boundary->execute(
+            $operation,
+            $request,
+            'scope/raced',
+            $intent,
+            static function () use (&$calls): HostResult {
+                $calls++;
+
+                return new HostResult(null);
+            },
+        );
+
+        self::assertSame($intent, $result->intentDigest);
+        $outcome = $result->outcome();
+        self::assertInstanceOf(HostResult::class, $outcome);
+        self::assertTrue($outcome->value->replayed);
+        self::assertSame(0, $calls);
+        self::assertSame(0, $replays->beginCalls);
+        self::assertSame(1, $transactions->calls);
+    }
+
+    /**
+     * A lost replay race whose winner is not yet visible is refused as retryably in progress.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testALostReplayRaceWithoutAWinnerIsRefusedAsInProgress(): void
+    {
+        [$operation, $request, $authority] = $this->authorizedRequest(
+            'studio.operation/recovery.store',
+            (object) ['envelope' => (object) ['draft' => 'no-winner']],
+            'idempotency/no-winner',
+        );
+        $intent = CanonicalJson::digest((object) ['intent' => 'no-winner']);
+        $replays = $this->scriptedReplays([null, null, null], true);
+        [$boundary] = $this->scriptedBoundary($authority, $replays);
+        $calls = 0;
+
+        try {
+            $boundary->execute(
+                $operation,
+                $request,
+                'scope/no-winner',
+                $intent,
+                static function () use (&$calls): HostResult {
+                    $calls++;
+
+                    return new HostResult(null);
+                },
+            );
+            self::fail('A lost claim race without a visible winner must be refused.');
+        } catch (HostRefusal $refused) {
+            self::assertSame('unavailable', $refused->error()->category());
+        }
+
+        self::assertSame(0, $calls);
+        self::assertSame(1, $replays->beginCalls);
+    }
+
+    /**
+     * A lost replay race serves the winner's protected outcome without re-running the mutation.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testALostReplayRaceServesTheWinningClaim(): void
+    {
+        [$operation, $request, $authority] = $this->authorizedRequest(
+            'studio.operation/recovery.store',
+            (object) ['envelope' => (object) ['draft' => 'winner']],
+            'idempotency/winner',
+        );
+        $intent = CanonicalJson::digest((object) ['intent' => 'winner']);
+        $record = $this->protectedRecord('scope/winner', $intent, new HostResult((object) ['winner' => true]));
+        $replays = $this->scriptedReplays([null, null, $record], true);
+        [$boundary] = $this->scriptedBoundary($authority, $replays);
+        $calls = 0;
+
+        $result = $boundary->execute(
+            $operation,
+            $request,
+            'scope/winner',
+            $intent,
+            static function () use (&$calls): HostResult {
+                $calls++;
+
+                return new HostResult(null);
+            },
+        );
+
+        self::assertSame($intent, $result->intentDigest);
+        $outcome = $result->outcome();
+        self::assertInstanceOf(HostResult::class, $outcome);
+        self::assertTrue($outcome->value->winner);
+        self::assertSame(0, $calls);
+        self::assertSame(1, $replays->beginCalls);
+    }
+
+    /**
+     * A replay whose current intent differs from the stored claim is refused, never served.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAReplayWithChangedIntentIsRefused(): void
+    {
+        [$operation, $request, $authority] = $this->authorizedRequest(
+            'studio.operation/recovery.store',
+            (object) ['envelope' => (object) ['draft' => 'changed']],
+            'idempotency/changed-intent',
+        );
+        $storedIntent = CanonicalJson::digest((object) ['intent' => 'original']);
+        $record = $this->protectedRecord('scope/changed-intent', $storedIntent, new HostResult(null));
+        $replays = $this->scriptedReplays([$record]);
+        [$boundary] = $this->scriptedBoundary($authority, $replays);
+        $calls = 0;
+
+        try {
+            $boundary->execute(
+                $operation,
+                $request,
+                'scope/changed-intent',
+                CanonicalJson::digest((object) ['intent' => 'changed']),
+                static function () use (&$calls): HostResult {
+                    $calls++;
+
+                    return new HostResult(null);
+                },
+            );
+            self::fail('A replay under a changed intent digest must be refused.');
+        } catch (HostRefusal $refused) {
+            self::assertSame('invalid-request', $refused->error()->category());
+        }
+
+        self::assertSame(0, $calls);
+    }
+
+    /**
+     * A claim still awaiting its protected outcome is refused as retryably in progress.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAPendingReplayClaimIsRefusedAsInProgress(): void
+    {
+        [$operation, $request, $authority] = $this->authorizedRequest(
+            'studio.operation/recovery.store',
+            (object) ['envelope' => (object) ['draft' => 'pending']],
+            'idempotency/pending-claim',
+        );
+        $intent = CanonicalJson::digest((object) ['intent' => 'pending-claim']);
+        $record = new StudioMutationReplayRecord(hash('sha256', 'scope/pending-claim'), $intent, null);
+        $replays = $this->scriptedReplays([$record]);
+        [$boundary] = $this->scriptedBoundary($authority, $replays);
+        $calls = 0;
+
+        try {
+            $boundary->execute(
+                $operation,
+                $request,
+                'scope/pending-claim',
+                $intent,
+                static function () use (&$calls): HostResult {
+                    $calls++;
+
+                    return new HostResult(null);
+                },
+            );
+            self::fail('A pending replay claim must be refused as in progress.');
+        } catch (HostRefusal $refused) {
+            self::assertSame('unavailable', $refused->error()->category());
+        }
+
+        self::assertSame(0, $calls);
+    }
+
+    /**
+     * A stored upload grant that authenticates but is not an object is refused at rehydration.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAStoredNonObjectUploadGrantIsRefusedWhenReplayed(): void
+    {
+        [$operation, $request, $authority] = $this->authorizedRequest(
+            'studio.operation/media.authorize-upload',
+            (object) ['request' => (object) ['name' => 'asset.png']],
+            'idempotency/stored-grant-invalid',
+            ['content.update', 'studio.mode.content'],
+        );
+        $intent = CanonicalJson::digest((object) ['intent' => 'stored-grant-invalid']);
+        $record = $this->protectedRecord('scope/stored-grant-invalid', $intent, new HostResult('not-an-object'));
+        $replays = $this->scriptedReplays([$record]);
+        [$boundary] = $this->scriptedBoundary($authority, $replays);
+        $calls = 0;
+
+        try {
+            $boundary->execute(
+                $operation,
+                $request,
+                'scope/stored-grant-invalid',
+                $intent,
+                static function () use (&$calls): HostResult {
+                    $calls++;
+
+                    return new HostResult(null);
+                },
+            );
+            self::fail('A stored non-object upload grant must be refused at replay.');
+        } catch (HostRefusal $refused) {
+            self::assertSame('internal', $refused->error()->category());
+        }
+
+        self::assertSame(0, $calls);
+    }
+
+    /**
+     * Build one durable claim completed under the shared deterministic test codec key.
+     *
+     * @param   string                $scopeSeed     Seed hashed into the record's trusted scope digest.
+     * @param   string                $intentDigest  Canonical SRI SHA-256 intent digest.
+     * @param   HostResult|HostError  $outcome       Logical outcome to protect for replay.
+     *
+     * @return  StudioMutationReplayRecord  Completed claim recoverable by the boundary's codec.
+     *
+     * @since   2.0.0
+     */
+    private function protectedRecord(
+        string $scopeSeed,
+        string $intentDigest,
+        HostResult|HostError $outcome,
+    ): StudioMutationReplayRecord {
+        $scopeDigest = hash('sha256', $scopeSeed);
+        $codec = new SodiumStudioMutationOutcomeCodec(str_repeat('k', 32));
+
+        return new StudioMutationReplayRecord(
+            $scopeDigest,
+            $intentDigest,
+            $codec->protect($outcome, $scopeDigest, $intentDigest),
+        );
+    }
+
+    /**
+     * Build one scripted replay repository whose lookups answer from a fixed queue.
+     *
+     * @param   list<StudioMutationReplayRecord|null>  $finds        Queued findReplay answers, in order.
+     * @param   bool                                   $raceOnBegin  Whether claiming loses the replay race.
+     *
+     * @return  StudioMutationReplayRepository  Observable scripted repository double.
+     *
+     * @since   2.0.0
+     */
+    private function scriptedReplays(array $finds, bool $raceOnBegin = false): StudioMutationReplayRepository
+    {
+        return new class ($finds, $raceOnBegin) implements StudioMutationReplayRepository {
+            /**
+             * Number of claim attempts observed.
+             *
+             * @var    int
+             * @since  2.0.0
+             */
+            public int $beginCalls = 0;
+
+            /**
+             * Completed claims, as scope digest and protected outcome pairs.
+             *
+             * @var    list<array{string, string}>
+             * @since  2.0.0
+             */
+            public array $completed = [];
+
+            /**
+             * Retain the scripted lookup queue and race behaviour.
+             *
+             * @param   array  $finds        Queued findReplay answers, in order.
+             * @param   bool   $raceOnBegin  Whether claiming loses the replay race.
+             *
+             * @since   2.0.0
+             */
+            public function __construct(private array $finds, private bool $raceOnBegin)
+            {
+            }
+
+            /**
+             * Answer the next scripted lookup regardless of the requested scope.
+             *
+             * @param   string  $scopeDigest  App-namespaced lowercase SHA-256 scope digest.
+             *
+             * @return  ?StudioMutationReplayRecord  The next queued record, or null.
+             *
+             * @since   2.0.0
+             */
+            public function findReplay(string $scopeDigest): ?StudioMutationReplayRecord
+            {
+                unset($scopeDigest);
+                $next = array_shift($this->finds);
+
+                return $next instanceof StudioMutationReplayRecord ? $next : null;
+            }
+
+            /**
+             * Count one claim attempt, losing the scripted race when configured.
+             *
+             * @param   StudioMutationReplayRecord           $record    New pending claim.
+             * @param   StudioHostSessionSnapshot            $snapshot  Trusted live App host session.
+             * @param   \Kumwe\Producer\Wire\RequestContext  $request   Validated Producer request context.
+             *
+             * @return  void
+             *
+             * @since   2.0.0
+             */
+            public function beginReplay(
+                StudioMutationReplayRecord $record,
+                StudioHostSessionSnapshot $snapshot,
+                \Kumwe\Producer\Wire\RequestContext $request,
+            ): void {
+                unset($record, $snapshot, $request);
+                $this->beginCalls++;
+                if ($this->raceOnBegin) {
+                    throw new StudioMutationReplayRace('Scripted concurrent replay claim.');
+                }
+            }
+
+            /**
+             * Record one completed claim for later inspection.
+             *
+             * @param   string  $scopeDigest       Existing claimed scope digest.
+             * @param   string  $protectedOutcome  Authenticated completed outcome envelope.
+             *
+             * @return  void
+             *
+             * @since   2.0.0
+             */
+            public function completeReplay(string $scopeDigest, string $protectedOutcome): void
+            {
+                $this->completed[] = [$scopeDigest, $protectedOutcome];
+            }
+        };
+    }
+
+    /**
+     * Compose the boundary around a caller-scripted replay repository.
+     *
+     * @param   StudioProducerRequestAuthority  $authority  Successfully authorized request authority.
+     * @param   StudioMutationReplayRepository  $replays    Scripted replay repository double.
+     *
+     * @return  array{StudioProducerMutationBoundary, object, object}
+     *
+     * @since   2.0.0
+     */
+    private function scriptedBoundary(
+        StudioProducerRequestAuthority $authority,
+        StudioMutationReplayRepository $replays,
+    ): array {
+        $transactions = new class implements TransactionManager {
+            /**
+             * Number of transaction scopes opened.
+             *
+             * @var    int
+             * @since  2.0.0
+             */
+            public int $calls = 0;
+
+            /**
+             * Count the scope and run the operation directly, committing implicitly on return.
+             *
+             * @param   callable  $operation  Work to perform inside the simulated transaction.
+             *
+             * @return  mixed  Whatever the operation returned, passed straight back.
+             *
+             * @since   2.0.0
+             */
+            public function transactional(callable $operation): mixed
+            {
+                $this->calls++;
+
+                return $operation();
+            }
+
+            /**
+             * Run a commit hook immediately, as if the outermost transaction had just committed.
+             *
+             * @param   callable  $operation  Side effect to perform once the work is durable.
+             *
+             * @return  void
+             *
+             * @since   2.0.0
+             */
+            public function afterCommit(callable $operation): void
+            {
+                $operation();
+            }
+
+            /**
+             * Discard a rollback hook, because this in-memory manager never rolls back.
+             *
+             * @param   callable  $operation  Compensating action that is deliberately dropped.
+             *
+             * @return  void
+             *
+             * @since   2.0.0
+             */
+            public function afterRollback(callable $operation): void
+            {
+                unset($operation);
+            }
+        };
+        $audit = new class implements AuditRecorder {
+            /**
+             * Every audit event recorded, in order of arrival.
+             *
+             * @var    list<AuditEvent>
+             * @since  2.0.0
+             */
+            public array $events = [];
+
+            /**
+             * Append one audit event to the observable in-memory trail.
+             *
+             * @param   AuditEvent  $event  Validated record of the audited mutation.
+             *
+             * @return  void
+             *
+             * @since   2.0.0
+             */
+            public function record(AuditEvent $event): void
+            {
+                $this->events[] = $event;
+            }
+        };
+        $clock = new class implements ClockInterface {
+            /**
+             * Return the fixed deterministic test instant.
+             *
+             * @return  DateTimeImmutable  Constant timestamp keeping audit records reproducible.
+             *
+             * @since   2.0.0
+             */
+            public function now(): DateTimeImmutable
+            {
+                return new DateTimeImmutable('2026-08-29T12:00:00+00:00');
+            }
+        };
+
+        return [
+            new StudioProducerMutationBoundary(
+                $transactions,
+                $replays,
+                new SodiumStudioMutationOutcomeCodec(str_repeat('k', 32)),
+                $audit,
+                $clock,
+                self::createStub(StudioMediaOperations::class),
+                $authority,
+            ),
+            $transactions,
+            $audit,
+        ];
+    }
 }

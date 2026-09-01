@@ -190,6 +190,7 @@ use Kumwe\App\BusinessIntegration\Application\TrustedRuntimeGenerationGuard;
 use Kumwe\App\BusinessIntegration\Application\ValidatedContributedJobHandler;
 use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventConsumerDefinition;
 use Kumwe\App\BusinessIntegration\Domain\EventSchemaDefinition;
+use Kumwe\Extension\Spi\Application\Automation\JobHandler as ContributedJobHandler;
 use Kumwe\Extension\Spi\BusinessIntegration\Domain\JobContributionDefinition;
 use Kumwe\App\BusinessIntegration\Infrastructure\DoctrineInboxStore;
 use Kumwe\App\BusinessIntegration\Infrastructure\DoctrineOutboxStore;
@@ -5905,7 +5906,10 @@ final class ContainerFactory
             ) {
                 $definition = $entry['definition'];
                 $handler = $entry['implementation'];
-                if (!$definition instanceof JobContributionDefinition || !$handler instanceof JobHandler) {
+                if (
+                    !$definition instanceof JobContributionDefinition
+                    || !$handler instanceof ContributedJobHandler
+                ) {
                     throw new RuntimeException('The trusted job registry contains an invalid executable entry.');
                 }
                 $handlers[] = new ValidatedContributedJobHandler($definition, $handler);

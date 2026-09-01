@@ -127,4 +127,44 @@ final class AdministratorStudioSessionHandlerTest extends TestCase
             self::assertJson((string) $response->getBody());
         }
     }
+
+    /**
+     * A well-formed request for a mode the live authority withholds is refused as forbidden.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAModeTheLiveAuthorityWithholdsIsRefusedAsForbidden(): void
+    {
+        $sessions = self::createStub(StudioHostSessionRepository::class);
+        $keys = self::createStub(StudioResourceContextKeyFactory::class);
+        $keys->method('create')->willReturn('contexts/session-handler-forbidden');
+        $authority = new StudioHostSessionAuthority(AuthorizationContext::gateway(), $sessions, $keys);
+        $preview = new StudioPreviewTransportGuard(
+            'https://kumwe.test',
+            self::createStub(StudioPreviewSequenceRepository::class),
+            self::createStub(StudioPreviewSequenceWaiter::class),
+        );
+        $context = AuthorizationContext::principal(['content.read'])->context(
+            SiteContext::default(),
+            AuthenticationStrength::Password,
+            'studio-session-handler-forbidden',
+            surface: AuthenticatedSurface::Administrator,
+            sessionId: 'administrator-studio-session-forbidden',
+        );
+        $request = (new ServerRequestFactory())
+            ->createServerRequest('POST', 'https://kumwe.test/administrator/studio/session')
+            ->withAttribute(ExecutionContext::REQUEST_ATTRIBUTE, $context)
+            ->withBody((new StreamFactory())->createStream(json_encode([
+                'mode' => 'content',
+                'resourceId' => 'contents/forbidden',
+                'resourceKind' => 'content',
+            ], JSON_THROW_ON_ERROR)));
+
+        $response = (new AdministratorStudioSessionHandler($authority, $preview))->handle($request);
+
+        self::assertSame(403, $response->getStatusCode());
+        self::assertJson((string) $response->getBody());
+    }
 }

@@ -18,6 +18,7 @@ use Kumwe\App\Studio\Application\Host\StudioResourceContextKeyFactory;
 use Kumwe\App\Studio\Domain\Host\StudioHostSession;
 use Kumwe\App\Studio\Domain\Host\StudioResourceKind;
 use Kumwe\App\Studio\Domain\Host\StudioSessionMode;
+use Kumwe\App\Studio\Domain\Preview\StudioPreviewTransport;
 use Kumwe\App\Tests\Support\AuthorizationContext;
 use Kumwe\Producer\Canonical\CanonicalJson;
 use Kumwe\Producer\Wire\Dispatcher;
@@ -440,6 +441,135 @@ final class StudioProducerRequestAuthorityTest extends TestCase
         $document = json_decode($response->body, false, 64, JSON_THROW_ON_ERROR);
         self::assertInstanceOf(stdClass::class, $document);
         self::assertSame('studio.host/stale-session-generation', $document->diagnostics[0]->code);
+    }
+
+    /**
+     * A resource-context key the authority never issued is refused without disclosure.
+     *
+     * @return  void
+     *
+     * @since  2.0.0
+     */
+    public function testAnUnknownResourceContextKeyIsRefusedWithoutDisclosure(): void
+    {
+        [$sessions, $context, $snapshot] = $this->runtime(['studio.mode.content']);
+        $authority = new StudioProducerRequestAuthority($context, $sessions);
+        $operation = OperationRegistry::byCapability('studio.operation/permission.refresh');
+        $document = self::requestDocument($operation->capability, $snapshot, new stdClass());
+        $document->context->resourceContextKey = 'contexts/never-issued';
+
+        $refusal = $authority->authorize(
+            $operation,
+            RequestEnvelope::parse(CanonicalJson::stringify($document)),
+        );
+
+        self::assertNotNull($refusal);
+        self::assertSame('forbidden', $refusal->category());
+        self::assertSame('studio.host/context-refused', $refusal->diagnostics()[0]->code());
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('must authorize');
+        $authority->snapshot();
+    }
+
+    /**
+     * Publish and unpublish are refused while the live target-specific transitions are withheld.
+     *
+     * @return  void
+     *
+     * @since  2.0.0
+     */
+    public function testLifecycleOperationsAreRefusedWithoutLiveTransitionAuthority(): void
+    {
+        [$sessions, $context, $snapshot] = $this->runtime(['studio.mode.content']);
+        $authority = new StudioProducerRequestAuthority($context, $sessions);
+
+        foreach (['studio.operation/artifact.publish', 'studio.operation/artifact.unpublish'] as $capability) {
+            $refusal = $authority->authorize(
+                OperationRegistry::byCapability($capability),
+                self::request($capability, $snapshot, new stdClass()),
+            );
+
+            self::assertNotNull($refusal);
+            self::assertSame('forbidden', $refusal->category());
+            self::assertSame('studio.host/session-refused', $refusal->diagnostics()[0]->code());
+        }
+    }
+
+    /**
+     * Save-family and media operations answer only from the exact live App permission policy.
+     *
+     * @return  void
+     *
+     * @since  2.0.0
+     */
+    public function testSaveAndMediaPolicyArmsAnswerFromLiveGrants(): void
+    {
+        [$sessions, $context, $snapshot] = $this->runtime(['studio.mode.content']);
+        $authority = new StudioProducerRequestAuthority($context, $sessions);
+
+        self::assertNull($authority->authorize(
+            OperationRegistry::byCapability('studio.operation/recovery.store'),
+            self::request('studio.operation/recovery.store', $snapshot, new stdClass()),
+        ));
+        $refusal = $authority->authorize(
+            OperationRegistry::byCapability('studio.operation/media.import-external'),
+            self::request('studio.operation/media.import-external', $snapshot, new stdClass()),
+        );
+        self::assertNotNull($refusal);
+        self::assertSame('forbidden', $refusal->category());
+        self::assertSame('studio.host/session-refused', $refusal->diagnostics()[0]->code());
+
+        [$granting, $grantingContext, $grantingSnapshot] = $this->runtime(['content.update', 'studio.mode.content']);
+        $grantedAuthority = new StudioProducerRequestAuthority($grantingContext, $granting);
+
+        self::assertNull($grantedAuthority->authorize(
+            OperationRegistry::byCapability('studio.operation/media.authorize-upload'),
+            self::request('studio.operation/media.authorize-upload', $grantingSnapshot, new stdClass()),
+        ));
+    }
+
+    /**
+     * The accessors expose exactly the trusted context and preview evidence bound at construction.
+     *
+     * @return  void
+     *
+     * @since  2.0.0
+     */
+    public function testAccessorsExposeTheBoundRequestEvidence(): void
+    {
+        [$sessions, $context] = $this->runtime(['studio.mode.content']);
+        $transport = new StudioPreviewTransport(
+            'https://studio.example.test',
+            'channels/preview-1',
+            'sources/browser-1',
+            0,
+        );
+        $bound = new StudioProducerRequestAuthority($context, $sessions, $transport);
+
+        self::assertSame($context, $bound->context());
+        self::assertSame($transport, $bound->previewTransport());
+        self::assertNull((new StudioProducerRequestAuthority($context, $sessions))->previewTransport());
+    }
+
+    /**
+     * Permission explanation answers only from the live snapshot proved by authorization.
+     *
+     * @return  void
+     *
+     * @since  2.0.0
+     */
+    public function testPermitsAnswersFromTheLiveAuthorizedSnapshot(): void
+    {
+        [$sessions, $context, $snapshot] = $this->runtime(['studio.mode.content']);
+        $authority = new StudioProducerRequestAuthority($context, $sessions);
+
+        self::assertNull($authority->authorize(
+            OperationRegistry::byCapability('studio.operation/permission.refresh'),
+            self::request('studio.operation/permission.refresh', $snapshot, new stdClass()),
+        ));
+        self::assertTrue($authority->permits('studio.permission/save'));
+        self::assertFalse($authority->permits('studio.permission/publish'));
+        self::assertFalse($authority->permits('studio.permission/not-in-vocabulary'));
     }
 
     /**
