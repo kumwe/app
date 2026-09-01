@@ -36,35 +36,60 @@ final class StudioContentFieldBlockRendererTest extends TestCase
             [
                 'core/field-text',
                 'Plain <b>text</b>',
-                '<p data-studio-part="value">Plain &lt;b&gt;text&lt;/b&gt;</p>',
+                '<p class="studio-preview-field-text" data-studio-part="value">Plain &lt;b&gt;text&lt;/b&gt;</p>',
             ],
-            ['core/field-integer', 42, '<p data-studio-part="value">42</p>'],
-            ['core/field-decimal', '19.95', '<p data-studio-part="value">19.95</p>'],
-            ['core/field-boolean', true, '<p data-studio-part="value">true</p>'],
-            ['core/field-date', '2026-08-12', '<p data-studio-part="value">2026-08-12</p>'],
+            ['core/field-integer', 42, '<p class="studio-preview-field-integer" data-studio-part="value">42</p>'],
+            [
+                'core/field-decimal',
+                '19.95',
+                '<p class="studio-preview-field-decimal" data-studio-part="value">19.95</p>',
+            ],
+            ['core/field-boolean', true, '<p class="studio-preview-field-boolean" data-studio-part="value">true</p>'],
+            [
+                'core/field-date',
+                '2026-08-12',
+                '<p class="studio-preview-field-date" data-studio-part="value">2026-08-12</p>',
+            ],
             [
                 'core/field-date-time',
                 '2026-08-12T00:00:00+00:00',
-                '<p data-studio-part="value">2026-08-12T00:00:00+00:00</p>',
+                '<p class="studio-preview-field-date-time" data-studio-part="value">2026-08-12T00:00:00+00:00</p>',
             ],
             [
                 'core/field-rich-text',
                 (object) ['text' => 'Lead ', 'content' => [(object) ['text' => 'tail']]],
-                '<article data-studio-part="value">Lead tail</article>',
+                '<article class="studio-preview-field-rich-text" data-studio-part="value">Lead tail</article>',
             ],
-            ['core/field-media', (object) ['alt' => 'Poster', 'id' => 'm-1'], '<p data-studio-part="value">Poster</p>'],
-            ['core/field-resource', (object) ['id' => 'r-1'], '<p data-studio-part="value">r-1</p>'],
+            [
+                'core/field-media',
+                (object) ['alt' => 'Poster', 'id' => 'm-1'],
+                '<p class="studio-preview-field-media" data-studio-part="value">Poster</p>',
+            ],
+            [
+                'core/field-resource',
+                (object) ['id' => 'r-1'],
+                '<p class="studio-preview-field-resource" data-studio-part="value">r-1</p>',
+            ],
         ];
         foreach ($cases as [$type, $value, $expected]) {
             self::assertSame($expected, self::render($type, BindingResolution::available($value)), $type);
         }
-        self::assertSame('', self::render('core/field-integer', BindingResolution::available('not-an-int')));
-        self::assertSame('', self::render('core/field-boolean', BindingResolution::available('yes')));
-        self::assertSame('', self::render('core/field-media', BindingResolution::available((object) ['url' => 'x'])));
+        self::assertSame(
+            self::emptyField('integer'),
+            self::render('core/field-integer', BindingResolution::available('not-an-int')),
+        );
+        self::assertSame(
+            self::emptyField('boolean'),
+            self::render('core/field-boolean', BindingResolution::available('yes')),
+        );
+        self::assertSame(
+            self::emptyField('media'),
+            self::render('core/field-media', BindingResolution::available((object) ['url' => 'x'])),
+        );
     }
 
     /**
-     * Prove an unavailable binding renders the empty unavailable baseline, never a placeholder.
+     * Prove an unavailable binding keeps its empty field element while a hidden one renders nothing.
      *
      * @return  void
      *
@@ -72,7 +97,8 @@ final class StudioContentFieldBlockRendererTest extends TestCase
      */
     public function testAnUnavailableBindingRendersNothing(): void
     {
-        self::assertSame('', self::render('core/field-text', BindingResolution::unavailable()));
+        self::assertSame(self::emptyField('text'), self::render('core/field-text', BindingResolution::unavailable()));
+        self::assertSame('', self::render('core/field-text', BindingResolution::hidden()));
     }
 
     /**
@@ -100,17 +126,20 @@ final class StudioContentFieldBlockRendererTest extends TestCase
     public function testRichTextFlattensOnlyItsClosedCanonicalShapes(): void
     {
         self::assertSame(
-            '<article data-studio-part="value">Plain rich value</article>',
+            '<article class="studio-preview-field-rich-text" data-studio-part="value">Plain rich value</article>',
             self::render('core/field-rich-text', BindingResolution::available('Plain rich value')),
         );
         self::assertSame(
-            '<article data-studio-part="value">First second</article>',
+            '<article class="studio-preview-field-rich-text" data-studio-part="value">First second</article>',
             self::render('core/field-rich-text', BindingResolution::available([
                 'First ',
                 (object) ['text' => 'second'],
             ])),
         );
-        self::assertSame('', self::render('core/field-rich-text', BindingResolution::available(42)));
+        self::assertSame(
+            self::emptyField('rich-text', 'article'),
+            self::render('core/field-rich-text', BindingResolution::available(42)),
+        );
     }
 
     /**
@@ -123,11 +152,17 @@ final class StudioContentFieldBlockRendererTest extends TestCase
     public function testReferencesRenderOnlyPlainLabelsOrNothing(): void
     {
         self::assertSame(
-            '<p data-studio-part="value">Plain label</p>',
+            '<p class="studio-preview-field-media" data-studio-part="value">Plain label</p>',
             self::render('core/field-media', BindingResolution::available('Plain label')),
         );
-        self::assertSame('', self::render('core/field-resource', BindingResolution::available(7)));
-        self::assertSame('', self::render('core/field-media', BindingResolution::available(['label' => 'x'])));
+        self::assertSame(
+            self::emptyField('resource'),
+            self::render('core/field-resource', BindingResolution::available(7)),
+        );
+        self::assertSame(
+            self::emptyField('media'),
+            self::render('core/field-media', BindingResolution::available(['label' => 'x'])),
+        );
     }
 
     /**
@@ -154,5 +189,20 @@ final class StudioContentFieldBlockRendererTest extends TestCase
             'scope-token',
             $state,
         );
+    }
+
+    /**
+     * Render the empty field element one kind keeps when its value is unavailable or malformed.
+     *
+     * @param   string  $kind  Closed field suffix.
+     * @param   string  $tag   Element the kind renders.
+     *
+     * @return  string  Empty classed field element.
+     *
+     * @since   2.0.0
+     */
+    private static function emptyField(string $kind, string $tag = 'p'): string
+    {
+        return sprintf('<%1$s class="studio-preview-field-%2$s" data-studio-part="value"></%1$s>', $tag, $kind);
     }
 }
