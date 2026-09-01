@@ -1,50 +1,50 @@
 {
     "note": "Exact coordinated Studio release pin per kumwe/app#104 and D16/ADR 0007. Producer owns the PHP schema and testkit authorities; App retains this record and the eight npm tarballs its browser build consumes. A re-pin changes this record, all eight tarballs, and the Producer dependency atomically.",
     "release_record": {
-        "release": "0.1.0-rc.1",
+        "release": "0.1.0-beta.3",
         "file": "studio-release.json",
-        "sha256": "b891bf573cfac52c751c1f13fa372a4f63ea76795316cce6f881b577f08bce56"
+        "sha256": "c1860c64d1a4ce1e6d9b96ea94a2d63df42e8ebaaf423ed5b4fa4dd841ed39a4"
     },
     "pinned": {
         "@kumwe/studio": {
-            "version": "0.1.0-rc.1",
-            "file": "kumwe-studio-0.1.0-rc.1.tgz",
-            "npm_tarball_sha256": "defcd596be411fb6654045015bc2a6d001ea21ee565b7e580fde3d51f4fad8ff"
+            "version": "0.1.0-beta.3",
+            "file": "kumwe-studio-0.1.0-beta.3.tgz",
+            "npm_tarball_sha256": "a2dc16044e14298df593f2e202291bc6b38ee76c4cef091a80d2a76108d1d97d"
         },
         "@kumwe/studio-core": {
-            "version": "0.1.0-rc.1",
-            "file": "kumwe-studio-core-0.1.0-rc.1.tgz",
-            "npm_tarball_sha256": "22a28005066f7ef17ea7bf935abf98240dbd91fe9c708f67e304ee7818a2891b"
+            "version": "0.1.0-beta.3",
+            "file": "kumwe-studio-core-0.1.0-beta.3.tgz",
+            "npm_tarball_sha256": "6da7419abb4d6db7439f4019b9336138a0c35824cd4d0a78bffd8a1b2d4dc67b"
         },
         "@kumwe/studio-media": {
-            "version": "0.1.0-rc.1",
-            "file": "kumwe-studio-media-0.1.0-rc.1.tgz",
-            "npm_tarball_sha256": "9b4195c7e3a95f2d485205cd292c10f15928559643ce4c16e06dace404468b9f"
+            "version": "0.1.0-beta.3",
+            "file": "kumwe-studio-media-0.1.0-beta.3.tgz",
+            "npm_tarball_sha256": "26d21e4620b8131620cee7bdf3298393958dbac5989fdc3ac743580356bfa661"
         },
         "@kumwe/studio-preview": {
-            "version": "0.1.0-rc.1",
-            "file": "kumwe-studio-preview-0.1.0-rc.1.tgz",
-            "npm_tarball_sha256": "5ad2a1733780f21ae796680c244f94effa0cb0d67c4c6dcf0a8d3dd6d02a88e5"
+            "version": "0.1.0-beta.3",
+            "file": "kumwe-studio-preview-0.1.0-beta.3.tgz",
+            "npm_tarball_sha256": "74b28cb48fcf15571255a2b861fd143f32221ee0f3462919771723afa51d7fde"
         },
         "@kumwe/studio-protocol": {
-            "version": "0.1.0-rc.1",
-            "file": "kumwe-studio-protocol-0.1.0-rc.1.tgz",
-            "npm_tarball_sha256": "9ac5b17eae36b6d4eaa8d9f9e6d73d8ecfbb4ec53bee420581a8c8a8de0ab89c"
+            "version": "0.1.0-beta.3",
+            "file": "kumwe-studio-protocol-0.1.0-beta.3.tgz",
+            "npm_tarball_sha256": "dadea111ee74564e183e6bf5b49da38f2e7adef1078e0d3aa5587459e723629c"
         },
         "@kumwe/studio-renderer-web": {
-            "version": "0.1.0-rc.1",
-            "file": "kumwe-studio-renderer-web-0.1.0-rc.1.tgz",
-            "npm_tarball_sha256": "dbf9e6ae44df712326891c97d4f2591939771cfa534688d5e76c4cc49c27bbcf"
+            "version": "0.1.0-beta.3",
+            "file": "kumwe-studio-renderer-web-0.1.0-beta.3.tgz",
+            "npm_tarball_sha256": "6e1112eb6837b3df4f91f6d8cfc9d9c85577adcea873c36fa2c972de8839f156"
         },
         "@kumwe/studio-rich-text": {
-            "version": "0.1.0-rc.1",
-            "file": "kumwe-studio-rich-text-0.1.0-rc.1.tgz",
-            "npm_tarball_sha256": "ebdf87d1d1387003e75725a1c6d93e891848442cc10e0580cda86d81b94293b8"
+            "version": "0.1.0-beta.3",
+            "file": "kumwe-studio-rich-text-0.1.0-beta.3.tgz",
+            "npm_tarball_sha256": "f751135a4c7a748ebcb75ea6dd1fd62d4def72e54e114246ab17751f4f381c8d"
         },
         "@kumwe/studio-testkit": {
-            "version": "0.1.0-rc.1",
-            "file": "kumwe-studio-testkit-0.1.0-rc.1.tgz",
-            "npm_tarball_sha256": "b1c4980f8b576ed292795b1f8d5f7d31ea840df5102c4f241bc349584187be81"
+            "version": "0.1.0-beta.3",
+            "file": "kumwe-studio-testkit-0.1.0-beta.3.tgz",
+            "npm_tarball_sha256": "2f37daf2e8b4bd722ce0944f1300b9ab9051fb942453862607a081187575c02a"
         }
     }
 }

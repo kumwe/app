@@ -51,7 +51,7 @@ if (!is_array($decoded) || array_is_list($decoded)) {
     $errors[] = 'The Extension SDK resource pin must be a JSON object.';
     extensionContractFailure($errors);
 }
-if (($decoded['format'] ?? null) !== 'kumwe-extension-sdk-resource-pin-v1') {
+if (($decoded['format'] ?? null) !== 'kumwe-extension-sdk-resource-pin-v2') {
     $errors[] = 'The Extension SDK resource pin declares an unsupported format.';
 }
 

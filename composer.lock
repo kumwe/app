@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "d0875321eeb6993688a701f6e208ad35",
+    "content-hash": "dd55a5c67d4dcae5aed6a5bfff4bef6e",
     "packages": [
         {
             "name": "brick/math",
@@ -326,20 +326,26 @@
         },
         {
             "name": "kumwe/conversion",
-            "version": "v0.1.1",
+            "version": "v0.1.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/kumwe/conversion.git",
-                "reference": "c3f2bd3fb6bd94a15dd9c8b995822ca86d6eaff9"
+                "reference": "5ccea7f7dc4ebd11bc27b11da8573da42807c196"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/kumwe/conversion/zipball/c3f2bd3fb6bd94a15dd9c8b995822ca86d6eaff9",
-                "reference": "c3f2bd3fb6bd94a15dd9c8b995822ca86d6eaff9",
+                "url": "https://api.github.com/repos/kumwe/conversion/zipball/5ccea7f7dc4ebd11bc27b11da8573da42807c196",
+                "reference": "5ccea7f7dc4ebd11bc27b11da8573da42807c196",
                 "shasum": ""
             },
             "require": {
                 "php": "^8.5"
+            },
+            "require-dev": {
+                "phpstan/phpstan": "^2.1",
+                "phpstan/phpstan-deprecation-rules": "^2.0",
+                "phpstan/phpstan-strict-rules": "^2.0",
+                "squizlabs/php_codesniffer": "^4.0"
             },
             "type": "library",
             "autoload": {
@@ -357,31 +363,42 @@
                 "issues": "https://github.com/kumwe/conversion/issues",
                 "source": "https://github.com/kumwe/conversion"
             },
-            "time": "2026-08-28T20:17:46+00:00"
+            "time": "2026-08-30T11:09:38+00:00"
         },
         {
             "name": "kumwe/extension-sdk",
-            "version": "v0.1.1",
+            "version": "v0.2.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/kumwe/extension-sdk.git",
-                "reference": "76fe8034233147c35e53c9bb52eaa9b3e858d3e5"
+                "reference": "91f03b8c4db403c947d1ccf5d7ca53ac0c6c8557"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/kumwe/extension-sdk/zipball/76fe8034233147c35e53c9bb52eaa9b3e858d3e5",
-                "reference": "76fe8034233147c35e53c9bb52eaa9b3e858d3e5",
+                "url": "https://api.github.com/repos/kumwe/extension-sdk/zipball/91f03b8c4db403c947d1ccf5d7ca53ac0c6c8557",
+                "reference": "91f03b8c4db403c947d1ccf5d7ca53ac0c6c8557",
                 "shasum": ""
             },
             "require": {
+                "doctrine/dbal": "^4.3",
                 "ext-json": "*",
+                "ext-mbstring": "*",
                 "ext-sodium": "*",
                 "ext-zip": "*",
-                "php": "^8.5"
+                "kumwe/conversion": "^0.1",
+                "kumwe/producer": "^0.2",
+                "php": "^8.5",
+                "psr/http-message": "^1.1 || ^2.0",
+                "psr/http-server-handler": "^1.0",
+                "ramsey/uuid": "^4.7"
             },
-            "suggest": {
-                "phpunit/phpunit": "Activates the ExtensionConformanceTestCase and ExtensionLifecycleTestCase bridges in a consuming suite."
+            "require-dev": {
+                "phpstan/phpstan": "^2.1",
+                "phpunit/phpunit": "^12.0"
             },
+            "bin": [
+                "bin/kumwe-extension"
+            ],
             "type": "library",
             "autoload": {
                 "psr-4": {
@@ -392,32 +409,36 @@
             "license": [
                 "Apache-2.0"
             ],
-            "description": "The Kumwe extension SDK: the manifest contract, SPI interfaces, classification data and signed compatibility fixtures, plus the author toolchain - scaffold, deterministic build, sign, inspect and conformance-test - sharing one inspection implementation with Kumwe App's admission.",
+            "description": "Canonical Kumwe extension contracts, manifest parsing, author SPI and neutral package inspection tooling.",
             "homepage": "https://github.com/kumwe/extension-sdk",
             "support": {
                 "issues": "https://github.com/kumwe/extension-sdk/issues",
                 "source": "https://github.com/kumwe/extension-sdk"
             },
-            "time": "2026-08-28T20:18:14+00:00"
+            "time": "2026-09-01T12:25:31+00:00"
         },
         {
             "name": "kumwe/producer",
-            "version": "v0.1.0",
+            "version": "v0.2.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/kumwe/producer.git",
-                "reference": "8799ec1b5f753af3408f24b6a87c768e7b79ec76"
+                "reference": "e746b9f019482c78a34df04375f00c35ad5961af"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/kumwe/producer/zipball/8799ec1b5f753af3408f24b6a87c768e7b79ec76",
-                "reference": "8799ec1b5f753af3408f24b6a87c768e7b79ec76",
+                "url": "https://api.github.com/repos/kumwe/producer/zipball/e746b9f019482c78a34df04375f00c35ad5961af",
+                "reference": "e746b9f019482c78a34df04375f00c35ad5961af",
                 "shasum": ""
             },
             "require": {
                 "ext-json": "*",
                 "ext-mbstring": "*",
                 "php": ">=8.1"
+            },
+            "require-dev": {
+                "phpstan/phpstan": "^2.1",
+                "squizlabs/php_codesniffer": "^4.0"
             },
             "type": "library",
             "autoload": {
@@ -427,7 +448,7 @@
             },
             "notification-url": "https://packagist.org/downloads/",
             "license": [
-                "MIT"
+                "Apache-2.0"
             ],
             "description": "The PHP producer for Kumwe Studio: receives canonical Studio compositions and makes them real - validated wire handling, semantic server-side rendering, and design-token CSS - while your application keeps all authority and storage.",
             "homepage": "https://github.com/kumwe/producer",
@@ -435,7 +456,7 @@
                 "issues": "https://github.com/kumwe/producer/issues",
                 "source": "https://github.com/kumwe/producer"
             },
-            "time": "2026-08-28T19:47:03+00:00"
+            "time": "2026-09-01T12:11:22+00:00"
         },
         {
             "name": "laminas/laminas-authentication",
