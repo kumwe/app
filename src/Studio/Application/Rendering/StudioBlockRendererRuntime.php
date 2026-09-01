@@ -38,11 +38,13 @@ final readonly class StudioBlockRendererRuntime
     /**
      * Return one fresh Producer registry containing only currently trusted exact coordinates.
      *
+     * @param   string  $viewport  Active semantic viewport handed to contributed SDK fragment renderers.
+     *
      * @return  BlockRendererRegistry  Direct canonical registry for one publication or render decision.
      *
      * @since   2.0.0
      */
-    public function registry(): BlockRendererRegistry
+    public function registry(string $viewport = 'expanded'): BlockRendererRegistry
     {
         $registry = BlockRendererRegistry::withCoreCatalog();
         $bindings = [];
@@ -110,7 +112,7 @@ final readonly class StudioBlockRendererRuntime
             $implementation = $entry['implementation'];
             if (
                 !$definition instanceof StudioPreviewRendererContribution
-                || !$implementation instanceof BlockRenderer
+                || !$implementation instanceof TrustEnforcingStudioPreviewBlockRenderer
             ) {
                 continue;
             }
@@ -121,12 +123,11 @@ final readonly class StudioBlockRendererRuntime
                 || $expected['owner']->identifier() !== $entry['owner']->identifier()
                 || $definition->owner->identifier() !== $entry['owner']->identifier()
                 || $expected['renderer'] !== $definition->renderer
-                || ($implementation instanceof TrustEnforcingStudioPreviewBlockRenderer
-                    && !$implementation->isAvailable())
+                || !$implementation->isAvailable()
             ) {
                 continue;
             }
-            $registry->register($coordinate, $implementation);
+            $registry->register($coordinate, new FragmentStudioPreviewBlockRenderer($implementation, $viewport));
         }
 
         return $registry;

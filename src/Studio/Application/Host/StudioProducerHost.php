@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Studio\Application\Host;
 
 use Kumwe\Producer\Wire\Port\ArtifactPortInterface;
+use Kumwe\Producer\Wire\Port\AuthoringPortInterface;
 use Kumwe\Producer\Wire\Port\AuthorizationInterface;
 use Kumwe\Producer\Wire\Port\HostAdapterInterface;
 use Kumwe\Producer\Wire\Port\LocalizationPortInterface;
@@ -78,6 +79,22 @@ final readonly class StudioProducerHost implements HostAdapterInterface
     public function mutations(): MutationBoundaryInterface
     {
         return $this->mutations;
+    }
+
+    /**
+     * Decline the optional contextual authoring port.
+     *
+     * The App serves no studio.port/authoring implementation: contextual
+     * authoring stays unavailable until the availability decision pinned by
+     * the Studio release integration turns it on with a real port.
+     *
+     * @return  AuthoringPortInterface|null  Always null; authoring is not served.
+     *
+     * @since  2.0.0
+     */
+    public function authoring(): ?AuthoringPortInterface
+    {
+        return null;
     }
 
     /**

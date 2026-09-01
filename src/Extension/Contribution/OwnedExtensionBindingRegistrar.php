@@ -27,7 +27,7 @@ use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresenter;
 use Kumwe\Extension\Spi\Contribution\CanonicalCompositionKind;
 use Kumwe\Extension\Spi\Contribution\CanonicalCompositionDocument;
 use Kumwe\Extension\Spi\Contribution\ContributionDefinition;
-use Kumwe\Producer\Render\BlockRenderer;
+use Kumwe\Extension\Spi\Studio\Application\Preview\StudioPreviewBlockRenderer;
 use LogicException;
 
 /**
@@ -361,13 +361,13 @@ final class OwnedExtensionBindingRegistrar implements ExtensionBindingRegistrar
      * Bind one owner-local preview renderer to every signed block that names it.
      *
      * @param   string                      $identifier  Canonical manifest renderer identifier.
-     * @param   BlockRenderer  $renderer    Canonical Producer executable.
+     * @param   StudioPreviewBlockRenderer  $renderer    Frozen SDK preview SPI executable.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    public function studioPreviewRenderer(string $identifier, BlockRenderer $renderer): void
+    public function studioPreviewRenderer(string $identifier, StudioPreviewBlockRenderer $renderer): void
     {
         $kind = ExecutableBindingKind::StudioPreviewRenderer;
         $this->assertBindable($kind, $identifier);

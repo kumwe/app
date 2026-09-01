@@ -6,21 +6,22 @@ namespace Kumwe\App\Extension\Runtime;
 
 use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
-use Kumwe\Producer\Render\BlockRenderer;
-use Kumwe\Producer\Render\RenderState;
-use stdClass;
+use Kumwe\Extension\Spi\Studio\Application\Preview\StudioPreviewBindingResult;
+use Kumwe\Extension\Spi\Studio\Application\Preview\StudioPreviewBlock;
+use Kumwe\Extension\Spi\Studio\Application\Preview\StudioPreviewBlockFragment;
+use Kumwe\Extension\Spi\Studio\Application\Preview\StudioPreviewBlockRenderer;
 
 /**
  * Re-establishes exact runtime-generation and package trust before extension preview code executes.
  *
  * @since  2.0.0
  */
-final readonly class TrustEnforcingStudioPreviewBlockRenderer implements BlockRenderer
+final readonly class TrustEnforcingStudioPreviewBlockRenderer implements StudioPreviewBlockRenderer
 {
     /**
      * Bind an implementation to its exact compiled publication entry and live trust authorities.
      *
-     * @param  BlockRenderer           $inner         Owner-local Producer implementation.
+     * @param  StudioPreviewBlockRenderer  $inner         Owner-local SDK implementation.
      * @param  TrustStore                  $trust         Live package trust boundary.
      * @param  ExtensionExecutionGate      $execution     Exact boot-generation fence.
      * @param  string                      $extension     Canonical `vendor/name` package owner.
@@ -29,7 +30,7 @@ final readonly class TrustEnforcingStudioPreviewBlockRenderer implements BlockRe
      * @since  2.0.0
      */
     public function __construct(
-        private BlockRenderer $inner,
+        private StudioPreviewBlockRenderer $inner,
         private TrustStore $trust,
         private ExtensionExecutionGate $execution,
         private string $extension,
@@ -40,27 +41,27 @@ final readonly class TrustEnforcingStudioPreviewBlockRenderer implements BlockRe
     /**
      * Execute only while the same signed runtime entry is active and trusted.
      *
-     * @param   stdClass    $node   Schema-admitted Blueprint node.
-     * @param   string      $scope  Producer-owned CSS scope.
-     * @param   RenderState $state  Per-render Producer services and host authority.
+     * @param   StudioPreviewBlock          $block     Immutable copied contributed block input.
+     * @param   StudioPreviewBindingResult  $binding   Authorized binding projection.
+     * @param   string                      $viewport  Active semantic viewport.
      *
-     * @return  string  Escaped inner markup returned inside the lifecycle lock.
+     * @return  StudioPreviewBlockFragment  Safe fragment returned inside the lifecycle lock.
      *
      * @since   2.0.0
      */
     public function render(
-        stdClass $node,
-        string $scope,
-        RenderState $state,
-    ): string {
+        StudioPreviewBlock $block,
+        StudioPreviewBindingResult $binding,
+        string $viewport,
+    ): StudioPreviewBlockFragment {
         $this->execution->assertCurrent();
 
         return $this->trust->synchronizedLifecycle(
-            function () use ($node, $scope, $state): string {
+            function () use ($block, $binding, $viewport): StudioPreviewBlockFragment {
                 $this->execution->assertCurrent();
                 $this->trust->enforceRuntimeTrust($this->extension, $this->runtimeEntry);
 
-                return $this->inner->render($node, $scope, $state);
+                return $this->inner->render($block, $binding, $viewport);
             },
         );
     }
