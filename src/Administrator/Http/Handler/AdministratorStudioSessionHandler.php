@@ -121,11 +121,17 @@ final readonly class AdministratorStudioSessionHandler implements RequestHandler
     private static function response(HostError $error): TextResponse
     {
         $response = (new StrictResponder())->refusal($error);
+        $headers = [];
+        foreach ($response->headers as $name => $value) {
+            if ($name !== '') {
+                $headers[$name] = $value;
+            }
+        }
 
         return new TextResponse(
             $response->body,
             StudioProducerError::status($error->category()),
-            $response->headers,
+            $headers,
         );
     }
 }

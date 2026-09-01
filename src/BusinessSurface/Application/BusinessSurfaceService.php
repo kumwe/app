@@ -1920,7 +1920,7 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
      * Relationship filters are refused: a view signs fields on its own definition, not a target-field
      * vocabulary for traversing another definition. The SDK query graph has no open node extension point.
      *
-     * @param   array<string, mixed>|null  $node  Canonical filter node, or null for no filter.
+     * @param   array<mixed>|null  $node  Candidate canonical filter node, or null for no filter.
      *
      * @return  list<string>  Referenced root-definition field handles.
      *
