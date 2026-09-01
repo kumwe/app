@@ -647,8 +647,8 @@ test('AP7 composition provisions by POST and opens an exact measured preview cha
   }
 
   const initialFrame = await previewFrame(page);
-  await expect(initialFrame.locator('link[data-studio-theme]')).toHaveCount(1);
-  await expect(initialFrame.locator('style[data-studio-theme], body[style]')).toHaveCount(0);
+  await expect(initialFrame.locator('link[data-studio-composition]')).toHaveCount(1);
+  await expect(initialFrame.locator('style[data-studio-composition], body[style]')).toHaveCount(0);
   await expect.poll(() => initialFrame.locator('body').evaluate((element) =>
     getComputedStyle(element).getPropertyValue('--site-accent').trim())).toBe(publishedAccent);
   expect(await shell.evaluate((element) => {

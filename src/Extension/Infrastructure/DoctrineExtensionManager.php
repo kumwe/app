@@ -1774,14 +1774,17 @@ final readonly class DoctrineExtensionManager
      * @param   ExtensionManifest  $manifest  Manifest whose declared contribution set is described.
      * @param   bool               $active    Whether the extension's registry status is currently `active`.
      *
-     * @return  array<string, mixed>  The contribution set as declared, with an `active` flag added at the
-     *          top level and on every individual entry.
+     * The canonical SDK graph carries only the sections a manifest declares. The administrator screen
+     * reads a stable shape, so every section it knows is present here, empty when undeclared.
+     *
+     * @return  array<string, mixed>  The contribution set as declared, every known section present, with
+     *          an `active` flag added at the top level and on every individual entry.
      *
      * @since   2.0.0
      */
     private function contributionDiagnostics(ExtensionManifest $manifest, bool $active): array
     {
-        $contributions = $manifest->contributions()->declarations();
+        $contributions = self::completeContributionSections($manifest->contributions()->declarations());
         $lifecycleFlag = static fn (array $entry): bool => $active
             && in_array($entry['lifecycle'] ?? null, ['active', 'deprecated'], true);
         $ownerFlag = static fn (array $entry): bool => $active;
@@ -1815,6 +1818,41 @@ final readonly class DoctrineExtensionManager
             $contributions['business'] = $business;
         }
         $contributions['active'] = $active;
+        return $contributions;
+    }
+
+    /**
+     * Fill in every contribution section the administrator diagnostics read, empty when undeclared.
+     *
+     * @param   array<string, mixed>  $contributions  Canonical declared graph from the SDK.
+     *
+     * @return  array<string, mixed>  The same graph with each known section and sub-section present.
+     *
+     * @since   2.0.0
+     */
+    private static function completeContributionSections(array $contributions): array
+    {
+        $sections = [
+            'administrator' => ['workspaces', 'navigation', 'routes', 'views'],
+            'portal' => ['workspaces', 'navigation', 'routes', 'templates'],
+            'business' => ['field_types', 'definitions'],
+        ];
+        foreach (['capabilities', 'resource_policies'] as $kind) {
+            if (!is_array($contributions[$kind] ?? null)) {
+                $contributions[$kind] = [];
+            }
+        }
+        foreach ($sections as $section => $kinds) {
+            $declared = $contributions[$section] ?? null;
+            $declared = is_array($declared) ? $declared : [];
+            foreach ($kinds as $kind) {
+                if (!is_array($declared[$kind] ?? null)) {
+                    $declared[$kind] = [];
+                }
+            }
+            $contributions[$section] = $declared;
+        }
+
         return $contributions;
     }
 
