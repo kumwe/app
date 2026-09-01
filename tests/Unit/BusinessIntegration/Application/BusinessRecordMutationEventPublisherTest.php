@@ -108,6 +108,68 @@ final class BusinessRecordMutationEventPublisherTest extends TestCase
     }
 
     /**
+     * Two equal-priority listeners dispatch in stable identifier order, not registration order.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testEqualPriorityListenersDispatchInStableIdentifierOrder(): void
+    {
+        $order = [];
+        $observer = function () use (&$order): DomainEventHandler {
+            $handler = $this->createMock(DomainEventHandler::class);
+            $handler->expects(self::once())
+                ->method('handle')
+                ->willReturnCallback(static function (
+                    DomainListenerDefinition $dispatched,
+                    DomainEvent $event,
+                ) use (&$order): void {
+                    unset($event);
+                    $order[] = $dispatched->identifier();
+                });
+
+            return $handler;
+        };
+        $contributions = new ExtensionContributionRegistrySet();
+        $contributions->domainListeners()->register(
+            ContributionOwner::extension('acme/listener'),
+            new DomainListenerDefinition('acme.listener.beta', 'core.business_record.mutated', [1], '1.0.0'),
+            $observer(),
+        );
+        $contributions->domainListeners()->register(
+            ContributionOwner::extension('acme/listener'),
+            new DomainListenerDefinition('acme.listener.alpha', 'core.business_record.mutated', [1], '1.0.0'),
+            $observer(),
+        );
+        $publisher = new BusinessRecordMutationEventPublisher(
+            $contributions->validateIntegrationContributions(),
+            $contributions,
+            $this->createStub(OutboxStore::class),
+            $this->createStub(ExtensionExecutionGate::class),
+        );
+
+        $publisher->publish(
+            ExecutionContext::issueSystem(
+                new \stdClass(),
+                SystemIdentity::CommandLine,
+                SiteContext::default(),
+                'mutation-order-request',
+                'mutation-order-correlation',
+            ),
+            'site.default.contact',
+            1,
+            '0191574f-f0b8-7bf3-a9aa-91c6b8244f93',
+            3,
+            'update',
+            ['name'],
+            new DateTimeImmutable('2026-08-22T10:15:30Z'),
+        );
+
+        self::assertSame(['acme.listener.alpha', 'acme.listener.beta'], $order);
+    }
+
+    /**
      * A stale runtime refuses the whole listener-and-outbox boundary without invoking extension code.
      *
      * @return  void

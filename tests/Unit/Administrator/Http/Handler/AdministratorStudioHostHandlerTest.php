@@ -99,6 +99,48 @@ final class AdministratorStudioHostHandlerTest extends TestCase
     }
 
     /**
+     * Prove a request whose route attributes are absent falls to the refused invalid route.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAMissingRouteAttributeFallsToTheRefusedInvalidRoute(): void
+    {
+        [$factory, $context, $body] = $this->host('studio.operation/permission.refresh');
+        $handler = new AdministratorStudioHostHandler($factory);
+        $request = (new ServerRequest(
+            [],
+            [],
+            'https://kumwe.test/administrator/studio/host',
+            'POST',
+            (new StreamFactory())->createStream($body),
+        ))->withAttribute(ExecutionContext::REQUEST_ATTRIBUTE, $context);
+
+        $response = $handler->handle($request);
+
+        self::assertGreaterThanOrEqual(400, $response->getStatusCode());
+        self::assertJson((string) $response->getBody());
+    }
+
+    /**
+     * Prove the handler refuses composition under a non-positive body ceiling.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testANonPositiveBodyCeilingIsRejectedAtComposition(): void
+    {
+        $factory = (new \ReflectionClass(StudioProducerHostFactory::class))->newInstanceWithoutConstructor();
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('must be positive');
+
+        new AdministratorStudioHostHandler($factory, 0);
+    }
+
+    /**
      * Compose one real factory over deterministic in-memory authority and port dependencies.
      *
      * @param   string  $operationId  Canonical operation the returned body envelope names.

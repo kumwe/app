@@ -31,6 +31,7 @@ use stdClass;
 use Twig\Loader\ArrayLoader;
 
 #[CoversClass(AdministratorContributionRenderer::class)]
+#[CoversClass(AdministratorRenderer::class)]
 /**
  * Proves administrator extension route rendering stays view-bound and refuses untrusted requests.
  *

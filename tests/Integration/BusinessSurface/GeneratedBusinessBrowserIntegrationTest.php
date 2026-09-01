@@ -623,6 +623,26 @@ final class GeneratedBusinessBrowserIntegrationTest extends TestCase
             }
         }
 
+        $narrowed = $surface->customView(
+            $context,
+            BusinessSurface::Administrator,
+            $definition->handle,
+            'browser_summary',
+            [
+                'projection' => ['fields' => ['name']],
+                'filter' => ['type' => 'boolean', 'operator' => 'all', 'children' => [
+                    ['type' => 'comparison', 'field' => 'status', 'operator' => 'eq', 'value' => 'draft'],
+                    ['type' => 'null', 'field' => 'status', 'is_null' => false],
+                ]],
+            ],
+            ['term' => 'south'],
+        );
+        self::assertArrayHasKey('data', $narrowed);
+        self::assertCount(2, $observedQueries);
+        $narrowedQuery = $observedQueries[1] ?? null;
+        self::assertInstanceOf(RecordQuerySpecification::class, $narrowedQuery);
+        self::assertSame(['name'], $narrowedQuery->projection->fields);
+
         $invalidTerm = str_repeat('n', 41);
         $invalid = $browser->customView(
             $context,

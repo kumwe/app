@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\Extension\Contribution;
 
 use Kumwe\App\BusinessDefinition\Domain\DefinitionOwner;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionHandlerRegistry;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewHandlerRegistry;
 use Kumwe\App\Extension\Contribution\CanonicalManifestInterpreter;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\Extension\Contribution\OwnedExtensionBindingRegistrar;
@@ -22,6 +24,8 @@ use PHPUnit\Framework\TestCase;
 
 #[CoversClass(CanonicalManifestInterpreter::class)]
 #[CoversClass(OwnedExtensionBindingRegistrar::class)]
+#[CoversClass(CustomBusinessActionHandlerRegistry::class)]
+#[CoversClass(CustomBusinessViewHandlerRegistry::class)]
 /**
  * Proves executable custom business handlers bind only to their signed policy contracts.
  *
