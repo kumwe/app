@@ -151,21 +151,23 @@ final class GeneratedExtensionLifecycleIntegrationTest extends TestCase
 
             // Withdrawal is a per-process contract: the process that performs a lifecycle mutation
             // observes its resident graph go stale and withdraws it, so the lifecycle tail runs
-            // through the runtime container's own manager rather than the pre-activation one.
+            // through the runtime container's own manager, under a context that container issued —
+            // an execution context is provenance-bound and carries no authority in another kernel.
             $runtimeManager = $runtime->get(ExtensionManager::class);
             self::assertInstanceOf(ExtensionManager::class, $runtimeManager);
-            $runtimeManager->disable($identifier, $context);
+            $runtimeContext = TestKernelFactory::administratorContext($runtime);
+            $runtimeManager->disable($identifier, $runtimeContext);
             $disabled = array_values(array_filter(
-                $runtimeManager->installed($context),
+                $runtimeManager->installed($runtimeContext),
                 static fn (array $extension): bool => ($extension['identifier'] ?? null) === $identifier,
             ));
             self::assertCount(1, $disabled);
             self::assertSame('disabled', $disabled[0]['status'] ?? null);
             self::assertNull($registries->projections()->definition($owner, $projectionIdentifier));
-            $runtimeManager->uninstall($identifier, $context);
+            $runtimeManager->uninstall($identifier, $runtimeContext);
             $installed = false;
             self::assertSame([], array_values(array_filter(
-                $runtimeManager->installed($context),
+                $runtimeManager->installed($runtimeContext),
                 static fn (array $extension): bool => ($extension['identifier'] ?? null) === $identifier,
             )));
             $trust->revoke($context, $keyId, 'Generated lifecycle acceptance completed.');
