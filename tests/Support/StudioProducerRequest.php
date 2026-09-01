@@ -56,6 +56,7 @@ final readonly class StudioProducerRequest
      * @param   list<string>  $capabilities    Effective trusted App capabilities.
      * @param   callable(StudioHostSessionSnapshot): StudioPreviewTransport|null $previewTransport
      *          Optional transport evidence derived from the opened session.
+     * @param   string        $resource        Resource identifier the opened session is bound to.
      *
      * @return  self  Request-scoped authority, snapshot, and parsed envelope.
      *
@@ -74,6 +75,7 @@ final readonly class StudioProducerRequest
             'studio.mode.content',
         ],
         ?callable $previewTransport = null,
+        string $resource = 'content-producer-port-test',
     ): self {
         $repository = new class implements StudioHostSessionRepository {
             /**
@@ -141,7 +143,7 @@ final readonly class StudioProducerRequest
             $context,
             StudioSessionMode::Content,
             StudioResourceKind::Content,
-            'content-producer-port-test',
+            $resource,
         );
         $requestContext = (object) [
             'operationId' => $capability,

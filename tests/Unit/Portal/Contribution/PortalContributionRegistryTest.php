@@ -47,7 +47,9 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Twig\Environment;
 use Twig\Loader\ArrayLoader;
+use Kumwe\App\Extension\Contribution\OwnedExtensionBindingRegistrar;
 
+#[CoversClass(OwnedExtensionBindingRegistrar::class)]
 #[CoversClass(PortalWorkspaceRegistry::class)]
 #[CoversClass(PortalNavigationRegistry::class)]
 #[CoversClass(PortalTemplateRegistry::class)]

@@ -26,6 +26,7 @@ use Kumwe\Extension\Manifest\ManifestContributions;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
+#[CoversClass(FieldPresentationInputFactory::class)]
 #[CoversClass(FieldPresentationCoverage::class)]
 #[CoversClass(FieldPresentationRegistry::class)]
 /**

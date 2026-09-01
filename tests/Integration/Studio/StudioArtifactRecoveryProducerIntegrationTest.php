@@ -13,9 +13,11 @@ use Kumwe\App\Studio\Application\Host\StudioArtifactRepository;
 use Kumwe\App\Studio\Application\Host\StudioRecoveryHostPort;
 use Kumwe\App\Studio\Application\Host\StudioRecoveryRepository;
 use Kumwe\App\Studio\Domain\Artifact\StoredStudioArtifact;
+use Kumwe\Producer\Schema\StudioContractResources;
 use Kumwe\Producer\Schema\StudioDocumentSchemaRegistry;
 use Kumwe\App\Tests\Support\StudioProducerRequest;
 use Kumwe\Producer\Canonical\CanonicalJson;
+use Kumwe\Producer\Error\HostRefusal;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
@@ -172,6 +174,186 @@ final class StudioArtifactRecoveryProducerIntegrationTest extends TestCase
     }
 
     /**
+     * Save, publish and unpublish append revisions under session permission and optimistic concurrency.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testSaveAndLifecycleTransitionsUseTheDirectProducerPort(): void
+    {
+        $document = json_decode(
+            StudioContractResources::testkitBytes('fixtures/entry.product.example.json'),
+            false,
+            64,
+            JSON_THROW_ON_ERROR,
+        );
+        self::assertInstanceOf(stdClass::class, $document);
+        $admission = new StudioArtifactAdmission(StudioDocumentSchemaRegistry::fromVendoredCorpus());
+        $repository = new class ($admission->admit('default', $document)) implements StudioArtifactRepository {
+            /**
+             * Retain the mutable artifact head under optimistic concurrency.
+             *
+             * @param   StoredStudioArtifact  $head  Initial stored artifact head.
+             *
+             * @since   2.0.0
+             */
+            public function __construct(public StoredStudioArtifact $head)
+            {
+            }
+
+            /**
+             * {@inheritDoc}
+             *
+             * @param   string  $siteIdentifier  Site scope the read is bound to.
+             * @param   string  $id              Requested artifact identifier.
+             * @param   string  $version         Requested artifact version.
+             *
+             * @return  ?StoredStudioArtifact  The live head when every coordinate matches, null otherwise.
+             *
+             * @since   2.0.0
+             */
+            public function current(string $siteIdentifier, string $id, string $version): ?StoredStudioArtifact
+            {
+                return $siteIdentifier === $this->head->siteIdentifier
+                    && $id === $this->head->id
+                    && $version === $this->head->version
+                    ? $this->head
+                    : null;
+            }
+
+            /**
+             * {@inheritDoc}
+             *
+             * @param   string  $siteIdentifier  Site scope the read is bound to.
+             * @param   string  $id              Requested artifact identifier.
+             * @param   string  $version         Requested artifact version.
+             * @param   string  $revision        Requested exact revision authority.
+             *
+             * @return  ?StoredStudioArtifact  The live head when its revision also matches, null otherwise.
+             *
+             * @since   2.0.0
+             */
+            public function revision(
+                string $siteIdentifier,
+                string $id,
+                string $version,
+                string $revision,
+            ): ?StoredStudioArtifact {
+                return $revision === $this->head->revision
+                    ? $this->current($siteIdentifier, $id, $version)
+                    : null;
+            }
+
+            /**
+             * {@inheritDoc}
+             *
+             * @param   StoredStudioArtifact  $artifact         Candidate artifact head to persist.
+             * @param   ?string               $expectedCurrent  Revision the caller believes is current.
+             *
+             * @return  bool  True only when the optimistic predecessor matched the live head.
+             *
+             * @since   2.0.0
+             */
+            public function store(StoredStudioArtifact $artifact, ?string $expectedCurrent): bool
+            {
+                if ($expectedCurrent !== $this->head->revision) {
+                    return false;
+                }
+                $this->head = $artifact;
+
+                return true;
+            }
+        };
+        $publication = new class implements StudioArtifactPublicationGuard {
+            /**
+             * {@inheritDoc}
+             *
+             * @param   SiteContext  $site       Site the publication would target.
+             * @param   stdClass     $blueprint  Decoded artifact blueprint under review.
+             *
+             * @return  void
+             *
+             * @since   2.0.0
+             */
+            public function assertPublishable(SiteContext $site, stdClass $blueprint): void
+            {
+                unset($site, $blueprint);
+            }
+        };
+        $port = new StudioArtifactHostPort($repository, $admission, $publication);
+        $reference = (object) ['reference' => (object) [
+            'id' => $document->id,
+            'version' => $document->model->version,
+        ]];
+
+        $save = StudioProducerRequest::authorized(
+            'studio.operation/artifact.save',
+            (object) ['document' => $document],
+            expectedRevision: $document->revision,
+            idempotencyKey: 'idempotency/artifact-save',
+            resource: $document->id,
+        );
+        $saved = $port->forRequest($save->authority)->save($save->arguments(), $save->context());
+        self::assertNull($saved->value);
+        self::assertIsString($saved->revision);
+        self::assertNotSame($document->revision, $saved->revision);
+        self::assertSame($saved->revision, $repository->head->revision);
+        self::assertSame('draft', $repository->head->status);
+
+        $publish = StudioProducerRequest::authorized(
+            'studio.operation/artifact.publish',
+            $reference,
+            expectedRevision: $saved->revision,
+            idempotencyKey: 'idempotency/artifact-publish',
+            resource: $document->id,
+        );
+        $published = $port->forRequest($publish->authority)->publish($publish->arguments(), $publish->context());
+        self::assertSame($published->revision, $repository->head->revision);
+        self::assertSame('published', $repository->head->status);
+
+        $unpublish = StudioProducerRequest::authorized(
+            'studio.operation/artifact.unpublish',
+            $reference,
+            expectedRevision: $published->revision,
+            idempotencyKey: 'idempotency/artifact-unpublish',
+            resource: $document->id,
+        );
+        $withdrawn = $port->forRequest($unpublish->authority)
+            ->unpublish($unpublish->arguments(), $unpublish->context());
+        self::assertSame($withdrawn->revision, $repository->head->revision);
+        self::assertSame('draft', $repository->head->status);
+
+        $stale = StudioProducerRequest::authorized(
+            'studio.operation/artifact.save',
+            (object) ['document' => $document],
+            expectedRevision: $document->revision,
+            idempotencyKey: 'idempotency/artifact-stale-save',
+            resource: $document->id,
+        );
+        try {
+            $port->forRequest($stale->authority)->save($stale->arguments(), $stale->context());
+            self::fail('A save against a superseded revision must be refused.');
+        } catch (HostRefusal $refused) {
+            self::assertSame('conflict', $refused->error()->category());
+        }
+
+        $missing = StudioProducerRequest::authorized(
+            'studio.operation/artifact.publish',
+            (object) ['reference' => (object) ['id' => $document->id, 'version' => '9.9.9']],
+            expectedRevision: $withdrawn->revision,
+            idempotencyKey: 'idempotency/artifact-missing-publish',
+            resource: $document->id,
+        );
+        try {
+            $port->forRequest($missing->authority)->publish($missing->arguments(), $missing->context());
+            self::fail('A lifecycle transition on an unknown head must be refused.');
+        } catch (HostRefusal $refused) {
+            self::assertSame('not-found', $refused->error()->category());
+        }
+    }
+
+    /**
      * Recovery store, load, and discard remain actor/session/resource scoped under direct Producer requests.
      *
      * @return  void
@@ -316,5 +498,30 @@ final class StudioArtifactRecoveryProducerIntegrationTest extends TestCase
         $port->forRequest($discard->authority)->discard($discard->arguments(), $discard->context());
         $empty = StudioProducerRequest::authorized('studio.operation/recovery.load', new stdClass());
         self::assertNull($port->forRequest($empty->authority)->load($empty->arguments(), $empty->context())->value);
+
+        $oversized = StudioProducerRequest::authorized(
+            'studio.operation/recovery.store',
+            (object) ['envelope' => (object) ['draft' => str_repeat('x', 200)]],
+            idempotencyKey: 'idempotency/recovery-oversized',
+        );
+        $bounded = new StudioRecoveryHostPort($repository, $clock, maximumBytes: 32);
+        try {
+            $bounded->forRequest($oversized->authority)->store($oversized->arguments(), $oversized->context());
+            self::fail('An envelope above the recovery byte bound must be refused.');
+        } catch (HostRefusal $refused) {
+            self::assertSame('limit-exceeded', $refused->error()->category());
+        }
+
+        $malformed = StudioProducerRequest::authorized(
+            'studio.operation/recovery.store',
+            (object) ['envelope' => 'not-an-object'],
+            idempotencyKey: 'idempotency/recovery-malformed',
+        );
+        try {
+            $port->forRequest($malformed->authority)->store($malformed->arguments(), $malformed->context());
+            self::fail('A non-object recovery envelope must be refused.');
+        } catch (HostRefusal $refused) {
+            self::assertSame('invalid-request', $refused->error()->category());
+        }
     }
 }
