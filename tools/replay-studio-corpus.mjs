@@ -82,6 +82,10 @@ async function validatePositiveCorpus() {
   );
 
   const explicitSchemas = new Map([
+    [
+      "fixtures/authoring-save.plan.example.json",
+      "authoring-save.schema.json",
+    ],
     ["fixtures/media-upload-grant.example.json", "media-upload-grant.schema.json"],
     ["fixtures/rich-text.example.json", "rich-text.schema.json"],
     ["fixtures/studio-config.example.json", "studio-config.schema.json"],

@@ -21,7 +21,7 @@ interface StudioMutationReplayRepository
      *
      * @return  StudioMutationReplayRecord|null  Existing claim or null.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function findReplay(string $scopeDigest): ?StudioMutationReplayRecord;
 
@@ -30,13 +30,13 @@ interface StudioMutationReplayRepository
      *
      * @param   StudioMutationReplayRecord  $record    New pending claim.
      * @param   StudioHostSessionSnapshot   $snapshot  Trusted live App host session.
-     * @param   RequestContext               $request   Validated Producer request context.
+     * @param   RequestContext              $request   Validated Producer request context.
      *
      * @return  void
      *
      * @throws  StudioMutationReplayRace  When another transaction won the scope.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function beginReplay(
         StudioMutationReplayRecord $record,
@@ -47,12 +47,12 @@ interface StudioMutationReplayRepository
     /**
      * Complete one pending claim with a versioned authenticated logical outcome.
      *
-     * @param   string  $scopeDigest      Existing App-namespaced scope digest.
+     * @param   string  $scopeDigest       Existing App-namespaced scope digest.
      * @param   string  $protectedOutcome  Authenticated completed outcome envelope.
      *
      * @return  void
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function completeReplay(string $scopeDigest, string $protectedOutcome): void;
 }

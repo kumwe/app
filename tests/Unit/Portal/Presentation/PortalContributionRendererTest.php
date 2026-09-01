@@ -35,8 +35,21 @@ use Twig\Environment;
 use Twig\Loader\ArrayLoader;
 
 #[CoversClass(PortalContributionRenderer::class)]
+/**
+ * Proves portal extension route rendering stays template-bound and refuses untrusted requests.
+ *
+ * @since  2.0.0
+ */
 final class PortalContributionRendererTest extends TestCase
 {
+    /**
+     * Prove each route renderer keeps its own template, navigation id and derived capabilities, ignoring
+     * caller-supplied template, active_navigation and capabilities overrides.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function testCapabilitiesAreTemplateBoundAndCannotCrossRender(): void
     {
         [$renderer, $owner, $provenance] = $this->renderer();
@@ -61,6 +74,13 @@ final class PortalContributionRendererTest extends TestCase
         );
     }
 
+    /**
+     * Prove rendering refuses fabricated request attributes, foreign provenance, and the wrong surface.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function testFabricatedOrWrongSurfaceRequestsAreRefused(): void
     {
         [$renderer, $owner, $provenance] = $this->renderer();
@@ -85,7 +105,13 @@ final class PortalContributionRendererTest extends TestCase
         ));
     }
 
-    /** @return array{PortalRenderer, ContributionOwner, object} */
+    /**
+     * Build a portal renderer with two registered extension templates over an isolated Twig namespace.
+     *
+     * @return array{PortalRenderer, ContributionOwner, object}
+     *
+     * @since   2.0.0
+     */
     private function renderer(): array
     {
         $provenance = new stdClass();
@@ -115,6 +141,16 @@ final class PortalContributionRendererTest extends TestCase
         ), $owner, $provenance];
     }
 
+    /**
+     * Build a portal request carrying a live session and an execution context for the given surface.
+     *
+     * @param   object                $provenance  Provenance token the execution context is issued under.
+     * @param   AuthenticatedSurface  $surface     Surface the execution context is issued for.
+     *
+     * @return  ServerRequestInterface  Request with session and execution-context attributes attached.
+     *
+     * @since   2.0.0
+     */
     private function request(object $provenance, AuthenticatedSurface $surface): ServerRequestInterface
     {
         $principal = AuthenticatedPrincipal::issueFromStrings(
@@ -151,7 +187,15 @@ final class PortalContributionRendererTest extends TestCase
             ->withAttribute(ExecutionContext::REQUEST_ATTRIBUTE, $context);
     }
 
-    /** @param callable(): string $render */
+    /**
+     * Assert one rendering attempt is refused with an InvalidArgumentException.
+     *
+     * @param callable(): string $render
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private function assertRefused(callable $render): void
     {
         try {

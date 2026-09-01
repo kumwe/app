@@ -30,13 +30,13 @@ final readonly class StudioProducerMutationBoundary implements MutationBoundaryI
     /**
      * Compose one request-scoped boundary from App transaction, persistence and authority services.
      *
-     * @param  TransactionManager               $transactions  Authoritative nesting transaction manager.
-     * @param  StudioMutationReplayRepository   $replays       Durable keyed mutation claim store.
-     * @param  StudioMutationOutcomeCodec        $outcomes      Authenticated logical-outcome protection.
-     * @param  AuditRecorder                    $audit         Transactional disclosure-safe audit sink.
-     * @param  ClockInterface                   $clock         Trusted audit-event clock.
-     * @param  StudioMediaOperations            $media         Upload-grant redaction rehydration authority.
-     * @param  StudioProducerRequestAuthority   $authority     Trusted evidence for this exact dispatch.
+     * @param  TransactionManager              $transactions  Authoritative nesting transaction manager.
+     * @param  StudioMutationReplayRepository  $replays       Durable keyed mutation claim store.
+     * @param  StudioMutationOutcomeCodec      $outcomes      Authenticated logical-outcome protection.
+     * @param  AuditRecorder                   $audit         Transactional disclosure-safe audit sink.
+     * @param  ClockInterface                  $clock         Trusted audit-event clock.
+     * @param  StudioMediaOperations           $media         Upload-grant redaction rehydration authority.
+     * @param  StudioProducerRequestAuthority  $authority     Trusted evidence for this exact dispatch.
      *
      * @since  2.0.0
      */
@@ -54,15 +54,15 @@ final readonly class StudioProducerMutationBoundary implements MutationBoundaryI
     /**
      * Commit one mutation and its audit, adding protected at-most-once replay only when Producer supplies a key.
      *
-     * @param   Operation                           $operation    Closed Producer registry row.
-     * @param   RequestEnvelope                     $request      Validated canonical request.
-     * @param   string|null                         $scopeKey     Producer's canonical replay scope, or null.
-     * @param   string|null                         $intentDigest Producer's canonical intent digest, or null.
-     * @param   callable(): (HostResult|HostError)  $mutation     Validated port mutation body.
+     * @param   Operation                           $operation     Closed Producer registry row.
+     * @param   RequestEnvelope                     $request       Validated canonical request.
+     * @param   string|null                         $scopeKey      Producer's canonical replay scope, or null.
+     * @param   string|null                         $intentDigest  Producer's canonical intent digest, or null.
+     * @param   callable(): (HostResult|HostError)  $mutation      Validated port mutation body.
      *
      * @return  MutationOutcome  Fresh committed outcome or exact logical replay.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function execute(
         Operation $operation,
@@ -140,7 +140,7 @@ final readonly class StudioProducerMutationBoundary implements MutationBoundaryI
      *
      * @return  HostResult|HostError  Fresh success or explicitly committed refusal.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     private function perform(
         Operation $operation,
@@ -164,7 +164,7 @@ final readonly class StudioProducerMutationBoundary implements MutationBoundaryI
      *
      * @return  MutationOutcome  Exact logical replay under the stored intent coordinate.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     private function replay(
         Operation $operation,
@@ -204,7 +204,7 @@ final readonly class StudioProducerMutationBoundary implements MutationBoundaryI
      *
      * @return  HostResult|HostError  Storage-safe logical projection.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     private function storedOutcome(Operation $operation, HostResult|HostError $outcome): HostResult|HostError
     {
@@ -231,13 +231,13 @@ final readonly class StudioProducerMutationBoundary implements MutationBoundaryI
     /**
      * Restore only a verified authorize-upload capability after the protected result authenticates.
      *
-     * @param   Operation                   $operation  Closed Producer registry row.
-     * @param   StudioHostSessionSnapshot   $snapshot   Current trusted App authority snapshot.
-     * @param   HostResult|HostError        $outcome    Authenticated stored logical outcome.
+     * @param   Operation                  $operation  Closed Producer registry row.
+     * @param   StudioHostSessionSnapshot  $snapshot   Current trusted App authority snapshot.
+     * @param   HostResult|HostError       $outcome    Authenticated stored logical outcome.
      *
      * @return  HostResult|HostError  Exact replayable outcome with any ephemeral capability restored.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     private function rehydratedOutcome(
         Operation $operation,
@@ -274,7 +274,7 @@ final readonly class StudioProducerMutationBoundary implements MutationBoundaryI
      *
      * @return  string  Lowercase SHA-256 digest fitting the existing durable scope column.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     private static function scopeDigest(string $scopeKey, StudioHostSessionSnapshot $snapshot): string
     {
@@ -289,14 +289,14 @@ final readonly class StudioProducerMutationBoundary implements MutationBoundaryI
     /**
      * Record one disclosure-safe generic mutation event inside the same authoritative transaction.
      *
-     * @param   Operation                   $operation  Closed Producer registry row.
-     * @param   RequestEnvelope             $request    Current validated request.
-     * @param   StudioHostSessionSnapshot   $snapshot   Trusted live App authority snapshot.
-     * @param   HostResult|HostError        $outcome    Fresh success or committed refusal.
+     * @param   Operation                  $operation  Closed Producer registry row.
+     * @param   RequestEnvelope            $request    Current validated request.
+     * @param   StudioHostSessionSnapshot  $snapshot   Trusted live App authority snapshot.
+     * @param   HostResult|HostError       $outcome    Fresh success or committed refusal.
      *
      * @return  void
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     private function audit(
         Operation $operation,

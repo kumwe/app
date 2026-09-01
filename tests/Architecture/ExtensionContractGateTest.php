@@ -19,14 +19,33 @@ use SplFileInfo;
 #[CoversNothing]
 final class ExtensionContractGateTest extends TestCase
 {
+    /**
+     * Absolute repository root every checked artifact path is resolved against.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
     private string $root;
 
+    /**
+     * Bind the repository root before each check.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     protected function setUp(): void
     {
         $this->root = dirname(__DIR__, 2);
     }
 
-    /** @since 2.0.0 */
+    /**
+     * Prove the App keeps no contract ledger of its own and names the SDK package sole authority.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function testTheSdkDependencyOwnsEveryContractArtifact(): void
     {
         self::assertFileDoesNotExist($this->root . '/docs/extension-contract/classification.json');
@@ -42,7 +61,13 @@ final class ExtensionContractGateTest extends TestCase
         ) ?: '');
     }
 
-    /** @since 2.0.0 */
+    /**
+     * Prove every installed SDK resource file matches its PIN.json digest, with none missing and none extra.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function testTheInstalledSdkResourceTreeMatchesItsPackagePin(): void
     {
         $resources = $this->root . '/vendor/kumwe/extension-sdk/resources';
@@ -85,7 +110,13 @@ final class ExtensionContractGateTest extends TestCase
         self::assertSame($pinned, $actual);
     }
 
-    /** @since 2.0.0 */
+    /**
+     * Prove the canonical SDK classification and generations documents name no Kumwe\App types.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function testCanonicalSdkContractArtifactsPublishNoHistoricalAppTypes(): void
     {
         $resources = $this->root . '/vendor/kumwe/extension-sdk/resources';
@@ -96,7 +127,13 @@ final class ExtensionContractGateTest extends TestCase
         }
     }
 
-    /** @since 2.0.0 */
+    /**
+     * Prove composer requires the SDK package and wires extension:contract to its package-owned verifier.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function testComposerRunsThePackageOwnedContractGate(): void
     {
         $composer = $this->document($this->root . '/composer.json');
@@ -108,7 +145,12 @@ final class ExtensionContractGateTest extends TestCase
     }
 
     /**
+     * Read one JSON document and assert it decodes to an array.
+     *
+     * @param   string  $path  Absolute path of the JSON document to read.
+     *
      * @return array<string, mixed>
+     *
      * @since 2.0.0
      */
     private function document(string $path): array

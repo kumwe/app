@@ -24,11 +24,11 @@ final readonly class PortalContributionRenderer implements PortalRouteRenderer
     /**
      * Bind a rendering capability to one owner and one template declaration.
      *
-     * @param  PortalRenderer  $renderer   Shared isolated portal renderer, retained privately.
-     * @param  string          $extension  Canonical owner identifier chosen by the registry.
-     * @param  string          $template   Owned template identifier chosen by the route declaration.
-     * @param  string          $activeNavigation Signed route identifier highlighted by the host shell.
-     * @param  object          $provenance Private composition-root authority for trusted request contexts.
+     * @param  PortalRenderer  $renderer          Shared isolated portal renderer, retained privately.
+     * @param  string          $extension         Canonical owner identifier chosen by the registry.
+     * @param  string          $template          Owned template identifier chosen by the route declaration.
+     * @param  string          $activeNavigation  Signed route identifier highlighted by the host shell.
+     * @param  object          $provenance        Private composition-root authority for trusted request contexts.
      *
      * @since  2.0.0
      */

@@ -28,11 +28,11 @@ final readonly class StudioLocalizationHostPort implements LocalizationPortInter
     /**
      * Bind compiled catalogues, effective overrides, locale scope, and carried locale inventory.
      *
-     * @param  MessageCatalogueRepository  $catalogues  Compiled core and extension layers.
-     * @param  MessageOverrideRepository   $overrides   Site and organization wording.
-     * @param  ActiveLocale                $active      Trusted request override scope.
-     * @param  SupportedLocales            $supported   Exact carried-locale registry.
-     * @param  StudioProducerRequestAuthority|null $authority Authorized Producer request scope, when bound.
+     * @param  MessageCatalogueRepository           $catalogues  Compiled core and extension layers.
+     * @param  MessageOverrideRepository            $overrides   Site and organization wording.
+     * @param  ActiveLocale                         $active      Trusted request override scope.
+     * @param  SupportedLocales                     $supported   Exact carried-locale registry.
+     * @param  StudioProducerRequestAuthority|null  $authority   Authorized Producer request scope, when bound.
      *
      * @since  2.0.0
      */

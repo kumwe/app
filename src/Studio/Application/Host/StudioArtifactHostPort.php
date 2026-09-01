@@ -26,10 +26,10 @@ final readonly class StudioArtifactHostPort implements ArtifactPortInterface
     /**
      * Bind artifact admission and persistence to the App's direct Producer port.
      *
-     * @param  StudioArtifactRepository        $artifacts    Versioned artifact persistence port.
-     * @param  StudioArtifactAdmission         $admission    Schema and active-content boundary.
-     * @param  StudioArtifactPublicationGuard  $publication  Exact public-runtime dependency guard.
-     * @param  StudioProducerRequestAuthority|null $authority Authorized Producer request scope, when bound.
+     * @param  StudioArtifactRepository             $artifacts    Versioned artifact persistence port.
+     * @param  StudioArtifactAdmission              $admission    Schema and active-content boundary.
+     * @param  StudioArtifactPublicationGuard       $publication  Exact public-runtime dependency guard.
+     * @param  StudioProducerRequestAuthority|null  $authority    Authorized Producer request scope, when bound.
      *
      * @since  2.0.0
      */

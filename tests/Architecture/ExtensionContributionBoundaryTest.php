@@ -45,6 +45,16 @@ final class ExtensionContributionBoundaryTest extends TestCase
         }
     }
 
+    /**
+     * Prove extension code binds contributions only through the owner-bound registrar in one ordered phase.
+     *
+     * The runtime loader must activate before it boots, derive contributions from the schema-one manifest,
+     * and the container must build exactly one registry set with no navigation registry on the allowlist.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function testExtensionsReceiveOnlyAnOwnerBoundExecutableBindingPhase(): void
     {
         $loader = $this->contents('src/Extension/Runtime/ExtensionRuntimeLoader.php');

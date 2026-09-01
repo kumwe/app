@@ -39,14 +39,14 @@ final readonly class StudioPreviewHostPort implements PreviewPortInterface, Stud
     /**
      * Compose canonical draft resolution, rendering, replay persistence and browser transport checks.
      *
-     * @param  StudioPreviewDraftSource       $drafts    Narrow AP-4 draft reader.
-     * @param  StudioPreviewBindingSource     $bindings  Content-authority binding resolver.
-     * @param  StudioPreviewRenderer          $renderer  Shared canonical site rendering path.
-     * @param  StudioPreviewGrantRepository   $grants    Pending/cancel/single-use grant ledger.
-     * @param  StudioPreviewTransportGuard    $guard     Origin/channel/source/sequence fence.
-     * @param  StudioPreviewActivityRecorder  $activity  Bounded ephemeral security activity trail.
-     * @param  ClockInterface                 $clock     Trusted expiry clock.
-     * @param  StudioProducerRequestAuthority|null $authority Authorized Producer request scope, when bound.
+     * @param  StudioPreviewDraftSource             $drafts     Narrow AP-4 draft reader.
+     * @param  StudioPreviewBindingSource           $bindings   Content-authority binding resolver.
+     * @param  StudioPreviewRenderer                $renderer   Shared canonical site rendering path.
+     * @param  StudioPreviewGrantRepository         $grants     Pending/cancel/single-use grant ledger.
+     * @param  StudioPreviewTransportGuard          $guard      Origin/channel/source/sequence fence.
+     * @param  StudioPreviewActivityRecorder        $activity   Bounded ephemeral security activity trail.
+     * @param  ClockInterface                       $clock      Trusted expiry clock.
+     * @param  StudioProducerRequestAuthority|null  $authority  Authorized Producer request scope, when bound.
      *
      * @since  2.0.0
      */
@@ -136,10 +136,10 @@ final readonly class StudioPreviewHostPort implements PreviewPortInterface, Stud
     /**
      * Claim and render one exact unpublished draft, discarding late results after cancellation.
      *
-     * @param   ExecutionContext           $context      Authenticated App request authority.
-     * @param   mixed                      $arguments    Canonical operation arguments carrying exact `{payload}`.
-     * @param   StudioHostSessionSnapshot  $snapshot     Live trusted host authority.
-     * @param   StudioPreviewTransport     $transport    Accepted browser transport evidence.
+     * @param   ExecutionContext           $context    Authenticated App request authority.
+     * @param   mixed                      $arguments  Canonical operation arguments carrying exact `{payload}`.
+     * @param   StudioHostSessionSnapshot  $snapshot   Live trusted host authority.
+     * @param   StudioPreviewTransport     $transport  Accepted browser transport evidence.
      *
      * @return  stdClass  Exact `preview-message#/$defs/rendered` payload.
      *
@@ -240,8 +240,8 @@ final readonly class StudioPreviewHostPort implements PreviewPortInterface, Stud
     /**
      * Apply the preview transport fence, activity trail and canonical Producer refusal translation.
      *
-     * @param   string                                                                      $action     Closed action.
-     * @param   callable(ExecutionContext, StudioHostSessionSnapshot, StudioPreviewTransport): mixed $operation
+     * @param string $action Closed action.
+     * @param   callable(ExecutionContext, StudioHostSessionSnapshot, StudioPreviewTransport): mixed  $operation
      *          Preview operation body.
      *
      * @return  HostResult  Canonical rendered value or cancellation acknowledgement.

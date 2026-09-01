@@ -42,6 +42,10 @@ use Kumwe\Extension\Spi\Contribution\CompositionHostBinding;
 use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\Producer\Canonical\CanonicalJson;
 use Kumwe\Producer\Error\HostRefusal;
+use Kumwe\Extension\Spi\Studio\Application\Preview\StudioPreviewBindingResult;
+use Kumwe\Extension\Spi\Studio\Application\Preview\StudioPreviewBlock;
+use Kumwe\Extension\Spi\Studio\Application\Preview\StudioPreviewBlockFragment;
+use Kumwe\Extension\Spi\Studio\Application\Preview\StudioPreviewBlockRenderer;
 use Kumwe\Producer\Render\BlockRenderer;
 use Kumwe\Producer\Render\RenderResult;
 use Kumwe\Producer\Render\RenderState;
@@ -468,9 +472,31 @@ final class StudioPublishedContentRendererTest extends TestCase
         );
     }
 
-    public function testPublishedOutputRefusesProducerEnhancementsUntilOneCanonicalRuntimeExists(): void
+    /**
+     * Prove a contributed implementation outside the frozen SDK fragment SPI cannot even register.
+     *
+     * A raw Producer renderer is the only shape that could request engine enhancements, so refusing it
+     * at the registration boundary keeps published output free of unserviced enhancement requests
+     * while the App has no canonical enhancement runtime.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAProducerEngineImplementationCannotRegisterAsAPreviewRenderer(): void
     {
         $enhancingRenderer = new class implements BlockRenderer {
+            /**
+             * Attempt the Producer engine surface the frozen SDK preview SPI deliberately withholds.
+             *
+             * @param   stdClass     $node   Composition node to render.
+             * @param   string       $scope  Rendering scope identifier.
+             * @param   RenderState  $state  Shared rendering state receiving the enhancement request.
+             *
+             * @return  string  Safe baseline markup.
+             *
+             * @since   2.0.0
+             */
             public function render(stdClass $node, string $scope, RenderState $state): string
             {
                 $state->enhance('motion', $node, $scope);
@@ -478,22 +504,9 @@ final class StudioPublishedContentRendererTest extends TestCase
                 return '<p>Safe non-JavaScript baseline</p>';
             }
         };
-        [$registries] = self::manifestSixRegistries(renderer: $enhancingRenderer);
-        $theme = $this->theme();
-        $artifact = self::admission()->admit(
-            SiteContext::DEFAULT,
-            $this->extensionGridBlueprint($theme),
-        );
-
-        $this->assertThrows(
-            StudioPublishedBlockRendererUnavailable::class,
-            fn () => $this->renderer(
-                $this->binding(),
-                $artifact,
-                $theme,
-                $registries,
-            )->render($this->record()),
-        );
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('requires an implementation of');
+        self::manifestSixRegistries(renderer: $enhancingRenderer);
     }
 
     /**
@@ -567,7 +580,8 @@ final class StudioPublishedContentRendererTest extends TestCase
     /**
      * Activate only the signed manifest-6 Grid document and its owner-bound host metadata.
      *
-     * @param   (callable(stdClass): void)|null  $mutate  Optional schema-valid definition mutation.
+     * @param   (callable(stdClass): void)|null  $mutate    Optional schema-valid definition mutation.
+     * @param   BlockRenderer|null               $renderer  Optional preview renderer replacing the default.
      *
      * @return  array{ExtensionContributionRegistrySet, ContributionOwner}  Mutable live registries and their
      *          extension owner for withdrawal proof.
@@ -576,7 +590,7 @@ final class StudioPublishedContentRendererTest extends TestCase
      */
     private static function manifestSixRegistries(
         ?callable $mutate = null,
-        ?BlockRenderer $renderer = null,
+        ?object $renderer = null,
     ): array {
         $path = dirname(__DIR__, 5)
             . '/vendor/kumwe/extension-sdk/resources/fixtures/generations/manifest-6/kumwe.json';
@@ -606,14 +620,32 @@ final class StudioPublishedContentRendererTest extends TestCase
         );
         $registries->canonicalCompositionDocuments()->register($owner, $document);
         $registries->compositionHostBindings()->register($owner, $binding);
-        $renderer ??= new class implements BlockRenderer {
-            public function render(stdClass $node, string $scope, RenderState $state): string
-            {
-                unset($scope);
+        $renderer ??= new class implements StudioPreviewBlockRenderer {
+            /**
+             * Name the copied column count inside one bounded safe fragment.
+             *
+             * @param   StudioPreviewBlock          $block     Immutable copied contributed grid input.
+             * @param   StudioPreviewBindingResult  $binding   Authorized binding projection.
+             * @param   string                      $viewport  Active semantic viewport.
+             *
+             * @return  StudioPreviewBlockFragment  Safe fixture grid fragment.
+             *
+             * @since   2.0.0
+             */
+            public function render(
+                StudioPreviewBlock $block,
+                StudioPreviewBindingResult $binding,
+                string $viewport,
+            ): StudioPreviewBlockFragment {
+                unset($viewport);
+                $columns = $block->property('columns');
 
-                return '<div data-columns="'
-                    . (int) ($node->properties->columns ?? 0)
-                    . '">' . $state->renderChildren($node, 'items') . '</div>';
+                return new StudioPreviewBlockFragment(
+                    'div',
+                    'fixture-grid',
+                    'Columns ' . (is_int($columns) ? $columns : 0),
+                    $binding->hidden,
+                );
             }
         };
         $registries->studioPreviewRenderers()->register(
@@ -628,9 +660,11 @@ final class StudioPublishedContentRendererTest extends TestCase
     /**
      * Compose the production renderer around deterministic in-memory repository doubles.
      *
-     * @param   ?ContentBlueprintBinding  $binding   Exact binding or no configured composition.
-     * @param   ?StoredStudioArtifact     $artifact  Selected current artifact or an unavailable coordinate.
-     * @param   StudioPublishedTheme      $theme     Deterministic live public theme.
+     * @param   ?ContentBlueprintBinding           $binding     Exact binding or no configured composition.
+     * @param   ?StoredStudioArtifact              $artifact    Selected current artifact or an unavailable
+     *          coordinate.
+     * @param   StudioPublishedTheme               $theme       Deterministic live public theme.
+     * @param   ?ExtensionContributionRegistrySet  $registries  Live contribution registries override.
      *
      * @return  CanonicalStudioPublishedContentRenderer  Renderer under test.
      *

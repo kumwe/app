@@ -36,7 +36,7 @@ use Kumwe\App\Portal\Contribution\PortalRouteRegistry;
 use Kumwe\App\Portal\Contribution\PortalTemplateRegistry;
 use Kumwe\App\Portal\Contribution\PortalWorkspaceRegistry;
 use Kumwe\Extension\Manifest\ManifestContributions;
-use Kumwe\Producer\Render\BlockRenderer;
+use Kumwe\Extension\Spi\Studio\Application\Preview\StudioPreviewBlockRenderer;
 
 /**
  * The one place every contribution registry in a process is created, wired together, and reached.
@@ -480,7 +480,7 @@ final readonly class ExtensionContributionRegistrySet
         $this->compositionHostBindings = new OwnedRuntimeContributionRegistry('composition_host_binding');
         $this->studioPreviewRenderers = new OwnedRuntimeContributionRegistry(
             'studio preview renderer',
-            BlockRenderer::class,
+            StudioPreviewBlockRenderer::class,
         );
         $this->surfaces = [
             'capabilities' => $this->capabilities,

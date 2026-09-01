@@ -115,7 +115,18 @@ final class StudioPreviewProducerPortTest extends TestCase
         self::assertInstanceOf(stdClass::class, $vector->render);
         $draft = new StudioPreviewDraft('default', $vector->draft);
         $renderer = new class implements StudioPreviewRenderer {
-            /** {@inheritDoc} */
+            /**
+             * {@inheritDoc}
+             *
+             * @param   StudioHostSessionSnapshot   $snapshot  Authorized host session snapshot.
+             * @param   StudioPreviewDraft          $draft     Draft selected for rendering.
+             * @param   StudioPreviewRenderRequest  $request   Validated preview render request.
+             * @param   StudioPreviewBindingValues  $values    Resolved preview binding values.
+             *
+             * @return  StudioPreviewRenderedDocument  Never returned: this double always raises a theme mismatch.
+             *
+             * @since   2.0.0
+             */
             public function render(
                 StudioHostSessionSnapshot $snapshot,
                 StudioPreviewDraft $draft,
@@ -169,12 +180,27 @@ final class StudioPreviewProducerPortTest extends TestCase
             new NativeStudioPreviewSequenceWaiter(),
         );
         $source = new class ($draft) implements StudioPreviewDraftSource {
-            /** Retain the deterministic draft. */
+            /**
+             * Retain the deterministic draft.
+             *
+             * @param   StudioPreviewDraft  $draft  Sole draft this source ever serves.
+             *
+             * @since   2.0.0
+             */
             public function __construct(private readonly StudioPreviewDraft $draft)
             {
             }
 
-            /** {@inheritDoc} */
+            /**
+             * {@inheritDoc}
+             *
+             * @param   StudioHostSessionSnapshot   $snapshot  Authorized host session snapshot.
+             * @param   StudioPreviewRenderRequest  $request   Validated preview render request.
+             *
+             * @return  ?StudioPreviewDraft  The retained draft when the artifact identifier matches, null otherwise.
+             *
+             * @since   2.0.0
+             */
             public function find(
                 StudioHostSessionSnapshot $snapshot,
                 StudioPreviewRenderRequest $request,
@@ -184,7 +210,17 @@ final class StudioPreviewProducerPortTest extends TestCase
             }
         };
         $bindings = new class implements StudioPreviewBindingSource {
-            /** {@inheritDoc} */
+            /**
+             * {@inheritDoc}
+             *
+             * @param   ExecutionContext           $context   Caller execution context.
+             * @param   StudioHostSessionSnapshot  $snapshot  Authorized host session snapshot.
+             * @param   StudioPreviewDraft         $draft     Draft the bindings would feed.
+             *
+             * @return  StudioPreviewBindingValues  Empty binding values regardless of input.
+             *
+             * @since   2.0.0
+             */
             public function resolve(
                 ExecutionContext $context,
                 StudioHostSessionSnapshot $snapshot,
@@ -195,7 +231,18 @@ final class StudioPreviewProducerPortTest extends TestCase
             }
         };
         $renderer ??= new class implements StudioPreviewRenderer {
-            /** {@inheritDoc} */
+            /**
+             * {@inheritDoc}
+             *
+             * @param   StudioHostSessionSnapshot   $snapshot  Authorized host session snapshot.
+             * @param   StudioPreviewDraft          $draft     Draft selected for rendering.
+             * @param   StudioPreviewRenderRequest  $request   Validated preview render request.
+             * @param   StudioPreviewBindingValues  $values    Resolved preview binding values.
+             *
+             * @return  StudioPreviewRenderedDocument  Minimal document carrying the draft's identity markers.
+             *
+             * @since   2.0.0
+             */
             public function render(
                 StudioHostSessionSnapshot $snapshot,
                 StudioPreviewDraft $draft,
@@ -213,7 +260,19 @@ final class StudioPreviewProducerPortTest extends TestCase
             }
         };
         $activity = new class implements StudioPreviewActivityRecorder {
-            /** {@inheritDoc} */
+            /**
+             * {@inheritDoc}
+             *
+             * @param   ExecutionContext           $context   Caller execution context.
+             * @param   StudioHostSessionSnapshot  $snapshot  Authorized host session snapshot.
+             * @param   string                     $action    Recorded preview action name.
+             * @param   string                     $outcome   Recorded action outcome.
+             * @param   string                     $reason    Recorded outcome reason.
+             *
+             * @return  void
+             *
+             * @since   2.0.0
+             */
             public function record(
                 ExecutionContext $context,
                 StudioHostSessionSnapshot $snapshot,
@@ -225,7 +284,13 @@ final class StudioPreviewProducerPortTest extends TestCase
             }
         };
         $clock = new class implements ClockInterface {
-            /** {@inheritDoc} */
+            /**
+             * {@inheritDoc}
+             *
+             * @return  DateTimeImmutable  The fixed instant this deterministic clock always reports.
+             *
+             * @since   2.0.0
+             */
             public function now(): DateTimeImmutable
             {
                 return new DateTimeImmutable('2026-08-24T12:00:00+00:00');

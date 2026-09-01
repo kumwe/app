@@ -14,12 +14,14 @@ use Kumwe\App\Studio\Application\Composition\StudioCompositionLockMismatch;
 use Kumwe\App\Studio\Application\Rendering\StudioBlockRendererRuntime;
 use Kumwe\App\Studio\Application\Rendering\StudioContentFieldBlockRenderer;
 use Kumwe\Extension\Spi\Contribution\CanonicalCompositionDocument;
+use Kumwe\Extension\Spi\Studio\Application\Preview\StudioPreviewBindingResult;
+use Kumwe\Extension\Spi\Studio\Application\Preview\StudioPreviewBlock;
+use Kumwe\Extension\Spi\Studio\Application\Preview\StudioPreviewBlockFragment;
+use Kumwe\Extension\Spi\Studio\Application\Preview\StudioPreviewBlockRenderer;
 use Kumwe\Extension\Spi\Contribution\CanonicalCompositionKind;
 use Kumwe\Extension\Spi\Contribution\CompositionHostBinding;
 use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\Producer\Canonical\CanonicalJson;
-use Kumwe\Producer\Render\BlockRenderer;
-use Kumwe\Producer\Render\RenderState;
 use Kumwe\Producer\Schema\StudioContractResources;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
@@ -216,12 +218,26 @@ final class StudioCompositionContributionCatalogTest extends TestCase
         $registries->studioPreviewRenderers()->register(
             $owner,
             $runtimeDefinition,
-            new class implements BlockRenderer {
-                public function render(stdClass $node, string $scope, RenderState $state): string
-                {
-                    unset($node, $scope, $state);
+            new class implements StudioPreviewBlockRenderer {
+                /**
+                 * Emit a fixed grid placeholder fragment regardless of block, binding or viewport.
+                 *
+                 * @param   StudioPreviewBlock          $block     Immutable copied contributed grid input.
+                 * @param   StudioPreviewBindingResult  $binding   Authorized binding projection.
+                 * @param   string                      $viewport  Active semantic viewport.
+                 *
+                 * @return  StudioPreviewBlockFragment  Constant placeholder fragment.
+                 *
+                 * @since   2.0.0
+                 */
+                public function render(
+                    StudioPreviewBlock $block,
+                    StudioPreviewBindingResult $binding,
+                    string $viewport,
+                ): StudioPreviewBlockFragment {
+                    unset($block, $binding, $viewport);
 
-                    return '<div class="acme-shop-grid"></div>';
+                    return new StudioPreviewBlockFragment('div', 'acme-shop-grid', '');
                 }
             },
         );
@@ -304,6 +320,15 @@ final class StudioCompositionContributionCatalogTest extends TestCase
         ));
     }
 
+    /**
+     * Build the catalogue under test over the given registries and a real block renderer runtime.
+     *
+     * @param   ExtensionContributionRegistrySet  $registries  Live contribution registries to project from.
+     *
+     * @return  StudioCompositionContributionCatalog  Catalogue under test.
+     *
+     * @since   2.0.0
+     */
     private static function catalog(ExtensionContributionRegistrySet $registries): StudioCompositionContributionCatalog
     {
         return new StudioCompositionContributionCatalog(

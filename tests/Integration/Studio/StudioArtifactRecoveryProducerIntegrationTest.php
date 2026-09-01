@@ -60,12 +60,28 @@ final class StudioArtifactRecoveryProducerIntegrationTest extends TestCase
             CanonicalJson::stringify($dependencies),
         );
         $repository = new class ($artifact) implements StudioArtifactRepository {
-            /** Retain the one immutable artifact head. */
+            /**
+             * Retain the one immutable artifact head.
+             *
+             * @param   StoredStudioArtifact  $artifact  Sole stored artifact head this repository serves.
+             *
+             * @since   2.0.0
+             */
             public function __construct(private StoredStudioArtifact $artifact)
             {
             }
 
-            /** {@inheritDoc} */
+            /**
+             * {@inheritDoc}
+             *
+             * @param   string  $siteIdentifier  Site scope the read is bound to.
+             * @param   string  $id              Requested artifact identifier.
+             * @param   string  $version         Requested artifact version.
+             *
+             * @return  ?StoredStudioArtifact  The retained head when every coordinate matches, null otherwise.
+             *
+             * @since   2.0.0
+             */
             public function current(string $siteIdentifier, string $id, string $version): ?StoredStudioArtifact
             {
                 return $siteIdentifier === 'default'
@@ -75,7 +91,18 @@ final class StudioArtifactRecoveryProducerIntegrationTest extends TestCase
                     : null;
             }
 
-            /** {@inheritDoc} */
+            /**
+             * {@inheritDoc}
+             *
+             * @param   string  $siteIdentifier  Site scope the read is bound to.
+             * @param   string  $id              Requested artifact identifier.
+             * @param   string  $version         Requested artifact version.
+             * @param   string  $revision        Requested exact revision authority.
+             *
+             * @return  ?StoredStudioArtifact  The retained head when its revision also matches, null otherwise.
+             *
+             * @since   2.0.0
+             */
             public function revision(
                 string $siteIdentifier,
                 string $id,
@@ -87,7 +114,16 @@ final class StudioArtifactRecoveryProducerIntegrationTest extends TestCase
                     : null;
             }
 
-            /** {@inheritDoc} */
+            /**
+             * {@inheritDoc}
+             *
+             * @param   StoredStudioArtifact  $artifact         Candidate artifact head to persist.
+             * @param   ?string               $expectedCurrent  Revision the caller believes is current.
+             *
+             * @return  bool  Always false: this read-only double never accepts writes.
+             *
+             * @since   2.0.0
+             */
             public function store(StoredStudioArtifact $artifact, ?string $expectedCurrent): bool
             {
                 unset($artifact, $expectedCurrent);
@@ -95,7 +131,16 @@ final class StudioArtifactRecoveryProducerIntegrationTest extends TestCase
             }
         };
         $publication = new class implements StudioArtifactPublicationGuard {
-            /** {@inheritDoc} */
+            /**
+             * {@inheritDoc}
+             *
+             * @param   SiteContext  $site       Site the publication would target.
+             * @param   stdClass     $blueprint  Decoded artifact blueprint under review.
+             *
+             * @return  void
+             *
+             * @since   2.0.0
+             */
             public function assertPublishable(SiteContext $site, stdClass $blueprint): void
             {
                 unset($site, $blueprint);
@@ -136,16 +181,43 @@ final class StudioArtifactRecoveryProducerIntegrationTest extends TestCase
     public function testRecoveryRoundTripUsesTheDirectProducerPort(): void
     {
         $repository = new class implements StudioRecoveryRepository {
-            /** Stored envelope by complete trusted scope. */
+            /**
+             * Stored envelope by complete trusted scope.
+             *
+             * @var    array<string, string>
+             * @since  2.0.0
+             */
             private array $envelopes = [];
 
-            /** {@inheritDoc} */
+            /**
+             * {@inheritDoc}
+             *
+             * @param   string  $actorId             Acting user identity scope.
+             * @param   string  $sessionBinding      Session binding scope.
+             * @param   string  $resourceContextKey  Resource context scope.
+             *
+             * @return  ?string  The stored canonical envelope, or null when the scope holds none.
+             *
+             * @since   2.0.0
+             */
             public function loadEnvelope(string $actorId, string $sessionBinding, string $resourceContextKey): ?string
             {
                 return $this->envelopes[self::key($actorId, $sessionBinding, $resourceContextKey)] ?? null;
             }
 
-            /** {@inheritDoc} */
+            /**
+             * {@inheritDoc}
+             *
+             * @param   string  $actorId                Acting user identity scope.
+             * @param   string  $sessionBinding         Session binding scope.
+             * @param   string  $resourceContextKey     Resource context scope.
+             * @param   string  $canonicalEnvelope      Canonical envelope bytes to retain.
+             * @param   int     $updatedAtMilliseconds  Update instant, ignored by this in-memory double.
+             *
+             * @return  void
+             *
+             * @since   2.0.0
+             */
             public function saveEnvelope(
                 string $actorId,
                 string $sessionBinding,
@@ -157,13 +229,34 @@ final class StudioArtifactRecoveryProducerIntegrationTest extends TestCase
                 $this->envelopes[self::key($actorId, $sessionBinding, $resourceContextKey)] = $canonicalEnvelope;
             }
 
-            /** {@inheritDoc} */
+            /**
+             * {@inheritDoc}
+             *
+             * @param   string  $actorId             Acting user identity scope.
+             * @param   string  $sessionBinding      Session binding scope.
+             * @param   string  $resourceContextKey  Resource context scope.
+             *
+             * @return  void
+             *
+             * @since   2.0.0
+             */
             public function discardEnvelope(string $actorId, string $sessionBinding, string $resourceContextKey): void
             {
                 unset($this->envelopes[self::key($actorId, $sessionBinding, $resourceContextKey)]);
             }
 
-            /** {@inheritDoc} */
+            /**
+             * {@inheritDoc}
+             *
+             * @param   string  $scopeDigest         Digest of the rate-limited scope.
+             * @param   int     $nowMilliseconds     Current instant in milliseconds.
+             * @param   int     $windowMilliseconds  Sliding window width in milliseconds.
+             * @param   int     $maximumRequests     Requests allowed within the window.
+             *
+             * @return  ?int  Always null: this double never throttles.
+             *
+             * @since   2.0.0
+             */
             public function consumeRateLimit(
                 string $scopeDigest,
                 int $nowMilliseconds,
@@ -174,14 +267,30 @@ final class StudioArtifactRecoveryProducerIntegrationTest extends TestCase
                 return null;
             }
 
-            /** Build one unambiguous in-memory scope key. */
+            /**
+             * Build one unambiguous in-memory scope key.
+             *
+             * @param   string  $actorId             Acting user identity scope.
+             * @param   string  $sessionBinding      Session binding scope.
+             * @param   string  $resourceContextKey  Resource context scope.
+             *
+             * @return  string  Collision-free digest of the three scope parts.
+             *
+             * @since   2.0.0
+             */
             private static function key(string $actorId, string $sessionBinding, string $resourceContextKey): string
             {
                 return hash('sha256', $actorId . "\0" . $sessionBinding . "\0" . $resourceContextKey);
             }
         };
         $clock = new class implements ClockInterface {
-            /** {@inheritDoc} */
+            /**
+             * {@inheritDoc}
+             *
+             * @return  DateTimeImmutable  The fixed instant this deterministic clock always reports.
+             *
+             * @since   2.0.0
+             */
             public function now(): DateTimeImmutable
             {
                 return new DateTimeImmutable('2026-08-29T12:00:00+00:00');

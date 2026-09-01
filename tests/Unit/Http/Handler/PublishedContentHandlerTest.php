@@ -253,6 +253,14 @@ final class PublishedContentHandlerTest extends TestCase
         self::assertSame('en-GB', $active->locale()->toString());
     }
 
+    /**
+     * Prove the stylesheet endpoint re-renders live output per request, then serves exact bytes with a
+     * digest ETag under must-revalidate caching, or an empty 304 on a matching If-None-Match.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function testPublishedStylesheetRevalidatesLiveOutputBeforeBytesOrNotModified(): void
     {
         $css = '[data-studio-block]{display:block}';
@@ -275,6 +283,14 @@ final class PublishedContentHandlerTest extends TestCase
         self::assertSame('', (string) $notModified->getBody());
     }
 
+    /**
+     * Prove a withdrawn composition or drifted locale coordinate yields an uncacheable 404, and the
+     * mismatched coordinate never reaches the rendering boundary.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function testPublishedStylesheetFailsClosedAfterWithdrawalOrCoordinateDrift(): void
     {
         $studio = $this->createMock(StudioPublishedContentRenderer::class);
@@ -354,6 +370,15 @@ final class PublishedContentHandlerTest extends TestCase
         );
     }
 
+    /**
+     * Build the stylesheet handler over real locators and an Arabic active locale.
+     *
+     * @param   StudioPublishedContentRenderer  $studio  Published composition boundary under test.
+     *
+     * @return  StudioPublishedStylesheetHandler  Handler composed over deterministic in-memory stores.
+     *
+     * @since   2.0.0
+     */
     private function stylesheetHandler(
         StudioPublishedContentRenderer $studio,
     ): StudioPublishedStylesheetHandler {
@@ -375,6 +400,15 @@ final class PublishedContentHandlerTest extends TestCase
         );
     }
 
+    /**
+     * Build one stylesheet request for the Arabic roadmap page at the given digest coordinate.
+     *
+     * @param   string  $digest  Stylesheet content digest addressed by the request path.
+     *
+     * @return  \Psr\Http\Message\ServerRequestInterface  Request carrying digest, page, entry and locale.
+     *
+     * @since   2.0.0
+     */
     private function stylesheetRequest(string $digest): \Psr\Http\Message\ServerRequestInterface
     {
         return $this->request('/studio/styles/' . $digest . '.css')

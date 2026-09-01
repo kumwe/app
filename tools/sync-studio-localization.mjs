@@ -27,11 +27,13 @@ if (releaseRecord.kind !== 'studio-release' || typeof releaseRecord.release !== 
   throw new Error('The canonical Studio release record is malformed.');
 }
 const entries = Object.entries(corpus.messages).sort(([left], [right]) => left.localeCompare(right));
-if (entries.length !== 160) throw new Error(`Expected 160 Studio authoring messages; received ${entries.length}.`);
+if (entries.length !== 271) throw new Error(`Expected 271 Studio authoring messages; received ${entries.length}.`);
 
+const namespaces = ['studio.contextual/', 'studio.shell/', 'studio.standalone/'];
 const units = entries.map(([wireId, message]) => {
-  if (!wireId.startsWith('studio.shell/')) throw new Error(`Unexpected Studio namespace: ${wireId}`);
-  const id = `core.studio.shell.${wireId.slice('studio.shell/'.length)}`;
+  const namespace = namespaces.find((candidate) => wireId.startsWith(candidate));
+  if (namespace === undefined) throw new Error(`Unexpected Studio namespace: ${wireId}`);
+  const id = `core.studio.${namespace.slice('studio.'.length, -1)}.${wireId.slice(namespace.length)}`;
   const context = `Exact @kumwe/studio ${xml(releaseRecord.release)} authoring message ${xml(wireId)}.`;
   return [
     `    <unit id="${xml(id)}">`,
@@ -58,8 +60,8 @@ if (process.argv.includes('--check')) {
     console.error('The App Studio localization corpus is stale; run node tools/sync-studio-localization.mjs.');
     process.exit(1);
   }
-  console.log('The exact 160-key Studio authoring message corpus is present in App XLIFF.');
+  console.log('The exact 271-key Studio authoring message corpus is present in App XLIFF.');
 } else {
   await writeFile(cataloguePath, expected);
-  console.log('Synchronized 160 Studio authoring messages into App XLIFF.');
+  console.log('Synchronized 271 Studio authoring messages into App XLIFF.');
 }

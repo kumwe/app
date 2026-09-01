@@ -142,7 +142,6 @@ final class PortalHomeHandlerTest extends TestCase
                 $index,
             ));
         }
-        $registrar->complete();
         $renderer = new PortalRenderer(
             new Environment(new ArrayLoader([
                 'portal/home.twig' => 'selected:{{ dashboard.selected_widget_ids|length }};'

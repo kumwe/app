@@ -41,11 +41,11 @@ final readonly class StudioPublishedCompositionGuard implements StudioArtifactPu
     /**
      * Bind compatibility to exact host schema, Content model, theme, and executable block authorities.
      *
-     * @param  StudioArtifactAdmission             $admission   Pinned schema and active-content admission.
-     * @param  ContentModelRepository              $models      Exact published Content definition store.
-     * @param  StudioPublishedTheme                $theme       Live exact public theme authority.
-     * @param  StudioBlockRendererRuntime          $blocks      Fresh live canonical Producer registry authority.
-     * @param  ExtensionContributionRegistrySet    $registries  Live owner-bound canonical block definitions.
+     * @param  StudioArtifactAdmission           $admission   Pinned schema and active-content admission.
+     * @param  ContentModelRepository            $models      Exact published Content definition store.
+     * @param  StudioPublishedTheme              $theme       Live exact public theme authority.
+     * @param  StudioBlockRendererRuntime        $blocks      Fresh live canonical Producer registry authority.
+     * @param  ExtensionContributionRegistrySet  $registries  Live owner-bound canonical block definitions.
      *
      * @since  2.0.0
      */

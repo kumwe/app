@@ -33,17 +33,17 @@ final readonly class AdministratorRenderer
     /**
      * Wire the renderer to its themed environment, its fallback, and the sources of the shell data.
      *
-     * @param  AdministratorTwigEnvironment      $twig            Isolated environment resolving core
+     * @param  AdministratorTwigEnvironment      $twig                        Isolated environment resolving core
      *         administrator templates, the activated theme layout, and extension views.
-     * @param  RecoveryAdministratorRenderer     $recovery        Theme-free renderer a failed render falls
+     * @param  RecoveryAdministratorRenderer     $recovery                    Theme-free renderer a failed render falls
      *         back to.
-     * @param  ?AdministratorNavigationRegistry  $navigation      Registry the menu is built from; null uses
+     * @param  ?AdministratorNavigationRegistry  $navigation                  Registry the menu is built from; null uses
      *         the core-only registry.
-     * @param  ?ViteAssetManifest                $assets          Manifest of built frontend files; null
+     * @param  ?ViteAssetManifest                $assets                      Manifest of built frontend files; null
      *         falls back to the unhashed administrator stylesheet and module.
-     * @param  ?AdministratorViewRegistry        $extensionViews  Resolves an extension's view name to the
+     * @param  ?AdministratorViewRegistry        $extensionViews              Resolves an extension's view name to the
      *         template it registered; null leaves `renderExtension()` unusable.
-     * @param  ?object                           $extensionRequestProvenance Private composition-root authority
+     * @param  ?object                           $extensionRequestProvenance  Private composition-root authority
      *         required to mint extension route renderer capabilities.
      *
      * @since  2.0.0

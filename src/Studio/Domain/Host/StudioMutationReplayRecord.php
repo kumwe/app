@@ -16,13 +16,13 @@ final readonly class StudioMutationReplayRecord
     /**
      * Retain the proved coordinates and optional protected completed outcome.
      *
-     * @param   string       $scopeDigest      App-namespaced lowercase SHA-256 scope digest.
-     * @param   string       $intentDigest     Producer's canonical SRI SHA-256 intent digest.
+     * @param   string       $scopeDigest       App-namespaced lowercase SHA-256 scope digest.
+     * @param   string       $intentDigest      Producer's canonical SRI SHA-256 intent digest.
      * @param   string|null  $protectedOutcome  Authenticated completed outcome, null while claimed.
      *
      * @throws  InvalidArgumentException  When either coordinate or a present envelope is invalid.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function __construct(
         public string $scopeDigest,

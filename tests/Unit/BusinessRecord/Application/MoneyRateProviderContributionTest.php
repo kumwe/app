@@ -246,7 +246,7 @@ final class MoneyRateProviderContributionTest extends TestCase
             4,
         );
         self::assertSame(
-            [['provider_id' => 'acme.rates.ecb', 'currencies' => ['EUR', 'ZAR'], 'priority' => 3]],
+            [['currencies' => ['EUR', 'ZAR'], 'priority' => 3, 'provider_id' => 'acme.rates.ecb']],
             $parsed->declarations()['integration']['rate_providers'] ?? null,
         );
 

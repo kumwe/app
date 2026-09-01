@@ -16397,9 +16397,769 @@
   </file>
   <!-- BEGIN GENERATED STUDIO AUTHORING MESSAGES -->
   <file id="core-studio-authoring">
+    <unit id="core.studio.contextual.add-field">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/add-field.</note>
+      </notes>
+      <segment>
+        <source>Add field</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.add-typed-field">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/add-typed-field.</note>
+      </notes>
+      <segment>
+        <source>Add typed field</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.all-saved">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/all-saved.</note>
+      </notes>
+      <segment>
+        <source>All local changes saved</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.announce-field-added">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/announce-field-added.</note>
+      </notes>
+      <segment>
+        <source>Field {label} added.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.announce-mode">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/announce-mode.</note>
+      </notes>
+      <segment>
+        <source>{mode} mode selected.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.announce-presentation">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/announce-presentation.</note>
+      </notes>
+      <segment>
+        <source>{presentation} presentation selected.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.announce-save-requested">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/announce-save-requested.</note>
+      </notes>
+      <segment>
+        <source>{outcome} requested. The host must confirm and accept it.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.authoring-mode">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/authoring-mode.</note>
+      </notes>
+      <segment>
+        <source>Authoring mode</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.bind-in-blueprint">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/bind-in-blueprint.</note>
+      </notes>
+      <segment>
+        <source>Bind in Blueprint</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.binding-heading">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/binding-heading.</note>
+      </notes>
+      <segment>
+        <source>Field binding</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.binding-help">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/binding-help.</note>
+      </notes>
+      <segment>
+        <source>Choose Blueprint mode, select a block, and bind one of these exact Model fields to a compatible block port. Studio keeps the Model definition, Blueprint binding, and Entry value separate while they remain in this resource session.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.blueprint-coordinate-mismatch">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/blueprint-coordinate-mismatch.</note>
+      </notes>
+      <segment>
+        <source>The session coordinates do not identify the supplied exact Blueprint revision.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.blueprint-model-mismatch">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/blueprint-model-mismatch.</note>
+      </notes>
+      <segment>
+        <source>The Blueprint does not lock the supplied exact Model revision.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.cardinality">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/cardinality.</note>
+      </notes>
+      <segment>
+        <source>Cardinality</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.cardinality-many">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/cardinality-many.</note>
+      </notes>
+      <segment>
+        <source>Multiple values</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.cardinality-one">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/cardinality-one.</note>
+      </notes>
+      <segment>
+        <source>One value</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.choose-start">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/choose-start.</note>
+      </notes>
+      <segment>
+        <source>Choose how to start</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.choose-value">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/choose-value.</note>
+      </notes>
+      <segment>
+        <source>Choose a value</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.collection-item-type">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/collection-item-type.</note>
+      </notes>
+      <segment>
+        <source>Collection item type (used only for a collection field)</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.configuration-generation-mismatch">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/configuration-generation-mismatch.</note>
+      </notes>
+      <segment>
+        <source>The Studio configuration and contextual session generations do not match.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.control-unavailable">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/control-unavailable.</note>
+      </notes>
+      <segment>
+        <source>This field control is unavailable.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.diagnostic-count">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/diagnostic-count.</note>
+      </notes>
+      <segment>
+        <source>{count} diagnostics</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.diagnostic-count-one">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/diagnostic-count-one.</note>
+      </notes>
+      <segment>
+        <source>1 diagnostic</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.dirty-artifacts">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/dirty-artifacts.</note>
+      </notes>
+      <segment>
+        <source>Model {model} · Blueprint {blueprint} · Content {entry}</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.entry-coordinate-mismatch">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/entry-coordinate-mismatch.</note>
+      </notes>
+      <segment>
+        <source>The session coordinates do not identify the supplied exact Entry revision.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.entry-model-mismatch">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/entry-model-mismatch.</note>
+      </notes>
+      <segment>
+        <source>The Entry does not lock the supplied exact Model revision.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.entry-resource-mismatch">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/entry-resource-mismatch.</note>
+      </notes>
+      <segment>
+        <source>The existing-item target does not identify the supplied Entry.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.enum-values">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/enum-values.</note>
+      </notes>
+      <segment>
+        <source>Enum choices (one identifier per line; used only for an enum field)</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.field-identifier">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/field-identifier.</note>
+      </notes>
+      <segment>
+        <source>Field identifier</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.field-kind-boolean">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/field-kind-boolean.</note>
+      </notes>
+      <segment>
+        <source>Boolean</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.field-kind-collection">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/field-kind-collection.</note>
+      </notes>
+      <segment>
+        <source>Collection</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.field-kind-date">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/field-kind-date.</note>
+      </notes>
+      <segment>
+        <source>Date</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.field-kind-date-time">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/field-kind-date-time.</note>
+      </notes>
+      <segment>
+        <source>Date and time</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.field-kind-decimal">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/field-kind-decimal.</note>
+      </notes>
+      <segment>
+        <source>Decimal</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.field-kind-enum">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/field-kind-enum.</note>
+      </notes>
+      <segment>
+        <source>Choice</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.field-kind-integer">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/field-kind-integer.</note>
+      </notes>
+      <segment>
+        <source>Integer</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.field-kind-media">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/field-kind-media.</note>
+      </notes>
+      <segment>
+        <source>Media</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.field-kind-money">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/field-kind-money.</note>
+      </notes>
+      <segment>
+        <source>Money</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.field-kind-object">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/field-kind-object.</note>
+      </notes>
+      <segment>
+        <source>Object</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.field-kind-resource">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/field-kind-resource.</note>
+      </notes>
+      <segment>
+        <source>Resource</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.field-kind-rich-text">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/field-kind-rich-text.</note>
+      </notes>
+      <segment>
+        <source>Rich text</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.field-kind-string">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/field-kind-string.</note>
+      </notes>
+      <segment>
+        <source>Text</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.field-label">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/field-label.</note>
+      </notes>
+      <segment>
+        <source>Label</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.field-optional">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/field-optional.</note>
+      </notes>
+      <segment>
+        <source>optional</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.field-required">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/field-required.</note>
+      </notes>
+      <segment>
+        <source>required</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.field-summary">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/field-summary.</note>
+      </notes>
+      <segment>
+        <source>{path} · {kind} · {cardinality} · {requirement}</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.field-type">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/field-type.</note>
+      </notes>
+      <segment>
+        <source>Field type</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.json-array">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/json-array.</note>
+      </notes>
+      <segment>
+        <source>JSON array</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.json-value">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/json-value.</note>
+      </notes>
+      <segment>
+        <source>Canonical JSON value</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.load-more-types">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/load-more-types.</note>
+      </notes>
+      <segment>
+        <source>Load more types</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.localized">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/localized.</note>
+      </notes>
+      <segment>
+        <source>Localized</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.mode-blueprint">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/mode-blueprint.</note>
+      </notes>
+      <segment>
+        <source>Blueprint</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.mode-content">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/mode-content.</note>
+      </notes>
+      <segment>
+        <source>Content</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.mode-model">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/mode-model.</note>
+      </notes>
+      <segment>
+        <source>Model</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.model-coordinate-mismatch">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/model-coordinate-mismatch.</note>
+      </notes>
+      <segment>
+        <source>The session coordinates do not identify the supplied exact Model revision.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.model-fields">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/model-fields.</note>
+      </notes>
+      <segment>
+        <source>Model fields</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.model-status">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/model-status.</note>
+      </notes>
+      <segment>
+        <source>This Model is {status}. The host must open a draft successor before fields can change.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.no-authorable-fields">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/no-authorable-fields.</note>
+      </notes>
+      <segment>
+        <source>This Model exposes no authorable fields.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.no-canonical-value">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/no-canonical-value.</note>
+      </notes>
+      <segment>
+        <source>No canonical value is available for this field yet.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.no-fields">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/no-fields.</note>
+      </notes>
+      <segment>
+        <source>No fields have been defined.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.presentation-fullscreen">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/presentation-fullscreen.</note>
+      </notes>
+      <segment>
+        <source>Fullscreen</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.presentation-inline">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/presentation-inline.</note>
+      </notes>
+      <segment>
+        <source>Inline</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.presentation-maximized">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/presentation-maximized.</note>
+      </notes>
+      <segment>
+        <source>Maximized</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.presentation-minimized">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/presentation-minimized.</note>
+      </notes>
+      <segment>
+        <source>Minimized</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.presentation-not-authorized">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/presentation-not-authorized.</note>
+      </notes>
+      <segment>
+        <source>The current presentation is not authorized by this contextual session.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.required">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/required.</note>
+      </notes>
+      <segment>
+        <source>Required</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.return">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/return.</note>
+      </notes>
+      <segment>
+        <source>Return to {destination}</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.return-destination">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/return-destination.</note>
+      </notes>
+      <segment>
+        <source>the host</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.save-as-new-type">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/save-as-new-type.</note>
+      </notes>
+      <segment>
+        <source>Save as new type</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.save-item">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/save-item.</note>
+      </notes>
+      <segment>
+        <source>Save item</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.save-new-type-version">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/save-new-type-version.</note>
+      </notes>
+      <segment>
+        <source>Save new type version</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.save-outcome">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/save-outcome.</note>
+      </notes>
+      <segment>
+        <source>Save outcome</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.save-plan-help">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/save-plan-help.</note>
+      </notes>
+      <segment>
+        <source>The authoritative host will plan and show affected artifacts and consequences before confirmation.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.search">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/search.</note>
+      </notes>
+      <segment>
+        <source>Search</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.session-generation-missing">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/session-generation-missing.</note>
+      </notes>
+      <segment>
+        <source>The contextual session has no authoritative generation.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.start">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/start.</note>
+      </notes>
+      <segment>
+        <source>Start Studio</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.start-blank">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/start-blank.</note>
+      </notes>
+      <segment>
+        <source>Blank start</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.start-blank-help">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/start-blank-help.</note>
+      </notes>
+      <segment>
+        <source>Create a new layout and content structure for this resource.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.start-existing">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/start-existing.</note>
+      </notes>
+      <segment>
+        <source>Existing item</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.start-from-type">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/start-from-type.</note>
+      </notes>
+      <segment>
+        <source>Reusable type · {type}</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.start-source">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/start-source.</note>
+      </notes>
+      <segment>
+        <source>Starting point</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.starting">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/starting.</note>
+      </notes>
+      <segment>
+        <source>Starting…</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.state-changed">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/state-changed.</note>
+      </notes>
+      <segment>
+        <source>changed</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.state-unchanged">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/state-unchanged.</note>
+      </notes>
+      <segment>
+        <source>unchanged</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.type-blueprint-mismatch">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/type-blueprint-mismatch.</note>
+      </notes>
+      <segment>
+        <source>The reusable type does not identify the supplied exact Blueprint revision.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.type-coordinate-mismatch">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/type-coordinate-mismatch.</note>
+      </notes>
+      <segment>
+        <source>The session coordinates do not identify the supplied exact reusable type version.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.type-model-mismatch">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/type-model-mismatch.</note>
+      </notes>
+      <segment>
+        <source>The reusable type does not identify the supplied exact Model revision.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.type-search">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/type-search.</note>
+      </notes>
+      <segment>
+        <source>Find a reusable type</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.types-empty">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/types-empty.</note>
+      </notes>
+      <segment>
+        <source>No authorized reusable types match this search.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.types-loading">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/types-loading.</note>
+      </notes>
+      <segment>
+        <source>Loading authorized reusable types…</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.unavailable">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/unavailable.</note>
+      </notes>
+      <segment>
+        <source>Load one authorized content resource to open Studio.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.unsaved">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/unsaved.</note>
+      </notes>
+      <segment>
+        <source>Unsaved changes</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.value-coordinate">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/value-coordinate.</note>
+      </notes>
+      <segment>
+        <source>Values belong to {entry}; they are not part of the reusable type.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.values-heading">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/values-heading.</note>
+      </notes>
+      <segment>
+        <source>Content values</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.workspace-size">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.contextual/workspace-size.</note>
+      </notes>
+      <segment>
+        <source>Workspace size</source>
+      </segment>
+    </unit>
     <unit id="core.studio.shell.announce-binding-removed">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/announce-binding-removed.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/announce-binding-removed.</note>
       </notes>
       <segment>
         <source>Removed the {port} binding</source>
@@ -16407,7 +17167,7 @@
     </unit>
     <unit id="core.studio.shell.announce-binding-set">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/announce-binding-set.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/announce-binding-set.</note>
       </notes>
       <segment>
         <source>Set the {port} binding</source>
@@ -16415,7 +17175,7 @@
     </unit>
     <unit id="core.studio.shell.announce-canvas-mode">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/announce-canvas-mode.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/announce-canvas-mode.</note>
       </notes>
       <segment>
         <source>Canvas mode: {state}</source>
@@ -16423,7 +17183,7 @@
     </unit>
     <unit id="core.studio.shell.announce-command-failed">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/announce-command-failed.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/announce-command-failed.</note>
       </notes>
       <segment>
         <source>Command failed: {message}</source>
@@ -16431,7 +17191,7 @@
     </unit>
     <unit id="core.studio.shell.announce-conflict">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/announce-conflict.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/announce-conflict.</note>
       </notes>
       <segment>
         <source>The change was rejected: {message} The document is unchanged; refresh the session or undo before retrying.</source>
@@ -16439,7 +17199,7 @@
     </unit>
     <unit id="core.studio.shell.announce-deleted">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/announce-deleted.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/announce-deleted.</note>
       </notes>
       <segment>
         <source>Deleted {label} block</source>
@@ -16447,7 +17207,7 @@
     </unit>
     <unit id="core.studio.shell.announce-drag-cancelled">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/announce-drag-cancelled.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/announce-drag-cancelled.</note>
       </notes>
       <segment>
         <source>Reorder cancelled. {label} kept its position.</source>
@@ -16455,7 +17215,7 @@
     </unit>
     <unit id="core.studio.shell.announce-dropped">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/announce-dropped.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/announce-dropped.</note>
       </notes>
       <segment>
         <source>Moved {label} to position {position} of {count}</source>
@@ -16463,7 +17223,7 @@
     </unit>
     <unit id="core.studio.shell.announce-duplicated">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/announce-duplicated.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/announce-duplicated.</note>
       </notes>
       <segment>
         <source>Duplicated {label}</source>
@@ -16471,7 +17231,7 @@
     </unit>
     <unit id="core.studio.shell.announce-edit-cancelled">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/announce-edit-cancelled.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/announce-edit-cancelled.</note>
       </notes>
       <segment>
         <source>Edit cancelled. {property} kept its value.</source>
@@ -16479,7 +17239,7 @@
     </unit>
     <unit id="core.studio.shell.announce-field-bound">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/announce-field-bound.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/announce-field-bound.</note>
       </notes>
       <segment>
         <source>Bound {port} to the {field} model field</source>
@@ -16487,7 +17247,7 @@
     </unit>
     <unit id="core.studio.shell.announce-inheritance-reset">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/announce-inheritance-reset.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/announce-inheritance-reset.</note>
       </notes>
       <segment>
         <source>Reset every responsive override for {property}; all viewports now inherit the base value</source>
@@ -16495,7 +17255,7 @@
     </unit>
     <unit id="core.studio.shell.announce-inserted">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/announce-inserted.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/announce-inserted.</note>
       </notes>
       <segment>
         <source>Inserted {label}</source>
@@ -16503,7 +17263,7 @@
     </unit>
     <unit id="core.studio.shell.announce-invalid-value">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/announce-invalid-value.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/announce-invalid-value.</note>
       </notes>
       <segment>
         <source>The {label} value is not valid JSON. Nothing was changed.</source>
@@ -16511,7 +17271,7 @@
     </unit>
     <unit id="core.studio.shell.announce-moved-down">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/announce-moved-down.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/announce-moved-down.</note>
       </notes>
       <segment>
         <source>Moved {label} down</source>
@@ -16519,7 +17279,7 @@
     </unit>
     <unit id="core.studio.shell.announce-moved-to">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/announce-moved-to.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/announce-moved-to.</note>
       </notes>
       <segment>
         <source>Moved {label} to {destination}</source>
@@ -16527,7 +17287,7 @@
     </unit>
     <unit id="core.studio.shell.announce-moved-up">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/announce-moved-up.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/announce-moved-up.</note>
       </notes>
       <segment>
         <source>Moved {label} up</source>
@@ -16535,7 +17295,7 @@
     </unit>
     <unit id="core.studio.shell.announce-name-required">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/announce-name-required.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/announce-name-required.</note>
       </notes>
       <segment>
         <source>Enter a name before applying the change.</source>
@@ -16543,7 +17303,7 @@
     </unit>
     <unit id="core.studio.shell.announce-override-removed">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/announce-override-removed.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/announce-override-removed.</note>
       </notes>
       <segment>
         <source>Removed the {property} override for the {viewport} viewport</source>
@@ -16551,7 +17311,7 @@
     </unit>
     <unit id="core.studio.shell.announce-override-set">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/announce-override-set.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/announce-override-set.</note>
       </notes>
       <segment>
         <source>Set the {property} override for the {viewport} viewport</source>
@@ -16559,7 +17319,7 @@
     </unit>
     <unit id="core.studio.shell.announce-pattern-applied">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/announce-pattern-applied.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/announce-pattern-applied.</note>
       </notes>
       <segment>
         <source>Applied the {pattern} pattern</source>
@@ -16567,7 +17327,7 @@
     </unit>
     <unit id="core.studio.shell.announce-preview-reloaded">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/announce-preview-reloaded.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/announce-preview-reloaded.</note>
       </notes>
       <segment>
         <source>The preview reloaded ({reason}). The document is unchanged.</source>
@@ -16575,7 +17335,7 @@
     </unit>
     <unit id="core.studio.shell.announce-preview-torn-down">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/announce-preview-torn-down.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/announce-preview-torn-down.</note>
       </notes>
       <segment>
         <source>The preview closed ({reason}). The document is unchanged.</source>
@@ -16583,7 +17343,7 @@
     </unit>
     <unit id="core.studio.shell.announce-property-set">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/announce-property-set.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/announce-property-set.</note>
       </notes>
       <segment>
         <source>Set {property}</source>
@@ -16591,7 +17351,7 @@
     </unit>
     <unit id="core.studio.shell.announce-property-unset">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/announce-property-unset.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/announce-property-unset.</note>
       </notes>
       <segment>
         <source>Unset {property}</source>
@@ -16599,7 +17359,7 @@
     </unit>
     <unit id="core.studio.shell.announce-recipe-applied">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/announce-recipe-applied.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/announce-recipe-applied.</note>
       </notes>
       <segment>
         <source>Applied the {recipe} recipe</source>
@@ -16607,7 +17367,7 @@
     </unit>
     <unit id="core.studio.shell.announce-redid">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/announce-redid.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/announce-redid.</note>
       </notes>
       <segment>
         <source>Redid change</source>
@@ -16615,7 +17375,7 @@
     </unit>
     <unit id="core.studio.shell.announce-restored">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/announce-restored.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/announce-restored.</note>
       </notes>
       <segment>
         <source>Restored {label} block</source>
@@ -16623,7 +17383,7 @@
     </unit>
     <unit id="core.studio.shell.announce-selection-cleared">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/announce-selection-cleared.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/announce-selection-cleared.</note>
       </notes>
       <segment>
         <source>Selection cleared</source>
@@ -16631,7 +17391,7 @@
     </unit>
     <unit id="core.studio.shell.announce-size-role-invalid">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/announce-size-role-invalid.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/announce-size-role-invalid.</note>
       </notes>
       <segment>
         <source>The {axis} role must be a lower-case identifier such as half or full-width. Nothing was changed.</source>
@@ -16639,7 +17399,7 @@
     </unit>
     <unit id="core.studio.shell.announce-size-role-removed">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/announce-size-role-removed.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/announce-size-role-removed.</note>
       </notes>
       <segment>
         <source>Removed the {axis} role</source>
@@ -16647,7 +17407,7 @@
     </unit>
     <unit id="core.studio.shell.announce-size-role-removed-viewport">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/announce-size-role-removed-viewport.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/announce-size-role-removed-viewport.</note>
       </notes>
       <segment>
         <source>Removed the {axis} role for the {viewport} viewport</source>
@@ -16655,7 +17415,7 @@
     </unit>
     <unit id="core.studio.shell.announce-size-role-set">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/announce-size-role-set.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/announce-size-role-set.</note>
       </notes>
       <segment>
         <source>Set the {axis} role to {role}</source>
@@ -16663,7 +17423,7 @@
     </unit>
     <unit id="core.studio.shell.announce-size-role-set-viewport">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/announce-size-role-set-viewport.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/announce-size-role-set-viewport.</note>
       </notes>
       <segment>
         <source>Set the {axis} role to {role} for the {viewport} viewport</source>
@@ -16671,7 +17431,7 @@
     </unit>
     <unit id="core.studio.shell.announce-undid">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/announce-undid.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/announce-undid.</note>
       </notes>
       <segment>
         <source>Undid change</source>
@@ -16679,7 +17439,7 @@
     </unit>
     <unit id="core.studio.shell.announce-viewport-changed">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/announce-viewport-changed.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/announce-viewport-changed.</note>
       </notes>
       <segment>
         <source>Previewing the {label} viewport</source>
@@ -16687,7 +17447,7 @@
     </unit>
     <unit id="core.studio.shell.block-actions">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/block-actions.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/block-actions.</note>
       </notes>
       <segment>
         <source>Block actions</source>
@@ -16695,7 +17455,7 @@
     </unit>
     <unit id="core.studio.shell.breadcrumb-label">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/breadcrumb-label.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/breadcrumb-label.</note>
       </notes>
       <segment>
         <source>Selection path</source>
@@ -16703,7 +17463,7 @@
     </unit>
     <unit id="core.studio.shell.canvas-edit-toggle">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/canvas-edit-toggle.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/canvas-edit-toggle.</note>
       </notes>
       <segment>
         <source>Select and move rendered blocks</source>
@@ -16711,7 +17471,7 @@
     </unit>
     <unit id="core.studio.shell.canvas-empty">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/canvas-empty.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/canvas-empty.</note>
       </notes>
       <segment>
         <source>Choose a block to begin composing.</source>
@@ -16719,7 +17479,7 @@
     </unit>
     <unit id="core.studio.shell.canvas-label">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/canvas-label.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/canvas-label.</note>
       </notes>
       <segment>
         <source>Blueprint structure</source>
@@ -16727,7 +17487,7 @@
     </unit>
     <unit id="core.studio.shell.canvas-mode-editing">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/canvas-mode-editing.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/canvas-mode-editing.</note>
       </notes>
       <segment>
         <source>selecting and moving blocks</source>
@@ -16735,7 +17495,7 @@
     </unit>
     <unit id="core.studio.shell.canvas-mode-interacting">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/canvas-mode-interacting.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/canvas-mode-interacting.</note>
       </notes>
       <segment>
         <source>interacting with the rendered preview</source>
@@ -16743,7 +17503,7 @@
     </unit>
     <unit id="core.studio.shell.command-apply-pattern">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/command-apply-pattern.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/command-apply-pattern.</note>
       </notes>
       <segment>
         <source>Apply pattern {pattern}</source>
@@ -16751,7 +17511,7 @@
     </unit>
     <unit id="core.studio.shell.command-clear-selection">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/command-clear-selection.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/command-clear-selection.</note>
       </notes>
       <segment>
         <source>Clear selection</source>
@@ -16759,7 +17519,7 @@
     </unit>
     <unit id="core.studio.shell.command-insert">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/command-insert.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/command-insert.</note>
       </notes>
       <segment>
         <source>Insert {label}</source>
@@ -16767,7 +17527,7 @@
     </unit>
     <unit id="core.studio.shell.command-move-to">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/command-move-to.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/command-move-to.</note>
       </notes>
       <segment>
         <source>Move to {destination}</source>
@@ -16775,7 +17535,7 @@
     </unit>
     <unit id="core.studio.shell.command-palette-empty">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/command-palette-empty.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/command-palette-empty.</note>
       </notes>
       <segment>
         <source>No commands match the filter.</source>
@@ -16783,7 +17543,7 @@
     </unit>
     <unit id="core.studio.shell.command-palette-hint">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/command-palette-hint.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/command-palette-hint.</note>
       </notes>
       <segment>
         <source>Type to filter commands. Arrow Down moves into the results, Arrow Up returns to the filter, Enter runs a command, Escape closes.</source>
@@ -16791,7 +17551,7 @@
     </unit>
     <unit id="core.studio.shell.command-palette-input-label">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/command-palette-input-label.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/command-palette-input-label.</note>
       </notes>
       <segment>
         <source>Filter commands</source>
@@ -16799,7 +17559,7 @@
     </unit>
     <unit id="core.studio.shell.command-palette-label">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/command-palette-label.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/command-palette-label.</note>
       </notes>
       <segment>
         <source>Command palette</source>
@@ -16807,7 +17567,7 @@
     </unit>
     <unit id="core.studio.shell.command-palette-results-label">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/command-palette-results-label.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/command-palette-results-label.</note>
       </notes>
       <segment>
         <source>Matching commands</source>
@@ -16815,7 +17575,7 @@
     </unit>
     <unit id="core.studio.shell.command-palette-toggle">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/command-palette-toggle.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/command-palette-toggle.</note>
       </notes>
       <segment>
         <source>Commands</source>
@@ -16823,7 +17583,7 @@
     </unit>
     <unit id="core.studio.shell.delete">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/delete.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/delete.</note>
       </notes>
       <segment>
         <source>Delete</source>
@@ -16831,7 +17591,7 @@
     </unit>
     <unit id="core.studio.shell.diagnostics-empty">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/diagnostics-empty.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/diagnostics-empty.</note>
       </notes>
       <segment>
         <source>No issues</source>
@@ -16839,7 +17599,7 @@
     </unit>
     <unit id="core.studio.shell.diagnostics-heading">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/diagnostics-heading.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/diagnostics-heading.</note>
       </notes>
       <segment>
         <source>Diagnostics</source>
@@ -16847,7 +17607,7 @@
     </unit>
     <unit id="core.studio.shell.document-roots">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/document-roots.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/document-roots.</note>
       </notes>
       <segment>
         <source>document roots</source>
@@ -16855,7 +17615,7 @@
     </unit>
     <unit id="core.studio.shell.drag-drop-position">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/drag-drop-position.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/drag-drop-position.</note>
       </notes>
       <segment>
         <source>Moving {label} to position {position} of {count}</source>
@@ -16863,7 +17623,7 @@
     </unit>
     <unit id="core.studio.shell.duplicate">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/duplicate.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/duplicate.</note>
       </notes>
       <segment>
         <source>Duplicate</source>
@@ -16871,7 +17631,7 @@
     </unit>
     <unit id="core.studio.shell.history-label">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/history-label.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/history-label.</note>
       </notes>
       <segment>
         <source>History</source>
@@ -16879,7 +17639,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-add-override">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-add-override.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-add-override.</note>
       </notes>
       <segment>
         <source>Add override</source>
@@ -16887,7 +17647,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-add-override-name-label">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-add-override-name-label.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-add-override-name-label.</note>
       </notes>
       <segment>
         <source>Override property name</source>
@@ -16895,7 +17655,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-add-override-value-label">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-add-override-value-label.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-add-override-value-label.</note>
       </notes>
       <segment>
         <source>Override value as JSON</source>
@@ -16903,7 +17663,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-add-property">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-add-property.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-add-property.</note>
       </notes>
       <segment>
         <source>Add property</source>
@@ -16911,7 +17671,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-add-property-name-label">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-add-property-name-label.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-add-property-name-label.</note>
       </notes>
       <segment>
         <source>New property name</source>
@@ -16919,7 +17679,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-add-property-value-label">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-add-property-value-label.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-add-property-value-label.</note>
       </notes>
       <segment>
         <source>New property value as JSON</source>
@@ -16927,7 +17687,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-binding-accepts">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-binding-accepts.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-binding-accepts.</note>
       </notes>
       <segment>
         <source>Accepts {cardinality} {value-type} value</source>
@@ -16935,7 +17695,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-binding-control-label">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-binding-control-label.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-binding-control-label.</note>
       </notes>
       <segment>
         <source>Declared {control} control for {field}</source>
@@ -16943,7 +17703,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-binding-control-preview">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-binding-control-preview.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-binding-control-preview.</note>
       </notes>
       <segment>
         <source>Control preview</source>
@@ -16951,7 +17711,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-binding-control-unavailable">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-binding-control-unavailable.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-binding-control-unavailable.</note>
       </notes>
       <segment>
         <source>The declared {control} control requires a host field-adapter contribution.</source>
@@ -16959,7 +17719,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-binding-control-undeclared">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-binding-control-undeclared.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-binding-control-undeclared.</note>
       </notes>
       <segment>
         <source>This field declares no authoring control.</source>
@@ -16967,7 +17727,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-binding-field-placeholder">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-binding-field-placeholder.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-binding-field-placeholder.</note>
       </notes>
       <segment>
         <source>Choose a model field</source>
@@ -16975,7 +17735,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-binding-invalid">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-binding-invalid.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-binding-invalid.</note>
       </notes>
       <segment>
         <source>This binding no longer resolves and requires migration.</source>
@@ -16983,7 +17743,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-binding-model">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-binding-model.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-binding-model.</note>
       </notes>
       <segment>
         <source>Fields from locked model {model}</source>
@@ -16991,7 +17751,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-binding-model-mismatch">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-binding-model-mismatch.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-binding-model-mismatch.</note>
       </notes>
       <segment>
         <source>The projected model does not match the Blueprint lock. Binding choices are disabled; see diagnostics.</source>
@@ -16999,7 +17759,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-binding-model-unavailable">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-binding-model-unavailable.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-binding-model-unavailable.</note>
       </notes>
       <segment>
         <source>The session advertises model reads, but no active model projection is loaded. Binding choices are disabled.</source>
@@ -17007,7 +17767,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-binding-no-compatible-fields">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-binding-no-compatible-fields.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-binding-no-compatible-fields.</note>
       </notes>
       <segment>
         <source>No compatible model fields</source>
@@ -17015,7 +17775,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-binding-non-field-source">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-binding-non-field-source.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-binding-non-field-source.</note>
       </notes>
       <segment>
         <source>This port uses a non-field source. Choosing a model field replaces that source explicitly.</source>
@@ -17023,7 +17783,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-binding-port-label">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-binding-port-label.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-binding-port-label.</note>
       </notes>
       <segment>
         <source>Binding port name</source>
@@ -17031,7 +17791,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-binding-required">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-binding-required.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-binding-required.</note>
       </notes>
       <segment>
         <source> (required)</source>
@@ -17039,7 +17799,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-binding-value-label">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-binding-value-label.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-binding-value-label.</note>
       </notes>
       <segment>
         <source>Binding value as JSON</source>
@@ -17047,7 +17807,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-bindings-empty">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-bindings-empty.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-bindings-empty.</note>
       </notes>
       <segment>
         <source>No bindings</source>
@@ -17055,7 +17815,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-bindings-heading">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-bindings-heading.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-bindings-heading.</note>
       </notes>
       <segment>
         <source>Bindings</source>
@@ -17063,7 +17823,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-design-heading">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-design-heading.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-design-heading.</note>
       </notes>
       <segment>
         <source>Design</source>
@@ -17071,7 +17831,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-design-placeholder">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-design-placeholder.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-design-placeholder.</note>
       </notes>
       <segment>
         <source>Choose a token</source>
@@ -17079,7 +17839,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-design-unset">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-design-unset.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-design-unset.</note>
       </notes>
       <segment>
         <source>Remove</source>
@@ -17087,7 +17847,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-empty">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-empty.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-empty.</note>
       </notes>
       <segment>
         <source>Select a block to inspect its contract.</source>
@@ -17095,7 +17855,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-heading">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-heading.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-heading.</note>
       </notes>
       <segment>
         <source>Inspector</source>
@@ -17103,7 +17863,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-hint">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-hint.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-hint.</note>
       </notes>
       <segment>
         <source>Inputs hold JSON values. Enter applies the edit, Escape reverts it.</source>
@@ -17111,7 +17871,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-identifier">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-identifier.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-identifier.</note>
       </notes>
       <segment>
         <source>Identifier</source>
@@ -17119,7 +17879,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-layout-axis-block">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-layout-axis-block.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-layout-axis-block.</note>
       </notes>
       <segment>
         <source>Block size</source>
@@ -17127,7 +17887,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-layout-axis-inline">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-layout-axis-inline.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-layout-axis-inline.</note>
       </notes>
       <segment>
         <source>Inline size</source>
@@ -17135,7 +17895,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-layout-base-none">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-layout-base-none.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-layout-base-none.</note>
       </notes>
       <segment>
         <source>Base: none</source>
@@ -17143,7 +17903,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-layout-base-role">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-layout-base-role.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-layout-base-role.</note>
       </notes>
       <segment>
         <source>Base: {role}</source>
@@ -17151,7 +17911,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-layout-fallback-hint">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-layout-fallback-hint.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-layout-fallback-hint.</note>
       </notes>
       <segment>
         <source>No theme size-role vocabulary is available. Enter a lower-case role identifier; Enter applies it, Escape cancels.</source>
@@ -17159,7 +17919,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-layout-heading">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-layout-heading.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-layout-heading.</note>
       </notes>
       <segment>
         <source>Layout</source>
@@ -17167,7 +17927,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-layout-no-roles">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-layout-no-roles.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-layout-no-roles.</note>
       </notes>
       <segment>
         <source>The active theme declares no size roles, so none can be assigned.</source>
@@ -17175,7 +17935,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-layout-role-label-base">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-layout-role-label-base.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-layout-role-label-base.</note>
       </notes>
       <segment>
         <source>{axis} role (base)</source>
@@ -17183,7 +17943,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-layout-role-label-viewport">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-layout-role-label-viewport.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-layout-role-label-viewport.</note>
       </notes>
       <segment>
         <source>{axis} role override for the {viewport} viewport</source>
@@ -17191,7 +17951,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-layout-role-placeholder">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-layout-role-placeholder.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-layout-role-placeholder.</note>
       </notes>
       <segment>
         <source>Choose a role</source>
@@ -17199,7 +17959,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-layout-unset">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-layout-unset.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-layout-unset.</note>
       </notes>
       <segment>
         <source>Remove</source>
@@ -17207,7 +17967,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-layout-unset-label-base">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-layout-unset-label-base.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-layout-unset-label-base.</note>
       </notes>
       <segment>
         <source>Remove the {axis} base role</source>
@@ -17215,7 +17975,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-layout-unset-label-viewport">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-layout-unset-label-viewport.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-layout-unset-label-viewport.</note>
       </notes>
       <segment>
         <source>Remove the {axis} role override for the {viewport} viewport</source>
@@ -17223,7 +17983,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-override-value-label">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-override-value-label.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-override-value-label.</note>
       </notes>
       <segment>
         <source>Override of {property} for the {viewport} viewport as JSON</source>
@@ -17231,7 +17991,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-overrides-empty">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-overrides-empty.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-overrides-empty.</note>
       </notes>
       <segment>
         <source>No overrides for the {viewport} viewport</source>
@@ -17239,7 +17999,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-overrides-heading">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-overrides-heading.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-overrides-heading.</note>
       </notes>
       <segment>
         <source>Overrides for the {viewport} viewport</source>
@@ -17247,7 +18007,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-properties">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-properties.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-properties.</note>
       </notes>
       <segment>
         <source>Properties</source>
@@ -17255,7 +18015,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-properties-empty">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-properties-empty.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-properties-empty.</note>
       </notes>
       <segment>
         <source>No properties</source>
@@ -17263,7 +18023,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-property-value-label">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-property-value-label.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-property-value-label.</note>
       </notes>
       <segment>
         <source>Value of {property} as JSON</source>
@@ -17271,7 +18031,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-provenance-base">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-provenance-base.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-provenance-base.</note>
       </notes>
       <segment>
         <source>Base value</source>
@@ -17279,7 +18039,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-provenance-inherited">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-provenance-inherited.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-provenance-inherited.</note>
       </notes>
       <segment>
         <source>Inherited from base: {value}</source>
@@ -17287,7 +18047,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-provenance-inherited-none">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-provenance-inherited-none.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-provenance-inherited-none.</note>
       </notes>
       <segment>
         <source>Inherited from base: none</source>
@@ -17295,7 +18055,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-provenance-overridden">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-provenance-overridden.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-provenance-overridden.</note>
       </notes>
       <segment>
         <source>Overridden for the {viewport} viewport: {value}</source>
@@ -17303,7 +18063,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-read-only">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-read-only.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-read-only.</note>
       </notes>
       <segment>
         <source>Editing is disabled because this session is read-only.</source>
@@ -17311,7 +18071,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-recipe-label">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-recipe-label.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-recipe-label.</note>
       </notes>
       <segment>
         <source>Recipe</source>
@@ -17319,7 +18079,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-recipe-placeholder">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-recipe-placeholder.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-recipe-placeholder.</note>
       </notes>
       <segment>
         <source>Choose a recipe</source>
@@ -17327,7 +18087,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-recipes-heading">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-recipes-heading.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-recipes-heading.</note>
       </notes>
       <segment>
         <source>Recipes</source>
@@ -17335,7 +18095,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-remove-binding">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-remove-binding.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-remove-binding.</note>
       </notes>
       <segment>
         <source>Remove</source>
@@ -17343,7 +18103,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-remove-binding-label">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-remove-binding-label.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-remove-binding-label.</note>
       </notes>
       <segment>
         <source>Remove the {port} binding</source>
@@ -17351,7 +18111,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-remove-override">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-remove-override.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-remove-override.</note>
       </notes>
       <segment>
         <source>Remove</source>
@@ -17359,7 +18119,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-remove-override-label">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-remove-override-label.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-remove-override-label.</note>
       </notes>
       <segment>
         <source>Remove the {property} override for the {viewport} viewport</source>
@@ -17367,7 +18127,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-reset-inheritance">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-reset-inheritance.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-reset-inheritance.</note>
       </notes>
       <segment>
         <source>Reset all viewport overrides</source>
@@ -17375,7 +18135,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-set-binding">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-set-binding.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-set-binding.</note>
       </notes>
       <segment>
         <source>Set binding</source>
@@ -17383,7 +18143,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-type">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-type.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-type.</note>
       </notes>
       <segment>
         <source>Type</source>
@@ -17391,7 +18151,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-unset">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-unset.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-unset.</note>
       </notes>
       <segment>
         <source>Unset</source>
@@ -17399,7 +18159,7 @@
     </unit>
     <unit id="core.studio.shell.inspector-unset-label">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/inspector-unset-label.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/inspector-unset-label.</note>
       </notes>
       <segment>
         <source>Unset {property}</source>
@@ -17407,7 +18167,7 @@
     </unit>
     <unit id="core.studio.shell.move-destination-label">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/move-destination-label.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/move-destination-label.</note>
       </notes>
       <segment>
         <source>Move block to another position or slot</source>
@@ -17415,7 +18175,7 @@
     </unit>
     <unit id="core.studio.shell.move-destination-option">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/move-destination-option.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/move-destination-option.</note>
       </notes>
       <segment>
         <source>{collection}, position {position} of {count}</source>
@@ -17423,7 +18183,7 @@
     </unit>
     <unit id="core.studio.shell.move-destination-placeholder">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/move-destination-placeholder.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/move-destination-placeholder.</note>
       </notes>
       <segment>
         <source>Choose a destination</source>
@@ -17431,7 +18191,7 @@
     </unit>
     <unit id="core.studio.shell.move-down">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/move-down.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/move-down.</note>
       </notes>
       <segment>
         <source>Move down</source>
@@ -17439,7 +18199,7 @@
     </unit>
     <unit id="core.studio.shell.move-slot-collection">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/move-slot-collection.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/move-slot-collection.</note>
       </notes>
       <segment>
         <source>{parent}: {slot} slot</source>
@@ -17447,7 +18207,7 @@
     </unit>
     <unit id="core.studio.shell.move-up">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/move-up.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/move-up.</note>
       </notes>
       <segment>
         <source>Move up</source>
@@ -17455,7 +18215,7 @@
     </unit>
     <unit id="core.studio.shell.outline-empty">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/outline-empty.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/outline-empty.</note>
       </notes>
       <segment>
         <source>The outline lists blocks once the document has content.</source>
@@ -17463,7 +18223,7 @@
     </unit>
     <unit id="core.studio.shell.outline-heading">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/outline-heading.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/outline-heading.</note>
       </notes>
       <segment>
         <source>Outline</source>
@@ -17471,7 +18231,7 @@
     </unit>
     <unit id="core.studio.shell.outline-hint">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/outline-hint.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/outline-hint.</note>
       </notes>
       <segment>
         <source>Arrow keys move focus. Alt+Arrow moves the block. Delete removes it. Ctrl+D or Cmd+D duplicates it.</source>
@@ -17479,7 +18239,7 @@
     </unit>
     <unit id="core.studio.shell.outline-slot">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/outline-slot.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/outline-slot.</note>
       </notes>
       <segment>
         <source>Slot: {slot}</source>
@@ -17487,7 +18247,7 @@
     </unit>
     <unit id="core.studio.shell.palette-heading">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/palette-heading.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/palette-heading.</note>
       </notes>
       <segment>
         <source>Blocks</source>
@@ -17495,7 +18255,7 @@
     </unit>
     <unit id="core.studio.shell.palette-label">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/palette-label.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/palette-label.</note>
       </notes>
       <segment>
         <source>Block palette</source>
@@ -17503,7 +18263,7 @@
     </unit>
     <unit id="core.studio.shell.patterns-heading">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/patterns-heading.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/patterns-heading.</note>
       </notes>
       <segment>
         <source>Patterns</source>
@@ -17511,7 +18271,7 @@
     </unit>
     <unit id="core.studio.shell.preview-closed">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/preview-closed.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/preview-closed.</note>
       </notes>
       <segment>
         <source>Preview is disconnected. Editing remains available.</source>
@@ -17519,7 +18279,7 @@
     </unit>
     <unit id="core.studio.shell.preview-connecting">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/preview-connecting.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/preview-connecting.</note>
       </notes>
       <segment>
         <source>Preview is connecting.</source>
@@ -17527,7 +18287,7 @@
     </unit>
     <unit id="core.studio.shell.preview-current">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/preview-current.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/preview-current.</note>
       </notes>
       <segment>
         <source>Preview is current.</source>
@@ -17535,7 +18295,7 @@
     </unit>
     <unit id="core.studio.shell.preview-heading">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/preview-heading.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/preview-heading.</note>
       </notes>
       <segment>
         <source>Preview</source>
@@ -17543,7 +18303,7 @@
     </unit>
     <unit id="core.studio.shell.preview-label">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/preview-label.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/preview-label.</note>
       </notes>
       <segment>
         <source>Rendered preview</source>
@@ -17551,7 +18311,7 @@
     </unit>
     <unit id="core.studio.shell.preview-rendering">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/preview-rendering.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/preview-rendering.</note>
       </notes>
       <segment>
         <source>Preview is updating.</source>
@@ -17559,7 +18319,7 @@
     </unit>
     <unit id="core.studio.shell.preview-stale">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/preview-stale.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/preview-stale.</note>
       </notes>
       <segment>
         <source>Preview is stale. Editing remains available.</source>
@@ -17567,7 +18327,7 @@
     </unit>
     <unit id="core.studio.shell.preview-unavailable">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/preview-unavailable.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/preview-unavailable.</note>
       </notes>
       <segment>
         <source>Preview is unavailable for this session. Editing remains available.</source>
@@ -17575,7 +18335,7 @@
     </unit>
     <unit id="core.studio.shell.redo">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/redo.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/redo.</note>
       </notes>
       <segment>
         <source>Redo</source>
@@ -17583,7 +18343,7 @@
     </unit>
     <unit id="core.studio.shell.restore-last-deleted">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/restore-last-deleted.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/restore-last-deleted.</note>
       </notes>
       <segment>
         <source>Restore last deleted block</source>
@@ -17591,7 +18351,7 @@
     </unit>
     <unit id="core.studio.shell.save-state-saved">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/save-state-saved.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/save-state-saved.</note>
       </notes>
       <segment>
         <source>Saved</source>
@@ -17599,7 +18359,7 @@
     </unit>
     <unit id="core.studio.shell.save-state-unsaved">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/save-state-unsaved.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/save-state-unsaved.</note>
       </notes>
       <segment>
         <source>Unsaved changes</source>
@@ -17607,7 +18367,7 @@
     </unit>
     <unit id="core.studio.shell.severity-blocking">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/severity-blocking.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/severity-blocking.</note>
       </notes>
       <segment>
         <source>Blocking</source>
@@ -17615,7 +18375,7 @@
     </unit>
     <unit id="core.studio.shell.severity-error">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/severity-error.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/severity-error.</note>
       </notes>
       <segment>
         <source>Error</source>
@@ -17623,7 +18383,7 @@
     </unit>
     <unit id="core.studio.shell.severity-information">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/severity-information.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/severity-information.</note>
       </notes>
       <segment>
         <source>Information</source>
@@ -17631,7 +18391,7 @@
     </unit>
     <unit id="core.studio.shell.severity-warning">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/severity-warning.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/severity-warning.</note>
       </notes>
       <segment>
         <source>Warning</source>
@@ -17639,7 +18399,7 @@
     </unit>
     <unit id="core.studio.shell.status-label">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/status-label.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/status-label.</note>
       </notes>
       <segment>
         <source>Status</source>
@@ -17647,7 +18407,7 @@
     </unit>
     <unit id="core.studio.shell.undo">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/undo.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/undo.</note>
       </notes>
       <segment>
         <source>Undo</source>
@@ -17655,7 +18415,7 @@
     </unit>
     <unit id="core.studio.shell.unresolved-block">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/unresolved-block.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/unresolved-block.</note>
       </notes>
       <segment>
         <source>(unresolved)</source>
@@ -17663,7 +18423,7 @@
     </unit>
     <unit id="core.studio.shell.viewport-label">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/viewport-label.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/viewport-label.</note>
       </notes>
       <segment>
         <source>Preview width</source>
@@ -17671,10 +18431,138 @@
     </unit>
     <unit id="core.studio.shell.visual-drop-target">
       <notes>
-        <note category="context">Exact @kumwe/studio 0.1.0-rc.1 authoring message studio.shell/visual-drop-target.</note>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.shell/visual-drop-target.</note>
       </notes>
       <segment>
         <source>Moving {label} to {destination}</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.standalone.change-local">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.standalone/change-local.</note>
+      </notes>
+      <segment>
+        <source>{artifact} changed in this browser session only.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.standalone.current-in-memory-draft">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.standalone/current-in-memory-draft.</note>
+      </notes>
+      <segment>
+        <source>Current in-memory draft</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.standalone.download-project">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.standalone/download-project.</note>
+      </notes>
+      <segment>
+        <source>Download project JSON</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.standalone.download-save-intent">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.standalone/download-save-intent.</note>
+      </notes>
+      <segment>
+        <source>Download save-intent JSON</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.standalone.heading">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.standalone/heading.</note>
+      </notes>
+      <segment>
+        <source>Local Studio workspace</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.standalone.import-failed">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.standalone/import-failed.</note>
+      </notes>
+      <segment>
+        <source>Project import failed: {message}</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.standalone.import-project">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.standalone/import-project.</note>
+      </notes>
+      <segment>
+        <source>Import project JSON</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.standalone.imported">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.standalone/imported.</note>
+      </notes>
+      <segment>
+        <source>Project imported into this browser session.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.standalone.json-actions">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.standalone/json-actions.</note>
+      </notes>
+      <segment>
+        <source>Local project import and download actions</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.standalone.no-in-memory-edits">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.standalone/no-in-memory-edits.</note>
+      </notes>
+      <segment>
+        <source>No in-memory edits</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.standalone.no-persistence">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.standalone/no-persistence.</note>
+      </notes>
+      <segment>
+        <source>Nothing is sent to or saved by a server. Changes live only in this page and are lost when it closes or reloads unless you download project JSON.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.standalone.project-downloaded">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.standalone/project-downloaded.</note>
+      </notes>
+      <segment>
+        <source>The complete Studio project JSON was downloaded.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.standalone.save-button-announcement">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.standalone/save-button-announcement.</note>
+      </notes>
+      <segment>
+        <source>{outcome} intent downloaded. No save occurred.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.standalone.save-button-help">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.standalone/save-button-help.</note>
+      </notes>
+      <segment>
+        <source>Downloads the selected host save-intent JSON. Nothing is sent or saved.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.standalone.save-intent-downloaded">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.standalone/save-intent-downloaded.</note>
+      </notes>
+      <segment>
+        <source>The {outcome} host save-intent JSON was downloaded. No save occurred.</source>
+      </segment>
+    </unit>
+    <unit id="core.studio.standalone.save-intent-outcome">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.3 authoring message studio.standalone/save-intent-outcome.</note>
+      </notes>
+      <segment>
+        <source>Save-intent outcome</source>
       </segment>
     </unit>
   </file>

@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-namespace KumweTest\Unit\Studio\Application\Rendering;
+namespace Kumwe\App\Tests\Unit\Studio\Application\Rendering;
 
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\Studio\Application\Rendering\FragmentStudioPreviewBlockRenderer;
 use Kumwe\App\Studio\Application\Rendering\StudioBlockRendererRuntime;
 use Kumwe\App\Studio\Application\Rendering\StudioContentFieldBlockRenderer;
 use Kumwe\App\Studio\Application\Rendering\StudioRenderResultAdmission;
@@ -13,6 +14,10 @@ use Kumwe\Extension\Spi\Contribution\CanonicalCompositionDocument;
 use Kumwe\Extension\Spi\Contribution\CanonicalCompositionKind;
 use Kumwe\Extension\Spi\Contribution\CompositionHostBinding;
 use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Extension\Spi\Studio\Application\Preview\StudioPreviewBindingResult;
+use Kumwe\Extension\Spi\Studio\Application\Preview\StudioPreviewBlock;
+use Kumwe\Extension\Spi\Studio\Application\Preview\StudioPreviewBlockFragment;
+use Kumwe\Extension\Spi\Studio\Application\Preview\StudioPreviewBlockRenderer;
 use Kumwe\Producer\Canonical\CanonicalJson;
 use Kumwe\Producer\Render\BindingResolution;
 use Kumwe\Producer\Render\BlockRenderer;
@@ -35,8 +40,20 @@ use stdClass;
 #[CoversClass(StudioContentFieldBlockRenderer::class)]
 #[CoversClass(StudioRenderResultAdmission::class)]
 #[UsesClass(ExtensionContributionRegistrySet::class)]
+/**
+ * Proves registry composition binds core coordinates directly and fences extension implementations.
+ *
+ * @since  2.0.0
+ */
 final class StudioBlockRendererRuntimeTest extends TestCase
 {
+    /**
+     * Prove core coordinates resolve directly and the full Producer output stays escaped and complete.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function testItBindsCoreCoordinatesDirectlyAndReturnsCompleteProducerOutput(): void
     {
         $registries = new ExtensionContributionRegistrySet();
@@ -101,6 +118,13 @@ final class StudioBlockRendererRuntimeTest extends TestCase
         self::assertSame([], $result->enhancements);
     }
 
+    /**
+     * Prove every registry decision re-reads live owner authority instead of reusing a snapshot.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function testEachRegistryReflectsCurrentOwnerAuthorityWithoutSnapshotReuse(): void
     {
         $registries = new ExtensionContributionRegistrySet();
@@ -112,6 +136,13 @@ final class StudioBlockRendererRuntimeTest extends TestCase
         self::assertFalse($runtime->registry()->supports($coordinate));
     }
 
+    /**
+     * Prove a hidden binding suppresses the wrapper without leaking the bound value into markup.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function testHiddenBindingIsRetainedOnlyAsProducerWrapperState(): void
     {
         $runtime = new StudioBlockRendererRuntime(
@@ -146,6 +177,13 @@ final class StudioBlockRendererRuntimeTest extends TestCase
         self::assertStringNotContainsString('hidden-field</', $result->html);
     }
 
+    /**
+     * Prove the App refuses a requested Producer enhancement rather than silently discarding it.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function testAppRefusesAProducerEnhancementInsteadOfDiscardingIt(): void
     {
         $result = new RenderResult(
@@ -159,14 +197,66 @@ final class StudioBlockRendererRuntimeTest extends TestCase
         StudioRenderResultAdmission::assertSupported($result);
     }
 
-    public function testExtensionCoordinateReturnsTheExactDirectProducerRenderer(): void
+    /**
+     * Prove a trusted SDK implementation resolves at its exact coordinate through the fragment adapter.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTrustedSdkImplementationProjectsThroughTheFragmentAdapter(): void
     {
-        [$registries, $coordinate, $renderer] = self::extensionRuntime();
+        [$registries, $coordinate] = self::extensionRuntime();
         $runtime = new StudioBlockRendererRuntime($registries, new StudioContentFieldBlockRenderer());
 
-        self::assertSame($renderer, $runtime->registry()->rendererFor($coordinate));
+        self::assertTrue($runtime->registry()->supports($coordinate));
+        self::assertInstanceOf(
+            FragmentStudioPreviewBlockRenderer::class,
+            $runtime->registry('compact')->rendererFor($coordinate),
+        );
     }
 
+    /**
+     * Prove an implementation outside the frozen SDK fragment SPI cannot even register.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAProducerEngineImplementationCannotRegisterAsAPreviewRenderer(): void
+    {
+        $producerRenderer = new class implements BlockRenderer {
+            /**
+             * Emit fixed markup so registration alone decides whether this executes.
+             *
+             * @param   stdClass     $node   The decoded Blueprint node to render.
+             * @param   string       $scope  The node's CSS-safe scope token.
+             * @param   RenderState  $state  Per-render accumulation and engine services.
+             *
+             * @return  string  Fixed inner markup.
+             *
+             * @since   2.0.0
+             */
+            public function render(stdClass $node, string $scope, RenderState $state): string
+            {
+                unset($node, $scope, $state);
+
+                return '<p>Exact extension renderer</p>';
+            }
+        };
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('requires an implementation of');
+        self::extensionRuntime($producerRenderer);
+    }
+
+    /**
+     * Prove one ambiguous trusted extension coordinate refuses the whole registry decision.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function testDuplicateTrustedExtensionCoordinateFailsClosed(): void
     {
         [$registries] = self::extensionRuntime();
@@ -188,9 +278,16 @@ final class StudioBlockRendererRuntimeTest extends TestCase
     }
 
     /**
-     * @return array{ExtensionContributionRegistrySet, BlockCoordinate, BlockRenderer}
+     * Register one signed extension block with a contributed executable for its preview renderer.
+     *
+     * @param   ?object  $renderer  Implementation to register; defaults to a bounded SDK fixture.
+     *
+     * @return  array{ExtensionContributionRegistrySet, BlockCoordinate, object}  Registries, the
+     *          exact block coordinate, and the registered implementation.
+     *
+     * @since   2.0.0
      */
-    private static function extensionRuntime(): array
+    private static function extensionRuntime(?object $renderer = null): array
     {
         $document = json_decode(
             StudioContractResources::testkitBytes('fixtures/block.grid.example.json'),
@@ -223,12 +320,26 @@ final class StudioBlockRendererRuntimeTest extends TestCase
             'acme.shop.renderer.grid',
         );
         $owner = ContributionOwner::extension('acme/shop');
-        $renderer = new class implements BlockRenderer {
-            public function render(stdClass $node, string $scope, RenderState $state): string
-            {
-                unset($node, $scope, $state);
+        $renderer ??= new class implements StudioPreviewBlockRenderer {
+            /**
+             * Emit one bounded fixture fragment regardless of block, binding or viewport.
+             *
+             * @param   StudioPreviewBlock          $block     Immutable copied contributed grid input.
+             * @param   StudioPreviewBindingResult  $binding   Authorized binding projection.
+             * @param   string                      $viewport  Active semantic viewport.
+             *
+             * @return  StudioPreviewBlockFragment  Constant fixture fragment.
+             *
+             * @since   2.0.0
+             */
+            public function render(
+                StudioPreviewBlock $block,
+                StudioPreviewBindingResult $binding,
+                string $viewport,
+            ): StudioPreviewBlockFragment {
+                unset($block, $binding, $viewport);
 
-                return '<p>Exact extension renderer</p>';
+                return new StudioPreviewBlockFragment('div', 'acme-shop-grid', '');
             }
         };
         $registries = new ExtensionContributionRegistrySet(withCore: false);

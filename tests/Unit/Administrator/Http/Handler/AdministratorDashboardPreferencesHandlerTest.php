@@ -161,7 +161,6 @@ final class AdministratorDashboardPreferencesHandlerTest extends TestCase
                 $index,
             ));
         }
-        $registrar->complete();
         $runtime = new DashboardPreferenceTestRuntime();
         $handler = new AdministratorDashboardPreferencesHandler(
             $runtime->service,

@@ -601,7 +601,7 @@
       "result_summary": "Passed; durable run: https://github.com/kumwe/app/actions/runs/31549497432",
       "artifact_paths": [
         "src/Presentation/Infrastructure/TwigThemePackageValidator.php",
-        "src/Extension/Domain/TemplateKisCompatibility.php",
+        "vendor/kumwe/extension-sdk/src/Manifest/TemplateKisCompatibility.php",
         "tests/Unit/Presentation/Application/ThemePackageValidatorTest.php",
         "tests/Integration/Presentation/DoctrineThemeManagerIntegrationTest.php",
         "examples/extensions/minimal-administrator-template/kumwe.json",

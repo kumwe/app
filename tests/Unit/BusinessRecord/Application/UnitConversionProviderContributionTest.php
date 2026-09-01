@@ -255,7 +255,7 @@ final class UnitConversionProviderContributionTest extends TestCase
             4,
         );
         self::assertSame(
-            [['provider_id' => 'acme.units.trade', 'units' => ['case', 'unit'], 'priority' => 3]],
+            [['priority' => 3, 'provider_id' => 'acme.units.trade', 'units' => ['case', 'unit']]],
             $parsed->declarations()['integration']['unit_converters'] ?? null,
         );
 

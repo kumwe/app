@@ -28,17 +28,17 @@ final readonly class StudioProducerHost implements HostAdapterInterface
     /**
      * Bind Producer's authorities and all nine pinned operation ports for one App request.
      *
-     * @param  AuthorizationInterface      $authorization  Trusted per-call App authority.
-     * @param  MutationBoundaryInterface   $mutations      Host-atomic App mutation boundary.
-     * @param  ArtifactPortInterface       $artifact       Required artifact port.
-     * @param  LocalizationPortInterface   $localization   App localization port.
-     * @param  MediaPortInterface          $media          App media port.
-     * @param  ModelPortInterface          $model          App model port.
-     * @param  PermissionPortInterface     $permission     App permission port.
-     * @param  PreviewPortInterface        $preview        App preview port.
-     * @param  RecoveryPortInterface       $recovery       App recovery port.
-     * @param  ResourcePortInterface       $resource       App resource port.
-     * @param  TelemetryPortInterface      $telemetry      App telemetry port.
+     * @param  AuthorizationInterface     $authorization  Trusted per-call App authority.
+     * @param  MutationBoundaryInterface  $mutations      Host-atomic App mutation boundary.
+     * @param  ArtifactPortInterface      $artifact       Required artifact port.
+     * @param  LocalizationPortInterface  $localization   App localization port.
+     * @param  MediaPortInterface         $media          App media port.
+     * @param  ModelPortInterface         $model          App model port.
+     * @param  PermissionPortInterface    $permission     App permission port.
+     * @param  PreviewPortInterface       $preview        App preview port.
+     * @param  RecoveryPortInterface      $recovery       App recovery port.
+     * @param  ResourcePortInterface      $resource       App resource port.
+     * @param  TelemetryPortInterface     $telemetry      App telemetry port.
      *
      * @since  2.0.0
      */
@@ -62,7 +62,7 @@ final readonly class StudioProducerHost implements HostAdapterInterface
      *
      * @return  AuthorizationInterface  Exact per-call authority.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function authorization(): AuthorizationInterface
     {
@@ -74,7 +74,7 @@ final readonly class StudioProducerHost implements HostAdapterInterface
      *
      * @return  MutationBoundaryInterface  Exact per-request mutation boundary.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function mutations(): MutationBoundaryInterface
     {
@@ -90,7 +90,7 @@ final readonly class StudioProducerHost implements HostAdapterInterface
      *
      * @return  AuthoringPortInterface|null  Always null; authoring is not served.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function authoring(): ?AuthoringPortInterface
     {
@@ -102,7 +102,7 @@ final readonly class StudioProducerHost implements HostAdapterInterface
      *
      * @return  ArtifactPortInterface  App artifact implementation.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function artifact(): ArtifactPortInterface
     {
@@ -114,7 +114,7 @@ final readonly class StudioProducerHost implements HostAdapterInterface
      *
      * @return  LocalizationPortInterface  App localization implementation.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function localization(): LocalizationPortInterface
     {
@@ -126,7 +126,7 @@ final readonly class StudioProducerHost implements HostAdapterInterface
      *
      * @return  MediaPortInterface  App media implementation.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function media(): MediaPortInterface
     {
@@ -138,7 +138,7 @@ final readonly class StudioProducerHost implements HostAdapterInterface
      *
      * @return  ModelPortInterface  App model implementation.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function model(): ModelPortInterface
     {
@@ -150,7 +150,7 @@ final readonly class StudioProducerHost implements HostAdapterInterface
      *
      * @return  PermissionPortInterface  App permission implementation.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function permission(): PermissionPortInterface
     {
@@ -162,7 +162,7 @@ final readonly class StudioProducerHost implements HostAdapterInterface
      *
      * @return  PreviewPortInterface  App preview implementation.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function preview(): PreviewPortInterface
     {
@@ -174,7 +174,7 @@ final readonly class StudioProducerHost implements HostAdapterInterface
      *
      * @return  RecoveryPortInterface  App recovery implementation.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function recovery(): RecoveryPortInterface
     {
@@ -186,7 +186,7 @@ final readonly class StudioProducerHost implements HostAdapterInterface
      *
      * @return  ResourcePortInterface  App resource implementation.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function resource(): ResourcePortInterface
     {
@@ -198,7 +198,7 @@ final readonly class StudioProducerHost implements HostAdapterInterface
      *
      * @return  TelemetryPortInterface  App telemetry implementation.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function telemetry(): TelemetryPortInterface
     {
