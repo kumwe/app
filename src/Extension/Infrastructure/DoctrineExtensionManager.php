@@ -1782,51 +1782,67 @@ final readonly class DoctrineExtensionManager
     private function contributionDiagnostics(ExtensionManifest $manifest, bool $active): array
     {
         $contributions = $manifest->contributions()->declarations();
-        foreach ($contributions['capabilities'] ?? [] as $index => $capability) {
-            if (!is_array($capability)) {
-                throw new LogicException('The canonical capability graph changed shape after SDK validation.');
-            }
-            $capability['active'] = $active
-                && in_array($capability['lifecycle'] ?? null, ['active', 'deprecated'], true);
-            $contributions['capabilities'][$index] = $capability;
+        $lifecycleFlag = static fn (array $entry): bool => $active
+            && in_array($entry['lifecycle'] ?? null, ['active', 'deprecated'], true);
+        $ownerFlag = static fn (array $entry): bool => $active;
+        $capabilities = $contributions['capabilities'] ?? null;
+        if (is_array($capabilities)) {
+            $contributions['capabilities'] = self::flaggedEntries($capabilities, 'capability', $lifecycleFlag);
         }
-        foreach ($contributions['resource_policies'] ?? [] as $index => $policy) {
-            if (!is_array($policy)) {
-                throw new LogicException('The canonical resource-policy graph changed shape after SDK validation.');
-            }
-            $policy['active'] = $active
-                && in_array($policy['lifecycle'] ?? null, ['active', 'deprecated'], true);
-            $contributions['resource_policies'][$index] = $policy;
+        $policies = $contributions['resource_policies'] ?? null;
+        if (is_array($policies)) {
+            $contributions['resource_policies'] = self::flaggedEntries($policies, 'resource-policy', $lifecycleFlag);
         }
-        foreach (['workspaces', 'navigation', 'routes', 'views'] as $kind) {
-            foreach ($contributions['administrator'][$kind] ?? [] as $index => $item) {
-                if (!is_array($item)) {
-                    throw new LogicException('The canonical administrator graph changed shape after SDK validation.');
+        $administrator = $contributions['administrator'] ?? null;
+        if (is_array($administrator)) {
+            foreach (['workspaces', 'navigation', 'routes', 'views'] as $kind) {
+                $entries = $administrator[$kind] ?? null;
+                if (is_array($entries)) {
+                    $administrator[$kind] = self::flaggedEntries($entries, 'administrator', $ownerFlag);
                 }
-                $item['active'] = $active;
-                $contributions['administrator'][$kind][$index] = $item;
             }
+            $contributions['administrator'] = $administrator;
         }
-        foreach (['field_types', 'definitions'] as $kind) {
-            foreach ($contributions['business'][$kind] ?? [] as $index => $item) {
-                if (!is_array($item)) {
-                    throw new LogicException('The canonical business graph changed shape after SDK validation.');
+        $business = $contributions['business'] ?? null;
+        if (is_array($business)) {
+            foreach (['field_types', 'definitions', 'field_presentations', 'view_handlers', 'action_handlers'] as $kind) {
+                $entries = $business[$kind] ?? null;
+                if (is_array($entries)) {
+                    $business[$kind] = self::flaggedEntries($entries, 'business', $ownerFlag);
                 }
-                $item['active'] = $active;
-                $contributions['business'][$kind][$index] = $item;
             }
-        }
-        foreach (['field_presentations', 'view_handlers', 'action_handlers'] as $kind) {
-            foreach ($contributions['business'][$kind] ?? [] as $index => $item) {
-                if (!is_array($item)) {
-                    throw new LogicException('The canonical business graph changed shape after SDK validation.');
-                }
-                $item['active'] = $active;
-                $contributions['business'][$kind][$index] = $item;
-            }
+            $contributions['business'] = $business;
         }
         $contributions['active'] = $active;
         return $contributions;
+    }
+
+    /**
+     * Stamp the live flag on every declared entry of one contribution kind.
+     *
+     * @param   array<mixed>                  $entries  Declared entries of one contribution kind.
+     * @param   string                        $graph    Canonical graph name for the impossible-shape failure.
+     * @param   callable(array<mixed>): bool  $flag     Per-entry live decision.
+     *
+     * @return  array<mixed>  The entries with their `active` flag stamped, keys preserved.
+     *
+     * @throws  LogicException  When the canonical graph changed shape after SDK validation.
+     *
+     * @since   2.0.0
+     */
+    private static function flaggedEntries(array $entries, string $graph, callable $flag): array
+    {
+        foreach ($entries as $index => $entry) {
+            if (!is_array($entry)) {
+                throw new LogicException(
+                    sprintf('The canonical %s graph changed shape after SDK validation.', $graph),
+                );
+            }
+            $entry['active'] = $flag($entry);
+            $entries[$index] = $entry;
+        }
+
+        return $entries;
     }
 
     /**
