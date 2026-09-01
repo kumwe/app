@@ -1771,10 +1771,11 @@ final readonly class DoctrineExtensionManager
      * in their individual flag, so disabled and retired declarations are never reported as live merely
      * because their owner is.
      *
+     * The canonical SDK graph carries only the sections a manifest declares. The administrator screen reads
+     * a stable shape, so every section it knows is present here, empty when undeclared.
+     *
      * @param   ExtensionManifest  $manifest  Manifest whose declared contribution set is described.
      * @param   bool               $active    Whether the extension's registry status is currently `active`.
-     *          The canonical SDK graph carries only the sections a manifest declares. The administrator screen
-     *          reads a stable shape, so every section it knows is present here, empty when undeclared.
      *
      * @return  array<string, mixed>  The contribution set as declared, every known section present, with
      *          an `active` flag added at the top level and on every individual entry.
