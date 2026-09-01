@@ -778,6 +778,23 @@ final class ApplicationAuthorizationTest extends TestCase
         self::assertStringContainsString('authorization-denied', (string) $response->getBody());
     }
 
+    /**
+     * Prove the SDK-facing scope accessors disclose exactly the coordinates the context carries.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testSdkScopeAccessorsDiscloseExactlyTheCarriedCoordinates(): void
+    {
+        $context = $this->context('content.read', 'content', self::PAGE_ONE);
+
+        self::assertSame(SiteContext::DEFAULT, $context->siteIdentifier());
+        self::assertNull($context->organizationIdentifier());
+        self::assertNull($context->workspaceIdentifier());
+        self::assertSame('api', $context->deliverySurface());
+    }
+
     private function content(
         ContentRepository $repository,
         ?ResourceSiteOwnershipWriter $ownership = null,
