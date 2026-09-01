@@ -21,7 +21,12 @@ use stdClass;
  */
 final readonly class StudioContentFieldBlockRenderer implements BlockRenderer
 {
-    /** @var list<string> Exact App-owned block types implemented here. @since 2.0.0 */
+    /**
+     * Exact App-owned block types implemented here.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
     public const array BLOCK_TYPES = [
         'core/field-text',
         'core/field-rich-text',
@@ -95,7 +100,15 @@ final readonly class StudioContentFieldBlockRenderer implements BlockRenderer
         return mb_substr($text, 0, 100_000, 'UTF-8');
     }
 
-    /** Flatten the closed rich-text value to inert text. @since 2.0.0 */
+    /**
+     * Flatten the closed rich-text value to inert text.
+     *
+     * @param   mixed  $value  Bound rich-text value in its canonical closed shape.
+     *
+     * @return  string  Concatenated plain text with no markup interpreted.
+     *
+     * @since   2.0.0
+     */
     private static function richText(mixed $value): string
     {
         if (is_string($value)) {
@@ -113,7 +126,15 @@ final readonly class StudioContentFieldBlockRenderer implements BlockRenderer
         return $text . (is_array($content) ? implode('', array_map(self::richText(...), $content)) : '');
     }
 
-    /** Select a non-navigable reference label. @since 2.0.0 */
+    /**
+     * Select a non-navigable reference label.
+     *
+     * @param   mixed  $value  Bound media or resource reference value.
+     *
+     * @return  string  Plain descriptive label; never a URL or identifier the browser navigates.
+     *
+     * @since   2.0.0
+     */
     private static function reference(mixed $value): string
     {
         if (is_string($value)) {

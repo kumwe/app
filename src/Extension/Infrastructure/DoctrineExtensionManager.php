@@ -1805,7 +1805,8 @@ final readonly class DoctrineExtensionManager
         }
         $business = $contributions['business'] ?? null;
         if (is_array($business)) {
-            foreach (['field_types', 'definitions', 'field_presentations', 'view_handlers', 'action_handlers'] as $kind) {
+            $businessKinds = ['field_types', 'definitions', 'field_presentations', 'view_handlers', 'action_handlers'];
+            foreach ($businessKinds as $kind) {
                 $entries = $business[$kind] ?? null;
                 if (is_array($entries)) {
                     $business[$kind] = self::flaggedEntries($entries, 'business', $ownerFlag);

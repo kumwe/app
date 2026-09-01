@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Kumwe\App\Extension\Runtime;
 
 use Kumwe\Extension\Spi\Runtime\ExtensionContainer;
-
 use InvalidArgumentException;
 use Kumwe\Extension\Manifest\ExtensionIdentifier;
 use RuntimeException;

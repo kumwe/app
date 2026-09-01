@@ -21,9 +21,13 @@ final class StudioRenderResultAdmission
     /**
      * Refuse a result that the App cannot consume completely.
      *
-     * @throws RenderException When any canonical enhancement was requested.
+     * @param   RenderResult  $result  Canonical Producer render result.
      *
-     * @since 2.0.0
+     * @return  void
+     *
+     * @throws  RenderException  When any canonical enhancement was requested.
+     *
+     * @since   2.0.0
      */
     public static function assertSupported(RenderResult $result): void
     {
@@ -32,6 +36,11 @@ final class StudioRenderResultAdmission
         }
     }
 
+    /**
+     * Static admission policy only; no instance carries state.
+     *
+     * @since  2.0.0
+     */
     private function __construct()
     {
     }

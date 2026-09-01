@@ -28,7 +28,14 @@ use Kumwe\Producer\Render\RenderException;
  */
 final readonly class StudioBlockRendererRuntime
 {
-    /** @since 2.0.0 */
+    /**
+     * Bind registry composition to the live contribution set and the host field renderer.
+     *
+     * @param  ExtensionContributionRegistrySet  $registries  Live owner-scoped contribution registries.
+     * @param  StudioContentFieldBlockRenderer   $fields      App-owned Content field block renderer.
+     *
+     * @since  2.0.0
+     */
     public function __construct(
         private ExtensionContributionRegistrySet $registries,
         private StudioContentFieldBlockRenderer $fields,
@@ -136,7 +143,13 @@ final readonly class StudioBlockRendererRuntime
     /**
      * Select the host implementation named by a core-owned binding.
      *
-     * @since 2.0.0
+     * @param   BlockRendererRegistry  $registry    Registry whose core catalog serves layout bindings.
+     * @param   BlockCoordinate        $coordinate  Exact core block coordinate being bound.
+     * @param   string                 $binding     Core-owned renderer binding identifier.
+     *
+     * @return  ?BlockRenderer  Host implementation, or null when the binding names none.
+     *
+     * @since   2.0.0
      */
     private function coreRenderer(
         BlockRendererRegistry $registry,

@@ -131,7 +131,12 @@ final readonly class AdministratorRenderer
     /**
      * Mint a renderer capability closed over one validated extension owner and signed view.
      *
-     * @since 2.0.0
+     * @param   string  $extension  Owning `vendor/name` package identifier.
+     * @param   string  $view       Signed view identifier the capability may render.
+     *
+     * @return  AdministratorRouteRenderer  Renderer bound to exactly this owner, view, and provenance.
+     *
+     * @since   2.0.0
      */
     public function forExtensionRoute(string $extension, string $view): AdministratorRouteRenderer
     {

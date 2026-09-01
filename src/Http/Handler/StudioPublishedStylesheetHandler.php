@@ -28,7 +28,16 @@ use Throwable;
  */
 final readonly class StudioPublishedStylesheetHandler implements RequestHandlerInterface
 {
-    /** @since 2.0.0 */
+    /**
+     * Bind stylesheet revalidation to the same public authorities the page handler uses.
+     *
+     * @param  PublicPageLocator               $pages      Canonical public page and homepage locator.
+     * @param  TranslationGroupPresenter       $languages  Locale negotiation for the language-neutral root.
+     * @param  StudioPublishedContentRenderer  $studio     Live published-composition renderer.
+     * @param  SiteContext                     $site       Site whose published stylesheets may be served.
+     *
+     * @since  2.0.0
+     */
     public function __construct(
         private PublicPageLocator $pages,
         private TranslationGroupPresenter $languages,
@@ -37,7 +46,15 @@ final readonly class StudioPublishedStylesheetHandler implements RequestHandlerI
     ) {
     }
 
-    /** @since 2.0.0 */
+    /**
+     * Serve one published composition's CSS only after every publication check repeats.
+     *
+     * @param   ServerRequestInterface  $request  Public stylesheet request carrying digest and coordinates.
+     *
+     * @return  ResponseInterface  Exact CSS bytes, a 304 revalidation, or one uncacheable miss.
+     *
+     * @since   2.0.0
+     */
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
         $digest = $request->getAttribute('digest');
@@ -102,7 +119,13 @@ final readonly class StudioPublishedStylesheetHandler implements RequestHandlerI
         return new TextResponse($result->css, 200, $headers);
     }
 
-    /** Resolve the language-neutral root through the same locale selection as the page handler. @since 2.0.0 */
+    /**
+     * Resolve the language-neutral root through the same locale selection as the page handler.
+     *
+     * @return  ?ContentRecord  Negotiated homepage record, or null when none is published.
+     *
+     * @since   2.0.0
+     */
     private function homepage(): ?ContentRecord
     {
         $record = $this->pages->homepage();
@@ -110,7 +133,18 @@ final readonly class StudioPublishedStylesheetHandler implements RequestHandlerI
         return $record === null ? null : $this->languages->negotiate($record);
     }
 
-    /** Require exact current route, entry, site and locale coordinates. @since 2.0.0 */
+    /**
+     * Require exact current route, entry, site and locale coordinates.
+     *
+     * @param   ContentRecord  $record    Public record resolved for the requested path.
+     * @param   string         $pagePath  Requested canonical page path.
+     * @param   string         $entryId   Requested Content entry identity.
+     * @param   string         $locale    Requested entry locale, `und` for language-neutral.
+     *
+     * @return  bool  True only when every requested coordinate matches the live record.
+     *
+     * @since   2.0.0
+     */
     private function matches(ContentRecord $record, string $pagePath, string $entryId, string $locale): bool
     {
         return hash_equals($this->site->identifier(), $record->siteIdentifier)
@@ -119,7 +153,13 @@ final readonly class StudioPublishedStylesheetHandler implements RequestHandlerI
             && ($pagePath === '/' || hash_equals($pagePath, $this->pages->pathFor($record)));
     }
 
-    /** Collapse malformed, withdrawn and unauthorized stylesheets into one uncacheable miss. @since 2.0.0 */
+    /**
+     * Collapse malformed, withdrawn and unauthorized stylesheets into one uncacheable miss.
+     *
+     * @return  EmptyResponse  Uncacheable not-found response.
+     *
+     * @since   2.0.0
+     */
     private static function unavailable(): EmptyResponse
     {
         return new EmptyResponse(404, ['Cache-Control' => 'private, no-store']);

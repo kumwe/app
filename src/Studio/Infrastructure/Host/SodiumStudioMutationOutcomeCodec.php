@@ -21,6 +21,7 @@ final readonly class SodiumStudioMutationOutcomeCodec implements StudioMutationO
     /**
      * Storage format prefix; older raw result bytes are intentionally unsupported.
      *
+     * @var    string
      * @since  2.0.0
      */
     private const string VERSION = 'v1.';
@@ -28,6 +29,7 @@ final readonly class SodiumStudioMutationOutcomeCodec implements StudioMutationO
     /**
      * Bound a stored envelope before attempting Base64 decoding or authenticated decryption.
      *
+     * @var    int
      * @since  2.0.0
      */
     private const int MAXIMUM_ENVELOPE_BYTES = 2097152;

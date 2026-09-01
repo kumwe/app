@@ -89,6 +89,7 @@
     "Kumwe\\Extension\\Spi\\BusinessSecurity\\Policy": "domain",
     "Kumwe\\Extension\\Spi\\BusinessSurface\\Application\\Custom": "application",
     "Kumwe\\Extension\\Spi\\BusinessSurface\\Presentation": "presentation",
+    "Kumwe\\Extension\\Spi\\BusinessSurface\\Presentation\\Field": "application",
     "Kumwe\\Extension\\Spi\\Contribution": "application",
     "Kumwe\\Extension\\Spi\\Contribution\\AdministratorRouteDefinition": "domain",
     "Kumwe\\Extension\\Spi\\Contribution\\AdministratorViewDefinition": "domain",

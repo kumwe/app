@@ -367,25 +367,49 @@ final readonly class ExecutionContext implements ExtensionExecutionContext
             ?? throw new \LogicException('The execution context has no identity.');
     }
 
-    /** @since 2.0.0 */
+    /**
+     * Return the site this execution is scoped to.
+     *
+     * @return  string  Canonical site identifier.
+     *
+     * @since   2.0.0
+     */
     public function siteIdentifier(): string
     {
         return $this->site->identifier();
     }
 
-    /** @since 2.0.0 */
+    /**
+     * Return the organization scope of this execution, when one is active.
+     *
+     * @return  ?string  Canonical organization identifier, or null outside an organization scope.
+     *
+     * @since   2.0.0
+     */
     public function organizationIdentifier(): ?string
     {
         return $this->organization()?->identifier();
     }
 
-    /** @since 2.0.0 */
+    /**
+     * Return the workspace scope of this execution, when one is active.
+     *
+     * @return  ?string  Canonical workspace identifier, or null outside a workspace scope.
+     *
+     * @since   2.0.0
+     */
     public function workspaceIdentifier(): ?string
     {
         return $this->workspace()?->identifier();
     }
 
-    /** @since 2.0.0 */
+    /**
+     * Return the delivery surface this execution entered through.
+     *
+     * @return  string  Closed authenticated-surface value.
+     *
+     * @since   2.0.0
+     */
     public function deliverySurface(): string
     {
         return $this->surface->value;

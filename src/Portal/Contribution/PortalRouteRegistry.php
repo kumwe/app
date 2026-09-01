@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Kumwe\App\Portal\Contribution;
 
 use Kumwe\Extension\Spi\Portal\Contribution\PortalRouteDefinition;
-
 use InvalidArgumentException;
 use Kumwe\App\Application\Authorization\AuthorizationPolicyRegistry;
 use Kumwe\App\Application\Authorization\AuthorizationResource;
