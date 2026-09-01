@@ -51,7 +51,7 @@ final class ExtensionTrustPostureTest extends TestCase
                 [self::CANONICAL, 'not a security sandbox'],
             ],
             'the container contract' => [
-                'src/Extension/Runtime/ExtensionContainer.php',
+                'vendor/kumwe/extension-sdk/src/Spi/Runtime/ExtensionContainer.php',
                 [self::CANONICAL, 'not a security sandbox'],
             ],
             'the architecture record' => [

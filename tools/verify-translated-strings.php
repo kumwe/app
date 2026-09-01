@@ -13,9 +13,10 @@
  * What counts as user-facing is stated rather than guessed, and the register of what is deliberately
  * exempt lives in `tools/translation-extraction.json` with a reason on every entry. A template that
  * appears in neither the enforced set nor the register is enforced, so a newly added template cannot
- * quietly reintroduce hardcoded text. Studio shell messages are the sole runtime-owned exception:
- * the vendored web component references them, while `sync-studio-localization.mjs --check` separately
- * proves the exact namespace is byte-for-byte complete against the coordinated release corpus.
+ * quietly reintroduce hardcoded text. Studio authoring messages — the shell, contextual, and
+ * standalone namespaces — are the sole runtime-owned exception: the vendored web components
+ * reference them, while `sync-studio-localization.mjs --check` separately proves each exact
+ * namespace is byte-for-byte complete against the coordinated release corpus.
  *
  * Usage:
  *   php tools/verify-translated-strings.php [--json]
@@ -674,7 +675,11 @@ if (is_file($compiled)) {
 $missing = array_values(array_diff(array_keys($referenced), array_keys($catalogue)));
 $runtimeOwned = [];
 foreach (array_keys($catalogue) as $identifier) {
-    if (str_starts_with($identifier, 'core.studio.shell.')) {
+    if (
+        str_starts_with($identifier, 'core.studio.contextual.')
+        || str_starts_with($identifier, 'core.studio.shell.')
+        || str_starts_with($identifier, 'core.studio.standalone.')
+    ) {
         $runtimeOwned[] = $identifier;
     }
 }

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "dd55a5c67d4dcae5aed6a5bfff4bef6e",
+    "content-hash": "648337b1009515850dcf4ce7359e8fd2",
     "packages": [
         {
             "name": "brick/math",
@@ -367,16 +367,16 @@
         },
         {
             "name": "kumwe/extension-sdk",
-            "version": "v0.2.0",
+            "version": "v0.2.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/kumwe/extension-sdk.git",
-                "reference": "91f03b8c4db403c947d1ccf5d7ca53ac0c6c8557"
+                "reference": "c7cb796cd9a8cddf53fa04fda840100e20d08de2"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/kumwe/extension-sdk/zipball/91f03b8c4db403c947d1ccf5d7ca53ac0c6c8557",
-                "reference": "91f03b8c4db403c947d1ccf5d7ca53ac0c6c8557",
+                "url": "https://api.github.com/repos/kumwe/extension-sdk/zipball/c7cb796cd9a8cddf53fa04fda840100e20d08de2",
+                "reference": "c7cb796cd9a8cddf53fa04fda840100e20d08de2",
                 "shasum": ""
             },
             "require": {
@@ -415,7 +415,7 @@
                 "issues": "https://github.com/kumwe/extension-sdk/issues",
                 "source": "https://github.com/kumwe/extension-sdk"
             },
-            "time": "2026-09-01T12:25:31+00:00"
+            "time": "2026-09-01T15:39:52+00:00"
         },
         {
             "name": "kumwe/producer",

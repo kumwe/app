@@ -72,7 +72,7 @@ final class ExtensionContractGateTest extends TestCase
     {
         $resources = $this->root . '/vendor/kumwe/extension-sdk/resources';
         $pin = $this->document($resources . '/PIN.json');
-        self::assertSame('kumwe-extension-sdk-resource-pin-v1', $pin['format'] ?? null);
+        self::assertSame('kumwe-extension-sdk-resource-pin-v2', $pin['format'] ?? null);
 
         $expected = [];
         foreach ($pin['files'] ?? [] as $entry) {

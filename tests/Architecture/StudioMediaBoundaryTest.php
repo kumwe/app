@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Architecture;
 
+use Kumwe\Producer\Wire\OperationRegistry;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
@@ -36,7 +37,7 @@ final class StudioMediaBoundaryTest extends TestCase
     }
 
     /**
-     * The public host binding recognizes all operations and exact nested wrapper names.
+     * The registered operations all bind to explicit port methods with exact nested wrapper names.
      *
      * @return  void
      *
@@ -47,16 +48,20 @@ final class StudioMediaBoundaryTest extends TestCase
         $port = $this->contents('src/Studio/Application/Media/StudioMediaHostPort.php');
         foreach (
             [
-                'abort-upload' => 'uploadId',
-                'authorize-upload' => 'request',
-                'complete-upload' => 'uploadId',
-                'get' => 'assetId',
-                'import-external' => 'url',
-                'list' => 'query',
-                'upload-status' => 'assetId',
-            ] as $operation => $wrapper
+                'abort-upload' => ['abortUpload', 'uploadId'],
+                'authorize-upload' => ['authorizeUpload', 'request'],
+                'complete-upload' => ['completeUpload', 'uploadId'],
+                'get' => ['get', 'assetId'],
+                'import-external' => ['importExternal', 'url'],
+                'list' => ['list', 'query'],
+                'upload-status' => ['uploadStatus', 'assetId'],
+            ] as $operation => [$method, $wrapper]
         ) {
-            self::assertStringContainsString('studio.operation/media.' . $operation, $port);
+            self::assertTrue(
+                OperationRegistry::isCapability('studio.operation/media.' . $operation),
+                sprintf('Producer must register studio.operation/media.%s.', $operation),
+            );
+            self::assertStringContainsString('public function ' . $method . '(', $port);
             self::assertStringContainsString("'" . $wrapper . "'", $port);
         }
     }

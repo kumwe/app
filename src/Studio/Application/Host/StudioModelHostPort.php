@@ -21,8 +21,8 @@ final readonly class StudioModelHostPort implements ModelPortInterface
     /**
      * Bind the port to the sole authorized exact Content-model projection service.
      *
-     * @param  StudioContentProjectionService  $models  Authorized exact Content-model projection.
-     * @param  StudioProducerRequestAuthority|null $authority Authorized Producer request scope, when bound.
+     * @param  StudioContentProjectionService       $models     Authorized exact Content-model projection.
+     * @param  StudioProducerRequestAuthority|null  $authority  Authorized Producer request scope, when bound.
      *
      * @since  2.0.0
      */
