@@ -13,6 +13,7 @@ use Kumwe\Extension\Package\PackageBillOfMaterials;
 use Kumwe\Extension\Package\PackageEvidenceReport;
 use Kumwe\Extension\Package\PackageEvidenceScope;
 use Kumwe\Extension\Package\PackageFinding;
+use LogicException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
@@ -108,6 +109,42 @@ final class PackageAdmissionPolicyTest extends TestCase
                 )],
             ),
             '[code.php.syntax]',
+        );
+    }
+
+    /**
+     * Evidence collected at a different depth than policy requested is refused outright.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testEvidenceCollectedAtTheWrongDepthIsRefused(): void
+    {
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('wrong inspection depth');
+
+        (new PackageAdmissionPolicy(PackageConformanceMode::Scan))
+            ->admit(self::evidence(scope: PackageEvidenceScope::Package));
+    }
+
+    /**
+     * An invalid attestation refuses admission even when no other finding blocks the package.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testInvalidAttestationWithoutOtherFindingsIsStillRefused(): void
+    {
+        self::assertRefused(
+            new PackageAdmissionPolicy(PackageConformanceMode::Off),
+            self::evidence(
+                scope: PackageEvidenceScope::Package,
+                sbomState: PackageAttestationState::Invalid,
+                checks: ['sbom' => false],
+            ),
+            'attestation evidence is invalid',
         );
     }
 

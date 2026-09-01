@@ -28,7 +28,10 @@ use Kumwe\Extension\Manifest\ManifestContributions;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use Kumwe\App\Extension\Contribution\CanonicalManifestInterpreter;
 
+#[CoversClass(CanonicalManifestInterpreter::class)]
+#[CoversClass(OwnedExtensionBindingRegistrar::class)]
 #[CoversClass(MoneyRateProviderDefinition::class)]
 #[CoversClass(RuntimeMoneyRateProviderCatalog::class)]
 /**

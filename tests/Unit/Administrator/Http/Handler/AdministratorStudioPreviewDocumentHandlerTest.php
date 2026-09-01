@@ -260,4 +260,26 @@ final class AdministratorStudioPreviewDocumentHandlerTest extends TestCase
 
         return [new StudioHostSessionAuthority(AuthorizationContext::gateway(), $sessions, $keys), $context];
     }
+    /**
+     * A document request missing its exact query coordinates is refused without disclosure.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAMissingQueryCoordinateIsRefusedCanonically(): void
+    {
+        [$authority] = $this->authority();
+        $handler = new AdministratorStudioPreviewDocumentHandler(
+            $authority,
+            self::createStub(StudioPreviewDocumentClaimer::class),
+        );
+
+        $response = $handler->handle((new ServerRequestFactory())
+            ->createServerRequest('GET', 'https://kumwe.test/administrator/studio/preview'));
+
+        self::assertSame(400, $response->getStatusCode());
+        self::assertSame('no-store, private', $response->getHeaderLine('Cache-Control'));
+        self::assertJson((string) $response->getBody());
+    }
 }

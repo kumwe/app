@@ -34,7 +34,11 @@ use RuntimeException;
 use SplFileInfo;
 use Throwable;
 use ZipArchive;
+use Kumwe\App\Extension\Contribution\CanonicalManifestActivator;
+use Kumwe\App\Extension\Contribution\OwnedExtensionBindingRegistrar;
 
+#[CoversClass(OwnedExtensionBindingRegistrar::class)]
+#[CoversClass(CanonicalManifestActivator::class)]
 #[CoversClass(DoctrineExtensionManager::class)]
 #[CoversClass(RedisLockedExtensionManager::class)]
 #[UsesClass(ActiveExtensionSet::class)]

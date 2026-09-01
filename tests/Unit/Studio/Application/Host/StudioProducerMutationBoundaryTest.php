@@ -31,6 +31,7 @@ use Kumwe\App\Studio\Infrastructure\Host\SodiumStudioMutationOutcomeCodec;
 use Kumwe\App\Tests\Support\AuthorizationContext;
 use Kumwe\Producer\Canonical\CanonicalJson;
 use Kumwe\Producer\Error\HostError;
+use Kumwe\Producer\Error\HostRefusal;
 use Kumwe\Producer\Wire\HostResult;
 use Kumwe\Producer\Wire\Operation;
 use Kumwe\Producer\Wire\OperationRegistry;
@@ -192,6 +193,70 @@ final class StudioProducerMutationBoundaryTest extends TestCase
         self::assertSame('restored-live-token', $replayed->value->headers->{'X-Studio-Upload-Token'});
         self::assertSame(1, $calls);
         self::assertCount(1, $audit->events);
+    }
+
+    /**
+     * A stored upload grant that is not an object never rehydrates a live token.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testANonObjectUploadGrantIsRejectedAtRehydration(): void
+    {
+        [$operation, $request, $authority] = $this->authorizedRequest(
+            'studio.operation/media.authorize-upload',
+            (object) ['request' => (object) ['name' => 'asset.png']],
+            'idempotency/upload-grant-invalid',
+            ['content.update', 'studio.mode.content'],
+        );
+        [$boundary] = $this->boundary($authority, self::createStub(StudioMediaOperations::class));
+        $scope = CanonicalJson::digest((object) ['scope' => 'upload-grant-invalid']);
+        $intent = CanonicalJson::digest((object) ['intent' => 'upload-grant-invalid']);
+
+        $this->expectException(HostRefusal::class);
+        $this->expectExceptionMessage('could not be completed');
+
+        $boundary->execute($operation, $request, $scope, $intent, static fn (): HostResult
+            => new HostResult('not-an-object'));
+    }
+
+    /**
+     * A stored upload grant the media authority cannot restore is rejected rather than served.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAnUnrestorableUploadGrantIsRejectedAtReplay(): void
+    {
+        [$operation, $request, $authority] = $this->authorizedRequest(
+            'studio.operation/media.authorize-upload',
+            (object) ['request' => (object) ['name' => 'asset.png']],
+            'idempotency/upload-grant-unrestorable',
+            ['content.update', 'studio.mode.content'],
+        );
+        $media = self::createStub(StudioMediaOperations::class);
+        $media->method('replayUploadGrant')
+            ->willThrowException(new \RuntimeException('The signing key rotated.'));
+        [$boundary] = $this->boundary($authority, $media);
+        $scope = CanonicalJson::digest((object) ['scope' => 'upload-grant-unrestorable']);
+        $intent = CanonicalJson::digest((object) ['intent' => 'upload-grant-unrestorable']);
+        $grant = (object) [
+            'headers' => (object) ['Content-Type' => 'image/png', 'X-Studio-Upload-Token' => 'fresh-live-token'],
+            'method' => 'PUT',
+            'uploadId' => 'uploads/producer-unrestorable',
+            'url' => '/administrator/studio/media/uploads/producer-unrestorable',
+        ];
+        $fresh = $boundary->execute($operation, $request, $scope, $intent, static fn (): HostResult
+            => new HostResult($grant))->outcome();
+        self::assertInstanceOf(HostResult::class, $fresh);
+
+        $this->expectException(HostRefusal::class);
+        $this->expectExceptionMessage('could not be completed');
+
+        $boundary->execute($operation, $request, $scope, $intent, static fn (): HostResult
+            => new HostResult($grant));
     }
 
     /**

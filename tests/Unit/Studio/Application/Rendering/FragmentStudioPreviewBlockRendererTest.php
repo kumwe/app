@@ -16,7 +16,9 @@ use Kumwe\Producer\Render\BlockCoordinate;
 use Kumwe\Producer\Render\BlockRendererRegistry;
 use Kumwe\Producer\Render\CompositionRenderer;
 use Kumwe\Producer\Render\RenderContext;
+use Kumwe\Producer\Render\RenderException;
 use Kumwe\Producer\Render\RenderPolicy;
+use Kumwe\Producer\Render\RenderState;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use stdClass;
@@ -211,6 +213,50 @@ final class FragmentStudioPreviewBlockRendererTest extends TestCase
 
         $this->expectException(InvalidArgumentException::class);
         new FragmentStudioPreviewBlockRenderer($inner, 'desktop');
+    }
+
+    /**
+     * Prove a node without its promised exact coordinates is refused before the SDK boundary.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testNodeMissingExactCoordinatesIsRefused(): void
+    {
+        $inner = new class implements StudioPreviewBlockRenderer {
+            /**
+             * Provide a syntactically complete implementation that must never execute.
+             *
+             * @param   StudioPreviewBlock          $block     Immutable copied contributed block input.
+             * @param   StudioPreviewBindingResult  $binding   Authorized binding projection.
+             * @param   string                      $viewport  Active semantic viewport.
+             *
+             * @return  StudioPreviewBlockFragment  Safe fixture fragment.
+             *
+             * @since   2.0.0
+             */
+            public function render(
+                StudioPreviewBlock $block,
+                StudioPreviewBindingResult $binding,
+                string $viewport,
+            ): StudioPreviewBlockFragment {
+                unset($block, $binding, $viewport);
+
+                return new StudioPreviewBlockFragment('div', 'acme-panel', '');
+            }
+        };
+        $registry = BlockRendererRegistry::withCoreCatalog();
+        $state = new RenderState(new RenderContext(), new CompositionRenderer($registry));
+
+        $this->expectException(RenderException::class);
+        $this->expectExceptionMessage('missing exact coordinates');
+
+        (new FragmentStudioPreviewBlockRenderer($inner, 'expanded'))->render(
+            (object) ['id' => 'panel-root', 'type' => self::TYPE],
+            'scope-token',
+            $state,
+        );
     }
 
     /**

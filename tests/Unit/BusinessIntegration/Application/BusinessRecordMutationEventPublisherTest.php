@@ -20,12 +20,14 @@ use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use Kumwe\App\BusinessIntegration\Application\DomainEventDispatcher;
 
 /**
  * Proves extension generation authority is checked before contributed mutation listeners execute.
  *
  * @since  2.0.0
  */
+#[CoversClass(DomainEventDispatcher::class)]
 #[CoversClass(BusinessRecordMutationEventPublisher::class)]
 final class BusinessRecordMutationEventPublisherTest extends TestCase
 {

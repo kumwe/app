@@ -80,4 +80,51 @@ final class AdministratorStudioSessionHandlerTest extends TestCase
         self::assertStringStartsWith('session-', $document->sessionGeneration);
         self::assertSame('no-store', $response->getHeaderLine('Cache-Control'));
     }
+
+    /**
+     * A body outside the closed open grammar is refused canonically without disclosure.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testABodyOutsideTheClosedGrammarIsRefused(): void
+    {
+        $sessions = self::createStub(StudioHostSessionRepository::class);
+        $keys = self::createStub(StudioResourceContextKeyFactory::class);
+        $keys->method('create')->willReturn('contexts/session-handler-refusal');
+        $authority = new StudioHostSessionAuthority(AuthorizationContext::gateway(), $sessions, $keys);
+        $preview = new StudioPreviewTransportGuard(
+            'https://kumwe.test',
+            self::createStub(StudioPreviewSequenceRepository::class),
+            self::createStub(StudioPreviewSequenceWaiter::class),
+        );
+        $handler = new AdministratorStudioSessionHandler($authority, $preview);
+        $context = AuthorizationContext::principal(['content.read', 'studio.mode.content'])->context(
+            SiteContext::default(),
+            AuthenticationStrength::Password,
+            'studio-session-handler-refusal',
+            surface: AuthenticatedSurface::Administrator,
+            sessionId: 'administrator-studio-session-refusal',
+        );
+        $bodies = [
+            'not json at all',
+            json_encode(['mode' => 'content'], JSON_THROW_ON_ERROR),
+            json_encode(['mode' => 1, 'resourceId' => 'x', 'resourceKind' => 'content'], JSON_THROW_ON_ERROR),
+            json_encode([
+                'mode' => 'hostile',
+                'resourceId' => 'contents/refused',
+                'resourceKind' => 'content',
+            ], JSON_THROW_ON_ERROR),
+        ];
+        foreach ($bodies as $body) {
+            $request = (new ServerRequestFactory())
+                ->createServerRequest('POST', 'https://kumwe.test/administrator/studio/session')
+                ->withAttribute(ExecutionContext::REQUEST_ATTRIBUTE, $context)
+                ->withBody((new StreamFactory())->createStream($body));
+            $response = $handler->handle($request);
+            self::assertSame(400, $response->getStatusCode(), $body);
+            self::assertJson((string) $response->getBody());
+        }
+    }
 }

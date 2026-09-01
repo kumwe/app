@@ -37,12 +37,14 @@ use RecursiveIteratorIterator;
 use RuntimeException;
 use SplFileInfo;
 use Throwable;
+use Kumwe\App\Extension\Contribution\OwnedExtensionBindingRegistrar;
 
 /**
  * Proves one unedited SDK scaffold crosses the complete production extension lifecycle.
  *
  * @since  2.0.0
  */
+#[CoversClass(OwnedExtensionBindingRegistrar::class)]
 #[CoversClass(DoctrineExtensionManager::class)]
 final class GeneratedExtensionLifecycleIntegrationTest extends TestCase
 {

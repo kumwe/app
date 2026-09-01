@@ -599,6 +599,13 @@ final class GeneratedBusinessBrowserIntegrationTest extends TestCase
             ]],
             ['search' => ['term' => 'north', 'fields' => ['enabled']]],
             ['sorts' => [['field' => 'enabled', 'direction' => 'asc']]],
+            ['projection' => ['aggregates' => [['alias' => 'total', 'function' => 'sum', 'field' => 'amount']]]],
+            ['filter' => [
+                'type' => 'relation',
+                'relationship' => 'parent',
+                'quantifier' => 'any',
+                'target' => ['type' => 'comparison', 'field' => 'name', 'operator' => 'eq', 'value' => 'north'],
+            ]],
         ];
         foreach ($hostileQueries as $hostileQuery) {
             try {

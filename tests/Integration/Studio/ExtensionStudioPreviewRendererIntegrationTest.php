@@ -10,7 +10,9 @@ use Kumwe\App\Kernel\Container;
 use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Extension\Application\ExtensionManager;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
+use Kumwe\App\Extension\Contribution\CanonicalManifestActivator;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\Extension\Contribution\OwnedExtensionBindingRegistrar;
 use Kumwe\App\Extension\Contribution\StudioPreviewRendererContribution;
 use Kumwe\Extension\Package\PackageChecksum;
 use Kumwe\Extension\Package\PackageSignatureMessage;
@@ -47,6 +49,8 @@ use ZipArchive;
 #[CoversClass(TrustEnforcingStudioPreviewBlockRenderer::class)]
 #[CoversClass(ActiveExtensionSet::class)]
 #[UsesClass(DoctrineExtensionManager::class)]
+#[CoversClass(OwnedExtensionBindingRegistrar::class)]
+#[UsesClass(CanonicalManifestActivator::class)]
 #[CoversClass(ExtensionRuntimeLoader::class)]
 /**
  * Proves schema-six preview code crosses the real signed extension lifecycle without manifest execution.
