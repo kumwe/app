@@ -56,6 +56,15 @@ use ZipArchive;
 final class ExtensionStudioPreviewRendererIntegrationTest extends TestCase
 {
     /**
+     * Contract-grammar preview marker for the fixture's one grid node (sha256 of `grid-node`).
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const string GRID_MARKER =
+        'studio.preview/node/d78336768c8cfc767454d3e2bafc54f62029c9d31aa281805075032763e0342b/0';
+
+    /**
      * Install, activate and render the signed fixture, then prove every lifecycle fence fails closed.
      *
      * @return  void
@@ -146,7 +155,7 @@ final class ExtensionStudioPreviewRendererIntegrationTest extends TestCase
 
             $exact = self::document($namespace, '1.0.0', 'grid-block-r1');
             self::assertStringContainsString(
-                'data-studio-preview-marker="marker-grid"',
+                'data-studio-preview-marker="' . self::GRID_MARKER . '"',
                 self::render($blocks, $exact),
             );
             self::assertStringContainsString(
@@ -410,7 +419,7 @@ final class ExtensionStudioPreviewRendererIntegrationTest extends TestCase
         return (new CompositionRenderer($runtime->registry()))->renderDocument(
             $document,
             new RenderContext(
-                previewMarkerMap: ['marker-grid' => 'grid-node'],
+                previewMarkerMap: [self::GRID_MARKER => 'grid-node'],
                 policy: RenderPolicy::RequireRegistered,
             ),
         )->html;

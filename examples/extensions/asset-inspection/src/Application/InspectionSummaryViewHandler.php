@@ -6,6 +6,8 @@ namespace KumweExample\AssetInspection\Application;
 
 use Kumwe\Extension\Spi\BusinessRecord\Application\BusinessRecordReader;
 use Kumwe\Extension\Spi\BusinessRecord\Application\BusinessRecordReadRequest;
+use Kumwe\Extension\Spi\BusinessRecord\Query\RecordProjection;
+use Kumwe\Extension\Spi\BusinessRecord\Query\RecordQuerySpecification;
 use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewHandler;
 use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewQuery;
 use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewResult;
@@ -13,9 +15,11 @@ use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewRes
 /**
  * Projects a bounded inspection summary through the canonical record-service policy boundary.
  *
- * The host dispatcher has already narrowed the canonical query to the signed view declaration. The handler
- * passes that immutable query unchanged to `BusinessRecordReader`, which applies capability, scope, row and
- * field policy before values cross the extension boundary, so denied records cannot enter the handler.
+ * The handler narrows the caller's already-validated record query to its two declared result fields before
+ * handing it to `BusinessRecordReader`: a summary view never forwards a caller-chosen projection, so a
+ * request naming a field outside the view's contract cannot reach the policy compiler in its name. The host
+ * port then applies capability, scope, row and field policy before values cross the extension boundary, so
+ * denied records cannot enter the handler.
  *
  * @since  2.0.0
  */
@@ -44,10 +48,21 @@ final readonly class InspectionSummaryViewHandler implements CustomBusinessViewH
      */
     public function handle(CustomBusinessViewQuery $query): CustomBusinessViewResult
     {
+        $requested = $query->records;
+        $specification = new RecordQuerySpecification(
+            $requested->filter,
+            $requested->search,
+            $requested->sorts,
+            null,
+            $requested->pageSize,
+            new RecordProjection(['reference', 'risk_score']),
+            $requested->includeArchived,
+            $requested->includeDeleted,
+        );
         $page = $this->records->readPage(new BusinessRecordReadRequest(
             $query->context,
             $query->definitionIdentifier,
-            $query->records,
+            $specification,
             $query->organizationIdentifier,
         ));
         $rows = [];
