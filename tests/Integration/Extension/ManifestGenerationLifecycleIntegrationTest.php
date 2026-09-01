@@ -6,12 +6,17 @@ namespace Kumwe\App\Tests\Integration\Extension;
 
 use DateTimeImmutable;
 use FilesystemIterator;
+use Kumwe\App\Administrator\Http\Handler\AdministratorExtensionsHandler;
+use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Application\Automation\JobHandlerRegistry;
+use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\App\Identity\Application\Administration\AdministratorSession;
 use Kumwe\App\Extension\Application\ExtensionManager;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\App\Tests\Support\TestKernelFactory;
+use Laminas\Diactoros\ServerRequestFactory;
 use Kumwe\Extension\Package\PackageChecksum;
 use Kumwe\Extension\Package\PackageSignatureMessage;
 use Kumwe\Extension\Spi\Contribution\ContributionOwner;
@@ -35,6 +40,7 @@ use Kumwe\App\Extension\Infrastructure\RedisLockedExtensionManager;
 use Kumwe\App\Extension\Contribution\CoreContributionRegistrar;
 
 #[CoversClass(CoreContributionRegistrar::class)]
+#[CoversClass(AdministratorExtensionsHandler::class)]
 #[CoversClass(DoctrineExtensionManager::class)]
 #[CoversClass(RedisLockedExtensionManager::class)]
 #[CoversClass(CanonicalManifestActivator::class)]
@@ -121,6 +127,7 @@ final class ManifestGenerationLifecycleIntegrationTest extends TestCase
                     5 => self::assertGeneration5($registries, $owner),
                 };
             }
+            self::assertExtensionsScreenRenders($runtime, $installed);
         } finally {
             foreach (array_reverse($installed) as $identifier) {
                 try {
@@ -348,5 +355,62 @@ final class ManifestGenerationLifecycleIntegrationTest extends TestCase
             PackageSignatureMessage::forChecksum(PackageChecksum::calculate($bytes)),
             $secretKey,
         ));
+    }
+
+    /**
+     * Prove the administrator extensions screen renders every installed generation's diagnostics.
+     *
+     * The canonical SDK graph carries only declared sections; the screen reads a stable shape. Rendering
+     * the real handler against the live kernel is the proof that no generation leaves a section missing.
+     *
+     * @param   \Psr\Container\ContainerInterface  $runtime    Fresh kernel that loaded the generations.
+     * @param   list<string>                        $installed  Identifiers every rendered row must cover.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    private static function assertExtensionsScreenRenders(
+        \Psr\Container\ContainerInterface $runtime,
+        array $installed,
+    ): void {
+        $context = TestKernelFactory::administratorContext($runtime);
+        $principal = $context->principal();
+        self::assertInstanceOf(AuthenticatedPrincipal::class, $principal);
+        $manager = $runtime->get(ExtensionManager::class);
+        self::assertInstanceOf(ExtensionManager::class, $manager);
+        $rows = [];
+        foreach ($manager->installed($context) as $row) {
+            self::assertIsArray($row);
+            $rows[$row['identifier']] = $row;
+        }
+        foreach ($installed as $identifier) {
+            self::assertArrayHasKey($identifier, $rows);
+            $contributions = $rows[$identifier]['contributions'];
+            self::assertIsArray($contributions);
+            self::assertIsArray($contributions['capabilities']);
+            foreach (['workspaces', 'navigation', 'routes', 'views'] as $kind) {
+                self::assertIsArray($contributions['administrator'][$kind]);
+            }
+        }
+        $handler = $runtime->get(AdministratorExtensionsHandler::class);
+        self::assertInstanceOf(AdministratorExtensionsHandler::class, $handler);
+        $request = (new ServerRequestFactory())
+            ->createServerRequest('GET', 'https://kumwe.test/administrator/extensions')
+            ->withAttribute(ExecutionContext::REQUEST_ATTRIBUTE, $context)
+            ->withAttribute(AdministratorSession::REQUEST_ATTRIBUTE, new AdministratorSession(
+                '018f22e2-7c8b-7ab0-8f3a-88e8026bb399',
+                $principal,
+                'generation-lifecycle-csrf',
+                new DateTimeImmutable('+1 hour'),
+            ));
+
+        $response = $handler->handle($request);
+
+        self::assertSame(200, $response->getStatusCode());
+        $body = (string) $response->getBody();
+        foreach ($installed as $identifier) {
+            self::assertStringContainsString($identifier, $body);
+        }
     }
 }

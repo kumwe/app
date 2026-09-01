@@ -6,6 +6,9 @@ namespace Kumwe\App\Tests\Integration\Studio;
 
 use DateTimeImmutable;
 use FilesystemIterator;
+use Kumwe\App\Administrator\Http\Handler\AdministratorExtensionsHandler;
+use Kumwe\App\Identity\Application\Administration\AdministratorSession;
+use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\App\Kernel\Container;
 use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Extension\Application\ExtensionManager;
@@ -26,6 +29,7 @@ use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\App\Studio\Application\Rendering\FragmentStudioPreviewBlockRenderer;
 use Kumwe\App\Studio\Application\Rendering\StudioBlockRendererRuntime;
 use Kumwe\App\Tests\Support\TestKernelFactory;
+use Laminas\Diactoros\ServerRequestFactory;
 use Kumwe\Producer\Render\BlockCoordinate;
 use Kumwe\Producer\Render\CompositionRenderer;
 use Kumwe\Producer\Render\RenderContext;
@@ -45,6 +49,7 @@ use Throwable;
 use ZipArchive;
 
 #[CoversClass(StudioBlockRendererRuntime::class)]
+#[CoversClass(AdministratorExtensionsHandler::class)]
 #[CoversClass(StudioPreviewRendererContribution::class)]
 #[CoversClass(TrustEnforcingStudioPreviewBlockRenderer::class)]
 #[CoversClass(ActiveExtensionSet::class)]
@@ -135,6 +140,7 @@ final class ExtensionStudioPreviewRendererIntegrationTest extends TestCase
             );
             $blocks = self::service($runtime, StudioBlockRendererRuntime::class);
             $registries = self::service($runtime, ExtensionContributionRegistrySet::class);
+            self::assertExtensionsScreenRenders($runtime, $identifier);
             $definition = self::rendererDefinition($registries, $identifier);
             $namespace = str_replace('/', '.', $identifier);
             self::assertSame('1.0.0', $definition->runtimeVersion);
@@ -539,5 +545,50 @@ final class ExtensionStudioPreviewRendererIntegrationTest extends TestCase
         self::assertInstanceOf($class, $service);
 
         return $service;
+    }
+
+    /**
+     * Prove the administrator extensions screen renders a composition-only extension's diagnostics.
+     *
+     * A manifest that declares only a Studio composition contributes no administrator section to the
+     * canonical SDK graph; the screen still reads every section, so the live projection must fill it.
+     *
+     * @param   Container  $runtime     Fresh kernel that loaded the renderer extension.
+     * @param   string     $identifier  Installed extension whose row must render.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    private static function assertExtensionsScreenRenders(Container $runtime, string $identifier): void
+    {
+        $context = TestKernelFactory::administratorContext($runtime);
+        $principal = $context->principal();
+        self::assertInstanceOf(AuthenticatedPrincipal::class, $principal);
+        $manager = self::service($runtime, ExtensionManager::class);
+        $row = null;
+        foreach ($manager->installed($context) as $candidate) {
+            if (is_array($candidate) && ($candidate['identifier'] ?? null) === $identifier) {
+                $row = $candidate;
+            }
+        }
+        self::assertIsArray($row);
+        self::assertIsArray($row['contributions']['composition'] ?? null);
+        self::assertSame([], $row['contributions']['administrator']['routes']);
+        $handler = self::service($runtime, AdministratorExtensionsHandler::class);
+        $request = (new ServerRequestFactory())
+            ->createServerRequest('GET', 'https://kumwe.test/administrator/extensions')
+            ->withAttribute(ExecutionContext::REQUEST_ATTRIBUTE, $context)
+            ->withAttribute(AdministratorSession::REQUEST_ATTRIBUTE, new AdministratorSession(
+                '018f22e2-7c8b-7ab0-8f3a-88e8026bb39a',
+                $principal,
+                'preview-renderer-csrf',
+                new DateTimeImmutable('+1 hour'),
+            ));
+
+        $response = $handler->handle($request);
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString($identifier, (string) $response->getBody());
     }
 }
