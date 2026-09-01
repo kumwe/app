@@ -68,7 +68,13 @@ final readonly class AdministratorStudioHostHandler implements RequestHandlerInt
         $status = $outcome->refusalCategory === null
             ? 200
             : StudioProducerError::status($outcome->refusalCategory);
+        $headers = [];
+        foreach ($outcome->headers as $name => $value) {
+            if ($name !== '') {
+                $headers[$name] = $value;
+            }
+        }
 
-        return new TextResponse($outcome->body, $status, $outcome->headers);
+        return new TextResponse($outcome->body, $status, $headers);
     }
 }
