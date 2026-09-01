@@ -45,7 +45,7 @@ final readonly class StudioResourceHostPort implements ResourcePortInterface
      * Index exact provider ownership and reject ambiguous resource families at composition time.
      *
      * @param  iterable<StudioResourceSearchProvider>  $providers  App-owned resource projections.
-     * @param  StudioProducerRequestAuthority|null $authority Authorized Producer request scope, when bound.
+     * @param  StudioProducerRequestAuthority|null     $authority  Authorized Producer request scope, when bound.
      *
      * @since  2.0.0
      */

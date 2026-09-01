@@ -48,12 +48,14 @@ use Kumwe\App\Studio\Application\Rendering\StudioBlockRendererRuntime;
 use Kumwe\App\Studio\Application\Rendering\StudioContentFieldBlockRenderer;
 use Kumwe\App\Studio\Application\Release\StudioReleaseRecord;
 use Kumwe\Extension\Spi\Contribution\CanonicalCompositionDocument;
+use Kumwe\Extension\Spi\Studio\Application\Preview\StudioPreviewBindingResult;
+use Kumwe\Extension\Spi\Studio\Application\Preview\StudioPreviewBlock;
+use Kumwe\Extension\Spi\Studio\Application\Preview\StudioPreviewBlockFragment;
+use Kumwe\Extension\Spi\Studio\Application\Preview\StudioPreviewBlockRenderer;
 use Kumwe\Extension\Spi\Contribution\CanonicalCompositionKind;
 use Kumwe\Extension\Spi\Contribution\CompositionHostBinding;
 use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\Producer\Canonical\CanonicalJson;
-use Kumwe\Producer\Render\BlockRenderer;
-use Kumwe\Producer\Render\RenderState;
 use Kumwe\Producer\Schema\StudioContractResources;
 use Kumwe\Producer\Schema\StudioDocumentSchemaRegistry;
 use Kumwe\App\Studio\Domain\Host\StudioHostSession;
@@ -1139,12 +1141,26 @@ final class StudioContentProjectionServiceTest extends TestCase
         $registries->studioPreviewRenderers()->register(
             $owner,
             new StudioPreviewRendererContribution($owner, '1.0.0', $canonical, $binding),
-            new class implements BlockRenderer {
-                public function render(\stdClass $node, string $scope, RenderState $state): string
-                {
-                    unset($node, $scope, $state);
+            new class implements StudioPreviewBlockRenderer {
+                /**
+                 * Emit a fixed grid placeholder fragment regardless of block, binding or viewport.
+                 *
+                 * @param   StudioPreviewBlock          $block     Immutable copied contributed grid input.
+                 * @param   StudioPreviewBindingResult  $binding   Authorized binding projection.
+                 * @param   string                      $viewport  Active semantic viewport.
+                 *
+                 * @return  StudioPreviewBlockFragment  Constant placeholder fragment.
+                 *
+                 * @since   2.0.0
+                 */
+                public function render(
+                    StudioPreviewBlock $block,
+                    StudioPreviewBindingResult $binding,
+                    string $viewport,
+                ): StudioPreviewBlockFragment {
+                    unset($block, $binding, $viewport);
 
-                    return '<div class="acme-shop-grid"></div>';
+                    return new StudioPreviewBlockFragment('div', 'acme-shop-grid', '');
                 }
             },
         );
@@ -1213,13 +1229,31 @@ final class StudioContentProjectionServiceTest extends TestCase
         );
     }
 
-    /** Execute one direct model.get call. */
+    /**
+     * Execute one direct model.get call.
+     *
+     * @param   StudioModelHostPort    $port     Model host port under test.
+     * @param   StudioProducerRequest  $request  Authorized Producer request scope.
+     *
+     * @return  HostResult  Exact host result of the get operation.
+     *
+     * @since   2.0.0
+     */
     private static function modelGet(StudioModelHostPort $port, StudioProducerRequest $request): HostResult
     {
         return $port->forRequest($request->authority)->get($request->arguments(), $request->context());
     }
 
-    /** Execute one direct model.list call. */
+    /**
+     * Execute one direct model.list call.
+     *
+     * @param   StudioModelHostPort    $port     Model host port under test.
+     * @param   StudioProducerRequest  $request  Authorized Producer request scope.
+     *
+     * @return  HostResult  Exact host result of the list operation.
+     *
+     * @since   2.0.0
+     */
     private static function modelList(StudioModelHostPort $port, StudioProducerRequest $request): HostResult
     {
         return $port->forRequest($request->authority)->list($request->arguments(), $request->context());

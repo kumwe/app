@@ -42,9 +42,9 @@ final readonly class StudioContentFieldBlockRenderer implements BlockRenderer
     /**
      * Render one exact Content field value without interpreting stored markup or URLs.
      *
-     * @param   stdClass    $node   Schema-admitted Blueprint node.
-     * @param   string      $scope  Producer-owned CSS scope (unused by this renderer).
-     * @param   RenderState $state  Per-render Producer services and host binding authority.
+     * @param   stdClass     $node   Schema-admitted Blueprint node.
+     * @param   string       $scope  Producer-owned CSS scope (unused by this renderer).
+     * @param   RenderState  $state  Per-render Producer services and host binding authority.
      *
      * @return  string  Escaped semantic inner markup, or an empty unavailable baseline.
      *

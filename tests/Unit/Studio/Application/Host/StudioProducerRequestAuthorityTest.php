@@ -26,6 +26,7 @@ use Kumwe\Producer\Wire\MutationOutcome;
 use Kumwe\Producer\Wire\Operation;
 use Kumwe\Producer\Wire\OperationRegistry;
 use Kumwe\Producer\Wire\Port\ArtifactPortInterface;
+use Kumwe\Producer\Wire\Port\AuthoringPortInterface;
 use Kumwe\Producer\Wire\Port\AuthorizationInterface;
 use Kumwe\Producer\Wire\Port\HostAdapterInterface;
 use Kumwe\Producer\Wire\Port\LocalizationPortInterface;
@@ -125,10 +126,27 @@ final class StudioProducerRequestAuthorityTest extends TestCase
         $revoked = self::context([]);
         $authority = new StudioProducerRequestAuthority($revoked, $sessions);
         $mutations = new class implements MutationBoundaryInterface {
-            /** Number of replay-boundary calls observed. */
+            /**
+             * Number of replay-boundary calls observed.
+             *
+             * @var    int
+             * @since  2.0.0
+             */
             public int $calls = 0;
 
-            /** {@inheritDoc} */
+            /**
+             * Record the boundary call and fail, because revoked authority must never reach replay.
+             *
+             * @param   Operation        $operation     Closed Producer registry operation.
+             * @param   RequestEnvelope  $request       Validated Producer request envelope.
+             * @param   ?string          $scopeKey      Producer replay scope digest, or null when unkeyed.
+             * @param   ?string          $intentDigest  Producer request intent digest, or null when unkeyed.
+             * @param   callable         $mutation      Mutation that must never execute.
+             *
+             * @return  MutationOutcome  Never returned; the boundary always throws in this test.
+             *
+             * @since   2.0.0
+             */
             public function execute(
                 Operation $operation,
                 RequestEnvelope $request,
@@ -142,40 +160,99 @@ final class StudioProducerRequestAuthorityTest extends TestCase
             }
         };
         $artifact = new class implements ArtifactPortInterface {
-            /** Whether a port operation was reached. */
+            /**
+             * Whether a port operation was reached.
+             *
+             * @var    bool
+             * @since  2.0.0
+             */
             public bool $called = false;
 
-            /** {@inheritDoc} */
+            /**
+             * Refuse the dependencies operation; revoked authority must never reach the artifact port.
+             *
+             * @param   mixed           $arguments  Operation argument value.
+             * @param   RequestContext  $context    Validated Producer request context.
+             *
+             * @return  HostResult  Never returned; the port always throws in this test.
+             *
+             * @since   2.0.0
+             */
             public function dependencies(mixed $arguments, RequestContext $context): HostResult
             {
                 return $this->unexpected($arguments, $context);
             }
 
-            /** {@inheritDoc} */
+            /**
+             * Refuse the load operation; revoked authority must never reach the artifact port.
+             *
+             * @param   mixed           $arguments  Operation argument value.
+             * @param   RequestContext  $context    Validated Producer request context.
+             *
+             * @return  HostResult  Never returned; the port always throws in this test.
+             *
+             * @since   2.0.0
+             */
             public function load(mixed $arguments, RequestContext $context): HostResult
             {
                 return $this->unexpected($arguments, $context);
             }
 
-            /** {@inheritDoc} */
+            /**
+             * Refuse the publish operation; revoked authority must never reach the artifact port.
+             *
+             * @param   mixed           $arguments  Operation argument value.
+             * @param   RequestContext  $context    Validated Producer request context.
+             *
+             * @return  HostResult  Never returned; the port always throws in this test.
+             *
+             * @since   2.0.0
+             */
             public function publish(mixed $arguments, RequestContext $context): HostResult
             {
                 return $this->unexpected($arguments, $context);
             }
 
-            /** {@inheritDoc} */
+            /**
+             * Refuse the save operation; revoked authority must never reach the artifact port.
+             *
+             * @param   mixed           $arguments  Operation argument value.
+             * @param   RequestContext  $context    Validated Producer request context.
+             *
+             * @return  HostResult  Never returned; the port always throws in this test.
+             *
+             * @since   2.0.0
+             */
             public function save(mixed $arguments, RequestContext $context): HostResult
             {
                 return $this->unexpected($arguments, $context);
             }
 
-            /** {@inheritDoc} */
+            /**
+             * Refuse the unpublish operation; revoked authority must never reach the artifact port.
+             *
+             * @param   mixed           $arguments  Operation argument value.
+             * @param   RequestContext  $context    Validated Producer request context.
+             *
+             * @return  HostResult  Never returned; the port always throws in this test.
+             *
+             * @since   2.0.0
+             */
             public function unpublish(mixed $arguments, RequestContext $context): HostResult
             {
                 return $this->unexpected($arguments, $context);
             }
 
-            /** Refuse any unexpected port call. */
+            /**
+             * Refuse any unexpected port call.
+             *
+             * @param   mixed           $arguments  Operation argument value.
+             * @param   RequestContext  $context    Validated Producer request context.
+             *
+             * @return  never  Always throws after marking the port as reached.
+             *
+             * @since   2.0.0
+             */
             private function unexpected(mixed $arguments, RequestContext $context): never
             {
                 unset($arguments, $context);
@@ -184,7 +261,15 @@ final class StudioProducerRequestAuthorityTest extends TestCase
             }
         };
         $host = new class ($authority, $mutations, $artifact) implements HostAdapterInterface {
-            /** Bind only the authorities and required port under test. */
+            /**
+             * Bind only the authorities and required port under test.
+             *
+             * @param   AuthorizationInterface     $authority  Revoked request authority under test.
+             * @param   MutationBoundaryInterface  $mutations  Observable failing replay boundary.
+             * @param   ArtifactPortInterface      $artifact   Observable failing artifact port.
+             *
+             * @since   2.0.0
+             */
             public function __construct(
                 private AuthorizationInterface $authority,
                 private MutationBoundaryInterface $mutations,
@@ -192,67 +277,145 @@ final class StudioProducerRequestAuthorityTest extends TestCase
             ) {
             }
 
-            /** {@inheritDoc} */
+            /**
+             * Expose the revoked request authority under test.
+             *
+             * @return  AuthorizationInterface  The bound request authority.
+             *
+             * @since   2.0.0
+             */
             public function authorization(): AuthorizationInterface
             {
                 return $this->authority;
             }
 
-            /** {@inheritDoc} */
+            /**
+             * Expose the observable mutation boundary.
+             *
+             * @return  MutationBoundaryInterface  The bound replay boundary.
+             *
+             * @since   2.0.0
+             */
             public function mutations(): MutationBoundaryInterface
             {
                 return $this->mutations;
             }
 
-            /** {@inheritDoc} */
+            /**
+             * Expose the observable artifact port.
+             *
+             * @return  ArtifactPortInterface  The bound artifact port.
+             *
+             * @since   2.0.0
+             */
             public function artifact(): ArtifactPortInterface
             {
                 return $this->artifact;
             }
 
-            /** {@inheritDoc} */
+            /**
+             * Declare the optional contextual authoring port absent.
+             *
+             * @return  ?AuthoringPortInterface  Always null; the port is not under test.
+             *
+             * @since   2.0.0
+             */
+            public function authoring(): ?AuthoringPortInterface
+            {
+                return null;
+            }
+
+            /**
+             * Declare the optional localization port absent.
+             *
+             * @return  ?LocalizationPortInterface  Always null; the port is not under test.
+             *
+             * @since   2.0.0
+             */
             public function localization(): ?LocalizationPortInterface
             {
                 return null;
             }
 
-            /** {@inheritDoc} */
+            /**
+             * Declare the optional media port absent.
+             *
+             * @return  ?MediaPortInterface  Always null; the port is not under test.
+             *
+             * @since   2.0.0
+             */
             public function media(): ?MediaPortInterface
             {
                 return null;
             }
 
-            /** {@inheritDoc} */
+            /**
+             * Declare the optional model port absent.
+             *
+             * @return  ?ModelPortInterface  Always null; the port is not under test.
+             *
+             * @since   2.0.0
+             */
             public function model(): ?ModelPortInterface
             {
                 return null;
             }
 
-            /** {@inheritDoc} */
+            /**
+             * Declare the optional permission port absent.
+             *
+             * @return  ?PermissionPortInterface  Always null; the port is not under test.
+             *
+             * @since   2.0.0
+             */
             public function permission(): ?PermissionPortInterface
             {
                 return null;
             }
 
-            /** {@inheritDoc} */
+            /**
+             * Declare the optional preview port absent.
+             *
+             * @return  ?PreviewPortInterface  Always null; the port is not under test.
+             *
+             * @since   2.0.0
+             */
             public function preview(): ?PreviewPortInterface
             {
                 return null;
             }
 
-            /** {@inheritDoc} */
+            /**
+             * Declare the optional recovery port absent.
+             *
+             * @return  ?RecoveryPortInterface  Always null; the port is not under test.
+             *
+             * @since   2.0.0
+             */
             public function recovery(): ?RecoveryPortInterface
             {
                 return null;
             }
 
-            /** {@inheritDoc} */
+            /**
+             * Declare the optional resource port absent.
+             *
+             * @return  ?ResourcePortInterface  Always null; the port is not under test.
+             *
+             * @since   2.0.0
+             */
             public function resource(): ?ResourcePortInterface
             {
                 return null;
             }
 
-            /** {@inheritDoc} */
+            /**
+             * Declare the optional telemetry port absent.
+             *
+             * @return  ?TelemetryPortInterface  Always null; the port is not under test.
+             *
+             * @since   2.0.0
+             */
             public function telemetry(): ?TelemetryPortInterface
             {
                 return null;
@@ -291,23 +454,50 @@ final class StudioProducerRequestAuthorityTest extends TestCase
     private function runtime(array $capabilities): array
     {
         $repository = new class implements StudioHostSessionRepository {
-            /** @var array<string, StudioHostSession> */
+            /**
+             * Stored bindings keyed by opaque resource-context key.
+             *
+             * @var    array<string, StudioHostSession>
+             * @since  2.0.0
+             */
             private array $sessions = [];
 
-            /** {@inheritDoc} */
+            /**
+             * Persist an opened binding under its resource-context key.
+             *
+             * @param   StudioHostSession  $session  Fully verified immutable binding.
+             *
+             * @return  void
+             *
+             * @since   2.0.0
+             */
             public function add(StudioHostSession $session): void
             {
                 $this->sessions[$session->resourceContextKey] = $session;
             }
 
-            /** {@inheritDoc} */
+            /**
+             * Resolve an opaque context key against the in-memory store.
+             *
+             * @param   string  $resourceContextKey  Canonical host-envelope key.
+             *
+             * @return  ?StudioHostSession  Stored binding, or null when unknown.
+             *
+             * @since   2.0.0
+             */
             public function find(string $resourceContextKey): ?StudioHostSession
             {
                 return $this->sessions[$resourceContextKey] ?? null;
             }
         };
         $keys = new class implements StudioResourceContextKeyFactory {
-            /** {@inheritDoc} */
+            /**
+             * Mint the fixed deterministic context key for this test.
+             *
+             * @return  string  Stable opaque resource-context identifier.
+             *
+             * @since   2.0.0
+             */
             public function create(): string
             {
                 return 'contexts/producer-authority-test';

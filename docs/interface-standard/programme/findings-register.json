@@ -189,7 +189,8 @@
           "method": "vendor/bin/phpunit tests/Unit/Extension/Contribution/ExtensionContributionRegistrySetTest.php",
           "result": "The deterministic icon-registry assertion is committed but was not executed because native PHP and Composer dependencies are unavailable.",
           "artifact_paths": [
-            "tests/Unit/Extension/Contribution/ExtensionContributionRegistrySetTest.php"
+            "src/Extension/Contribution/ExtensionContributionRegistrySet.php",
+            "tests/Unit/Extension/Contribution/ExtensionContributionSummaryTest.php"
           ],
           "blocker_finding_ids": [
             "KIS-ENV-0001"
@@ -203,7 +204,7 @@
           "method": "GitHub Actions Kumwe CI PHP quality suite, run 31549497432",
           "result": "The PHP quality suite passed the protected icon registry and extension contribution assertions on the merged Phase 0-2 tree.",
           "artifact_paths": [
-            "tests/Unit/Extension/Contribution/ExtensionContributionRegistrySetTest.php",
+            "src/Extension/Contribution/ExtensionContributionRegistrySet.php",
             "docs/interface-standard/programme/reports/phase-0-2-accepted.json"
           ],
           "blocker_finding_ids": []

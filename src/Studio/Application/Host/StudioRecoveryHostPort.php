@@ -25,12 +25,12 @@ final readonly class StudioRecoveryHostPort implements RecoveryPortInterface
     /**
      * Bind scoped recovery persistence to shared idempotency, time and bounded limits.
      *
-     * @param  StudioRecoveryRepository  $recovery            Recovery and rate-limit persistence.
-     * @param  ClockInterface            $clock               Trusted server clock.
-     * @param  int                       $maximumBytes        Maximum canonical envelope bytes.
-     * @param  int                       $maximumWrites       Maximum writes per fixed window.
-     * @param  int                       $windowMilliseconds  Fixed-window duration.
-     * @param  StudioProducerRequestAuthority|null $authority Authorized Producer request scope, when bound.
+     * @param  StudioRecoveryRepository             $recovery            Recovery and rate-limit persistence.
+     * @param  ClockInterface                       $clock               Trusted server clock.
+     * @param  int                                  $maximumBytes        Maximum canonical envelope bytes.
+     * @param  int                                  $maximumWrites       Maximum writes per fixed window.
+     * @param  int                                  $windowMilliseconds  Fixed-window duration.
+     * @param  StudioProducerRequestAuthority|null  $authority           Authorized Producer request scope, when bound.
      *
      * @since  2.0.0
      */
@@ -230,7 +230,7 @@ final readonly class StudioRecoveryHostPort implements RecoveryPortInterface
      * Require the published operation's exact wrapper object.
      *
      * @param   mixed         $arguments  Validated Producer operation arguments.
-     * @param   list<string>       $members  Exact member set.
+     * @param   list<string>  $members    Exact member set.
      *
      * @return  stdClass  Exact argument wrapper.
      *

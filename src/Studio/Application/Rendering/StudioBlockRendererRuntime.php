@@ -11,6 +11,7 @@ use Kumwe\Extension\Spi\Contribution\CanonicalCompositionDocument;
 use Kumwe\Extension\Spi\Contribution\CanonicalCompositionKind;
 use Kumwe\Extension\Spi\Contribution\CompositionHostBinding;
 use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Extension\Spi\Studio\Application\Preview\StudioPreviewBlockRenderer;
 use Kumwe\Producer\Render\BlockCoordinate;
 use Kumwe\Producer\Render\BlockRenderer;
 use Kumwe\Producer\Render\BlockRendererRegistry;
@@ -119,7 +120,7 @@ final readonly class StudioBlockRendererRuntime
             $implementation = $entry['implementation'];
             if (
                 !$definition instanceof StudioPreviewRendererContribution
-                || !$implementation instanceof TrustEnforcingStudioPreviewBlockRenderer
+                || !$implementation instanceof StudioPreviewBlockRenderer
             ) {
                 continue;
             }
@@ -130,7 +131,8 @@ final readonly class StudioBlockRendererRuntime
                 || $expected['owner']->identifier() !== $entry['owner']->identifier()
                 || $definition->owner->identifier() !== $entry['owner']->identifier()
                 || $expected['renderer'] !== $definition->renderer
-                || !$implementation->isAvailable()
+                || ($implementation instanceof TrustEnforcingStudioPreviewBlockRenderer
+                    && !$implementation->isAvailable())
             ) {
                 continue;
             }

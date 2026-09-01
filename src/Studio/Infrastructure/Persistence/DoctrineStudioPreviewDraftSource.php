@@ -26,8 +26,8 @@ final readonly class DoctrineStudioPreviewDraftSource implements StudioPreviewDr
     /**
      * Bind artifact reads to the prefix-aware database and pinned Blueprint schema.
      *
-     * @param  Connection             $database  Database containing immutable AP-4 revisions.
-     * @param  TableNames             $tables    Prefix-aware table compiler.
+     * @param  Connection                    $database  Database containing immutable AP-4 revisions.
+     * @param  TableNames                    $tables    Prefix-aware table compiler.
      * @param  StudioDocumentSchemaRegistry  $schemas   Producer's exact pinned schema registry.
      *
      * @since  2.0.0

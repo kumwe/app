@@ -32,7 +32,7 @@ final readonly class BusinessFormInputMapper
     /**
      * Map one decoded form values object against its authorized presentation list.
      *
-     * @param   array<string, mixed>     $values  Parsed values under field handles.
+     * @param   array<string, mixed>          $values  Parsed values under field handles.
      * @param   list<FieldPresentationModel>  $fields  Server-produced fields for this exact actor and record.
      *
      * @return  array<string, mixed>  Typed patch safe to hand to a business-record command.
@@ -143,7 +143,7 @@ final readonly class BusinessFormInputMapper
      * Normalize one browser representation according to its semantic widget.
      *
      * @param   FieldPresentationModel  $field  Authorized field presentation.
-     * @param   mixed              $value  Parsed browser value.
+     * @param   mixed                   $value  Parsed browser value.
      *
      * @return  mixed  Narrow typed value expected by the record value codec.
      *

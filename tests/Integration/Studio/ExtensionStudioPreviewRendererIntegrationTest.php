@@ -21,10 +21,10 @@ use Kumwe\App\Extension\Runtime\ExtensionRuntimeLoader;
 use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
 use Kumwe\App\Extension\Runtime\TrustEnforcingStudioPreviewBlockRenderer;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\App\Studio\Application\Rendering\FragmentStudioPreviewBlockRenderer;
 use Kumwe\App\Studio\Application\Rendering\StudioBlockRendererRuntime;
 use Kumwe\App\Tests\Support\TestKernelFactory;
 use Kumwe\Producer\Render\BlockCoordinate;
-use Kumwe\Producer\Render\BlockRenderer;
 use Kumwe\Producer\Render\CompositionRenderer;
 use Kumwe\Producer\Render\RenderContext;
 use Kumwe\Producer\Render\RenderException;
@@ -137,8 +137,9 @@ final class ExtensionStudioPreviewRendererIntegrationTest extends TestCase
             );
             $rendererRegistry = $blocks->registry();
             self::assertTrue($rendererRegistry->supports($exactCoordinate));
-            self::assertSame(
-                self::rendererImplementation($registries, $identifier),
+            self::assertTrue(self::rendererImplementation($registries, $identifier)->isAvailable());
+            self::assertInstanceOf(
+                FragmentStudioPreviewBlockRenderer::class,
                 $rendererRegistry->rendererFor($exactCoordinate),
             );
 
@@ -148,7 +149,7 @@ final class ExtensionStudioPreviewRendererIntegrationTest extends TestCase
                 self::render($blocks, $exact),
             );
             self::assertStringContainsString(
-                '<p class="studio-preview-extension-grid"',
+                '<section class="studio-preview-extension-grid">',
                 self::render($blocks, $exact),
             );
             self::assertStringContainsString(
@@ -409,6 +410,16 @@ final class ExtensionStudioPreviewRendererIntegrationTest extends TestCase
         )->html;
     }
 
+    /**
+     * Require the canonical composition path to refuse the document at its current coordinates.
+     *
+     * @param   StudioBlockRendererRuntime  $runtime   Live runtime-composed Producer registry.
+     * @param   stdClass                    $document  Blueprint input expected to be unregistered.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private static function assertRenderRefused(StudioBlockRendererRuntime $runtime, stdClass $document): void
     {
         try {
@@ -439,21 +450,31 @@ final class ExtensionStudioPreviewRendererIntegrationTest extends TestCase
         return $definition;
     }
 
+    /**
+     * Find the trust-enforcing executable registered by one active package.
+     *
+     * @param   ExtensionContributionRegistrySet  $registries  Runtime contribution registry set.
+     * @param   string                            $identifier  Expected package owner.
+     *
+     * @return  TrustEnforcingStudioPreviewBlockRenderer  Exact live trust-fenced SDK implementation.
+     *
+     * @since   2.0.0
+     */
     private static function rendererImplementation(
         ExtensionContributionRegistrySet $registries,
         string $identifier,
-    ): BlockRenderer {
+    ): TrustEnforcingStudioPreviewBlockRenderer {
         foreach ($registries->studioPreviewRenderers()->executableEntries() as $entry) {
             if ($entry['owner']->identifier() !== $identifier) {
                 continue;
             }
             $implementation = $entry['implementation'];
-            self::assertInstanceOf(BlockRenderer::class, $implementation);
+            self::assertInstanceOf(TrustEnforcingStudioPreviewBlockRenderer::class, $implementation);
 
             return $implementation;
         }
 
-        self::fail('The exact live Producer renderer implementation is unavailable.');
+        self::fail('The exact live trust-fenced renderer implementation is unavailable.');
     }
 
     /**

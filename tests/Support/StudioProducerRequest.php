@@ -68,6 +68,7 @@ final readonly class StudioProducerRequest
         ?string $idempotencyKey = null,
         array $capabilities = [
             'content.publish',
+            'content.read',
             'content.unpublish',
             'content.update',
             'studio.mode.content',
@@ -75,23 +76,50 @@ final readonly class StudioProducerRequest
         ?callable $previewTransport = null,
     ): self {
         $repository = new class implements StudioHostSessionRepository {
-            /** Retained session. */
+            /**
+             * Retained session.
+             *
+             * @var    StudioHostSession|null
+             * @since  2.0.0
+             */
             private ?StudioHostSession $session = null;
 
-            /** {@inheritDoc} */
+            /**
+             * {@inheritDoc}
+             *
+             * @param   StudioHostSession  $session  Opened session to retain.
+             *
+             * @return  void
+             *
+             * @since   2.0.0
+             */
             public function add(StudioHostSession $session): void
             {
                 $this->session = $session;
             }
 
-            /** {@inheritDoc} */
+            /**
+             * {@inheritDoc}
+             *
+             * @param   string  $resourceContextKey  Requested resource context key.
+             *
+             * @return  StudioHostSession|null  The retained session when its key matches exactly.
+             *
+             * @since   2.0.0
+             */
             public function find(string $resourceContextKey): ?StudioHostSession
             {
                 return $this->session?->resourceContextKey === $resourceContextKey ? $this->session : null;
             }
         };
         $keys = new class implements StudioResourceContextKeyFactory {
-            /** {@inheritDoc} */
+            /**
+             * {@inheritDoc}
+             *
+             * @return  string  One fixed deterministic resource context key.
+             *
+             * @since   2.0.0
+             */
             public function create(): string
             {
                 return 'contexts/producer-port-test';

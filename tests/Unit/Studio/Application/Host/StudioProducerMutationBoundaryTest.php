@@ -209,10 +209,23 @@ final class StudioProducerMutationBoundaryTest extends TestCase
         ?StudioMediaOperations $media = null,
     ): array {
         $transactions = new class implements TransactionManager {
-            /** Number of transaction scopes opened. */
+            /**
+             * Number of transaction scopes opened.
+             *
+             * @var    int
+             * @since  2.0.0
+             */
             public int $calls = 0;
 
-            /** {@inheritDoc} */
+            /**
+             * Count the scope and run the operation directly, committing implicitly on return.
+             *
+             * @param   callable  $operation  Work to perform inside the simulated transaction.
+             *
+             * @return  mixed  Whatever the operation returned, passed straight back.
+             *
+             * @since   2.0.0
+             */
             public function transactional(callable $operation): mixed
             {
                 $this->calls++;
@@ -220,29 +233,70 @@ final class StudioProducerMutationBoundaryTest extends TestCase
                 return $operation();
             }
 
-            /** {@inheritDoc} */
+            /**
+             * Run a commit hook immediately, as if the outermost transaction had just committed.
+             *
+             * @param   callable  $operation  Side effect to perform once the work is durable.
+             *
+             * @return  void
+             *
+             * @since   2.0.0
+             */
             public function afterCommit(callable $operation): void
             {
                 $operation();
             }
 
-            /** {@inheritDoc} */
+            /**
+             * Discard a rollback hook, because this in-memory manager never rolls back.
+             *
+             * @param   callable  $operation  Compensating action that is deliberately dropped.
+             *
+             * @return  void
+             *
+             * @since   2.0.0
+             */
             public function afterRollback(callable $operation): void
             {
                 unset($operation);
             }
         };
         $replays = new class implements StudioMutationReplayRepository {
-            /** @var array<string, StudioMutationReplayRecord> */
+            /**
+             * Pending and completed claims keyed by trusted scope digest.
+             *
+             * @var    array<string, StudioMutationReplayRecord>
+             * @since  2.0.0
+             */
             public array $records = [];
 
-            /** {@inheritDoc} */
+            /**
+             * Find one claim by the complete trusted replay scope digest.
+             *
+             * @param   string  $scopeDigest  App-namespaced lowercase SHA-256 scope digest.
+             *
+             * @return  ?StudioMutationReplayRecord  Existing claim, or null when the scope is unclaimed.
+             *
+             * @since   2.0.0
+             */
             public function findReplay(string $scopeDigest): ?StudioMutationReplayRecord
             {
                 return $this->records[$scopeDigest] ?? null;
             }
 
-            /** {@inheritDoc} */
+            /**
+             * Claim one scope in memory, refusing a duplicate claim as a replay race.
+             *
+             * @param   StudioMutationReplayRecord           $record    New pending claim.
+             * @param   StudioHostSessionSnapshot            $snapshot  Trusted live App host session.
+             * @param   \Kumwe\Producer\Wire\RequestContext  $request   Validated Producer request context.
+             *
+             * @return  void
+             *
+             * @throws  StudioMutationReplayRace  When the scope digest is already claimed.
+             *
+             * @since   2.0.0
+             */
             public function beginReplay(
                 StudioMutationReplayRecord $record,
                 StudioHostSessionSnapshot $snapshot,
@@ -255,7 +309,16 @@ final class StudioProducerMutationBoundaryTest extends TestCase
                 $this->records[$record->scopeDigest] = $record;
             }
 
-            /** {@inheritDoc} */
+            /**
+             * Replace one pending claim with its completed protected outcome.
+             *
+             * @param   string  $scopeDigest       Existing claimed scope digest.
+             * @param   string  $protectedOutcome  Authenticated completed outcome envelope.
+             *
+             * @return  void
+             *
+             * @since   2.0.0
+             */
             public function completeReplay(string $scopeDigest, string $protectedOutcome): void
             {
                 $record = $this->records[$scopeDigest] ?? null;
@@ -269,7 +332,13 @@ final class StudioProducerMutationBoundaryTest extends TestCase
                 );
             }
 
-            /** Return the only completed test record. */
+            /**
+             * Return the only completed test record.
+             *
+             * @return  StudioMutationReplayRecord  The single stored replay record.
+             *
+             * @since   2.0.0
+             */
             public function onlyRecord(): StudioMutationReplayRecord
             {
                 if (count($this->records) !== 1) {
@@ -280,17 +349,36 @@ final class StudioProducerMutationBoundaryTest extends TestCase
             }
         };
         $audit = new class implements AuditRecorder {
-            /** @var list<AuditEvent> */
+            /**
+             * Every audit event recorded, in order of arrival.
+             *
+             * @var    list<AuditEvent>
+             * @since  2.0.0
+             */
             public array $events = [];
 
-            /** {@inheritDoc} */
+            /**
+             * Append one audit event to the observable in-memory trail.
+             *
+             * @param   AuditEvent  $event  Validated record of the audited mutation.
+             *
+             * @return  void
+             *
+             * @since   2.0.0
+             */
             public function record(AuditEvent $event): void
             {
                 $this->events[] = $event;
             }
         };
         $clock = new class implements ClockInterface {
-            /** {@inheritDoc} */
+            /**
+             * Return the fixed deterministic test instant.
+             *
+             * @return  DateTimeImmutable  Constant timestamp keeping audit records reproducible.
+             *
+             * @since   2.0.0
+             */
             public function now(): DateTimeImmutable
             {
                 return new DateTimeImmutable('2026-08-29T12:00:00+00:00');
@@ -367,23 +455,50 @@ final class StudioProducerMutationBoundaryTest extends TestCase
     private function session(array $capabilities): array
     {
         $repository = new class implements StudioHostSessionRepository {
-            /** @var array<string, StudioHostSession> */
+            /**
+             * Stored bindings keyed by opaque resource-context key.
+             *
+             * @var    array<string, StudioHostSession>
+             * @since  2.0.0
+             */
             private array $sessions = [];
 
-            /** {@inheritDoc} */
+            /**
+             * Persist an opened binding under its resource-context key.
+             *
+             * @param   StudioHostSession  $session  Fully verified immutable binding.
+             *
+             * @return  void
+             *
+             * @since   2.0.0
+             */
             public function add(StudioHostSession $session): void
             {
                 $this->sessions[$session->resourceContextKey] = $session;
             }
 
-            /** {@inheritDoc} */
+            /**
+             * Resolve an opaque context key against the in-memory store.
+             *
+             * @param   string  $resourceContextKey  Canonical host-envelope key.
+             *
+             * @return  ?StudioHostSession  Stored binding, or null when unknown.
+             *
+             * @since   2.0.0
+             */
             public function find(string $resourceContextKey): ?StudioHostSession
             {
                 return $this->sessions[$resourceContextKey] ?? null;
             }
         };
         $keys = new class implements StudioResourceContextKeyFactory {
-            /** {@inheritDoc} */
+            /**
+             * Mint the fixed deterministic context key for this test.
+             *
+             * @return  string  Stable opaque resource-context identifier.
+             *
+             * @since   2.0.0
+             */
             public function create(): string
             {
                 return 'contexts/producer-mutation-test';

@@ -4,7 +4,7 @@
     "name": "reveal-validation"
   },
   "assets/administrator/components/studio-composition.ts": {
-    "file": "js/studio-composition-19ImR37T.js",
+    "file": "js/studio-composition-DBPht1NY.js",
     "name": "studio-composition",
     "src": "assets/administrator/components/studio-composition.ts",
     "isDynamicEntry": true,
@@ -17,7 +17,7 @@
     ]
   },
   "assets/administrator/main.ts": {
-    "file": "js/administrator-BNhXpvVW.js",
+    "file": "js/administrator-BF4tf80K.js",
     "name": "administrator",
     "src": "assets/administrator/main.ts",
     "isEntry": true,

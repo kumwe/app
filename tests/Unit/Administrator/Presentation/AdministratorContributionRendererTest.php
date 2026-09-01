@@ -31,8 +31,21 @@ use stdClass;
 use Twig\Loader\ArrayLoader;
 
 #[CoversClass(AdministratorContributionRenderer::class)]
+/**
+ * Proves administrator extension route rendering stays view-bound and refuses untrusted requests.
+ *
+ * @since  2.0.0
+ */
 final class AdministratorContributionRendererTest extends TestCase
 {
+    /**
+     * Prove each route renderer keeps its own view, CSRF token, navigation id and derived capabilities,
+     * ignoring caller-supplied csrf, view, active_navigation and capabilities overrides.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function testCapabilitiesAreRouteBoundAndCannotCrossRender(): void
     {
         [$renderer, $owner, $provenance] = $this->renderer();
@@ -58,6 +71,13 @@ final class AdministratorContributionRendererTest extends TestCase
         );
     }
 
+    /**
+     * Prove rendering refuses fabricated request attributes, foreign provenance, and the wrong surface.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function testFabricatedOrWrongSurfaceRequestsAreRefused(): void
     {
         [$renderer, $owner, $provenance] = $this->renderer();
@@ -78,7 +98,13 @@ final class AdministratorContributionRendererTest extends TestCase
         ));
     }
 
-    /** @return array{AdministratorRenderer, ContributionOwner, object} */
+    /**
+     * Build an administrator renderer with two registered extension views over an isolated Twig namespace.
+     *
+     * @return array{AdministratorRenderer, ContributionOwner, object}
+     *
+     * @since   2.0.0
+     */
     private function renderer(): array
     {
         $provenance = new stdClass();
@@ -104,6 +130,16 @@ final class AdministratorContributionRendererTest extends TestCase
         ), $owner, $provenance];
     }
 
+    /**
+     * Build an administrator request carrying a live session and an execution context for the given surface.
+     *
+     * @param   object                $provenance  Provenance token the execution context is issued under.
+     * @param   AuthenticatedSurface  $surface     Surface the execution context is issued for.
+     *
+     * @return  ServerRequestInterface  Request with session and execution-context attributes attached.
+     *
+     * @since   2.0.0
+     */
     private function request(object $provenance, AuthenticatedSurface $surface): ServerRequestInterface
     {
         $principal = AuthenticatedPrincipal::issueFromStrings(
@@ -133,7 +169,15 @@ final class AdministratorContributionRendererTest extends TestCase
             ->withAttribute(ExecutionContext::REQUEST_ATTRIBUTE, $context);
     }
 
-    /** @param callable(): string $render */
+    /**
+     * Assert one rendering attempt is refused with an InvalidArgumentException.
+     *
+     * @param callable(): string $render
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private function assertRefused(callable $render): void
     {
         try {

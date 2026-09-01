@@ -27,28 +27,28 @@ use PHPUnit\Framework\TestCase;
 final class PinnedStudioContextualAuthoringAvailabilityTest extends TestCase
 {
     /**
-     * The withdrawn RC stays unavailable despite claiming the authoring-web profile.
+     * The pinned beta publishes the contextual protocol yet stays unavailable without a browser runtime.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    public function testCurrentPinnedRcFailsClosedOnMissingContextualProtocol(): void
+    public function testCurrentPinnedBetaStopsClosedAtTheMissingContextualBrowserRuntime(): void
     {
         $root = dirname(__DIR__, 5);
         $release = (string) file_get_contents($root . '/resources/studio-contract/studio-release.json');
-        self::assertStringContainsString('studio.profile/authoring-web', $release);
+        self::assertStringContainsString('"claimedProfiles": []', $release);
         self::assertNotContains('authoring-target', StudioDocumentSchemaRegistry::DOCUMENT_KINDS);
-        self::assertFalse(OperationRegistry::isCapability('studio.operation/authoring.resolve-target'));
+        self::assertTrue(OperationRegistry::isCapability('studio.operation/authoring.resolve-target'));
 
         $readiness = (new PinnedStudioContextualAuthoringAvailability($root, null))->current();
 
         self::assertFalse($readiness->available);
-        self::assertSame(StudioContextualAuthoringFallbackReason::ProtocolUnavailable, $readiness->reason);
+        self::assertSame(StudioContextualAuthoringFallbackReason::BrowserRuntimeUnavailable, $readiness->reason);
         self::assertSame([
             'available' => false,
             'fallback' => 'structured-form',
-            'reason' => 'protocol-unavailable',
+            'reason' => 'browser-runtime-unavailable',
         ], $readiness->toArray());
     }
 

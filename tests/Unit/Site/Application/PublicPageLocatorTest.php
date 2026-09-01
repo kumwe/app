@@ -34,6 +34,7 @@ use Kumwe\App\Presentation\Twig\SiteTwigEnvironment;
 use Kumwe\App\Site\Application\PublicPageLocator;
 use Kumwe\App\Site\Application\SiteSettings;
 use Kumwe\App\Studio\Application\Composition\StudioPublishedContentRenderer;
+use Kumwe\Producer\Render\RenderResult;
 use Kumwe\App\Tests\Support\AuthorizationContext;
 use Kumwe\App\Workflow\Domain\Workflow;
 use Laminas\Diactoros\ServerRequestFactory;
@@ -173,13 +174,15 @@ final class PublicPageLocatorTest extends TestCase
         self::assertSame('/about/team|Team|<p>Team</p>', (string) $response->getBody());
 
         $studio = $this->createMock(StudioPublishedContentRenderer::class);
-        $studio->expects(self::once())->method('render')->with($records[self::TEAM])->willReturn(
+        $studio->expects(self::once())->method('render')->with($records[self::TEAM])->willReturn(new RenderResult(
             '<section class="studio-preview-section"><p>Studio team</p></section>',
-        );
+            '[data-studio-block]{display:block}',
+            [],
+        ));
         $studioHandler = new PublishedContentHandler(
             $locator,
             new ContentPageRenderService($settings, new SiteRenderer(new SiteTwigEnvironment(new ArrayLoader([
-                'page.twig' => '{{ current_path }}|{{ entry.title }}|{{ entry.body_html|raw }}|'
+                'page.twig' => '<head></head>{{ current_path }}|{{ entry.title }}|{{ entry.body_html|raw }}|'
                     . '{{ entry.data|length }}',
             ])))),
             new ContentPresenter(new RichTextFormatter()),
@@ -191,9 +194,15 @@ final class PublicPageLocatorTest extends TestCase
         $studioResponse = $studioHandler->handle($request);
 
         self::assertSame(200, $studioResponse->getStatusCode());
-        self::assertSame(
+        $studioBody = (string) $studioResponse->getBody();
+        self::assertStringContainsString(
             '/about/team|Team|<section class="studio-preview-section"><p>Studio team</p></section>|0',
-            (string) $studioResponse->getBody(),
+            $studioBody,
+        );
+        self::assertMatchesRegularExpression(
+            '#<head><link rel="stylesheet" href="/studio/styles/[a-f0-9]{64}\.css\?[^"]+"'
+            . ' data-studio-composition></head>#',
+            $studioBody,
         );
     }
 

@@ -79,6 +79,7 @@ process.stdout.write(
 /** Verify the closed release-record shape and coordinated versions. */
 function verifyReleaseRecord() {
   const expectedMembers = [
+    "browserArtifacts",
     "claimedProfiles",
     "contractVersion",
     "corpusManifestDigest",
@@ -140,6 +141,50 @@ function verifyReleaseRecord() {
       "studio-release.json corpusManifestDigest does not match the vendored corpus manifest bytes.",
     );
   }
+  const expectedBrowserArtifacts = {
+    authoringArchive: {
+      archiveStem: `studio-browser-${release.release}`,
+      assetRole: "browser-module",
+      loading: "module",
+    },
+    enhancementRuntime: {
+      assetRole: "enhancement-runtime",
+      loading: "defer",
+      package: "@kumwe/studio-renderer-web",
+      packageBasePath: "dist/browser/",
+    },
+    manifest: {
+      name: "studio-assets.json",
+      schema:
+        "https://schemas.kumwe.org/studio/v1/studio-browser-assets.schema.json",
+    },
+  };
+  if (
+    canonical(release.browserArtifacts) !== canonical(expectedBrowserArtifacts)
+  ) {
+    errors.push(
+      "studio-release.json browserArtifacts must pin the exact coordinated browser locators.",
+    );
+  }
+}
+
+/**
+ * Serialize one JSON value with recursively sorted object members.
+ *
+ * @param {unknown} value Decoded JSON value.
+ * @returns {string} Canonical serialization for exact comparison.
+ */
+function canonical(value) {
+  if (Array.isArray(value)) {
+    return `[${value.map(canonical).join(",")}]`;
+  }
+  if (isPlainObject(value)) {
+    const members = Object.keys(value)
+      .sort()
+      .map((name) => `${JSON.stringify(name)}:${canonical(value[name])}`);
+    return `{${members.join(",")}}`;
+  }
+  return JSON.stringify(value);
 }
 
 /** Prove the exact installed protocol, testkit, and host name the same release bytes. */

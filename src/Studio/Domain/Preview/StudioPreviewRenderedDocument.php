@@ -17,11 +17,11 @@ final readonly class StudioPreviewRenderedDocument
     /**
      * Retain trusted rendered HTML and the exact protocol inventory it contains.
      *
-     * @param   string                 $html             Complete same-origin HTML document.
-     * @param   list<string>           $markers          Canonical preorder markers.
-     * @param   array<string, string>  $markerMap        Marker to stable Blueprint node identity.
-     * @param   list<stdClass>         $diagnostics      Safe canonical rendering diagnostics.
-     * @param   string|null            $stylesheet       Exact combined Producer and generated theme CSS.
+     * @param   string                 $html         Complete same-origin HTML document.
+     * @param   list<string>           $markers      Canonical preorder markers.
+     * @param   array<string, string>  $markerMap    Marker to stable Blueprint node identity.
+     * @param   list<stdClass>         $diagnostics  Safe canonical rendering diagnostics.
+     * @param   string|null            $stylesheet   Exact combined Producer and generated theme CSS.
      *
      * @throws  InvalidArgumentException  When the document or inventory is incoherent.
      *

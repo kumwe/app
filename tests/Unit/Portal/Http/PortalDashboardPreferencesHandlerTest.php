@@ -171,7 +171,6 @@ final class PortalDashboardPreferencesHandlerTest extends TestCase
                 $index,
             ));
         }
-        $registrar->complete();
         $runtime = new DashboardPreferenceTestRuntime();
         $handler = new PortalDashboardPreferencesHandler(
             $runtime->service,

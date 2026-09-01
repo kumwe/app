@@ -24,7 +24,7 @@ final readonly class StudioMediaHostPort implements MediaPortInterface
     /**
      * Compose the App-owned media use case for direct Producer invocation.
      *
-     * @param  StudioMediaOperations                 $media      Complete media use case.
+     * @param  StudioMediaOperations                $media      Complete media use case.
      * @param  StudioProducerRequestAuthority|null  $authority  Authorized request scope, when bound.
      *
      * @since  2.0.0

@@ -650,7 +650,7 @@
       "result_summary": "Versioned KIS compatibility, schema-1 conservative compatibility, visible semantic administrator/site shell validation, synthetic page-content proof, examples, and negative fixtures are committed. Focused WASM checks passed during implementation, but canonical native integration and browser lifecycle qualification remain blocked.",
       "artifact_paths": [
         "src/Presentation/Infrastructure/TwigThemePackageValidator.php",
-        "src/Extension/Domain/TemplateKisCompatibility.php",
+        "vendor/kumwe/extension-sdk/src/Manifest/TemplateKisCompatibility.php",
         "tests/Unit/Presentation/Application/ThemePackageValidatorTest.php",
         "tests/Integration/Presentation/DoctrineThemeManagerIntegrationTest.php",
         "examples/extensions/minimal-administrator-template/kumwe.json",

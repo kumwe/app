@@ -97,7 +97,7 @@ final class ExtensionContentTranslationTest extends TestCase
             4,
         );
         self::assertSame(
-            [['group_id' => 'acme.blog.articles', 'locales' => ['de', 'en-GB'], 'fallback_locale' => 'en-GB']],
+            [['fallback_locale' => 'en-GB', 'group_id' => 'acme.blog.articles', 'locales' => ['de', 'en-GB']]],
             $parsed->declarations()['content']['translation_groups'] ?? null,
         );
 

@@ -198,7 +198,7 @@ final readonly class DoctrineStudioHostStorage implements
      *
      * @param   StudioMutationReplayRecord  $record    New pending claim.
      * @param   StudioHostSessionSnapshot   $snapshot  Trusted live host session.
-     * @param   RequestContext               $request   Validated Producer request context.
+     * @param   RequestContext              $request   Validated Producer request context.
      *
      * @return  void
      *
@@ -239,7 +239,7 @@ final readonly class DoctrineStudioHostStorage implements
     /**
      * Complete one pending idempotency claim exactly once.
      *
-     * @param   string  $scopeDigest  Existing claim scope.
+     * @param   string  $scopeDigest       Existing claim scope.
      * @param   string  $protectedOutcome  Versioned authenticated logical outcome.
      *
      * @return  void

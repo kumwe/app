@@ -218,7 +218,7 @@ final class FieldPresentationRegistryTest extends TestCase
 
         self::assertArrayHasKey('field_presentations', $roundTrip['business']);
         self::assertSame(
-            [['field_type' => $type->id, 'contexts' => ['detail', 'update']]],
+            [['contexts' => ['update', 'detail'], 'field_type' => $type->id]],
             $roundTrip['business']['field_presentations'],
         );
         self::assertSame(
@@ -257,19 +257,31 @@ final class FieldPresentationRegistryTest extends TestCase
      *
      * @since   2.0.0
      */
-    public function testManifestRejectsPublishedCustomFieldWithIncompletePresentationCoverage(): void
+    public function testIncompletePresentationCoverageIsRefusedAtActiveGraphAdmission(): void
     {
         $type = self::type();
         $document = self::manifestDocument($type);
         $document['business']['definitions'] = [self::definitionDocument($type)];
-
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('require signed presentation contexts');
-        ManifestContributions::fromManifest(
+        $contributions = ManifestContributions::fromManifest(
             ExtensionIdentifier::fromString('acme/editor'),
             $document,
             3,
         );
+        self::assertIsArray(
+            $contributions->declarations()['business'] ?? null,
+            'The structural manifest boundary admits the declaration; coverage is host admission policy.',
+        );
+
+        $registries = new ExtensionContributionRegistrySet();
+        $registries->fieldTypes()->register(DefinitionOwner::extension('acme/editor'), $type);
+        $registries->businessDefinitions()->register(
+            DefinitionOwner::extension('acme/editor'),
+            EntityTypeDefinition::fromArray(self::definitionDocument($type)),
+        );
+
+        $this->expectException(InvalidBusinessDefinition::class);
+        $this->expectExceptionMessage('Active business definitions require field-presentation contexts');
+        $registries->validateBusinessDefinitions();
     }
 
     /**
@@ -352,7 +364,9 @@ final class FieldPresentationRegistryTest extends TestCase
             2,
         )->declarations();
 
-        self::assertSame([$type->toArray()], $roundTrip['business']['field_types']);
+        $expected = $type->toArray();
+        ksort($expected, SORT_STRING);
+        self::assertSame([$expected], $roundTrip['business']['field_types']);
         self::assertArrayNotHasKey('field_presentations', $roundTrip['business']);
     }
 

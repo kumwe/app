@@ -64,7 +64,12 @@ final class AssetInspectionDeploymentAcceptance
     /** Installed example package owner. @since 2.0.0 */
     private const string OWNER = 'kumwe/asset-inspection-example';
 
-    /** Stable inspection definition selected by the signed deployment profile. @since 2.0.0 */
+    /**
+     * Stable inspection definition selected by the signed deployment profile.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
     private const string INSPECTION_DEFINITION_ID = '019bc200-0000-7000-8000-000000000003';
 
     /** Durable consumer whose deduplication receipt is replay-tested. @since 2.0.0 */
@@ -522,6 +527,8 @@ final class AssetInspectionDeploymentAcceptance
      * relation rows disclose a UUID only when the definition is a graph target; read rows expose only fields
      * used by the restored graph. Inspection reads remain in the signed profile and its relate row repeats the
      * same risk threshold.
+     *
+     * @param   Container  $container  Live container whose registered example definitions bound each policy.
      *
      * @return  list<array<string, mixed>>  Fourteen closed production administration requests.
      *

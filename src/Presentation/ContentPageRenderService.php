@@ -40,7 +40,7 @@ final readonly class ContentPageRenderService
      * @param   array<string, mixed>        $languages              Presented language alternates.
      * @param   bool                        $includeThemeVariables  Whether validated CSS variables may be emitted as
      *          the existing public theme attribute; preview documents set false under their stricter CSP.
-     * @param   string|null                 $studioStylesheetHref  Exact same-origin Producer stylesheet URL.
+     * @param   string|null                 $studioStylesheetHref   Exact same-origin Producer stylesheet URL.
      *
      * @return  string  Complete themed HTML document.
      *
@@ -108,13 +108,13 @@ final readonly class ContentPageRenderService
     /**
      * Render an exact preview document whose validated theme travels through a same-origin stylesheet.
      *
-     * @param   string                     $template             Site layout name without `.twig`.
-     * @param   array<string, mixed>|null  $entry                Already presented safe entry.
-     * @param   string                     $currentPath          Current application path.
-     * @param   string                     $canonicalUrl         Canonical path or absolute URL.
-     * @param   string|null                $schemeOverride       Optional menu-bound colour scheme.
-     * @param   string                     $surfaceId            Stable interface surface identity.
-     * @param   string                     $stylesheetHref       Trusted combined stylesheet sentinel.
+     * @param   string                     $template        Site layout name without `.twig`.
+     * @param   array<string, mixed>|null  $entry           Already presented safe entry.
+     * @param   string                     $currentPath     Current application path.
+     * @param   string                     $canonicalUrl    Canonical path or absolute URL.
+     * @param   string|null                $schemeOverride  Optional menu-bound colour scheme.
+     * @param   string                     $surfaceId       Stable interface surface identity.
+     * @param   string                     $stylesheetHref  Trusted combined stylesheet sentinel.
      *
      * @return  array{html: string, themeStylesheet: string}  Complete HTML and its closed theme stylesheet.
      *

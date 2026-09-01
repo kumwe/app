@@ -24,8 +24,8 @@ final readonly class StudioTelemetryHostPort implements TelemetryPortInterface
     /**
      * Bind client telemetry to the existing structured observability sink.
      *
-     * @param  LoggerInterface  $logger  Existing structured observability sink.
-     * @param  StudioProducerRequestAuthority|null $authority Authorized Producer request scope, when bound.
+     * @param  LoggerInterface                      $logger     Existing structured observability sink.
+     * @param  StudioProducerRequestAuthority|null  $authority  Authorized Producer request scope, when bound.
      *
      * @since  2.0.0
      */

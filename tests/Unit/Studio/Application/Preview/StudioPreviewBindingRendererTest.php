@@ -7,7 +7,6 @@ namespace Kumwe\App\Tests\Unit\Studio\Application\Preview;
 use InvalidArgumentException;
 use Kumwe\App\Application\Authorization\SiteContext;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
-use Kumwe\App\Extension\Contribution\StudioPreviewRendererContribution;
 use Kumwe\App\Extension\Runtime\ActiveExtensionSet;
 use Kumwe\App\Presentation\ContentPageRenderService;
 use Kumwe\App\Presentation\SiteRenderer;
@@ -29,18 +28,11 @@ use Kumwe\App\Studio\Domain\Preview\StudioPreviewDraft;
 use Kumwe\App\Studio\Domain\Preview\StudioPreviewIdentity;
 use Kumwe\App\Studio\Domain\Preview\StudioPreviewRenderRequest;
 use Kumwe\App\Studio\Presentation\Preview\CanonicalStudioPreviewRenderer;
-use Kumwe\Extension\Spi\Contribution\CanonicalCompositionDocument;
-use Kumwe\Extension\Spi\Contribution\CanonicalCompositionKind;
-use Kumwe\Extension\Spi\Contribution\CompositionHostBinding;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
-use Kumwe\Producer\Canonical\CanonicalJson;
-use Kumwe\Producer\Render\BlockRenderer;
 use Kumwe\Producer\Render\CompositionRenderer;
 use Kumwe\Producer\Render\RenderContext;
 use Kumwe\Producer\Render\RenderException;
 use Kumwe\Producer\Render\RenderPolicy;
 use Kumwe\Producer\Render\RenderState;
-use Kumwe\Producer\Schema\StudioContractResources;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\UsesClass;
@@ -54,9 +46,20 @@ use Twig\Loader\ArrayLoader;
 #[CoversClass(StudioPreviewStylesheet::class)]
 #[UsesClass(StudioBlockRendererRuntime::class)]
 #[UsesClass(StudioContentFieldBlockRenderer::class)]
+/**
+ * Proves preview binding resolution, canonical preview output and stylesheet activation fail closed.
+ *
+ * @since  2.0.0
+ */
 final class StudioPreviewBindingRendererTest extends TestCase
 {
-    /** @return iterable<string, array{string, mixed, string}> */
+    /**
+     * Provide each core field block type with a raw bound value and its expected safe rendering.
+     *
+     * @return iterable<string, array{string, mixed, string}>
+     *
+     * @since   2.0.0
+     */
     public static function fieldBlocks(): iterable
     {
         yield 'text' => ['core/field-text', '<script>alert(1)</script>', '&lt;script&gt;alert(1)&lt;/script&gt;'];
@@ -79,6 +82,17 @@ final class StudioPreviewBindingRendererTest extends TestCase
     }
 
     #[DataProvider('fieldBlocks')]
+    /**
+     * Prove each core field block renders only its escaped bound value, with no script, URL or style leak.
+     *
+     * @param   string  $type      Core field block type under test.
+     * @param   mixed   $value     Raw bound entry-field value.
+     * @param   string  $expected  Exact safe fragment the rendered output must contain.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function testCoreFieldBlocksResolveOnlyAuthorizedValues(
         string $type,
         mixed $value,
@@ -101,6 +115,13 @@ final class StudioPreviewBindingRendererTest extends TestCase
         self::assertStringNotContainsString(' style=', $html);
     }
 
+    /**
+     * Prove an unregistered binding source applies the declared fallback and never leaks other values.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function testUnregisteredBindingOperationsApplyTheDeclaredFallback(): void
     {
         $document = self::document('core/field-text', (object) [
@@ -119,6 +140,14 @@ final class StudioPreviewBindingRendererTest extends TestCase
         self::assertStringNotContainsString('must-not-render', $html);
     }
 
+    /**
+     * Prove the canonical preview emits Producer HTML, markers and theme CSS through one linked
+     * stylesheet placeholder, with no inline style element in the page.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function testCanonicalPreviewConsumesProducerHtmlCssAndMarkersThroughOneStylesheet(): void
     {
         [$renderer, $theme] = $this->canonicalRuntime();
@@ -156,6 +185,13 @@ final class StudioPreviewBindingRendererTest extends TestCase
         self::assertSame('field-node', $rendered->markerMap[$rendered->markers[0]]);
     }
 
+    /**
+     * Prove placeholder activation substitutes only a same-origin URL and strips nothing when inactive.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function testStylesheetActivationRequiresExactSameOriginUrlAndInventory(): void
     {
         $placeholder = sprintf('href="%s"', StudioPreviewStylesheet::HREF_PLACEHOLDER);
@@ -177,6 +213,13 @@ final class StudioPreviewBindingRendererTest extends TestCase
         StudioPreviewStylesheet::activate($html, 'https://example.test/styles.css', true);
     }
 
+    /**
+     * Prove rendering refuses a draft whose locked theme no longer matches the live active scheme.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function testCanonicalRendererRefusesAStalePublishedThemeLock(): void
     {
         $settingsDocument = self::settingsDocument();
@@ -211,6 +254,13 @@ final class StudioPreviewBindingRendererTest extends TestCase
         );
     }
 
+    /**
+     * Prove a draft locked to an unregistered block revision fails closed instead of rendering anything.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function testCanonicalRendererRefusesAnUnregisteredRevisionWithoutDraftFallback(): void
     {
         [$renderer, $theme] = $this->canonicalRuntime();
@@ -238,22 +288,26 @@ final class StudioPreviewBindingRendererTest extends TestCase
         );
     }
 
+    /**
+     * Prove preview rendering fails closed when the Producer engine records an enhancement request,
+     * because the App has no canonical enhancement runtime yet. Motion intent on a node's design
+     * properties is the engine-owned path that requests one; the frozen SDK fragment SPI gives
+     * contributed renderers no way to request enhancements at all.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function testCanonicalPreviewRefusesProducerEnhancementsUntilOneCanonicalRuntimeExists(): void
     {
-        $enhancingRenderer = new class implements BlockRenderer {
-            public function render(stdClass $node, string $scope, RenderState $state): string
-            {
-                $state->enhance('motion', $node, $scope);
-
-                return '<p>Safe non-JavaScript baseline</p>';
-            }
-        };
-        [$renderer, $theme] = $this->canonicalRuntime(runtime: self::extensionRuntime($enhancingRenderer));
-        $document = self::lockTheme(self::document('acme.shop/grid', new stdClass()), $theme);
-        $document->dependencyLock->blocks[0]->revision = 'grid-block-r1';
-        $document->roots[0]->properties = (object) ['columns' => 3, 'collapse' => 'stack'];
-        $document->roots[0]->bindings = new stdClass();
-        $document->roots[0]->slots = (object) ['items' => []];
+        [$renderer, $theme] = $this->canonicalRuntime();
+        $document = self::lockTheme(self::document('core/field-text', (object) [
+            'source' => (object) ['kind' => 'static-value', 'value' => 'Rendered value'],
+            'transforms' => [],
+            'onNull' => 'empty',
+            'onError' => 'error',
+        ]), $theme);
+        $document->roots[0]->properties = (object) ['design' => (object) ['animation' => 'fade']];
         $draft = new StudioPreviewDraft('default', $document);
 
         $this->expectException(RenderException::class);
@@ -272,6 +326,16 @@ final class StudioPreviewBindingRendererTest extends TestCase
         );
     }
 
+    /**
+     * Build a one-node Blueprint document binding the value port of a single field block.
+     *
+     * @param   string    $type     Field block type placed at the document root.
+     * @param   stdClass  $binding  Binding declaration attached to the node's value port.
+     *
+     * @return  stdClass  Locked single-node Blueprint document.
+     *
+     * @since   2.0.0
+     */
     private static function document(string $type, stdClass $binding): stdClass
     {
         return (object) [
@@ -295,6 +359,16 @@ final class StudioPreviewBindingRendererTest extends TestCase
         ];
     }
 
+    /**
+     * Render one document through the core runtime with the preview binding resolver.
+     *
+     * @param   stdClass                    $document  Blueprint document to render.
+     * @param   StudioPreviewBindingValues  $values    Authorized binding values offered to the resolver.
+     *
+     * @return  string  Rendered preview HTML.
+     *
+     * @since   2.0.0
+     */
     private static function render(stdClass $document, StudioPreviewBindingValues $values): string
     {
         $identity = StudioPreviewIdentity::forDraft($document);
@@ -314,6 +388,15 @@ final class StudioPreviewBindingRendererTest extends TestCase
         )->html;
     }
 
+    /**
+     * Build a trusted blueprint-mode session snapshot bound to the draft's artifact.
+     *
+     * @param   StudioPreviewDraft  $draft  Draft whose artifact id the session is opened for.
+     *
+     * @return  StudioHostSessionSnapshot  Live session snapshot with read permission.
+     *
+     * @since   2.0.0
+     */
     private static function snapshot(StudioPreviewDraft $draft): StudioHostSessionSnapshot
     {
         $session = new StudioHostSession(
@@ -340,6 +423,16 @@ final class StudioPreviewBindingRendererTest extends TestCase
         );
     }
 
+    /**
+     * Lock the document's dependency lock to the live published theme coordinate.
+     *
+     * @param   stdClass              $document  Blueprint document receiving the theme lock.
+     * @param   StudioPublishedTheme  $theme     Live theme whose reference is locked.
+     *
+     * @return  stdClass  The same document with its theme lock applied.
+     *
+     * @since   2.0.0
+     */
     private static function lockTheme(stdClass $document, StudioPublishedTheme $theme): stdClass
     {
         $document->dependencyLock->theme = $theme->reference(SiteContext::default())->document();
@@ -347,7 +440,16 @@ final class StudioPreviewBindingRendererTest extends TestCase
         return $document;
     }
 
-    /** @return array{CanonicalStudioPreviewRenderer, StudioPublishedTheme} */
+    /**
+     * Compose the canonical preview renderer around live theme, page rendering and block runtime parts.
+     *
+     * @param   ?SiteSettings                $settings  Live site settings override.
+     * @param   ?StudioBlockRendererRuntime  $runtime   Block renderer runtime override.
+     *
+     * @return array{CanonicalStudioPreviewRenderer, StudioPublishedTheme}
+     *
+     * @since   2.0.0
+     */
     private function canonicalRuntime(
         ?SiteSettings $settings = null,
         ?StudioBlockRendererRuntime $runtime = null,
@@ -379,6 +481,13 @@ final class StudioPreviewBindingRendererTest extends TestCase
         ), $theme];
     }
 
+    /**
+     * Build the core-only block renderer runtime over the default contribution registries.
+     *
+     * @return  StudioBlockRendererRuntime  Runtime resolving only core field block renderers.
+     *
+     * @since   2.0.0
+     */
     private static function runtime(): StudioBlockRendererRuntime
     {
         return new StudioBlockRendererRuntime(
@@ -387,56 +496,17 @@ final class StudioPreviewBindingRendererTest extends TestCase
         );
     }
 
-    private static function extensionRuntime(BlockRenderer $renderer): StudioBlockRendererRuntime
-    {
-        $document = json_decode(
-            StudioContractResources::testkitBytes('fixtures/block.grid.example.json'),
-            false,
-            64,
-            JSON_THROW_ON_ERROR,
-        );
-        self::assertInstanceOf(stdClass::class, $document);
-        $document->type = 'acme.shop/grid';
-        $document->owner = (object) ['id' => 'acme.shop/blocks', 'version' => '1.0.0'];
-        $document->rendererRequirements = [
-            (object) [
-                'surface' => 'web',
-                'capability' => 'acme.shop/web-grid',
-                'versions' => '^1.0.0',
-            ],
-            (object) [
-                'surface' => 'preview',
-                'capability' => 'acme.shop/preview-grid',
-                'versions' => '^1.0.0',
-            ],
-        ];
-        $canonical = new CanonicalCompositionDocument(
-            CanonicalCompositionKind::BlockDefinition,
-            CanonicalJson::stringify($document),
-        );
-        $binding = new CompositionHostBinding(
-            CanonicalCompositionKind::BlockDefinition,
-            'acme.shop/grid',
-            'acme.shop.renderer.grid',
-        );
-        $owner = ContributionOwner::extension('acme/shop');
-        $registries = new ExtensionContributionRegistrySet(withCore: false);
-        $registries->canonicalCompositionDocuments()->register($owner, $canonical);
-        $registries->compositionHostBindings()->register($owner, $binding);
-        $registries->studioPreviewRenderers()->register(
-            $owner,
-            new StudioPreviewRendererContribution($owner, '1.0.0', $canonical, $binding),
-            $renderer,
-        );
-
-        return new StudioBlockRendererRuntime($registries, new StudioContentFieldBlockRenderer());
-    }
-
-    /** @return array<string, mixed> */
+    /**
+     * Build a settings document whose default scheme pins a recognizable accent variable.
+     *
+     * @return array<string, mixed>
+     *
+     * @since   2.0.0
+     */
     private static function settingsDocument(): array
     {
         $presentation = \Kumwe\App\Presentation\Application\SitePresentation::defaults();
-        $presentation['schemes']['default']['variables']['--site-accent'] = '#0c9189';
+        $presentation['schemes'][0]['colors']['accent'] = '#0c9189';
 
         return [
             'site_name' => 'Kumwe',
