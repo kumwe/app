@@ -553,7 +553,7 @@ test('AP7 composition provisions by POST and opens an exact measured preview cha
   const traffic = observePreviewTraffic(page);
   const themeResponses: Array<{ cacheControl: string; contentType: string; status: number }> = [];
   page.on('response', (response) => {
-    if (new URL(response.url()).pathname !== '/administrator/studio/preview/theme.css') return;
+    if (new URL(response.url()).pathname !== '/administrator/studio/preview/styles.css') return;
     const headers = response.headers();
     themeResponses.push({
       cacheControl: headers['cache-control'] ?? '',
@@ -1422,7 +1422,7 @@ test('closed layout intent renders four, two and one columns without surface ove
   ] as const;
   for (const [viewport, expectedColumns] of expectations) {
     await shell.getByRole('button', { name: viewport, exact: true }).click();
-    await expect.poll(async () => frame.locator('.studio-preview-grid').nth(existingGrids).evaluate((element) => ({
+    await expect.poll(async () => frame.locator('[data-studio-block="grid"]').nth(existingGrids).evaluate((element) => ({
       columns: getComputedStyle(element).gridTemplateColumns.trim().split(/\s+/u).length,
       intent: element.getAttribute('data-studio-layout-columns'),
     }))).toEqual({ columns: expectedColumns, intent: '4' });

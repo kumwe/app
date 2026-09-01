@@ -60,19 +60,17 @@ final readonly class StudioContentFieldBlockRenderer implements BlockRenderer
             throw new RenderException('The App Content field renderer received an unregistered block type.');
         }
         $binding = $state->bindingResolution($node, 'value');
-        if (!$binding->isAvailable()) {
+        if ($binding->isHidden()) {
             return '';
         }
         $kind = substr($type, strlen('core/field-'));
-        $text = self::display($kind, $binding->value());
-        if ($text === '') {
-            return '';
-        }
+        $text = $binding->isAvailable() ? self::display($kind, $binding->value()) : '';
 
         return sprintf(
-            '<%1$s data-studio-part="value">%2$s</%1$s>',
+            '<%1$s class="studio-preview-field-%3$s" data-studio-part="value">%2$s</%1$s>',
             $kind === 'rich-text' ? 'article' : 'p',
             SafeMarkup::escapeHtml($text),
+            $kind,
         );
     }
 
