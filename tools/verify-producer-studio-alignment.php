@@ -96,10 +96,16 @@ function verifyProducerStudioAlignment(array $paths): int
             'Producer Studio repository',
             $errors,
         );
-        producerAlignmentSame($source['kind'] ?? null, 'coordinated-release', 'Producer pin kind', $errors);
+        producerAlignmentSame(
+            $source['kind'] ?? null,
+            'provenance-backed-npm-release',
+            'Producer pin kind',
+            $errors,
+        );
         producerAlignmentSame($source['release'] ?? null, $appReleaseName, 'Producer source release', $errors);
-        if (array_key_exists('commit', $source)) {
-            $errors[] = 'Producer PIN source must not retain a git-prerelease commit beside a coordinated release.';
+        $sourceCommit = $source['commit'] ?? null;
+        if (!is_string($sourceCommit) || preg_match('/^[a-f0-9]{40}$/D', $sourceCommit) !== 1) {
+            $errors[] = 'Producer PIN source must anchor the provenance-backed publication to its exact commit.';
         }
     }
 
