@@ -44,7 +44,6 @@ use SplFileInfo;
 
 #[CoversClass(ConvertedMoneySurface::class)]
 #[CoversClass(CoreFieldPresenter::class)]
-#[CoversClass(FieldPresentationModel::class)]
 #[CoversClass(FieldPresentationRegistry::class)]
 #[CoversClass(BusinessRecordProjector::class)]
 #[CoversClass(BusinessDocumentPresenter::class)]

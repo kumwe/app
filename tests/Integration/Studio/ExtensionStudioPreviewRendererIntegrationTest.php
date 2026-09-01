@@ -29,6 +29,7 @@ use Kumwe\Producer\Render\CompositionRenderer;
 use Kumwe\Producer\Render\RenderContext;
 use Kumwe\Producer\Render\RenderException;
 use Kumwe\Producer\Render\RenderPolicy;
+use LogicException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
@@ -127,7 +128,7 @@ final class ExtensionStudioPreviewRendererIntegrationTest extends TestCase
             self::assertSame($namespace . '/grid', $definition->blockType);
             self::assertSame('1.0.0', $definition->blockVersion);
             self::assertSame('grid-block-r1', $definition->blockRevision);
-            self::assertSame($namespace . '.renderer.grid', $definition->renderer);
+            self::assertSame($namespace . '/grid-preview', $definition->renderer);
             self::assertSame($namespace . '/grid', $definition->previewCapability);
             self::assertSame('^1.0.0', $definition->previewCapabilityVersions);
             $exactCoordinate = new BlockCoordinate(
@@ -203,14 +204,14 @@ final class ExtensionStudioPreviewRendererIntegrationTest extends TestCase
             $installed[] = $missingIdentifier;
             $manager->activate($missingIdentifier, $context);
             $trust->synchronizeRuntimeMaterialization();
-            $missingRuntime = TestKernelFactory::create($environment);
-            $missingRegistries = self::service($missingRuntime, ExtensionContributionRegistrySet::class);
-            self::assertNull(self::optionalRendererDefinition($missingRegistries, $missingIdentifier));
-            $missingNamespace = str_replace('/', '.', $missingIdentifier);
-            self::assertRenderRefused(
-                self::service($missingRuntime, StudioBlockRendererRuntime::class),
-                self::document($missingNamespace, '1.0.0', 'grid-block-r1'),
-            );
+            // Binding is eager and mandatory: a provider whose declared renderer service is not the
+            // SDK preview contract must fail the runtime load loudly instead of shipping a silent gap.
+            try {
+                TestKernelFactory::create($environment);
+                self::fail('A bound preview service outside the SDK renderer contract must refuse to load.');
+            } catch (LogicException $exception) {
+                self::assertSame('The manifest-six preview renderer is unavailable.', $exception->getMessage());
+            }
         } finally {
             foreach (array_reverse($installed) as $identifierToRemove) {
                 try {
@@ -235,7 +236,8 @@ final class ExtensionStudioPreviewRendererIntegrationTest extends TestCase
      *
      * @param   string  $identifier      Per-test extension identifier.
      * @param   string  $version         Exact package runtime version.
-     * @param   bool    $missingService  Whether the provider deliberately omits the bound service.
+     * @param   bool    $missingService  Whether the bound service deliberately resolves outside the
+     *          SDK renderer contract.
      *
      * @return  string  Absolute archive path.
      *
@@ -313,7 +315,11 @@ final class ExtensionStudioPreviewRendererIntegrationTest extends TestCase
                     $contents = $encoded . "\n";
                 }
                 if ($missingService && $relative === 'src/Provider.php') {
-                    $contents = str_replace('.renderer.grid\'', '.renderer.absent\'', $contents);
+                    $contents = str_replace(
+                        ': GridPreviewRenderer => new GridPreviewRenderer(),',
+                        ': object => new \stdClass(),',
+                        $contents,
+                    );
                 }
                 if (!$zip->addFromString($relative, $contents)) {
                     throw new RuntimeException('A Studio preview fixture file cannot be packaged.');

@@ -16,6 +16,7 @@
 
 declare(strict_types=1);
 
+use Kumwe\Extension\Package\InspectedPackage;
 use Kumwe\Extension\Package\ZipArchiveContentReader;
 use Kumwe\App\Tests\Deployment\CaseReport;
 
@@ -41,14 +42,31 @@ try {
     }
     $archive = $directory . '/package.zip';
 
+    // The reader only expands packages whose safety inspection is clean, so the drill package must
+    // carry a root manifest and content that stays under the compression-ratio limit.
     $entries = [
-        'kumwe.sbom.json' => str_repeat('s', 4_096),
-        'kumwe.provenance.json' => str_repeat('p', 4_096),
+        'kumwe.json' => (string) json_encode([
+            'schema' => 1,
+            'name' => 'fixture/memory-ceiling',
+            'type' => 'plugin',
+            'version' => '1.0.0',
+            'provider' => 'Fixture\\MemoryCeiling\\Provider',
+            'autoload' => ['psr-4' => ['Fixture\\MemoryCeiling\\' => 'src/']],
+            'requires' => ['kumwe' => '^2.0.0', 'php' => '^8.5.0'],
+            'dependencies' => [],
+            'migrations' => [],
+            'configuration' => new stdClass(),
+            'permissions' => [],
+            'routes' => [],
+            'events' => [],
+            'assets' => [],
+        ], JSON_THROW_ON_ERROR),
+        'kumwe.sbom.json' => random_bytes(4_096),
+        'kumwe.provenance.json' => random_bytes(4_096),
         'a.php' => '<?php',
         'b.php' => '<?php',
         'c.php' => '<?php',
         'd.php' => '<?php',
-        'e.php' => '<?php',
     ];
 
     $zip = new ZipArchive();
@@ -60,9 +78,15 @@ try {
     }
     $zip->close();
 
+    $canonical = realpath($archive);
+    if (!is_string($canonical)) {
+        throw new RuntimeException('The package path could not be canonicalized.');
+    }
+    $package = InspectedPackage::inspect($canonical);
+
     $before = memory_get_usage(true);
     $retained = [];
-    foreach ((new ZipArchiveContentReader())->contents($archive) as $path => $entry) {
+    foreach ((new ZipArchiveContentReader())->contents($package) as $path => $entry) {
         $retained[$path] = $entry;
     }
     $growth = memory_get_usage(true) - $before;

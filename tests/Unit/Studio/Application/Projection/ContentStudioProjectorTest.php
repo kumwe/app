@@ -39,7 +39,6 @@ use stdClass;
 #[UsesClass(ContentBlueprintBinding::class)]
 #[UsesClass(EntryCompositionOverrides::class)]
 #[UsesClass(JsonSchemaValidator::class)]
-#[UsesClass(StudioDocumentSchemaRegistry::class)]
 final class ContentStudioProjectorTest extends TestCase
 {
     /**

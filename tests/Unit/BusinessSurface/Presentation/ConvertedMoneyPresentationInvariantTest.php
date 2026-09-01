@@ -22,7 +22,6 @@ use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldWidget;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
-#[CoversClass(FieldPresentationModel::class)]
 #[CoversClass(ClientAssertedInstant::class)]
 /**
  * Pins the refusals that keep a converted figure and its evidence from coming apart in a presentation.

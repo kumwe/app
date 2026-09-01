@@ -37,7 +37,6 @@ use Throwable;
 use ZipArchive;
 
 #[CoversClass(ContentService::class)]
-#[CoversClass(TranslationSetItemAssociation::class)]
 #[UsesClass(TranslationGroupDeclaration::class)]
 #[UsesClass(OwnedRuntimeContributionRegistry::class)]
 /**

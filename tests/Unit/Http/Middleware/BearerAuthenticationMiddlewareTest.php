@@ -10,7 +10,6 @@ use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Http\Middleware\BearerAuthenticationMiddleware;
 use Kumwe\App\Identity\Application\Authentication\AccessTokenVerifier;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use Laminas\Diactoros\Response\TextResponse;
 use Laminas\Diactoros\ServerRequestFactory;
 use LogicException;
@@ -27,7 +26,6 @@ use Psr\Http\Server\RequestHandlerInterface;
 
 #[CoversClass(BearerAuthenticationMiddleware::class)]
 #[UsesClass(AuthenticatedPrincipal::class)]
-#[UsesClass(Capability::class)]
 final class BearerAuthenticationMiddlewareTest extends TestCase
 {
     private const TOKEN = 'abcdefghijklmnopqrstuvwxyz0123456789ABCD';

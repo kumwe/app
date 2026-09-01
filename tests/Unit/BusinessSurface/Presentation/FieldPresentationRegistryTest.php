@@ -13,7 +13,6 @@ use Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition;
 use Kumwe\App\BusinessSurface\Presentation\Field\CoreFieldPresenter;
 use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationInputFactory;
 use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationContext;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationContribution;
 use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationInput;
 use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationModel;
 use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresenter;
@@ -27,7 +26,6 @@ use Kumwe\Extension\Manifest\ManifestContributions;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
-#[CoversClass(FieldPresentationContribution::class)]
 #[CoversClass(FieldPresentationCoverage::class)]
 #[CoversClass(FieldPresentationRegistry::class)]
 /**

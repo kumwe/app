@@ -8,7 +8,6 @@ use InvalidArgumentException;
 use Kumwe\Extension\Spi\Contribution\ContributionDefinition;
 use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\OwnedRuntimeContributionRegistry;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use Kumwe\App\InterfaceStandard\ConformanceDiagnostic;
 use Kumwe\App\InterfaceStandard\ConformanceSeverity;
 use Kumwe\App\InterfaceStandard\CustomizationPermission;
@@ -55,8 +54,6 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass(SurfaceIntent::class)]
 #[CoversClass(SurfacePattern::class)]
 #[CoversClass(SurfaceState::class)]
-#[UsesClass(Capability::class)]
-#[UsesClass(ContributionOwner::class)]
 #[UsesClass(OwnedRuntimeContributionRegistry::class)]
 /**
  * Pins strict parsing, semantic conformance, and existing-registry compatibility for KIS surfaces.

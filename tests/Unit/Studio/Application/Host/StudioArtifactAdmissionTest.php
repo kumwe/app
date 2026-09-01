@@ -24,7 +24,6 @@ use stdClass;
  *
  * @since  2.0.0
  */
-#[CoversClass(CanonicalJson::class)]
 #[CoversClass(StoredStudioArtifact::class)]
 #[CoversClass(StudioArtifactAdmission::class)]
 #[CoversClass(StudioStoredDocumentPolicy::class)]

@@ -10,8 +10,6 @@ use Kumwe\Extension\Spi\Contribution\AdministratorRouteDefinition;
 use Kumwe\Extension\Spi\Contribution\AdministratorViewDefinition;
 use Kumwe\Extension\Spi\Contribution\AdministratorWorkspaceDefinition;
 use Kumwe\Extension\Spi\Contribution\ContributionOwner;
-use Kumwe\Extension\Manifest\ExtensionIdentifier;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use Kumwe\App\InterfaceStandard\SurfaceId;
 use Kumwe\Extension\Spi\Portal\Contribution\PortalNavigationDefinition;
 use Kumwe\Extension\Spi\Portal\Contribution\PortalRouteDefinition;
@@ -28,17 +26,6 @@ use PHPUnit\Framework\TestCase;
  * @since  2.0.0
  */
 #[CoversClass(SurfaceId::class)]
-#[CoversClass(AdministratorWorkspaceDefinition::class)]
-#[CoversClass(AdministratorNavigationDefinition::class)]
-#[CoversClass(AdministratorRouteDefinition::class)]
-#[CoversClass(AdministratorViewDefinition::class)]
-#[CoversClass(PortalWorkspaceDefinition::class)]
-#[CoversClass(PortalNavigationDefinition::class)]
-#[CoversClass(PortalRouteDefinition::class)]
-#[CoversClass(PortalTemplateDefinition::class)]
-#[UsesClass(ContributionOwner::class)]
-#[UsesClass(ExtensionIdentifier::class)]
-#[UsesClass(Capability::class)]
 final class SurfaceIdentifierParityTest extends TestCase
 {
     /**

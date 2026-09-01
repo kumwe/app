@@ -23,12 +23,12 @@ use Kumwe\Extension\Toolchain\ProtectedSigningKeyReader;
 use Kumwe\Extension\Toolchain\StaticConformanceRunner;
 use KumweExample\AssetInspection\Provider;
 use LogicException;
-use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 
-#[CoversClass(Provider::class)]
+#[CoversNothing]
 /**
  * Proves the installable asset-inspection package is canonical SDK code with one signed declaration graph.
  *

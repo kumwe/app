@@ -40,10 +40,8 @@ use Psr\Clock\ClockInterface;
 #[UsesClass(AuditEvent::class)]
 #[UsesClass(LocaleTag::class)]
 #[UsesClass(Workflow::class)]
-#[UsesClass(ContributionOwner::class)]
 #[UsesClass(OwnedRuntimeContributionRegistry::class)]
 #[UsesClass(TranslationGroupDeclaration::class)]
-#[UsesClass(TranslationSetItemAssociation::class)]
 /**
  * Pins the runtime half of the extension content-translation contract inside `ContentService`.
  *

@@ -42,7 +42,6 @@ use Twig\Loader\ArrayLoader;
 
 #[CoversClass(AdministratorAuthorizationMiddleware::class)]
 #[UsesClass(AuthenticatedPrincipal::class)]
-#[UsesClass(Capability::class)]
 #[UsesClass(AdministratorRenderer::class)]
 #[UsesClass(RecoveryAdministratorRenderer::class)]
 #[UsesClass(AdministratorSession::class)]
