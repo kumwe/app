@@ -12,6 +12,7 @@ use Kumwe\Producer\Schema\StudioContractRelease;
 use Kumwe\Producer\Schema\StudioContractResources;
 use Kumwe\Producer\Schema\StudioDocumentSchemaRegistry;
 use Kumwe\Producer\Wire\OperationRegistry;
+use ReflectionClass;
 use Throwable;
 
 /**
@@ -183,8 +184,12 @@ final readonly class PinnedStudioContextualAuthoringAvailability implements Stud
             return false;
         }
 
+        $manifested = $this->manifestedProtocolSchemas();
+        if ($manifested === null) {
+            return false;
+        }
         foreach (self::REQUIRED_DOCUMENT_KINDS as $kind) {
-            if (!in_array($kind, StudioDocumentSchemaRegistry::DOCUMENT_KINDS, true)) {
+            if (!isset($manifested[$kind . '.schema.json'])) {
                 return false;
             }
         }
@@ -199,6 +204,45 @@ final readonly class PinnedStudioContextualAuthoringAvailability implements Stud
         }
 
         return true;
+    }
+
+    /**
+     * Read the schema inventory of Producer's digest-verified protocol corpus manifest.
+     *
+     * A successful `fromVendoredCorpus()` has already proven every manifested schema's bytes against
+     * Producer's package PIN, so membership in this inventory is Producer's publication evidence for
+     * one canonical document kind. Producer 0.2.0 keeps the contextual authoring documents in this
+     * corpus rather than in its closed runtime document-kind set.
+     *
+     * @return  array<string, true>|null  Manifested schema basenames, or null when the corpus is unreadable.
+     *
+     * @since   2.0.0
+     */
+    private function manifestedProtocolSchemas(): ?array
+    {
+        $registryFile = (new ReflectionClass(StudioDocumentSchemaRegistry::class))->getFileName();
+        if (!is_string($registryFile)) {
+            return null;
+        }
+        $manifest = $this->decode(
+            dirname($registryFile, 3) . '/resources/studio-contract/protocol/schemas/manifest.json',
+        );
+        if ($manifest === null || ($manifest['kind'] ?? null) !== 'schema-manifest') {
+            return null;
+        }
+        $entries = $manifest['schemas'] ?? null;
+        if (!is_array($entries) || !array_is_list($entries)) {
+            return null;
+        }
+        $files = [];
+        foreach ($entries as $entry) {
+            $file = is_array($entry) ? ($entry['file'] ?? null) : null;
+            if (is_string($file)) {
+                $files[$file] = true;
+            }
+        }
+
+        return $files;
     }
 
     /**

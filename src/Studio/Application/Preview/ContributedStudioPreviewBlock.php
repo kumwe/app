@@ -34,10 +34,10 @@ final readonly class ContributedStudioPreviewBlock implements StudioPreviewBlock
     /**
      * Copy the exact node coordinates and its already schema-bounded properties.
      *
-     * @param   string                $id          Stable Blueprint node identifier.
-     * @param   string                $type        Qualified block type.
-     * @param   string                $version     Exact block version.
-     * @param   array<string, mixed>  $properties  Admitted block properties copied by canonical JSON.
+     * @param   string        $id          Stable Blueprint node identifier.
+     * @param   string        $type        Qualified block type.
+     * @param   string        $version     Exact block version.
+     * @param   array<mixed>  $properties  Admitted block property members copied by canonical JSON.
      *
      * @throws  InvalidArgumentException  When a coordinate is empty or properties leave canonical JSON.
      *

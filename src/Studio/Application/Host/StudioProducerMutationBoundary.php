@@ -222,7 +222,7 @@ final readonly class StudioProducerMutationBoundary implements MutationBoundaryI
             StudioProducerError::refuse('internal', 'studio.media/idempotency-corrupt');
         }
         $stored = clone $outcome->value;
-        $stored->headers = clone $outcome->value->headers;
+        $stored->headers = clone $headers;
         unset($stored->headers->{'X-Studio-Upload-Token'});
 
         return new HostResult($stored, $outcome->revision);

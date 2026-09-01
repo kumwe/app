@@ -140,15 +140,24 @@ final readonly class ExtensionRuntimeLoader
             }
             $extensionIdentifier = ExtensionIdentifier::fromString($identifier);
             $identifier = $extensionIdentifier->value();
-            $declared = $manifestSchema >= 2
-                ? ManifestContributions::fromManifest(
+            $declared = ManifestContributions::fromSchemaOne($extensionIdentifier);
+            if ($manifestSchema >= 2) {
+                if (!is_array($declaredContributions)) {
+                    throw new RuntimeException('Strict runtime contributions are unavailable.');
+                }
+                $contributionMembers = [];
+                foreach ($declaredContributions as $member => $value) {
+                    if (!is_string($member)) {
+                        throw new RuntimeException('Strict runtime contributions are unavailable.');
+                    }
+                    $contributionMembers[$member] = $value;
+                }
+                $declared = ManifestContributions::fromManifest(
                     $extensionIdentifier,
-                    is_array($declaredContributions)
-                        ? $declaredContributions
-                        : throw new RuntimeException('Strict runtime contributions are unavailable.'),
+                    $contributionMembers,
                     $manifestSchema,
-                )
-                : ManifestContributions::fromSchemaOne($extensionIdentifier);
+                );
+            }
             $root = $this->safeRoot($relativeRoot);
             $this->registerAutoload($root, $autoload);
 
