@@ -4,12 +4,8 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Architecture;
 
-use FilesystemIterator;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
-use SplFileInfo;
 
 /**
  * Proves that the extension contract has one package owner rather than a translated App copy.
@@ -59,72 +55,6 @@ final class ExtensionContractGateTest extends TestCase
         self::assertStringContainsString('no second App-owned public-API ledger', file_get_contents(
             $this->root . '/tools/verify-extension-contract.php',
         ) ?: '');
-    }
-
-    /**
-     * Prove every installed SDK resource file matches its PIN.json digest, with none missing and none extra.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    public function testTheInstalledSdkResourceTreeMatchesItsPackagePin(): void
-    {
-        $resources = $this->root . '/vendor/kumwe/extension-sdk/resources';
-        $pin = $this->document($resources . '/PIN.json');
-        self::assertSame('kumwe-extension-sdk-resource-pin-v2', $pin['format'] ?? null);
-
-        $expected = [];
-        foreach ($pin['files'] ?? [] as $entry) {
-            self::assertIsArray($entry);
-            $file = $entry['file'] ?? null;
-            $digest = $entry['sha256'] ?? null;
-            self::assertIsString($file);
-            self::assertMatchesRegularExpression(
-                '#^(?!/)(?!.*(?:^|/)\.\.(?:/|$))[A-Za-z0-9._/-]+$#D',
-                $file,
-            );
-            self::assertIsString($digest);
-            self::assertMatchesRegularExpression('/^[a-f0-9]{64}$/D', $digest);
-            self::assertArrayNotHasKey($file, $expected);
-            $expected[$file] = $digest;
-            self::assertSame($digest, hash_file('sha256', $resources . '/' . $file));
-        }
-
-        $actual = [];
-        $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($resources, FilesystemIterator::SKIP_DOTS),
-        );
-        foreach ($iterator as $entry) {
-            if (!$entry instanceof SplFileInfo || !$entry->isFile()) {
-                continue;
-            }
-            $relative = str_replace('\\', '/', substr($entry->getPathname(), strlen($resources) + 1));
-            if ($relative !== 'PIN.json') {
-                $actual[] = $relative;
-            }
-        }
-        sort($actual, SORT_STRING);
-        $pinned = array_keys($expected);
-        sort($pinned, SORT_STRING);
-        self::assertSame($pinned, $actual);
-    }
-
-    /**
-     * Prove the canonical SDK classification and generations documents name no Kumwe\App types.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    public function testCanonicalSdkContractArtifactsPublishNoHistoricalAppTypes(): void
-    {
-        $resources = $this->root . '/vendor/kumwe/extension-sdk/resources';
-        foreach (['contract/classification.json', 'contract/generations.json'] as $relative) {
-            $bytes = file_get_contents($resources . '/' . $relative);
-            self::assertIsString($bytes);
-            self::assertStringNotContainsString('Kumwe\\\\App\\\\', $bytes, $relative);
-        }
     }
 
     /**

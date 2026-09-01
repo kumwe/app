@@ -78,14 +78,6 @@
                 "reason": "The subject is a shipped demonstration manifest's shape rather than a class."
             },
             {
-                "path": "tests/Unit/Extension/Development/ExtensionManifestCompatibilityFixtureTest.php",
-                "reason": "The subject is a signed compatibility fixture, which is data the extension contract promises rather than code."
-            },
-            {
-                "path": "tests/Unit/Extension/Development/ExtensionPublicApiCompatibilityFixtureTest.php",
-                "reason": "The subject is the recorded public-API surface, which is data the extension contract promises rather than code."
-            },
-            {
                 "path": "tests/Unit/Presentation/Twig/",
                 "reason": "The subject is rendered template output. A template is not a class under src/, and attributing the renderer would credit Twig for the template's own markup."
             },

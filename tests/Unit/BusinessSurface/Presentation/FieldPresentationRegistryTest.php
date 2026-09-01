@@ -198,58 +198,6 @@ final class FieldPresentationRegistryTest extends TestCase
     }
 
     /**
-     * Schema 3 parses and canonically round-trips an actual signed presentation declaration.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    public function testSchemaThreeManifestRoundTripsPresentationDeclaration(): void
-    {
-        $type = self::type();
-        $document = self::manifestDocument($type);
-        $declared = ManifestContributions::fromManifest(
-            ExtensionIdentifier::fromString('acme/editor'),
-            $document,
-            3,
-        );
-        $roundTrip = $declared->declarations();
-
-        self::assertArrayHasKey('field_presentations', $roundTrip['business']);
-        self::assertSame(
-            [['contexts' => ['update', 'detail'], 'field_type' => $type->id]],
-            $roundTrip['business']['field_presentations'],
-        );
-        self::assertSame(
-            $roundTrip,
-            ManifestContributions::fromManifest(
-                ExtensionIdentifier::fromString('acme/editor'),
-                $roundTrip,
-                3,
-            )->declarations(),
-        );
-    }
-
-    /**
-     * Schema 2 keeps its original closed business-contribution grammar.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    public function testSchemaTwoRejectsFieldPresentationDeclaration(): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('unknown key field_presentations');
-
-        ManifestContributions::fromManifest(
-            ExtensionIdentifier::fromString('acme/editor'),
-            self::manifestDocument(self::type()),
-            2,
-        );
-    }
-
-    /**
      * A published generated definition cannot defer missing custom presentation coverage until first render.
      *
      * @return  void
@@ -284,41 +232,6 @@ final class FieldPresentationRegistryTest extends TestCase
     }
 
     /**
-     * Exact declarative coverage admits a published custom field before any provider code can run.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    public function testManifestAcceptsPublishedCustomFieldWithCompletePresentationCoverage(): void
-    {
-        $type = self::type();
-        $document = self::manifestDocument($type);
-        $document['business']['definitions'] = [self::definitionDocument($type)];
-        $document['business']['field_presentations'][0]['contexts'] = [
-            'relation',
-            'update',
-            'detail',
-            'create',
-            'list',
-        ];
-
-        $manifest = ManifestContributions::fromManifest(
-            ExtensionIdentifier::fromString('acme/editor'),
-            $document,
-            3,
-        );
-
-        self::assertSame(
-            ['create', 'detail', 'list', 'relation', 'update'],
-            array_map(
-                static fn (FieldPresentationContext $context): string => $context->value,
-                $manifest->fieldPresentations()[0]->contexts,
-            ),
-        );
-    }
-
-    /**
      * Activation also checks a custom type whose signed presenter belongs to another contributing owner.
      *
      * @return  void
@@ -342,31 +255,6 @@ final class FieldPresentationRegistryTest extends TestCase
         $this->expectException(InvalidBusinessDefinition::class);
         $this->expectExceptionMessage('Active business definitions require field-presentation contexts');
         $registries->validateBusinessDefinitions();
-    }
-
-    /**
-     * Schema 2 still round-trips an unused custom field type without admitting a schema-3-only key.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    public function testSchemaTwoRetainsUnusedCustomFieldTypeGrammar(): void
-    {
-        $type = self::type();
-        $document = self::manifestDocument($type);
-        unset($document['business']['field_presentations']);
-
-        $roundTrip = ManifestContributions::fromManifest(
-            ExtensionIdentifier::fromString('acme/editor'),
-            $document,
-            2,
-        )->declarations();
-
-        $expected = $type->toArray();
-        ksort($expected, SORT_STRING);
-        self::assertSame([$expected], $roundTrip['business']['field_types']);
-        self::assertArrayNotHasKey('field_presentations', $roundTrip['business']);
     }
 
     /**

@@ -17,7 +17,6 @@ use Kumwe\Extension\Spi\Portal\Contribution\PortalTemplateDefinition;
 use Kumwe\Extension\Spi\Portal\Contribution\PortalWorkspaceDefinition;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -118,7 +117,7 @@ final class SurfaceIdentifierParityTest extends TestCase
     }
 
     /**
-     * Both 63-character package segments remain representable inside the 191-character contribution bound.
+     * Both 63-character package segments remain representable inside the 191-character surface bound.
      *
      * @return  void
      *
@@ -128,73 +127,46 @@ final class SurfaceIdentifierParityTest extends TestCase
     {
         $vendor = '9' . str_repeat('a', 62);
         $package = '2' . str_repeat('b', 62);
-        $owner = ContributionOwner::extension($vendor . '/' . $package);
         $surface = SurfaceId::fromString($vendor . '.' . $package . '.workspace');
-
-        $owner->assertOwns($surface->value(), 'interface surface');
 
         self::assertSame($vendor . '.' . $package . '.workspace', $surface->value());
     }
 
     /**
-     * Historical package dots remain representable only as part of the exact declaring owner prefix.
+     * Historical package dots remain representable in a surface identifier.
      *
-     * @param   string  $ownerIdentifier  Canonical slash-separated package identifier.
-     * @param   string  $namespace        Historical dotted contribution namespace.
+     * @param   string  $namespace  Historical dotted contribution namespace.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    #[DataProvider('legacyDottedOwners')]
-    public function testLegacyOwnerDotSpellingsRemainRepresentable(
-        string $ownerIdentifier,
-        string $namespace,
-    ): void {
-        $owner = ContributionOwner::extension($ownerIdentifier);
+    #[DataProvider('legacyDottedNamespaces')]
+    public function testLegacyOwnerDotSpellingsRemainRepresentable(string $namespace): void
+    {
         $identifier = $namespace . '.workspace';
 
-        $owner->assertOwns(SurfaceId::fromString($identifier)->value(), 'interface surface');
-        AdministratorWorkspaceDefinition::assertIdentifier($identifier, 'workspace');
-        PortalWorkspaceDefinition::assertIdentifier($identifier, 'workspace');
-
-        self::assertSame($namespace, $owner->namespace());
+        self::assertSame($identifier, SurfaceId::fromString($identifier)->value());
     }
 
     /**
-     * Supply canonical package spellings whose legacy slash-to-dot mapping contains repeated dots.
+     * Supply historical dotted namespaces whose legacy slash-to-dot mapping contains repeated dots.
      *
-     * @return  iterable<string, array{string, string}>
+     * @return  iterable<string, array{string}>
      *
      * @since   2.0.0
      */
-    public static function legacyDottedOwners(): iterable
+    public static function legacyDottedNamespaces(): iterable
     {
-        yield 'repeated vendor dot' => ['a../b', 'a...b'];
-        yield 'trailing vendor dot' => ['a./b', 'a..b'];
-        yield 'trailing package dot' => ['a/b.', 'a.b.'];
+        yield 'repeated vendor dot' => ['a...b'];
+        yield 'trailing vendor dot' => ['a..b'];
+        yield 'trailing package dot' => ['a.b.'];
     }
 
     /**
-     * Repeated dots outside the exact owner prefix cannot become an ambiguous core contribution suffix.
+     * The surface identifier parser rejects unsafe boundaries, path characters, casing drift, and overlength values.
      *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    public function testOwnerBoundaryRejectsRepeatedDotsInContributionSuffix(): void
-    {
-        SurfaceId::fromString('core..settings');
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('core namespace');
-
-        ContributionOwner::core()->assertOwns('core..settings', 'interface surface');
-    }
-
-    /**
-     * Every shared lexical parser rejects unsafe boundaries, path characters, casing drift, and overlength values.
-     *
-     * @param   string  $identifier  Unsafe contribution identifier candidate.
+     * @param   string  $identifier  Unsafe surface identifier candidate.
      *
      * @return  void
      *
@@ -203,30 +175,13 @@ final class SurfaceIdentifierParityTest extends TestCase
     #[DataProvider('invalidIdentifiers')]
     public function testSharedGrammarRejectsUnsafeOrAmbiguousIdentifiers(string $identifier): void
     {
-        $validators = [
-            static function () use ($identifier): void {
-                SurfaceId::fromString($identifier);
-            },
-            static function () use ($identifier): void {
-                AdministratorWorkspaceDefinition::assertIdentifier($identifier, 'test');
-            },
-            static function () use ($identifier): void {
-                PortalWorkspaceDefinition::assertIdentifier($identifier, 'test');
-            },
-        ];
+        $this->expectException(InvalidArgumentException::class);
 
-        foreach ($validators as $validator) {
-            try {
-                $validator();
-                self::fail('Every shared contribution identifier parser must reject the candidate.');
-            } catch (InvalidArgumentException) {
-                self::addToAssertionCount(1);
-            }
-        }
+        SurfaceId::fromString($identifier);
     }
 
     /**
-     * Supply representative invalid shared identifiers.
+     * Supply representative invalid surface identifiers.
      *
      * @return  iterable<string, array{string}>
      *

@@ -30,9 +30,13 @@ use Kumwe\Producer\Render\RenderException;
 use Kumwe\Producer\Render\RenderResult;
 use Kumwe\Producer\Render\RenderState;
 use Kumwe\Producer\Schema\StudioContractResources;
+use Kumwe\Extension\Spi\Contribution\ContributionDefinition;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
+use Closure;
+use ReflectionClass;
+use ReflectionMethod;
 use ReflectionProperty;
 use stdClass;
 
@@ -275,6 +279,149 @@ final class StudioBlockRendererRuntimeTest extends TestCase
             $registries,
             new StudioContentFieldBlockRenderer(),
         ))->registry();
+    }
+
+    /**
+     * Prove a canonical block whose signed host binding was withdrawn cannot register its coordinate.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testACanonicalBlockWithoutItsSignedHostBindingCannotRegister(): void
+    {
+        [$registries, $coordinate] = self::extensionRuntime();
+        $registries->compositionHostBindings()->remove(ContributionOwner::extension('acme/shop'));
+        $runtime = new StudioBlockRendererRuntime($registries, new StudioContentFieldBlockRenderer());
+
+        self::assertFalse($runtime->registry()->supports($coordinate));
+    }
+
+    /**
+     * Prove forged canonical state without exact executable coordinates is skipped, never registered.
+     *
+     * A genuine canonical document cannot lose its coordinate members, so corrupted registry state is
+     * reproduced by initializing the readonly value without its constructor. One forged document drops
+     * the revision member entirely and the other carries a type outside the Producer coordinate
+     * grammar; both must leave the registry decision without any registered coordinate.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testForgedCanonicalStateWithoutExactCoordinatesCannotRegister(): void
+    {
+        $registries = new ExtensionContributionRegistrySet(withCore: false);
+        $missingOwner = ContributionOwner::extension('acme/forge');
+        $registries->canonicalCompositionDocuments()->register($missingOwner, self::forgedDocument(
+            '{"kind":"block-definition","type":"acme.forge/block","version":"1.0.0"}',
+            'acme.forge/block',
+        ));
+        $registries->compositionHostBindings()->register($missingOwner, new CompositionHostBinding(
+            CanonicalCompositionKind::BlockDefinition,
+            'acme.forge/block',
+            'acme.forge/renderer',
+        ));
+        $mangledOwner = ContributionOwner::extension('acme/mangle');
+        $registries->canonicalCompositionDocuments()->register($mangledOwner, self::forgedDocument(
+            '{"kind":"block-definition","revision":"forged-r1","type":"Not A Qualified Name",'
+                . '"version":"1.0.0"}',
+            'acme.mangle/block',
+        ));
+        $registries->compositionHostBindings()->register($mangledOwner, new CompositionHostBinding(
+            CanonicalCompositionKind::BlockDefinition,
+            'acme.mangle/block',
+            'acme.mangle/renderer',
+        ));
+        $registry = (new StudioBlockRendererRuntime(
+            $registries,
+            new StudioContentFieldBlockRenderer(),
+        ))->registry();
+
+        self::assertFalse($registry->supports(new BlockCoordinate('acme.forge/block', '1.0.0', 'forged-r1')));
+        self::assertFalse($registry->supports(new BlockCoordinate('acme.mangle/block', '1.0.0', 'forged-r1')));
+    }
+
+    /**
+     * Prove an implementation declared by a foreign definition shape never reaches the registry.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAForeignDefinitionShapeCannotProjectATrustedPreviewImplementation(): void
+    {
+        [$registries, $coordinate, $renderer] = self::extensionRuntime();
+        $owner = ContributionOwner::extension('acme/shop');
+        $registries->studioPreviewRenderers()->remove($owner);
+        $foreign = new class implements ContributionDefinition {
+            /**
+             * Claim an identifier inside the owner namespace without being a renderer contribution.
+             *
+             * @return  string  Owner-scoped identifier.
+             *
+             * @since   2.0.0
+             */
+            public function identifier(): string
+            {
+                return 'acme.shop/foreign-preview';
+            }
+
+            /**
+             * Export the empty declaration body.
+             *
+             * @return  array<string, mixed>  Empty manifest structure.
+             *
+             * @since   2.0.0
+             */
+            public function toArray(): array
+            {
+                return [];
+            }
+        };
+        $registries->studioPreviewRenderers()->register($owner, $foreign, $renderer);
+        $runtime = new StudioBlockRendererRuntime($registries, new StudioContentFieldBlockRenderer());
+
+        self::assertFalse($runtime->registry()->supports($coordinate));
+    }
+
+    /**
+     * Prove the admission policy is a closed static surface whose constructor holds no state.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheAdmissionPolicyIsAClosedStaticSurface(): void
+    {
+        $constructor = new ReflectionMethod(StudioRenderResultAdmission::class, '__construct');
+        self::assertTrue($constructor->isPrivate());
+
+        $instance = (new ReflectionClass(StudioRenderResultAdmission::class))->newInstanceWithoutConstructor();
+        $constructor->invoke($instance);
+        self::assertSame([], get_object_vars($instance));
+    }
+
+    /**
+     * Forge one canonical composition document value outside its validating constructor.
+     *
+     * @param   string  $canonical  Raw canonical JSON bytes the forged value retains.
+     * @param   string  $identity   Identity member the forged value reports.
+     *
+     * @return  CanonicalCompositionDocument  Forged block-definition document value.
+     *
+     * @since   2.0.0
+     */
+    private static function forgedDocument(string $canonical, string $identity): CanonicalCompositionDocument
+    {
+        $forged = (new ReflectionClass(CanonicalCompositionDocument::class))->newInstanceWithoutConstructor();
+        Closure::bind(function (string $bytes, string $id): void {
+            $this->kind = CanonicalCompositionKind::BlockDefinition;
+            $this->canonical = $bytes;
+            $this->identity = $id;
+        }, $forged, CanonicalCompositionDocument::class)($canonical, $identity);
+
+        return $forged;
     }
 
     /**

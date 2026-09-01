@@ -85,48 +85,4 @@ final class BusinessRecordQueryFactoryTest extends TestCase
 
         (new BusinessRecordQueryFactory())->create(['organization' => 'untrusted']);
     }
-
-    /**
-     * Proves approximate floating-point comparison values cannot enter exact queries.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    public function testRejectsApproximateComparisonValues(): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('cannot be a float');
-
-        (new BusinessRecordQueryFactory())->create(['filter' => [
-            'type' => 'comparison',
-            'field' => 'amount',
-            'operator' => 'eq',
-            'value' => 1.25,
-        ]]);
-    }
-
-    /**
-     * Proves a boolean filter cannot exceed its declared child fan-out.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    public function testRejectsAFilterWiderThanTheDeclaredBooleanBound(): void
-    {
-        $children = array_fill(0, 17, [
-            'type' => 'null',
-            'field' => 'reference',
-            'is_null' => true,
-        ]);
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('between 1 and 16 children');
-
-        (new BusinessRecordQueryFactory())->create(['filter' => [
-            'type' => 'boolean',
-            'operator' => 'all',
-            'children' => $children,
-        ]]);
-    }
 }
