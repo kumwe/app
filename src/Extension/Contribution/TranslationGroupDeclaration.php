@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Kumwe\App\Extension\Contribution;
 
 use Kumwe\Extension\Spi\Contribution\ContributionDefinition;
-
 use InvalidArgumentException;
 use Kumwe\App\Content\Domain\TranslationGroup;
 use Kumwe\App\Localization\Domain\InvalidLocaleTag;

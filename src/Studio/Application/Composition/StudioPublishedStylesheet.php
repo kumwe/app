@@ -18,15 +18,26 @@ use Kumwe\App\Content\Application\ContentRecord;
  */
 final class StudioPublishedStylesheet
 {
-    /** Public route prefix owned by the App delivery layer. @since 2.0.0 */
+    /**
+     * Public route prefix owned by the App delivery layer.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
     public const string PATH_PREFIX = '/studio/styles/';
 
     /**
      * Build one root-relative stylesheet URL whose path identity is the exact CSS digest.
      *
-     * @throws InvalidArgumentException When a trusted caller supplies an unusable path or CSS value.
+     * @param   ContentRecord  $record    Published record the stylesheet belongs to.
+     * @param   string         $pagePath  Canonical public page path the browser requested.
+     * @param   string         $css       Exact Producer stylesheet bytes.
      *
-     * @since 2.0.0
+     * @return  string  Root-relative digest-addressed stylesheet URL.
+     *
+     * @throws  InvalidArgumentException  When a trusted caller supplies an unusable path or CSS value.
+     *
+     * @since   2.0.0
      */
     public static function href(ContentRecord $record, string $pagePath, string $css): string
     {
@@ -53,12 +64,25 @@ final class StudioPublishedStylesheet
         return self::PATH_PREFIX . $digest . '.css?' . $query;
     }
 
-    /** Return the lowercase SHA-256 cache identity of exact stylesheet bytes. @since 2.0.0 */
+    /**
+     * Return the lowercase SHA-256 cache identity of exact stylesheet bytes.
+     *
+     * @param   string  $css  Exact stylesheet bytes.
+     *
+     * @return  string  Lowercase SHA-256 hex digest.
+     *
+     * @since   2.0.0
+     */
     public static function digest(string $css): string
     {
         return hash('sha256', $css);
     }
 
+    /**
+     * Static URL grammar only; no instance carries state.
+     *
+     * @since  2.0.0
+     */
     private function __construct()
     {
     }

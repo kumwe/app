@@ -5,13 +5,9 @@ declare(strict_types=1);
 namespace Kumwe\App\Extension\Domain;
 
 use Kumwe\Extension\Manifest\SemanticVersion;
-
 use Kumwe\Extension\Manifest\ExtensionType;
-
 use Kumwe\Extension\Manifest\ExtensionManifest;
-
 use Kumwe\Extension\Manifest\ExtensionIdentifier;
-
 use InvalidArgumentException;
 
 /**

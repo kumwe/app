@@ -216,26 +216,6 @@
     },
     {
       "from": "Kumwe\\App\\Extension\\Application\\Migration\\ExtensionMigrationRunner",
-      "to": "Kumwe\\App\\Extension\\Infrastructure\\Trust\\FilesystemExtensionArtifactVerifier",
-      "from_layer": "application",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-A defines the transaction abstraction in Application and adapts Doctrine in Infrastructure; P3-B moves the automation adapters out of src/Application behind application ports. Until then this edge is recorded, not permitted."
-    },
-    {
-      "from": "Kumwe\\App\\Extension\\Application\\Migration\\ExtensionMigrationRunner",
-      "to": "Kumwe\\App\\Infrastructure\\Persistence\\TableNames",
-      "from_layer": "application",
-      "to_layer": "infrastructure",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-A defines the transaction abstraction in Application and adapts Doctrine in Infrastructure; P3-B moves the automation adapters out of src/Application behind application ports. Until then this edge is recorded, not permitted."
-    },
-    {
-      "from": "Kumwe\\App\\Extension\\Application\\Migration\\ExtensionTableNames",
       "to": "Kumwe\\App\\Infrastructure\\Persistence\\TableNames",
       "from_layer": "application",
       "to_layer": "infrastructure",
@@ -253,16 +233,6 @@
       "finding": "V2-ARC-003",
       "expires": "2027-06-30",
       "justification": "P3-D: typed configuration is handed to this collaborator by the composition root rather than read out of it."
-    },
-    {
-      "from": "Kumwe\\App\\Extension\\Contribution\\AdministratorRouteHandlerFactory",
-      "to": "Kumwe\\App\\Administrator\\Presentation\\AdministratorRenderer",
-      "from_layer": "application",
-      "to_layer": "presentation",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-C gives business-surface application code a rendering contract or a fully typed view model instead of importing the surface it feeds."
     },
     {
       "from": "Kumwe\\App\\Extension\\Contribution\\AdministratorRouteRegistry",
@@ -296,16 +266,6 @@
     },
     {
       "from": "Kumwe\\App\\Extension\\Contribution\\BusinessContributionSurface",
-      "to": "Kumwe\\Extension\\Spi\\BusinessSurface\\Presentation\\Field\\FieldPresentationContribution",
-      "from_layer": "application",
-      "to_layer": "presentation",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-C gives business-surface application code a rendering contract or a fully typed view model instead of importing the surface it feeds."
-    },
-    {
-      "from": "Kumwe\\App\\Extension\\Contribution\\BusinessContributionSurface",
       "to": "Kumwe\\App\\BusinessSurface\\Presentation\\Field\\FieldPresentationRegistry",
       "from_layer": "application",
       "to_layer": "presentation",
@@ -317,26 +277,6 @@
     {
       "from": "Kumwe\\App\\Extension\\Contribution\\CoreExtensionContributions",
       "to": "Kumwe\\App\\BusinessSurface\\Presentation\\Field\\CoreFieldPresenter",
-      "from_layer": "application",
-      "to_layer": "presentation",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-C gives business-surface application code a rendering contract or a fully typed view model instead of importing the surface it feeds."
-    },
-    {
-      "from": "Kumwe\\App\\Extension\\Contribution\\CoreExtensionContributions",
-      "to": "Kumwe\\Extension\\Spi\\BusinessSurface\\Presentation\\Field\\FieldPresentationContext",
-      "from_layer": "application",
-      "to_layer": "presentation",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-C gives business-surface application code a rendering contract or a fully typed view model instead of importing the surface it feeds."
-    },
-    {
-      "from": "Kumwe\\App\\Extension\\Contribution\\CoreExtensionContributions",
-      "to": "Kumwe\\Extension\\Spi\\BusinessSurface\\Presentation\\Field\\FieldPresentationContribution",
       "from_layer": "application",
       "to_layer": "presentation",
       "owner": "platform-architecture",
@@ -565,16 +505,6 @@
       "justification": "P3-A defines the transaction abstraction in Application and adapts Doctrine in Infrastructure; P3-B moves the automation adapters out of src/Application behind application ports. Until then this edge is recorded, not permitted."
     },
     {
-      "from": "Kumwe\\App\\Portal\\Contribution\\PortalRouteHandlerFactory",
-      "to": "Kumwe\\App\\Portal\\Presentation\\PortalContributionRenderer",
-      "from_layer": "application",
-      "to_layer": "presentation",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-C gives business-surface application code a rendering contract or a fully typed view model instead of importing the surface it feeds."
-    },
-    {
       "from": "Kumwe\\App\\Portal\\Contribution\\PortalRouteRegistry",
       "to": "Kumwe\\App\\Portal\\Http\\Handler\\PortalExtensionRootRedirectHandler",
       "from_layer": "application",
@@ -603,16 +533,6 @@
       "finding": "V2-ARC-003",
       "expires": "2027-06-30",
       "justification": "P3-C keeps HTTP, machine-surface and console input models in delivery and translates them into typed application commands."
-    },
-    {
-      "from": "Kumwe\\App\\Portal\\Contribution\\PortalRouteRegistry",
-      "to": "Kumwe\\App\\Portal\\Presentation\\PortalContributionRenderer",
-      "from_layer": "application",
-      "to_layer": "presentation",
-      "owner": "platform-architecture",
-      "finding": "V2-ARC-003",
-      "expires": "2027-06-30",
-      "justification": "P3-C gives business-surface application code a rendering contract or a fully typed view model instead of importing the surface it feeds."
     },
     {
       "from": "Kumwe\\App\\Portal\\Contribution\\PortalRouteRegistry",

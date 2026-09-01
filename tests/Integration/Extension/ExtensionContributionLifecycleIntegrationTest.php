@@ -75,8 +75,8 @@ final class ExtensionContributionLifecycleIntegrationTest extends TestCase
             $secretKey,
         ));
         $extensionTables = new ScopedExtensionTableNames(
-            $database,
-            $tables,
+            $tables->raw(...),
+            static fn (string $part): string => $database->getDatabasePlatform()->quoteSingleIdentifier($part),
             ExtensionIdentifier::fromString($identifier),
         );
         $dataTable = $extensionTables->raw('announcements');

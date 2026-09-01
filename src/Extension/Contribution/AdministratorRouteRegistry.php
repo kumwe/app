@@ -5,9 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Extension\Contribution;
 
 use Kumwe\Extension\Spi\Contribution\ContributionOwner;
-
 use Kumwe\Extension\Spi\Contribution\AdministratorRouteDefinition;
-
 use InvalidArgumentException;
 use Kumwe\App\Administrator\Http\Middleware\AdministratorAuthorizationMiddleware;
 use Kumwe\App\Administrator\Http\Middleware\AdministratorCsrfMiddleware;

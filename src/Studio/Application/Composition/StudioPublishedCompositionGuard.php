@@ -192,6 +192,8 @@ final readonly class StudioPublishedCompositionGuard implements StudioArtifactPu
      *          Blueprint dependency lock.
      * @param   array<string, array{document: stdClass, integrity: string}>  $definitions     Live exact block
      *          definitions and their canonical digests.
+     * @param   BlockRendererRegistry                                        $runtime         Fresh trusted
+     *          Producer renderer registry the locks must resolve in.
      *
      * @return  array<string, BlockCoordinate>  Exact type/version lock map.
      *

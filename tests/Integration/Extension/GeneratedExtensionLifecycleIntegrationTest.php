@@ -117,8 +117,8 @@ final class GeneratedExtensionLifecycleIntegrationTest extends TestCase
             $installed = true;
             self::assertSame('disabled', $result['status']);
             $componentTable = (new ScopedExtensionTableNames(
-                $database,
-                $tables,
+                $tables->raw(...),
+                static fn (string $part): string => $database->getDatabasePlatform()->quoteSingleIdentifier($part),
                 ExtensionIdentifier::fromString($identifier),
             ))->raw('component_records');
             self::assertTrue($database->createSchemaManager()->tablesExist([$componentTable]));

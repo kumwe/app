@@ -26,6 +26,7 @@ use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Laminas\Diactoros\ServerRequestFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use Psr\Http\Message\ServerRequestInterface;
 use stdClass;
 use Twig\Loader\ArrayLoader;
 
@@ -103,7 +104,7 @@ final class AdministratorContributionRendererTest extends TestCase
         ), $owner, $provenance];
     }
 
-    private function request(object $provenance, AuthenticatedSurface $surface): \Psr\Http\Message\ServerRequestInterface
+    private function request(object $provenance, AuthenticatedSurface $surface): ServerRequestInterface
     {
         $principal = AuthenticatedPrincipal::issueFromStrings(
             $provenance,

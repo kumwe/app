@@ -215,7 +215,11 @@ final readonly class ExtensionMigrationRunner
      */
     private function extensionTables(ExtensionManifest $manifest): ExtensionTableNames
     {
-        return new ScopedExtensionTableNames($this->database, $this->tables, $manifest->identifier());
+        return new ScopedExtensionTableNames(
+            $this->tables->raw(...),
+            fn (string $part): string => $this->database->getDatabasePlatform()->quoteSingleIdentifier($part),
+            $manifest->identifier(),
+        );
     }
 
     /**

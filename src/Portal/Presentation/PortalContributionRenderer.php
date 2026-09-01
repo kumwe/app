@@ -63,7 +63,9 @@ final readonly class PortalContributionRenderer implements PortalRouteRenderer
             || $context->sessionId() !== $session->id
             || $context->surface() !== AuthenticatedSurface::Portal
         ) {
-            throw new InvalidArgumentException('An active host-issued portal session and execution context are required.');
+            throw new InvalidArgumentException(
+                'An active host-issued portal session and execution context are required.',
+            );
         }
 
         $capabilities = [];

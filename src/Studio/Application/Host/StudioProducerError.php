@@ -20,6 +20,7 @@ final readonly class StudioProducerError
     /**
      * The fixed non-disclosing message every App host refusal exposes.
      *
+     * @var    string
      * @since  2.0.0
      */
     private const string MESSAGE_KEY = 'studio.host/request-refused';
@@ -27,6 +28,7 @@ final readonly class StudioProducerError
     /**
      * The fixed fallback text every App host refusal exposes.
      *
+     * @var    string
      * @since  2.0.0
      */
     private const string MESSAGE_FALLBACK = 'The Studio host request could not be completed.';

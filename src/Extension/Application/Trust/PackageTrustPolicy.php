@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Kumwe\App\Extension\Application\Trust;
 
 use Kumwe\Extension\Package\PackageSignatureVerifier;
-
 use InvalidArgumentException;
 use Kumwe\Extension\Package\PackageChecksum;
 use Kumwe\Extension\Package\PackageSignature;

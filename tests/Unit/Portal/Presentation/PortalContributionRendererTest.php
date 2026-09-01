@@ -29,6 +29,7 @@ use Kumwe\Extension\Spi\Portal\Contribution\PortalTemplateDefinition;
 use Laminas\Diactoros\ServerRequestFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use Psr\Http\Message\ServerRequestInterface;
 use stdClass;
 use Twig\Environment;
 use Twig\Loader\ArrayLoader;
@@ -114,7 +115,7 @@ final class PortalContributionRendererTest extends TestCase
         ), $owner, $provenance];
     }
 
-    private function request(object $provenance, AuthenticatedSurface $surface): \Psr\Http\Message\ServerRequestInterface
+    private function request(object $provenance, AuthenticatedSurface $surface): ServerRequestInterface
     {
         $principal = AuthenticatedPrincipal::issueFromStrings(
             $provenance,

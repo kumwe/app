@@ -102,7 +102,13 @@ final readonly class PortalRenderer
     /**
      * Mint a renderer capability closed over one validated owner, template and active navigation item.
      *
-     * @since 2.0.0
+     * @param   string  $extension         Owning `vendor/name` package identifier.
+     * @param   string  $template          Signed template path the capability may render.
+     * @param   string  $activeNavigation  Portal navigation identifier marked active for the route.
+     *
+     * @return  PortalRouteRenderer  Renderer bound to exactly this owner, template, and provenance.
+     *
+     * @since   2.0.0
      */
     public function forExtensionRoute(
         string $extension,

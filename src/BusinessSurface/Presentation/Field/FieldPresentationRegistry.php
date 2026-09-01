@@ -9,7 +9,6 @@ use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationCont
 use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationInput;
 use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationModel;
 use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresenter;
-
 use InvalidArgumentException;
 use Kumwe\App\BusinessDefinition\Domain\DefinitionOwner;
 use Kumwe\App\BusinessDefinition\Domain\DefinitionStatus;

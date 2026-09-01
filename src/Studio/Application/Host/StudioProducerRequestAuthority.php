@@ -22,6 +22,7 @@ final class StudioProducerRequestAuthority implements AuthorizationInterface
     /**
      * The live authority snapshot established for the current request.
      *
+     * @var    ?StudioHostSessionSnapshot
      * @since  2.0.0
      */
     private ?StudioHostSessionSnapshot $snapshot = null;

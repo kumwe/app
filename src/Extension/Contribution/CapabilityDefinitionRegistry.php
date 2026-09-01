@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Kumwe\App\Extension\Contribution;
 
 use Kumwe\Extension\Spi\Contribution\ContributionOwner;
-
 use InvalidArgumentException;
 use Kumwe\App\Application\Authorization\AuthorizationPolicyRegistry;
 use Kumwe\App\Application\Authorization\CapabilityDefinition as AuthorizationCapabilityDefinition;

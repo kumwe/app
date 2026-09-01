@@ -36,6 +36,7 @@ final readonly class StudioResourceHostPort implements ResourcePortInterface
     /**
      * Authorized Producer request scope, when this port has been bound for dispatch.
      *
+     * @var    ?StudioProducerRequestAuthority
      * @since  2.0.0
      */
     private ?StudioProducerRequestAuthority $authority;

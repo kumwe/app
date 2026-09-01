@@ -22,7 +22,16 @@ use Psr\Http\Message\ServerRequestInterface;
  */
 final readonly class AdministratorContributionRenderer implements AdministratorRouteRenderer
 {
-    /** @since 2.0.0 */
+    /**
+     * Fix the renderer to one signed route owner, view, and host-issued provenance token.
+     *
+     * @param  AdministratorRenderer  $renderer    Canonical administrator page renderer.
+     * @param  string                 $extension   Owning `vendor/name` package identifier.
+     * @param  string                 $view        Signed view identifier this instance may render.
+     * @param  object                 $provenance  Host-issued token the execution context must carry.
+     *
+     * @since  2.0.0
+     */
     public function __construct(
         private AdministratorRenderer $renderer,
         private string $extension,
@@ -36,6 +45,8 @@ final readonly class AdministratorContributionRenderer implements AdministratorR
      *
      * @param   array<string, mixed>    $model    Extension view model.
      * @param   ServerRequestInterface  $request  Active administrator request.
+     *
+     * @return  string  Complete administrator page for the one signed extension view.
      *
      * @since   2.0.0
      */

@@ -4,23 +4,24 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Extension\Application\Migration;
 
-use Doctrine\DBAL\Connection;
+use Closure;
 use InvalidArgumentException;
 use Kumwe\Extension\Manifest\ExtensionIdentifier;
 use Kumwe\Extension\Spi\Migration\ExtensionTableNames;
-use Kumwe\App\Infrastructure\Persistence\TableNames;
 
 /**
  * Compiles the physical names of the tables one extension owns, so a migration never spells one itself.
  *
  * The caller supplies only the bare name; this class prepends an `ext_` marker and a namespace derived
- * from the extension identifier, and `TableNames` prepends the site's configured prefix. Because the
- * migration never supplies those leading segments, it cannot reach a core table or another package's,
- * whatever it asks for. The bare name is checked as a lowercase identifier here and the composed name is
- * checked again by `TableNames`, so neither package nor operator input reaches the SQL grammar.
+ * from the extension identifier, and the injected core compiler prepends the site's configured prefix.
+ * Because the migration never supplies those leading segments, it cannot reach a core table or another
+ * package's, whatever it asks for. The bare name is checked as a lowercase identifier here and the
+ * composed name is checked again by the core compiler, so neither package nor operator input reaches
+ * the SQL grammar.
  *
- * `ExtensionMigrationRunner` constructs one per extension and hands it to `up()` and `down()`, which is
- * where migrations get their names from.
+ * `ExtensionMigrationRunner` constructs one per extension — closing over the infrastructure name
+ * compiler and the connection's identifier quoting it alone is admitted to import — and hands it to
+ * `up()` and `down()`, which is where migrations get their names from.
  *
  * @since  2.0.0
  */
@@ -37,18 +38,18 @@ final readonly class ScopedExtensionTableNames implements ExtensionTableNames
     /**
      * Bind the compiler to one extension on one site.
      *
-     * @param  Connection           $database   Connection whose platform supplies the identifier quoting
-     *         rules `quoted()` applies.
-     * @param  TableNames           $tables     Core name compiler that adds the site's table prefix and
-     *         enforces the portable 63-byte limit on the finished name.
-     * @param  ExtensionIdentifier  $extension  Owning extension; its `vendor/name` value becomes the
+     * @param  Closure(string): string  $compile    Core name compiler that adds the site's table prefix
+     *         and enforces the portable 63-byte limit on the finished name.
+     * @param  Closure(string): string  $quote      Identifier quoting for one dot-separated name part,
+     *         under the executing connection's platform rules.
+     * @param  ExtensionIdentifier      $extension  Owning extension; its `vendor/name` value becomes the
      *         namespace segment, with `/`, `.` and `-` folded to underscores.
      *
      * @since  2.0.0
      */
     public function __construct(
-        private Connection $database,
-        private TableNames $tables,
+        private Closure $compile,
+        private Closure $quote,
         ExtensionIdentifier $extension,
     ) {
         $this->namespace = str_replace(['/', '.', '-'], '_', $extension->value());
@@ -77,7 +78,7 @@ final readonly class ScopedExtensionTableNames implements ExtensionTableNames
             throw new InvalidArgumentException('An extension table name must be a safe lowercase identifier.');
         }
 
-        return $this->tables->raw('ext_' . $this->namespace . '_' . $name);
+        return ($this->compile)('ext_' . $this->namespace . '_' . $name);
     }
 
     /**
@@ -98,9 +99,6 @@ final readonly class ScopedExtensionTableNames implements ExtensionTableNames
      */
     public function quoted(string $name): string
     {
-        return implode('.', array_map(
-            $this->database->getDatabasePlatform()->quoteSingleIdentifier(...),
-            explode('.', $this->raw($name)),
-        ));
+        return implode('.', array_map($this->quote, explode('.', $this->raw($name))));
     }
 }
