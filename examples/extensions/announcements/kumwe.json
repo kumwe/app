@@ -19,7 +19,12 @@
     "capabilities": [{
       "id": "kumwe.announcements-example.manage",
       "label": "Manage announcements example",
-      "description": "Open and manage the announcements conformance workspace."
+      "description": "Open and manage the announcements conformance workspace.",
+      "allowed_scopes": ["global", "site"],
+      "delegatable": true,
+      "high_impact": false,
+      "lifecycle": "active",
+      "version": 1
     }],
     "resource_policies": [{
       "id": "kumwe.announcements-example.administrator",

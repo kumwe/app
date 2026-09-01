@@ -9,6 +9,7 @@ use DateTimeImmutable;
 use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordService;
 use Kumwe\App\BusinessRecord\Application\Command\CreateRecordCommand;
+use Kumwe\App\BusinessRecord\Application\PolicyBusinessRecordReader;
 use Kumwe\App\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordReadRepository;
 use Kumwe\Extension\Spi\BusinessRecord\Query\RecordProjection;
 use Kumwe\Extension\Spi\BusinessRecord\Query\RecordQuerySpecification;
@@ -206,7 +207,7 @@ final class AssetInspectionCustomViewIntegrationTest extends TestCase
             ['business.record.browse'],
             array_map(static fn (Capability $capability): string => $capability->value(), $principal->capabilities()),
         );
-        $handler = new InspectionSummaryViewHandler($records);
+        $handler = new InspectionSummaryViewHandler(new PolicyBusinessRecordReader($records));
 
         $result = $handler->handle(new CustomBusinessViewQuery(
             $viewer,

@@ -37,8 +37,6 @@ use stdClass;
 #[CoversClass(StudioCompositionContributionProjection::class)]
 #[CoversClass(StudioCompositionLockMismatch::class)]
 #[CoversClass(CoreStudioCompositionContributions::class)]
-#[UsesClass(CanonicalCompositionDocument::class)]
-#[UsesClass(CompositionHostBinding::class)]
 #[UsesClass(ExtensionContributionRegistrySet::class)]
 #[UsesClass(OwnedRuntimeContributionRegistry::class)]
 #[UsesClass(StudioPreviewRendererContribution::class)]
@@ -203,7 +201,7 @@ final class StudioCompositionContributionCatalogTest extends TestCase
         $binding = new CompositionHostBinding(
             CanonicalCompositionKind::BlockDefinition,
             'acme.shop/grid',
-            'acme.shop.renderer.grid',
+            'acme.shop/grid-preview',
             'acme.shop.catalog.edit',
         );
         $registries = new ExtensionContributionRegistrySet();

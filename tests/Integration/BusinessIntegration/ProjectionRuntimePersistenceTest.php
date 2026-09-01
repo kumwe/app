@@ -253,7 +253,7 @@ final class ProjectionRuntimePersistenceTest extends TestCase
         self::assertSame('00000000-0000-7000-8000-000000000001', $event->id());
         self::assertSame('business.record.changed', $event->type());
         self::assertSame(1, $event->schemaVersion());
-        self::assertSame($this->clock->now(), $event->occurredAt());
+        self::assertEquals($this->clock->now(), $event->occurredAt());
         self::assertSame(['record_id' => 'record-1'], $event->payload());
         self::assertMatchesRegularExpression('/^[0-9a-f]{64}$/D', $event->checksum());
         $payload = $event->payload();

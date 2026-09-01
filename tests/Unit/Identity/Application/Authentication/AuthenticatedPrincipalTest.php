@@ -19,7 +19,6 @@ use Kumwe\App\Tests\Support\AuthorizationContext;
 
 #[CoversClass(AuthenticatedPrincipal::class)]
 #[UsesClass(AuthenticationStrength::class)]
-#[UsesClass(Capability::class)]
 #[UsesClass(ExecutionContext::class)]
 #[UsesClass(SiteContext::class)]
 #[UsesClass(GrantScope::class)]

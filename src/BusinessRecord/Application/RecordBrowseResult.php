@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessRecord\Application;
 
 use InvalidArgumentException;
+use Kumwe\Extension\Spi\BusinessRecord\Application\BusinessRecordPage;
 use Kumwe\Extension\Spi\BusinessRecord\Query\RecordCursor;
 
 /**
@@ -19,7 +20,7 @@ use Kumwe\Extension\Spi\BusinessRecord\Query\RecordCursor;
  *
  * @since  2.0.0
  */
-final readonly class RecordBrowseResult
+final readonly class RecordBrowseResult implements BusinessRecordPage
 {
     /**
      * Projected records on this page, in the order the query's sort produced them.
@@ -62,5 +63,41 @@ final readonly class RecordBrowseResult
         }
         $this->records = array_values($records);
         $this->aggregates = $aggregates;
+    }
+
+    /**
+     * Projected records on this page, in the order the query's sort produced them.
+     *
+     * @return  list<BusinessRecordView>  Policy-admitted projected records.
+     *
+     * @since   2.0.0
+     */
+    public function records(): array
+    {
+        return $this->records;
+    }
+
+    /**
+     * Token to pass as the next query's `after`, present only while further rows remain.
+     *
+     * @return  ?RecordCursor  Signed continuation token, or null on the final page.
+     *
+     * @since   2.0.0
+     */
+    public function nextCursor(): ?RecordCursor
+    {
+        return $this->nextCursor;
+    }
+
+    /**
+     * Aggregate results computed over every matching row, keyed by the alias the query named.
+     *
+     * @return  array<string, int|string|null>  Requested aggregates; empty when none were asked for.
+     *
+     * @since   2.0.0
+     */
+    public function aggregates(): array
+    {
+        return $this->aggregates;
     }
 }

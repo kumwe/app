@@ -48,10 +48,6 @@ use Psr\Http\Server\RequestHandlerInterface;
 use Twig\Environment;
 use Twig\Loader\ArrayLoader;
 
-#[CoversClass(PortalWorkspaceDefinition::class)]
-#[CoversClass(PortalNavigationDefinition::class)]
-#[CoversClass(PortalTemplateDefinition::class)]
-#[CoversClass(PortalRouteDefinition::class)]
 #[CoversClass(PortalWorkspaceRegistry::class)]
 #[CoversClass(PortalNavigationRegistry::class)]
 #[CoversClass(PortalTemplateRegistry::class)]

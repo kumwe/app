@@ -140,6 +140,8 @@ use Kumwe\App\BusinessRecord\Application\BusinessRecordWriteRepository;
 use Kumwe\App\BusinessRecord\Application\InstalledBusinessRecordDefinitionResolver;
 use Kumwe\Conversion\Provider\MoneyConversionPipeline;
 use Kumwe\Conversion\Provider\MoneyRateProviderCatalog;
+use Kumwe\App\BusinessRecord\Application\PolicyBusinessRecordReader;
+use Kumwe\Extension\Spi\BusinessRecord\Application\BusinessRecordReader;
 use Kumwe\App\BusinessRecord\Application\PostingPeriodCalendar;
 use Kumwe\App\BusinessRecord\Application\PostingPeriodLock;
 use Kumwe\App\BusinessRecord\Application\PostingPeriodRepository;
@@ -3236,6 +3238,9 @@ final class ContainerFactory
                 self::service($container, TrustStore::class),
                 $execution,
             ))->load([
+                BusinessRecordReader::class => new PolicyBusinessRecordReader(
+                    self::service($container, BusinessRecordService::class),
+                ),
                 BusinessRecordService::class => self::service($container, BusinessRecordService::class),
                 ContentService::class => self::service($container, ContentService::class),
                 NavigationService::class => self::service($container, NavigationService::class),

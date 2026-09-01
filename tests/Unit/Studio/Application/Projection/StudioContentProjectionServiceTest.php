@@ -106,8 +106,6 @@ use Twig\Loader\ArrayLoader;
 #[UsesClass(ContentEntry::class)]
 #[UsesClass(ContentRecord::class)]
 #[UsesClass(ContentBlueprintBinding::class)]
-#[UsesClass(CanonicalCompositionDocument::class)]
-#[UsesClass(CompositionHostBinding::class)]
 #[UsesClass(ExtensionContributionRegistrySet::class)]
 #[UsesClass(StudioPreviewRendererContribution::class)]
 #[UsesClass(StudioBlockRendererRuntime::class)]
@@ -115,7 +113,6 @@ use Twig\Loader\ArrayLoader;
 #[UsesClass(EntryCompositionOverrides::class)]
 #[UsesClass(JsonSchemaValidator::class)]
 #[UsesClass(SchemaCompatibilityChecker::class)]
-#[UsesClass(StudioDocumentSchemaRegistry::class)]
 #[UsesClass(Workflow::class)]
 #[UsesClass(WorkflowDefinition::class)]
 #[UsesClass(WorkflowStateDefinition::class)]
@@ -359,7 +356,7 @@ final class StudioContentProjectionServiceTest extends TestCase
             ),
             self::TYPE_ID,
             4,
-            ['acme.shop.renderer.grid', 'core.renderer/field', 'core.renderer/layout'],
+            ['acme.shop/grid-preview', 'core.renderer/field', 'core.renderer/layout'],
         );
         $second = $service->provision(
             AuthorizationContext::human(
@@ -368,7 +365,7 @@ final class StudioContentProjectionServiceTest extends TestCase
             ),
             self::TYPE_ID,
             4,
-            ['acme.shop.renderer.grid', 'core.renderer/field', 'core.renderer/layout'],
+            ['acme.shop/grid-preview', 'core.renderer/field', 'core.renderer/layout'],
         );
 
         self::assertSame($first->binding->blueprintId, $second->binding->blueprintId);
@@ -384,12 +381,12 @@ final class StudioContentProjectionServiceTest extends TestCase
         self::assertContains('acme.shop/grid', $lockedTypes);
         $restricted = $catalog->project(
             [],
-            ['acme.shop.renderer.grid', 'core.renderer/field', 'core.renderer/layout'],
+            ['acme.shop/grid-preview', 'core.renderer/field', 'core.renderer/layout'],
             $first->blueprint->document()->dependencyLock->blocks,
         );
         $privileged = $catalog->project(
             ['acme.shop.catalog.edit' => true],
-            ['acme.shop.renderer.grid', 'core.renderer/field', 'core.renderer/layout'],
+            ['acme.shop/grid-preview', 'core.renderer/field', 'core.renderer/layout'],
             $first->blueprint->document()->dependencyLock->blocks,
         );
         self::assertNotContains('acme.shop/grid', self::compositionBlockTypes($restricted->documents));
@@ -1132,7 +1129,7 @@ final class StudioContentProjectionServiceTest extends TestCase
         $binding = new CompositionHostBinding(
             CanonicalCompositionKind::BlockDefinition,
             'acme.shop/grid',
-            'acme.shop.renderer.grid',
+            'acme.shop/grid-preview',
             'acme.shop.catalog.edit',
         );
         $registries = new ExtensionContributionRegistrySet();

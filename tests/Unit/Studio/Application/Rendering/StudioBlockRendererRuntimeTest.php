@@ -317,7 +317,7 @@ final class StudioBlockRendererRuntimeTest extends TestCase
         $binding = new CompositionHostBinding(
             CanonicalCompositionKind::BlockDefinition,
             'acme.shop/grid',
-            'acme.shop.renderer.grid',
+            'acme.shop/grid-preview',
         );
         $owner = ContributionOwner::extension('acme/shop');
         $renderer ??= new class implements StudioPreviewBlockRenderer {

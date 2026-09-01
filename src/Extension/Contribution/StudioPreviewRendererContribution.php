@@ -136,7 +136,7 @@ final readonly class StudioPreviewRendererContribution implements ContributionDe
         if ($this->blockType !== $document->identity() || !str_starts_with($this->documentOwner, $studioPrefix)) {
             throw new InvalidArgumentException('A Studio preview block document contradicts its package owner.');
         }
-        $owner->assertOwns($this->renderer, 'composition renderer');
+        $owner->assertOwns($this->renderer, 'studio preview renderer');
         $owner->assertOwns($this->previewCapability, 'preview renderer capability');
     }
 

@@ -116,6 +116,10 @@
             {
                 "path": "tests/Unit/Performance/",
                 "reason": "The subject is tools/perf-harness.php and the result schema it writes against, neither of which is under src/ or part of the released package. The cases hold the tool's deterministic plan and the schema document to each other by running the tool as a subprocess."
+            },
+            {
+                "path": "tests/Unit/Extension/Development/AssetInspectionExampleTest.php",
+                "reason": "The subject is the installable asset-inspection example package under examples/, exercised through the SDK toolchain; example code is outside src/ and outside the released coverage surface."
             }
         ],
         "pending": [],

@@ -62,7 +62,7 @@ jobs:
             tests/Unit/Administrator/Http/Handler/AdministratorStudioPreviewDocumentHandlerTest.php \
             tests/Unit/Administrator/Http/StudioPreviewHttpTransportTest.php \
             tests/Unit/Studio/Application/Preview/StudioPreviewTransportGuardTest.php \
-            tests/Unit/Studio/Application/Preview/StudioPreviewHostPortTest.php \
+            tests/Unit/Studio/Application/Preview/StudioPreviewProducerPortTest.php \
             tests/Unit/Studio/Application/Preview/StudioPreviewActivityRecorderTest.php \
             tests/Integration/Studio/StudioPreviewPersistenceTest.php \
             tests/Unit/Http/Security/SecurityHeadersTest.php \

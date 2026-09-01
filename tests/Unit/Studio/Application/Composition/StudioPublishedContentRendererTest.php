@@ -616,7 +616,7 @@ final class StudioPublishedContentRendererTest extends TestCase
         $binding = new CompositionHostBinding(
             CanonicalCompositionKind::BlockDefinition,
             'kumwe.contract-manifest-six/grid',
-            'kumwe.contract-manifest-six.renderer.grid',
+            'kumwe.contract-manifest-six/grid-preview',
         );
         $registries->canonicalCompositionDocuments()->register($owner, $document);
         $registries->compositionHostBindings()->register($owner, $binding);

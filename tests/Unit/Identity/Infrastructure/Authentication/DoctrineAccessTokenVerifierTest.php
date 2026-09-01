@@ -22,7 +22,6 @@ use Kumwe\App\Tests\Support\AuthorizationContext;
 
 #[CoversClass(DoctrineAccessTokenVerifier::class)]
 #[UsesClass(AuthenticatedPrincipal::class)]
-#[UsesClass(Capability::class)]
 #[UsesClass(GrantScope::class)]
 #[UsesClass(PrincipalGrant::class)]
 final class DoctrineAccessTokenVerifierTest extends TestCase
