@@ -3,8 +3,8 @@
     "work_package": "P0-A",
     "authority": "docs/roadmap/README.md",
     "note": "Every figure below is derived from the repository at the recorded commit. Nothing is typed by hand, nothing reads the clock or the machine, and running the generator twice at one commit produces the same document. composer baseline:check fails when it drifts.",
-    "commit": "e9df1cad030a0e596cf6436935cd4314ec978b4c",
-    "recorded_at": "2026-08-29",
+    "commit": "39813585335e6c66024a6ca2b928217c61b71388",
+    "recorded_at": "2026-09-01",
     "recorded_from": [],
     "toolchain": {
         "php": "^8.5",
@@ -21,25 +21,25 @@
             "ext-sodium",
             "ext-zip"
         ],
-        "composer_lock_sha256": "1c474f22285ff229efd644f0523ffe65f3446d8b37974f54ee19d2c036dfe48f",
-        "package_lock_sha256": "977e7f2d2a270dee95b0d5c19df256ec812c6466eda2f030855245fd0aa351a3"
+        "composer_lock_sha256": "8f725a2254eeb88aac223945f00922677686a1c652e059ff5ed8c1afd418d8ab",
+        "package_lock_sha256": "da68211a61c6296e0997cfaa162f78151d205ae77d42fd543b4b34aac806e353"
     },
     "tests": {
         "architecture": {
             "files": 55,
-            "test_methods": 324
+            "test_methods": 325
         },
         "functional": {
             "files": 9,
             "test_methods": 32
         },
         "integration": {
-            "files": 108,
+            "files": 109,
             "test_methods": 410
         },
         "unit": {
-            "files": 441,
-            "test_methods": 2277
+            "files": 428,
+            "test_methods": 2200
         }
     },
     "coverage": {
@@ -460,6 +460,11 @@
                 "method": "GET",
                 "path": "/robots.txt",
                 "name": "site.robots"
+            },
+            {
+                "method": "GET",
+                "path": "/studio/styles/{digest}.css",
+                "name": "site.studio.stylesheet"
             }
         ],
         "console_commands": [
@@ -582,9 +587,9 @@
             "tests/Unit/Extension/Infrastructure/Trust/FilesystemExtensionArtifactVerifierTest.php": 2
         },
         "recorded_exemptions": {
-            "dependency-graph": 76,
+            "dependency-graph": 62,
             "idempotency": 0,
-            "test-documentation": 3661
+            "test-documentation": 3583
         }
     }
 }

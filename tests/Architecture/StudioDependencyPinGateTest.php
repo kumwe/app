@@ -367,7 +367,7 @@ final class StudioDependencyPinGateTest extends TestCase
     }
 
     /**
-     * Build Producer's corrected coordinated-release PIN from App's independently verified release evidence.
+     * Build Producer's provenance-backed release PIN from App's independently verified release evidence.
      *
      * @return  array<string, mixed>  Aligned Producer PIN.
      *
@@ -385,8 +385,9 @@ final class StudioDependencyPinGateTest extends TestCase
             'pin' => 'kumwe-producer-studio-contract',
             'source' => [
                 'repository' => 'https://github.com/kumwe/studio',
-                'kind' => 'coordinated-release',
+                'kind' => 'provenance-backed-npm-release',
                 'release' => $release['release'],
+                'commit' => str_repeat('ab', 20),
             ],
             'release_record' => $appPin['release_record'],
             'protocol_version' => $release['protocolVersion'],

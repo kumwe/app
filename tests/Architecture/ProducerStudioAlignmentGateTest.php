@@ -182,8 +182,9 @@ final class ProducerStudioAlignmentGateTest extends TestCase
                 'pin' => 'kumwe-producer-studio-contract',
                 'source' => [
                     'repository' => 'https://github.com/kumwe/studio',
-                    'kind' => 'coordinated-release',
+                    'kind' => 'provenance-backed-npm-release',
                     'release' => '0.1.0-rc.1',
+                    'commit' => str_repeat('ab', 20),
                 ],
                 'release_record' => $releaseRecord,
                 'protocol_version' => '0.1.0-draft.2',

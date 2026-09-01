@@ -575,12 +575,12 @@
     },
     {
       "id": "p6-006-graphical-fail-closed",
-      "path": "tests/Unit/Extension/Contribution/InterfaceSurfaceContributionTest.php",
+      "path": "vendor/kumwe/extension-sdk/tests/Case/TypedDefinitionTest.php",
       "kind": "phpunit",
       "marker": "testGraphicalPackageCannotOmitItsInterfaceDeclaration",
       "owner": "ci-quality",
       "must_contain": [
-        "unset($document['interface'])",
+        "unset($undeclared['contributions']['interface'])",
         "declare every administrator graphical GET route as a surface"
       ]
     },
@@ -689,91 +689,359 @@
       "id": "P6-001",
       "journey": "provision -> portal -> work -> submit -> checker decision -> result",
       "acceptance_points": [
-        {"id": "provision", "evidence": ["p6-001-browser-identity-bootstrap", "p6-001-access-ui", "p6-001-user-service"]},
-        {"id": "membership", "evidence": ["p6-001-browser-membership-bootstrap", "p6-001-access-ui", "p6-001-membership-role-service"]},
-        {"id": "portal-sign-in", "evidence": ["p6-001-maker-checker", "p6-001-login-non-enumeration"]},
-        {"id": "open-work", "evidence": ["p6-001-maker-checker"]},
-        {"id": "submit-for-approval", "evidence": ["p6-001-maker-checker"]},
-        {"id": "checker-decision", "evidence": ["p6-001-maker-checker"]},
-        {"id": "result", "evidence": ["p6-001-maker-checker"]}
+        {
+          "id": "provision",
+          "evidence": [
+            "p6-001-browser-identity-bootstrap",
+            "p6-001-access-ui",
+            "p6-001-user-service"
+          ]
+        },
+        {
+          "id": "membership",
+          "evidence": [
+            "p6-001-browser-membership-bootstrap",
+            "p6-001-access-ui",
+            "p6-001-membership-role-service"
+          ]
+        },
+        {
+          "id": "portal-sign-in",
+          "evidence": [
+            "p6-001-maker-checker",
+            "p6-001-login-non-enumeration"
+          ]
+        },
+        {
+          "id": "open-work",
+          "evidence": [
+            "p6-001-maker-checker"
+          ]
+        },
+        {
+          "id": "submit-for-approval",
+          "evidence": [
+            "p6-001-maker-checker"
+          ]
+        },
+        {
+          "id": "checker-decision",
+          "evidence": [
+            "p6-001-maker-checker"
+          ]
+        },
+        {
+          "id": "result",
+          "evidence": [
+            "p6-001-maker-checker"
+          ]
+        }
       ]
     },
     {
       "id": "P6-002",
       "journey": "define -> publish -> schema plan -> approve and execute -> record -> relations -> action -> report -> history",
       "acceptance_points": [
-        {"id": "define", "evidence": ["p6-002-definition-ui"]},
-        {"id": "publish", "evidence": ["p6-002-definition-ui"]},
-        {"id": "schema-plan", "evidence": ["p6-002-schema-runtime"]},
-        {"id": "schema-approve-execute", "evidence": ["p6-002-schema-runtime"]},
-        {"id": "record-create", "evidence": ["p6-002-record-relations-ui", "p6-002-history-ui", "p6-002-bulk-ui"]},
-        {"id": "relations", "evidence": ["p6-002-record-relations-ui"]},
-        {"id": "action", "evidence": ["p6-002-action-runtime"]},
-        {"id": "report", "evidence": ["p6-002-report-ui"]},
-        {"id": "history", "evidence": ["p6-002-history-ui"]}
+        {
+          "id": "define",
+          "evidence": [
+            "p6-002-definition-ui"
+          ]
+        },
+        {
+          "id": "publish",
+          "evidence": [
+            "p6-002-definition-ui"
+          ]
+        },
+        {
+          "id": "schema-plan",
+          "evidence": [
+            "p6-002-schema-runtime"
+          ]
+        },
+        {
+          "id": "schema-approve-execute",
+          "evidence": [
+            "p6-002-schema-runtime"
+          ]
+        },
+        {
+          "id": "record-create",
+          "evidence": [
+            "p6-002-record-relations-ui",
+            "p6-002-history-ui",
+            "p6-002-bulk-ui"
+          ]
+        },
+        {
+          "id": "relations",
+          "evidence": [
+            "p6-002-record-relations-ui"
+          ]
+        },
+        {
+          "id": "action",
+          "evidence": [
+            "p6-002-action-runtime"
+          ]
+        },
+        {
+          "id": "report",
+          "evidence": [
+            "p6-002-report-ui"
+          ]
+        },
+        {
+          "id": "history",
+          "evidence": [
+            "p6-002-history-ui"
+          ]
+        }
       ]
     },
     {
       "id": "P6-003",
       "journey": "install -> activate -> use -> customize -> disable -> reactivate -> upgrade -> fallback -> reset",
       "acceptance_points": [
-        {"id": "install", "evidence": ["p6-003-extension-lifecycle", "p6-003-template-conformance"]},
-        {"id": "activate", "evidence": ["p6-003-extension-lifecycle", "p6-003-template-conformance"]},
-        {"id": "use", "evidence": ["p6-003-extension-use-ui", "p6-003-template-use-ui"]},
-        {"id": "customize", "evidence": ["p6-003-preference-customization"]},
-        {"id": "disable", "evidence": ["p6-003-extension-lifecycle", "p6-003-extension-reactivation-ui"]},
-        {"id": "reactivate", "evidence": ["p6-003-extension-lifecycle", "p6-003-extension-reactivation-ui"]},
-        {"id": "upgrade", "evidence": ["p6-003-template-upgrade"]},
-        {"id": "fallback", "evidence": ["p6-003-preference-fallback"]},
-        {"id": "reset", "evidence": ["p6-003-template-reset"]}
+        {
+          "id": "install",
+          "evidence": [
+            "p6-003-extension-lifecycle",
+            "p6-003-template-conformance"
+          ]
+        },
+        {
+          "id": "activate",
+          "evidence": [
+            "p6-003-extension-lifecycle",
+            "p6-003-template-conformance"
+          ]
+        },
+        {
+          "id": "use",
+          "evidence": [
+            "p6-003-extension-use-ui",
+            "p6-003-template-use-ui"
+          ]
+        },
+        {
+          "id": "customize",
+          "evidence": [
+            "p6-003-preference-customization"
+          ]
+        },
+        {
+          "id": "disable",
+          "evidence": [
+            "p6-003-extension-lifecycle",
+            "p6-003-extension-reactivation-ui"
+          ]
+        },
+        {
+          "id": "reactivate",
+          "evidence": [
+            "p6-003-extension-lifecycle",
+            "p6-003-extension-reactivation-ui"
+          ]
+        },
+        {
+          "id": "upgrade",
+          "evidence": [
+            "p6-003-template-upgrade"
+          ]
+        },
+        {
+          "id": "fallback",
+          "evidence": [
+            "p6-003-preference-fallback"
+          ]
+        },
+        {
+          "id": "reset",
+          "evidence": [
+            "p6-003-template-reset"
+          ]
+        }
       ]
     },
     {
       "id": "P6-004",
       "journey": "diagnose every shell and component across supported interaction modes",
       "acceptance_points": [
-        {"id": "component-diagnostics", "evidence": ["p6-004-component-diagnostics"]},
-        {"id": "administrator-diagnostics", "evidence": ["p6-004-administrator-diagnostics", "p6-004-diagnostic-inventory"]},
-        {"id": "portal-diagnostics", "evidence": ["p6-004-portal-diagnostics", "p6-004-diagnostic-inventory"]},
-        {"id": "keyboard-focus-url-responsive", "evidence": ["p6-004-component-modes"]},
-        {"id": "touch-zoom-contrast-motion-print", "evidence": ["p6-004-presentation-matrix"]},
-        {"id": "no-javascript", "evidence": ["p6-004-no-javascript"]}
+        {
+          "id": "component-diagnostics",
+          "evidence": [
+            "p6-004-component-diagnostics"
+          ]
+        },
+        {
+          "id": "administrator-diagnostics",
+          "evidence": [
+            "p6-004-administrator-diagnostics",
+            "p6-004-diagnostic-inventory"
+          ]
+        },
+        {
+          "id": "portal-diagnostics",
+          "evidence": [
+            "p6-004-portal-diagnostics",
+            "p6-004-diagnostic-inventory"
+          ]
+        },
+        {
+          "id": "keyboard-focus-url-responsive",
+          "evidence": [
+            "p6-004-component-modes"
+          ]
+        },
+        {
+          "id": "touch-zoom-contrast-motion-print",
+          "evidence": [
+            "p6-004-presentation-matrix"
+          ]
+        },
+        {
+          "id": "no-javascript",
+          "evidence": [
+            "p6-004-no-javascript"
+          ]
+        }
       ]
     },
     {
       "id": "P6-005",
       "journey": "qualify topology, database matrix, recovery and security in their real CI owners",
       "acceptance_points": [
-        {"id": "production-topology", "evidence": ["p6-005-topology-contract", "p6-005-deployment-topology"]},
-        {"id": "mariadb", "evidence": ["p6-005-database-matrix-contract", "p6-005-database-matrix-execution"]},
-        {"id": "mysql", "evidence": ["p6-005-database-matrix-contract", "p6-005-database-matrix-execution"]},
-        {"id": "postgresql", "evidence": ["p6-005-database-matrix-contract", "p6-005-database-matrix-execution"]},
-        {"id": "backup-restore", "evidence": ["p6-005-backup-contract", "p6-005-backup-execution", "p6-005-deployment-restore"]},
-        {"id": "security-source", "evidence": ["p6-005-security-source"]},
-        {"id": "security-dependencies", "evidence": ["p6-005-security-dependencies"]},
-        {"id": "security-image", "evidence": ["p6-005-security-image"]},
-        {"id": "security-sbom", "evidence": ["p6-005-security-sbom"]}
+        {
+          "id": "production-topology",
+          "evidence": [
+            "p6-005-topology-contract",
+            "p6-005-deployment-topology"
+          ]
+        },
+        {
+          "id": "mariadb",
+          "evidence": [
+            "p6-005-database-matrix-contract",
+            "p6-005-database-matrix-execution"
+          ]
+        },
+        {
+          "id": "mysql",
+          "evidence": [
+            "p6-005-database-matrix-contract",
+            "p6-005-database-matrix-execution"
+          ]
+        },
+        {
+          "id": "postgresql",
+          "evidence": [
+            "p6-005-database-matrix-contract",
+            "p6-005-database-matrix-execution"
+          ]
+        },
+        {
+          "id": "backup-restore",
+          "evidence": [
+            "p6-005-backup-contract",
+            "p6-005-backup-execution",
+            "p6-005-deployment-restore"
+          ]
+        },
+        {
+          "id": "security-source",
+          "evidence": [
+            "p6-005-security-source"
+          ]
+        },
+        {
+          "id": "security-dependencies",
+          "evidence": [
+            "p6-005-security-dependencies"
+          ]
+        },
+        {
+          "id": "security-image",
+          "evidence": [
+            "p6-005-security-image"
+          ]
+        },
+        {
+          "id": "security-sbom",
+          "evidence": [
+            "p6-005-security-sbom"
+          ]
+        }
       ]
     },
     {
       "id": "P6-006",
       "journey": "keep every graphical route, navigation item and lifecycle owner bound to permanent declarations",
       "acceptance_points": [
-        {"id": "core-contracts", "evidence": ["p6-006-core-contracts"]},
-        {"id": "completed-migrations", "evidence": ["p6-006-completed-migrations"]},
-        {"id": "graphical-fail-closed", "evidence": ["p6-006-graphical-fail-closed"]},
-        {"id": "owner-lifecycle", "evidence": ["p6-006-owner-lifecycle"]},
-        {"id": "programme-verification", "evidence": ["p6-006-programme-verifier"]}
+        {
+          "id": "core-contracts",
+          "evidence": [
+            "p6-006-core-contracts"
+          ]
+        },
+        {
+          "id": "completed-migrations",
+          "evidence": [
+            "p6-006-completed-migrations"
+          ]
+        },
+        {
+          "id": "graphical-fail-closed",
+          "evidence": [
+            "p6-006-graphical-fail-closed"
+          ]
+        },
+        {
+          "id": "owner-lifecycle",
+          "evidence": [
+            "p6-006-owner-lifecycle"
+          ]
+        },
+        {
+          "id": "programme-verification",
+          "evidence": [
+            "p6-006-programme-verifier"
+          ]
+        }
       ]
     },
     {
       "id": "P6-007",
       "journey": "accept qualification -> publish continuation state -> use GitHub only as final confirmation",
       "acceptance_points": [
-        {"id": "gates", "evidence": ["p6-007-gate-qualification"]},
-        {"id": "unresolved-severity-waivers", "evidence": ["p6-007-blocking-finding-qualification", "p6-007-waiver-qualification"]},
-        {"id": "evidence-index-residual-p3", "evidence": ["p6-007-evidence-index-qualification", "p6-007-final-acceptance-qualification"]},
-        {"id": "continuation-acceptance-github-confirmation", "evidence": ["p6-007-final-acceptance-qualification", "p6-007-human-review-contract"]}
+        {
+          "id": "gates",
+          "evidence": [
+            "p6-007-gate-qualification"
+          ]
+        },
+        {
+          "id": "unresolved-severity-waivers",
+          "evidence": [
+            "p6-007-blocking-finding-qualification",
+            "p6-007-waiver-qualification"
+          ]
+        },
+        {
+          "id": "evidence-index-residual-p3",
+          "evidence": [
+            "p6-007-evidence-index-qualification",
+            "p6-007-final-acceptance-qualification"
+          ]
+        },
+        {
+          "id": "continuation-acceptance-github-confirmation",
+          "evidence": [
+            "p6-007-final-acceptance-qualification",
+            "p6-007-human-review-contract"
+          ]
+        }
       ]
     }
   ]
