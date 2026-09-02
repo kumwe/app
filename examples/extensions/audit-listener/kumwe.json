@@ -1,0 +1,27 @@
+{
+  "schema": 4,
+  "name": "kumwe/audit-listener-example",
+  "type": "component",
+  "version": "2.0.0",
+  "provider": "KumweExample\\AuditListener\\Provider",
+  "autoload": {"psr-4": {"KumweExample\\AuditListener\\": "src/"}},
+  "requires": {"kumwe": "^2.0.0", "php": "^8.5.0"},
+  "dependencies": [],
+  "migrations": [],
+  "configuration": {"type": "object", "properties": {}},
+  "permissions": [],
+  "assets": [],
+  "contributions": {
+    "version": 2,
+    "integration": {
+      "domain_listeners": [{
+        "listener_id": "kumwe.audit-listener-example.record-mutations",
+        "event_type": "core.business_record.mutated",
+        "schema_versions": [1],
+        "handler_version": "1.0.0",
+        "priority": 0,
+        "sensitivity_ceiling": "internal"
+      }]
+    }
+  }
+}

@@ -11,6 +11,7 @@ use Kumwe\App\Application\Authorization\AuthorizationGateway;
 use Kumwe\App\Application\Authorization\AuthorizationResource;
 use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\Infrastructure\Persistence\SchemaCollationConvergence;
 use Kumwe\Extension\Spi\Identity\Domain\Capability;
 
 /**
@@ -46,6 +47,9 @@ final readonly class MigrationRunner
      *         exercise `system.migrate`.
      * @param  NonTransactionalMigrationRecovery  $nonTransactionalRecovery  Journals and resumes attempts
      *         where DDL commits implicitly.
+     * @param  ?SchemaCollationConvergence        $collation                 Converges every application
+     *         table on the database default collation once the plan has run, still under the lock; null
+     *         leaves the schema exactly as the migrations wrote it.
      *
      * @since  2.0.0
      */
@@ -57,6 +61,7 @@ final readonly class MigrationRunner
         private MigrationPlan $plan,
         private AuthorizationGateway $authorization,
         private NonTransactionalMigrationRecovery $nonTransactionalRecovery,
+        private ?SchemaCollationConvergence $collation = null,
     ) {
     }
 
@@ -67,12 +72,16 @@ final readonly class MigrationRunner
      * table is created when absent, the recovery journal is rejected if it holds an attempt this binary
      * does not ship, and the ledger is proven an exact prefix of the plan before any DDL runs. On MySQL
      * a migration already in the ledger is still reconciled, so a stale attempt left by a crash between
-     * the ledger write and the journal cleanup is retired instead of replayed.
+     * the ledger write and the journal cleanup is retired instead of replayed. Once the plan has run,
+     * and before the lock is released, every application table is converged on the database default
+     * collation, so a server whose character-set default differs from the database default cannot leave
+     * the schema split between two collations; a consistent schema is read and left untouched.
      *
      * @param   ExecutionContext  $context  Actor, site and provenance the run is authorized and audited
      *          under.
      *
-     * @return  MigrationResult  The IDs this pass recorded; empty when the ledger was already current.
+     * @return  MigrationResult  The IDs this pass recorded, empty when the ledger was already current,
+     *          together with the tables converged on the database default collation.
      *
      * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not exercise
      *          `system.migrate` over the database schema.
@@ -127,7 +136,9 @@ final readonly class MigrationRunner
                 $completed[] = $id;
             }
 
-            return new MigrationResult($completed);
+            $converged = $this->collation?->converge() ?? [];
+
+            return new MigrationResult($completed, $converged, $converged === [] ? null : $this->collation?->target());
         });
     }
 

@@ -1611,6 +1611,56 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Fixed
 
+- **2026-09-02 — A migration pass leaves every application table on one collation, whatever the server
+  defaulted to.** DBAL writes `DEFAULT CHARACTER SET utf8mb4` and no `COLLATE` for a table it creates
+  through a schema configuration, which MariaDB and MySQL resolve to the *character set's* default
+  collation, while a table created without the clause inherits the *database's* default. The two agree on
+  the `mariadb:lts` and `mysql:8.4` images with a database the image created, which is why every CI lane
+  was green, and disagree the moment an operator creates the database with the explicit
+  `COLLATE utf8mb4_unicode_ci` the restore runbook shows, or runs a server with a `collation-server` of
+  its own: eighteen tables, `kumwe_sites` among them, landed on `utf8mb4_general_ci` while
+  `kumwe_api_tokens` and the rest took `utf8mb4_unicode_ci`, and every bearer-token surface — the REST
+  API, MCP, every token-authenticated console command — failed with "Illegal mix of collations". The
+  sandbox bootstrap had been papering over exactly this with a normalizer of its own. The repair now ships
+  in the product: `SchemaCollationConvergence` runs inside `MigrationRunner` after the plan, still under
+  the migration lock, converts every prefixed table whose own or column collation disagrees with the
+  database default, drops and faithfully re-creates the foreign keys that would block the conversion, and
+  `database:migrate` names each converted table. A consistent schema is read twice and left untouched, and
+  PostgreSQL is never touched. `SchemaCollationConvergenceIntegrationTest` plants the split with a foreign
+  key across it and proves the conversion, the surviving key, the now-legal join and the no-op second pass
+  on MariaDB, and the no-op on PostgreSQL.
+
+- **2026-09-02 — The audit-listener example is shipped again, on the SDK contract.** The library adoption
+  deleted `examples/extensions/audit-listener` and dropped it from both demo commands' default set while
+  `docs/demonstration.md` and `tools/production-demo.sh` kept promising it, so `demo:install-examples
+  --extensions=audit-listener` refused with "not shipped". The SDK retired the imperative runtime event
+  registrar the old plugin used, so the example is rebuilt as the smallest schema-4 component: one
+  manifest-declared `domain_listeners` entry on the platform's `core.business_record.mutated` event, bound
+  to an executable `MutationAuditListener` through the canonical registrar, with a bounded in-memory
+  ledger. It builds, inspects and passes conformance with no findings, installs and activates through the
+  signed pipeline, and is back in the default example set of `demo:install` and `demo:install-examples`.
+
+- **2026-09-02 — The console bootstrap's recovery list names the theme recovery command correctly.**
+  `bootstrap/console.php` listed `administrator:theme:recover`, a name no command answers to, so the real
+  break-glass command `theme:administrator:recover` booted the full container instead of the reduced
+  recovery one — the file's own reason for existing — and would have failed in exactly the incident it is
+  for. `ConsoleRecoveryBootstrapTest` now holds every entry of that list to the retained CLI contract.
+
+- **2026-09-02 — Three administrator and MCP requests answer with the status they mean instead of a 500.**
+  A signed-in administrator's mistyped URL matched the public site's catch-all route, which declares no
+  administrator policy, and `AdministratorAuthorizationMiddleware` reported that as an undeclared screen;
+  it now forwards a match outside the administrator tree to the not-found answer. A sign-in posted with an
+  empty or over-long address escaped the gateway's address validation as an internal error; the form now
+  answers it at 401 exactly as a wrong password. And `OPTIONS /mcp`, the unauthenticated CORS preflight
+  that runs no bearer middleware by design, was refused by the handler as unauthenticated; it is now
+  answered with the transport's own allowances before any principal is required.
+
+- **2026-09-02 — Documentation rewritten during the extraction cites files that exist.** The
+  content-translation guide pointed at an SDK pin that was never published and at two App tests the
+  adoption deleted; it now names the association pin, the SDK contract generations and the library suite
+  that carries those proofs. The qualification gap matrix's evidence paths for the signature document and
+  the event envelope point at their SDK homes.
+
 - **2026-09-02 — An installation configured before the admission-mode rename boots again.** The library
   adoption reduced `EXTENSIONS_CONFORMANCE_ADMISSION` from `enforce`, `warn` and `off` to `scan` and `off`
   and rewrote `.env.example` in the same commit, so every fresh-install lane passed while every existing

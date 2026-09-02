@@ -636,6 +636,7 @@ use Kumwe\App\Infrastructure\Persistence\Migration\BusinessTransactionalRuntimeM
 use Kumwe\App\Infrastructure\Persistence\Migration\ConstraintNameIsolationCompatibilityMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\ConstraintNameIsolationPortabilityMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\ContentModelIdentifierCollationMigration;
+use Kumwe\App\Infrastructure\Persistence\SchemaCollationConvergence;
 use Kumwe\App\Infrastructure\Persistence\Migration\CoreSchemaMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\ContentModelRuntimeMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\DatabaseDrivenPresentationMigration;
@@ -2268,6 +2269,10 @@ final class ContainerFactory
                 plan: self::service($container, MigrationPlan::class),
                 authorization: self::service($container, AuthorizationGateway::class),
                 nonTransactionalRecovery: self::service($container, NonTransactionalMigrationRecovery::class),
+                collation: new SchemaCollationConvergence(
+                    self::service($container, Connection::class),
+                    self::service($container, TableNames::class),
+                ),
             ), true);
         $container->share(ReadinessProbe::class, static fn (Container $container): ReadinessProbe =>
             new ReadinessProbe(

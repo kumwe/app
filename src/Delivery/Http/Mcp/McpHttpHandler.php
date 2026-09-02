@@ -108,19 +108,28 @@ final readonly class McpHttpHandler implements RequestHandlerInterface
      * handed to `KumweMcpHandlers`, which is what makes every tool the session can reach run under this
      * caller's authority and no one else's.
      *
+     * A CORS preflight is the one request answered before any of that: a browser sends `OPTIONS`
+     * without credentials, so the route that carries it runs no bearer middleware and no principal can
+     * be present. It is answered here with the same allowances the transport's CORS middleware
+     * would attach, without constructing a server for a caller that has not yet authenticated.
+     *
      * @param   ServerRequestInterface  $request  MCP request already past bearer authentication and the
-     *          middleware that attaches the execution context.
+     *          middleware that attaches the execution context, or an unauthenticated preflight.
      *
-     * @return  ResponseInterface  Whatever the transport produces — a JSON-RPC result, an event stream, a
-     *          preflight answer, or a refusal from the transport middleware.
+     * @return  ResponseInterface  Whatever the transport produces — a JSON-RPC result, an event stream, or a
+     *          refusal from the transport middleware — or the preflight answer for `OPTIONS`.
      *
-     * @throws  \LogicException  When the request carries no authenticated principal, carries no execution
-     *          context, or carries a context whose subject differs from the authenticated one.
+     * @throws  \LogicException  When a non-preflight request carries no authenticated principal, carries no
+     *          execution context, or carries a context whose subject differs from the authenticated one.
      *
      * @since   2.0.0
      */
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
+        if (strtoupper($request->getMethod()) === 'OPTIONS') {
+            return $this->preflight();
+        }
+
         $principal = $request->getAttribute(AuthenticatedPrincipal::REQUEST_ATTRIBUTE);
         if (!$principal instanceof AuthenticatedPrincipal) {
             throw new \LogicException('MCP HTTP requests must be authenticated before dispatch.');
@@ -150,5 +159,35 @@ final readonly class McpHttpHandler implements RequestHandlerInterface
         }
 
         return $this->servers->create($this->handlers->forContext($context))->run($transport);
+    }
+
+    /**
+     * Answer a CORS preflight with the methods and headers the transport admits.
+     *
+     * The allowances mirror the transport's own `CorsMiddleware` defaults: the three MCP methods, the
+     * request headers the streamable transport reads, and the session header it exposes. No origin is
+     * echoed, because no origin is configured as allowed; a browser on another origin therefore learns
+     * the shape of the endpoint and is still refused by its own same-origin policy, exactly as the
+     * transport would refuse it after authentication.
+     *
+     * @return  ResponseInterface  An empty 204 carrying the preflight allowances and an `Allow` header.
+     *
+     * @since   2.0.0
+     */
+    private function preflight(): ResponseInterface
+    {
+        return $this->responses->createResponse(204)
+            ->withHeader('Allow', 'GET, POST, DELETE, OPTIONS')
+            ->withHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE')
+            ->withHeader('Access-Control-Allow-Headers', implode(', ', [
+                'Accept',
+                'Authorization',
+                'Content-Type',
+                'Last-Event-ID',
+                StreamableHttpTransport::PROTOCOL_VERSION_HEADER,
+                StreamableHttpTransport::SESSION_HEADER,
+            ]))
+            ->withHeader('Access-Control-Expose-Headers', StreamableHttpTransport::SESSION_HEADER)
+            ->withHeader('Cache-Control', 'no-store');
     }
 }

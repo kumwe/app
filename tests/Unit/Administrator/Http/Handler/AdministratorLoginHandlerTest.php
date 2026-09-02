@@ -95,6 +95,37 @@ final class AdministratorLoginHandlerTest extends TestCase
     }
 
     /**
+     * A submission whose address is not an address is answered on the form at 401, not as a 500.
+     *
+     * The gateway refuses to normalise an empty or over-long address before it looks anything up;
+     * that refusal is a wrong credential from the visitor's side and must draw the same rejection as
+     * a wrong password, with the typed value kept and nothing escaping to the error middleware.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAMalformedAddressIsRefusedOnTheFormLikeAWrongCredential(): void
+    {
+        $identities = $this->createStub(AdministratorIdentityGateway::class);
+        $identities->method('authenticate')->willThrowException(
+            new \InvalidArgumentException('An email address must contain between 1 and 254 characters.'),
+        );
+        $request = (new ServerRequestFactory())
+            ->createServerRequest('POST', 'https://kumwe.test/administrator/login')
+            ->withParsedBody(['email' => '', 'password' => '']);
+
+        $response = $this->handler($identities)->handle($request);
+
+        self::assertSame(401, $response->getStatusCode());
+        self::assertSame('no-store', $response->getHeaderLine('Cache-Control'));
+        self::assertStringContainsString(
+            'The email address or password is incorrect.',
+            (string) $response->getBody(),
+        );
+    }
+
+    /**
      * A throttled address is refused at 429 with the shared wording and a Retry-After.
      *
      * @return  void

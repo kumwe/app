@@ -198,8 +198,9 @@ individual contributed items by the association contract below.
 
 The registrar is a separate one-method interface, so a package that publishes in one language is source
 compatible and untouched. Its signature, the manifest section it is read from and the members a
-declaration carries are pinned in
-`vendor/kumwe/extension-sdk/resources/fixtures/pins/content-translation-registrar-v1.json`.
+declaration carries are pinned by the SDK that owns the type: the association contract in
+`vendor/kumwe/extension-sdk/resources/fixtures/pins/content-translation-association-v1.json` and the
+registrar's generation in `vendor/kumwe/extension-sdk/resources/contract/generations.json`.
 
 A manifest that declares no content set exports no `content` section at all, so an already-published
 package's bytes are the bytes it was admitted against.
@@ -249,8 +250,7 @@ beside generation one, never edited into it.
 | `tests/Unit/BusinessDefinition/Domain/LocalizedDefinitionLabelTest.php` | An untranslated definition checksums to a hand-written pre-dimension document |
 | `tests/Unit/Content/Application/ExtensionContentTranslationTest.php` | Canonical manifest activation cannot widen the inventoried language declaration |
 | `tests/Unit/Content/Presentation/TranslationGroupPresenterTest.php` | Alternates list exactly the published locales, named in their own language |
-| `tests/Unit/Extension/Development/ContentTranslationAssociationFixtureTest.php` | The association contract's bytes, members and group derivation are the released ones |
-| `tests/Unit/Extension/Contribution/TranslationSetItemAssociationTest.php` | The association claim is closed over owner, namespace and generation, and its derivation is a stable function |
+| `kumwe/extension-sdk` suite, `composer extension:contract` | The association contract's bytes, members and group derivation are the released ones, and the claim is closed over owner, namespace and generation with a stable derivation; the library owns those types now, so it carries their proofs, and the App verifies the vendored records on every build |
 | `tests/Unit/Content/Application/ContributedContentTranslationTest.php` | The resolved declaration decides group and fallback, the refusals leave the store untouched, and the audit trail names the set |
 | `tests/Integration/Content/MultilingualContentIntegrationTest.php` | All of it on a real database, including both uniqueness constraints and the rendered public page |
 | `tests/Integration/Extension/ContributedContentTranslationIntegrationTest.php` | The signed fixture: a package installs through the trust path, stores two variants through the public application path, renders both through real negotiation, and every promised refusal refuses |

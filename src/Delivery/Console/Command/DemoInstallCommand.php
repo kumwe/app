@@ -51,7 +51,7 @@ final readonly class DemoInstallCommand implements Command
      * @var    list<string>
      * @since  2.0.0
      */
-    private const array DEFAULT_EXAMPLES = ['announcements', 'asset-inspection', 'horizon-theme'];
+    private const array DEFAULT_EXAMPLES = ['announcements', 'asset-inspection', 'audit-listener', 'horizon-theme'];
 
     /**
      * Wire the one-step demonstration pipeline to configuration, manifests, and both demo services.

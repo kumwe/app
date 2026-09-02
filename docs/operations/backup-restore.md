@@ -238,7 +238,10 @@ MYSQL_PWD="$(cat /run/secrets/database-password)" mariadb \
   --execute='CREATE DATABASE kumwe_restore CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'
 ```
 
-For MySQL, use the same arguments with the `mysql` client and a MySQL-compatible collation.
+For MySQL, use the same arguments with the `mysql` client and a MySQL-compatible collation. The collation
+named here is the one the whole schema ends up using: `database:migrate` converges every application table
+on the database's default collation after applying the plan, so a server whose `utf8mb4` default differs
+from it cannot leave the schema split between two collations. Keep it a `utf8mb4` collation.
 
 Example PostgreSQL creation:
 

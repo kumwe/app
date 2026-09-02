@@ -21,7 +21,7 @@ use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 $command = $_SERVER['argv'][1] ?? '';
 $recoveryCommands = [
     'app:health',
-    'administrator:theme:recover',
+    'theme:administrator:recover',
     'database:recover-lock',
     'database:status',
     'extension:runtime:materialize',

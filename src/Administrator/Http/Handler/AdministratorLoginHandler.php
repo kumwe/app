@@ -17,6 +17,7 @@ use Kumwe\App\Identity\Application\Administration\AuthenticationThrottled;
 use Kumwe\App\Http\Middleware\TrustedProxyMiddleware;
 use Kumwe\App\Localization\Application\Translator;
 use Kumwe\App\Http\Middleware\RequestIdMiddleware;
+use InvalidArgumentException;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Laminas\Diactoros\Response\RedirectResponse;
 use Psr\Http\Message\ResponseInterface;
@@ -104,6 +105,11 @@ final readonly class AdministratorLoginHandler implements RequestHandlerInterfac
                 $form['password'] ?? '',
                 $remoteAddress,
             );
+        } catch (InvalidArgumentException) {
+            // A submission whose address is not an address at all — empty, or longer than an address
+            // can be — is a wrong credential, not a defect: it is answered on the form exactly as a
+            // wrong password is, rather than escaping as a 500.
+            $principal = null;
         } catch (AuthenticationThrottled) {
             return new HtmlResponse($this->renderer->render('login', [
                 'error' => $this->translator->translate('core.security.authentication.throttled'),
