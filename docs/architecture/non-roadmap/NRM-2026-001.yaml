@@ -1,0 +1,32 @@
+schema: kumwe-non-roadmap-record/v1
+id: NRM-2026-001
+nrm_ref: NRM-2026-001
+roadmap_impact: None
+rationale: "Make the library-first Core policy executable before the first Version 2 extraction."
+repositories:
+  - kumwe/app
+behavior_before: "Runtime behaviour unchanged. No capability index, Core Growth gate or record schemas existed."
+behavior_after: "Runtime behaviour unchanged. Governance gates, record schemas and the PR template are added."
+public_api_impact: None
+dependency_impact: None
+compatibility: unchanged
+data_migration: None
+security_impact: "None. The gates only read files under the repository and vendor/; nothing runs at runtime."
+performance:
+  claim: None
+  evidence: []
+operations_deployment: None
+recovery_rollback: "Revert the pull request. No data, configuration or dependency is touched."
+artifacts_evidence:
+  - docs/architecture/capability-index.md
+  - docs/architecture/governance/core-growth-baseline.json
+  - docs/architecture/governance/legacy-packages.json
+  - docs/architecture/governance/schemas/
+  - docs/architecture/governance/examples/
+  - "build/capability-index/v1.json (generated, not committed)"
+  - "build/capability-index/v1.sha256 (generated, not committed)"
+  - composer kumwe:capability-index-check
+  - composer kumwe:core-growth-check
+known_gaps: []
+owner: "eWɘyn"
+status: in-progress
