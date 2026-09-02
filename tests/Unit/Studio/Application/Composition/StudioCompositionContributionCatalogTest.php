@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Unit\Studio\Application\Composition;
 
+use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Extension\Contribution\CoreStudioCompositionContributions;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\Extension\Contribution\OwnedRuntimeContributionRegistry;
 use Kumwe\App\Extension\Contribution\StudioPreviewRendererContribution;
+use Kumwe\App\Extension\Runtime\TrustEnforcingStudioPreviewBlockRenderer;
 use Kumwe\App\Studio\Application\Composition\StudioCompositionContributionCatalog;
 use Kumwe\App\Studio\Application\Composition\StudioCompositionContributionProjection;
 use Kumwe\App\Studio\Application\Composition\StudioCompositionLockMismatch;
@@ -23,6 +25,7 @@ use Kumwe\Extension\Spi\Contribution\CompositionHostBinding;
 use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\Producer\Canonical\CanonicalJson;
 use Kumwe\Producer\Schema\StudioContractResources;
+use Kumwe\App\Tests\Support\TrustFencedStudioPreviewRenderers;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
@@ -42,8 +45,12 @@ use stdClass;
 #[UsesClass(StudioPreviewRendererContribution::class)]
 #[UsesClass(StudioBlockRendererRuntime::class)]
 #[UsesClass(StudioContentFieldBlockRenderer::class)]
+#[UsesClass(TrustEnforcingStudioPreviewBlockRenderer::class)]
+#[UsesClass(TrustStore::class)]
 final class StudioCompositionContributionCatalogTest extends TestCase
 {
+    use TrustFencedStudioPreviewRenderers;
+
     /**
      * The exact host-supported catalog, rather than a copied list, becomes the initial lock.
      *
@@ -213,31 +220,32 @@ final class StudioCompositionContributionCatalogTest extends TestCase
         self::assertArrayNotHasKey('acme.shop/grid', $unsupported->blockRenderers);
 
         $runtimeDefinition = new StudioPreviewRendererContribution($owner, '1.0.0', $canonical, $binding);
+        $preview = new class implements StudioPreviewBlockRenderer {
+            /**
+             * Emit a fixed grid placeholder fragment regardless of block, binding or viewport.
+             *
+             * @param   StudioPreviewBlock          $block     Immutable copied contributed grid input.
+             * @param   StudioPreviewBindingResult  $binding   Authorized binding projection.
+             * @param   string                      $viewport  Active semantic viewport.
+             *
+             * @return  StudioPreviewBlockFragment  Constant placeholder fragment.
+             *
+             * @since   2.0.0
+             */
+            public function render(
+                StudioPreviewBlock $block,
+                StudioPreviewBindingResult $binding,
+                string $viewport,
+            ): StudioPreviewBlockFragment {
+                unset($block, $binding, $viewport);
+
+                return new StudioPreviewBlockFragment('div', 'acme-shop-grid', '');
+            }
+        };
         $registries->studioPreviewRenderers()->register(
             $owner,
             $runtimeDefinition,
-            new class implements StudioPreviewBlockRenderer {
-                /**
-                 * Emit a fixed grid placeholder fragment regardless of block, binding or viewport.
-                 *
-                 * @param   StudioPreviewBlock          $block     Immutable copied contributed grid input.
-                 * @param   StudioPreviewBindingResult  $binding   Authorized binding projection.
-                 * @param   string                      $viewport  Active semantic viewport.
-                 *
-                 * @return  StudioPreviewBlockFragment  Constant placeholder fragment.
-                 *
-                 * @since   2.0.0
-                 */
-                public function render(
-                    StudioPreviewBlock $block,
-                    StudioPreviewBindingResult $binding,
-                    string $viewport,
-                ): StudioPreviewBlockFragment {
-                    unset($block, $binding, $viewport);
-
-                    return new StudioPreviewBlockFragment('div', 'acme-shop-grid', '');
-                }
-            },
+            self::trustFencedPreviewRenderer($preview, 'acme/shop'),
         );
         $catalog = self::catalog($registries);
 

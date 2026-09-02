@@ -23,7 +23,9 @@ use Kumwe\Producer\Render\RenderException;
  * No renderer chooses its own coordinate. Canonical documents and separate signed host bindings must
  * agree on owner and identity; extension implementations must additionally remain executable under
  * the current package trust generation. Rebuilding for each decision prevents snapshot reuse after
- * disable, removal, distrust or registry mutation.
+ * disable, removal, distrust or registry mutation. Only `TrustEnforcingStudioPreviewBlockRenderer`
+ * re-establishes that trust on every render, so an extension-owned executable of any other shape is a
+ * host invariant violation and refuses the whole registry decision instead of being skipped or run.
  *
  * @since  2.0.0
  */
@@ -124,6 +126,12 @@ final readonly class StudioBlockRendererRuntime
                 || !$implementation instanceof StudioPreviewBlockRenderer
             ) {
                 continue;
+            }
+            if (
+                $entry['owner']->identifier() !== ContributionOwner::CORE
+                && !$implementation instanceof TrustEnforcingStudioPreviewBlockRenderer
+            ) {
+                throw new RenderException('An extension preview renderer is not fenced by live host trust.');
             }
             $coordinate = $definition->coordinate();
             $expected = $extensionCoordinates[$coordinate->key()] ?? null;

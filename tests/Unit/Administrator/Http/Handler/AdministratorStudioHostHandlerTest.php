@@ -11,6 +11,7 @@ use Kumwe\App\Application\Authorization\AuthenticationStrength;
 use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Application\Authorization\SiteContext;
 use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\Application\Persistence\TransactionState;
 use Kumwe\App\Audit\Application\AuditRecorder;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\App\Studio\Application\Host\StudioArtifactAdmission;
@@ -293,6 +294,7 @@ final class AdministratorStudioHostHandlerTest extends TestCase
         $factory = new StudioProducerHostFactory(
             $sessions,
             $transactions,
+            self::createStub(TransactionState::class),
             self::createStub(StudioMutationReplayRepository::class),
             new SodiumStudioMutationOutcomeCodec(str_repeat('k', 32)),
             self::createStub(AuditRecorder::class),

@@ -10,6 +10,7 @@ use Kumwe\App\Application\Authorization\AuthenticationStrength;
 use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Application\Authorization\SiteContext;
 use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\Application\Persistence\TransactionState;
 use Kumwe\App\Audit\Application\AuditRecorder;
 use Kumwe\App\Audit\Domain\AuditEvent;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
@@ -30,6 +31,7 @@ use Kumwe\App\Studio\Domain\Host\StudioSessionMode;
 use Kumwe\App\Studio\Infrastructure\Host\SodiumStudioMutationOutcomeCodec;
 use Kumwe\App\Tests\Support\AuthorizationContext;
 use Kumwe\Producer\Canonical\CanonicalJson;
+use Kumwe\Producer\Error\Diagnostic;
 use Kumwe\Producer\Error\HostError;
 use Kumwe\Producer\Error\HostRefusal;
 use Kumwe\Producer\Wire\HostResult;
@@ -262,8 +264,10 @@ final class StudioProducerMutationBoundaryTest extends TestCase
     /**
      * Compose the boundary around observable deterministic in-memory services.
      *
-     * @param   StudioProducerRequestAuthority  $authority  Successfully authorized request authority.
-     * @param   StudioMediaOperations|null      $media      Optional upload rehydration authority.
+     * @param   StudioProducerRequestAuthority  $authority         Successfully authorized request authority.
+     * @param   StudioMediaOperations|null      $media             Optional upload rehydration authority.
+     * @param   TransactionState|null           $transactionState  Optional live transaction state; defaults
+     *          to no open transaction.
      *
      * @return  array{StudioProducerMutationBoundary, object, object, object, SodiumStudioMutationOutcomeCodec}
      *
@@ -272,6 +276,7 @@ final class StudioProducerMutationBoundaryTest extends TestCase
     private function boundary(
         StudioProducerRequestAuthority $authority,
         ?StudioMediaOperations $media = null,
+        ?TransactionState $transactionState = null,
     ): array {
         $transactions = new class implements TransactionManager {
             /**
@@ -454,6 +459,7 @@ final class StudioProducerMutationBoundaryTest extends TestCase
         return [
             new StudioProducerMutationBoundary(
                 $transactions,
+                $transactionState ?? self::createStub(TransactionState::class),
                 $replays,
                 $codec,
                 $audit,
@@ -623,6 +629,61 @@ final class StudioProducerMutationBoundaryTest extends TestCase
             self::fail('A scope key without an intent digest must be refused.');
         } catch (HostRefusal $refused) {
             self::assertSame('internal', $refused->error()->category());
+        }
+
+        self::assertSame(0, $calls);
+        self::assertSame(0, $transactions->calls);
+        self::assertSame([], $replays->records);
+        self::assertCount(0, $audit->events);
+    }
+
+    /**
+     * A boundary entered while a transaction is already open is refused before any work or lookup runs.
+     *
+     * Replay-race recovery depends on observing the losing statement's rollback, which an enclosing
+     * transaction would turn into an aborted transaction on PostgreSQL, so nesting is a host composition
+     * error rather than a scope to join: no authority snapshot, replay lookup, mutation or audit may run.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testANestedTransactionIsRefusedBeforeAnyWork(): void
+    {
+        [$operation, $request, $authority] = $this->authorizedRequest(
+            'studio.operation/recovery.store',
+            (object) ['envelope' => (object) ['draft' => 'nested']],
+            'idempotency/nested',
+        );
+        $state = self::createStub(TransactionState::class);
+        $state->method('isActive')->willReturn(true);
+        [$boundary, $transactions, $replays, $audit] = $this->boundary($authority, transactionState: $state);
+        $scope = CanonicalJson::digest((object) ['scope' => 'nested']);
+        $intent = CanonicalJson::digest((object) ['intent' => 'nested']);
+        $calls = 0;
+
+        try {
+            $boundary->execute(
+                $operation,
+                $request,
+                $scope,
+                $intent,
+                static function () use (&$calls): HostResult {
+                    $calls++;
+
+                    return new HostResult(null);
+                },
+            );
+            self::fail('A mutation boundary entered inside an open transaction must be refused.');
+        } catch (HostRefusal $refused) {
+            self::assertSame('internal', $refused->error()->category());
+            self::assertSame(
+                ['studio.host/mutation-boundary-nested'],
+                array_map(
+                    static fn (Diagnostic $diagnostic): string => $diagnostic->code(),
+                    $refused->error()->diagnostics(),
+                ),
+            );
         }
 
         self::assertSame(0, $calls);
@@ -1141,6 +1202,7 @@ final class StudioProducerMutationBoundaryTest extends TestCase
         return [
             new StudioProducerMutationBoundary(
                 $transactions,
+                self::createStub(TransactionState::class),
                 $replays,
                 new SodiumStudioMutationOutcomeCodec(str_repeat('k', 32)),
                 $audit,
