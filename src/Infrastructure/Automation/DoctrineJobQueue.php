@@ -16,6 +16,7 @@ use Kumwe\App\Application\Authorization\AuthorizationGateway;
 use Kumwe\App\Application\Authorization\AuthorizationResource;
 use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter;
+use Kumwe\App\Application\Automation\ExpiredJobLease;
 use Kumwe\App\Application\Automation\JobExecutionClass;
 use Kumwe\App\Application\Automation\JobQueue;
 use Kumwe\App\Application\Automation\JobExecutionScope;
@@ -850,7 +851,7 @@ final readonly class DoctrineJobQueue implements JobQueue
             'attempts' => $this->integer($row, 'attempts'),
             'maximum_attempts' => $this->integer($row, 'maximum_attempts'),
             'failure_classification' => 'transient',
-            'exception_type' => 'Kumwe\\App\\Application\\Automation\\ExpiredJobLease',
+            'exception_type' => ExpiredJobLease::class,
             'error_message' => 'The final worker lease expired before the job completed.',
             'failed_at' => $now,
             'created_at' => $now,

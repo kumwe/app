@@ -1662,6 +1662,16 @@ development programme, from the architecture decision that opened it to the curr
   events are host-internal under the SDK contract, and cites the `audit-listener` example; "Database
   migrations" names the SDK's `ExtensionMigration` and `ExtensionTableNames`. (#128)
 
+- **2026-09-02 — The shipped example set is pinned, every default example conforms, and a dead-lettered
+  job names a failure type that exists.** `ShippedExampleSetTest` holds both demo commands to one default
+  list, requires every default to be a shipped directory with a manifest and the README the conformance
+  gate checks, and requires every other example directory to be named as a reasoned exclusion, so an
+  extraction can no longer drop an example without a test saying so. The announcements example gains the
+  README it lacked, so `extension:conformance` reports it conforming like its siblings. The job queue wrote
+  `Kumwe\App\Application\Automation\ExpiredJobLease` into a failed-job row when a final worker lease
+  expired, a class that never existed; it now exists, documented as the failure the queue records when a
+  lease lapses on the last attempt, and the row names it by `::class`. (#128)
+
 - **2026-09-02 — The asset-inspection deployment acceptance emits the profile checksum it verified instead
   of dereferencing a variable the extraction removed.** The SDK migration replaced
   `InspectionPolicyProfile::fromPackage()` with a request loader that pins the profile's canonical checksum,
