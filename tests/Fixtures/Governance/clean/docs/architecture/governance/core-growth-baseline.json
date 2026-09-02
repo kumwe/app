@@ -1,0 +1,30 @@
+{
+    "schema": "kumwe-core-growth-baseline/v1",
+    "note": "The recorded public surface of every class-like declared under src/ (production only), keyed by fully qualified name: its kind, its layer from docs/architecture/layers.json, the first 24 hexadecimal characters of the SHA-256 of its canonical public surface (kind, modifiers, parent, interfaces, public constants, public properties and public method signatures), and its growth evidence. Written only by composer kumwe:core-growth-record and never by hand; checked by composer kumwe:core-growth-check in composer qa and CI. growth is null for every symbol present at the bootstrap snapshot; portable-layer growth (shared, domain, application) recorded later cites its approved Core Growth Record as {\"record\": \"KUMWE-CGR-YYYY-NNN\"}, and host-layer growth (infrastructure, presentation, delivery, kernel) carries its adapter or composition evidence as {\"classification\": \"host-<layer>\", \"implements\": [...], \"extends\": ...}. Re-record after adding, removing or widening a symbol and commit the result with the change. The record command refuses while a duplicate FQCN or service owner, a reintroduced extracted namespace or removed symbol, a likely duplicate responsibility of a package symbol, a reference to a retired namespace, or a missing, pending or rejected Core Growth Record remains; only \"baseline stale\" and \"re-record\" findings are cleared by recording.",
+    "symbols": {
+        "Kumwe\\App\\Example\\Application\\DescribeSubject": {
+            "kind": "class",
+            "layer": "application",
+            "surface": "24d0c170fe56e7074799598a",
+            "growth": null
+        },
+        "Kumwe\\App\\Example\\Domain\\ExampleSubject": {
+            "kind": "class",
+            "layer": "domain",
+            "surface": "229a4863be75646e9b82febf",
+            "growth": null
+        },
+        "Kumwe\\App\\Example\\Infrastructure\\PrefixedExampleService": {
+            "kind": "class",
+            "layer": "infrastructure",
+            "surface": "ce0bca878c0f5cb3187e3c20",
+            "growth": null
+        },
+        "Kumwe\\App\\Kernel\\ContainerFactory": {
+            "kind": "class",
+            "layer": "kernel",
+            "surface": "ba13a0781f58e7d9b3b780af",
+            "growth": null
+        }
+    }
+}

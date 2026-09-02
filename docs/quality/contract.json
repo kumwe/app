@@ -702,6 +702,32 @@
             }
         },
         {
+            "id": "core-growth",
+            "title": "App production growth is recorded and duplicates no installed Kumwe package",
+            "purpose": "Scan every class-like under src/, classify it through docs/architecture/layers.json, digest its public surface and compare the inventory with docs/architecture/governance/core-growth-baseline.json, the capability index, the migration ledger and the Core Growth Records; fail on a stale capability index or baseline, a duplicate FQCN or service owner, a reintroduced extracted namespace or removed App symbol, a likely duplicate responsibility of a package symbol, new or widened shared/domain/application growth without an approved KUMWE-CGR record, unrecorded host-layer growth, a reference to a retired namespace, or a broken Core Growth Record (NRM-2026-001, Kumwe-v2-02).",
+            "owner": "platform-architecture",
+            "runner": "composer",
+            "composer_script": "kumwe:core-growth-check",
+            "command": "composer kumwe:core-growth-check",
+            "artifact": "docs/architecture/governance/core-growth-baseline.json",
+            "in_qa": true,
+            "cadence": [
+                "local",
+                "ci",
+                "nightly",
+                "release"
+            ],
+            "maximum_interval": "per-change",
+            "engines": [],
+            "workflows": {
+                "ci": {
+                    "file": ".github/workflows/ci.yml",
+                    "job": "quality",
+                    "contains": "composer kumwe:core-growth-check"
+                }
+            }
+        },
+        {
             "id": "openapi-drift",
             "title": "The generated OpenAPI document matches the routes that exist",
             "purpose": "Regenerate the contract and fail when it differs from the committed artifact.",
