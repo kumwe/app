@@ -7,9 +7,13 @@ namespace Kumwe\App\Tests\Unit\Demo\Infrastructure;
 use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\App\Demo\Infrastructure\FilesystemDemoManifestCatalog;
 use PHPUnit\Framework\Attributes\CoversClass;
+use FilesystemIterator;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
 use RuntimeException;
+use SplFileInfo;
 
 /**
  * Pins the shipped content and business demo manifests as one coherent release contract.
@@ -613,6 +617,282 @@ final class FilesystemDemoManifestCatalogTest extends TestCase
         $this->expectExceptionMessage('unsupported');
 
         $this->catalog()->access('../vdm');
+    }
+
+    /**
+     * Accept a package re-namespaced under its own profile name, the way `demo:export-profile` writes one.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testBusinessProfileAcceptsARenamedPackageInItsOwnNamespace(): void
+    {
+        $root = $this->forkPackage(static fn (array $package): array => $package);
+        try {
+            $loaded = (new FilesystemDemoManifestCatalog($root))->business('fork');
+            self::assertMatchesRegularExpression('/^[a-f0-9]{64}$/D', $loaded['checksum']);
+            $documents = $this->map($loaded['manifest']['definition_documents'] ?? null, 'definition documents');
+            self::assertCount(12, $documents);
+            foreach ($documents as $document) {
+                $handle = $this->string($this->map($document, 'definition'), 'handle');
+                self::assertStringStartsWith('site.default.fork_', $handle);
+            }
+        } finally {
+            $this->removeTree($root);
+        }
+    }
+
+    /**
+     * Refuse a package whose definitions keep another profile's handle namespace.
+     *
+     * This is the package the exporter used to write: `--profile=fork` around `site.default.vdm_*` handles,
+     * which the install-side projector refuses as contradicting the default site template. The reader has to
+     * refuse it first so the export command cannot report success for it.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testBusinessProfileRefusesDefinitionHandlesOutsideItsNamespace(): void
+    {
+        $root = $this->forkPackage(static function (array $package): array {
+            $encoded = json_encode($package, JSON_THROW_ON_ERROR);
+            /** @var array<string, mixed> $renamed */
+            $renamed = json_decode(
+                str_replace('site.default.fork_', 'site.default.vdm_', $encoded),
+                true,
+                64,
+                JSON_THROW_ON_ERROR,
+            );
+
+            return $renamed;
+        });
+        try {
+            $this->expectException(RuntimeException::class);
+            $this->expectExceptionMessage(
+                'Business demo definition definition.client_account must use the site.default.fork_ handle namespace.',
+            );
+            (new FilesystemDemoManifestCatalog($root))->business('fork');
+        } finally {
+            $this->removeTree($root);
+        }
+    }
+
+    /**
+     * Refuse an installation entry whose declared handle contradicts the document it names.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testBusinessProfileRefusesAnEntryHandleItsDocumentContradicts(): void
+    {
+        $root = $this->forkPackage(static function (array $package): array {
+            $profile = $package['profile'];
+            self::assertIsArray($profile);
+            self::assertIsArray($profile['installation_order']);
+            self::assertIsArray($profile['installation_order'][0]);
+            $profile['installation_order'][0]['handle'] = 'site.default.fork_client_accounts';
+            $package['profile'] = $profile;
+
+            return $package;
+        });
+        try {
+            $this->expectException(RuntimeException::class);
+            $this->expectExceptionMessage('definition.client_account declares a handle its document contradicts');
+            (new FilesystemDemoManifestCatalog($root))->business('fork');
+        } finally {
+            $this->removeTree($root);
+        }
+    }
+
+    /**
+     * Refuse an order that installs a definition after one that references it through a field.
+     *
+     * `invoice_line` reaches `product` through an entity-reference field alone, which is the edge the old
+     * exporter missed; the reader must catch it whether the dependency is declared out of order or not
+     * declared at all, and must refuse a `depends_on` that is not a list.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testBusinessProfileRefusesAnUnsatisfiableInstallationOrder(): void
+    {
+        $swapped = $this->forkPackage(static function (array $package): array {
+            $profile = $package['profile'];
+            self::assertIsArray($profile);
+            self::assertIsArray($profile['installation_order']);
+            $product = null;
+            $remaining = [];
+            foreach ($profile['installation_order'] as $entry) {
+                self::assertIsArray($entry);
+                if (($entry['fixture_key'] ?? null) === 'definition.product') {
+                    $product = $entry;
+                    continue;
+                }
+                $remaining[] = $entry;
+            }
+            self::assertIsArray($product);
+            $remaining[] = $product;
+            $profile['installation_order'] = $remaining;
+            $package['profile'] = $profile;
+
+            return $package;
+        });
+        try {
+            (new FilesystemDemoManifestCatalog($swapped))->business('fork');
+            self::fail('An order installing product after its dependents was accepted.');
+        } catch (RuntimeException $exception) {
+            self::assertSame(
+                'Business demo definition definition.quotation_line depends on definition.product, '
+                    . 'which is not installed before it.',
+                $exception->getMessage(),
+            );
+        } finally {
+            $this->removeTree($swapped);
+        }
+
+        $undeclared = $this->forkPackage(static function (array $package): array {
+            $profile = $package['profile'];
+            self::assertIsArray($profile);
+            self::assertIsArray($profile['installation_order']);
+            foreach ($profile['installation_order'] as $offset => $entry) {
+                self::assertIsArray($entry);
+                if (($entry['fixture_key'] ?? null) === 'definition.invoice_line') {
+                    $entry['depends_on'] = [];
+                    $profile['installation_order'][$offset] = $entry;
+                }
+            }
+            $package['profile'] = $profile;
+
+            return $package;
+        });
+        try {
+            (new FilesystemDemoManifestCatalog($undeclared))->business('fork');
+            self::fail('A field reference missing from depends_on was accepted.');
+        } catch (RuntimeException $exception) {
+            self::assertSame(
+                'Business demo definition definition.invoice_line references definition.product '
+                    . 'without declaring it in depends_on.',
+                $exception->getMessage(),
+            );
+        } finally {
+            $this->removeTree($undeclared);
+        }
+
+        $malformed = $this->forkPackage(static function (array $package): array {
+            $profile = $package['profile'];
+            self::assertIsArray($profile);
+            self::assertIsArray($profile['installation_order']);
+            self::assertIsArray($profile['installation_order'][0]);
+            $profile['installation_order'][0]['depends_on'] = 'definition.product';
+            $package['profile'] = $profile;
+
+            return $package;
+        });
+        try {
+            $this->expectException(RuntimeException::class);
+            $this->expectExceptionMessage('definition.client_account declares an invalid dependency list');
+            (new FilesystemDemoManifestCatalog($malformed))->business('fork');
+        } finally {
+            $this->removeTree($malformed);
+        }
+    }
+
+    /**
+     * Write the released VDM profile under the name `fork`, re-namespaced, into a temporary catalog root.
+     *
+     * The mutation receives the package as `profile` (the profile document), `definitions` (documents keyed
+     * by their relative file name), and `records`, and returns what is written; the identity mutation
+     * yields exactly the package `demo:export-profile` writes for a VDM installation.
+     *
+     * @param   callable(array<string, mixed>): array<string, mixed>  $mutate  Package mutation applied
+     *          before writing.
+     *
+     * @return  string  Absolute temporary root holding `resources/demo/business/fork`.
+     *
+     * @since   2.0.0
+     */
+    private function forkPackage(callable $mutate): string
+    {
+        $source = $this->catalog()->vdmBusiness()['manifest'];
+        $encoded = json_encode($source, JSON_THROW_ON_ERROR);
+        /** @var array<string, mixed> $renamed */
+        $renamed = json_decode(
+            str_replace(['"vdm"', 'site.default.vdm_'], ['"fork"', 'site.default.fork_'], $encoded),
+            true,
+            64,
+            JSON_THROW_ON_ERROR,
+        );
+        $documents = $this->map($renamed['definition_documents'] ?? null, 'definition documents');
+        $records = $this->map($renamed['records_document'] ?? null, 'records document');
+        unset($renamed['definition_documents'], $renamed['records_document']);
+        $definitions = [];
+        foreach ($this->list($renamed['installation_order'] ?? null, 'installation order') as $entry) {
+            $entry = $this->map($entry, 'installation entry');
+            $definitions[$this->string($entry, 'file')] = $documents[$this->string($entry, 'fixture_key')];
+        }
+        $package = $mutate(['profile' => $renamed, 'definitions' => $definitions, 'records' => $records]);
+
+        $root = sys_get_temp_dir() . '/kumwe-catalog-fork-' . bin2hex(random_bytes(6));
+        $base = $root . '/resources/demo/business/fork';
+        self::assertTrue(mkdir($base . '/definitions', 0o700, true));
+        $this->writeJson($base . '/profile.json', $package['profile']);
+        $this->writeJson($base . '/records.json', $package['records']);
+        foreach ($this->map($package['definitions'] ?? null, 'definitions') as $file => $document) {
+            $this->writeJson($base . '/' . $file, $document);
+        }
+
+        return $root;
+    }
+
+    /**
+     * Write one document as JSON.
+     *
+     * @param   string  $path      Absolute file path.
+     * @param   mixed   $document  JSON-encodable document.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    private function writeJson(string $path, mixed $document): void
+    {
+        $encoded = json_encode($document, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT);
+        self::assertNotFalse(file_put_contents($path, $encoded));
+    }
+
+    /**
+     * Remove one temporary catalog root.
+     *
+     * @param   string  $root  Absolute directory to remove.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    private function removeTree(string $root): void
+    {
+        if (!is_dir($root)) {
+            return;
+        }
+        $entries = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::CHILD_FIRST,
+        );
+        foreach ($entries as $entry) {
+            if (!$entry instanceof SplFileInfo) {
+                continue;
+            }
+            if ($entry->isDir()) {
+                rmdir($entry->getPathname());
+            } else {
+                unlink($entry->getPathname());
+            }
+        }
+        rmdir($root);
     }
 
     /**

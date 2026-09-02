@@ -34,8 +34,11 @@ use Throwable;
  * confirms the cast reports that existing sign-ins remain valid and touches nothing, which is what
  * lets an operator re-run the command with the same options. When new credentials must be written,
  * the destination keeps the `demo:provision-access` contract: it must not exist yet, and it is
- * created exclusively with owner-only permissions. When the business profile is `none` the cast is
- * skipped with an explanation instead of failing, and the examples still install.
+ * created exclusively with owner-only permissions. The file's path is reported the moment it is
+ * written, before any example installs, so a later refusal cannot leave passwords on disk that the
+ * operator was never told about; and an example that fails is named in the failure line. When the
+ * business profile is `none` the cast is skipped with an explanation instead of failing, and the
+ * examples still install.
  *
  * @since  2.0.0
  */
@@ -107,7 +110,8 @@ final readonly class DemoInstallCommand implements Command
      *          comma-separated subset of the shipped examples.
      * @param   Output        $output     Sink for the sequential outcomes or the failure message.
      *
-     * @return  int  0 when the cast and every selected example are in place, 1 when any step failed.
+     * @return  int  0 when the cast and every selected example are in place, 1 when any step failed;
+     *          an example step's failure line names the example it stopped on.
      *
      * @since   2.0.0
      */
@@ -157,10 +161,26 @@ final readonly class DemoInstallCommand implements Command
                         break;
                     }
                 }
+                if ($credentialsWritten) {
+                    $output->message('core.console.demo_install.wrote_the_demonstration_credentials_file', [
+                        'credentialsPath' => $credentialsPath,
+                    ]);
+                } else {
+                    $output->message('core.console.demo_install.no_new_credentials_were_generated_existing');
+                }
             }
 
             foreach ($selection as $example) {
-                $result = $this->installer->install($context, $example);
+                try {
+                    $result = $this->installer->install($context, $example);
+                } catch (Throwable $failure) {
+                    $output->failure('core.console.demo_install.example_failed', [
+                        'example' => $example,
+                        'reason' => $failure->getMessage(),
+                    ]);
+
+                    return 1;
+                }
                 $output->message('core.console.demo_install.example_outcome', [
                     'installed' => $result['installed'],
                     'activated' => $result['activated'],
@@ -170,13 +190,6 @@ final readonly class DemoInstallCommand implements Command
                 ]);
             }
 
-            if ($credentialsWritten) {
-                $output->message('core.console.demo_install.wrote_the_demonstration_credentials_file', [
-                    'credentialsPath' => $credentialsPath,
-                ]);
-            } elseif ($profile !== 'none') {
-                $output->message('core.console.demo_install.no_new_credentials_were_generated_existing');
-            }
             $output->message('core.console.demo_install.staff_sign_in_at_administrator_portal');
             $output->message('core.console.demo_install.dataset_installed_by_migrate');
 

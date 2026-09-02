@@ -4,10 +4,15 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Unit\Extension\Contribution;
 
+use InvalidArgumentException;
+use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\App\Application\Authorization\SystemIdentity;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\Extension\Contribution\OwnedExtensionBindingRegistrar;
 use Kumwe\Extension\Manifest\ExtensionIdentifier;
 use Kumwe\Extension\Manifest\ManifestContributions;
 use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
@@ -59,6 +64,123 @@ final class ExtensionContributionRegistrySetTest extends TestCase
             self::assertSame([], $value, sprintf('Surface %s survived owner removal.', $key));
         }
         self::assertSame([], $registries->navigation()->visible(['acme.editor.manage' => true]));
+    }
+
+    /**
+     * Distinct active owners cannot share or nest the same legacy dotted contribution namespace.
+     *
+     * `a.b/c` and `a/b.c` both flatten to the dotted namespace `a.b.c`, and `a.b/c.d` sits beneath it,
+     * so a string-prefix ownership test could no longer tell their contributions apart. The second
+     * distinct owner is refused before any of its declarations are registered, and the namespace is
+     * released again once the first owner is removed.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAmbiguousOwnerNamespacesFailBeforeRegistrationAndReleaseOnRemoval(): void
+    {
+        $registries = new ExtensionContributionRegistrySet(withCore: false);
+        $first = ContributionOwner::extension('a.b/c');
+        $registries->activateManifest(self::emptyManifest('a.b/c'));
+
+        foreach (['a/b.c', 'a.b/c.d'] as $colliding) {
+            try {
+                $registries->activateManifest(self::emptyManifest($colliding));
+                self::fail('Two active owners must not share the same dotted contribution namespace.');
+            } catch (InvalidArgumentException $exception) {
+                self::assertStringContainsString('conflicts with active owner a.b/c', $exception->getMessage());
+            }
+        }
+
+        $registries->remove($first);
+
+        self::assertInstanceOf(
+            OwnedExtensionBindingRegistrar::class,
+            $registries->activateManifest(self::emptyManifest('a/b.c')),
+        );
+    }
+
+    /**
+     * Core publishes complete typed capability metadata and a typed system-identity policy allowlist.
+     *
+     * The gateway reads ownership, impact, scope, delegation, human-grant and unattended-identity
+     * answers from the shipped core contribution set alone, so each of those answers is pinned here
+     * against the live registry rather than inferred from capability names.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testCorePublishesCompleteTypedCapabilityAndSystemPolicyMetadata(): void
+    {
+        $policies = (new ExtensionContributionRegistrySet())->authorizationPolicies();
+        $delete = $policies->capability(Capability::fromString('content.delete'));
+
+        self::assertNotNull($delete);
+        self::assertSame('core', $delete->owner);
+        self::assertTrue($delete->highImpact);
+        self::assertContains('content', $delete->allowedScopes);
+        self::assertTrue($policies->supports(
+            Capability::fromString('content.read'),
+            AuthorizationResource::item('business_definition', 'page'),
+        ));
+        self::assertTrue($policies->allowsSystemIdentity(
+            Capability::fromString('content.read'),
+            AuthorizationResource::item('content', 'page'),
+            SystemIdentity::Worker,
+        ));
+        self::assertFalse($policies->allowsSystemIdentity(
+            Capability::fromString('content.read'),
+            AuthorizationResource::item('content', 'page'),
+            SystemIdentity::Scheduler,
+        ));
+        self::assertFalse($policies->supports(
+            Capability::fromString('themes.site.manage'),
+            AuthorizationResource::item('theme', 'administrator'),
+        ));
+        self::assertFalse($policies->allowsHumanGrant(Capability::fromString('administrator.bootstrap')));
+        foreach (
+            [
+                'business.approval.approve' => 'approval_request',
+                'business.approval.manage' => 'approval_request',
+                'business.approval.request' => 'business_record',
+                'business.security.manage' => 'resource_policy',
+                'business.step_up.manage' => 'step_up_credential',
+                'portal.access' => 'portal_session',
+            ] as $capability => $resource
+        ) {
+            $definition = $policies->capability(Capability::fromString($capability));
+            self::assertNotNull($definition, $capability);
+            self::assertTrue($definition->delegatable, $capability);
+            self::assertContains('global', $definition->allowedScopes, $capability);
+            self::assertTrue($policies->supports(
+                Capability::fromString($capability),
+                AuthorizationResource::item($resource, 'fixture'),
+            ), $capability);
+        }
+        self::assertTrue(
+            $policies->capability(Capability::fromString('business.approval.approve'))?->highImpact,
+        );
+        self::assertFalse($policies->capability(Capability::fromString('portal.access'))?->highImpact);
+    }
+
+    /**
+     * Declare one manifest graph that contributes nothing, so only its owner namespace is claimed.
+     *
+     * @param   string  $identifier  Package identifier in `vendor/name` form.
+     *
+     * @return  ManifestContributions  Canonical declaration graph with every surface empty.
+     *
+     * @since   2.0.0
+     */
+    private static function emptyManifest(string $identifier): ManifestContributions
+    {
+        return ManifestContributions::fromManifest(
+            ExtensionIdentifier::fromString($identifier),
+            ['version' => 2],
+            4,
+        );
     }
 
     /**

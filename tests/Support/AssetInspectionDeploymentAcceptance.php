@@ -318,7 +318,7 @@ final class AssetInspectionDeploymentAcceptance
                 'identifier' => $organization,
                 'membership_id' => $membershipId,
             ],
-            'profile_checksum' => $profile->checksum(),
+            'profile_checksum' => self::POLICY_PROFILE_CHECKSUM,
             'profile_policy_ids' => array_slice($policyIds, 0, 4),
             'seed_policy_ids' => array_slice($policyIds, 4),
             'policy_ids' => $policyIds,

@@ -41,6 +41,7 @@ use Kumwe\Producer\Wire\RequestEnvelope;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
+use RuntimeException;
 use stdClass;
 
 /**
@@ -262,12 +263,252 @@ final class StudioProducerMutationBoundaryTest extends TestCase
     }
 
     /**
+     * An audit sink failure inside an unkeyed save propagates, rolls the transaction back and commits nothing.
+     *
+     * The audit write runs inside the same authoritative transaction as the mutation, so a recorder that
+     * throws must abort the scope rather than leave a mutated head without its audit trail.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAFailedAuditWriteRollsBackAnUnkeyedSave(): void
+    {
+        [$operation, $request, $authority] = $this->authorizedRequest(
+            'studio.operation/artifact.save',
+            (object) ['document' => (object) ['kind' => 'entry'], 'expectedRevision' => 'entry-r1'],
+        );
+        $transactions = $this->observingTransactions();
+        $audit = $this->failingAudit();
+        [$boundary, , $replays] = $this->boundary($authority, transactions: $transactions, audit: $audit);
+        $calls = 0;
+
+        try {
+            $boundary->execute(
+                $operation,
+                $request,
+                null,
+                null,
+                static function () use (&$calls): HostResult {
+                    $calls++;
+
+                    return new HostResult(null, 'entry-r2');
+                },
+            );
+            self::fail('A failed Studio audit write must abort the artifact mutation.');
+        } catch (RuntimeException $failure) {
+            self::assertSame('audit unavailable', $failure->getMessage());
+        }
+
+        self::assertSame(1, $calls);
+        self::assertSame(1, $audit->attempts);
+        self::assertSame(0, $transactions->commits);
+        self::assertSame(1, $transactions->rollbacks);
+        self::assertSame([], $replays->records);
+    }
+
+    /**
+     * An audit sink failure inside a keyed save rolls back before any replay claim is completed.
+     *
+     * A later retry with the same key must find no protected outcome to replay, because the claim
+     * was opened inside the very transaction the failed audit write discarded.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAFailedAuditWriteCompletesNoReplayClaimForAKeyedSave(): void
+    {
+        [$operation, $request, $authority] = $this->authorizedRequest(
+            'studio.operation/artifact.save',
+            (object) ['document' => (object) ['kind' => 'entry'], 'expectedRevision' => 'entry-r1'],
+            'idempotency/audit-unavailable',
+        );
+        $transactions = $this->observingTransactions();
+        [$boundary, , $replays] = $this->boundary(
+            $authority,
+            transactions: $transactions,
+            audit: $this->failingAudit(),
+        );
+        $scope = CanonicalJson::digest((object) ['scope' => 'audit-unavailable']);
+        $intent = CanonicalJson::digest((object) ['intent' => 'audit-unavailable']);
+
+        try {
+            $boundary->execute($operation, $request, $scope, $intent, static fn (): HostResult
+                => new HostResult(null, 'entry-r2'));
+            self::fail('A failed Studio audit write must abort the keyed artifact mutation.');
+        } catch (RuntimeException $failure) {
+            self::assertSame('audit unavailable', $failure->getMessage());
+        }
+
+        self::assertSame(0, $transactions->commits);
+        self::assertSame(1, $transactions->rollbacks);
+        self::assertLessThanOrEqual(1, count($replays->records));
+        foreach ($replays->records as $record) {
+            self::assertNull($record->protectedOutcome, 'A rolled-back mutation must not complete its replay claim.');
+        }
+    }
+
+    /**
+     * Build one transaction manager that commits on return and rolls back when the operation throws.
+     *
+     * @return  TransactionManager  Observable double exposing `commits` and `rollbacks` counters and
+     *          running the registered hooks for whichever way the scope ends.
+     *
+     * @since   2.0.0
+     */
+    private function observingTransactions(): TransactionManager
+    {
+        return new class implements TransactionManager {
+            /**
+             * Number of scopes that ended in a commit.
+             *
+             * @var    int
+             * @since  2.0.0
+             */
+            public int $commits = 0;
+
+            /**
+             * Number of scopes that ended in a rollback.
+             *
+             * @var    int
+             * @since  2.0.0
+             */
+            public int $rollbacks = 0;
+
+            /**
+             * Hooks queued for the next commit.
+             *
+             * @var    list<callable(): void>
+             * @since  2.0.0
+             */
+            private array $commitHooks = [];
+
+            /**
+             * Hooks queued for the next rollback.
+             *
+             * @var    list<callable(): void>
+             * @since  2.0.0
+             */
+            private array $rollbackHooks = [];
+
+            /**
+             * Run the operation, committing on return and rolling back when it throws.
+             *
+             * @param   callable  $operation  Work to perform inside the simulated transaction.
+             *
+             * @return  mixed  Whatever the operation returned, passed straight back.
+             *
+             * @throws  \Throwable  Whatever the operation threw, after the rollback hooks ran.
+             *
+             * @since   2.0.0
+             */
+            public function transactional(callable $operation): mixed
+            {
+                try {
+                    $result = $operation();
+                } catch (\Throwable $failure) {
+                    $this->rollbacks++;
+                    $hooks = $this->rollbackHooks;
+                    $this->commitHooks = [];
+                    $this->rollbackHooks = [];
+                    foreach ($hooks as $hook) {
+                        $hook();
+                    }
+
+                    throw $failure;
+                }
+                $this->commits++;
+                $hooks = $this->commitHooks;
+                $this->commitHooks = [];
+                $this->rollbackHooks = [];
+                foreach ($hooks as $hook) {
+                    $hook();
+                }
+
+                return $result;
+            }
+
+            /**
+             * Queue a hook for the moment the current scope commits.
+             *
+             * @param   callable  $operation  Side effect to perform once the work is durable.
+             *
+             * @return  void
+             *
+             * @since   2.0.0
+             */
+            public function afterCommit(callable $operation): void
+            {
+                $this->commitHooks[] = $operation;
+            }
+
+            /**
+             * Queue a hook for the moment the current scope is discarded.
+             *
+             * @param   callable  $operation  Compensating action to perform on rollback.
+             *
+             * @return  void
+             *
+             * @since   2.0.0
+             */
+            public function afterRollback(callable $operation): void
+            {
+                $this->rollbackHooks[] = $operation;
+            }
+        };
+    }
+
+    /**
+     * Build one audit sink that refuses every write, to prove the surrounding mutation rolls back.
+     *
+     * @return  AuditRecorder  Double counting refused writes in `attempts`.
+     *
+     * @since   2.0.0
+     */
+    private function failingAudit(): AuditRecorder
+    {
+        return new class implements AuditRecorder {
+            /**
+             * Number of audit writes refused.
+             *
+             * @var    int
+             * @since  2.0.0
+             */
+            public int $attempts = 0;
+
+            /**
+             * Refuse the audit write.
+             *
+             * @param   AuditEvent  $event  Event whose write is refused.
+             *
+             * @return  void
+             *
+             * @throws  RuntimeException  Always, carrying the message the boundary must propagate.
+             *
+             * @since   2.0.0
+             */
+            public function record(AuditEvent $event): void
+            {
+                unset($event);
+                $this->attempts++;
+
+                throw new RuntimeException('audit unavailable');
+            }
+        };
+    }
+
+    /**
      * Compose the boundary around observable deterministic in-memory services.
      *
      * @param   StudioProducerRequestAuthority  $authority         Successfully authorized request authority.
      * @param   StudioMediaOperations|null      $media             Optional upload rehydration authority.
      * @param   TransactionState|null           $transactionState  Optional live transaction state; defaults
      *          to no open transaction.
+     * @param   TransactionManager|null         $transactions      Optional transaction manager double; defaults
+     *          to one that counts scopes and commits implicitly on return.
+     * @param   AuditRecorder|null              $audit             Optional audit sink double; defaults to one
+     *          that records every event in memory.
      *
      * @return  array{StudioProducerMutationBoundary, object, object, object, SodiumStudioMutationOutcomeCodec}
      *
@@ -277,8 +518,10 @@ final class StudioProducerMutationBoundaryTest extends TestCase
         StudioProducerRequestAuthority $authority,
         ?StudioMediaOperations $media = null,
         ?TransactionState $transactionState = null,
+        ?TransactionManager $transactions = null,
+        ?AuditRecorder $audit = null,
     ): array {
-        $transactions = new class implements TransactionManager {
+        $transactions ??= new class implements TransactionManager {
             /**
              * Number of transaction scopes opened.
              *
@@ -418,7 +661,7 @@ final class StudioProducerMutationBoundaryTest extends TestCase
                 return array_values($this->records)[0];
             }
         };
-        $audit = new class implements AuditRecorder {
+        $audit ??= new class implements AuditRecorder {
             /**
              * Every audit event recorded, in order of arrival.
              *

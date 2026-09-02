@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Demo\Application;
 
 use Kumwe\App\Application\Authorization\SiteContext;
+use Kumwe\App\BusinessDefinition\Domain\DefinitionStatus;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
 
@@ -16,7 +17,11 @@ use RuntimeException;
  * and record identities, and explicit site ownership fields. Business values such as field defaults are
  * never interpreted as site identifiers. The template's handle namespace and projection namespace derive
  * from the manifest's own profile name, so any discovered business profile — the released VDM example or
- * a fork's replacement — projects identically.
+ * a fork's replacement — projects identically. Every projected definition document leaves in the
+ * released-draft shape the installer publishes from — status `draft`, version zero — because that is the
+ * one shape `EntityTypeDefinition::published()` accepts: a document exported from a running site carries
+ * the published status and version of its source, and left as it was it installed once and then made every
+ * later reconciliation fail before it could compare the definition to its checkpoint.
  *
  * @since  2.0.0
  */
@@ -28,7 +33,8 @@ final readonly class VdmBusinessManifestProjector
      * @param   array<string, mixed>  $manifest  Validated aggregate business demo template.
      * @param   SiteContext           $site      Installation site receiving the example.
      *
-     * @return  array<string, mixed>  Site-scoped aggregate ready for canonical application services.
+     * @return  array<string, mixed>  Site-scoped aggregate ready for canonical application services, every
+     *          definition document in the released-draft shape (status `draft`, version zero).
      *
      * @throws  RuntimeException  When the source contradicts the template contract or the target site
      *          cannot form a valid business-definition namespace.
@@ -55,6 +61,11 @@ final readonly class VdmBusinessManifestProjector
             $owner['identifier'] = $siteIdentifier;
             $document['owner'] = $owner;
             $document['site'] = $siteIdentifier;
+            // The installer publishes every template document from a version-zero draft, exactly as
+            // `BusinessDefinitionService::importDraft()` normalizes an imported document; a published
+            // status or version copied from an export's source is lifecycle state, not template content.
+            $document['status'] = DefinitionStatus::Draft->value;
+            $document['definition_version'] = 0;
             $documents[$fixtureKey] = $document;
         }
         $records = $this->map($projected['records_document'] ?? null, 'records document');

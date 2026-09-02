@@ -72,6 +72,15 @@ a released fixture can never be edited, reordered, or removed, only extended by 
 under a higher manifest version. Record access policies are derived from each definition's field
 flags and installed with provenance checkpoints under `core.demo.<profile>.…` policy codes.
 
+The catalog enforces the namespace rule and the order rule before an installer sees a manifest: every
+definition document's handle must start with `site.default.<profile>_` and be repeated by its
+`installation_order` entry, and every package definition a document references — through a relationship or
+through an entity-reference or ordered-lines field, the same target set the definition runtime persists as
+its dependency graph — must be named in that entry's `depends_on` and installed before it. The installer
+publishes definitions one at a time, so a package breaking either rule could never install. Every document is
+normalised to the released-draft shape — status `draft`, version zero — before it is published, which is the
+one shape a definition can be published from.
+
 ## Access manifests
 
 A business profile may ship an `access.json` manifest (`kumwe.demo-access/v1`) declaring its
@@ -98,8 +107,10 @@ accounts receive generated credentials at deployment time through host-authorize
 1. Create the manifest files under `resources/demo/content` or `resources/demo/business/<name>` with the
    correct `format`, `profile`, and `version` fields.
 2. For a business profile, give every definition the `site.default.<name>_` handle prefix, a fresh UUID,
-   and list it in `profile.json` `installation_order` with correct `depends_on` entries; declare every
-   record operation in `records.json` with a unique `fixture_key` and idempotency key.
+   and list it in `profile.json` `installation_order` after every definition it references, with
+   `depends_on` naming each of them — relationship targets and entity-reference or ordered-lines field
+   targets alike; declare every record operation in `records.json` with a unique `fixture_key` and
+   idempotency key.
 3. Select it with `KUMWE_SITE_CONTENT_PROFILE=<name>` or `KUMWE_BUSINESS_PROFILE=<name>` before the first
    `php bin/kumwe database:migrate`.
 4. Keep the release contract: bump `version` on any change, only append business operations, and update
@@ -132,6 +143,21 @@ profile document, one canonical definition document per published definition in 
 records document with every record, relation, workflow action, and archive, and the demonstration
 access manifest. Beside the tree the command writes `export.json`, an integrity index repeating each
 document's canonical checksum so a recipient can verify the package without trusting its transport.
+
+Definitions are exported as the released contract requires, not as the running site holds them. Every
+handle is re-namespaced to `site.default.<profile>_<fixture tail>` — the derivation the released VDM profile
+follows, so `definition.client_account` exported as `--profile=fork` becomes
+`site.default.fork_client_account` — and every reference to it follows through one exact-value map:
+relationship targets, entity-reference and ordered-lines field targets, and the definition named by each
+record, relation, action, and archive declaration. The installation order and each entry's `depends_on` are
+derived from the complete reference graph, reference fields as well as relationships, and definitions that
+reference one another in a cycle are refused by name, because the installer publishes one definition at a
+time and could never satisfy the first member's references. Each definition document is written in the
+released-draft shape — status `draft`, version zero, `record_invariants` present — that the installer
+publishes from; a document carrying its source's published status installs once and then fails every later
+`database:migrate`. The catalog re-validation refuses a package that leaves the namespace or breaks the
+order, so the command cannot report success for a package that cannot install. Fixture keys, idempotency
+keys, and record identities are not renamed: they are what keep the export diffable against its source.
 
 A site that publishes more definitions — or references more roles — than the envelope carries is
 refused before anything is written, naming the count it found and the bound it exceeded. A demonstration

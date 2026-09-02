@@ -998,6 +998,189 @@ final class MigrationIntegrationTest extends TestCase
         }
     }
 
+    /**
+     * The token lifecycle migration backfills legacy API tokens from the user row, not a column default.
+     *
+     * A pre-lifecycle `api_tokens` row carries no audience, purpose, site or epoch and may carry no expiry.
+     * Running the migration on that exact shape must stamp the `kumwe-http`, `api` and `default` values,
+     * copy the subject's non-default `security_epoch`, give an open-ended token a bounded expiry while
+     * leaving an explicit one untouched, make `expires_at` mandatory, and stay a no-op when run again. The
+     * tables live under a random prefix and are dropped afterwards, so a reused database stays clean.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTokenLifecycleMigrationBackfillsLegacyApiTokensFromTheUserSecurityEpoch(): void
+    {
+        $container = (new ContainerFactory())->create(Environment::fromGlobals());
+        $database = $container->get(Connection::class);
+        self::assertInstanceOf(Connection::class, $database);
+        $prefix = 'u' . bin2hex(random_bytes(4)) . '_';
+        $tables = new TableNames($database, $prefix);
+        $tokenColumns = 'SELECT security_epoch, audience, purpose, site_identifier, expires_at FROM %s WHERE id = ?';
+        try {
+            $this->createPreLifecycleTokenSchema($database, $tables);
+            $userId = Uuid::uuid7()->toString();
+            $openEndedTokenId = Uuid::uuid7()->toString();
+            $boundedTokenId = Uuid::uuid7()->toString();
+            $explicitExpiry = (new DateTimeImmutable('+400 days'))->setTime(12, 30, 0);
+            $database->insert($tables->raw('users'), ['id' => $userId, 'status' => 'active', 'security_epoch' => 7]);
+            $database->insert($tables->raw('api_tokens'), [
+                'id' => $openEndedTokenId,
+                'subject_id' => $userId,
+                'expires_at' => null,
+                'revoked_at' => null,
+            ]);
+            $database->insert($tables->raw('api_tokens'), [
+                'id' => $boundedTokenId,
+                'subject_id' => $userId,
+                'expires_at' => $explicitExpiry,
+                'revoked_at' => null,
+            ], ['expires_at' => Types::DATETIME_IMMUTABLE]);
+
+            (new TokenAndTrustLifecycleMigration($tables))->up($database);
+
+            $openEnded = $database->fetchAssociative(
+                sprintf($tokenColumns, $tables->quoted('api_tokens')),
+                [$openEndedTokenId],
+            );
+            self::assertIsArray($openEnded);
+            self::assertSame('7', (string) $openEnded['security_epoch']);
+            self::assertSame('kumwe-http', $openEnded['audience']);
+            self::assertSame('api', $openEnded['purpose']);
+            self::assertSame('default', $openEnded['site_identifier']);
+            $backfilledExpiry = new DateTimeImmutable((string) $openEnded['expires_at']);
+            self::assertGreaterThan(new DateTimeImmutable('+29 days'), $backfilledExpiry);
+            self::assertLessThanOrEqual(new DateTimeImmutable('+31 days'), $backfilledExpiry);
+
+            $bounded = $database->fetchAssociative(
+                sprintf($tokenColumns, $tables->quoted('api_tokens')),
+                [$boundedTokenId],
+            );
+            self::assertIsArray($bounded);
+            self::assertSame('7', (string) $bounded['security_epoch']);
+            self::assertSame('kumwe-http', $bounded['audience']);
+            self::assertSame(
+                $explicitExpiry->format('Y-m-d H:i:s'),
+                (new DateTimeImmutable((string) $bounded['expires_at']))->format('Y-m-d H:i:s'),
+            );
+            self::assertTrue(
+                $database->createSchemaManager()
+                    ->introspectTableByUnquotedName($tables->raw('api_tokens'))
+                    ->getColumn('expires_at')
+                    ->getNotnull(),
+                'The migration must make api_tokens.expires_at mandatory once every row carries one.',
+            );
+
+            (new TokenAndTrustLifecycleMigration($tables))->up($database);
+
+            self::assertSame($openEnded, $database->fetchAssociative(
+                sprintf($tokenColumns, $tables->quoted('api_tokens')),
+                [$openEndedTokenId],
+            ));
+            self::assertSame('1', (string) $database->fetchOne(sprintf(
+                'SELECT COUNT(*) FROM %s',
+                $tables->quoted('extension_trust_generation'),
+            )));
+        } finally {
+            $schema = $database->createSchemaManager();
+            foreach (
+                [
+                    'api_tokens',
+                    'users',
+                    'extension_releases',
+                    'extension_trust_keys',
+                    'extension_runtime_outbox',
+                    'extension_trust_generation',
+                    'extension_runtime_generation',
+                    'idempotency',
+                ] as $table
+            ) {
+                $name = $tables->raw($table);
+                if ($schema->tablesExist([$name])) {
+                    $schema->dropTable($name);
+                }
+            }
+        }
+    }
+
+    /**
+     * Create the pre-lifecycle table shapes the token and trust migration upgrades in place.
+     *
+     * Only the tables the migration touches are created: `users` already carries `security_epoch` so the
+     * backfill must read the row rather than add the column, `api_tokens` has the pre-lifecycle columns
+     * alone, and `extension_trust_generation` exists without its lifecycle column or singleton row to
+     * mirror interrupted DDL.
+     *
+     * @param   Connection  $database  Live connection the tables are created on.
+     * @param   TableNames  $tables    Prefixed naming for this test's isolated tables.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    private function createPreLifecycleTokenSchema(Connection $database, TableNames $tables): void
+    {
+        $schema = new Schema();
+        $users = $schema->createTable($tables->raw('users'));
+        $users->addColumn('id', Types::GUID);
+        $users->addColumn('status', Types::STRING, ['length' => 32]);
+        $users->addColumn('security_epoch', Types::BIGINT, ['default' => 1]);
+        $users->setPrimaryKey(['id']);
+        $tokens = $schema->createTable($tables->raw('api_tokens'));
+        $tokens->addColumn('id', Types::GUID);
+        $tokens->addColumn('subject_id', Types::GUID);
+        $tokens->addColumn('expires_at', Types::DATETIME_IMMUTABLE, ['notnull' => false]);
+        $tokens->addColumn('revoked_at', Types::DATETIME_IMMUTABLE, ['notnull' => false]);
+        $tokens->setPrimaryKey(['id']);
+        $releases = $schema->createTable($tables->raw('extension_releases'));
+        $releases->addColumn('id', Types::GUID);
+        $releases->addColumn('extension_id', Types::GUID);
+        $releases->addColumn('version', Types::STRING, ['length' => 128]);
+        $releases->addColumn('manifest', Types::JSON);
+        $releases->addColumn('package_sha256', Types::STRING, ['length' => 64]);
+        $releases->addColumn('released_at', Types::DATETIME_IMMUTABLE);
+        $releases->setPrimaryKey(['id']);
+        $keys = $schema->createTable($tables->raw('extension_trust_keys'));
+        $keys->addColumn('key_id', Types::STRING, ['length' => 127]);
+        $keys->addColumn('algorithm', Types::STRING, ['length' => 32]);
+        $keys->addColumn('public_key_base64', Types::STRING, ['length' => 128]);
+        $keys->addColumn('enabled', Types::BOOLEAN);
+        $keys->addColumn('added_at', Types::DATETIME_IMMUTABLE);
+        $keys->addColumn('revoked_at', Types::DATETIME_IMMUTABLE, ['notnull' => false]);
+        $keys->setPrimaryKey(['key_id']);
+        $generation = $schema->createTable($tables->raw('extension_runtime_generation'));
+        $generation->addColumn('singleton_key', Types::SMALLINT);
+        $generation->addColumn('generation', Types::BIGINT);
+        $generation->addColumn('rebuilt_at', Types::DATETIME_IMMUTABLE);
+        $generation->setPrimaryKey(['singleton_key']);
+        $trustGeneration = $schema->createTable($tables->raw('extension_trust_generation'));
+        $trustGeneration->addColumn('singleton_key', Types::SMALLINT);
+        $trustGeneration->addColumn('generation', Types::BIGINT, ['default' => 0]);
+        $trustGeneration->addColumn('updated_at', Types::DATETIME_IMMUTABLE);
+        $trustGeneration->setPrimaryKey(['singleton_key']);
+        $idempotency = $schema->createTable($tables->raw('idempotency'));
+        $idempotency->addColumn('id', Types::GUID);
+        $idempotency->addColumn('idempotency_key', Types::STRING, ['length' => 128]);
+        $idempotency->addColumn('subject', Types::STRING, ['length' => 255]);
+        $idempotency->addColumn('operation', Types::STRING, ['length' => 160]);
+        $idempotency->addColumn('request_digest', Types::STRING, ['length' => 64]);
+        $idempotency->addColumn('state', Types::STRING, ['length' => 16]);
+        $idempotency->addColumn('result_body', Types::TEXT, ['notnull' => false]);
+        $idempotency->addColumn('created_at', Types::DATETIME_IMMUTABLE);
+        $idempotency->addColumn('expires_at', Types::DATETIME_IMMUTABLE);
+        $idempotency->setPrimaryKey(['id']);
+        foreach ($schema->toSql($database->getDatabasePlatform()) as $statement) {
+            $database->executeStatement($statement);
+        }
+        $database->insert($tables->raw('extension_runtime_generation'), [
+            'singleton_key' => 1,
+            'generation' => 0,
+            'rebuilt_at' => new DateTimeImmutable(),
+        ], ['rebuilt_at' => Types::DATETIME_IMMUTABLE]);
+    }
+
     private function assertSecondMigrationSessionIsBlocked(DoctrineMigrationLock $lock): void
     {
         try {

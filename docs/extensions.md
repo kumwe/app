@@ -323,26 +323,47 @@ Contribution capability definitions enter the normal capability catalog but are 
 
 ## Events
 
-Attach typed listeners through the extension event registrar in `boot()`; each listener receives the Kumwe-owned `ExtensionEvent` contract, never the dispatch engine behind it. Event objects and names are versioned extension API. A listener must document whether it can stop propagation and whether throwing aborts the current transaction.
+Listeners are declared, not attached. The SDK publishes no code-side event registrar — the App registrar that
+packages once attached listeners through in `boot()` is retired — so the signed manifest is the only place a
+package says which events it observes. Declare each listener under `contributions.integration.domain_listeners`
+(schema 4 and later; see [Business integrations](business-integrations.md)) with its `listener_id`, the
+`event_type` it observes, the `schema_versions` it accepts, a `handler_version`, a `priority`, and a
+`sensitivity_ceiling`. The event type is either an event the package declares itself under `event_schemas` or a
+platform event in the host's `core.` namespace, whose schema the host owns, versions, and enforces at
+activation; today the App publishes `core.business_record.mutated`, declared in
+`src/Extension/Contribution/CoreExtensionContributions.php`. A manifest can never bind to another extension's
+event.
 
-Keep synchronous listeners fast and deterministic. For email, indexing, webhooks, or remote calls, enqueue a namespaced job or consume a committed outbox event. Never depend on listener registration order for correctness and never use an event to bypass an application service's authorization or audit behavior.
+The provider then binds exactly one executable per declaration in `bind()`, through
+`Kumwe\Extension\Spi\Binding\ExtensionBindingRegistrar::domainListener()`, to a
+`Kumwe\Extension\Spi\BusinessIntegration\Application\DomainEventHandler`. The handler receives the host-validated
+`DomainListenerDefinition` and the `DomainEvent`. It runs synchronously inside the authoritative mutation
+transaction — `BusinessRecordMutationEventPublisher` dispatches it, only while the package is active and trusted,
+before the same event identity is appended to the durable outbox — and throwing aborts the mutation. Keep it fast
+and deterministic: validate, record, return. Anything that must leave the process — email, indexing, webhooks,
+remote calls — belongs in a durable counterpart declared in the same section: a `consumers` entry over the
+committed outbox, a `jobs` entry, a `projections` entry, or a `webhooks` adapter. Never depend on listener order
+for correctness and never use a listener to bypass an application service's authorization or audit behavior.
 
-Declare consumed and emitted events in the manifest so compatibility tooling can inspect them. The provider remains responsible for attaching concrete listener classes.
+The shipped [`audit-listener`](../examples/extensions/audit-listener) example is the canonical minimal
+illustration: `kumwe.json` declares one listener on `core.business_record.mutated`, `src/Provider.php` binds it
+with `domainListener()`, and `src/Integration/MutationAuditListener.php` refuses a foreign declaration or an event
+outside the declared contract before it records anything.
 
-The extension lifecycle emits paired domain events:
-
-| Operation | Before | After |
-|---|---|---|
-| Install | `onKumweExtensionBeforeInstall` | `onKumweExtensionAfterInstall` |
-| Activate | `onKumweExtensionBeforeActivate` | `onKumweExtensionAfterActivate` |
-| Disable | `onKumweExtensionBeforeDisable` | `onKumweExtensionAfterDisable` |
-| Uninstall | `onKumweExtensionBeforeUninstall` | `onKumweExtensionAfterUninstall` |
-
-Lifecycle event arguments include `identifier`, `version`, `actor_id`, and an operation `result` when available. Before-event failure aborts the operation. After events run only after the corresponding state change succeeds; listeners that need durable remote work should enqueue it.
+The extension lifecycle still raises paired `onKumweExtensionBefore*` and `onKumweExtensionAfter*` events around
+install, activate, disable, and uninstall, but they are a private host dispatch — `DoctrineExtensionManager` on
+the Laminas event manager — that reaches host-internal listeners only. A package cannot subscribe to them under
+the SDK contract, and a manifest has no place to declare them. React to lifecycle through the surfaces the SDK
+does publish instead: migrations for schema, `register()`, `bind()`, and `boot()` for composition, and durable
+consumers or jobs for work that must follow a committed state change.
 
 ## Database migrations
 
-Migration classes implement `Kumwe\App\Extension\Application\Migration\ExtensionMigration`:
+Migration classes implement the SDK contract `Kumwe\Extension\Spi\Migration\ExtensionMigration` and receive a
+`Kumwe\Extension\Spi\Migration\ExtensionTableNames` allocator that resolves a logical table name to the physical,
+owner-prefixed one — `raw()` for schema-manager calls, `quoted()` for SQL text. The shipped
+[`announcements`](../examples/extensions/announcements/src/Migration/CreateAnnouncements.php) migration is the
+current shape:
 
 ```php
 <?php
@@ -354,21 +375,22 @@ namespace Acme\Announcements\Migration;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Schema\Table;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\App\Extension\Application\Migration\ExtensionMigration;
-use Kumwe\App\Extension\Application\Migration\ExtensionTableNames;
+use Kumwe\Extension\Spi\Migration\ExtensionMigration;
+use Kumwe\Extension\Spi\Migration\ExtensionTableNames;
 
-final class Version202608040001CreateAnnouncements implements ExtensionMigration
+final class CreateAnnouncements implements ExtensionMigration
 {
     public function id(): string
     {
-        return '20260804000100_create_announcements';
+        return '20260804000000_create_announcements';
     }
 
     public function up(Connection $database, ExtensionTableNames $tables): void
     {
         $table = new Table($tables->raw('announcements'));
         $table->addColumn('id', Types::GUID);
-        $table->addColumn('title', Types::STRING, ['length' => 255]);
+        $table->addColumn('message', Types::TEXT);
+        $table->addColumn('created_at', Types::DATETIME_IMMUTABLE);
         $table->setPrimaryKey(['id']);
         $database->createSchemaManager()->createTable($table);
     }
@@ -380,7 +402,12 @@ final class Version202608040001CreateAnnouncements implements ExtensionMigration
 }
 ```
 
-Kumwe assigns extension tables a safe prefix derived from the installation prefix and extension identifier. Migrations are applied in manifest order and recorded per extension with a SHA-256 digest of the migration implementation. A later package cannot reuse an applied migration ID with different executable bytes. Newly applied migrations are compensated in reverse order if installation fails. They must be portable across MariaDB, MySQL, and PostgreSQL and must not alter core tables.
+List each class in the manifest's `migrations` array. The host's `ExtensionMigrationRunner` loads them through
+a PSR-4 autoloader pinned to the deployed package directory, applies them in manifest order, and records each one
+per extension with a SHA-256 digest over the class name, the migration ID, and the bytes of its source file. A
+later package cannot reuse an applied migration ID with different executable bytes; drift aborts the install
+rather than skipping the step. Newly applied migrations are compensated in reverse order if installation fails.
+They must be portable across MariaDB, MySQL, and PostgreSQL and must not alter core tables.
 
 Migrations are forward-moving application assets. `down()` exists to compensate the migrations applied by a failed installation attempt; uninstall and ordinary upgrades do not silently destroy site data. Provide an explicit, separately confirmed purge operation when an extension truly needs destructive cleanup.
 
