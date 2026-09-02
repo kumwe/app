@@ -2131,13 +2131,15 @@ generation.
 **S-B — Pin the contract and replay its corpus.** Findings: `V2-STU-002`. **Gate B.** Add the exact
 Studio package versions to the administrator build and record them where the release manifest can read
 them. The coordinated family contains protocol, core, preview, media, rich text, renderer-web, shell and
-testkit at one exact version; no package advances alone. The next Studio prerelease set is currently expected
-as `0.1.0-alpha.9`, but App adopts only the `<coordinated-version>` and bytes in Studio's published release
-record. Beta/RC adoption is disabled until Studio M1-04 and evidence acceptance. Vendor the published schema
-and fixture corpus into the test fixtures at those exact versions, with
-a check that fails when the vendored copy and the pinned version disagree. A conformance suite validates
-every corpus document against its schema and recomputes the digest manifest, so a silent contract drift
-under a floating dependency is not a state the build permits.
+testkit at one exact version; no package advances alone. App adopts only the `<coordinated-version>` and
+bytes in Studio's published release record, and only as a deliberate re-pin with its own evidence: the
+pin is the Studio coordinate the exactly pinned `kumwe/producer` implements, so App → Producer → Studio
+is one chain, and a prerelease label carries no maturity claim in either direction. Vendor the published
+schema and fixture corpus once, at that exact release, inside the pinned Producer library rather than as
+a second copy under `tests/`, with a check that fails when App's release record, Producer's typed release
+and the installed packages disagree. A conformance suite validates every corpus document against its
+schema and recomputes the digest manifest, so a silent contract drift under a floating dependency is not
+a state the build permits.
 
 *The enforcing check:* a dependency check fails on a non-exact version specifier for any `@kumwe/studio`
 package, and the corpus check fails when the vendored fixtures do not match the pinned release.

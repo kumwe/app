@@ -45,7 +45,7 @@ record is not thereby a new machine-evidence candidate.
 | 5 — Enterprise scale | B | Not started | — (`P2-I` delivered; the harness reproduces a stable breakpoint report nightly) |
 | 6 — Continuity and introspection | B | Not started | Phase 2 gates (may run parallel to 3–5) |
 | 7 — Qualification | B | Not started | Phases 5 and 6, and phase L's `PL-G` |
-| S — Studio contextual Content authoring | A, with a B integration | In progress — `S-A`, `S-C` and `S-D` complete and package/corpus, media, preview, shell, and public-runtime foundations exist. PR 119 completed `S-G1` contract truth. The successor implementation now gives Content New/Edit a PHP-owned create/edit target decision, keeps an unqualified create free of a reusable-type prerequisite, persists an opaque exact-target context bound to the authenticated administrator scope/session/approval generation with a hard administrator-session-lifetime expiry, re-loads and re-authorizes that target on each successful resolution, and physically reclaims expired contexts through bounded installation-wide maintenance. It gates contextual mounting on exact protocol/browser/PHP evidence and labels the structured form as fallback. The configuration-first, per-mount deployment and security boundary is now explicit, but no canonical host configuration or context key is emitted. The contextual shell, successor-context advancement, and saves are still absent, the Blueprint composer remains an unlinked low-level primitive, and critical `V2-STU-007`, `S-G2`–`S-G9`, `S-B`, and `S-E`–`S-F` remain open. Gate B is not asserted | The coordinated contextual Studio family is not yet published; App's exact `0.1.0-rc.1` pin fails the readiness gate closed. Release readiness alone cannot activate the UI without canonical per-mount configuration. |
+| S — Studio contextual Content authoring | A, with a B integration | In progress — `S-A` through `S-D` complete and package/corpus, media, preview, shell, and public-runtime foundations exist. PR 119 completed `S-G1` contract truth. The successor implementation now gives Content New/Edit a PHP-owned create/edit target decision, keeps an unqualified create free of a reusable-type prerequisite, persists an opaque exact-target context bound to the authenticated administrator scope/session/approval generation with a hard administrator-session-lifetime expiry, re-loads and re-authorizes that target on each successful resolution, and physically reclaims expired contexts through bounded installation-wide maintenance. It gates contextual mounting on exact protocol/browser/PHP evidence and labels the structured form as fallback. The configuration-first, per-mount deployment and security boundary is now explicit, but no canonical host configuration or context key is emitted. The contextual shell, successor-context advancement, and saves are still absent, the Blueprint composer remains an unlinked low-level primitive, and critical `V2-STU-007`, `S-G2`–`S-G9`, and `S-E`–`S-F` remain open. Gate B is not asserted | Studio's coordinated contextual family is not yet published: the pinned `0.1.0-beta.3` release claims no contextual profile and App packages no contextual browser entry. App's exact pin is now the Studio coordinate Producer 0.2.0 pins, and `PinnedStudioContextualAuthoringAvailabilityTest` proves the readiness gate passes its protocol boundary — Producer's digest-verified corpus manifests the four contextual document schemas, its operation registry carries the seven authoring capability/route pairs, and App's release record and eight tarballs bind byte-for-byte to Producer's typed release — then stops closed at `browser-runtime-unavailable`, ahead of the absent host qualification and authoring port. Release readiness alone cannot activate the UI without canonical per-mount configuration. |
 | **Gate B** | | **Not assessed** | **Phases 7 and S** |
 | M — Maintainability | — | Not started | Phase 3 seams settled. Blocks nothing. |
 | N — Native client platform contracts | — | Version 3 seed — not started | Nothing in Version 2; blocks nothing. Decision D17, [ADR 0009](decisions/0009-native-client-platform-and-the-authentication-link.md). |
@@ -63,7 +63,7 @@ remains in README.
 | L | `PL-G` | `V2-LNG-010` |
 | 5 | `P5-A` … `P5-I` | `V2-SCL-001`, `V2-SCL-002`, `V2-SCL-004` – `V2-SCL-008` |
 | 6 | `P6-A` … `P6-D` | `V2-DR-001` – `V2-DR-004`, `V2-OPS-001`, `GM-BAK-04`, `GM-BAK-08` |
-| S | `S-B`, `S-E` … `S-G` | `V2-STU-002`, `V2-STU-005` – `V2-STU-007` |
+| S | `S-E` … `S-G` | `V2-STU-005` – `V2-STU-007` |
 | 7 | `P7-A` … `P7-I` | `V2-UX-001`, `V2-UX-002`, `V2-QA-014`, `GM-AUD-08`, `GM-IDN-04` – `GM-IDN-07`, `GM-SUP-05`, `GM-SUP-08`, `GM-OBS-05`, `V2-UX-003` |
 | M | Lane M maintainability backlog | `V2-ARC-002`, `V2-QA-010` |
 | N | Lane N, no packages assigned yet | `V3-NC-001` – `V3-NC-004` |
@@ -97,11 +97,11 @@ product-owner correction to D16 rather than a nineteenth decision.
 
 ## Ledger snapshot
 
-**44 open findings** in [`findings.json`](findings.json). The ledger holds open work only.
+**43 open findings** in [`findings.json`](findings.json). The ledger holds open work only.
 
 | State | Count |
 |---|---|
-| `accepted_for_implementation` | 9 |
+| `accepted_for_implementation` | 6 |
 | `reproduced` | 7 |
 | `open` | 20 |
 | `conditional` | 6 |
@@ -122,7 +122,7 @@ product-owner correction to D16 rather than a nineteenth decision.
 | 5 | 7 |
 | 6 | 7 |
 | 7 | 12 |
-| S | 4 |
+| S | 3 |
 | M | 2 |
 | N | 4 |
 | evidence (`GM-AUD-02`, conditional residual) | 1 |
@@ -130,11 +130,11 @@ product-owner correction to D16 rather than a nineteenth decision.
 | Gate | Findings |
 |---|---|
 | A | 0 |
-| B | 21 |
+| B | 20 |
 | none | 23 |
 
-By severity: 1 critical, 17 high, 17 medium, 9 low.
-By origin: 12 from the independent review, 12 still-open entries from the executed gap matrix, 20 discovered
+By severity: 1 critical, 16 high, 17 medium, 9 low.
+By origin: 12 from the independent review, 12 still-open entries from the executed gap matrix, 19 discovered
 while verifying this roadmap, during the qualification programme, or from decisions D7, D10 through D14,
 D16 through D18.
 
@@ -145,7 +145,8 @@ drill and the four production-only defects — is in [`CHANGELOG.md`](../../CHAN
 that closed it. Further findings have left since, including the machine surface's credential transport and risk
 taxonomy,
 the MySQL/MariaDB schema-global foreign-key names, the extension trust posture, the root locale-addressing
-defect and the unreachable catalogue-refusal seam. Their completed substance is recorded in the changelog.
+defect, the unreachable catalogue-refusal seam and the Studio contract pin with its corpus replay (`V2-STU-002`,
+package `S-B`). Their completed substance is recorded in the changelog.
 PostgreSQL's separate schema-global non-primary-index namespace is closed: migration `20260823010000` renames every literal non-primary index to the digest derivation, proven by installing two complete prefixed core plans into one PostgreSQL schema.
 
 ## Gate A criteria
@@ -174,7 +175,7 @@ were added:
 | # | Criterion | Met | Findings |
 |---|---|---|---|
 | 11 | All nine languages ship and each is qualified in its own right | No | `V2-LNG-010` |
-| 12 | Studio contextual Content authoring ships and passes `STUDIO-PROD-015`, through PHP and with zero production Node.js/npm | No — the current visible slice is a separate Blueprint-only model-version composer | `V2-STU-002`, `V2-STU-005` – `V2-STU-007` |
+| 12 | Studio contextual Content authoring ships and passes `STUDIO-PROD-015`, through PHP and with zero production Node.js/npm | No — the current visible slice is a separate Blueprint-only model-version composer | `V2-STU-005` – `V2-STU-007` |
 
 ## Baseline health at `7a83c295`
 
