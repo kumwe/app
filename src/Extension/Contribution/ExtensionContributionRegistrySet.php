@@ -538,7 +538,7 @@ final readonly class ExtensionContributionRegistrySet
      * then the returned SDK registrar permits behavior to attach only to its exact executable inventory.
      *
      * @param ManifestContributions $manifest Canonical signed declaration graph.
-     * @param ?TrustStore $trust Live trust boundary for preview bindings.
+     * @param ?TrustStore $trust Live trust boundary for preview and job bindings.
      * @param   ?\Kumwe\App\Extension\Application\ExtensionExecutionGate  $execution       Runtime generation fence.
      * @param   ?string                                                   $runtimeVersion  Exact signed package version.
      * @param array<string, mixed>|null $runtimeEntry Exact signed runtime-map entry.

@@ -17,6 +17,7 @@ use Kumwe\App\Extension\Contribution\CanonicalManifestInterpreter;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\Extension\Contribution\OwnedExtensionBindingRegistrar;
 use Kumwe\App\Extension\Contribution\StudioPreviewRendererContribution;
+use Kumwe\App\Extension\Runtime\TrustEnforcingJobHandler;
 use Kumwe\App\Presentation\Twig\AdministratorTwigEnvironment;
 use Kumwe\App\Presentation\Twig\RecoveryAdministratorTwigEnvironment;
 use Kumwe\Extension\Manifest\ExtensionIdentifier;
@@ -92,7 +93,13 @@ final class ExtensionBindingSurfaceTest extends TestCase
     {
         $manifest = self::generationManifest(4);
         $registries = new ExtensionContributionRegistrySet(withCore: false);
-        $registrar = $registries->activateManifest($manifest);
+        $registrar = $registries->activateManifest(
+            $manifest,
+            self::trustStore(),
+            self::executionGate(),
+            '1.0.0',
+            ['identifier' => 'kumwe/contract-manifest-four'],
+        );
 
         $registrar->domainListener(
             'kumwe.contract-manifest-four.observe-now',
@@ -114,12 +121,34 @@ final class ExtensionBindingSurfaceTest extends TestCase
         self::assertCount(1, $registries->domainListeners()->ownedBy($owner));
         self::assertCount(1, $registries->eventConsumers()->ownedBy($owner));
         self::assertCount(1, $registries->jobs()->ownedBy($owner));
+        self::assertInstanceOf(
+            TrustEnforcingJobHandler::class,
+            $registries->jobs()->implementation($owner, 'kumwe.contract-manifest-four.summarize'),
+        );
         self::assertCount(1, $registries->projections()->ownedBy($owner));
         self::assertCount(1, $registries->webhooks()->ownedBy($owner));
         self::assertCount(1, $registries->reports()->ownedBy($owner));
         self::assertCount(1, $registries->queues()->ownedBy($owner));
         self::assertCount(1, $registries->schedules()->ownedBy($owner));
         self::assertCount(1, $registries->eventSchemas()->ownedBy($owner));
+    }
+
+    /**
+     * Prove a declared job handler cannot bind without exact signed runtime provenance.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAJobHandlerWithoutRuntimeProvenanceIsRefused(): void
+    {
+        $registrar = (new ExtensionContributionRegistrySet(withCore: false))
+            ->activateManifest(self::generationManifest(4));
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('requires exact signed runtime provenance');
+
+        $registrar->jobHandler('kumwe.contract-manifest-four.summarize', self::jobHandler());
     }
 
     /**

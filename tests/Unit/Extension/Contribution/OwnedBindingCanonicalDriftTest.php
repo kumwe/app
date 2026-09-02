@@ -163,9 +163,10 @@ final class OwnedBindingCanonicalDriftTest extends TestCase
      */
     public function testAJobWithoutItsCanonicalDefinitionIsRefused(): void
     {
-        $registrar = self::registrar([
-            'integration' => ['jobs' => [['job_type' => 'acme.probe.summarize']]],
-        ]);
+        $registrar = self::registrar(
+            ['integration' => ['jobs' => [['job_type' => 'acme.probe.summarize']]]],
+            provenance: true,
+        );
 
         $this->expectException(LogicException::class);
         $this->expectExceptionMessage('job lost its canonical definition');
