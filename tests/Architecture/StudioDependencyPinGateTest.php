@@ -12,7 +12,8 @@ use PHPUnit\Framework\TestCase;
  *
  * The extracted PHP libraries and Studio packages cross a trust boundary before any of their classes run.
  * These tests exercise the dependency-free gate in both directions: the committed records pass, while
- * ranges, branches, Composer aliases, npm aliases, mutable lock references, and foreign URLs all fail.
+ * ranges, branches, Composer aliases, npm aliases, mutable lock references, foreign URLs, a runtime library
+ * declared only under require-dev, and a lock whose dist reference diverges from its source all fail.
  * Synthetic passing evidence supplies an aligned Producer release so a pin failure cannot be confused with
  * the separate three-way Studio alignment decision.
  *
@@ -207,6 +208,47 @@ final class StudioDependencyPinGateTest extends TestCase
     }
 
     /**
+     * An extracted runtime library declared only under require-dev is not a runtime pin and fails.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAnExtractedPackageOnlyInRequireDevFails(): void
+    {
+        $fixture = $this->fixture();
+        $fixture['composer']['require-dev']['kumwe/producer'] = $fixture['composer']['require']['kumwe/producer'];
+        unset($fixture['composer']['require']['kumwe/producer']);
+        $result = $this->executeFixture($fixture);
+
+        self::assertSame(1, $result['status']);
+        self::assertStringContainsString(
+            'composer.json require must directly pin extracted runtime library kumwe/producer.',
+            $result['output'],
+        );
+    }
+
+    /**
+     * composer.lock cannot download one commit while naming another as its source.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testADivergentComposerLockDistReferenceFails(): void
+    {
+        $fixture = $this->fixture();
+        $this->setComposerLockValue($fixture, 'kumwe/producer', ['dist', 'reference'], str_repeat('0', 40));
+        $result = $this->executeFixture($fixture);
+
+        self::assertSame(1, $result['status']);
+        self::assertStringContainsString(
+            'composer.lock kumwe/producer source and dist references differ.',
+            $result['output'],
+        );
+    }
+
+    /**
      * An npm range for a Studio package fails in any dependency section.
      *
      * @return  void
@@ -380,6 +422,17 @@ final class StudioDependencyPinGateTest extends TestCase
         $release = $this->decode($releasePath);
         $bytes = file_get_contents($releasePath);
         self::assertIsString($bytes);
+        $pinned = $appPin['pinned'] ?? null;
+        self::assertIsArray($pinned);
+        $provenance = [];
+        foreach ($pinned as $name => $record) {
+            self::assertIsArray($record);
+            $provenance[] = [
+                'name' => $name,
+                'version' => $record['version'] ?? null,
+                'sha256' => $record['npm_tarball_sha256'] ?? null,
+            ];
+        }
 
         return [
             'pin' => 'kumwe-producer-studio-contract',
@@ -394,6 +447,7 @@ final class StudioDependencyPinGateTest extends TestCase
             'corpus_manifest_digest' => $release['corpusManifestDigest'],
             'claimed_profiles' => $release['claimedProfiles'],
             'packages' => $release['packages'],
+            'package_provenance' => $provenance,
             'files' => [
                 ['file' => 'studio-release.json', 'sha256' => hash('sha256', $bytes)],
             ],

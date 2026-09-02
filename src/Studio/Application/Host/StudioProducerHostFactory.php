@@ -6,6 +6,7 @@ namespace Kumwe\App\Studio\Application\Host;
 
 use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\Application\Persistence\TransactionState;
 use Kumwe\App\Audit\Application\AuditRecorder;
 use Kumwe\App\Studio\Application\Media\StudioMediaHostPort;
 use Kumwe\App\Studio\Application\Media\StudioMediaOperations;
@@ -23,27 +24,29 @@ final readonly class StudioProducerHostFactory
     /**
      * Compose stable App services and request-scopable direct Producer port implementations.
      *
-     * @param  StudioHostSessionAuthority      $sessions      Canonical Studio session authority.
-     * @param  TransactionManager              $transactions  Authoritative App transaction manager.
-     * @param  StudioMutationReplayRepository  $replays       Durable keyed replay store.
-     * @param  StudioMutationOutcomeCodec      $outcomes      Authenticated outcome protection.
-     * @param  AuditRecorder                   $audit         Transactional audit sink.
-     * @param  ClockInterface                  $clock         Trusted audit and expiry clock.
-     * @param  StudioMediaOperations           $media         Complete media use case.
-     * @param  StudioArtifactHostPort          $artifact      App artifact port prototype.
-     * @param  StudioLocalizationHostPort      $localization  App localization port prototype.
-     * @param  StudioMediaHostPort             $mediaPort     App media port prototype.
-     * @param  StudioModelHostPort             $model         App model port prototype.
-     * @param  StudioPreviewHostPort           $preview       App preview port prototype.
-     * @param  StudioRecoveryHostPort          $recovery      App recovery port prototype.
-     * @param  StudioResourceHostPort          $resource      App resource port prototype.
-     * @param  StudioTelemetryHostPort         $telemetry     App telemetry port prototype.
+     * @param  StudioHostSessionAuthority      $sessions          Canonical Studio session authority.
+     * @param  TransactionManager              $transactions      Authoritative App transaction manager.
+     * @param  TransactionState                $transactionState  Live connection transaction state.
+     * @param  StudioMutationReplayRepository  $replays           Durable keyed replay store.
+     * @param  StudioMutationOutcomeCodec      $outcomes          Authenticated outcome protection.
+     * @param  AuditRecorder                   $audit             Transactional audit sink.
+     * @param  ClockInterface                  $clock             Trusted audit and expiry clock.
+     * @param  StudioMediaOperations           $media             Complete media use case.
+     * @param  StudioArtifactHostPort          $artifact          App artifact port prototype.
+     * @param  StudioLocalizationHostPort      $localization      App localization port prototype.
+     * @param  StudioMediaHostPort             $mediaPort         App media port prototype.
+     * @param  StudioModelHostPort             $model             App model port prototype.
+     * @param  StudioPreviewHostPort           $preview           App preview port prototype.
+     * @param  StudioRecoveryHostPort          $recovery          App recovery port prototype.
+     * @param  StudioResourceHostPort          $resource          App resource port prototype.
+     * @param  StudioTelemetryHostPort         $telemetry         App telemetry port prototype.
      *
      * @since  2.0.0
      */
     public function __construct(
         private StudioHostSessionAuthority $sessions,
         private TransactionManager $transactions,
+        private TransactionState $transactionState,
         private StudioMutationReplayRepository $replays,
         private StudioMutationOutcomeCodec $outcomes,
         private AuditRecorder $audit,
@@ -81,6 +84,7 @@ final readonly class StudioProducerHostFactory
         );
         $mutations = new StudioProducerMutationBoundary(
             $this->transactions,
+            $this->transactionState,
             $this->replays,
             $this->outcomes,
             $this->audit,

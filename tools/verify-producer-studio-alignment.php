@@ -7,8 +7,11 @@
  * corpus: an exact Producer release can itself be pinned to a different Studio release. This verifier
  * compares the two independently published evidence chains. Producer must name a coordinated release,
  * carry the same release-record bytes and hash, and repeat the protocol version, corpus digest, package
- * family, and claimed profiles that App verifies. No remapping or compatibility interpretation occurs;
- * disagreement is a hard failure that must be corrected and released in Producer.
+ * family, and claimed profiles that App verifies. It then closes the chain on bytes: every package App
+ * pins must carry the npm tarball SHA-256 that Producer's package provenance records for the same
+ * version, so the browser build and the PHP authority cannot consume two different publications of one
+ * coordinate. No remapping or compatibility interpretation occurs; disagreement is a hard failure that
+ * must be corrected and released in Producer.
  *
  * Usage:
  *
@@ -69,6 +72,11 @@ function verifyProducerStudioAlignment(array $paths): int
         $errors,
     );
     $appPinnedPackages = producerAlignmentPinnedPackageMap($appPin['pinned'] ?? null, $errors);
+    $appTarballDigests = producerAlignmentPinnedTarballDigests($appPin['pinned'] ?? null, $errors);
+    $producerTarballDigests = producerAlignmentProvenanceDigests(
+        $producerPin['package_provenance'] ?? null,
+        $errors,
+    );
 
     $appReleaseHash = hash('sha256', $appReleaseEvidence['bytes']);
     $producerReleaseHash = hash('sha256', $producerReleaseEvidence['bytes']);
@@ -135,6 +143,9 @@ function verifyProducerStudioAlignment(array $paths): int
         $errors,
     );
     producerAlignmentSame($producerPackages, $appPackages, 'Producer package family', $errors);
+    if ($appTarballDigests !== null && $producerTarballDigests !== null) {
+        verifyProducerTarballDigests($appTarballDigests, $producerTarballDigests, $errors);
+    }
     producerAlignmentSame(
         $producerReleaseEvidence['bytes'],
         $appReleaseEvidence['bytes'],
@@ -152,10 +163,12 @@ function verifyProducerStudioAlignment(array $paths): int
     fwrite(
         STDOUT,
         sprintf(
-            "Producer/Studio alignment verified: release %s, protocol %s, %d package(s), %d profile(s).\n",
+            "Producer/Studio alignment verified: release %s, protocol %s, %d package(s), %d tarball digest(s), "
+            . "%d profile(s).\n",
             $appReleaseName,
             $protocolVersion,
             count($appPackages ?? []),
+            count($appTarballDigests ?? []),
             count($claimedProfiles ?? []),
         ),
     );
@@ -282,6 +295,149 @@ function producerAlignmentPinnedPackageMap(mixed $value, array &$errors): ?array
     ksort($packages, SORT_STRING);
 
     return $packages;
+}
+
+/**
+ * Read App PIN's per-package npm tarball digests, refusing any package that does not bind its bytes.
+ *
+ * Shape failures of the `pinned` object itself are reported once by the package-map reader; this reader
+ * adds only the digest requirement so one malformed record does not produce two diagnostics.
+ *
+ * @param   mixed         $value   App PIN `pinned` object.
+ * @param   list<string>  $errors  Accumulated failures.
+ *
+ * @return  array<string, array{version: string, sha256: string}>|null  Sorted digests by package, or null
+ *          after failure.
+ *
+ * @since   2.0.0
+ */
+function producerAlignmentPinnedTarballDigests(mixed $value, array &$errors): ?array
+{
+    if (!is_array($value) || array_is_list($value) || $value === []) {
+        return null;
+    }
+    $digests = [];
+    foreach ($value as $name => $record) {
+        $version = is_array($record) ? ($record['version'] ?? null) : null;
+        if (!is_string($name) || !is_string($version)) {
+            return null;
+        }
+        $digest = $record['npm_tarball_sha256'] ?? null;
+        if (!producerAlignmentSha256($digest)) {
+            $errors[] = sprintf(
+                'App PIN package %s must carry a lowercase hexadecimal npm_tarball_sha256, got %s.',
+                $name,
+                producerAlignmentPrintable($digest),
+            );
+
+            return null;
+        }
+        $digests[$name] = ['version' => $version, 'sha256' => $digest];
+    }
+    ksort($digests, SORT_STRING);
+
+    return $digests;
+}
+
+/**
+ * Read Producer's per-package npm provenance digests, refusing malformed or repeated records.
+ *
+ * @param   mixed         $value   Producer PIN `package_provenance` list.
+ * @param   list<string>  $errors  Accumulated failures.
+ *
+ * @return  array<string, array{version: string, sha256: string}>|null  Sorted digests by package, or null
+ *          after failure.
+ *
+ * @since   2.0.0
+ */
+function producerAlignmentProvenanceDigests(mixed $value, array &$errors): ?array
+{
+    if (!is_array($value) || !array_is_list($value)) {
+        $errors[] = 'Producer PIN package_provenance must be an array.';
+
+        return null;
+    }
+    $digests = [];
+    foreach ($value as $entry) {
+        $name = is_array($entry) ? ($entry['name'] ?? null) : null;
+        $version = is_array($entry) ? ($entry['version'] ?? null) : null;
+        $digest = is_array($entry) ? ($entry['sha256'] ?? null) : null;
+        if (
+            !is_string($name)
+            || $name === ''
+            || !is_string($version)
+            || $version === ''
+            || !producerAlignmentSha256($digest)
+        ) {
+            $errors[] = 'Every Producer package provenance record must carry a name, a version, and a lowercase '
+                . 'hexadecimal sha256.';
+
+            return null;
+        }
+        if (isset($digests[$name])) {
+            $errors[] = sprintf('Producer PIN package_provenance repeats %s.', $name);
+
+            return null;
+        }
+        $digests[$name] = ['version' => $version, 'sha256' => $digest];
+    }
+    ksort($digests, SORT_STRING);
+
+    return $digests;
+}
+
+/**
+ * Decide whether a value is one lowercase hexadecimal SHA-256 digest.
+ *
+ * @param   mixed  $value  Decoded value.
+ *
+ * @return  bool  True only for a 64-character lowercase hexadecimal string.
+ *
+ * @since   2.0.0
+ */
+function producerAlignmentSha256(mixed $value): bool
+{
+    return is_string($value) && preg_match('/^[a-f0-9]{64}$/D', $value) === 1;
+}
+
+/**
+ * Require Producer to record the same npm tarball bytes App pins for every package of the release.
+ *
+ * A package App pins without a Producer provenance record, a provenance record at another version, or a
+ * differing digest each fail: the tarball App builds its browser from must be the publication Producer
+ * proved.
+ *
+ * @param   array<string, array{version: string, sha256: string}>  $appDigests       App PIN digests.
+ * @param   array<string, array{version: string, sha256: string}>  $producerDigests  Producer digests.
+ * @param   list<string>                                            $errors           Accumulated failures.
+ *
+ * @return  void
+ *
+ * @since   2.0.0
+ */
+function verifyProducerTarballDigests(array $appDigests, array $producerDigests, array &$errors): void
+{
+    foreach ($appDigests as $name => $pinned) {
+        $provenance = $producerDigests[$name] ?? null;
+        if ($provenance === null) {
+            $errors[] = sprintf('Producer package provenance is missing for %s.', $name);
+            continue;
+        }
+        producerAlignmentSame(
+            $provenance['version'],
+            $pinned['version'],
+            sprintf('Producer package provenance version for %s', $name),
+            $errors,
+        );
+        if (!hash_equals($pinned['sha256'], $provenance['sha256'])) {
+            $errors[] = sprintf(
+                'Producer npm tarball SHA-256 for %s differs: expected %s, got %s.',
+                $name,
+                $pinned['sha256'],
+                $provenance['sha256'],
+            );
+        }
+    }
 }
 
 /**

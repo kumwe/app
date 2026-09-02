@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Studio\Application\Host;
 
 use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\Application\Persistence\TransactionState;
 use Kumwe\App\Audit\Application\AuditRecorder;
 use Kumwe\App\Audit\Domain\AuditEvent;
 use Kumwe\App\Studio\Application\Media\StudioMediaOperations;
@@ -23,6 +24,12 @@ use stdClass;
 /**
  * App-owned atomic transaction, audit and protected replay boundary for every Producer mutation.
  *
+ * The boundary assumes it is the outermost transaction of its request, and asserts it. Replay-race
+ * recovery relies on the statement that lost a unique-index race having been rolled back before
+ * `findReplay()` re-reads the winning claim; inside an enclosing transaction PostgreSQL instead leaves the
+ * whole transaction aborted and the recovery lookup fails. `execute()` therefore refuses to start while any
+ * transaction is already active rather than joining it the way ordinary `TransactionManager` nesting would.
+ *
  * @since  2.0.0
  */
 final readonly class StudioProducerMutationBoundary implements MutationBoundaryInterface
@@ -30,18 +37,20 @@ final readonly class StudioProducerMutationBoundary implements MutationBoundaryI
     /**
      * Compose one request-scoped boundary from App transaction, persistence and authority services.
      *
-     * @param  TransactionManager              $transactions  Authoritative nesting transaction manager.
-     * @param  StudioMutationReplayRepository  $replays       Durable keyed mutation claim store.
-     * @param  StudioMutationOutcomeCodec      $outcomes      Authenticated logical-outcome protection.
-     * @param  AuditRecorder                   $audit         Transactional disclosure-safe audit sink.
-     * @param  ClockInterface                  $clock         Trusted audit-event clock.
-     * @param  StudioMediaOperations           $media         Upload-grant redaction rehydration authority.
-     * @param  StudioProducerRequestAuthority  $authority     Trusted evidence for this exact dispatch.
+     * @param  TransactionManager              $transactions      Authoritative nesting transaction manager.
+     * @param  TransactionState                $transactionState  Live connection state proving no scope is open.
+     * @param  StudioMutationReplayRepository  $replays           Durable keyed mutation claim store.
+     * @param  StudioMutationOutcomeCodec      $outcomes          Authenticated logical-outcome protection.
+     * @param  AuditRecorder                   $audit             Transactional disclosure-safe audit sink.
+     * @param  ClockInterface                  $clock             Trusted audit-event clock.
+     * @param  StudioMediaOperations           $media             Upload-grant redaction rehydration authority.
+     * @param  StudioProducerRequestAuthority  $authority         Trusted evidence for this exact dispatch.
      *
      * @since  2.0.0
      */
     public function __construct(
         private TransactionManager $transactions,
+        private TransactionState $transactionState,
         private StudioMutationReplayRepository $replays,
         private StudioMutationOutcomeCodec $outcomes,
         private AuditRecorder $audit,
@@ -53,6 +62,10 @@ final readonly class StudioProducerMutationBoundary implements MutationBoundaryI
 
     /**
      * Commit one mutation and its audit, adding protected at-most-once replay only when Producer supplies a key.
+     *
+     * A call made while a transaction is already open is refused before any authority snapshot, lookup
+     * or mutation runs: nesting would silently disable replay-race recovery, so it is a host composition
+     * error rather than a scope to join.
      *
      * @param   Operation                           $operation     Closed Producer registry row.
      * @param   RequestEnvelope                     $request       Validated canonical request.
@@ -71,6 +84,9 @@ final readonly class StudioProducerMutationBoundary implements MutationBoundaryI
         ?string $intentDigest,
         callable $mutation,
     ): MutationOutcome {
+        if ($this->transactionState->isActive()) {
+            StudioProducerError::refuse('internal', 'studio.host/mutation-boundary-nested');
+        }
         if (($scopeKey === null) !== ($intentDigest === null)) {
             StudioProducerError::refuse('internal', 'studio.host/mutation-coordinate-invalid');
         }

@@ -54,6 +54,7 @@ use Kumwe\App\Application\Authorization\StructuredLogAuthorizationDecisionRecord
 use Kumwe\App\Application\Authorization\SystemIdentity;
 use Kumwe\App\Application\Authorization\SystemPrincipal;
 use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\App\Application\Persistence\TransactionState;
 use Kumwe\App\Application\Presentation\Preference\PresentationAccessGroupRepository;
 use Kumwe\App\Application\Security\HighImpactCredentialGuard;
 use Kumwe\App\Application\Operations\ExpiredMigrationLockRecovery;
@@ -617,6 +618,7 @@ use Kumwe\App\Infrastructure\Persistence\DoctrineConnectionFactory;
 use Kumwe\App\Infrastructure\Persistence\DoctrineIdempotencyLedger;
 use Kumwe\App\Infrastructure\Persistence\DoctrineSecretOnceIdempotencyLedger;
 use Kumwe\App\Infrastructure\Persistence\DoctrineTransactionManager;
+use Kumwe\App\Infrastructure\Persistence\DoctrineTransactionState;
 use Kumwe\App\Infrastructure\Persistence\Migration\MigrationLock;
 use Kumwe\App\Infrastructure\Persistence\Migration\MigrationPlan;
 use Kumwe\App\Infrastructure\Persistence\Migration\MigrationRepository;
@@ -1171,6 +1173,8 @@ final class ContainerFactory
         ), true);
         $container->share(TransactionManager::class, static fn (Container $container): TransactionManager =>
             new DoctrineTransactionManager(self::service($container, Connection::class)), true);
+        $container->share(TransactionState::class, static fn (Container $container): TransactionState =>
+            new DoctrineTransactionState(self::service($container, Connection::class)), true);
         $redisConfiguration = $configuration->redis;
         $container->share(Redis::class, static fn (): Redis =>
             (new RedisConnectionFactory($redisConfiguration))->create(), true);
@@ -2043,6 +2047,7 @@ final class ContainerFactory
         ): StudioProducerHostFactory => new StudioProducerHostFactory(
             self::service($container, StudioHostSessionAuthority::class),
             self::service($container, TransactionManager::class),
+            self::service($container, TransactionState::class),
             self::service($container, StudioMutationReplayRepository::class),
             self::service($container, StudioMutationOutcomeCodec::class),
             self::service($container, AuditRecorder::class),

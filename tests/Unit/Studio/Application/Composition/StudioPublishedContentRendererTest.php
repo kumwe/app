@@ -13,9 +13,11 @@ use Kumwe\App\Content\Domain\ContentEntry;
 use Kumwe\App\Content\Domain\ContentStatus;
 use Kumwe\App\Content\Domain\ContentTypeDefinition;
 use Kumwe\App\Content\Domain\JsonSchemaValidator;
+use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\Extension\Contribution\StudioPreviewRendererContribution;
 use Kumwe\App\Extension\Runtime\ActiveExtensionSet;
+use Kumwe\App\Extension\Runtime\TrustEnforcingStudioPreviewBlockRenderer;
 use Kumwe\App\Presentation\Application\SitePresentation;
 use Kumwe\App\Site\Application\SiteSettings;
 use Kumwe\App\Studio\Application\Composition\CanonicalStudioPublishedContentRenderer;
@@ -53,6 +55,7 @@ use Kumwe\Producer\Render\RenderResult;
 use Kumwe\Producer\Render\RenderState;
 use Kumwe\Producer\Schema\StudioDocumentSchemaRegistry;
 use Kumwe\App\Studio\Domain\Projection\ContentBlueprintBinding;
+use Kumwe\App\Tests\Support\TrustFencedStudioPreviewRenderers;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
@@ -74,8 +77,12 @@ use stdClass;
 #[UsesClass(ContentStudioProjector::class)]
 #[UsesClass(StudioBlockRendererRuntime::class)]
 #[UsesClass(StudioContentFieldBlockRenderer::class)]
+#[UsesClass(TrustEnforcingStudioPreviewBlockRenderer::class)]
+#[UsesClass(TrustStore::class)]
 final class StudioPublishedContentRendererTest extends TestCase
 {
+    use TrustFencedStudioPreviewRenderers;
+
     /**
      * Stable Content type used by every exact binding fixture.
      *
@@ -837,7 +844,9 @@ final class StudioPublishedContentRendererTest extends TestCase
         $registries->studioPreviewRenderers()->register(
             $owner,
             new StudioPreviewRendererContribution($owner, '1.0.0', $document, $binding),
-            $renderer,
+            $renderer instanceof StudioPreviewBlockRenderer
+                ? self::trustFencedPreviewRenderer($renderer, 'kumwe/contract-manifest-six')
+                : $renderer,
         );
 
         return [$registries, $owner];

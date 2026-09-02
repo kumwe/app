@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Unit\Studio\Application\Rendering;
 
+use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\Extension\Runtime\TrustEnforcingStudioPreviewBlockRenderer;
 use Kumwe\App\Studio\Application\Rendering\FragmentStudioPreviewBlockRenderer;
 use Kumwe\App\Studio\Application\Rendering\StudioBlockRendererRuntime;
 use Kumwe\App\Studio\Application\Rendering\StudioContentFieldBlockRenderer;
@@ -30,6 +32,7 @@ use Kumwe\Producer\Render\RenderException;
 use Kumwe\Producer\Render\RenderResult;
 use Kumwe\Producer\Render\RenderState;
 use Kumwe\Producer\Schema\StudioContractResources;
+use Kumwe\App\Tests\Support\TrustFencedStudioPreviewRenderers;
 use Kumwe\Extension\Spi\Contribution\ContributionDefinition;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
@@ -44,6 +47,8 @@ use stdClass;
 #[CoversClass(StudioContentFieldBlockRenderer::class)]
 #[CoversClass(StudioRenderResultAdmission::class)]
 #[UsesClass(ExtensionContributionRegistrySet::class)]
+#[UsesClass(TrustEnforcingStudioPreviewBlockRenderer::class)]
+#[UsesClass(TrustStore::class)]
 /**
  * Proves registry composition binds core coordinates directly and fences extension implementations.
  *
@@ -51,6 +56,8 @@ use stdClass;
  */
 final class StudioBlockRendererRuntimeTest extends TestCase
 {
+    use TrustFencedStudioPreviewRenderers;
+
     /**
      * Prove core coordinates resolve directly and the full Producer output stays escaped and complete.
      *
@@ -255,6 +262,97 @@ final class StudioBlockRendererRuntimeTest extends TestCase
     }
 
     /**
+     * Prove an extension executable outside the live trust fence refuses the decision before it can render.
+     *
+     * The registrar always installs `TrustEnforcingStudioPreviewBlockRenderer`, so a bare SDK
+     * implementation under an extension owner can only mean the fence was bypassed. The runtime must
+     * not skip such an entry quietly, and must not consult it: the whole registry decision fails and the
+     * implementation is never invoked.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAnUnfencedExtensionImplementationIsRefusedBeforeItCanRender(): void
+    {
+        $unfenced = new class implements StudioPreviewBlockRenderer {
+            /**
+             * Number of times the host asked this implementation to render.
+             *
+             * @var    int
+             * @since  2.0.0
+             */
+            public int $renders = 0;
+
+            /**
+             * Count the invocation so the test can prove the runtime never reached it.
+             *
+             * @param   StudioPreviewBlock          $block     Immutable copied contributed grid input.
+             * @param   StudioPreviewBindingResult  $binding   Authorized binding projection.
+             * @param   string                      $viewport  Active semantic viewport.
+             *
+             * @return  StudioPreviewBlockFragment  Constant fixture fragment.
+             *
+             * @since   2.0.0
+             */
+            public function render(
+                StudioPreviewBlock $block,
+                StudioPreviewBindingResult $binding,
+                string $viewport,
+            ): StudioPreviewBlockFragment {
+                unset($block, $binding, $viewport);
+                $this->renders++;
+
+                return new StudioPreviewBlockFragment('div', 'acme-shop-grid', '');
+            }
+        };
+        [$registries, $coordinate] = self::extensionRuntime($unfenced, fenced: false);
+        $runtime = new StudioBlockRendererRuntime($registries, new StudioContentFieldBlockRenderer());
+
+        try {
+            $runtime->registry();
+            self::fail('An extension implementation outside the trust fence must refuse the registry decision.');
+        } catch (RenderException $refusal) {
+            self::assertSame(
+                'An extension preview renderer is not fenced by live host trust.',
+                $refusal->getMessage(),
+            );
+        }
+        try {
+            $runtime->registry('compact')->supports($coordinate);
+            self::fail('A viewport-specific registry decision must refuse the same unfenced implementation.');
+        } catch (RenderException) {
+        }
+
+        self::assertSame(0, $unfenced->renders);
+    }
+
+    /**
+     * Prove the fenced implementation is refused only for extension owners, never for core-owned entries.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testCoreOwnedEntriesKeepTheirDirectPathWithoutTheExtensionFence(): void
+    {
+        $registries = new ExtensionContributionRegistrySet();
+        $runtime = new StudioBlockRendererRuntime($registries, new StudioContentFieldBlockRenderer());
+        $registry = $runtime->registry();
+
+        self::assertTrue($registry->supports(new BlockCoordinate('core/field-text', '1.0.0', 'core-block-r1')));
+        self::assertTrue($registry->supports(new BlockCoordinate(
+            'studio.core/section',
+            '1.0.0',
+            'layout-section-r1',
+        )));
+        self::assertNotInstanceOf(
+            FragmentStudioPreviewBlockRenderer::class,
+            $registry->rendererFor(new BlockCoordinate('core/field-text', '1.0.0', 'core-block-r1')),
+        );
+    }
+
+    /**
      * Prove one ambiguous trusted extension coordinate refuses the whole registry decision.
      *
      * @return  void
@@ -427,14 +525,19 @@ final class StudioBlockRendererRuntimeTest extends TestCase
     /**
      * Register one signed extension block with a contributed executable for its preview renderer.
      *
+     * An SDK implementation is registered behind the exact production trust fence unless a test asks
+     * for the bare implementation to prove the runtime refuses it; any other object is registered as-is
+     * so registration itself can be proven to refuse it.
+     *
      * @param   ?object  $renderer  Implementation to register; defaults to a bounded SDK fixture.
+     * @param   bool     $fenced    Whether an SDK implementation is wrapped in live trust enforcement.
      *
      * @return  array{ExtensionContributionRegistrySet, BlockCoordinate, object}  Registries, the
      *          exact block coordinate, and the registered implementation.
      *
      * @since   2.0.0
      */
-    private static function extensionRuntime(?object $renderer = null): array
+    private static function extensionRuntime(?object $renderer = null, bool $fenced = true): array
     {
         $document = json_decode(
             StudioContractResources::testkitBytes('fixtures/block.grid.example.json'),
@@ -489,6 +592,9 @@ final class StudioBlockRendererRuntimeTest extends TestCase
                 return new StudioPreviewBlockFragment('div', 'acme-shop-grid', '');
             }
         };
+        if ($fenced && $renderer instanceof StudioPreviewBlockRenderer) {
+            $renderer = self::trustFencedPreviewRenderer($renderer, 'acme/shop');
+        }
         $registries = new ExtensionContributionRegistrySet(withCore: false);
         $registries->canonicalCompositionDocuments()->register($owner, $canonical);
         $registries->compositionHostBindings()->register($owner, $binding);

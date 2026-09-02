@@ -11,8 +11,9 @@ use PHPUnit\Framework\TestCase;
  * Proves App refuses an exact Producer release that implements a different Studio coordinate.
  *
  * Producer and App publish their evidence independently, so equality is tested rather than assumed from
- * the Composer pin. The accepted fixture agrees on release bytes, protocol, corpus, packages, and profiles;
- * each negative case changes one coordinate and requires a hard failure with no compatibility translation.
+ * the Composer pin. The accepted fixture agrees on release bytes, protocol, corpus, packages, per-package
+ * npm tarball digests, and profiles; each negative case changes one coordinate and requires a hard failure
+ * with no compatibility translation.
  *
  * @since   2.0.0
  */
@@ -146,6 +147,46 @@ final class ProducerStudioAlignmentGateTest extends TestCase
     }
 
     /**
+     * Producer cannot record different npm tarball bytes for a package App pins at the same version.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAProducerTarballDigestMismatchFails(): void
+    {
+        $documents = $this->documents();
+        $documents['producer_pin']['package_provenance'][0]['sha256'] = str_repeat('d2', 32);
+        $result = $this->executeDocuments($documents);
+
+        self::assertSame(1, $result['status']);
+        self::assertStringContainsString(
+            'Producer npm tarball SHA-256 for @kumwe/studio differs',
+            $result['output'],
+        );
+    }
+
+    /**
+     * Producer cannot omit the provenance record for a package App pins.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testMissingProducerPackageProvenanceFails(): void
+    {
+        $documents = $this->documents();
+        $documents['producer_pin']['package_provenance'] = [];
+        $result = $this->executeDocuments($documents);
+
+        self::assertSame(1, $result['status']);
+        self::assertStringContainsString(
+            'Producer package provenance is missing for @kumwe/studio.',
+            $result['output'],
+        );
+    }
+
+    /**
      * Build a minimal but complete pair of independently published Studio evidence records.
      *
      * @return  array{app_pin: array<string, mixed>, app_release: array<string, mixed>,
@@ -171,11 +212,12 @@ final class ProducerStudioAlignmentGateTest extends TestCase
             'file' => 'studio-release.json',
             'sha256' => $releaseHash,
         ];
+        $tarball = str_repeat('c1', 32);
 
         return [
             'app_pin' => [
                 'release_record' => $releaseRecord,
-                'pinned' => ['@kumwe/studio' => ['version' => '0.1.0-rc.1']],
+                'pinned' => ['@kumwe/studio' => ['version' => '0.1.0-rc.1', 'npm_tarball_sha256' => $tarball]],
             ],
             'app_release' => $release,
             'producer_pin' => [
@@ -191,6 +233,9 @@ final class ProducerStudioAlignmentGateTest extends TestCase
                 'corpus_manifest_digest' => $release['corpusManifestDigest'],
                 'claimed_profiles' => $release['claimedProfiles'],
                 'packages' => $release['packages'],
+                'package_provenance' => [
+                    ['name' => '@kumwe/studio', 'version' => '0.1.0-rc.1', 'sha256' => $tarball],
+                ],
                 'files' => [['file' => 'studio-release.json', 'sha256' => $releaseHash]],
             ],
             'producer_release' => $release,
