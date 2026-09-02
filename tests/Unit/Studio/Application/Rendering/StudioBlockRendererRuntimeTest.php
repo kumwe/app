@@ -115,7 +115,7 @@ final class StudioBlockRendererRuntimeTest extends TestCase
         );
 
         self::assertStringContainsString('data-studio-block="section"', $result->html);
-        self::assertStringContainsString('data-studio-layout="section"', $result->html);
+        self::assertStringContainsString('class="studio-preview-section"', $result->html);
         self::assertStringContainsString('&lt;Current&gt;', $result->html);
         self::assertStringNotContainsString('<Current>', $result->html);
         self::assertNotSame('', $result->css);
