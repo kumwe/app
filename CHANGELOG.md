@@ -33,22 +33,33 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Added
 
+- **2026-09-02 — The Core Growth gate completes `NRM-2026-001`: App production growth is recorded and
+  duplicates no installed Kumwe package.** `composer kumwe:core-growth-check` scans every class-like under
+  `src/`, classifies it through `docs/architecture/layers.json` by the same first-segment rule the dependency
+  gate enforces, digests its public surface and compares the inventory with
+  `docs/architecture/governance/core-growth-baseline.json`, the capability index, the migration ledger and the
+  Core Growth Records. It refuses a stale capability index or baseline, a duplicate FQCN or service owner, a
+  reintroduced extracted namespace or removed App symbol, a likely duplicate responsibility of a package
+  symbol, new or widened shared, domain or application growth without an approved
+  `docs/architecture/core-growth/KUMWE-CGR-YYYY-NNN.md`, unrecorded host-layer adapters and composition, a
+  reference to a retired namespace, and a broken record. `composer kumwe:core-growth-record` re-derives the
+  baseline and refuses to record a violation. The bootstrap snapshot records the 1,413 existing production
+  symbols with no growth claim; the check joins `composer qa`, the quality contract and both CI record steps.
+  No runtime behaviour changes. (#131)
 - **2026-09-02 — The library-first Core policy is executable: `NRM-2026-001` bootstraps App governance.**
   `AGENTS.md` now carries the policy verbatim and the Capability Reuse Review an agent runs before writing
   anything reusable. The capability index, `docs/architecture/capability-index.md`, is generated from
-  `composer.lock` and the installed Kumwe packages' CHARTER, README, public-api, capabilities and service-map
-  manifests — today three legacy-unmanifested transitional entries, `kumwe/conversion`, `kumwe/extension-sdk`
-  and `kumwe/producer`, which cannot satisfy a migration release gate — and
-  `composer kumwe:capability-index-check` refuses a stale index or digest. The Core Growth gate,
-  `composer kumwe:core-growth-check`, refuses duplicate FQCN, capability and service ownership, a reintroduced
-  extracted namespace or removed App symbol, and unrecorded portable growth without an approved Core Growth
-  Record; host-layer adapters and composition are recorded as evidence in
-  `docs/architecture/governance/core-growth-baseline.json`. Every governance record — capability index, Core
-  Growth Record, migration ledger, change set, non-roadmap record, conflict ledger, integration train, Engine
-  candidate attestation, release attestation, verified-legacy release, migration handoff and the three
-  package manifests — has a versioned JSON Schema and a validated example under
-  `docs/architecture/governance/`, and `.github/pull_request_template.md` requires the reuse evidence a
-  reviewer can reproduce without chat history. No runtime behaviour changes. (#130)
+  `composer.lock` and the installed Kumwe packages' manifests — today three legacy-unmanifested transitional
+  entries, `kumwe/conversion`, `kumwe/extension-sdk` and `kumwe/producer`, which cannot satisfy a migration
+  release gate — reads only what a release archive ships so a git checkout and a dist zipball of one lock
+  agree, and `composer kumwe:capability-index-check` refuses a stale index or digest. Every governance record
+  — capability index, Core Growth Record, migration ledger, change set, non-roadmap record, conflict ledger,
+  integration train, Engine candidate attestation, release attestation, verified-legacy release, migration
+  handoff and the three package manifests — has a versioned JSON Schema and a validated example under
+  `docs/architecture/governance/`, the dependency-free classes under `tools/Governance/` read them, and
+  `.github/pull_request_template.md` requires the reuse evidence a reviewer can reproduce without chat
+  history. The Core Growth gate those documents describe followed in its own pull request. No runtime
+  behaviour changes. (#130)
 - **2026-09-02 — Contributed job handlers run behind the same per-call trust and boot-generation fence as
   extension routes and Studio preview renderers.** A job implementation is bound once while the runtime
   loads and then executed by the worker for as long as the process lives, so the worker alone could not

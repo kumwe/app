@@ -65,6 +65,7 @@ jobs:
           composer studio:corpus
           composer studio:dependencies
           composer kumwe:capability-index-check
+          composer kumwe:core-growth-check
 
       - name: Verify documentation records
         run: |
@@ -398,6 +399,7 @@ jobs:
           composer studio:corpus
           composer studio:dependencies
           composer kumwe:capability-index-check
+          composer kumwe:core-growth-check
 
       - name: Verify the interface programme and the roadmap ledger
         run: |
