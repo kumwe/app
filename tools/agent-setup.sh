@@ -137,8 +137,24 @@ seed_distonly_composer_cache() {
 }
 
 say "Composer dependencies"
-if [ -f vendor/autoload.php ]; then
-    note "vendor/ already present; skipping install."
+# An environment snapshot may carry a vendor/ tree built from an older composer.lock, so
+# presence alone proves nothing: after the library adoption such a tree lacked the service
+# manager and the kumwe libraries, and every bin/kumwe command failed before the first test.
+# Composer's dry run says whether the installed set matches the lock without touching the
+# network when it does; only a matching tree skips the install.
+VENDOR_CURRENT=no
+if [ -f vendor/autoload.php ] && [ "$PHP_VERSION" != "none" ]; then
+    if composer install --no-interaction --no-progress --prefer-dist --dry-run $PLATFORM_FLAG 2>&1 \
+        | grep -q 'Nothing to install, update or remove'; then
+        VENDOR_CURRENT=yes
+    else
+        note "vendor/ is present but does not match composer.lock; reinstalling."
+    fi
+elif [ -f vendor/autoload.php ]; then
+    VENDOR_CURRENT=yes
+fi
+if [ "$VENDOR_CURRENT" = yes ]; then
+    note "vendor/ matches composer.lock; skipping install."
     TIER1=yes
 elif [ "$PHP_VERSION" != "none" ]; then
     if composer install --no-interaction --no-progress --prefer-dist $PLATFORM_FLAG >/tmp/agent-setup-composer.log 2>&1; then

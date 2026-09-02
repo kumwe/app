@@ -20,6 +20,15 @@ schema and its migration ledger established by the new baseline. Do not copy the
 historical checksum exceptions. There is intentionally no legacy namespace loader, alias, remapping layer,
 or dual App/SDK contract ownership.
 
+## Configuration vocabulary
+
+A variable's accepted values may be reduced as a control is simplified, but the spellings an earlier
+`.env.example` or `compose.production.yaml` shipped keep reading. `EXTENSIONS_CONFORMANCE_ADMISSION`
+accepted `enforce`, `warn` and `off` before its model was reduced to `scan` and `off`; `enforce` and
+`warn` both select `scan`, so an installation configured from the earlier example boots unchanged.
+Update the value to `scan` at the next convenient edit. A spelling that was never documented still
+stops the boot, because a typo must not silently select a default.
+
 ## Procedure
 
 1. Read the release notes and [verify](release-verification.md) checksums, signatures, provenance, SBOMs, and image digests.

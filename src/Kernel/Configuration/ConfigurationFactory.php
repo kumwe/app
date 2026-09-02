@@ -26,6 +26,24 @@ use ValueError;
 final class ConfigurationFactory
 {
     /**
+     * Admission spellings shipped before the mode set was reduced to `scan` and `off`, by the mode that
+     * keeps their meaning.
+     *
+     * `enforce` and `warn` both ran the install-time scan and differed only in whether an authoring
+     * finding refused the install or merely recorded it. Mandatory package evidence now fails closed in
+     * every mode and authoring findings are always advisory, so both select `Scan`. A `.env` written
+     * from the example that carried `enforce` as its default therefore keeps booting, and keeps the
+     * fuller posture, instead of stopping every command at configuration time.
+     *
+     * @var    array<string, PackageConformanceMode>
+     * @since  2.0.0
+     */
+    private const array LEGACY_CONFORMANCE_ADMISSION = [
+        'enforce' => PackageConformanceMode::Scan,
+        'warn' => PackageConformanceMode::Scan,
+    ];
+
+    /**
      * Assemble the application, database, and Redis configuration from the supplied environment.
      *
      * Defaults are resolved before validation, so an unset variable yields the documented fallback
@@ -117,24 +135,30 @@ final class ConfigurationFactory
      * Resolve how install-time admission treats the static conformance scan of packaged code.
      *
      * Omitting the variable selects `Scan`, so an installation that says nothing collects advisory
-     * authoring observations as well as mandatory evidence. An unknown spelling is a configuration
-     * error rather than a silent fall back to the default.
+     * authoring observations as well as mandatory evidence. The spellings the variable accepted before
+     * the mode set was reduced, `enforce` and `warn`, select `Scan` as well, so an existing `.env` keeps
+     * booting. Any other spelling is a configuration error rather than a silent fall back to the default.
      *
      * @param   Environment  $environment  Allow-listed variables resolved from the process and dotenv file.
      *
      * @return  PackageConformanceMode  The selected admission posture.
      *
-     * @throws  InvalidArgumentException  When the variable names no supported mode.
+     * @throws  InvalidArgumentException  When the variable names no supported or previously supported mode.
      *
      * @since   2.0.0
      */
     private function packageConformanceAdmission(Environment $environment): PackageConformanceMode
     {
-        $mode = $environment->string('EXTENSIONS_CONFORMANCE_ADMISSION', PackageConformanceMode::Scan->value);
+        $mode = strtolower(trim(
+            $environment->string('EXTENSIONS_CONFORMANCE_ADMISSION', PackageConformanceMode::Scan->value),
+        ));
 
-        return PackageConformanceMode::tryFrom(strtolower($mode)) ?? throw new InvalidArgumentException(
-            'EXTENSIONS_CONFORMANCE_ADMISSION must be scan or off.',
-        );
+        return PackageConformanceMode::tryFrom($mode)
+            ?? self::LEGACY_CONFORMANCE_ADMISSION[$mode]
+            ?? throw new InvalidArgumentException(
+                'EXTENSIONS_CONFORMANCE_ADMISSION must be scan or off; the earlier enforce and warn spellings '
+                . 'are still accepted and select scan.',
+            );
     }
 
     /**
