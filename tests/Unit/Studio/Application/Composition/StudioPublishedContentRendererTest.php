@@ -118,7 +118,8 @@ final class StudioPublishedContentRendererTest extends TestCase
         self::assertInstanceOf(RenderResult::class, $result);
         self::assertStringContainsString('data-studio-block="field-text"', $result->html);
         self::assertStringContainsString(
-            '<p class="studio-preview-field-text" data-studio-part="value">&lt;strong&gt;Exact &amp; safe&lt;/strong&gt;</p>',
+            '<p class="studio-preview-field-text" data-studio-part="value">'
+            . '&lt;strong&gt;Exact &amp; safe&lt;/strong&gt;</p>',
             $result->html,
         );
         self::assertStringNotContainsString('data-studio-preview-marker', $result->html);
