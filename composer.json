@@ -36,7 +36,7 @@
     "ext-zip": "*",
     "doctrine/dbal": "^4.4",
     "kumwe/conversion": "0.1.2",
-    "kumwe/extension-sdk": "0.2.3",
+    "kumwe/extension-sdk": "0.2.4",
     "kumwe/producer": "0.2.0",
     "laminas/laminas-authentication": "^2.19",
     "laminas/laminas-diactoros": "^3.8",
