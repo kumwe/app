@@ -1263,7 +1263,7 @@ development programme, from the architecture decision that opened it to the curr
   stayed green there, while the documented `docker compose run --rm app composer qa` on a laptop, or any
   contended sandbox, was killed at "The process "phpunit --colors=always" exceeded the timeout of 300
   seconds" — a red result that names no test. The manifest now sets `process-timeout` to one hour, so the
-  local gate reports what the suite found rather than how fast the machine was.
+  local gate reports what the suite found rather than how fast the machine was. (#128)
 
 - **2026-09-02 — `kumwe/extension-sdk` is pinned at 0.2.4, the release that makes the scaffold executable
   end to end.** The 0.2.3 scaffold generated handlers calling declaration members the SDK never defined —
@@ -1628,7 +1628,7 @@ development programme, from the architecture decision that opened it to the curr
   `database:migrate` names each converted table. A consistent schema is read twice and left untouched, and
   PostgreSQL is never touched. `SchemaCollationConvergenceIntegrationTest` plants the split with a foreign
   key across it and proves the conversion, the surviving key, the now-legal join and the no-op second pass
-  on MariaDB, and the no-op on PostgreSQL.
+  on MariaDB, and the no-op on PostgreSQL. (#128)
 
 - **2026-09-02 — The audit-listener example is shipped again, on the SDK contract.** The library adoption
   deleted `examples/extensions/audit-listener` and dropped it from both demo commands' default set while
@@ -1638,13 +1638,13 @@ development programme, from the architecture decision that opened it to the curr
   manifest-declared `domain_listeners` entry on the platform's `core.business_record.mutated` event, bound
   to an executable `MutationAuditListener` through the canonical registrar, with a bounded in-memory
   ledger. It builds, inspects and passes conformance with no findings, installs and activates through the
-  signed pipeline, and is back in the default example set of `demo:install` and `demo:install-examples`.
+  signed pipeline, and is back in the default example set of `demo:install` and `demo:install-examples`. (#128)
 
 - **2026-09-02 — The console bootstrap's recovery list names the theme recovery command correctly.**
   `bootstrap/console.php` listed `administrator:theme:recover`, a name no command answers to, so the real
   break-glass command `theme:administrator:recover` booted the full container instead of the reduced
   recovery one — the file's own reason for existing — and would have failed in exactly the incident it is
-  for. `ConsoleRecoveryBootstrapTest` now holds every entry of that list to the retained CLI contract.
+  for. `ConsoleRecoveryBootstrapTest` now holds every entry of that list to the retained CLI contract. (#128)
 
 - **2026-09-02 — Three administrator and MCP requests answer with the status they mean instead of a 500.**
   A signed-in administrator's mistyped URL matched the public site's catch-all route, which declares no
@@ -1653,13 +1653,13 @@ development programme, from the architecture decision that opened it to the curr
   empty or over-long address escaped the gateway's address validation as an internal error; the form now
   answers it at 401 exactly as a wrong password. And `OPTIONS /mcp`, the unauthenticated CORS preflight
   that runs no bearer middleware by design, was refused by the handler as unauthenticated; it is now
-  answered with the transport's own allowances before any principal is required.
+  answered with the transport's own allowances before any principal is required. (#128)
 
 - **2026-09-02 — Documentation rewritten during the extraction cites files that exist.** The
   content-translation guide pointed at an SDK pin that was never published and at two App tests the
   adoption deleted; it now names the association pin, the SDK contract generations and the library suite
   that carries those proofs. The qualification gap matrix's evidence paths for the signature document and
-  the event envelope point at their SDK homes.
+  the event envelope point at their SDK homes. (#128)
 
 - **2026-09-02 — An installation configured before the admission-mode rename boots again.** The library
   adoption reduced `EXTENSIONS_CONFORMANCE_ADMISSION` from `enforce`, `warn` and `off` to `scan` and `off`
@@ -1674,7 +1674,7 @@ development programme, from the architecture decision that opened it to the curr
   moves has to keep reading the spellings it once documented. The agent bootstrap no longer treats a
   present `vendor/` as current: a snapshot carrying a tree from an older lockfile lacked the service manager
   and the three libraries, so schema preparation failed before the first test; the script now reinstalls
-  when Composer's dry run reports drift.
+  when Composer's dry run reports drift. (#128)
 
 - **2026-09-01 — The administrator extensions screen renders composition-only extensions instead of failing
   with HTTP 500.** The canonical SDK contribution graph carries only the sections a manifest declares, so a
