@@ -1,0 +1,188 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kumwe.dev/schemas/core-growth-record.v1",
+  "title": "Kumwe Core Growth Record front matter",
+  "description": "Front matter of core-growth/KUMWE-CGR-YYYY-NNN.md; the body carries seven required H2 sections.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "kumwe-core-growth-record/v1"
+    },
+    "id": {
+      "$ref": "#/$defs/cgr_id"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "symbols": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/fqcn"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "layer": {
+      "$ref": "#/$defs/layer"
+    },
+    "capability_index_sha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "packages_reviewed": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "package": {
+            "$ref": "#/$defs/package"
+          },
+          "version": {
+            "$ref": "#/$defs/version"
+          },
+          "symbols_inspected": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/fqcn"
+            }
+          },
+          "source_inspected": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/path"
+            }
+          },
+          "tests_inspected": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/path"
+            }
+          }
+        },
+        "required": [
+          "package",
+          "version",
+          "symbols_inspected",
+          "source_inspected",
+          "tests_inspected"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "search_terms": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "required_capability": {
+      "type": "string",
+      "minLength": 1
+    },
+    "consumers": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "overlap_reviewed": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/fqcn"
+      }
+    },
+    "decision": {
+      "type": "string",
+      "enum": [
+        "approved",
+        "pending",
+        "rejected"
+      ]
+    },
+    "decided_by": {
+      "type": "string",
+      "minLength": 1
+    },
+    "reviewer": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "decided_on": {
+      "$ref": "#/$defs/date"
+    },
+    "pull_request": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "schema",
+    "id",
+    "title",
+    "symbols",
+    "layer",
+    "capability_index_sha256",
+    "packages_reviewed",
+    "search_terms",
+    "required_capability",
+    "consumers",
+    "overlap_reviewed",
+    "decision",
+    "decided_by",
+    "reviewer",
+    "decided_on",
+    "pull_request"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "cgr_id": {
+      "type": "string",
+      "pattern": "^KUMWE-CGR-[0-9]{4}-[0-9]{3}$"
+    },
+    "date": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+    },
+    "fqcn": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_]*(\\\\[A-Za-z_][A-Za-z0-9_]*)*$",
+      "description": "Fully qualified class-like name without a leading backslash."
+    },
+    "layer": {
+      "type": "string",
+      "enum": [
+        "shared",
+        "domain",
+        "application",
+        "infrastructure",
+        "presentation",
+        "delivery",
+        "kernel"
+      ]
+    },
+    "package": {
+      "type": "string",
+      "pattern": "^kumwe/[a-z0-9-]+$",
+      "description": "Composer package name in the kumwe vendor."
+    },
+    "path": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Relative path with forward slashes."
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "Lowercase hexadecimal SHA-256 digest."
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^v?[0-9]+\\.[0-9]+\\.[0-9]+([-+][0-9A-Za-z.-]+)?$",
+      "description": "Semantic version, optional v prefix."
+    }
+  }
+}

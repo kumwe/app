@@ -1,0 +1,33 @@
+# Example verified legacy release record (schema 4.9, Kumwe-v2-08) for a fictitious pre-Version-2
+# dependency. The real record lives at docs/architecture/migrations/evidence/legacy/<package>/VERIFIED-LEGACY-RELEASE.yaml
+# and is referenced from docs/architecture/governance/legacy-packages.json as verified_legacy_release.
+schema: kumwe-verified-legacy-release/v1
+legacy_without_v2_handoff: true
+repository: https://github.com/kumwe/example-legacy
+artifact_identity: "kumwe/example-legacy 0.9.0 (Composer)"
+version: 0.9.0
+tag: v0.9.0
+source_commit: "d6b30e0e1aa60f0e238898a30ca6e024a17e1e8b"
+source_archive:
+  url: "https://github.com/kumwe/example-legacy/archive/refs/tags/v0.9.0.tar.gz"
+  sha256: "5ba590b093bb21a357713b1d3c26754983c1dad97fac9d0572534a3be97344e4"
+registry_or_distribution_verification:
+  - "packagist.org/packages/kumwe/example-legacy lists v0.9.0 at the tag commit"
+public_api_snapshot:
+  documentation:
+    - README.md
+  exported_symbols_or_manifest: "source scan of src/ excluding @internal declarations"
+  sha256: "3650da2bd9b9d42c90badab6e51bf4bba2b9c874458cab8ab04e097524264675"
+responsibility_and_non_goals_review: "README responsibility boundary matches the legacy registry entry."
+clean_consumer_verification:
+  - "composer require kumwe/example-legacy:0.9.0 --no-dev in a fresh project; the documented example runs"
+security_and_license_verification:
+  - "composer audit: no advisories; LICENSE is Apache-2.0"
+compatibility_constraints:
+  - "php ^8.5"
+known_gaps:
+  - "No Version 2 manifests; the entry remains legacy-unmanifested until the package adopts them."
+verified_at: "2026-09-02T14:00:00Z"
+verified_by: "Release verification session"
+approved_by: "eWɘyn"
+status: verified

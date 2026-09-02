@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kumwe.dev/schemas/package-service-map.v1",
+  "title": "Kumwe package service map",
+  "description": "resources/service-map/v1.json of a Version 2 package: provider, factories, aliases, keys.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "kumwe-package-service-map/v1"
+    },
+    "package": {
+      "$ref": "#/$defs/package"
+    },
+    "release": {
+      "$ref": "#/$defs/version"
+    },
+    "config_provider": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/fqcn"
+        }
+      ]
+    },
+    "provider_absence_reason": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "factories": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "service": {
+            "$ref": "#/$defs/fqcn"
+          },
+          "factory": {
+            "$ref": "#/$defs/fqcn"
+          },
+          "lifetime": {
+            "$ref": "#/$defs/lifetime"
+          }
+        },
+        "required": [
+          "service",
+          "factory",
+          "lifetime"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "aliases": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/fqcn"
+      }
+    },
+    "delegators": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "service": {
+            "$ref": "#/$defs/fqcn"
+          },
+          "delegator": {
+            "$ref": "#/$defs/fqcn"
+          }
+        },
+        "required": [
+          "service",
+          "delegator"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "configuration_keys": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "pattern": "^kumwe\\.[a-z0-9-]+(\\.[A-Za-z0-9_.-]+)+$"
+          },
+          "default": {},
+          "description": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "default",
+          "description"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "schema",
+    "package",
+    "release",
+    "config_provider",
+    "provider_absence_reason",
+    "factories",
+    "aliases",
+    "delegators",
+    "configuration_keys"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "fqcn": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_]*(\\\\[A-Za-z_][A-Za-z0-9_]*)*$",
+      "description": "Fully qualified class-like name without a leading backslash."
+    },
+    "lifetime": {
+      "type": "string",
+      "enum": [
+        "shared",
+        "non-shared",
+        "request-supplied"
+      ]
+    },
+    "package": {
+      "type": "string",
+      "pattern": "^kumwe/[a-z0-9-]+$",
+      "description": "Composer package name in the kumwe vendor."
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^v?[0-9]+\\.[0-9]+\\.[0-9]+([-+][0-9A-Za-z.-]+)?$",
+      "description": "Semantic version, optional v prefix."
+    }
+  }
+}

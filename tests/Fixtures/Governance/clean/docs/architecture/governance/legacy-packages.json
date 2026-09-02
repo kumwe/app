@@ -1,0 +1,23 @@
+{
+  "schema": "kumwe-legacy-packages/v1",
+  "note": "Governance fixture registry: one approved legacy-unmanifested entry for the fictitious kumwe/example-legacy release. The real registry is docs/architecture/governance/legacy-packages.json.",
+  "packages": {
+    "kumwe/example-legacy": {
+      "installed_version": "v0.9.0",
+      "reason": "Released before the Version 2 protocol; ships no public-api, capabilities or service-map manifest and no MIGRATION-HANDOFF.md, so its public symbols come from a source scan.",
+      "responsibility": "Format legacy descriptions for the example module.",
+      "non_responsibilities": [
+        "Persistence, authorization and presentation."
+      ],
+      "canonical_namespaces": [
+        "Kumwe\\ExampleLegacy\\"
+      ],
+      "retired_app_namespaces": [
+        "Kumwe\\App\\Example\\Formatting\\"
+      ],
+      "verified_legacy_release": null,
+      "approved_by": "eWɘyn",
+      "approved_on": "2026-09-02"
+    }
+  }
+}

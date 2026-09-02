@@ -1,0 +1,268 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kumwe.dev/schemas/release-attestation.v2",
+  "title": "Kumwe external release attestation",
+  "description": "evidence/<MIG>/RELEASE-ATTESTATION.yaml (verified) or RELEASE-VERIFICATION-FAILED.yaml (D-GOV-4).",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "kumwe-release-attestation/v2"
+    },
+    "artifact_kind": {
+      "$ref": "#/$defs/artifact_kind"
+    },
+    "migration_id": {
+      "$ref": "#/$defs/migration_id"
+    },
+    "change_set": {
+      "$ref": "#/$defs/change_set_id"
+    },
+    "repository": {
+      "$ref": "#/$defs/url"
+    },
+    "merge_commit": {
+      "$ref": "#/$defs/commit"
+    },
+    "version": {
+      "$ref": "#/$defs/version"
+    },
+    "tag": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_archive": {
+      "type": "object",
+      "properties": {
+        "url": {
+          "$ref": "#/$defs/url"
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      },
+      "required": [
+        "url",
+        "sha256"
+      ],
+      "additionalProperties": false
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "identity": {
+            "type": "string",
+            "minLength": 1
+          },
+          "url": {
+            "$ref": "#/$defs/url"
+          },
+          "sha256": {
+            "$ref": "#/$defs/sha256"
+          }
+        },
+        "required": [
+          "identity",
+          "url",
+          "sha256"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "manifests_and_corpora": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/manifest_digest"
+      }
+    },
+    "abi_and_capabilities": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "abi_major": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "capabilities": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "corpus_digests": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/sha256"
+              }
+            }
+          },
+          "required": [
+            "abi_major",
+            "capabilities",
+            "corpus_digests"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "sbom": {
+      "type": "object",
+      "properties": {
+        "url": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/url"
+            }
+          ]
+        },
+        "sha256": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/sha256"
+            }
+          ]
+        }
+      },
+      "required": [
+        "url",
+        "sha256"
+      ],
+      "additionalProperties": false
+    },
+    "provenance": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "release_workflow": {
+      "type": "string",
+      "minLength": 1
+    },
+    "registry_or_pie_verification": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "clean_consumer_or_build_verification": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "verified_at": {
+      "type": "string",
+      "minLength": 1
+    },
+    "verified_by": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "verified",
+        "failed"
+      ]
+    },
+    "known_gaps": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "schema",
+    "artifact_kind",
+    "migration_id",
+    "change_set",
+    "repository",
+    "merge_commit",
+    "version",
+    "tag",
+    "source_archive",
+    "artifacts",
+    "manifests_and_corpora",
+    "abi_and_capabilities",
+    "sbom",
+    "provenance",
+    "release_workflow",
+    "registry_or_pie_verification",
+    "clean_consumer_or_build_verification",
+    "verified_at",
+    "verified_by",
+    "status"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "artifact_kind": {
+      "type": "string",
+      "enum": [
+        "framework_php",
+        "native_cpp",
+        "php_extension"
+      ]
+    },
+    "change_set_id": {
+      "type": "string",
+      "pattern": "^KUMWE-CS-[0-9]{4}-[0-9]{3}$"
+    },
+    "commit": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$",
+      "description": "Full 40-character Git commit SHA."
+    },
+    "manifest_digest": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/path"
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      },
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "additionalProperties": false
+    },
+    "migration_id": {
+      "type": "string",
+      "pattern": "^KUMWE-MIG-[0-9]{4}-[0-9]{3}$"
+    },
+    "path": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Relative path with forward slashes."
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "Lowercase hexadecimal SHA-256 digest."
+    },
+    "url": {
+      "type": "string",
+      "pattern": "^https?://.+$"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^v?[0-9]+\\.[0-9]+\\.[0-9]+([-+][0-9A-Za-z.-]+)?$",
+      "description": "Semantic version, optional v prefix."
+    }
+  }
+}

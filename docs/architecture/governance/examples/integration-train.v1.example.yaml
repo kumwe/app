@@ -1,0 +1,22 @@
+# Example integration train record (schema 4.16, Kumwe-v2-04 "Integration train"; D-GOV-8) for a
+# fictitious single-PR train. The real records live under docs/architecture/migrations/trains/.
+schema: kumwe-integration-train/v1
+train: KUMWE-TRAIN-2026-001
+packages:
+  - package: kumwe/example
+    version: 0.1.0
+merge_order:
+  - "https://github.com/kumwe/app/pull/1234"
+custodian: "Platform architecture"
+hotspots:
+  - composer.json
+  - composer.lock
+  - src/Kernel/ContainerFactory.php
+  - docs/architecture/capability-index.md
+  - CHANGELOG.md
+commands:
+  - "composer install"
+  - "composer kumwe:capability-index"
+  - "composer qa"
+conflict_ledger: docs/architecture/migrations/conflicts
+serialized_by: "eWɘyn"

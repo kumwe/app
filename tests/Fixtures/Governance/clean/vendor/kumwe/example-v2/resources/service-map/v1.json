@@ -1,0 +1,25 @@
+{
+  "schema": "kumwe-package-service-map/v1",
+  "package": "kumwe/example-v2",
+  "release": "0.1.0",
+  "config_provider": "Kumwe\\Example\\ConfigProvider",
+  "provider_absence_reason": null,
+  "factories": [
+    {
+      "service": "Kumwe\\Example\\ExampleService",
+      "factory": "Kumwe\\Example\\Container\\ExampleServiceFactory",
+      "lifetime": "shared"
+    }
+  ],
+  "aliases": {
+    "Kumwe\\Example\\Contract\\ExampleServiceInterface": "Kumwe\\Example\\ExampleService"
+  },
+  "delegators": [],
+  "configuration_keys": [
+    {
+      "key": "kumwe.example.prefix",
+      "default": "example",
+      "description": "Marker prepended to every description."
+    }
+  ]
+}

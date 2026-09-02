@@ -1,0 +1,84 @@
+{
+    "_readme": [
+        "Governance fixture lock: two fictitious Kumwe packages, one Version 2 manifested and one legacy release.",
+        "References are derived from readable stems (git SHA-1 of the stem text); they identify nothing real."
+    ],
+    "content-hash": "366522ce65a4435f9dc117c4d4e283150536d46427adc71ed0c53c75053a5e7a",
+    "packages": [
+        {
+            "name": "kumwe/example-legacy",
+            "version": "v0.9.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/kumwe/example-legacy.git",
+                "reference": "d6b30e0e1aa60f0e238898a30ca6e024a17e1e8b"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/kumwe/example-legacy/zipball/d6b30e0e1aa60f0e238898a30ca6e024a17e1e8b",
+                "reference": "d6b30e0e1aa60f0e238898a30ca6e024a17e1e8b",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.5"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Kumwe\\ExampleLegacy\\": "src/"
+                }
+            },
+            "license": [
+                "Apache-2.0"
+            ],
+            "description": "Fictitious pre-Version-2 formatter for the governance fixture.",
+            "homepage": "https://github.com/kumwe/example-legacy"
+        },
+        {
+            "name": "kumwe/example-v2",
+            "version": "v0.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/kumwe/example-v2.git",
+                "reference": "22a6e91d610c68c7cc91afca305f2b5565ab70ce"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/kumwe/example-v2/zipball/22a6e91d610c68c7cc91afca305f2b5565ab70ce",
+                "reference": "22a6e91d610c68c7cc91afca305f2b5565ab70ce",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.5",
+                "psr/container": "^2.0"
+            },
+            "type": "library",
+            "extra": {
+                "laminas": {
+                    "config-provider": "Kumwe\\Example\\ConfigProvider"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Kumwe\\Example\\": "src/"
+                }
+            },
+            "license": [
+                "Apache-2.0"
+            ],
+            "description": "Fictitious Version 2 manifested describing service for the governance fixture.",
+            "homepage": "https://github.com/kumwe/example-v2"
+        }
+    ],
+    "packages-dev": [],
+    "aliases": [],
+    "minimum-stability": "stable",
+    "stability-flags": {},
+    "prefer-stable": true,
+    "prefer-lowest": false,
+    "platform": {
+        "php": "^8.5"
+    },
+    "platform-dev": {},
+    "plugin-api-version": "2.6.0"
+}

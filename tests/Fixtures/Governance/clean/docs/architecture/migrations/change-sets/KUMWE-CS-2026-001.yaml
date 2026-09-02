@@ -1,0 +1,59 @@
+# Governance fixture: the central change-set record of the fictitious kumwe/example-v2 extraction.
+schema: kumwe-change-set/v2
+change_set: KUMWE-CS-2026-001
+migration_id: KUMWE-MIG-2026-001
+roadmap_source:
+  title: Kumwe ERP-Extensibility Foundation Roadmap
+  sha256: a202155ef1a65f5ab293d4f8397ebf4ac430db7f1e877c776bbe7851e6fe18d8
+roadmap_refs: []
+state: core-integrated
+phase_1:
+  source_repository: kumwe/app
+  source_sha: "45ab34fdc486a2242d51946625d980dcbd69c40f"
+  target_repository: kumwe/example-v2
+  package_pr: "https://github.com/kumwe/example-v2/pull/1"
+  tested_sha: "4da135e993d9864f509e707a77143176c61f86b2"
+  public_api_digest: "c190471c6a06c5f48dbae21498d8c4394257229962c457c869fdc0f46dea0218"
+  capability_digest: "b3a3432d2421166dd94b3b9232688819cf82ab5bb77f4416e50a22cbc5ccea7a"
+  service_map_digest: "1e80b56250532416f66b069ac2326819d216d10657a3337524f2f305c1ad2a2a"
+  handoff_digest: "fac05cd33a1982ac982941a70ee3d3def33ae50dac19b272ef7f7a0beba66ad3"
+release:
+  version: 0.1.0
+  source_sha: "22a6e91d610c68c7cc91afca305f2b5565ab70ce"
+  artifact_digest: "64f372d94d03531729b3fae87163c8485b3643df3b38d60d3be4061e77f79669"
+  clean_consumer_evidence:
+    - "https://github.com/kumwe/example-v2/actions/runs/1"
+phase_2:
+  app_pr: "https://github.com/kumwe/app/pull/1234"
+  tested_sha: "bcd8a095b0b6413059893a46d8e6473eb93aee8c"
+  merged_sha: "49b31c6625878a4c144887241f4418980e9ebaa3"
+  exact_dependency: "kumwe/example-v2 0.1.0"
+  composer_lock_digest: null
+  removed_app_symbols:
+    - Kumwe\App\Example\Describing\Describer
+    - Kumwe\App\Example\Describing\DescriberInterface
+  moved_unit_tests:
+    - tests/Unit/Example/Describing/DescriberTest.php
+  retained_app_tests:
+    - tests/Integration/Example/DescribeSubjectIntegrationTest.php
+evidence:
+  package:
+    - "https://github.com/kumwe/example-v2/actions/runs/1"
+  app_composition:
+    - tests/Integration/Example/DescribeSubjectIntegrationTest.php
+  database_matrix: []
+  concurrency: []
+  authorization_security: []
+  lifecycle_recovery: []
+  delivery_browser: []
+  deployment_backup_restore: []
+  native_parity_abi: []
+  performance_capacity: []
+compatibility: "Drop-in replacement; the App behaves identically before and after adoption."
+migration_recovery: null
+security_impact: null
+performance_claim: null
+rollback: "Revert the App pull request and restore the removed App classes from the baseline commit."
+known_gaps: []
+completion_claim: false
+accepted_by: null

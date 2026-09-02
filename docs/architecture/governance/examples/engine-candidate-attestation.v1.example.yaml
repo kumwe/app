@@ -1,0 +1,49 @@
+# Example Engine candidate attestation (schema 4.7, Kumwe-v2-08) for a fictitious candidate build.
+# The real record is an external CI/check artifact and is never committed into the candidate archive.
+schema: kumwe-engine-candidate-attestation/v1
+change_set: KUMWE-CS-2026-002
+engine_candidate:
+  repository: https://github.com/kumwe/engine
+  tested_commit: "f7df2994a0e8db493c1cb37e945303a9545a7ba2"
+  tested_tree: "b810dd95663d8662d576357f6169b43ad19c52af"
+  source_archive_sha256: "eab92065808e7845f307e28870fb1d8f2a8f168f855a6589382cf89463536af3"
+  handoff_sha256: "fb1639670c76329163f30c9ae93468b2a2b5e515262d702bcf8541defc32837a"
+extension_candidate:
+  repository: https://github.com/kumwe/kumwe-engine
+  tested_commit: "8b6efac68c1b480ede2badc28c86e9e3b3b7abf2"
+  tested_tree: "a7560110e9177b21f9fb6cb7c67efd7beceb790f"
+semantic_inputs:
+  - owner: kumwe/example
+    version: 0.1.0
+    manifest_or_corpus_sha256: "816e970640c81cde6f37c6723386c5101ead7c9a2a49ccc2b94747de289573b9"
+build:
+  network_disabled: true
+  toolchains:
+    - "gcc 14.2"
+    - "clang 19.1"
+  operating_systems:
+    - "ubuntu-24.04"
+  architectures:
+    - x86_64
+    - aarch64
+  php_modes_and_versions:
+    - "8.5 NTS"
+    - "8.5 ZTS"
+verification:
+  cmake_consumer: "https://ci.example.invalid/runs/1/cmake-consumer"
+  pie_source_build: "https://ci.example.invalid/runs/1/pie-source-build"
+  module_load_and_reflection: "https://ci.example.invalid/runs/1/module-load"
+  abi_capability_handshake: "https://ci.example.invalid/runs/1/abi-handshake"
+  corpus_results:
+    - "example-corpus-v1: 128/128 passed"
+  lifecycle_sanitizer_leak:
+    - "asan+ubsan: clean"
+  hostile_input_and_refusal:
+    - "fuzz corpus: 0 crashes"
+ci:
+  run_url: "https://ci.example.invalid/runs/1"
+  artifact_url: "https://ci.example.invalid/runs/1/artifacts/attestation"
+status: passed
+observed_at: "2026-09-02T12:00:00Z"
+observed_by: "Kumwe Engine candidate cross-build"
+publishing_permitted: false

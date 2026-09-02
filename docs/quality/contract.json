@@ -676,6 +676,32 @@
             }
         },
         {
+            "id": "capability-index",
+            "title": "The capability index matches the installed Kumwe packages",
+            "purpose": "Regenerate the capability index from composer.lock, the installed vendor/kumwe manifests, the legacy registry and the migration ledger, and fail when docs/architecture/capability-index.md or its embedded digest differs, when a locked Kumwe package is installed without Version 2 manifests and is not an approved legacy entry, when two packages claim one FQCN, capability or service, or when a provider or handoff is undocumented (NRM-2026-001, Kumwe-v2-02).",
+            "owner": "platform-architecture",
+            "runner": "composer",
+            "composer_script": "kumwe:capability-index-check",
+            "command": "composer kumwe:capability-index-check",
+            "artifact": "docs/architecture/capability-index.md",
+            "in_qa": true,
+            "cadence": [
+                "local",
+                "ci",
+                "nightly",
+                "release"
+            ],
+            "maximum_interval": "per-change",
+            "engines": [],
+            "workflows": {
+                "ci": {
+                    "file": ".github/workflows/ci.yml",
+                    "job": "quality",
+                    "contains": "composer kumwe:capability-index-check"
+                }
+            }
+        },
+        {
             "id": "openapi-drift",
             "title": "The generated OpenAPI document matches the routes that exist",
             "purpose": "Regenerate the contract and fail when it differs from the committed artifact.",

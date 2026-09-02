@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kumwe.dev/schemas/core-growth-baseline.v1",
+  "title": "Kumwe core growth baseline",
+  "description": "governance/core-growth-baseline.json: the recorded public surface of every src/ symbol.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "kumwe-core-growth-baseline/v1"
+    },
+    "note": {
+      "type": "string",
+      "minLength": 1
+    },
+    "symbols": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/$defs/kind"
+          },
+          "layer": {
+            "$ref": "#/$defs/layer"
+          },
+          "surface": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{24}$"
+          },
+          "growth": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "record": {
+                    "$ref": "#/$defs/cgr_id"
+                  }
+                },
+                "required": [
+                  "record"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "classification": {
+                    "type": "string",
+                    "pattern": "^host-(infrastructure|presentation|delivery|kernel)$"
+                  },
+                  "implements": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/fqcn"
+                    }
+                  },
+                  "extends": {
+                    "anyOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "$ref": "#/$defs/fqcn"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "classification",
+                  "implements",
+                  "extends"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "layer",
+          "surface",
+          "growth"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "schema",
+    "note",
+    "symbols"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "cgr_id": {
+      "type": "string",
+      "pattern": "^KUMWE-CGR-[0-9]{4}-[0-9]{3}$"
+    },
+    "fqcn": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_]*(\\\\[A-Za-z_][A-Za-z0-9_]*)*$",
+      "description": "Fully qualified class-like name without a leading backslash."
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "class",
+        "interface",
+        "trait",
+        "enum"
+      ]
+    },
+    "layer": {
+      "type": "string",
+      "enum": [
+        "shared",
+        "domain",
+        "application",
+        "infrastructure",
+        "presentation",
+        "delivery",
+        "kernel"
+      ]
+    }
+  }
+}

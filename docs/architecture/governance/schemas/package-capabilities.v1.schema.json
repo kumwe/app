@@ -1,0 +1,189 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kumwe.dev/schemas/package-capabilities.v1",
+  "title": "Kumwe package capabilities manifest",
+  "description": "resources/capabilities/v1.json of a Version 2 package: capabilities and responsibility.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "kumwe-package-capabilities/v1"
+    },
+    "package": {
+      "$ref": "#/$defs/package"
+    },
+    "release": {
+      "$ref": "#/$defs/version"
+    },
+    "namespace": {
+      "$ref": "#/$defs/namespace_root"
+    },
+    "responsibility": {
+      "type": "string",
+      "minLength": 1
+    },
+    "non_responsibilities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "capabilities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/capability_id"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "symbols": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/fqcn"
+            },
+            "minItems": 1
+          },
+          "documentation": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/path"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "description",
+          "symbols",
+          "documentation"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "native_requirements": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "extension": {
+              "type": "string",
+              "minLength": 1
+            },
+            "abi_major": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "capabilities": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "corpus_digests": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/sha256"
+              }
+            }
+          },
+          "required": [
+            "extension",
+            "abi_major",
+            "capabilities",
+            "corpus_digests"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "deprecations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "symbol": {
+            "$ref": "#/$defs/fqcn"
+          },
+          "since": {
+            "type": "string"
+          },
+          "replacement": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/$defs/fqcn"
+              }
+            ]
+          }
+        },
+        "required": [
+          "symbol",
+          "since",
+          "replacement"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "schema",
+    "package",
+    "release",
+    "namespace",
+    "responsibility",
+    "non_responsibilities",
+    "capabilities",
+    "native_requirements",
+    "deprecations"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "capability_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+(\\.[a-z0-9-]+)+$",
+      "description": "Dot-separated, package-prefixed identifier."
+    },
+    "fqcn": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_]*(\\\\[A-Za-z_][A-Za-z0-9_]*)*$",
+      "description": "Fully qualified class-like name without a leading backslash."
+    },
+    "namespace_root": {
+      "type": "string",
+      "pattern": "^([A-Za-z_][A-Za-z0-9_]*\\\\)+$",
+      "description": "Namespace root with a trailing backslash (autoload.psr-4)."
+    },
+    "package": {
+      "type": "string",
+      "pattern": "^kumwe/[a-z0-9-]+$",
+      "description": "Composer package name in the kumwe vendor."
+    },
+    "path": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Relative path with forward slashes."
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "Lowercase hexadecimal SHA-256 digest."
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^v?[0-9]+\\.[0-9]+\\.[0-9]+([-+][0-9A-Za-z.-]+)?$",
+      "description": "Semantic version, optional v prefix."
+    }
+  }
+}

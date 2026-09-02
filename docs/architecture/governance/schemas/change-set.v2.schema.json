@@ -1,0 +1,481 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kumwe.dev/schemas/change-set.v2",
+  "title": "Kumwe central change-set record",
+  "description": "migrations/change-sets/KUMWE-CS-YYYY-NNN.yaml: the cross-repository migration state.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "kumwe-change-set/v2"
+    },
+    "change_set": {
+      "$ref": "#/$defs/change_set_id"
+    },
+    "migration_id": {
+      "$ref": "#/$defs/migration_id"
+    },
+    "roadmap_source": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      },
+      "required": [
+        "title",
+        "sha256"
+      ],
+      "additionalProperties": false
+    },
+    "roadmap_refs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/roadmap_ref"
+      }
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "enabling-refactor",
+        "package-implemented",
+        "package-released",
+        "release-verified",
+        "app-pr-ready",
+        "core-integrated",
+        "objective-verified",
+        "gate-accepted"
+      ]
+    },
+    "phase_1": {
+      "type": "object",
+      "properties": {
+        "source_repository": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_sha": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/commit"
+            }
+          ]
+        },
+        "target_repository": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "package_pr": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "tested_sha": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/commit"
+            }
+          ]
+        },
+        "public_api_digest": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/sha256"
+            }
+          ]
+        },
+        "capability_digest": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/sha256"
+            }
+          ]
+        },
+        "service_map_digest": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/sha256"
+            }
+          ]
+        },
+        "handoff_digest": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/sha256"
+            }
+          ]
+        }
+      },
+      "required": [
+        "source_repository",
+        "source_sha",
+        "target_repository",
+        "package_pr",
+        "tested_sha",
+        "public_api_digest",
+        "capability_digest",
+        "service_map_digest",
+        "handoff_digest"
+      ],
+      "additionalProperties": false
+    },
+    "release": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/version"
+            }
+          ]
+        },
+        "source_sha": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/commit"
+            }
+          ]
+        },
+        "artifact_digest": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/sha256"
+            }
+          ]
+        },
+        "clean_consumer_evidence": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "version",
+        "source_sha",
+        "artifact_digest",
+        "clean_consumer_evidence"
+      ],
+      "additionalProperties": false
+    },
+    "phase_2": {
+      "type": "object",
+      "properties": {
+        "app_pr": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "tested_sha": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/commit"
+            }
+          ]
+        },
+        "merged_sha": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/commit"
+            }
+          ]
+        },
+        "exact_dependency": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "composer_lock_digest": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/sha256"
+            }
+          ]
+        },
+        "removed_app_symbols": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/fqcn"
+          }
+        },
+        "moved_unit_tests": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/path"
+          }
+        },
+        "retained_app_tests": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/path"
+          }
+        }
+      },
+      "required": [
+        "app_pr",
+        "tested_sha",
+        "merged_sha",
+        "exact_dependency",
+        "composer_lock_digest",
+        "removed_app_symbols",
+        "moved_unit_tests",
+        "retained_app_tests"
+      ],
+      "additionalProperties": false
+    },
+    "evidence": {
+      "type": "object",
+      "properties": {
+        "package": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "app_composition": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "database_matrix": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "concurrency": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "authorization_security": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "lifecycle_recovery": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "delivery_browser": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "deployment_backup_restore": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "native_parity_abi": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "performance_capacity": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "package",
+        "app_composition",
+        "database_matrix",
+        "concurrency",
+        "authorization_security",
+        "lifecycle_recovery",
+        "delivery_browser",
+        "deployment_backup_restore",
+        "native_parity_abi",
+        "performance_capacity"
+      ],
+      "additionalProperties": false
+    },
+    "compatibility": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "migration_recovery": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "security_impact": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "performance_claim": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "rollback": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "known_gaps": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "completion_claim": {
+      "type": "boolean"
+    },
+    "accepted_by": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "schema",
+    "change_set",
+    "migration_id",
+    "roadmap_source",
+    "roadmap_refs",
+    "state",
+    "phase_1",
+    "release",
+    "phase_2",
+    "evidence",
+    "compatibility",
+    "migration_recovery",
+    "security_impact",
+    "performance_claim",
+    "rollback",
+    "known_gaps",
+    "completion_claim",
+    "accepted_by"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "change_set_id": {
+      "type": "string",
+      "pattern": "^KUMWE-CS-[0-9]{4}-[0-9]{3}$"
+    },
+    "commit": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$",
+      "description": "Full 40-character Git commit SHA."
+    },
+    "fqcn": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_]*(\\\\[A-Za-z_][A-Za-z0-9_]*)*$",
+      "description": "Fully qualified class-like name without a leading backslash."
+    },
+    "migration_id": {
+      "type": "string",
+      "pattern": "^KUMWE-MIG-[0-9]{4}-[0-9]{3}$"
+    },
+    "path": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Relative path with forward slashes."
+    },
+    "roadmap_ref": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Z0-9]+-[A-Z]?[0-9]{2}$"
+        },
+        "heading": {
+          "type": "string"
+        },
+        "ordinal": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "relation": {
+          "type": "string",
+          "enum": [
+            "enables",
+            "verifies",
+            "accepts"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "heading",
+        "ordinal",
+        "relation"
+      ],
+      "additionalProperties": false
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "Lowercase hexadecimal SHA-256 digest."
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^v?[0-9]+\\.[0-9]+\\.[0-9]+([-+][0-9A-Za-z.-]+)?$",
+      "description": "Semantic version, optional v prefix."
+    }
+  }
+}

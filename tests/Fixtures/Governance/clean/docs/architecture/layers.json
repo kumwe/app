@@ -1,0 +1,146 @@
+{
+  "graph": "kumwe-layer-graph",
+  "authority": "docs/architecture/principles.md",
+  "note": "Governance fixture copy of the real layer graph with the fictitious example package namespaces admitted and classified.",
+  "layers": {
+    "shared": {
+      "description": "Framework-free types with a stable semantic owner and inward consumers in more than one layer. Depends on nothing.",
+      "may_depend_on": []
+    },
+    "domain": {
+      "description": "State, invariants and value objects. Depends on nothing but the shared kernel.",
+      "may_depend_on": [
+        "shared"
+      ]
+    },
+    "application": {
+      "description": "Use cases, authorization, transactions and audit records. Depends inward on the domain.",
+      "may_depend_on": [
+        "shared",
+        "domain"
+      ]
+    },
+    "infrastructure": {
+      "description": "Persistence, rendering, packages, clocks, logs and protocol adapters. Implements application-owned ports.",
+      "may_depend_on": [
+        "shared",
+        "domain",
+        "application"
+      ]
+    },
+    "presentation": {
+      "description": "View models, presenters and form mappers. Shapes application results for a surface without receiving input itself.",
+      "may_depend_on": [
+        "shared",
+        "domain",
+        "application"
+      ]
+    },
+    "delivery": {
+      "description": "HTTP, console, worker and machine-surface entry points. Validates and translates input, formats a result, and owns no business rule.",
+      "may_depend_on": [
+        "shared",
+        "domain",
+        "application",
+        "presentation"
+      ]
+    },
+    "kernel": {
+      "description": "The single composition root. It is the one place that may see every layer at once, which is what keeps the others from needing to.",
+      "may_depend_on": [
+        "*"
+      ]
+    }
+  },
+  "first_party_namespaces": [
+    "Kumwe\\App",
+    "Kumwe\\Conversion",
+    "Kumwe\\Extension",
+    "Kumwe\\Producer",
+    "Kumwe\\Example",
+    "Kumwe\\ExampleLegacy"
+  ],
+  "namespace_segments": {
+    "Shared": "shared",
+    "Domain": "domain",
+    "Application": "application",
+    "Infrastructure": "infrastructure",
+    "Presentation": "presentation",
+    "Delivery": "delivery",
+    "Kernel": "kernel"
+  },
+  "namespace_prefixes": {
+    "Kumwe\\Conversion\\Contract": "shared",
+    "Kumwe\\Conversion\\Decimal": "shared",
+    "Kumwe\\Conversion\\Provider": "application",
+    "Kumwe\\Conversion\\Value": "shared",
+    "Kumwe\\Extension\\Contract": "shared",
+    "Kumwe\\Extension\\Manifest": "shared",
+    "Kumwe\\Extension\\Package": "application",
+    "Kumwe\\Extension\\Spi\\Application": "application",
+    "Kumwe\\Extension\\Spi\\Application\\Automation": "application",
+    "Kumwe\\Extension\\Spi\\Binding": "application",
+    "Kumwe\\Extension\\Spi\\BusinessRecord\\Application": "application",
+    "Kumwe\\Extension\\Spi\\BusinessRecord\\Query": "domain",
+    "Kumwe\\Extension\\Spi\\BusinessRecord\\Value": "domain",
+    "Kumwe\\Extension\\Spi\\BusinessIntegration\\Application": "application",
+    "Kumwe\\Extension\\Spi\\BusinessIntegration\\Domain": "domain",
+    "Kumwe\\Extension\\Spi\\BusinessReporting\\Application": "application",
+    "Kumwe\\Extension\\Spi\\BusinessReporting\\Domain": "domain",
+    "Kumwe\\Extension\\Spi\\BusinessSecurity\\Application": "application",
+    "Kumwe\\Extension\\Spi\\BusinessSecurity\\Policy": "domain",
+    "Kumwe\\Extension\\Spi\\BusinessSurface\\Application\\Custom": "application",
+    "Kumwe\\Extension\\Spi\\BusinessSurface\\Presentation": "presentation",
+    "Kumwe\\Extension\\Spi\\BusinessSurface\\Presentation\\Field": "application",
+    "Kumwe\\Extension\\Spi\\Contribution": "application",
+    "Kumwe\\Extension\\Spi\\Contribution\\AdministratorRouteDefinition": "domain",
+    "Kumwe\\Extension\\Spi\\Contribution\\AdministratorViewDefinition": "domain",
+    "Kumwe\\Extension\\Spi\\Contribution\\AdministratorWorkspaceDefinition": "domain",
+    "Kumwe\\Extension\\Spi\\Contribution\\CanonicalCompositionKind": "domain",
+    "Kumwe\\Extension\\Spi\\Contribution\\CompositionBlockDeclaration": "domain",
+    "Kumwe\\Extension\\Spi\\Contribution\\CompositionDesignVocabularyDeclaration": "domain",
+    "Kumwe\\Extension\\Spi\\Contribution\\CompositionFieldControlDeclaration": "domain",
+    "Kumwe\\Extension\\Spi\\Contribution\\CompositionHostBinding": "domain",
+    "Kumwe\\Extension\\Spi\\Contribution\\CompositionInspectorDeclaration": "domain",
+    "Kumwe\\Extension\\Spi\\Contribution\\CompositionMigrationDeclaration": "domain",
+    "Kumwe\\Extension\\Spi\\Contribution\\CompositionPatternDeclaration": "domain",
+    "Kumwe\\Extension\\Spi\\Contribution\\CompositionPropertySchema": "domain",
+    "Kumwe\\Extension\\Spi\\Contribution\\CompositionPropertyType": "domain",
+    "Kumwe\\Extension\\Spi\\Contribution\\ContributionDefinition": "domain",
+    "Kumwe\\Extension\\Spi\\Contribution\\ContributionOwner": "domain",
+    "Kumwe\\Extension\\Spi\\Contribution\\TranslationSetItemAssociation": "domain",
+    "Kumwe\\Extension\\Spi\\Http": "presentation",
+    "Kumwe\\Extension\\Spi\\Identity\\Domain": "domain",
+    "Kumwe\\Extension\\Spi\\Migration": "application",
+    "Kumwe\\Extension\\Spi\\Portal\\Contribution": "application",
+    "Kumwe\\Extension\\Spi\\Runtime": "application",
+    "Kumwe\\Extension\\Spi\\Studio\\Application": "application",
+    "Kumwe\\Extension\\Support": "shared",
+    "Kumwe\\Extension\\Toolchain": "application",
+    "Kumwe\\Producer\\Canonical": "shared",
+    "Kumwe\\Producer\\Css": "application",
+    "Kumwe\\Producer\\Error": "application",
+    "Kumwe\\Producer\\Render": "application",
+    "Kumwe\\Producer\\Schema": "shared",
+    "Kumwe\\Producer\\Wire": "application",
+    "Kumwe\\App\\Application\\Authorization\\AuthenticatedSurface": "shared",
+    "Kumwe\\App\\Application\\Authorization\\SiteContext": "shared",
+    "Kumwe\\App\\Http": "delivery",
+    "Kumwe\\App\\Administrator\\Http": "delivery",
+    "Kumwe\\App\\Administrator\\Content": "presentation",
+    "Kumwe\\App\\Administrator\\Automation": "presentation",
+    "Kumwe\\App\\Administrator\\Navigation": "presentation",
+    "Kumwe\\App\\BusinessDefinition\\Administrator": "presentation",
+    "Kumwe\\App\\BusinessSecurity\\Policy": "domain",
+    "Kumwe\\App\\Extension\\Contribution": "application",
+    "Kumwe\\App\\Extension\\Contribution\\ContributionDefinitionChecksum": "application",
+    "Kumwe\\App\\Extension\\Runtime": "application",
+    "Kumwe\\App\\InterfaceStandard": "domain",
+    "Kumwe\\App\\Localization\\Http": "delivery",
+    "Kumwe\\App\\Portal\\Http": "delivery",
+    "Kumwe\\App\\Portal\\Contribution": "application",
+    "Kumwe\\Example\\Contract": "shared",
+    "Kumwe\\Example": "application",
+    "Kumwe\\ExampleLegacy": "shared"
+  }
+}
