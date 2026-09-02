@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\Extension\Development;
 
 use Closure;
+use Kumwe\App\Extension\Application\ExtensionExecutionGate;
+use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\Extension\Runtime\ActiveExtensionSet;
 use Kumwe\App\Extension\Runtime\RestrictedExtensionContainer;
@@ -27,6 +29,7 @@ use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
+use ReflectionClass;
 
 #[CoversNothing]
 /**
@@ -151,12 +154,17 @@ final class AssetInspectionExampleTest extends TestCase
         ]);
         $provider->register($container);
         $registries = new ExtensionContributionRegistrySet();
-        $active = new ActiveExtensionSet($registries);
+        $active = new ActiveExtensionSet(
+            $registries,
+            (new ReflectionClass(TrustStore::class))->newInstanceWithoutConstructor(),
+            $this->createStub(ExtensionExecutionGate::class),
+        );
         $active->add(
             $manifest->identifier()->value(),
             $provider,
             $container,
             $manifest->contributions(),
+            runtimeEntry: ['identifier' => $manifest->identifier()->value()],
         );
         $active->activate();
 

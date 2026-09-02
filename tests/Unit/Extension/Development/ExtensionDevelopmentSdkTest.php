@@ -19,6 +19,8 @@ use Kumwe\Extension\Spi\BusinessIntegration\Application\DomainEventHandler;
 use Kumwe\Extension\Spi\BusinessIntegration\Application\IntegrationEventHandler;
 use Kumwe\Extension\Spi\BusinessReporting\Application\ProjectionBuilder;
 use Kumwe\Extension\Spi\Migration\ExtensionMigration;
+use Kumwe\App\Extension\Application\ExtensionExecutionGate;
+use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\Extension\Toolchain\ComponentScaffolder;
 use Kumwe\Extension\Toolchain\DeterministicPackageBuilder;
@@ -32,6 +34,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
+use ReflectionClass;
 use SplFileInfo;
 
 #[CoversClass(BuildExtensionCommand::class)]
@@ -154,7 +157,13 @@ final class ExtensionDevelopmentSdkTest extends TestCase
         $registries = new ExtensionContributionRegistrySet();
         $container = new RestrictedExtensionContainer($manifest->identifier()->value(), []);
         $provider->register($container);
-        $registrar = $registries->activateManifest($declarations);
+        $registrar = $registries->activateManifest(
+            $declarations,
+            (new ReflectionClass(TrustStore::class))->newInstanceWithoutConstructor(),
+            $this->createStub(ExtensionExecutionGate::class),
+            null,
+            ['identifier' => $manifest->identifier()->value()],
+        );
         $provider->bind($registrar, $container);
         $registrar->complete();
         $registries->validateBusinessDefinitions();

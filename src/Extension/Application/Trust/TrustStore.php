@@ -33,10 +33,11 @@ use Throwable;
  * in one transaction with the trust generation bump and the audit record that describes it. Withdrawing
  * a key goes further and publishes a new runtime generation, because that is the change that alters what
  * is allowed to run. It is also the enforcement point the running system keeps coming back to — install
- * and activation call `assertTrusted()`, and every extension route, event listener and administrator menu
- * render calls `enforceRuntimeTrust()` — which is what makes a key revoked long after installation take
- * effect at the next request rather than at the next deployment. Enforcement fails closed: a release that
- * cannot be verified is quarantined before the failure is raised.
+ * and activation call `assertTrusted()`, and every extension route, event listener, contributed job run,
+ * Studio preview render and administrator menu render calls `enforceRuntimeTrust()` — which is what makes
+ * a key revoked long after installation take effect at the next request rather than at the next
+ * deployment. Enforcement fails closed: a release that cannot be verified is quarantined before the
+ * failure is raised.
  *
  * @since  2.0.0
  */

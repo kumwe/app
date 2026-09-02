@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use Kumwe\App\BusinessDefinition\Domain\DefinitionOwner;
 use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
+use Kumwe\App\Extension\Runtime\TrustEnforcingJobHandler;
 use Kumwe\App\Extension\Runtime\TrustEnforcingStudioPreviewBlockRenderer;
 use Kumwe\Conversion\Provider\MoneyRateProvider;
 use Kumwe\Conversion\Provider\UnitConversionProvider;
@@ -70,8 +71,8 @@ final class OwnedExtensionBindingRegistrar implements ExtensionBindingRegistrar
      *
      * @param  ManifestContributions             $manifest        Canonical package-owned declaration graph.
      * @param  ExtensionContributionRegistrySet  $registries      Host registries receiving admitted behavior.
-     * @param  ?TrustStore                       $trust           Live trust boundary required by preview code.
-     * @param  ?ExtensionExecutionGate           $execution       Runtime-generation boundary for preview code.
+     * @param  ?TrustStore                       $trust           Live trust boundary required by preview and job code.
+     * @param  ?ExtensionExecutionGate           $execution       Runtime-generation boundary for preview and job code.
      * @param  ?string                           $runtimeVersion  Exact signed package version.
      * @param  array<string, mixed>|null         $runtimeEntry    Exact signed runtime-map entry.
      *
@@ -298,7 +299,7 @@ final class OwnedExtensionBindingRegistrar implements ExtensionBindingRegistrar
     }
 
     /**
-     * Bind a job executable to its signed job type.
+     * Bind a job executable to its signed job type behind the live trust and boot-generation fence.
      *
      * @param   string      $identifier  Canonical manifest job type.
      * @param   JobHandler  $handler     SDK job executable.
@@ -311,9 +312,22 @@ final class OwnedExtensionBindingRegistrar implements ExtensionBindingRegistrar
     {
         $kind = ExecutableBindingKind::JobHandler;
         $this->assertBindable($kind, $identifier);
+        if ($this->trust === null || $this->execution === null || $this->runtimeEntry === null) {
+            throw new LogicException('A contributed job handler requires exact signed runtime provenance.');
+        }
         $definition = $this->manifest->job($identifier)
             ?? throw new LogicException('A declared job lost its canonical definition.');
-        $this->registries->jobs()->register($this->manifest->owner, $definition, $handler);
+        $this->registries->jobs()->register(
+            $this->manifest->owner,
+            $definition,
+            new TrustEnforcingJobHandler(
+                $handler,
+                $this->trust,
+                $this->execution,
+                $this->manifest->owner->identifier(),
+                $this->runtimeEntry,
+            ),
+        );
         $this->record($kind, $identifier);
     }
 
