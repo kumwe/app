@@ -48,8 +48,9 @@ until then, which is why every version below is exact.
 
 ## Current App pin and next release family
 
-The App currently consumes the eight-package `0.1.0-rc.1` release-candidate family. All
-eight exact tarballs are vendored and pinned:
+The App currently consumes the eight-package `0.1.0-beta.3` coordinated beta family — the Studio
+coordinate `kumwe/producer` 0.2.0 pins, adopted deliberately in place of the interim `0.1.0-rc.1`
+snapshot so that App → Producer → Studio is one chain. All eight exact tarballs are vendored and pinned:
 [`resources/studio-contract/PIN.json`](../../resources/studio-contract/PIN.json) is the authoritative
 record of their exact versions and tarball checksums, and `composer studio:corpus` fails when the
 App bytes, Producer's typed release, and the installed exact packages disagree. Producer owns the PHP schema
@@ -60,24 +61,24 @@ Node.js, Vite, a development server, or server-side JavaScript.
 
 | Package | Version | What it carries |
 |---|---|---|
-| `@kumwe/studio-protocol` | `0.1.0-rc.1`, vendored and pinned | The wire types, guards, and the complete JSON Schema corpus with its digest manifest |
-| `@kumwe/studio-core` | `0.1.0-rc.1`, vendored and pinned | The deterministic command engine, session, contribution runtime, migrations, URL policy |
-| `@kumwe/studio-preview` | `0.1.0-rc.1`, vendored and pinned | Both ends of the origin-pinned preview channel: client, host responder, geometry |
-| `@kumwe/studio-media` | `0.1.0-rc.1`, vendored and pinned | Upload orchestration over the canonical media session state machine |
-| `@kumwe/studio-renderer-web` | `0.1.0-rc.1`, vendored and pinned | The portable semantic web renderer with scoped CSS, safe markup, and the published conformance vector runner |
-| `@kumwe/studio-rich-text` | `0.1.0-rc.1`, vendored and pinned | The bounded rich-text grammar, parser and renderer projection |
-| `@kumwe/studio` | `0.1.0-rc.1`, vendored and pinned | The authoring shell as a web component, keyboard-complete and catalog-localized |
-| `@kumwe/studio-testkit` | `0.1.0-rc.1`, vendored and pinned | The canonical fixture corpus and a deterministic in-memory reference host |
+| `@kumwe/studio-protocol` | `0.1.0-beta.3`, vendored and pinned | The wire types, guards, and the complete JSON Schema corpus with its digest manifest |
+| `@kumwe/studio-core` | `0.1.0-beta.3`, vendored and pinned | The deterministic command engine, session, contribution runtime, migrations, URL policy |
+| `@kumwe/studio-preview` | `0.1.0-beta.3`, vendored and pinned | Both ends of the origin-pinned preview channel: client, host responder, geometry |
+| `@kumwe/studio-media` | `0.1.0-beta.3`, vendored and pinned | Upload orchestration over the canonical media session state machine |
+| `@kumwe/studio-renderer-web` | `0.1.0-beta.3`, vendored and pinned | The portable semantic web renderer with scoped CSS, safe markup, and the published conformance vector runner |
+| `@kumwe/studio-rich-text` | `0.1.0-beta.3`, vendored and pinned | The bounded rich-text grammar, parser and renderer projection |
+| `@kumwe/studio` | `0.1.0-beta.3`, vendored and pinned | The authoring shell as a web component, keyboard-complete and catalog-localized |
+| `@kumwe/studio-testkit` | `0.1.0-beta.3`, vendored and pinned | The canonical fixture corpus and a deterministic in-memory reference host |
 
 The host adapter's server side needs none of these at runtime — the protocol is JSON over the wire.
 The packages matter in two places: the administrator build consumes `@kumwe/studio` (and transitively
 the runtime packages) through the existing Vite entry points, and the test suite consumes the corpus
 shipped inside `@kumwe/studio-testkit` and `@kumwe/studio-protocol`.
 
-The pin identifies one coordinated release-candidate family; it is not evidence that App's contextual journey or
+The pin identifies one coordinated beta family; it is not evidence that App's contextual journey or
 Studio's/App's gate acceptance has passed. Package publication, provenance, conformance, and gate status remain
 separate claims under Studio's release record and roadmap status. No App documentation may infer integrated product
-maturity from the `rc.1` label alone.
+maturity from the `beta.3` label alone.
 
 | Coordinated package | Release-unit responsibility |
 |---|---|
@@ -147,16 +148,19 @@ and media, not behavior implementations.
 ## The contract corpus, usable from PHPUnit
 
 Every contract artifact is language-neutral JSON, so the host side proves conformance without executing
-any Studio code. The corpus at the currently pinned rc.1 versions is:
+any Studio code. The corpus at the currently pinned beta.3 versions, as Producer vendors it and
+`npm run check:studio-corpus` replays it, is:
 
 | Corpus | Where it ships | Count |
 |---|---|---|
-| Positive schema documents | coordinated protocol/testkit corpus | 218 |
+| Positive schema documents | coordinated protocol/testkit corpus | 234 |
 | Command vectors (initial document, command, expected result or failure code, inverse) | `@kumwe/studio-testkit` `vectors/command/` | 60 |
 | Canonical serializations | coordinated protocol/testkit corpus | 12 |
 | Preview identities | coordinated protocol/testkit corpus | 2 |
-| Negative fixtures the schemas must reject | coordinated protocol/testkit corpus | 43 |
-| Rich-text renderer conformance projections | `@kumwe/studio-testkit` `conformance/rich-text/` | 7 |
+| Negative fixtures the schemas must reject | coordinated protocol/testkit corpus | 60 |
+| Rich-text renderer conformance projections | `@kumwe/studio-testkit` `conformance/rich-text/` | 8 |
+| Renderer-web conformance vectors | `@kumwe/studio-testkit` `conformance/renderer-web/` | 8 |
+| Host-port and host-sequence vectors, replayed by the PHP suites | `@kumwe/studio-testkit` `vectors/host/`, `vectors/host-sequence/` | 31 and 9 |
 
 What the host test suite asserts with them:
 
@@ -173,8 +177,10 @@ The eight-package family adds a renderer-web conformance corpus. Its candidate b
 first-party block types, all nine progressive-behavior families, all ten presentation axes and the five
 security-fallback classes in eight language-neutral vectors. Those numbers describe the acceptance target
 for the coordinated prerelease. The App's corpus lane replays all eight vectors through the published
-`runRendererWebVector` runner against the exact installed renderer; the App Twig adapter's replay of the
-same vectors is still open work and remains required before this pin can become Gate B evidence.
+`runRendererWebVector` runner against the exact installed renderer. There is no App Twig renderer to replay
+them against any more: preview and publication call Producer's `CompositionRenderer`, so renderer conformance
+is Producer's obligation at its pinned coordinate, and the App proves only its own seams — the structural
+layout renderer, contributed block binding and render-result admission — under its unit and integration suites.
 
 ### App verification paths
 

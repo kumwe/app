@@ -19,10 +19,14 @@ An installed extension is **trusted in-process extension code**. Its PHP runs in
 and scheduler processes with the full ambient authority of the runtime user, and installing it means the
 operator has trusted you with that process.
 
-`RestrictedExtensionContainer`, which hands your provider its services, is an **API compatibility
-boundary and not a sandbox**. It decides which host services you may resolve — which is what stops you
-depending on internals that move under you, and stops two extensions colliding — and it constrains
-nothing about what your code does once it is running. Do not design against it as though it were a
+Your provider is typed against the SDK contract `Kumwe\Extension\Spi\Runtime\ExtensionContainer` —
+`get()` and `share()` — and never against a host class. The App's `RestrictedExtensionContainer`
+(`Kumwe\App\Extension\Runtime`) is the host authority that implements that contract: the runtime loader
+builds one per active extension and hands it to your provider, it decides which host services you may
+resolve, and it confines what you share to your own `extension.<vendor>.<name>.` prefix. It is an **API
+compatibility boundary and not a sandbox**. Deciding which services resolve is what stops you depending on
+internals that move under you, and stops two extensions colliding — and it constrains nothing about what
+your code does once it is running. Do not design against it as though it were a
 security boundary, and do not describe it to your users as one.
 
 Two consequences for an author:

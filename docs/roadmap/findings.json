@@ -641,32 +641,6 @@
             "forward_reference": "V2-DR-003 changes the artifact this section documents; the reference schedule and the off-host step must be restated for the reshaped payload and the reference transport."
         },
         {
-            "id": "V2-STU-002",
-            "title": "The Studio contract is not pinned or replayed, so a composition integration would build against a moving draft",
-            "severity": "high",
-            "state": "accepted_for_implementation",
-            "phase": "S",
-            "gate": "B",
-            "origin": "new",
-            "source_anchors": [
-                {
-                    "file": "package.json",
-                    "symbol": "the dependency set",
-                    "note": "The administrator build declares lit as its single runtime dependency and no @kumwe/studio package of any kind. Nothing pins a contract version and nothing fails when one moves."
-                },
-                {
-                    "file": "docs/roadmap/studio-integration.md",
-                    "symbol": "the published package table",
-                    "note": "Seven packages publish on a prerelease dist-tag under a 0.1-draft contract, so an inexact specifier would take a contract change silently."
-                }
-            ],
-            "acceptance_test": "The administrator build declares every Studio package at an exact version, the published schema and fixture corpus is vendored into the test fixtures at those exact versions, and a conformance suite validates every corpus document against its schema and recomputes the published digest manifest. A dependency check fails the build on a non-exact specifier for any Studio package, and the corpus check fails when the vendored fixtures and the pinned release disagree.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null,
-            "work_package": "S-B",
-            "product_owner_decision": "Decision D16."
-        },
-        {
             "id": "V2-STU-005",
             "title": "The media port and the external-source obligations the composition contract names have no host implementation",
             "severity": "high",

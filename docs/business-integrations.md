@@ -5,9 +5,10 @@ automation, projections, and reports. They extend schema 3; they do not change t
 schema 1, 2, or 3 packages. A schema-4 package is trusted in-process code, but every executable contribution still
 has to match its signed, owner-scoped declaration before it can enter a runtime generation.
 
-The complete Version 2 extension SDK now carries manifest schemas 1 through 5 and contribution SPI revisions 1
-through 3. Schema 5/SPI 3 preserves every schema-4 integration byte and adds the separate declarative composition
-section. This guide focuses on the durable-integration contract introduced by schema 4/SPI 2.
+The complete Version 2 extension SDK — `kumwe/extension-sdk`, pinned exactly at 0.2.4 — carries manifest schemas 1
+through 6 and contribution SPI revisions 1 through 4. Schema 5/SPI 3 preserves every schema-4 integration byte and
+adds the separate declarative composition section; schema 6/SPI 4 carries canonical Studio documents beside the
+frozen generations. This guide focuses on the durable-integration contract introduced by schema 4/SPI 2.
 
 This guide is for extension authors and operators. It covers compatibility and failure semantics that application
 code must not invent independently. The example under `examples/extensions/asset-inspection` is deliberately a
@@ -53,7 +54,7 @@ runtime inventory; parsing a manifest or instantiating its provider alone is not
 
 The following are versioned extension-facing contracts in Kumwe 2.x:
 
-- manifest schemas 1 through 5 and contribution SPI revisions 1 through 3;
+- manifest schemas 1 through 6 and contribution SPI revisions 1 through 4;
 - `ExtensionServiceProvider`, optional `BootableExtension`, `ExtensionBindingProvider`,
   `ExtensionBindingRegistrar`, and `ExtensionContainer`;
 - immutable definition and event DTOs in `BusinessIntegration\Domain` and `BusinessReporting\Domain`;

@@ -33,6 +33,44 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Added
 
+- **2026-09-02 — Contributed job handlers run behind the same per-call trust and boot-generation fence as
+  extension routes and Studio preview renderers.** A job implementation is bound once while the runtime
+  loads and then executed by the worker for as long as the process lives, so the worker alone could not
+  express that the package had been superseded, deactivated or had its signing key revoked afterwards.
+  The binding registrar now refuses a job binding without exact signed runtime provenance and wraps every
+  contributed handler in `TrustEnforcingJobHandler`, which checks the boot generation before and inside
+  the installation-wide lifecycle lock and re-runs package trust against the exact signed runtime entry
+  before the delegate runs; the worker's payload validation against the signed schema stays outermost, so
+  an undeclared payload member is refused without taking the lock. A refusal quarantines an untrusted
+  release and fails the job closed. (#124)
+- **2026-09-02 — Phase S package `S-B` is complete: the Studio contract is pinned exactly, replayed and
+  verified on every build, and `V2-STU-002` leaves the ledger.** Every acceptance clause of the finding holds
+  in the tree. The administrator build declares all eight `@kumwe/studio` packages as exact `0.1.0-beta.3`
+  tarballs whose versions and SHA-256 digests `resources/studio-contract/PIN.json` records;
+  `npm run check:studio-release` proves eight exact packages, three identical release records, pinned tarball
+  bytes and a matching lockfile. The published schema and fixture corpus is vendored at that exact release —
+  once, inside the exactly pinned `kumwe/producer` 0.2.0, rather than as a second copy under `tests/` — and
+  `composer studio:corpus` binds App's release record and tarball bytes to Producer's typed release, compiles
+  Producer's closed schema registry and resolves all 301 testkit members in 14 groups, failing when any of the
+  three disagree. `npm run check:studio-corpus` validates 234 positive documents against their schemas, refuses
+  60 negative fixtures and replays 60 command, 12 canonical, 2 preview-identity, 8 rich-text and 8 renderer-web
+  vectors against the installed packages. `composer studio:dependencies` holds the three Composer pins and eight
+  Studio pins to exact immutable coordinates, and `StudioDependencyPinGateTest` proves that a range, branch,
+  alias or foreign specifier fails. Host-port vectors replay through App's own Producer ports in the PHP suites
+  — media and preview today, artifact and recovery in
+  `tests/Integration/Studio/StudioArtifactRecoveryVectorReplayIntegrationTest.php`. The pin is evidence of a
+  frozen dependency, not of integrated maturity: Gate B criterion 12 still turns on `V2-STU-005` –
+  `V2-STU-007`. (#124)
+- **2026-09-02 — The four structural block families render through an App-owned layout renderer behind
+  Producer's seam.** Producer renders `studio.core/{section,stack,grid,columns}` as a neutral layout `div`
+  with scoped column custom properties; the App's site stylesheet, Studio canvas and published pages key on
+  the contract the App owned before the extraction — one classed structural element carrying the closed
+  `data-studio-layout` intent, resolved for the requested width in a preview and retained for every bounded
+  width in public markup. `StudioLayoutBlockRenderer` now owns that vocabulary and is bound at the
+  `core.renderer/layout` seam of `StudioBlockRendererRuntime`, so grids keep their columns, empty sections keep
+  their editor placeholder height and measured canvas regions have a size again; the stylesheet returns to its
+  class vocabulary, the built assets follow, and the published-content and block-runtime proofs assert the App
+  element. Block semantics, wrappers, hidden state, scope and traversal stay Producer's. (#124)
 - **P4-B — Bulk persistence mechanics: a document's cost is decided up front, bounded by declaration, and
   visible afterwards.** Four paths in the aggregate document command grew with the collection instead of
   with the work. Entity references resolved per line — every reference field of every line took a
@@ -251,7 +289,10 @@ development programme, from the architecture decision that opened it to the curr
   `kumwe/contract-manifest-six` fixture declares every canonical kind and passes the complete
   install, activate, upgrade, disable, reactivate and uninstall lifecycle, and
   `classification.json` and `generations.json` record the generation with recomputed surface
-  digests: 6 manifest generations, 4 SPI generations, 117 classified public types.
+  digests: 6 manifest generations, 4 SPI generations and, in the App-owned classification of that
+  commit, 117 classified public types. That classification has since moved to `kumwe/extension-sdk`;
+  at the pinned 0.2.4 it records 182 public types — 117 classes, 43 interfaces and 22 enums across its
+  five public namespaces — beside the same six manifest and four SPI generations.
 
 - **The Studio schema-property profile has its independent PHP implementation.** Under
   `src/Extension/Domain/Internal/StudioProfile/`, `CanonicalJson` produces the portability
@@ -1216,6 +1257,39 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Changed
 
+- **2026-09-02 — `kumwe/extension-sdk` is pinned at 0.2.4, the release that makes the scaffold executable
+  end to end.** The 0.2.3 scaffold generated handlers calling declaration members the SDK never defined —
+  the listener passed the event object to `DomainListenerDefinition::accepts()`, the job handler called a
+  `type()` the job definition does not have, and the consumer called an `accepts()` the consumer definition
+  does not have — so an installed component crashed on its first event, job and durable delivery; the
+  generation-lifecycle proof had only ever loaded them. 0.2.4 corrects the generated and fixture handlers,
+  executes them in the SDK suite against manifest-built declarations, repairs the `kumwe-extension` command
+  line that fatalled on every real command, removes the two declaration mirrors that imported five
+  non-existent `Spi` types together with the dead `Spi\Presentation` and `Spi\Runtime` registrar families
+  (182 classified public types), adds `Capability` grammar coverage and reconciles the migration map
+  against this branch. The App's generated-extension lifecycle proof now drives every executable the
+  provider binds through the host after activation: the domain listener through the App dispatcher against
+  the App's event contracts, the job through the worker registry's validated and trust-fenced handler, and
+  both graphical routes through the HTTP pipeline under a real administrator session and a real portal
+  member session, then observes the pipeline drain with 503 once the package is disabled. The layer map
+  drops the `Spi\Presentation` rule with the namespace. (#124)
+- **2026-09-01 — Recorded decision: the App's Studio pin moves from `0.1.0-rc.1` to `0.1.0-beta.3`, the
+  coordinate `kumwe/producer` 0.2.0 pins.** This is a deliberate re-pin with its own evidence, not a silent
+  one, and the lower prerelease label is accepted on purpose: Producer's host agreement makes the pin a
+  three-way chain, App → Producer → Studio, and Producer's first released coordinate set
+  (`kumwe/extension-sdk` 0.2.0, since advanced to 0.2.4, `kumwe/producer` 0.2.0, `kumwe/conversion` 0.1.2)
+  implements Studio `0.1.0-beta.3` at protocol `0.1.0-draft.2`. Holding the interim `0.1.0-rc.1` snapshot
+  would have left App and Producer disagreeing about the contract they share. The release record and all
+  eight npm tarballs were replaced atomically with the provenance-backed beta.3 bytes, `PIN.json` names every
+  digest, the browser build points at the same tarballs, and the alignment verifier now requires the Producer
+  pin to be a provenance-backed npm release anchored to its exact source commit.
+  `PinnedStudioContextualAuthoringAvailabilityTest` records what the new pin does and does not enable: the
+  readiness gate passes its protocol boundary —
+  Producer's digest-verified corpus manifests the four contextual document schemas and its operation registry
+  carries the seven authoring capability/route pairs — and stops closed at `browser-runtime-unavailable`,
+  because beta.3 claims no contextual profile and App packages no contextual browser entry. No maturity claim
+  follows from the label in either direction. (#124)
+
 - **Extension installation now consumes the Extension SDK 0.2 package and security authorities directly.**
   One private, bounded `InspectedPackage` snapshot supplies archive identity, checksum, manifest, neutral
   findings, attestations and extraction bytes; App policy maps coded facts without recreating SDK package
@@ -1528,6 +1602,14 @@ development programme, from the architecture decision that opened it to the curr
   and export payloads are unchanged. (`72cc3e6`)
 
 ### Fixed
+
+- **2026-09-01 — The administrator extensions screen renders composition-only extensions instead of failing
+  with HTTP 500.** The canonical SDK contribution graph carries only the sections a manifest declares, so a
+  schema-6 package with no administrator section reached the extensions screen without one and the screen
+  failed; the browser lanes saw it on every asset-inspection and Horizon listing. `DoctrineExtensionManager`'s
+  live diagnostics projection now fills every section the screen reads, empty when undeclared, before stamping
+  its live flags, and the generation-lifecycle walk and the manifest-six preview-renderer proof both render
+  the real extensions screen against their fresh kernel. (#124)
 
 - **The Studio host now consumes one release coordinate instead of four copied literals.** PHP bootstrap,
   the Vite build assertion and localization generation all derive from the canonical vendored
