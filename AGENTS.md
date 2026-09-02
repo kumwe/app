@@ -52,6 +52,8 @@ services. What one allows, the others allow. What one refuses, the others refuse
 [ ] Read only the package you are executing (roadmap README §9) and any ADR it names.
 [ ] Do not read docs/qualification/gap-matrix.md to plan. It is historical evidence.
 [ ] Follow the recipe below that matches what you are about to touch.
+[ ] Run the Capability Reuse Review (section 5 recipe) before writing any class, interface, enum,
+    exception, value, helper, registry, policy, factory or public method that could be reusable.
 [ ] Run the hand-back commands. Re-record the baseline if inventory moved.
 [ ] Same pull request: live indexes and changelog move together. Never set a finding to closed.
 ```
@@ -149,6 +151,9 @@ nobody told the record. This is the hole.
 | Widen a PHPDoc type (`list<string>` → `array`) | PHPStan max | Add prose. Never widen or delete an existing type |
 | Touch a shipped migration that checksums its own bytes | install integrity | Document **before** it ships. Never formatter-pass it afterwards |
 | Introduce a secret-shaped literal, even in a later-fixed commit | `composer security:secrets` | Rewrite the introducing commit, or fingerprint-allowlist in `.gitleaksignore` |
+| Change `composer.lock`, re-pin a Kumwe package, or edit a vendor manifest | `composer kumwe:capability-index-check` | `composer kumwe:capability-index` and commit `docs/architecture/capability-index.md` |
+| Add a `src/` class-like or change a public signature | `composer kumwe:core-growth-check` | Portable layer (shared, domain, application): an approved `docs/architecture/core-growth/KUMWE-CGR-YYYY-NNN.md`, then `composer kumwe:core-growth-record`. Host layer: `composer kumwe:core-growth-record`. Commit `docs/architecture/governance/core-growth-baseline.json` |
+| Reintroduce an extracted namespace or a removed App symbol | `kumwe:core-growth-check` | Use the package symbol the capability index names. No alias, remap, shadow or fallback |
 
 `composer qa` already includes `baseline:check`. Adding a legitimate test without
 re-recording the baseline is the most common red build.
@@ -176,13 +181,60 @@ Pick one. Do every box. Then the hand-back commands.
 [ ] composer baseline:record
 ```
 
+### Reuse before you build (Capability Reuse Review)
+
+Run this before writing any class, interface, trait, enum, exception, value, helper, algorithm,
+registry, policy, service abstraction, factory or public method that could be reusable. App is the
+composition root, not the default home for reusable behaviour. The machinery is explained in
+[`docs/architecture/governance/README.md`](docs/architecture/governance/README.md).
+
+```
+[ ] Inspect, in this order:
+    1. composer.lock and composer show --locked "kumwe/*": the exact installed releases.
+    2. The generated capability index, docs/architecture/capability-index.md, and its digest.
+    3. The relevant packages' CHARTER.md, README.md, architecture/integration docs and examples.
+    4. resources/public-api/v1.json, resources/capabilities/v1.json, resources/service-map/v1.json.
+    5. The exact installed release's source and tests, not an assumed or remembered API.
+    6. App adapters, DI/configuration, migration records and active extraction PRs.
+    7. Extension SDK, Producer and Studio ownership when the capability concerns extensibility.
+[ ] Search by business noun, action, responsibility, invariant, error/finding and consumer
+    behaviour as well as the proposed symbol name. A name-only search is insufficient.
+[ ] A missing or contradictory package manifest is a discovery blocker. Repair the owning
+    package's documentation or release evidence before inventing another API.
+[ ] Decide in this order and stop at the first that applies:
+    1. Reuse an existing stable public API.
+    2. Incomplete? Extend the package that already owns the responsibility; test, release and
+       consume that new immutable version.
+    3. No package coherently owns the portable capability? Propose a focused new library with a
+       charter and a dependency review.
+    4. Add to App only when the behaviour is inherently host composition, authority, adapter,
+       persistence, orchestration, security enforcement, delivery, deployment or recovery.
+    5. Ownership still ambiguous? Stop for architectural review.
+    Convenience, urgency, an unfamiliar API or avoiding an upstream release is not an
+    App-ownership justification.
+[ ] Never answer a missing capability with: editing vendor/; copying package code into App; an
+    App helper that duplicates a package responsibility; a historical namespace alias or Composer
+    remap; a class_exists(), extension-detection or silent-exception fallback; registering both
+    App and package owners for one service or FQCN; depending on internal or undocumented package
+    classes; reintroducing a class an extraction removed.
+[ ] Fill the "Capability reuse review" section of the pull request
+    (.github/pull_request_template.md): capability required, packages/releases/symbols inspected,
+    capability-index digest, decision, upstream PR and release, Core Growth Record or migration
+    record, tests proving ownership. A reviewer must be able to reproduce the decision without
+    your chat history.
+```
+
 ### Add a PHP class under `src/`
 
 ```
+[ ] Capability Reuse Review first (recipe above). Reusable behaviour belongs to the package that
+    owns it; App owns composition, authority, adapters, persistence, delivery and recovery.
 [ ] final readonly class is the default. Constructor promotion. Native types everywhere.
 [ ] Documentation block on the class, every method, property, constant, and enum case.
     @since 2.0.0 last. Never rewrite an existing @since.
 [ ] Put it in the module that owns the concept (section 2). Do not invent a sixth HTTP tree.
+[ ] Never reintroduce a symbol a migration removed or a namespace an extraction retired. Use
+    the package symbol the capability index names; kumwe:core-growth-check refuses both.
 [ ] Dependencies through the constructor. No static container.
 [ ] Domain and application code must not import Doctrine, Redis, Twig, HTTP messages,
     or process globals. If you need them, you are in the wrong layer: introduce a port.
@@ -199,6 +251,11 @@ Pick one. Do every box. Then the hand-back commands.
 [ ] Sandbox on PHP 8.4? Whatever is 8.5-only — deprecations fail both PHPStan and the
     suite in CI — stays invisible locally until the packages.sury.org egress line is
     allowed. Treat any 8.5-deprecated API as forbidden.
+[ ] composer kumwe:core-growth-check. A new or widened public surface in shared, domain or
+    application needs an approved docs/architecture/core-growth/KUMWE-CGR-YYYY-NNN.md (how:
+    docs/architecture/core-growth/README.md); infrastructure, presentation, delivery and kernel
+    growth is recorded as host evidence. Either way, composer kumwe:core-growth-record and commit
+    docs/architecture/governance/core-growth-baseline.json.
 [ ] Then the "add a test" recipe, including baseline:record.
 ```
 
@@ -299,10 +356,11 @@ older contributor files. It currently runs, in order:
 
 ```
 architecture:policy → baseline:check → quality:contract → docs:api →
-docs:format:check → docs:tests → extension:contract → cli:contract →
-mcp:contract → interface:programme → roadmap:check → openapi:check →
-translation:check → translation:strings → assets:direction →
-coverage:attribution → cs → analyse → test
+docs:format:check → docs:tests → extension:contract → extension:independence →
+conversion:api → cli:contract → mcp:contract → studio:corpus → studio:dependencies →
+kumwe:capability-index-check → kumwe:core-growth-check → interface:programme →
+roadmap:check → openapi:check → translation:check → translation:strings →
+assets:direction → coverage:attribution → cs → analyse → test
 ```
 
 ```bash
@@ -311,6 +369,10 @@ composer docs:format        # apply alignment; qa only dry-runs it
 composer security:secrets   # history-wide gitleaks; needs Docker; not inside qa
 composer baseline:record    # when tests, routes, commands, migrations, skips,
                             # lockfiles, or OpenAPI operations moved
+composer kumwe:capability-index        # regenerate the capability index after a lockfile or pin change
+composer kumwe:capability-index-check  # the committed index matches composer.lock and vendor/ exactly
+composer kumwe:core-growth-check       # no duplicate owner, reintroduced symbol or unrecorded growth
+composer kumwe:core-growth-record      # re-record docs/architecture/governance/core-growth-baseline.json
 ```
 
 When `composer install` is unavailable, the documentation tools still run:
@@ -366,6 +428,39 @@ npm run test:browser                            # public HTML behaviour
 10. **PHP remains the server authority.** Browser Studio calls PHP application services and PHP HTTP endpoints.
     Node.js and npm may build and test committed browser assets, but never ship as a production requirement,
     process, container dependency, operator step, or author step.
+11. **Library-first Core.** Reusable behaviour belongs to the Kumwe package that owns it; App composes.
+    This block is the policy, verbatim from the Version 2 Core Non-Reinvention Protocol:
+
+    ```text
+    LIBRARY-FIRST CORE POLICY
+
+    Before adding or expanding reusable production behavior in kumwe/app, inspect composer.lock, composer show
+    --locked "kumwe/*", the generated Kumwe capability index, and the relevant installed packages' CHARTER, README,
+    public-api, capability, service-map, source, tests, and examples. Search by responsibility and behavior, not only
+    a proposed class name. Record the Capability Reuse Review in the PR.
+
+    Reuse an existing public package API first. If it is incomplete, change and release the package that owns the
+    responsibility before changing App. Propose a new focused package only when no current package owns the portable
+    bounded context. App may own host composition, authority, adapters, persistence, orchestration, security
+    enforcement, delivery, deployment, and recovery—not portable framework behavior.
+
+    Do not edit vendor, copy a package implementation into App, add historical aliases/remaps/shadows/fallbacks,
+    depend on package internals, or create a second production owner. A new App production FQCN/public reusable method
+    requires an approved Core Growth Record and architecture-gate evidence. If ownership is ambiguous, stop for
+    review.
+    ```
+
+12. **Phase discipline and human merge authority.** Every agent that migrates, adopts or integrates a
+    package works under this clause, verbatim from the Version 2 Parallel Migration Protocol:
+
+    ```text
+    Read the repository-specific Version 2 brief and the parallel migration protocol before changing code. Determine
+    the phase and do not cross its release gate. Investigate existing package APIs before adding App implementation.
+    Preserve all concurrent objectives when synchronizing; never resolve a conflicted file wholesale with ours/theirs
+    and never hand-edit generated dependency state. Record nontrivial conflicts and tests proving both objectives
+    survived. You may prepare and update branches and PRs, but human maintainers retain protected-branch merge and
+    release authority.
+    ```
 
 A fixture, a route, a command, and a changelog sentence are all load-bearing. The
 gates treat them that way.
@@ -417,6 +512,8 @@ application, adapter in infrastructure. Do not grow the baseline.
 | [`docs/README.md`](docs/README.md) | Operating or extending a *site*, not this programme. |
 | [`docs/qualification/gap-matrix.md`](docs/qualification/gap-matrix.md) | Never, to plan. Residual `GM-*` IDs live in `findings.json`. |
 | KIS programme under `docs/interface-standard/programme/` | Changing a graphical surface's migration state. Not product sequencing. |
+| [`docs/architecture/governance/README.md`](docs/architecture/governance/README.md) | Adopting, extracting or pinning a Kumwe package; writing any governance record |
+| [`docs/architecture/capability-index.md`](docs/architecture/capability-index.md) | Before adding reusable behaviour: what the installed packages already own |
 
 **Three views, one state.** `docs/roadmap/README.md` is the durable programme
 specification. `STATUS.md` and `findings.json` are the live forward-work indexes.

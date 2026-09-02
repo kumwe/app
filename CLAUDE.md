@@ -19,6 +19,8 @@ them automatically and does not carry a second, drifting copy of the rules.
 composer qa                 # the local lane (see AGENTS.md for the full member set)
 composer baseline:record    # after tests, routes, commands, migrations, skips,
                             # lockfiles, or OpenAPI operations move (AGENTS.md §4)
+composer kumwe:capability-index    # regenerate docs/architecture/capability-index.md (lockfile/pin moved)
+composer kumwe:core-growth-check   # refuse duplicate owners, reintroduced symbols, unrecorded growth
 composer cs                 # PSR-12 layout
 composer analyse            # PHPStan level max
 composer test:unit          # unit suite
@@ -33,3 +35,7 @@ Read `AGENTS.md`. Every class, method, property, class constant, and enum case c
 documentation block ending in `@since`, and existing narrow PHPDoc types are load-bearing
 for PHPStan — never widen or delete them. Adding a `public function test…` without
 re-recording `docs/quality/baseline.json` fails `composer qa`.
+
+Before writing any class, interface, enum, exception, value, helper, registry, policy, factory or
+public method that could be reusable, run the Capability Reuse Review (`AGENTS.md` section 5, "Reuse
+before you build"): reusable behaviour belongs to the Kumwe package that owns it, and App composes it.
