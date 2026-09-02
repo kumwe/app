@@ -33,6 +33,22 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Added
 
+- **2026-09-02 — The library-first Core policy is executable: `NRM-2026-001` bootstraps App governance.**
+  `AGENTS.md` now carries the policy verbatim and the Capability Reuse Review an agent runs before writing
+  anything reusable. The capability index, `docs/architecture/capability-index.md`, is generated from
+  `composer.lock` and the installed Kumwe packages' CHARTER, README, public-api, capabilities and service-map
+  manifests — today three legacy-unmanifested transitional entries, `kumwe/conversion`, `kumwe/extension-sdk`
+  and `kumwe/producer`, which cannot satisfy a migration release gate — and
+  `composer kumwe:capability-index-check` refuses a stale index or digest. The Core Growth gate,
+  `composer kumwe:core-growth-check`, refuses duplicate FQCN, capability and service ownership, a reintroduced
+  extracted namespace or removed App symbol, and unrecorded portable growth without an approved Core Growth
+  Record; host-layer adapters and composition are recorded as evidence in
+  `docs/architecture/governance/core-growth-baseline.json`. Every governance record — capability index, Core
+  Growth Record, migration ledger, change set, non-roadmap record, conflict ledger, integration train, Engine
+  candidate attestation, release attestation, verified-legacy release, migration handoff and the three
+  package manifests — has a versioned JSON Schema and a validated example under
+  `docs/architecture/governance/`, and `.github/pull_request_template.md` requires the reuse evidence a
+  reviewer can reproduce without chat history. No runtime behaviour changes. (#129)
 - **2026-09-02 — Contributed job handlers run behind the same per-call trust and boot-generation fence as
   extension routes and Studio preview renderers.** A job implementation is bound once while the runtime
   loads and then executed by the worker for as long as the process lives, so the worker alone could not

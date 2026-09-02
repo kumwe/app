@@ -79,6 +79,25 @@ recorded families keep their owner, finding, and expiry and belong to the seams 
 
 ---
 
+## Governance
+
+Portable behaviour belongs to Kumwe packages; App composes them. The policy is `AGENTS.md`
+section 7, items 11 and 12; the guide is [governance/README.md](governance/README.md); two
+gates in `composer qa`, `kumwe:capability-index-check` and `kumwe:core-growth-check`, enforce it.
+
+| Path | Role |
+|---|---|
+| `docs/architecture/governance/` | Guide, rulings, record schemas and examples, legacy registry, Core Growth baseline |
+| `docs/architecture/capability-index.md` | Generated: what every locked Kumwe package owns. Never hand-edited |
+| `docs/architecture/core-growth/` | Core Growth Records: why approved portable-layer growth stays in App |
+| `docs/architecture/migrations/` | Ledger, change sets, conflicts, trains and release evidence of package adoption |
+| `docs/architecture/non-roadmap/` | Non-roadmap records (`NRM-YYYY-NNN.yaml`) for governance and relocation work |
+| `tools/Governance/` | Dependency-free classes behind both gates: YAML subset, schemas, scanner, index, gate |
+| `tools/generate-capability-index.php` | `--write` regenerates, `--check` refuses drift, `--digest` prints it |
+| `tools/verify-core-growth.php` | Compares `src/` with the baseline and the index; `--record` re-records the baseline |
+
+---
+
 ## Request flow
 
 ```
