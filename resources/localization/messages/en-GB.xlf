@@ -15474,6 +15474,14 @@
         <source>Unknown Kumwe command: {name}</source>
       </segment>
     </unit>
+    <unit id="core.console.demo_install.example_failed">
+      <notes>
+        <note category="context">Failure line of demo:install when one example's install step throws. {example} is the shipped example name and {reason} the refusal the extension pipeline raised.</note>
+      </notes>
+      <segment>
+        <source>Installing the {example} example failed: {reason}</source>
+      </segment>
+    </unit>
     <unit id="core.console.demo_install.no_business_demonstration_dataset">
       <notes>
         <note category="context">Console output line on src/Delivery/Console/Command/DemoInstallCommand.php.</note>

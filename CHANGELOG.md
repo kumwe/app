@@ -1611,6 +1611,65 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Fixed
 
+- **2026-09-02 — `demo:export-profile` writes a business package that installs under the profile name it
+  was exported as.** Exporting a documentation-plus-VDM installation as `--profile=fork` produced a package
+  the catalog re-validated and the command reported as success, which `database:migrate` then refused three
+  ways: the definitions kept their `site.default.vdm_*` handles under the new name ("contradicts the default
+  site template"), `installation_order` and `depends_on` were derived from relationships alone, so
+  `invoice_line` was declared before the `product` it references through an entity-reference field
+  ("targets an unavailable definition"), and every document was written in its source's published shape,
+  which installed once and then made every later migration die with "Only a draft definition can be
+  published to a positive version". A pure `DemoBusinessTemplateProjector` now re-namespaces every handle
+  to `site.default.<profile>_<tail>` and rewrites every reference through one exact-value map — relationship
+  targets, entity-reference and ordered-lines field targets, and the definition each record, relation,
+  action and archive names; installation order and `depends_on` come from the full reference graph the
+  validator closes over, and a cycle is refused by name; documents leave in the released-draft shape.
+  `VdmBusinessManifestProjector` normalises any projected document to that shape, so a package installed
+  from an older export re-migrates cleanly, and `FilesystemDemoManifestCatalog` refuses a handle outside the
+  profile's namespace, an entry that contradicts its document and an unsatisfiable order, so the command can
+  no longer report success for an uninstallable package. `DemoBusinessProfileExportInstallIntegrationTest`
+  exports a fresh documentation-plus-VDM installation under a minted name, installs the package into a
+  second empty installation, asserts the same 12 definitions, 80 records, 130 relations, 65 actions,
+  2 archives and 221 policy rows arrive, and reconciles a second time proving nothing changes, on MariaDB and
+  PostgreSQL. (#128)
+
+- **2026-09-02 — The App-owned proofs pull request #124 dropped beside its SDK migration are pinned again.**
+  The deletions removed tests whose subjects still live under `src/`: the refusal of system identities on
+  extension resource policies, the owner check a policy's capability must pass, the typed capability and
+  system-policy metadata core publishes, the ambiguous-namespace refusal in `ExtensionContributionRegistrySet`,
+  the owner-bound `ContributionDefinitionChecksum`, the core administrator icon sprite contract, the
+  audit-failure rollback of `StudioProducerMutationBoundary`, and the `api_tokens` backfill in
+  `TokenAndTrustLifecycleMigration`. Each assertion is restored against the SDK-canonical types in
+  `ResourcePolicyDefinitionTest`, `ResourcePolicyRegistryTest`, `ContributionDefinitionChecksumTest`,
+  `ExtensionContributionRegistrySetTest`, a new `AdministratorNavigationRegistryTest`,
+  `StudioProducerMutationBoundaryTest` — a throwing audit recorder now proves zero commits, one rollback and
+  no completed replay claim for keyed and unkeyed saves — and `MigrationIntegrationTest`, whose slimmed
+  token-lifecycle proof seeds the pre-lifecycle row shape under a random prefix and asserts the stamps, the
+  copied security epoch and the bounded expiry backfill on MariaDB and PostgreSQL. (#128)
+
+- **2026-09-02 — A refused demonstration example leaves no enabled signing key behind, `demo:install`
+  names the example that failed and reports the credentials file before any example installs, and the
+  extension guide stops documenting the retired event registrar and App migration types.**
+  `DemoExampleExtensionInstaller::install()` registered a one-year single-package key before the package was
+  admitted, and a refusal unlinked only the archive, so every refused attempt left another live row in the
+  trust store. The installer now revokes the key, with a reason naming the example, when the manager refuses
+  the package; a key that signed an admitted release is kept on purpose, because the release names it and
+  runtime trust enforcement verifies against it on every request. `DemoInstallCommand` prints the
+  credentials-file line the moment the file is written, ahead of the example loop, and an example step that
+  throws reports which example failed. The "Events" section of `docs/extensions.md` now describes
+  manifest-declared `domain_listeners` bound through `ExtensionBindingRegistrar::domainListener()` and
+  dispatched inside the authoritative transaction, states plainly that the `onKumweExtension*` lifecycle
+  events are host-internal under the SDK contract, and cites the `audit-listener` example; "Database
+  migrations" names the SDK's `ExtensionMigration` and `ExtensionTableNames`. (#128)
+
+- **2026-09-02 — The asset-inspection deployment acceptance emits the profile checksum it verified instead
+  of dereferencing a variable the extraction removed.** The SDK migration replaced
+  `InspectionPolicyProfile::fromPackage()` with a request loader that pins the profile's canonical checksum,
+  but the policy step's evidence document still read `$profile->checksum()`, so the "Complete deployment
+  acceptance" job failed on every engine with "Call to a member function checksum() on null" the moment the
+  merge reached `master`. The document now carries the pinned checksum the loader already proved equal to the
+  file. (#128)
+
 - **2026-09-02 — A migration pass leaves every application table on one collation, whatever the server
   defaulted to.** DBAL writes `DEFAULT CHARACTER SET utf8mb4` and no `COLLATE` for a table it creates
   through a schema configuration, which MariaDB and MySQL resolve to the *character set's* default

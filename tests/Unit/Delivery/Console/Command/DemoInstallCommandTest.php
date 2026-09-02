@@ -34,14 +34,16 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
 use ReflectionClass;
+use RuntimeException;
 
 /**
  * Proves the one-step demonstration command's option, gating, and credentials-file decisions.
  *
  * The full end-to-end path — real cast provisioning and signed example installation against a
  * database — is exercised by the live installation checks; what belongs here is the command's own
- * surface: the option grammar, the protected password-file gate, the `none`-profile skip, and the
- * rule that the credentials file is only created when this run actually generated a password.
+ * surface: the option grammar, the protected password-file gate, the `none`-profile skip, the rule
+ * that the credentials file is only created when this run actually generated a password, that its
+ * path is reported before any example installs, and that a failing example is named.
  *
  * @since  2.0.0
  */
@@ -204,10 +206,11 @@ final class DemoInstallCommandTest extends TestCase
             $output,
         ));
         self::assertStringStartsWith('Provisioned clerk@vdm.example as vdm-clerk', $output->lines[0]);
-        self::assertContains(
+        self::assertSame(
             sprintf('Wrote the demonstration credentials file %s.', $this->credentialsFile),
-            $output->lines,
+            $output->lines[1],
         );
+        self::assertStringStartsWith('Confirmed kumwe/announcements-example', $output->lines[2]);
         self::assertFileExists($this->credentialsFile);
         self::assertSame(0o600, fileperms($this->credentialsFile) & 0o777);
         $document = file_get_contents($this->credentialsFile);
@@ -247,6 +250,41 @@ final class DemoInstallCommandTest extends TestCase
             $output->lines,
             static fn (string $line): bool => str_starts_with($line, 'Confirmed kumwe/'),
         )));
+    }
+
+    /**
+     * An example step that throws names the example in the failure line, after the credentials file
+     * the run already wrote has been reported, so the passwords on disk are never left unannounced.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testNamesTheFailingExampleAfterReportingTheCredentialsFile(): void
+    {
+        $manager = $this->createMock(ExtensionManager::class);
+        $manager->method('installed')
+            ->willThrowException(new RuntimeException('The extension registry is unavailable.'));
+        $manager->expects(self::never())->method('install');
+        $output = new DemoInstallCommandOutput();
+
+        self::assertSame(1, $this->command('vdm', $this->emptyRepository(), $manager)->execute(
+            [...$this->arguments(), '--extensions=asset-inspection,announcements'],
+            $output,
+        ));
+        self::assertSame(
+            ['Installing the asset-inspection example failed: The extension registry is unavailable.'],
+            $output->errors,
+        );
+        self::assertSame(
+            sprintf('Wrote the demonstration credentials file %s.', $this->credentialsFile),
+            $output->lines[1],
+        );
+        self::assertFileExists($this->credentialsFile);
+        self::assertNotContains(
+            'Staff sign in at /administrator; portal organization members sign in at /portal.',
+            $output->lines,
+        );
     }
 
     public function testReportsAFailedAuthenticationWithoutTouchingAnyService(): void

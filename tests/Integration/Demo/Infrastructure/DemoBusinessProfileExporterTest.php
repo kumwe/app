@@ -7,7 +7,9 @@ namespace Kumwe\App\Tests\Integration\Demo\Infrastructure;
 use FilesystemIterator;
 use Kumwe\Extension\Spi\Application\Automation\IdempotencyKey;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordService;
+use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\App\BusinessRecord\Application\Command\CreateRecordCommand;
+use Kumwe\App\Demo\Application\DemoBusinessTemplateProjector;
 use Kumwe\App\Demo\Infrastructure\DemoBusinessProfileExporter;
 use Kumwe\App\Demo\Infrastructure\DemoProfileExporter;
 use Kumwe\App\Demo\Infrastructure\FilesystemDemoManifestCatalog;
@@ -27,12 +29,17 @@ use RecursiveIteratorIterator;
  * @since  2.0.0
  */
 #[CoversClass(DemoBusinessProfileExporter::class)]
+#[CoversClass(DemoBusinessTemplateProjector::class)]
 #[UsesClass(DemoProfileExporter::class)]
 #[UsesClass(FilesystemDemoManifestCatalog::class)]
 final class DemoBusinessProfileExporterTest extends TestCase
 {
     /**
      * Export a freshly authored definition and record and re-validate the written business package.
+     *
+     * The live definition lives under its own handle; the package declares it under the export profile's
+     * namespace, `site.default.<profile>_<fixture tail>`, as a version-zero draft, and every record
+     * declaration follows the handle — the shape the profile installer accepts.
      *
      * @return  void
      *
@@ -77,11 +84,33 @@ final class DemoBusinessProfileExporterTest extends TestCase
             }
         }
         self::assertIsArray($declared);
-        self::assertSame($definition->handle, $declared['handle']);
+        self::assertIsString($declared['fixture_key']);
+        self::assertStringStartsWith('definition.', $declared['fixture_key']);
+        $templateHandle = sprintf(
+            'site.default.%s_%s',
+            $profile,
+            substr($declared['fixture_key'], strlen('definition.')),
+        );
+        self::assertSame($templateHandle, $declared['handle']);
+        self::assertSame([], $declared['depends_on']);
         self::assertSame('administration', $declared['record_access']);
         self::assertIsString($declared['file']);
         self::assertArrayHasKey($declared['file'], $documents['definitions']);
-        self::assertSame($definition->toArray(), $documents['definitions'][$declared['file']]);
+        $expectedDocument = $definition->toArray();
+        $expectedDocument['handle'] = $templateHandle;
+        $expectedDocument['status'] = 'draft';
+        $expectedDocument['definition_version'] = 0;
+        if (!array_key_exists('record_invariants', $expectedDocument)) {
+            $expectedDocument['record_invariants'] = [];
+        }
+        self::assertSame($expectedDocument, $documents['definitions'][$declared['file']]);
+        $republished = EntityTypeDefinition::fromArray($documents['definitions'][$declared['file']])
+            ->published($definition->definitionVersion);
+        self::assertSame($templateHandle, $republished->handle);
+        self::assertSame(
+            array_map(static fn ($field): array => $field->toArray(), $definition->fields()),
+            array_map(static fn ($field): array => $field->toArray(), $republished->fields()),
+        );
 
         $declaredRecord = null;
         self::assertIsArray($documents['records']['records']);
@@ -92,7 +121,7 @@ final class DemoBusinessProfileExporterTest extends TestCase
             }
         }
         self::assertIsArray($declaredRecord);
-        self::assertSame($definition->handle, $declaredRecord['definition']);
+        self::assertSame($templateHandle, $declaredRecord['definition']);
         self::assertIsArray($declaredRecord['values']);
         self::assertSame('Export test record ' . $suffix, $declaredRecord['values']['name']);
         self::assertArrayNotHasKey('credential', $declaredRecord['values']);
@@ -114,6 +143,7 @@ final class DemoBusinessProfileExporterTest extends TestCase
             // envelope (64 definitions, 2 MB documents) stays honest no matter how full the suite
             // database is, while the in-memory assertions above still cover the full-system export.
             $filterEntries = static function (mixed $entries, string $handle): array {
+                // Declarations name the template handle, which is what the written package must carry.
                 self::assertIsArray($entries);
                 $kept = [];
                 foreach ($entries as $entry) {
@@ -131,10 +161,10 @@ final class DemoBusinessProfileExporterTest extends TestCase
             $profileDocument['installation_order'] = [$declaredEntry];
             $recordsDocument = $documents['records'];
             self::assertIsArray($recordsDocument);
-            $recordsDocument['records'] = $filterEntries($recordsDocument['records'], $definition->handle);
-            $recordsDocument['relations'] = $filterEntries($recordsDocument['relations'], $definition->handle);
-            $recordsDocument['actions'] = $filterEntries($recordsDocument['actions'], $definition->handle);
-            $recordsDocument['archives'] = $filterEntries($recordsDocument['archives'], $definition->handle);
+            $recordsDocument['records'] = $filterEntries($recordsDocument['records'], $templateHandle);
+            $recordsDocument['relations'] = $filterEntries($recordsDocument['relations'], $templateHandle);
+            $recordsDocument['actions'] = $filterEntries($recordsDocument['actions'], $templateHandle);
+            $recordsDocument['archives'] = $filterEntries($recordsDocument['archives'], $templateHandle);
             $recordsDocument['expected'] = [
                 'record_count' => count($recordsDocument['records']),
                 'relation_count' => count($recordsDocument['relations']),

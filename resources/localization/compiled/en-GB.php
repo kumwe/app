@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for en-GB, carrying 2404 messages.
+ * Compiled interface message catalogue for en-GB, carrying 2405 messages.
  *
  * Generated from en-GB.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1871,6 +1871,7 @@ return [
     'core.console.demo_export_profile.withheld_identities_outside_the_reserved_example' => 'Withheld {identities} identities outside the reserved .example zone.',
     'core.console.demo_install.dataset_installed_by_migrate' => 'The selected site content and business dataset were already installed by database:migrate.',
     'core.console.demo_install.description' => 'Provision the demonstration sign-ins and install the example extensions in one step.',
+    'core.console.demo_install.example_failed' => 'Installing the {example} example failed: {reason}',
     'core.console.demo_install.example_outcome' => '{installed, select, true {Installed} other {{activated, select, true {Reactivated} other {Confirmed}}}} {identifier} ({example}{selectable, select, true {; selectable, not activated} other {}}).',
     'core.console.demo_install.identity_line' => '{created, select, true {Provisioned} other {Confirmed}} {email} as {role} ({area}{organization}){has_password, select, true { password {password}} other {}}',
     'core.console.demo_install.no_business_demonstration_dataset' => 'No business demonstration dataset is selected; skipping the demonstration cast and its credentials file.',

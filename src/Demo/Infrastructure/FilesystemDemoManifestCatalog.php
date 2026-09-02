@@ -186,11 +186,20 @@ final readonly class FilesystemDemoManifestCatalog
     /**
      * Load one discovered business demonstration dataset.
      *
+     * Beyond shape, the order itself is validated as installable: every definition document must carry a
+     * handle in the profile's own namespace, `site.default.<profile>_<name>`, that its installation entry
+     * repeats, and every definition it references — by relationship or by entity-reference and
+     * ordered-lines field, the same target set the definition runtime persists — must be declared in its
+     * `depends_on` and installed before it. The installer publishes definitions one at a time, so a package
+     * that breaks either rule can never install; refusing it here keeps `demo:export-profile`, which
+     * re-validates through this reader, from reporting success for such a package.
+     *
      * @param   string  $profile  Discovered profile name, for example `vdm`.
      *
      * @return  array{manifest: array<string, mixed>, checksum: string}  Validated document and canonical digest.
      *
-     * @throws  RuntimeException  When the profile is undiscovered or any manifest violates its contract.
+     * @throws  RuntimeException  When the profile is undiscovered, any manifest violates its contract, a
+     *          definition handle leaves the profile namespace, or the installation order is unsatisfiable.
      *
      * @since   2.0.0
      */
@@ -251,8 +260,10 @@ final readonly class FilesystemDemoManifestCatalog
                     $fixtureKey,
                 ));
             }
+            $this->assertTemplateHandle($profile, $fixtureKey, $entry, $definition);
             $definitions[$fixtureKey] = $definition;
         }
+        $this->assertInstallationOrder($order, $definitions);
         $recordsFile = $manifest['records_file'] ?? null;
         if (!is_string($recordsFile) || $recordsFile !== 'records.json') {
             throw new RuntimeException(
@@ -266,6 +277,157 @@ final readonly class FilesystemDemoManifestCatalog
         ];
 
         return ['manifest' => $aggregate, 'checksum' => CanonicalDefinitionJson::checksum($aggregate)];
+    }
+
+    /**
+     * Require one definition document to carry the profile's handle namespace, repeated by its order entry.
+     *
+     * @param   string                   $profile     Discovered business profile name.
+     * @param   string                   $fixtureKey  Validated definition fixture key.
+     * @param   array<array-key, mixed>  $entry       Installation-order entry naming the definition.
+     * @param   array<string, mixed>     $definition  Decoded definition document.
+     *
+     * @return  void
+     *
+     * @throws  RuntimeException  When the handle leaves `site.default.<profile>_` or the entry contradicts it.
+     *
+     * @since   2.0.0
+     */
+    private function assertTemplateHandle(string $profile, string $fixtureKey, array $entry, array $definition): void
+    {
+        $prefix = 'site.default.' . $profile . '_';
+        $handle = $definition['handle'] ?? null;
+        if (!is_string($handle) || !str_starts_with($handle, $prefix) || $handle === $prefix) {
+            throw new RuntimeException(sprintf(
+                'Business demo definition %s must use the %s handle namespace.',
+                $fixtureKey,
+                $prefix,
+            ));
+        }
+        if (($entry['handle'] ?? null) !== $handle) {
+            throw new RuntimeException(sprintf(
+                'Business demo definition %s declares a handle its document contradicts.',
+                $fixtureKey,
+            ));
+        }
+    }
+
+    /**
+     * Require the installation order to be satisfiable one definition at a time.
+     *
+     * Each entry's `depends_on` must name fixture keys installed before it, and every package definition
+     * the document references — relationship targets plus entity-reference and ordered-lines field targets,
+     * the two sources `EntityTypeDefinition::dependencyGraph()` reads — must be among those dependencies.
+     * References to definitions outside the package are left to the installer, which resolves them against
+     * the installation's catalog.
+     *
+     * @param   list<mixed>                          $order        Validated installation-order entries.
+     * @param   array<string, array<string, mixed>>  $definitions  Decoded definition documents by fixture key.
+     *
+     * @return  void
+     *
+     * @throws  RuntimeException  When a dependency is undeclared, invalid, or declared after its dependent.
+     *
+     * @since   2.0.0
+     */
+    private function assertInstallationOrder(array $order, array $definitions): void
+    {
+        $fixtureByHandle = [];
+        foreach ($definitions as $fixtureKey => $definition) {
+            $handle = $definition['handle'] ?? null;
+            if (is_string($handle)) {
+                $fixtureByHandle[$handle] = $fixtureKey;
+            }
+        }
+        $placed = [];
+        foreach ($order as $entry) {
+            $fixtureKey = is_array($entry) ? ($entry['fixture_key'] ?? null) : null;
+            if (!is_array($entry) || !is_string($fixtureKey) || !isset($definitions[$fixtureKey])) {
+                continue;
+            }
+            $declared = $entry['depends_on'] ?? [];
+            if (!is_array($declared) || !array_is_list($declared)) {
+                throw new RuntimeException(sprintf(
+                    'Business demo definition %s declares an invalid dependency list.',
+                    $fixtureKey,
+                ));
+            }
+            $dependencies = [];
+            foreach ($declared as $dependency) {
+                if (!is_string($dependency) || !isset($placed[$dependency])) {
+                    throw new RuntimeException(sprintf(
+                        'Business demo definition %s depends on %s, which is not installed before it.',
+                        $fixtureKey,
+                        is_string($dependency) ? $dependency : 'an invalid entry',
+                    ));
+                }
+                $dependencies[$dependency] = true;
+            }
+            foreach ($this->definitionReferences($definitions[$fixtureKey]) as $target) {
+                $targetFixture = $fixtureByHandle[$target] ?? null;
+                if ($targetFixture === null || $targetFixture === $fixtureKey) {
+                    continue;
+                }
+                if (!isset($dependencies[$targetFixture])) {
+                    throw new RuntimeException(sprintf(
+                        'Business demo definition %s references %s without declaring it in depends_on.',
+                        $fixtureKey,
+                        $targetFixture,
+                    ));
+                }
+            }
+            $placed[$fixtureKey] = true;
+        }
+    }
+
+    /**
+     * Read the definition handles one decoded definition document references.
+     *
+     * @param   array<string, mixed>  $definition  Decoded definition document.
+     *
+     * @return  list<string>  Distinct relationship and reference-field target handles, in declaration order.
+     *
+     * @since   2.0.0
+     */
+    private function definitionReferences(array $definition): array
+    {
+        $targets = [];
+        foreach ($this->listMember($definition, 'relationships') as $relationship) {
+            $target = is_array($relationship) ? ($relationship['target'] ?? null) : null;
+            if (is_string($target)) {
+                $targets[] = $target;
+            }
+        }
+        $referenceTypes = ['core.entity_reference', 'core.ordered_lines'];
+        foreach ($this->listMember($definition, 'fields') as $field) {
+            if (!is_array($field) || !in_array($field['type'] ?? null, $referenceTypes, true)) {
+                continue;
+            }
+            $configuration = $field['configuration'] ?? null;
+            $target = is_array($configuration) ? ($configuration['target'] ?? null) : null;
+            if (is_string($target)) {
+                $targets[] = $target;
+            }
+        }
+
+        return array_values(array_unique($targets));
+    }
+
+    /**
+     * Read one list-shaped member of a decoded document, tolerating its absence.
+     *
+     * @param   array<string, mixed>  $document  Decoded document.
+     * @param   string                $key       Member name.
+     *
+     * @return  list<mixed>  The member's list value, or empty when absent or not a list.
+     *
+     * @since   2.0.0
+     */
+    private function listMember(array $document, string $key): array
+    {
+        $value = $document[$key] ?? null;
+
+        return is_array($value) && array_is_list($value) ? $value : [];
     }
 
     /**

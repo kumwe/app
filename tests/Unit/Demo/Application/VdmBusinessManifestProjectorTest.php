@@ -209,6 +209,44 @@ final class VdmBusinessManifestProjectorTest extends TestCase
     }
 
     /**
+     * Normalize a document exported with published lifecycle state back to the released-draft shape.
+     *
+     * The installer publishes every template document with `EntityTypeDefinition::published()`, which only a
+     * version-zero draft survives. A package written from a running site carries `published` and its source
+     * version; once such a package installed, every later reconciliation died in preflight. Projection now
+     * hands the installer a draft whose republished checksum equals the released draft's, so the comparison
+     * against the checkpoint can happen at all.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testProjectionNormalizesPublishedDocumentsToTheReleasedDraftShape(): void
+    {
+        $source = (new FilesystemDemoManifestCatalog(dirname(__DIR__, 4)))->vdmBusiness()['manifest'];
+        $documents = $source['definition_documents'] ?? null;
+        self::assertIsArray($documents);
+        $released = $documents['definition.client_account'] ?? null;
+        self::assertIsArray($released);
+        $exported = $released;
+        $exported['status'] = 'published';
+        $exported['definition_version'] = 3;
+        $documents['definition.client_account'] = $exported;
+        $source['definition_documents'] = $documents;
+
+        $projected = (new VdmBusinessManifestProjector())->forSite($source, SiteContext::default());
+
+        $document = $projected['definition_documents']['definition.client_account'] ?? null;
+        self::assertIsArray($document);
+        self::assertSame('draft', $document['status'] ?? null);
+        self::assertSame(0, $document['definition_version'] ?? null);
+        self::assertSame(
+            EntityTypeDefinition::fromArray($released)->published(3)->checksum(),
+            EntityTypeDefinition::fromArray($document)->published(3)->checksum(),
+        );
+    }
+
+    /**
      * Collect the definition and record UUIDs that form the globally persisted identity graph.
      *
      * @param   array<string, mixed>  $manifest  Projected or source aggregate.

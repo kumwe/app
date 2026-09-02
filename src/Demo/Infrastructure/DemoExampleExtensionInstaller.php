@@ -17,6 +17,7 @@ use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use RuntimeException;
 use SplFileInfo;
+use Throwable;
 use ZipArchive;
 
 /**
@@ -27,9 +28,14 @@ use ZipArchive;
  * trust store scoped to exactly that package, and then installed and activated through the same
  * manager every operator upload passes — so the demonstration exercises signing, trust, install,
  * and activation instead of sidestepping them. The ephemeral secret key is discarded after signing;
- * a later reinstall simply mints another. Installation is idempotent per example: an identifier the
- * registry already lists as enabled is confirmed rather than reinstalled, and a disabled one is
- * reactivated without repackaging.
+ * a later reinstall simply mints another. The public half stays enabled in the trust store after a
+ * successful install on purpose: the installed release names it, so runtime trust enforcement keeps
+ * verifying the package against it on every request, revoking it would quarantine the example, and its
+ * one-year, single-package scope is the auditable provenance of who signed what. A key whose package
+ * the manager refuses is a different matter — nothing names it, so it is revoked in the failure path
+ * rather than left enabled. Installation is idempotent per example: an identifier the registry already
+ * lists as enabled is confirmed rather than reinstalled, and a disabled one is reactivated without
+ * repackaging.
  *
  * @since  2.0.0
  */
@@ -88,7 +94,9 @@ final readonly class DemoExampleExtensionInstaller
      *
      * Whichever path is taken, the result carries the extension's contribution lines — the same
      * summary the Extensions screen shows — so the console can say where the freshly installed
-     * example actually surfaces instead of only that it installed.
+     * example actually surfaces instead of only that it installed. When the manager refuses the
+     * package, the ephemeral key registered for it is revoked before the refusal propagates, so a
+     * failed attempt leaves no enabled key behind; a key that signed an admitted release is kept.
      *
      * @param   ExecutionContext  $context  Authenticated administrator the install runs as.
      * @param   string            $example  Example directory name from `available()`.
@@ -140,6 +148,8 @@ final readonly class DemoExampleExtensionInstaller
         }
 
         $archive = $this->package($directory, $example);
+        $keyId = null;
+        $admitted = false;
         try {
             $bytes = file_get_contents($archive);
             if (!is_string($bytes)) {
@@ -160,9 +170,15 @@ final readonly class DemoExampleExtensionInstaller
                 sodium_crypto_sign_secretkey($keyPair),
             );
             $this->extensions->install($archive, $context, $keyId, base64_encode($signature));
+            $admitted = true;
             if ($activatable) {
                 $this->extensions->activate($identifier, $context);
             }
+        } catch (Throwable $failure) {
+            if ($keyId !== null && !$admitted) {
+                $this->withdrawUnusedKey($context, $keyId, $example);
+            }
+            throw $failure;
         } finally {
             @unlink($archive);
         }
@@ -173,6 +189,40 @@ final readonly class DemoExampleExtensionInstaller
             'activated' => $activatable,
             'contributions' => $this->contributionLines($context, $identifier),
         ];
+    }
+
+    /**
+     * Revoke an ephemeral key whose package the manager refused, so the failed attempt leaves no key.
+     *
+     * The key is scoped to one package and its secret half never leaves this process, so once the
+     * install it was minted for has been refused nothing can ever present a signature under it; an
+     * enabled row would only accumulate, one per refused attempt. A key that signed an admitted release
+     * is never passed here: the release names it, and the store would rightly refuse to withdraw it.
+     * Revocation failing must not mask the install failure the caller is about to raise — that failure
+     * is the actionable one, and a key the store could not withdraw stays visible on the trust screen.
+     *
+     * @param   ExecutionContext  $context  Administrator the addition ran as, credited with the revocation.
+     * @param   string            $keyId    Ephemeral key identifier registered for the refused package.
+     * @param   string            $example  Example name, recorded in the revocation reason.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    private function withdrawUnusedKey(ExecutionContext $context, string $keyId, string $example): void
+    {
+        try {
+            $this->trust->revoke(
+                $context,
+                $keyId,
+                sprintf(
+                    'The %s example was refused at install; its single-use demonstration key signed nothing.',
+                    $example,
+                ),
+            );
+        } catch (Throwable) {
+            // The install refusal propagates unchanged; a key the store could not withdraw stays auditable.
+        }
     }
 
     /**

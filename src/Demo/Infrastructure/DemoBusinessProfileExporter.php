@@ -27,6 +27,7 @@ use Kumwe\Extension\Spi\BusinessRecord\Value\ZonedDateTimeValue;
 use Kumwe\Extension\Spi\BusinessRecord\Query\RecordProjection;
 use Kumwe\Extension\Spi\BusinessRecord\Query\RecordQuerySpecification;
 use Kumwe\App\BusinessSecurity\Application\Administration\BusinessSecurityAdministrationRepository;
+use Kumwe\App\Demo\Application\DemoBusinessTemplateProjector;
 use Kumwe\App\Demo\Application\DemoProfileLedger;
 use Kumwe\App\Identity\Application\Administration\AccessControlService;
 use Kumwe\App\Kernel\Configuration\ApplicationConfiguration;
@@ -45,7 +46,10 @@ use RuntimeException;
  * source profile keeps its released mode, anything else falls back to `administration`, the most
  * restrictive mode. The access manifest observes a hard privacy rule: only identities already inside
  * the reserved `.example` zone are exported, every other identity is counted and withheld, and no
- * credential material of any kind is ever within reach of these read paths.
+ * credential material of any kind is ever within reach of these read paths. The definitions leave through
+ * `DemoBusinessTemplateProjector`: every handle is re-namespaced to `site.default.<profile>_<name>` with every
+ * reference following it, the documents take the released-draft shape the installer publishes from, and the
+ * installation order is settled over the full reference graph — reference fields as well as relationships.
  *
  * @since  2.0.0
  */
@@ -100,6 +104,8 @@ final readonly class DemoBusinessProfileExporter
      *         selectors naming the installed source profile.
      * @param  DemoProfileLedger                         $ledger         Provenance ledger holding
      *         installed fixture identities and applied requests.
+     * @param  DemoBusinessTemplateProjector             $template       Pure projection of live definitions
+     *         into the default-site template namespace, order, and draft shape.
      *
      * @since  2.0.0
      */
@@ -111,19 +117,22 @@ final readonly class DemoBusinessProfileExporter
         private FilesystemDemoManifestCatalog $catalog,
         private ApplicationConfiguration $configuration,
         private DemoProfileLedger $ledger,
+        private DemoBusinessTemplateProjector $template = new DemoBusinessTemplateProjector(),
     ) {
     }
 
     /**
      * Project the site's business dataset and demonstration cast into installable manifest documents.
      *
-     * The result carries the `kumwe.demo-business-profile/v1` profile document, one canonical document
+     * The result carries the `kumwe.demo-business-profile/v1` profile document, one released-draft document
      * per published site-owned definition keyed by its relative file name, the
      * `kumwe.demo-business-records/v1` records document, and the `kumwe.demo-access/v1` access
-     * document. When the site publishes no site-owned business definitions every member is empty, and
-     * when no identity qualifies for the access manifest its member is empty so the caller omits the
-     * file instead of writing an invalid one. The withheld-identity count reports how many live
-     * identities were excluded by the `.example` privacy rule.
+     * document. Definitions are declared in reference order under the `site.default.<profile>_` namespace
+     * the catalog requires, so the package installs under the profile name it was exported as. When the
+     * site publishes no site-owned business definitions every member is empty, and when no identity
+     * qualifies for the access manifest its member is empty so the caller omits the file instead of
+     * writing an invalid one. The withheld-identity count reports how many live identities were excluded
+     * by the `.example` privacy rule.
      *
      * @param   ExecutionContext  $context  Authenticated administrator the reads run as.
      * @param   string            $profile  Profile name the manifests will be published under.
@@ -137,7 +146,8 @@ final readonly class DemoBusinessProfileExporter
      *          }  Manifest documents ready for `DemoProfileExporter::writePackage()`.
      *
      * @throws  InvalidArgumentException  When the profile name violates the selection grammar.
-     * @throws  RuntimeException  When a live read answers with a shape the manifests cannot carry.
+     * @throws  RuntimeException  When a live read answers with a shape the manifests cannot carry, or the
+     *          published definitions reference one another in a cycle no installation order can satisfy.
      *
      * @since   2.0.0
      */
@@ -160,9 +170,10 @@ final readonly class DemoBusinessProfileExporter
                 'withheld_identities' => 0,
             ];
         }
-        $definitions = $this->orderByDependency($definitions);
+        $definitions = $this->template->orderByDependency($definitions);
         $installed = $this->installedAssets($site);
         $fixtures = $this->definitionFixtures($definitions, $installed);
+        $handles = $this->template->templateHandles($profile, $definitions, $fixtures);
         $modes = $this->recoveredModes();
         $order = [];
         $documents = [];
@@ -170,24 +181,20 @@ final readonly class DemoBusinessProfileExporter
             $fixture = $fixtures[$definition->handle];
             $tail = substr($fixture, strlen('definition.'));
             $file = 'definitions/' . str_replace('_', '-', $tail) . '.json';
-            $dependsOn = [];
-            foreach ($definition->relationships() as $relationship) {
-                $target = $fixtures[$relationship->target] ?? null;
-                if ($target !== null && !in_array($target, $dependsOn, true)) {
-                    $dependsOn[] = $target;
-                }
-            }
             $order[] = [
                 'fixture_key' => $fixture,
                 'record_access' => $modes[$definition->id] ?? 'administration',
                 'file' => $file,
                 'id' => $definition->id,
-                'handle' => $definition->handle,
-                'depends_on' => $dependsOn,
+                'handle' => $handles[$definition->handle],
+                'depends_on' => $this->template->dependencies($definition, $definitions, $fixtures),
             ];
-            $documents[$file] = $definition->toArray();
+            $documents[$file] = $this->template->templateDocument($definition, $handles);
         }
-        $records = $this->recordsDocument($context, $profile, $site, $definitions, $fixtures, $installed);
+        $records = $this->template->templateRecords(
+            $this->recordsDocument($context, $profile, $site, $definitions, $fixtures, $installed),
+            $handles,
+        );
         $expected = $this->mapOf($records, 'expected');
 
         return [
@@ -257,64 +264,6 @@ final readonly class DemoBusinessProfileExporter
         }
 
         return $definitions;
-    }
-
-    /**
-     * Order definitions so every relationship target precedes the definitions depending on it.
-     *
-     * The sort is a repeated stable scan: each pass places, in catalog order, every definition whose
-     * exported targets are already placed, so ties keep their catalog order. A cycle stalls a pass;
-     * the remaining definitions are then appended in catalog order rather than refused, because a
-     * cyclic graph installed once will install again in the same order.
-     *
-     * @param   list<EntityTypeDefinition>  $definitions  Published definitions in catalog order.
-     *
-     * @return  list<EntityTypeDefinition>  The same definitions in dependency order.
-     *
-     * @since   2.0.0
-     */
-    private function orderByDependency(array $definitions): array
-    {
-        $exported = [];
-        foreach ($definitions as $definition) {
-            $exported[$definition->handle] = true;
-        }
-        $placed = [];
-        $ordered = [];
-        $remaining = $definitions;
-        while ($remaining !== []) {
-            $progress = false;
-            $deferred = [];
-            foreach ($remaining as $definition) {
-                $ready = true;
-                foreach ($definition->relationships() as $relationship) {
-                    if (
-                        $relationship->target !== $definition->handle
-                        && isset($exported[$relationship->target])
-                        && !isset($placed[$relationship->target])
-                    ) {
-                        $ready = false;
-                        break;
-                    }
-                }
-                if ($ready) {
-                    $placed[$definition->handle] = true;
-                    $ordered[] = $definition;
-                    $progress = true;
-                } else {
-                    $deferred[] = $definition;
-                }
-            }
-            if (!$progress) {
-                foreach ($deferred as $definition) {
-                    $ordered[] = $definition;
-                }
-                break;
-            }
-            $remaining = $deferred;
-        }
-
-        return $ordered;
     }
 
     /**
@@ -420,10 +369,10 @@ final readonly class DemoBusinessProfileExporter
      * `definition.<tail>` key whose tail is the handle's last dot segment with its vendor prefix
      * stripped, lowercased, confined to `[a-z0-9_]`, and deduplicated with numeric suffixes.
      *
-     * @param   list<EntityTypeDefinition>  $definitions  Definitions in dependency order.
+     * @param   list<EntityTypeDefinition>  $definitions  Definitions in installation order.
      * @param   array<string, mixed>        $installed    Ledger index built by `installedAssets()`.
      *
-     * @return  array<string, string>  Fixture key by definition handle.
+     * @return  array<string, string>  Fixture key by live definition handle.
      *
      * @since   2.0.0
      */
