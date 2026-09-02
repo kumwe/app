@@ -46,13 +46,14 @@ final readonly class StudioBlockRendererRuntime
     /**
      * Return one fresh Producer registry containing only currently trusted exact coordinates.
      *
-     * @param   string  $viewport  Active semantic viewport handed to contributed SDK fragment renderers.
+     * @param   ?string  $viewport  Active preview semantic width handed to layout and contributed fragment
+     *          renderers; null renders immutable public markup that retains every bounded width.
      *
      * @return  BlockRendererRegistry  Direct canonical registry for one publication or render decision.
      *
      * @since   2.0.0
      */
-    public function registry(string $viewport = 'expanded'): BlockRendererRegistry
+    public function registry(?string $viewport = null): BlockRendererRegistry
     {
         $registry = BlockRendererRegistry::withCoreCatalog();
         $bindings = [];
@@ -100,7 +101,7 @@ final readonly class StudioBlockRendererRuntime
                 continue;
             }
             if ($entry['owner']->identifier() === ContributionOwner::CORE) {
-                $renderer = $this->coreRenderer($registry, $coordinate, $binding->renderer);
+                $renderer = $this->coreRenderer($coordinate, $binding->renderer, $viewport);
                 if ($renderer !== null) {
                     $registry->register($coordinate, $renderer);
                 }
@@ -136,7 +137,10 @@ final readonly class StudioBlockRendererRuntime
             ) {
                 continue;
             }
-            $registry->register($coordinate, new FragmentStudioPreviewBlockRenderer($implementation, $viewport));
+            $registry->register(
+                $coordinate,
+                new FragmentStudioPreviewBlockRenderer($implementation, $viewport ?? 'expanded'),
+            );
         }
 
         return $registry;
@@ -145,21 +149,22 @@ final readonly class StudioBlockRendererRuntime
     /**
      * Select the host implementation named by a core-owned binding.
      *
-     * @param   BlockRendererRegistry  $registry    Registry whose core catalog serves layout bindings.
-     * @param   BlockCoordinate        $coordinate  Exact core block coordinate being bound.
-     * @param   string                 $binding     Core-owned renderer binding identifier.
+     * @param   BlockCoordinate  $coordinate  Exact core block coordinate being bound.
+     * @param   string           $binding     Core-owned renderer binding identifier.
+     * @param   ?string          $viewport    Active preview semantic width, or null for public markup.
      *
      * @return  ?BlockRenderer  Host implementation, or null when the binding names none.
      *
      * @since   2.0.0
      */
-    private function coreRenderer(
-        BlockRendererRegistry $registry,
-        BlockCoordinate $coordinate,
-        string $binding,
-    ): ?BlockRenderer {
+    private function coreRenderer(BlockCoordinate $coordinate, string $binding, ?string $viewport): ?BlockRenderer
+    {
         return match ($binding) {
-            'core.renderer/layout' => $registry->draftRendererFor($coordinate->type, $coordinate->version),
+            'core.renderer/layout' => in_array(
+                $coordinate->type,
+                StudioLayoutBlockRenderer::BLOCK_TYPES,
+                true,
+            ) ? new StudioLayoutBlockRenderer($viewport) : null,
             'core.renderer/field' => in_array(
                 $coordinate->type,
                 StudioContentFieldBlockRenderer::BLOCK_TYPES,

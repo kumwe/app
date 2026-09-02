@@ -1422,7 +1422,7 @@ test('closed layout intent renders four, two and one columns without surface ove
   ] as const;
   for (const [viewport, expectedColumns] of expectations) {
     await shell.getByRole('button', { name: viewport, exact: true }).click();
-    await expect.poll(async () => frame.locator('[data-studio-block="grid"]').nth(existingGrids).evaluate((element) => ({
+    await expect.poll(async () => frame.locator('.studio-preview-grid').nth(existingGrids).evaluate((element) => ({
       columns: getComputedStyle(element).gridTemplateColumns.trim().split(/\s+/u).length,
       intent: element.getAttribute('data-studio-layout-columns'),
     }))).toEqual({ columns: expectedColumns, intent: '4' });

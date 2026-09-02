@@ -227,21 +227,17 @@
   .article-further-reading { margin-top: 2.2rem; padding-top: 1.2rem; border-top: 1px solid var(--site-border); }
 
   /* Studio preview output exposes only this closed class/data vocabulary. */
-  .studio-preview-section, .studio-preview-stack, .studio-preview-grid, .studio-preview-columns,
-  [data-studio-block="section"], [data-studio-block="stack"],
-  [data-studio-block="grid"], [data-studio-block="columns"] {
+  .studio-preview-section, .studio-preview-stack, .studio-preview-grid, .studio-preview-columns {
     min-inline-size: 0;
   }
   [data-kis-surface="core.administrator.content-editor"] :is(
-    .studio-preview-section, .studio-preview-stack, .studio-preview-grid, .studio-preview-columns,
-    [data-studio-block="section"], [data-studio-block="stack"],
-    [data-studio-block="grid"], [data-studio-block="columns"]
+    .studio-preview-section, .studio-preview-stack, .studio-preview-grid, .studio-preview-columns
   ) {
     min-block-size: 2.75rem;
   }
-  .studio-preview-section, [data-studio-block="section"] { display: grid; gap: 1.25rem; }
-  .studio-preview-stack, [data-studio-block="stack"] { display: flex; flex-direction: column; gap: 1.25rem; }
-  .studio-preview-grid, .studio-preview-columns, [data-studio-block="grid"], [data-studio-block="columns"] {
+  .studio-preview-section { display: grid; gap: 1.25rem; }
+  .studio-preview-stack { display: flex; flex-direction: column; gap: 1.25rem; }
+  .studio-preview-grid, .studio-preview-columns {
     --studio-preview-column-count: 1;
     display: grid;
     grid-template-columns: repeat(var(--studio-preview-column-count), minmax(0, 1fr));
