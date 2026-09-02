@@ -15,6 +15,11 @@ namespace Kumwe\App\Tools\Governance;
  * manifest it does ship (`resources/public-api.json` schema 2, or a schema-1 `resources/public-api/v1.json`)
  * and otherwise from a PSR-4 source scan that excludes `@internal` declarations.
  *
+ * Only inputs a release archive is guaranteed to ship are read for a legacy package: `composer.json`,
+ * `resources/` and `src/`. CHARTER.md, README.md and `docs/` are never probed, so the index digest is the same
+ * whether the package was installed from a distribution archive that export-ignores them or from source. A
+ * Version 2 package must ship every document its handoff names, and the gate fails closed when it does not.
+ *
  * @since  2.0.0
  */
 final readonly class PackageManifests
@@ -153,10 +158,6 @@ final readonly class PackageManifests
             );
         }
 
-        $charterPath = is_file($packageRoot . '/CHARTER.md') ? $display . '/CHARTER.md' : null;
-        $charterSummary = $charterPath === null ? null : self::readCharterSummary($packageRoot . '/CHARTER.md');
-        $readmePath = is_file($packageRoot . '/README.md') ? $display . '/README.md' : null;
-
         $validator = new SchemaValidator();
         $publicApiFile = $packageRoot . '/' . self::MANIFEST_PATHS['public_api'];
         $publicApiRaw = is_file(
@@ -168,6 +169,10 @@ final readonly class PackageManifests
             || ($publicApiRaw !== null && ($publicApiRaw['schema'] ?? null) === 'kumwe-package-public-api/v1');
 
         if ($claimsVersion2) {
+            $charterPath = is_file($packageRoot . '/CHARTER.md') ? $display . '/CHARTER.md' : null;
+            $charterSummary = $charterPath === null ? null : self::readCharterSummary($packageRoot . '/CHARTER.md');
+            $readmePath = is_file($packageRoot . '/README.md') ? $display . '/README.md' : null;
+
             return self::version2(
                 $packageRoot,
                 $display,
@@ -182,17 +187,7 @@ final readonly class PackageManifests
             );
         }
 
-        return self::legacy(
-            $packageRoot,
-            $display,
-            $name,
-            $composer,
-            $psr4,
-            $charterPath,
-            $charterSummary,
-            $readmePath,
-            $publicApiRaw,
-        );
+        return self::legacy($packageRoot, $display, $name, $composer, $psr4, $publicApiRaw);
     }
 
     /**
@@ -327,15 +322,12 @@ final readonly class PackageManifests
     /**
      * Read a package released before Version 2, deriving its public symbols from what it does ship.
      *
-     * @param   string                       $packageRoot     Absolute package root.
-     * @param   string                       $display         Repository-relative package root.
-     * @param   string                       $name            Package name.
-     * @param   array<string, mixed>         $composer        Decoded composer.json.
-     * @param   array<string, list<string>>  $psr4            PSR-4 roots.
-     * @param   string|null                  $charterPath     CHARTER.md path when present.
-     * @param   string|null                  $charterSummary  Charter summary when present.
-     * @param   string|null                  $readmePath      README.md path when present.
-     * @param   array<string, mixed>|null    $publicApiV1     Decoded pre-Version-2 `resources/public-api/v1.json`.
+     * @param   string                       $packageRoot  Absolute package root.
+     * @param   string                       $display      Repository-relative package root.
+     * @param   string                       $name         Package name.
+     * @param   array<string, mixed>         $composer     Decoded composer.json.
+     * @param   array<string, list<string>>  $psr4         PSR-4 roots.
+     * @param   array<string, mixed>|null    $publicApiV1  Decoded pre-Version-2 `resources/public-api/v1.json`.
      *
      * @return  self  A `legacy-unmanifested` package.
      *
@@ -349,9 +341,6 @@ final readonly class PackageManifests
         string $name,
         array $composer,
         array $psr4,
-        ?string $charterPath,
-        ?string $charterSummary,
-        ?string $readmePath,
         ?array $publicApiV1,
     ): self {
         $roots = array_keys($psr4);
@@ -400,9 +389,9 @@ final readonly class PackageManifests
                 $display,
                 $composer,
                 $psr4,
-                $charterPath,
-                $charterSummary,
-                $readmePath,
+                null,
+                null,
+                null,
                 null,
                 null,
                 null,
@@ -448,9 +437,9 @@ final readonly class PackageManifests
             $display,
             $composer,
             $psr4,
-            $charterPath,
-            $charterSummary,
-            $readmePath,
+            null,
+            null,
+            null,
             null,
             null,
             null,
@@ -575,8 +564,9 @@ final readonly class PackageManifests
             if (!is_file($packageRoot . '/' . $document)) {
                 throw GovernanceViolation::at(
                     $relative,
-                    sprintf('documentation.%s names %s, which the package does not ship', $field, $document),
-                    'repair the handoff',
+                    sprintf('documentation.%s names %s, which the installed package does not ship', $field, $document),
+                    'a Version 2 release archive must ship CHARTER.md, README.md, docs/, resources/ and '
+                    . 'MIGRATION-HANDOFF.md (no export-ignore); a release that omits them fails this gate at adoption',
                 );
             }
         }
