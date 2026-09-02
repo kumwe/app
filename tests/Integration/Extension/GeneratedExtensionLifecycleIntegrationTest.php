@@ -10,6 +10,7 @@ use Doctrine\DBAL\Connection;
 use FilesystemIterator;
 use InvalidArgumentException;
 use Kumwe\App\Administrator\Http\Middleware\AdministratorSessionMiddleware;
+use Kumwe\App\Application\Authorization\AuthenticationStrength;
 use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Application\Authorization\SiteContext;
 use Kumwe\App\Application\Automation\JobHandlerRegistry;
@@ -28,6 +29,7 @@ use Kumwe\App\Extension\Infrastructure\DoctrineExtensionManager;
 use Kumwe\App\Extension\Runtime\ActiveExtensionSet;
 use Kumwe\App\Extension\Runtime\TrustEnforcingRequestHandler;
 use Kumwe\App\Identity\Application\Administration\AccessControlService;
+use Kumwe\App\Identity\Application\Administration\AdministratorIdentityGateway;
 use Kumwe\App\Identity\Application\Administration\AdministratorSessionStore;
 use Kumwe\App\Identity\Domain\UserStatus;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
@@ -141,9 +143,13 @@ final class GeneratedExtensionLifecycleIntegrationTest extends TestCase
         $portalEmail = 'generated-portal-' . $marker . '@example.test';
         $portalName = 'Generated portal member ' . $marker;
         $portalPassword = 'generated portal passphrase ' . $marker;
+        $administratorEmail = 'generated-administrator-' . $marker . '@example.test';
+        $administratorName = 'Generated administrator ' . $marker;
+        $administratorPassword = 'generated administrator passphrase ' . $marker;
         $installed = false;
         $trusted = false;
         $componentTable = null;
+        $administratorUser = null;
         $administratorRole = null;
         $administratorSessionId = null;
         $portalMember = null;
@@ -226,25 +232,47 @@ final class GeneratedExtensionLifecycleIntegrationTest extends TestCase
             // The scaffold guards both routes with the capability it declares. An installation
             // administrator holding `extensions.manage` may bootstrap the first grant of an
             // extension-owned capability, which is how a freshly activated package ever gains a holder:
-            // once for the administrator, once for an ordinary portal member who holds nothing else.
+            // once for a generated administrator, once for an ordinary portal member who holds nothing
+            // else. Both actors belong to this run: a role assignment advances its subject's security
+            // epoch, which retires every session and token minted under the previous authority, so the
+            // seeded integration administrator, whose epoch other proofs assert, is never the subject.
             $runtimeAccess = $runtime->get(AccessControlService::class);
+            $identities = $runtime->get(AdministratorIdentityGateway::class);
             self::assertInstanceOf(AccessControlService::class, $runtimeAccess);
+            self::assertInstanceOf(AdministratorIdentityGateway::class, $identities);
+            $administratorUser = $runtimeAccess->createUser(
+                $runtimeContext,
+                $administratorEmail,
+                $administratorName,
+                $administratorPassword,
+            );
             $administratorRole = $runtimeAccess->createRole(
                 $runtimeContext,
                 'generated-' . $marker,
                 'Generated lifecycle ' . $marker,
             );
+            $runtimeAccess->grant($runtimeContext, $administratorRole, 'administrator.access');
             $runtimeAccess->grant($runtimeContext, $administratorRole, $dotted . '.access');
-            $runtimeAccess->assignRole($runtimeContext, $runtimeContext->actorId(), $administratorRole);
+            $runtimeAccess->assignRole($runtimeContext, $administratorUser, $administratorRole);
             $portalMember = $runtimeAccess->createUser($runtimeContext, $portalEmail, $portalName, $portalPassword);
             $portalRole = $runtimeAccess->createRole($runtimeContext, 'generated-' . $marker . '-portal', $portalName);
             $runtimeAccess->grant($runtimeContext, $portalRole, 'portal.access', 'site', SiteContext::DEFAULT);
             $runtimeAccess->grant($runtimeContext, $portalRole, $dotted . '.access', 'site', SiteContext::DEFAULT);
             $runtimeAccess->assignRole($runtimeContext, $portalMember, $portalRole);
-            // A role assignment advances the actor's security epoch, which is what retires every
-            // session and token minted under the previous authority; the administrator therefore
-            // re-authenticates before holding a browser session that carries the new capability.
-            $runtimeContext = TestKernelFactory::administratorContext($runtime);
+            // The generated administrator authenticates through the identity gateway, exactly as a
+            // login does, before it can hold a browser session that carries the new capability.
+            $administratorPrincipal = $identities->authenticate(
+                $administratorEmail,
+                $administratorPassword,
+                'integration-tests',
+            );
+            self::assertNotNull($administratorPrincipal);
+            self::assertTrue($administratorPrincipal->hasCapability(Capability::fromString($dotted . '.access')));
+            $administratorContext = $administratorPrincipal->context(
+                SiteContext::default(),
+                AuthenticationStrength::Password,
+                'integration-generated-' . $marker,
+            );
 
             // Both routes are mounted where the App-composed registries say they are, behind the
             // App's own session boundaries: an anonymous navigation never reaches extension code.
@@ -263,7 +291,7 @@ final class GeneratedExtensionLifecycleIntegrationTest extends TestCase
             self::assertSame(303, $anonymous->getStatusCode());
             self::assertSame('/portal/login', $anonymous->getHeaderLine('Location'));
 
-            $administratorSession = $sessions->create($runtimeContext, self::USER_AGENT);
+            $administratorSession = $sessions->create($administratorContext, self::USER_AGENT);
             $administratorSessionId = $administratorSession->session->id;
             $administratorCookie = [AdministratorSessionMiddleware::COOKIE_NAME => $administratorSession->token];
             $before = $application->handle(self::request($administratorPath, $administratorCookie));
@@ -400,8 +428,18 @@ final class GeneratedExtensionLifecycleIntegrationTest extends TestCase
                     }
                 });
             }
-            if ($administratorRole !== null) {
-                self::quietly(static fn () => $access->revokeRole($context, $context->actorId(), $administratorRole));
+            if ($administratorRole !== null && $administratorUser !== null) {
+                self::quietly(static fn () => $access->revokeRole($context, $administratorUser, $administratorRole));
+            }
+            if ($administratorUser !== null) {
+                self::quietly(static fn () => $access->updateUser(
+                    $context,
+                    $administratorUser,
+                    $administratorEmail,
+                    $administratorName,
+                    UserStatus::Disabled,
+                    1,
+                ));
             }
             if ($portalMember !== null) {
                 self::quietly(static fn () => $access->updateUser(
