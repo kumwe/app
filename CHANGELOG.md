@@ -1603,6 +1603,21 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Fixed
 
+- **2026-09-02 — An installation configured before the admission-mode rename boots again.** The library
+  adoption reduced `EXTENSIONS_CONFORMANCE_ADMISSION` from `enforce`, `warn` and `off` to `scan` and `off`
+  and rewrote `.env.example` in the same commit, so every fresh-install lane passed while every existing
+  `.env` — written from the example that shipped `enforce` as its default — stopped `bin/kumwe database:migrate`
+  and every other command at configuration time with "must be scan or off". `ConfigurationFactory` now reads
+  `enforce` and `warn` as `scan`, the mode that keeps their meaning now that mandatory package evidence
+  fails closed in every mode and authoring findings are always advisory; an undocumented spelling still
+  refuses, because a typo must not select a default. `ShippedDotenvCompatibilityTest` pins the proof the
+  suite lacked: the current `.env.example` and the Gate A example, kept byte for byte as a fixture, must
+  both produce a configuration through the factory with no process overlay, so a variable whose vocabulary
+  moves has to keep reading the spellings it once documented. The agent bootstrap no longer treats a
+  present `vendor/` as current: a snapshot carrying a tree from an older lockfile lacked the service manager
+  and the three libraries, so schema preparation failed before the first test; the script now reinstalls
+  when Composer's dry run reports drift.
+
 - **2026-09-01 — The administrator extensions screen renders composition-only extensions instead of failing
   with HTTP 500.** The canonical SDK contribution graph carries only the sections a manifest declares, so a
   schema-6 package with no administrator section reached the extensions screen without one and the screen

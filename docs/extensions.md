@@ -486,7 +486,9 @@ classifies them explicitly.
 unfinished-marker, text-encoding and README checks; their findings are advisory because another vendor's
 house style is not an installation-integrity boundary. `off` skips those authoring checks but still runs
 every mandatory package check, and production refuses `off` so published installations retain the full
-evidence record.
+evidence record. The `enforce` and `warn` spellings the variable accepted before this model, both of
+which ran the scan, are still read and select `scan`, so a `.env` written from an earlier example keeps
+booting.
 
 Both results are stored on the release and shown on the Extensions screen, per extension: bill of
 materials state, provenance state, scan outcome, inventory size, asserted builder, and the findings. A

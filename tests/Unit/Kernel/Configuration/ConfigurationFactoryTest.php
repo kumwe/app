@@ -102,11 +102,38 @@ final class ConfigurationFactoryTest extends TestCase
         self::assertSame(PackageConformanceMode::Off, $off->packageConformanceAdmission);
     }
 
+    /**
+     * Proves the spellings the variable accepted before the rename still boot and select the scanning posture.
+     *
+     * `enforce` and `warn` were the documented values, and `enforce` the shipped default, until the mode set
+     * was reduced to `scan` and `off`. Both ran the scan, so both resolve to `Scan`, in production as well as
+     * development and in any letter case, rather than stopping an existing installation at configuration time.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testPreRenameConformanceAdmissionSpellingsStillSelectScan(): void
+    {
+        foreach (['enforce', 'warn', 'ENFORCE', 'Warn', ' enforce '] as $spelling) {
+            $values = $this->values();
+            $values['EXTENSIONS_CONFORMANCE_ADMISSION'] = $spelling;
+            $production = (new ConfigurationFactory())->create(new Environment($values));
+            self::assertSame(PackageConformanceMode::Scan, $production->packageConformanceAdmission, $spelling);
+
+            $values['APP_ENV'] = 'development';
+            $values['APP_BASE_URL'] = 'http://localhost:8080';
+            $development = (new ConfigurationFactory())->create(new Environment($values));
+            self::assertSame(PackageConformanceMode::Scan, $development->packageConformanceAdmission, $spelling);
+        }
+    }
+
     public function testUnknownConformanceAdmissionModeIsRefusedRatherThanDefaulted(): void
     {
         $values = $this->values();
-        $values['EXTENSIONS_CONFORMANCE_ADMISSION'] = 'warn';
+        $values['EXTENSIONS_CONFORMANCE_ADMISSION'] = 'audit';
         $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('EXTENSIONS_CONFORMANCE_ADMISSION must be scan or off');
 
         (new ConfigurationFactory())->create(new Environment($values));
     }
