@@ -87,7 +87,8 @@
     "preferred-install": {
       "*": "dist"
     },
-    "sort-packages": true
+    "sort-packages": true,
+    "process-timeout": 3600
   },
   "scripts": {
     "analyse": "phpstan analyse --no-progress --memory-limit=1G",
