@@ -1,0 +1,27 @@
+# Example non-roadmap record (schema 4.5, Kumwe-v2-07 "Non-roadmap work") for a fictitious relocation.
+# The real records live under docs/architecture/non-roadmap/NRM-YYYY-NNN.yaml.
+schema: kumwe-non-roadmap-record/v1
+id: NRM-2026-099
+nrm_ref: NRM-2026-099
+roadmap_impact: None
+rationale: "Pure relocation of the example describing service into kumwe/example; no roadmap criterion is claimed."
+repositories:
+  - kumwe/app
+  - kumwe/example
+behavior_before: "App owned Kumwe\\App\\Example\\Describing\\Describer and its interface."
+behavior_after: "App consumes Kumwe\\Example\\ExampleService through its infrastructure adapter."
+public_api_impact: "No App public API changes; the removed classes were internal to the Example module."
+dependency_impact: "Adds kumwe/example 0.1.0 as an exact runtime dependency."
+compatibility: "Byte-identical behaviour proven by the retained integration test."
+data_migration: null
+security_impact: null
+performance:
+  claim: None
+  evidence: []
+operations_deployment: null
+recovery_rollback: "Revert the adoption pull request."
+artifacts_evidence:
+  - docs/architecture/migrations/KUMWE-MIG-2026-001.yaml
+known_gaps: []
+owner: "Platform architecture"
+status: delivered

@@ -1,0 +1,25 @@
+# Example conflict ledger record (schema 4.6, Kumwe-v2-04 "Conflict ledger") for a fictitious resolution.
+# The real records live under docs/architecture/migrations/conflicts/KUMWE-CONFLICT-YYYY-NNN.yaml.
+schema: kumwe-conflict-ledger/v1
+conflict_id: KUMWE-CONFLICT-2026-001
+change_sets:
+  - KUMWE-CS-2026-001
+file: src/Kernel/ContainerFactory.php
+symbols_or_keys:
+  - Kumwe\Example\Contract\ExampleServiceInterface
+base_behavior: "The kernel bound the App-owned describer interface to its Doctrine adapter."
+current_objective: "Target master binds a second, unrelated service added by another change set."
+incoming_objective: "The adoption binds the package interface to the App adapter recorded in KUMWE-MIG-2026-001."
+resolution: "Both bindings kept; the package interface binding follows the ledger di_changes entry."
+content_removed: []
+content_preserved:
+  - "ExampleServiceInterface::class => PrefixedExampleService::class"
+generated_files_regenerated:
+  - docs/architecture/capability-index.md
+focused_tests:
+  - tests/Integration/Example/DescribeSubjectIntegrationTest.php
+combined_tests:
+  - "composer qa"
+ownership_review: "One owner per service identifier confirmed against the capability index."
+resolved_by: "Adoption agent"
+reviewed_by: "Platform architecture"

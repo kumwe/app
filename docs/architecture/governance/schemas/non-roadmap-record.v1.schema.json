@@ -1,0 +1,163 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kumwe.dev/schemas/non-roadmap-record.v1",
+  "title": "Kumwe non-roadmap work record",
+  "description": "non-roadmap/NRM-YYYY-NNN.yaml: architecture work without a roadmap criterion.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "kumwe-non-roadmap-record/v1"
+    },
+    "id": {
+      "$ref": "#/$defs/nrm_id"
+    },
+    "nrm_ref": {
+      "$ref": "#/$defs/nrm_id"
+    },
+    "roadmap_impact": {
+      "type": "string",
+      "minLength": 1
+    },
+    "rationale": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "repositories": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "behavior_before": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "behavior_after": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "public_api_impact": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "dependency_impact": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "compatibility": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "data_migration": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "security_impact": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "performance": {
+      "type": "object",
+      "properties": {
+        "claim": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "claim",
+        "evidence"
+      ],
+      "additionalProperties": false
+    },
+    "operations_deployment": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "recovery_rollback": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "artifacts_evidence": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "known_gaps": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "owner": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "planned",
+        "in-progress",
+        "delivered"
+      ]
+    }
+  },
+  "required": [
+    "schema",
+    "id",
+    "nrm_ref",
+    "roadmap_impact",
+    "rationale",
+    "repositories",
+    "behavior_before",
+    "behavior_after",
+    "public_api_impact",
+    "dependency_impact",
+    "compatibility",
+    "data_migration",
+    "security_impact",
+    "performance",
+    "operations_deployment",
+    "recovery_rollback",
+    "artifacts_evidence",
+    "known_gaps",
+    "owner",
+    "status"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "nrm_id": {
+      "type": "string",
+      "pattern": "^NRM-[0-9]{4}-[0-9]{3}$"
+    }
+  }
+}

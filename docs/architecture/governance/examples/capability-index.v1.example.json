@@ -1,0 +1,162 @@
+{
+  "schema": "kumwe-capability-index/v1",
+  "generator": "tools/generate-capability-index.php",
+  "composer_lock_sha256": "50a5104a43aa32e266ef4d21795bf7d4f372dae60fc00eb496b958b17d26db83",
+  "packages": [
+    {
+      "package": "kumwe/example",
+      "repository": "https://github.com/kumwe/example",
+      "installed_version": "v0.1.0",
+      "source_reference": "3954a3683953783da908a00b2c15d8d215166b8f",
+      "dist_reference": "3954a3683953783da908a00b2c15d8d215166b8f",
+      "license": [
+        "Apache-2.0"
+      ],
+      "manifest_status": "v2-manifested",
+      "legacy": null,
+      "release_gate_eligible": true,
+      "canonical_namespaces": [
+        "Kumwe\\Example\\"
+      ],
+      "responsibility": "Describe a subject with a configured prefix through one stable contract.",
+      "non_responsibilities": [
+        "Site settings, actor context and authorization.",
+        "Persistence of subjects or descriptions."
+      ],
+      "capabilities": [
+        {
+          "id": "example.describe",
+          "title": "Subject description",
+          "symbols": [
+            "Kumwe\\Example\\Contract\\ExampleServiceInterface",
+            "Kumwe\\Example\\ExampleService"
+          ],
+          "documentation": [
+            "vendor/kumwe/example/docs/public-api.md"
+          ]
+        }
+      ],
+      "public_symbols": [
+        "Kumwe\\Example\\ConfigProvider",
+        "Kumwe\\Example\\Container\\ExampleServiceFactory",
+        "Kumwe\\Example\\Contract\\ExampleServiceInterface",
+        "Kumwe\\Example\\ExampleService"
+      ],
+      "public_symbols_source": "manifest:resources/public-api/v1.json",
+      "public_api_digest": "sha256:816e970640c81cde6f37c6723386c5101ead7c9a2a49ccc2b94747de289573b9",
+      "documentation": {
+        "charter": "vendor/kumwe/example/CHARTER.md",
+        "readme": "vendor/kumwe/example/README.md",
+        "public_api": "vendor/kumwe/example/docs/public-api.md"
+      },
+      "dependency_injection": {
+        "config_provider": "Kumwe\\Example\\ConfigProvider",
+        "provider_absence_reason": null,
+        "factories": [
+          {
+            "service": "Kumwe\\Example\\ExampleService",
+            "factory": "Kumwe\\Example\\Container\\ExampleServiceFactory",
+            "lifetime": "shared"
+          }
+        ],
+        "aliases": {
+          "Kumwe\\Example\\Contract\\ExampleServiceInterface": "Kumwe\\Example\\ExampleService"
+        },
+        "configuration_keys": [
+          {
+            "key": "kumwe.example.prefix",
+            "default": "example",
+            "description": "Marker prepended to every description."
+          }
+        ]
+      },
+      "native_requirements": null,
+      "deprecations": [],
+      "handoff": {
+        "path": "vendor/kumwe/example/MIGRATION-HANDOFF.md",
+        "sha256": "58a1c2300a35c06e3768d9f698ae5da1d054d18267851bbea912d3939b8584d2",
+        "migration_id": "KUMWE-MIG-2026-001",
+        "change_set": "KUMWE-CS-2026-001"
+      }
+    },
+    {
+      "package": "kumwe/example-legacy",
+      "repository": "https://github.com/kumwe/example-legacy",
+      "installed_version": "v0.9.0",
+      "source_reference": "d6b30e0e1aa60f0e238898a30ca6e024a17e1e8b",
+      "dist_reference": "d6b30e0e1aa60f0e238898a30ca6e024a17e1e8b",
+      "license": [
+        "Apache-2.0"
+      ],
+      "manifest_status": "legacy-unmanifested",
+      "legacy": {
+        "reason": "Released before the Version 2 protocol; ships no public-api, capabilities or service-map manifest and no MIGRATION-HANDOFF.md, so its public symbols come from a source scan.",
+        "approved_by": "eWɘyn",
+        "approved_on": "2026-09-02",
+        "verified_legacy_release": null,
+        "retired_app_namespaces": [
+          "Kumwe\\App\\Example\\Formatting\\"
+        ]
+      },
+      "release_gate_eligible": false,
+      "canonical_namespaces": [
+        "Kumwe\\ExampleLegacy\\"
+      ],
+      "responsibility": "Format legacy descriptions for the example module.",
+      "non_responsibilities": [
+        "Persistence, authorization and presentation."
+      ],
+      "capabilities": [],
+      "public_symbols": [
+        "Kumwe\\ExampleLegacy\\LegacyFormat",
+        "Kumwe\\ExampleLegacy\\LegacyFormatter"
+      ],
+      "public_symbols_source": "source-scan",
+      "public_api_digest": "sha256:3650da2bd9b9d42c90badab6e51bf4bba2b9c874458cab8ab04e097524264675",
+      "documentation": {
+        "charter": null,
+        "readme": "vendor/kumwe/example-legacy/README.md",
+        "public_api": null
+      },
+      "dependency_injection": {
+        "config_provider": null,
+        "provider_absence_reason": "kumwe/example-legacy v0.9.0 ships no Version 2 service map; it is an approved legacy-unmanifested entry and App composes its services explicitly.",
+        "factories": [],
+        "aliases": {},
+        "configuration_keys": []
+      },
+      "native_requirements": null,
+      "deprecations": [],
+      "handoff": null
+    }
+  ],
+  "extracted_namespaces": [
+    {
+      "old_namespace": "Kumwe\\App\\Example\\Describing\\",
+      "package": "kumwe/example",
+      "migration_id": "KUMWE-MIG-2026-001"
+    }
+  ],
+  "removed_symbols": [
+    {
+      "old_fqcn": "Kumwe\\App\\Example\\Describing\\Describer",
+      "new_fqcn": "Kumwe\\Example\\ExampleService",
+      "package": "kumwe/example",
+      "migration_id": "KUMWE-MIG-2026-001"
+    },
+    {
+      "old_fqcn": "Kumwe\\App\\Example\\Describing\\DescriberInterface",
+      "new_fqcn": "Kumwe\\Example\\Contract\\ExampleServiceInterface",
+      "package": "kumwe/example",
+      "migration_id": "KUMWE-MIG-2026-001"
+    }
+  ],
+  "ownership": {
+    "Kumwe\\Example\\ConfigProvider": "kumwe/example",
+    "Kumwe\\Example\\Container\\ExampleServiceFactory": "kumwe/example",
+    "Kumwe\\Example\\Contract\\ExampleServiceInterface": "kumwe/example",
+    "Kumwe\\Example\\ExampleService": "kumwe/example",
+    "Kumwe\\ExampleLegacy\\LegacyFormat": "kumwe/example-legacy",
+    "Kumwe\\ExampleLegacy\\LegacyFormatter": "kumwe/example-legacy"
+  }
+}

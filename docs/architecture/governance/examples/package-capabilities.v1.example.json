@@ -1,0 +1,27 @@
+{
+  "schema": "kumwe-package-capabilities/v1",
+  "package": "kumwe/example",
+  "release": "0.1.0",
+  "namespace": "Kumwe\\Example\\",
+  "responsibility": "Describe a subject with a configured prefix through one stable contract.",
+  "non_responsibilities": [
+    "Site settings, actor context and authorization.",
+    "Persistence of subjects or descriptions."
+  ],
+  "capabilities": [
+    {
+      "id": "example.describe",
+      "title": "Subject description",
+      "description": "Compose the description of a subject, prefixed with the configured marker.",
+      "symbols": [
+        "Kumwe\\Example\\Contract\\ExampleServiceInterface",
+        "Kumwe\\Example\\ExampleService"
+      ],
+      "documentation": [
+        "docs/public-api.md"
+      ]
+    }
+  ],
+  "native_requirements": null,
+  "deprecations": []
+}

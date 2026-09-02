@@ -49,7 +49,7 @@ kernel may see every layer
 | delivery | shared, domain, application, presentation | HTTP, console, worker, machine-surface entry |
 | kernel | everything | The composition root |
 
-App-owned classification is the last namespace segment (`Domain`, `Application`, …)
+App-owned classification is the first namespace segment (`Domain`, `Application`, …)
 unless `layers.json` `namespace_prefixes` overrides it. Extracted packages never
 inherit that shorthand: each public namespace App imports needs an explicit
 longest-prefix rule. Rules that surprise people:

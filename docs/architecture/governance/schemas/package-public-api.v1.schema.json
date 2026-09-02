@@ -1,0 +1,277 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kumwe.dev/schemas/package-public-api.v1",
+  "title": "Kumwe package public API manifest",
+  "description": "resources/public-api/v1.json of a Version 2 package: every exported symbol and signature.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "kumwe-package-public-api/v1"
+    },
+    "package": {
+      "$ref": "#/$defs/package"
+    },
+    "release": {
+      "$ref": "#/$defs/version"
+    },
+    "namespace": {
+      "$ref": "#/$defs/namespace_root"
+    },
+    "symbols": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/$defs/kind"
+          },
+          "stability": {
+            "type": "string",
+            "enum": [
+              "stable",
+              "experimental",
+              "deprecated"
+            ]
+          },
+          "file": {
+            "$ref": "#/$defs/path"
+          },
+          "abstract": {
+            "type": "boolean"
+          },
+          "final": {
+            "type": "boolean"
+          },
+          "readonly": {
+            "type": "boolean"
+          },
+          "parent": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/$defs/fqcn"
+              }
+            ]
+          },
+          "interfaces": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/fqcn"
+            }
+          },
+          "constants": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "type"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "properties": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "static": {
+                  "type": "boolean"
+                },
+                "readonly": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "type",
+                "static",
+                "readonly"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "methods": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "visibility": {
+                  "type": "string",
+                  "enum": [
+                    "public"
+                  ]
+                },
+                "static": {
+                  "type": "boolean"
+                },
+                "parameters": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "type": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "optional": {
+                        "type": "boolean"
+                      },
+                      "variadic": {
+                        "type": "boolean"
+                      },
+                      "by_reference": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "type",
+                      "optional",
+                      "variadic",
+                      "by_reference"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "return": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "visibility",
+                "static",
+                "parameters",
+                "return"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "deprecated": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "since": {
+                    "type": "string"
+                  },
+                  "replacement": {
+                    "anyOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "$ref": "#/$defs/fqcn"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "since",
+                  "replacement"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "stability",
+          "file",
+          "abstract",
+          "final",
+          "readonly",
+          "parent",
+          "interfaces",
+          "constants",
+          "properties",
+          "methods",
+          "deprecated"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "extension_points": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/fqcn"
+      }
+    },
+    "digest_of": {
+      "$ref": "#/$defs/path"
+    }
+  },
+  "required": [
+    "schema",
+    "package",
+    "release",
+    "namespace",
+    "symbols",
+    "extension_points",
+    "digest_of"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "fqcn": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_]*(\\\\[A-Za-z_][A-Za-z0-9_]*)*$",
+      "description": "Fully qualified class-like name without a leading backslash."
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "class",
+        "interface",
+        "trait",
+        "enum"
+      ]
+    },
+    "namespace_root": {
+      "type": "string",
+      "pattern": "^([A-Za-z_][A-Za-z0-9_]*\\\\)+$",
+      "description": "Namespace root with a trailing backslash (autoload.psr-4)."
+    },
+    "package": {
+      "type": "string",
+      "pattern": "^kumwe/[a-z0-9-]+$",
+      "description": "Composer package name in the kumwe vendor."
+    },
+    "path": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Relative path with forward slashes."
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^v?[0-9]+\\.[0-9]+\\.[0-9]+([-+][0-9A-Za-z.-]+)?$",
+      "description": "Semantic version, optional v prefix."
+    }
+  }
+}

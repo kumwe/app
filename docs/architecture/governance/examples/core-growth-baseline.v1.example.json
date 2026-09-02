@@ -1,0 +1,32 @@
+{
+  "schema": "kumwe-core-growth-baseline/v1",
+  "note": "Example baseline (schema 4.15, spec section 5.2). The real file is docs/architecture/governance/core-growth-baseline.json, recorded by composer kumwe:core-growth-record. growth is null for every symbol present at the bootstrap snapshot; later portable growth cites its approved Core Growth Record and host-layer growth records its adapter or composition evidence.",
+  "symbols": {
+    "Kumwe\\App\\Example\\Application\\DescribeSubject": {
+      "kind": "class",
+      "layer": "application",
+      "surface": "0123456789abcdef01234567",
+      "growth": {
+        "record": "KUMWE-CGR-2026-001"
+      }
+    },
+    "Kumwe\\App\\Example\\Domain\\ExampleSubject": {
+      "kind": "class",
+      "layer": "domain",
+      "surface": "89abcdef0123456789abcdef",
+      "growth": null
+    },
+    "Kumwe\\App\\Example\\Infrastructure\\PrefixedExampleService": {
+      "kind": "class",
+      "layer": "infrastructure",
+      "surface": "fedcba9876543210fedcba98",
+      "growth": {
+        "classification": "host-infrastructure",
+        "implements": [
+          "Kumwe\\Example\\Contract\\ExampleServiceInterface"
+        ],
+        "extends": null
+      }
+    }
+  }
+}

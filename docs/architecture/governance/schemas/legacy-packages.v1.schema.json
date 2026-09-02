@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kumwe.dev/schemas/legacy-packages.v1",
+  "title": "Kumwe legacy-unmanifested package registry",
+  "description": "governance/legacy-packages.json: approved transitional entries for pre-Version-2 packages.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "kumwe-legacy-packages/v1"
+    },
+    "note": {
+      "type": "string",
+      "minLength": 1
+    },
+    "packages": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "installed_version": {
+            "$ref": "#/$defs/version"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "responsibility": {
+            "type": "string",
+            "minLength": 1
+          },
+          "non_responsibilities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "canonical_namespaces": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/namespace_root"
+            },
+            "minItems": 1
+          },
+          "retired_app_namespaces": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/namespace_root"
+            }
+          },
+          "verified_legacy_release": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/$defs/path"
+              }
+            ]
+          },
+          "approved_by": {
+            "type": "string",
+            "minLength": 1
+          },
+          "approved_on": {
+            "$ref": "#/$defs/date"
+          }
+        },
+        "required": [
+          "installed_version",
+          "reason",
+          "responsibility",
+          "non_responsibilities",
+          "canonical_namespaces",
+          "retired_app_namespaces",
+          "verified_legacy_release",
+          "approved_by",
+          "approved_on"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "schema",
+    "note",
+    "packages"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "date": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+    },
+    "namespace_root": {
+      "type": "string",
+      "pattern": "^([A-Za-z_][A-Za-z0-9_]*\\\\)+$",
+      "description": "Namespace root with a trailing backslash (autoload.psr-4)."
+    },
+    "path": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Relative path with forward slashes."
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^v?[0-9]+\\.[0-9]+\\.[0-9]+([-+][0-9A-Za-z.-]+)?$",
+      "description": "Semantic version, optional v prefix."
+    }
+  }
+}

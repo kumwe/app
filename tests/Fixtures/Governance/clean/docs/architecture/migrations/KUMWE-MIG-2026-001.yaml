@@ -1,0 +1,36 @@
+# Governance fixture: the App adoption record of the fictitious kumwe/example-v2 release.
+schema: kumwe-migration-ledger/v1
+migration_id: KUMWE-MIG-2026-001
+change_set: KUMWE-CS-2026-001
+package: kumwe/example-v2
+version: 0.1.0
+artifact_digest: "64f372d94d03531729b3fae87163c8485b3643df3b38d60d3be4061e77f79669"
+handoff_path: vendor/kumwe/example-v2/MIGRATION-HANDOFF.md
+handoff_sha256: "fac05cd33a1982ac982941a70ee3d3def33ae50dac19b272ef7f7a0beba66ad3"
+release_attestation: docs/architecture/migrations/evidence/KUMWE-MIG-2026-001/RELEASE-ATTESTATION.yaml
+old_namespace_roots:
+  - Kumwe\App\Example\Describing\
+symbols:
+  - old_fqcn: Kumwe\App\Example\Describing\Describer
+    new_fqcn: Kumwe\Example\ExampleService
+  - old_fqcn: Kumwe\App\Example\Describing\DescriberInterface
+    new_fqcn: Kumwe\Example\Contract\ExampleServiceInterface
+removed_paths:
+  - src/Example/Describing/Describer.php
+  - src/Example/Describing/DescriberInterface.php
+removed_tests:
+  - tests/Unit/Example/Describing/DescriberTest.php
+retained_tests:
+  - tests/Integration/Example/DescribeSubjectIntegrationTest.php
+di_changes:
+  - service: Kumwe\Example\Contract\ExampleServiceInterface
+    factory: Kumwe\App\Kernel\ContainerFactory
+    note: "App binds its infrastructure adapter to the package interface; the package provider is not registered."
+capability_index_entries:
+  - kumwe/example-v2
+release_evidence:
+  - docs/architecture/migrations/evidence/KUMWE-MIG-2026-001/RELEASE-ATTESTATION.yaml
+app_pull_request: "https://github.com/kumwe/app/pull/1234"
+roadmap_refs: []
+non_roadmap_refs: []
+conflicts: []
