@@ -1257,6 +1257,14 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Changed
 
+- **2026-09-02 — `composer qa` no longer depends on the machine finishing the suite in five minutes.**
+  Composer kills a script after its default `process-timeout` of 300 seconds, and the complete PHPUnit lane
+  now carries 3,618 tests against a real database. The CI runners finish inside that window, so the gate
+  stayed green there, while the documented `docker compose run --rm app composer qa` on a laptop, or any
+  contended sandbox, was killed at "The process "phpunit --colors=always" exceeded the timeout of 300
+  seconds" — a red result that names no test. The manifest now sets `process-timeout` to one hour, so the
+  local gate reports what the suite found rather than how fast the machine was.
+
 - **2026-09-02 — `kumwe/extension-sdk` is pinned at 0.2.4, the release that makes the scaffold executable
   end to end.** The 0.2.3 scaffold generated handlers calling declaration members the SDK never defined —
   the listener passed the event object to `DomainListenerDefinition::accepts()`, the job handler called a
