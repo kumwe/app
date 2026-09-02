@@ -43,6 +43,36 @@ final class McpHttpHandlerTest extends TestCase
         self::assertSame(204, $this->handler()->handle($request)->getStatusCode());
     }
 
+    /**
+     * A browser's preflight carries no credentials, so it is answered without a principal and without a 500.
+     *
+     * The `OPTIONS` route runs no bearer middleware; before this, the handler refused the request as
+     * unauthenticated, which surfaced as an internal error on every cross-origin attempt. The answer
+     * mirrors the transport's CORS defaults: the three MCP methods, the headers the transport reads,
+     * and the session header it exposes.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAnUnauthenticatedPreflightIsAnsweredWithTheTransportAllowances(): void
+    {
+        $request = (new ServerRequest())
+            ->withMethod('OPTIONS')
+            ->withUri(new \Laminas\Diactoros\Uri('https://kumwe.test/mcp'))
+            ->withHeader('Origin', 'https://elsewhere.test')
+            ->withHeader('Access-Control-Request-Method', 'POST');
+
+        $response = $this->handler()->handle($request);
+
+        self::assertSame(204, $response->getStatusCode());
+        self::assertSame('GET, POST, DELETE', $response->getHeaderLine('Access-Control-Allow-Methods'));
+        self::assertStringContainsString('Mcp-Session-Id', $response->getHeaderLine('Access-Control-Allow-Headers'));
+        self::assertStringContainsString('Authorization', $response->getHeaderLine('Access-Control-Allow-Headers'));
+        self::assertSame('Mcp-Session-Id', $response->getHeaderLine('Access-Control-Expose-Headers'));
+        self::assertFalse($response->hasHeader('Access-Control-Allow-Origin'), 'No origin is configured as allowed.');
+    }
+
     public function testItRejectsMismatchedPrincipalAndExecutionContext(): void
     {
         $context = AuthorizationContext::human(['content.read']);
@@ -51,7 +81,7 @@ final class McpHttpHandlerTest extends TestCase
             '018f22e2-7c8b-7ab0-8f3a-88e8026bb302',
         );
         $request = (new ServerRequest())
-            ->withMethod('OPTIONS')
+            ->withMethod('POST')
             ->withUri(new \Laminas\Diactoros\Uri('https://kumwe.test/mcp'))
             ->withAttribute(AuthenticatedPrincipal::REQUEST_ATTRIBUTE, $other->principal())
             ->withAttribute(ExecutionContext::REQUEST_ATTRIBUTE, $context);

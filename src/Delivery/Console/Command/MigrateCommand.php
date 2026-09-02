@@ -74,9 +74,10 @@ final readonly class MigrateCommand implements Command
      * Apply every outstanding migration, then reconcile and materialize the extension runtime map.
      *
      * The runtime pass runs unconditionally, so an installation whose schema was already current still
-     * converges its publication; only the lines printed ahead of it differ. Each run mints a fresh
-     * request identifier, which is what ties the authorization and audit records the run produces back
-     * to this one invocation.
+     * converges its publication; only the lines printed ahead of it differ. A table the runner converged
+     * on the database default collation is named on its own line, so a rewrite of physical tables never
+     * happens silently. Each run mints a fresh request identifier, which is what ties the authorization
+     * and audit records the run produces back to this one invocation.
      *
      * @param   list<string>  $arguments  Ignored; the command accepts no options.
      * @param   Output        $output     Sink for the migration lines and the materialized generation.
@@ -101,6 +102,12 @@ final readonly class MigrateCommand implements Command
             foreach ($result->applied as $migration) {
                 $output->message('core.console.database_migrate.applied', ['migration' => $migration]);
             }
+        }
+        foreach ($result->converged as $table) {
+            $output->message('core.console.database_migrate.converged_collation', [
+                'table' => $table,
+                'collation' => (string) $result->collation,
+            ]);
         }
         foreach ($this->profiles->reconcile() as $line) {
             $output->line($line);

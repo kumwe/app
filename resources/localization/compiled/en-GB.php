@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for en-GB, carrying 2403 messages.
+ * Compiled interface message catalogue for en-GB, carrying 2404 messages.
  *
  * Generated from en-GB.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1847,6 +1847,7 @@ return [
     'core.console.content.description' => 'List, read, create, update, transition, trash, or restore content.',
     'core.console.content_model.description' => 'List, read, create, or publish versioned content types and workflows.',
     'core.console.database_migrate.applied' => 'Applied {migration}',
+    'core.console.database_migrate.converged_collation' => 'Converged {table} to the database collation {collation}',
     'core.console.database_migrate.database_schema_is_current_reconciling_the' => 'Database schema is current; reconciling the extension runtime publication.',
     'core.console.database_migrate.description' => 'Apply pending forward-only Kumwe 2.x migrations.',
     'core.console.database_migrate.materialized_extension_runtime_generation' => 'Materialized extension runtime generation {generation}',

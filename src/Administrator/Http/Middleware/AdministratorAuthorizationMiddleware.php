@@ -57,8 +57,9 @@ final readonly class AdministratorAuthorizationMiddleware implements MiddlewareI
      * Pass the request on only when its route's declared capabilities are all held by the principal.
      *
      * Traffic outside `/administrator`, and the login form itself, is forwarded untouched. A request
-     * whose route did not match carries no declaration and is also forwarded, so a mistyped
-     * administrator URL still reaches the not-found handler instead of being reported as forbidden.
+     * whose route did not match, or that only the public site's catch-all route matched, carries no
+     * administrator declaration and is also forwarded, so a mistyped administrator URL still reaches
+     * the not-found handler instead of being reported as forbidden or as a defect.
      * A denial names the capability the principal lacks, in the shape the caller can use: a browser
      * navigation receives the themed `access-denied` page, everything else an
      * `application/problem+json` document.
@@ -154,14 +155,18 @@ final readonly class AdministratorAuthorizationMiddleware implements MiddlewareI
      *
      * Sorting by capability name makes a denial reproducible: the same principal on the same route is
      * always told about the same missing capability, instead of one that depends on the order the
-     * route happened to be registered in. A route that did not match yields an empty list, which is
-     * the only way a request reaches the handler without a policy; a route that did match and
+     * route happened to be registered in. A route that did not match yields an empty list, and so
+     * does a match on a route outside the administrator tree — the public site's catch-all matches
+     * every path, so an administrator URL nothing serves lands there and must reach the not-found
+     * answer rather than be treated as an undeclared administrator screen. Those two are the only ways
+     * a request reaches the handler without a policy; an administrator route that did match and
      * declares nothing usable is refused here, so the failure is a raised defect rather than an open
      * screen.
      *
      * @param   ServerRequestInterface  $request  Request the routing middleware has already run against.
      *
-     * @return  list<Capability>  Declared capabilities ordered by name; empty only when no route matched.
+     * @return  list<Capability>  Declared capabilities ordered by name; empty only when no route matched
+     *          or the match lies outside the administrator tree.
      *
      * @throws  LogicException  When the matched route is not a `Route`, declares no non-empty list of capability
      *          strings, or names one that is not a valid capability.
@@ -180,6 +185,10 @@ final readonly class AdministratorAuthorizationMiddleware implements MiddlewareI
 
         if (!$route instanceof Route) {
             throw new LogicException('Administrator authorization requires a matched route.');
+        }
+
+        if (!str_starts_with($route->getPath(), '/administrator')) {
+            return [];
         }
 
         $configured = $route->getOptions()[self::OPTION_REQUIRED_CAPABILITIES] ?? null;

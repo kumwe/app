@@ -212,6 +212,31 @@ final class AdministratorAuthorizationMiddlewareTest extends TestCase
         self::assertSame('application/problem+json', $response->getHeaderLine('Content-Type'));
     }
 
+    /**
+     * An administrator URL nothing serves matches the public catch-all and is forwarded to the not-found answer.
+     *
+     * The public site registers `/{path:.+}`, so a signed-in administrator's mistyped URL always has a
+     * matched route; that route declares no administrator policy because it is not an administrator
+     * route. Treating it as an undeclared screen turned every typo into a 500; it must forward instead.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testForwardsAnUnknownAdministratorPathMatchedByThePublicCatchAll(): void
+    {
+        $principal = AuthorizationContext::principal(['administrator.access'], self::SUBJECT);
+        $route = new Route('/{path:.+}', $this->createStub(MiddlewareInterface::class), ['GET'], 'site.content.path');
+        $request = (new ServerRequestFactory())
+            ->createServerRequest('GET', 'https://kumwe.test/administrator/nonexistent')
+            ->withAttribute(RouteResult::class, RouteResult::fromRoute($route, ['path' => 'administrator/nonexistent']))
+            ->withAttribute(AuthenticatedPrincipal::REQUEST_ATTRIBUTE, $principal);
+
+        $response = (new AdministratorAuthorizationMiddleware())->process($request, $this->successfulHandler());
+
+        self::assertSame(204, $response->getStatusCode());
+    }
+
     public function testFailsClosedWhenAdministratorRouteHasNoCapabilityPolicy(): void
     {
         $principal = AuthorizationContext::principal(['administrator.access'], self::SUBJECT);

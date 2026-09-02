@@ -16010,6 +16010,14 @@
         <source>Materialized extension runtime generation {generation}</source>
       </segment>
     </unit>
+    <unit id="core.console.database_migrate.converged_collation">
+      <notes>
+        <note category="context">Console output line on src/Delivery/Console/Command/MigrateCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Converged {table} to the database collation {collation}</source>
+      </segment>
+    </unit>
     <unit id="core.console.database_status.description">
       <notes>
         <note category="context">Console command summary on src/Delivery/Console/Command/MigrationStatusCommand.php.</note>

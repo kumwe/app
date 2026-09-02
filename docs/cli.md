@@ -29,6 +29,7 @@ Commands return `0` on success and a non-zero status on invalid input, unavailab
 | `demo:install` | Provision the demonstration sign-ins and install the example extensions in one step |
 | `demo:provision-access` | Provision demonstration staff and portal sign-ins with generated credentials |
 | `demo:install-examples` | Install and activate the shipped example extensions through the signed pipeline |
+| `demo:export-profile` | Export the running site into an installable demo-profile package with integrity checksums; see [demo profiles](demo-profiles.md#exporting-a-running-system) |
 
 The owner command requires `--email`, `--name`, and an absolute `--password-file` whose group/other permission bits are clear.
 

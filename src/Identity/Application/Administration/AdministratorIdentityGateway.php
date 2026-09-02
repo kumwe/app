@@ -39,6 +39,8 @@ interface AdministratorIdentityGateway
      *          credential does not identify an account that may sign in.
      *
      * @throws  AuthenticationThrottled  When too many attempts have already failed for this pair.
+     * @throws  \InvalidArgumentException  When the address is not syntactically an address at all, which an
+     *          implementation refuses before it counts or looks anything up.
      *
      * @since   2.0.0
      */

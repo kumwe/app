@@ -167,7 +167,7 @@ final class DemoInstallCommandTest extends TestCase
         self::assertSame(0, $this->command('none')->execute($this->arguments(), $output));
         self::assertStringContainsString('skipping the demonstration cast', $output->lines[0]);
         self::assertSame('Confirmed kumwe/announcements-example (announcements).', $output->lines[1]);
-        self::assertCount(3, array_filter(
+        self::assertCount(4, array_filter(
             $output->lines,
             static fn (string $line): bool => str_starts_with($line, 'Confirmed kumwe/'),
         ));
@@ -455,6 +455,7 @@ final class DemoInstallCommandTest extends TestCase
         return [
             ['identifier' => 'kumwe/announcements-example', 'status' => 'active'],
             ['identifier' => 'kumwe/asset-inspection-example', 'status' => 'active'],
+            ['identifier' => 'kumwe/audit-listener-example', 'status' => 'active'],
             ['identifier' => 'kumwe/horizon-theme-example', 'status' => 'active'],
         ];
     }
