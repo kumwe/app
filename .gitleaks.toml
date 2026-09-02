@@ -35,8 +35,11 @@ useDefault = true
 # line shapes are narrower than a path or blanket rule exemption and target only upstream's generic-api-key
 # heuristic: the first admits only an explicitly named SHA-256 field, and the second names the exact schema
 # identities whose retained 64-hex value is a contract checksum.
-# Any new identity must be reviewed and added deliberately; arbitrary JSON keys and arbitrary hex values stay
-# scanned by every default rule.
+# The third admits the same explicitly named SHA-256 field in the YAML governance records under
+# docs/architecture (change sets, migration ledgers, handoffs and attestations name every checksum
+# `<what>_digest` or `<what>_sha256`, such as `public_api_digest`), where the key is unquoted.
+# Any new identity must be reviewed and added deliberately; arbitrary JSON keys, arbitrary YAML keys and
+# arbitrary hex values stay scanned by every default rule.
 [[rules]]
 id = "generic-api-key"
 
@@ -45,6 +48,7 @@ description = "Retained machine-contract SHA-256 fields"
 regexTarget = "match"
 regexes = [
   '''^[a-z][a-z0-9_]*_sha256"\s*:\s*"[a-f0-9]{64}"$''',
+  '''^[a-z][a-z0-9_]*_(?:digest|sha256):\s*"[a-f0-9]{64}"$''',
   '''^(?:ApiDiscovery|ExtensionCredentialRequest|ExtensionTrustKey|ExtensionTrustKeyCollection|ExtensionTrustKeyCreate|ExtensionTrustKeyRevoke|ExtensionTrustKeyRotate|IssuedToken|OpenApiDocument|TokenCollection|TokenCreate|TokenRecord|TokenRevocationRequest|TokenRevocationResult|TokenRotate)"\s*:\s*"[a-f0-9]{64}"$''',
 ]
 

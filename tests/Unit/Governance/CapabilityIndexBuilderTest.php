@@ -427,6 +427,57 @@ final class CapabilityIndexBuilderTest extends TestCase
     }
 
     /**
+     * A distribution install that omits a legacy package's charter, README, docs and tests yields identical bytes.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheIndexDoesNotDependOnLegacyFilesAReleaseArchiveMayOmit(): void
+    {
+        $expected = CapabilityIndexWriter::json((new CapabilityIndexBuilder(GovernanceFixture::cleanRoot()))->build());
+        $root = GovernanceFixture::copy();
+        try {
+            foreach (['CHARTER.md', 'README.md', 'docs', 'tests'] as $relative) {
+                GovernanceFixture::delete($root, 'vendor/kumwe/example-legacy/' . $relative);
+            }
+            self::assertFileDoesNotExist($root . '/vendor/kumwe/example-legacy/CHARTER.md');
+            self::assertFileDoesNotExist($root . '/vendor/kumwe/example-legacy/README.md');
+
+            $document = (new CapabilityIndexBuilder($root))->build();
+
+            self::assertSame($expected, CapabilityIndexWriter::json($document));
+            self::assertSame(
+                ['charter' => null, 'readme' => null, 'public_api' => null],
+                $document['packages'][0]['documentation'],
+            );
+        } finally {
+            GovernanceFixture::remove($root);
+        }
+    }
+
+    /**
+     * A Version 2 archive that omits its charter fails closed, naming what a release archive must ship.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAVersion2ArchiveMustShipItsDocumentation(): void
+    {
+        $root = GovernanceFixture::copy();
+        try {
+            GovernanceFixture::delete($root, 'vendor/kumwe/example-v2/CHARTER.md');
+            $this->assertRefused(
+                $root,
+                'release archive must ship CHARTER.md, README.md, docs/, resources/ and MIGRATION-HANDOFF.md',
+            );
+        } finally {
+            GovernanceFixture::remove($root);
+        }
+    }
+
+    /**
      * Two packages exporting one FQCN, or declaring one capability id, are refused as duplicate owners.
      *
      * @return  void

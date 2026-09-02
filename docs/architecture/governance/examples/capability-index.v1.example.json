@@ -115,7 +115,7 @@
       "public_api_digest": "sha256:3650da2bd9b9d42c90badab6e51bf4bba2b9c874458cab8ab04e097524264675",
       "documentation": {
         "charter": null,
-        "readme": "vendor/kumwe/example-legacy/README.md",
+        "readme": null,
         "public_api": null
       },
       "dependency_injection": {

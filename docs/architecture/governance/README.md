@@ -30,6 +30,12 @@ the installed packages and never edited by hand. It is the answer to "does a pac
    responsibility summary); `README.md`; `MIGRATION-HANDOFF.md`; and the three manifests
    `resources/public-api/v1.json`, `resources/capabilities/v1.json` and `resources/service-map/v1.json`.
    A locked package whose vendor directory is missing fails the build: install locked dependencies first.
+   The index reads only what a release archive is guaranteed to ship, so a git checkout and a dist
+   zipball of the same lock produce the same digest: for a legacy entry that is `composer.json`,
+   `resources/` and `src/` alone (its responsibility comes from the registry, its `documentation`
+   records `charter: null` and `readme: null`); for a Version 2 package the charter, README, `docs/`,
+   `resources/` and `MIGRATION-HANDOFF.md` are required, so a Version 2 release archive must ship them
+   and must not `export-ignore` them — one that omits them fails this gate at adoption.
 3. [`legacy-packages.json`](legacy-packages.json) — the legacy registry (section 1.6).
 4. `docs/architecture/migrations/KUMWE-MIG-*.yaml` — the migration ledger: retired namespaces, removed
    symbols and recorded DI changes.
