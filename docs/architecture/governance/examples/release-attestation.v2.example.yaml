@@ -1,0 +1,39 @@
+# Example external release attestation (schema 4.8, Kumwe-v2-08) for a fictitious kumwe/example release.
+# The real record lives at docs/architecture/migrations/evidence/<MIG>/RELEASE-ATTESTATION.yaml with
+# status verified; a failed verification is written to RELEASE-VERIFICATION-FAILED.yaml with status
+# failed and non-empty known_gaps (D-GOV-4).
+schema: kumwe-release-attestation/v2
+artifact_kind: framework_php
+migration_id: KUMWE-MIG-2026-001
+change_set: KUMWE-CS-2026-001
+repository: https://github.com/kumwe/example
+merge_commit: "3954a3683953783da908a00b2c15d8d215166b8f"
+version: 0.1.0
+tag: v0.1.0
+source_archive:
+  url: "https://github.com/kumwe/example/archive/refs/tags/v0.1.0.tar.gz"
+  sha256: "5651c3936712b44dc391efe86562b11826438f365dd94fe88bb8ba987bf2c186"
+artifacts:
+  - identity: "kumwe/example 0.1.0 (Composer dist)"
+    url: "https://api.github.com/repos/kumwe/example/zipball/3954a3683953783da908a00b2c15d8d215166b8f"
+    sha256: "686ea5ab2d2d9aadab0fa0e9555bc5eb251962490a36b07bab07fb6acdc24133"
+manifests_and_corpora:
+  - path: resources/public-api/v1.json
+    sha256: "816e970640c81cde6f37c6723386c5101ead7c9a2a49ccc2b94747de289573b9"
+  - path: resources/capabilities/v1.json
+    sha256: "41e71c5b6f5f6f1524a35e9a2fda86afd89b01cc23d749b322e761e6b6d225d5"
+  - path: resources/service-map/v1.json
+    sha256: "f4ed617bde18ad896f86c4780b2ee5cc441b249c8a101e25a9b6dac70390b24d"
+abi_and_capabilities: null
+sbom:
+  url: null
+  sha256: null
+provenance: null
+release_workflow: "https://github.com/kumwe/example/actions/runs/1 (release-on-record, success)"
+registry_or_pie_verification:
+  - "packagist.org/packages/kumwe/example lists v0.1.0 at the merge commit"
+clean_consumer_or_build_verification:
+  - "composer create-project consumer; composer require kumwe/example:0.1.0 --no-dev; examples pass"
+verified_at: "2026-09-02T13:00:00Z"
+verified_by: "Release verification session"
+status: verified

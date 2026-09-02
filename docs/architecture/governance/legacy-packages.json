@@ -1,0 +1,71 @@
+{
+  "schema": "kumwe-legacy-packages/v1",
+  "note": "Installed Kumwe packages released before the Version 2 migration protocol. Each entry is a transitional, explicitly approved legacy-unmanifested capability-index entry. It cannot satisfy a migration release gate and must be replaced by Version 2 manifests when the package adopts Version 2 governance. The locked version is recorded exactly: a re-pin re-approves the entry.",
+  "packages": {
+    "kumwe/conversion": {
+      "installed_version": "v0.1.2",
+      "reason": "Released before the Version 2 protocol; ships a schema-1 resources/public-api/v1.json but no capabilities or service-map manifest and no MIGRATION-HANDOFF.md.",
+      "responsibility": "The money and quantity conversion contract of the Kumwe family: the exact decimal kernel, the typed money and quantity values, the converted value types that cannot exist without their own provenance, the conversion requests, the converters and pipelines, and the provider ports that rate and conversion-table extensions implement.",
+      "non_responsibilities": [
+        "No rate and no conversion table of any kind: a rate provider, a factor table, a bank feed or a fixed contractual rate is an implementation of a port defined here, living in an extension.",
+        "No SPI wiring: the registrars, contribution definitions, capability plumbing and runtime catalogs that make a provider reachable inside an installation are the App's authority.",
+        "No storage: nothing here owns a database, a table, a column, or a codec into one.",
+        "No presentation and no rendering: how a converted figure is rendered stays in the App.",
+        "No runtime Composer dependencies."
+      ],
+      "canonical_namespaces": [
+        "Kumwe\\Conversion\\"
+      ],
+      "retired_app_namespaces": [],
+      "verified_legacy_release": null,
+      "approved_by": "eWɘyn",
+      "approved_on": "2026-09-02"
+    },
+    "kumwe/extension-sdk": {
+      "installed_version": "v0.2.4",
+      "reason": "Released before the Version 2 protocol; ships resources/PIN.json and contract generation records but no public-api, capabilities or service-map manifest and no MIGRATION-HANDOFF.md, so its public symbols come from a source scan.",
+      "responsibility": "The canonical, independently reusable Kumwe extension contract and author tooling: versioned manifest grammar, strict parsing and canonical validated contribution values; host-neutral author SPI and executable binding contracts; deterministic scaffold, package build, signing, inspection and conformance tooling; typed, stable findings over bounded package bytes; and SDK-owned public API, generation and resource records.",
+      "non_responsibilities": [
+        "Admission, trust, authorization or activation decisions.",
+        "Host storage, registries, deployment state or application-domain implementations.",
+        "A second namespace, aliases, remapping, adapters or a historical runtime path.",
+        "A second declaration channel in executable code.",
+        "Copies of contracts owned by another Kumwe library."
+      ],
+      "canonical_namespaces": [
+        "Kumwe\\Extension\\"
+      ],
+      "retired_app_namespaces": [
+        "Kumwe\\App\\BusinessRecord\\Query\\",
+        "Kumwe\\App\\Extension\\Development\\",
+        "Kumwe\\App\\Extension\\Infrastructure\\Package\\"
+      ],
+      "verified_legacy_release": null,
+      "approved_by": "eWɘyn",
+      "approved_on": "2026-09-02"
+    },
+    "kumwe/producer": {
+      "installed_version": "v0.2.0",
+      "reason": "Released before the Version 2 protocol; ships a schema-2 resources/public-api.json but no capabilities or service-map manifest and no MIGRATION-HANDOFF.md.",
+      "responsibility": "The PHP realization layer for Kumwe Studio: it validates what arrives on the wire, renders published compositions into semantic HTML, and generates the stylesheet a design's tokens imply, while the host application keeps every shred of authority.",
+      "non_responsibilities": [
+        "No authority: authentication, authorization, capability checks, and policy belong to the host.",
+        "No storage: the host owns persistence, encryption, redaction, protected capability handles, revisions, replay rehydration, and audit.",
+        "No Node.js: Producer is pure PHP and never compiles, bundles, or executes JavaScript or TypeScript.",
+        "No code generation at render time: rendering assembles bounded, escaped HTML and static CSS from data and never evaluates stored markup, styles, or scripts.",
+        "No floating dependency on a draft contract: the Studio pin is exact.",
+        "No runtime Composer dependencies."
+      ],
+      "canonical_namespaces": [
+        "Kumwe\\Producer\\"
+      ],
+      "retired_app_namespaces": [
+        "Kumwe\\App\\Extension\\Domain\\Internal\\StudioProfile\\",
+        "Kumwe\\App\\Studio\\Domain\\Contract\\"
+      ],
+      "verified_legacy_release": null,
+      "approved_by": "eWɘyn",
+      "approved_on": "2026-09-02"
+    }
+  }
+}

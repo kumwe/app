@@ -1,0 +1,211 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kumwe.dev/schemas/migration-ledger.v1",
+  "title": "Kumwe App migration ledger record",
+  "description": "migrations/KUMWE-MIG-YYYY-NNN.yaml: the App adoption evidence of one package extraction.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "kumwe-migration-ledger/v1"
+    },
+    "migration_id": {
+      "$ref": "#/$defs/migration_id"
+    },
+    "change_set": {
+      "$ref": "#/$defs/change_set_id"
+    },
+    "package": {
+      "$ref": "#/$defs/package"
+    },
+    "version": {
+      "$ref": "#/$defs/version"
+    },
+    "artifact_digest": {
+      "$ref": "#/$defs/sha256"
+    },
+    "handoff_path": {
+      "$ref": "#/$defs/path"
+    },
+    "handoff_sha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "release_attestation": {
+      "$ref": "#/$defs/path"
+    },
+    "old_namespace_roots": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/namespace_root"
+      }
+    },
+    "symbols": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "old_fqcn": {
+            "$ref": "#/$defs/fqcn"
+          },
+          "new_fqcn": {
+            "$ref": "#/$defs/fqcn"
+          }
+        },
+        "required": [
+          "old_fqcn",
+          "new_fqcn"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "removed_paths": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/path"
+      }
+    },
+    "removed_tests": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/path"
+      }
+    },
+    "retained_tests": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/path"
+      }
+    },
+    "di_changes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "service": {
+            "$ref": "#/$defs/fqcn"
+          },
+          "factory": {
+            "$ref": "#/$defs/fqcn"
+          },
+          "note": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "service",
+          "factory",
+          "note"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "capability_index_entries": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/package"
+      },
+      "minItems": 1
+    },
+    "release_evidence": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "app_pull_request": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "roadmap_refs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "non_roadmap_refs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/nrm_id"
+      }
+    },
+    "conflicts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/conflict_id"
+      }
+    }
+  },
+  "required": [
+    "schema",
+    "migration_id",
+    "change_set",
+    "package",
+    "version",
+    "artifact_digest",
+    "handoff_path",
+    "handoff_sha256",
+    "release_attestation",
+    "old_namespace_roots",
+    "symbols",
+    "removed_paths",
+    "removed_tests",
+    "retained_tests",
+    "di_changes",
+    "capability_index_entries",
+    "release_evidence",
+    "app_pull_request",
+    "roadmap_refs",
+    "non_roadmap_refs",
+    "conflicts"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "change_set_id": {
+      "type": "string",
+      "pattern": "^KUMWE-CS-[0-9]{4}-[0-9]{3}$"
+    },
+    "conflict_id": {
+      "type": "string",
+      "pattern": "^KUMWE-CONFLICT-[0-9]{4}-[0-9]{3}$"
+    },
+    "fqcn": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_]*(\\\\[A-Za-z_][A-Za-z0-9_]*)*$",
+      "description": "Fully qualified class-like name without a leading backslash."
+    },
+    "migration_id": {
+      "type": "string",
+      "pattern": "^KUMWE-MIG-[0-9]{4}-[0-9]{3}$"
+    },
+    "namespace_root": {
+      "type": "string",
+      "pattern": "^([A-Za-z_][A-Za-z0-9_]*\\\\)+$",
+      "description": "Namespace root with a trailing backslash (autoload.psr-4)."
+    },
+    "nrm_id": {
+      "type": "string",
+      "pattern": "^NRM-[0-9]{4}-[0-9]{3}$"
+    },
+    "package": {
+      "type": "string",
+      "pattern": "^kumwe/[a-z0-9-]+$",
+      "description": "Composer package name in the kumwe vendor."
+    },
+    "path": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Relative path with forward slashes."
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "Lowercase hexadecimal SHA-256 digest."
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^v?[0-9]+\\.[0-9]+\\.[0-9]+([-+][0-9A-Za-z.-]+)?$",
+      "description": "Semantic version, optional v prefix."
+    }
+  }
+}

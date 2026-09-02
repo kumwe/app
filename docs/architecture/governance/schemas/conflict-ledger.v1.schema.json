@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kumwe.dev/schemas/conflict-ledger.v1",
+  "title": "Kumwe conflict ledger record",
+  "description": "migrations/conflicts/KUMWE-CONFLICT-YYYY-NNN.yaml: one semantic conflict resolution.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "kumwe-conflict-ledger/v1"
+    },
+    "conflict_id": {
+      "$ref": "#/$defs/conflict_id"
+    },
+    "change_sets": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/change_set_id"
+      }
+    },
+    "file": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "symbols_or_keys": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "base_behavior": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "current_objective": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "incoming_objective": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "resolution": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "content_removed": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "content_preserved": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "generated_files_regenerated": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "focused_tests": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "combined_tests": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "ownership_review": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "resolved_by": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "reviewed_by": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "schema",
+    "conflict_id",
+    "change_sets",
+    "file",
+    "symbols_or_keys",
+    "base_behavior",
+    "current_objective",
+    "incoming_objective",
+    "resolution",
+    "content_removed",
+    "content_preserved",
+    "generated_files_regenerated",
+    "focused_tests",
+    "combined_tests",
+    "ownership_review",
+    "resolved_by",
+    "reviewed_by"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "change_set_id": {
+      "type": "string",
+      "pattern": "^KUMWE-CS-[0-9]{4}-[0-9]{3}$"
+    },
+    "conflict_id": {
+      "type": "string",
+      "pattern": "^KUMWE-CONFLICT-[0-9]{4}-[0-9]{3}$"
+    }
+  }
+}

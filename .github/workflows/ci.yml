@@ -64,6 +64,7 @@ jobs:
           composer mcp:contract
           composer studio:corpus
           composer studio:dependencies
+          composer kumwe:capability-index-check
 
       - name: Verify documentation records
         run: |
@@ -392,10 +393,11 @@ jobs:
           composer cli:contract
           composer mcp:contract
 
-      - name: Verify the pinned Studio contract corpus
+      - name: Verify the pinned Studio contract corpus and the capability index
         run: |
           composer studio:corpus
           composer studio:dependencies
+          composer kumwe:capability-index-check
 
       - name: Verify the interface programme and the roadmap ledger
         run: |

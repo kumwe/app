@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kumwe.dev/schemas/integration-train.v1",
+  "title": "Kumwe integration train record",
+  "description": "migrations/trains/KUMWE-TRAIN-YYYY-NNN.yaml: the declared merge order of App PRs (D-GOV-8).",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "kumwe-integration-train/v1"
+    },
+    "train": {
+      "$ref": "#/$defs/train_id"
+    },
+    "packages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "package": {
+            "$ref": "#/$defs/package"
+          },
+          "version": {
+            "$ref": "#/$defs/version"
+          }
+        },
+        "required": [
+          "package",
+          "version"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1
+    },
+    "merge_order": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "custodian": {
+      "type": "string",
+      "minLength": 1
+    },
+    "hotspots": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "commands": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "conflict_ledger": {
+      "$ref": "#/$defs/path"
+    },
+    "serialized_by": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "required": [
+    "schema",
+    "train",
+    "packages",
+    "merge_order",
+    "custodian",
+    "hotspots",
+    "commands",
+    "conflict_ledger",
+    "serialized_by"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "package": {
+      "type": "string",
+      "pattern": "^kumwe/[a-z0-9-]+$",
+      "description": "Composer package name in the kumwe vendor."
+    },
+    "path": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Relative path with forward slashes."
+    },
+    "train_id": {
+      "type": "string",
+      "pattern": "^KUMWE-TRAIN-[0-9]{4}-[0-9]{3}$"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^v?[0-9]+\\.[0-9]+\\.[0-9]+([-+][0-9A-Za-z.-]+)?$",
+      "description": "Semantic version, optional v prefix."
+    }
+  }
+}

@@ -1,0 +1,146 @@
+{
+  "schema": "kumwe-package-public-api/v1",
+  "package": "kumwe/example-v2",
+  "release": "0.1.0",
+  "namespace": "Kumwe\\Example\\",
+  "symbols": {
+    "Kumwe\\Example\\ConfigProvider": {
+      "kind": "class",
+      "stability": "stable",
+      "file": "src/ConfigProvider.php",
+      "abstract": false,
+      "final": true,
+      "readonly": false,
+      "parent": null,
+      "interfaces": [],
+      "constants": {},
+      "properties": {},
+      "methods": {
+        "__invoke": {
+          "visibility": "public",
+          "static": false,
+          "parameters": [],
+          "return": "array"
+        }
+      },
+      "deprecated": null
+    },
+    "Kumwe\\Example\\Container\\ExampleServiceFactory": {
+      "kind": "class",
+      "stability": "stable",
+      "file": "src/Container/ExampleServiceFactory.php",
+      "abstract": false,
+      "final": true,
+      "readonly": true,
+      "parent": null,
+      "interfaces": [],
+      "constants": {},
+      "properties": {},
+      "methods": {
+        "__invoke": {
+          "visibility": "public",
+          "static": false,
+          "parameters": [
+            {
+              "name": "container",
+              "type": "Psr\\Container\\ContainerInterface",
+              "optional": false,
+              "variadic": false,
+              "by_reference": false
+            }
+          ],
+          "return": "Kumwe\\Example\\ExampleService"
+        }
+      },
+      "deprecated": null
+    },
+    "Kumwe\\Example\\Contract\\ExampleServiceInterface": {
+      "kind": "interface",
+      "stability": "stable",
+      "file": "src/Contract/ExampleServiceInterface.php",
+      "abstract": false,
+      "final": false,
+      "readonly": false,
+      "parent": null,
+      "interfaces": [],
+      "constants": {},
+      "properties": {},
+      "methods": {
+        "describe": {
+          "visibility": "public",
+          "static": false,
+          "parameters": [
+            {
+              "name": "subject",
+              "type": "string",
+              "optional": false,
+              "variadic": false,
+              "by_reference": false
+            }
+          ],
+          "return": "string"
+        }
+      },
+      "deprecated": null
+    },
+    "Kumwe\\Example\\ExampleService": {
+      "kind": "class",
+      "stability": "stable",
+      "file": "src/ExampleService.php",
+      "abstract": false,
+      "final": true,
+      "readonly": true,
+      "parent": null,
+      "interfaces": [
+        "Kumwe\\Example\\Contract\\ExampleServiceInterface"
+      ],
+      "constants": {
+        "DEFAULT_PREFIX": {
+          "type": "string"
+        }
+      },
+      "properties": {
+        "prefix": {
+          "type": "string",
+          "static": false,
+          "readonly": true
+        }
+      },
+      "methods": {
+        "__construct": {
+          "visibility": "public",
+          "static": false,
+          "parameters": [
+            {
+              "name": "prefix",
+              "type": "string",
+              "optional": true,
+              "variadic": false,
+              "by_reference": false
+            }
+          ],
+          "return": null
+        },
+        "describe": {
+          "visibility": "public",
+          "static": false,
+          "parameters": [
+            {
+              "name": "subject",
+              "type": "string",
+              "optional": false,
+              "variadic": false,
+              "by_reference": false
+            }
+          ],
+          "return": "string"
+        }
+      },
+      "deprecated": null
+    }
+  },
+  "extension_points": [
+    "Kumwe\\Example\\Contract\\ExampleServiceInterface"
+  ],
+  "digest_of": "src"
+}

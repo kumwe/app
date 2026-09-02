@@ -1,0 +1,64 @@
+# Example central change-set record (schema 4.4, Kumwe-v2-07) for a fictitious kumwe/example package.
+# The real records live under docs/architecture/migrations/change-sets/KUMWE-CS-YYYY-NNN.yaml.
+schema: kumwe-change-set/v2
+change_set: KUMWE-CS-2026-001
+migration_id: KUMWE-MIG-2026-001
+roadmap_source:
+  title: Kumwe ERP-Extensibility Foundation Roadmap
+  sha256: a202155ef1a65f5ab293d4f8397ebf4ac430db7f1e877c776bbe7851e6fe18d8
+roadmap_refs:
+  - id: S3-O01
+    heading: "Session 3 prompt — Relational schema and transactional record runtime"
+    ordinal: 1
+    relation: enables
+state: core-integrated
+phase_1:
+  source_repository: kumwe/app
+  source_sha: "d5f5bef50cff74915bfdbcf8793b447d98fb6029"
+  target_repository: kumwe/example
+  package_pr: "https://github.com/kumwe/example/pull/1"
+  tested_sha: "5138050e19befd9428db186b68c896af7362b582"
+  public_api_digest: "816e970640c81cde6f37c6723386c5101ead7c9a2a49ccc2b94747de289573b9"
+  capability_digest: "41e71c5b6f5f6f1524a35e9a2fda86afd89b01cc23d749b322e761e6b6d225d5"
+  service_map_digest: "f4ed617bde18ad896f86c4780b2ee5cc441b249c8a101e25a9b6dac70390b24d"
+  handoff_digest: "58a1c2300a35c06e3768d9f698ae5da1d054d18267851bbea912d3939b8584d2"
+release:
+  version: 0.1.0
+  source_sha: "3954a3683953783da908a00b2c15d8d215166b8f"
+  artifact_digest: "5651c3936712b44dc391efe86562b11826438f365dd94fe88bb8ba987bf2c186"
+  clean_consumer_evidence:
+    - "https://github.com/kumwe/example/actions/runs/1"
+phase_2:
+  app_pr: "https://github.com/kumwe/app/pull/1234"
+  tested_sha: "01e9b89a2177a87d82a5bf5c40aa28d60418490a"
+  merged_sha: "17760a0e33b5bc5ebdc7564f91e45f4e0c1f1e90"
+  exact_dependency: "kumwe/example 0.1.0"
+  composer_lock_digest: "50a5104a43aa32e266ef4d21795bf7d4f372dae60fc00eb496b958b17d26db83"
+  removed_app_symbols:
+    - Kumwe\App\Example\Describing\Describer
+    - Kumwe\App\Example\Describing\DescriberInterface
+  moved_unit_tests:
+    - tests/Unit/Example/Describing/DescriberTest.php
+  retained_app_tests:
+    - tests/Integration/Example/DescribeSubjectIntegrationTest.php
+evidence:
+  package:
+    - "https://github.com/kumwe/example/actions/runs/1"
+  app_composition:
+    - tests/Integration/Example/DescribeSubjectIntegrationTest.php
+  database_matrix: []
+  concurrency: []
+  authorization_security: []
+  lifecycle_recovery: []
+  delivery_browser: []
+  deployment_backup_restore: []
+  native_parity_abi: []
+  performance_capacity: []
+compatibility: "Drop-in replacement; the App behaves identically before and after adoption."
+migration_recovery: null
+security_impact: null
+performance_claim: null
+rollback: "Revert the App pull request and restore the removed App classes from the baseline commit."
+known_gaps: []
+completion_claim: false
+accepted_by: null

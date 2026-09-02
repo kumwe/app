@@ -112,6 +112,10 @@
             {
                 "path": "tests/Unit/Extension/Development/AssetInspectionExampleTest.php",
                 "reason": "The subject is the installable asset-inspection example package under examples/, exercised through the SDK toolchain; example code is outside src/ and outside the released coverage surface."
+            },
+            {
+                "path": "tests/Unit/Governance/",
+                "reason": "The subject is tools/Governance, the dependency-free capability-index and core-growth tooling, which is not under src/ and is not part of the released package."
             }
         ],
         "pending": [],
