@@ -135,7 +135,7 @@ release_evidence:
   - "docs/architecture/migrations/evidence/KUMWE-MIG-2026-005/RELEASE-ATTESTATION.yaml"
   - "docs/architecture/migrations/evidence/KUMWE-MIG-2026-005/consumer-verification.json"
   - "docs/architecture/migrations/evidence/KUMWE-MIG-2026-005/archive-verification.json"
-app_pull_request: null
+app_pull_request: "https://github.com/kumwe/app/pull/142"
 roadmap_refs: []
 non_roadmap_refs:
   - "NRM-2026-006"

@@ -91,7 +91,7 @@ decision: approved
 decided_by: "Llewellynvdm: delegated package adoption and merge instruction"
 reviewer: "Codex (review delegated by Llewellynvdm)"
 decided_on: "2026-09-10"
-pull_request: null
+pull_request: "https://github.com/kumwe/app/pull/142"
 ---
 
 ## Capability required
@@ -128,7 +128,9 @@ unchanged. The record does not authorize new public methods or additional reusab
 The retained localization settings and middleware tests, host key lifecycle and ExactValueCodec tests,
 Doctrine transaction tests, and ContainerTest exercise actual App composition. Focused verification on
 PHP 8.5.10 passed 76 tests and 213 assertions. Independent clean consumers verify all three exact package
-release archives. The combined change is rebased onto merged sequence PR #139 at master 32d6a6f3; final App QA follows.
+release archives. The combined change is rebased onto merged sequence PR #139 at master 32d6a6f3. All pre-test local QA gates
+pass, and the complete unit/architecture suites pass 3,321 tests with 68,925 assertions on PHP 8.5.10.
+Hosted database and browser validation remains required.
 
 ## Decision
 

@@ -24,8 +24,8 @@ release:
     - "docs/architecture/migrations/evidence/KUMWE-MIG-2026-001/RELEASE-ATTESTATION.yaml"
     - "docs/architecture/migrations/evidence/KUMWE-MIG-2026-001/consumer-verification.json"
 phase_2:
-  app_pr: null
-  tested_sha: null
+  app_pr: "https://github.com/kumwe/app/pull/142"
+  tested_sha: "158e197dd6b634fe7bce8663793ea331f49f5fff"
   merged_sha: null
   exact_dependency: "kumwe/transaction 0.1.2"
   composer_lock_digest: "3eed59d14f5a729dcdc93cd51a7f454fa096e2d76a64e6a07c775a8f2452d67d"
@@ -65,6 +65,6 @@ security_impact: "Authorization, audit persistence and transaction ownership rem
 performance_claim: null
 rollback: "Revert the combined foundation adoption change and install its previous Composer lock; no persisted data migration is required."
 known_gaps:
-  - "Combined App QA, final rebased PR identity and merged-target verification remain pending."
+  - "Hosted App database/browser checks and merged-target verification remain pending."
 completion_claim: false
 accepted_by: null

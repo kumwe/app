@@ -12,7 +12,8 @@ packages:
     version: "0.1.1"
 merge_order:
   - "https://github.com/kumwe/app/pull/139"
-  - "Combined transaction, secret-envelope and localization adoption PR; URL pending creation after final verification."
+  - "https://github.com/kumwe/app/pull/140"
+  - "https://github.com/kumwe/app/pull/142"
 custodian: "Foundation adoption coordinator"
 hotspots:
   - "composer.json"

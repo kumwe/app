@@ -23,7 +23,8 @@ artifacts_evidence:
   - "docs/architecture/migrations/change-sets/KUMWE-CS-2026-003.yaml"
   - "docs/architecture/migrations/trains/KUMWE-TRAIN-2026-004.yaml"
   - "docs/architecture/migrations/evidence/KUMWE-MIG-2026-003/RELEASE-ATTESTATION.yaml"
+  - "https://github.com/kumwe/app/pull/142"
 known_gaps:
-  - "Combined App QA, final rebased PR identity and merged-target verification remain pending."
+  - "Hosted App database/browser checks and merged-target verification remain pending."
 owner: "Platform architecture"
 status: "in-progress"
