@@ -1370,6 +1370,13 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Changed
 
+- **Foundation library adoption.** Core now consumes `kumwe/transaction 0.1.2`,
+  `kumwe/localization 0.1.1` and `kumwe/secret-envelope 0.1.1` through Composer. Removed the
+  extracted contracts, translation runtime and cryptographic values/implementations together
+  with their duplicate unit tests; retained transaction adapters, site wording policy, key
+  custody, purpose-specific rotation and application integration tests. Package service
+  providers now supply canonical factories, aliases and lifetimes to the host container.
+
 - **NRM-2026-014 — Package test ownership at adoption.** Migration governance now rejects duplicate
   package tests still present in App, missing retained host test files, contradictory ownership and
   non-canonical paths. Extraction guidance and the PR template require existing, legacy and future

@@ -11,7 +11,7 @@ use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter;
 use Kumwe\App\Application\Authorization\SiteContext;
 use Kumwe\App\Application\Authorization\SystemIdentity;
-use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\App\Audit\Application\AuditRecorder;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionCompatibilityAnalyzer;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionContractAdmission;

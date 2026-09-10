@@ -12,7 +12,7 @@ use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
 use JsonException;
 use Kumwe\App\Application\Authorization\ExecutionContext;
-use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Psr\Clock\ClockInterface;

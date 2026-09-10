@@ -14,7 +14,7 @@ use Kumwe\App\Application\Authorization\AuthorizationGateway;
 use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter;
 use Kumwe\App\Application\Authorization\SiteContext;
-use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\App\Application\Security\HighImpactCredentialGuard;
 use Kumwe\App\Audit\Application\AuditRecorder;
 use Kumwe\App\BusinessSecurity\Application\Approval\StepUpProofConsumer;

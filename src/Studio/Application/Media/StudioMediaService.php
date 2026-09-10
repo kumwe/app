@@ -7,7 +7,7 @@ namespace Kumwe\App\Studio\Application\Media;
 use DateTimeImmutable;
 use InvalidArgumentException;
 use Kumwe\App\Application\Authorization\ExecutionContext;
-use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\App\Audit\Application\AuditRecorder;
 use Kumwe\App\Audit\Domain\AuditEvent;
 use Kumwe\App\Media\Application\MediaAsset;

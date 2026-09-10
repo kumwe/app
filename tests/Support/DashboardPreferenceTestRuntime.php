@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Support;
 
+use Kumwe\Transaction\Testing\ImmediateTransactionManager;
 use DateTimeImmutable;
 use Kumwe\App\Application\Authorization\MembershipContext;
 use Kumwe\App\Application\Authorization\MembershipContextValidator;

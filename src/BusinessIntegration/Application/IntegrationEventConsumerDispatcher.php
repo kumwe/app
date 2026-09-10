@@ -8,7 +8,7 @@ use InvalidArgumentException;
 use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Application\Automation\QueueRuntimePolicyCatalog;
 use Kumwe\App\Application\Automation\RetryPolicy;
-use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Extension\Spi\BusinessIntegration\Application\IntegrationEventHandler;
 use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventConsumerDefinition;
 use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationEvent;

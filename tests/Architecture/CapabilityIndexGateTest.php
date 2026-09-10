@@ -69,7 +69,7 @@ final class CapabilityIndexGateTest extends TestCase
         $check = GovernanceFixture::run(['--check']);
 
         self::assertSame(0, $check['status'], $check['output']);
-        self::assertStringContainsString('Capability index verified (5 packages; digest sha256:', $check['output']);
+        self::assertStringContainsString('Capability index verified (8 packages; digest sha256:', $check['output']);
 
         $digest = GovernanceFixture::run(['--digest']);
         self::assertSame(0, $digest['status'], $digest['output']);
@@ -185,9 +185,8 @@ final class CapabilityIndexGateTest extends TestCase
 
     /**
      * Two pre-Version-2 packages remain legacy-unmanifested transitional entries that cannot satisfy a release
-     * gate, while `kumwe/canonical-json`, `kumwe/producer` and `kumwe/sequence` are indexed from their Version 2
-     * manifests and the ledger records adopting their handoffs, and the sequence adoption's four removed symbols
-     * are the index's removed-symbol table.
+     * gate. The six adopted packages are indexed from their Version 2 manifests and ledger handoffs; foundation
+     * namespace retirement and all four packages' removed-symbol counts are preserved alongside sequence mappings.
      *
      * @return  void
      *
@@ -200,7 +199,10 @@ final class CapabilityIndexGateTest extends TestCase
         $packages = $document['packages'];
 
         self::assertSame(
-            ['kumwe/canonical-json', 'kumwe/conversion', 'kumwe/extension-sdk', 'kumwe/producer', 'kumwe/sequence'],
+            [
+                'kumwe/canonical-json', 'kumwe/conversion', 'kumwe/extension-sdk', 'kumwe/localization',
+                'kumwe/producer', 'kumwe/secret-envelope', 'kumwe/sequence', 'kumwe/transaction',
+            ],
             array_column($packages, 'package'),
         );
         foreach ([$packages[1], $packages[2]] as $package) {
@@ -221,7 +223,7 @@ final class CapabilityIndexGateTest extends TestCase
         self::assertSame('KUMWE-CS-2026-007', $canonical['handoff']['change_set']);
         self::assertSame('vendor/kumwe/canonical-json/MIGRATION-HANDOFF.md', $canonical['handoff']['path']);
         self::assertContains('Kumwe\\CanonicalJson\\Profile', $canonical['public_symbols']);
-        $producer = $packages[3];
+        $producer = $packages[4];
         self::assertSame('v2-manifested', $producer['manifest_status']);
         self::assertTrue($producer['release_gate_eligible']);
         self::assertNull($producer['legacy']);
@@ -236,12 +238,34 @@ final class CapabilityIndexGateTest extends TestCase
         self::assertSame('source-scan', $sources['kumwe/extension-sdk']);
         self::assertSame('manifest:resources/public-api/v1.json', $sources['kumwe/producer']);
         self::assertSame(
-            ['v0.1.1', 'v0.1.2', 'v0.2.4', 'v0.3.0', 'v0.2.1'],
+            ['v0.1.1', 'v0.1.2', 'v0.2.4', 'v0.1.1', 'v0.3.0', 'v0.1.1', 'v0.2.1', 'v0.1.2'],
             array_column($packages, 'installed_version'),
         );
-        self::assertSame([], $document['extracted_namespaces']);
+        self::assertSame(
+            [
+                [
+                    'old_namespace' => 'Kumwe\\App\\Application\\Persistence\\',
+                    'package' => 'kumwe/transaction',
+                    'migration_id' => 'KUMWE-MIG-2026-001',
+                ],
+                [
+                    'old_namespace' => 'Kumwe\\App\\Localization\\Domain\\',
+                    'package' => 'kumwe/localization',
+                    'migration_id' => 'KUMWE-MIG-2026-005',
+                ],
+            ],
+            $document['extracted_namespaces'],
+        );
         /** @var list<array{old_fqcn: string, new_fqcn: string, package: string, migration_id: string}> $removed */
         $removed = $document['removed_symbols'];
+        self::assertSame(
+            ['kumwe/transaction' => 3, 'kumwe/sequence' => 4, 'kumwe/secret-envelope' => 9, 'kumwe/localization' => 23],
+            array_count_values(array_column($removed, 'package')),
+        );
+        $removed = array_values(array_filter(
+            $removed,
+            static fn (array $entry): bool => $entry['package'] === 'kumwe/sequence',
+        ));
         self::assertSame(
             [
                 'Kumwe\\App\\BusinessDefinition\\Domain\\NumberSequenceFormat',

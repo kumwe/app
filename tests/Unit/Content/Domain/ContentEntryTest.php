@@ -11,7 +11,7 @@ use Kumwe\App\Content\Domain\ContentStatus;
 use Kumwe\App\Content\Domain\ExpectedVersion;
 use Kumwe\App\Content\Domain\PublicationWindow;
 use Kumwe\App\Content\Domain\VersionConflict;
-use Kumwe\App\Localization\Domain\LocaleTag;
+use Kumwe\Localization\Domain\LocaleTag;
 use Kumwe\App\Workflow\Domain\InvalidWorkflowTransition;
 use Kumwe\App\Workflow\Domain\Workflow;
 use PHPUnit\Framework\Attributes\CoversClass;

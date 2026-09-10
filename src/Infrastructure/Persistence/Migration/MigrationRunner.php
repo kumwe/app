@@ -10,7 +10,7 @@ use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Kumwe\App\Application\Authorization\AuthorizationGateway;
 use Kumwe\App\Application\Authorization\AuthorizationResource;
 use Kumwe\App\Application\Authorization\ExecutionContext;
-use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\App\Infrastructure\Persistence\SchemaCollationConvergence;
 use Kumwe\Extension\Spi\Identity\Domain\Capability;
 
