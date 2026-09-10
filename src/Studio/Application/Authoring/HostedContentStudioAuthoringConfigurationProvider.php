@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Studio\Application\Authoring;
 
 use Kumwe\App\Application\Authorization\ExecutionContext;
-use Kumwe\App\Localization\Application\ActiveLocale;
+use Kumwe\Localization\Application\ActiveLocale;
 use Kumwe\App\Site\Application\SiteSettings;
 use Kumwe\App\Studio\Application\Composition\StudioPublishedTheme;
 use Kumwe\App\Studio\Application\Host\StudioHostAccessRefused;

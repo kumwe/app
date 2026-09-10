@@ -9,7 +9,7 @@ use Kumwe\App\Application\Authorization\AuthenticatedSurface;
 use Kumwe\App\Application\Authorization\AuthenticationStrength;
 use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Application\Authorization\SiteContext;
-use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\App\Audit\Application\AuditRecorder;
 use Kumwe\App\Audit\Domain\AuditEvent;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;

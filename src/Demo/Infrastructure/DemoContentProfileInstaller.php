@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Demo\Infrastructure;
 
 use Kumwe\App\Application\Authorization\ExecutionContext;
-use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\App\Content\Application\ContentNotFound;
 use Kumwe\App\Content\Application\ContentRecord;

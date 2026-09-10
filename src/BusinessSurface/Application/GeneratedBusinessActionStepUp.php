@@ -7,7 +7,7 @@ namespace Kumwe\App\BusinessSurface\Application;
 use InvalidArgumentException;
 use Kumwe\App\Application\Authorization\AuthenticationStrength;
 use Kumwe\App\Application\Authorization\ExecutionContext;
-use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\App\Identity\Application\StepUp\AuthorizationStepUpProofAdapter;
 use Kumwe\App\Identity\Application\StepUp\StepUpProvider;
 use Kumwe\App\Identity\Domain\StepUp\StepUpIntent;

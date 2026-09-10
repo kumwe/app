@@ -17,7 +17,7 @@ use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Application\Authorization\MembershipContext;
 use Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter;
 use Kumwe\App\Application\Authorization\SiteContext;
-use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\App\BusinessSecurity\Application\MembershipDirectory;
 use Kumwe\App\Identity\Application\Administration\AdministratorSession;
 use Kumwe\App\Identity\Application\Administration\AdministratorSessionStore;

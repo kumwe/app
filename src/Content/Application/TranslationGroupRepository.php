@@ -6,7 +6,7 @@ namespace Kumwe\App\Content\Application;
 
 use Kumwe\App\Application\Authorization\SiteContext;
 use Kumwe\App\Content\Domain\TranslationGroup;
-use Kumwe\App\Localization\Domain\LocaleTag;
+use Kumwe\Localization\Domain\LocaleTag;
 
 /**
  * Persistence contract for the translation group behind one logical item.

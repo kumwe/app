@@ -12,7 +12,7 @@ use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
 use Kumwe\App\Administrator\Presentation\SecurityWorkspaceState;
 use Kumwe\App\Application\Authorization\AuthenticationStrength;
 use Kumwe\App\Application\Authorization\ExecutionContext;
-use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\App\BusinessSecurity\Application\Approval\StepUpProofConsumer;
 use Kumwe\App\BusinessSecurity\Application\MembershipDirectory;
 use Kumwe\App\Http\Middleware\TrustedProxyMiddleware;

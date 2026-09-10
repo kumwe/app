@@ -7,7 +7,7 @@ namespace Kumwe\App\Tests\Unit\Support;
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Kumwe\App\Application\Authorization\SiteContext;
-use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionRepository;
 use Kumwe\App\BusinessDefinition\Application\DefinitionVersionRecord;
 use Kumwe\App\BusinessDefinition\Domain\CompatibilityPlan;

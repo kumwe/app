@@ -57,7 +57,10 @@
     "Kumwe\\Conversion",
     "Kumwe\\Extension",
     "Kumwe\\Producer",
-    "Kumwe\\Sequence"
+    "Kumwe\\Sequence",
+    "Kumwe\\Transaction",
+    "Kumwe\\Localization",
+    "Kumwe\\Secret"
   ],
   "namespace_segments": {
     "Shared": "shared",
@@ -141,6 +144,20 @@
     "Kumwe\\App\\Portal\\Contribution": "application",
     "Kumwe\\Sequence\\Contract": "shared",
     "Kumwe\\Sequence\\Exception": "shared",
-    "Kumwe\\Sequence\\Value": "shared"
+    "Kumwe\\Sequence\\Value": "shared",
+    "Kumwe\\Transaction\\Contract": "shared",
+    "Kumwe\\Transaction\\Testing": "infrastructure",
+    "Kumwe\\Localization\\Application": "application",
+    "Kumwe\\Localization\\Domain": "domain",
+    "Kumwe\\Localization\\Infrastructure": "infrastructure",
+    "Kumwe\\Localization\\Container": "kernel",
+    "Kumwe\\Localization\\ConfigProvider": "kernel",
+    "Kumwe\\Secret\\Value": "shared",
+    "Kumwe\\Secret\\Exception": "shared",
+    "Kumwe\\Secret\\Contract": "shared",
+    "Kumwe\\Secret\\Cipher": "infrastructure",
+    "Kumwe\\Secret\\Provider": "infrastructure",
+    "Kumwe\\Secret\\Container": "kernel",
+    "Kumwe\\Secret\\ConfigProvider": "kernel"
   }
 }

@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\Localization\Http;
 
 use Kumwe\App\Application\Authorization\ExecutionContext;
-use Kumwe\App\Localization\Application\ActiveLocale;
-use Kumwe\App\Localization\Application\LocaleNegotiator;
+use Kumwe\Localization\Application\ActiveLocale;
+use Kumwe\Localization\Application\LocaleNegotiator;
 use Kumwe\App\Localization\Application\SiteDefaultLocale;
-use Kumwe\App\Localization\Application\SupportedLocales;
-use Kumwe\App\Localization\Domain\LocaleTag;
+use Kumwe\Localization\Application\SupportedLocales;
+use Kumwe\Localization\Domain\LocaleTag;
 use Kumwe\App\Localization\Http\Middleware\LocaleNegotiationMiddleware;
 use Kumwe\App\Site\Application\SiteSettings;
 use Laminas\Diactoros\Response;

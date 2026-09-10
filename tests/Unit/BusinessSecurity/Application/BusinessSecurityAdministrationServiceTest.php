@@ -17,7 +17,7 @@ use Kumwe\App\Application\Authorization\OrganizationContext;
 use Kumwe\App\Application\Authorization\ResourcePolicyTarget;
 use Kumwe\App\Application\Authorization\SiteContext;
 use Kumwe\App\Application\Authorization\StepUpProof;
-use Kumwe\App\Application\Persistence\TransactionManager;
+use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\App\Audit\Application\AuditRecorder;
 use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\App\BusinessSecurity\Application\Administration\BusinessSecurityAdministrationRepository;

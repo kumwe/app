@@ -10,8 +10,8 @@ use Kumwe\App\Application\Authorization\AuthenticatedSurface;
 use Kumwe\App\Application\Authorization\AuthenticationStrength;
 use Kumwe\App\Application\Authorization\ExecutionContext;
 use Kumwe\App\Application\Authorization\SiteContext;
-use Kumwe\App\Application\Persistence\TransactionManager;
-use Kumwe\App\Application\Persistence\TransactionState;
+use Kumwe\Transaction\Contract\TransactionManager;
+use Kumwe\Transaction\Contract\TransactionState;
 use Kumwe\App\Audit\Application\AuditRecorder;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\App\Studio\Application\Host\StudioArtifactAdmission;
@@ -395,12 +395,12 @@ final class AdministratorStudioHostHandlerTest extends TestCase
                 },
             ),
             new StudioLocalizationHostPort(
-                self::createStub(\Kumwe\App\Localization\Application\MessageCatalogueRepository::class),
-                self::createStub(\Kumwe\App\Localization\Application\MessageOverrideRepository::class),
-                new \Kumwe\App\Localization\Application\ActiveLocale(
-                    new \Kumwe\App\Localization\Application\SupportedLocales(),
+                self::createStub(\Kumwe\Localization\Application\MessageCatalogueRepository::class),
+                self::createStub(\Kumwe\Localization\Application\MessageOverrideRepository::class),
+                new \Kumwe\Localization\Application\ActiveLocale(
+                    new \Kumwe\Localization\Application\SupportedLocales(),
                 ),
-                new \Kumwe\App\Localization\Application\SupportedLocales(),
+                new \Kumwe\Localization\Application\SupportedLocales(),
             ),
             new StudioMediaHostPort(self::createStub(StudioMediaOperations::class)),
             new StudioModelHostPort(
