@@ -1,0 +1,1658 @@
+{
+  "scope": "Observed artifact identity and schema checks; does not waive release-admission blockers.",
+  "packages": [
+    {
+      "name": "kumwe/access-context",
+      "version": "0.1.2",
+      "observed_at": "2026-09-13T18:06:27.536065+00:00",
+      "source_commit": "132c3cd7c229ceda4398e19140d1477512c27ebf",
+      "registry_url": "https://repo.packagist.org/p2/kumwe/access-context.json",
+      "registry_source": {
+        "url": "https://github.com/kumwe/access-context.git",
+        "type": "git",
+        "reference": "132c3cd7c229ceda4398e19140d1477512c27ebf"
+      },
+      "registry_dist": {
+        "url": "https://api.github.com/repos/kumwe/access-context/zipball/132c3cd7c229ceda4398e19140d1477512c27ebf",
+        "type": "zip",
+        "shasum": "",
+        "reference": "132c3cd7c229ceda4398e19140d1477512c27ebf"
+      },
+      "downloaded_source_archive": {
+        "url": "https://api.github.com/repos/kumwe/access-context/zipball/132c3cd7c229ceda4398e19140d1477512c27ebf",
+        "sha256": "519186ae6ef014d5d9c398ec6199125759f63ae9b1369086221856110ea29bdb",
+        "bytes": 84838
+      },
+      "package_release": {
+        "assets": [],
+        "immutable": false,
+        "published_at": "2026-09-08T14:31:14Z",
+        "url": "https://github.com/kumwe/access-context/releases/tag/v0.1.2"
+      },
+      "release_record": {
+        "path": "MIGRATION-HANDOFF.md",
+        "sha256": "3ab70a9ee37308329c745e8864d456d3cfc6d3d572808fdb9605dab3813145fb",
+        "migration_id": "KUMWE-MIG-2026-004",
+        "change_set": "KUMWE-CS-2026-004"
+      },
+      "manifests": [
+        {
+          "path": "resources/public-api/v1.json",
+          "sha256": "109b5449f343a28a2ab523c7460d7b7c4ee6d1c109f2cdaf96dd0d2124e681ba"
+        },
+        {
+          "path": "resources/capabilities/v1.json",
+          "sha256": "fcd9597350e055c32b33ea442f51b952ba2621776a16069fa5ece318c909ea02"
+        },
+        {
+          "path": "resources/service-map/v1.json",
+          "sha256": "88da845b4839b312723ec55bd5b1f3def42649683797e728d0ed6a124a8ab195"
+        }
+      ],
+      "license": {
+        "declaration": "Apache-2.0",
+        "path": "LICENSE",
+        "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      },
+      "archive_file_count": 34,
+      "archive_matches_complete_git_export": true,
+      "current_app_record_and_manifest_schemas": "passed"
+    },
+    {
+      "name": "kumwe/access-control",
+      "version": "0.1.2",
+      "observed_at": "2026-09-13T18:06:27.535545+00:00",
+      "source_commit": "c2420d1ed03bc39eaf5d8b9f5540580c297e3b57",
+      "registry_url": "https://repo.packagist.org/p2/kumwe/access-control.json",
+      "registry_source": {
+        "url": "https://github.com/kumwe/access-control.git",
+        "type": "git",
+        "reference": "c2420d1ed03bc39eaf5d8b9f5540580c297e3b57"
+      },
+      "registry_dist": {
+        "url": "https://api.github.com/repos/kumwe/access-control/zipball/c2420d1ed03bc39eaf5d8b9f5540580c297e3b57",
+        "type": "zip",
+        "shasum": "",
+        "reference": "c2420d1ed03bc39eaf5d8b9f5540580c297e3b57"
+      },
+      "downloaded_source_archive": {
+        "url": "https://api.github.com/repos/kumwe/access-control/zipball/c2420d1ed03bc39eaf5d8b9f5540580c297e3b57",
+        "sha256": "626af3a0b29935ec97754e0bc4f3ee4ff26d8c364e23d5a8c8c2a129c9c4fb77",
+        "bytes": 135437
+      },
+      "package_release": {
+        "assets": [],
+        "immutable": false,
+        "published_at": "2026-09-08T16:00:25Z",
+        "url": "https://github.com/kumwe/access-control/releases/tag/v0.1.2"
+      },
+      "release_record": {
+        "path": "MIGRATION-HANDOFF.md",
+        "sha256": "b773fac93bb440cf3088102b3894275697fc435402d3220a615d695787f76437",
+        "migration_id": "KUMWE-MIG-2026-009",
+        "change_set": "KUMWE-CS-2026-009"
+      },
+      "manifests": [
+        {
+          "path": "resources/public-api/v1.json",
+          "sha256": "7ccd1fc48e4effd48df82a0b649336ccdc4cba37122977e977cbe4c99279655e"
+        },
+        {
+          "path": "resources/capabilities/v1.json",
+          "sha256": "64bc44385cf4a90cf60d59123424d2c5224d0eff7832070defc7fc0c58a3e237"
+        },
+        {
+          "path": "resources/service-map/v1.json",
+          "sha256": "830928ca5a3dd5715026f4b481689407d05a59cd87879516f57ce4d7387e5a82"
+        }
+      ],
+      "license": {
+        "declaration": "Apache-2.0",
+        "path": "LICENSE",
+        "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      },
+      "archive_file_count": 71,
+      "archive_matches_complete_git_export": true,
+      "current_app_record_and_manifest_schemas": "passed"
+    },
+    {
+      "name": "kumwe/administrator-contract",
+      "version": "0.2.1",
+      "observed_at": "2026-09-13T18:06:27.536763+00:00",
+      "source_commit": "2c8e1c5a39c6591be046b76b0f11f7eded6084bd",
+      "registry_url": "https://repo.packagist.org/p2/kumwe/administrator-contract.json",
+      "registry_source": {
+        "url": "https://github.com/kumwe/administrator-contract.git",
+        "type": "git",
+        "reference": "2c8e1c5a39c6591be046b76b0f11f7eded6084bd"
+      },
+      "registry_dist": {
+        "url": "https://api.github.com/repos/kumwe/administrator-contract/zipball/2c8e1c5a39c6591be046b76b0f11f7eded6084bd",
+        "type": "zip",
+        "shasum": "",
+        "reference": "2c8e1c5a39c6591be046b76b0f11f7eded6084bd"
+      },
+      "downloaded_source_archive": {
+        "url": "https://api.github.com/repos/kumwe/administrator-contract/zipball/2c8e1c5a39c6591be046b76b0f11f7eded6084bd",
+        "sha256": "bc63ca3e41a3da4db96ef76ea30a9d90066f89c8f7e0fd3fbc233ff8987a7e4a",
+        "bytes": 38744
+      },
+      "package_release": {
+        "assets": [],
+        "immutable": false,
+        "published_at": "2026-09-08T16:06:18Z",
+        "url": "https://github.com/kumwe/administrator-contract/releases/tag/v0.2.1"
+      },
+      "release_record": {
+        "path": "MIGRATION-HANDOFF.md",
+        "sha256": "48594029637a19d8236f7bc8947e2b390286fc02941b0ab540b618e501d7ee80",
+        "migration_id": "KUMWE-MIG-2026-036",
+        "change_set": "KUMWE-CS-2026-034"
+      },
+      "manifests": [
+        {
+          "path": "resources/public-api/v1.json",
+          "sha256": "358f0c10db36d24336a9d9a9eb4aa7883fa52bef89a6405e8ec144045c323234"
+        },
+        {
+          "path": "resources/capabilities/v1.json",
+          "sha256": "544befcb798ea27deb239b7004ae1ef5b18712409eb3cd6a0b54c3cd1f798692"
+        },
+        {
+          "path": "resources/service-map/v1.json",
+          "sha256": "70639318efb922d2385cd9a099ba020ed3777810e2c3bcd66ab4ce35e038c580"
+        }
+      ],
+      "license": {
+        "declaration": "Apache-2.0",
+        "path": "LICENSE",
+        "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      },
+      "archive_file_count": 28,
+      "archive_matches_complete_git_export": true,
+      "current_app_record_and_manifest_schemas": "passed"
+    },
+    {
+      "name": "kumwe/approval",
+      "version": "0.1.2",
+      "observed_at": "2026-09-13T18:06:27.537235+00:00",
+      "source_commit": "6e72f04aca6675f3cc1f219059256d7df13b511c",
+      "registry_url": "https://repo.packagist.org/p2/kumwe/approval.json",
+      "registry_source": {
+        "url": "https://github.com/kumwe/approval.git",
+        "type": "git",
+        "reference": "6e72f04aca6675f3cc1f219059256d7df13b511c"
+      },
+      "registry_dist": {
+        "url": "https://api.github.com/repos/kumwe/approval/zipball/6e72f04aca6675f3cc1f219059256d7df13b511c",
+        "type": "zip",
+        "shasum": "",
+        "reference": "6e72f04aca6675f3cc1f219059256d7df13b511c"
+      },
+      "downloaded_source_archive": {
+        "url": "https://api.github.com/repos/kumwe/approval/zipball/6e72f04aca6675f3cc1f219059256d7df13b511c",
+        "sha256": "55bfc473d9af44e5ddd0dc5b32f9e5496a2300b0a81e1685ff211c55410cd925",
+        "bytes": 51990
+      },
+      "package_release": {
+        "assets": [],
+        "immutable": false,
+        "published_at": "2026-09-08T16:06:29Z",
+        "url": "https://github.com/kumwe/approval/releases/tag/v0.1.2"
+      },
+      "release_record": {
+        "path": "MIGRATION-HANDOFF.md",
+        "sha256": "d82232c8cedefa79e43339d05086804558f6a69d3fad40766520edc5fa336a07",
+        "migration_id": "KUMWE-MIG-2026-023",
+        "change_set": "KUMWE-CS-2026-023"
+      },
+      "manifests": [
+        {
+          "path": "resources/public-api/v1.json",
+          "sha256": "5985b2105f0ecafd9804084a894309175236e8f182c4ad47c892c97dbe72c48d"
+        },
+        {
+          "path": "resources/capabilities/v1.json",
+          "sha256": "355b1a9fc67458ba5fbc2758d06415a72dbaf19bc50b7bdee09fca5812de4109"
+        },
+        {
+          "path": "resources/service-map/v1.json",
+          "sha256": "da068d341df795d85028636ad16414a7086de63f9ece5e3551ed39a6907fdc25"
+        }
+      ],
+      "license": {
+        "declaration": "Apache-2.0",
+        "path": "LICENSE",
+        "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      },
+      "archive_file_count": 36,
+      "archive_matches_complete_git_export": true,
+      "current_app_record_and_manifest_schemas": "passed"
+    },
+    {
+      "name": "kumwe/audit",
+      "version": "0.1.2",
+      "observed_at": "2026-09-13T18:06:27.537743+00:00",
+      "source_commit": "e97da93a29e69183b9592e71c1b68065dc2a87f6",
+      "registry_url": "https://repo.packagist.org/p2/kumwe/audit.json",
+      "registry_source": {
+        "url": "https://github.com/kumwe/audit.git",
+        "type": "git",
+        "reference": "e97da93a29e69183b9592e71c1b68065dc2a87f6"
+      },
+      "registry_dist": {
+        "url": "https://api.github.com/repos/kumwe/audit/zipball/e97da93a29e69183b9592e71c1b68065dc2a87f6",
+        "type": "zip",
+        "shasum": "",
+        "reference": "e97da93a29e69183b9592e71c1b68065dc2a87f6"
+      },
+      "downloaded_source_archive": {
+        "url": "https://api.github.com/repos/kumwe/audit/zipball/e97da93a29e69183b9592e71c1b68065dc2a87f6",
+        "sha256": "bf4417fe028c79cc90788087feb30da9d8958802eb9c8e5799c7a5de571d7770",
+        "bytes": 49613
+      },
+      "package_release": {
+        "assets": [],
+        "immutable": false,
+        "published_at": "2026-09-08T15:59:47Z",
+        "url": "https://github.com/kumwe/audit/releases/tag/v0.1.2"
+      },
+      "release_record": {
+        "path": "MIGRATION-HANDOFF.md",
+        "sha256": "9ac7e06f9ea7c903b1f3661e31d719f2298fa85343a1f06e15dd63c9f91b6a34",
+        "migration_id": "KUMWE-MIG-2026-021",
+        "change_set": "KUMWE-CS-2026-021"
+      },
+      "manifests": [
+        {
+          "path": "resources/public-api/v1.json",
+          "sha256": "2c6dc77bf3f6ae1d1d23a5a6cc137639a12cdab895dfeeb26804cdbeead985b0"
+        },
+        {
+          "path": "resources/capabilities/v1.json",
+          "sha256": "40d0b9d532edc419c22513022a9ce97eb22ed5544f1e7ba927136049bd651a1e"
+        },
+        {
+          "path": "resources/service-map/v1.json",
+          "sha256": "01464f2aa14a01add0e74b24a2b516257c8d614af9ed4a6498a5875a731d7225"
+        }
+      ],
+      "license": {
+        "declaration": "Apache-2.0",
+        "path": "LICENSE",
+        "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      },
+      "archive_file_count": 32,
+      "archive_matches_complete_git_export": true,
+      "current_app_record_and_manifest_schemas": "passed"
+    },
+    {
+      "name": "kumwe/automation",
+      "version": "0.2.2",
+      "observed_at": "2026-09-13T18:06:27.538483+00:00",
+      "source_commit": "cef19174a9c8a7a6008fe284481a235d13eec195",
+      "registry_url": "https://repo.packagist.org/p2/kumwe/automation.json",
+      "registry_source": {
+        "url": "https://github.com/kumwe/automation.git",
+        "type": "git",
+        "reference": "cef19174a9c8a7a6008fe284481a235d13eec195"
+      },
+      "registry_dist": {
+        "url": "https://api.github.com/repos/kumwe/automation/zipball/cef19174a9c8a7a6008fe284481a235d13eec195",
+        "type": "zip",
+        "shasum": "",
+        "reference": "cef19174a9c8a7a6008fe284481a235d13eec195"
+      },
+      "downloaded_source_archive": {
+        "url": "https://api.github.com/repos/kumwe/automation/zipball/cef19174a9c8a7a6008fe284481a235d13eec195",
+        "sha256": "4c94c829e59e7213bf3d46f40bdcb88280380e3a5657b6714a0c09c703ea0031",
+        "bytes": 131075
+      },
+      "package_release": {
+        "assets": [],
+        "immutable": false,
+        "published_at": "2026-09-08T17:38:57Z",
+        "url": "https://github.com/kumwe/automation/releases/tag/v0.2.2"
+      },
+      "release_record": {
+        "path": "MIGRATION-HANDOFF.md",
+        "sha256": "d52dedae51cdbaea29be213a447c2206f5a5517cb191e3fca464913804b0af07",
+        "migration_id": "KUMWE-MIG-2026-026",
+        "change_set": "KUMWE-CS-2026-026"
+      },
+      "manifests": [
+        {
+          "path": "resources/public-api/v1.json",
+          "sha256": "5528055c23afaea3711de77e0e66f84b0e122df520542fb61c8b8fd9f0c8cf53"
+        },
+        {
+          "path": "resources/capabilities/v1.json",
+          "sha256": "4cebd820f960ccdaf3b988231e54555d75291861a5d3bfbb8ba0dcefe7694e1a"
+        },
+        {
+          "path": "resources/service-map/v1.json",
+          "sha256": "4bacfb7a2eb2b2dc4046b85826bf53bda5c4ef24a23c5b9b69c2ad0bf62b05c6"
+        }
+      ],
+      "license": {
+        "declaration": "Apache-2.0",
+        "path": "LICENSE",
+        "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      },
+      "archive_file_count": 77,
+      "archive_matches_complete_git_export": true,
+      "current_app_record_and_manifest_schemas": "passed"
+    },
+    {
+      "name": "kumwe/business-definition",
+      "version": "0.1.2",
+      "observed_at": "2026-09-13T18:06:27.540393+00:00",
+      "source_commit": "1cb59229f311067e8cfdd773a34e34cfeb501791",
+      "registry_url": "https://repo.packagist.org/p2/kumwe/business-definition.json",
+      "registry_source": {
+        "url": "https://github.com/kumwe/business-definition.git",
+        "type": "git",
+        "reference": "1cb59229f311067e8cfdd773a34e34cfeb501791"
+      },
+      "registry_dist": {
+        "url": "https://api.github.com/repos/kumwe/business-definition/zipball/1cb59229f311067e8cfdd773a34e34cfeb501791",
+        "type": "zip",
+        "shasum": "",
+        "reference": "1cb59229f311067e8cfdd773a34e34cfeb501791"
+      },
+      "downloaded_source_archive": {
+        "url": "https://api.github.com/repos/kumwe/business-definition/zipball/1cb59229f311067e8cfdd773a34e34cfeb501791",
+        "sha256": "68de06e87d006f48315402018325a134e51c0b1d6663871ff8c597fe90a10872",
+        "bytes": 225960
+      },
+      "package_release": {
+        "assets": [],
+        "immutable": false,
+        "published_at": "2026-09-08T15:58:25Z",
+        "url": "https://github.com/kumwe/business-definition/releases/tag/v0.1.2"
+      },
+      "release_record": {
+        "path": "MIGRATION-HANDOFF.md",
+        "sha256": "6e65d7fafb1be8c35960e063e15e2b88a6a7af191be8c944cf81110db71e05a7",
+        "migration_id": "KUMWE-MIG-2026-010",
+        "change_set": "KUMWE-CS-2026-010"
+      },
+      "manifests": [
+        {
+          "path": "resources/public-api/v1.json",
+          "sha256": "3df7be6ece4d1e4641cb1f4bea82d14c09a646b17e965ffb9a294f93d8575fbf"
+        },
+        {
+          "path": "resources/capabilities/v1.json",
+          "sha256": "7fcdbf45a74c50036f4b3250e3367d16546f7d0d45cf4a1bdee5849232d57455"
+        },
+        {
+          "path": "resources/service-map/v1.json",
+          "sha256": "de7d6161f1aa527a44d746ecdc04d02859bab27adf8b7125f580eda7d580856f"
+        }
+      ],
+      "license": {
+        "declaration": "Apache-2.0",
+        "path": "LICENSE",
+        "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      },
+      "archive_file_count": 72,
+      "archive_matches_complete_git_export": true,
+      "current_app_record_and_manifest_schemas": "passed"
+    },
+    {
+      "name": "kumwe/business-policy",
+      "version": "0.1.1",
+      "observed_at": "2026-09-13T18:06:27.541371+00:00",
+      "source_commit": "96c68447a7a7beccbdb5d152e53306595ae0d7a1",
+      "registry_url": "https://repo.packagist.org/p2/kumwe/business-policy.json",
+      "registry_source": {
+        "url": "https://github.com/kumwe/business-policy.git",
+        "type": "git",
+        "reference": "96c68447a7a7beccbdb5d152e53306595ae0d7a1"
+      },
+      "registry_dist": {
+        "url": "https://api.github.com/repos/kumwe/business-policy/zipball/96c68447a7a7beccbdb5d152e53306595ae0d7a1",
+        "type": "zip",
+        "shasum": "",
+        "reference": "96c68447a7a7beccbdb5d152e53306595ae0d7a1"
+      },
+      "downloaded_source_archive": {
+        "url": "https://api.github.com/repos/kumwe/business-policy/zipball/96c68447a7a7beccbdb5d152e53306595ae0d7a1",
+        "sha256": "302bd99c96358e5d7d7aaa0db7e50c7bf4785ec24de8d9e22edcf77aa1a554fb",
+        "bytes": 54986
+      },
+      "package_release": {
+        "assets": [],
+        "immutable": false,
+        "published_at": "2026-09-08T14:32:37Z",
+        "url": "https://github.com/kumwe/business-policy/releases/tag/v0.1.1"
+      },
+      "release_record": {
+        "path": "MIGRATION-HANDOFF.md",
+        "sha256": "f6ad8ef8f2b54c4788939a6bdb4f29c9a7ee1b12df388a284f3d3542d5635df5",
+        "migration_id": "KUMWE-MIG-2026-022",
+        "change_set": "KUMWE-CS-2026-022"
+      },
+      "manifests": [
+        {
+          "path": "resources/public-api/v1.json",
+          "sha256": "ea84598cfc3e7149da76119bf20d6ca641d29490585c18297b611dd032b9fabd"
+        },
+        {
+          "path": "resources/capabilities/v1.json",
+          "sha256": "7b64637adad6a6c9067d39d1635f66d4748cc1423f0e1d318c6ec3172e9fa362"
+        },
+        {
+          "path": "resources/service-map/v1.json",
+          "sha256": "8361cc187e2dd3093e748290d2ccf7b52d53ae6273b2100980eae82e3a5b92e7"
+        }
+      ],
+      "license": {
+        "declaration": "Apache-2.0",
+        "path": "LICENSE",
+        "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      },
+      "archive_file_count": 33,
+      "archive_matches_complete_git_export": true,
+      "current_app_record_and_manifest_schemas": "passed"
+    },
+    {
+      "name": "kumwe/business-schema",
+      "version": "0.1.3",
+      "observed_at": "2026-09-13T18:07:12.359037+00:00",
+      "source_commit": "5c442a147e98c702a50cf5dc2b7d8faf6499d8ef",
+      "registry_url": "https://repo.packagist.org/p2/kumwe/business-schema.json",
+      "registry_source": {
+        "url": "https://github.com/kumwe/business-schema.git",
+        "type": "git",
+        "reference": "5c442a147e98c702a50cf5dc2b7d8faf6499d8ef"
+      },
+      "registry_dist": {
+        "url": "https://api.github.com/repos/kumwe/business-schema/zipball/5c442a147e98c702a50cf5dc2b7d8faf6499d8ef",
+        "type": "zip",
+        "shasum": "",
+        "reference": "5c442a147e98c702a50cf5dc2b7d8faf6499d8ef"
+      },
+      "downloaded_source_archive": {
+        "url": "https://api.github.com/repos/kumwe/business-schema/zipball/5c442a147e98c702a50cf5dc2b7d8faf6499d8ef",
+        "sha256": "4c38e65a867645a93150d3300cd25cfbc08927d61844ebc9c02e9f78843e96b1",
+        "bytes": 154490
+      },
+      "package_release": {
+        "assets": [],
+        "immutable": false,
+        "published_at": "2026-09-10T18:47:00Z",
+        "url": "https://github.com/kumwe/business-schema/releases/tag/v0.1.3"
+      },
+      "release_record": {
+        "path": "MIGRATION-HANDOFF.md",
+        "sha256": "c9392c4fb52867e932c1aef08c52b4d641085ea390f113c18d8f4d20b2b665d8",
+        "migration_id": "KUMWE-MIG-2026-030",
+        "change_set": "KUMWE-CS-2026-030"
+      },
+      "manifests": [
+        {
+          "path": "resources/public-api/v1.json",
+          "sha256": "d3dd01caf6d4b6162c54f87797aadc38457754866f1abeb5bfb31d16c6b54178"
+        },
+        {
+          "path": "resources/capabilities/v1.json",
+          "sha256": "9df001a9b1b911e9fa012d2a6de75ae34f9ab8e1c647a59ddb9af529f4b60bd7"
+        },
+        {
+          "path": "resources/service-map/v1.json",
+          "sha256": "d7a0f0d59aa94f0f251c598c75a4b97072cbd213e1957e93d321200f268c607b"
+        }
+      ],
+      "license": {
+        "declaration": "Apache-2.0",
+        "path": "LICENSE",
+        "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      },
+      "archive_file_count": 52,
+      "archive_matches_complete_git_export": true,
+      "current_app_record_and_manifest_schemas": "passed"
+    },
+    {
+      "name": "kumwe/business-surface-contract",
+      "version": "0.1.3",
+      "observed_at": "2026-09-13T18:07:12.360518+00:00",
+      "source_commit": "06c23a90b9fe9826276d1d57faef74729b5a1e38",
+      "registry_url": "https://repo.packagist.org/p2/kumwe/business-surface-contract.json",
+      "registry_source": {
+        "url": "https://github.com/kumwe/business-surface-contract.git",
+        "type": "git",
+        "reference": "06c23a90b9fe9826276d1d57faef74729b5a1e38"
+      },
+      "registry_dist": {
+        "url": "https://api.github.com/repos/kumwe/business-surface-contract/zipball/06c23a90b9fe9826276d1d57faef74729b5a1e38",
+        "type": "zip",
+        "shasum": "",
+        "reference": "06c23a90b9fe9826276d1d57faef74729b5a1e38"
+      },
+      "downloaded_source_archive": {
+        "url": "https://api.github.com/repos/kumwe/business-surface-contract/zipball/06c23a90b9fe9826276d1d57faef74729b5a1e38",
+        "sha256": "d020f9c9f8d7dd000039e7fe25200b241590a683617f0ff40ababecc869e85d5",
+        "bytes": 74074
+      },
+      "package_release": {
+        "assets": [],
+        "immutable": false,
+        "published_at": "2026-09-08T17:11:08Z",
+        "url": "https://github.com/kumwe/business-surface-contract/releases/tag/v0.1.3"
+      },
+      "release_record": {
+        "path": "MIGRATION-HANDOFF.md",
+        "sha256": "4a601a20feca9a35673230371d788d2a4376613a05ae3d68d96cdaea85df6720",
+        "migration_id": "KUMWE-MIG-2026-038",
+        "change_set": "KUMWE-CS-2026-034"
+      },
+      "manifests": [
+        {
+          "path": "resources/public-api/v1.json",
+          "sha256": "b1e32b598fba37057505fe3f9973e4ccc53820a482f430d3368edee08d075d48"
+        },
+        {
+          "path": "resources/capabilities/v1.json",
+          "sha256": "281056c74191acd898db6b6111dad0092cc565c1a9c089774ace6bb3b8e1a59c"
+        },
+        {
+          "path": "resources/service-map/v1.json",
+          "sha256": "b2b5cb7daf86f471c7b39a15ce2bd5f2d69f2c55fa7109b69b0350a31aa5111d"
+        }
+      ],
+      "license": {
+        "declaration": "Apache-2.0",
+        "path": "LICENSE",
+        "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      },
+      "archive_file_count": 42,
+      "archive_matches_complete_git_export": true,
+      "current_app_record_and_manifest_schemas": "passed"
+    },
+    {
+      "name": "kumwe/canonical-json",
+      "version": "0.1.1",
+      "observed_at": "2026-09-13T18:07:12.364969+00:00",
+      "source_commit": "e7006a2580a49a1c8ab507b0d7b9c3403b4f9f58",
+      "registry_url": "https://repo.packagist.org/p2/kumwe/canonical-json.json",
+      "registry_source": {
+        "url": "https://github.com/kumwe/canonical-json.git",
+        "type": "git",
+        "reference": "e7006a2580a49a1c8ab507b0d7b9c3403b4f9f58"
+      },
+      "registry_dist": {
+        "url": "https://api.github.com/repos/kumwe/canonical-json/zipball/e7006a2580a49a1c8ab507b0d7b9c3403b4f9f58",
+        "type": "zip",
+        "shasum": "",
+        "reference": "e7006a2580a49a1c8ab507b0d7b9c3403b4f9f58"
+      },
+      "downloaded_source_archive": {
+        "url": "https://api.github.com/repos/kumwe/canonical-json/zipball/e7006a2580a49a1c8ab507b0d7b9c3403b4f9f58",
+        "sha256": "06ee813d1b917d32563670fa113f21931f85b1e3b282aed8c8a1cef364812c09",
+        "bytes": 54557
+      },
+      "package_release": {
+        "assets": [],
+        "immutable": false,
+        "published_at": "2026-09-07T19:52:25Z",
+        "url": "https://github.com/kumwe/canonical-json/releases/tag/v0.1.1"
+      },
+      "release_record": {
+        "path": "MIGRATION-HANDOFF.md",
+        "sha256": "a0b6e32a94436b889d1f23c1d3b2eef0df7b4617c7661bd1a3ae3cac8cd1f75c",
+        "migration_id": "KUMWE-MIG-2026-007",
+        "change_set": "KUMWE-CS-2026-007"
+      },
+      "manifests": [
+        {
+          "path": "resources/public-api/v1.json",
+          "sha256": "43b126b3215555482b3d439cc2521808f16d252a99e0036138d6607a3c3a3465"
+        },
+        {
+          "path": "resources/capabilities/v1.json",
+          "sha256": "fba51564639daa35180b354084649bacff466728ba531c2104b0a93d5136143b"
+        },
+        {
+          "path": "resources/service-map/v1.json",
+          "sha256": "a9426334ed36972ab82781a64ace58bbac058aed884d5aa091354bbeb82e4108"
+        }
+      ],
+      "license": {
+        "declaration": "Apache-2.0",
+        "path": "LICENSE",
+        "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      },
+      "archive_file_count": 32,
+      "archive_matches_complete_git_export": true,
+      "current_app_record_and_manifest_schemas": "passed"
+    },
+    {
+      "name": "kumwe/content-model",
+      "version": "0.2.0",
+      "observed_at": "2026-09-13T18:07:12.482153+00:00",
+      "source_commit": "011bb7afef3194f6594d9daee3f01f96a6401556",
+      "registry_url": "https://repo.packagist.org/p2/kumwe/content-model.json",
+      "registry_source": {
+        "url": "https://github.com/kumwe/content-model.git",
+        "type": "git",
+        "reference": "011bb7afef3194f6594d9daee3f01f96a6401556"
+      },
+      "registry_dist": {
+        "url": "https://api.github.com/repos/kumwe/content-model/zipball/011bb7afef3194f6594d9daee3f01f96a6401556",
+        "type": "zip",
+        "shasum": "",
+        "reference": "011bb7afef3194f6594d9daee3f01f96a6401556"
+      },
+      "downloaded_source_archive": {
+        "url": "https://api.github.com/repos/kumwe/content-model/zipball/011bb7afef3194f6594d9daee3f01f96a6401556",
+        "sha256": "930ba0a24929e3e64692060eb1aafdf5bbf9b37de5626b2323592e18780fee58",
+        "bytes": 123835
+      },
+      "package_release": {
+        "assets": [],
+        "immutable": false,
+        "published_at": "2026-09-10T12:09:23Z",
+        "url": "https://github.com/kumwe/content-model/releases/tag/v0.2.0"
+      },
+      "release_record": {
+        "path": "MIGRATION-HANDOFF.md",
+        "sha256": "71b63ce55ee4677bc0244cd89a186403c73480763daba99078cf933ac7f511f3",
+        "migration_id": "KUMWE-MIG-2026-034",
+        "change_set": "KUMWE-CS-2026-034"
+      },
+      "manifests": [
+        {
+          "path": "resources/public-api/v1.json",
+          "sha256": "337556f5c7d7c8afeb7da7987bfe9624ef0645783463942e25ce10ceff3f6f61"
+        },
+        {
+          "path": "resources/capabilities/v1.json",
+          "sha256": "7391c88b0f89aa3b9229af97c12e4b274166c547d80f9af31f988c0a93dbda24"
+        },
+        {
+          "path": "resources/service-map/v1.json",
+          "sha256": "57dae31e71b99912c0fbc3e7f147b47311f14772145f586056a30559f15c4b7f"
+        }
+      ],
+      "license": {
+        "declaration": "Apache-2.0",
+        "path": "LICENSE",
+        "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      },
+      "archive_file_count": 55,
+      "archive_matches_complete_git_export": true,
+      "current_app_record_and_manifest_schemas": "passed"
+    },
+    {
+      "name": "kumwe/contribution",
+      "version": "0.1.1",
+      "observed_at": "2026-09-13T18:07:12.607097+00:00",
+      "source_commit": "2fc75742aa5a7d78418d2f586fa3043271e70082",
+      "registry_url": "https://repo.packagist.org/p2/kumwe/contribution.json",
+      "registry_source": {
+        "url": "https://github.com/kumwe/contribution.git",
+        "type": "git",
+        "reference": "2fc75742aa5a7d78418d2f586fa3043271e70082"
+      },
+      "registry_dist": {
+        "url": "https://api.github.com/repos/kumwe/contribution/zipball/2fc75742aa5a7d78418d2f586fa3043271e70082",
+        "type": "zip",
+        "shasum": "",
+        "reference": "2fc75742aa5a7d78418d2f586fa3043271e70082"
+      },
+      "downloaded_source_archive": {
+        "url": "https://api.github.com/repos/kumwe/contribution/zipball/2fc75742aa5a7d78418d2f586fa3043271e70082",
+        "sha256": "2de76e88f8ca576480422d72a918867b36ce5ea27aefd73a9c001a4ba94d6788",
+        "bytes": 49368
+      },
+      "package_release": {
+        "assets": [],
+        "immutable": false,
+        "published_at": "2026-09-07T19:20:42Z",
+        "url": "https://github.com/kumwe/contribution/releases/tag/v0.1.1"
+      },
+      "release_record": {
+        "path": "MIGRATION-HANDOFF.md",
+        "sha256": "07478d94f2bf239298d9800996c6a4dcab77ca7aceafc7224cb031f9614d5d70",
+        "migration_id": "KUMWE-MIG-2026-006",
+        "change_set": "KUMWE-CS-2026-006"
+      },
+      "manifests": [
+        {
+          "path": "resources/public-api/v1.json",
+          "sha256": "85202012eef68919fd3eed8894e5e17d7760dbc2a751d65ae244f3a2abea2cf6"
+        },
+        {
+          "path": "resources/capabilities/v1.json",
+          "sha256": "e50defb725e5f03e74480fe8b6965ff020147be57dedd5915a495f6175c2f785"
+        },
+        {
+          "path": "resources/service-map/v1.json",
+          "sha256": "12d4602942c1ebd9f01e5046f7c7f3457f673fb1b655c3b4c95399ff085ef742"
+        }
+      ],
+      "license": {
+        "declaration": "Apache-2.0",
+        "path": "LICENSE",
+        "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      },
+      "archive_file_count": 27,
+      "archive_matches_complete_git_export": true,
+      "current_app_record_and_manifest_schemas": "passed"
+    },
+    {
+      "name": "kumwe/conversion",
+      "version": "0.1.5",
+      "observed_at": "2026-09-13T18:07:12.785842+00:00",
+      "source_commit": "b291f3a31314644fd88150dc9a9e911fe0617fe7",
+      "registry_url": "https://repo.packagist.org/p2/kumwe/conversion.json",
+      "registry_source": {
+        "url": "https://github.com/kumwe/conversion.git",
+        "type": "git",
+        "reference": "b291f3a31314644fd88150dc9a9e911fe0617fe7"
+      },
+      "registry_dist": {
+        "url": "https://api.github.com/repos/kumwe/conversion/zipball/b291f3a31314644fd88150dc9a9e911fe0617fe7",
+        "type": "zip",
+        "shasum": "",
+        "reference": "b291f3a31314644fd88150dc9a9e911fe0617fe7"
+      },
+      "downloaded_source_archive": {
+        "url": "https://api.github.com/repos/kumwe/conversion/zipball/b291f3a31314644fd88150dc9a9e911fe0617fe7",
+        "sha256": "4e538016d6a946f8a36ac27e8adebfa45ca959242ad6e83cd65efb2898de1532",
+        "bytes": 110597
+      },
+      "package_release": {
+        "assets": [],
+        "immutable": false,
+        "published_at": "2026-09-08T16:43:41Z",
+        "url": "https://github.com/kumwe/conversion/releases/tag/v0.1.5"
+      },
+      "release_record": {
+        "path": "MIGRATION-HANDOFF.md",
+        "sha256": "d4deb9a6fb3892f6c38dc006c551149fe4b658befba320685c302894ed41687a",
+        "migration_id": "KUMWE-MIG-2026-031",
+        "change_set": "KUMWE-CS-2026-031"
+      },
+      "manifests": [
+        {
+          "path": "resources/public-api/v1.json",
+          "sha256": "e2e3c0e3fb5127d38b382cb4779ff7d0343ab0ee0c3ea48264472e75b30298e3"
+        },
+        {
+          "path": "resources/capabilities/v1.json",
+          "sha256": "fd7946e41e724ee071dc619105cd06ac6c29f90e159e40b5ad5267d3d6c4237b"
+        },
+        {
+          "path": "resources/service-map/v1.json",
+          "sha256": "bc9a36835e305643cc24af4e698551726750425c1869fc525411f561c73fc4d7"
+        }
+      ],
+      "license": {
+        "declaration": "Apache-2.0",
+        "path": "LICENSE",
+        "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      },
+      "archive_file_count": 47,
+      "archive_matches_complete_git_export": true,
+      "current_app_record_and_manifest_schemas": "passed"
+    },
+    {
+      "name": "kumwe/conversion-extension",
+      "version": "0.1.4",
+      "observed_at": "2026-09-13T18:07:12.872822+00:00",
+      "source_commit": "e184976c738c6672dae731765d1ef528f248b1b8",
+      "registry_url": "https://repo.packagist.org/p2/kumwe/conversion-extension.json",
+      "registry_source": {
+        "url": "https://github.com/kumwe/conversion-extension.git",
+        "type": "git",
+        "reference": "e184976c738c6672dae731765d1ef528f248b1b8"
+      },
+      "registry_dist": {
+        "url": "https://api.github.com/repos/kumwe/conversion-extension/zipball/e184976c738c6672dae731765d1ef528f248b1b8",
+        "type": "zip",
+        "shasum": "",
+        "reference": "e184976c738c6672dae731765d1ef528f248b1b8"
+      },
+      "downloaded_source_archive": {
+        "url": "https://api.github.com/repos/kumwe/conversion-extension/zipball/e184976c738c6672dae731765d1ef528f248b1b8",
+        "sha256": "004b495908bd5b83bcb0c6bfbc0470a4fad03a37476122a40de1af3066295139",
+        "bytes": 89631
+      },
+      "package_release": {
+        "assets": [],
+        "immutable": false,
+        "published_at": "2026-09-08T17:34:32Z",
+        "url": "https://github.com/kumwe/conversion-extension/releases/tag/v0.1.4"
+      },
+      "release_record": {
+        "path": "MIGRATION-HANDOFF.md",
+        "sha256": "a8b57f61de334abd49b3a7772733bef7781bfa66908c329316af6d9527696976",
+        "migration_id": "KUMWE-MIG-2026-028",
+        "change_set": "KUMWE-CS-2026-028"
+      },
+      "manifests": [
+        {
+          "path": "resources/public-api/v1.json",
+          "sha256": "5520fe30fc1e99030849e14806396375daa18c53a42a17094248ba5cdd56fc97"
+        },
+        {
+          "path": "resources/capabilities/v1.json",
+          "sha256": "9bbd3bb0a65ac5f21668b5ed75125b0e6e8705b124bca8caf96c510aac73904b"
+        },
+        {
+          "path": "resources/service-map/v1.json",
+          "sha256": "f07fea2bd537ec495a2538030d4c370c22f37ccac2c14e2d04a01d419f41cba4"
+        }
+      ],
+      "license": {
+        "declaration": "Apache-2.0",
+        "path": "LICENSE",
+        "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      },
+      "archive_file_count": 59,
+      "archive_matches_complete_git_export": true,
+      "current_app_record_and_manifest_schemas": "passed"
+    },
+    {
+      "name": "kumwe/extension-sdk",
+      "version": "0.3.2",
+      "observed_at": "2026-09-13T18:07:12.986647+00:00",
+      "source_commit": "6a79bd3b45cd3a2e3c388d9e3d8c1624d9d04563",
+      "registry_url": "https://repo.packagist.org/p2/kumwe/extension-sdk.json",
+      "registry_source": {
+        "url": "https://github.com/kumwe/extension-sdk.git",
+        "type": "git",
+        "reference": "6a79bd3b45cd3a2e3c388d9e3d8c1624d9d04563"
+      },
+      "registry_dist": {
+        "url": "https://api.github.com/repos/kumwe/extension-sdk/zipball/6a79bd3b45cd3a2e3c388d9e3d8c1624d9d04563",
+        "type": "zip",
+        "shasum": "",
+        "reference": "6a79bd3b45cd3a2e3c388d9e3d8c1624d9d04563"
+      },
+      "downloaded_source_archive": {
+        "url": "https://api.github.com/repos/kumwe/extension-sdk/zipball/6a79bd3b45cd3a2e3c388d9e3d8c1624d9d04563",
+        "sha256": "e8f329f9463a1e73f7a12466b961062ff8f7fe14ad9f202cac4eaa903889015c",
+        "bytes": 399778
+      },
+      "package_release": {
+        "assets": [],
+        "immutable": false,
+        "published_at": "2026-09-12T12:51:26Z",
+        "url": "https://github.com/kumwe/extension-sdk/releases/tag/v0.3.2"
+      },
+      "release_record": {
+        "path": "MIGRATION-HANDOFF.md",
+        "sha256": "ba6ced332c352dbb5d1740f5b4adc52debab4630bd74c65e3c182c14ff9023d8",
+        "migration_id": "KUMWE-MIG-2026-033",
+        "change_set": "KUMWE-CS-2026-033"
+      },
+      "manifests": [
+        {
+          "path": "resources/public-api/v1.json",
+          "sha256": "9bcc011d36a21a1ea328f2c450087b31f808e890e5d4f157acd725f110a22987"
+        },
+        {
+          "path": "resources/capabilities/v1.json",
+          "sha256": "c8cb869bebbc725c6ba769d2a82bb74a47a150b4a12a124bc8cb35f0c0c77143"
+        },
+        {
+          "path": "resources/service-map/v1.json",
+          "sha256": "d782df039a31280c7fe6b4ef43516f18de305b561a2fbb910d23f89c3d50c5d9"
+        }
+      ],
+      "license": {
+        "declaration": "Apache-2.0",
+        "path": "LICENSE",
+        "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      },
+      "archive_file_count": 196,
+      "archive_matches_complete_git_export": true,
+      "current_app_record_and_manifest_schemas": "passed"
+    },
+    {
+      "name": "kumwe/idempotency",
+      "version": "0.1.2",
+      "observed_at": "2026-09-13T18:07:56.797033+00:00",
+      "source_commit": "283ddd7d862295078e354ebe7ebfa6e41af1dd94",
+      "registry_url": "https://repo.packagist.org/p2/kumwe/idempotency.json",
+      "registry_source": {
+        "url": "https://github.com/kumwe/idempotency.git",
+        "type": "git",
+        "reference": "283ddd7d862295078e354ebe7ebfa6e41af1dd94"
+      },
+      "registry_dist": {
+        "url": "https://api.github.com/repos/kumwe/idempotency/zipball/283ddd7d862295078e354ebe7ebfa6e41af1dd94",
+        "type": "zip",
+        "shasum": "",
+        "reference": "283ddd7d862295078e354ebe7ebfa6e41af1dd94"
+      },
+      "downloaded_source_archive": {
+        "url": "https://api.github.com/repos/kumwe/idempotency/zipball/283ddd7d862295078e354ebe7ebfa6e41af1dd94",
+        "sha256": "0d496969f2510594dc1af6aa26e4ac3116bfb3a1e9f18355f3184531be273312",
+        "bytes": 48381
+      },
+      "package_release": {
+        "assets": [],
+        "immutable": false,
+        "published_at": "2026-09-08T16:54:18Z",
+        "url": "https://github.com/kumwe/idempotency/releases/tag/v0.1.2"
+      },
+      "release_record": {
+        "path": "MIGRATION-HANDOFF.md",
+        "sha256": "4881ff9c927eb5437995162fe5f276832768fa9775c2b5a19548bf9a4113449a",
+        "migration_id": "KUMWE-MIG-2026-020",
+        "change_set": "KUMWE-CS-2026-020"
+      },
+      "manifests": [
+        {
+          "path": "resources/public-api/v1.json",
+          "sha256": "eb2b62d538984de8b0caa603b2dc8a2c82a30c8848686c9683182b620ef92104"
+        },
+        {
+          "path": "resources/capabilities/v1.json",
+          "sha256": "1239150786e1ac847d0229b0dc56b3092fc92961aa77d342ec23a3943e54b981"
+        },
+        {
+          "path": "resources/service-map/v1.json",
+          "sha256": "1243b15876b134c88b20990836e4ff60d7b7d32aa3155f41f7f3ec2e7b70846d"
+        }
+      ],
+      "license": {
+        "declaration": "Apache-2.0",
+        "path": "LICENSE",
+        "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      },
+      "archive_file_count": 26,
+      "archive_matches_complete_git_export": true,
+      "current_app_record_and_manifest_schemas": "passed"
+    },
+    {
+      "name": "kumwe/integration",
+      "version": "0.2.3",
+      "observed_at": "2026-09-13T18:07:57.009849+00:00",
+      "source_commit": "219278ccf3a7eed6bbf165c7d26431a87602951d",
+      "registry_url": "https://repo.packagist.org/p2/kumwe/integration.json",
+      "registry_source": {
+        "url": "https://github.com/kumwe/integration.git",
+        "type": "git",
+        "reference": "219278ccf3a7eed6bbf165c7d26431a87602951d"
+      },
+      "registry_dist": {
+        "url": "https://api.github.com/repos/kumwe/integration/zipball/219278ccf3a7eed6bbf165c7d26431a87602951d",
+        "type": "zip",
+        "shasum": "",
+        "reference": "219278ccf3a7eed6bbf165c7d26431a87602951d"
+      },
+      "downloaded_source_archive": {
+        "url": "https://api.github.com/repos/kumwe/integration/zipball/219278ccf3a7eed6bbf165c7d26431a87602951d",
+        "sha256": "2bc0f39c32253321941a368a2d17a7c30ae0704b85ed407b88f1fea01af10534",
+        "bytes": 145046
+      },
+      "package_release": {
+        "assets": [],
+        "immutable": false,
+        "published_at": "2026-09-08T20:01:01Z",
+        "url": "https://github.com/kumwe/integration/releases/tag/v0.2.3"
+      },
+      "release_record": {
+        "path": "MIGRATION-HANDOFF.md",
+        "sha256": "aa2e9a80112454c707f5dfc7c80de402c1b4fe97c83bf8db81918fbb87ab1ba3",
+        "migration_id": "KUMWE-MIG-2026-027",
+        "change_set": "KUMWE-CS-2026-035"
+      },
+      "manifests": [
+        {
+          "path": "resources/public-api/v1.json",
+          "sha256": "c95efa67274c4c989703db6f0f862953704ac4cdede6c515cc9cc06f20852a5c"
+        },
+        {
+          "path": "resources/capabilities/v1.json",
+          "sha256": "dd98607038e6d72dc9a0fa5d2e1f524102f6fc20eb4fc32bfbca2f3871334cfe"
+        },
+        {
+          "path": "resources/service-map/v1.json",
+          "sha256": "99951ae2eadb277d96b9aa0f282634840a8e3b90a60372885a15dcb7aa5a91d2"
+        }
+      ],
+      "license": {
+        "declaration": "Apache-2.0",
+        "path": "LICENSE",
+        "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      },
+      "archive_file_count": 87,
+      "archive_matches_complete_git_export": true,
+      "current_app_record_and_manifest_schemas": "passed"
+    },
+    {
+      "name": "kumwe/interface-standard",
+      "version": "0.1.2",
+      "observed_at": "2026-09-13T18:07:57.138940+00:00",
+      "source_commit": "93d4637fda7c0881f7e00aae132c2d470b5eceac",
+      "registry_url": "https://repo.packagist.org/p2/kumwe/interface-standard.json",
+      "registry_source": {
+        "url": "https://github.com/kumwe/interface-standard.git",
+        "type": "git",
+        "reference": "93d4637fda7c0881f7e00aae132c2d470b5eceac"
+      },
+      "registry_dist": {
+        "url": "https://api.github.com/repos/kumwe/interface-standard/zipball/93d4637fda7c0881f7e00aae132c2d470b5eceac",
+        "type": "zip",
+        "shasum": "",
+        "reference": "93d4637fda7c0881f7e00aae132c2d470b5eceac"
+      },
+      "downloaded_source_archive": {
+        "url": "https://api.github.com/repos/kumwe/interface-standard/zipball/93d4637fda7c0881f7e00aae132c2d470b5eceac",
+        "sha256": "0f552d810b30dfb6813449171b438df8edb279d956177b12d74da8975b4ad09e",
+        "bytes": 104933
+      },
+      "package_release": {
+        "assets": [],
+        "immutable": false,
+        "published_at": "2026-09-08T16:10:10Z",
+        "url": "https://github.com/kumwe/interface-standard/releases/tag/v0.1.2"
+      },
+      "release_record": {
+        "path": "MIGRATION-HANDOFF.md",
+        "sha256": "18e93b04ca1042c69c4d5deb319df53e0b220cd35fa483c9d2bcbacf7793dc05",
+        "migration_id": "KUMWE-MIG-2026-025",
+        "change_set": "KUMWE-CS-2026-025"
+      },
+      "manifests": [
+        {
+          "path": "resources/public-api/v1.json",
+          "sha256": "b43cbc7230bb74355750d386a92567e75939c9435db2d743bf6e21e4a4a886ea"
+        },
+        {
+          "path": "resources/capabilities/v1.json",
+          "sha256": "03b227f67703e57edc36502bc8b7129f33d002fcfbd285f56d59495545e44c2d"
+        },
+        {
+          "path": "resources/service-map/v1.json",
+          "sha256": "0becbd85cc64870926e3798628b3b126d955180e633f1db8354ed9e50d481401"
+        }
+      ],
+      "license": {
+        "declaration": "Apache-2.0",
+        "path": "LICENSE",
+        "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      },
+      "archive_file_count": 68,
+      "archive_matches_complete_git_export": true,
+      "current_app_record_and_manifest_schemas": "passed"
+    },
+    {
+      "name": "kumwe/localization",
+      "version": "0.1.1",
+      "observed_at": "2026-09-13T18:07:57.144049+00:00",
+      "source_commit": "8571ab575b9b9f2dc1b8a25b3c902d9cf44093cb",
+      "registry_url": "https://repo.packagist.org/p2/kumwe/localization.json",
+      "registry_source": {
+        "url": "https://github.com/kumwe/localization.git",
+        "type": "git",
+        "reference": "8571ab575b9b9f2dc1b8a25b3c902d9cf44093cb"
+      },
+      "registry_dist": {
+        "url": "https://api.github.com/repos/kumwe/localization/zipball/8571ab575b9b9f2dc1b8a25b3c902d9cf44093cb",
+        "type": "zip",
+        "shasum": "",
+        "reference": "8571ab575b9b9f2dc1b8a25b3c902d9cf44093cb"
+      },
+      "downloaded_source_archive": {
+        "url": "https://api.github.com/repos/kumwe/localization/zipball/8571ab575b9b9f2dc1b8a25b3c902d9cf44093cb",
+        "sha256": "d0c3341f2e6126c83499a07d3aeb9490799228f55019b265d1c8c5e765dadcae",
+        "bytes": 96012
+      },
+      "package_release": {
+        "assets": [],
+        "immutable": false,
+        "published_at": "2026-09-07T19:22:51Z",
+        "url": "https://github.com/kumwe/localization/releases/tag/v0.1.1"
+      },
+      "release_record": {
+        "path": "MIGRATION-HANDOFF.md",
+        "sha256": "6b1279c0292ea5b8baac07f8a997e6406fa0a9e2cc33cc1cc29a9830a99579ac",
+        "migration_id": "KUMWE-MIG-2026-005",
+        "change_set": "KUMWE-CS-2026-005"
+      },
+      "manifests": [
+        {
+          "path": "resources/public-api/v1.json",
+          "sha256": "645454cdf3893932af21fba20fc8a1b6652619ca1ef7b91f05a5f23a5b9c5bbc"
+        },
+        {
+          "path": "resources/capabilities/v1.json",
+          "sha256": "e5ffa4984b444276f5135bb541026734e5a85354d112642bdb244d08972a8697"
+        },
+        {
+          "path": "resources/service-map/v1.json",
+          "sha256": "c7e70a8b5e5ea7bfd70d19cccbb17f111357f7f0f61fcabc7bd14cf5437eca3e"
+        }
+      ],
+      "license": {
+        "declaration": "Apache-2.0",
+        "path": "LICENSE",
+        "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      },
+      "archive_file_count": 49,
+      "archive_matches_complete_git_export": true,
+      "current_app_record_and_manifest_schemas": "passed"
+    },
+    {
+      "name": "kumwe/navigation",
+      "version": "0.1.2",
+      "observed_at": "2026-09-13T18:07:57.146374+00:00",
+      "source_commit": "f620836d0fdd4964fdc703a35d0873202459b83d",
+      "registry_url": "https://repo.packagist.org/p2/kumwe/navigation.json",
+      "registry_source": {
+        "url": "https://github.com/kumwe/navigation.git",
+        "type": "git",
+        "reference": "f620836d0fdd4964fdc703a35d0873202459b83d"
+      },
+      "registry_dist": {
+        "url": "https://api.github.com/repos/kumwe/navigation/zipball/f620836d0fdd4964fdc703a35d0873202459b83d",
+        "type": "zip",
+        "shasum": "",
+        "reference": "f620836d0fdd4964fdc703a35d0873202459b83d"
+      },
+      "downloaded_source_archive": {
+        "url": "https://api.github.com/repos/kumwe/navigation/zipball/f620836d0fdd4964fdc703a35d0873202459b83d",
+        "sha256": "92b2564cdadb5dd0665f30bdf4da6d1fbdd4cb98cad669e418f35d4d4f152ec9",
+        "bytes": 48873
+      },
+      "package_release": {
+        "assets": [],
+        "immutable": false,
+        "published_at": "2026-09-08T16:09:32Z",
+        "url": "https://github.com/kumwe/navigation/releases/tag/v0.1.2"
+      },
+      "release_record": {
+        "path": "MIGRATION-HANDOFF.md",
+        "sha256": "add55d25f388561fdc34558e113757d289ae3f96a1857cb6007616de79998f71",
+        "migration_id": "KUMWE-MIG-2026-035",
+        "change_set": "KUMWE-CS-2026-034"
+      },
+      "manifests": [
+        {
+          "path": "resources/public-api/v1.json",
+          "sha256": "fc1caa1c9b859e091d0cda6de0b5283458110ffaa6c4a8ea8e90060287dc7484"
+        },
+        {
+          "path": "resources/capabilities/v1.json",
+          "sha256": "84fb94a6c8d5f988b5a492c3aa2dbba6f6f4ba18c482480acbd07f86eeae922b"
+        },
+        {
+          "path": "resources/service-map/v1.json",
+          "sha256": "4a93bf6835f4b896af14756c6f542f50d68c7e26ce5cc28b637a65f275ff8020"
+        }
+      ],
+      "license": {
+        "declaration": "Apache-2.0",
+        "path": "LICENSE",
+        "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      },
+      "archive_file_count": 32,
+      "archive_matches_complete_git_export": true,
+      "current_app_record_and_manifest_schemas": "passed"
+    },
+    {
+      "name": "kumwe/portal-contract",
+      "version": "0.2.1",
+      "observed_at": "2026-09-13T18:07:57.410266+00:00",
+      "source_commit": "6ba19b263e3cf874a4c45e478450ccc3aa9605d6",
+      "registry_url": "https://repo.packagist.org/p2/kumwe/portal-contract.json",
+      "registry_source": {
+        "url": "https://github.com/kumwe/portal-contract.git",
+        "type": "git",
+        "reference": "6ba19b263e3cf874a4c45e478450ccc3aa9605d6"
+      },
+      "registry_dist": {
+        "url": "https://api.github.com/repos/kumwe/portal-contract/zipball/6ba19b263e3cf874a4c45e478450ccc3aa9605d6",
+        "type": "zip",
+        "shasum": "",
+        "reference": "6ba19b263e3cf874a4c45e478450ccc3aa9605d6"
+      },
+      "downloaded_source_archive": {
+        "url": "https://api.github.com/repos/kumwe/portal-contract/zipball/6ba19b263e3cf874a4c45e478450ccc3aa9605d6",
+        "sha256": "f33c4f0624d7fb30b159ad08d5ae5593b03c2d14a54ed05b6dc7842f9910316b",
+        "bytes": 35860
+      },
+      "package_release": {
+        "assets": [],
+        "immutable": false,
+        "published_at": "2026-09-08T16:06:37Z",
+        "url": "https://github.com/kumwe/portal-contract/releases/tag/v0.2.1"
+      },
+      "release_record": {
+        "path": "MIGRATION-HANDOFF.md",
+        "sha256": "b392b05fb8b0391cc6d5046aad6a5800a18270634b8102191d9bd2f8c7abc770",
+        "migration_id": "KUMWE-MIG-2026-037",
+        "change_set": "KUMWE-CS-2026-034"
+      },
+      "manifests": [
+        {
+          "path": "resources/public-api/v1.json",
+          "sha256": "b99190ab6d5b2fc8bad4eb0b869fb3a3f3d80ea12a08b6d0bb8e68e1e5030ee4"
+        },
+        {
+          "path": "resources/capabilities/v1.json",
+          "sha256": "34ee89b3053fdca0fba4adb90a56b9de04fde0097b672578dedf31ea617a6b4c"
+        },
+        {
+          "path": "resources/service-map/v1.json",
+          "sha256": "5a16c05e97fba8b836d6743cdf2e4d953b627b63829d210b304852380170598e"
+        }
+      ],
+      "license": {
+        "declaration": "Apache-2.0",
+        "path": "LICENSE",
+        "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      },
+      "archive_file_count": 28,
+      "archive_matches_complete_git_export": true,
+      "current_app_record_and_manifest_schemas": "passed"
+    },
+    {
+      "name": "kumwe/producer",
+      "version": "0.3.0",
+      "observed_at": "2026-09-13T18:07:57.522414+00:00",
+      "source_commit": "65d0a10ce39954738f091ec4b5e2626768053c8d",
+      "registry_url": "https://repo.packagist.org/p2/kumwe/producer.json",
+      "registry_source": {
+        "url": "https://github.com/kumwe/producer.git",
+        "type": "git",
+        "reference": "65d0a10ce39954738f091ec4b5e2626768053c8d"
+      },
+      "registry_dist": {
+        "url": "https://api.github.com/repos/kumwe/producer/zipball/65d0a10ce39954738f091ec4b5e2626768053c8d",
+        "type": "zip",
+        "shasum": "",
+        "reference": "65d0a10ce39954738f091ec4b5e2626768053c8d"
+      },
+      "downloaded_source_archive": {
+        "url": "https://api.github.com/repos/kumwe/producer/zipball/65d0a10ce39954738f091ec4b5e2626768053c8d",
+        "sha256": "c9210315f4eb2d5f8b453f1a7b32e1b2e591ec49da54e61c858e370b943a0b8e",
+        "bytes": 969712
+      },
+      "package_release": {
+        "assets": [],
+        "immutable": false,
+        "published_at": "2026-09-09T13:52:04Z",
+        "url": "https://github.com/kumwe/producer/releases/tag/v0.3.0"
+      },
+      "release_record": {
+        "path": "MIGRATION-HANDOFF.md",
+        "sha256": "2363da6372cac1166b1eeadaff79f41421ba862d31ff04b02d24b53730565b7c",
+        "migration_id": "KUMWE-MIG-2026-032",
+        "change_set": "KUMWE-CS-2026-032"
+      },
+      "manifests": [
+        {
+          "path": "resources/public-api/v1.json",
+          "sha256": "5fe7efb49a29799fcc3c3bbdba9ba4138d63688669ba933a2be6996f13f12cc2"
+        },
+        {
+          "path": "resources/capabilities/v1.json",
+          "sha256": "a7e4b69f5b5612272584b187ae9ee9afe34ea85499dca91b35260ab3b66ee8a5"
+        },
+        {
+          "path": "resources/service-map/v1.json",
+          "sha256": "7173160cd25ff40ff5002a8c5c63ae769ce8b8df6fcd1138f1d9e949acad7fd3"
+        }
+      ],
+      "license": {
+        "declaration": "Apache-2.0",
+        "path": "LICENSE",
+        "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      },
+      "archive_file_count": 480,
+      "archive_matches_complete_git_export": true,
+      "current_app_record_and_manifest_schemas": "passed"
+    },
+    {
+      "name": "kumwe/record-model",
+      "version": "0.1.3",
+      "observed_at": "2026-09-13T18:07:57.634428+00:00",
+      "source_commit": "8d20cf75ee6ab915102bbf6a17567087971e9dfe",
+      "registry_url": "https://repo.packagist.org/p2/kumwe/record-model.json",
+      "registry_source": {
+        "url": "https://github.com/kumwe/record-model.git",
+        "type": "git",
+        "reference": "8d20cf75ee6ab915102bbf6a17567087971e9dfe"
+      },
+      "registry_dist": {
+        "url": "https://api.github.com/repos/kumwe/record-model/zipball/8d20cf75ee6ab915102bbf6a17567087971e9dfe",
+        "type": "zip",
+        "shasum": "",
+        "reference": "8d20cf75ee6ab915102bbf6a17567087971e9dfe"
+      },
+      "downloaded_source_archive": {
+        "url": "https://api.github.com/repos/kumwe/record-model/zipball/8d20cf75ee6ab915102bbf6a17567087971e9dfe",
+        "sha256": "3e27ec64f6e1dffcb164af2a17d2b124afe7334224710eb049468d2d02a8ba40",
+        "bytes": 130968
+      },
+      "package_release": {
+        "assets": [],
+        "immutable": false,
+        "published_at": "2026-09-08T16:54:35Z",
+        "url": "https://github.com/kumwe/record-model/releases/tag/v0.1.3"
+      },
+      "release_record": {
+        "path": "MIGRATION-HANDOFF.md",
+        "sha256": "2641325fbd3b26b3f581761fdcc11256037394bf3283120ebe21d848a4318721",
+        "migration_id": "KUMWE-MIG-2026-032",
+        "change_set": "KUMWE-CS-2026-032"
+      },
+      "manifests": [
+        {
+          "path": "resources/public-api/v1.json",
+          "sha256": "119608b245415e8f6af68d8faaf71c7fe4bdd19a9ac5821ae1d483f8d4bcd8c8"
+        },
+        {
+          "path": "resources/capabilities/v1.json",
+          "sha256": "539e33fa84b18ded21cd7bf09dab9cbc35baab3f1b789d26eeebe9d1b9dc973b"
+        },
+        {
+          "path": "resources/service-map/v1.json",
+          "sha256": "f18271ca0ea9271870f1081d9f7f29f6486289557dfe34a956fd12f9d8cc5458"
+        }
+      ],
+      "license": {
+        "declaration": "Apache-2.0",
+        "path": "LICENSE",
+        "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      },
+      "archive_file_count": 40,
+      "archive_matches_complete_git_export": true,
+      "current_app_record_and_manifest_schemas": "passed"
+    },
+    {
+      "name": "kumwe/record-query",
+      "version": "0.1.3",
+      "observed_at": "2026-09-13T18:08:41.127219+00:00",
+      "source_commit": "18b1f8ca8dce5eb3ca3cb8c4c3a0443599d232d9",
+      "registry_url": "https://repo.packagist.org/p2/kumwe/record-query.json",
+      "registry_source": {
+        "url": "https://github.com/kumwe/record-query.git",
+        "type": "git",
+        "reference": "18b1f8ca8dce5eb3ca3cb8c4c3a0443599d232d9"
+      },
+      "registry_dist": {
+        "url": "https://api.github.com/repos/kumwe/record-query/zipball/18b1f8ca8dce5eb3ca3cb8c4c3a0443599d232d9",
+        "type": "zip",
+        "shasum": "",
+        "reference": "18b1f8ca8dce5eb3ca3cb8c4c3a0443599d232d9"
+      },
+      "downloaded_source_archive": {
+        "url": "https://api.github.com/repos/kumwe/record-query/zipball/18b1f8ca8dce5eb3ca3cb8c4c3a0443599d232d9",
+        "sha256": "4b1ade9abeb9cc752f8101aac80e8aa0bdbd5202d2aa74b9f2e57b90a65d1b9d",
+        "bytes": 79870
+      },
+      "package_release": {
+        "assets": [],
+        "immutable": false,
+        "published_at": "2026-09-08T16:55:46Z",
+        "url": "https://github.com/kumwe/record-query/releases/tag/v0.1.3"
+      },
+      "release_record": {
+        "path": "MIGRATION-HANDOFF.md",
+        "sha256": "44ab8d2627a3c01f92443db3f4f0e16c90527aede1b537b5f28ab6196983f329",
+        "migration_id": "KUMWE-MIG-2026-031",
+        "change_set": "KUMWE-CS-2026-031"
+      },
+      "manifests": [
+        {
+          "path": "resources/public-api/v1.json",
+          "sha256": "8757ea552ed1b1f89cbc0accb82daab1cb9ad3091f9b5b6a219473af253e60ec"
+        },
+        {
+          "path": "resources/capabilities/v1.json",
+          "sha256": "d7ee277a5acbdc59fcb5588efb2d5fe62406c822e4718a179997eb61ad394620"
+        },
+        {
+          "path": "resources/service-map/v1.json",
+          "sha256": "86d96e1265d9e9681fc59b94b67f1b87854323f6a65d2018d7aa2f46822eaf08"
+        }
+      ],
+      "license": {
+        "declaration": "Apache-2.0",
+        "path": "LICENSE",
+        "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      },
+      "archive_file_count": 52,
+      "archive_matches_complete_git_export": true,
+      "current_app_record_and_manifest_schemas": "passed"
+    },
+    {
+      "name": "kumwe/record-values",
+      "version": "0.1.4",
+      "observed_at": "2026-09-13T18:08:41.138358+00:00",
+      "source_commit": "04a3f5f8094861771682b3ba83536ec8828dc704",
+      "registry_url": "https://repo.packagist.org/p2/kumwe/record-values.json",
+      "registry_source": {
+        "url": "https://github.com/kumwe/record-values.git",
+        "type": "git",
+        "reference": "04a3f5f8094861771682b3ba83536ec8828dc704"
+      },
+      "registry_dist": {
+        "url": "https://api.github.com/repos/kumwe/record-values/zipball/04a3f5f8094861771682b3ba83536ec8828dc704",
+        "type": "zip",
+        "shasum": "",
+        "reference": "04a3f5f8094861771682b3ba83536ec8828dc704"
+      },
+      "downloaded_source_archive": {
+        "url": "https://api.github.com/repos/kumwe/record-values/zipball/04a3f5f8094861771682b3ba83536ec8828dc704",
+        "sha256": "41407515fda9a0385f1210a4e9b873e39de396c90a2f05995cd2defb79f9d5fb",
+        "bytes": 41765
+      },
+      "package_release": {
+        "assets": [],
+        "immutable": false,
+        "published_at": "2026-09-08T16:50:01Z",
+        "url": "https://github.com/kumwe/record-values/releases/tag/v0.1.4"
+      },
+      "release_record": {
+        "path": "MIGRATION-HANDOFF.md",
+        "sha256": "90ad098f4f1c05d1d78f99d65fbef9c327abfb2260efe60d916dd6807bbc1160",
+        "migration_id": "KUMWE-MIG-2026-029",
+        "change_set": "KUMWE-CS-2026-029"
+      },
+      "manifests": [
+        {
+          "path": "resources/public-api/v1.json",
+          "sha256": "ca6e82ea1697041424ce2644b5fa0566c805d60da2f8d36ada2c19b16756b8b3"
+        },
+        {
+          "path": "resources/capabilities/v1.json",
+          "sha256": "fa79ef590b02bae4f958bbbd8544e9a1f7a271cde45d2f2bac761e6a01b4308c"
+        },
+        {
+          "path": "resources/service-map/v1.json",
+          "sha256": "b266081c33d866630f97b49b5e164eb090f0c54811a426031f9a4456f3fed111"
+        }
+      ],
+      "license": {
+        "declaration": "Apache-2.0",
+        "path": "LICENSE",
+        "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      },
+      "archive_file_count": 27,
+      "archive_matches_complete_git_export": true,
+      "current_app_record_and_manifest_schemas": "passed"
+    },
+    {
+      "name": "kumwe/reporting",
+      "version": "0.1.4",
+      "observed_at": "2026-09-13T18:08:41.273723+00:00",
+      "source_commit": "63f807e70e3390ca9be65b22ac23b8c879866394",
+      "registry_url": "https://repo.packagist.org/p2/kumwe/reporting.json",
+      "registry_source": {
+        "url": "https://github.com/kumwe/reporting.git",
+        "type": "git",
+        "reference": "63f807e70e3390ca9be65b22ac23b8c879866394"
+      },
+      "registry_dist": {
+        "url": "https://api.github.com/repos/kumwe/reporting/zipball/63f807e70e3390ca9be65b22ac23b8c879866394",
+        "type": "zip",
+        "shasum": "",
+        "reference": "63f807e70e3390ca9be65b22ac23b8c879866394"
+      },
+      "downloaded_source_archive": {
+        "url": "https://api.github.com/repos/kumwe/reporting/zipball/63f807e70e3390ca9be65b22ac23b8c879866394",
+        "sha256": "62aea16b245db153ec9982392e7b0dfe731508b38fb6ea04fa35bab78dc3c693",
+        "bytes": 69926
+      },
+      "package_release": {
+        "assets": [],
+        "immutable": false,
+        "published_at": "2026-09-12T12:31:47Z",
+        "url": "https://github.com/kumwe/reporting/releases/tag/v0.1.4"
+      },
+      "release_record": {
+        "path": "MIGRATION-HANDOFF.md",
+        "sha256": "9dd8fc6b5361513fedb5afae6c960b6695e3154304169052adaaea60e3f84e98",
+        "migration_id": "KUMWE-MIG-2026-033",
+        "change_set": "KUMWE-CS-2026-033"
+      },
+      "manifests": [
+        {
+          "path": "resources/public-api/v1.json",
+          "sha256": "2386de88af076421e1a61c4ae094a86560dc2340f3373117ad155d886ac52721"
+        },
+        {
+          "path": "resources/capabilities/v1.json",
+          "sha256": "5151b6a103d3961c8200aeda37eb1e527c7efdf6bd5db1a4ec775d701dbea517"
+        },
+        {
+          "path": "resources/service-map/v1.json",
+          "sha256": "4d0227d84a18e964c8e9291fb712719ea2893523e2e80f5e852a5afde97b834d"
+        }
+      ],
+      "license": {
+        "declaration": "Apache-2.0",
+        "path": "LICENSE",
+        "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      },
+      "archive_file_count": 47,
+      "archive_matches_complete_git_export": true,
+      "current_app_record_and_manifest_schemas": "passed"
+    },
+    {
+      "name": "kumwe/sequence",
+      "version": "0.2.1",
+      "observed_at": "2026-09-13T18:08:41.287804+00:00",
+      "source_commit": "142c3e74a7596935ef42c8fa744ca705fd3b4b4f",
+      "registry_url": "https://repo.packagist.org/p2/kumwe/sequence.json",
+      "registry_source": {
+        "url": "https://github.com/kumwe/sequence.git",
+        "type": "git",
+        "reference": "142c3e74a7596935ef42c8fa744ca705fd3b4b4f"
+      },
+      "registry_dist": {
+        "url": "https://api.github.com/repos/kumwe/sequence/zipball/142c3e74a7596935ef42c8fa744ca705fd3b4b4f",
+        "type": "zip",
+        "shasum": "",
+        "reference": "142c3e74a7596935ef42c8fa744ca705fd3b4b4f"
+      },
+      "downloaded_source_archive": {
+        "url": "https://api.github.com/repos/kumwe/sequence/zipball/142c3e74a7596935ef42c8fa744ca705fd3b4b4f",
+        "sha256": "ffdc4708354ea72824d0f83bb996eed277e0e19f17a78109f99a496101cfca67",
+        "bytes": 74615
+      },
+      "package_release": {
+        "assets": [],
+        "immutable": false,
+        "published_at": "2026-09-07T19:23:18Z",
+        "url": "https://github.com/kumwe/sequence/releases/tag/v0.2.1"
+      },
+      "release_record": {
+        "path": "MIGRATION-HANDOFF.md",
+        "sha256": "733ea4ab21a16a00565e81a513b9d3f1d36f79be3c473c2cf991bfa3145fd7db",
+        "migration_id": "KUMWE-MIG-2026-002",
+        "change_set": "KUMWE-CS-2026-002"
+      },
+      "manifests": [
+        {
+          "path": "resources/public-api/v1.json",
+          "sha256": "01f26a717405438d10bd76e33dda4edaae16fa03f3976dc26d8ccde2a30c1964"
+        },
+        {
+          "path": "resources/capabilities/v1.json",
+          "sha256": "13c07a238124b08486f53e3d4c7dccd7a0990d95b40ec017c302acc2357c9ea7"
+        },
+        {
+          "path": "resources/service-map/v1.json",
+          "sha256": "34ee30e7c49f707bafaa0a7e5d6d1964f32af98124a396424ecc678aae266ed0"
+        }
+      ],
+      "license": {
+        "declaration": "Apache-2.0",
+        "path": "LICENSE",
+        "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      },
+      "archive_file_count": 25,
+      "archive_matches_complete_git_export": true,
+      "current_app_record_and_manifest_schemas": "passed"
+    },
+    {
+      "name": "kumwe/transaction",
+      "version": "0.1.2",
+      "observed_at": "2026-09-13T18:08:41.291816+00:00",
+      "source_commit": "56c8eb14a70bd3f1ed7eaeae7196a07d6627bf03",
+      "registry_url": "https://repo.packagist.org/p2/kumwe/transaction.json",
+      "registry_source": {
+        "url": "https://github.com/kumwe/transaction.git",
+        "type": "git",
+        "reference": "56c8eb14a70bd3f1ed7eaeae7196a07d6627bf03"
+      },
+      "registry_dist": {
+        "url": "https://api.github.com/repos/kumwe/transaction/zipball/56c8eb14a70bd3f1ed7eaeae7196a07d6627bf03",
+        "type": "zip",
+        "shasum": "",
+        "reference": "56c8eb14a70bd3f1ed7eaeae7196a07d6627bf03"
+      },
+      "downloaded_source_archive": {
+        "url": "https://api.github.com/repos/kumwe/transaction/zipball/56c8eb14a70bd3f1ed7eaeae7196a07d6627bf03",
+        "sha256": "e6a769da5aeb7a8257e4f75e69c7b55939265bc806b9e987eb125b2dc4f97256",
+        "bytes": 59657
+      },
+      "package_release": {
+        "assets": [],
+        "immutable": false,
+        "published_at": "2026-09-07T19:07:28Z",
+        "url": "https://github.com/kumwe/transaction/releases/tag/v0.1.2"
+      },
+      "release_record": {
+        "path": "MIGRATION-HANDOFF.md",
+        "sha256": "32dce75a78252d88cb297d3f57b3620577b63f012c3d3962697bc4964c8e9a1f",
+        "migration_id": "KUMWE-MIG-2026-001",
+        "change_set": "KUMWE-CS-2026-001"
+      },
+      "manifests": [
+        {
+          "path": "resources/public-api/v1.json",
+          "sha256": "f9589717354cc969ecb87e18d27c3e7f9e501f551bce80cadb698c3989cf2b75"
+        },
+        {
+          "path": "resources/capabilities/v1.json",
+          "sha256": "4e3fc6c4f014183eafad06b39e5c34a10c5e889c305ae09836f813d67cf5795c"
+        },
+        {
+          "path": "resources/service-map/v1.json",
+          "sha256": "ec72f2fbda46e326380795664c62c4d7cf38ec557c7e2a9bac40a905ee62d5f5"
+        }
+      ],
+      "license": {
+        "declaration": "Apache-2.0",
+        "path": "LICENSE",
+        "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      },
+      "archive_file_count": 23,
+      "archive_matches_complete_git_export": true,
+      "current_app_record_and_manifest_schemas": "passed"
+    }
+  ]
+}

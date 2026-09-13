@@ -1,0 +1,42 @@
+{
+  "unchanged_imports": [
+    {
+      "path": "RELEASE-VERIFICATION-FAILED.yaml",
+      "sha256": "b2b91514330286384387dff6af1debaf0e8a9723c893c6785cc9ca8d70553581"
+    },
+    {
+      "path": "consumer-runtime.json",
+      "sha256": "e1b17066fda22186305ad6099a6b3ec97340457a97e2aae8f7db2b8a19aabe6f"
+    },
+    {
+      "path": "individual-admission-review.json",
+      "sha256": "deb120f25fa02f7d0ab22ac2a6fa9f9330245aae0ac0f18202f3c0fa863af31c"
+    }
+  ],
+  "summaries": [
+    {
+      "path": "selected-graph.json",
+      "sha256": "e5d591259c324b331a5ae338e66c7fc9a0a330e8b668b990e922150eeaea282a"
+    },
+    {
+      "path": "archive-identities.json",
+      "sha256": "25a0e879234eb5f089924bd42d734c8d5693c7b94dec5374ae753caad60b62ba"
+    },
+    {
+      "path": "release-ancestry.json",
+      "sha256": "ef0724d848d974567ecdae25171e03a40df6624526d22f012bf6fc34b83c4fa4"
+    },
+    {
+      "path": "consumer-result.json",
+      "sha256": "3702406e3c62554ff7776012e111f52d20987027ea41df631a8eda2a81a0d606"
+    },
+    {
+      "path": "hosted-receipts.json",
+      "sha256": "f5bfcf66b9918f7b470f6f6086449fec4285929700187ab25b191ca137cc3cd3"
+    },
+    {
+      "path": "policy-conflicts.json",
+      "sha256": "97d0ce7e3799cbba817d15feace32f6fb6fc9d1f7936fdfee658f251ed6ff404"
+    }
+  ]
+}
