@@ -1,0 +1,1181 @@
+{
+  "scope": "Exact observed tag commit, merged PR and publication workflow checks.",
+  "packages": [
+    {
+      "name": "kumwe/access-context",
+      "source_commit": "132c3cd7c229ceda4398e19140d1477512c27ebf",
+      "merged_pull_requests": [
+        {
+          "number": 8,
+          "html_url": "https://github.com/kumwe/access-context/pull/8",
+          "merged_at": "2026-09-08T14:30:32Z",
+          "merge_commit_sha": "132c3cd7c229ceda4398e19140d1477512c27ebf",
+          "base_ref": "main",
+          "author": "Llewellynvdm"
+        }
+      ],
+      "release_run": {
+        "id": 34238712434,
+        "name": "Release on record",
+        "head_sha": "132c3cd7c229ceda4398e19140d1477512c27ebf",
+        "conclusion": "success",
+        "html_url": "https://github.com/kumwe/access-context/actions/runs/34238712434",
+        "event": "push"
+      },
+      "jobs": [
+        {
+          "name": "check / PHP 8.5",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / Release automation tests",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / Package gate",
+          "conclusion": "success"
+        },
+        {
+          "name": "Release the recorded version",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "name": "kumwe/access-control",
+      "source_commit": "c2420d1ed03bc39eaf5d8b9f5540580c297e3b57",
+      "merged_pull_requests": [
+        {
+          "number": 7,
+          "html_url": "https://github.com/kumwe/access-control/pull/7",
+          "merged_at": "2026-09-08T15:58:54Z",
+          "merge_commit_sha": "c2420d1ed03bc39eaf5d8b9f5540580c297e3b57",
+          "base_ref": "main",
+          "author": "Llewellynvdm"
+        }
+      ],
+      "release_run": {
+        "id": 34248219134,
+        "name": "Release on record",
+        "head_sha": "c2420d1ed03bc39eaf5d8b9f5540580c297e3b57",
+        "conclusion": "success",
+        "html_url": "https://github.com/kumwe/access-control/actions/runs/34248219134",
+        "event": "push"
+      },
+      "jobs": [
+        {
+          "name": "check / PHP 8.5",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / Release automation tests",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / Package gate",
+          "conclusion": "success"
+        },
+        {
+          "name": "Release the recorded version",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "name": "kumwe/administrator-contract",
+      "source_commit": "2c8e1c5a39c6591be046b76b0f11f7eded6084bd",
+      "merged_pull_requests": [
+        {
+          "number": 5,
+          "html_url": "https://github.com/kumwe/administrator-contract/pull/5",
+          "merged_at": "2026-09-08T16:05:24Z",
+          "merge_commit_sha": "2c8e1c5a39c6591be046b76b0f11f7eded6084bd",
+          "base_ref": "main",
+          "author": "Llewellynvdm"
+        }
+      ],
+      "release_run": {
+        "id": 34248909452,
+        "name": "Release on record",
+        "head_sha": "2c8e1c5a39c6591be046b76b0f11f7eded6084bd",
+        "conclusion": "success",
+        "html_url": "https://github.com/kumwe/administrator-contract/actions/runs/34248909452",
+        "event": "push"
+      },
+      "jobs": [
+        {
+          "name": "check / Release automation tests",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / PHP 8.5",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / Package gate",
+          "conclusion": "success"
+        },
+        {
+          "name": "Release the recorded version",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "name": "kumwe/approval",
+      "source_commit": "6e72f04aca6675f3cc1f219059256d7df13b511c",
+      "merged_pull_requests": [
+        {
+          "number": 5,
+          "html_url": "https://github.com/kumwe/approval/pull/5",
+          "merged_at": "2026-09-08T16:05:20Z",
+          "merge_commit_sha": "6e72f04aca6675f3cc1f219059256d7df13b511c",
+          "base_ref": "main",
+          "author": "Llewellynvdm"
+        }
+      ],
+      "release_run": {
+        "id": 34248902673,
+        "name": "Release on record",
+        "head_sha": "6e72f04aca6675f3cc1f219059256d7df13b511c",
+        "conclusion": "success",
+        "html_url": "https://github.com/kumwe/approval/actions/runs/34248902673",
+        "event": "push"
+      },
+      "jobs": [
+        {
+          "name": "check / Release automation tests",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / PHP 8.5",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / Package gate",
+          "conclusion": "success"
+        },
+        {
+          "name": "Release the recorded version",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "name": "kumwe/audit",
+      "source_commit": "e97da93a29e69183b9592e71c1b68065dc2a87f6",
+      "merged_pull_requests": [
+        {
+          "number": 6,
+          "html_url": "https://github.com/kumwe/audit/pull/6",
+          "merged_at": "2026-09-08T15:58:58Z",
+          "merge_commit_sha": "e97da93a29e69183b9592e71c1b68065dc2a87f6",
+          "base_ref": "main",
+          "author": "Llewellynvdm"
+        }
+      ],
+      "release_run": {
+        "id": 34248226376,
+        "name": "Release on record",
+        "head_sha": "e97da93a29e69183b9592e71c1b68065dc2a87f6",
+        "conclusion": "success",
+        "html_url": "https://github.com/kumwe/audit/actions/runs/34248226376",
+        "event": "push"
+      },
+      "jobs": [
+        {
+          "name": "check / PHP 8.5",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / Release automation tests",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / Package gate",
+          "conclusion": "success"
+        },
+        {
+          "name": "Release the recorded version",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "name": "kumwe/automation",
+      "source_commit": "cef19174a9c8a7a6008fe284481a235d13eec195",
+      "merged_pull_requests": [
+        {
+          "number": 7,
+          "html_url": "https://github.com/kumwe/automation/pull/7",
+          "merged_at": "2026-09-08T17:37:54Z",
+          "merge_commit_sha": "cef19174a9c8a7a6008fe284481a235d13eec195",
+          "base_ref": "main",
+          "author": "Llewellynvdm"
+        }
+      ],
+      "release_run": {
+        "id": 34258275885,
+        "name": "Release on record",
+        "head_sha": "cef19174a9c8a7a6008fe284481a235d13eec195",
+        "conclusion": "success",
+        "html_url": "https://github.com/kumwe/automation/actions/runs/34258275885",
+        "event": "push"
+      },
+      "jobs": [
+        {
+          "name": "check / PHP 8.5",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / Release automation tests",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / Package gate",
+          "conclusion": "success"
+        },
+        {
+          "name": "Release the recorded version",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "name": "kumwe/business-definition",
+      "source_commit": "1cb59229f311067e8cfdd773a34e34cfeb501791",
+      "merged_pull_requests": [
+        {
+          "number": 9,
+          "html_url": "https://github.com/kumwe/business-definition/pull/9",
+          "merged_at": "2026-09-08T15:57:29Z",
+          "merge_commit_sha": "1cb59229f311067e8cfdd773a34e34cfeb501791",
+          "base_ref": "main",
+          "author": "Llewellynvdm"
+        }
+      ],
+      "release_run": {
+        "id": 34248071466,
+        "name": "Release on record",
+        "head_sha": "1cb59229f311067e8cfdd773a34e34cfeb501791",
+        "conclusion": "success",
+        "html_url": "https://github.com/kumwe/business-definition/actions/runs/34248071466",
+        "event": "push"
+      },
+      "jobs": [
+        {
+          "name": "check / Release automation tests",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / PHP 8.5",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / Package gate",
+          "conclusion": "success"
+        },
+        {
+          "name": "Release the recorded version",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "name": "kumwe/business-policy",
+      "source_commit": "96c68447a7a7beccbdb5d152e53306595ae0d7a1",
+      "merged_pull_requests": [
+        {
+          "number": 3,
+          "html_url": "https://github.com/kumwe/business-policy/pull/3",
+          "merged_at": "2026-09-08T14:31:36Z",
+          "merge_commit_sha": "96c68447a7a7beccbdb5d152e53306595ae0d7a1",
+          "base_ref": "main",
+          "author": "Llewellynvdm"
+        }
+      ],
+      "release_run": {
+        "id": 34238830213,
+        "name": "Release on record",
+        "head_sha": "96c68447a7a7beccbdb5d152e53306595ae0d7a1",
+        "conclusion": "success",
+        "html_url": "https://github.com/kumwe/business-policy/actions/runs/34238830213",
+        "event": "push"
+      },
+      "jobs": [
+        {
+          "name": "check / Release automation tests",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / PHP 8.5",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / Package gate",
+          "conclusion": "success"
+        },
+        {
+          "name": "Release the recorded version",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "name": "kumwe/business-schema",
+      "source_commit": "5c442a147e98c702a50cf5dc2b7d8faf6499d8ef",
+      "merged_pull_requests": [
+        {
+          "number": 6,
+          "html_url": "https://github.com/kumwe/business-schema/pull/6",
+          "merged_at": "2026-09-10T18:45:51Z",
+          "merge_commit_sha": "5c442a147e98c702a50cf5dc2b7d8faf6499d8ef",
+          "base_ref": "main",
+          "author": "Llewellynvdm"
+        }
+      ],
+      "release_run": {
+        "id": 34516325845,
+        "name": "Release on record",
+        "head_sha": "5c442a147e98c702a50cf5dc2b7d8faf6499d8ef",
+        "conclusion": "success",
+        "html_url": "https://github.com/kumwe/business-schema/actions/runs/34516325845",
+        "event": "push"
+      },
+      "jobs": [
+        {
+          "name": "check / Release automation tests",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / PHP 8.5 source and archive",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / Package gate",
+          "conclusion": "success"
+        },
+        {
+          "name": "Release the recorded version",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "name": "kumwe/business-surface-contract",
+      "source_commit": "06c23a90b9fe9826276d1d57faef74729b5a1e38",
+      "merged_pull_requests": [
+        {
+          "number": 8,
+          "html_url": "https://github.com/kumwe/business-surface-contract/pull/8",
+          "merged_at": "2026-09-08T17:09:29Z",
+          "merge_commit_sha": "06c23a90b9fe9826276d1d57faef74729b5a1e38",
+          "base_ref": "main",
+          "author": "Llewellynvdm"
+        }
+      ],
+      "release_run": {
+        "id": 34255398842,
+        "name": "Release on record",
+        "head_sha": "06c23a90b9fe9826276d1d57faef74729b5a1e38",
+        "conclusion": "success",
+        "html_url": "https://github.com/kumwe/business-surface-contract/actions/runs/34255398842",
+        "event": "push"
+      },
+      "jobs": [
+        {
+          "name": "check / Release automation tests",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / PHP 8.5",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / Package gate",
+          "conclusion": "success"
+        },
+        {
+          "name": "Release the recorded version",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "name": "kumwe/canonical-json",
+      "source_commit": "e7006a2580a49a1c8ab507b0d7b9c3403b4f9f58",
+      "merged_pull_requests": [
+        {
+          "number": 7,
+          "html_url": "https://github.com/kumwe/canonical-json/pull/7",
+          "merged_at": "2026-09-07T19:51:16Z",
+          "merge_commit_sha": "e7006a2580a49a1c8ab507b0d7b9c3403b4f9f58",
+          "base_ref": "main",
+          "author": "Llewellynvdm"
+        }
+      ],
+      "release_run": {
+        "id": 34157162566,
+        "name": "Release on record",
+        "head_sha": "e7006a2580a49a1c8ab507b0d7b9c3403b4f9f58",
+        "conclusion": "success",
+        "html_url": "https://github.com/kumwe/canonical-json/actions/runs/34157162566",
+        "event": "push"
+      },
+      "jobs": [
+        {
+          "name": "check / PHP 8.5",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / Release automation tests",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / Package gate",
+          "conclusion": "success"
+        },
+        {
+          "name": "Release the recorded version",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "name": "kumwe/content-model",
+      "source_commit": "011bb7afef3194f6594d9daee3f01f96a6401556",
+      "merged_pull_requests": [
+        {
+          "number": 6,
+          "html_url": "https://github.com/kumwe/content-model/pull/6",
+          "merged_at": "2026-09-10T12:07:49Z",
+          "merge_commit_sha": "011bb7afef3194f6594d9daee3f01f96a6401556",
+          "base_ref": "main",
+          "author": "Llewellynvdm"
+        }
+      ],
+      "release_run": {
+        "id": 34475024020,
+        "name": "Release on record",
+        "head_sha": "011bb7afef3194f6594d9daee3f01f96a6401556",
+        "conclusion": "success",
+        "html_url": "https://github.com/kumwe/content-model/actions/runs/34475024020",
+        "event": "push"
+      },
+      "jobs": [
+        {
+          "name": "check / Release automation tests",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / PHP 8.5",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / Package gate",
+          "conclusion": "success"
+        },
+        {
+          "name": "Release the recorded version",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "name": "kumwe/contribution",
+      "source_commit": "2fc75742aa5a7d78418d2f586fa3043271e70082",
+      "merged_pull_requests": [
+        {
+          "number": 6,
+          "html_url": "https://github.com/kumwe/contribution/pull/6",
+          "merged_at": "2026-09-07T19:20:02Z",
+          "merge_commit_sha": "2fc75742aa5a7d78418d2f586fa3043271e70082",
+          "base_ref": "main",
+          "author": "Llewellynvdm"
+        }
+      ],
+      "release_run": {
+        "id": 34155177522,
+        "name": "Release on record",
+        "head_sha": "2fc75742aa5a7d78418d2f586fa3043271e70082",
+        "conclusion": "success",
+        "html_url": "https://github.com/kumwe/contribution/actions/runs/34155177522",
+        "event": "push"
+      },
+      "jobs": [
+        {
+          "name": "check / PHP 8.5",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / Release automation tests",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / Package gate",
+          "conclusion": "success"
+        },
+        {
+          "name": "Release the recorded version",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "name": "kumwe/conversion",
+      "source_commit": "b291f3a31314644fd88150dc9a9e911fe0617fe7",
+      "merged_pull_requests": [
+        {
+          "number": 12,
+          "html_url": "https://github.com/kumwe/conversion/pull/12",
+          "merged_at": "2026-09-08T16:42:57Z",
+          "merge_commit_sha": "b291f3a31314644fd88150dc9a9e911fe0617fe7",
+          "base_ref": "main",
+          "author": "Llewellynvdm"
+        }
+      ],
+      "release_run": {
+        "id": 34252752635,
+        "name": "Release on record",
+        "head_sha": "b291f3a31314644fd88150dc9a9e911fe0617fe7",
+        "conclusion": "success",
+        "html_url": "https://github.com/kumwe/conversion/actions/runs/34252752635",
+        "event": "push"
+      },
+      "jobs": [
+        {
+          "name": "check / Release automation tests",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / PHP 8.5",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / Package gate",
+          "conclusion": "success"
+        },
+        {
+          "name": "Release the recorded version",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "name": "kumwe/conversion-extension",
+      "source_commit": "e184976c738c6672dae731765d1ef528f248b1b8",
+      "merged_pull_requests": [
+        {
+          "number": 7,
+          "html_url": "https://github.com/kumwe/conversion-extension/pull/7",
+          "merged_at": "2026-09-08T17:33:39Z",
+          "merge_commit_sha": "e184976c738c6672dae731765d1ef528f248b1b8",
+          "base_ref": "main",
+          "author": "Llewellynvdm"
+        }
+      ],
+      "release_run": {
+        "id": 34257845413,
+        "name": "Release on record",
+        "head_sha": "e184976c738c6672dae731765d1ef528f248b1b8",
+        "conclusion": "success",
+        "html_url": "https://github.com/kumwe/conversion-extension/actions/runs/34257845413",
+        "event": "push"
+      },
+      "jobs": [
+        {
+          "name": "check / PHP 8.5",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / Package gate",
+          "conclusion": "success"
+        },
+        {
+          "name": "Release the recorded version",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "name": "kumwe/extension-sdk",
+      "source_commit": "6a79bd3b45cd3a2e3c388d9e3d8c1624d9d04563",
+      "merged_pull_requests": [
+        {
+          "number": 20,
+          "html_url": "https://github.com/kumwe/extension-sdk/pull/20",
+          "merged_at": "2026-09-12T12:49:15Z",
+          "merge_commit_sha": "6a79bd3b45cd3a2e3c388d9e3d8c1624d9d04563",
+          "base_ref": "main",
+          "author": "Llewellynvdm"
+        }
+      ],
+      "release_run": {
+        "id": 34694718062,
+        "name": "Release on record",
+        "head_sha": "6a79bd3b45cd3a2e3c388d9e3d8c1624d9d04563",
+        "conclusion": "success",
+        "html_url": "https://github.com/kumwe/extension-sdk/actions/runs/34694718062",
+        "event": "push"
+      },
+      "jobs": [
+        {
+          "name": "check / Published dependency archive consumer",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / Release automation tests",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / PHP 8.5",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / Package gate",
+          "conclusion": "success"
+        },
+        {
+          "name": "Release the recorded version",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "name": "kumwe/idempotency",
+      "source_commit": "283ddd7d862295078e354ebe7ebfa6e41af1dd94",
+      "merged_pull_requests": [
+        {
+          "number": 5,
+          "html_url": "https://github.com/kumwe/idempotency/pull/5",
+          "merged_at": "2026-09-08T16:53:27Z",
+          "merge_commit_sha": "283ddd7d862295078e354ebe7ebfa6e41af1dd94",
+          "base_ref": "main",
+          "author": "Llewellynvdm"
+        }
+      ],
+      "release_run": {
+        "id": 34253802898,
+        "name": "Release on record",
+        "head_sha": "283ddd7d862295078e354ebe7ebfa6e41af1dd94",
+        "conclusion": "success",
+        "html_url": "https://github.com/kumwe/idempotency/actions/runs/34253802898",
+        "event": "push"
+      },
+      "jobs": [
+        {
+          "name": "check / Release automation tests",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / PHP 8.5",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / Package gate",
+          "conclusion": "success"
+        },
+        {
+          "name": "Release the recorded version",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "name": "kumwe/integration",
+      "source_commit": "219278ccf3a7eed6bbf165c7d26431a87602951d",
+      "merged_pull_requests": [
+        {
+          "number": 8,
+          "html_url": "https://github.com/kumwe/integration/pull/8",
+          "merged_at": "2026-09-08T19:59:40Z",
+          "merge_commit_sha": "219278ccf3a7eed6bbf165c7d26431a87602951d",
+          "base_ref": "main",
+          "author": "Llewellynvdm"
+        }
+      ],
+      "release_run": {
+        "id": 34272180930,
+        "name": "Release on record",
+        "head_sha": "219278ccf3a7eed6bbf165c7d26431a87602951d",
+        "conclusion": "success",
+        "html_url": "https://github.com/kumwe/integration/actions/runs/34272180930",
+        "event": "push"
+      },
+      "jobs": [
+        {
+          "name": "check / PHP 8.5",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / Release automation tests",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / Package gate",
+          "conclusion": "success"
+        },
+        {
+          "name": "Release the recorded version",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "name": "kumwe/interface-standard",
+      "source_commit": "93d4637fda7c0881f7e00aae132c2d470b5eceac",
+      "merged_pull_requests": [
+        {
+          "number": 5,
+          "html_url": "https://github.com/kumwe/interface-standard/pull/5",
+          "merged_at": "2026-09-08T16:08:42Z",
+          "merge_commit_sha": "93d4637fda7c0881f7e00aae132c2d470b5eceac",
+          "base_ref": "main",
+          "author": "Llewellynvdm"
+        }
+      ],
+      "release_run": {
+        "id": 34249249675,
+        "name": "Release on record",
+        "head_sha": "93d4637fda7c0881f7e00aae132c2d470b5eceac",
+        "conclusion": "success",
+        "html_url": "https://github.com/kumwe/interface-standard/actions/runs/34249249675",
+        "event": "push"
+      },
+      "jobs": [
+        {
+          "name": "check / PHP 8.5",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / Release automation tests",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / Package gate",
+          "conclusion": "success"
+        },
+        {
+          "name": "Release the recorded version",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "name": "kumwe/localization",
+      "source_commit": "8571ab575b9b9f2dc1b8a25b3c902d9cf44093cb",
+      "merged_pull_requests": [
+        {
+          "number": 6,
+          "html_url": "https://github.com/kumwe/localization/pull/6",
+          "merged_at": "2026-09-07T19:22:10Z",
+          "merge_commit_sha": "8571ab575b9b9f2dc1b8a25b3c902d9cf44093cb",
+          "base_ref": "main",
+          "author": "Llewellynvdm"
+        }
+      ],
+      "release_run": {
+        "id": 34155314875,
+        "name": "Release on record",
+        "head_sha": "8571ab575b9b9f2dc1b8a25b3c902d9cf44093cb",
+        "conclusion": "success",
+        "html_url": "https://github.com/kumwe/localization/actions/runs/34155314875",
+        "event": "push"
+      },
+      "jobs": [
+        {
+          "name": "check / Release automation tests",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / PHP 8.5",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / Package gate",
+          "conclusion": "success"
+        },
+        {
+          "name": "Release the recorded version",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "name": "kumwe/navigation",
+      "source_commit": "f620836d0fdd4964fdc703a35d0873202459b83d",
+      "merged_pull_requests": [
+        {
+          "number": 5,
+          "html_url": "https://github.com/kumwe/navigation/pull/5",
+          "merged_at": "2026-09-08T16:08:48Z",
+          "merge_commit_sha": "f620836d0fdd4964fdc703a35d0873202459b83d",
+          "base_ref": "main",
+          "author": "Llewellynvdm"
+        }
+      ],
+      "release_run": {
+        "id": 34249264086,
+        "name": "Release on record",
+        "head_sha": "f620836d0fdd4964fdc703a35d0873202459b83d",
+        "conclusion": "success",
+        "html_url": "https://github.com/kumwe/navigation/actions/runs/34249264086",
+        "event": "push"
+      },
+      "jobs": [
+        {
+          "name": "check / Release automation tests",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / PHP 8.5",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / Package gate",
+          "conclusion": "success"
+        },
+        {
+          "name": "Release the recorded version",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "name": "kumwe/portal-contract",
+      "source_commit": "6ba19b263e3cf874a4c45e478450ccc3aa9605d6",
+      "merged_pull_requests": [
+        {
+          "number": 5,
+          "html_url": "https://github.com/kumwe/portal-contract/pull/5",
+          "merged_at": "2026-09-08T16:05:28Z",
+          "merge_commit_sha": "6ba19b263e3cf874a4c45e478450ccc3aa9605d6",
+          "base_ref": "main",
+          "author": "Llewellynvdm"
+        }
+      ],
+      "release_run": {
+        "id": 34248915985,
+        "name": "Release on record",
+        "head_sha": "6ba19b263e3cf874a4c45e478450ccc3aa9605d6",
+        "conclusion": "success",
+        "html_url": "https://github.com/kumwe/portal-contract/actions/runs/34248915985",
+        "event": "push"
+      },
+      "jobs": [
+        {
+          "name": "check / PHP 8.5",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / Release automation tests",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / Package gate",
+          "conclusion": "success"
+        },
+        {
+          "name": "Release the recorded version",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "name": "kumwe/producer",
+      "source_commit": "65d0a10ce39954738f091ec4b5e2626768053c8d",
+      "merged_pull_requests": [
+        {
+          "number": 12,
+          "html_url": "https://github.com/kumwe/producer/pull/12",
+          "merged_at": "2026-09-09T13:50:27Z",
+          "merge_commit_sha": "65d0a10ce39954738f091ec4b5e2626768053c8d",
+          "base_ref": "main",
+          "author": "Llewellynvdm"
+        }
+      ],
+      "release_run": {
+        "id": 34359681189,
+        "name": "Release on record",
+        "head_sha": "65d0a10ce39954738f091ec4b5e2626768053c8d",
+        "conclusion": "success",
+        "html_url": "https://github.com/kumwe/producer/actions/runs/34359681189",
+        "event": "push"
+      },
+      "jobs": [
+        {
+          "name": "check / Release automation tests",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / PHP 8.2",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / PHP 8.4",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / PHP 8.1",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / PHP 8.5",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / PHP 8.3",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / Package gate",
+          "conclusion": "success"
+        },
+        {
+          "name": "Release the recorded version",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "name": "kumwe/record-model",
+      "source_commit": "8d20cf75ee6ab915102bbf6a17567087971e9dfe",
+      "merged_pull_requests": [
+        {
+          "number": 8,
+          "html_url": "https://github.com/kumwe/record-model/pull/8",
+          "merged_at": "2026-09-08T16:53:32Z",
+          "merge_commit_sha": "8d20cf75ee6ab915102bbf6a17567087971e9dfe",
+          "base_ref": "main",
+          "author": "Llewellynvdm"
+        }
+      ],
+      "release_run": {
+        "id": 34253812301,
+        "name": "Release on record",
+        "head_sha": "8d20cf75ee6ab915102bbf6a17567087971e9dfe",
+        "conclusion": "success",
+        "html_url": "https://github.com/kumwe/record-model/actions/runs/34253812301",
+        "event": "push"
+      },
+      "jobs": [
+        {
+          "name": "check / PHP 8.5 source and archive",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / Release automation tests",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / Package gate",
+          "conclusion": "success"
+        },
+        {
+          "name": "Release the recorded version",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "name": "kumwe/record-query",
+      "source_commit": "18b1f8ca8dce5eb3ca3cb8c4c3a0443599d232d9",
+      "merged_pull_requests": [
+        {
+          "number": 7,
+          "html_url": "https://github.com/kumwe/record-query/pull/7",
+          "merged_at": "2026-09-08T16:54:26Z",
+          "merge_commit_sha": "18b1f8ca8dce5eb3ca3cb8c4c3a0443599d232d9",
+          "base_ref": "main",
+          "author": "Llewellynvdm"
+        }
+      ],
+      "release_run": {
+        "id": 34253899937,
+        "name": "Release on record",
+        "head_sha": "18b1f8ca8dce5eb3ca3cb8c4c3a0443599d232d9",
+        "conclusion": "success",
+        "html_url": "https://github.com/kumwe/record-query/actions/runs/34253899937",
+        "event": "push"
+      },
+      "jobs": [
+        {
+          "name": "check / PHP 8.5 source and archive",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / Release automation tests",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / Package gate",
+          "conclusion": "success"
+        },
+        {
+          "name": "Release the recorded version",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "name": "kumwe/record-values",
+      "source_commit": "04a3f5f8094861771682b3ba83536ec8828dc704",
+      "merged_pull_requests": [
+        {
+          "number": 7,
+          "html_url": "https://github.com/kumwe/record-values/pull/7",
+          "merged_at": "2026-09-08T16:48:41Z",
+          "merge_commit_sha": "04a3f5f8094861771682b3ba83536ec8828dc704",
+          "base_ref": "main",
+          "author": "Llewellynvdm"
+        }
+      ],
+      "release_run": {
+        "id": 34253329842,
+        "name": "Release on record",
+        "head_sha": "04a3f5f8094861771682b3ba83536ec8828dc704",
+        "conclusion": "success",
+        "html_url": "https://github.com/kumwe/record-values/actions/runs/34253329842",
+        "event": "push"
+      },
+      "jobs": [
+        {
+          "name": "check / Release automation tests",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / PHP 8.5 source and archive",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / Package gate",
+          "conclusion": "success"
+        },
+        {
+          "name": "Release the recorded version",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "name": "kumwe/reporting",
+      "source_commit": "63f807e70e3390ca9be65b22ac23b8c879866394",
+      "merged_pull_requests": [
+        {
+          "number": 10,
+          "html_url": "https://github.com/kumwe/reporting/pull/10",
+          "merged_at": "2026-09-12T12:30:24Z",
+          "merge_commit_sha": "63f807e70e3390ca9be65b22ac23b8c879866394",
+          "base_ref": "main",
+          "author": "Llewellynvdm"
+        }
+      ],
+      "release_run": {
+        "id": 34693856840,
+        "name": "Release on record",
+        "head_sha": "63f807e70e3390ca9be65b22ac23b8c879866394",
+        "conclusion": "success",
+        "html_url": "https://github.com/kumwe/reporting/actions/runs/34693856840",
+        "event": "push"
+      },
+      "jobs": [
+        {
+          "name": "check / PHP 8.5 source and archive",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / Release automation tests",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / Package gate",
+          "conclusion": "success"
+        },
+        {
+          "name": "Release the recorded version",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "name": "kumwe/sequence",
+      "source_commit": "142c3e74a7596935ef42c8fa744ca705fd3b4b4f",
+      "merged_pull_requests": [
+        {
+          "number": 6,
+          "html_url": "https://github.com/kumwe/sequence/pull/6",
+          "merged_at": "2026-09-07T19:22:34Z",
+          "merge_commit_sha": "142c3e74a7596935ef42c8fa744ca705fd3b4b4f",
+          "base_ref": "main",
+          "author": "Llewellynvdm"
+        }
+      ],
+      "release_run": {
+        "id": 34155339114,
+        "name": "Release on record",
+        "head_sha": "142c3e74a7596935ef42c8fa744ca705fd3b4b4f",
+        "conclusion": "success",
+        "html_url": "https://github.com/kumwe/sequence/actions/runs/34155339114",
+        "event": "push"
+      },
+      "jobs": [
+        {
+          "name": "check / Release automation tests",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / PHP 8.5",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / Package gate",
+          "conclusion": "success"
+        },
+        {
+          "name": "Release the recorded version",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "name": "kumwe/transaction",
+      "source_commit": "56c8eb14a70bd3f1ed7eaeae7196a07d6627bf03",
+      "merged_pull_requests": [
+        {
+          "number": 6,
+          "html_url": "https://github.com/kumwe/transaction/pull/6",
+          "merged_at": "2026-09-07T19:06:49Z",
+          "merge_commit_sha": "56c8eb14a70bd3f1ed7eaeae7196a07d6627bf03",
+          "base_ref": "main",
+          "author": "Llewellynvdm"
+        }
+      ],
+      "release_run": {
+        "id": 34154321176,
+        "name": "Release on record",
+        "head_sha": "56c8eb14a70bd3f1ed7eaeae7196a07d6627bf03",
+        "conclusion": "success",
+        "html_url": "https://github.com/kumwe/transaction/actions/runs/34154321176",
+        "event": "push"
+      },
+      "jobs": [
+        {
+          "name": "check / Release automation tests",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / PHP 8.5",
+          "conclusion": "success"
+        },
+        {
+          "name": "check / Package gate",
+          "conclusion": "success"
+        },
+        {
+          "name": "Release the recorded version",
+          "conclusion": "success"
+        }
+      ]
+    }
+  ]
+}
