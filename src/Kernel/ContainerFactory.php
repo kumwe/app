@@ -717,7 +717,7 @@ use Kumwe\App\Site\Application\PublicPageLocator;
 use Kumwe\App\Site\Application\SiteSettings;
 use Kumwe\App\Site\Infrastructure\Persistence\DoctrineSiteSettings;
 use Kumwe\App\Site\Infrastructure\Persistence\CachedSiteSettings;
-use Kumwe\App\Navigation\Application\NavigationRepository;
+use Kumwe\Navigation\Application\NavigationRepository;
 use Kumwe\App\Navigation\Application\NavigationService;
 use Kumwe\App\Navigation\Application\PublicNavigation;
 use Kumwe\App\Navigation\Infrastructure\Persistence\DoctrineNavigationRepository;

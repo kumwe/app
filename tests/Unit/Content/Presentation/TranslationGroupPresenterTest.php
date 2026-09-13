@@ -21,7 +21,7 @@ use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Localization\Application\ActiveLocale;
 use Kumwe\Localization\Application\SupportedLocales;
 use Kumwe\Localization\Domain\LocaleTag;
-use Kumwe\App\Navigation\Application\NavigationRepository;
+use Kumwe\Navigation\Application\NavigationRepository;
 use Kumwe\App\Navigation\Application\PublicNavigation;
 use Kumwe\App\Site\Application\PublicPageLocator;
 use Kumwe\App\Site\Application\SiteSettings;

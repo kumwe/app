@@ -10,7 +10,7 @@ use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\App\Content\Application\ContentRecord;
 use Kumwe\App\Content\Application\ContentService;
 use Kumwe\App\Demo\Application\DemoProfileLedger;
-use Kumwe\App\Navigation\Application\MenuItemRecord;
+use Kumwe\Navigation\Application\MenuItemRecord;
 use Kumwe\App\Navigation\Application\NavigationService;
 use Kumwe\App\Site\Application\SiteSettings;
 use Kumwe\Context\Value\ExecutionContext;
