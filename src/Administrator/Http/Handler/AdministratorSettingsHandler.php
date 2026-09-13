@@ -12,7 +12,7 @@ use Kumwe\App\Content\Application\ContentRecord;
 use Kumwe\App\Content\Application\ContentService;
 use Kumwe\App\Media\Application\MediaAsset;
 use Kumwe\App\Media\Application\MediaService;
-use Kumwe\App\Navigation\Application\MenuRecord;
+use Kumwe\Navigation\Application\MenuRecord;
 use Kumwe\App\Navigation\Application\NavigationService;
 use Kumwe\App\Site\Application\SiteSettings;
 use Laminas\Diactoros\Response\HtmlResponse;

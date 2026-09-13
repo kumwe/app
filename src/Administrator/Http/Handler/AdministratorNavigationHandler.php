@@ -9,8 +9,8 @@ use Kumwe\App\Administrator\Http\AdministratorRequest;
 use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
 use Kumwe\App\Content\Application\ContentRecord;
 use Kumwe\App\Content\Application\ContentService;
-use Kumwe\App\Navigation\Application\MenuItemRecord;
-use Kumwe\App\Navigation\Application\MenuRecord;
+use Kumwe\Navigation\Application\MenuItemRecord;
+use Kumwe\Navigation\Application\MenuRecord;
 use Kumwe\App\Navigation\Application\NavigationService;
 use Kumwe\App\Presentation\Application\SitePresentation;
 use Kumwe\App\Presentation\ContentLayoutCatalog;
@@ -69,8 +69,8 @@ final readonly class AdministratorNavigationHandler implements RequestHandlerInt
      * @throws  InvalidArgumentException  When a required field is missing, the action is unknown, or a submitted
      *          value is refused.
      * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage the menu.
-     * @throws  \Kumwe\App\Navigation\Application\NavigationNotFound  When the named menu or item does not exist.
-     * @throws  \Kumwe\App\Navigation\Application\NavigationVersionConflict  When another editor moved it on first.
+     * @throws  \Kumwe\Navigation\Application\NavigationNotFound  When the named menu or item does not exist.
+     * @throws  \Kumwe\Navigation\Application\NavigationVersionConflict  When another editor moved it on first.
      * @throws  \Kumwe\App\Content\Application\ContentNotFound  When a chosen page target no longer exists.
      *
      * @since   2.0.0
@@ -153,8 +153,8 @@ final readonly class AdministratorNavigationHandler implements RequestHandlerInt
      * @throws  InvalidArgumentException  When the action is unknown, a required field is missing, or a submitted
      *          value is refused.
      * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage the menu.
-     * @throws  \Kumwe\App\Navigation\Application\NavigationNotFound  When the named menu or item does not exist.
-     * @throws  \Kumwe\App\Navigation\Application\NavigationVersionConflict  When another editor moved it on first.
+     * @throws  \Kumwe\Navigation\Application\NavigationNotFound  When the named menu or item does not exist.
+     * @throws  \Kumwe\Navigation\Application\NavigationVersionConflict  When another editor moved it on first.
      * @throws  \Kumwe\App\Content\Application\ContentNotFound  When a chosen page target no longer exists.
      *
      * @since   2.0.0
@@ -243,8 +243,8 @@ final readonly class AdministratorNavigationHandler implements RequestHandlerInt
      * @throws  InvalidArgumentException  When the list repeats an item, does not cover the menu, or names an item
      *          that is not in it.
      * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage the menu.
-     * @throws  \Kumwe\App\Navigation\Application\NavigationNotFound  When no menu carries that identifier.
-     * @throws  \Kumwe\App\Navigation\Application\NavigationVersionConflict  When an item changes between the read
+     * @throws  \Kumwe\Navigation\Application\NavigationNotFound  When no menu carries that identifier.
+     * @throws  \Kumwe\Navigation\Application\NavigationVersionConflict  When an item changes between the read
      *          and its write.
      *
      * @since   2.0.0

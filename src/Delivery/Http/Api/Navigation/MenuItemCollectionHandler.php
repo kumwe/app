@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Delivery\Http\Api\Navigation;
 
-use Kumwe\App\Navigation\Application\MenuItemRecord;
+use Kumwe\Navigation\Application\MenuItemRecord;
 use Kumwe\App\Navigation\Application\NavigationService;
 use Laminas\Diactoros\Response\JsonResponse;
 use Psr\Http\Message\ResponseInterface;

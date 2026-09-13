@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Navigation\Application;
 
+use Kumwe\Navigation\Application\MenuItemRecord;
+use Kumwe\Navigation\Application\MenuRecord;
+use Kumwe\Navigation\Application\NavigationRepository;
 use Kumwe\App\Application\Authorization\AuthorizationResource;
 use Kumwe\App\Application\Authorization\AuthorizationResourceOwnershipUnknown;
 use Kumwe\App\Application\Authorization\ResourceSiteOwnership;

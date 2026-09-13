@@ -10,10 +10,10 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
-use Kumwe\App\Navigation\Application\MenuItemRecord;
-use Kumwe\App\Navigation\Application\MenuRecord;
-use Kumwe\App\Navigation\Application\NavigationRepository;
-use Kumwe\App\Navigation\Application\NavigationVersionConflict;
+use Kumwe\Navigation\Application\MenuItemRecord;
+use Kumwe\Navigation\Application\MenuRecord;
+use Kumwe\Navigation\Application\NavigationRepository;
+use Kumwe\Navigation\Application\NavigationVersionConflict;
 use RuntimeException;
 
 /**
