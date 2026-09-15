@@ -312,6 +312,69 @@ final class CoreGrowthGateTest extends TestCase
     }
 
     /**
+     * A surface that already carries a name an earlier adoption retired, which the baseline spells as the package
+     * symbol, and now also spells a newly retired name as its package symbol is still a rename: the check rewrites
+     * only the newly retired name back, so the earlier rename recorded in the baseline no longer hides it.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testARenameNextToAnEarlierRecordedRenameIsStillReRecordedNotGrowth(): void
+    {
+        $root = GovernanceFixture::copy();
+        try {
+            $fqcn = 'Kumwe\\App\\Example\\Application\\DescribeSubject';
+            $file = 'src/Example/Application/DescribeSubject.php';
+            $retiredInterface = 'Kumwe\\App\\Example\\Describing\\DescriberInterface';
+            $packageInterface = 'Kumwe\\Example\\Contract\\ExampleServiceInterface';
+            $packageService = 'Kumwe\\Example\\ExampleService';
+            GovernanceFixture::replace(
+                $root,
+                $file,
+                "use Kumwe\\Example\\Contract\\ExampleServiceInterface;\n",
+                "use Kumwe\\Example\\Contract\\ExampleServiceInterface;\nuse Kumwe\\Example\\ExampleService;\n",
+            );
+            $anchor = "    public function describe(ExampleSubject \$subject): string\n";
+            GovernanceFixture::replace(
+                $root,
+                $file,
+                $anchor,
+                "    public function service(): ExampleService\n    {\n"
+                . "        return new ExampleService();\n    }\n\n" . $anchor,
+            );
+            $symbol = CoreGrowthInventory::scan(
+                $root,
+                LayerClassifier::fromFile($root . '/' . CoreGrowthGate::LAYER_GRAPH),
+            )->symbol($fqcn);
+            self::assertNotNull($symbol);
+            self::assertStringContainsString($packageInterface, $symbol['canonical']);
+            self::assertStringContainsString($packageService, $symbol['canonical']);
+            self::recordSurface($root, $fqcn, CoreGrowthInventory::digest(
+                str_replace($packageInterface, $retiredInterface, $symbol['canonical']),
+            ));
+
+            $failures = self::assertRefused(
+                $root,
+                sprintf(
+                    're-record: %s differs from the baseline only by the names KUMWE-MIG-2026-001 retired (%s -> %s)',
+                    $fqcn,
+                    $retiredInterface,
+                    $packageInterface,
+                ),
+            );
+            self::assertCount(1, $failures);
+
+            $recorded = self::runGate(['--record', '--root=' . $root]);
+            self::assertSame(0, $recorded['status'], $recorded['output']);
+            self::assertStringContainsString('0 added, 0 removed, 0 expanded, 1 renamed', $recorded['output']);
+            self::assertVerified($root, 4, 0);
+        } finally {
+            GovernanceFixture::remove($root);
+        }
+    }
+
+    /**
      * Host-layer growth fails until recorded, is recorded as `implements`/`extends` evidence, and fails again when
      * those facts change.
      *

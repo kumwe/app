@@ -1,0 +1,73 @@
+schema: kumwe-release-attestation/v2
+artifact_kind: framework_php
+migration_id: KUMWE-MIG-2026-035
+change_set: KUMWE-CS-2026-035
+repository: "https://github.com/kumwe/navigation"
+merge_commit: "0d3b5c130e04c92453d1d91287535e077e43dd54"
+version: "0.1.3"
+tag: v0.1.3
+source_archive:
+  url: "https://api.github.com/repos/kumwe/navigation/zipball/0d3b5c130e04c92453d1d91287535e077e43dd54"
+  sha256: "cb3e0ba294ded66acf419624e63fdfde0ee11c1f138a50d79ece55d0bfede2ad"
+artifacts:
+  - identity: "kumwe/navigation:0.1.3"
+    url: "https://api.github.com/repos/kumwe/navigation/zipball/0d3b5c130e04c92453d1d91287535e077e43dd54"
+    sha256: "cb3e0ba294ded66acf419624e63fdfde0ee11c1f138a50d79ece55d0bfede2ad"
+manifests_and_corpora:
+  - path: resources/public-api/v1.json
+    sha256: "145931da0b289eae0d3c7909c8e505436a7f21afdebba90769c0592ad789c1fe"
+  - path: resources/capabilities/v1.json
+    sha256: "bd618af1a89da33ce6f528538a116f10ae612e39f3b626c6427c8a3432f012b7"
+  - path: resources/service-map/v1.json
+    sha256: "5c5a4a87404a3d4bdd1ed4e1b54e766d8ad7c214d1ab61d7f0c67a0747b8bc5e"
+  - path: resources/public-api/signature-details-v1.json
+    sha256: "351810ca26acd40de694b6a1a0be1fc837a5f5560ecf3ab0168b75018c15f472"
+  - path: docs/release-record.md
+    sha256: "f9f328dae1126753ddb8aca78d457817d7d5e311242d5a9e8613cad77016ba06"
+abi_and_capabilities: null
+sbom:
+  url: null
+  sha256: null
+provenance: "Release on record run 34991182537 (push, attempt 1) published release 389279037 as github-actions[bot]"
+release_workflow: "https://github.com/kumwe/navigation/actions/runs/34991182537 success on the merge commit"
+registry_or_pie_verification:
+  - "Packagist p2 observed 2026-09-15T19:57:34Z: v0.1.3 (0.1.3.0) is the newest of v0.1.3, v0.1.2, v0.1.1, v0.1.0"
+  - "Packagist published-time 2026-09-15T15:51:37+00:00, time 2026-09-15T15:50:58+00:00; no wait or retry was needed"
+  - "Packagist source: git https://github.com/kumwe/navigation.git at 0d3b5c130e04c92453d1d91287535e077e43dd54"
+  - "Packagist dist: zip at reference 0d3b5c130e04c92453d1d91287535e077e43dd54, url equal to the source archive URL"
+  - "Packagist dist shasum is an empty string; license Apache-2.0; require php ^8.5 and ext-mbstring only"
+  - "Packagist autoload: psr-4 Kumwe\\Navigation\\ => src/; no runtime package dependencies"
+  - "GitHub git/ref/tags/v0.1.3: lightweight tag, commit 0d3b5c130e04c92453d1d91287535e077e43dd54"
+  - "GitHub commits/main is 0d3b5c130e04c92453d1d91287535e077e43dd54; compare with main identical, 0 ahead, 0 behind"
+  - "GitHub release v0.1.3 id 389279037: published_at 2026-09-15T15:51:35Z, draft false, prerelease false"
+  - "GitHub release v0.1.3 reports immutable true"
+  - "Release on record run 34991182537 jobs: check / PHP 8.5, Release automation tests, Package gate all success"
+  - "Release on record run 34991182537 job Release the recorded version: success"
+  - "Package CI run 34991182008: completed, success, on the same commit"
+clean_consumer_or_build_verification:
+  - "Fresh consumer requiring kumwe/navigation 0.1.3 (proprietary, stable, allow-plugins false)"
+  - "Consumer toolchain: composer 2.10.3 phar on PHP 8.4.19 NTS"
+  - "composer install --no-dev --classmap-authoritative --prefer-dist --ignore-platform-req=php: exit 0, 1 install"
+  - "installed.json: v0.1.3, dist zip reference 0d3b5c130e04c92453d1d91287535e077e43dd54, dev false, Apache-2.0"
+  - "autoload_real.php sets setClassMapAuthoritative(true); the classmap holds the 8 Kumwe\\Navigation symbols"
+  - "vendor src/ and resources/ are byte-identical (diff -r) to the source archive; release-record digest matches"
+  - "Smoke script: all 8 public-api symbols exist; MenuTree::create derived /products and /products/widgets"
+  - "Smoke script: move() to root re-derived /widgets leaving the original intact; a cyclic move raised InvalidMenuTree"
+  - "examples/standalone.php through the consumer autoloader printed Navigation model example passed, exit 0"
+  - "composer audit in the consumer: No security vulnerability advisories found, exit 0"
+  - "Archive ships CHARTER.md, README.md, LICENSE (Apache 2.0), docs/, resources/, examples/, src/, composer.json"
+  - "Archive omits tests/, tools/, vendor/ and .github/ (export-ignore); all four manifests carry release 0.1.3"
+  - "CHANGELOG.md newest release heading is [0.1.3] - 2026-09-15 below an empty Unreleased section"
+  - "Record front matter: KUMWE-MIG-2026-035, KUMWE-CS-2026-035, framework_php, kumwe/navigation, Kumwe\\Navigation\\"
+  - "Record ownership.public_manifests digests equal the four locally computed manifest digests"
+  - "Front matter accepted by package-release-record.v1.schema.json with a local checker; 7 broken variants rejected"
+verified_at: "2026-09-15T19:58:54Z"
+verified_by: "Independent release verification agent (isolated session, no Phase 1 or Phase 2 context)"
+status: verified
+known_gaps:
+  - "Tag protection was not visible to the API: rulesets returned an empty list and tags/protection returned 404"
+  - "The maintainer states tag protection is configured organisation-wide; the release immutable flag was observed true"
+  - "Local PHP 8.4.19 versus php ^8.5: the consumer used --ignore-platform-req=php; CI proved PHP 8.5 on this commit"
+  - "Packagist publishes an empty dist shasum; the archive digest above was computed locally at verification time"
+  - "No SBOM and no release assets exist for v0.1.3; abi_and_capabilities does not apply to a framework_php artifact"
+  - "The schema check used a purpose-written minimal checker, not a full JSON Schema 2020-12 implementation"

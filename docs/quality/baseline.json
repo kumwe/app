@@ -3,8 +3,8 @@
     "work_package": "P0-A",
     "authority": "docs/roadmap/README.md",
     "note": "Every figure below is derived from the repository at the recorded commit. Nothing is typed by hand, nothing reads the clock or the machine, and running the generator twice at one commit produces the same document. composer baseline:check fails when it drifts.",
-    "commit": "67b99f7a46cdc9460bd123edd31ce3247a5f3524",
-    "recorded_at": "2026-09-12",
+    "commit": "84cd9c572a4f56e8617f763f45d7e108670b4361",
+    "recorded_at": "2026-09-15",
     "recorded_from": [],
     "toolchain": {
         "php": "^8.5",
@@ -22,7 +22,7 @@
             "ext-sodium",
             "ext-zip"
         ],
-        "composer_lock_sha256": "45ea6a550528a7cc03393c37d5610e4f0505ec1ccf347fbad7c40d5ef0794e28",
+        "composer_lock_sha256": "b74e1a9f8618e00a5c0fd50f6151552ccf7545a89fe984d60d397a6654ba177a",
         "package_lock_sha256": "c78dea5ee1832a88a2a909642e1c22f66c76189f9f56972b642c58aaed4719d3"
     },
     "tests": {
@@ -39,8 +39,8 @@
             "test_methods": 429
         },
         "unit": {
-            "files": 483,
-            "test_methods": 2470
+            "files": 481,
+            "test_methods": 2462
         }
     },
     "coverage": {
@@ -590,7 +590,7 @@
         "recorded_exemptions": {
             "dependency-graph": 62,
             "idempotency": 0,
-            "test-documentation": 3467
+            "test-documentation": 3448
         }
     }
 }

@@ -1,0 +1,27 @@
+schema: kumwe-integration-train/v1
+train: KUMWE-TRAIN-2026-035
+packages:
+  - package: kumwe/navigation
+    version: 0.1.3
+merge_order:
+  - "https://github.com/kumwe/app/pull/146"
+custodian: "Lemuel"
+hotspots:
+  - composer.json
+  - composer.lock
+  - src/Kernel/ContainerFactory.php
+  - docs/architecture/layers.json
+  - docs/architecture/capability-index.md
+  - docs/architecture/governance/core-growth-baseline.json
+  - docs/machine-contract/mcp-v1.json
+  - docs/quality/baseline.json
+  - docs/quality/test-docblock-baseline.json
+  - CHANGELOG.md
+commands:
+  - "composer install"
+  - "composer kumwe:capability-index"
+  - "composer kumwe:core-growth-record"
+  - "composer baseline:record"
+  - "composer qa"
+conflict_ledger: docs/architecture/migrations/conflicts
+serialized_by: "Lemuel, rebase-merging the green pull request under the standing maintainer mandate"

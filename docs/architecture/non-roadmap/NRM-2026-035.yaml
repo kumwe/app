@@ -1,0 +1,30 @@
+schema: kumwe-non-roadmap-record/v1
+id: NRM-2026-035
+nrm_ref: NRM-2026-035
+roadmap_impact: None
+rationale: "Adopt verified kumwe/navigation 0.1.3, the owner of the bounded menu tree, the navigation records and the repository contract."
+repositories:
+  - kumwe/app
+  - kumwe/navigation
+behavior_before: "App declared the menu tree, its items, the menu and item records, the repository interface and the not-found and version-conflict refusals itself."
+behavior_after: "The eight types come from kumwe/navigation 0.1.3; App keeps NavigationService, PublicNavigation, the Doctrine repository, authorization, transactions and every delivery surface."
+public_api_impact: "None for callers; the records and refusals keep their names and shapes under the package namespace, and the MCP error vocabulary maps the package refusals to the same stable codes."
+dependency_impact: "Adds kumwe/navigation 0.1.3 exactly; no other lock entry changes."
+compatibility: "Drop-in for every consumer; the package refuses the same malformed trees, moves and titles the App classes refused."
+data_migration: None
+security_impact: "No authority change; capability checks, site ownership, audit and the transaction stay in App, and the package never sees a request."
+performance:
+  claim: None
+  evidence: []
+operations_deployment: "None; no configuration, provider or schema change."
+recovery_rollback: "Revert the adoption pull request and restore the eight removed classes and the two moved unit tests; no persisted data changes."
+artifacts_evidence:
+  - docs/architecture/migrations/KUMWE-MIG-2026-035.yaml
+  - docs/architecture/migrations/change-sets/KUMWE-CS-2026-035.yaml
+  - docs/architecture/migrations/trains/KUMWE-TRAIN-2026-035.yaml
+  - docs/architecture/migrations/evidence/KUMWE-MIG-2026-035/RELEASE-ATTESTATION.yaml
+  - docs/architecture/capability-index.md
+known_gaps:
+  - "The remaining Framework 5 packages (content-model, administrator-contract, portal-contract, business-surface-contract) follow as separate adoptions."
+owner: "Lemuel"
+status: in-progress
