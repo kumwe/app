@@ -8,9 +8,9 @@ use DateTimeImmutable;
 use Kumwe\App\Application\Authorization\AuthorizationResource;
 use Kumwe\App\Application\Authorization\OwnershipScope;
 use Kumwe\App\Application\Authorization\ResourceSiteOwnership;
-use Kumwe\App\Navigation\Application\MenuItemRecord;
-use Kumwe\App\Navigation\Application\MenuRecord;
-use Kumwe\App\Navigation\Application\NavigationRepository;
+use Kumwe\Navigation\Application\MenuItemRecord;
+use Kumwe\Navigation\Application\MenuRecord;
+use Kumwe\Navigation\Application\NavigationRepository;
 use Kumwe\App\Navigation\Application\PublicNavigation;
 use Kumwe\Context\Value\SiteContext;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -18,8 +18,6 @@ use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(PublicNavigation::class)]
-#[UsesClass(MenuItemRecord::class)]
-#[UsesClass(MenuRecord::class)]
 #[UsesClass(AuthorizationResource::class)]
 final class PublicNavigationTest extends TestCase
 {

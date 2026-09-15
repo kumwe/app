@@ -1,0 +1,65 @@
+schema: kumwe-migration-ledger/v1
+migration_id: KUMWE-MIG-2026-035
+change_set: KUMWE-CS-2026-035
+package: kumwe/navigation
+version: 0.1.3
+artifact_digest: "cb3e0ba294ded66acf419624e63fdfde0ee11c1f138a50d79ece55d0bfede2ad"
+handoff_path: vendor/kumwe/navigation/docs/release-record.md
+handoff_sha256: "f9f328dae1126753ddb8aca78d457817d7d5e311242d5a9e8613cad77016ba06"
+release_attestation: docs/architecture/migrations/evidence/KUMWE-MIG-2026-035/RELEASE-ATTESTATION.yaml
+old_namespace_roots:
+  - Kumwe\App\Navigation\Domain\
+symbols:
+  - old_fqcn: Kumwe\App\Navigation\Domain\InvalidMenuTree
+    new_fqcn: Kumwe\Navigation\Domain\InvalidMenuTree
+  - old_fqcn: Kumwe\App\Navigation\Domain\MenuItem
+    new_fqcn: Kumwe\Navigation\Domain\MenuItem
+  - old_fqcn: Kumwe\App\Navigation\Domain\MenuTree
+    new_fqcn: Kumwe\Navigation\Domain\MenuTree
+  - old_fqcn: Kumwe\App\Navigation\Application\MenuItemRecord
+    new_fqcn: Kumwe\Navigation\Application\MenuItemRecord
+  - old_fqcn: Kumwe\App\Navigation\Application\MenuRecord
+    new_fqcn: Kumwe\Navigation\Application\MenuRecord
+  - old_fqcn: Kumwe\App\Navigation\Application\NavigationNotFound
+    new_fqcn: Kumwe\Navigation\Application\NavigationNotFound
+  - old_fqcn: Kumwe\App\Navigation\Application\NavigationRepository
+    new_fqcn: Kumwe\Navigation\Application\NavigationRepository
+  - old_fqcn: Kumwe\App\Navigation\Application\NavigationVersionConflict
+    new_fqcn: Kumwe\Navigation\Application\NavigationVersionConflict
+removed_paths:
+  - src/Navigation/Domain/InvalidMenuTree.php
+  - src/Navigation/Domain/MenuItem.php
+  - src/Navigation/Domain/MenuTree.php
+  - src/Navigation/Application/MenuItemRecord.php
+  - src/Navigation/Application/MenuRecord.php
+  - src/Navigation/Application/NavigationNotFound.php
+  - src/Navigation/Application/NavigationRepository.php
+  - src/Navigation/Application/NavigationVersionConflict.php
+removed_tests:
+  - tests/Unit/Navigation/Domain/MenuItemTest.php
+  - tests/Unit/Navigation/Domain/MenuTreeTest.php
+retained_tests:
+  - tests/Unit/Navigation/Application/NavigationServiceTest.php
+  - tests/Unit/Navigation/Application/PublicNavigationTest.php
+  - tests/Unit/Content/Presentation/TranslationGroupPresenterTest.php
+  - tests/Unit/Http/Handler/HomePageHandlerTest.php
+  - tests/Unit/Http/Handler/PublishedContentHandlerTest.php
+  - tests/Unit/Site/Application/PublicPageLocatorTest.php
+  - tests/Unit/Infrastructure/Mcp/McpMachineContractTest.php
+  - tests/Unit/Governance/ComposerLockTest.php
+  - tests/Integration/Demo/Infrastructure/DemoProfileExporterTest.php
+  - tests/Functional/Http/ManagementDeliveryTest.php
+  - tests/Support/customize-demo-profile.php
+di_changes:
+  - service: Kumwe\Navigation\Application\NavigationRepository
+    factory: Kumwe\App\Kernel\ContainerFactory
+    note: "Host binds the package repository port to DoctrineNavigationRepository; the package ships no provider."
+capability_index_entries:
+  - kumwe/navigation
+release_evidence:
+  - docs/architecture/migrations/evidence/KUMWE-MIG-2026-035/RELEASE-ATTESTATION.yaml
+app_pull_request: "https://github.com/kumwe/app/pull/146"
+roadmap_refs: []
+non_roadmap_refs:
+  - NRM-2026-035
+conflicts: []

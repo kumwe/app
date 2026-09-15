@@ -43,8 +43,8 @@ use Kumwe\App\Content\Application\ContentModelNotFound;
 use Kumwe\App\Content\Application\ContentNotFound;
 use Kumwe\App\Content\Domain\VersionConflict;
 use Kumwe\App\Identity\Application\Authorization\InsufficientCapability;
-use Kumwe\App\Navigation\Application\NavigationNotFound;
-use Kumwe\App\Navigation\Application\NavigationVersionConflict;
+use Kumwe\Navigation\Application\NavigationNotFound;
+use Kumwe\Navigation\Application\NavigationVersionConflict;
 use Throwable;
 
 /**

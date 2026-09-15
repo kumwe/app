@@ -12,11 +12,11 @@ use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\App\Audit\Application\AuditRecorder;
 use Kumwe\App\Audit\Domain\AuditEvent;
-use Kumwe\App\Navigation\Application\MenuItemRecord;
-use Kumwe\App\Navigation\Application\MenuRecord;
-use Kumwe\App\Navigation\Application\NavigationRepository;
+use Kumwe\Navigation\Application\MenuItemRecord;
+use Kumwe\Navigation\Application\MenuRecord;
+use Kumwe\Navigation\Application\NavigationRepository;
 use Kumwe\App\Navigation\Application\NavigationService;
-use Kumwe\App\Navigation\Application\NavigationVersionConflict;
+use Kumwe\Navigation\Application\NavigationVersionConflict;
 use Kumwe\App\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
@@ -25,8 +25,6 @@ use Psr\Clock\ClockInterface;
 
 #[CoversClass(NavigationService::class)]
 #[UsesClass(AuditEvent::class)]
-#[UsesClass(MenuItemRecord::class)]
-#[UsesClass(MenuRecord::class)]
 final class NavigationServiceTest extends TestCase
 {
     private const ACTOR = '018f22e2-7c8b-7ab0-8f3a-88e8026bb301';

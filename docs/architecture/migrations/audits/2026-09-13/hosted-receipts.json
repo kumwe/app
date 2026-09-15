@@ -1,0 +1,199 @@
+{
+  "scope": "Retained hosted evidence coordinates; only Navigation was cleared in the requested five-package individual review.",
+  "records": [
+    {
+      "package": "kumwe/integration",
+      "version": "0.2.3",
+      "source_commit": "219278ccf3a7eed6bbf165c7d26431a87602951d",
+      "verifier_run_url": "https://github.com/kumwe/extension-sdk/actions/runs/34517719816",
+      "verifier_commit": "c11e45e5bf7259f44a3e8bb8f50406038e39e2b9",
+      "original_yaml_sha256": "ffe50979c2fa5ce2886d845f9c5fe84cc05d5a758110c9fd6598ae5bbad84e11",
+      "original_source_archive_sha256": "2bc0f39c32253321941a368a2d17a7c30ae0704b85ed407b88f1fea01af10534",
+      "revalidation_scope": "Original ZIP and member identity, published source, schema, inventory, SBOM and recorded consumer checks; dependency-admission conflicts remain separate.",
+      "attestation": {
+        "id": 10168394084,
+        "url": "https://github.com/kumwe/extension-sdk/actions/runs/34517719816/artifacts/10168394084",
+        "zip_sha256": "0a96066a9b6da4915d38e2c09340f23e53590902dd7a6e4228bbdeb63a021e50",
+        "expires_at": "2026-12-09T18:59:50Z",
+        "expired_at_observation": false
+      },
+      "evidence": {
+        "id": 10168393004,
+        "url": "https://github.com/kumwe/extension-sdk/actions/runs/34517719816/artifacts/10168393004",
+        "zip_sha256": "27e10881371e8e4102f39d48462b6c943da504373a8e8046a19475ad77ddcfdd",
+        "expires_at": "2026-12-09T18:59:50Z",
+        "expired_at_observation": false
+      }
+    },
+    {
+      "package": "kumwe/automation",
+      "version": "0.2.2",
+      "source_commit": "cef19174a9c8a7a6008fe284481a235d13eec195",
+      "verifier_run_url": "https://github.com/kumwe/extension-sdk/actions/runs/34517719816",
+      "verifier_commit": "c11e45e5bf7259f44a3e8bb8f50406038e39e2b9",
+      "original_yaml_sha256": "5fa152dcadccd9b95b13b443939afbc5279cfe561a1eb1213ecf677acfbc866d",
+      "original_source_archive_sha256": "4c94c829e59e7213bf3d46f40bdcb88280380e3a5657b6714a0c09c703ea0031",
+      "revalidation_scope": "Original ZIP and member identity, published source, schema, inventory, SBOM and recorded consumer checks; dependency-admission conflicts remain separate.",
+      "attestation": {
+        "id": 10168376780,
+        "url": "https://github.com/kumwe/extension-sdk/actions/runs/34517719816/artifacts/10168376780",
+        "zip_sha256": "64a6511a81e10762794afb0a6fced5f627c9e38ab8c3bb4a41187f8cdc0ce59d",
+        "expires_at": "2026-12-09T18:59:50Z",
+        "expired_at_observation": false
+      },
+      "evidence": {
+        "id": 10168376111,
+        "url": "https://github.com/kumwe/extension-sdk/actions/runs/34517719816/artifacts/10168376111",
+        "zip_sha256": "1490423b363eb8c0444ec480ff4e45f751163b1298c3b226c0aef43ec0735aa9",
+        "expires_at": "2026-12-09T18:59:50Z",
+        "expired_at_observation": false
+      }
+    },
+    {
+      "package": "kumwe/business-schema",
+      "version": "0.1.3",
+      "source_commit": "5c442a147e98c702a50cf5dc2b7d8faf6499d8ef",
+      "verifier_run_url": "https://github.com/kumwe/extension-sdk/actions/runs/34517043293",
+      "verifier_commit": "0fc9e6bca74b41dfbfa745b2fc5fd4367b881ff0",
+      "original_yaml_sha256": "8130b3346968283beb883bf0589ddbd3bf17e97841131739e77a7d23e681f021",
+      "original_source_archive_sha256": "4c38e65a867645a93150d3300cd25cfbc08927d61844ebc9c02e9f78843e96b1",
+      "revalidation_scope": "Original ZIP and member identity, published source, schema, inventory, SBOM and recorded consumer checks; dependency-admission conflicts remain separate.",
+      "attestation": {
+        "id": 10168126802,
+        "url": "https://github.com/kumwe/extension-sdk/actions/runs/34517043293/artifacts/10168126802",
+        "zip_sha256": "f3104e26172280b224d785db66c38a7d394fa3f93579beb1b09086feb6e9ff98",
+        "expires_at": "2026-12-09T18:53:02Z",
+        "expired_at_observation": false
+      },
+      "evidence": {
+        "id": 10168125923,
+        "url": "https://github.com/kumwe/extension-sdk/actions/runs/34517043293/artifacts/10168125923",
+        "zip_sha256": "9899d534c627d1b04369cf58306c1a9b154043acc6d2942fc1af9bb72162a5f3",
+        "expires_at": "2026-12-09T18:53:02Z",
+        "expired_at_observation": false
+      }
+    },
+    {
+      "package": "kumwe/access-control",
+      "version": "0.1.2",
+      "source_commit": "c2420d1ed03bc39eaf5d8b9f5540580c297e3b57",
+      "verifier_run_url": "https://github.com/kumwe/extension-sdk/actions/runs/34516447646",
+      "verifier_commit": "d21879b98737883b38ee8c97d3c5a2e50186f867",
+      "original_yaml_sha256": "01482324adb634afaca415de492c82caab5e3ca4ecf12be5bd2f1d1f808201ee",
+      "original_source_archive_sha256": "626af3a0b29935ec97754e0bc4f3ee4ff26d8c364e23d5a8c8c2a129c9c4fb77",
+      "revalidation_scope": "Original ZIP and member identity, published source, schema, inventory, SBOM and recorded consumer checks; dependency-admission conflicts remain separate.",
+      "attestation": {
+        "id": 10167877306,
+        "url": "https://github.com/kumwe/extension-sdk/actions/runs/34516447646/artifacts/10167877306",
+        "zip_sha256": "dcbb8bdc9af35eb848871d069d4adabb0bb8929627c3601bce83c6112fda073a",
+        "expires_at": "2026-12-09T18:47:07Z",
+        "expired_at_observation": false
+      },
+      "evidence": {
+        "id": 10167876626,
+        "url": "https://github.com/kumwe/extension-sdk/actions/runs/34516447646/artifacts/10167876626",
+        "zip_sha256": "e544fd75041a48ff061d1b55e5dcf368356a48f2d28746d294933e24cd1aa216",
+        "expires_at": "2026-12-09T18:47:07Z",
+        "expired_at_observation": false
+      }
+    },
+    {
+      "package": "kumwe/business-surface-contract",
+      "version": "0.1.3",
+      "source_commit": "06c23a90b9fe9826276d1d57faef74729b5a1e38",
+      "verifier_run_url": "https://github.com/kumwe/extension-sdk/actions/runs/34480751067",
+      "verifier_commit": "17973a9f912500de54d8a1402e3b68088180d1c6",
+      "original_yaml_sha256": "8d41fed860c1b03e9acca7c5fcfb9bdd65facb216f3726e6634caf6662f56ba7",
+      "original_source_archive_sha256": "d020f9c9f8d7dd000039e7fe25200b241590a683617f0ff40ababecc869e85d5",
+      "revalidation_scope": "Original ZIP and member identity, published source, schema, inventory, SBOM and recorded consumer checks; dependency-admission conflicts remain separate.",
+      "attestation": {
+        "id": 10153528908,
+        "url": "https://github.com/kumwe/extension-sdk/actions/runs/34480751067/artifacts/10153528908",
+        "zip_sha256": "f5a2acc59aac92df9ddcf6d3ce78296e82e24db686217d0ec6d12322de1f92ef",
+        "expires_at": "2026-12-09T13:08:02Z",
+        "expired_at_observation": false
+      },
+      "evidence": {
+        "id": 10153527964,
+        "url": "https://github.com/kumwe/extension-sdk/actions/runs/34480751067/artifacts/10153527964",
+        "zip_sha256": "249581d7cea6d55cc13ab002abf8d5bfd65a71831175d138c8d16ec69a454479",
+        "expires_at": "2026-12-09T13:08:02Z",
+        "expired_at_observation": false
+      }
+    },
+    {
+      "package": "kumwe/conversion-extension",
+      "version": "0.1.4",
+      "source_commit": "e184976c738c6672dae731765d1ef528f248b1b8",
+      "verifier_run_url": "https://github.com/kumwe/extension-sdk/actions/runs/34480751067",
+      "verifier_commit": "17973a9f912500de54d8a1402e3b68088180d1c6",
+      "original_yaml_sha256": "eca8f3d64f61ba59b9a4ea49b148cf601cbcdbaafdc58c9a9b6d37ca3b86e4df",
+      "original_source_archive_sha256": "004b495908bd5b83bcb0c6bfbc0470a4fad03a37476122a40de1af3066295139",
+      "revalidation_scope": "Original ZIP and member identity, published source, schema, inventory, SBOM and recorded consumer checks; dependency-admission conflicts remain separate.",
+      "attestation": {
+        "id": 10153479808,
+        "url": "https://github.com/kumwe/extension-sdk/actions/runs/34480751067/artifacts/10153479808",
+        "zip_sha256": "e603a54b8df4c5eb210802f3495fe267512a3ac6f7c7fb66aa233f4712f0aa71",
+        "expires_at": "2026-12-09T13:08:02Z",
+        "expired_at_observation": false
+      },
+      "evidence": {
+        "id": 10153479075,
+        "url": "https://github.com/kumwe/extension-sdk/actions/runs/34480751067/artifacts/10153479075",
+        "zip_sha256": "4235c4f1507875cd98e296add5bfd0e4f3c234c95611a42507de2b47f9cb3f70",
+        "expires_at": "2026-12-09T13:08:02Z",
+        "expired_at_observation": false
+      }
+    },
+    {
+      "package": "kumwe/navigation",
+      "version": "0.1.2",
+      "source_commit": "f620836d0fdd4964fdc703a35d0873202459b83d",
+      "verifier_run_url": "https://github.com/kumwe/extension-sdk/actions/runs/34480751067",
+      "verifier_commit": "17973a9f912500de54d8a1402e3b68088180d1c6",
+      "original_yaml_sha256": "a885b5fce1509a458af983c0bd183b432963f1b974a2afe99484dd06b3b3c7f1",
+      "original_source_archive_sha256": "92b2564cdadb5dd0665f30bdf4da6d1fbdd4cb98cad669e418f35d4d4f152ec9",
+      "revalidation_scope": "Original ZIP and member identity, published source, schema, inventory, SBOM and recorded consumer checks; dependency-admission conflicts remain separate.",
+      "attestation": {
+        "id": 10153476156,
+        "url": "https://github.com/kumwe/extension-sdk/actions/runs/34480751067/artifacts/10153476156",
+        "zip_sha256": "75e090f5d309084b7ee9186d61579358e39d5b029e8ad5e556cdd371401be45b",
+        "expires_at": "2026-12-09T13:08:02Z",
+        "expired_at_observation": false
+      },
+      "evidence": {
+        "id": 10153475475,
+        "url": "https://github.com/kumwe/extension-sdk/actions/runs/34480751067/artifacts/10153475475",
+        "zip_sha256": "52635eb8af46181814689a4c0d268d93096a385ae211ba1a624efe890473900a",
+        "expires_at": "2026-12-09T13:08:02Z",
+        "expired_at_observation": false
+      }
+    },
+    {
+      "package": "kumwe/canonical-json",
+      "version": "0.1.1",
+      "source_commit": "e7006a2580a49a1c8ab507b0d7b9c3403b4f9f58",
+      "verifier_run_url": "https://github.com/kumwe/extension-sdk/actions/runs/34256595276",
+      "verifier_commit": "24f20bec47c0b0f0cc308c058ed4b8f875799370",
+      "original_yaml_sha256": "39d115ad689e70b1eab96bf9a7a6945c4370f3582e0513ecd110f705651aac7f",
+      "original_source_archive_sha256": "06ee813d1b917d32563670fa113f21931f85b1e3b282aed8c8a1cef364812c09",
+      "revalidation_scope": "Original ZIP and member identity, published source, schema, inventory, SBOM and recorded consumer checks; dependency-admission conflicts remain separate.",
+      "verifier_pr_head": "4dc365e35460eb598d8616aa71e6ae396c75627e",
+      "verifier_identity_note": "Observed GitHub-generated merge commit has the recorded PR head as its second parent.",
+      "attestation": {
+        "id": 10068127889,
+        "url": "https://github.com/kumwe/extension-sdk/actions/runs/34256595276/artifacts/10068127889",
+        "zip_sha256": "e6526f8adcea531094bd7b81ac23937dbe8c7f2dda2e66e113fd3843f47dfbd9",
+        "expires_at": "2026-12-07T17:21:27Z",
+        "expired_at_observation": false
+      },
+      "evidence": {
+        "id": 10068126874,
+        "url": "https://github.com/kumwe/extension-sdk/actions/runs/34256595276/artifacts/10068126874",
+        "zip_sha256": "b156d43218782b71e23bb2a84f251c07f338f21f7c24d89735f397c2b7a29ade",
+        "expires_at": "2026-12-07T17:21:27Z",
+        "expired_at_observation": false
+      }
+    }
+  ]
+}

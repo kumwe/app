@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Navigation\Application;
 
+use Kumwe\Navigation\Application\MenuItemRecord;
+use Kumwe\Navigation\Application\MenuRecord;
+use Kumwe\Navigation\Application\NavigationNotFound;
+use Kumwe\Navigation\Application\NavigationRepository;
+use Kumwe\Navigation\Application\NavigationVersionConflict;
 use DateTimeImmutable;
 use InvalidArgumentException;
 use Kumwe\App\Application\Authorization\AuthorizationGateway;

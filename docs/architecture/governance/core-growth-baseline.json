@@ -6837,72 +6837,24 @@
             "surface": "a74b38d6d186bb887ff93400",
             "growth": null
         },
-        "Kumwe\\App\\Navigation\\Application\\MenuItemRecord": {
-            "kind": "class",
-            "layer": "application",
-            "surface": "9eaa9dbf1c7036fa3f97c8ef",
-            "growth": null
-        },
-        "Kumwe\\App\\Navigation\\Application\\MenuRecord": {
-            "kind": "class",
-            "layer": "application",
-            "surface": "f507c7de8e080070cf8a68bc",
-            "growth": null
-        },
-        "Kumwe\\App\\Navigation\\Application\\NavigationNotFound": {
-            "kind": "class",
-            "layer": "application",
-            "surface": "5b9a0be18fac327fce84c54c",
-            "growth": null
-        },
-        "Kumwe\\App\\Navigation\\Application\\NavigationRepository": {
-            "kind": "interface",
-            "layer": "application",
-            "surface": "1780cce5902a4e5d6ba26eb0",
-            "growth": null
-        },
         "Kumwe\\App\\Navigation\\Application\\NavigationService": {
             "kind": "class",
             "layer": "application",
-            "surface": "226b5142124e43e0606a3316",
+            "surface": "d5d03b8f6eb69d1583c46306",
             "growth": {
                 "record": "KUMWE-CGR-2026-004"
             }
         },
-        "Kumwe\\App\\Navigation\\Application\\NavigationVersionConflict": {
-            "kind": "class",
-            "layer": "application",
-            "surface": "5b9a0be18fac327fce84c54c",
-            "growth": null
-        },
         "Kumwe\\App\\Navigation\\Application\\PublicNavigation": {
             "kind": "class",
             "layer": "application",
-            "surface": "16f6fe73991bfa18cf2d188a",
-            "growth": null
-        },
-        "Kumwe\\App\\Navigation\\Domain\\InvalidMenuTree": {
-            "kind": "class",
-            "layer": "domain",
-            "surface": "5b9a0be18fac327fce84c54c",
-            "growth": null
-        },
-        "Kumwe\\App\\Navigation\\Domain\\MenuItem": {
-            "kind": "class",
-            "layer": "domain",
-            "surface": "2f206b5bd3a24d9bcc85d46e",
-            "growth": null
-        },
-        "Kumwe\\App\\Navigation\\Domain\\MenuTree": {
-            "kind": "class",
-            "layer": "domain",
-            "surface": "2cc86b027f55c9667aca834c",
+            "surface": "9929b8df9cbf15310d8d0646",
             "growth": null
         },
         "Kumwe\\App\\Navigation\\Infrastructure\\Persistence\\DoctrineNavigationRepository": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "8dc1c982ea4e2580ecbc0396",
+            "surface": "613c96c9b60ca534a6f9f8bb",
             "growth": null
         },
         "Kumwe\\App\\OpenApi\\Application\\CompiledOpenApiContract": {

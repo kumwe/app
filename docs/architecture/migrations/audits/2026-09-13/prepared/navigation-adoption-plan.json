@@ -1,0 +1,228 @@
+{
+  "symbols": [
+    {
+      "repository": "https://github.com/kumwe/app",
+      "old_fqcn": "Kumwe\\App\\Navigation\\Domain\\InvalidMenuTree",
+      "new_fqcn": "Kumwe\\Navigation\\Domain\\InvalidMenuTree",
+      "source_path": "src/Navigation/Domain/InvalidMenuTree.php",
+      "target_path": "src/Domain/InvalidMenuTree.php",
+      "source_commit": "24ecf956423c18933e824b43cea1bfb9127a79a9",
+      "source_sha256": "45299fe6c09fb4b09b2ffb1425e0f71c8316cfcbb22ec876b30abc74c9f5ec42",
+      "kind": "class",
+      "public_methods": [],
+      "public_properties": [],
+      "public_constants": [],
+      "compatibility": "namespace ownership move; see COMPATIBILITY.md"
+    },
+    {
+      "repository": "https://github.com/kumwe/app",
+      "old_fqcn": "Kumwe\\App\\Navigation\\Domain\\MenuItem",
+      "new_fqcn": "Kumwe\\Navigation\\Domain\\MenuItem",
+      "source_path": "src/Navigation/Domain/MenuItem.php",
+      "target_path": "src/Domain/MenuItem.php",
+      "source_commit": "24ecf956423c18933e824b43cea1bfb9127a79a9",
+      "source_sha256": "651edaa7eac4884895d9e3d79031512266c5dbee1252b3fc1deb90a8e89a7ead",
+      "kind": "class",
+      "public_methods": [
+        "create",
+        "id",
+        "title",
+        "slug",
+        "parentId",
+        "path",
+        "placedAt"
+      ],
+      "public_properties": [],
+      "public_constants": [],
+      "compatibility": "namespace ownership move; see COMPATIBILITY.md"
+    },
+    {
+      "repository": "https://github.com/kumwe/app",
+      "old_fqcn": "Kumwe\\App\\Navigation\\Domain\\MenuTree",
+      "new_fqcn": "Kumwe\\Navigation\\Domain\\MenuTree",
+      "source_path": "src/Navigation/Domain/MenuTree.php",
+      "target_path": "src/Domain/MenuTree.php",
+      "source_commit": "24ecf956423c18933e824b43cea1bfb9127a79a9",
+      "source_sha256": "f7e1b340e097ae06d84f7211f72570c1a0cd8638f3a1b346ee0e0df2e6da9025",
+      "kind": "class",
+      "public_methods": [
+        "create",
+        "id",
+        "item",
+        "items",
+        "move"
+      ],
+      "public_properties": [],
+      "public_constants": [],
+      "compatibility": "namespace ownership move; see COMPATIBILITY.md"
+    },
+    {
+      "repository": "https://github.com/kumwe/app",
+      "old_fqcn": "Kumwe\\App\\Navigation\\Application\\MenuItemRecord",
+      "new_fqcn": "Kumwe\\Navigation\\Application\\MenuItemRecord",
+      "source_path": "src/Navigation/Application/MenuItemRecord.php",
+      "target_path": "src/Application/MenuItemRecord.php",
+      "source_commit": "24ecf956423c18933e824b43cea1bfb9127a79a9",
+      "source_sha256": "0733b5246a4ed1c1849d66be9cb63f6d44dbf5f0f297f8fe349a0b3f278bf89f",
+      "kind": "class",
+      "public_methods": [
+        "__construct",
+        "toArray"
+      ],
+      "public_properties": [
+        "id",
+        "menuId",
+        "parentId",
+        "title",
+        "slug",
+        "path",
+        "position",
+        "version",
+        "createdAt",
+        "updatedAt",
+        "targetType",
+        "contentId",
+        "targetUrl",
+        "template",
+        "colorScheme"
+      ],
+      "public_constants": [],
+      "compatibility": "namespace ownership move; see COMPATIBILITY.md"
+    },
+    {
+      "repository": "https://github.com/kumwe/app",
+      "old_fqcn": "Kumwe\\App\\Navigation\\Application\\MenuRecord",
+      "new_fqcn": "Kumwe\\Navigation\\Application\\MenuRecord",
+      "source_path": "src/Navigation/Application/MenuRecord.php",
+      "target_path": "src/Application/MenuRecord.php",
+      "source_commit": "24ecf956423c18933e824b43cea1bfb9127a79a9",
+      "source_sha256": "ccd1abc2ff882ae1abaebf35bfba6e354f79ff4a0f8c7aed9bc7a4739b4475fe",
+      "kind": "class",
+      "public_methods": [
+        "__construct",
+        "toArray"
+      ],
+      "public_properties": [
+        "id",
+        "handle",
+        "title",
+        "version",
+        "createdAt",
+        "updatedAt"
+      ],
+      "public_constants": [],
+      "compatibility": "namespace ownership move; see COMPATIBILITY.md"
+    },
+    {
+      "repository": "https://github.com/kumwe/app",
+      "old_fqcn": "Kumwe\\App\\Navigation\\Application\\NavigationNotFound",
+      "new_fqcn": "Kumwe\\Navigation\\Application\\NavigationNotFound",
+      "source_path": "src/Navigation/Application/NavigationNotFound.php",
+      "target_path": "src/Application/NavigationNotFound.php",
+      "source_commit": "24ecf956423c18933e824b43cea1bfb9127a79a9",
+      "source_sha256": "4b4a9813ac6fe552d2fc4601bb7a21fec284cb9136b53afd32220c60163db09e",
+      "kind": "class",
+      "public_methods": [],
+      "public_properties": [],
+      "public_constants": [],
+      "compatibility": "namespace ownership move; see COMPATIBILITY.md"
+    },
+    {
+      "repository": "https://github.com/kumwe/app",
+      "old_fqcn": "Kumwe\\App\\Navigation\\Application\\NavigationRepository",
+      "new_fqcn": "Kumwe\\Navigation\\Application\\NavigationRepository",
+      "source_path": "src/Navigation/Application/NavigationRepository.php",
+      "target_path": "src/Application/NavigationRepository.php",
+      "source_commit": "24ecf956423c18933e824b43cea1bfb9127a79a9",
+      "source_sha256": "45d2c9508e61c9be8b9ae78c4974ad32447583e761b24a82dc0e44d4e9c48800",
+      "kind": "interface",
+      "public_methods": [
+        "menus",
+        "menu",
+        "items",
+        "item",
+        "insertMenu",
+        "updateMenu",
+        "itemIdsForMenuDeletion",
+        "deleteMenu",
+        "insertItem",
+        "updateItem",
+        "deleteItem",
+        "pathForParent",
+        "assertMoveIsAcyclic",
+        "moveDescendantPaths"
+      ],
+      "public_properties": [],
+      "public_constants": [],
+      "compatibility": "namespace ownership move; see COMPATIBILITY.md"
+    },
+    {
+      "repository": "https://github.com/kumwe/app",
+      "old_fqcn": "Kumwe\\App\\Navigation\\Application\\NavigationVersionConflict",
+      "new_fqcn": "Kumwe\\Navigation\\Application\\NavigationVersionConflict",
+      "source_path": "src/Navigation/Application/NavigationVersionConflict.php",
+      "target_path": "src/Application/NavigationVersionConflict.php",
+      "source_commit": "24ecf956423c18933e824b43cea1bfb9127a79a9",
+      "source_sha256": "caf2b1f1cbefb4b06489df26c395104d23ab2702079aa39321ff5cd11d68dda6",
+      "kind": "class",
+      "public_methods": [],
+      "public_properties": [],
+      "public_constants": [],
+      "compatibility": "namespace ownership move; see COMPATIBILITY.md"
+    }
+  ],
+  "removed_tests": [
+    "tests/Unit/Navigation/Domain/MenuItemTest.php",
+    "tests/Unit/Navigation/Domain/MenuTreeTest.php"
+  ],
+  "drift_review": "Current App preserves no portable behavior absent from exact released source; reviewed compatibility corrections bound input and preserve host authority.",
+  "sibling_imports": [
+    {
+      "file": "src/Navigation/Application/PublicNavigation.php",
+      "import": "Kumwe\\Navigation\\Application\\MenuItemRecord"
+    },
+    {
+      "file": "src/Navigation/Application/NavigationService.php",
+      "import": "Kumwe\\Navigation\\Application\\MenuItemRecord"
+    },
+    {
+      "file": "src/Navigation/Application/PublicNavigation.php",
+      "import": "Kumwe\\Navigation\\Application\\MenuRecord"
+    },
+    {
+      "file": "src/Navigation/Application/NavigationService.php",
+      "import": "Kumwe\\Navigation\\Application\\MenuRecord"
+    },
+    {
+      "file": "src/Navigation/Application/NavigationService.php",
+      "import": "Kumwe\\Navigation\\Application\\NavigationNotFound"
+    },
+    {
+      "file": "src/Navigation/Application/PublicNavigation.php",
+      "import": "Kumwe\\Navigation\\Application\\NavigationRepository"
+    },
+    {
+      "file": "src/Navigation/Application/NavigationService.php",
+      "import": "Kumwe\\Navigation\\Application\\NavigationRepository"
+    },
+    {
+      "file": "src/Navigation/Application/NavigationService.php",
+      "import": "Kumwe\\Navigation\\Application\\NavigationVersionConflict"
+    }
+  ],
+  "retained_host_tests": [
+    "tests/Unit/Navigation/Application/NavigationServiceTest.php",
+    "tests/Unit/Navigation/Application/PublicNavigationTest.php",
+    "tests/Unit/Content/Presentation/TranslationGroupPresenterTest.php",
+    "tests/Unit/Http/Handler/HomePageHandlerTest.php",
+    "tests/Unit/Http/Handler/PublishedContentHandlerTest.php",
+    "tests/Unit/Site/Application/PublicPageLocatorTest.php"
+  ],
+  "di_changes": [
+    {
+      "service": "Kumwe\\Navigation\\Application\\NavigationRepository",
+      "before": "App NavigationRepository bound to DoctrineNavigationRepository",
+      "after": "Canonical package NavigationRepository bound to same host DoctrineNavigationRepository"
+    }
+  ]
+}

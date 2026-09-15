@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "fadc681de73e17786cf1a1c57655026c",
+    "content-hash": "c6ce9df37f0ad07f4580cd9380ea7a06",
     "packages": [
         {
             "name": "brick/math",
@@ -589,6 +589,49 @@
                 "source": "https://github.com/kumwe/localization"
             },
             "time": "2026-09-07T19:22:10+00:00"
+        },
+        {
+            "name": "kumwe/navigation",
+            "version": "v0.1.3",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/kumwe/navigation.git",
+                "reference": "0d3b5c130e04c92453d1d91287535e077e43dd54"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/kumwe/navigation/zipball/0d3b5c130e04c92453d1d91287535e077e43dd54",
+                "reference": "0d3b5c130e04c92453d1d91287535e077e43dd54",
+                "shasum": ""
+            },
+            "require": {
+                "ext-mbstring": "*",
+                "php": "^8.5"
+            },
+            "require-dev": {
+                "ext-zip": "*",
+                "phpstan/phpstan": "^2.1",
+                "phpstan/phpstan-strict-rules": "^2.0",
+                "phpunit/phpunit": "^12.0",
+                "squizlabs/php_codesniffer": "^4.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Kumwe\\Navigation\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "Apache-2.0"
+            ],
+            "description": "Bounded deterministic navigation trees, records and persistence contracts.",
+            "homepage": "https://github.com/kumwe/navigation",
+            "support": {
+                "issues": "https://github.com/kumwe/navigation/issues",
+                "source": "https://github.com/kumwe/navigation/tree/v0.1.3"
+            },
+            "time": "2026-09-15T15:50:58+00:00"
         },
         {
             "name": "kumwe/producer",

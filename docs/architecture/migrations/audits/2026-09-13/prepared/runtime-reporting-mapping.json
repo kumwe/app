@@ -1,0 +1,23 @@
+{
+  "Kumwe\\App\\BusinessReporting\\Domain\\ReportAggregateDefinition": "Kumwe\\Reporting\\Domain\\ReportAggregateDefinition",
+  "Kumwe\\App\\BusinessReporting\\Domain\\ReportAggregateFunction": "Kumwe\\Reporting\\Domain\\ReportAggregateFunction",
+  "Kumwe\\App\\BusinessReporting\\Domain\\ReportColumnDefinition": "Kumwe\\Reporting\\Domain\\ReportColumnDefinition",
+  "Kumwe\\App\\BusinessReporting\\Domain\\ReportDefinition": "Kumwe\\Reporting\\Domain\\ReportDefinition",
+  "Kumwe\\App\\BusinessReporting\\Domain\\ReportDrillDownDefinition": "Kumwe\\Reporting\\Domain\\ReportDrillDownDefinition",
+  "Kumwe\\App\\BusinessReporting\\Domain\\ReportFilterDefinition": "Kumwe\\Reporting\\Domain\\ReportFilterDefinition",
+  "Kumwe\\App\\BusinessReporting\\Domain\\ReportFilterOperator": "Kumwe\\Reporting\\Domain\\ReportFilterOperator",
+  "Kumwe\\App\\BusinessReporting\\Domain\\ReportFormulaDefinition": "Kumwe\\Reporting\\Domain\\ReportFormulaDefinition",
+  "Kumwe\\App\\BusinessReporting\\Domain\\ReportGroupDefinition": "Kumwe\\Reporting\\Domain\\ReportGroupDefinition",
+  "Kumwe\\App\\BusinessReporting\\Domain\\ReportParameterDefinition": "Kumwe\\Reporting\\Domain\\ReportParameterDefinition",
+  "Kumwe\\App\\BusinessReporting\\Domain\\ReportRelationQuantifier": "Kumwe\\Reporting\\Domain\\ReportRelationQuantifier",
+  "Kumwe\\App\\BusinessReporting\\Domain\\ReportSortDefinition": "Kumwe\\Reporting\\Domain\\ReportSortDefinition",
+  "Kumwe\\App\\BusinessReporting\\Domain\\ReportSortDirection": "Kumwe\\Reporting\\Domain\\ReportSortDirection",
+  "Kumwe\\Extension\\Spi\\BusinessReporting\\Domain\\ProjectionDefinition": "Kumwe\\Reporting\\Domain\\ProjectionDefinition",
+  "Kumwe\\Extension\\Spi\\BusinessReporting\\Domain\\ProjectionFieldDefinition": "Kumwe\\Reporting\\Domain\\ProjectionFieldDefinition",
+  "Kumwe\\Extension\\Spi\\BusinessReporting\\Domain\\ProjectionSourceDefinition": "Kumwe\\Reporting\\Domain\\ProjectionSourceDefinition",
+  "Kumwe\\Extension\\Spi\\BusinessReporting\\Domain\\ReportDefinitionGuard": "Kumwe\\Reporting\\Domain\\ReportDefinitionGuard",
+  "Kumwe\\Extension\\Spi\\BusinessReporting\\Domain\\ReportValueType": "Kumwe\\Reporting\\Domain\\ReportValueType",
+  "Kumwe\\Extension\\Spi\\BusinessReporting\\Application\\ProjectionBuilder": "Kumwe\\Reporting\\Contract\\ProjectionBuilder",
+  "Kumwe\\Extension\\Spi\\BusinessReporting\\Application\\ProjectionEvent": "Kumwe\\Reporting\\Contract\\ProjectionEvent",
+  "Kumwe\\Extension\\Spi\\BusinessReporting\\Application\\ProjectionWriter": "Kumwe\\Reporting\\Contract\\ProjectionWriter"
+}

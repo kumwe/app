@@ -103,6 +103,17 @@ final readonly class CoreGrowthGate
     public const RECORD_COMMAND = 'composer kumwe:core-growth-record';
 
     /**
+     * Most retired names one surface may carry before the rename search is abandoned as growth.
+     *
+     * The search tries every subset of the names the surface carries, so it is bounded to keep the check cheap;
+     * a surface naming more retired symbols than this is judged as growth and needs a record or a split.
+     *
+     * @var    int
+     * @since  2.0.0
+     */
+    public const RENAME_SEARCH_LIMIT = 12;
+
+    /**
      * The command that regenerates the capability index.
      *
      * @var    string
@@ -1434,6 +1445,11 @@ final readonly class CoreGrowthGate
      * comparison rewrites the current canonical surface back to the retired names and matches the result against
      * the recorded digest, so any other difference in the surface still counts as growth.
      *
+     * A surface may also carry names an earlier adoption retired that the baseline already spells as package
+     * names, next to names the newest adoption retired since the baseline was recorded. Only the second group
+     * is rewritten, so every subset of the carried renames is tried, smallest first, and the first subset whose
+     * rewrite reproduces the recorded digest is the rename this change is.
+     *
      * @param   array{kind: string, layer: string, surface: string, canonical: string}  $symbol   The symbol.
      * @param   array{kind: string, layer: string, surface: string, growth: array<string, mixed>|null}|null  $entry
      *          Its baseline entry, or null for a new symbol.
@@ -1457,24 +1473,75 @@ final readonly class CoreGrowthGate
             return null;
         }
         $canonical = $symbol['canonical'];
-        $names = [];
-        $migrations = [];
+        /** @var list<array{pattern: string, old_fqcn: string, new_fqcn: string, migration_id: string}> $carried */
+        $carried = [];
         foreach ($renames as $new => $rename) {
             $pattern = '/(?<![\\\\\w])' . preg_quote($new, '/') . '(?![\\\\\w])/';
-            $rewritten = preg_replace($pattern, $rename['old_fqcn'], $canonical);
-            if (!is_string($rewritten) || $rewritten === $canonical) {
+            if (preg_match($pattern, $canonical) !== 1) {
                 continue;
             }
-            $canonical = $rewritten;
-            $names[] = $rename['old_fqcn'] . ' -> ' . $new;
-            $migrations[] = $rename['migration_id'];
+            $carried[] = [
+                'pattern' => $pattern,
+                'old_fqcn' => $rename['old_fqcn'],
+                'new_fqcn' => $new,
+                'migration_id' => $rename['migration_id'],
+            ];
         }
-        if ($names === [] || CoreGrowthInventory::digest($canonical) !== $entry['surface']) {
+        $count = count($carried);
+        if ($count === 0 || $count > self::RENAME_SEARCH_LIMIT) {
             return null;
         }
-        sort($names, SORT_STRING);
+        $combinations = 1 << $count;
+        for ($size = 1; $size <= $count; $size++) {
+            for ($mask = 1; $mask < $combinations; $mask++) {
+                if (self::bitCount($mask) !== $size) {
+                    continue;
+                }
+                $rewritten = $canonical;
+                $names = [];
+                $migrations = [];
+                foreach ($carried as $index => $rename) {
+                    if (($mask & (1 << $index)) === 0) {
+                        continue;
+                    }
+                    $replaced = preg_replace($rename['pattern'], $rename['old_fqcn'], $rewritten);
+                    if (!is_string($replaced)) {
+                        return null;
+                    }
+                    $rewritten = $replaced;
+                    $names[] = $rename['old_fqcn'] . ' -> ' . $rename['new_fqcn'];
+                    $migrations[] = $rename['migration_id'];
+                }
+                if (CoreGrowthInventory::digest($rewritten) !== $entry['surface']) {
+                    continue;
+                }
+                sort($names, SORT_STRING);
 
-        return ['names' => $names, 'migrations' => array_values(array_unique($migrations))];
+                return ['names' => $names, 'migrations' => array_values(array_unique($migrations))];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Count the set bits of a subset mask over the carried renames.
+     *
+     * @param   int  $mask  Subset mask.
+     *
+     * @return  int  The number of renames the mask selects.
+     *
+     * @since   2.0.0
+     */
+    private static function bitCount(int $mask): int
+    {
+        $count = 0;
+        while ($mask !== 0) {
+            $count += $mask & 1;
+            $mask >>= 1;
+        }
+
+        return $count;
     }
 
     /**
