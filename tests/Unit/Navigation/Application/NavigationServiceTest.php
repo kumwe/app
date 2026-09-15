@@ -25,8 +25,6 @@ use Psr\Clock\ClockInterface;
 
 #[CoversClass(NavigationService::class)]
 #[UsesClass(AuditEvent::class)]
-#[UsesClass(MenuItemRecord::class)]
-#[UsesClass(MenuRecord::class)]
 final class NavigationServiceTest extends TestCase
 {
     private const ACTOR = '018f22e2-7c8b-7ab0-8f3a-88e8026bb301';

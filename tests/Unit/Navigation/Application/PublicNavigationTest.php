@@ -18,8 +18,6 @@ use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(PublicNavigation::class)]
-#[UsesClass(MenuItemRecord::class)]
-#[UsesClass(MenuRecord::class)]
 #[UsesClass(AuthorizationResource::class)]
 final class PublicNavigationTest extends TestCase
 {
