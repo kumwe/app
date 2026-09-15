@@ -41,7 +41,7 @@
             "retryable"
         ],
         "unexpected_failure": "generic_protocol_error_and_server_log",
-        "registry_sha256": "f8ca7f719c10f279a516979fcf61e10939425d4ebb8d663fbac3183ae749a745",
+        "registry_sha256": "0664a13984cad8f28130e71391cbd92fee25bc6cecbaa4ac4e9d23e018b68c48",
         "registry": [
             {
                 "code": "authorization.denied",
@@ -81,7 +81,7 @@
                         "exception": "Kumwe\\App\\Content\\Application\\ContentModelNotFound"
                     },
                     {
-                        "exception": "Kumwe\\App\\Navigation\\Application\\NavigationNotFound"
+                        "exception": "Kumwe\\Navigation\\Application\\NavigationNotFound"
                     },
                     {
                         "exception": "Kumwe\\App\\Application\\Automation\\AutomationNotFound"
@@ -164,7 +164,7 @@
                         "exception": "Kumwe\\App\\Content\\Domain\\VersionConflict"
                     },
                     {
-                        "exception": "Kumwe\\App\\Navigation\\Application\\NavigationVersionConflict"
+                        "exception": "Kumwe\\Navigation\\Application\\NavigationVersionConflict"
                     },
                     {
                         "exception": "Kumwe\\App\\BusinessDefinition\\Application\\BusinessDefinitionRevisionConflict"
@@ -445,7 +445,7 @@
             ]
         }
     ],
-    "contract_sha256": "43c4006eb385eca3c356f3bdbaeb543d048d7a5d5743dcb00308621d1005649b",
+    "contract_sha256": "d41ed76c90b243e8822041766c51beb6c64540588dc427f16802d4c26b8e28fc",
     "surface": {
         "tools": [
             {

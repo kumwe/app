@@ -1,0 +1,89 @@
+schema: kumwe-change-set/v2
+change_set: KUMWE-CS-2026-035
+migration_id: KUMWE-MIG-2026-035
+roadmap_source:
+  title: Kumwe ERP-Extensibility Foundation Roadmap
+  sha256: a202155ef1a65f5ab293d4f8397ebf4ac430db7f1e877c776bbe7851e6fe18d8
+roadmap_refs: []
+state: app-pr-ready
+phase_1:
+  source_repository: kumwe/app
+  source_sha: "24ecf956423c18933e824b43cea1bfb9127a79a9"
+  target_repository: kumwe/navigation
+  package_pr: "https://github.com/kumwe/navigation/pull/7"
+  tested_sha: "1eeb0197745868ac462da8fbf4c4c2e8b3e1c21d"
+  public_api_digest: "145931da0b289eae0d3c7909c8e505436a7f21afdebba90769c0592ad789c1fe"
+  capability_digest: "bd618af1a89da33ce6f528538a116f10ae612e39f3b626c6427c8a3432f012b7"
+  service_map_digest: "5c5a4a87404a3d4bdd1ed4e1b54e766d8ad7c214d1ab61d7f0c67a0747b8bc5e"
+  handoff_digest: "f9f328dae1126753ddb8aca78d457817d7d5e311242d5a9e8613cad77016ba06"
+release:
+  version: 0.1.3
+  source_sha: "0d3b5c130e04c92453d1d91287535e077e43dd54"
+  artifact_digest: "cb3e0ba294ded66acf419624e63fdfde0ee11c1f138a50d79ece55d0bfede2ad"
+  clean_consumer_evidence:
+    - "https://github.com/kumwe/navigation/actions/runs/34991182008"
+    - "https://github.com/kumwe/navigation/actions/runs/34991182537"
+phase_2:
+  app_pr: "https://github.com/kumwe/app/pull/146"
+  tested_sha: null
+  merged_sha: null
+  exact_dependency: "kumwe/navigation 0.1.3"
+  composer_lock_digest: "b74e1a9f8618e00a5c0fd50f6151552ccf7545a89fe984d60d397a6654ba177a"
+  removed_app_symbols:
+    - Kumwe\App\Navigation\Domain\InvalidMenuTree
+    - Kumwe\App\Navigation\Domain\MenuItem
+    - Kumwe\App\Navigation\Domain\MenuTree
+    - Kumwe\App\Navigation\Application\MenuItemRecord
+    - Kumwe\App\Navigation\Application\MenuRecord
+    - Kumwe\App\Navigation\Application\NavigationNotFound
+    - Kumwe\App\Navigation\Application\NavigationRepository
+    - Kumwe\App\Navigation\Application\NavigationVersionConflict
+  moved_unit_tests:
+    - tests/Unit/Navigation/Domain/MenuItemTest.php
+    - tests/Unit/Navigation/Domain/MenuTreeTest.php
+  retained_app_tests:
+    - tests/Unit/Navigation/Application/NavigationServiceTest.php
+    - tests/Unit/Navigation/Application/PublicNavigationTest.php
+    - tests/Unit/Content/Presentation/TranslationGroupPresenterTest.php
+    - tests/Unit/Http/Handler/HomePageHandlerTest.php
+    - tests/Unit/Http/Handler/PublishedContentHandlerTest.php
+    - tests/Unit/Site/Application/PublicPageLocatorTest.php
+    - tests/Unit/Infrastructure/Mcp/McpMachineContractTest.php
+    - tests/Unit/Governance/ComposerLockTest.php
+    - tests/Integration/Demo/Infrastructure/DemoProfileExporterTest.php
+    - tests/Functional/Http/ManagementDeliveryTest.php
+    - tests/Support/customize-demo-profile.php
+evidence:
+  package:
+    - "https://github.com/kumwe/navigation/actions/runs/34991182008"
+    - "https://github.com/kumwe/navigation/actions/runs/34991182537"
+  app_composition:
+    - tests/Unit/Navigation/Application/NavigationServiceTest.php
+    - tests/Unit/Navigation/Application/PublicNavigationTest.php
+    - tests/Unit/Governance/ComposerLockTest.php
+  database_matrix:
+    - tests/Integration/Demo/Infrastructure/DemoProfileExporterTest.php
+  concurrency: []
+  authorization_security:
+    - tests/Unit/Navigation/Application/NavigationServiceTest.php
+    - tests/Unit/Navigation/Application/PublicNavigationTest.php
+  lifecycle_recovery: []
+  delivery_browser:
+    - tests/Unit/Http/Handler/HomePageHandlerTest.php
+    - tests/Unit/Http/Handler/PublishedContentHandlerTest.php
+    - tests/Unit/Infrastructure/Mcp/McpMachineContractTest.php
+    - tests/Functional/Http/ManagementDeliveryTest.php
+  deployment_backup_restore: []
+  native_parity_abi: []
+  performance_capacity: []
+compatibility: "Drop-in: the eight types keep their names, shapes and refusals under Kumwe\\Navigation; App keeps its services, adapter and surfaces."
+migration_recovery: null
+security_impact: "None; capability checks, site ownership, audit and the transaction stay in NavigationService and the Doctrine adapter."
+performance_claim: null
+rollback: "Revert the App pull request and restore the eight removed classes and two unit tests from the baseline commit."
+known_gaps:
+  - "Navigation 0.1.2 published change set KUMWE-CS-2026-034; 0.1.3 corrects only the record so the pair shares sequence 035."
+  - "The release attestation was produced by an isolated verification agent with no Phase 1 or Phase 2 context."
+  - "The local sandbox runs PHP 8.4 and no native extension; PHP 8.5 and the native lanes are proven by the App CI on this PR."
+completion_claim: false
+accepted_by: null

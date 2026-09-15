@@ -69,6 +69,24 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Added
 
+- **2026-09-15 — `kumwe/navigation` 0.1.3 owns the menu tree, the navigation records and the repository contract.**
+  The first Content-and-Surfaces package enters App through the migration ledger (`NRM-2026-035`):
+  `KUMWE-MIG-2026-035`, its change set, the integration train `KUMWE-TRAIN-2026-035` and the independent release
+  attestation record the verified `v0.1.3` release, and `composer.json` pins it exactly. As the released record
+  prescribes, the App's `InvalidMenuTree`, `MenuItem`, `MenuTree`, `MenuItemRecord`, `MenuRecord`,
+  `NavigationNotFound`, `NavigationRepository` and `NavigationVersionConflict` are removed together with the two
+  duplicated tree unit tests, every consumer reads the package types, `ContainerFactory` binds
+  `DoctrineNavigationRepository` to the package repository port, and `NavigationService`, `PublicNavigation`, the
+  Doctrine adapter, authorization, the transaction and every delivery surface stay in App. The retired
+  `Kumwe\App\Navigation\Domain\` root is recorded so the growth gate refuses its return, the layer graph admits
+  `Kumwe\Navigation` as an application and domain package, and the retained MCP error vocabulary names the package
+  refusals under the unchanged `resource.not_found` and `conflict.version` codes, exactly as the earlier
+  library adoption did for the conversion refusals. Navigation 0.1.2 had published change set `KUMWE-CS-2026-034`,
+  which Content Model also carries and which App's one-sequence rule refuses; the 0.1.3 successor corrects only that
+  record so ledger, change set and record share sequence `035`. The growth gate's rename check now tries every
+  subset of the retired names a surface carries, so a signature that already spells an earlier adoption's package
+  name next to a newly retired one (`PublicNavigation` with the access-context `SiteContext` beside the navigation
+  repository port) is still re-recorded as a rename instead of being refused as unrecorded growth. (#146)
 - **2026-09-10 — `kumwe/access-context` 0.1.2 owns the access-context values and the neutral actor ports.**
   The third package of the extension-sdk release train enters App through the migration ledger (`NRM-2026-005`):
   `KUMWE-MIG-2026-004`, its change set, the integration train `KUMWE-TRAIN-2026-004` and the independent release
