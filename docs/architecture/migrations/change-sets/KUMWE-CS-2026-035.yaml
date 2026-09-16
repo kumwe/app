@@ -5,7 +5,7 @@ roadmap_source:
   title: Kumwe ERP-Extensibility Foundation Roadmap
   sha256: a202155ef1a65f5ab293d4f8397ebf4ac430db7f1e877c776bbe7851e6fe18d8
 roadmap_refs: []
-state: app-pr-ready
+state: core-integrated
 phase_1:
   source_repository: kumwe/app
   source_sha: "24ecf956423c18933e824b43cea1bfb9127a79a9"
@@ -25,8 +25,8 @@ release:
     - "https://github.com/kumwe/navigation/actions/runs/34991182537"
 phase_2:
   app_pr: "https://github.com/kumwe/app/pull/146"
-  tested_sha: null
-  merged_sha: null
+  tested_sha: "b4f431d2f9ebea92c4207b81a68e8971ac6a40df"
+  merged_sha: "008237a081cc75349ffed4b7de37efa4b0dffb0b"
   exact_dependency: "kumwe/navigation 0.1.3"
   composer_lock_digest: "b74e1a9f8618e00a5c0fd50f6151552ccf7545a89fe984d60d397a6654ba177a"
   removed_app_symbols:
@@ -55,25 +55,56 @@ phase_2:
     - tests/Support/customize-demo-profile.php
 evidence:
   package:
-    - "https://github.com/kumwe/navigation/actions/runs/34991182008"
-    - "https://github.com/kumwe/navigation/actions/runs/34991182537"
+    - "docs/architecture/migrations/evidence/KUMWE-MIG-2026-035/RELEASE-ATTESTATION.yaml"
+    - "https://github.com/kumwe/navigation/actions/runs/34991182008; Package CI at 0d3b5c130e04c92453d1d91287535e077e43dd54"
+    - "https://github.com/kumwe/navigation/actions/runs/34991182537; release-on-record published v0.1.3"
   app_composition:
     - tests/Unit/Navigation/Application/NavigationServiceTest.php
     - tests/Unit/Navigation/Application/PublicNavigationTest.php
     - tests/Unit/Governance/ComposerLockTest.php
+    - tests/Unit/Governance/CoreGrowthGateTest.php
+    - tests/Architecture/CapabilityIndexGateTest.php
+    - "https://github.com/kumwe/app/actions/runs/35030593538/job/104587928416; quality, unit and architecture suites"
+    - "https://github.com/kumwe/app/actions/runs/35030593538/job/104587928691; pre-flight record gates"
+    - "https://github.com/kumwe/app/actions/runs/35030593538/job/104587928752; Composer lock consistency"
   database_matrix:
     - tests/Integration/Demo/Infrastructure/DemoProfileExporterTest.php
+    - "https://github.com/kumwe/app/actions/runs/35030593538/job/104588492467"
+    - "https://github.com/kumwe/app/actions/runs/35030593538/job/104588492466"
+    - "https://github.com/kumwe/app/actions/runs/35030593538/job/104588492456"
   concurrency: []
   authorization_security:
     - tests/Unit/Navigation/Application/NavigationServiceTest.php
     - tests/Unit/Navigation/Application/PublicNavigationTest.php
-  lifecycle_recovery: []
+    - "https://github.com/kumwe/app/actions/runs/35030593199; source-and-image security scans"
+  lifecycle_recovery:
+    - "https://github.com/kumwe/app/actions/runs/35030593538/job/104588492467; MariaDB with coverage ratchets"
+    - "https://github.com/kumwe/app/actions/runs/35030593538/job/104588492466; MySQL 8.4 LTS"
+    - "https://github.com/kumwe/app/actions/runs/35030593538/job/104588492456; PostgreSQL 17"
+    - "All three engines passed repeat and reverse-order integration, signed backup and clean restore."
   delivery_browser:
     - tests/Unit/Http/Handler/HomePageHandlerTest.php
     - tests/Unit/Http/Handler/PublishedContentHandlerTest.php
     - tests/Unit/Infrastructure/Mcp/McpMachineContractTest.php
     - tests/Functional/Http/ManagementDeliveryTest.php
-  deployment_backup_restore: []
+    - "https://github.com/kumwe/app/actions/runs/35030593538/job/104588492571"
+    - "https://github.com/kumwe/app/actions/runs/35030593538/job/104588492396"
+    - "https://github.com/kumwe/app/actions/runs/35030593538/job/104588492559"
+    - "https://github.com/kumwe/app/actions/runs/35030593538/job/104587928635; administrator frontend build"
+  deployment_backup_restore:
+    - "https://github.com/kumwe/app/actions/runs/35030593191; fresh Compose installation, readiness and assets"
+    - "https://github.com/kumwe/app/actions/runs/35030593538/job/104588492373; deployed-artifact regression"
+    - "https://github.com/kumwe/app/actions/runs/35030593538/job/104606900519; Composer and ZIP installation"
+    - "https://github.com/kumwe/app/actions/runs/35030593538/job/104606900474; production acceptance on MariaDB"
+    - "https://github.com/kumwe/app/actions/runs/35030593538/job/104606900458; production acceptance on MySQL"
+    - "https://github.com/kumwe/app/actions/runs/35030593538/job/104606900430; production acceptance on PostgreSQL"
+    - "https://github.com/kumwe/app/actions/runs/35037097148; continuous release cut v2.0.0-alpha.20"
+    - "https://github.com/kumwe/app/releases/tag/v2.0.0-alpha.20"
+    - "https://github.com/kumwe/app/actions/runs/35037111608"
+    - "App v2.0.0-alpha.20 points to green master 008237a081cc75349ffed4b7de37efa4b0dffb0b."
+    - "Release deployment gate passed Composer/ZIP installation and production acceptance on three engines."
+    - "Image, SBOM and checksum signing and provenance attestation succeeded; seven assets carry SHA256 digests."
+    - "Published ZIP SHA256: a6ae4dc47d3a93bf63ffaeb3c45f0a9b01697845bcb7e059865b505c30e69004"
   native_parity_abi: []
   performance_capacity: []
 compatibility: "Drop-in: the eight types keep their names, shapes and refusals under Kumwe\\Navigation; App keeps its services, adapter and surfaces."
@@ -84,6 +115,5 @@ rollback: "Revert the App pull request and restore the eight removed classes and
 known_gaps:
   - "Navigation 0.1.2 published change set KUMWE-CS-2026-034; 0.1.3 corrects only the record so the pair shares sequence 035."
   - "The release attestation was produced by an isolated verification agent with no Phase 1 or Phase 2 context."
-  - "The local sandbox runs PHP 8.4 and no native extension; PHP 8.5 and the native lanes are proven by the App CI on this PR."
 completion_claim: false
 accepted_by: null
