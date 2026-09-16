@@ -24,7 +24,16 @@ artifacts_evidence:
   - docs/architecture/migrations/trains/KUMWE-TRAIN-2026-035.yaml
   - docs/architecture/migrations/evidence/KUMWE-MIG-2026-035/RELEASE-ATTESTATION.yaml
   - docs/architecture/capability-index.md
-known_gaps:
-  - "The remaining Framework 5 packages (content-model, administrator-contract, portal-contract, business-surface-contract) follow as separate adoptions."
+  - "https://github.com/kumwe/app/pull/146"
+  - "https://github.com/kumwe/app/commit/008237a081cc75349ffed4b7de37efa4b0dffb0b"
+  - "https://github.com/kumwe/app/actions/runs/35030593538"
+  - "https://github.com/kumwe/app/actions/runs/35030593199"
+  - "https://github.com/kumwe/app/actions/runs/35030593191"
+  - "https://github.com/kumwe/app/actions/runs/35037097148"
+  - "https://github.com/kumwe/app/releases/tag/v2.0.0-alpha.20"
+  - "https://github.com/kumwe/app/actions/runs/35037111608"
+  - "App v2.0.0-alpha.20 points to green master 008237a081cc75349ffed4b7de37efa4b0dffb0b."
+  - "Published ZIP SHA256: a6ae4dc47d3a93bf63ffaeb3c45f0a9b01697845bcb7e059865b505c30e69004"
+known_gaps: []
 owner: "Lemuel"
-status: in-progress
+status: delivered
