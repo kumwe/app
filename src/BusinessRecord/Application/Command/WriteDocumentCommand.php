@@ -8,7 +8,7 @@ use InvalidArgumentException;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Extension\Spi\Application\Automation\IdempotencyKey;
 use Kumwe\App\BusinessRecord\Application\RecordRequestGuard;
-use Kumwe\App\BusinessRecord\Domain\ClientAssertedInstant;
+use Kumwe\Record\Value\ClientAssertedInstant;
 
 /**
  * Request to write one whole document — a header and the owned lines belonging to it — as a single thing.

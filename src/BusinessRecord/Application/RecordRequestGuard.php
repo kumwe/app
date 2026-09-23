@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessRecord\Application;
 
 use InvalidArgumentException;
-use Kumwe\App\BusinessRecord\Domain\RecordValueGuard;
+use Kumwe\App\BusinessRecord\Domain\RecordValueProtection;
+use Kumwe\Record\Value\RecordValueGuard;
 use Ramsey\Uuid\Uuid;
 
 /**
@@ -142,7 +143,7 @@ final class RecordRequestGuard
             if (preg_match('/^[a-z][a-z0-9_]{0,62}$/D', $handle) !== 1) {
                 throw new InvalidArgumentException('A business-record value set contains an invalid field handle.');
             }
-            RecordValueGuard::assertValue($value);
+            RecordValueGuard::assertValue(RecordValueProtection::protect($value));
         }
     }
 

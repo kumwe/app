@@ -8,9 +8,10 @@ use DateTimeImmutable;
 use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\BusinessDefinition\Domain\Sensitivity;
 use Kumwe\App\BusinessRecord\Domain\BusinessRecordRevision;
-use Kumwe\App\BusinessRecord\Domain\RecordValueGuard;
+use Kumwe\App\BusinessRecord\Domain\RecordValueProtection;
 use Kumwe\BusinessPolicy\Application\FieldAccessUsage;
 use Kumwe\BusinessPolicy\Application\FieldDisclosurePlan;
+use Kumwe\Record\Value\RecordValueGuard;
 
 /**
  * Disclosure-safe view over one integrity-verified revision, as a history page hands it to a caller.
@@ -156,11 +157,11 @@ final readonly class BusinessRecordRevisionView
         ));
 
         $integrityChecksum = $disclosure === null ? $revision->checksum() : hash('sha256', json_encode(
-            RecordValueGuard::canonical([
+            RecordValueGuard::canonical(RecordValueProtection::protect([
                 'revision_id' => $revision->revisionId,
                 'snapshot' => $snapshot,
                 'changed_fields' => $changedFields,
-            ]),
+            ])),
             JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE,
         ));
 

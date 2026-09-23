@@ -1,0 +1,112 @@
+schema: kumwe-change-set/v2
+change_set: KUMWE-CS-2026-029
+migration_id: KUMWE-MIG-2026-029
+roadmap_source:
+  title: Kumwe ERP-Extensibility Foundation Roadmap
+  sha256: a202155ef1a65f5ab293d4f8397ebf4ac430db7f1e877c776bbe7851e6fe18d8
+roadmap_refs: []
+state: app-pr-ready
+phase_1:
+  source_repository: kumwe/app
+  source_sha: "24ecf956423c18933e824b43cea1bfb9127a79a9"
+  target_repository: kumwe/record-values
+  package_pr: "https://github.com/kumwe/record-values/pull/7"
+  tested_sha: null
+  public_api_digest: "ca6e82ea1697041424ce2644b5fa0566c805d60da2f8d36ada2c19b16756b8b3"
+  capability_digest: "fa79ef590b02bae4f958bbbd8544e9a1f7a271cde45d2f2bac761e6a01b4308c"
+  service_map_digest: "b266081c33d866630f97b49b5e164eb090f0c54811a426031f9a4456f3fed111"
+  handoff_digest: "90ad098f4f1c05d1d78f99d65fbef9c327abfb2260efe60d916dd6807bbc1160"
+release:
+  version: 0.1.4
+  source_sha: "04a3f5f8094861771682b3ba83536ec8828dc704"
+  artifact_digest: "337253ed85d5e2d20d823637ec9c46989a1fbccf22fed012e1f113ec6318f122"
+  clean_consumer_evidence:
+    - docs/architecture/migrations/evidence/KUMWE-MIG-2026-029/RELEASE-ATTESTATION.yaml
+phase_2:
+  app_pr: "https://github.com/kumwe/app/pull/151"
+  tested_sha: null
+  merged_sha: null
+  exact_dependency: "kumwe/record-values 0.1.4"
+  composer_lock_digest: "4eed6274711541261a08364c8f2d52b65dba1462bb67840d5bf8ee81ac27f07a"
+  removed_app_symbols:
+    - Kumwe\App\BusinessRecord\Domain\RecordValueGuard
+    - Kumwe\App\BusinessRecord\Domain\ClientAssertedInstant
+  moved_unit_tests:
+    - tests/Unit/BusinessRecord/Domain/RecordValueGuardTest.php
+    - tests/Unit/BusinessSurface/Presentation/ConvertedMoneyPresentationInvariantTest.php
+  retained_app_tests:
+    - tests/Architecture/ClientAssertedInstantBoundaryTest.php
+    - tests/Architecture/ConvertedMoneySurfaceCoverageTest.php
+    - tests/Architecture/MoneyConversionBoundaryTest.php
+    - tests/Architecture/UnitConversionBoundaryTest.php
+    - tests/Architecture/TruthfulQualityGateTest.php
+    - tests/Architecture/BusinessRuntimeBoundaryTest.php
+    - tests/Integration/BusinessRecord/BusinessRecordRuntimeIntegrationTest.php
+    - tests/Integration/BusinessRecord/RecordSecretRotationIntegrationTest.php
+    - tests/Support/BusinessRuntimeBackupAcceptance.php
+    - tests/Unit/BusinessRecord/Domain/ExactValueCodecTest.php
+    - tests/Unit/BusinessRecord/Domain/RecordIntegrityTest.php
+    - tests/Unit/BusinessRecord/Domain/RecordValueProtectionTest.php
+    - tests/Unit/BusinessRecord/Infrastructure/SecretKeyLifecycleTest.php
+    - tests/Unit/BusinessRecord/Application/RecordRuleValidatorTest.php
+    - tests/Unit/BusinessRecord/Application/WriteDocumentCommandTest.php
+    - tests/Unit/BusinessRecord/Application/BusinessRecordMutationPublicationTest.php
+    - tests/Unit/Governance/ComposerLockTest.php
+    - tests/Architecture/CapabilityIndexGateTest.php
+evidence:
+  package:
+    - docs/architecture/migrations/evidence/KUMWE-MIG-2026-029/RELEASE-ATTESTATION.yaml
+    - "https://github.com/kumwe/record-values/pull/7; the handoff names it as the Phase 1 pull request, it merged 2026-09-08T16:48:41Z, and the tag commit 04a3f5f8094861771682b3ba83536ec8828dc704 is the published release"
+    - "Packagist kumwe/record-values v0.1.4 with source and dist at the tag commit; GitHub release 384907933 published 2026-09-08T16:50:01Z by the release-on-record run 34253329842"
+  app_composition:
+    - tests/Unit/Governance/ComposerLockTest.php
+    - tests/Unit/Governance/CoreGrowthGateTest.php
+    - tests/Unit/Governance/PackageManifestsTest.php
+    - tests/Unit/Governance/LayerClassifierTest.php
+    - tests/Architecture/CapabilityIndexGateTest.php
+    - tests/Architecture/TruthfulQualityGateTest.php
+    - tests/Unit/BusinessRecord/Domain/RecordValueProtectionTest.php
+    - "composer require kumwe/record-values:0.1.4; one lock install, no other lock change (kumwe/conversion 0.1.5 was already locked exactly)"
+    - "composer kumwe:capability-index, kumwe:core-growth-record, baseline:record, then the composer qa gates and the unit and architecture suites, run locally on PHP 8.4 without ext-kumwe_engine"
+  database_matrix:
+    - tests/Integration/BusinessRecord/BusinessRecordRuntimeIntegrationTest.php
+    - tests/Integration/BusinessRecord/RecordSecretRotationIntegrationTest.php
+    - "To be exercised by the pull request's hosted workflows on MariaDB, MySQL and PostgreSQL; the value codec, column encoding and the canonical bytes of every stored snapshot, checksum and fingerprint are unchanged."
+  concurrency:
+    - tests/Integration/BusinessRecord/BusinessRecordRuntimeIntegrationTest.php
+    - "The package types are final values and a static guard with no state; the mutation fence, transactions and revision append stay host-owned and unchanged; to be exercised by the pull request's hosted workflows."
+  authorization_security:
+    - tests/Unit/BusinessRecord/Domain/RecordValueProtectionTest.php
+    - tests/Unit/BusinessRecord/Domain/RecordIntegrityTest.php
+    - tests/Unit/BusinessRecord/Infrastructure/SecretKeyLifecycleTest.php
+    - tests/Architecture/ClientAssertedInstantBoundaryTest.php
+    - "Sealing, decryption, associated data, key custody and rotation stay in App; the package performs no cryptography, and the client-asserted instant still reaches no ordering, expiry, period or numbering path; the hosted source-and-image security scans run on the pull request."
+  lifecycle_recovery:
+    - tests/Integration/BusinessRecord/RecordSecretRotationIntegrationTest.php
+    - tests/Support/BusinessRuntimeBackupAcceptance.php
+    - "Stored envelopes, rotation and backup acceptance read the same four storage strings as before; to be exercised by the pull request's hosted workflows."
+  delivery_browser:
+    - tests/Architecture/ConvertedMoneySurfaceCoverageTest.php
+    - tests/Unit/BusinessRecord/Application/WriteDocumentCommandTest.php
+    - "No HTTP, console or OpenAPI surface reads the client-asserted instant, and the zoned date-time presenters keep their shape; the browser suites run in the pull request's hosted workflows."
+  deployment_backup_restore:
+    - tests/Support/BusinessRuntimeBackupAcceptance.php
+    - "Signed backup, clean restore and production acceptance on three engines; to be exercised by the pull request's hosted workflows."
+  native_parity_abi:
+    - tests/Unit/BusinessRecord/Domain/ExactValueCodecTest.php
+    - "The package is PHP-only (native_requirements null) and reduces values to the same storage spellings the App wrote before; the native decimal cutover remains Computation-owned and is not claimed here."
+  performance_capacity:
+    - tests/Unit/BusinessRecord/Domain/RecordValueProtectionTest.php
+    - "No performance claim is made; the adapter copies only arrays that hold a sealed secret and walks no deeper than the guard's own bound."
+compatibility: "Drop-in for stored data: the guard, the client-asserted instant and the zoned date-time keep their names and public members under Kumwe\\Record\\Value, and every checksum, fingerprint and revision byte is unchanged because App substitutes ProtectedRecordValue(EncryptedEnvelope::toStorage()) before the guard and the guard canonicalises that storage as the same four strings in the same order. Three refusals tighten: canonical() applies the 8-deep, 4096-node budget to the whole tree it reduces, the four storage members of each sealed secret count toward that budget, and ClientAssertedInstant::fromPortableString accepts only offsets within -14:00..+14:00 with minutes 00-59, refuses a parse that raises a warning and holds capturedAt in UTC; no HTTP or OpenAPI surface reads the client instant, so the grammar change reaches only a PHP caller of WriteDocumentCommand."
+migration_recovery: null
+security_impact: "None on authority: sealing, decryption, associated data, key custody and rotation stay in the App adapters, the package performs no cryptography and never sees a connection or a request, and a raw EncryptedEnvelope is now refused by the guard unless App has wrapped it, which every App guard call does through RecordValueProtection."
+performance_claim: null
+rollback: "Revert the App pull request: the pin, the two removed classes, the two moved unit tests and the retired boundary assertions return from the baseline commit, and no persisted data changes."
+known_gaps:
+  - "The local sandbox runs PHP 8.4 without ext-kumwe_engine and without a database server, so the integration and functional lanes, PHP 8.5 and the native runtime are proven by the App CI on this pull request."
+  - "kumwe/extension-sdk 0.2.4 still ships Kumwe\\Extension\\Spi\\BusinessRecord\\Value\\ZonedDateTimeValue and its QueryValue admits only that copy; App passes scalars, DateTimeImmutable and ExactDecimal into the SDK filters and cursors, never a zoned value, so the two copies coexist without a refusal until the 0.3.2 train (KUMWE-MIG-2026-033) removes the SDK copy."
+  - "An extension compiled against the SDK ZonedDateTimeValue would be refused by the package guard; no installed extension or example builds one, and the SDK successor resolves the split."
+  - "The package's release-dependencies manifest marks kumwe/conversion 0.1.5 as not independently verified by design; the App's KUMWE-MIG-2026-031 attestation covers that release."
+completion_claim: false
+accepted_by: null

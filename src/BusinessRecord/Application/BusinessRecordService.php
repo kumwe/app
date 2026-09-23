@@ -9,6 +9,9 @@ use InvalidArgumentException;
 use Kumwe\Access\AuthorizationGateway;
 use Kumwe\Access\AuthorizationResource;
 use Kumwe\Access\ResourceSiteOwnershipWriter;
+use Kumwe\App\BusinessRecord\Domain\RecordValueProtection;
+use Kumwe\Record\Value\RecordValueGuard;
+use Kumwe\Record\Value\ZonedDateTimeValue;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\BusinessDefinition\Domain\ActionDefinition;
 use Kumwe\App\BusinessDefinition\Domain\ExpressionEvaluator;
@@ -55,7 +58,6 @@ use Kumwe\App\BusinessRecord\Domain\BusinessRecordIdempotency;
 use Kumwe\App\BusinessRecord\Domain\BusinessRecordIdempotencyState;
 use Kumwe\App\BusinessRecord\Domain\BusinessRecordReplayWindow;
 use Kumwe\App\BusinessRecord\Domain\RecordScope;
-use Kumwe\App\BusinessRecord\Domain\RecordValueGuard;
 use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalBinding;
 use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalDenied;
 use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalService;
@@ -67,7 +69,6 @@ use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Conversion\Decimal\ExactDecimal;
 use Kumwe\Extension\Spi\Application\Automation\IdempotencyKey;
 use Kumwe\Extension\Spi\BusinessRecord\Application\BusinessRecordQueryPurpose;
-use Kumwe\Extension\Spi\BusinessRecord\Value\ZonedDateTimeValue;
 use Kumwe\BusinessPolicy\Application\FieldAccessUsage;
 use Kumwe\Access\Capability;
 use Kumwe\Sequence\Contract\NumberSequenceAllocator;
@@ -3913,8 +3914,8 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
         $changed = [];
         foreach ($handles as $handle) {
             if (
-                RecordValueGuard::canonical($before[$handle] ?? null)
-                !== RecordValueGuard::canonical($after[$handle] ?? null)
+                RecordValueGuard::canonical(RecordValueProtection::protect($before[$handle] ?? null))
+                !== RecordValueGuard::canonical(RecordValueProtection::protect($after[$handle] ?? null))
             ) {
                 $changed[] = $handle;
             }

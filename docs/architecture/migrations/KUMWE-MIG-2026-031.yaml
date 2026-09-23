@@ -87,7 +87,7 @@ retained_tests:
   - tests/Architecture/ConvertedMoneySurfaceCoverageTest.php
   - tests/Architecture/ConversionApiConsumerGateTest.php
   - tests/Unit/BusinessRecord/Domain/ExactValueCodecTest.php
-  - tests/Unit/BusinessRecord/Domain/RecordValueGuardTest.php
+  - tests/Unit/BusinessRecord/Domain/RecordValueProtectionTest.php
   - tests/Unit/BusinessRecord/Application/MoneyRateProviderContributionTest.php
   - tests/Unit/BusinessRecord/Application/UnitConversionProviderContributionTest.php
   - tests/Unit/Extension/Contribution/UnitConversionProviderDeclarationTest.php

@@ -58,6 +58,7 @@ final class ComposerLockTest extends TestCase
                 'kumwe/localization',
                 'kumwe/navigation',
                 'kumwe/producer',
+                'kumwe/record-values',
                 'kumwe/secret-envelope',
                 'kumwe/sequence',
                 'kumwe/transaction',

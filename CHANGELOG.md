@@ -79,6 +79,30 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Added
 
+- **2026-09-23 — `kumwe/record-values` 0.1.4 owns the record-value guard, the client-asserted capture instant, the
+  zoned date-time value and the protected storage a host supplies for a sealed secret.** The record-values package
+  enters App through the migration ledger (`NRM-2026-042`): `KUMWE-MIG-2026-029`, its change set, the integration
+  train `KUMWE-TRAIN-2026-029` and the independent release attestation record the verified `v0.1.4` release, and
+  `composer.json` pins it exactly (one lock install; it requires `kumwe/conversion` `0.1.5` exactly, already locked,
+  so no other lock entry moves). As the released record prescribes, the App's `RecordValueGuard` and
+  `ClientAssertedInstant` are removed together with the two duplicated unit tests the package now owns, every
+  consumer reads the package types, and the twelve `ZonedDateTimeValue` consumers read
+  `Kumwe\Record\Value\ZonedDateTimeValue` while `kumwe/extension-sdk` 0.2.4 keeps its unreferenced copy until the
+  0.3.2 train removes it. The package guard deliberately knows no cryptography and refuses a raw
+  `Kumwe\Secret\Value\EncryptedEnvelope`, so App adds the host adapter `RecordValueProtection`
+  (`KUMWE-CGR-2026-009`), which substitutes `ProtectedRecordValue(EncryptedEnvelope::toStorage())` for every
+  sealed secret before the guard sees it; the protected storage canonicalises as the same four envelope strings in
+  the same order, so no stored checksum, fingerprint or revision byte moves, and sealing, key custody and rotation
+  stay in App. `RecordValueProtectionTest` keeps the host assertion that a PHP float is refused at the App
+  boundary, which moved there from the retired `RecordValueGuardTest`; `ClientAssertedInstantBoundaryTest` keeps
+  only the boundary, because the package proves the claim's grammar, UTC normalisation and range refusals. Three
+  refusals tighten: `canonical()` applies the 8-deep, 4096-node budget to the whole tree it reduces, the four
+  storage members of a sealed secret count toward it, and `ClientAssertedInstant::fromPortableString` accepts only
+  offsets within `-14:00`..`+14:00` with minutes `00`-`59`, refuses a parse that raises a warning and holds
+  `capturedAt` in UTC; no HTTP or OpenAPI surface reads the client instant, so the grammar change reaches only a
+  PHP caller of `WriteDocumentCommand`. The package exports no provider, so `ContainerFactory` is unchanged; the
+  layer graph admits `Kumwe\Record` with `Kumwe\Record\Value` as shared. The installed release ships its record as
+  `MIGRATION-HANDOFF.md`, which the ledger binds by path and digest. (#151)
 - **2026-09-23 — `kumwe/business-definition` 0.1.2 owns the definition model, its canonical profile, validation,
   compatibility and registries.**
   The business-definition package enters App through the migration ledger (`NRM-2026-040`): `KUMWE-MIG-2026-010`,

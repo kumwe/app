@@ -12,8 +12,9 @@ use Kumwe\BusinessDefinition\Domain\FieldDefinition;
 use Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition;
 use Kumwe\BusinessDefinition\Domain\RecordInvariantDefinition;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordValidationFailed;
+use Kumwe\App\BusinessRecord\Domain\RecordValueProtection;
 use Kumwe\Conversion\Decimal\ExactDecimal;
-use Kumwe\App\BusinessRecord\Domain\RecordValueGuard;
+use Kumwe\Record\Value\RecordValueGuard;
 use Ramsey\Uuid\Uuid;
 
 /**
@@ -842,7 +843,7 @@ final readonly class RecordRuleValidator
                 'min' => $this->compare($value, $this->validatorScalar($validator, 'value'), $field) >= 0,
                 'max' => $this->compare($value, $this->validatorScalar($validator, 'value'), $field) <= 0,
                 'one_of' => in_array(
-                    RecordValueGuard::canonical($value),
+                    RecordValueGuard::canonical(RecordValueProtection::protect($value)),
                     $this->validatorList($validator, 'value'),
                     true,
                 ),

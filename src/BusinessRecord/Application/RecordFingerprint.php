@@ -6,7 +6,8 @@ namespace Kumwe\App\BusinessRecord\Application;
 
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\App\BusinessRecord\Domain\RecordValueGuard;
+use Kumwe\App\BusinessRecord\Domain\RecordValueProtection;
+use Kumwe\Record\Value\RecordValueGuard;
 
 /**
  * Keyed digest over any record-shaped value, for the comparisons that outlive the request that made them.
@@ -91,7 +92,7 @@ final readonly class RecordFingerprint
      */
     private function canonical(mixed $value): mixed
     {
-        $value = RecordValueGuard::canonical($value);
+        $value = RecordValueGuard::canonical(RecordValueProtection::protect($value));
         if (is_array($value)) {
             foreach ($value as $key => $item) {
                 $value[$key] = $this->canonical($item);

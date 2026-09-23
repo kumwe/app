@@ -7,7 +7,9 @@ namespace Kumwe\App\BusinessSurface\Application;
 use DateInterval;
 use InvalidArgumentException;
 use JsonException;
+use Kumwe\App\BusinessRecord\Domain\RecordValueProtection;
 use Kumwe\Context\Value\ExecutionContext;
+use Kumwe\Record\Value\RecordValueGuard;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\BusinessDefinition\Domain\ScopeMode;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordDefinitionResolver;
@@ -18,7 +20,6 @@ use Kumwe\App\BusinessRecord\Application\Query\ReadRecordQuery;
 use Kumwe\App\BusinessRecord\Application\RecordFingerprint;
 use Kumwe\App\BusinessRecord\Application\RecordRequestGuard;
 use Kumwe\App\BusinessRecord\Domain\RecordScope;
-use Kumwe\App\BusinessRecord\Domain\RecordValueGuard;
 use Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessController;
 use Kumwe\Secret\Value\EncryptedEnvelope;
 use Psr\Clock\ClockInterface;
@@ -449,7 +450,7 @@ final readonly class BusinessMutationPlanService
             throw self::invalid();
         }
         RecordRequestGuard::definition($input['definition']);
-        RecordValueGuard::assertValue($input);
+        RecordValueGuard::assertValue(RecordValueProtection::protect($input));
 
         if ($operation === 'create') {
             if (!is_array($input['values']) || ($input['record'] !== null && !is_string($input['record']))) {

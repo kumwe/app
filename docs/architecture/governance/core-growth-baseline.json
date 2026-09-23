@@ -1261,7 +1261,7 @@
         "Kumwe\\App\\BusinessRecord\\Application\\BusinessRecordMutationPublication": {
             "kind": "class",
             "layer": "application",
-            "surface": "bde0108091ecadb8654a7c08",
+            "surface": "5767797eb8f0116f0ae4a656",
             "growth": null
         },
         "Kumwe\\App\\BusinessRecord\\Application\\BusinessRecordReadRepository": {
@@ -1389,7 +1389,7 @@
         "Kumwe\\App\\BusinessRecord\\Application\\Command\\WriteDocumentCommand": {
             "kind": "class",
             "layer": "application",
-            "surface": "916bfa5297ccd9462c5d48d2",
+            "surface": "a25df9335b7b4216cd9b52e5",
             "growth": null
         },
         "Kumwe\\App\\BusinessRecord\\Application\\DocumentCommitTimingRecorder": {
@@ -1778,12 +1778,6 @@
             "surface": "6eaf382801657646cae4994d",
             "growth": null
         },
-        "Kumwe\\App\\BusinessRecord\\Domain\\ClientAssertedInstant": {
-            "kind": "class",
-            "layer": "domain",
-            "surface": "8706a6b96bc176a702f271f8",
-            "growth": null
-        },
         "Kumwe\\App\\BusinessRecord\\Domain\\MoneyRateProviderDefinition": {
             "kind": "class",
             "layer": "domain",
@@ -1808,11 +1802,13 @@
             "surface": "3e90bbbc47d71b5155315130",
             "growth": null
         },
-        "Kumwe\\App\\BusinessRecord\\Domain\\RecordValueGuard": {
+        "Kumwe\\App\\BusinessRecord\\Domain\\RecordValueProtection": {
             "kind": "class",
             "layer": "domain",
-            "surface": "49a45948b178e964d26b79e7",
-            "growth": null
+            "surface": "141c15cdde277e83ea7def4f",
+            "growth": {
+                "record": "KUMWE-CGR-2026-009"
+            }
         },
         "Kumwe\\App\\BusinessRecord\\Domain\\SecretKeyPurpose": {
             "kind": "enum",
