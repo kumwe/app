@@ -128,6 +128,7 @@ known_gaps:
   - "The package CHANGELOG.md carries an Unreleased section above the 0.1.4 record."
   - "The package commands are typed on the concrete host ExecutionContext, so the App tests that proved refusal of a foreign extension execution context (CustomBusinessActionExecutorTest and CustomBusinessHandlerRegistryTest) no longer have a subject and those methods are removed; the remaining methods stay."
   - "The Packagist p2 fetch was reset by the peer on the first attempt at 2026-09-23T18:20:46Z and succeeded on the retry recorded in the attestation."
+  - "The package query and command carry the host ExecutionContext while the SDK BusinessRecordReadRequest takes the SDK context interface the App reader honours only when the App issued it, so a custom view or action handler could no longer read records through the SDK port; the App composes the released types through CustomBusinessInvocationScope (KUMWE-CGR-2026-014): the dispatcher enters it with the invocation host context and the reader resolves a context naming the same coordinates to it. An upstream release that hands custom handlers an SDK context, or the SDK reader a host one, retires the scope."
   - "kumwe/extension-sdk 0.3.3 is adopted from its unpublished candidate, pull request 22 at commit b54022b05075944e884dc1df038cbcb63f723472, through a temporary package repository entry in composer.json; the entry is removed and the lock re-pointed at the Packagist distribution once v0.3.3 is published (KUMWE-CS-2026-033)."
 completion_claim: false
 accepted_by: null

@@ -53,7 +53,7 @@ final class Provider implements ExtensionServiceProvider, ExtensionBindingProvid
 
         $bindings->fieldPresenter(
             'kumwe.announcements-example.severity',
-            new SeverityFieldPresenter(new DeterministicCanonicalEncoder(), $encoder),
+            new SeverityFieldPresenter($encoder),
         );
         $bindings->administratorRoute('kumwe.announcements-example.index', $factory);
     }

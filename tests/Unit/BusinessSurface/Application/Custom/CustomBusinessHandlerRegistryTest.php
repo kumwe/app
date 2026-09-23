@@ -14,10 +14,12 @@ use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionHandlerRegistry;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessHandlerFailed;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessInvocationScope;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessSurfaceDispatcher;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewHandlerRegistry;
 use Kumwe\App\BusinessSurface\Application\BusinessSurfaceOperation;
 use Kumwe\App\Extension\Application\ExtensionExecutionGate;
+use Kumwe\App\Tests\Support\CoordinateExecutionContext;
 use Kumwe\Idempotency\IdempotencyKey;
 use Kumwe\Record\Query\RecordQuerySpecification;
 use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessActionCommand;
@@ -283,8 +285,20 @@ final class CustomBusinessHandlerRegistryTest extends TestCase
     public function testDispatcherInvokesPublishedViewAndActionContractsAtRuntime(): void
     {
         $owner = DefinitionOwner::extension('acme/editor');
+        $invocations = new CustomBusinessInvocationScope();
         $views = new CustomBusinessViewHandlerRegistry();
-        $views->register($owner, self::viewContract(), new class implements CustomBusinessViewHandler {
+        $viewHandler = new class ($invocations) implements CustomBusinessViewHandler {
+            /**
+             * Hold the scope the dispatcher must have entered before this handler runs.
+             *
+             * @param  CustomBusinessInvocationScope  $invocations  Scope shared with the dispatcher.
+             *
+             * @since  2.0.0
+             */
+            public function __construct(private readonly CustomBusinessInvocationScope $invocations)
+            {
+            }
+
             /**
              * Return the admitted term through the signed result shape.
              *
@@ -296,13 +310,30 @@ final class CustomBusinessHandlerRegistryTest extends TestCase
              */
             public function handle(CustomBusinessViewQuery $query): CustomBusinessViewResult
             {
+                $named = new CoordinateExecutionContext($query->context);
+                if ($this->invocations->hostFor($named) !== $query->context) {
+                    throw new LogicException('The view ran outside its invocation scope.');
+                }
+
                 return new CustomBusinessViewResult([
                     'items' => [['label' => $query->parameters['term']]],
                 ]);
             }
-        });
+        };
+        $views->register($owner, self::viewContract(), $viewHandler);
         $actions = new CustomBusinessActionHandlerRegistry();
-        $actions->register($owner, self::actionContract(), new class implements CustomBusinessActionHandler {
+        $actionHandler = new class ($invocations) implements CustomBusinessActionHandler {
+            /**
+             * Hold the scope the dispatcher must have entered before this handler runs.
+             *
+             * @param  CustomBusinessInvocationScope  $invocations  Scope shared with the dispatcher.
+             *
+             * @since  2.0.0
+             */
+            public function __construct(private readonly CustomBusinessInvocationScope $invocations)
+            {
+            }
+
             /**
              * Return one operation-bound custom action result.
              *
@@ -314,6 +345,11 @@ final class CustomBusinessHandlerRegistryTest extends TestCase
              */
             public function handle(CustomBusinessActionCommand $command): CustomBusinessActionResult
             {
+                $named = new CoordinateExecutionContext($command->context);
+                if ($this->invocations->hostFor($named) !== $command->context) {
+                    throw new LogicException('The action ran outside its invocation scope.');
+                }
+
                 return new CustomBusinessActionResult(
                     ['status' => 'done'],
                     2,
@@ -321,7 +357,8 @@ final class CustomBusinessHandlerRegistryTest extends TestCase
                     workflowState: 'ready',
                 );
             }
-        });
+        };
+        $actions->register($owner, self::actionContract(), $actionHandler);
         $authorization = $this->createMock(AuthorizationGateway::class);
         $authorization->expects(self::once())->method('assertAllowed');
         $dispatcher = new CustomBusinessSurfaceDispatcher(
@@ -329,6 +366,7 @@ final class CustomBusinessHandlerRegistryTest extends TestCase
             $actions,
             $authorization,
             $this->createStub(ExtensionExecutionGate::class),
+            $invocations,
         );
         $definition = self::definition();
         $viewQuery = new CustomBusinessViewQuery(
@@ -367,15 +405,56 @@ final class CustomBusinessHandlerRegistryTest extends TestCase
         self::assertSame('done', $result->data['status']);
         self::assertSame('ready', $result->workflowState);
         self::assertTrue($result->operationId->equals($operation));
+        self::assertNull($invocations->hostFor(new CoordinateExecutionContext($viewQuery->context)));
 
         $inactive = new CustomBusinessSurfaceDispatcher(
             new CustomBusinessViewHandlerRegistry(),
             new CustomBusinessActionHandlerRegistry(),
             $authorization,
             $this->createStub(ExtensionExecutionGate::class),
+            $invocations,
         );
         self::assertNull($inactive->viewContractSchemas($definition, 'summary'));
         self::assertNull($inactive->actionContractSchemas($definition, 'recalculate'));
+    }
+
+    /**
+     * Proves the dispatcher leaves the invocation scope when a handler fails, so nothing lingers.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testDispatcherLeavesTheInvocationScopeWhenAHandlerFails(): void
+    {
+        $owner = DefinitionOwner::extension('acme/editor');
+        $invocations = new CustomBusinessInvocationScope();
+        $viewHandler = $this->createStub(CustomBusinessViewHandler::class);
+        $viewHandler->method('handle')->willThrowException(new RuntimeException('extension failure'));
+        $views = new CustomBusinessViewHandlerRegistry();
+        $views->register($owner, self::viewContract(), $viewHandler);
+        $dispatcher = new CustomBusinessSurfaceDispatcher(
+            $views,
+            new CustomBusinessActionHandlerRegistry(),
+            $this->createStub(AuthorizationGateway::class),
+            $this->createStub(ExtensionExecutionGate::class),
+            $invocations,
+        );
+        $definition = self::definition();
+        $query = new CustomBusinessViewQuery(
+            self::context(),
+            $definition->handle,
+            'summary',
+            new RecordQuerySpecification(pageSize: 10),
+            ['term' => 'north'],
+        );
+
+        try {
+            $dispatcher->view($definition, $query);
+            self::fail('The failing handler did not surface as a handler failure.');
+        } catch (CustomBusinessHandlerFailed) {
+            self::assertNull($invocations->hostFor(new CoordinateExecutionContext($query->context)));
+        }
     }
 
     /**
@@ -402,7 +481,13 @@ final class CustomBusinessHandlerRegistryTest extends TestCase
         $execution->expects(self::exactly(2))
             ->method('assertCurrent')
             ->willThrowException(new RuntimeException('stale extension generation'));
-        $dispatcher = new CustomBusinessSurfaceDispatcher($views, $actions, $authorization, $execution);
+        $dispatcher = new CustomBusinessSurfaceDispatcher(
+            $views,
+            $actions,
+            $authorization,
+            $execution,
+            new CustomBusinessInvocationScope(),
+        );
         $definition = self::definition();
 
         try {

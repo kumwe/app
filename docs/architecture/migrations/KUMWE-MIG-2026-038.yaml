@@ -67,7 +67,16 @@ retained_tests:
   - tests/Unit/Extension/Contribution/ExtensionBindingSurfaceTest.php
   - tests/Unit/Extension/Contribution/OwnedBindingCanonicalDriftTest.php
   - tests/Unit/Governance/ComposerLockTest.php
-di_changes: []
+di_changes:
+  - service: Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessInvocationScope
+    factory: Kumwe\App\Kernel\ContainerFactory
+    note: "Added: one scope shared by the custom business dispatcher and every extension-facing PolicyBusinessRecordReader. The package query and command carry the host ExecutionContext, so the dispatcher enters the scope with it around each handler and the reader resolves an SDK context naming the same coordinates to that host context for the duration of the invocation (KUMWE-CGR-2026-014)."
+  - service: Kumwe\Extension\Spi\BusinessRecord\Application\BusinessRecordReader
+    factory: Kumwe\App\Kernel\ContainerFactory
+    note: "Rebound: the PolicyBusinessRecordReader bound into each extension container takes the shared invocation scope as its second constructor argument."
+  - service: Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessSurfaceDispatcher
+    factory: Kumwe\App\Kernel\ContainerFactory
+    note: "Rebound: the dispatcher takes the shared invocation scope as its fifth constructor argument."
 capability_index_entries:
   - kumwe/business-surface-contract
 release_evidence:

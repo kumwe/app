@@ -33,6 +33,7 @@ use Kumwe\BusinessPolicy\Policy\RecordPolicySet;
 use Kumwe\App\BusinessSurface\Application\CustomBusinessActionExecutor;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionHandlerRegistry;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionLedgerResult;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessInvocationScope;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessReferenceRegistry;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessSurfaceDispatcher;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewHandlerRegistry;
@@ -198,6 +199,7 @@ final class CustomBusinessActionExecutorTest extends TestCase
             $actions,
             $authorization,
             $this->createStub(ExtensionExecutionGate::class),
+            new CustomBusinessInvocationScope(),
         );
         $guard = $this->createMock(BusinessRecordCustomActionGuard::class);
         $guard->expects(self::once())->method('guardCustomAction');

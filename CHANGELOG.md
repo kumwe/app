@@ -114,7 +114,12 @@ development programme, from the architecture decision that opened it to the curr
   `FieldPresentationModel` takes the canonical encoder as its ninth argument, which `CoreFieldPresenter` and the
   announcements example presenter now receive. The two App tests that proved refusal of a foreign extension
   execution context are removed because the package command type makes the case unrepresentable. Handler
-  admission, binding, authorization, the action ledger and rendering stay in App. (#151)
+  admission, binding, authorization, the action ledger and rendering stay in App. Because the package
+  query and command carry the host context while the SDK record reader takes the SDK context the App
+  issues, `CustomBusinessInvocationScope` (`KUMWE-CGR-2026-014`) names the host context of the running
+  custom invocation: the dispatcher enters it around every handler and `PolicyBusinessRecordReader`
+  resolves a context naming the same coordinates to it, so the asset-inspection example reads its
+  policy-filtered page through the SDK port again without holding an App type. (#151)
 
 - **2026-09-23 — `kumwe/portal-contract` 0.2.2 owns the portal workspace, navigation, route and template
   contribution definitions.**

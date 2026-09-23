@@ -27,7 +27,9 @@ use Kumwe\Access\Capability;
  * The delivery-neutral facade is the only runtime bridge from immutable definition references to the
  * owner-aware registries. It never accepts a request object or executable callback. Missing definitions,
  * inactive handlers, wrong owners, and mismatched schemas all collapse to the same non-enumerating
- * definition failure. The action's own capability is asserted before extension application code runs.
+ * definition failure. The action's own capability is asserted before extension application code runs, and
+ * every handler runs inside the custom business invocation scope, so the SDK record reader can resolve the
+ * host context the handler was handed for exactly that invocation.
  *
  * @since  2.0.0
  */
@@ -40,6 +42,8 @@ final readonly class CustomBusinessSurfaceDispatcher
      * @param  CustomBusinessActionHandlerRegistry  $actions        Active typed action handlers.
      * @param  AuthorizationGateway                 $authorization  Shared audited authorization boundary.
      * @param  ExtensionExecutionGate               $execution      Live generation authority for extension code.
+     * @param  CustomBusinessInvocationScope        $invocations    Scope naming the host context of the running
+     *         custom invocation for the SDK record reader.
      *
      * @since  2.0.0
      */
@@ -48,6 +52,7 @@ final readonly class CustomBusinessSurfaceDispatcher
         private CustomBusinessActionHandlerRegistry $actions,
         private AuthorizationGateway $authorization,
         private ExtensionExecutionGate $execution,
+        private CustomBusinessInvocationScope $invocations,
     ) {
     }
 
@@ -228,7 +233,12 @@ final readonly class CustomBusinessSurfaceDispatcher
             throw new BusinessRecordDefinitionUnavailable();
         }
 
-        return $this->views->execute($definition->owner, $handler, $schema, $query);
+        $this->invocations->enter($query->context);
+        try {
+            return $this->views->execute($definition->owner, $handler, $schema, $query);
+        } finally {
+            $this->invocations->leave();
+        }
     }
 
     /**
@@ -268,7 +278,12 @@ final readonly class CustomBusinessSurfaceDispatcher
             AuthorizationResource::collection('business_record'),
         );
 
-        return $this->actions->execute($definition->owner, $handler, $schema, $command);
+        $this->invocations->enter($context);
+        try {
+            return $this->actions->execute($definition->owner, $handler, $schema, $command);
+        } finally {
+            $this->invocations->leave();
+        }
     }
 
     /**
