@@ -6,8 +6,8 @@ namespace Kumwe\App\Tests\Unit\Identity\Application\StepUp;
 
 use DateTimeImmutable;
 use Kumwe\Transaction\Contract\TransactionManager;
-use Kumwe\App\Audit\Application\AuditRecorder;
-use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\Audit\Application\AuditRecorder;
+use Kumwe\Audit\Domain\AuditEvent;
 use Kumwe\App\Identity\Application\StepUp\StepUpAttemptThrottle;
 use Kumwe\App\Identity\Application\StepUp\StepUpCredentialStore;
 use Kumwe\App\Identity\Application\StepUp\StepUpRandomSource;

@@ -6,7 +6,7 @@ namespace Kumwe\App\Tests\Unit\Content\Application;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\Audit\Application\AuditRecorder;
 use Kumwe\App\Content\Application\ContentModelNotFound;
 use Kumwe\App\Content\Application\ContentModelRepository;
 use Kumwe\App\Content\Application\ContentRecord;

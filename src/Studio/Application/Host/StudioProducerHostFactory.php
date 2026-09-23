@@ -7,7 +7,7 @@ namespace Kumwe\App\Studio\Application\Host;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Transaction\Contract\TransactionState;
 use Kumwe\Context\Value\ExecutionContext;
-use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\Audit\Application\AuditRecorder;
 use Kumwe\App\Studio\Application\Media\StudioMediaHostPort;
 use Kumwe\App\Studio\Application\Media\StudioMediaOperations;
 use Kumwe\App\Studio\Application\Preview\StudioPreviewHostPort;

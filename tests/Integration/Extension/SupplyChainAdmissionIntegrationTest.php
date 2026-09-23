@@ -35,7 +35,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
-use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\Audit\Application\AuditRecorder;
 use Ramsey\Uuid\Uuid;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;

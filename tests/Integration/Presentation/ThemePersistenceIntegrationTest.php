@@ -36,6 +36,8 @@ use Kumwe\App\Infrastructure\Persistence\Migration\BusinessTransactionalRuntimeM
 use Kumwe\App\Infrastructure\Persistence\Migration\IsolateThemeSurfacesMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\TokenAndTrustLifecycleMigration;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Kernel\NativeComputationFactory;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\App\Presentation\Infrastructure\DoctrineThemeMutationAuthorizer;
 use Kumwe\App\Extension\Domain\ThemeSurface;
 use Kumwe\App\Tests\Support\AuthorizationContext;
@@ -626,7 +628,10 @@ final class ThemePersistenceIntegrationTest extends TestCase
         (new BusinessTransactionalRuntimeMigration($tables))->up($database);
         (new BusinessSecurityPortalMigration($tables))->up($database);
         (new InstallationGlobalAutomationMigration($tables))->up($database);
-        (new AuditTamperEvidenceMigration($tables))->up($database);
+        (new AuditTamperEvidenceMigration(
+            $tables,
+            (new NativeComputationFactory())->create(Environment::fromGlobals()),
+        ))->up($database);
 
         return [$database, $tables];
     }
@@ -642,7 +647,11 @@ final class ThemePersistenceIntegrationTest extends TestCase
             new DoctrineTransactionManager($database),
             new IntegrationClock(),
             new IntegrationRateLimiter(),
-            new DoctrineAuditRecorder($database, $tables),
+            new DoctrineAuditRecorder(
+                $database,
+                $tables,
+                (new NativeComputationFactory())->create(Environment::fromGlobals()),
+            ),
             $this->createStub(AccessTokenQuotaPolicy::class),
             str_repeat('s', 32),
             AuthorizationContext::gateway(),

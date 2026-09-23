@@ -6,8 +6,8 @@ namespace Kumwe\App\Tests\Unit\Content\Application;
 
 use DateTimeImmutable;
 use Kumwe\App\Application\Authorization\AuthorizationDenied;
-use Kumwe\App\Audit\Application\AuditRecorder;
-use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\Audit\Application\AuditRecorder;
+use Kumwe\Audit\Domain\AuditEvent;
 use Kumwe\App\Content\Application\ContentRecord;
 use Kumwe\App\Content\Application\ContentRepository;
 use Kumwe\App\Content\Application\ContentService;
@@ -33,7 +33,6 @@ use Psr\Clock\ClockInterface;
 #[UsesClass(ContentEntry::class)]
 #[UsesClass(ContentRecord::class)]
 #[UsesClass(ContentRevision::class)]
-#[UsesClass(AuditEvent::class)]
 #[UsesClass(Workflow::class)]
 /**
  * Pins the use case that brings a translation into being: declaring what language an entry is in.

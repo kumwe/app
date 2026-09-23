@@ -65,7 +65,8 @@
     "Kumwe\\Transaction",
     "Kumwe\\Localization",
     "Kumwe\\Secret",
-    "Kumwe\\Navigation"
+    "Kumwe\\Navigation",
+    "Kumwe\\Audit"
   ],
   "namespace_segments": {
     "Shared": "shared",
@@ -175,6 +176,8 @@
     "Kumwe\\Secret\\Container": "kernel",
     "Kumwe\\Secret\\ConfigProvider": "kernel",
     "Kumwe\\Navigation\\Application": "application",
-    "Kumwe\\Navigation\\Domain": "domain"
+    "Kumwe\\Navigation\\Domain": "domain",
+    "Kumwe\\Audit\\Application": "application",
+    "Kumwe\\Audit\\Domain": "domain"
   }
 }

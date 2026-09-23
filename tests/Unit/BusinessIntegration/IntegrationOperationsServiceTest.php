@@ -6,8 +6,8 @@ namespace Kumwe\App\Tests\Unit\BusinessIntegration;
 
 use DateTimeImmutable;
 use Kumwe\Transaction\Contract\TransactionManager;
-use Kumwe\App\Audit\Application\AuditRecorder;
-use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\Audit\Application\AuditRecorder;
+use Kumwe\Audit\Domain\AuditEvent;
 use Kumwe\App\BusinessIntegration\Application\EventContractRegistry;
 use Kumwe\App\BusinessIntegration\Application\InboxStore;
 use Kumwe\App\BusinessIntegration\Application\IntegrationOperationsService;
@@ -18,12 +18,10 @@ use Kumwe\App\BusinessReporting\Application\ProjectionRebuildResult;
 use Kumwe\App\BusinessReporting\Application\ProjectionRuntime;
 use Kumwe\App\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
-use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
 
 #[CoversClass(IntegrationOperationsService::class)]
-#[UsesClass(AuditEvent::class)]
 final class IntegrationOperationsServiceTest extends TestCase
 {
     private const EVENT_ID = '018f22e2-7c8b-7ab0-8f3a-88e8026bb501';

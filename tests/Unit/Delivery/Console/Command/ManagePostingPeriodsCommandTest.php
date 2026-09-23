@@ -6,8 +6,8 @@ namespace Kumwe\App\Tests\Unit\Delivery\Console\Command;
 
 use Kumwe\App\Tests\Support\TranslatesConsoleOutput;
 use DateTimeImmutable;
-use Kumwe\App\Audit\Application\AuditRecorder;
-use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\Audit\Application\AuditRecorder;
+use Kumwe\Audit\Domain\AuditEvent;
 use Kumwe\App\BusinessRecord\Application\PostingPeriodService;
 use Kumwe\App\Delivery\Console\Command\ConsoleAuthorizer;
 use Kumwe\App\Delivery\Console\Command\ManagePostingPeriodsCommand;

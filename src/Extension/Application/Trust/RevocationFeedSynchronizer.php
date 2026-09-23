@@ -6,8 +6,8 @@ namespace Kumwe\App\Extension\Application\Trust;
 
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\App\Audit\Application\AuditRecorder;
-use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\Audit\Application\AuditRecorder;
+use Kumwe\Audit\Domain\AuditEvent;
 use Kumwe\App\Kernel\Configuration\RevocationFeedConfiguration;
 use Kumwe\Context\Value\ExecutionContext;
 use Psr\Clock\ClockInterface;

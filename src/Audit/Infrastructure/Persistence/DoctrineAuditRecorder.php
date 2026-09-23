@@ -7,10 +7,11 @@ namespace Kumwe\App\Audit\Infrastructure\Persistence;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\App\Audit\Application\AuditRecorder;
-use Kumwe\App\Audit\Domain\AuditEvent;
-use Kumwe\App\Audit\Domain\AuditEventDigest;
+use Kumwe\Audit\Application\AuditRecorder;
+use Kumwe\Audit\Domain\AuditEvent;
+use Kumwe\Audit\Domain\AuditEventDigest;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\CanonicalJson\CanonicalEncoder;
 
 /**
  * Records audit events as digest-chained rows in the prefixed `audit_events` table.
@@ -39,15 +40,19 @@ use Kumwe\App\Infrastructure\Persistence\TableNames;
 final readonly class DoctrineAuditRecorder implements AuditRecorder
 {
     /**
-     * Bind the recorder to the connection and table map it writes through.
+     * Bind the recorder to the connection and table map it writes through and the encoder it digests with.
      *
-     * @param  Connection  $database  DBAL connection carrying the caller's transaction.
-     * @param  TableNames  $tables    Resolver that applies the configured prefix to the audit table name.
+     * @param  Connection        $database  DBAL connection carrying the caller's transaction.
+     * @param  TableNames        $tables    Resolver that applies the configured prefix to the audit table name.
+     * @param  CanonicalEncoder  $encoder   Host-bound canonical encoder every event digest is computed with.
      *
      * @since  2.0.0
      */
-    public function __construct(private Connection $database, private TableNames $tables)
-    {
+    public function __construct(
+        private Connection $database,
+        private TableNames $tables,
+        private CanonicalEncoder $encoder,
+    ) {
     }
 
     /**
@@ -77,6 +82,7 @@ final readonly class DoctrineAuditRecorder implements AuditRecorder
             $event->subjectId(),
             $event->outcome(),
             $event->metadata(),
+            $this->encoder,
         );
         $head = $this->database->fetchAssociative(sprintf(
             'SELECT position, digest FROM %s ORDER BY position DESC LIMIT 1',

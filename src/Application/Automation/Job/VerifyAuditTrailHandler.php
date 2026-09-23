@@ -6,7 +6,7 @@ namespace Kumwe\App\Application\Automation\Job;
 
 use InvalidArgumentException;
 use Kumwe\App\Application\Automation\JobHandler;
-use Kumwe\App\Audit\Application\AuditTrailVerifier;
+use Kumwe\Audit\Application\AuditTrailVerifier;
 use Kumwe\Context\Value\ExecutionContext;
 use RuntimeException;
 

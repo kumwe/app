@@ -24,7 +24,7 @@ use Kumwe\App\Application\Automation\JobHandlerRegistry;
 use Kumwe\App\Application\Automation\JobQueue;
 use Kumwe\App\Application\Automation\Scheduler;
 use Kumwe\App\Application\Automation\Worker;
-use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\Audit\Application\AuditRecorder;
 use Kumwe\App\Content\Application\ContentRecord;
 use Kumwe\App\Content\Application\ContentRepository;
 use Kumwe\App\Content\Application\ContentService;

@@ -14,8 +14,8 @@ use Kumwe\App\Application\Automation\JobQueue;
 use Kumwe\App\Application\Automation\QueueRuntimeOperations;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Transaction\Contract\TransactionManager;
-use Kumwe\App\Audit\Application\AuditRecorder;
-use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\Audit\Application\AuditRecorder;
+use Kumwe\Audit\Domain\AuditEvent;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
@@ -23,7 +23,6 @@ use Psr\Clock\ClockInterface;
 use Kumwe\App\Tests\Support\AuthorizationContext;
 
 #[CoversClass(AutomationManagementService::class)]
-#[UsesClass(AuditEvent::class)]
 #[UsesClass(JobHandlerRegistry::class)]
 final class AutomationManagementServiceTest extends TestCase
 {

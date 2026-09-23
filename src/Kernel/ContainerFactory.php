@@ -102,11 +102,11 @@ use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
 use Kumwe\App\Administrator\Presentation\RecoveryAdministratorRenderer;
 use Kumwe\App\Administrator\Presentation\SitePresentationFormMapper;
 use Kumwe\App\Audit\Application\AuditAnchorWriter;
-use Kumwe\App\Audit\Application\AuditArchiveStorage;
-use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\Audit\Application\AuditArchiveStorage;
+use Kumwe\Audit\Application\AuditRecorder;
 use Kumwe\App\Audit\Application\AuditRetentionService;
-use Kumwe\App\Audit\Application\AuditTrailExporter;
-use Kumwe\App\Audit\Application\AuditTrailVerifier;
+use Kumwe\Audit\Application\AuditTrailExporter;
+use Kumwe\Audit\Application\AuditTrailVerifier;
 use Kumwe\App\Audit\Infrastructure\Persistence\DoctrineAuditAnchorWriter;
 use Kumwe\App\Audit\Infrastructure\Persistence\DoctrineAuditRecorder;
 use Kumwe\App\Audit\Infrastructure\Persistence\DoctrineAuditRetentionService;
@@ -1208,6 +1208,12 @@ final class ContainerFactory
             StudioHostSessionMigration::ID => [
                 '9579330402183aedb650109583b9c10531fa84ba5172e0a377319d9cf4c61eda',
             ],
+            // KUMWE-MIG-2026-021 moved the audit values, ports and digests to kumwe/audit. The tamper-evidence
+            // migration now receives the host canonical encoder its backfill digests with; its statements are
+            // unchanged, so databases migrated before the move keep the checksum recorded then.
+            AuditTamperEvidenceMigration::ID => [
+                'a34cfbeea195bfc724a6a30b6d3697fea2a8e605d15a0c427d68bc8d9c1194bf',
+            ],
         ];
     }
 
@@ -1603,6 +1609,7 @@ final class ContainerFactory
             new DoctrineAuditRecorder(
                 self::service($container, Connection::class),
                 self::service($container, TableNames::class),
+                self::service($container, CanonicalEncoder::class),
             ), true);
         $container->share(AuditArchiveStorage::class, static fn (): AuditArchiveStorage =>
             new FilesystemAuditArchiveStorage($root . '/storage/private/audit-archives'), true);
@@ -1614,12 +1621,14 @@ final class ContainerFactory
                 self::service($container, AuditRecorder::class),
                 self::service($container, ClockInterface::class),
                 self::service($container, AuthorizationGateway::class),
+                self::service($container, CanonicalEncoder::class),
             ), true);
         $container->share(AuditTrailVerifier::class, static fn (Container $container): AuditTrailVerifier =>
             new DoctrineAuditTrailVerifier(
                 self::service($container, Connection::class),
                 self::service($container, TableNames::class),
                 self::service($container, AuthorizationGateway::class),
+                self::service($container, CanonicalEncoder::class),
             ), true);
         $container->share(AuditTrailExporter::class, static fn (Container $container): AuditTrailExporter =>
             new DoctrineAuditTrailExporter(
@@ -1640,6 +1649,7 @@ final class ContainerFactory
                 self::service($container, AuditRecorder::class),
                 self::service($container, ClockInterface::class),
                 self::service($container, AuthorizationGateway::class),
+                self::service($container, CanonicalEncoder::class),
             ), true);
         $container->share(ContentRepository::class, static fn (Container $container): ContentRepository =>
             new DoctrineContentRepository(
@@ -2351,7 +2361,10 @@ final class ContainerFactory
                     new InterfacePresentationPreferenceMigration(self::service($container, TableNames::class)),
                     new DocumentContentTypesMigration(self::service($container, TableNames::class)),
                     new MenuPresentationBindingMigration(self::service($container, TableNames::class)),
-                    new AuditTamperEvidenceMigration(self::service($container, TableNames::class)),
+                    new AuditTamperEvidenceMigration(
+                        self::service($container, TableNames::class),
+                        self::service($container, CanonicalEncoder::class),
+                    ),
                     new RecordEncryptionKeyRingMigration(self::service($container, TableNames::class)),
                     new CredentialLifecycleMigration(self::service($container, TableNames::class)),
                     new BusinessNumberSequenceMigration(self::service($container, TableNames::class)),

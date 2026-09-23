@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Delivery\Console\Command;
 
-use Kumwe\App\Audit\Application\AuditTrailVerifier;
+use Kumwe\Audit\Application\AuditTrailVerifier;
 use Kumwe\App\Delivery\Console\Command;
 use Kumwe\App\Delivery\Console\Output;
 use Throwable;

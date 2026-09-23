@@ -1,0 +1,100 @@
+schema: kumwe-migration-ledger/v1
+migration_id: KUMWE-MIG-2026-021
+change_set: KUMWE-CS-2026-021
+package: kumwe/audit
+version: 0.1.2
+artifact_digest: "51771898e5937d7e8b4947baf1006c2a8b1377bd3e3a5c841e48cbffe0ddbf1c"
+handoff_path: vendor/kumwe/audit/MIGRATION-HANDOFF.md
+handoff_sha256: "9ac7e06f9ea7c903b1f3661e31d719f2298fa85343a1f06e15dd63c9f91b6a34"
+release_attestation: docs/architecture/migrations/evidence/KUMWE-MIG-2026-021/RELEASE-ATTESTATION.yaml
+old_namespace_roots: []
+symbols:
+  - old_fqcn: Kumwe\App\Audit\Application\AuditArchiveStorage
+    new_fqcn: Kumwe\Audit\Application\AuditArchiveStorage
+  - old_fqcn: Kumwe\App\Audit\Application\AuditMetadataRedactor
+    new_fqcn: Kumwe\Audit\Application\AuditMetadataRedactor
+  - old_fqcn: Kumwe\App\Audit\Application\AuditRecorder
+    new_fqcn: Kumwe\Audit\Application\AuditRecorder
+  - old_fqcn: Kumwe\App\Audit\Application\AuditTrailExport
+    new_fqcn: Kumwe\Audit\Application\AuditTrailExport
+  - old_fqcn: Kumwe\App\Audit\Application\AuditTrailExporter
+    new_fqcn: Kumwe\Audit\Application\AuditTrailExporter
+  - old_fqcn: Kumwe\App\Audit\Application\AuditTrailVerifier
+    new_fqcn: Kumwe\Audit\Application\AuditTrailVerifier
+  - old_fqcn: Kumwe\App\Audit\Domain\AuditAnchorDigest
+    new_fqcn: Kumwe\Audit\Domain\AuditAnchorDigest
+  - old_fqcn: Kumwe\App\Audit\Domain\AuditEnforcementState
+    new_fqcn: Kumwe\Audit\Domain\AuditEnforcementState
+  - old_fqcn: Kumwe\App\Audit\Domain\AuditEvent
+    new_fqcn: Kumwe\Audit\Domain\AuditEvent
+  - old_fqcn: Kumwe\App\Audit\Domain\AuditEventDigest
+    new_fqcn: Kumwe\Audit\Domain\AuditEventDigest
+  - old_fqcn: Kumwe\App\Audit\Domain\AuditVerificationFinding
+    new_fqcn: Kumwe\Audit\Domain\AuditVerificationFinding
+  - old_fqcn: Kumwe\App\Audit\Domain\AuditVerificationReport
+    new_fqcn: Kumwe\Audit\Domain\AuditVerificationReport
+  - old_fqcn: Kumwe\App\Audit\Domain\StoredAuditArchive
+    new_fqcn: Kumwe\Audit\Domain\StoredAuditArchive
+removed_paths:
+  - src/Audit/Application/AuditArchiveStorage.php
+  - src/Audit/Application/AuditMetadataRedactor.php
+  - src/Audit/Application/AuditRecorder.php
+  - src/Audit/Application/AuditTrailExport.php
+  - src/Audit/Application/AuditTrailExporter.php
+  - src/Audit/Application/AuditTrailVerifier.php
+  - src/Audit/Domain/AuditAnchorDigest.php
+  - src/Audit/Domain/AuditEnforcementState.php
+  - src/Audit/Domain/AuditEvent.php
+  - src/Audit/Domain/AuditEventDigest.php
+  - src/Audit/Domain/AuditVerificationFinding.php
+  - src/Audit/Domain/AuditVerificationReport.php
+  - src/Audit/Domain/StoredAuditArchive.php
+removed_tests:
+  - tests/Unit/Audit/Domain/AuditEventTest.php
+  - tests/Unit/Audit/Application/AuditMetadataRedactorTest.php
+  - tests/Unit/Audit/Domain/AuditEventDigestTest.php
+  - tests/Unit/Audit/Domain/AuditAnchorDigestTest.php
+retained_tests:
+  - tests/Integration/Audit/AuditTrailRuntimeIntegrationTest.php
+  - tests/Integration/Audit/AuditTamperEvidenceTest.php
+  - tests/Integration/Audit/AuditEnforcementUnavailableTest.php
+  - tests/Unit/Audit/Infrastructure/Persistence/AuditEnforcementRefusalTest.php
+  - tests/Integration/Persistence/TransactionBoundaryEngineIntegrationTest.php
+  - tests/Integration/BusinessReporting/ExportArtifactPersistenceTest.php
+  - tests/Integration/Presentation/ThemePersistenceIntegrationTest.php
+  - tests/Unit/Delivery/Console/Command/AuditConsoleCommandTest.php
+  - tests/Unit/Application/Authorization/AdapterAuthorizationParityTest.php
+  - tests/Unit/Application/Authorization/ApplicationAuthorizationTest.php
+  - tests/Unit/Application/Automation/AutomationManagementServiceTest.php
+  - tests/Unit/BusinessIntegration/IntegrationOperationsServiceTest.php
+  - tests/Unit/Identity/Application/Administration/AccessControlServiceTest.php
+  - tests/Unit/Content/Application/ContentTranslationServiceTest.php
+  - tests/Unit/Content/Application/ContributedContentTranslationTest.php
+  - tests/Unit/Navigation/Application/NavigationServiceTest.php
+  - tests/Unit/BusinessReporting/ExportServiceTransactionTest.php
+  - tests/Unit/Studio/Application/Media/StudioMediaAuditTest.php
+  - tests/Architecture/StudioMediaBoundaryTest.php
+  - tests/Unit/Governance/ComposerLockTest.php
+  - tests/Architecture/CapabilityIndexGateTest.php
+di_changes:
+  - service: Kumwe\Audit\Application\AuditRecorder
+    factory: Kumwe\App\Kernel\ContainerFactory
+    note: "Host binds the package recorder port to DoctrineAuditRecorder, which now receives the container's Kumwe\\CanonicalJson\\CanonicalEncoder for every event digest; the package ships no provider."
+  - service: Kumwe\Audit\Application\AuditArchiveStorage
+    factory: Kumwe\App\Kernel\ContainerFactory
+    note: "Host binds the package archive-storage port to FilesystemAuditArchiveStorage, whose keys and lowercase SHA-256 checksums satisfy the package StoredAuditArchive validation."
+  - service: Kumwe\Audit\Application\AuditTrailVerifier
+    factory: Kumwe\App\Kernel\ContainerFactory
+    note: "Host binds the package verifier port to DoctrineAuditTrailVerifier, which now receives the container's CanonicalEncoder to recompute event and anchor digests; finding codes and report counters stay within the package bounds."
+  - service: Kumwe\Audit\Application\AuditTrailExporter
+    factory: Kumwe\App\Kernel\ContainerFactory
+    note: "Host binds the package exporter port to DoctrineAuditTrailExporter; it refuses empty and inverted ranges before constructing the package AuditTrailExport. The App-owned AuditAnchorWriter and AuditRetentionService ports and the tamper-evidence migration also receive the container's CanonicalEncoder."
+capability_index_entries:
+  - kumwe/audit
+release_evidence:
+  - docs/architecture/migrations/evidence/KUMWE-MIG-2026-021/RELEASE-ATTESTATION.yaml
+app_pull_request: "https://github.com/kumwe/app/pull/151"
+roadmap_refs: []
+non_roadmap_refs:
+  - NRM-2026-036
+conflicts: []

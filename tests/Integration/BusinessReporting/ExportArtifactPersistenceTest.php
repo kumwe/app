@@ -10,7 +10,7 @@ use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
 use Kumwe\Context\Value\AuthenticatedSurface;
-use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\Audit\Domain\AuditEvent;
 use Kumwe\App\Audit\Infrastructure\Persistence\DoctrineAuditRecorder;
 use Kumwe\App\BusinessReporting\Application\ExportVersionConflict;
 use Kumwe\App\BusinessReporting\Domain\ExportArtifact;
@@ -22,6 +22,9 @@ use Kumwe\App\Infrastructure\Persistence\Migration\AuditTamperEvidenceMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\CoreSchemaMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\InstallationGlobalAutomationMigration;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Kernel\NativeComputationFactory;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\CanonicalJson\CanonicalEncoder;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
@@ -48,8 +51,17 @@ final class ExportArtifactPersistenceTest extends TestCase
 
     private DoctrineExportArtifactRepository $artifacts;
 
+    /**
+     * Production canonical encoder the audit recorder and migration under test digest with.
+     *
+     * @var    CanonicalEncoder
+     * @since  2.0.0
+     */
+    private CanonicalEncoder $encoder;
+
     protected function setUp(): void
     {
+        $this->encoder = (new NativeComputationFactory())->create(Environment::fromGlobals());
         $this->database = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
         $this->tables = new TableNames($this->database, 'kumwe_');
         $this->transactions = new DoctrineTransactionManager($this->database);
@@ -60,7 +72,7 @@ final class ExportArtifactPersistenceTest extends TestCase
         );
         (new CoreSchemaMigration($this->tables))->up($this->database);
         (new InstallationGlobalAutomationMigration($this->tables))->up($this->database);
-        (new AuditTamperEvidenceMigration($this->tables))->up($this->database);
+        (new AuditTamperEvidenceMigration($this->tables, $this->encoder))->up($this->database);
         $migration = new BusinessIntegrationSdkMigration($this->tables);
         $migration->up($this->database);
         $migration->up($this->database);
@@ -68,7 +80,7 @@ final class ExportArtifactPersistenceTest extends TestCase
 
     public function testMetadataAuditAndDatabaseJobCommitOrRollbackAsOneUnit(): void
     {
-        $audit = new DoctrineAuditRecorder($this->database, $this->tables);
+        $audit = new DoctrineAuditRecorder($this->database, $this->tables, $this->encoder);
         $rolledBack = $this->artifact();
 
         try {

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Kumwe\App\Audit\Infrastructure\Storage;
 
 use InvalidArgumentException;
-use Kumwe\App\Audit\Application\AuditArchiveStorage;
-use Kumwe\App\Audit\Domain\StoredAuditArchive;
+use Kumwe\Audit\Application\AuditArchiveStorage;
+use Kumwe\Audit\Domain\StoredAuditArchive;
 use RuntimeException;
 
 /**

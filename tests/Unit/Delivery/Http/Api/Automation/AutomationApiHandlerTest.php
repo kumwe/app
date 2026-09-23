@@ -13,7 +13,7 @@ use Kumwe\Context\Value\AuthenticationStrength;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\Transaction\Contract\TransactionManager;
-use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\Audit\Application\AuditRecorder;
 use Kumwe\App\Delivery\Http\Api\Automation\AutomationApiHandler;
 use Kumwe\App\Delivery\Http\Api\Concurrency\IfMatch;
 use Kumwe\App\Delivery\Http\Api\Concurrency\RequireIfMatchMiddleware;

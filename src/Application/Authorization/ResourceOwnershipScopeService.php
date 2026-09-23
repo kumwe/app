@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Kumwe\App\Application\Authorization;
 
 use Kumwe\Transaction\Contract\TransactionManager;
-use Kumwe\App\Audit\Application\AuditRecorder;
-use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\Audit\Application\AuditRecorder;
+use Kumwe\Audit\Domain\AuditEvent;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use Psr\Clock\ClockInterface;

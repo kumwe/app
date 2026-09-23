@@ -12,7 +12,7 @@ use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Transaction\Contract\TransactionState;
-use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\Audit\Application\AuditRecorder;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\App\Studio\Application\Host\StudioArtifactAdmission;
 use Kumwe\App\Studio\Application\Host\StudioArtifactHostPort;

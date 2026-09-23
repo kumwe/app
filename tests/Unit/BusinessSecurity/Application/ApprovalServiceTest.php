@@ -10,7 +10,7 @@ use Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\Context\Value\StepUpProof;
-use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\Audit\Application\AuditRecorder;
 use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalBinding;
 use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalDenied;
 use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalRepository;

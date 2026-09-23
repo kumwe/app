@@ -10,7 +10,7 @@ use Kumwe\App\Application\Authorization\AuthorizationGateway;
 use Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter;
 use Kumwe\App\Application\Authorization\SystemIdentity;
 use Kumwe\Transaction\Contract\TransactionManager;
-use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\Audit\Application\AuditRecorder;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionCompatibilityAnalyzer;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionContractAdmission;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionRepository;

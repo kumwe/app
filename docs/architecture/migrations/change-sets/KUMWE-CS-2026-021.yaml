@@ -1,0 +1,137 @@
+schema: kumwe-change-set/v2
+change_set: KUMWE-CS-2026-021
+migration_id: KUMWE-MIG-2026-021
+roadmap_source:
+  title: Kumwe ERP-Extensibility Foundation Roadmap
+  sha256: a202155ef1a65f5ab293d4f8397ebf4ac430db7f1e877c776bbe7851e6fe18d8
+roadmap_refs: []
+state: app-pr-ready
+phase_1:
+  source_repository: kumwe/app
+  source_sha: "24ecf956423c18933e824b43cea1bfb9127a79a9"
+  target_repository: kumwe/audit
+  package_pr: "https://github.com/kumwe/audit/pull/6"
+  tested_sha: null
+  public_api_digest: "2c6dc77bf3f6ae1d1d23a5a6cc137639a12cdab895dfeeb26804cdbeead985b0"
+  capability_digest: "40d0b9d532edc419c22513022a9ce97eb22ed5544f1e7ba927136049bd651a1e"
+  service_map_digest: "01464f2aa14a01add0e74b24a2b516257c8d614af9ed4a6498a5875a731d7225"
+  handoff_digest: "9ac7e06f9ea7c903b1f3661e31d719f2298fa85343a1f06e15dd63c9f91b6a34"
+release:
+  version: 0.1.2
+  source_sha: "e97da93a29e69183b9592e71c1b68065dc2a87f6"
+  artifact_digest: "51771898e5937d7e8b4947baf1006c2a8b1377bd3e3a5c841e48cbffe0ddbf1c"
+  clean_consumer_evidence:
+    - docs/architecture/migrations/evidence/KUMWE-MIG-2026-021/RELEASE-ATTESTATION.yaml
+phase_2:
+  app_pr: "https://github.com/kumwe/app/pull/151"
+  tested_sha: null
+  merged_sha: null
+  exact_dependency: "kumwe/audit 0.1.2"
+  composer_lock_digest: "bdbea0de16613fb28900f5fc98b21f8f2a66aa6e10b06a8a2fa3da71e27876d8"
+  removed_app_symbols:
+    - Kumwe\App\Audit\Application\AuditArchiveStorage
+    - Kumwe\App\Audit\Application\AuditMetadataRedactor
+    - Kumwe\App\Audit\Application\AuditRecorder
+    - Kumwe\App\Audit\Application\AuditTrailExport
+    - Kumwe\App\Audit\Application\AuditTrailExporter
+    - Kumwe\App\Audit\Application\AuditTrailVerifier
+    - Kumwe\App\Audit\Domain\AuditAnchorDigest
+    - Kumwe\App\Audit\Domain\AuditEnforcementState
+    - Kumwe\App\Audit\Domain\AuditEvent
+    - Kumwe\App\Audit\Domain\AuditEventDigest
+    - Kumwe\App\Audit\Domain\AuditVerificationFinding
+    - Kumwe\App\Audit\Domain\AuditVerificationReport
+    - Kumwe\App\Audit\Domain\StoredAuditArchive
+  moved_unit_tests:
+    - tests/Unit/Audit/Domain/AuditEventTest.php
+    - tests/Unit/Audit/Application/AuditMetadataRedactorTest.php
+    - tests/Unit/Audit/Domain/AuditEventDigestTest.php
+    - tests/Unit/Audit/Domain/AuditAnchorDigestTest.php
+  retained_app_tests:
+    - tests/Integration/Audit/AuditTrailRuntimeIntegrationTest.php
+    - tests/Integration/Audit/AuditTamperEvidenceTest.php
+    - tests/Integration/Audit/AuditEnforcementUnavailableTest.php
+    - tests/Unit/Audit/Infrastructure/Persistence/AuditEnforcementRefusalTest.php
+    - tests/Integration/Persistence/TransactionBoundaryEngineIntegrationTest.php
+    - tests/Integration/BusinessReporting/ExportArtifactPersistenceTest.php
+    - tests/Integration/Presentation/ThemePersistenceIntegrationTest.php
+    - tests/Unit/Delivery/Console/Command/AuditConsoleCommandTest.php
+    - tests/Unit/Application/Authorization/AdapterAuthorizationParityTest.php
+    - tests/Unit/Application/Authorization/ApplicationAuthorizationTest.php
+    - tests/Unit/Application/Automation/AutomationManagementServiceTest.php
+    - tests/Unit/BusinessIntegration/IntegrationOperationsServiceTest.php
+    - tests/Unit/Identity/Application/Administration/AccessControlServiceTest.php
+    - tests/Unit/Content/Application/ContentTranslationServiceTest.php
+    - tests/Unit/Content/Application/ContributedContentTranslationTest.php
+    - tests/Unit/Navigation/Application/NavigationServiceTest.php
+    - tests/Unit/BusinessReporting/ExportServiceTransactionTest.php
+    - tests/Unit/Studio/Application/Media/StudioMediaAuditTest.php
+    - tests/Architecture/StudioMediaBoundaryTest.php
+    - tests/Unit/Governance/ComposerLockTest.php
+    - tests/Architecture/CapabilityIndexGateTest.php
+evidence:
+  package:
+    - docs/architecture/migrations/evidence/KUMWE-MIG-2026-021/RELEASE-ATTESTATION.yaml
+    - "https://github.com/kumwe/audit/actions/runs/34248226376; release on record on tag commit e97da93a29e69183b9592e71c1b68065dc2a87f6"
+    - "https://github.com/kumwe/audit/actions/runs/34248226150; package CI on the same commit"
+  app_composition:
+    - tests/Unit/Delivery/Console/Command/AuditConsoleCommandTest.php
+    - tests/Unit/Audit/Infrastructure/Persistence/AuditEnforcementRefusalTest.php
+    - tests/Unit/Governance/ComposerLockTest.php
+    - tests/Unit/Governance/CoreGrowthGateTest.php
+    - tests/Architecture/CapabilityIndexGateTest.php
+    - tests/Architecture/StudioMediaBoundaryTest.php
+    - "composer require kumwe/audit:0.1.2 --prefer-source; one lock install, no other lock change"
+    - "composer kumwe:capability-index, kumwe:core-growth-record, baseline:record, then the composer qa gates and the unit and architecture suites, run locally on PHP 8.4 without ext-kumwe_engine"
+  database_matrix:
+    - tests/Integration/Audit/AuditTrailRuntimeIntegrationTest.php
+    - tests/Integration/Audit/AuditTamperEvidenceTest.php
+    - tests/Integration/Audit/AuditEnforcementUnavailableTest.php
+    - tests/Integration/Persistence/TransactionBoundaryEngineIntegrationTest.php
+    - tests/Integration/BusinessReporting/ExportArtifactPersistenceTest.php
+    - "To be exercised by the pull request's hosted workflows on MariaDB, MySQL and PostgreSQL."
+  concurrency:
+    - tests/Integration/Audit/AuditTrailRuntimeIntegrationTest.php
+    - tests/Integration/Persistence/TransactionBoundaryEngineIntegrationTest.php
+    - "Witness-link recording under concurrent transactions and transaction atomicity; to be exercised by the pull request's hosted workflows."
+  authorization_security:
+    - tests/Unit/Application/Authorization/AdapterAuthorizationParityTest.php
+    - tests/Unit/Application/Authorization/ApplicationAuthorizationTest.php
+    - tests/Unit/Delivery/Console/Command/AuditConsoleCommandTest.php
+    - tests/Integration/Audit/AuditTamperEvidenceTest.php
+    - "Capability checks on verify, export, anchor and retention stay in the App adapters; the hosted source-and-image security scans run on the pull request."
+  lifecycle_recovery:
+    - tests/Integration/Audit/AuditEnforcementUnavailableTest.php
+    - tests/Integration/Audit/AuditTamperEvidenceTest.php
+    - tests/Integration/Presentation/ThemePersistenceIntegrationTest.php
+    - "Repeatable tamper-evidence migration, guard refusal degradation and backfill idempotency; to be exercised by the pull request's hosted workflows."
+  delivery_browser:
+    - tests/Unit/Delivery/Console/Command/AuditConsoleCommandTest.php
+    - tests/Unit/Administrator/Http/Handler/AdministratorAccessControlHandlerTest.php
+    - tests/Unit/Administrator/Http/Handler/AdministratorDashboardHandlerTest.php
+    - tests/Unit/Delivery/Http/Api/Automation/AutomationApiHandlerTest.php
+    - "audit:verify and audit:export console delivery and the administrator handlers that record audit events; the browser suites run in the pull request's hosted workflows."
+  deployment_backup_restore:
+    - tests/Support/BusinessRuntimeBackupAcceptance.php
+    - tests/Integration/Audit/AuditTamperEvidenceTest.php
+    - "Signed backup, clean restore and production acceptance on three engines; to be exercised by the pull request's hosted workflows."
+  native_parity_abi:
+    - tests/Unit/Kernel/NativeComputationFactoryTest.php
+    - tests/Architecture/CanonicalJsonSemanticIdentityGateTest.php
+    - tests/Integration/Audit/AuditTrailRuntimeIntegrationTest.php
+    - "Every digest now flows through the host-bound Kumwe\\CanonicalJson\\CanonicalEncoder (the native generic-v1 encoder); to be exercised by the pull request's hosted workflows with ext-kumwe_engine 1.0.3."
+  performance_capacity:
+    - tests/Integration/Audit/AuditTrailRuntimeIntegrationTest.php
+    - tests/Integration/Audit/AuditTamperEvidenceTest.php
+    - "Batched verification and bounded link windows are unchanged; no performance claim is made and the hosted database lanes exercise the batched walk."
+compatibility: "Drop-in for consumers: the thirteen types keep their names and shapes under Kumwe\\Audit; AuditEventDigest::compute() and AuditAnchorDigest::compute() take the host CanonicalEncoder explicitly, and the package values refuse unbounded metadata, empty exports, malformed checksums and inconsistent report counters that the App classes accepted."
+migration_recovery: null
+security_impact: "None on authority: capability checks, transaction coupling, append-only guards, export key custody and retention stay in the App adapters; the package tightens metadata bounds and refuses object-bearing metadata before it is recorded."
+performance_claim: null
+rollback: "Revert the App pull request and restore the thirteen removed classes and four unit tests from the baseline commit; no persisted data changes, and databases migrated before the move keep their recorded tamper-evidence migration checksum."
+known_gaps:
+  - "The local sandbox runs PHP 8.4 without ext-kumwe_engine and without a database server, so the integration and functional lanes, PHP 8.5 and the native encoder path are proven by the App CI on this pull request."
+  - "Byte parity between the host-bound native generic-v1 encoder and the retired Kumwe\\App\\Shared\\Domain\\CanonicalJson encoding of already-stored audit rows was asserted on the canonical-json corpus (KUMWE-MIG-2026-007); a pre-adoption database must still report audit:verify intact after upgrade, which the hosted database lanes observe."
+  - "The release attestation was produced by an isolated verification agent restricted to inspection; no clean consumer install was executed there."
+completion_claim: false
+accepted_by: null

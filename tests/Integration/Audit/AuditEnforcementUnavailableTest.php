@@ -11,8 +11,8 @@ use Doctrine\DBAL\Exception\SyntaxErrorException;
 use Kumwe\App\Application\Authorization\SystemIdentity;
 use Kumwe\App\Application\Authorization\SystemPrincipal;
 use Kumwe\App\Application\Automation\Job\VerifyAuditTrailHandler;
-use Kumwe\App\Audit\Domain\AuditEnforcementState;
-use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\Audit\Domain\AuditEnforcementState;
+use Kumwe\Audit\Domain\AuditEvent;
 use Kumwe\App\Audit\Infrastructure\Persistence\AuditAppendOnlyGuard;
 use Kumwe\App\Audit\Infrastructure\Persistence\AuditEnforcementRefusal;
 use Kumwe\App\Audit\Infrastructure\Persistence\DoctrineAuditAnchorWriter;
@@ -27,9 +27,12 @@ use Kumwe\App\Infrastructure\Persistence\Migration\AuditTamperEvidenceMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\CoreSchemaMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\InstallationGlobalAutomationMigration;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Kernel\NativeComputationFactory;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\App\Tests\Support\AllowingAuditAuthorization;
 use Kumwe\App\Tests\Support\MovableAuditClock;
 use Kumwe\App\Tests\Support\TriggerRefusingConnection;
+use Kumwe\CanonicalJson\CanonicalEncoder;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Context\Value\SiteContext;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -61,6 +64,14 @@ final class AuditEnforcementUnavailableTest extends TestCase
 
     private DoctrineAuditRecorder $recorder;
 
+    /**
+     * Production canonical encoder every digest in this test is computed and re-derived with.
+     *
+     * @var    CanonicalEncoder
+     * @since  2.0.0
+     */
+    private CanonicalEncoder $encoder;
+
     private MovableAuditClock $clock;
 
     private string $archiveRoot;
@@ -76,7 +87,8 @@ final class AuditEnforcementUnavailableTest extends TestCase
         $this->database = $database;
         $this->tables = new TableNames($this->database, 'kumwe_');
         $this->transactions = new DoctrineTransactionManager($this->database);
-        $this->recorder = new DoctrineAuditRecorder($this->database, $this->tables);
+        $this->encoder = (new NativeComputationFactory())->create(Environment::fromGlobals());
+        $this->recorder = new DoctrineAuditRecorder($this->database, $this->tables, $this->encoder);
         $this->clock = new MovableAuditClock(new DateTimeImmutable('2026-08-13 09:00:00', new DateTimeZone('UTC')));
         $this->archiveRoot = sys_get_temp_dir() . '/kumwe-audit-degraded-' . bin2hex(random_bytes(8));
         (new CoreSchemaMigration($this->tables))->up($this->database);
@@ -95,7 +107,7 @@ final class AuditEnforcementUnavailableTest extends TestCase
 
     public function testTheMigrationCompletesWhenTheServerRefusesToCreateTheTriggers(): void
     {
-        $migration = new AuditTamperEvidenceMigration($this->tables);
+        $migration = new AuditTamperEvidenceMigration($this->tables, $this->encoder);
 
         $migration->up($this->database);
         // Repeatable: a replay on a still-unprivileged server must be just as uneventful.
@@ -120,7 +132,7 @@ final class AuditEnforcementUnavailableTest extends TestCase
 
         $this->expectException(SyntaxErrorException::class);
 
-        (new AuditTamperEvidenceMigration($this->tables))->up($this->database);
+        (new AuditTamperEvidenceMigration($this->tables, $this->encoder))->up($this->database);
     }
 
     public function testTheTrailIsStillChainedAnchoredAndVerifiableWithoutEnforcement(): void
@@ -225,7 +237,7 @@ final class AuditEnforcementUnavailableTest extends TestCase
     /** Applies the tamper-evidence migration on the refusing connection. */
     private function migrate(): void
     {
-        (new AuditTamperEvidenceMigration($this->tables))->up($this->database);
+        (new AuditTamperEvidenceMigration($this->tables, $this->encoder))->up($this->database);
     }
 
     /** @return list<string> */
@@ -253,7 +265,12 @@ final class AuditEnforcementUnavailableTest extends TestCase
 
     private function verifier(): DoctrineAuditTrailVerifier
     {
-        return new DoctrineAuditTrailVerifier($this->database, $this->tables, new AllowingAuditAuthorization());
+        return new DoctrineAuditTrailVerifier(
+            $this->database,
+            $this->tables,
+            new AllowingAuditAuthorization(),
+            $this->encoder,
+        );
     }
 
     private function anchorWriter(): DoctrineAuditAnchorWriter
@@ -265,6 +282,7 @@ final class AuditEnforcementUnavailableTest extends TestCase
             $this->recorder,
             $this->clock,
             new AllowingAuditAuthorization(),
+            $this->encoder,
         );
     }
 
@@ -286,6 +304,7 @@ final class AuditEnforcementUnavailableTest extends TestCase
             $this->recorder,
             $this->clock,
             new AllowingAuditAuthorization(),
+            $this->encoder,
         );
     }
 

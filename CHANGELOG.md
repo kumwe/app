@@ -79,6 +79,25 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Added
 
+- **2026-09-23 — `kumwe/audit` 0.1.2 owns the audit event, redaction, digests, evidence values and storage ports.**
+  The audit package enters App through the migration ledger (`NRM-2026-036`): `KUMWE-MIG-2026-021`, its change set,
+  the integration train `KUMWE-TRAIN-2026-021` and the independent release attestation record the verified `v0.1.2`
+  release, and `composer.json` pins it exactly. As the released record prescribes, the App's `AuditArchiveStorage`,
+  `AuditMetadataRedactor`, `AuditRecorder`, `AuditTrailExport`, `AuditTrailExporter`, `AuditTrailVerifier`,
+  `AuditAnchorDigest`, `AuditEnforcementState`, `AuditEvent`, `AuditEventDigest`, `AuditVerificationFinding`,
+  `AuditVerificationReport` and `StoredAuditArchive` are removed together with the four duplicated unit tests the
+  package now owns, every consumer reads the package types, and `ContainerFactory` binds the package recorder,
+  archive-storage, exporter and verifier ports to the App's Doctrine and filesystem adapters. The Doctrine recorder,
+  verifier, anchor writer and retention service and the tamper-evidence migration now take the container's
+  `Kumwe\CanonicalJson\CanonicalEncoder` through their constructors, because the package computes every event and
+  anchor digest through an explicit encoder rather than the App's `CanonicalJson` helper; the migration's statements
+  are unchanged, so its pre-move checksum stays accepted for databases migrated before the move. The adapters, the
+  App-owned `AuditAnchorWriter` and `AuditRetentionService` ports, authorization, transaction coupling, the
+  append-only guards, the migration and the `audit:verify` and `audit:export` commands stay in App, so no
+  `Kumwe\App\Audit\` root is retired and the ledger enumerates the thirteen symbols instead. The layer graph admits
+  `Kumwe\Audit` as an application and domain package, and the retained tests no longer attribute the package
+  classes as App coverage. The installed release ships its record as `MIGRATION-HANDOFF.md`, which the ledger binds
+  by path and digest. (#151)
 - **2026-09-15 — `kumwe/navigation` 0.1.3 owns the menu tree, the navigation records and the repository contract.**
   The first Content-and-Surfaces package enters App through the migration ledger (`NRM-2026-035`):
   `KUMWE-MIG-2026-035`, its change set, the integration train `KUMWE-TRAIN-2026-035` and the independent release

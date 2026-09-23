@@ -9,14 +9,15 @@ use InvalidArgumentException;
 use Kumwe\App\Application\Authorization\AuthorizationGateway;
 use Kumwe\App\Application\Authorization\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
-use Kumwe\App\Audit\Application\AuditTrailVerifier;
-use Kumwe\App\Audit\Domain\AuditAnchorDigest;
-use Kumwe\App\Audit\Domain\AuditEnforcementState;
-use Kumwe\App\Audit\Domain\AuditEventDigest;
-use Kumwe\App\Audit\Domain\AuditVerificationFinding;
-use Kumwe\App\Audit\Domain\AuditVerificationReport;
+use Kumwe\Audit\Application\AuditTrailVerifier;
+use Kumwe\Audit\Domain\AuditAnchorDigest;
+use Kumwe\Audit\Domain\AuditEnforcementState;
+use Kumwe\Audit\Domain\AuditEventDigest;
+use Kumwe\Audit\Domain\AuditVerificationFinding;
+use Kumwe\Audit\Domain\AuditVerificationReport;
 use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\CanonicalJson\CanonicalEncoder;
 use RuntimeException;
 use Throwable;
 
@@ -61,11 +62,12 @@ final readonly class DoctrineAuditTrailVerifier implements AuditTrailVerifier
     private const int LINK_WINDOW = 4096;
 
     /**
-     * Bind the verifier to its connection, table map and authorization gateway.
+     * Bind the verifier to its connection, table map, authorization gateway and canonical encoder.
      *
      * @param  Connection            $database       Connection the audit tables live on.
      * @param  TableNames            $tables         Resolver for prefixed physical table names.
      * @param  AuthorizationGateway  $authorization  Decides whether the caller may verify the trail.
+     * @param  CanonicalEncoder      $encoder        Host-bound encoder every stored digest is recomputed with.
      *
      * @since  2.0.0
      */
@@ -73,6 +75,7 @@ final readonly class DoctrineAuditTrailVerifier implements AuditTrailVerifier
         private Connection $database,
         private TableNames $tables,
         private AuthorizationGateway $authorization,
+        private CanonicalEncoder $encoder,
     ) {
     }
 
@@ -196,6 +199,7 @@ final readonly class DoctrineAuditTrailVerifier implements AuditTrailVerifier
                 $entry->previousDigest,
                 $entry->archiveSha256,
                 $entry->createdAt,
+                $this->encoder,
             );
             if (!hash_equals($entry->digest, $digest)) {
                 return new AuditVerificationFinding(
@@ -476,6 +480,7 @@ final readonly class DoctrineAuditTrailVerifier implements AuditTrailVerifier
             $this->optionalText($row['subject_id'] ?? null),
             $this->text($row['outcome'] ?? null),
             $decoded,
+            $this->encoder,
         );
     }
 
