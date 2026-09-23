@@ -81,14 +81,14 @@ development programme, from the architecture decision that opened it to the curr
 
 - **2026-09-23 — `kumwe/extension-sdk` 0.3.3 composes the extension contracts over the extracted capability
   packages and closes the release train.**
-  The SDK candidate enters App through the migration ledger (`NRM-2026-057`): `KUMWE-MIG-2026-033`, its change
-  set, the integration train `KUMWE-TRAIN-2026-033`, which carries the ten train packages and their merge order,
-  and the release attestation record the candidate commit of pull request 22, and `composer.json`
-  pins `0.3.3` exactly through a temporary package repository entry that names the candidate's zipball; the
-  entry leaves once `v0.3.3` is published. The SDK is now a Version 2 manifested package with 96 exports, so it
-  leaves the legacy registry, which is empty, and its three retired App roots move to the ledger. The eighty-eight
-  duplicate declarations the SDK dropped resolve to their canonical owners through the train ledgers, and the SDK
-  `IdempotencyKey` copy maps to `Kumwe\Idempotency\IdempotencyKey`. `ExtensionManifest::fromJson`,
+  The SDK enters App through the migration ledger (`NRM-2026-057`): `KUMWE-MIG-2026-033`, its change set, the
+  integration train `KUMWE-TRAIN-2026-033`, which carries the ten train packages and their merge order, and the
+  release attestation record the published `v0.3.3` (the pin was first locked from the candidate commit of
+  pull request 22 through a temporary package repository entry until the release was published), and
+  `composer.json` pins `0.3.3` exactly from Packagist. The SDK is now a Version 2 manifested package with 96
+  exports, so it leaves the legacy registry, which is empty, and its three retired App roots move to the ledger.
+  The eighty-eight duplicate declarations the SDK dropped resolve to their canonical owners through the train
+  ledgers, and the SDK `IdempotencyKey` copy maps to `Kumwe\Idempotency\IdempotencyKey`. `ExtensionManifest::fromJson`,
   `ManifestContributions::fromManifest`, `ExtensionContributionSummary::project` and the manifest declaration
   factories take the container's `CanonicalEncoder`, so `DoctrineExtensionManager`, `ExtensionRuntimeMapCompiler`,
   `ExtensionRuntimeLoader`, `TrustStore`, `BusinessSecurityPortalMigration`, `ExtensionContributionRegistrySet`,
