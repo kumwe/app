@@ -37,7 +37,6 @@ it leaves the registry when that is adopted, as `kumwe/conversion` did at `0.1.5
 
 ### The remaining catalogue
 
-The Version 2 catalogue has thirty targets ([audit of 2026-09-07](audits/2026-09-07/requirements.md)); sixteen
 The Version 2 catalogue has thirty targets ([audit of 2026-09-07](audits/2026-09-07/requirements.md)); seventeen
 are adopted above (the Engine and its binding are provisioned as `ext-kumwe_engine 1.0.3`). Every remaining
 PHP package is published on Packagist with Version 2 manifests and a release record, and each record
