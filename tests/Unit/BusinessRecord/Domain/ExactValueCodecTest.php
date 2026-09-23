@@ -12,6 +12,7 @@ use Kumwe\App\BusinessRecord\Application\PlannedFieldEncoding;
 use Kumwe\App\BusinessRecord\Application\RecordColumnEncodingPlan;
 use Kumwe\App\BusinessRecord\Application\RecordValueCodec;
 use Kumwe\App\BusinessRecord\Application\SecretAssociatedData;
+use Kumwe\App\BusinessRecord\Domain\RecordValueProtection;
 use Kumwe\BusinessSchema\Domain\PhysicalColumnBlueprint;
 use Kumwe\BusinessSchema\Domain\PhysicalTableBlueprint;
 use Kumwe\BusinessSchema\Domain\PhysicalTableKind;
@@ -312,6 +313,145 @@ final class ExactValueCodecTest extends TestCase
             ['c_code' => 'B'],
             $codec->encodePlanned($plan, ['code' => 'B']),
             'A value collection mentioning one planned field writes only that field.',
+        );
+    }
+
+    /**
+     * A bounded JSON value normalizes to its canonical spelling and is refused past its byte budget.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testBoundedJsonNormalizesToItsCanonicalSpellingWithinItsByteBudget(): void
+    {
+        $codec = self::codec();
+        $field = new FieldDefinition('payload', 'Payload', 'core.bounded_json', configuration: ['max_bytes' => 32]);
+
+        self::assertSame(
+            ['alpha' => ['flag' => true], 'zeta' => 1],
+            $codec->normalize(
+                $field,
+                ['zeta' => 1, 'alpha' => ['flag' => true]],
+                'default',
+                NeutralBusinessFixture::DEFINITION_ID,
+                'row',
+            ),
+            'The canonical spelling, with its keys ordered, is what reaches the column.',
+        );
+
+        try {
+            $codec->normalize(
+                $field,
+                ['note' => str_repeat('x', 40)],
+                'default',
+                NeutralBusinessFixture::DEFINITION_ID,
+                'row',
+            );
+            self::fail('A canonical JSON document over the configured byte budget was accepted.');
+        } catch (InvalidArgumentException $exception) {
+            self::assertSame('A bounded JSON value exceeds its configured byte limit.', $exception->getMessage());
+        }
+    }
+
+    /**
+     * A secret that is already sealed passes through normalization in either form App carries it.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAnAlreadySealedSecretPassesThroughNormalizationUnchanged(): void
+    {
+        $codec = self::codec();
+        $envelope = self::envelope();
+        $field = self::field('credential');
+
+        self::assertSame(
+            $envelope,
+            $codec->normalize($field, $envelope, 'default', NeutralBusinessFixture::DEFINITION_ID, 'row'),
+            'An envelope is returned as it is, never sealed a second time.',
+        );
+
+        $rebuilt = $codec->normalize(
+            $field,
+            RecordValueProtection::protect($envelope),
+            'default',
+            NeutralBusinessFixture::DEFINITION_ID,
+            'row',
+        );
+        self::assertInstanceOf(EncryptedEnvelope::class, $rebuilt);
+        self::assertSame($envelope->toStorage(), $rebuilt->toStorage());
+    }
+
+    /**
+     * Column encoding refuses a secret that was never sealed and rebuilds one held as protected storage.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testColumnEncodingRefusesAnUnsealedSecretAndRebuildsAProtectedOne(): void
+    {
+        $definition = EntityTypeDefinition::fromArray(NeutralBusinessFixture::backupDocument());
+        $table = new PhysicalTableBlueprint(
+            'record',
+            'kb_secret_record',
+            PhysicalTableKind::Entity,
+            [
+                new PhysicalColumnBlueprint('record_key', 'c_record_key', 'guid'),
+                new PhysicalColumnBlueprint('credential.ciphertext', 'c_credential_ciphertext', 'blob'),
+                new PhysicalColumnBlueprint('credential.nonce', 'c_credential_nonce', 'blob'),
+                new PhysicalColumnBlueprint('credential.key_id', 'c_credential_key_id', 'string'),
+                new PhysicalColumnBlueprint('credential.algorithm', 'c_credential_algorithm', 'string'),
+            ],
+            ['c_record_key'],
+        );
+        $codec = self::codec();
+        $plan = $codec->encodingPlan($definition, $table);
+        $envelope = self::envelope();
+        $columns = [
+            'c_credential_ciphertext' => $envelope->ciphertext,
+            'c_credential_nonce' => $envelope->nonce,
+            'c_credential_key_id' => 'unit-key-v1',
+            'c_credential_algorithm' => $envelope->algorithm,
+        ];
+
+        self::assertSame(
+            ['credential'],
+            array_map(
+                static fn (PlannedFieldEncoding $planned): string => $planned->field->handle,
+                $plan->fields,
+            ),
+        );
+        self::assertSame($columns, $codec->encodePlanned($plan, ['credential' => $envelope]));
+        self::assertSame(
+            $columns,
+            $codec->encodePlanned($plan, ['credential' => RecordValueProtection::protect($envelope)]),
+            'The protected storage a record holds is rebuilt into the same envelope.',
+        );
+
+        try {
+            $codec->encodePlanned($plan, ['credential' => 'plaintext-never-stored']);
+            self::fail('An unsealed secret must never reach a column.');
+        } catch (InvalidArgumentException $exception) {
+            self::assertSame('A normalized secret field is invalid.', $exception->getMessage());
+        }
+    }
+
+    /**
+     * Build one sealed envelope whose members are exact, so storage round trips compare byte for byte.
+     *
+     * @return  EncryptedEnvelope  Envelope under the unit key.
+     *
+     * @since   2.0.0
+     */
+    private static function envelope(): EncryptedEnvelope
+    {
+        return new EncryptedEnvelope(
+            str_repeat("\x7f", 32),
+            str_repeat("\x01", SODIUM_CRYPTO_AEAD_XCHACHA20POLY1305_IETF_NPUBBYTES),
+            'unit-key-v1',
         );
     }
 

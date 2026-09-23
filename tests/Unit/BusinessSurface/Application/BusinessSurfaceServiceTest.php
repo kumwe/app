@@ -14,6 +14,8 @@ use Kumwe\Context\Value\SiteContext;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\BusinessDefinition\Application\FieldTypeDefinitionResolver;
 use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\BusinessDefinition\Domain\FieldDefinition;
+use Kumwe\BusinessDefinition\Domain\FieldTypeDefinition;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordDefinitionResolver;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordNotFound;
 use Kumwe\Extension\Spi\BusinessRecord\Query\RecordCursor;
@@ -22,6 +24,9 @@ use Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessController;
 use Kumwe\App\BusinessSurface\Application\BusinessSurface;
 use Kumwe\App\BusinessSurface\Application\BusinessSurfaceCatalog;
 use Kumwe\App\BusinessSurface\Application\BusinessSurfaceService;
+use Kumwe\App\BusinessSurface\Application\FieldModelContext;
+use Kumwe\App\BusinessSurface\Application\FieldModelPresenter;
+use Kumwe\App\BusinessSurface\Application\PresentedField;
 use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
 use Kumwe\App\Tests\Support\AuthorizationContext;
 use Kumwe\App\Tests\Support\NeutralBusinessFixture;
@@ -117,6 +122,84 @@ final class BusinessSurfaceServiceTest extends TestCase
     }
 
     /**
+     * Proves conditional visibility and editability are evaluated fail closed from the values at hand.
+     *
+     * A field carrying a visibility or editability condition is presented only when the condition reads
+     * exactly true against the disclosed values: a false condition hides the field or pins it read-only,
+     * and a condition whose dependency the values do not carry counts as false rather than as open. The
+     * editability condition is consulted only in a context that accepts input at all.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testConditionalFieldsArePresentedFailClosedFromTheValuesAtHand(): void
+    {
+        $document = NeutralBusinessFixture::document();
+        $document['fields'][] = [
+            'handle' => 'conditional_note',
+            'label' => 'Conditional note',
+            'type' => 'core.text',
+            'default' => 'Default note',
+            'visibility_condition' => [
+                'op' => 'eq',
+                'type' => 'boolean',
+                'args' => [
+                    ['op' => 'field', 'type' => 'boolean', 'field' => 'enabled'],
+                    ['op' => 'literal', 'type' => 'boolean', 'value' => true],
+                ],
+            ],
+            'editability_condition' => [
+                'op' => 'eq',
+                'type' => 'boolean',
+                'args' => [
+                    ['op' => 'field', 'type' => 'string', 'field' => 'status'],
+                    ['op' => 'literal', 'type' => 'string', 'value' => 'ready'],
+                ],
+            ],
+        ];
+        $definition = EntityTypeDefinition::fromArray($document);
+        $metadata = ['fields' => [self::fieldMetadata('name', 1), self::fieldMetadata('conditional_note', 2)]];
+        $service = $this->presentingService();
+        $present = (new ReflectionClass(BusinessSurfaceService::class))->getMethod('present');
+        $presented = static fn (FieldModelContext $context, array $values): array => array_map(
+            static fn (array $field): array => [$field['handle'], $field['editable']],
+            $present->invoke($service, $definition, $metadata, $context, $values),
+        );
+
+        self::assertSame(
+            [['name', true], ['conditional_note', true]],
+            $presented(FieldModelContext::Update, ['enabled' => true, 'status' => 'ready']),
+            'Both conditions read true, so the field is shown and open for input.',
+        );
+        self::assertSame(
+            [['name', true], ['conditional_note', false]],
+            $presented(FieldModelContext::Update, ['enabled' => true, 'status' => 'draft']),
+            'A false editability condition pins the visible field read-only.',
+        );
+        self::assertSame(
+            [['name', true]],
+            $presented(FieldModelContext::Update, ['enabled' => false, 'status' => 'ready']),
+            'A false visibility condition hides the field entirely.',
+        );
+        self::assertSame(
+            [['name', true]],
+            $presented(FieldModelContext::Update, ['status' => 'ready']),
+            'A visibility dependency the values do not carry fails closed to hidden.',
+        );
+        self::assertSame(
+            [['name', true], ['conditional_note', false]],
+            $presented(FieldModelContext::Update, ['enabled' => true]),
+            'An editability dependency the values do not carry fails closed to read-only.',
+        );
+        self::assertSame(
+            [['name', false], ['conditional_note', false]],
+            $presented(FieldModelContext::Detail, ['enabled' => true, 'status' => 'ready']),
+            'A context that accepts no input never consults the editability condition.',
+        );
+    }
+
+    /**
      * Build a catalog that authorizes reads but contains no matching definition.
      *
      * @return  BusinessSurfaceCatalog  Executable empty catalog fixture.
@@ -162,6 +245,81 @@ final class BusinessSurfaceServiceTest extends TestCase
         $reflection->getProperty('catalog')->setValue($service, $catalog);
 
         return $service;
+    }
+
+    /**
+     * Build a facade whose presenter echoes the handle and editability the facade settled.
+     *
+     * @return  BusinessSurfaceService  Reflection-backed fixture with only the presentation collaborators.
+     *
+     * @since   2.0.0
+     */
+    private function presentingService(): BusinessSurfaceService
+    {
+        $presenter = new class implements FieldModelPresenter {
+            /**
+             * Echo the handle and the editability the facade decided, which is all the proof reads back.
+             *
+             * @param   FieldDefinition      $field     Field declaration being presented.
+             * @param   FieldTypeDefinition  $type      Resolved field type.
+             * @param   FieldModelContext    $context   Render or edit context.
+             * @param   mixed                $value     Disclosed or retained value.
+             * @param   list<string>         $errors    Caller-visible validation messages.
+             * @param   bool                 $editable  Whether policy and conditions admit input now.
+             *
+             * @return  PresentedField  Presentation carrying the handle and editability only.
+             *
+             * @since   2.0.0
+             */
+            public function present(
+                FieldDefinition $field,
+                FieldTypeDefinition $type,
+                FieldModelContext $context,
+                mixed $value,
+                array $errors = [],
+                bool $editable = false,
+            ): PresentedField {
+                return new PresentedField(
+                    is_string($value) ? $value : '',
+                    null,
+                    ['handle' => $field->handle, 'editable' => $editable],
+                );
+            }
+        };
+        $fieldTypes = $this->createStub(FieldTypeDefinitionResolver::class);
+        $fieldTypes->method('get')->willReturn(
+            new FieldTypeDefinition('core.text', 'Text', 'Bounded text.', 'string', 'string'),
+        );
+        $reflection = new ReflectionClass(BusinessSurfaceService::class);
+        $service = $reflection->newInstanceWithoutConstructor();
+        $reflection->getProperty('presentations')->setValue($service, $presenter);
+        $reflection->getProperty('fieldTypes')->setValue($service, $fieldTypes);
+
+        return $service;
+    }
+
+    /**
+     * Build the policy-filtered metadata document one presented field is allowed under.
+     *
+     * @param   string  $handle  Field handle the metadata admits.
+     * @param   int     $order   Form order the presentation sorts by.
+     *
+     * @return  array<string, mixed>  Field metadata in the shape the catalog generates.
+     *
+     * @since   2.0.0
+     */
+    private static function fieldMetadata(string $handle, int $order): array
+    {
+        return [
+            'handle' => $handle,
+            'description' => '',
+            'help_text' => '',
+            'type' => 'core.text',
+            'schema' => ['type' => 'string'],
+            'form_group' => 'general',
+            'order' => $order,
+            'placements' => ['form', 'detail'],
+        ];
     }
 
     /**

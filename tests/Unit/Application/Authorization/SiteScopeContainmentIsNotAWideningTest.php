@@ -4,11 +4,17 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Unit\Application\Authorization;
 
+use Kumwe\Access\AuthorizationDecision;
+use Kumwe\Access\AuthorizationDecisionRecorder;
+use Kumwe\Access\AuthorizationDenied;
 use Kumwe\Access\AuthorizationResource;
+use Kumwe\Access\AuthorizationResourceOwnershipUnknown;
+use Kumwe\Access\GrantScope;
 use Kumwe\App\Application\Authorization\DenyByDefaultAuthorizationGateway;
 use Kumwe\Access\MembershipContextValidator;
 use Kumwe\Access\OwnershipScope;
 use Kumwe\Access\ResourceSiteOwnership;
+use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\App\Application\Authorization\StructuredLogAuthorizationDecisionRecorder;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
@@ -137,23 +143,7 @@ final class SiteScopeContainmentIsNotAWideningTest extends TestCase
             AuthorizationContext::ownership(),
             new StructuredLogAuthorizationDecisionRecorder(new NullLogger()),
         );
-        $unowned = new class implements ResourceSiteOwnership {
-            /**
-             * Refuse to name an owner, as the registry does for a resource with no row.
-             *
-             * @param   AuthorizationResource  $resource  Target being resolved.
-             *
-             * @return  OwnershipScope  Never returned.
-             *
-             * @throws  \Kumwe\Access\AuthorizationResourceOwnershipUnknown  Always.
-             *
-             * @since   2.0.0
-             */
-            public function scopeFor(AuthorizationResource $resource): OwnershipScope
-            {
-                throw new \Kumwe\Access\AuthorizationResourceOwnershipUnknown($resource);
-            }
-        };
+        $unowned = $this->unowned();
         self::assertTrue($gateway->decide(
             AuthorizationContext::siteScoped('content.read'),
             Capability::fromString('content.read'),
@@ -174,6 +164,66 @@ final class SiteScopeContainmentIsNotAWideningTest extends TestCase
 
         self::assertFalse($decision->allowed);
         self::assertSame('resource_site_unknown', $decision->reason);
+    }
+
+    /**
+     * Delegation over a resource with no recorded owner is denied and recorded, never resolved to the caller.
+     *
+     * A grant scope naming a concrete resource is admitted only when that resource is owned by the caller's
+     * site. When the ownership registry cannot name an owner at all, the gateway records a denial under the
+     * site-ownership policy and refuses, instead of treating the unknown resource as the caller's own.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testDelegationOverAnUnownedResourceIsDeniedAndRecorded(): void
+    {
+        $recorded = [];
+        $recorder = $this->createStub(AuthorizationDecisionRecorder::class);
+        $recorder->method('record')->willReturnCallback(
+            static function (
+                ExecutionContext $context,
+                Capability $action,
+                AuthorizationResource $resource,
+                AuthorizationDecision $decision,
+            ) use (&$recorded): void {
+                $recorded[] = [
+                    $action->value(),
+                    $resource->type(),
+                    $resource->identifier(),
+                    $decision->allowed,
+                    $decision->policy,
+                    $decision->reason,
+                ];
+            },
+        );
+        $gateway = new DenyByDefaultAuthorizationGateway(
+            AuthorizationContext::provenance(),
+            (new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission()))->authorizationPolicies(),
+            $this->createStub(MembershipContextValidator::class),
+            $this->unowned(),
+            $recorder,
+        );
+
+        try {
+            $gateway->assertCanDelegate(
+                AuthorizationContext::human(['content.update']),
+                Capability::fromString('content.update'),
+                GrantScope::named('content', self::CONTENT),
+            );
+            self::fail('Delegation over a resource whose owning site is unknown must be refused.');
+        } catch (AuthorizationDenied $denied) {
+            self::assertSame('core.site-ownership.v1', $denied->policy);
+            self::assertSame('resource_site_unknown', $denied->reason);
+            self::assertSame('content', $denied->resourceType);
+            self::assertSame(self::CONTENT, $denied->resourceIdentifier);
+        }
+        self::assertSame(
+            [['content.update', 'content', self::CONTENT, false, 'core.site-ownership.v1', 'resource_site_unknown']],
+            $recorded,
+            'The denial is recorded before it is raised.',
+        );
     }
 
     /**
@@ -217,6 +267,34 @@ final class SiteScopeContainmentIsNotAWideningTest extends TestCase
             $this->ownedBy($owner),
             new StructuredLogAuthorizationDecisionRecorder(new NullLogger()),
         );
+    }
+
+    /**
+     * An ownership registry that refuses to name an owner, as the real one does for a resource with no row.
+     *
+     * @return  ResourceSiteOwnership  Registry whose every lookup raises ownership-unknown.
+     *
+     * @since   2.0.0
+     */
+    private function unowned(): ResourceSiteOwnership
+    {
+        return new class implements ResourceSiteOwnership {
+            /**
+             * Refuse to name an owner, as the registry does for a resource with no row.
+             *
+             * @param   AuthorizationResource  $resource  Target being resolved.
+             *
+             * @return  OwnershipScope  Never returned.
+             *
+             * @throws  AuthorizationResourceOwnershipUnknown  Always.
+             *
+             * @since   2.0.0
+             */
+            public function scopeFor(AuthorizationResource $resource): OwnershipScope
+            {
+                throw new AuthorizationResourceOwnershipUnknown($resource);
+            }
+        };
     }
 
     /**

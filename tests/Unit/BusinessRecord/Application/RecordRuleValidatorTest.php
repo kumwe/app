@@ -356,6 +356,46 @@ final class RecordRuleValidatorTest extends TestCase
     }
 
     /**
+     * The `one_of` rule judges the canonical spelling of the normalized value against its declared list.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testOneOfValidatorJudgesTheCanonicalSpellingAgainstTheDeclaredList(): void
+    {
+        $document = NeutralBusinessFixture::backupDocument();
+        foreach ($document['fields'] as &$field) {
+            if (is_array($field) && ($field['handle'] ?? null) === 'evolution_code') {
+                $field['validators'] = [['rule' => 'one_of', 'value' => ['ALPHA', 'BETA']]];
+            }
+        }
+        unset($field);
+        $definition = EntityTypeDefinition::fromArray($document);
+        $rules = self::rules();
+
+        $accepted = $rules->create(
+            $definition,
+            [...NeutralBusinessFixture::recordValues(), 'evolution_code' => 'BETA'],
+            'default',
+            NeutralBusinessFixture::RECORD_ID,
+            NeutralBusinessFixture::RECORD_ID,
+        );
+        self::assertSame('BETA', $accepted['evolution_code']);
+
+        self::assertValidationCode(
+            static fn (): array => $rules->create(
+                $definition,
+                [...NeutralBusinessFixture::recordValues(), 'evolution_code' => 'GAMMA'],
+                'default',
+                NeutralBusinessFixture::RECORD_ID,
+                NeutralBusinessFixture::RECORD_ID,
+            ),
+            'one_of',
+        );
+    }
+
+    /**
      * Build one definition with independent visibility and editability dependencies.
      *
      * @return  EntityTypeDefinition  Definition used by conditional input validation tests.
