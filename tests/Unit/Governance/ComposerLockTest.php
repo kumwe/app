@@ -51,6 +51,7 @@ final class ComposerLockTest extends TestCase
                 'kumwe/audit',
                 'kumwe/business-definition',
                 'kumwe/business-policy',
+                'kumwe/business-schema',
                 'kumwe/canonical-json',
                 'kumwe/computation',
                 'kumwe/content-model',

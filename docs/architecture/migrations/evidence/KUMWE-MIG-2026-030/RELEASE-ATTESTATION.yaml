@@ -1,0 +1,113 @@
+schema: kumwe-release-attestation/v2
+artifact_kind: framework_php
+migration_id: KUMWE-MIG-2026-030
+change_set: KUMWE-CS-2026-030
+repository: "https://github.com/kumwe/business-schema"
+merge_commit: "5c442a147e98c702a50cf5dc2b7d8faf6499d8ef"
+version: "0.1.3"
+tag: v0.1.3
+source_archive:
+  url: "https://github.com/kumwe/business-schema/archive/refs/tags/v0.1.3.tar.gz"
+  sha256: "51f20e334c39887c89035467c9d5847386f4a170470828b7d8f90ac30894c967"
+artifacts:
+  - identity: "kumwe/business-schema:0.1.3"
+    url: "https://github.com/kumwe/business-schema/archive/refs/tags/v0.1.3.tar.gz"
+    sha256: "51f20e334c39887c89035467c9d5847386f4a170470828b7d8f90ac30894c967"
+manifests_and_corpora:
+  - path: resources/public-api/v1.json
+    sha256: "d3dd01caf6d4b6162c54f87797aadc38457754866f1abeb5bfb31d16c6b54178"
+  - path: resources/capabilities/v1.json
+    sha256: "9df001a9b1b911e9fa012d2a6de75ae34f9ab8e1c647a59ddb9af529f4b60bd7"
+  - path: resources/service-map/v1.json
+    sha256: "d7a0f0d59aa94f0f251c598c75a4b97072cbd213e1957e93d321200f268c607b"
+  - path: resources/test-ownership/v1.json
+    sha256: "98d475d96b24535ee998005ef5fb256cdcd74105b1b2fa5a0b21dd15bedcfffe"
+  - path: resources/extraction/v1.json
+    sha256: "8021eed35c7093364b3135f08f857bf02794cb0e6fe22d4b906963dd853e8632"
+  - path: resources/release-dependencies/v1.json
+    sha256: "3a5237c33becb2aa4aa7fe92491cede435844819532cf16da3c52f0ec62f1c3c"
+  - path: MIGRATION-HANDOFF.md
+    sha256: "c9392c4fb52867e932c1aef08c52b4d641085ea390f113c18d8f4d20b2b665d8"
+abi_and_capabilities: null
+sbom:
+  url: null
+  sha256: null
+provenance: "Release on record run 34516325845 (push, attempt 1) published release 386538600 as github-actions[bot]"
+release_workflow: "https://github.com/kumwe/business-schema/actions/runs/34516325845 success on the tag commit"
+registry_or_pie_verification:
+  - "git ls-remote https://github.com/kumwe/business-schema refs/tags/v0.1.3 returned one line for refs/tags/v0.1.3"
+  - "Tag commit from git ls-remote: 5c442a147e98c702a50cf5dc2b7d8faf6499d8ef; no peeled ^{} line (lightweight tag)"
+  - "git clone --quiet --depth 1 --branch v0.1.3 of the repository: HEAD 5c442a147e98c702a50cf5dc2b7d8faf6499d8ef"
+  - "In the clone git cat-file -t v0.1.3 is commit; GitHub git/ref/tags/v0.1.3 object type commit, same sha"
+  - "Packagist p2 observed 2026-09-23T17:25:03Z at repo.packagist.org/p2/kumwe/business-schema.json (HTTP 200)"
+  - "Packagist lists v0.1.3 (0.1.3.0) newest of v0.1.3, v0.1.2, v0.1.1, v0.1.0; time 2026-09-10T18:45:51+00:00"
+  - "Packagist source: git https://github.com/kumwe/business-schema.git at 5c442a147e98c702a50cf5dc2b7d8faf6499d8ef"
+  - "Packagist dist: zip at reference 5c442a147e98c702a50cf5dc2b7d8faf6499d8ef (api.github.com zipball URL)"
+  - "Packagist source and dist references both equal the tag commit and the clone HEAD"
+  - "Packagist dist shasum is an empty string; license Apache-2.0; psr-4 Kumwe\\BusinessSchema\\ => src/"
+  - "Packagist require: php ^8.5, php-64bit *, ext-json *, ext-mbstring *, business-definition 0.1.2, sequence 0.2.1"
+  - "Packagist require also names psr/container ^2.0 and ramsey/uuid ^4.9"
+  - "curl -sS -L of the archive/refs/tags/v0.1.3.tar.gz URL above: HTTP 200, 123088 bytes"
+  - "The download resolved to codeload.github.com/kumwe/business-schema/tar.gz/refs/tags/v0.1.3"
+  - "file reports gzip compressed data for both downloads"
+  - "sha256 51f20e334c39887c89035467c9d5847386f4a170470828b7d8f90ac30894c967 covers the tar.gz bytes"
+  - "The same URL was fetched twice and both downloads produced that digest"
+  - "git archive --format=tar --prefix=business-schema-0.1.3/ v0.1.3 | sha256sum gave d13641880cf6fa31"
+  - "Full local git archive digest: d13641880cf6fa31bb4ef2bd564e13876c8870feae5e4fa868e9621a7d4834cb"
+  - "Extracted business-schema-0.1.3/ holds 52 files, each byte-identical (cmp) to the clone's tracked file"
+  - "diff -r --exclude=.git differs only by .github, phpcs.xml, phpstan.neon, phpunit.xml, tests and tools"
+  - "Every path diff -r reports is export-ignore in .gitattributes; no path exists only in the archive"
+  - "The clone tracks 88 files; the archive omits the 36 export-ignore files and nothing else"
+  - "Archive top level: CHANGELOG.md, CHARTER.md, LICENSE, MIGRATION-HANDOFF.md, README.md, composer.json"
+  - "Archive top-level directories: docs, examples, resources, src; LICENSE is Apache License Version 2.0"
+  - "CHARTER.md, README.md, docs/, resources/ and src/ are all present in the archive"
+  - "GitHub release v0.1.3 id 386538600: author github-actions[bot], published_at 2026-09-10T18:47:00Z"
+  - "GitHub release v0.1.3: draft false, prerelease false, immutable false, target_commitish main, no assets"
+  - "Release on record run 34516325845: push, attempt 1, head_sha 5c442a147e98c702a50cf5dc2b7d8faf6499d8ef"
+  - "Release on record run 34516325845: status completed, conclusion success, created 2026-09-10T18:45:54Z"
+  - "Run 34516325845 jobs: check / PHP 8.5 source and archive, check / Release automation tests, check / Package gate"
+  - "Run 34516325845 job Release the recorded version: success, completed 2026-09-10T18:47:03Z; all four jobs success"
+  - "Package CI run 34516325360: completed, success, on the same commit"
+  - "PR https://github.com/kumwe/business-schema/pull/6 merged 2026-09-10T18:45:51Z into main"
+  - "PR 6 head was 0675894cfe342298e6b7505acdeca08112967518; the tag commit is the main commit of that merge"
+  - "GitHub MCP tools answered every query; no access-denied response was observed"
+clean_consumer_or_build_verification:
+  - "Inspection only: no package script or example was executed; archive, clone and vendor copy were compared"
+  - "resources/public-api/v1.json: valid against package-public-api.v1.schema.json (App SchemaValidator)"
+  - "resources/capabilities/v1.json: valid against package-capabilities.v1.schema.json (App SchemaValidator)"
+  - "resources/service-map/v1.json: valid against package-service-map.v1.schema.json (App SchemaValidator)"
+  - "All three manifests carry package kumwe/business-schema and release 0.1.3"
+  - "docs/release-record.md does not exist at v0.1.3; the shipped record is MIGRATION-HANDOFF.md"
+  - "Governance README section 3.11 admits MIGRATION-HANDOFF.md for published releases"
+  - "MIGRATION-HANDOFF.md front matter parsed by StrictYaml::parseFrontMatter"
+  - "MIGRATION-HANDOFF.md front matter: valid against migration-handoff.v2.schema.json (App SchemaValidator)"
+  - "Record front matter: kumwe-migration-handoff/v2, KUMWE-MIG-2026-030, KUMWE-CS-2026-030, framework_php"
+  - "Record state draft_pr_open; target https://github.com/kumwe/business-schema"
+  - "Record artifact_identity kumwe/business-schema"
+  - "Record canonical namespace Kumwe\\BusinessSchema; composer_package kumwe/business-schema"
+  - "Record ownership.public_manifests digests equal the four locally computed manifest digests"
+  - "Record blockers: 0.1.2 candidate review and merge, independent verification of the final release"
+  - "CHANGELOG.md newest release heading is ## 0.1.3 above ## 0.1.2, ## 0.1.1 and ## 0.1.0; no Unreleased section"
+  - "Package composer.json require: php ^8.5, php-64bit *, ext-json *, ext-mbstring *, business-definition 0.1.2"
+  - "Package composer.json require also names sequence 0.2.1, psr/container ^2.0 and ramsey/uuid ^4.9"
+  - "App composer.lock: kumwe/business-definition v0.1.2 at 1cb59229f311067e8cfdd773a34e34cfeb501791 (exact)"
+  - "App composer.lock: kumwe/sequence v0.2.1 at 142c3e74a7596935ef42c8fa744ca705fd3b4b4f (exact)"
+  - "App composer.lock: psr/container 2.0.2 and ramsey/uuid 4.9.3 satisfy ^2.0 and ^4.9"
+  - "App composer.lock platform: php ^8.5, ext-json * and ext-mbstring * (all satisfy the package requirements)"
+  - "App composer.lock: kumwe/business-schema v0.1.3 at 5c442a147e98c702a50cf5dc2b7d8faf6499d8ef"
+  - "The App vendor copy of MIGRATION-HANDOFF.md and of the six manifests carries the digests above"
+  - "resources/release-readiness.json: status ready, integration_status awaiting-independent-release-verification"
+  - "Validator: tools/Governance bootstrap, SchemaValidator and StrictYaml loaded by a scratch script on PHP 8.4.19"
+verified_at: "2026-09-23T17:25:03Z"
+verified_by: "Independent release verification, inspection only, in the adoption worktree before the Phase 2 edits"
+status: verified
+known_gaps:
+  - "GitHub release v0.1.3 reports immutable false; tag protection and rulesets were not queried"
+  - "No clean consumer install, smoke test or example run was performed; the verification was restricted to inspection"
+  - "The Packagist dist zipball was not downloaded; Packagist publishes an empty dist shasum for it"
+  - "The attested archive is the GitHub tag tar.gz, whose bytes differ from the Packagist zipball of the same commit"
+  - "The verification was performed by the adopting party in the adoption worktree, not by a separate isolated verifier"
+  - "resources/release-readiness.json still reports awaiting-independent-release-verification, by package design"
+  - "The record's blockers still name the 0.1.2 candidate and the 0.1.1 publication; the 0.1.3 release supersedes both"
+  - "No SBOM and no release assets exist for v0.1.3; abi_and_capabilities does not apply to a framework_php artifact"
+  - "The schema checks used the App's fixed JSON Schema 2020-12 subset validator, not a full implementation"

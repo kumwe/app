@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessSchema\Delivery\Api;
 
 use Kumwe\App\BusinessSchema\Application\SchemaExecutionOutcome;
-use Kumwe\App\BusinessSchema\Domain\SchemaPlan;
-use Kumwe\App\BusinessSchema\Domain\SchemaPlanStep;
+use Kumwe\BusinessSchema\Domain\SchemaPlan;
+use Kumwe\BusinessSchema\Domain\SchemaPlanStep;
 
 /**
  * Renders schema-plan application results as stable REST documents.

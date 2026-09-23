@@ -33,7 +33,6 @@ use Kumwe\Extension\Spi\BusinessRecord\Query\RecordProjection;
 use Kumwe\Extension\Spi\BusinessRecord\Query\RecordQuerySpecification;
 use Kumwe\Extension\Spi\BusinessRecord\Query\RelationFilter;
 use Kumwe\Extension\Spi\BusinessRecord\Query\RelationQuantifier;
-use Kumwe\App\BusinessSchema\Infrastructure\Schema\CanonicalDefinitionPhysicalSchemaCompiler;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\App\Tests\Support\NeutralBusinessFixture;
 use Kumwe\App\Tests\Support\TestKernelFactory;
@@ -45,7 +44,6 @@ use Ramsey\Uuid\Uuid;
 #[CoversClass(WorkflowBinding::class)]
 #[CoversClass(BusinessRecordImmutable::class)]
 #[CoversClass(BusinessDefinitionValidator::class)]
-#[CoversClass(CanonicalDefinitionPhysicalSchemaCompiler::class)]
 /**
  * Proves the immutable-correction rule of ADR 0003 end to end against a real engine.
  *

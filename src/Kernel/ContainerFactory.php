@@ -311,15 +311,23 @@ use Kumwe\App\BusinessSchema\Delivery\Administrator\CreateBusinessSchemaPurgePla
 use Kumwe\App\BusinessSchema\Delivery\Administrator\ExecuteBusinessSchemaPlanHandler;
 use Kumwe\App\BusinessSchema\Delivery\Administrator\RecordBusinessSchemaRecoveryEvidenceHandler;
 use Kumwe\App\BusinessSchema\Delivery\Administrator\RecoverBusinessSchemaPlanHandler;
-use Kumwe\App\BusinessSchema\Domain\PhysicalNameCompiler;
+use Kumwe\BusinessSchema\Domain\PhysicalNameCompiler;
 use Kumwe\App\BusinessSchema\Infrastructure\Execution\ConfiguredBusinessSchemaEnvironment;
 use Kumwe\App\BusinessSchema\Infrastructure\Execution\DoctrineBusinessSchemaExecutionLock;
 use Kumwe\App\BusinessSchema\Infrastructure\Execution\DoctrineBusinessSchemaExecutionStateGuard;
 use Kumwe\App\BusinessSchema\Infrastructure\Persistence\DoctrineBusinessSchemaInstallationRepository;
 use Kumwe\App\BusinessSchema\Infrastructure\Persistence\DoctrineBusinessSchemaPlanRepository;
 use Kumwe\App\BusinessSchema\Infrastructure\Persistence\DoctrineBusinessSchemaRecoveryEvidenceRepository;
-use Kumwe\App\BusinessSchema\Infrastructure\Schema\CanonicalDefinitionPhysicalSchemaCompiler;
+use Kumwe\BusinessSchema\Compiler\CanonicalDefinitionPhysicalSchemaCompiler;
 use Kumwe\App\BusinessSchema\Infrastructure\Schema\DoctrinePhysicalSchemaGateway;
+use Kumwe\App\BusinessSchema\Infrastructure\Schema\PortableDefinitionPhysicalSchemaCompiler;
+use Kumwe\App\BusinessSchema\Infrastructure\Schema\PublishedDefinitionSchemaLookup;
+use Kumwe\BusinessDefinition\Application\FieldTypeDefinitionResolver;
+use Kumwe\BusinessSchema\ConfigProvider as BusinessSchemaConfigProvider;
+use Kumwe\BusinessSchema\Container\PhysicalSchemaCompilerFactory;
+use Kumwe\BusinessSchema\Container\SchemaChangePlannerFactory;
+use Kumwe\BusinessSchema\Contract\DefinitionSchemaLookup;
+use Kumwe\BusinessSchema\Planner\SchemaChangePlanner;
 use Kumwe\Content\Application\ContentRepository;
 use Kumwe\Content\Application\ContentModelRepository;
 use Kumwe\App\Content\Application\ContentModelService;
@@ -3071,6 +3079,37 @@ final class ContainerFactory
             self::service($container, TableNames::class),
             self::service($container, FieldTypeRegistry::class),
         ), true);
+        // kumwe/business-schema builds its shared compiler and planner through its ConfigProvider
+        // (KUMWE-MIG-2026-030). The provider advertises its factories as bare class names, so the host admits
+        // only the two container factories the package exports before installing them. The compiler factory
+        // resolves the three typed host bindings below from the container and refuses to construct without
+        // them, so the host binds each one explicitly: the catalog lookup over the App definition repository,
+        // the persisted field-type resolver under the package resolver port, and the name compiler over the
+        // configured table prefix.
+        $businessSchemaDependencies = (new BusinessSchemaConfigProvider())()['dependencies'];
+        $businessSchemaFactories = [];
+        foreach ($businessSchemaDependencies['factories'] as $service => $factory) {
+            if (
+                !is_a($factory, PhysicalSchemaCompilerFactory::class, true)
+                && !is_a($factory, SchemaChangePlannerFactory::class, true)
+            ) {
+                throw new RuntimeException(
+                    sprintf('kumwe/business-schema advertises an unknown container factory "%s".', $factory),
+                );
+            }
+            $businessSchemaFactories[$service] = $factory;
+        }
+        $container->configure([
+            'factories' => $businessSchemaFactories,
+            'aliases' => [],
+            'shared' => $businessSchemaDependencies['shared'],
+        ]);
+        $container->share(DefinitionSchemaLookup::class, static fn (
+            Container $container,
+        ): DefinitionSchemaLookup => new PublishedDefinitionSchemaLookup(
+            self::service($container, BusinessDefinitionRepository::class),
+        ), true);
+        $container->alias(FieldTypeDefinitionResolver::class, DoctrinePersistedFieldTypeDefinitionResolver::class);
         $container->share(
             PhysicalNameCompiler::class,
             new PhysicalNameCompiler($configuration->database->tablePrefix),
@@ -3078,16 +3117,15 @@ final class ContainerFactory
         );
         $container->share(DefinitionPhysicalSchemaCompiler::class, static fn (
             Container $container,
-        ): DefinitionPhysicalSchemaCompiler => new CanonicalDefinitionPhysicalSchemaCompiler(
-            self::service($container, BusinessDefinitionRepository::class),
-            self::service($container, DoctrinePersistedFieldTypeDefinitionResolver::class),
-            self::service($container, PhysicalNameCompiler::class),
+        ): DefinitionPhysicalSchemaCompiler => new PortableDefinitionPhysicalSchemaCompiler(
+            self::service($container, CanonicalDefinitionPhysicalSchemaCompiler::class),
         ), true);
         $container->share(BusinessSchemaPlanner::class, static fn (
             Container $container,
         ): BusinessSchemaPlanner => new BusinessSchemaPlanner(
             self::service($container, BusinessDefinitionRepository::class),
             self::service($container, DefinitionPhysicalSchemaCompiler::class),
+            self::service($container, SchemaChangePlanner::class),
             self::service($container, BusinessSchemaInstallationRepository::class),
             self::service($container, BusinessSchemaPlanRepository::class),
             self::service($container, PhysicalSchemaGateway::class),

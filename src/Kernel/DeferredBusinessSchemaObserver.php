@@ -9,7 +9,7 @@ use DateTimeImmutable;
 use Kumwe\BusinessDefinition\Application\DefinitionVersionRecord;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaLifecycleObserver;
 use Kumwe\App\BusinessSchema\Application\PublishedDefinitionSchemaObserver;
-use Kumwe\App\BusinessSchema\Domain\SchemaPlan;
+use Kumwe\BusinessSchema\Domain\SchemaPlan;
 use Kumwe\Context\Value\SiteContext;
 
 /**

@@ -15,7 +15,6 @@ use Kumwe\App\BusinessRecord\Application\Query\BrowseRecordsQuery;
 use Kumwe\App\BusinessRecord\Application\Query\ReadRecordQuery;
 use Kumwe\Extension\Spi\BusinessRecord\Query\RecordQuerySpecification;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaInstallationRepository;
-use Kumwe\App\BusinessSchema\Infrastructure\Schema\CanonicalDefinitionPhysicalSchemaCompiler;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Kernel\Container;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
@@ -42,7 +41,7 @@ use Ramsey\Uuid\Uuid;
  *
  * @since  2.0.0
  */
-#[CoversClass(CanonicalDefinitionPhysicalSchemaCompiler::class)]
+#[CoversClass(BusinessRecordService::class)]
 final class HotPlanRegressionIntegrationTest extends TestCase
 {
     /**

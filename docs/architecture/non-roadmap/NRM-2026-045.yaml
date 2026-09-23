@@ -1,0 +1,31 @@
+schema: kumwe-non-roadmap-record/v1
+id: NRM-2026-045
+nrm_ref: NRM-2026-045
+roadmap_impact: None
+rationale: "Adopt verified kumwe/business-schema 0.1.3, the owner of the portable physical schema blueprints, the deterministic definition-to-blueprint compiler, the ordered schema change planner and the plan, step, installation and recovery values."
+repositories:
+  - kumwe/app
+  - kumwe/business-schema
+behavior_before: "App declared the twenty-two schema types itself: the blueprint values for tables, columns, indexes, foreign keys and whole schemas, the physical name compiler, the evolution hints, the plan, step, approval, installation and recovery-evidence values with their enums, and the compiler that turned a published definition into its blueprint through the App definition repository and a SiteContext; the ordered diff of two blueprints was a set of private methods on the App BusinessSchemaPlanner."
+behavior_after: "The twenty-two types come from kumwe/business-schema 0.1.3, whose ConfigProvider builds the shared compiler and SchemaChangePlanner; the App binds the package's three typed host inputs, the DefinitionSchemaLookup port to a PublishedDefinitionSchemaLookup adapter over its definition repository, the business-definition FieldTypeDefinitionResolver port to its persisted resolver, and the PhysicalNameCompiler over the configured table prefix, keeps its DefinitionPhysicalSchemaCompiler port bound to a PortableDefinitionPhysicalSchemaCompiler adapter, and injects the package planner into the retained BusinessSchemaPlanner. App keeps planning authority, approval, execution, locks and fences, transactions, audit, persistence, the schema gateway and delivery."
+public_api_impact: "None for callers of the twenty-one namespace-only value moves and none for the three consumers of the App compiler port; BusinessSchemaPlanner takes the package SchemaChangePlanner as a third constructor argument and its dependency blueprints are keyed by handle."
+dependency_impact: "Adds kumwe/business-schema 0.1.3 exactly; its dependencies kumwe/business-definition 0.1.2 and kumwe/sequence 0.2.1 were already locked, psr/container 2.0.2 and ramsey/uuid 4.9.3 satisfy its constraints, and no other lock entry changes."
+compatibility: "Blueprints, operations, plans, steps and their checksums are byte-identical to the App copies, so approvals recorded before the move stay valid. The package raises a TypeError instead of InvalidBusinessSchema for an integer compatibility-metadata key, an edge the definition validator does not admit through the administrator surfaces; the neutral fixture and the VDM definitions plan unchanged."
+data_migration: None
+security_impact: "No authority change; planning, approval, execution and destructive-purge capability checks, the execution lock and fences, transactions and audit stay in App, and the package receives already authorized definitions and blueprints."
+performance:
+  claim: None
+  evidence: []
+operations_deployment: "None; no configuration or schema change. The table prefix the package validates is the one the App already configures."
+recovery_rollback: "Revert the adoption pull request and restore the twenty-two removed classes and the six moved unit tests; no persisted data changes."
+artifacts_evidence:
+  - docs/architecture/migrations/KUMWE-MIG-2026-030.yaml
+  - docs/architecture/migrations/change-sets/KUMWE-CS-2026-030.yaml
+  - docs/architecture/migrations/trains/KUMWE-TRAIN-2026-030.yaml
+  - docs/architecture/migrations/evidence/KUMWE-MIG-2026-030/RELEASE-ATTESTATION.yaml
+  - docs/architecture/capability-index.md
+known_gaps:
+  - "kumwe/record-model 0.1.3, kumwe/record-query 0.1.4 and kumwe/business-surface-contract 0.1.3 read the same definition and value packages and follow as separate adoptions."
+  - "The package's domain-typed refusal of non-string compatibility-metadata keys and the typed factory declarations of its ConfigProvider are owed by a package successor release."
+owner: "eWɘyn"
+status: in-progress

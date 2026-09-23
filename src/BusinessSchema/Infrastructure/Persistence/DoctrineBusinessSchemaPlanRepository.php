@@ -14,8 +14,8 @@ use JsonException;
 use Kumwe\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaConflict;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaPlanRepository;
-use Kumwe\App\BusinessSchema\Domain\SchemaPlan;
-use Kumwe\App\BusinessSchema\Domain\SchemaPlanStep;
+use Kumwe\BusinessSchema\Domain\SchemaPlan;
+use Kumwe\BusinessSchema\Domain\SchemaPlanStep;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\Context\Value\SiteContext;
 use RuntimeException;
@@ -63,7 +63,7 @@ final readonly class DoctrineBusinessSchemaPlanRepository implements BusinessSch
      *
      * @throws  \Doctrine\DBAL\Exception  When the driver rejects the read.
      * @throws  RuntimeException  When a stored row disagrees with its own canonical plan document.
-     * @throws  \Kumwe\App\BusinessSchema\Domain\InvalidBusinessSchema  When a stored canonical document is
+     * @throws  \Kumwe\BusinessSchema\Domain\InvalidBusinessSchema  When a stored canonical document is
      *          not a valid plan.
      * @throws  \Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition  When a stored plan cannot be
      *          canonically fingerprinted, as one holding more than 512 operations cannot.
@@ -94,7 +94,7 @@ final readonly class DoctrineBusinessSchemaPlanRepository implements BusinessSch
      *
      * @throws  \Doctrine\DBAL\Exception  When the driver rejects the read.
      * @throws  RuntimeException  When the stored row disagrees with its own canonical plan document.
-     * @throws  \Kumwe\App\BusinessSchema\Domain\InvalidBusinessSchema  When the stored canonical document is
+     * @throws  \Kumwe\BusinessSchema\Domain\InvalidBusinessSchema  When the stored canonical document is
      *          not a valid plan.
      * @throws  \Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition  When the stored plan cannot be
      *          canonically fingerprinted, as one holding more than 512 operations cannot.
@@ -124,7 +124,7 @@ final readonly class DoctrineBusinessSchemaPlanRepository implements BusinessSch
      *
      * @throws  \Doctrine\DBAL\Exception  When the driver rejects the read.
      * @throws  RuntimeException  When the stored row disagrees with its own canonical plan document.
-     * @throws  \Kumwe\App\BusinessSchema\Domain\InvalidBusinessSchema  When the stored canonical document is
+     * @throws  \Kumwe\BusinessSchema\Domain\InvalidBusinessSchema  When the stored canonical document is
      *          not a valid plan.
      * @throws  \Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition  When the stored plan cannot be
      *          canonically fingerprinted, as one holding more than 512 operations cannot.
@@ -291,7 +291,7 @@ final readonly class DoctrineBusinessSchemaPlanRepository implements BusinessSch
      *
      * @throws  \Doctrine\DBAL\Exception  When the driver rejects the read.
      * @throws  RuntimeException  When a journal column is absent, empty, wrongly typed, or holds invalid JSON.
-     * @throws  \Kumwe\App\BusinessSchema\Domain\InvalidBusinessSchema  When a stored row breaks a step
+     * @throws  \Kumwe\BusinessSchema\Domain\InvalidBusinessSchema  When a stored row breaks a step
      *          invariant, or its kind, risk, or state is not one this build knows.
      * @throws  \Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition  When a stored cursor or
      *          outcome cannot be canonically encoded.
@@ -596,7 +596,7 @@ final readonly class DoctrineBusinessSchemaPlanRepository implements BusinessSch
      *
      * @throws  RuntimeException  When `canonical_plan` is absent or is not a JSON object, a ledger column
      *          disagrees with the rebuilt plan, or a stored timestamp cannot be read.
-     * @throws  \Kumwe\App\BusinessSchema\Domain\InvalidBusinessSchema  When the canonical document is not a
+     * @throws  \Kumwe\BusinessSchema\Domain\InvalidBusinessSchema  When the canonical document is not a
      *          valid plan, or its stored checksum does not match its content.
      * @throws  \Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition  When the stored plan or a
      *          stored outcome cannot be canonically encoded.

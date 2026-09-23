@@ -7,7 +7,7 @@ namespace Kumwe\App\BusinessSchema\Delivery\Api;
 use InvalidArgumentException;
 use Kumwe\App\Application\Security\HighImpactCredentialGuard;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaService;
-use Kumwe\App\BusinessSchema\Domain\SchemaPlan;
+use Kumwe\BusinessSchema\Domain\SchemaPlan;
 use Kumwe\App\Delivery\Http\Api\ApiExecutionContext;
 use Kumwe\App\Delivery\Http\Api\Business\BusinessApiResponder;
 use Kumwe\App\Delivery\Http\Api\Content\ContentApiRequest;

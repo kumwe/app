@@ -6,8 +6,8 @@ namespace Kumwe\App\Delivery\Console\Command;
 
 use InvalidArgumentException;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaService;
-use Kumwe\App\BusinessSchema\Domain\SchemaPlan;
-use Kumwe\App\BusinessSchema\Domain\SchemaPlanStep;
+use Kumwe\BusinessSchema\Domain\SchemaPlan;
+use Kumwe\BusinessSchema\Domain\SchemaPlanStep;
 use Kumwe\App\Delivery\Console\Command;
 use Kumwe\App\Delivery\Console\Output;
 use Throwable;

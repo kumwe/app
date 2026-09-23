@@ -12,12 +12,12 @@ use Kumwe\App\BusinessRecord\Application\RecordValueCodec;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaConflict;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaRecordRepinGateway;
 use Kumwe\App\BusinessSchema\Application\SchemaChunkResult;
-use Kumwe\App\BusinessSchema\Domain\InvalidBusinessSchema;
-use Kumwe\App\BusinessSchema\Domain\PhysicalColumnBlueprint;
-use Kumwe\App\BusinessSchema\Domain\PhysicalSchemaBlueprint;
-use Kumwe\App\BusinessSchema\Domain\PhysicalTableBlueprint;
-use Kumwe\App\BusinessSchema\Domain\SchemaOperation;
-use Kumwe\App\BusinessSchema\Domain\SchemaOperationKind;
+use Kumwe\BusinessSchema\Domain\InvalidBusinessSchema;
+use Kumwe\BusinessSchema\Domain\PhysicalColumnBlueprint;
+use Kumwe\BusinessSchema\Domain\PhysicalSchemaBlueprint;
+use Kumwe\BusinessSchema\Domain\PhysicalTableBlueprint;
+use Kumwe\BusinessSchema\Domain\SchemaOperation;
+use Kumwe\BusinessSchema\Domain\SchemaOperationKind;
 
 /**
  * Revalidates and rewrites exact typed rows under the schema executor's database fence.

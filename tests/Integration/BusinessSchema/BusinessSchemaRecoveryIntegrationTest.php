@@ -17,17 +17,15 @@ use Kumwe\App\BusinessSchema\Application\BusinessSchemaPlanRepository;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaService;
 use Kumwe\App\BusinessSchema\Application\DefinitionPhysicalSchemaCompiler;
 use Kumwe\App\BusinessSchema\Application\PhysicalSchemaGateway;
-use Kumwe\App\BusinessSchema\Domain\PhysicalTableBlueprint;
-use Kumwe\App\BusinessSchema\Domain\SchemaInstallationStatus;
-use Kumwe\App\BusinessSchema\Domain\SchemaOperation;
-use Kumwe\App\BusinessSchema\Domain\SchemaOperationKind;
-use Kumwe\App\BusinessSchema\Domain\SchemaPlan;
-use Kumwe\App\BusinessSchema\Domain\SchemaPlanStatus;
-use Kumwe\App\BusinessSchema\Domain\SchemaPlanStep;
-use Kumwe\App\BusinessSchema\Domain\SchemaStepStatus;
+use Kumwe\BusinessSchema\Domain\PhysicalTableBlueprint;
+use Kumwe\BusinessSchema\Domain\SchemaInstallationStatus;
+use Kumwe\BusinessSchema\Domain\SchemaOperation;
+use Kumwe\BusinessSchema\Domain\SchemaOperationKind;
+use Kumwe\BusinessSchema\Domain\SchemaPlan;
+use Kumwe\BusinessSchema\Domain\SchemaPlanStatus;
+use Kumwe\BusinessSchema\Domain\SchemaStepStatus;
 use Kumwe\App\BusinessSchema\Infrastructure\Execution\DoctrineBusinessSchemaExecutionLock;
 use Kumwe\App\BusinessSchema\Infrastructure\Persistence\DoctrineBusinessSchemaPlanRepository;
-use Kumwe\App\BusinessSchema\Infrastructure\Schema\CanonicalDefinitionPhysicalSchemaCompiler;
 use Kumwe\App\BusinessSchema\Infrastructure\Schema\DoctrinePhysicalSchemaGateway;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
@@ -41,10 +39,7 @@ use RuntimeException;
 #[CoversClass(BusinessSchemaService::class)]
 #[CoversClass(DoctrineBusinessSchemaExecutionLock::class)]
 #[CoversClass(DoctrineBusinessSchemaPlanRepository::class)]
-#[CoversClass(CanonicalDefinitionPhysicalSchemaCompiler::class)]
 #[CoversClass(DoctrinePhysicalSchemaGateway::class)]
-#[CoversClass(SchemaPlan::class)]
-#[CoversClass(SchemaPlanStep::class)]
 final class BusinessSchemaRecoveryIntegrationTest extends TestCase
 {
     private const EMPTY_SCHEMA_CHECKSUM = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';

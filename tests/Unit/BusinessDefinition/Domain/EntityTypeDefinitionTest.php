@@ -161,6 +161,40 @@ final class EntityTypeDefinitionTest extends TestCase
     }
 
     /**
+     * The host-composed validator admits an unindexed text field at its full thousand-character length.
+     *
+     * The compiler test that pinned this before the schema extraction asserted the portable length boundary
+     * on the compiled column, which `kumwe/business-schema` now proves. What stays with the host is that the
+     * validator, composed with the SDK admission adapter, neither caps nor refuses a 1000-character text
+     * field that is not indexed, so the declared length is what reaches the compiler.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAnUnindexedTextFieldKeepsItsThousandCharacterLengthThroughAdmission(): void
+    {
+        $document = self::document();
+        $document['fields'][] = [
+            'handle' => 'external_reference',
+            'label' => 'External reference',
+            'type' => 'core.text',
+            'length' => 1000,
+            'indexed' => false,
+        ];
+        $definition = EntityTypeDefinition::fromArray($document);
+
+        (new BusinessDefinitionValidator(new FieldTypeRegistry(), new SdkFieldConfigurationAdmission()))
+            ->validateGraph([$definition]);
+
+        $lengths = [];
+        foreach ($definition->fields() as $field) {
+            $lengths[$field->handle] = $field->length;
+        }
+        self::assertSame(1000, $lengths['external_reference'] ?? null);
+    }
+
+    /**
      * A minimal valid site-owned definition the presentation-profile and executor cases extend.
      *
      * @return  array<string, mixed>  Canonical definition document with an identity, a text and a computed

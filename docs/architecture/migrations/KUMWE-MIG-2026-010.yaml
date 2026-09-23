@@ -144,7 +144,6 @@ retained_tests:
   - tests/Unit/BusinessRecord/Application/AggregateInvariantValidationTest.php
   - tests/Unit/BusinessRecord/Application/BusinessRecordViewTest.php
   - tests/Unit/BusinessRecord/NeutralBusinessFixtureTest.php
-  - tests/Unit/BusinessSchema/Infrastructure/CanonicalDefinitionPhysicalSchemaCompilerTest.php
   - tests/Unit/BusinessSurface/Presentation/Field/CoreFieldPresenterTest.php
   - tests/Unit/Demo/Infrastructure/VdmBusinessDefinitionSchemaTest.php
   - tests/Unit/Demo/Infrastructure/VdmBusinessDemoInstallerTest.php

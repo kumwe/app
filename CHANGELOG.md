@@ -79,6 +79,33 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Added
 
+- **2026-09-23 — `kumwe/business-schema` 0.1.3 owns the physical schema blueprints, the definition-to-blueprint
+  compiler, the ordered change planner and the plan, step, installation and recovery values.**
+  The business-schema package enters App through the migration ledger (`NRM-2026-045`): `KUMWE-MIG-2026-030`,
+  its change set, the integration train `KUMWE-TRAIN-2026-030` and the independent release attestation record the
+  verified `v0.1.3` release, and `composer.json` pins it exactly. As the released record prescribes, the
+  twenty-one App values under `Kumwe\App\BusinessSchema\Domain` — `InvalidBusinessSchema`, the table, column,
+  index, foreign-key and schema blueprints, `PhysicalNameCompiler`, `SchemaDocument`, `SchemaEvolutionHints`,
+  `SchemaInstallation`, `SchemaOperation`, `SchemaPlan`, `SchemaPlanApproval`, `SchemaPlanStep`,
+  `SchemaRecoveryEvidence` and their enums — and the App `CanonicalDefinitionPhysicalSchemaCompiler` are removed
+  together with the six duplicated unit tests the package now owns, and every consumer reads the package types.
+  `ContainerFactory` installs the package `ConfigProvider`, whose factories build the shared compiler and
+  `SchemaChangePlanner`, and binds the three typed host inputs the compiler factory resolves by name: the
+  `DefinitionSchemaLookup` port to the new `PublishedDefinitionSchemaLookup` over the App definition repository,
+  the business-definition `FieldTypeDefinitionResolver` port to `DoctrinePersistedFieldTypeDefinitionResolver`,
+  and `PhysicalNameCompiler` over the configured table prefix. The App `DefinitionPhysicalSchemaCompiler` port
+  stays for the planner, executor and lifecycle manager and is bound to the new
+  `PortableDefinitionPhysicalSchemaCompiler`, which hands the package compiler the site's identifier, so every
+  blueprint, plan, step and approval checksum is unchanged. `BusinessSchemaPlanner` is a partial extraction: it
+  receives the package planner and keeps planning authority, purges, graph observation, audit and persistence,
+  while its private diff, pinned-row and dependency-handle helpers leave with the package; the ledger records
+  that in its change set rather than as a symbol pair. The compiler unit test the record marks as a mixed suite
+  with no retained method is removed, and its one retained assertion — the host-composed validator admits an
+  unindexed thousand-character text field — lives with the definition owner in `EntityTypeDefinitionTest`. The
+  layer graph admits `Kumwe\BusinessSchema`, the retained tests no longer attribute the package classes as App
+  coverage, and the access-context and business-definition ledgers repoint the removed compiler test to its
+  reviewed replacements. The installed release ships its record as `MIGRATION-HANDOFF.md`, which the ledger
+  binds by path and digest. (#151)
 - **2026-09-23 — `kumwe/record-model` 0.1.4 owns the immutable business record, its revision, the idempotency replay
   window, the mutation result and the record scope.** The record-model package enters App through the migration
   ledger (`NRM-2026-046`): `KUMWE-MIG-2026-040`, its change set, the integration train `KUMWE-TRAIN-2026-040` and

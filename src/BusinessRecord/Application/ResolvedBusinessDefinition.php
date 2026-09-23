@@ -6,7 +6,7 @@ namespace Kumwe\App\BusinessRecord\Application;
 
 use InvalidArgumentException;
 use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\App\BusinessSchema\Domain\SchemaInstallation;
+use Kumwe\BusinessSchema\Domain\SchemaInstallation;
 
 /**
  * A published business definition paired with the physical schema installed for it.

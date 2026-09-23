@@ -73,7 +73,8 @@
     "Kumwe\\BusinessDefinition",
     "Kumwe\\Record",
     "Kumwe\\Content",
-    "Kumwe\\Approval"
+    "Kumwe\\Approval",
+    "Kumwe\\BusinessSchema"
   ],
   "namespace_segments": {
     "Shared": "shared",
@@ -203,6 +204,13 @@
     "Kumwe\\Approval": "application",
     "Kumwe\\Approval\\Container": "kernel",
     "Kumwe\\Approval\\ConfigProvider": "kernel",
-    "Kumwe\\Record\\Model": "domain"
+    "Kumwe\\Record\\Model": "domain",
+    "Kumwe\\BusinessSchema\\Domain": "domain",
+    "Kumwe\\BusinessSchema\\Internal": "domain",
+    "Kumwe\\BusinessSchema\\Contract": "application",
+    "Kumwe\\BusinessSchema\\Compiler": "application",
+    "Kumwe\\BusinessSchema\\Planner": "application",
+    "Kumwe\\BusinessSchema\\Container": "kernel",
+    "Kumwe\\BusinessSchema\\ConfigProvider": "kernel"
   }
 }

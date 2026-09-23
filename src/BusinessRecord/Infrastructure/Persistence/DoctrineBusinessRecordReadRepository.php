@@ -39,9 +39,9 @@ use Kumwe\Extension\Spi\BusinessRecord\Query\RecordQuerySpecification;
 use Kumwe\BusinessPolicy\Application\BusinessRecordAccessPlan;
 use Kumwe\BusinessPolicy\Application\FieldAccessUsage;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaInstallationRepository;
-use Kumwe\App\BusinessSchema\Domain\PhysicalTableBlueprint;
-use Kumwe\App\BusinessSchema\Domain\SchemaEvolutionHints;
-use Kumwe\App\BusinessSchema\Domain\SchemaInstallationStatus;
+use Kumwe\BusinessSchema\Domain\PhysicalTableBlueprint;
+use Kumwe\BusinessSchema\Domain\SchemaEvolutionHints;
+use Kumwe\BusinessSchema\Domain\SchemaInstallationStatus;
 
 /**
  * Reads business records straight off the physical tables an installation generated, over DBAL.
@@ -1424,7 +1424,7 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
      *          the target definition no longer exists on this site.
      * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable  When
      *          the shared fence cannot be taken, or the installation moved since it was resolved.
-     * @throws  \Kumwe\App\BusinessSchema\Domain\InvalidBusinessSchema  When the source definition's
+     * @throws  \Kumwe\BusinessSchema\Domain\InvalidBusinessSchema  When the source definition's
      *          evolution metadata cannot be read for a pinned target version.
      * @throws  InvalidArgumentException  When the site identifier stored on the definition is malformed,
      *          or the resolved definition and installation disagree.
@@ -1464,7 +1464,7 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
      * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable  When
      *          no transaction is open to hold the shared lock, the platform offers none, the lock cannot
      *          be taken, or the resolved pair differs from the fenced generation.
-     * @throws  \Kumwe\App\BusinessSchema\Domain\InvalidBusinessSchema  When the source definition's
+     * @throws  \Kumwe\BusinessSchema\Domain\InvalidBusinessSchema  When the source definition's
      *          evolution metadata is malformed, or the handle is not a namespaced definition handle.
      * @throws  InvalidArgumentException  When the site identifier stored on the definition is malformed,
      *          or the published definition and the installation disagree.

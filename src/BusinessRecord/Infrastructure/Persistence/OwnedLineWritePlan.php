@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessRecord\Infrastructure\Persistence;
 
 use Kumwe\App\BusinessRecord\Application\RecordColumnEncodingPlan;
-use Kumwe\App\BusinessSchema\Domain\PhysicalTableBlueprint;
+use Kumwe\BusinessSchema\Domain\PhysicalTableBlueprint;
 
 /**
  * Every table-level fact one owned-line write needs, resolved exactly once per command.

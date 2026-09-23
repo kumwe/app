@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\BusinessSchema\Application;
 
-use Kumwe\App\BusinessSchema\Domain\SchemaInstallation;
+use Kumwe\BusinessSchema\Domain\SchemaInstallation;
 
 /**
  * Store of the physical schema each business definition currently has installed.

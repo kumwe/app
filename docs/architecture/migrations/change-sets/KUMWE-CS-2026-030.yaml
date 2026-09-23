@@ -1,0 +1,161 @@
+schema: kumwe-change-set/v2
+change_set: KUMWE-CS-2026-030
+migration_id: KUMWE-MIG-2026-030
+roadmap_source:
+  title: Kumwe ERP-Extensibility Foundation Roadmap
+  sha256: a202155ef1a65f5ab293d4f8397ebf4ac430db7f1e877c776bbe7851e6fe18d8
+roadmap_refs: []
+state: app-pr-ready
+phase_1:
+  source_repository: kumwe/app
+  source_sha: "24ecf956423c18933e824b43cea1bfb9127a79a9"
+  target_repository: kumwe/business-schema
+  package_pr: "https://github.com/kumwe/business-schema/pull/3"
+  tested_sha: null
+  public_api_digest: "d3dd01caf6d4b6162c54f87797aadc38457754866f1abeb5bfb31d16c6b54178"
+  capability_digest: "9df001a9b1b911e9fa012d2a6de75ae34f9ab8e1c647a59ddb9af529f4b60bd7"
+  service_map_digest: "d7a0f0d59aa94f0f251c598c75a4b97072cbd213e1957e93d321200f268c607b"
+  handoff_digest: "c9392c4fb52867e932c1aef08c52b4d641085ea390f113c18d8f4d20b2b665d8"
+release:
+  version: 0.1.3
+  source_sha: "5c442a147e98c702a50cf5dc2b7d8faf6499d8ef"
+  artifact_digest: "51f20e334c39887c89035467c9d5847386f4a170470828b7d8f90ac30894c967"
+  clean_consumer_evidence:
+    - docs/architecture/migrations/evidence/KUMWE-MIG-2026-030/RELEASE-ATTESTATION.yaml
+phase_2:
+  app_pr: "https://github.com/kumwe/app/pull/151"
+  tested_sha: null
+  merged_sha: null
+  exact_dependency: "kumwe/business-schema 0.1.3"
+  composer_lock_digest: "41d75b4e73986a7ee47eb31ebd98d0d26724cc2ad097889d0ef57f111f2c4aa3"
+  removed_app_symbols:
+    - Kumwe\App\BusinessSchema\Domain\InvalidBusinessSchema
+    - Kumwe\App\BusinessSchema\Domain\PhysicalColumnBlueprint
+    - Kumwe\App\BusinessSchema\Domain\PhysicalForeignKeyBlueprint
+    - Kumwe\App\BusinessSchema\Domain\PhysicalIndexBlueprint
+    - Kumwe\App\BusinessSchema\Domain\PhysicalNameCompiler
+    - Kumwe\App\BusinessSchema\Domain\PhysicalSchemaBlueprint
+    - Kumwe\App\BusinessSchema\Domain\PhysicalTableBlueprint
+    - Kumwe\App\BusinessSchema\Domain\PhysicalTableKind
+    - Kumwe\App\BusinessSchema\Domain\SchemaDocument
+    - Kumwe\App\BusinessSchema\Domain\SchemaEvolutionHints
+    - Kumwe\App\BusinessSchema\Domain\SchemaInstallation
+    - Kumwe\App\BusinessSchema\Domain\SchemaInstallationStatus
+    - Kumwe\App\BusinessSchema\Domain\SchemaOperation
+    - Kumwe\App\BusinessSchema\Domain\SchemaOperationKind
+    - Kumwe\App\BusinessSchema\Domain\SchemaPlan
+    - Kumwe\App\BusinessSchema\Domain\SchemaPlanApproval
+    - Kumwe\App\BusinessSchema\Domain\SchemaPlanStatus
+    - Kumwe\App\BusinessSchema\Domain\SchemaPlanStep
+    - Kumwe\App\BusinessSchema\Domain\SchemaRecoveryEvidence
+    - Kumwe\App\BusinessSchema\Domain\SchemaRisk
+    - Kumwe\App\BusinessSchema\Domain\SchemaStepStatus
+    - Kumwe\App\BusinessSchema\Infrastructure\Schema\CanonicalDefinitionPhysicalSchemaCompiler
+  moved_unit_tests:
+    - tests/Unit/BusinessSchema/Domain/PhysicalNameCompilerTest.php
+    - tests/Unit/BusinessSchema/Domain/SchemaEvolutionHintsTest.php
+    - tests/Unit/BusinessSchema/Domain/SchemaInstallationTest.php
+    - tests/Unit/BusinessSchema/Domain/SchemaPlanTest.php
+    - tests/Unit/BusinessSchema/Domain/SchemaRecoveryContractTest.php
+    - tests/Unit/BusinessSchema/Infrastructure/CanonicalDefinitionPhysicalSchemaCompilerTest.php
+  retained_app_tests:
+    - tests/Unit/BusinessSchema/Infrastructure/DoctrinePhysicalSchemaGatewayDefaultTest.php
+    - tests/Unit/BusinessSchema/Infrastructure/PortableDefinitionPhysicalSchemaCompilerTest.php
+    - tests/Unit/BusinessSchema/Infrastructure/PublishedDefinitionSchemaLookupTest.php
+    - tests/Unit/BusinessDefinition/Domain/EntityTypeDefinitionTest.php
+    - tests/Unit/BusinessRecord/NeutralBusinessFixtureTest.php
+    - tests/Unit/BusinessRecord/Application/BusinessRecordRelationshipCoordinatorTest.php
+    - tests/Unit/BusinessRecord/Domain/ExactValueCodecTest.php
+    - tests/Unit/BusinessReporting/RecordExportPipelineTest.php
+    - tests/Unit/BusinessReporting/RecordExportReportProviderTest.php
+    - tests/Unit/BusinessSurface/Application/Custom/CustomBusinessActionExecutorTest.php
+    - tests/Unit/Demo/Infrastructure/VdmBusinessDefinitionSchemaTest.php
+    - tests/Unit/Support/TransientBusinessDefinitionFixtureScopeTest.php
+    - tests/Support/AssetInspectionDeploymentAcceptance.php
+    - tests/Support/BusinessRuntimeBackupAcceptance.php
+    - tests/Support/NeutralBusinessFixture.php
+    - tests/Support/TransientBusinessDefinitionFixtureScope.php
+    - tests/Integration/BusinessSchema/BusinessSchemaColumnRelaxationIntegrationTest.php
+    - tests/Integration/BusinessSchema/BusinessSchemaExecutionStateGuardIntegrationTest.php
+    - tests/Integration/BusinessSchema/BusinessSchemaRecoveryIntegrationTest.php
+    - tests/Integration/BusinessSchema/BusinessSchemaRuntimeIntegrationTest.php
+    - tests/Integration/BusinessSchema/BusinessSchemaSourceBindingRecoveryIntegrationTest.php
+    - tests/Integration/BusinessRecord/BusinessRecordEvolutionIntegrationTest.php
+    - tests/Integration/BusinessRecord/BusinessRecordInverseRelationshipIntegrationTest.php
+    - tests/Integration/BusinessRecord/BusinessRecordMutationGenerationIntegrationTest.php
+    - tests/Integration/BusinessRecord/BusinessRecordRelationshipIntegrationTest.php
+    - tests/Integration/BusinessRecord/BusinessRecordRuntimeIntegrationTest.php
+    - tests/Integration/BusinessRecord/ImmutableRecordReversalIntegrationTest.php
+    - tests/Integration/Performance/HotPlanRegressionIntegrationTest.php
+    - tests/Unit/Governance/ComposerLockTest.php
+    - tests/Architecture/CapabilityIndexGateTest.php
+evidence:
+  package:
+    - docs/architecture/migrations/evidence/KUMWE-MIG-2026-030/RELEASE-ATTESTATION.yaml
+    - "https://github.com/kumwe/business-schema/actions/runs/34516325845; release on record on tag commit 5c442a147e98c702a50cf5dc2b7d8faf6499d8ef"
+    - "https://github.com/kumwe/business-schema/actions/runs/34516325360; package CI on the same commit"
+  app_composition:
+    - tests/Unit/BusinessSchema/Infrastructure/PortableDefinitionPhysicalSchemaCompilerTest.php
+    - tests/Unit/BusinessSchema/Infrastructure/PublishedDefinitionSchemaLookupTest.php
+    - tests/Unit/Demo/Infrastructure/VdmBusinessDefinitionSchemaTest.php
+    - tests/Unit/BusinessRecord/NeutralBusinessFixtureTest.php
+    - tests/Unit/BusinessDefinition/Domain/EntityTypeDefinitionTest.php
+    - tests/Unit/Governance/ComposerLockTest.php
+    - tests/Unit/Governance/CoreGrowthGateTest.php
+    - tests/Architecture/CapabilityIndexGateTest.php
+    - "composer require kumwe/business-schema:0.1.3; one lock install, no other lock change"
+    - "composer kumwe:capability-index, kumwe:core-growth-record, baseline:record, then the composer qa gates and the unit and architecture suites, run locally on PHP 8.4 without ext-kumwe_engine"
+  database_matrix:
+    - tests/Unit/BusinessSchema/Infrastructure/DoctrinePhysicalSchemaGatewayDefaultTest.php
+    - tests/Integration/BusinessSchema/BusinessSchemaRuntimeIntegrationTest.php
+    - tests/Integration/BusinessSchema/BusinessSchemaColumnRelaxationIntegrationTest.php
+    - tests/Integration/BusinessRecord/BusinessRecordEvolutionIntegrationTest.php
+    - tests/Integration/BusinessRecord/BusinessRecordRelationshipIntegrationTest.php
+    - tests/Integration/BusinessRecord/BusinessRecordInverseRelationshipIntegrationTest.php
+    - tests/Integration/BusinessRecord/ImmutableRecordReversalIntegrationTest.php
+    - "To be exercised by the pull request's hosted workflows on MariaDB, MySQL and PostgreSQL."
+  concurrency:
+    - tests/Integration/BusinessSchema/BusinessSchemaRecoveryIntegrationTest.php
+    - tests/Integration/BusinessSchema/BusinessSchemaExecutionStateGuardIntegrationTest.php
+    - "The global execution lock, the per-installation fence and concurrent disable during finalization; to be exercised by the pull request's hosted workflows."
+  authorization_security:
+    - tests/Integration/BusinessSchema/BusinessSchemaExecutionStateGuardIntegrationTest.php
+    - tests/Integration/BusinessRecord/BusinessRecordMutationGenerationIntegrationTest.php
+    - tests/Integration/BusinessSchema/BusinessSchemaRuntimeIntegrationTest.php
+    - "Capability checks on planning, approval, execution and destructive purges stay in the App planner, executor and service; the hosted source-and-image security scans run on the pull request."
+  lifecycle_recovery:
+    - tests/Integration/BusinessSchema/BusinessSchemaRecoveryIntegrationTest.php
+    - tests/Integration/BusinessSchema/BusinessSchemaSourceBindingRecoveryIntegrationTest.php
+    - tests/Integration/BusinessRecord/BusinessRecordEvolutionIntegrationTest.php
+    - tests/Support/BusinessRuntimeBackupAcceptance.php
+    - "Interrupted steps, fence advancement, source-bound recovery evidence and schema evolution; to be exercised by the pull request's hosted workflows."
+  delivery_browser:
+    - tests/Unit/BusinessSchema/Delivery/Administrator/BusinessSchemaAdministratorRequestTest.php
+    - tests/Unit/Presentation/Twig/BusinessSchemaPlansTemplateTest.php
+    - "The schema-plan administrator surface and the business-schema API read the package plan, step and installation values through the unchanged App handlers and presenter; the browser suites run in the pull request's hosted workflows."
+  deployment_backup_restore:
+    - tests/Support/BusinessRuntimeBackupAcceptance.php
+    - tests/Support/AssetInspectionDeploymentAcceptance.php
+    - "Signed backup, clean restore and deployment acceptance on three engines; to be exercised by the pull request's hosted workflows."
+  native_parity_abi:
+    - tests/Unit/Kernel/NativeComputationFactoryTest.php
+    - "The package ships no native component and no executor; blueprint compilation and plan derivation stay pure PHP and no native cutover is claimed."
+  performance_capacity:
+    - tests/Integration/Performance/HotPlanRegressionIntegrationTest.php
+    - tests/Integration/BusinessSurface/GeneratedBusinessQueryBudgetIntegrationTest.php
+    - "Blueprints, operations and hints now detach their collections on construction; no performance claim is made and the hosted lanes exercise the hot plan budget."
+compatibility: "Drop-in for consumers of the twenty-one namespace-only value moves; two differences drive code: the package compiler takes a bare site identifier through the DefinitionSchemaLookup port instead of SiteContext and BusinessDefinitionRepository, which the host adapters absorb behind the unchanged App DefinitionPhysicalSchemaCompiler port, and the diff itself is the public SchemaChangePlanner the App planner now receives. Blueprints, plans, steps and checksums are byte-identical to the App copies."
+migration_recovery: null
+security_impact: "None on authority: planning, approval, execution and destructive-purge capability checks, the execution lock and fences, transactions, audit and persistence stay in the App planner, executor, service and repositories; the package receives already authorized definitions and blueprints."
+performance_claim: null
+rollback: "Revert the App pull request and restore the twenty-two removed classes and six unit tests from the baseline commit; no persisted data changes, because plan, step and installation payloads and their checksums are unchanged."
+known_gaps:
+  - "The local sandbox runs PHP 8.4 without ext-kumwe_engine and without a database server, so the integration and functional lanes, PHP 8.5 and the demo profile installations are proven by the App CI on this pull request."
+  - "BusinessSchemaPlanner is a partial extraction: the package SchemaChangePlanner now owns its former private operations, containsPinnedRowBreakingChange, hasRecordRepin and dependencyHandles helpers and is injected, while the App class keeps plan, purgePlan, observePublishedGraph and persistPlan; the ledger lists no symbol pair for it because the App class is retained under its name."
+  - "The released record marks CanonicalDefinitionPhysicalSchemaCompilerTest as a mixed suite with no retained method; a test file with zero test methods cannot stay, so it is removed and its one retained assertion, that the host-composed validator admits an unindexed 1000-character text field, lives in tests/Unit/BusinessDefinition/Domain/EntityTypeDefinitionTest.php under the definition owner."
+  - "SchemaEvolutionHints::fromDefinition() in the package no longer carries the App's explicit refusal of non-string compatibility-metadata keys, which existed at the extraction baseline: an EntityTypeDefinition whose compatibility metadata mixes an integer key with string keys now raises a TypeError from looksLikeEvolutionKey() where the App raised InvalidBusinessSchema; the definition is still refused and the publication transaction still rolls back, and the domain-typed refusal is to be restored in a package successor release."
+  - "The package ConfigProvider documents its factories as bare class-strings rather than as the container factory classes it ships, so the kernel admits only PhysicalSchemaCompilerFactory and SchemaChangePlannerFactory before installing the provider; a package successor that types the provider makes that guard unnecessary."
+  - "The package compiler reports an unavailable or version-mismatched relationship target with one message where the App compiler distinguished an absent catalog entry from an unpublished version; no App test or consumer reads either message."
+  - "The release attestation was produced by an isolated verification restricted to inspection; no clean consumer install was executed there."
+completion_claim: false
+accepted_by: null

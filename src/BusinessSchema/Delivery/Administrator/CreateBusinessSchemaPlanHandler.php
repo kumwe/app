@@ -57,7 +57,7 @@ final readonly class CreateBusinessSchemaPlanHandler implements RequestHandlerIn
      *          matches within the site.
      * @throws  \Kumwe\App\BusinessSchema\Application\BusinessSchemaConflict  When the installed schema
      *          contradicts its recorded metadata or is not older than the published definition.
-     * @throws  \Kumwe\App\BusinessSchema\Domain\InvalidBusinessSchema  When the published definition graph
+     * @throws  \Kumwe\BusinessSchema\Domain\InvalidBusinessSchema  When the published definition graph
      *          cannot be compiled into a valid physical blueprint.
      *
      * @since   2.0.0
