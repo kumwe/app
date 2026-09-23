@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "eab2a083f7db6f5f34afc74b5a0e899c",
+    "content-hash": "6c0603986d355d6ec5008c01e14b3749",
     "packages": [
         {
             "name": "brick/math",
@@ -537,22 +537,23 @@
         },
         {
             "name": "kumwe/conversion",
-            "version": "v0.1.2",
+            "version": "v0.1.5",
             "source": {
                 "type": "git",
                 "url": "https://github.com/kumwe/conversion.git",
-                "reference": "5ccea7f7dc4ebd11bc27b11da8573da42807c196"
+                "reference": "b291f3a31314644fd88150dc9a9e911fe0617fe7"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/kumwe/conversion/zipball/5ccea7f7dc4ebd11bc27b11da8573da42807c196",
-                "reference": "5ccea7f7dc4ebd11bc27b11da8573da42807c196",
+                "url": "https://api.github.com/repos/kumwe/conversion/zipball/b291f3a31314644fd88150dc9a9e911fe0617fe7",
+                "reference": "b291f3a31314644fd88150dc9a9e911fe0617fe7",
                 "shasum": ""
             },
             "require": {
                 "php": "^8.5"
             },
             "require-dev": {
+                "ext-zip": "*",
                 "phpstan/phpstan": "^2.1",
                 "phpstan/phpstan-deprecation-rules": "^2.0",
                 "phpstan/phpstan-strict-rules": "^2.0",
@@ -574,7 +575,7 @@
                 "issues": "https://github.com/kumwe/conversion/issues",
                 "source": "https://github.com/kumwe/conversion"
             },
-            "time": "2026-08-30T11:09:38+00:00"
+            "time": "2026-09-08T16:42:56+00:00"
         },
         {
             "name": "kumwe/extension-sdk",

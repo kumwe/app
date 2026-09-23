@@ -6,6 +6,7 @@ namespace Kumwe\App\Tests\Unit\Governance;
 
 use Kumwe\App\Tools\Governance\GovernanceViolation;
 use Kumwe\App\Tools\Governance\PackageManifests;
+use Kumwe\App\Tools\Governance\StrictYaml;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -187,6 +188,71 @@ final class PackageManifestsTest extends TestCase
         $parsed = PackageManifests::parseReleaseRecord("---\n" . $accepted . "\n---\nBody", $path);
         self::assertSame(json_decode($accepted, true, flags: JSON_THROW_ON_ERROR), $parsed['front_matter']);
         self::assertSame('Body', $parsed['body']);
+    }
+
+    /**
+     * A published handoff may carry JSON front matter and the two published section titles, and nothing looser.
+     *
+     * kumwe/conversion 0.1.5 ships `MIGRATION-HANDOFF.md` with a JSON object as front matter and titles its
+     * seventh and eighth sections "Concurrency and conflict record" and "Validation and remaining gates". The
+     * reader accepts exactly that, still binds the record bytes, still refuses duplicate JSON members on that
+     * path, and still refuses any other title in place of a required heading.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAPublishedHandoffMayCarryJsonFrontMatterAndItsPublishedSectionTitles(): void
+    {
+        $path = 'vendor/kumwe/example-v2/MIGRATION-HANDOFF.md';
+        $root = GovernanceFixture::copy();
+        try {
+            $parsed = StrictYaml::parseFrontMatter(GovernanceFixture::read($root, $path));
+            $body = str_replace(
+                ['## 7. Drift check', '## 8. Validation recipe and observed local results'],
+                ['## 7. Concurrency and conflict record', '## 8. Validation and remaining gates'],
+                $parsed['body'],
+            );
+            $json = json_encode($parsed['front_matter'], JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR);
+            GovernanceFixture::write($root, $path, "---\n" . $json . "\n---\n" . $body);
+
+            $manifests = self::read($root, 'example-v2');
+            self::assertSame('v2-manifested', $manifests->manifestStatus());
+            $handoff = $manifests->handoff();
+            self::assertNotNull($handoff);
+            self::assertSame($path, $handoff['path']);
+            self::assertSame($parsed['front_matter'], $handoff['front_matter']);
+            self::assertSame($body, $handoff['body']);
+            self::assertSame(hash('sha256', GovernanceFixture::read($root, $path)), $handoff['sha256']);
+
+            $member = '"artifact_kind": "framework_php",';
+            self::assertStringContainsString($member, $json);
+            GovernanceFixture::write(
+                $root,
+                $path,
+                "---\n" . str_replace($member, $member . "\n    " . $member, $json) . "\n---\n" . $body,
+            );
+            try {
+                self::read($root, 'example-v2');
+                self::fail('Duplicate JSON members must be refused on the handoff path too.');
+            } catch (GovernanceViolation $violation) {
+                self::assertStringContainsString('duplicate object keys', $violation->getMessage());
+            }
+
+            $retitled = str_replace('## 7. Concurrency and conflict record', '## 7. Drift', $body);
+            GovernanceFixture::write($root, $path, "---\n" . $json . "\n---\n" . $retitled);
+            try {
+                self::read($root, 'example-v2');
+                self::fail('Only the published title may stand in for a required heading.');
+            } catch (GovernanceViolation $violation) {
+                self::assertStringContainsString(
+                    'narrative section "## Drift check" is missing',
+                    $violation->getMessage(),
+                );
+            }
+        } finally {
+            GovernanceFixture::remove($root);
+        }
     }
 
     /**

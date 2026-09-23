@@ -2,25 +2,6 @@
   "schema": "kumwe-legacy-packages/v1",
   "note": "Installed Kumwe packages released before the Version 2 migration protocol. Each entry is a transitional, explicitly approved legacy-unmanifested capability-index entry. It cannot satisfy a migration release gate and must be replaced by Version 2 manifests when the package adopts Version 2 governance. The locked version is recorded exactly: a re-pin re-approves the entry.",
   "packages": {
-    "kumwe/conversion": {
-      "installed_version": "v0.1.2",
-      "reason": "Released before the Version 2 protocol; ships a schema-1 resources/public-api/v1.json but no capabilities or service-map manifest and no MIGRATION-HANDOFF.md.",
-      "responsibility": "The money and quantity conversion contract of the Kumwe family: the exact decimal kernel, the typed money and quantity values, the converted value types that cannot exist without their own provenance, the conversion requests, the converters and pipelines, and the provider ports that rate and conversion-table extensions implement.",
-      "non_responsibilities": [
-        "No rate and no conversion table of any kind: a rate provider, a factor table, a bank feed or a fixed contractual rate is an implementation of a port defined here, living in an extension.",
-        "No SPI wiring: the registrars, contribution definitions, capability plumbing and runtime catalogs that make a provider reachable inside an installation are the App's authority.",
-        "No storage: nothing here owns a database, a table, a column, or a codec into one.",
-        "No presentation and no rendering: how a converted figure is rendered stays in the App.",
-        "No runtime Composer dependencies."
-      ],
-      "canonical_namespaces": [
-        "Kumwe\\Conversion\\"
-      ],
-      "retired_app_namespaces": [],
-      "verified_legacy_release": null,
-      "approved_by": "eWɘyn",
-      "approved_on": "2026-09-02"
-    },
     "kumwe/extension-sdk": {
       "installed_version": "v0.2.4",
       "reason": "Released before the Version 2 protocol; ships resources/PIN.json and contract generation records but no public-api, capabilities or service-map manifest and no MIGRATION-HANDOFF.md, so its public symbols come from a source scan.",

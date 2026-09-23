@@ -25,10 +25,11 @@ change set is `core-integrated` only once the merged master commit is recorded (
 | `kumwe/navigation` | `0.1.3` | `KUMWE-MIG-2026-035` | `KUMWE-CS-2026-035` | `core-integrated` | #146 | `008237a0` |
 | `kumwe/audit` | `0.1.2` | `KUMWE-MIG-2026-021` | `KUMWE-CS-2026-021` | `app-pr-ready` | #151 | — |
 | `kumwe/business-policy` | `0.1.1` | `KUMWE-MIG-2026-022` | `KUMWE-CS-2026-022` | `app-pr-ready` | #151 | — |
+| `kumwe/conversion` | `0.1.5` | `KUMWE-MIG-2026-031` | `KUMWE-CS-2026-031` | `app-pr-ready` | #151 | — |
 
-`kumwe/conversion 0.1.2` and `kumwe/extension-sdk 0.2.4` remain the two legacy-unmanifested entries of
-[`legacy-packages.json`](../governance/legacy-packages.json); both have Version 2 successors published
-(`conversion 0.1.5`, `extension-sdk 0.3.2`) and leave the registry when those are adopted.
+`kumwe/extension-sdk 0.2.4` remains the one legacy-unmanifested entry of
+[`legacy-packages.json`](../governance/legacy-packages.json); its Version 2 successor `0.3.2` is published and
+it leaves the registry when that is adopted, as `kumwe/conversion` did at `0.1.5` (`KUMWE-MIG-2026-031`).
 
 ### The remaining catalogue
 
@@ -54,8 +55,7 @@ identifier.
 | `kumwe/conversion-extension` | `0.1.4` | `MIG-028` / `CS-028` | contribution, conversion | free |
 | `kumwe/record-values` | `0.1.4` | `MIG-029` / `CS-029` | conversion | free |
 | `kumwe/business-schema` | `0.1.3` | `MIG-030` / `CS-030` | business-definition, sequence | free |
-| `kumwe/conversion` | `0.1.5` | `MIG-031` / `CS-031` | — | **conflict** — `kumwe/record-query 0.1.3` claims the same pair |
-| `kumwe/record-query` | `0.1.3` | `MIG-031` / `CS-031` | record-values, business-definition, conversion | **conflict** — see `kumwe/conversion` |
+| `kumwe/record-query` | `0.1.4` | `MIG-039` / `CS-039` | record-values, business-definition, conversion | free — `0.1.3` claimed `MIG-031` / `CS-031`, which `kumwe/conversion 0.1.5` holds in this ledger |
 | `kumwe/record-model` | `0.1.3` | `MIG-032` / `CS-032` | access-context, business-definition, record-values | **conflict** — `MIG-032` is `kumwe/producer`'s, already in this ledger |
 | `kumwe/extension-sdk` | `0.3.2` | `MIG-033` / `CS-033` | the sixteen-package train | **conflict** — `kumwe/reporting 0.1.4` claims the same pair |
 | `kumwe/reporting` | `0.1.4` | `MIG-033` / `CS-033` | business-definition, contribution, integration, access-context, conversion, access-control | **conflict** — see `kumwe/extension-sdk` |

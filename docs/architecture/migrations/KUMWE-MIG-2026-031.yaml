@@ -1,0 +1,129 @@
+schema: kumwe-migration-ledger/v1
+migration_id: KUMWE-MIG-2026-031
+change_set: KUMWE-CS-2026-031
+package: kumwe/conversion
+version: 0.1.5
+artifact_digest: "0ae9770ff793f11c6de2b959e170fc8a82af3548655f1824958680784b0ea232"
+handoff_path: vendor/kumwe/conversion/MIGRATION-HANDOFF.md
+handoff_sha256: "d4deb9a6fb3892f6c38dc006c551149fe4b658befba320685c302894ed41687a"
+release_attestation: docs/architecture/migrations/evidence/KUMWE-MIG-2026-031/RELEASE-ATTESTATION.yaml
+old_namespace_roots: []
+symbols:
+  - old_fqcn: Kumwe\App\BusinessRecord\Domain\ExactDecimal
+    new_fqcn: Kumwe\Conversion\Decimal\ExactDecimal
+  - old_fqcn: Kumwe\App\BusinessRecord\Domain\ExactDecimalArithmetic
+    new_fqcn: Kumwe\Conversion\Decimal\ExactDecimalArithmetic
+  - old_fqcn: Kumwe\App\BusinessRecord\Domain\ExactRoundingRule
+    new_fqcn: Kumwe\Conversion\Decimal\ExactRoundingRule
+  - old_fqcn: Kumwe\App\BusinessRecord\Domain\MoneyValue
+    new_fqcn: Kumwe\Conversion\Value\MoneyValue
+  - old_fqcn: Kumwe\App\BusinessRecord\Domain\QuantityValue
+    new_fqcn: Kumwe\Conversion\Value\QuantityValue
+  - old_fqcn: Kumwe\App\BusinessRecord\Domain\MoneyRoundingMode
+    new_fqcn: Kumwe\Conversion\Value\MoneyRoundingMode
+  - old_fqcn: Kumwe\App\BusinessRecord\Domain\QuantityRoundingMode
+    new_fqcn: Kumwe\Conversion\Value\QuantityRoundingMode
+  - old_fqcn: Kumwe\App\BusinessRecord\Domain\MoneyExchangeRate
+    new_fqcn: Kumwe\Conversion\Value\MoneyExchangeRate
+  - old_fqcn: Kumwe\App\BusinessRecord\Domain\UnitConversionFactor
+    new_fqcn: Kumwe\Conversion\Value\UnitConversionFactor
+  - old_fqcn: Kumwe\App\BusinessRecord\Domain\ConvertedMoneyValue
+    new_fqcn: Kumwe\Conversion\Value\ConvertedMoneyValue
+  - old_fqcn: Kumwe\App\BusinessRecord\Domain\ConvertedQuantityValue
+    new_fqcn: Kumwe\Conversion\Value\ConvertedQuantityValue
+  - old_fqcn: Kumwe\App\BusinessRecord\Domain\MoneyConversionRequest
+    new_fqcn: Kumwe\Conversion\Contract\MoneyConversionRequest
+  - old_fqcn: Kumwe\App\BusinessRecord\Domain\UnitConversionRequest
+    new_fqcn: Kumwe\Conversion\Contract\UnitConversionRequest
+  - old_fqcn: Kumwe\App\BusinessRecord\Domain\MoneyConverter
+    new_fqcn: Kumwe\Conversion\Contract\MoneyConverter
+  - old_fqcn: Kumwe\App\BusinessRecord\Domain\QuantityConverter
+    new_fqcn: Kumwe\Conversion\Contract\QuantityConverter
+  - old_fqcn: Kumwe\App\BusinessRecord\Application\MoneyRateProvider
+    new_fqcn: Kumwe\Conversion\Provider\MoneyRateProvider
+  - old_fqcn: Kumwe\App\BusinessRecord\Application\UnitConversionProvider
+    new_fqcn: Kumwe\Conversion\Provider\UnitConversionProvider
+  - old_fqcn: Kumwe\App\BusinessRecord\Application\MoneyRateProviderCatalog
+    new_fqcn: Kumwe\Conversion\Provider\MoneyRateProviderCatalog
+  - old_fqcn: Kumwe\App\BusinessRecord\Application\UnitConversionProviderCatalog
+    new_fqcn: Kumwe\Conversion\Provider\UnitConversionProviderCatalog
+  - old_fqcn: Kumwe\App\BusinessRecord\Application\MoneyRateUnavailable
+    new_fqcn: Kumwe\Conversion\Provider\MoneyRateUnavailable
+  - old_fqcn: Kumwe\App\BusinessRecord\Application\UnitConversionUnavailable
+    new_fqcn: Kumwe\Conversion\Provider\UnitConversionUnavailable
+  - old_fqcn: Kumwe\App\BusinessRecord\Application\MoneyConversionPipeline
+    new_fqcn: Kumwe\Conversion\Provider\MoneyConversionPipeline
+  - old_fqcn: Kumwe\App\BusinessRecord\Application\UnitConversionPipeline
+    new_fqcn: Kumwe\Conversion\Provider\UnitConversionPipeline
+removed_paths:
+  - src/BusinessRecord/Domain/ExactDecimal.php
+  - src/BusinessRecord/Domain/ExactDecimalArithmetic.php
+  - src/BusinessRecord/Domain/ExactRoundingRule.php
+  - src/BusinessRecord/Domain/MoneyValue.php
+  - src/BusinessRecord/Domain/QuantityValue.php
+  - src/BusinessRecord/Domain/MoneyRoundingMode.php
+  - src/BusinessRecord/Domain/QuantityRoundingMode.php
+  - src/BusinessRecord/Domain/MoneyExchangeRate.php
+  - src/BusinessRecord/Domain/UnitConversionFactor.php
+  - src/BusinessRecord/Domain/ConvertedMoneyValue.php
+  - src/BusinessRecord/Domain/ConvertedQuantityValue.php
+  - src/BusinessRecord/Domain/MoneyConversionRequest.php
+  - src/BusinessRecord/Domain/UnitConversionRequest.php
+  - src/BusinessRecord/Domain/MoneyConverter.php
+  - src/BusinessRecord/Domain/QuantityConverter.php
+  - src/BusinessRecord/Application/MoneyRateProvider.php
+  - src/BusinessRecord/Application/UnitConversionProvider.php
+  - src/BusinessRecord/Application/MoneyRateProviderCatalog.php
+  - src/BusinessRecord/Application/UnitConversionProviderCatalog.php
+  - src/BusinessRecord/Application/MoneyRateUnavailable.php
+  - src/BusinessRecord/Application/UnitConversionUnavailable.php
+  - src/BusinessRecord/Application/MoneyConversionPipeline.php
+  - src/BusinessRecord/Application/UnitConversionPipeline.php
+removed_tests:
+  - tests/Unit/BusinessRecord/Domain/ExactDecimalTest.php
+retained_tests:
+  - tests/Architecture/MoneyConversionBoundaryTest.php
+  - tests/Architecture/UnitConversionBoundaryTest.php
+  - tests/Architecture/ConvertedMoneySurfaceCoverageTest.php
+  - tests/Architecture/ConversionApiConsumerGateTest.php
+  - tests/Unit/BusinessRecord/Domain/ExactValueCodecTest.php
+  - tests/Unit/BusinessRecord/Domain/RecordValueGuardTest.php
+  - tests/Unit/BusinessRecord/Application/MoneyRateProviderContributionTest.php
+  - tests/Unit/BusinessRecord/Application/UnitConversionProviderContributionTest.php
+  - tests/Unit/Extension/Contribution/UnitConversionProviderDeclarationTest.php
+  - tests/Unit/BusinessReporting/ConvertedMoneyProvenanceTest.php
+  - tests/Unit/BusinessReporting/ConvertedQuantityProvenanceTest.php
+  - tests/Unit/BusinessRecord/Application/RecordRuleValidatorTest.php
+  - tests/Unit/BusinessRecord/Application/BusinessRecordRelationshipCoordinatorTest.php
+  - tests/Integration/BusinessRecord/AggregateDocumentIntegrationTest.php
+  - tests/Integration/BusinessRecord/BusinessRecordRelationshipIntegrationTest.php
+  - tests/Integration/BusinessRecord/BusinessRecordRuntimeIntegrationTest.php
+  - tests/Support/BusinessRuntimeBackupAcceptance.php
+  - tests/Architecture/TruthfulQualityGateTest.php
+  - tests/Unit/Governance/LayerClassifierTest.php
+  - tests/Unit/Governance/ComposerLockTest.php
+  - tests/Unit/Governance/PackageManifestsTest.php
+  - tests/Architecture/CapabilityIndexGateTest.php
+  - tests/Architecture/StudioDependencyPinGateTest.php
+di_changes:
+  - service: Kumwe\Conversion\Provider\MoneyRateProviderCatalog
+    factory: Kumwe\App\Kernel\ContainerFactory
+    note: "Host shares the package catalog port as RuntimeMoneyRateProviderCatalog over the contribution registry set and the extension execution gate, so only trusted, activated rate providers are reachable; the package ships no provider and its service map owns no service."
+  - service: Kumwe\Conversion\Provider\MoneyConversionPipeline
+    factory: Kumwe\App\Kernel\ContainerFactory
+    note: "Host constructs the package pipeline directly from the shared MoneyConverter and MoneyRateProviderCatalog, the direct construction mode the service map prescribes; no factory, alias or provider is registered."
+  - service: Kumwe\Conversion\Provider\UnitConversionProviderCatalog
+    factory: Kumwe\App\Kernel\ContainerFactory
+    note: "Host shares the package catalog port as RuntimeUnitConversionProviderCatalog over the same registry set and execution gate; core ships no conversion table, so the catalog stays empty until a package that owns one is installed."
+  - service: Kumwe\Conversion\Provider\UnitConversionPipeline
+    factory: Kumwe\App\Kernel\ContainerFactory
+    note: "Host constructs the package pipeline directly from the shared QuantityConverter and UnitConversionProviderCatalog, mirroring the money pipeline."
+capability_index_entries:
+  - kumwe/conversion
+release_evidence:
+  - docs/architecture/migrations/evidence/KUMWE-MIG-2026-031/RELEASE-ATTESTATION.yaml
+app_pull_request: "https://github.com/kumwe/app/pull/151"
+roadmap_refs: []
+non_roadmap_refs:
+  - NRM-2026-041
+conflicts: []

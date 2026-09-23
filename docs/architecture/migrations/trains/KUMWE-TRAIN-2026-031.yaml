@@ -1,0 +1,30 @@
+schema: kumwe-integration-train/v1
+train: KUMWE-TRAIN-2026-031
+packages:
+  - package: kumwe/conversion
+    version: 0.1.5
+merge_order:
+  - "https://github.com/kumwe/app/pull/151"
+custodian: "eWɘyn"
+hotspots:
+  - composer.json
+  - composer.lock
+  - tools/verify-conversion-api.php
+  - tools/Governance/PackageManifests.php
+  - docs/architecture/governance/legacy-packages.json
+  - docs/architecture/governance/README.md
+  - docs/architecture/capability-index.md
+  - docs/architecture/governance/core-growth-baseline.json
+  - docs/quality/baseline.json
+  - docs/quality/test-docblock-baseline.json
+  - tests/Architecture/CapabilityIndexGateTest.php
+  - tests/Unit/Governance/ComposerLockTest.php
+  - CHANGELOG.md
+commands:
+  - "composer install"
+  - "composer kumwe:capability-index"
+  - "composer kumwe:core-growth-record"
+  - "composer baseline:record"
+  - "composer qa"
+conflict_ledger: docs/architecture/migrations/conflicts
+serialized_by: "eWɘyn, rebase-merging the green pull request under the standing maintainer mandate"

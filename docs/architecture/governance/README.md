@@ -102,9 +102,9 @@ canonical namespaces, the App namespaces its earlier extraction retired, the app
   non-`@internal` declarations; `public_symbols_source` records which.
 - `verified_legacy_release` is `null` until a `VERIFIED-LEGACY-RELEASE.yaml` (section 3.10) exists for the
   package; then it is that file's path.
-- Today's entries (D-GOV-10): `kumwe/conversion 0.1.2` and `kumwe/extension-sdk 0.2.4`. Each leaves the
-  registry when its package adopts Version 2 manifests, as `kumwe/producer` did at `0.3.0`
-  (`KUMWE-MIG-2026-032`).
+- Today's entry (D-GOV-10): `kumwe/extension-sdk 0.2.4`. It leaves the registry when its package adopts
+  Version 2 manifests, as `kumwe/producer` did at `0.3.0` (`KUMWE-MIG-2026-032`) and `kumwe/conversion` at
+  `0.1.5` (`KUMWE-MIG-2026-031`).
 
 ---
 
@@ -305,13 +305,18 @@ unique; year-sequence ids match `^[A-Z-]+-[0-9]{4}-[0-9]{3}$`.
 - Current path: `vendor/kumwe/<name>/docs/release-record.md`.
 - Current schema: [`schemas/package-release-record.v1.schema.json`](schemas/package-release-record.v1.schema.json).
 - Current front matter accepts the block YAML subset below or a JSON object. Duplicate JSON members,
-  including escaped or nested duplicates, are refused. JSON support applies only to this current record path.
+  including escaped or nested duplicates, are refused. A published `MIGRATION-HANDOFF.md` may carry the same
+  JSON object form, because `kumwe/conversion 0.1.5` shipped one and an immutable release cannot be
+  re-encoded; every other record keeps the YAML subset.
 - The record binds public API, capability and service manifests, test ownership, source provenance,
   compatibility and the `consumer_contract`. It contains no draft-PR state, temporary branch assignment
   or next-agent instructions. Core ownership and consumer obligations remain independently verifiable.
 - Already published packages may instead ship `MIGRATION-HANDOFF.md`, validated against the unchanged
   [`migration-handoff.v2.schema.json`](schemas/migration-handoff.v2.schema.json). Its `next_task` remains
-  readable for those immutable releases. Existing release artifacts and attestations are not rewritten.
+  readable for those immutable releases. Existing release artifacts and attestations are not rewritten. Its
+  body carries the eight handoff headings; for the seventh and eighth the reader also accepts the published
+  titles `Concurrency and conflict record` and `Validation and remaining gates`, which `kumwe/conversion
+  0.1.5` uses, and no other.
 - The selected record must agree with the package manifests and the adoption ledger must pin its actual
   path and SHA-256. A malformed current record must fail validation, never fall back to legacy metadata.
 - The [legacy example](examples/migration-handoff.v2.example.md) remains a compatibility fixture for
@@ -499,8 +504,8 @@ keys `[A-Za-z0-9_./-]+`; block sequences `- value` and `- key: value`; scalars `
 `false`, integers, plain strings, double-quoted strings with `\"`, `\\` and `\n`, single-quoted strings with
 `''`; empty flow collections `[]` and `{}`. No multi-line scalars (`|`, `>`), anchors, aliases, tags, flow
 collections with content or multiple documents. Front matter is `---`, YAML, `---`, body. A value longer
-than a 120-column line must be shortened, not folded. Current package release records additionally support
-the JSON object front matter described in section 3.11; Core ledger formats are unchanged.
+than a 120-column line must be shortened, not folded. Package release records and published handoffs
+additionally support the JSON object front matter described in section 3.11; Core ledger formats are unchanged.
 
 ---
 

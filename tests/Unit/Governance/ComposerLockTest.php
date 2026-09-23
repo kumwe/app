@@ -63,7 +63,7 @@ final class ComposerLockTest extends TestCase
         );
         $conversion = $lock->package('kumwe/conversion');
         self::assertNotNull($conversion);
-        self::assertSame('v0.1.2', $conversion['version']);
+        self::assertSame('v0.1.5', $conversion['version']);
         self::assertMatchesRegularExpression('/^[a-f0-9]{40}$/', $conversion['source']['reference']);
         self::assertSame($conversion['source']['reference'], $conversion['dist']['reference']);
         self::assertSame(['Kumwe\\Conversion\\' => ['src/']], $conversion['psr4']);

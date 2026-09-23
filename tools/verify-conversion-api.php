@@ -1,12 +1,15 @@
 <?php
 
 /**
- * Verify App's exact consumer profile against the installed Conversion package's public API manifest.
+ * Verify App's exact consumer profile against the installed Conversion package's public API profile manifest.
  *
  * The package owns the complete type-shape manifest. App records only the package coordinate, profile ID,
  * digest, and member count it consumes. This gate rebuilds the profile digest from the installed manifest's
  * full reflected shapes, checks canonical ordering and namespaces, and proves every member autoloads under
- * its canonical name. It never copies a class signature or accepts a historical App alias.
+ * its canonical name. It never copies a class signature or accepts a historical App alias. Since 0.1.5 the
+ * package publishes its canonical `kumwe-package-public-api/v1` manifest at `resources/public-api/v1.json`
+ * and preserves the schema-1 profile manifest byte for byte at `resources/public-api/legacy-v1.json`, which
+ * is the compatibility path this consumer gate reads.
  *
  * Usage:
  *   php tools/verify-conversion-api.php [--manifest=PATH] [--consumer=PATH] [--autoload=PATH]
@@ -17,7 +20,7 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__);
-$manifestPath = $root . '/vendor/kumwe/conversion/resources/public-api/v1.json';
+$manifestPath = $root . '/vendor/kumwe/conversion/resources/public-api/legacy-v1.json';
 $consumerPath = $root . '/docs/architecture/conversion-api-profile.json';
 $autoloadPath = $root . '/vendor/autoload.php';
 $errors = [];
