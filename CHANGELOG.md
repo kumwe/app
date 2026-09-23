@@ -79,6 +79,35 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Added
 
+- **2026-09-23 — `kumwe/record-model` 0.1.4 owns the immutable business record, its revision, the idempotency replay
+  window, the mutation result and the record scope.** The record-model package enters App through the migration
+  ledger (`NRM-2026-046`): `KUMWE-MIG-2026-040`, its change set, the integration train `KUMWE-TRAIN-2026-040` and
+  the independent release attestation record the verified `v0.1.4` release, and `composer.json` pins it exactly
+  (one lock install; it requires `kumwe/access-context` `0.1.2`, `kumwe/business-definition` `0.1.2` and
+  `kumwe/record-values` `0.1.4` exactly, all already locked, so no other lock entry moves). As the released record
+  prescribes, the App's `BusinessRecord`, `BusinessRecordRevision`, `RecordScope`, `BusinessRecordReplayWindow`
+  and `RecordMutationResult` are removed together with `RecordScopeTest`, which the package now owns; every
+  consumer under `src/` and `tests/` reads the `Kumwe\Record\Model` types, `BusinessRecordService` imports
+  `RecordMutationResult` explicitly, and the two Kernel configuration classes read the package replay window.
+  The package constructors hand every value to `Kumwe\Record\Value\RecordValueGuard` themselves and cannot know
+  a sealed `EncryptedEnvelope`, so App applies `RecordValueProtection::protect()` to the value map immediately
+  before it constructs or advances a record — in `BusinessRecordService` and `DoctrineBusinessRecordReadRepository`
+  — and `RecordValueCodec` rebuilds the envelope from the resulting `ProtectedRecordValue` when it seals or
+  stores the field; a revision snapshot already reached the constructor in canonical form. `RecordIntegrityTest`
+  pins the exact checksum bytes the App-owned revision produced over a sealed secret and `RecordValueProtectionTest`
+  is unchanged, so no stored checksum, fingerprint or revision byte moves. Four refusals tighten with the package:
+  a revision actor must match the bounded identifier grammar the record already enforced, a revision snapshot or
+  changed-field list holds at most 256 entries, the optimistic version refuses to advance past `PHP_INT_MAX`, and
+  nested arrays are detached from caller references; every actor identifier App stamps satisfies the grammar and
+  no App fixture crosses a bound. `BusinessRecordReplayWindowTest` keeps only the stable-code assertion of
+  `BusinessRecordIdempotencyConflict`, `ClientAssertedInstantBoundaryTest` keeps the carrier boundary and the
+  server-instant horizon while the package replay window leaves its deciding-path list, and the access-context
+  ledger no longer names the moved `RecordScopeTest`. `kumwe/extension-sdk` 0.2.4 keeps its own
+  `BusinessRecordRequestGuard`, which App never referenced, until the 0.3.2 train removes it. The package exports
+  no provider, so `ContainerFactory` is unchanged; the layer graph classifies `Kumwe\Record\Model` as domain. The
+  installed release ships its record as `docs/release-record.md`, which the ledger binds by path and digest; the
+  published tag commit lies outside the package repository's default-branch history, whose head carries the
+  identical tree, and the attestation records that as verified. (#151)
 - **2026-09-23 — `kumwe/approval` 0.1.2 owns the maker-checker binding, transitions, projections and ports.**
   The approval package enters App through the migration ledger (`NRM-2026-044`): `KUMWE-MIG-2026-023`, its change
   set, the integration train `KUMWE-TRAIN-2026-023` and the release attestation record the verified `v0.1.2` release,

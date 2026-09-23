@@ -22,6 +22,12 @@ use Kumwe\Secret\Value\EncryptedEnvelope;
  * verified here; envelope authenticity, key custody and rotation stay with the App's Secret Envelope
  * adapters.
  *
+ * The record and revision aggregates are `Kumwe\Record\Model\BusinessRecord` and
+ * `Kumwe\Record\Model\BusinessRecordRevision`, whose constructors hand every value to the guard themselves,
+ * so App applies this substitution to the value map immediately before it constructs or advances one of
+ * them: a stored record therefore carries each sealed secret as the `ProtectedRecordValue` the guard admits,
+ * and `RecordValueCodec` recognises that form again when it seals or stores the field.
+ *
  * @since  2.0.0
  */
 final class RecordValueProtection
@@ -39,13 +45,16 @@ final class RecordValueProtection
      *
      * Scalars, the domain value objects and `DateTimeImmutable` pass through untouched, so a PHP float or
      * an unsupported object still reaches the guard and is refused there. Arrays are copied and walked to
-     * the guard's own depth bound; a deeper structure is returned as it stands and the guard refuses it.
+     * the guard's own depth bound; a deeper structure is returned as it stands and the guard refuses it. An
+     * array comes back as an array with the same keys in the same order, which is what lets a whole value
+     * map be protected in place of the map a record or revision constructor is handed.
      *
      * @param   mixed  $value  Field value, value map, snapshot or evidence tree about to be admitted or
      *          canonicalised.
      *
-     * @return  mixed  The same value with each `EncryptedEnvelope` replaced by a `ProtectedRecordValue`
-     *          built from its storage spelling; unchanged when it holds no envelope.
+     * @return  ($value is array ? array<array-key, mixed> : mixed)  The same value with each
+     *          `EncryptedEnvelope` replaced by a `ProtectedRecordValue` built from its storage spelling;
+     *          unchanged when it holds no envelope.
      *
      * @throws  InvalidArgumentException  When an envelope's storage spelling breaches the protected storage
      *          bounds, which a Secret Envelope value cannot do within its own ciphertext limit.
@@ -54,34 +63,40 @@ final class RecordValueProtection
      */
     public static function protect(mixed $value): mixed
     {
+        if ($value instanceof EncryptedEnvelope) {
+            return new ProtectedRecordValue($value->toStorage());
+        }
+        if (!is_array($value)) {
+            return $value;
+        }
+
         return self::substitute($value, 0);
     }
 
     /**
-     * Walk one level of the value, substituting envelopes and descending into arrays within the bound.
+     * Walk one level of an array, substituting envelopes and descending into arrays within the bound.
      *
-     * @param   mixed  $value  Value at this level.
-     * @param   int    $depth  Nesting level of $value, 0 at the top.
+     * @param   array<array-key, mixed>  $values  Array at this level.
+     * @param   int                      $depth   Nesting level of $values, 0 at the top.
      *
-     * @return  mixed  The value with its envelopes substituted down to the bound.
+     * @return  array<array-key, mixed>  The array with its envelopes substituted down to the bound.
      *
      * @since   2.0.0
      */
-    private static function substitute(mixed $value, int $depth): mixed
+    private static function substitute(array $values, int $depth): array
     {
-        if ($value instanceof EncryptedEnvelope) {
-            return new ProtectedRecordValue($value->toStorage());
+        if ($depth >= self::MAXIMUM_DEPTH) {
+            return $values;
         }
-        if (!is_array($value) || $depth >= self::MAXIMUM_DEPTH) {
-            return $value;
-        }
-        foreach ($value as $key => $item) {
-            if ($item instanceof EncryptedEnvelope || is_array($item)) {
-                $value[$key] = self::substitute($item, $depth + 1);
+        foreach ($values as $key => $item) {
+            if ($item instanceof EncryptedEnvelope) {
+                $values[$key] = new ProtectedRecordValue($item->toStorage());
+            } elseif (is_array($item)) {
+                $values[$key] = self::substitute($item, $depth + 1);
             }
         }
 
-        return $value;
+        return $values;
     }
 
     /**

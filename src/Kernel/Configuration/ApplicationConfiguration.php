@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Kernel\Configuration;
 
 use InvalidArgumentException;
-use Kumwe\App\BusinessRecord\Domain\BusinessRecordReplayWindow;
+use Kumwe\Record\Model\BusinessRecordReplayWindow;
 use Kumwe\App\Extension\Application\Package\PackageConformanceMode;
 use Kumwe\App\Http\Security\TrustedProxyMatcher;
 use Kumwe\App\Infrastructure\Observability\ObservabilityContract;

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Kumwe\App\BusinessRecord\Application;
 
-use Kumwe\App\BusinessRecord\Domain\BusinessRecordRevision;
-use Kumwe\App\BusinessRecord\Domain\RecordScope;
+use Kumwe\Record\Model\BusinessRecordRevision;
+use Kumwe\Record\Model\RecordScope;
 use Kumwe\BusinessPolicy\Application\BusinessRecordAccessPlan;
 
 /**

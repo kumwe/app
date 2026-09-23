@@ -19,6 +19,7 @@ use Kumwe\App\BusinessSchema\Domain\PhysicalTableBlueprint;
 use Kumwe\Conversion\Decimal\ExactDecimal;
 use Kumwe\Conversion\Value\MoneyValue;
 use Kumwe\Conversion\Value\QuantityValue;
+use Kumwe\Record\Value\ProtectedRecordValue;
 use Kumwe\Record\Value\RecordValueGuard;
 use Kumwe\Record\Value\ZonedDateTimeValue;
 use Kumwe\Secret\Contract\EnvelopeCipher;
@@ -1119,12 +1120,14 @@ final readonly class RecordValueCodec
     /**
      * Seal a secret value into the envelope stored in its place.
      *
-     * An already sealed envelope passes through untouched, which is what lets an unchanged secret survive
-     * a decode, validate, and re-encode round trip without being encrypted again. Otherwise the value is
-     * sealed under a binding built from the site, definition, record, and field, so an envelope copied
-     * into another cell no longer authenticates.
+     * An already sealed envelope passes through untouched — whether it arrives as the `EncryptedEnvelope`
+     * this method produced or as the `ProtectedRecordValue` a stored record carries it as — which is what
+     * lets an unchanged secret survive a decode, validate, and re-encode round trip without being encrypted
+     * again. Otherwise the value is sealed under a binding built from the site, definition, record, and
+     * field, so an envelope copied into another cell no longer authenticates.
      *
-     * @param   mixed   $value           Plaintext secret, or an already sealed `EncryptedEnvelope`.
+     * @param   mixed   $value           Plaintext secret, an already sealed `EncryptedEnvelope`, or the
+     *          `ProtectedRecordValue` a record holds one as.
      * @param   string  $siteIdentifier  Site owning the record.
      * @param   string  $definitionId    UUID of the business definition.
      * @param   string  $recordId        Caller-facing identity of the record.
@@ -1132,7 +1135,7 @@ final readonly class RecordValueCodec
      *
      * @return  EncryptedEnvelope  The sealed value; the plaintext is never returned or stored.
      *
-     * @throws  InvalidArgumentException  When the value is neither a string nor an envelope.
+     * @throws  InvalidArgumentException  When the value is neither a string nor a sealed envelope.
      *
      * @since   2.0.0
      */
@@ -1143,8 +1146,9 @@ final readonly class RecordValueCodec
         string $recordId,
         string $field,
     ): EncryptedEnvelope {
-        if ($value instanceof EncryptedEnvelope) {
-            return $value;
+        $sealed = $this->sealed($value);
+        if ($sealed !== null) {
+            return $sealed;
         }
         if (!is_string($value)) {
             throw new InvalidArgumentException('A secret field requires a string.');
@@ -1823,11 +1827,12 @@ final readonly class RecordValueCodec
      * Insist a secret field really normalized to a sealed envelope before it is stored.
      *
      * This is the last point at which a plaintext secret could reach a column, so an unsealed value is
-     * refused rather than written.
+     * refused rather than written. A record holds a sealed secret as the `ProtectedRecordValue` the package
+     * record-value guard admits, so that form is rebuilt into the envelope it was made from.
      *
      * @param   mixed  $value  Normalized field value.
      *
-     * @return  EncryptedEnvelope  The value unchanged.
+     * @return  EncryptedEnvelope  The value unchanged, or rebuilt from its protected storage.
      *
      * @throws  InvalidArgumentException  When the value was not sealed by secret normalization.
      *
@@ -1835,9 +1840,34 @@ final readonly class RecordValueCodec
      */
     private function envelope(mixed $value): EncryptedEnvelope
     {
-        return $value instanceof EncryptedEnvelope
-            ? $value
-            : throw new InvalidArgumentException('A normalized secret field is invalid.');
+        return $this->sealed($value)
+            ?? throw new InvalidArgumentException('A normalized secret field is invalid.');
+    }
+
+    /**
+     * Recognise a value that is already a sealed secret, in either of the two forms App carries one.
+     *
+     * `normalize()` seals a secret into an `EncryptedEnvelope`, and the record and revision aggregates hold
+     * it as the `ProtectedRecordValue` that `RecordValueProtection::protect()` substitutes for the package
+     * guard. That protected storage is `EncryptedEnvelope::toStorage()` unchanged, so `fromStorage()`
+     * rebuilds the same envelope, re-validating its four members and decrypting nothing.
+     *
+     * @param   mixed  $value  Field value that may be a sealed secret.
+     *
+     * @return  ?EncryptedEnvelope  The envelope, or null when the value is not a sealed secret at all.
+     *
+     * @throws  InvalidArgumentException  When protected storage does not rebuild into an envelope, which
+     *          storage taken from an envelope cannot fail to do.
+     *
+     * @since   2.0.0
+     */
+    private function sealed(mixed $value): ?EncryptedEnvelope
+    {
+        if ($value instanceof ProtectedRecordValue) {
+            return EncryptedEnvelope::fromStorage($value->toStorage());
+        }
+
+        return $value instanceof EncryptedEnvelope ? $value : null;
     }
 
     /**

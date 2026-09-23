@@ -19,7 +19,7 @@ use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordVersionConflict
 use Kumwe\App\BusinessRecord\Application\Query\ReadRecordQuery;
 use Kumwe\App\BusinessRecord\Application\RecordFingerprint;
 use Kumwe\App\BusinessRecord\Application\RecordRequestGuard;
-use Kumwe\App\BusinessRecord\Domain\RecordScope;
+use Kumwe\Record\Model\RecordScope;
 use Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessController;
 use Kumwe\Secret\Value\EncryptedEnvelope;
 use Psr\Clock\ClockInterface;

@@ -202,6 +202,7 @@
     "Kumwe\\Content\\Workflow\\Domain": "domain",
     "Kumwe\\Approval": "application",
     "Kumwe\\Approval\\Container": "kernel",
-    "Kumwe\\Approval\\ConfigProvider": "kernel"
+    "Kumwe\\Approval\\ConfigProvider": "kernel",
+    "Kumwe\\Record\\Model": "domain"
   }
 }

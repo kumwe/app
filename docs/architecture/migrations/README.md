@@ -32,6 +32,7 @@ change set is `core-integrated` only once the merged master commit is recorded (
 | `kumwe/record-values` | `0.1.4` | `KUMWE-MIG-2026-029` | `KUMWE-CS-2026-029` | `app-pr-ready` | #151 | — |
 | `kumwe/content-model` | `0.2.0` | `KUMWE-MIG-2026-034` | `KUMWE-CS-2026-034` | `app-pr-ready` | #151 | — |
 | `kumwe/approval` | `0.1.2` | `KUMWE-MIG-2026-023` | `KUMWE-CS-2026-023` | `app-pr-ready` | #151 | — |
+| `kumwe/record-model` | `0.1.4` | `KUMWE-MIG-2026-040` | `KUMWE-CS-2026-040` | `app-pr-ready` | #151 | — |
 
 `kumwe/extension-sdk 0.2.4` remains the one legacy-unmanifested entry of
 [`legacy-packages.json`](../governance/legacy-packages.json); its Version 2 successor `0.3.2` is published and
@@ -39,7 +40,7 @@ it leaves the registry when that is adopted, as `kumwe/conversion` did at `0.1.5
 
 ### The remaining catalogue
 
-The Version 2 catalogue has thirty targets ([audit of 2026-09-07](audits/2026-09-07/requirements.md)); nineteen
+The Version 2 catalogue has thirty targets ([audit of 2026-09-07](audits/2026-09-07/requirements.md)); twenty
 are adopted above (the Engine and its binding are provisioned as `ext-kumwe_engine 1.0.3`). Every remaining
 PHP package is published on Packagist with Version 2 manifests and a release record, and each record
 pre-allocates the ledger and change-set identifiers the App must use (the capability index refuses a ledger
@@ -59,7 +60,6 @@ identifier.
 | `kumwe/conversion-extension` | `0.1.4` | `MIG-028` / `CS-028` | contribution, conversion | free |
 | `kumwe/business-schema` | `0.1.3` | `MIG-030` / `CS-030` | business-definition, sequence | free |
 | `kumwe/record-query` | `0.1.4` | `MIG-039` / `CS-039` | record-values, business-definition, conversion | free — `0.1.3` claimed `MIG-031` / `CS-031`, which `kumwe/conversion 0.1.5` holds in this ledger |
-| `kumwe/record-model` | `0.1.3` | `MIG-032` / `CS-032` | access-context, business-definition, record-values | **conflict** — `MIG-032` is `kumwe/producer`'s, already in this ledger |
 | `kumwe/extension-sdk` | `0.3.2` | `MIG-033` / `CS-033` | the sixteen-package train | **conflict** — `kumwe/reporting 0.1.4` claims the same pair |
 | `kumwe/reporting` | `0.1.4` | `MIG-033` / `CS-033` | business-definition, contribution, integration, access-context, conversion, access-control | **conflict** — see `kumwe/extension-sdk` |
 | `kumwe/administrator-contract` | `0.2.1` | `MIG-036` / `CS-034` | access-control, contribution | **conflict** — `CS-034` is not its sequence (D-GOV-2) |

@@ -9,7 +9,7 @@ use Kumwe\App\BusinessRecord\Application\BusinessRecordRelationView;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordRevisionView;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordView;
 use Kumwe\App\BusinessRecord\Application\RecordHistoryResult;
-use Kumwe\App\BusinessRecord\Application\RecordMutationResult;
+use Kumwe\Record\Model\RecordMutationResult;
 use Kumwe\App\BusinessSurface\Application\BusinessRecordProjector;
 use Kumwe\App\Delivery\Http\Api\Business\BusinessRecordApiPresenter;
 use PHPUnit\Framework\Attributes\CoversClass;

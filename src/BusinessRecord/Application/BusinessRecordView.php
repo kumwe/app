@@ -8,7 +8,7 @@ use DateTimeImmutable;
 use InvalidArgumentException;
 use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\BusinessDefinition\Domain\Sensitivity;
-use Kumwe\App\BusinessRecord\Domain\BusinessRecord;
+use Kumwe\Record\Model\BusinessRecord;
 use Kumwe\Extension\Spi\BusinessRecord\Application\BusinessRecordView as BusinessRecordViewContract;
 use Kumwe\BusinessPolicy\Application\FieldAccessUsage;
 use Kumwe\BusinessPolicy\Application\FieldDisclosurePlan;

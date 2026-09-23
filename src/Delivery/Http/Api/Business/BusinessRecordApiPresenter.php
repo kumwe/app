@@ -7,7 +7,7 @@ namespace Kumwe\App\Delivery\Http\Api\Business;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordView;
 use Kumwe\App\BusinessRecord\Application\RecordBrowseResult;
 use Kumwe\App\BusinessRecord\Application\RecordHistoryResult;
-use Kumwe\App\BusinessRecord\Application\RecordMutationResult;
+use Kumwe\Record\Model\RecordMutationResult;
 use Kumwe\App\BusinessSurface\Application\BusinessRecordProjector;
 
 /**

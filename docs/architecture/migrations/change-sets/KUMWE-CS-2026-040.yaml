@@ -1,0 +1,132 @@
+schema: kumwe-change-set/v2
+change_set: KUMWE-CS-2026-040
+migration_id: KUMWE-MIG-2026-040
+roadmap_source:
+  title: Kumwe ERP-Extensibility Foundation Roadmap
+  sha256: a202155ef1a65f5ab293d4f8397ebf4ac430db7f1e877c776bbe7851e6fe18d8
+roadmap_refs: []
+state: app-pr-ready
+phase_1:
+  source_repository: kumwe/app
+  source_sha: "24ecf956423c18933e824b43cea1bfb9127a79a9"
+  target_repository: kumwe/record-model
+  package_pr: "https://github.com/kumwe/record-model/pull/10"
+  tested_sha: null
+  public_api_digest: "6d0df80e7cc0fe88b8714c0b33c59e6cf4493b2c8d7047bfdc66fe7a68ccc894"
+  capability_digest: "15d75b5f83c60b05426735955ee21998a5820bfbc231524de8a5337203da2bb8"
+  service_map_digest: "dea73d8d706da0c3e517a818b27bc1d74c22a09f164aa76480362e7ba4c7a839"
+  handoff_digest: "316d3a7476adb52931eba200b9f5d1695acbceab17ec6dbb5cbc669106febcc0"
+release:
+  version: 0.1.4
+  source_sha: "907d5175fe4c6fe1d30e8fa92560dc569631d98d"
+  artifact_digest: "97ff1e0ea4088b782d9c77281a253db8b683a76298e4ae2728858834f4168d1c"
+  clean_consumer_evidence:
+    - docs/architecture/migrations/evidence/KUMWE-MIG-2026-040/RELEASE-ATTESTATION.yaml
+phase_2:
+  app_pr: "https://github.com/kumwe/app/pull/151"
+  tested_sha: null
+  merged_sha: null
+  exact_dependency: "kumwe/record-model 0.1.4"
+  composer_lock_digest: "d73dca2e1e9e1adbfb95b5043c2260e5ebe26fc22f6ccc295fbef423e7dcb95d"
+  removed_app_symbols:
+    - Kumwe\App\BusinessRecord\Domain\BusinessRecord
+    - Kumwe\App\BusinessRecord\Domain\BusinessRecordRevision
+    - Kumwe\App\BusinessRecord\Domain\RecordScope
+    - Kumwe\App\BusinessRecord\Domain\BusinessRecordReplayWindow
+    - Kumwe\App\BusinessRecord\Application\RecordMutationResult
+  moved_unit_tests:
+    - tests/Unit/BusinessRecord/Domain/RecordScopeTest.php
+  retained_app_tests:
+    - tests/Architecture/ClientAssertedInstantBoundaryTest.php
+    - tests/Integration/BusinessRecord/AggregateDocumentIntegrationTest.php
+    - tests/Integration/BusinessRecord/BusinessRecordHistoryPagingIntegrationTest.php
+    - tests/Integration/BusinessRecord/BusinessRecordPolicyCompilerIntegrationTest.php
+    - tests/Integration/BusinessRecord/BusinessRecordRuntimeIntegrationTest.php
+    - tests/Integration/BusinessRecord/RecordSecretRotationIntegrationTest.php
+    - tests/Integration/BusinessSurface/GeneratedBusinessQueryBudgetIntegrationTest.php
+    - tests/Support/NeutralBusinessFixture.php
+    - tests/Unit/BusinessRecord/Application/BusinessRecordMutationPublicationTest.php
+    - tests/Unit/BusinessRecord/Application/BusinessRecordRelationshipCoordinatorTest.php
+    - tests/Unit/BusinessRecord/Application/BusinessRecordRevisionCursorTest.php
+    - tests/Unit/BusinessRecord/Application/BusinessRecordViewTest.php
+    - tests/Unit/BusinessRecord/Application/PostingPeriodLockTest.php
+    - tests/Unit/BusinessRecord/Application/RecordRuleValidatorTest.php
+    - tests/Unit/BusinessRecord/Domain/BusinessRecordReplayWindowTest.php
+    - tests/Unit/BusinessRecord/Domain/ExactValueCodecTest.php
+    - tests/Unit/BusinessRecord/Domain/RecordIntegrityTest.php
+    - tests/Unit/BusinessRecord/Domain/RecordValueProtectionTest.php
+    - tests/Unit/BusinessSecurity/Application/BusinessRecordAccessPlanTest.php
+    - tests/Unit/BusinessSecurity/Infrastructure/Persistence/DoctrineBusinessRecordAccessControllerTest.php
+    - tests/Unit/BusinessSurface/Application/BusinessSurfaceCatalogTest.php
+    - tests/Unit/Delivery/Console/Command/BusinessRecordConsolePresenterTest.php
+    - tests/Unit/Delivery/Http/Api/Business/BusinessOperationStatusApiHandlerTest.php
+    - tests/Unit/Delivery/Http/Api/Business/BusinessRecordApiPresenterTest.php
+    - tests/Unit/Delivery/Http/Api/Business/BusinessRecordApiResponderTest.php
+    - tests/Unit/Governance/ComposerLockTest.php
+    - tests/Architecture/CapabilityIndexGateTest.php
+evidence:
+  package:
+    - docs/architecture/migrations/evidence/KUMWE-MIG-2026-040/RELEASE-ATTESTATION.yaml
+    - "https://github.com/kumwe/record-model/pull/10; it merged 2026-09-23T09:25:18Z, produced the tag commit 907d5175fe4c6fe1d30e8fa92560dc569631d98d and the release-on-record run published that commit as the immutable v0.1.4 release"
+    - "The package default branch was later reset and https://github.com/kumwe/record-model/pull/11 re-merged the same change as ba941954da28d238a579315a11d3d0976b3a24bf, whose tree equals the tag commit's; the tag commit is reachable from no branch, and the attestation records that as verified"
+    - "Packagist kumwe/record-model v0.1.4 with source and dist at the tag commit; GitHub release 394495149 (immutable) published 2026-09-23T09:26:29Z by the release-on-record run 35842839918"
+  app_composition:
+    - tests/Unit/Governance/ComposerLockTest.php
+    - tests/Unit/Governance/CoreGrowthGateTest.php
+    - tests/Unit/Governance/PackageManifestsTest.php
+    - tests/Unit/Governance/LayerClassifierTest.php
+    - tests/Architecture/CapabilityIndexGateTest.php
+    - tests/Architecture/TruthfulQualityGateTest.php
+    - tests/Unit/BusinessRecord/Domain/RecordIntegrityTest.php
+    - tests/Unit/BusinessRecord/Domain/RecordValueProtectionTest.php
+    - "composer require kumwe/record-model:0.1.4; one lock install, no other lock change (kumwe/access-context 0.1.2, kumwe/business-definition 0.1.2 and kumwe/record-values 0.1.4 were already locked exactly)"
+    - "composer kumwe:capability-index, kumwe:core-growth-record, baseline:record, then the composer qa gates and the unit and architecture suites, run locally on PHP 8.4 without ext-kumwe_engine"
+  database_matrix:
+    - tests/Integration/BusinessRecord/BusinessRecordRuntimeIntegrationTest.php
+    - tests/Integration/BusinessRecord/BusinessRecordHistoryPagingIntegrationTest.php
+    - tests/Integration/BusinessRecord/AggregateDocumentIntegrationTest.php
+    - "To be exercised by the pull request's hosted workflows on MariaDB, MySQL and PostgreSQL; the row decode, column encoding and the canonical bytes of every stored snapshot, checksum and fingerprint are unchanged, and a stored secret enters the package record as the protected storage its guard admits."
+  concurrency:
+    - tests/Integration/BusinessRecord/BusinessRecordRuntimeIntegrationTest.php
+    - tests/Integration/BusinessRecord/AggregateDocumentIntegrationTest.php
+    - "The package types are final immutable values; the optimistic version the repository presents as its lock is still the record's own, now refusing to advance past PHP_INT_MAX, and the mutation fence, transactions and revision append stay host-owned and unchanged; to be exercised by the pull request's hosted workflows."
+  authorization_security:
+    - tests/Unit/BusinessSecurity/Application/BusinessRecordAccessPlanTest.php
+    - tests/Unit/BusinessSecurity/Infrastructure/Persistence/DoctrineBusinessRecordAccessControllerTest.php
+    - tests/Integration/BusinessRecord/BusinessRecordPolicyCompilerIntegrationTest.php
+    - tests/Unit/BusinessRecord/Domain/RecordIntegrityTest.php
+    - tests/Unit/BusinessRecord/Domain/RecordValueProtectionTest.php
+    - tests/Architecture/ClientAssertedInstantBoundaryTest.php
+    - "Scope authority stays in App: RecordScope::forDefinition still takes the site from the execution context the application service supplies, policy compilation and field disclosure are unchanged, sealing, key custody and rotation stay in App, and the client-asserted instant still reaches no ordering, expiry, period or numbering path; the hosted source-and-image security scans run on the pull request."
+  lifecycle_recovery:
+    - tests/Integration/BusinessRecord/RecordSecretRotationIntegrationTest.php
+    - tests/Integration/BusinessRecord/BusinessRecordRuntimeIntegrationTest.php
+    - "Idempotency replay and retention read the same package window through the same configuration keys, stored envelopes rotate from their physical columns as before, and the revision checksum re-derived on read is byte-identical; to be exercised by the pull request's hosted workflows."
+  delivery_browser:
+    - tests/Unit/Delivery/Http/Api/Business/BusinessRecordApiPresenterTest.php
+    - tests/Unit/Delivery/Http/Api/Business/BusinessRecordApiResponderTest.php
+    - tests/Unit/Delivery/Http/Api/Business/BusinessOperationStatusApiHandlerTest.php
+    - tests/Unit/Delivery/Console/Command/BusinessRecordConsolePresenterTest.php
+    - "The mutation result keeps its shape, so no HTTP, console or OpenAPI surface changes; the browser suites run in the pull request's hosted workflows."
+  deployment_backup_restore:
+    - tests/Support/BusinessRuntimeBackupAcceptance.php
+    - "Signed backup, clean restore and production acceptance on three engines; to be exercised by the pull request's hosted workflows."
+  native_parity_abi:
+    - tests/Unit/BusinessRecord/Domain/ExactValueCodecTest.php
+    - "The package is PHP-only (native_requirements null) and carries its own frozen conformance corpora; the native decimal cutover remains Computation-owned and is not claimed here."
+  performance_capacity:
+    - tests/Unit/BusinessRecord/Domain/RecordValueProtectionTest.php
+    - "No performance claim is made; the protection walk copies only arrays that hold a sealed secret, and the package detaches nested arrays once per admitted value."
+compatibility: "Drop-in for stored data: the five types keep their names and public members under Kumwe\\Record\\Model, RecordScope is typed on the Kumwe\\BusinessDefinition\\Domain\\ScopeMode App already uses, and every checksum, fingerprint and revision byte is unchanged, which RecordIntegrityTest pins by exact digest. The package constructors admit values through Kumwe\\Record\\Value\\RecordValueGuard themselves and cannot know a sealed Kumwe\\Secret\\Value\\EncryptedEnvelope, so App applies RecordValueProtection::protect() to the value map immediately before it constructs or advances a record (BusinessRecordService, DoctrineBusinessRecordReadRepository) and RecordValueCodec rebuilds the envelope from that ProtectedRecordValue when it seals or stores the field; a revision snapshot already reaches the constructor in canonical form. Four refusals tighten: a revision actor must match ^[A-Za-z0-9][A-Za-z0-9._:-]{0,190}$, a revision snapshot or changed-field list holds at most 256 entries, the optimistic version refuses to advance past PHP_INT_MAX, and nested arrays are detached from caller references. Every actor identifier App stamps satisfies the grammar and no App fixture crosses a bound."
+migration_recovery: null
+security_impact: "None on authority: scope derivation still takes the site from the execution context, policy, disclosure, sealing, decryption, associated data, key custody and rotation stay in the App adapters, the package performs no cryptography and never sees a connection or a request, and a sealed secret reaches the package aggregates only as the opaque protected storage App substitutes for it."
+performance_claim: null
+rollback: "Revert the App pull request: the pin, the five removed classes, the moved unit test, the trimmed replay-window test and the two retired coverage attributes return from the baseline commit, and no persisted data changes."
+known_gaps:
+  - "The local sandbox runs PHP 8.4 without ext-kumwe_engine and without a database server, so the integration and functional lanes, PHP 8.5 and the native runtime are proven by the App CI on this pull request."
+  - "The published tag commit 907d5175fe4c6fe1d30e8fa92560dc569631d98d lies outside the package repository's default-branch history: main was reset after the merge that produced it and the same change was re-merged as ba941954da28d238a579315a11d3d0976b3a24bf, whose tree equals the tag's; the immutable release, the Packagist coordinate and the lock all bind the tag commit, and a later package release from default-branch history would be a separate adoption."
+  - "kumwe/extension-sdk 0.2.4 still ships Kumwe\\Extension\\Spi\\BusinessRecord\\Application\\BusinessRecordRequestGuard and calls it from its own read request and custom-action classes; App never referenced it, so the ledger maps it without swapping anything, and the 0.3.2 train (KUMWE-MIG-2026-033) removes the copy."
+  - "The D14 assertion that no deciding path reads a client-asserted instant no longer lists the replay window, which is package source; App keeps the assertion that the replay horizon is measured from the server's own claim instant."
+  - "The package's release-dependencies manifest marks kumwe/access-context 0.1.2, kumwe/business-definition 0.1.2 and kumwe/record-values 0.1.4 as not independently verified by design; the App's KUMWE-MIG-2026-004, KUMWE-MIG-2026-010 and KUMWE-MIG-2026-029 attestations cover those releases."
+completion_claim: false
+accepted_by: null

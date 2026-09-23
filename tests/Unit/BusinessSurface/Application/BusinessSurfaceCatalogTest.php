@@ -21,7 +21,7 @@ use Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordDefinitionResolver;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
 use Kumwe\App\BusinessRecord\Application\ResolvedBusinessDefinition;
-use Kumwe\App\BusinessRecord\Domain\RecordScope;
+use Kumwe\Record\Model\RecordScope;
 use Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessController;
 use Kumwe\BusinessPolicy\Application\BusinessRecordAccessPlan;
 use Kumwe\BusinessPolicy\Application\FieldDisclosurePlan;

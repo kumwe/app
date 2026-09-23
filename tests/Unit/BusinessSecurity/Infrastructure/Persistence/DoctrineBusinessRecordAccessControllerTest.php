@@ -10,7 +10,7 @@ use Kumwe\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\BusinessDefinition\Domain\ScopeMode;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordDefinitionResolver;
 use Kumwe\App\BusinessRecord\Application\ResolvedBusinessDefinition;
-use Kumwe\App\BusinessRecord\Domain\RecordScope;
+use Kumwe\Record\Model\RecordScope;
 use Kumwe\Access\MembershipDirectory;
 use Kumwe\App\BusinessSecurity\Infrastructure\Persistence\DoctrineBusinessRecordAccessController;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;

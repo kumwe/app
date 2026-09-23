@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Architecture;
 
 use DateTimeImmutable;
-use Kumwe\App\BusinessRecord\Domain\BusinessRecordReplayWindow;
-use PHPUnit\Framework\Attributes\CoversClass;
+use Kumwe\Record\Model\BusinessRecordReplayWindow;
+use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use SplFileInfo;
 
-#[CoversClass(BusinessRecordReplayWindow::class)]
+#[CoversNothing]
 /**
  * Holds the boundary decision D14 draws around a client's clock: it may be recorded, and it decides nothing.
  *
@@ -21,7 +21,10 @@ use SplFileInfo;
  * `Kumwe\Record\Value\ClientAssertedInstant`, whose grammar, UTC normalisation and range refusals
  * kumwe/record-values proves; what App owns, and what is pinned here, is the boundary around it: which paths
  * may carry the claim, that no path deciding ordering, expiry, period assignment or numbering can read it,
- * and that the replay horizon runs from the server's own instant.
+ * and that the replay horizon runs from the server's own instant. The replay window itself is
+ * `Kumwe\Record\Model\BusinessRecordReplayWindow`, owned by kumwe/record-model, so the deciding paths listed
+ * here are the App-owned ones; the horizon assertion constructs the package window and measures it from
+ * the server's claim instant.
  *
  * @since  2.0.0
  */
@@ -39,7 +42,6 @@ final class ClientAssertedInstantBoundaryTest extends TestCase
     private const DECIDING_PATHS = [
         'src/BusinessRecord/Infrastructure/Persistence/DoctrineBusinessNumberSequenceAllocator.php',
         'src/BusinessRecord/Domain/BusinessRecordIdempotency.php',
-        'src/BusinessRecord/Domain/BusinessRecordReplayWindow.php',
         'src/BusinessRecord/Application/BusinessRecordIdempotencyPurger.php',
         'src/Infrastructure/Automation/DoctrineIdempotencyPurger.php',
         'src/Infrastructure/Persistence/DoctrineIdempotencyLedger.php',

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "4c63e3ae4f96346249fecab534c8afe8",
+    "content-hash": "eb8e11d93926b0346f63d3fac38e9277",
     "packages": [
         {
             "name": "brick/math",
@@ -991,6 +991,54 @@
                 "source": "https://github.com/kumwe/producer"
             },
             "time": "2026-09-09T13:50:26+00:00"
+        },
+        {
+            "name": "kumwe/record-model",
+            "version": "v0.1.4",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/kumwe/record-model.git",
+                "reference": "907d5175fe4c6fe1d30e8fa92560dc569631d98d"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/kumwe/record-model/zipball/907d5175fe4c6fe1d30e8fa92560dc569631d98d",
+                "reference": "907d5175fe4c6fe1d30e8fa92560dc569631d98d",
+                "shasum": ""
+            },
+            "require": {
+                "ext-json": "*",
+                "ext-mbstring": "*",
+                "kumwe/access-context": "0.1.2",
+                "kumwe/business-definition": "0.1.2",
+                "kumwe/record-values": "0.1.4",
+                "php": "^8.5",
+                "php-64bit": "*",
+                "ramsey/uuid": "^4.9"
+            },
+            "require-dev": {
+                "ext-zip": "*",
+                "phpstan/phpstan": "^2.1",
+                "phpunit/phpunit": "^12.0 || ^13.0",
+                "squizlabs/php_codesniffer": "^4.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Kumwe\\Record\\Model\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "Apache-2.0"
+            ],
+            "description": "Portable immutable records, revisions, replay outcomes and scope values.",
+            "homepage": "https://github.com/kumwe/record-model",
+            "support": {
+                "issues": "https://github.com/kumwe/record-model/issues",
+                "source": "https://github.com/kumwe/record-model/tree/v0.1.4"
+            },
+            "time": "2026-09-23T09:25:18+00:00"
         },
         {
             "name": "kumwe/record-values",

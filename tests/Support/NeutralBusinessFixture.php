@@ -21,7 +21,7 @@ use Kumwe\App\BusinessRecord\Application\BusinessRecordService;
 use Kumwe\App\BusinessRecord\Application\Command\CreateRecordCommand;
 use Kumwe\App\BusinessRecord\Application\Command\RelateRecordsCommand;
 use Kumwe\App\BusinessRecord\Application\Command\ReorderRecordLinesCommand;
-use Kumwe\App\BusinessRecord\Application\RecordMutationResult;
+use Kumwe\Record\Model\RecordMutationResult;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaService;
 use Kumwe\App\BusinessSchema\Domain\SchemaInstallationStatus;
 use Kumwe\App\BusinessSchema\Domain\SchemaPlanStatus;

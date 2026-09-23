@@ -15,7 +15,7 @@ use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailab
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordValidationFailed;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordVersionConflict;
 use Kumwe\App\BusinessRecord\Application\Exception\InvalidBusinessRecordQuery;
-use Kumwe\App\BusinessRecord\Application\RecordMutationResult;
+use Kumwe\Record\Model\RecordMutationResult;
 use Kumwe\App\BusinessRecord\Application\ValidationViolation;
 use Kumwe\App\BusinessSurface\Application\BusinessRecordProjector;
 use Kumwe\Approval\ApprovalDenied;

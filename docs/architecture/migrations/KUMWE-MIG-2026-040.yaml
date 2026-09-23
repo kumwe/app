@@ -1,0 +1,69 @@
+schema: kumwe-migration-ledger/v1
+migration_id: KUMWE-MIG-2026-040
+change_set: KUMWE-CS-2026-040
+package: kumwe/record-model
+version: 0.1.4
+artifact_digest: "97ff1e0ea4088b782d9c77281a253db8b683a76298e4ae2728858834f4168d1c"
+handoff_path: vendor/kumwe/record-model/docs/release-record.md
+handoff_sha256: "316d3a7476adb52931eba200b9f5d1695acbceab17ec6dbb5cbc669106febcc0"
+release_attestation: docs/architecture/migrations/evidence/KUMWE-MIG-2026-040/RELEASE-ATTESTATION.yaml
+old_namespace_roots: []
+symbols:
+  - old_fqcn: Kumwe\App\BusinessRecord\Domain\BusinessRecord
+    new_fqcn: Kumwe\Record\Model\BusinessRecord
+  - old_fqcn: Kumwe\App\BusinessRecord\Domain\BusinessRecordRevision
+    new_fqcn: Kumwe\Record\Model\BusinessRecordRevision
+  - old_fqcn: Kumwe\App\BusinessRecord\Domain\RecordScope
+    new_fqcn: Kumwe\Record\Model\RecordScope
+  - old_fqcn: Kumwe\App\BusinessRecord\Domain\BusinessRecordReplayWindow
+    new_fqcn: Kumwe\Record\Model\BusinessRecordReplayWindow
+  - old_fqcn: Kumwe\App\BusinessRecord\Application\RecordMutationResult
+    new_fqcn: Kumwe\Record\Model\RecordMutationResult
+  - old_fqcn: Kumwe\Extension\Spi\BusinessRecord\Application\BusinessRecordRequestGuard
+    new_fqcn: Kumwe\Record\Model\BusinessRecordRequestGuard
+removed_paths:
+  - src/BusinessRecord/Domain/BusinessRecord.php
+  - src/BusinessRecord/Domain/BusinessRecordRevision.php
+  - src/BusinessRecord/Domain/RecordScope.php
+  - src/BusinessRecord/Domain/BusinessRecordReplayWindow.php
+  - src/BusinessRecord/Application/RecordMutationResult.php
+removed_tests:
+  - tests/Unit/BusinessRecord/Domain/RecordScopeTest.php
+retained_tests:
+  - tests/Architecture/ClientAssertedInstantBoundaryTest.php
+  - tests/Integration/BusinessRecord/AggregateDocumentIntegrationTest.php
+  - tests/Integration/BusinessRecord/BusinessRecordHistoryPagingIntegrationTest.php
+  - tests/Integration/BusinessRecord/BusinessRecordPolicyCompilerIntegrationTest.php
+  - tests/Integration/BusinessRecord/BusinessRecordRuntimeIntegrationTest.php
+  - tests/Integration/BusinessRecord/RecordSecretRotationIntegrationTest.php
+  - tests/Integration/BusinessSurface/GeneratedBusinessQueryBudgetIntegrationTest.php
+  - tests/Support/NeutralBusinessFixture.php
+  - tests/Unit/BusinessRecord/Application/BusinessRecordMutationPublicationTest.php
+  - tests/Unit/BusinessRecord/Application/BusinessRecordRelationshipCoordinatorTest.php
+  - tests/Unit/BusinessRecord/Application/BusinessRecordRevisionCursorTest.php
+  - tests/Unit/BusinessRecord/Application/BusinessRecordViewTest.php
+  - tests/Unit/BusinessRecord/Application/PostingPeriodLockTest.php
+  - tests/Unit/BusinessRecord/Application/RecordRuleValidatorTest.php
+  - tests/Unit/BusinessRecord/Domain/BusinessRecordReplayWindowTest.php
+  - tests/Unit/BusinessRecord/Domain/ExactValueCodecTest.php
+  - tests/Unit/BusinessRecord/Domain/RecordIntegrityTest.php
+  - tests/Unit/BusinessRecord/Domain/RecordValueProtectionTest.php
+  - tests/Unit/BusinessSecurity/Application/BusinessRecordAccessPlanTest.php
+  - tests/Unit/BusinessSecurity/Infrastructure/Persistence/DoctrineBusinessRecordAccessControllerTest.php
+  - tests/Unit/BusinessSurface/Application/BusinessSurfaceCatalogTest.php
+  - tests/Unit/Delivery/Console/Command/BusinessRecordConsolePresenterTest.php
+  - tests/Unit/Delivery/Http/Api/Business/BusinessOperationStatusApiHandlerTest.php
+  - tests/Unit/Delivery/Http/Api/Business/BusinessRecordApiPresenterTest.php
+  - tests/Unit/Delivery/Http/Api/Business/BusinessRecordApiResponderTest.php
+  - tests/Unit/Governance/ComposerLockTest.php
+  - tests/Architecture/CapabilityIndexGateTest.php
+di_changes: []
+capability_index_entries:
+  - kumwe/record-model
+release_evidence:
+  - docs/architecture/migrations/evidence/KUMWE-MIG-2026-040/RELEASE-ATTESTATION.yaml
+app_pull_request: "https://github.com/kumwe/app/pull/151"
+roadmap_refs: []
+non_roadmap_refs:
+  - NRM-2026-046
+conflicts: []

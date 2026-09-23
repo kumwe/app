@@ -28,9 +28,9 @@ use Kumwe\App\BusinessRecord\Application\Query\ReadRecordQuery;
 use Kumwe\App\BusinessRecord\Application\Query\RecordHistoryQuery;
 use Kumwe\App\BusinessRecord\Application\RecordValueCodec;
 use Kumwe\App\BusinessRecord\Application\ValidationViolation;
-use Kumwe\App\BusinessRecord\Domain\BusinessRecord;
+use Kumwe\Record\Model\BusinessRecord;
 use Kumwe\Conversion\Decimal\ExactDecimal;
-use Kumwe\App\BusinessRecord\Domain\RecordScope;
+use Kumwe\Record\Model\RecordScope;
 use Kumwe\BusinessDefinition\Domain\ScopeMode;
 use Kumwe\App\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordWriteRepository;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaInstallationRepository;
@@ -1052,7 +1052,7 @@ final class AggregateDocumentIntegrationTest extends TestCase
      * @param   EntityTypeDefinition  $header      Installed header definition.
      * @param   string                $documentId  Identity of the document.
      *
-     * @return  \Kumwe\App\BusinessRecord\Domain\BusinessRecord  The stored header record.
+     * @return  \Kumwe\Record\Model\BusinessRecord  The stored header record.
      *
      * @since   2.0.0
      */

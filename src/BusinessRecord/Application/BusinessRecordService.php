@@ -53,11 +53,12 @@ use Kumwe\App\BusinessRecord\Application\Query\BrowseRelatedRecordsQuery;
 use Kumwe\App\BusinessRecord\Application\Query\OwnedLineFormQuery;
 use Kumwe\App\BusinessRecord\Application\Query\ReadRecordQuery;
 use Kumwe\App\BusinessRecord\Application\Query\RecordHistoryQuery;
-use Kumwe\App\BusinessRecord\Domain\BusinessRecord;
+use Kumwe\Record\Model\BusinessRecord;
 use Kumwe\App\BusinessRecord\Domain\BusinessRecordIdempotency;
 use Kumwe\App\BusinessRecord\Domain\BusinessRecordIdempotencyState;
-use Kumwe\App\BusinessRecord\Domain\BusinessRecordReplayWindow;
-use Kumwe\App\BusinessRecord\Domain\RecordScope;
+use Kumwe\Record\Model\BusinessRecordReplayWindow;
+use Kumwe\Record\Model\RecordMutationResult;
+use Kumwe\Record\Model\RecordScope;
 use Kumwe\Approval\ApprovalBinding;
 use Kumwe\Approval\ApprovalDenied;
 use Kumwe\Approval\ApprovalService;
@@ -316,7 +317,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                     $scope,
                     1,
                     $resolved->definition->workflow?->initialState,
-                    $values,
+                    RecordValueProtection::protect($values),
                     $command->context->actorId(),
                     $now,
                     $command->context->actorId(),
@@ -850,7 +851,11 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                     $values,
                     array_keys($command->values),
                 );
-                $updated = $record->updated($values, $command->context->actorId(), $now);
+                $updated = $record->updated(
+                    RecordValueProtection::protect($values),
+                    $command->context->actorId(),
+                    $now,
+                );
                 $changed = $this->changed($record->values(), $updated->values());
                 $this->writes->update($resolved, $updated, $command->expectedVersion);
                 $this->publication->publish(
@@ -2311,7 +2316,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
             $scope,
             1,
             $resolved->definition->workflow?->initialState,
-            $values,
+            RecordValueProtection::protect($values),
             $command->context->actorId(),
             $now,
             $command->context->actorId(),
@@ -2395,7 +2400,11 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
             $values,
             array_keys($command->values),
         );
-        $updated = $header->updated($values, $command->context->actorId(), $now);
+        $updated = $header->updated(
+            RecordValueProtection::protect($values),
+            $command->context->actorId(),
+            $now,
+        );
         $changed = $this->changed($header->values(), $updated->values());
         $this->writes->update($resolved, $updated, (int) $command->expectedVersion);
 

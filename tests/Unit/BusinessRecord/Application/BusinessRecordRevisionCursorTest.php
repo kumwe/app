@@ -8,7 +8,7 @@ use DateTimeImmutable;
 use DateTimeZone;
 use InvalidArgumentException;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordRevisionCursor;
-use Kumwe\App\BusinessRecord\Domain\BusinessRecordRevision;
+use Kumwe\Record\Model\BusinessRecordRevision;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

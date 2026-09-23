@@ -13,7 +13,7 @@ use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordDefinitionResolver;
 use Kumwe\App\BusinessRecord\Application\ResolvedBusinessDefinition;
-use Kumwe\App\BusinessRecord\Domain\RecordScope;
+use Kumwe\Record\Model\RecordScope;
 use Kumwe\App\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordQueryCompiler;
 use Kumwe\Extension\Spi\BusinessRecord\Query\AggregateFunction;
 use Kumwe\Extension\Spi\BusinessRecord\Query\ComparisonFilter;
@@ -61,7 +61,7 @@ final class BusinessRecordPolicyCompilerIntegrationTest extends TestCase
         self::assertInstanceOf(BusinessRecordDefinitionResolver::class, $resolver);
         self::assertInstanceOf(DoctrineBusinessRecordQueryCompiler::class, $compiler);
         $resolved = $resolver->forCreate($context, $definition->handle);
-        $scope = \Kumwe\App\BusinessRecord\Domain\RecordScope::forDefinition(
+        $scope = \Kumwe\Record\Model\RecordScope::forDefinition(
             $definition->scope,
             $context->site(),
             null,
@@ -168,7 +168,7 @@ final class BusinessRecordPolicyCompilerIntegrationTest extends TestCase
         self::assertInstanceOf(BusinessRecordDefinitionResolver::class, $resolver);
         self::assertInstanceOf(DoctrineBusinessRecordQueryCompiler::class, $compiler);
         $resolved = $resolver->forCreate($context, $definition->handle);
-        $scope = \Kumwe\App\BusinessRecord\Domain\RecordScope::forDefinition(
+        $scope = \Kumwe\Record\Model\RecordScope::forDefinition(
             $definition->scope,
             $context->site(),
             null,
@@ -214,7 +214,7 @@ final class BusinessRecordPolicyCompilerIntegrationTest extends TestCase
         self::assertInstanceOf(Connection::class, $database);
         self::assertInstanceOf(TableNames::class, $tables);
         $resolved = $resolver->forCreate($context, $definition->handle);
-        $scope = \Kumwe\App\BusinessRecord\Domain\RecordScope::forDefinition(
+        $scope = \Kumwe\Record\Model\RecordScope::forDefinition(
             $definition->scope,
             $context->site(),
             null,
@@ -512,7 +512,7 @@ final class BusinessRecordPolicyCompilerIntegrationTest extends TestCase
         self::assertInstanceOf(BusinessRecordAccessController::class, $accessController);
         self::assertInstanceOf(Connection::class, $database);
         $resolved = $resolver->forCreate($context, $owner->handle);
-        $scope = \Kumwe\App\BusinessRecord\Domain\RecordScope::forDefinition(
+        $scope = \Kumwe\Record\Model\RecordScope::forDefinition(
             $owner->scope,
             $context->site(),
             null,
