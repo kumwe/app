@@ -1,0 +1,33 @@
+schema: kumwe-non-roadmap-record/v1
+id: NRM-2026-046
+nrm_ref: NRM-2026-046
+roadmap_impact: None
+rationale: "Adopt verified kumwe/record-model 0.1.4, the owner of the portable immutable business record, its revision, the idempotency replay window, the mutation result and the record scope."
+repositories:
+  - kumwe/app
+  - kumwe/record-model
+behavior_before: "App declared BusinessRecord, BusinessRecordRevision, RecordScope, BusinessRecordReplayWindow and RecordMutationResult itself under Kumwe\\App\\BusinessRecord, and the record and revision constructors passed each sealed secret through RecordValueProtection before the record-value guard."
+behavior_after: "The five types come from kumwe/record-model 0.1.4 under Kumwe\\Record\\Model; App keeps the record service, rule validation, the value codec, secret sealing, key custody and rotation, fingerprints, revision and record persistence, policy, authorization and delivery, applies RecordValueProtection::protect() to the value map immediately before it constructs or advances a package record, and RecordValueCodec rebuilds the envelope from the protected storage a record carries, so every stored checksum, fingerprint and revision byte is unchanged."
+public_api_impact: "None for callers: the five types keep their names and public members under the package namespace, RecordScope is typed on the Kumwe\\BusinessDefinition\\Domain\\ScopeMode App already uses, and no HTTP, console or OpenAPI surface changes. A revision actor must match the bounded identifier grammar the record already enforced, a revision snapshot or changed-field list holds at most 256 entries, the optimistic version refuses to advance past PHP_INT_MAX, nested arrays are detached from caller references, and a record holds a sealed secret as the ProtectedRecordValue the package guard admits rather than as the EncryptedEnvelope."
+dependency_impact: "Adds kumwe/record-model 0.1.4 exactly; it requires kumwe/access-context 0.1.2, kumwe/business-definition 0.1.2 and kumwe/record-values 0.1.4 exactly, all already locked, with ramsey/uuid ^4.9, ext-json and ext-mbstring, and no other lock entry changes. kumwe/extension-sdk 0.2.4 stays locked with its BusinessRecordRequestGuard copy, which App never referenced, until the 0.3.2 train removes it."
+compatibility: "Drop-in for stored data: the row decode, column encoding and the canonical bytes of every snapshot, checksum and fingerprint are unchanged, which RecordIntegrityTest pins by exact digest over a sealed secret."
+data_migration: None
+security_impact: "No authority change; scope derivation still takes the site from the execution context, policy, disclosure, sealing, decryption, associated data, key custody and rotation stay in App, the package performs no cryptography and never sees a connection or a request, and the client-asserted instant still reaches no ordering, expiry, period or numbering path."
+performance:
+  claim: None
+  evidence: []
+operations_deployment: "None; no configuration, provider or schema change. The idempotency replay and retention keys are read into the package window through the same configuration factory."
+recovery_rollback: "Revert the adoption pull request and restore the five removed classes, the moved unit test and the trimmed replay-window methods; no persisted data changes."
+artifacts_evidence:
+  - docs/architecture/migrations/KUMWE-MIG-2026-040.yaml
+  - docs/architecture/migrations/change-sets/KUMWE-CS-2026-040.yaml
+  - docs/architecture/migrations/trains/KUMWE-TRAIN-2026-040.yaml
+  - docs/architecture/migrations/evidence/KUMWE-MIG-2026-040/RELEASE-ATTESTATION.yaml
+  - docs/architecture/core-growth/KUMWE-CGR-2026-009.md
+  - docs/architecture/capability-index.md
+known_gaps:
+  - "The published tag commit lies outside the package repository's default-branch history, whose head carries the identical tree; a later package release from that history would be a separate adoption."
+  - "kumwe/extension-sdk 0.3.2 (KUMWE-MIG-2026-033) removes the Kumwe\\Extension\\Spi\\BusinessRecord\\Application\\BusinessRecordRequestGuard copy App never referenced and follows as a separate adoption."
+  - "kumwe/business-surface-contract 0.1.4 pins this release exactly and follows as a separate adoption."
+owner: "eWɘyn"
+status: in-progress

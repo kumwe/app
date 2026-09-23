@@ -20,7 +20,7 @@ use Kumwe\BusinessDefinition\Domain\IdentityStrategy;
 use Kumwe\BusinessDefinition\Domain\ScopeMode;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordDefinitionResolver;
 use Kumwe\App\BusinessRecord\Application\ResolvedBusinessDefinition;
-use Kumwe\App\BusinessRecord\Domain\RecordScope;
+use Kumwe\Record\Model\RecordScope;
 use Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessCatalogPlanner;
 use Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessController;
 use Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessOperationCatalogPlanner;

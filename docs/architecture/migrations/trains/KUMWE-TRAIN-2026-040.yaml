@@ -1,0 +1,39 @@
+schema: kumwe-integration-train/v1
+train: KUMWE-TRAIN-2026-040
+packages:
+  - package: kumwe/record-model
+    version: 0.1.4
+merge_order:
+  - "https://github.com/kumwe/app/pull/151"
+custodian: "eWɘyn"
+hotspots:
+  - composer.json
+  - composer.lock
+  - src/BusinessRecord/Application/BusinessRecordService.php
+  - src/BusinessRecord/Application/RecordValueCodec.php
+  - src/BusinessRecord/Domain/RecordValueProtection.php
+  - src/BusinessRecord/Infrastructure/Persistence/DoctrineBusinessRecordReadRepository.php
+  - src/Kernel/Configuration/ApplicationConfiguration.php
+  - src/Kernel/Configuration/ConfigurationFactory.php
+  - docs/architecture/layers.json
+  - docs/architecture/capability-index.md
+  - docs/architecture/core-growth/KUMWE-CGR-2026-009.md
+  - docs/architecture/governance/core-growth-baseline.json
+  - docs/architecture/migrations/README.md
+  - docs/architecture/migrations/KUMWE-MIG-2026-004.yaml
+  - docs/architecture/migrations/change-sets/KUMWE-CS-2026-004.yaml
+  - docs/quality/baseline.json
+  - docs/quality/test-docblock-baseline.json
+  - tests/Architecture/CapabilityIndexGateTest.php
+  - tests/Architecture/ClientAssertedInstantBoundaryTest.php
+  - tests/Unit/BusinessRecord/Domain/RecordIntegrityTest.php
+  - tests/Unit/Governance/ComposerLockTest.php
+  - CHANGELOG.md
+commands:
+  - "composer install"
+  - "composer kumwe:capability-index"
+  - "composer kumwe:core-growth-record"
+  - "composer baseline:record"
+  - "composer qa"
+conflict_ledger: docs/architecture/migrations/conflicts
+serialized_by: "eWɘyn, rebase-merging the green pull request under the standing maintainer mandate"

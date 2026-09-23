@@ -18,7 +18,7 @@ use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\BusinessDefinition\Domain\FieldTypeDefinition;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordDefinitionResolver;
 use Kumwe\App\BusinessRecord\Application\RecordFingerprint;
-use Kumwe\App\BusinessRecord\Application\RecordMutationResult;
+use Kumwe\Record\Model\RecordMutationResult;
 use Kumwe\App\BusinessRecord\Application\ResolvedBusinessDefinition;
 use Kumwe\App\BusinessRecord\Domain\BusinessRecordIdempotency;
 use Kumwe\App\BusinessRecord\Domain\BusinessRecordIdempotencyState;

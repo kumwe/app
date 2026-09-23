@@ -10,7 +10,7 @@ use Kumwe\App\BusinessRecord\Application\BusinessRecordRevisionView;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordView;
 use Kumwe\App\BusinessRecord\Application\RecordBrowseResult;
 use Kumwe\App\BusinessRecord\Application\RecordHistoryResult;
-use Kumwe\App\BusinessRecord\Application\RecordMutationResult;
+use Kumwe\Record\Model\RecordMutationResult;
 use Kumwe\Conversion\Value\ConvertedMoneyValue;
 use Kumwe\Conversion\Decimal\ExactDecimal;
 use Kumwe\Conversion\Value\MoneyValue;

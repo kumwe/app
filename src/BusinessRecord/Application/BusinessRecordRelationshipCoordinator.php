@@ -21,8 +21,8 @@ use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordReferenceConfli
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordValidationFailed;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRelationshipRejected;
-use Kumwe\App\BusinessRecord\Domain\BusinessRecord;
-use Kumwe\App\BusinessRecord\Domain\RecordScope;
+use Kumwe\Record\Model\BusinessRecord;
+use Kumwe\Record\Model\RecordScope;
 use Kumwe\App\BusinessRecord\Domain\RecordValueProtection;
 use Kumwe\BusinessPolicy\Application\BusinessRecordAccessPlan;
 use Kumwe\Context\Value\AuthenticatedSurface;

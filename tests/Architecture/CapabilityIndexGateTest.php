@@ -69,7 +69,7 @@ final class CapabilityIndexGateTest extends TestCase
         $check = GovernanceFixture::run(['--check']);
 
         self::assertSame(0, $check['status'], $check['output']);
-        self::assertStringContainsString('Capability index verified (19 packages; digest sha256:', $check['output']);
+        self::assertStringContainsString('Capability index verified (20 packages; digest sha256:', $check['output']);
 
         $digest = GovernanceFixture::run(['--digest']);
         self::assertSame(0, $digest['status'], $digest['output']);
@@ -185,7 +185,7 @@ final class CapabilityIndexGateTest extends TestCase
 
     /**
      * One pre-Version-2 package remains a legacy-unmanifested transitional entry that cannot satisfy a release
-     * gate. The eighteen manifested packages retain their release metadata; the conversion re-pin binds the JSON
+     * gate. The nineteen manifested packages retain their release metadata; the conversion re-pin binds the JSON
      * handoff its release ships, the transaction, localization and secret-envelope adoptions preserve the
      * access-context and sequence handoffs and removed-symbol mappings, and the navigation adoption retires its
      * App domain root.
@@ -217,6 +217,7 @@ final class CapabilityIndexGateTest extends TestCase
                 'kumwe/localization',
                 'kumwe/navigation',
                 'kumwe/producer',
+                'kumwe/record-model',
                 'kumwe/record-values',
                 'kumwe/secret-envelope',
                 'kumwe/sequence',
@@ -293,6 +294,7 @@ final class CapabilityIndexGateTest extends TestCase
                 'v0.1.3',
                 'v0.3.0',
                 'v0.1.4',
+                'v0.1.4',
                 'v0.1.1',
                 'v0.2.1',
                 'v0.1.2',
@@ -361,6 +363,7 @@ final class CapabilityIndexGateTest extends TestCase
                 'kumwe/business-definition' => 36,
                 'kumwe/sequence' => 4,
                 'kumwe/conversion' => 23,
+                'kumwe/record-model' => 6,
                 'kumwe/secret-envelope' => 9,
                 'kumwe/record-values' => 3,
                 'kumwe/approval' => 12,

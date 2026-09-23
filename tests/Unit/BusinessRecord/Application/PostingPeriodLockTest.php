@@ -11,10 +11,10 @@ use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordPostingPeriodCl
 use Kumwe\App\BusinessRecord\Application\PostingPeriodLock;
 use Kumwe\App\BusinessRecord\Application\PostingPeriodRepository;
 use Kumwe\App\BusinessRecord\Application\RecordValueCodec;
-use Kumwe\App\BusinessRecord\Domain\BusinessRecord;
+use Kumwe\Record\Model\BusinessRecord;
 use Kumwe\App\BusinessRecord\Domain\PostingPeriod;
 use Kumwe\App\BusinessRecord\Domain\PostingPeriodStatus;
-use Kumwe\App\BusinessRecord\Domain\RecordScope;
+use Kumwe\Record\Model\RecordScope;
 use Kumwe\App\Tests\Support\NeutralBusinessFixture;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\Secret\Cipher\SodiumEnvelopeCipher;

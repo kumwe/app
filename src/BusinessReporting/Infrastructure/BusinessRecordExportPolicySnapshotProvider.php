@@ -10,7 +10,7 @@ use Kumwe\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\BusinessDefinition\Domain\ScopeMode;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordDefinitionResolver;
 use Kumwe\Extension\Spi\BusinessRecord\Application\BusinessRecordQueryPurpose;
-use Kumwe\App\BusinessRecord\Domain\RecordScope;
+use Kumwe\Record\Model\RecordScope;
 use Kumwe\App\BusinessReporting\Application\ExportPolicySnapshotProvider;
 use Kumwe\App\BusinessReporting\Domain\ReportDefinition;
 use Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessController;

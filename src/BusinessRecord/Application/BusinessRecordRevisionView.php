@@ -7,7 +7,7 @@ namespace Kumwe\App\BusinessRecord\Application;
 use DateTimeImmutable;
 use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\BusinessDefinition\Domain\Sensitivity;
-use Kumwe\App\BusinessRecord\Domain\BusinessRecordRevision;
+use Kumwe\Record\Model\BusinessRecordRevision;
 use Kumwe\App\BusinessRecord\Domain\RecordValueProtection;
 use Kumwe\BusinessPolicy\Application\FieldAccessUsage;
 use Kumwe\BusinessPolicy\Application\FieldDisclosurePlan;

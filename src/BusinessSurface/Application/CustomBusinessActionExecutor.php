@@ -27,7 +27,7 @@ use Kumwe\App\BusinessRecord\Application\RecordFingerprint;
 use Kumwe\App\BusinessRecord\Application\ResolvedBusinessDefinition;
 use Kumwe\App\BusinessRecord\Domain\BusinessRecordIdempotency;
 use Kumwe\App\BusinessRecord\Domain\BusinessRecordIdempotencyState;
-use Kumwe\App\BusinessRecord\Domain\RecordScope;
+use Kumwe\Record\Model\RecordScope;
 use Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessController;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionLedgerResult;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessSurfaceDispatcher;

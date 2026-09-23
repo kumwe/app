@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessRecord\Application;
 
 use InvalidArgumentException;
-use Kumwe\App\BusinessRecord\Domain\BusinessRecordRevision;
+use Kumwe\Record\Model\BusinessRecordRevision;
 
 /**
  * Exclusive upper bound on a page of revision history, spelled in the log's own ordering key.

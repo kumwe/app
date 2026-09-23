@@ -9,8 +9,8 @@ use InvalidArgumentException;
 use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\BusinessDefinition\Domain\FieldDefinition;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordPostingPeriodClosed;
-use Kumwe\App\BusinessRecord\Domain\BusinessRecord;
-use Kumwe\App\BusinessRecord\Domain\RecordScope;
+use Kumwe\Record\Model\BusinessRecord;
+use Kumwe\Record\Model\RecordScope;
 use Kumwe\Record\Value\ZonedDateTimeValue;
 
 /**

@@ -31,8 +31,9 @@ use Kumwe\App\BusinessRecord\Application\RecordValueCodec;
 use Kumwe\App\BusinessRecord\Application\ResolvedBusinessDefinition;
 use Kumwe\App\BusinessRecord\Application\StoredOwnedLine;
 use Kumwe\App\BusinessRecord\Application\StoredRecordIdentity;
-use Kumwe\App\BusinessRecord\Domain\BusinessRecord;
-use Kumwe\App\BusinessRecord\Domain\RecordScope;
+use Kumwe\App\BusinessRecord\Domain\RecordValueProtection;
+use Kumwe\Record\Model\BusinessRecord;
+use Kumwe\Record\Model\RecordScope;
 use Kumwe\Extension\Spi\BusinessRecord\Query\CursorPosition;
 use Kumwe\Extension\Spi\BusinessRecord\Query\RecordQuerySpecification;
 use Kumwe\BusinessPolicy\Application\BusinessRecordAccessPlan;
@@ -1757,7 +1758,9 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
      * equal the version of $resolved, so a caller that failed to re-pin gets a refusal instead of a
      * record decoded against the wrong shape. Values are rebuilt through the codec, virtual formula
      * fields are recomputed rather than trusted from storage, and the caller-facing identity is derived
-     * last, from the values the identity strategy actually keeps it in.
+     * last, from the values the identity strategy actually keeps it in. The value map is passed through
+     * `RecordValueProtection::protect()` on its way into the package record, so a sealed secret enters the
+     * aggregate as the protected storage its guard admits.
      *
      * @param   ResolvedBusinessDefinition  $resolved  Pinned definition the row must have been written
      *          under, and whose fields the columns are decoded into.
@@ -1815,7 +1818,7 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
             $scope,
             $this->integer($row, $this->physical($table, 'version')),
             $this->optionalString($row, $table, 'workflow_state'),
-            $values,
+            RecordValueProtection::protect($values),
             $this->string($row, $this->physical($table, 'created_by')),
             $this->date($row[$this->physical($table, 'created_at')] ?? null),
             $this->string($row, $this->physical($table, 'updated_by')),

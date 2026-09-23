@@ -26,7 +26,7 @@ use Kumwe\App\BusinessRecord\Application\BusinessRecordMutationFence;
 use Kumwe\App\BusinessRecord\Application\RecordCursorCodec;
 use Kumwe\App\BusinessRecord\Application\RecordValueCodec;
 use Kumwe\App\BusinessRecord\Application\ResolvedBusinessDefinition;
-use Kumwe\App\BusinessRecord\Domain\RecordScope;
+use Kumwe\Record\Model\RecordScope;
 use Kumwe\Extension\Spi\BusinessRecord\Query\AggregateFunction;
 use Kumwe\Extension\Spi\BusinessRecord\Query\BooleanFilter;
 use Kumwe\Extension\Spi\BusinessRecord\Query\BooleanOperator;

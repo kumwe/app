@@ -158,7 +158,6 @@ phase_2:
     - tests/Unit/BusinessRecord/Application/PostingPeriodLockTest.php
     - tests/Unit/BusinessRecord/Application/PostingPeriodServiceTest.php
     - tests/Unit/BusinessRecord/Application/WriteDocumentCommandTest.php
-    - tests/Unit/BusinessRecord/Domain/RecordScopeTest.php
     - tests/Unit/BusinessReporting/ExportArtifactTest.php
     - tests/Unit/BusinessReporting/ExportGenerationPolicyFenceTest.php
     - tests/Unit/BusinessReporting/ExportServiceTransactionTest.php

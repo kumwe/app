@@ -34,8 +34,6 @@ search_terms:
   - unsupported runtime type
 required_capability: "Every business-record value App hands the package guard, including a sealed secret held as a Kumwe\\Secret\\Value\\EncryptedEnvelope, must be admitted and canonicalised as before, with the envelope's storage spelling and therefore every stored checksum, fingerprint and revision byte unchanged, while the package guard knows no cryptography and refuses a raw envelope."
 consumers:
-  - src/BusinessRecord/Domain/BusinessRecord.php
-  - src/BusinessRecord/Domain/BusinessRecordRevision.php
   - src/BusinessRecord/Application/BusinessRecordMutationPublication.php
   - src/BusinessRecord/Application/BusinessRecordRelationshipCoordinator.php
   - src/BusinessRecord/Application/BusinessRecordRevisionView.php
@@ -44,6 +42,7 @@ consumers:
   - src/BusinessRecord/Application/RecordRequestGuard.php
   - src/BusinessRecord/Application/RecordRuleValidator.php
   - src/BusinessRecord/Application/RecordValueCodec.php
+  - src/BusinessRecord/Infrastructure/Persistence/DoctrineBusinessRecordReadRepository.php
   - src/BusinessRecord/Infrastructure/Persistence/DoctrineBusinessRecordRevisionRepository.php
   - src/BusinessSurface/Application/BusinessMutationPlanService.php
 overlap_reviewed: []
@@ -126,3 +125,12 @@ Approval covers the one FQCN and its single public method. Revisit this record w
 releases a way for a host to register protected-storage suppliers, or when a record-model adoption moves the
 record and revision aggregates that call it; if either package comes to own the seam, the adapter is deleted
 and this record retired.
+
+Revisited under `KUMWE-MIG-2026-040`: the record and revision aggregates moved to `kumwe/record-model` 0.1.4 as
+`Kumwe\Record\Model\BusinessRecord` and `Kumwe\Record\Model\BusinessRecordRevision`, whose constructors hand
+every value to the package guard themselves. Neither package came to own the seam, so the adapter stays: App now
+applies `protect()` to the value map immediately before it constructs or advances a record, in
+`BusinessRecordService` and `DoctrineBusinessRecordReadRepository`, and `RecordValueCodec` rebuilds the envelope
+from the `ProtectedRecordValue` a record carries when it seals or stores the field. The approval still covers the
+one FQCN and its single public method; its native signature is unchanged, and its documented return type is
+narrowed to say that an array comes back as an array.

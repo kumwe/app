@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessRecord\Application;
 
 use Kumwe\BusinessDefinition\Domain\RelationshipDefinition;
-use Kumwe\App\BusinessRecord\Domain\BusinessRecord;
-use Kumwe\App\BusinessRecord\Domain\RecordScope;
+use Kumwe\Record\Model\BusinessRecord;
+use Kumwe\Record\Model\RecordScope;
 use Kumwe\Extension\Spi\BusinessRecord\Query\RecordQuerySpecification;
 use Kumwe\BusinessPolicy\Application\BusinessRecordAccessPlan;
 

@@ -7,7 +7,7 @@ namespace Kumwe\App\BusinessRecord\Application;
 use DateTimeImmutable;
 use Kumwe\BusinessDefinition\Domain\RelationshipDefinition;
 use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\App\BusinessRecord\Domain\BusinessRecord;
+use Kumwe\Record\Model\BusinessRecord;
 
 /**
  * Port for every write that moves a business-record row or the storage of its relationships.
