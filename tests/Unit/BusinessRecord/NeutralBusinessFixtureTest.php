@@ -16,8 +16,7 @@ use Kumwe\App\Tests\Support\NeutralBusinessFixture;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
-#[CoversClass(BusinessDefinitionValidator::class)]
-#[CoversClass(EntityTypeDefinition::class)]
+#[CoversClass(SdkFieldConfigurationAdmission::class)]
 final class NeutralBusinessFixtureTest extends TestCase
 {
     public function testStandaloneBackupDefinitionIsStableAndValid(): void
