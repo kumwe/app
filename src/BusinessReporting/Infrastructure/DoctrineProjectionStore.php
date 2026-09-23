@@ -11,7 +11,7 @@ use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
 use JsonException;
 use Kumwe\Transaction\Contract\TransactionManager;
-use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\App\BusinessIntegration\Domain\RecordedIntegrationEvent;
 use Kumwe\App\BusinessReporting\Application\JournalProjectionEvent;
 use Kumwe\App\BusinessReporting\Application\ProjectionEventSource;

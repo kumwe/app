@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use Kumwe\Access\AuthorizationResource;
 use Kumwe\App\Application\Authorization\SystemIdentity;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\App\Extension\Contribution\OwnedExtensionBindingRegistrar;
 use Kumwe\Extension\Manifest\ExtensionIdentifier;
 use Kumwe\Extension\Manifest\ManifestContributions;
@@ -33,7 +34,7 @@ final class ExtensionContributionRegistrySetTest extends TestCase
      */
     public function testEveryDeclaredSurfaceAppearsInInventoryAndIsWithdrawnOnRemoval(): void
     {
-        $registries = new ExtensionContributionRegistrySet(withCore: false);
+        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
         $owner = ContributionOwner::extension('acme/editor');
         $registries->activateManifest(self::manifest());
 
@@ -80,7 +81,7 @@ final class ExtensionContributionRegistrySetTest extends TestCase
      */
     public function testAmbiguousOwnerNamespacesFailBeforeRegistrationAndReleaseOnRemoval(): void
     {
-        $registries = new ExtensionContributionRegistrySet(withCore: false);
+        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
         $first = ContributionOwner::extension('a.b/c');
         $registries->activateManifest(self::emptyManifest('a.b/c'));
 
@@ -114,7 +115,9 @@ final class ExtensionContributionRegistrySetTest extends TestCase
      */
     public function testCorePublishesCompleteTypedCapabilityAndSystemPolicyMetadata(): void
     {
-        $policies = (new ExtensionContributionRegistrySet())->authorizationPolicies();
+        $policies = (new ExtensionContributionRegistrySet(
+            new SdkFieldConfigurationAdmission(),
+        ))->authorizationPolicies();
         $delete = $policies->capability(Capability::fromString('content.delete'));
 
         self::assertNotNull($delete);

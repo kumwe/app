@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Demo\Application;
 
-use Kumwe\App\BusinessDefinition\Domain\DefinitionStatus;
+use Kumwe\BusinessDefinition\Domain\DefinitionStatus;
 use Kumwe\Context\Value\SiteContext;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;

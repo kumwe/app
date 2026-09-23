@@ -39,6 +39,7 @@
     "kumwe/access-context": "0.1.2",
     "kumwe/access-control": "0.1.2",
     "kumwe/audit": "0.1.2",
+    "kumwe/business-definition": "0.1.2",
     "kumwe/business-policy": "0.1.1",
     "kumwe/canonical-json": "0.1.1",
     "kumwe/computation": "0.3.3",

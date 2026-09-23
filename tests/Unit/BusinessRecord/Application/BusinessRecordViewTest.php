@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\BusinessRecord\Application;
 
 use DateTimeImmutable;
-use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\App\BusinessDefinition\Domain\ScopeMode;
+use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\BusinessDefinition\Domain\ScopeMode;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordView;
 use Kumwe\App\BusinessRecord\Application\RecordExpressionValues;
 use Kumwe\App\BusinessRecord\Application\RecordFieldVisibility;

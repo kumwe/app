@@ -11,7 +11,7 @@ use Kumwe\Access\AuthorizationPolicyRegistry;
 use Kumwe\App\Application\Automation\JobExecutionScope;
 use Kumwe\App\Application\Automation\JobHandlerRegistry;
 use Kumwe\App\Application\Automation\QueueRuntimePolicyCatalog;
-use Kumwe\App\BusinessDefinition\Application\FieldTypeRegistry;
+use Kumwe\BusinessDefinition\Application\FieldTypeRegistry;
 use Kumwe\App\BusinessIntegration\Application\EventContractRegistry;
 use Kumwe\App\BusinessIntegration\Application\PayloadSchemaValidator;
 use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventConsumerDefinition;

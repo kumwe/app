@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessDefinition\Administrator;
 
 use InvalidArgumentException;
-use Kumwe\App\BusinessDefinition\Domain\DefinitionOwner;
-use Kumwe\App\BusinessDefinition\Domain\DefinitionStatus;
-use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\BusinessDefinition\Domain\DefinitionOwner;
+use Kumwe\BusinessDefinition\Domain\DefinitionStatus;
+use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\Context\Value\SiteContext;
 use Ramsey\Uuid\Uuid;
 
@@ -49,7 +49,7 @@ final readonly class BusinessDefinitionFormMapper
      *
      * @throws  InvalidArgumentException  When a required input is blank, a number is not an integer, a
      *          preserved JSON input is unusable, or no field row was filled in at all.
-     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the assembled document
+     * @throws  \Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition  When the assembled document
      *          breaks a construction rule, such as an exact numeric field left without a precision.
      *
      * @since   2.0.0

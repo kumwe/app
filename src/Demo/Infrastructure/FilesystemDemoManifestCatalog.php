@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Demo\Infrastructure;
 
 use JsonException;
-use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use RuntimeException;
 
 /**

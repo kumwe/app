@@ -45,9 +45,6 @@ phase_2:
     - tests/Integration/BusinessRecord/BusinessRecordDeadlockIntegrationTest.php
     - tests/Integration/BusinessRecord/FiscalPeriodSequenceIntegrationTest.php
     - tests/Integration/Persistence/TransactionBoundaryEngineIntegrationTest.php
-    - tests/Unit/BusinessDefinition/Application/AllocatedNumberFieldRuleTest.php
-    - tests/Unit/BusinessDefinition/Application/FiscalPeriodSequenceCoherenceTest.php
-    - tests/Unit/BusinessDefinition/Application/NumberSequenceScopeCoherenceTest.php
 evidence:
   package:
     - "https://github.com/kumwe/sequence/actions/runs/34155338963"
@@ -56,7 +53,7 @@ evidence:
     - tests/Integration/BusinessRecord/BusinessNumberSequenceIdentityIntegrationTest.php
     - tests/Integration/BusinessRecord/FiscalPeriodSequenceIntegrationTest.php
     - tests/Integration/Persistence/TransactionBoundaryEngineIntegrationTest.php
-    - tests/Unit/BusinessDefinition/Application/AllocatedNumberFieldRuleTest.php
+    - "The allocated-number, fiscal-period and scope coherence unit tests moved to kumwe/business-definition 0.1.2 under KUMWE-MIG-2026-010"
   database_matrix:
     - tests/Integration/BusinessRecord/BusinessNumberSequenceContentionIntegrationTest.php
     - tests/Integration/BusinessRecord/BusinessNumberSequenceHotPathIntegrationTest.php

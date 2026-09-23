@@ -7,6 +7,7 @@ namespace Kumwe\App\Tests\Unit\Extension\Runtime;
 use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\App\Extension\Runtime\ExtensionRuntimeLoader;
 use Kumwe\App\Extension\Runtime\RuntimeCanonicalJson;
 use Kumwe\App\Extension\Runtime\RuntimePublicationKeyRing;
@@ -73,7 +74,7 @@ final class ExtensionRuntimeLoaderContributionShapeTest extends TestCase
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Strict runtime contributions are unavailable.');
 
-        $loader->load([], new ExtensionContributionRegistrySet(withCore: false));
+        $loader->load([], new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false));
     }
 
     /**

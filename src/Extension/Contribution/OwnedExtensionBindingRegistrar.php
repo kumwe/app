@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Extension\Contribution;
 
 use InvalidArgumentException;
-use Kumwe\App\BusinessDefinition\Domain\DefinitionOwner;
+use Kumwe\BusinessDefinition\Domain\DefinitionOwner;
 use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Extension\Runtime\TrustEnforcingJobHandler;

@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Kumwe\App\BusinessSchema\Domain;
 
-use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
-use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\App\BusinessDefinition\Domain\Expression;
-use Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition;
+use Kumwe\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\BusinessDefinition\Domain\Expression;
+use Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition;
 
 /**
  * The declared, bounded instructions that let a plan rewrite data instead of refusing to.

@@ -3,9 +3,6 @@ schema: kumwe-core-growth-record/v1
 id: KUMWE-CGR-2026-005
 title: "Existing domain consumers adopt canonical foundation package types"
 symbols:
-  - Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition
-  - Kumwe\App\BusinessDefinition\Domain\FieldDefinition
-  - Kumwe\App\BusinessDefinition\Domain\LocalizedDefinitionText
   - Kumwe\App\Content\Domain\ContentEntry
   - Kumwe\App\Content\Domain\TranslationGroup
   - Kumwe\App\Content\Domain\TranslationGroupMember
@@ -116,3 +113,7 @@ Approval covers only these existing signatures consuming canonical package types
 responsibilities described above. It grants no approval for new public methods, new portable behavior,
 future package upgrades or retaining behavior that a later package adoption must remove. Revisit this record
 when a listed consumer gains behavior beyond these substitutions or moves to another extracted package.
+
+Revisited under `KUMWE-MIG-2026-010`: `EntityTypeDefinition`, `FieldDefinition` and `LocalizedDefinitionText`
+moved to `kumwe/business-definition` 0.1.2 as `Kumwe\BusinessDefinition\Domain\*`, so they no longer exist
+in App and are no longer named above; the three Content symbols keep this approval unchanged.

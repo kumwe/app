@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessRecord\Application;
 
 use InvalidArgumentException;
-use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\App\BusinessDefinition\Domain\Expression;
-use Kumwe\App\BusinessDefinition\Domain\FieldDefinition;
-use Kumwe\App\BusinessDefinition\Domain\RecordInvariantDefinition;
+use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\BusinessDefinition\Domain\ExpressionEvaluator;
+use Kumwe\BusinessDefinition\Domain\Expression;
+use Kumwe\BusinessDefinition\Domain\FieldDefinition;
+use Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition;
+use Kumwe\BusinessDefinition\Domain\RecordInvariantDefinition;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordValidationFailed;
 use Kumwe\Conversion\Decimal\ExactDecimal;
 use Kumwe\App\BusinessRecord\Domain\RecordValueGuard;
@@ -483,7 +485,7 @@ final readonly class RecordRuleValidator
             return null;
         }
         try {
-            if ($condition->evaluate($values) !== true) {
+            if (ExpressionEvaluator::evaluate($condition, $values) !== true) {
                 return new ValidationViolation($field->handle, $rejectedCode, $rejectedMessage);
             }
         } catch (InvalidArgumentException) {
@@ -585,7 +587,9 @@ final readonly class RecordRuleValidator
                     }
                 }
                 try {
-                    $raw = $field->formula?->evaluate(RecordExpressionValues::from($values));
+                    $raw = $field->formula === null
+                        ? null
+                        : ExpressionEvaluator::evaluate($field->formula, RecordExpressionValues::from($values));
                     $values[$handle] = $this->codec->normalize(
                         $field,
                         $raw,
@@ -777,7 +781,14 @@ final readonly class RecordRuleValidator
         array $lines,
     ): ?ValidationViolation {
         try {
-            $satisfied = $invariant->isSatisfied(RecordExpressionValues::from($values), $lines);
+            $satisfied = ExpressionEvaluator::evaluate(
+                $invariant->condition,
+                RecordExpressionValues::from($values),
+                $lines,
+            );
+            if (!is_bool($satisfied)) {
+                throw new InvalidBusinessDefinition('A record invariant produced a non-boolean result.');
+            }
         } catch (InvalidArgumentException $exception) {
             return new ValidationViolation($invariant->handle, 'invariant_invalid', $exception->getMessage());
         }

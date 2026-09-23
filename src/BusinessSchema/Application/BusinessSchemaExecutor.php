@@ -13,7 +13,7 @@ use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Audit\Application\AuditRecorder;
 use Kumwe\Audit\Domain\AuditEvent;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionRepository;
-use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\App\BusinessSchema\Domain\PhysicalSchemaBlueprint;
 use Kumwe\App\BusinessSchema\Domain\PhysicalTableBlueprint;
 use Kumwe\App\BusinessSchema\Domain\SchemaInstallation;

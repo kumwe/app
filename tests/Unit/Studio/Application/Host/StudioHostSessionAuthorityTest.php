@@ -12,6 +12,7 @@ use Kumwe\Context\Value\MembershipContext;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\App\Extension\Runtime\ActiveExtensionSet;
 use Kumwe\App\Presentation\Application\SitePresentation;
 use Kumwe\App\Site\Application\SiteSettings;
@@ -272,7 +273,10 @@ final class StudioHostSessionAuthorityTest extends TestCase
         );
         $theme = new StudioPublishedTheme(
             $settings,
-            new ActiveExtensionSet(new ExtensionContributionRegistrySet(withCore: false)),
+            new ActiveExtensionSet(new ExtensionContributionRegistrySet(
+                new SdkFieldConfigurationAdmission(),
+                withCore: false,
+            )),
             new StudioBuiltInThemeRelease(str_repeat('a', 64)),
         );
         [$authority] = $this->authority($theme);

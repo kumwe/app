@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessReporting\Domain;
 
 use InvalidArgumentException;
-use Kumwe\App\BusinessDefinition\Domain\Expression;
+use Kumwe\BusinessDefinition\Domain\Expression;
 use Kumwe\Extension\Spi\BusinessReporting\Domain\ReportDefinitionGuard;
 use Kumwe\Extension\Spi\BusinessReporting\Domain\ReportValueType;
 

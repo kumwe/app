@@ -6,8 +6,8 @@ namespace Kumwe\App\Tests\Unit\BusinessRecord\Domain;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\App\BusinessDefinition\Domain\FieldDefinition;
+use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\BusinessDefinition\Domain\FieldDefinition;
 use Kumwe\App\BusinessRecord\Application\PlannedFieldEncoding;
 use Kumwe\App\BusinessRecord\Application\RecordColumnEncodingPlan;
 use Kumwe\App\BusinessRecord\Application\RecordValueCodec;

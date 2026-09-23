@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessSurface\Presentation\Field;
 
 use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationContext;
-use Kumwe\App\BusinessDefinition\Domain\FieldDefinition;
-use Kumwe\App\BusinessDefinition\Domain\FieldTypeDefinition;
+use Kumwe\BusinessDefinition\Domain\FieldDefinition;
+use Kumwe\BusinessDefinition\Domain\FieldTypeDefinition;
 use Kumwe\App\BusinessSurface\Application\FieldModelContext;
 use Kumwe\App\BusinessSurface\Application\FieldModelPresenter;
 use Kumwe\App\BusinessSurface\Application\PresentedField;
@@ -52,7 +52,7 @@ final readonly class RegistryFieldModelPresenter implements FieldModelPresenter
      *
      * @return  PresentedField  Display text, conversion provenance and the exported semantic model.
      *
-     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When no safe presenter
+     * @throws  \Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition  When no safe presenter
      *          covers the pair, the strategy answers for another field, it widens editability, or it
      *          drops the provenance of a converted amount.
      * @throws  \InvalidArgumentException  When a value marked as converted cannot prove the conversion

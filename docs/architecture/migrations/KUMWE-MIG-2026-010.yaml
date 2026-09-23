@@ -1,0 +1,185 @@
+schema: kumwe-migration-ledger/v1
+migration_id: KUMWE-MIG-2026-010
+change_set: KUMWE-CS-2026-010
+package: kumwe/business-definition
+version: 0.1.2
+artifact_digest: "e88066f6ba5dbbdd8775b482f7ab82aea32ee415afeb35d4a5758af7dc2070ed"
+handoff_path: vendor/kumwe/business-definition/MIGRATION-HANDOFF.md
+handoff_sha256: "6e65d7fafb1be8c35960e063e15e2b88a6a7af191be8c944cf81110db71e05a7"
+release_attestation: docs/architecture/migrations/evidence/KUMWE-MIG-2026-010/RELEASE-ATTESTATION.yaml
+old_namespace_roots: []
+symbols:
+  - old_fqcn: Kumwe\App\BusinessDefinition\Application\BusinessDefinitionCompatibilityAnalyzer
+    new_fqcn: Kumwe\BusinessDefinition\Application\BusinessDefinitionCompatibilityAnalyzer
+  - old_fqcn: Kumwe\App\BusinessDefinition\Application\BusinessDefinitionContributionRegistry
+    new_fqcn: Kumwe\BusinessDefinition\Application\BusinessDefinitionContributionRegistry
+  - old_fqcn: Kumwe\App\BusinessDefinition\Application\BusinessDefinitionValidator
+    new_fqcn: Kumwe\BusinessDefinition\Application\BusinessDefinitionValidator
+  - old_fqcn: Kumwe\App\BusinessDefinition\Application\DefinitionCatalogEntry
+    new_fqcn: Kumwe\BusinessDefinition\Application\DefinitionCatalogEntry
+  - old_fqcn: Kumwe\App\BusinessDefinition\Application\DefinitionDraft
+    new_fqcn: Kumwe\BusinessDefinition\Application\DefinitionDraft
+  - old_fqcn: Kumwe\App\BusinessDefinition\Application\DefinitionVersionRecord
+    new_fqcn: Kumwe\BusinessDefinition\Application\DefinitionVersionRecord
+  - old_fqcn: Kumwe\App\BusinessDefinition\Application\FieldTypeDefinitionResolver
+    new_fqcn: Kumwe\BusinessDefinition\Application\FieldTypeDefinitionResolver
+  - old_fqcn: Kumwe\App\BusinessDefinition\Application\FieldTypeRegistry
+    new_fqcn: Kumwe\BusinessDefinition\Application\FieldTypeRegistry
+  - old_fqcn: Kumwe\App\BusinessDefinition\Domain\ActionDefinition
+    new_fqcn: Kumwe\BusinessDefinition\Domain\ActionDefinition
+  - old_fqcn: Kumwe\App\BusinessDefinition\Domain\BuiltInFieldTypes
+    new_fqcn: Kumwe\BusinessDefinition\Domain\BuiltInFieldTypes
+  - old_fqcn: Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson
+    new_fqcn: Kumwe\BusinessDefinition\Domain\CanonicalDefinitionJson
+  - old_fqcn: Kumwe\App\BusinessDefinition\Domain\CompatibilityChange
+    new_fqcn: Kumwe\BusinessDefinition\Domain\CompatibilityChange
+  - old_fqcn: Kumwe\App\BusinessDefinition\Domain\CompatibilityClassification
+    new_fqcn: Kumwe\BusinessDefinition\Domain\CompatibilityClassification
+  - old_fqcn: Kumwe\App\BusinessDefinition\Domain\CompatibilityPlan
+    new_fqcn: Kumwe\BusinessDefinition\Domain\CompatibilityPlan
+  - old_fqcn: Kumwe\App\BusinessDefinition\Domain\ComputationMode
+    new_fqcn: Kumwe\BusinessDefinition\Domain\ComputationMode
+  - old_fqcn: Kumwe\App\BusinessDefinition\Domain\DefinitionOwner
+    new_fqcn: Kumwe\BusinessDefinition\Domain\DefinitionOwner
+  - old_fqcn: Kumwe\App\BusinessDefinition\Domain\DefinitionOwnerType
+    new_fqcn: Kumwe\BusinessDefinition\Domain\DefinitionOwnerType
+  - old_fqcn: Kumwe\App\BusinessDefinition\Domain\DefinitionStatus
+    new_fqcn: Kumwe\BusinessDefinition\Domain\DefinitionStatus
+  - old_fqcn: Kumwe\App\BusinessDefinition\Domain\DeleteBehavior
+    new_fqcn: Kumwe\BusinessDefinition\Domain\DeleteBehavior
+  - old_fqcn: Kumwe\App\BusinessDefinition\Domain\DocumentViewDefinition
+    new_fqcn: Kumwe\BusinessDefinition\Domain\DocumentViewDefinition
+  - old_fqcn: Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition
+    new_fqcn: Kumwe\BusinessDefinition\Domain\EntityTypeDefinition
+  - old_fqcn: Kumwe\App\BusinessDefinition\Domain\Expression
+    new_fqcn: Kumwe\BusinessDefinition\Domain\Expression
+  - old_fqcn: Kumwe\App\BusinessDefinition\Domain\FieldDefinition
+    new_fqcn: Kumwe\BusinessDefinition\Domain\FieldDefinition
+  - old_fqcn: Kumwe\App\BusinessDefinition\Domain\FieldTypeDefinition
+    new_fqcn: Kumwe\BusinessDefinition\Domain\FieldTypeDefinition
+  - old_fqcn: Kumwe\App\BusinessDefinition\Domain\IdentityStrategy
+    new_fqcn: Kumwe\BusinessDefinition\Domain\IdentityStrategy
+  - old_fqcn: Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition
+    new_fqcn: Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition
+  - old_fqcn: Kumwe\App\BusinessDefinition\Domain\LocalizedDefinitionText
+    new_fqcn: Kumwe\BusinessDefinition\Domain\LocalizedDefinitionText
+  - old_fqcn: Kumwe\App\BusinessDefinition\Domain\PortalOperation
+    new_fqcn: Kumwe\BusinessDefinition\Domain\PortalOperation
+  - old_fqcn: Kumwe\App\BusinessDefinition\Domain\RecordInvariantDefinition
+    new_fqcn: Kumwe\BusinessDefinition\Domain\RecordInvariantDefinition
+  - old_fqcn: Kumwe\App\BusinessDefinition\Domain\RelationshipDefinition
+    new_fqcn: Kumwe\BusinessDefinition\Domain\RelationshipDefinition
+  - old_fqcn: Kumwe\App\BusinessDefinition\Domain\RelationshipKind
+    new_fqcn: Kumwe\BusinessDefinition\Domain\RelationshipKind
+  - old_fqcn: Kumwe\App\BusinessDefinition\Domain\ScopeMode
+    new_fqcn: Kumwe\BusinessDefinition\Domain\ScopeMode
+  - old_fqcn: Kumwe\App\BusinessDefinition\Domain\Sensitivity
+    new_fqcn: Kumwe\BusinessDefinition\Domain\Sensitivity
+  - old_fqcn: Kumwe\App\BusinessDefinition\Domain\StorageMode
+    new_fqcn: Kumwe\BusinessDefinition\Domain\StorageMode
+  - old_fqcn: Kumwe\App\BusinessDefinition\Domain\ViewDefinition
+    new_fqcn: Kumwe\BusinessDefinition\Domain\ViewDefinition
+  - old_fqcn: Kumwe\App\BusinessDefinition\Domain\WorkflowBinding
+    new_fqcn: Kumwe\BusinessDefinition\Domain\WorkflowBinding
+removed_paths:
+  - src/BusinessDefinition/Application/BusinessDefinitionCompatibilityAnalyzer.php
+  - src/BusinessDefinition/Application/BusinessDefinitionContributionRegistry.php
+  - src/BusinessDefinition/Application/BusinessDefinitionValidator.php
+  - src/BusinessDefinition/Application/DefinitionCatalogEntry.php
+  - src/BusinessDefinition/Application/DefinitionDraft.php
+  - src/BusinessDefinition/Application/DefinitionVersionRecord.php
+  - src/BusinessDefinition/Application/FieldTypeDefinitionResolver.php
+  - src/BusinessDefinition/Application/FieldTypeRegistry.php
+  - src/BusinessDefinition/Domain/ActionDefinition.php
+  - src/BusinessDefinition/Domain/BuiltInFieldTypes.php
+  - src/BusinessDefinition/Domain/CanonicalDefinitionJson.php
+  - src/BusinessDefinition/Domain/CompatibilityChange.php
+  - src/BusinessDefinition/Domain/CompatibilityClassification.php
+  - src/BusinessDefinition/Domain/CompatibilityPlan.php
+  - src/BusinessDefinition/Domain/ComputationMode.php
+  - src/BusinessDefinition/Domain/DefinitionOwner.php
+  - src/BusinessDefinition/Domain/DefinitionOwnerType.php
+  - src/BusinessDefinition/Domain/DefinitionStatus.php
+  - src/BusinessDefinition/Domain/DeleteBehavior.php
+  - src/BusinessDefinition/Domain/DocumentViewDefinition.php
+  - src/BusinessDefinition/Domain/EntityTypeDefinition.php
+  - src/BusinessDefinition/Domain/Expression.php
+  - src/BusinessDefinition/Domain/FieldDefinition.php
+  - src/BusinessDefinition/Domain/FieldTypeDefinition.php
+  - src/BusinessDefinition/Domain/IdentityStrategy.php
+  - src/BusinessDefinition/Domain/InvalidBusinessDefinition.php
+  - src/BusinessDefinition/Domain/LocalizedDefinitionText.php
+  - src/BusinessDefinition/Domain/PortalOperation.php
+  - src/BusinessDefinition/Domain/RecordInvariantDefinition.php
+  - src/BusinessDefinition/Domain/RelationshipDefinition.php
+  - src/BusinessDefinition/Domain/RelationshipKind.php
+  - src/BusinessDefinition/Domain/ScopeMode.php
+  - src/BusinessDefinition/Domain/Sensitivity.php
+  - src/BusinessDefinition/Domain/StorageMode.php
+  - src/BusinessDefinition/Domain/ViewDefinition.php
+  - src/BusinessDefinition/Domain/WorkflowBinding.php
+removed_tests:
+  - tests/Unit/BusinessDefinition/Application/AllocatedNumberFieldRuleTest.php
+  - tests/Unit/BusinessDefinition/Application/BoundedJsonDefaultBudgetTest.php
+  - tests/Unit/BusinessDefinition/Application/BusinessDefinitionCompatibilityAnalyzerTest.php
+  - tests/Unit/BusinessDefinition/Application/FiscalPeriodSequenceCoherenceTest.php
+  - tests/Unit/BusinessDefinition/Application/NumberSequenceScopeCoherenceTest.php
+  - tests/Unit/BusinessDefinition/Application/ReversalRelationshipValidationTest.php
+  - tests/Unit/BusinessDefinition/Domain/AggregateInvariantDeclarationTest.php
+  - tests/Unit/BusinessDefinition/Domain/CustomBusinessDefinitionReferenceTest.php
+  - tests/Unit/BusinessDefinition/Domain/DocumentViewDefinitionTest.php
+  - tests/Unit/BusinessDefinition/Domain/LocalizedDefinitionLabelTest.php
+  - tests/Unit/BusinessDefinition/Domain/WorkflowBindingTest.php
+retained_tests:
+  - tests/Unit/BusinessDefinition/Domain/EntityTypeDefinitionTest.php
+  - tests/Unit/BusinessDefinition/Domain/ExpressionTest.php
+  - tests/Unit/BusinessDefinition/Domain/ExpressionPropertyTest.php
+  - tests/Unit/BusinessDefinition/Domain/ExpressionLineAggregateTest.php
+  - tests/Unit/BusinessDefinition/Administrator/BusinessDefinitionFormMapperTest.php
+  - tests/Unit/BusinessDefinition/Infrastructure/DoctrineBusinessDefinitionRepositoryTest.php
+  - tests/Unit/BusinessDefinition/Infrastructure/DoctrinePersistedFieldTypeDefinitionResolverTest.php
+  - tests/Integration/BusinessDefinition/BusinessDefinitionRuntimeIntegrationTest.php
+  - tests/Integration/BusinessDefinition/OpenApiDefinitionPublicationAdmissionIntegrationTest.php
+  - tests/Unit/BusinessRecord/Application/RecordRuleValidatorTest.php
+  - tests/Unit/BusinessRecord/Application/AggregateInvariantValidationTest.php
+  - tests/Unit/BusinessRecord/Application/BusinessRecordViewTest.php
+  - tests/Unit/BusinessRecord/NeutralBusinessFixtureTest.php
+  - tests/Unit/BusinessSchema/Infrastructure/CanonicalDefinitionPhysicalSchemaCompilerTest.php
+  - tests/Unit/BusinessSurface/Presentation/Field/CoreFieldPresenterTest.php
+  - tests/Unit/Demo/Infrastructure/VdmBusinessDefinitionSchemaTest.php
+  - tests/Unit/Demo/Infrastructure/VdmBusinessDemoInstallerTest.php
+  - tests/Unit/Extension/Contribution/ExtensionContributionRegistrySetTest.php
+  - tests/Integration/BusinessRecord/BusinessRecordRuntimeIntegrationTest.php
+  - tests/Integration/BusinessSchema/BusinessSchemaRuntimeIntegrationTest.php
+  - tests/Integration/Demo/Infrastructure/DemoBusinessProfileExportInstallIntegrationTest.php
+  - tests/Architecture/ImmutableRecordBoundaryTest.php
+  - tests/Architecture/BusinessDefinitionBoundaryTest.php
+  - tests/Architecture/ExtensionContributionBoundaryTest.php
+  - tests/Architecture/FieldPresenterBoundaryTest.php
+  - tests/Unit/Governance/ComposerLockTest.php
+  - tests/Architecture/CapabilityIndexGateTest.php
+di_changes:
+  - service: Kumwe\BusinessDefinition\Application\FieldConfigurationAdmission
+    factory: Kumwe\App\Kernel\ContainerFactory
+    note: "Host binds the package admission port to the App's SdkFieldConfigurationAdmission, which admits a field configuration exactly when extension-sdk 0.2.4's FieldPresentationConfiguration::fromArray accepts it; one shared instance is handed to the registry set, the validator and the package synchronizer. The package ships no default and its ConfigProvider is not configured."
+  - service: Kumwe\BusinessDefinition\Application\FieldTypeRegistry
+    factory: Kumwe\App\Kernel\ContainerFactory
+    note: "Re-keyed from the retired App name; the host keeps sharing the contribution-fed registry the ExtensionContributionRegistrySet builds with new FieldTypeRegistry(false), so core built-ins still arrive through CoreContributionRegistrar. The package FieldTypeRegistryFactory, which seeds BuiltInFieldTypes, is not registered, and the service-map alias FieldTypeDefinitionResolver is not registered either: each consumer receives the live registry or the Doctrine persisted resolver explicitly, and DoctrinePersistedFieldTypeDefinitionResolver implements the package interface."
+  - service: Kumwe\BusinessDefinition\Application\BusinessDefinitionValidator
+    factory: Kumwe\App\Kernel\ContainerFactory
+    note: "Re-keyed from the retired App name and constructed with the contribution-fed registry and the host admission adapter; it stays shared, where the service map declares the package factory non-shared, because the validator is stateless and BusinessDefinitionService holds it once. DoctrinePackageDefinitionSynchronizer builds its own validator over the persisted field types with the same admission port."
+  - service: Kumwe\BusinessDefinition\Application\BusinessDefinitionContributionRegistry
+    factory: Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet
+    note: "Not a container key: the set constructs the registry around a validator built from its own field-type registry and the admission port it now requires as its first constructor argument; the package factory is not registered."
+  - service: Kumwe\BusinessDefinition\Application\BusinessDefinitionCompatibilityAnalyzer
+    factory: Kumwe\App\Kernel\ContainerFactory
+    note: "Re-keyed from the retired App name; one shared stateless instance is consumed by BusinessDefinitionService and DoctrinePackageDefinitionSynchronizer, and the package classification of entity label-translation changes as behaviour-changing now applies to publication confirmations."
+capability_index_entries:
+  - kumwe/business-definition
+release_evidence:
+  - docs/architecture/migrations/evidence/KUMWE-MIG-2026-010/RELEASE-ATTESTATION.yaml
+app_pull_request: "https://github.com/kumwe/app/pull/151"
+roadmap_refs: []
+non_roadmap_refs:
+  - NRM-2026-040
+conflicts: []

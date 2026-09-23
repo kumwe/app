@@ -33,9 +33,6 @@ retained_tests:
   - tests/Integration/BusinessRecord/BusinessRecordDeadlockIntegrationTest.php
   - tests/Integration/BusinessRecord/FiscalPeriodSequenceIntegrationTest.php
   - tests/Integration/Persistence/TransactionBoundaryEngineIntegrationTest.php
-  - tests/Unit/BusinessDefinition/Application/AllocatedNumberFieldRuleTest.php
-  - tests/Unit/BusinessDefinition/Application/FiscalPeriodSequenceCoherenceTest.php
-  - tests/Unit/BusinessDefinition/Application/NumberSequenceScopeCoherenceTest.php
 di_changes:
   - service: Kumwe\Sequence\Contract\NumberSequenceAllocator
     factory: Kumwe\App\Kernel\ContainerFactory

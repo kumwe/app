@@ -9,6 +9,7 @@ use Kumwe\App\Content\Domain\TranslationGroup;
 use Kumwe\App\Extension\Contribution\TranslationGroupDeclaration;
 use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\Extension\Manifest\ExtensionIdentifier;
 use Kumwe\Extension\Manifest\ManifestContributions;
 use Kumwe\Localization\Domain\LocaleTag;
@@ -39,7 +40,7 @@ final class ExtensionContentTranslationTest extends TestCase
      */
     public function testAnExtensionDeclaresLocaleVariantsThroughItsCanonicalManifest(): void
     {
-        $registries = new ExtensionContributionRegistrySet(withCore: false);
+        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
         $owner = ContributionOwner::extension('acme/blog');
         $declaration = new TranslationGroupDeclaration('acme.blog.articles', ['en-GB', 'af', 'de'], 'en-GB');
         $registrar = $registries->activateManifest(self::manifest($declaration));
@@ -62,7 +63,7 @@ final class ExtensionContentTranslationTest extends TestCase
      */
     public function testCoreContributesNoContentTranslationGroup(): void
     {
-        $registries = new ExtensionContributionRegistrySet();
+        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
 
         self::assertSame([], $registries->contentTranslationGroups()->definitions());
     }
@@ -76,7 +77,7 @@ final class ExtensionContentTranslationTest extends TestCase
      */
     public function testRemovingThePackageWithdrawsItsContentTranslationGroups(): void
     {
-        $registries = new ExtensionContributionRegistrySet(withCore: false);
+        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
         $owner = ContributionOwner::extension('acme/blog');
         $declaration = new TranslationGroupDeclaration('acme.blog.articles', ['en-GB', 'de'], 'en-GB');
         $registrar = $registries->activateManifest(self::manifest($declaration));

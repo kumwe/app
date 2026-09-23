@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\BusinessRecord\Application;
 
-use Kumwe\App\BusinessDefinition\Domain\FieldDefinition;
+use Kumwe\BusinessDefinition\Domain\FieldDefinition;
 
 /**
  * One field's share of a compiled column-encoding plan.

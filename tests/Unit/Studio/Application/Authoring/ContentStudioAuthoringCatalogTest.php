@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\Studio\Application\Authoring;
 
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\App\Extension\Contribution\StudioPreviewRendererContribution;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringCatalog;
 use Kumwe\App\Studio\Application\Composition\StudioCompositionContributionCatalog;
@@ -49,7 +50,7 @@ final class ContentStudioAuthoringCatalogTest extends TestCase
      */
     public function testCoreCoordinatesAndActiveContributionsFormTheLocks(): void
     {
-        $registries = new ExtensionContributionRegistrySet();
+        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
         self::contributeBlock($registries, 'acme.shop/grid', '1.0.0');
         $catalog = self::catalog($registries);
 
@@ -96,7 +97,7 @@ final class ContentStudioAuthoringCatalogTest extends TestCase
         self::assertNotFalse(file_put_contents($file, json_encode($record, JSON_THROW_ON_ERROR)));
 
         try {
-            $catalog = self::catalog(new ExtensionContributionRegistrySet(), $file);
+            $catalog = self::catalog(new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission()), $file);
             $this->expectException(LogicException::class);
             $this->expectExceptionMessage('studio.core/section is declared at a coordinate');
             $catalog->blockLocks();

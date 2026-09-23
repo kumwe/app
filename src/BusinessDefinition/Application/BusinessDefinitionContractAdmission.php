@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\BusinessDefinition\Application;
 
-use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\Context\Value\SiteContext;
 
 /**
@@ -22,7 +22,7 @@ interface BusinessDefinitionContractAdmission
      *
      * @return  void
      *
-     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When a derived contract name
+     * @throws  \Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition  When a derived contract name
      *          is unsafe or collides.
      *
      * @since   2.0.0

@@ -21,6 +21,7 @@ use Kumwe\Conversion\Value\MoneyValue;
 use Kumwe\App\BusinessRecord\Infrastructure\RuntimeMoneyRateProviderCatalog;
 use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use Kumwe\App\Extension\Contribution\OwnedExtensionBindingRegistrar;
 use Kumwe\Extension\Manifest\ExtensionIdentifier;
@@ -50,7 +51,7 @@ final class MoneyRateProviderContributionTest extends TestCase
      */
     public function testAnExtensionSuppliesARateThroughTheContributionRegistrar(): void
     {
-        $registries = new ExtensionContributionRegistrySet(withCore: false);
+        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
         $this->activateProvider($registries, 'acme/rates', 'acme.rates.ecb', '0.04938240');
 
         $converted = $this->pipeline($registries)->convert($this->request());
@@ -75,7 +76,7 @@ final class MoneyRateProviderContributionTest extends TestCase
      */
     public function testCoreShipsNoRateProviderAndRefusesRatherThanInventingARate(): void
     {
-        $registries = new ExtensionContributionRegistrySet();
+        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
 
         self::assertSame([], $registries->moneyRateProviders()->definitions());
         $this->expectException(MoneyRateUnavailable::class);
@@ -92,9 +93,9 @@ final class MoneyRateProviderContributionTest extends TestCase
      */
     public function testTwoPackagesConvertingTheSameAmountProduceTheSameShape(): void
     {
-        $first = new ExtensionContributionRegistrySet(withCore: false);
+        $first = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
         $this->activateProvider($first, 'acme/rates', 'acme.rates.ecb', '0.04938240');
-        $second = new ExtensionContributionRegistrySet(withCore: false);
+        $second = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
         $this->activateProvider($second, 'zeta/treasury', 'zeta.treasury.contracted', '0.04938240');
 
         $left = $this->pipeline($first)->convert($this->request())->toArray();
@@ -116,7 +117,7 @@ final class MoneyRateProviderContributionTest extends TestCase
      */
     public function testDeclaredPriorityDecidesWhichPackageAnswers(): void
     {
-        $registries = new ExtensionContributionRegistrySet(withCore: false);
+        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
         $this->activateProvider($registries, 'acme/rates', 'acme.rates.ecb', '0.04938240', 10);
         $this->activateProvider($registries, 'zeta/treasury', 'zeta.treasury.contracted', '0.05000000', -5);
 
@@ -135,7 +136,7 @@ final class MoneyRateProviderContributionTest extends TestCase
      */
     public function testAPackageCannotWidenItsReachAfterAdmission(): void
     {
-        $undeclared = new ExtensionContributionRegistrySet(withCore: false);
+        $undeclared = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
         $this->activateProvider($undeclared, 'acme/rates', 'acme.rates.ecb', '0.04938240', 0, ['ZAR', 'USD']);
         try {
             $this->pipeline($undeclared)->convert($this->request());
@@ -144,7 +145,7 @@ final class MoneyRateProviderContributionTest extends TestCase
             self::assertStringContainsString('No contributed rate provider', $exception->getMessage());
         }
 
-        $impersonating = new ExtensionContributionRegistrySet(withCore: false);
+        $impersonating = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
         $this->activateProvider(
             $impersonating,
             'acme/rates',
@@ -161,7 +162,7 @@ final class MoneyRateProviderContributionTest extends TestCase
             self::assertStringContainsString('attributed to another provider', $exception->getMessage());
         }
 
-        $registries = new ExtensionContributionRegistrySet(withCore: false);
+        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
         $definition = new MoneyRateProviderDefinition('acme.rates.ecb', ['ZAR', 'EUR']);
         $registrar = $this->registrar($registries, 'acme/rates', $definition);
         try {
@@ -184,7 +185,7 @@ final class MoneyRateProviderContributionTest extends TestCase
      */
     public function testRemovingThePackageWithdrawsItsRates(): void
     {
-        $registries = new ExtensionContributionRegistrySet(withCore: false);
+        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
         $this->activateProvider($registries, 'acme/rates', 'acme.rates.ecb', '0.04938240');
 
         $registries->remove(ContributionOwner::extension('acme/rates'));
@@ -208,7 +209,7 @@ final class MoneyRateProviderContributionTest extends TestCase
         $provider->method('identifier')->willReturn('acme.rates.ecb');
         $provider->expects(self::never())->method('supports');
         $provider->expects(self::never())->method('rateFor');
-        $registries = new ExtensionContributionRegistrySet(withCore: false);
+        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
         $registrar = $this->registrar($registries, 'acme/rates', $definition);
         $registrar->moneyRateProvider($definition->identifier(), $provider);
         $registrar->complete();

@@ -13,14 +13,14 @@ use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionRepository;
-use Kumwe\App\BusinessDefinition\Domain\ComputationMode;
-use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
-use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\App\BusinessDefinition\Domain\FieldDefinition;
-use Kumwe\App\BusinessDefinition\Domain\IdentityStrategy;
-use Kumwe\App\BusinessDefinition\Domain\RelationshipDefinition;
-use Kumwe\App\BusinessDefinition\Domain\RelationshipKind;
-use Kumwe\App\BusinessDefinition\Domain\Sensitivity;
+use Kumwe\BusinessDefinition\Domain\ComputationMode;
+use Kumwe\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\BusinessDefinition\Domain\FieldDefinition;
+use Kumwe\BusinessDefinition\Domain\IdentityStrategy;
+use Kumwe\BusinessDefinition\Domain\RelationshipDefinition;
+use Kumwe\BusinessDefinition\Domain\RelationshipKind;
+use Kumwe\BusinessDefinition\Domain\Sensitivity;
 use Kumwe\App\BusinessRecord\Application\Exception\InvalidBusinessRecordQuery;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordMutationFence;
 use Kumwe\App\BusinessRecord\Application\RecordCursorCodec;
@@ -2578,7 +2578,7 @@ final readonly class DoctrineBusinessRecordQueryCompiler
      *
      * @return  string  Lowercase 64-character SHA-256 over the canonical form of all of it.
      *
-     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When something the query
+     * @throws  \Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition  When something the query
      *          carries cannot be canonically encoded, a string that is not valid UTF-8 being the case the
      *          query's own bounds still admit.
      *

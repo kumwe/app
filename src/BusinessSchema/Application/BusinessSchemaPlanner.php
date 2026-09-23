@@ -13,9 +13,9 @@ use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Audit\Application\AuditRecorder;
 use Kumwe\Audit\Domain\AuditEvent;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionRepository;
-use Kumwe\App\BusinessDefinition\Application\DefinitionVersionRecord;
-use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\App\BusinessDefinition\Domain\Expression;
+use Kumwe\BusinessDefinition\Application\DefinitionVersionRecord;
+use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\BusinessDefinition\Domain\Expression;
 use Kumwe\App\BusinessSchema\Domain\InvalidBusinessSchema;
 use Kumwe\App\BusinessSchema\Domain\PhysicalColumnBlueprint;
 use Kumwe\App\BusinessSchema\Domain\PhysicalForeignKeyBlueprint;
@@ -117,7 +117,7 @@ final readonly class BusinessSchemaPlanner implements PublishedDefinitionSchemaO
      *          is inserted concurrently.
      * @throws  InvalidBusinessSchema  When the definition crosses site scope, its evolution hints do not
      *          describe this evolution, or a narrowing change would reach rows pinned to an older version.
-     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the derived plan holds
+     * @throws  \Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition  When the derived plan holds
      *          more than 512 operations, which the canonical encoder refuses to fingerprint.
      *
      * @since   2.0.0
@@ -162,7 +162,7 @@ final readonly class BusinessSchemaPlanner implements PublishedDefinitionSchemaO
      * @throws  BusinessSchemaNotFound  When this site has nothing installed under that identifier, when the
      *          installation belongs to another site, or when the definition is no longer published.
      * @throws  BusinessSchemaConflict  When an identical purge plan is already stored.
-     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the plan holds more than
+     * @throws  \Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition  When the plan holds more than
      *          512 operations, which the canonical encoder refuses to fingerprint.
      *
      * @since   2.0.0
@@ -276,7 +276,7 @@ final readonly class BusinessSchemaPlanner implements PublishedDefinitionSchemaO
      * @throws  BusinessSchemaConflict  When an installed schema belongs to another site, is not older than
      *          the version being published, no longer matches the blueprint recorded for it, or an
      *          identical plan is inserted concurrently.
-     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When a derived plan holds
+     * @throws  \Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition  When a derived plan holds
      *          more than 512 operations, which the canonical encoder refuses to fingerprint.
      *
      * @since   2.0.0
@@ -356,7 +356,7 @@ final readonly class BusinessSchemaPlanner implements PublishedDefinitionSchemaO
      * @throws  BusinessSchemaConflict  When the installed metadata belongs to another site, the installed
      *          version is not older than the published one, the live schema has drifted from that metadata,
      *          or an identical plan is inserted concurrently.
-     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the plan holds more than
+     * @throws  \Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition  When the plan holds more than
      *          512 operations, which the canonical encoder refuses to fingerprint.
      *
      * @since   2.0.0

@@ -10,6 +10,7 @@ use Kumwe\App\BusinessIntegration\Domain\QueueContributionDefinition;
 use Kumwe\App\BusinessIntegration\Infrastructure\ContributedQueueRuntimePolicyCatalog;
 use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
 use Kumwe\Extension\Spi\Application\Automation\JobHandler;
 use Kumwe\Extension\Spi\Application\ExecutionContext;
@@ -24,7 +25,7 @@ final class QueueRuntimePolicyTest extends TestCase
     public function testTrustedCatalogIntersectsProducerHandlerAndQueueAttemptBudgets(): void
     {
         $owner = ContributionOwner::extension('acme/example');
-        $registries = new ExtensionContributionRegistrySet(withCore: false);
+        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
         $registries->queues()->register(
             $owner,
             new QueueContributionDefinition('acme.example.priority', 45, 3, 2, 14),

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Unit\Demo\Infrastructure;
 
-use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\App\Demo\Infrastructure\FilesystemDemoManifestCatalog;
 use PHPUnit\Framework\Attributes\CoversClass;
 use FilesystemIterator;

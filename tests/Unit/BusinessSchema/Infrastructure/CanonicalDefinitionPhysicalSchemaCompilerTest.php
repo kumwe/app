@@ -6,13 +6,14 @@ namespace Kumwe\App\Tests\Unit\BusinessSchema\Infrastructure;
 
 use DateTimeImmutable;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionRepository;
-use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionValidator;
-use Kumwe\App\BusinessDefinition\Application\DefinitionCatalogEntry;
-use Kumwe\App\BusinessDefinition\Application\DefinitionVersionRecord;
-use Kumwe\App\BusinessDefinition\Application\FieldTypeRegistry;
-use Kumwe\App\BusinessDefinition\Domain\CompatibilityPlan;
-use Kumwe\App\BusinessDefinition\Domain\DefinitionStatus;
-use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\BusinessDefinition\Application\BusinessDefinitionValidator;
+use Kumwe\BusinessDefinition\Application\DefinitionCatalogEntry;
+use Kumwe\BusinessDefinition\Application\DefinitionVersionRecord;
+use Kumwe\BusinessDefinition\Application\FieldTypeRegistry;
+use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
+use Kumwe\BusinessDefinition\Domain\CompatibilityPlan;
+use Kumwe\BusinessDefinition\Domain\DefinitionStatus;
+use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\App\BusinessSchema\Domain\PhysicalForeignKeyBlueprint;
 use Kumwe\App\BusinessSchema\Domain\PhysicalNameCompiler;
 use Kumwe\App\BusinessSchema\Infrastructure\Schema\CanonicalDefinitionPhysicalSchemaCompiler;
@@ -127,7 +128,8 @@ final class CanonicalDefinitionPhysicalSchemaCompilerTest extends TestCase
         $document['fields'][1]['length'] = 1000;
         $document['fields'][1]['indexed'] = false;
         $definition = EntityTypeDefinition::fromArray($document);
-        (new BusinessDefinitionValidator(new FieldTypeRegistry()))->validateGraph([$definition]);
+        (new BusinessDefinitionValidator(new FieldTypeRegistry(), new SdkFieldConfigurationAdmission()))
+            ->validateGraph([$definition]);
 
         $column = $this->compiler()->compile(
             $definition,

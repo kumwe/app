@@ -12,11 +12,11 @@ use Doctrine\DBAL\Connection;
 use InvalidArgumentException;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionRepository;
-use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\App\BusinessDefinition\Domain\IdentityStrategy;
-use Kumwe\App\BusinessDefinition\Domain\RelationshipDefinition;
-use Kumwe\App\BusinessDefinition\Domain\RelationshipKind;
-use Kumwe\App\BusinessDefinition\Domain\Sensitivity;
+use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\BusinessDefinition\Domain\IdentityStrategy;
+use Kumwe\BusinessDefinition\Domain\RelationshipDefinition;
+use Kumwe\BusinessDefinition\Domain\RelationshipKind;
+use Kumwe\BusinessDefinition\Domain\Sensitivity;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordReadRepository;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordRelationView;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordMutationFence;
@@ -1355,7 +1355,7 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
      * @return  RelationshipDefinition  The declared or synthesized relationship.
      *
      * @throws  BusinessRecordSchemaUnavailable  When the definition declares nothing under that handle.
-     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When a matching
+     * @throws  \Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition  When a matching
      *          ordered-line field names no usable target entity.
      *
      * @since   2.0.0

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessRecord\Application;
 
 use DateTimeImmutable;
-use Kumwe\App\BusinessDefinition\Domain\RelationshipDefinition;
-use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\BusinessDefinition\Domain\RelationshipDefinition;
+use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\App\BusinessRecord\Domain\BusinessRecord;
 
 /**

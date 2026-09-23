@@ -6,7 +6,7 @@ namespace Kumwe\App\Tests\Unit\BusinessReporting;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\App\BusinessReporting\Domain\ExportArtifact;
 use Kumwe\App\BusinessReporting\Domain\ExportArtifactStatus;
 use Kumwe\Context\Value\AuthenticatedSurface;

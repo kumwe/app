@@ -6,9 +6,9 @@ namespace Kumwe\App\Tests\Integration\BusinessDefinition;
 
 use Doctrine\DBAL\Connection;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionService;
-use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
-use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition;
+use Kumwe\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\App\Tests\Support\TestKernelFactory;

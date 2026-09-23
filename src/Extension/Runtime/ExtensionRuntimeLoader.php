@@ -79,7 +79,7 @@ final readonly class ExtensionRuntimeLoader
      *          registrations do not match the contributions its manifest declared.
      * @throws  \LogicException  When two entries claim the same theme surface or site, or an entry's
      *          manifest schema and provider contract disagree.
-     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the business
+     * @throws  \Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition  When the business
      *          definitions the loaded extensions contribute do not validate as one graph.
      *
      * @since   2.0.0

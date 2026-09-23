@@ -6,7 +6,7 @@ namespace Kumwe\App\BusinessSurface\Application;
 
 use InvalidArgumentException;
 use Kumwe\Extension\Spi\Application\Automation\IdempotencyKey;
-use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\BusinessDefinition\Domain\CanonicalDefinitionJson;
 
 /**
  * Validated bounded plan for one atomic generated-surface bulk mutation.

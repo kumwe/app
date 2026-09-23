@@ -6,7 +6,7 @@ namespace Kumwe\App\Tests\Integration\Extension;
 
 use Closure;
 use DateTimeImmutable;
-use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordService;
 use Kumwe\App\BusinessRecord\Application\Command\CreateRecordCommand;
 use Kumwe\App\BusinessRecord\Application\PolicyBusinessRecordReader;

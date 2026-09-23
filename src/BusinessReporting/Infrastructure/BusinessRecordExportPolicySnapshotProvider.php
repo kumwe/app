@@ -6,8 +6,8 @@ namespace Kumwe\App\BusinessReporting\Infrastructure;
 
 use InvalidArgumentException;
 use Kumwe\Context\Value\ExecutionContext;
-use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
-use Kumwe\App\BusinessDefinition\Domain\ScopeMode;
+use Kumwe\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\BusinessDefinition\Domain\ScopeMode;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordDefinitionResolver;
 use Kumwe\Extension\Spi\BusinessRecord\Application\BusinessRecordQueryPurpose;
 use Kumwe\App\BusinessRecord\Domain\RecordScope;

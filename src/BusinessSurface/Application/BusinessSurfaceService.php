@@ -8,11 +8,12 @@ use InvalidArgumentException;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Extension\Spi\Application\Automation\IdempotencyKey;
 use Kumwe\Transaction\Contract\TransactionManager;
-use Kumwe\App\BusinessDefinition\Application\FieldTypeDefinitionResolver;
-use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\App\BusinessDefinition\Domain\FieldDefinition;
-use Kumwe\App\BusinessDefinition\Domain\IdentityStrategy;
-use Kumwe\App\BusinessDefinition\Domain\ScopeMode;
+use Kumwe\BusinessDefinition\Application\FieldTypeDefinitionResolver;
+use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\BusinessDefinition\Domain\ExpressionEvaluator;
+use Kumwe\BusinessDefinition\Domain\FieldDefinition;
+use Kumwe\BusinessDefinition\Domain\IdentityStrategy;
+use Kumwe\BusinessDefinition\Domain\ScopeMode;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordDefinitionResolver;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordRelationView;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordService;
@@ -2505,7 +2506,10 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
             return true;
         }
         try {
-            return $field->visibilityCondition->evaluate(RecordExpressionValues::from($values)) === true;
+            return ExpressionEvaluator::evaluate(
+                $field->visibilityCondition,
+                RecordExpressionValues::from($values),
+            ) === true;
         } catch (InvalidArgumentException) {
             return false;
         }
@@ -2527,7 +2531,10 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
             return true;
         }
         try {
-            return $field->editabilityCondition->evaluate(RecordExpressionValues::from($values)) === true;
+            return ExpressionEvaluator::evaluate(
+                $field->editabilityCondition,
+                RecordExpressionValues::from($values),
+            ) === true;
         } catch (InvalidArgumentException) {
             return false;
         }

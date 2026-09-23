@@ -21,6 +21,7 @@ use Kumwe\Conversion\Contract\UnitConversionRequest;
 use Kumwe\App\BusinessRecord\Infrastructure\RuntimeUnitConversionProviderCatalog;
 use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use Kumwe\App\Extension\Contribution\OwnedExtensionBindingRegistrar;
 use Kumwe\Extension\Manifest\ExtensionIdentifier;
@@ -54,7 +55,7 @@ final class UnitConversionProviderContributionTest extends TestCase
      */
     public function testAnExtensionSuppliesAFactorThroughTheContributionRegistrar(): void
     {
-        $registries = new ExtensionContributionRegistrySet(withCore: false);
+        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
         $this->activateProvider($registries, 'acme/units', 'acme.units.trade', '12.000000');
 
         $converted = $this->pipeline($registries)->convert($this->request());
@@ -81,7 +82,7 @@ final class UnitConversionProviderContributionTest extends TestCase
      */
     public function testCoreShipsNoConversionTableAndRefusesRatherThanInventingAFactor(): void
     {
-        $registries = new ExtensionContributionRegistrySet();
+        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
 
         self::assertSame([], $registries->unitConversionProviders()->definitions());
         $this->expectException(UnitConversionUnavailable::class);
@@ -101,9 +102,9 @@ final class UnitConversionProviderContributionTest extends TestCase
      */
     public function testTwoPackagesConvertingTheSameQuantityProduceTheSameShape(): void
     {
-        $first = new ExtensionContributionRegistrySet(withCore: false);
+        $first = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
         $this->activateProvider($first, 'acme/units', 'acme.units.trade', '12.000000');
-        $second = new ExtensionContributionRegistrySet(withCore: false);
+        $second = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
         $this->activateProvider($second, 'zeta/logistics', 'zeta.logistics.packing', '12.000000');
 
         $left = $this->pipeline($first)->convert($this->request())->toArray();
@@ -125,7 +126,7 @@ final class UnitConversionProviderContributionTest extends TestCase
      */
     public function testDeclaredPriorityDecidesWhichPackageAnswers(): void
     {
-        $registries = new ExtensionContributionRegistrySet(withCore: false);
+        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
         $this->activateProvider($registries, 'acme/units', 'acme.units.trade', '12.000000', 10);
         $this->activateProvider($registries, 'zeta/logistics', 'zeta.logistics.packing', '10.000000', -5);
 
@@ -144,7 +145,7 @@ final class UnitConversionProviderContributionTest extends TestCase
      */
     public function testAPackageCannotWidenItsReachAfterAdmission(): void
     {
-        $undeclared = new ExtensionContributionRegistrySet(withCore: false);
+        $undeclared = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
         $this->activateProvider($undeclared, 'acme/units', 'acme.units.trade', '12.000000', 0, ['case', 'pallet']);
         try {
             $this->pipeline($undeclared)->convert($this->request());
@@ -153,7 +154,7 @@ final class UnitConversionProviderContributionTest extends TestCase
             self::assertStringContainsString('No contributed conversion provider', $exception->getMessage());
         }
 
-        $impersonating = new ExtensionContributionRegistrySet(withCore: false);
+        $impersonating = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
         $this->activateProvider(
             $impersonating,
             'acme/units',
@@ -170,7 +171,7 @@ final class UnitConversionProviderContributionTest extends TestCase
             self::assertStringContainsString('attributed to another provider', $exception->getMessage());
         }
 
-        $registries = new ExtensionContributionRegistrySet(withCore: false);
+        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
         $definition = new UnitConversionProviderDefinition('acme.units.trade', ['case', 'unit']);
         $registrar = $this->registrar($registries, 'acme/units', $definition);
         try {
@@ -193,7 +194,7 @@ final class UnitConversionProviderContributionTest extends TestCase
      */
     public function testRemovingThePackageWithdrawsItsFactors(): void
     {
-        $registries = new ExtensionContributionRegistrySet(withCore: false);
+        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
         $this->activateProvider($registries, 'acme/units', 'acme.units.trade', '12.000000');
 
         $registries->remove(ContributionOwner::extension('acme/units'));
@@ -217,7 +218,7 @@ final class UnitConversionProviderContributionTest extends TestCase
         $provider->method('identifier')->willReturn('acme.units.trade');
         $provider->expects(self::never())->method('supports');
         $provider->expects(self::never())->method('factorFor');
-        $registries = new ExtensionContributionRegistrySet(withCore: false);
+        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
         $registrar = $this->registrar($registries, 'acme/units', $definition);
         $registrar->unitConversionProvider($definition->identifier(), $provider);
         $registrar->complete();

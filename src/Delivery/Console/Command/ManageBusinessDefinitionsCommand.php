@@ -6,9 +6,9 @@ namespace Kumwe\App\Delivery\Console\Command;
 
 use InvalidArgumentException;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionService;
-use Kumwe\App\BusinessDefinition\Application\DefinitionCatalogEntry;
-use Kumwe\App\BusinessDefinition\Application\DefinitionDraft;
-use Kumwe\App\BusinessDefinition\Application\DefinitionVersionRecord;
+use Kumwe\BusinessDefinition\Application\DefinitionCatalogEntry;
+use Kumwe\BusinessDefinition\Application\DefinitionDraft;
+use Kumwe\BusinessDefinition\Application\DefinitionVersionRecord;
 use Kumwe\App\Delivery\Console\Command;
 use Kumwe\App\Delivery\Console\Output;
 use Throwable;
@@ -173,7 +173,7 @@ final readonly class ManageBusinessDefinitionsCommand implements Command
      *
      * @throws  \Kumwe\App\BusinessDefinition\Application\BusinessDefinitionNotFound  When the actor's
      *          site holds no definition under that handle.
-     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the definition is
+     * @throws  \Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition  When the definition is
      *          package-owned, so its status is not the operator's to set.
      *
      * @since   2.0.0

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "ce17487db7755800e3d4aad0a263512d",
+    "content-hash": "c03e35dce070697cbed7a3c65391d104",
     "packages": [
         {
             "name": "brick/math",
@@ -451,6 +451,56 @@
                 "source": "https://github.com/kumwe/audit/tree/v0.1.2"
             },
             "time": "2026-09-08T15:58:58+00:00"
+        },
+        {
+            "name": "kumwe/business-definition",
+            "version": "v0.1.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/kumwe/business-definition.git",
+                "reference": "1cb59229f311067e8cfdd773a34e34cfeb501791"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/kumwe/business-definition/zipball/1cb59229f311067e8cfdd773a34e34cfeb501791",
+                "reference": "1cb59229f311067e8cfdd773a34e34cfeb501791",
+                "shasum": ""
+            },
+            "require": {
+                "ext-mbstring": "*",
+                "kumwe/localization": "0.1.1",
+                "kumwe/sequence": "0.2.1",
+                "php": "^8.5",
+                "php-64bit": "*",
+                "psr/container": "^2.0",
+                "ramsey/uuid": "^4.9"
+            },
+            "require-dev": {
+                "ext-zip": "*",
+                "laminas/laminas-servicemanager": "^4.0",
+                "phpstan/phpstan": "^2.1",
+                "phpstan/phpstan-deprecation-rules": "^2.0",
+                "phpstan/phpstan-strict-rules": "^2.0",
+                "phpunit/phpunit": "^12.0 || ^13.0",
+                "squizlabs/php_codesniffer": "^4.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Kumwe\\BusinessDefinition\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "Apache-2.0"
+            ],
+            "description": "Immutable business definitions, bounded formula semantics, validation and compatibility.",
+            "homepage": "https://github.com/kumwe/business-definition",
+            "support": {
+                "issues": "https://github.com/kumwe/business-definition/issues",
+                "source": "https://github.com/kumwe/business-definition"
+            },
+            "time": "2026-09-08T15:57:29+00:00"
         },
         {
             "name": "kumwe/business-policy",

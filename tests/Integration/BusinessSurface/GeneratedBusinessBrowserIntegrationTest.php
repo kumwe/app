@@ -14,7 +14,7 @@ use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnava
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordVersionConflict;
 use Kumwe\App\BusinessRecord\Application\Query\ReadRecordQuery;
 use Kumwe\Extension\Spi\BusinessRecord\Query\RecordQuerySpecification;
-use Kumwe\App\BusinessDefinition\Domain\DefinitionOwner;
+use Kumwe\BusinessDefinition\Domain\DefinitionOwner;
 use Kumwe\App\BusinessSurface\Application\BusinessBulkMutation;
 use Kumwe\App\BusinessSurface\Application\BusinessOperationStatusService;
 use Kumwe\App\BusinessSurface\Application\BusinessSurface;

@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Kumwe\App\BusinessDefinition\Domain;
 
+use Kumwe\BusinessDefinition\Domain\Expression;
+use Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition;
+
 /**
  * Interpreter that turns a parsed `Expression` into a value without ever letting a PHP float appear.
  *
@@ -13,8 +16,9 @@ namespace Kumwe\App\BusinessDefinition\Domain;
  * and routes `decimal` arithmetic through `DecimalValue` so a formula produces the same digits in every
  * process and on every engine. Integer arithmetic is checked for overflow instead of being promoted to
  * float behind the caller's back, and an absent dependency is refused rather than read as null, so a
- * record invariant is never quietly reported as satisfied on incomplete input. Callers reach it through
- * `Expression::evaluate()`; it is a stateless collection of static routines and cannot be instantiated.
+ * record invariant is never quietly reported as satisfied on incomplete input. Callers invoke it directly, because
+ * the package `Expression` carries no executor; it is a stateless collection of static routines and cannot
+ * be instantiated.
  *
  * One leaf reads past the record: `line_aggregate` reduces a whole owned-line collection the caller
  * gathered, so a document rule is computed once for the document. The same refusal applies to it — a

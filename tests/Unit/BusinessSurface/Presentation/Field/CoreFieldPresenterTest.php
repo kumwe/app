@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\BusinessSurface\Presentation\Field;
 
 use InvalidArgumentException;
-use Kumwe\App\BusinessDefinition\Domain\FieldDefinition;
-use Kumwe\App\BusinessDefinition\Domain\FieldTypeDefinition;
+use Kumwe\BusinessDefinition\Domain\FieldDefinition;
+use Kumwe\BusinessDefinition\Domain\FieldTypeDefinition;
 use Kumwe\App\BusinessSurface\Presentation\Field\CoreFieldPresenter;
 use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationInputFactory;
 use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationConfiguration;

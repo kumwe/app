@@ -22,6 +22,7 @@ use Kumwe\Extension\Spi\Migration\ExtensionMigration;
 use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\Extension\Toolchain\ComponentScaffolder;
 use Kumwe\Extension\Toolchain\DeterministicPackageBuilder;
 use Kumwe\Extension\Toolchain\PackageInspector;
@@ -154,7 +155,7 @@ final class ExtensionDevelopmentSdkTest extends TestCase
         self::assertInstanceOf(ExtensionMigration::class, new $migrationClass());
 
         $declarations = $manifest->contributions();
-        $registries = new ExtensionContributionRegistrySet();
+        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
         $container = new RestrictedExtensionContainer($manifest->identifier()->value(), []);
         $provider->register($container);
         $registrar = $registries->activateManifest(

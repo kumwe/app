@@ -6,7 +6,7 @@ namespace Kumwe\App\BusinessReporting\Domain;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\Access\GrantScope;
 use Kumwe\Context\Value\AuthenticatedSurface;
 use Kumwe\Extension\Spi\BusinessReporting\Domain\ReportDefinitionGuard;

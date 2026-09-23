@@ -31,6 +31,7 @@ use Kumwe\App\Delivery\Http\Api\Content\ContentApiResponder;
 use Kumwe\App\Delivery\Http\Api\Content\ContentCollectionHandler;
 use Kumwe\App\Delivery\Http\Api\ProblemDetailsResponseFactory;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\App\Extension\Contribution\CapabilityDefinition as ExtensionCapabilityDefinition;
 use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ResourcePolicyDefinition as ExtensionResourcePolicyDefinition;
@@ -153,7 +154,7 @@ final class ApplicationAuthorizationTest extends TestCase
      */
     public function testGlobalExtensionManagerMayBootstrapOnlyExtensionOwnedDelegation(): void
     {
-        $registries = new ExtensionContributionRegistrySet();
+        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
         $owner = ContributionOwner::extension('acme/inspection');
         $registries->capabilities()->register($owner, new ExtensionCapabilityDefinition(
             'acme.inspection.view',
@@ -222,7 +223,7 @@ final class ApplicationAuthorizationTest extends TestCase
     {
         $gateway = new DenyByDefaultAuthorizationGateway(
             AuthorizationContext::provenance(),
-            (new ExtensionContributionRegistrySet())->authorizationPolicies(),
+            (new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission()))->authorizationPolicies(),
             $this->createStub(MembershipContextValidator::class),
             new class implements ResourceSiteOwnership {
                 public function scopeFor(AuthorizationResource $resource): OwnershipScope

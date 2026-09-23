@@ -58,7 +58,7 @@ final readonly class DoctrineBusinessSchemaRecoveryEvidenceRepository implements
      * @throws  RuntimeException  When a stored column is absent, empty, wrongly typed, or holds invalid JSON.
      * @throws  \Kumwe\App\BusinessSchema\Domain\InvalidBusinessSchema  When the stored row no longer
      *          satisfies the evidence rules, such as a verification that precedes its own backup.
-     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the stored details hold
+     * @throws  \Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition  When the stored details hold
      *          a value that cannot be canonically encoded.
      *
      * @since   2.0.0
@@ -109,7 +109,7 @@ final readonly class DoctrineBusinessSchemaRecoveryEvidenceRepository implements
      *          concurrent writer claimed the identifier first.
      * @throws  \Kumwe\App\BusinessSchema\Domain\InvalidBusinessSchema  When the record already held under the
      *          identifier no longer satisfies the evidence rules.
-     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the details of the record
+     * @throws  \Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition  When the details of the record
      *          already held cannot be canonically encoded.
      *
      * @since   2.0.0

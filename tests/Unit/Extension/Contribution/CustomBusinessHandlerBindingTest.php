@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Unit\Extension\Contribution;
 
-use Kumwe\App\BusinessDefinition\Domain\DefinitionOwner;
+use Kumwe\BusinessDefinition\Domain\DefinitionOwner;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionHandlerRegistry;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewHandlerRegistry;
 use Kumwe\App\Extension\Contribution\CanonicalManifestInterpreter;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\App\Extension\Contribution\OwnedExtensionBindingRegistrar;
 use Kumwe\Extension\Manifest\ExtensionIdentifier;
 use Kumwe\Extension\Manifest\ManifestContributions;
@@ -42,7 +43,7 @@ final class CustomBusinessHandlerBindingTest extends TestCase
      */
     public function testSignedViewAndActionHandlersBindToTheirContracts(): void
     {
-        $registries = new ExtensionContributionRegistrySet(withCore: false);
+        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
         $manifest = self::manifest();
         $registrar = $registries->activateManifest($manifest);
         self::assertInstanceOf(OwnedExtensionBindingRegistrar::class, $registrar);
@@ -104,7 +105,7 @@ final class CustomBusinessHandlerBindingTest extends TestCase
      */
     public function testAnUndeclaredHandlerIdentifierIsRefused(): void
     {
-        $registries = new ExtensionContributionRegistrySet(withCore: false);
+        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
         $registrar = $registries->activateManifest(self::manifest());
         $view = new class implements CustomBusinessViewHandler {
             /**

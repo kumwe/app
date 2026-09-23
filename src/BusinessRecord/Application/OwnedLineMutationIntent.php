@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\BusinessRecord\Application;
 
-use Kumwe\App\BusinessDefinition\Domain\RelationshipDefinition;
+use Kumwe\BusinessDefinition\Domain\RelationshipDefinition;
 
 /**
  * Complete owned-line mutation the aggregate document command has decided but not yet written.

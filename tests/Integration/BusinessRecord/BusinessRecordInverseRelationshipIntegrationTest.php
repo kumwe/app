@@ -6,7 +6,7 @@ namespace Kumwe\App\Tests\Integration\BusinessRecord;
 
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\App\BusinessDefinition\Application\PackageDefinitionSynchronizer;
-use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\App\BusinessDefinition\Infrastructure\Persistence\DoctrinePackageDefinitionSynchronizer;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordRelationView;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordRevisionView;

@@ -16,6 +16,7 @@ use Kumwe\Access\ResourceSiteOwnershipWriter;
 use Kumwe\App\Application\Authorization\SystemIdentity;
 use Kumwe\App\Application\Authorization\SystemPrincipal;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\Context\Value\AuthenticationStrength;
 use Kumwe\Context\Value\ExecutionContext;
@@ -130,7 +131,7 @@ final class AuthorizationContext
     ): DenyByDefaultAuthorizationGateway {
         return new DenyByDefaultAuthorizationGateway(
             self::provenance(),
-            (new ExtensionContributionRegistrySet())->authorizationPolicies(),
+            (new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission()))->authorizationPolicies(),
             $memberships ?? new class implements MembershipContextValidator {
                 /**
                  * Fail closed when a test did not explicitly supply live membership state.

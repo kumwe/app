@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Extension\Contribution;
 
-use Kumwe\App\BusinessDefinition\Domain\DefinitionOwner;
+use Kumwe\BusinessDefinition\Domain\DefinitionOwner;
 use Kumwe\Extension\Manifest\ManifestContributions;
 
 /**

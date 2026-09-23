@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessDefinition\Application;
 
 use DateTimeImmutable;
-use Kumwe\App\BusinessDefinition\Domain\CompatibilityPlan;
-use Kumwe\App\BusinessDefinition\Domain\DefinitionStatus;
-use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\BusinessDefinition\Domain\CompatibilityPlan;
+use Kumwe\BusinessDefinition\Domain\DefinitionStatus;
+use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\Context\Value\SiteContext;
+use Kumwe\BusinessDefinition\Application\DefinitionCatalogEntry;
+use Kumwe\BusinessDefinition\Application\DefinitionDraft;
+use Kumwe\BusinessDefinition\Application\DefinitionVersionRecord;
 
 /**
  * Store behind a site's definition catalog: the draft in progress and every version already published.
@@ -150,7 +153,7 @@ interface BusinessDefinitionRepository
      *
      * @return  DefinitionDraft  The stored draft at its new revision, which the next write must quote.
      *
-     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the submitted identity
+     * @throws  \Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition  When the submitted identity
      *          is already claimed under another site, handle or owner.
      * @throws  BusinessDefinitionRevisionConflict  When the stored draft is not at the expected revision, or
      *          another writer created or advanced the same handle or definition identity first.
@@ -182,7 +185,7 @@ interface BusinessDefinitionRepository
      *
      * @return  DefinitionVersionRecord  The stored version, published and paired with its plan.
      *
-     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the supplied version
+     * @throws  \Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition  When the supplied version
      *          moves the stored definition's catalog site, handle or owner.
      * @throws  BusinessDefinitionRevisionConflict  When the stored draft is no longer at the expected
      *          revision, so another writer changed it after the plan was analysed.

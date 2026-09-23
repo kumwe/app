@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Unit\BusinessSchema\Domain;
 
-use Kumwe\App\BusinessDefinition\Domain\Expression;
+use Kumwe\BusinessDefinition\Domain\Expression;
 use Kumwe\App\BusinessSchema\Domain\InvalidBusinessSchema;
 use Kumwe\App\BusinessSchema\Domain\SchemaEvolutionHints;
 use PHPUnit\Framework\Attributes\CoversClass;

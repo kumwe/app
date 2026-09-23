@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\Extension\Runtime;
 
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\App\Extension\Runtime\ActiveExtensionSet;
 use Kumwe\App\Extension\Runtime\RestrictedExtensionContainer;
 use Kumwe\Extension\Manifest\ExtensionIdentifier;
@@ -32,7 +33,10 @@ final class ActiveExtensionSetOwnershipTest extends TestCase
      */
     public function testAForeignManifestContributionGraphIsRefused(): void
     {
-        $active = new ActiveExtensionSet(new ExtensionContributionRegistrySet(withCore: false));
+        $active = new ActiveExtensionSet(new ExtensionContributionRegistrySet(
+            new SdkFieldConfigurationAdmission(),
+            withCore: false,
+        ));
         $foreignGraph = ManifestContributions::fromSchemaOne(
             ExtensionIdentifier::fromString('acme/other'),
         );

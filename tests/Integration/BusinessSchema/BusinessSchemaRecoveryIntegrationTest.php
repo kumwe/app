@@ -10,7 +10,7 @@ use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionService;
 use Kumwe\App\BusinessDefinition\Application\PackageDefinitionSynchronizer;
-use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaConflict;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaExecutionLock;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaPlanRepository;

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessRecord\Domain;
 
 use InvalidArgumentException;
-use Kumwe\App\BusinessDefinition\Domain\ScopeMode;
+use Kumwe\BusinessDefinition\Domain\ScopeMode;
 use Kumwe\Context\Value\SiteContext;
 
 /**

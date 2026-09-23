@@ -415,7 +415,7 @@ final class ActiveExtensionSet
      *
      * @throws  LogicException  When signed executable requirements have no binding provider.
      * @throws  \InvalidArgumentException  When executable bindings do not exactly satisfy the manifest.
-     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the assembled
+     * @throws  \Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition  When the assembled
      *          business definition graph does not validate.
      *
      * @since   2.0.0

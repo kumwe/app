@@ -7,6 +7,7 @@ namespace Kumwe\App\Tests\Unit\Studio\Application\Composition;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Extension\Contribution\CoreStudioCompositionContributions;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\App\Extension\Contribution\OwnedRuntimeContributionRegistry;
 use Kumwe\App\Extension\Contribution\StudioPreviewRendererContribution;
 use Kumwe\App\Extension\Runtime\TrustEnforcingStudioPreviewBlockRenderer;
@@ -60,7 +61,7 @@ final class StudioCompositionContributionCatalogTest extends TestCase
      */
     public function testSupportedBlocksProduceADeterministicTrustedLock(): void
     {
-        $catalog = self::catalog(new ExtensionContributionRegistrySet());
+        $catalog = self::catalog(new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission()));
 
         $first = $catalog->project([], ['core.renderer/field', 'core.renderer/layout']);
         $second = $catalog->project([], ['core.renderer/layout', 'core.renderer/field']);
@@ -98,7 +99,7 @@ final class StudioCompositionContributionCatalogTest extends TestCase
      */
     public function testExistingLocksIntersectBlocksAndPatternsExactly(): void
     {
-        $catalog = self::catalog(new ExtensionContributionRegistrySet());
+        $catalog = self::catalog(new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission()));
         $exactSection = (object) [
             'type' => 'studio.core/section',
             'version' => '1.0.0',
@@ -119,7 +120,7 @@ final class StudioCompositionContributionCatalogTest extends TestCase
      */
     public function testAnActiveBlockWithAMismatchedLockedRevisionFailsProjection(): void
     {
-        $catalog = self::catalog(new ExtensionContributionRegistrySet());
+        $catalog = self::catalog(new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission()));
 
         $this->expectException(StudioCompositionLockMismatch::class);
         $this->expectExceptionMessage('studio.core/section');
@@ -139,7 +140,7 @@ final class StudioCompositionContributionCatalogTest extends TestCase
      */
     public function testAnActiveBlockWithAMismatchedLockedVersionFailsProjection(): void
     {
-        $catalog = self::catalog(new ExtensionContributionRegistrySet());
+        $catalog = self::catalog(new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission()));
 
         $this->expectException(StudioCompositionLockMismatch::class);
         $this->expectExceptionMessage('studio.core/section');
@@ -159,7 +160,7 @@ final class StudioCompositionContributionCatalogTest extends TestCase
      */
     public function testAMissingLockedDefinitionRemainsOmittedAndRepresentable(): void
     {
-        $catalog = self::catalog(new ExtensionContributionRegistrySet());
+        $catalog = self::catalog(new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission()));
         $missing = $catalog->project([], ['core.renderer/field', 'core.renderer/layout'], [(object) [
             'type' => 'withdrawn.vendor/card',
             'version' => '1.0.0',
@@ -211,7 +212,7 @@ final class StudioCompositionContributionCatalogTest extends TestCase
             'acme.shop/grid-preview',
             'acme.shop.catalog.edit',
         );
-        $registries = new ExtensionContributionRegistrySet();
+        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
         $registries->canonicalCompositionDocuments()->register($owner, $canonical);
         $registries->compositionHostBindings()->register($owner, $binding);
         $withoutRuntime = self::catalog($registries);

@@ -1,0 +1,175 @@
+schema: kumwe-change-set/v2
+change_set: KUMWE-CS-2026-010
+migration_id: KUMWE-MIG-2026-010
+roadmap_source:
+  title: Kumwe ERP-Extensibility Foundation Roadmap
+  sha256: a202155ef1a65f5ab293d4f8397ebf4ac430db7f1e877c776bbe7851e6fe18d8
+roadmap_refs: []
+state: app-pr-ready
+phase_1:
+  source_repository: kumwe/app
+  source_sha: "960ce8ec00cf724a7cae03e5ba09c4852c9ab54e"
+  target_repository: kumwe/business-definition
+  package_pr: "https://github.com/kumwe/business-definition/pull/7"
+  tested_sha: null
+  public_api_digest: "3df7be6ece4d1e4641cb1f4bea82d14c09a646b17e965ffb9a294f93d8575fbf"
+  capability_digest: "7fcdbf45a74c50036f4b3250e3367d16546f7d0d45cf4a1bdee5849232d57455"
+  service_map_digest: "de7d6161f1aa527a44d746ecdc04d02859bab27adf8b7125f580eda7d580856f"
+  handoff_digest: "6e65d7fafb1be8c35960e063e15e2b88a6a7af191be8c944cf81110db71e05a7"
+release:
+  version: 0.1.2
+  source_sha: "1cb59229f311067e8cfdd773a34e34cfeb501791"
+  artifact_digest: "e88066f6ba5dbbdd8775b482f7ab82aea32ee415afeb35d4a5758af7dc2070ed"
+  clean_consumer_evidence:
+    - docs/architecture/migrations/evidence/KUMWE-MIG-2026-010/RELEASE-ATTESTATION.yaml
+phase_2:
+  app_pr: "https://github.com/kumwe/app/pull/151"
+  tested_sha: null
+  merged_sha: null
+  exact_dependency: "kumwe/business-definition 0.1.2"
+  composer_lock_digest: "02d46cb5968b68ba17b963ee8db2c22b13b3e6c35f0dc93f6ec900fa7c5ac32b"
+  removed_app_symbols:
+    - Kumwe\App\BusinessDefinition\Application\BusinessDefinitionCompatibilityAnalyzer
+    - Kumwe\App\BusinessDefinition\Application\BusinessDefinitionContributionRegistry
+    - Kumwe\App\BusinessDefinition\Application\BusinessDefinitionValidator
+    - Kumwe\App\BusinessDefinition\Application\DefinitionCatalogEntry
+    - Kumwe\App\BusinessDefinition\Application\DefinitionDraft
+    - Kumwe\App\BusinessDefinition\Application\DefinitionVersionRecord
+    - Kumwe\App\BusinessDefinition\Application\FieldTypeDefinitionResolver
+    - Kumwe\App\BusinessDefinition\Application\FieldTypeRegistry
+    - Kumwe\App\BusinessDefinition\Domain\ActionDefinition
+    - Kumwe\App\BusinessDefinition\Domain\BuiltInFieldTypes
+    - Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson
+    - Kumwe\App\BusinessDefinition\Domain\CompatibilityChange
+    - Kumwe\App\BusinessDefinition\Domain\CompatibilityClassification
+    - Kumwe\App\BusinessDefinition\Domain\CompatibilityPlan
+    - Kumwe\App\BusinessDefinition\Domain\ComputationMode
+    - Kumwe\App\BusinessDefinition\Domain\DefinitionOwner
+    - Kumwe\App\BusinessDefinition\Domain\DefinitionOwnerType
+    - Kumwe\App\BusinessDefinition\Domain\DefinitionStatus
+    - Kumwe\App\BusinessDefinition\Domain\DeleteBehavior
+    - Kumwe\App\BusinessDefinition\Domain\DocumentViewDefinition
+    - Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition
+    - Kumwe\App\BusinessDefinition\Domain\Expression
+    - Kumwe\App\BusinessDefinition\Domain\FieldDefinition
+    - Kumwe\App\BusinessDefinition\Domain\FieldTypeDefinition
+    - Kumwe\App\BusinessDefinition\Domain\IdentityStrategy
+    - Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition
+    - Kumwe\App\BusinessDefinition\Domain\LocalizedDefinitionText
+    - Kumwe\App\BusinessDefinition\Domain\PortalOperation
+    - Kumwe\App\BusinessDefinition\Domain\RecordInvariantDefinition
+    - Kumwe\App\BusinessDefinition\Domain\RelationshipDefinition
+    - Kumwe\App\BusinessDefinition\Domain\RelationshipKind
+    - Kumwe\App\BusinessDefinition\Domain\ScopeMode
+    - Kumwe\App\BusinessDefinition\Domain\Sensitivity
+    - Kumwe\App\BusinessDefinition\Domain\StorageMode
+    - Kumwe\App\BusinessDefinition\Domain\ViewDefinition
+    - Kumwe\App\BusinessDefinition\Domain\WorkflowBinding
+  moved_unit_tests:
+    - tests/Unit/BusinessDefinition/Application/AllocatedNumberFieldRuleTest.php
+    - tests/Unit/BusinessDefinition/Application/BoundedJsonDefaultBudgetTest.php
+    - tests/Unit/BusinessDefinition/Application/BusinessDefinitionCompatibilityAnalyzerTest.php
+    - tests/Unit/BusinessDefinition/Application/FiscalPeriodSequenceCoherenceTest.php
+    - tests/Unit/BusinessDefinition/Application/NumberSequenceScopeCoherenceTest.php
+    - tests/Unit/BusinessDefinition/Application/ReversalRelationshipValidationTest.php
+    - tests/Unit/BusinessDefinition/Domain/AggregateInvariantDeclarationTest.php
+    - tests/Unit/BusinessDefinition/Domain/CustomBusinessDefinitionReferenceTest.php
+    - tests/Unit/BusinessDefinition/Domain/DocumentViewDefinitionTest.php
+    - tests/Unit/BusinessDefinition/Domain/LocalizedDefinitionLabelTest.php
+    - tests/Unit/BusinessDefinition/Domain/WorkflowBindingTest.php
+  retained_app_tests:
+    - tests/Unit/BusinessDefinition/Domain/EntityTypeDefinitionTest.php
+    - tests/Unit/BusinessDefinition/Domain/ExpressionTest.php
+    - tests/Unit/BusinessDefinition/Domain/ExpressionPropertyTest.php
+    - tests/Unit/BusinessDefinition/Domain/ExpressionLineAggregateTest.php
+    - tests/Unit/BusinessDefinition/Administrator/BusinessDefinitionFormMapperTest.php
+    - tests/Unit/BusinessDefinition/Infrastructure/DoctrineBusinessDefinitionRepositoryTest.php
+    - tests/Unit/BusinessDefinition/Infrastructure/DoctrinePersistedFieldTypeDefinitionResolverTest.php
+    - tests/Integration/BusinessDefinition/BusinessDefinitionRuntimeIntegrationTest.php
+    - tests/Integration/BusinessDefinition/OpenApiDefinitionPublicationAdmissionIntegrationTest.php
+    - tests/Unit/BusinessRecord/Application/RecordRuleValidatorTest.php
+    - tests/Unit/BusinessRecord/Application/AggregateInvariantValidationTest.php
+    - tests/Unit/BusinessRecord/Application/BusinessRecordViewTest.php
+    - tests/Unit/BusinessRecord/NeutralBusinessFixtureTest.php
+    - tests/Unit/BusinessSchema/Infrastructure/CanonicalDefinitionPhysicalSchemaCompilerTest.php
+    - tests/Unit/BusinessSurface/Presentation/Field/CoreFieldPresenterTest.php
+    - tests/Unit/Demo/Infrastructure/VdmBusinessDefinitionSchemaTest.php
+    - tests/Unit/Demo/Infrastructure/VdmBusinessDemoInstallerTest.php
+    - tests/Unit/Extension/Contribution/ExtensionContributionRegistrySetTest.php
+    - tests/Integration/BusinessRecord/BusinessRecordRuntimeIntegrationTest.php
+    - tests/Integration/BusinessSchema/BusinessSchemaRuntimeIntegrationTest.php
+    - tests/Integration/Demo/Infrastructure/DemoBusinessProfileExportInstallIntegrationTest.php
+    - tests/Architecture/ImmutableRecordBoundaryTest.php
+    - tests/Architecture/BusinessDefinitionBoundaryTest.php
+    - tests/Architecture/ExtensionContributionBoundaryTest.php
+    - tests/Architecture/FieldPresenterBoundaryTest.php
+    - tests/Unit/Governance/ComposerLockTest.php
+    - tests/Architecture/CapabilityIndexGateTest.php
+evidence:
+  package:
+    - docs/architecture/migrations/evidence/KUMWE-MIG-2026-010/RELEASE-ATTESTATION.yaml
+    - "https://github.com/kumwe/business-definition/actions/runs/34248071466; release on record on tag commit 1cb59229f311067e8cfdd773a34e34cfeb501791"
+    - "https://github.com/kumwe/business-definition/actions/runs/34248071179; package CI on the same commit"
+  app_composition:
+    - tests/Unit/BusinessDefinition/Domain/EntityTypeDefinitionTest.php
+    - tests/Unit/Extension/Contribution/ExtensionContributionRegistrySetTest.php
+    - tests/Unit/Demo/Infrastructure/VdmBusinessDefinitionSchemaTest.php
+    - tests/Unit/BusinessRecord/NeutralBusinessFixtureTest.php
+    - tests/Unit/Governance/ComposerLockTest.php
+    - tests/Unit/Governance/CoreGrowthGateTest.php
+    - tests/Architecture/CapabilityIndexGateTest.php
+    - tests/Architecture/ExtensionContributionBoundaryTest.php
+    - "composer require kumwe/business-definition:0.1.2; one lock install, no other lock change"
+    - "composer kumwe:capability-index, kumwe:core-growth-record, baseline:record, then the composer qa gates and the unit and architecture suites, run locally on PHP 8.4 without ext-kumwe_engine"
+  database_matrix:
+    - tests/Integration/BusinessDefinition/BusinessDefinitionRuntimeIntegrationTest.php
+    - tests/Integration/BusinessDefinition/OpenApiDefinitionPublicationAdmissionIntegrationTest.php
+    - tests/Integration/BusinessRecord/BusinessRecordRuntimeIntegrationTest.php
+    - tests/Integration/BusinessSchema/BusinessSchemaRuntimeIntegrationTest.php
+    - tests/Integration/Demo/Infrastructure/DemoBusinessProfileExportInstallIntegrationTest.php
+    - "To be exercised by the pull request's hosted workflows on MariaDB, MySQL and PostgreSQL."
+  concurrency:
+    - tests/Integration/BusinessRecord/AggregateDocumentConcurrencyIntegrationTest.php
+    - tests/Integration/BusinessRecord/BusinessNumberSequenceContentionIntegrationTest.php
+    - "Definition publication and record commits under concurrent transactions; to be exercised by the pull request's hosted workflows."
+  authorization_security:
+    - tests/Unit/BusinessSecurity/Application/BusinessSecurityAdministrationServiceTest.php
+    - tests/Unit/OpenApi/Application/OpenApiExtensionActivationAdmissionTest.php
+    - tests/Unit/Demo/Infrastructure/VdmBusinessDemoInstallerTest.php
+    - tests/Architecture/FieldPresenterBoundaryTest.php
+    - "Capability checks on definition publication, ownership and extension activation stay in the App services; the hosted source-and-image security scans run on the pull request."
+  lifecycle_recovery:
+    - tests/Integration/BusinessSchema/BusinessSchemaRecoveryIntegrationTest.php
+    - tests/Integration/BusinessSchema/BusinessSchemaSourceBindingRecoveryIntegrationTest.php
+    - tests/Integration/BusinessRecord/BusinessRecordEvolutionIntegrationTest.php
+    - "Repeatable definition publication, schema recovery and evolution; to be exercised by the pull request's hosted workflows."
+  delivery_browser:
+    - tests/Unit/Delivery/Http/Api/Business/BusinessRecordApiHandlerTest.php
+    - tests/Unit/BusinessDefinition/Administrator/BusinessDefinitionFormMapperTest.php
+    - tests/Functional/BusinessSurface/GeneratedBusinessAdapterParityTest.php
+    - "The definition administrator form, the business record API and the generated surfaces; the browser suites run in the pull request's hosted workflows."
+  deployment_backup_restore:
+    - tests/Support/BusinessRuntimeBackupAcceptance.php
+    - tests/Integration/Demo/Infrastructure/DemoBusinessProfileExportInstallIntegrationTest.php
+    - "Signed backup, clean restore and demo profile installation on three engines; to be exercised by the pull request's hosted workflows."
+  native_parity_abi:
+    - tests/Unit/BusinessDefinition/Domain/ExpressionTest.php
+    - tests/Unit/BusinessDefinition/Domain/ExpressionPropertyTest.php
+    - tests/Unit/BusinessDefinition/Domain/ExpressionLineAggregateTest.php
+    - tests/Unit/Kernel/NativeComputationFactoryTest.php
+    - "Every runtime caller evaluates through the retained App ExpressionEvaluator; no native cutover is claimed and the PHP executor stays until Computation Phase 2."
+  performance_capacity:
+    - tests/Integration/Performance/HotPlanRegressionIntegrationTest.php
+    - tests/Integration/BusinessSurface/GeneratedBusinessQueryBudgetIntegrationTest.php
+    - "Definition values now detach their collections on construction; no performance claim is made and the hosted lanes exercise the hot plan budget."
+compatibility: "Drop-in for consumers of the thirty-three namespace-only moves; three differences drive code: BusinessDefinitionValidator requires a host FieldConfigurationAdmission, and Expression::evaluate() and RecordInvariantDefinition::isSatisfied() no longer exist, so every runtime caller evaluates through the App ExpressionEvaluator. The package validator additionally refuses expression reads outside their field's scalar family, non-boolean field conditions at construction and over-long text defaults measured with mbstring, and classifies entity label-translation changes as behaviour-changing."
+migration_recovery: null
+security_impact: "None on authority: publication authorization, ownership, extension trust, transaction coupling and audit stay in the App services; the package tightens definition admission and the host admission adapter keeps the SDK presentation budget in force."
+performance_claim: null
+rollback: "Revert the App pull request and restore the thirty-six removed classes and eleven unit tests from the baseline commit; no persisted data changes, because the canonical definition bytes and checksums are unchanged."
+known_gaps:
+  - "The local sandbox runs PHP 8.4 without ext-kumwe_engine and without a database server, so the integration and functional lanes, PHP 8.5 and the demo profile installations are proven by the App CI on this pull request."
+  - "Previously published definitions that the stricter package validator would now refuse are not rewritten; the neutral fixture and the VDM definitions admit unchanged, and the hosted database lanes observe the demo profiles."
+  - "The release attestation was produced by an isolated verification restricted to inspection; no clean consumer install was executed there."
+completion_claim: false
+accepted_by: null

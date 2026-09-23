@@ -10,8 +10,9 @@ use Kumwe\Context\Value\AuthenticatedSurface;
 use Kumwe\Access\AuthorizationGateway;
 use Kumwe\Access\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
-use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\App\BusinessDefinition\Domain\DecimalValue;
+use Kumwe\App\BusinessDefinition\Domain\ExpressionEvaluator;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordView;
 use Kumwe\App\BusinessRecord\Application\Exception\InvalidBusinessRecordQuery;
 use Kumwe\Extension\Spi\BusinessRecord\Application\BusinessRecordQueryPurpose;
@@ -552,7 +553,7 @@ final readonly class ReportService
                 }
                 /** @var array<string, bool|int|string|null> $values */
                 $values = array_intersect_key($row, array_fill_keys($dependencies, true));
-                $value = $formula->expression->evaluate($values);
+                $value = ExpressionEvaluator::evaluate($formula->expression, $values);
                 if ($value !== null && !$formula->type->accepts($value)) {
                     throw new ReportUnavailable('A report formula result contradicts its declared type.');
                 }

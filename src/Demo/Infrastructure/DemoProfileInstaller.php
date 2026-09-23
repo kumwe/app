@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Demo\Infrastructure;
 
 use Kumwe\App\Application\Authorization\SystemPrincipal;
-use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\App\Demo\Application\DemoProfileLedger;
 use Kumwe\App\Demo\Application\DemoProfileReconciler;
 use Kumwe\App\Demo\Infrastructure\FilesystemDemoManifestCatalog;

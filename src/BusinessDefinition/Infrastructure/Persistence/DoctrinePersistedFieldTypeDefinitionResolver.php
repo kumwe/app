@@ -6,13 +6,13 @@ namespace Kumwe\App\BusinessDefinition\Infrastructure\Persistence;
 
 use Doctrine\DBAL\Connection;
 use JsonException;
-use Kumwe\App\BusinessDefinition\Application\FieldTypeDefinitionResolver;
-use Kumwe\App\BusinessDefinition\Application\FieldTypeRegistry;
-use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
-use Kumwe\App\BusinessDefinition\Domain\DefinitionOwner;
-use Kumwe\App\BusinessDefinition\Domain\DefinitionOwnerType;
-use Kumwe\App\BusinessDefinition\Domain\FieldTypeDefinition;
-use Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition;
+use Kumwe\BusinessDefinition\Application\FieldTypeDefinitionResolver;
+use Kumwe\BusinessDefinition\Application\FieldTypeRegistry;
+use Kumwe\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\BusinessDefinition\Domain\DefinitionOwner;
+use Kumwe\BusinessDefinition\Domain\DefinitionOwnerType;
+use Kumwe\BusinessDefinition\Domain\FieldTypeDefinition;
+use Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 
 /**

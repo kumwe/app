@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessSchema\Application;
 
 use DateTimeImmutable;
-use Kumwe\App\BusinessDefinition\Application\DefinitionVersionRecord;
+use Kumwe\BusinessDefinition\Application\DefinitionVersionRecord;
 use Kumwe\App\BusinessSchema\Domain\SchemaPlan;
 use Kumwe\Context\Value\SiteContext;
 

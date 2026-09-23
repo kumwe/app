@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Unit\BusinessSurface\Presentation;
 
-use Kumwe\App\BusinessDefinition\Domain\DefinitionOwner;
-use Kumwe\App\BusinessDefinition\Domain\FieldDefinition;
-use Kumwe\App\BusinessDefinition\Domain\FieldTypeDefinition;
-use Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition;
+use Kumwe\BusinessDefinition\Domain\DefinitionOwner;
+use Kumwe\BusinessDefinition\Domain\FieldDefinition;
+use Kumwe\BusinessDefinition\Domain\FieldTypeDefinition;
+use Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition;
 use Kumwe\App\BusinessSurface\Application\FieldModelContext;
 use Kumwe\App\BusinessSurface\Application\PresentedField;
 use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationContext;

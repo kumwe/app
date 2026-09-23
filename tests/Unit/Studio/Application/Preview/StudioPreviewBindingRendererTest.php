@@ -7,6 +7,7 @@ namespace Kumwe\App\Tests\Unit\Studio\Application\Preview;
 use InvalidArgumentException;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\App\Extension\Runtime\ActiveExtensionSet;
 use Kumwe\App\Presentation\ContentPageRenderService;
 use Kumwe\App\Presentation\SiteRenderer;
@@ -585,7 +586,10 @@ final class StudioPreviewBindingRendererTest extends TestCase
         }
         $theme = new StudioPublishedTheme(
             $settings,
-            new ActiveExtensionSet(new ExtensionContributionRegistrySet(withCore: false)),
+            new ActiveExtensionSet(new ExtensionContributionRegistrySet(
+                new SdkFieldConfigurationAdmission(),
+                withCore: false,
+            )),
             new StudioBuiltInThemeRelease(str_repeat('a', 64)),
         );
 
@@ -616,7 +620,7 @@ final class StudioPreviewBindingRendererTest extends TestCase
     private static function runtime(): StudioBlockRendererRuntime
     {
         return new StudioBlockRendererRuntime(
-            new ExtensionContributionRegistrySet(),
+            new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission()),
             new StudioContentFieldBlockRenderer(),
         );
     }

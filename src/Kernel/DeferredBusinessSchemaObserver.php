@@ -6,7 +6,7 @@ namespace Kumwe\App\Kernel;
 
 use Closure;
 use DateTimeImmutable;
-use Kumwe\App\BusinessDefinition\Application\DefinitionVersionRecord;
+use Kumwe\BusinessDefinition\Application\DefinitionVersionRecord;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaLifecycleObserver;
 use Kumwe\App\BusinessSchema\Application\PublishedDefinitionSchemaObserver;
 use Kumwe\App\BusinessSchema\Domain\SchemaPlan;

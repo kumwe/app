@@ -1,0 +1,34 @@
+schema: kumwe-integration-train/v1
+train: KUMWE-TRAIN-2026-010
+packages:
+  - package: kumwe/business-definition
+    version: 0.1.2
+merge_order:
+  - "https://github.com/kumwe/app/pull/151"
+custodian: "eWɘyn"
+hotspots:
+  - composer.json
+  - composer.lock
+  - src/Kernel/ContainerFactory.php
+  - src/Extension/Contribution/ExtensionContributionRegistrySet.php
+  - src/BusinessSurface/Presentation/Field/SdkFieldConfigurationAdmission.php
+  - src/BusinessDefinition/Infrastructure/Persistence/DoctrinePackageDefinitionSynchronizer.php
+  - src/BusinessRecord/Application/RecordRuleValidator.php
+  - src/BusinessRecord/Application/BusinessRecordService.php
+  - src/BusinessSurface/Application/BusinessSurfaceService.php
+  - src/BusinessReporting/Application/ReportService.php
+  - src/BusinessSchema/Infrastructure/Schema/DoctrinePhysicalSchemaGateway.php
+  - docs/architecture/layers.json
+  - docs/architecture/capability-index.md
+  - docs/architecture/governance/core-growth-baseline.json
+  - docs/quality/baseline.json
+  - docs/quality/test-docblock-baseline.json
+  - CHANGELOG.md
+commands:
+  - "composer install"
+  - "composer kumwe:capability-index"
+  - "composer kumwe:core-growth-record"
+  - "composer baseline:record"
+  - "composer qa"
+conflict_ledger: docs/architecture/migrations/conflicts
+serialized_by: "eWɘyn, rebase-merging the green pull request under the standing maintainer mandate"

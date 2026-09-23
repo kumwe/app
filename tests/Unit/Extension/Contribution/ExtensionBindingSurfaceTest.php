@@ -15,6 +15,7 @@ use Kumwe\App\Extension\Contribution\BusinessContributionSurface;
 use Kumwe\App\Extension\Contribution\CanonicalManifestActivator;
 use Kumwe\App\Extension\Contribution\CanonicalManifestInterpreter;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\App\Extension\Contribution\OwnedExtensionBindingRegistrar;
 use Kumwe\App\Extension\Contribution\StudioPreviewRendererContribution;
 use Kumwe\App\Extension\Runtime\TrustEnforcingJobHandler;
@@ -92,7 +93,7 @@ final class ExtensionBindingSurfaceTest extends TestCase
     public function testCanonicalIntegrationDeclarationsBindTheirExecutables(): void
     {
         $manifest = self::generationManifest(4);
-        $registries = new ExtensionContributionRegistrySet(withCore: false);
+        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
         $registrar = $registries->activateManifest(
             $manifest,
             self::trustStore(),
@@ -142,7 +143,7 @@ final class ExtensionBindingSurfaceTest extends TestCase
      */
     public function testAJobHandlerWithoutRuntimeProvenanceIsRefused(): void
     {
-        $registrar = (new ExtensionContributionRegistrySet(withCore: false))
+        $registrar = (new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false))
             ->activateManifest(self::generationManifest(4));
 
         $this->expectException(LogicException::class);
@@ -160,7 +161,7 @@ final class ExtensionBindingSurfaceTest extends TestCase
      */
     public function testSemanticBusinessAndPortalDeclarationsBindTheirExecutables(): void
     {
-        $registries = new ExtensionContributionRegistrySet(withCore: false);
+        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
         $registrar = $registries->activateManifest(self::probeManifest());
 
         $registrar->fieldPresenter('acme.probe.color', self::fieldPresenter());
@@ -192,7 +193,7 @@ final class ExtensionBindingSurfaceTest extends TestCase
      */
     public function testAnAdministratorRouteBindsAndMountsThroughItsRegistry(): void
     {
-        $registries = new ExtensionContributionRegistrySet(withCore: false);
+        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
         $registrar = $registries->activateManifest(self::routesManifest());
         $factory = self::administratorRouteFactory();
         $registrar->administratorRoute('acme.routes.index', $factory);
@@ -227,7 +228,7 @@ final class ExtensionBindingSurfaceTest extends TestCase
      */
     public function testARepeatedExecutableBindingIsRefused(): void
     {
-        $registrar = (new ExtensionContributionRegistrySet(withCore: false))
+        $registrar = (new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false))
             ->activateManifest(self::routesManifest());
         $registrar->administratorRoute('acme.routes.index', self::administratorRouteFactory());
 
@@ -246,7 +247,7 @@ final class ExtensionBindingSurfaceTest extends TestCase
      */
     public function testABindingAfterCompletionIsRefused(): void
     {
-        $registrar = (new ExtensionContributionRegistrySet(withCore: false))
+        $registrar = (new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false))
             ->activateManifest(self::routesManifest());
         $registrar->administratorRoute('acme.routes.index', self::administratorRouteFactory());
         $registrar->complete();
@@ -266,7 +267,7 @@ final class ExtensionBindingSurfaceTest extends TestCase
      */
     public function testACanonicalStudioRendererBindsToItsSignedBlocks(): void
     {
-        $registries = new ExtensionContributionRegistrySet(withCore: false);
+        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
         $registrar = $registries->activateManifest(
             self::generationManifest(6),
             self::trustStore(),
@@ -299,7 +300,7 @@ final class ExtensionBindingSurfaceTest extends TestCase
      */
     public function testAStudioRendererWithoutRuntimeProvenanceIsRefused(): void
     {
-        $registrar = (new ExtensionContributionRegistrySet(withCore: false))
+        $registrar = (new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false))
             ->activateManifest(self::generationManifest(6));
 
         $this->expectException(LogicException::class);
@@ -329,7 +330,7 @@ final class ExtensionBindingSurfaceTest extends TestCase
             JSON_THROW_ON_ERROR,
         );
         self::assertIsArray($announcements);
-        $surfaces = new ExtensionContributionRegistrySet(withCore: false);
+        $surfaces = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
         $surfaces->activateManifest(ManifestContributions::fromManifest(
             ExtensionIdentifier::fromString('kumwe/announcements-example'),
             $announcements['contributions'],
@@ -338,7 +339,7 @@ final class ExtensionBindingSurfaceTest extends TestCase
         $announcer = ContributionOwner::extension('kumwe/announcements-example');
         self::assertCount(1, $surfaces->interfaceSurfaces()->ownedBy($announcer));
 
-        $content = new ExtensionContributionRegistrySet(withCore: false);
+        $content = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
         $content->activateManifest(ManifestContributions::fromManifest(
             ExtensionIdentifier::fromString('acme/probe'),
             [

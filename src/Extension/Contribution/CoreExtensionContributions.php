@@ -9,7 +9,7 @@ use Kumwe\Extension\Spi\Contribution\AdministratorWorkspaceDefinition;
 use Kumwe\Extension\Spi\Contribution\AdministratorNavigationDefinition;
 use Kumwe\Access\ResourcePolicyTarget;
 use Kumwe\App\Application\Authorization\SystemIdentity;
-use Kumwe\App\BusinessDefinition\Domain\BuiltInFieldTypes;
+use Kumwe\BusinessDefinition\Domain\BuiltInFieldTypes;
 use Kumwe\App\BusinessIntegration\Domain\EventSchemaDefinition;
 use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventSensitivity;
 use Kumwe\App\BusinessSurface\Presentation\Field\CoreFieldPresenter;

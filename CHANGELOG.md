@@ -79,6 +79,34 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Added
 
+- **2026-09-23 — `kumwe/business-definition` 0.1.2 owns the definition model, its canonical profile, validation,
+  compatibility and registries.**
+  The business-definition package enters App through the migration ledger (`NRM-2026-040`): `KUMWE-MIG-2026-010`,
+  its change set, the integration train `KUMWE-TRAIN-2026-010` and the independent release attestation record the
+  verified `v0.1.2` release, and `composer.json` pins it exactly. As the released record prescribes, the thirty-six
+  App types under `Kumwe\App\BusinessDefinition\Domain` and `Kumwe\App\BusinessDefinition\Application` — the
+  definition values and enums from `ActionDefinition` to `WorkflowBinding`, `Expression`, `CanonicalDefinitionJson`,
+  the compatibility plan, change and classification, `BusinessDefinitionCompatibilityAnalyzer`,
+  `BusinessDefinitionContributionRegistry`, `BusinessDefinitionValidator`, `DefinitionCatalogEntry`,
+  `DefinitionDraft`, `DefinitionVersionRecord`, `FieldTypeDefinitionResolver` and `FieldTypeRegistry` — are removed
+  together with the eleven duplicated unit tests the package now owns, and every consumer reads the package types.
+  The package makes field-configuration admission a host port and ships no default, so the new
+  `SdkFieldConfigurationAdmission` admits a configuration exactly when extension-sdk 0.2.4's
+  `FieldPresentationConfiguration::fromArray` accepts it; `ContainerFactory` binds it once and hands it to the
+  validator and the package synchronizer, and `ExtensionContributionRegistrySet` requires it as its first
+  constructor argument. The package ships no PHP executor: `Expression::evaluate()` and
+  `RecordInvariantDefinition::isSatisfied()` are gone, and every runtime caller — record rules and invariants,
+  action preconditions, field visibility and editability, report formulas and schema backfills — evaluates through
+  the retained `ExpressionEvaluator`, with the invariant's boolean check applied in `RecordRuleValidator`; the PHP
+  executor and `DecimalValue` stay in App until Computation Phase 2. The contribution-fed field-type registry keeps
+  its `new FieldTypeRegistry(false)` shape, so the package `ConfigProvider` and its built-in-seeding factory are not
+  registered and the ledger records the explicit host bindings. The package validator is stricter than the App copy
+  — expression reads must match their field's scalar family, field conditions must be boolean at construction,
+  text defaults are measured with mbstring and entity label-translation changes are behaviour-changing — and the
+  neutral business fixture and the VDM demo definitions admit under it unchanged. The layer graph admits
+  `Kumwe\BusinessDefinition`, the retained tests no longer attribute the package classes as App coverage, and the
+  sequence ledger no longer names the three sequence-rule unit tests the package now owns. The installed release
+  ships its record as `MIGRATION-HANDOFF.md`, which the ledger binds by path and digest. (#151)
 - **2026-09-23 — `kumwe/access-control` 0.1.2 owns the authorization decisions, registries, scopes and ports.**
   The access-control package enters App through the migration ledger (`NRM-2026-037`): `KUMWE-MIG-2026-009`, its
   change set, the integration train `KUMWE-TRAIN-2026-009` and the independent release attestation record the

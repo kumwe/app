@@ -8,6 +8,7 @@ use FilesystemIterator;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\Extension\Spi\Application\ExtensionServiceProvider;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\App\Extension\Runtime\ActiveExtensionSet;
 use Kumwe\Extension\Manifest\ExtensionIdentifier;
 use Kumwe\Extension\Manifest\ManifestContributions;
@@ -207,7 +208,7 @@ final class StudioPublishedThemeTest extends TestCase
                 return $settingsDocument;
             },
         );
-        $registries = new ExtensionContributionRegistrySet(withCore: false);
+        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
         $extensions = new ActiveExtensionSet($registries);
         $extensions->add(
             'acme/public-theme',
@@ -248,7 +249,10 @@ final class StudioPublishedThemeTest extends TestCase
         $settings->method('current')->willReturn([]);
         $projection = new StudioPublishedTheme(
             $settings,
-            new ActiveExtensionSet(new ExtensionContributionRegistrySet(withCore: false)),
+            new ActiveExtensionSet(new ExtensionContributionRegistrySet(
+                new SdkFieldConfigurationAdmission(),
+                withCore: false,
+            )),
             new StudioBuiltInThemeRelease(str_repeat('a', 64)),
         );
 
