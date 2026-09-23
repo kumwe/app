@@ -79,6 +79,24 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Added
 
+- **2026-09-23 — `kumwe/idempotency` 0.1.3 owns the replay key, the replay values and the ledger ports.**
+  The idempotency package enters App through the migration ledger (`NRM-2026-039`): `KUMWE-MIG-2026-020`, its change
+  set, the integration train `KUMWE-TRAIN-2026-020` and the release attestation record the verified `v0.1.3` release,
+  and `composer.json` pins it exactly; the independent verification of `v0.1.2` had failed because its record's front
+  matter fell outside the App StrictYaml subset, and that failed record is kept beside the attestation as history. As
+  the released record prescribes, the App's HTTP `IdempotencyKey`, the `IdempotencyLedger`,
+  `SecretOnceIdempotencyLedger` and `IdempotencyPurger` ports and the `IdempotencyRecord`, `IdempotencyResult` and
+  `IdempotencyState` values are removed together with the two duplicated unit tests the package now owns, every
+  consumer reads the package types, `RequireIdempotencyKeyMiddleware` parses the package key, and `ContainerFactory`
+  binds the three package ports to the App's Doctrine ledger, secret-once ledger and purger adapters. The adapters,
+  the middlewares, exact route preauthorization, transaction coupling, the request digests, the purge job and the
+  retention migrations stay in App; the fully vacated `Kumwe\App\Application\Idempotency\` root is retired and the
+  ledger enumerates the seven symbols. Business-record commands keep the `kumwe/extension-sdk` 0.2.4 key, bridged
+  from the package key in `BusinessRecordApiRequest`, until the extension-sdk train swaps the SDK key; that train's
+  `0.3.2` release pins `kumwe/idempotency` 0.1.2 exactly and needs a successor before it can resolve beside 0.1.3.
+  The layer graph admits `Kumwe\Idempotency` as a shared package, the seam test pins the ports to the installed
+  release, and the installed release ships its record as `docs/release-record.md`, which the ledger binds by path and
+  digest. (#151)
 - **2026-09-23 — `kumwe/conversion` 0.1.5 is the governed owner of the exact decimal kernel, the money and quantity
   values, the conversion contract and the provider ports.**
   The conversion package leaves the legacy registry through the migration ledger (`NRM-2026-041`):

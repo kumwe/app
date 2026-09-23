@@ -7,7 +7,8 @@ namespace Kumwe\App\Delivery\Http\Api\Idempotency;
 use DateTimeImmutable;
 use JsonException;
 use Kumwe\App\Application\Authorization\ExecutionContextAttribute;
-use Kumwe\App\Application\Idempotency\IdempotencyLedger;
+use Kumwe\Idempotency\IdempotencyKey;
+use Kumwe\Idempotency\IdempotencyLedger;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\App\Delivery\Http\Api\ProblemDetailsResponseFactory;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
@@ -28,8 +29,8 @@ use Throwable;
  * This is the general-purpose half of the idempotency pair: the mutating API routes mount it behind
  * `RequireIdempotencyKeyMiddleware`. It stores the handler's response verbatim, which is precisely why
  * token issuance and rotation use `SecretOnceIdempotencyMiddleware` instead — those bodies carry a live
- * credential. A record is keyed by subject, operation and key, and the application-owned
- * `IdempotencyLedger` arbitrates the reservation on that identity, so two simultaneous first attempts
+ * credential. A record is keyed by subject, operation and key, and the `IdempotencyLedger` port of
+ * kumwe/idempotency arbitrates the reservation on that identity, so two simultaneous first attempts
  * cannot both reach the handler; this middleware never touches the store behind that port. What a caller
  * is promised: a completed operation is replayed with `Idempotency-Replayed: true` rather than repeated,
  * a key reused for different content is refused with 422, a key presented under different credentials
@@ -46,7 +47,7 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
     /**
      * Wire the middleware to the ledger, the clock and the policy check a reservation depends on.
      *
-     * @param  IdempotencyLedger              $ledger            Application-owned ledger the reservation
+     * @param  IdempotencyLedger              $ledger            Package ledger port the reservation
      *         lifecycle runs against.
      * @param  ClockInterface                 $clock             Supplies the instant stored expiry and lock
      *         lapse are judged against.

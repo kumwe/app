@@ -1,0 +1,32 @@
+schema: kumwe-non-roadmap-record/v1
+id: NRM-2026-039
+nrm_ref: NRM-2026-039
+roadmap_impact: None
+rationale: "Adopt verified kumwe/idempotency 0.1.3, the owner of the replay identity, the immutable record, result and state values and the ledger, secret-once and purge ports."
+repositories:
+  - kumwe/app
+  - kumwe/idempotency
+behavior_before: "App declared the HTTP IdempotencyKey value, the IdempotencyLedger, SecretOnceIdempotencyLedger and IdempotencyPurger ports and the IdempotencyRecord, IdempotencyResult and IdempotencyState values itself, and the record and result digested their bodies through Kumwe\\App\\Shared\\Domain\\CanonicalJson."
+behavior_after: "The seven types come from kumwe/idempotency 0.1.3; ContainerFactory binds the three package ports to the Doctrine ledger, secret-once ledger and purger adapters, RequireIdempotencyKeyMiddleware parses the package key and BusinessRecordApiRequest bridges it to the kumwe/extension-sdk 0.2.4 command key. App keeps the Doctrine adapters, the middlewares, exact route preauthorization, transaction coupling, the request digests, the purge job and the retention migrations."
+public_api_impact: "None for callers; the Idempotency-Key header grammar, the problem documents and the replay semantics are unchanged, and the package key adds fromString() and value() to the shape the App value had."
+dependency_impact: "Adds kumwe/idempotency 0.1.3 exactly; its only dependency kumwe/canonical-json 0.1.1 was already locked, and no other lock entry changes. kumwe/extension-sdk 0.3.2 pins kumwe/idempotency 0.1.2, so its train needs a successor release before it can resolve."
+compatibility: "Drop-in for every consumer of the HTTP key and the three ports; the record, result and state values had no App production consumer, so their explicit CanonicalEncoder parameter changes nothing persisted."
+data_migration: None
+security_impact: "No authority change; exact preauthorization, credential fingerprints, secret-once stripping, transaction coupling and the purge capability stay in App, and the package never sees a request, a connection or a credential."
+performance:
+  claim: None
+  evidence: []
+operations_deployment: "None; no configuration, provider, schema or scheduled-job change."
+recovery_rollback: "Revert the adoption pull request and restore the seven removed classes and the two moved unit tests; no persisted data changes."
+artifacts_evidence:
+  - docs/architecture/migrations/KUMWE-MIG-2026-020.yaml
+  - docs/architecture/migrations/change-sets/KUMWE-CS-2026-020.yaml
+  - docs/architecture/migrations/trains/KUMWE-TRAIN-2026-020.yaml
+  - docs/architecture/migrations/evidence/KUMWE-MIG-2026-020/RELEASE-ATTESTATION.yaml
+  - docs/architecture/migrations/evidence/KUMWE-MIG-2026-020/RELEASE-VERIFICATION-FAILED.yaml
+  - docs/architecture/capability-index.md
+known_gaps:
+  - "The Kumwe\\Extension\\Spi\\Application\\Automation\\IdempotencyKey swap (34 App files) waits for the extension-sdk train; until then the HTTP key and the command key are different types bridged in BusinessRecordApiRequest."
+  - "kumwe/extension-sdk 0.3.2 requires kumwe/idempotency 0.1.2 exactly and cannot resolve beside 0.1.3; a successor extension-sdk release pinning 0.1.3 precedes that train."
+owner: "eWɘyn"
+status: in-progress

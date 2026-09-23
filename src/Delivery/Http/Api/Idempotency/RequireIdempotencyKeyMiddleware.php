@@ -6,6 +6,7 @@ namespace Kumwe\App\Delivery\Http\Api\Idempotency;
 
 use InvalidArgumentException;
 use Kumwe\App\Delivery\Http\Api\ProblemDetailsResponseFactory;
+use Kumwe\Idempotency\IdempotencyKey;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;

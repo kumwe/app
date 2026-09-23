@@ -8,7 +8,7 @@ use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\App\Application\Idempotency\SecretOnceIdempotencyLedger;
+use Kumwe\Idempotency\SecretOnceIdempotencyLedger;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 

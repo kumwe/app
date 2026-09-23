@@ -11,7 +11,7 @@ use Kumwe\Context\Value\SiteContext;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\App\Content\Application\ContentService;
 use Kumwe\App\Delivery\Http\Api\Idempotency\HttpMutationPreauthorizer;
-use Kumwe\App\Delivery\Http\Api\Idempotency\IdempotencyKey;
+use Kumwe\Idempotency\IdempotencyKey;
 use Kumwe\App\Delivery\Http\Api\Idempotency\PersistentIdempotencyMiddleware;
 use Kumwe\App\Delivery\Http\Api\Idempotency\RequireIdempotencyKeyMiddleware;
 use Kumwe\App\Delivery\Http\Api\ProblemDetailsResponseFactory;

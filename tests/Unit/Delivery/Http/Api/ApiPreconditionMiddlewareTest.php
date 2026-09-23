@@ -6,7 +6,7 @@ namespace Kumwe\App\Tests\Unit\Delivery\Http\Api;
 
 use Kumwe\App\Delivery\Http\Api\Concurrency\IfMatch;
 use Kumwe\App\Delivery\Http\Api\Concurrency\RequireIfMatchMiddleware;
-use Kumwe\App\Delivery\Http\Api\Idempotency\IdempotencyKey;
+use Kumwe\Idempotency\IdempotencyKey;
 use Kumwe\App\Delivery\Http\Api\Idempotency\RequireIdempotencyKeyMiddleware;
 use Kumwe\App\Delivery\Http\Api\ProblemDetailsResponseFactory;
 use Laminas\Diactoros\Response\TextResponse;

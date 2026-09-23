@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Architecture;
 
-use Kumwe\App\Application\Automation\IdempotencyPurger;
-use Kumwe\App\Application\Idempotency\IdempotencyLedger;
-use Kumwe\App\Application\Idempotency\SecretOnceIdempotencyLedger;
 use Kumwe\App\Infrastructure\Automation\DoctrineIdempotencyPurger;
 use Kumwe\App\Infrastructure\Persistence\DoctrineIdempotencyLedger;
 use Kumwe\App\Infrastructure\Persistence\DoctrineSecretOnceIdempotencyLedger;
+use Kumwe\Idempotency\IdempotencyLedger;
+use Kumwe\Idempotency\IdempotencyPurger;
+use Kumwe\Idempotency\SecretOnceIdempotencyLedger;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
@@ -28,24 +28,24 @@ use SplFileInfo;
  * Pins the idempotency seam by type rather than by grep, the way the transaction seam is pinned.
  *
  * Which operations are replay-protected, and what a reservation means, are use-case decisions, so
- * Application declares the ledger contracts and Infrastructure supplies the Doctrine adapters. The HTTP
- * middlewares that consume them are delivery code, and delivery code writing Doctrine state directly is
- * the exact leak `P3-C` closed — so these checks read reflected signatures and token streams, which is
- * what makes them survive a rename: a driver type reaching back into the middleware directory fails here
- * even when it arrives without a `use` line for a textual gate to find.
+ * `kumwe/idempotency` declares the ledger contracts and Infrastructure supplies the Doctrine adapters.
+ * The HTTP middlewares that consume them are delivery code, and delivery code writing Doctrine state
+ * directly is the exact leak `P3-C` closed — so these checks read reflected signatures and token streams,
+ * which is what makes them survive a rename: a driver type reaching back into the middleware directory
+ * fails here even when it arrives without a `use` line for a textual gate to find.
  *
  * @since  2.0.0
  */
 final class IdempotencySeamBoundaryTest extends TestCase
 {
     /**
-     * The idempotency ports belong to Application, and every shipped adapter to Infrastructure.
+     * The idempotency ports belong to the installed package, and every shipped adapter to Infrastructure.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    public function testTheIdempotencyPortsAreOwnedByApplicationAndAdaptedByInfrastructure(): void
+    public function testTheIdempotencyPortsAreOwnedByThePackageAndAdaptedByInfrastructure(): void
     {
         $bindings = [
             DoctrineIdempotencyLedger::class => IdempotencyLedger::class,
@@ -58,13 +58,13 @@ final class IdempotencySeamBoundaryTest extends TestCase
             $adapterClass = new ReflectionClass($adapter);
 
             self::assertTrue($portClass->isInterface(), $port . ' must be a contract, not a class.');
-            self::assertStringStartsWith('Kumwe\\App\\Application\\', $port);
+            self::assertStringStartsWith('Kumwe\\Idempotency\\', $port);
             self::assertStringStartsWith('Kumwe\\App\\Infrastructure\\', $adapter);
             self::assertTrue($adapterClass->implementsInterface($port), $adapter . ' must answer ' . $port . '.');
             self::assertStringStartsWith(
-                dirname(__DIR__, 2) . '/src/Application/',
+                dirname(__DIR__, 2) . '/vendor/kumwe/idempotency/src/',
                 (string) $portClass->getFileName(),
-                'The port file must sit inside the application layer, not merely carry its namespace.',
+                'The port must be the installed kumwe/idempotency contract, not a copy carried under src/.',
             );
             self::assertStringStartsWith(
                 dirname(__DIR__, 2) . '/src/Infrastructure/',
@@ -146,7 +146,7 @@ final class IdempotencySeamBoundaryTest extends TestCase
         self::assertSame(
             [],
             $offenders,
-            'Delivery idempotency code must reach the ledger only through its application-owned ports.',
+            'Delivery idempotency code must reach the ledger only through the package-owned ports.',
         );
     }
 

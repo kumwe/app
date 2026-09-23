@@ -1,0 +1,107 @@
+schema: kumwe-release-attestation/v2
+artifact_kind: framework_php
+migration_id: KUMWE-MIG-2026-020
+change_set: KUMWE-CS-2026-020
+repository: "https://github.com/kumwe/idempotency"
+merge_commit: "351f5491d193babf6193ddb4af064edc7ce62ea5"
+version: "0.1.3"
+tag: v0.1.3
+source_archive:
+  url: "https://github.com/kumwe/idempotency/archive/refs/tags/v0.1.3.tar.gz"
+  sha256: "14bd663620be28df61cc7d74f1b9decc696fc6f44c9d5b01bba42bab89433b46"
+artifacts:
+  - identity: "kumwe/idempotency:0.1.3"
+    url: "https://github.com/kumwe/idempotency/archive/refs/tags/v0.1.3.tar.gz"
+    sha256: "14bd663620be28df61cc7d74f1b9decc696fc6f44c9d5b01bba42bab89433b46"
+manifests_and_corpora:
+  - path: resources/public-api/v1.json
+    sha256: "fdf88a404e3e120fcb230641f45a3203c2984365a229fb554a1ff1e1cc593ab8"
+  - path: resources/capabilities/v1.json
+    sha256: "4aba0ad34309591469d9421b60355a729a3a5b2ef892253634b695288d5f09f2"
+  - path: resources/service-map/v1.json
+    sha256: "f545183e4ec69bf23f3ed7570c59689e0af077044ef09c4280400c95e56335a6"
+  - path: docs/release-record.md
+    sha256: "6448a8df51d0ce0cfd0262d19445c532f09cb888fe631d32e10c54a3fc3088ba"
+abi_and_capabilities: null
+sbom:
+  url: null
+  sha256: null
+provenance: "Release on record run 35843895621 (push, attempt 1) published release 394502847 as github-actions[bot]"
+release_workflow: "https://github.com/kumwe/idempotency/actions/runs/35843895621 success on the tag commit"
+registry_or_pie_verification:
+  - "git ls-remote https://github.com/kumwe/idempotency refs/tags/v0.1.3 returned one line for refs/tags/v0.1.3"
+  - "Tag commit from git ls-remote: 351f5491d193babf6193ddb4af064edc7ce62ea5; no peeled ^{} line (lightweight tag)"
+  - "The ls-remote was observed 2026-09-23T15:31:57Z; asking for refs/tags/v0.1.3^{} in the same call returned nothing"
+  - "git clone --quiet --depth 1 --branch v0.1.3 of the repository: HEAD 351f5491d193babf6193ddb4af064edc7ce62ea5"
+  - "In the clone git cat-file -t v0.1.3 is commit; the HEAD commit is dated 2026-09-23 11:36:00 +0200"
+  - "Packagist p2 observed 2026-09-23T15:32:29Z at https://repo.packagist.org/p2/kumwe/idempotency.json (HTTP 200)"
+  - "Packagist lists v0.1.3 (0.1.3.0) newest of v0.1.3, v0.1.2, v0.1.1, v0.1.0; time 2026-09-23T09:36:00+00:00"
+  - "Packagist published-time for v0.1.3 is 2026-09-23T09:36:50+00:00"
+  - "Packagist source: git https://github.com/kumwe/idempotency.git at 351f5491d193babf6193ddb4af064edc7ce62ea5"
+  - "Packagist dist: zip at reference 351f5491d193babf6193ddb4af064edc7ce62ea5 (api.github.com zipball URL)"
+  - "Packagist source and dist references both equal the tag commit and the clone HEAD"
+  - "Packagist dist shasum is an empty string; license Apache-2.0; autoload psr-4 Kumwe\\Idempotency\\ => src/"
+  - "Packagist require: php ^8.5, ext-json *, kumwe/canonical-json 0.1.1 (equal to the archive composer.json)"
+  - "curl -sS -L of https://github.com/kumwe/idempotency/archive/refs/tags/v0.1.3.tar.gz: HTTP 200, 36844 bytes"
+  - "The download resolved to codeload.github.com/kumwe/idempotency/tar.gz/refs/tags/v0.1.3; file reports gzip data"
+  - "sha256 14bd663620be28df61cc7d74f1b9decc696fc6f44c9d5b01bba42bab89433b46 covers the hosted tar.gz bytes"
+  - "diff -r of the extracted idempotency-0.1.3/ tree against git archive v0.1.3 of the clone: identical"
+  - "diff -r --exclude=.git against the clone working tree differs only by .gitattributes, .github, .gitignore"
+  - "diff -r also lists phpcs.xml, phpstan.neon, phpunit.xml, tests and tools only in the clone; all are export-ignore"
+  - "The clone tracks 70 files; the archive holds 26 files"
+  - "Archive top level: CHANGELOG.md, CHARTER.md, LICENSE, README.md, composer.json, docs, examples, resources, src"
+  - "CHARTER.md, README.md, docs/, resources/ and src/ are all present in the archive; LICENSE is Apache License 2.0"
+  - "The archive ships docs/release-record.md and no MIGRATION-HANDOFF.md; the record row above is that file's digest"
+  - "src/ and examples/ of the v0.1.3 clone are byte-identical to those of a depth-1 clone of v0.1.2"
+  - "That v0.1.2 clone has HEAD 283ddd7d862295078e354ebe7ebfa6e41af1dd94, the Packagist reference of v0.1.2"
+  - "GitHub release v0.1.3 id 394502847: author github-actions[bot], created 2026-09-23T09:36:00Z"
+  - "GitHub release v0.1.3 published_at 2026-09-23T09:36:48Z; draft false, prerelease false, immutable true"
+  - "GitHub release v0.1.3: target_commitish main, no assets"
+  - "Release on record run 35843895621: push, attempt 1, head_sha 351f5491d193babf6193ddb4af064edc7ce62ea5"
+  - "Release on record run 35843895621: status completed, conclusion success, created 2026-09-23T09:36:04Z"
+  - "Run 35843895621 jobs: check / PHP 8.5, check / Release automation tests, check / Package gate all success"
+  - "Run 35843895621 job Release the recorded version (107125424533): success, completed 2026-09-23T09:36:52Z"
+  - "Idempotency CI run 35843894991: completed, success, on the same commit"
+  - "PR https://github.com/kumwe/idempotency/pull/7 merged 2026-09-23T09:36:01Z into main"
+  - "PR 7 head was b412079976a075dfb57d99140324db5342d76c01; the tag commit carries its title"
+  - "The tag commit has a committer date of 2026-09-23T09:36:00Z, one second before the merge was recorded"
+  - "GitHub MCP tools answered every query; no access-denied response was observed"
+clean_consumer_or_build_verification:
+  - "Manifests and record were checked with the App validator: tools/Governance bootstrap on PHP 8.4.19 CLI"
+  - "resources/public-api/v1.json: valid against package-public-api.v1.schema.json (App SchemaValidator)"
+  - "resources/capabilities/v1.json: valid against package-capabilities.v1.schema.json (App SchemaValidator)"
+  - "resources/service-map/v1.json: valid against package-service-map.v1.schema.json (App SchemaValidator)"
+  - "All three manifests carry package kumwe/idempotency and release 0.1.3"
+  - "docs/release-record.md front matter parsed by PackageManifests::parseReleaseRecord (the StrictYaml subset)"
+  - "docs/release-record.md front matter: valid against package-release-record.v1.schema.json (App SchemaValidator)"
+  - "Record front matter: kumwe-package-release-record/v1, KUMWE-MIG-2026-020, KUMWE-CS-2026-020, framework_php"
+  - "Record target https://github.com/kumwe/idempotency, artifact_identity kumwe/idempotency"
+  - "Record canonical namespace Kumwe\\Idempotency\\ and composer_package kumwe/idempotency; blockers empty"
+  - "Record ownership.public_manifests digests equal the three locally computed manifest digests"
+  - "Record changelog_record is CHANGELOG.md / 0.1.3; the newest CHANGELOG heading is ## 0.1.3 above ## 0.1.2"
+  - "Record consumer_contract lists seven namespace replacements, seven files_to_remove and two tests_to_remove"
+  - "PackageManifests::read reports v2-manifested, seven public symbols and the record path docs/release-record.md"
+  - "Package composer.json require: php ^8.5, ext-json *, kumwe/canonical-json 0.1.1; no repositories entry"
+  - "App composer.lock: kumwe/canonical-json v0.1.1 at e7006a2580a49a1c8ab507b0d7b9c3403b4f9f58 (exact)"
+  - "App composer.lock platform: php ^8.5 and ext-json * (both satisfy the package requirements)"
+  - "composer require kumwe/idempotency:0.1.3 --no-install: one lock install, no update, no removal"
+  - "composer install from the seeded dist cache installed vendor/kumwe/idempotency"
+  - "diff -r of the installed vendor/kumwe/idempotency against the extracted tag archive: identical"
+  - "The installed record and manifests carry the digests recorded above"
+verified_at: "2026-09-23T15:31:57Z"
+verified_by: "Release verification of the published tag, registry and workflows, performed before the Phase 2 edits"
+status: verified
+known_gaps:
+  - "This verification ran in the adoption worktree, not in a separate context; the isolated 0.1.2 verification failed"
+  - "That failed 0.1.2 record (verified_at 2026-09-23T09:13:26Z) is kept beside this file as history"
+  - "Later main commits 6f60f6a2a7e22677ef0ed289eca1641c17c497cd and 163b41b8c1625a3bfa49468555b9f48aad299bf5"
+  - "carry the same title but are not in v0.1.3"
+  - "Their Release on record runs 35845509630 and 35879155690 concluded failure after the release was published"
+  - "GitHub release v0.1.3 reports immutable true; tag protection and rulesets were not queried"
+  - "The package's own test suite is export-ignored and was not executed here; the tag's package gate ran it upstream"
+  - "The Packagist dist zipball was not downloaded; Packagist publishes an empty dist shasum for it"
+  - "The attested archive is the GitHub tag tar.gz, whose bytes differ from the Packagist zipball of the same commit"
+  - "No SBOM and no release assets exist for v0.1.3; abi_and_capabilities does not apply to a framework_php artifact"
+  - "The schema checks used the App's fixed JSON Schema 2020-12 subset validator, not a full implementation"
+  - "The first Packagist request through the sandbox proxy was reset; the retry returned HTTP 200 and the record above"
+  - "kumwe/extension-sdk 0.3.2 on Packagist requires kumwe/idempotency 0.1.2 exactly, so it cannot resolve beside 0.1.3"

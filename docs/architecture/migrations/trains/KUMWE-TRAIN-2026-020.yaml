@@ -1,0 +1,33 @@
+schema: kumwe-integration-train/v1
+train: KUMWE-TRAIN-2026-020
+packages:
+  - package: kumwe/idempotency
+    version: 0.1.3
+merge_order:
+  - "https://github.com/kumwe/app/pull/151"
+custodian: "eWɘyn"
+hotspots:
+  - composer.json
+  - composer.lock
+  - src/Kernel/ContainerFactory.php
+  - src/Delivery/Http/Api/Idempotency/PersistentIdempotencyMiddleware.php
+  - src/Delivery/Http/Api/Idempotency/SecretOnceIdempotencyMiddleware.php
+  - src/Delivery/Http/Api/Idempotency/RequireIdempotencyKeyMiddleware.php
+  - src/Delivery/Http/Api/Business/BusinessRecordApiRequest.php
+  - src/Infrastructure/Persistence/DoctrineIdempotencyLedger.php
+  - src/Infrastructure/Persistence/DoctrineSecretOnceIdempotencyLedger.php
+  - src/Infrastructure/Automation/DoctrineIdempotencyPurger.php
+  - docs/architecture/layers.json
+  - docs/architecture/capability-index.md
+  - docs/architecture/governance/core-growth-baseline.json
+  - docs/quality/baseline.json
+  - docs/quality/test-docblock-baseline.json
+  - CHANGELOG.md
+commands:
+  - "composer install"
+  - "composer kumwe:capability-index"
+  - "composer kumwe:core-growth-record"
+  - "composer baseline:record"
+  - "composer qa"
+conflict_ledger: docs/architecture/migrations/conflicts
+serialized_by: "eWɘyn, rebase-merging the green pull request under the standing maintainer mandate"
