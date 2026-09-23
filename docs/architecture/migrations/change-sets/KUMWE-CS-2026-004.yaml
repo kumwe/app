@@ -265,7 +265,7 @@ phase_2:
     - tests/Unit/Studio/Domain/Projection/EntryCompositionOverridesTest.php
     - tests/Unit/Studio/Infrastructure/Persistence/DoctrineContentProjectionBindingRepositoryTest.php
     - tests/Unit/Support/TransientBusinessDefinitionFixtureScopeTest.php
-    - tests/Unit/Workflow/Domain/WorkflowTest.php
+    - tests/Unit/Workflow/Application/ContentTransitionAuthorizerTest.php
 evidence:
   package:
     - "https://github.com/kumwe/access-context/actions/runs/34238712434"

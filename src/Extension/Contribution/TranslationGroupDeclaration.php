@@ -6,7 +6,7 @@ namespace Kumwe\App\Extension\Contribution;
 
 use Kumwe\Extension\Spi\Contribution\ContributionDefinition;
 use InvalidArgumentException;
-use Kumwe\App\Content\Domain\TranslationGroup;
+use Kumwe\Content\Domain\TranslationGroup;
 use Kumwe\Localization\Domain\InvalidLocaleTag;
 use Kumwe\Localization\Domain\LocaleTag;
 

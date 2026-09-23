@@ -11,7 +11,7 @@ use Kumwe\Access\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Extension\Spi\BusinessReporting\Domain\ReportDefinitionGuard;
 use Kumwe\App\Content\Application\ContentService;
-use Kumwe\App\Content\Application\ContentModelRepository;
+use Kumwe\Content\Application\ContentModelRepository;
 use Kumwe\App\Identity\Application\Administration\AccessControlRepository;
 use Kumwe\App\Identity\Application\Administration\TokenDelegationPreauthorizer;
 use Kumwe\App\Identity\Application\Administration\TokenRotationPreauthorizer;
@@ -85,11 +85,11 @@ final readonly class HttpMutationPreauthorizer
      *          the body is not a JSON object, a required body field is missing or blank, or a named grant is gone.
      * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not perform the
      *          mutation, or may not delegate a capability the request would hand on.
-     * @throws  \Kumwe\App\Content\Application\ContentNotFound  When a transition names an entry the context
+     * @throws  \Kumwe\Content\Application\ContentNotFound  When a transition names an entry the context
      *          cannot reach.
-     * @throws  \Kumwe\App\Content\Application\ContentModelNotFound  When the entry's pinned workflow version
+     * @throws  \Kumwe\Content\Application\ContentModelNotFound  When the entry's pinned workflow version
      *          is no longer published.
-     * @throws  \Kumwe\App\Workflow\Domain\InvalidWorkflowTransition  When the workflow declares no edge to
+     * @throws  \Kumwe\Content\Workflow\Domain\InvalidWorkflowTransition  When the workflow declares no edge to
      *          the requested status.
      *
      * @since   2.0.0
@@ -338,11 +338,11 @@ final readonly class HttpMutationPreauthorizer
      *          `status`.
      * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not read the
      *          entry.
-     * @throws  \Kumwe\App\Content\Application\ContentNotFound  When no entry matches within reach of the
+     * @throws  \Kumwe\Content\Application\ContentNotFound  When no entry matches within reach of the
      *          context.
-     * @throws  \Kumwe\App\Content\Application\ContentModelNotFound  When the entry's pinned workflow version
+     * @throws  \Kumwe\Content\Application\ContentModelNotFound  When the entry's pinned workflow version
      *          is no longer published.
-     * @throws  \Kumwe\App\Workflow\Domain\InvalidWorkflowTransition  When the workflow declares no edge to
+     * @throws  \Kumwe\Content\Workflow\Domain\InvalidWorkflowTransition  When the workflow declares no edge to
      *          the requested status.
      *
      * @since   2.0.0

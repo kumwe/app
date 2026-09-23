@@ -192,7 +192,7 @@ final readonly class ManageNavigationCommand implements Command
      * @throws  \InvalidArgumentException  When a required option is missing, or a field, parent, target or
      *          resolved path is rejected.
      * @throws  \Kumwe\Navigation\Application\NavigationNotFound  When no menu carries that identifier.
-     * @throws  \Kumwe\App\Content\Application\ContentNotFound  When the named content target does not exist.
+     * @throws  \Kumwe\Content\Application\ContentNotFound  When the named content target does not exist.
      *
      * @since   2.0.0
      */
@@ -231,7 +231,7 @@ final readonly class ManageNavigationCommand implements Command
      *          or a resulting path is rejected.
      * @throws  \Kumwe\Navigation\Application\NavigationNotFound  When no item carries that identifier.
      * @throws  \Kumwe\Navigation\Application\NavigationVersionConflict  When the stored item has moved on.
-     * @throws  \Kumwe\App\Content\Application\ContentNotFound  When the named content target does not exist.
+     * @throws  \Kumwe\Content\Application\ContentNotFound  When the named content target does not exist.
      *
      * @since   2.0.0
      */

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Presentation;
 
-use Kumwe\App\Content\Application\ContentModelRepository;
-use Kumwe\App\Content\Application\ContentRecord;
+use Kumwe\Content\Application\ContentModelRepository;
+use Kumwe\Content\Application\ContentRecord;
 use Kumwe\Context\Value\SiteContext;
 
 /**

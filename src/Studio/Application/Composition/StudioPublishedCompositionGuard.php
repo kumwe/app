@@ -6,8 +6,8 @@ namespace Kumwe\App\Studio\Application\Composition;
 
 use InvalidArgumentException;
 use Kumwe\Context\Value\SiteContext;
-use Kumwe\App\Content\Application\ContentModelRepository;
-use Kumwe\App\Content\Domain\ContentTypeDefinition;
+use Kumwe\Content\Application\ContentModelRepository;
+use Kumwe\Content\Domain\ContentTypeDefinition;
 use Kumwe\Extension\Spi\Contribution\CanonicalCompositionDocument;
 use Kumwe\Extension\Spi\Contribution\CanonicalCompositionKind;
 use Kumwe\Extension\Spi\Contribution\CompositionHostBinding;

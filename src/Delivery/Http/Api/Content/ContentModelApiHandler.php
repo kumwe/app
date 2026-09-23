@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Kumwe\App\Delivery\Http\Api\Content;
 
 use Kumwe\App\Content\Application\ContentModelService;
-use Kumwe\App\Content\Domain\ContentTypeDefinition;
+use Kumwe\Content\Domain\ContentTypeDefinition;
 use Kumwe\App\Delivery\Http\Api\ApiExecutionContext;
-use Kumwe\App\Workflow\Domain\WorkflowDefinition;
+use Kumwe\Content\Workflow\Domain\WorkflowDefinition;
 use Laminas\Diactoros\Response\JsonResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;

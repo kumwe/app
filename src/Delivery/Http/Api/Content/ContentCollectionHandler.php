@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Delivery\Http\Api\Content;
 
-use Kumwe\App\Content\Application\ContentRecord;
+use Kumwe\Content\Application\ContentRecord;
 use Kumwe\App\Content\Application\ContentService;
 use Kumwe\App\Delivery\Http\Api\ApiExecutionContext;
 use Laminas\Diactoros\Response\JsonResponse;

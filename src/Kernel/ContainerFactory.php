@@ -317,13 +317,13 @@ use Kumwe\App\BusinessSchema\Infrastructure\Persistence\DoctrineBusinessSchemaPl
 use Kumwe\App\BusinessSchema\Infrastructure\Persistence\DoctrineBusinessSchemaRecoveryEvidenceRepository;
 use Kumwe\App\BusinessSchema\Infrastructure\Schema\CanonicalDefinitionPhysicalSchemaCompiler;
 use Kumwe\App\BusinessSchema\Infrastructure\Schema\DoctrinePhysicalSchemaGateway;
-use Kumwe\App\Content\Application\ContentRepository;
-use Kumwe\App\Content\Application\ContentModelRepository;
+use Kumwe\Content\Application\ContentRepository;
+use Kumwe\Content\Application\ContentModelRepository;
 use Kumwe\App\Content\Application\ContentModelService;
 use Kumwe\App\Content\Application\ContentService;
-use Kumwe\App\Content\Application\TranslationGroupRepository;
-use Kumwe\App\Content\Domain\JsonSchemaValidator;
-use Kumwe\App\Content\Domain\SchemaCompatibilityChecker;
+use Kumwe\Content\Application\TranslationGroupRepository;
+use Kumwe\Content\Domain\JsonSchemaValidator;
+use Kumwe\Content\Domain\SchemaCompatibilityChecker;
 use Kumwe\App\Content\Infrastructure\Persistence\DoctrineContentModelRepository;
 use Kumwe\App\Content\Infrastructure\Persistence\DoctrineContentRepository;
 use Kumwe\App\Content\Infrastructure\Persistence\DoctrineTranslationGroupRepository;
@@ -803,7 +803,7 @@ use Kumwe\App\Localization\Infrastructure\CompiledMessageCatalogueRepository;
 use Kumwe\App\Localization\Infrastructure\DoctrineMessageOverrideRepository;
 use Kumwe\Localization\Infrastructure\IntlMessagePatternFormatter;
 use Kumwe\App\Localization\Presentation\TranslationTwigExtension;
-use Kumwe\App\Workflow\Domain\Workflow;
+use Kumwe\Content\Workflow\Domain\Workflow;
 use Laminas\Diactoros\ResponseFactory;
 use Laminas\Diactoros\ServerRequestFactory;
 use Laminas\Diactoros\StreamFactory;
@@ -1235,6 +1235,7 @@ final class ContainerFactory
             ],
             DynamicSiteContentMigration::ID => [
                 'e42d07ec8c59e29293e0aac77f2acdf3c35bc8c57314af4375d2d7585e259f05',
+                '84c9a0eecb0b7a2d860c3ed07540fd423e402fd942dda848e40fd7f56c42c0af',
             ],
             BusinessSecurityPortalMigration::ID => [
                 'adac395af8bed6dde8b179895e7b59e46eb220a736c902014f7ea1db85d754c9',
@@ -1263,6 +1264,13 @@ final class ContainerFactory
             // unchanged, so databases migrated before the move keep the checksum recorded then.
             AuditTamperEvidenceMigration::ID => [
                 'a34cfbeea195bfc724a6a30b6d3697fea2a8e605d15a0c427d68bc8d9c1194bf',
+            ],
+            // KUMWE-MIG-2026-034 moved the content entry, revision, status and publication window to
+            // kumwe/content-model. The dynamic-site migration above keeps the checksum recorded between the
+            // access-context move and this one, and the database-driven presentation migration, which
+            // names the same values, keeps the checksum recorded before it; their statements are unchanged.
+            DatabaseDrivenPresentationMigration::ID => [
+                '17a28ff3468601efa7d7302ae24c79ff321f88269b181b4d14f406f53920a789',
             ],
         ];
     }

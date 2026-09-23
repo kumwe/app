@@ -9,7 +9,7 @@ use Kumwe\App\Administrator\Content\ContentFormDataMapper;
 use Kumwe\App\Administrator\Http\AdministratorRequest;
 use Kumwe\App\Content\Application\ContentModelService;
 use Kumwe\App\Content\Application\ContentService;
-use Kumwe\App\Content\Domain\InvalidContentData;
+use Kumwe\Content\Domain\InvalidContentData;
 use Laminas\Diactoros\Response\RedirectResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -71,8 +71,8 @@ final readonly class AdministratorCreateContentHandler implements RequestHandler
      *
      * @throws  \InvalidArgumentException  When `title` or `slug` is missing, or a submitted value does not parse.
      * @throws  \DateMalformedStringException  When `publish_at` or `unpublish_at` is not a readable date.
-     * @throws  \Kumwe\App\Content\Application\ContentModelNotFound  When the named content type is not published.
-     * @throws  \Kumwe\App\Content\Domain\InvalidContentData  When the body does not satisfy the type's schema and
+     * @throws  \Kumwe\Content\Application\ContentModelNotFound  When the named content type is not published.
+     * @throws  \Kumwe\Content\Domain\InvalidContentData  When the body does not satisfy the type's schema and
      *          no editor is wired to redraw the form.
      * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not create content, or
      *          may not read the content type it named.

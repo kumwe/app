@@ -165,7 +165,7 @@ phase_2:
     - tests/Unit/Studio/Application/Authoring/ContentStudioAuthoringContextAuthorityTest.php
     - tests/Unit/Studio/Application/Authoring/ContentStudioAuthoringTargetResolverTest.php
     - tests/Unit/Studio/Application/Media/StudioMediaHostPortTest.php
-    - tests/Unit/Workflow/Domain/WorkflowTest.php
+    - tests/Unit/Workflow/Application/ContentTransitionAuthorizerTest.php
     - tests/Unit/BusinessSecurity/Infrastructure/Persistence/DoctrineBusinessRecordAccessControllerTest.php
     - tests/Unit/Portal/Application/MembershipPortalSessionIdentityLoaderTest.php
     - tests/Unit/Delivery/Console/Command/CreateAccessTokenCommandTest.php

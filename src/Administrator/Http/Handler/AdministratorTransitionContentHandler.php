@@ -51,11 +51,11 @@ final readonly class AdministratorTransitionContentHandler implements RequestHan
      * @throws  \InvalidArgumentException  When the route carries no identifier, or `version` or `status` is
      *          missing or malformed.
      * @throws  \Kumwe\Access\AuthorizationDenied  When the edge's own capability is refused.
-     * @throws  \Kumwe\App\Content\Application\ContentNotFound  When no entry matches within reach of the context.
-     * @throws  \Kumwe\App\Content\Application\ContentModelNotFound  When the entry's pinned workflow version is
+     * @throws  \Kumwe\Content\Application\ContentNotFound  When no entry matches within reach of the context.
+     * @throws  \Kumwe\Content\Application\ContentModelNotFound  When the entry's pinned workflow version is
      *          no longer published.
-     * @throws  \Kumwe\App\Workflow\Domain\InvalidWorkflowTransition  When the workflow declares no such edge.
-     * @throws  \Kumwe\App\Content\Domain\VersionConflict  When another writer moved the entry on first.
+     * @throws  \Kumwe\Content\Workflow\Domain\InvalidWorkflowTransition  When the workflow declares no such edge.
+     * @throws  \Kumwe\Content\Domain\VersionConflict  When another writer moved the entry on first.
      *
      * @since   2.0.0
      */

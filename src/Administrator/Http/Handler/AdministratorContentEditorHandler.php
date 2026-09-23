@@ -10,8 +10,8 @@ use Kumwe\App\Administrator\Http\AdministratorRequest;
 use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
 use Kumwe\App\Content\Application\ContentService;
 use Kumwe\App\Content\Application\ContentModelService;
-use Kumwe\App\Content\Application\ContentRecord;
-use Kumwe\App\Content\Domain\ContentTypeDefinition;
+use Kumwe\Content\Application\ContentRecord;
+use Kumwe\Content\Domain\ContentTypeDefinition;
 use Kumwe\App\Http\Middleware\SecurityHeadersMiddleware;
 use Kumwe\App\Media\Application\MediaAsset;
 use Kumwe\App\Media\Application\MediaService;
@@ -78,7 +78,7 @@ final readonly class AdministratorContentEditorHandler implements RequestHandler
      * @return  ResponseInterface  The rendered editor, marked `no-store` because it carries a CSRF token.
      *
      * @throws  \RuntimeException  When the stored entry's pinned type or workflow reference is unusable.
-     * @throws  \Kumwe\App\Content\Application\ContentNotFound  When the route names an entry out of reach.
+     * @throws  \Kumwe\Content\Application\ContentNotFound  When the route names an entry out of reach.
      *
      * @since   2.0.0
      */
@@ -111,7 +111,7 @@ final readonly class AdministratorContentEditorHandler implements RequestHandler
      *          that one exact script origin.
      *
      * @throws  \RuntimeException  When the stored entry's pinned type or workflow reference is unusable.
-     * @throws  \Kumwe\App\Content\Application\ContentNotFound  When the route names an entry out of reach.
+     * @throws  \Kumwe\Content\Application\ContentNotFound  When the route names an entry out of reach.
      *
      * @since   2.0.0
      */

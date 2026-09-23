@@ -246,7 +246,7 @@ beside generation one, never edited into it.
 
 | Check | What it proves |
 |---|---|
-| `tests/Unit/Content/Domain/TranslationGroupTest.php` | One entry per locale, per-locale publication, fallback resolution, and that an untranslated entry's snapshot keys are unchanged |
+| `kumwe/content-model` suite, `tests/Domain/TranslationGroupTest.php` at the released tag | One entry per locale, per-locale publication, fallback resolution, and that an untranslated entry's snapshot keys are unchanged; the package owns the group model and carries its proofs |
 | `tests/Unit/BusinessDefinition/Domain/LocalizedDefinitionLabelTest.php` | An untranslated definition checksums to a hand-written pre-dimension document |
 | `tests/Unit/Content/Application/ExtensionContentTranslationTest.php` | Canonical manifest activation cannot widen the inventoried language declaration |
 | `tests/Unit/Content/Presentation/TranslationGroupPresenterTest.php` | Alternates list exactly the published locales, named in their own language |

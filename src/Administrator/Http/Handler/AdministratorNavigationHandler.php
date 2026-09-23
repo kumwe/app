@@ -7,7 +7,7 @@ namespace Kumwe\App\Administrator\Http\Handler;
 use InvalidArgumentException;
 use Kumwe\App\Administrator\Http\AdministratorRequest;
 use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
-use Kumwe\App\Content\Application\ContentRecord;
+use Kumwe\Content\Application\ContentRecord;
 use Kumwe\App\Content\Application\ContentService;
 use Kumwe\Navigation\Application\MenuItemRecord;
 use Kumwe\Navigation\Application\MenuRecord;
@@ -71,7 +71,7 @@ final readonly class AdministratorNavigationHandler implements RequestHandlerInt
      * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not manage the menu.
      * @throws  \Kumwe\Navigation\Application\NavigationNotFound  When the named menu or item does not exist.
      * @throws  \Kumwe\Navigation\Application\NavigationVersionConflict  When another editor moved it on first.
-     * @throws  \Kumwe\App\Content\Application\ContentNotFound  When a chosen page target no longer exists.
+     * @throws  \Kumwe\Content\Application\ContentNotFound  When a chosen page target no longer exists.
      *
      * @since   2.0.0
      */
@@ -155,7 +155,7 @@ final readonly class AdministratorNavigationHandler implements RequestHandlerInt
      * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not manage the menu.
      * @throws  \Kumwe\Navigation\Application\NavigationNotFound  When the named menu or item does not exist.
      * @throws  \Kumwe\Navigation\Application\NavigationVersionConflict  When another editor moved it on first.
-     * @throws  \Kumwe\App\Content\Application\ContentNotFound  When a chosen page target no longer exists.
+     * @throws  \Kumwe\Content\Application\ContentNotFound  When a chosen page target no longer exists.
      *
      * @since   2.0.0
      */

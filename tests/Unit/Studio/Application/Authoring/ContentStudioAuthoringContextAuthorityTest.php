@@ -8,17 +8,17 @@ use DateTimeImmutable;
 use InvalidArgumentException;
 use Kumwe\Access\AuthorizationGateway;
 use Kumwe\Audit\Application\AuditRecorder;
-use Kumwe\App\Content\Application\ContentModelRepository;
+use Kumwe\Content\Application\ContentModelRepository;
 use Kumwe\App\Content\Application\ContentModelService;
-use Kumwe\App\Content\Application\ContentRecord;
-use Kumwe\App\Content\Application\ContentRepository;
+use Kumwe\Content\Application\ContentRecord;
+use Kumwe\Content\Application\ContentRepository;
 use Kumwe\App\Content\Application\ContentService;
-use Kumwe\App\Content\Domain\ContentEntry;
-use Kumwe\App\Content\Domain\ContentStatus;
-use Kumwe\App\Content\Domain\ContentTypeDefinition;
-use Kumwe\App\Content\Domain\JsonSchemaValidator;
-use Kumwe\App\Content\Domain\PublicationWindow;
-use Kumwe\App\Content\Domain\SchemaCompatibilityChecker;
+use Kumwe\Content\Domain\ContentEntry;
+use Kumwe\Content\Domain\ContentStatus;
+use Kumwe\Content\Domain\ContentTypeDefinition;
+use Kumwe\Content\Domain\JsonSchemaValidator;
+use Kumwe\Content\Domain\PublicationWindow;
+use Kumwe\Content\Domain\SchemaCompatibilityChecker;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringContextAuthority;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringContextBinding;
@@ -31,7 +31,7 @@ use Kumwe\App\Studio\Application\Host\StudioResourceContextKeyFactory;
 use Kumwe\App\Studio\Domain\Authoring\StudioAuthoringIntent;
 use Kumwe\App\Tests\Support\AuthorizationContext;
 use Kumwe\Transaction\Testing\ImmediateTransactionManager;
-use Kumwe\App\Workflow\Domain\Workflow;
+use Kumwe\Content\Workflow\Domain\Workflow;
 use Kumwe\Context\Value\AuthenticatedSurface;
 use Kumwe\Context\Value\AuthenticationStrength;
 use Kumwe\Context\Value\ExecutionContext;
@@ -56,11 +56,6 @@ use Psr\Clock\ClockInterface;
 #[UsesClass(ContentStudioAuthoringTarget::class)]
 #[UsesClass(ContentModelService::class)]
 #[UsesClass(ContentService::class)]
-#[UsesClass(ContentTypeDefinition::class)]
-#[UsesClass(ContentEntry::class)]
-#[UsesClass(ContentRecord::class)]
-#[UsesClass(JsonSchemaValidator::class)]
-#[UsesClass(SchemaCompatibilityChecker::class)]
 final class ContentStudioAuthoringContextAuthorityTest extends TestCase
 {
     /**

@@ -1,0 +1,30 @@
+schema: kumwe-non-roadmap-record/v1
+id: NRM-2026-043
+nrm_ref: NRM-2026-043
+roadmap_impact: None
+rationale: "Adopt verified kumwe/content-model 0.2.0, the owner of the portable content entry, revision, status, publication window, translation group, content-type and field definitions, the JSON schema validator and compatibility checker, the editorial workflow models and the five persistence ports the host implements."
+repositories:
+  - kumwe/app
+  - kumwe/content-model
+behavior_before: "App declared the content entry, revision, status, expected version, publication window, translation group and member, content-type and field definitions, the JSON schema validator, the schema compatibility checker, the invalid-data, invalid-group and version-conflict refusals, the built-in and custom workflow models with their state, transition and invalid-transition types, the browse query, page and record values, the not-found and incompatible-definition refusals and the five repository ports itself under Kumwe\\App\\Content\\Domain, Kumwe\\App\\Content\\Application and Kumwe\\App\\Workflow\\Domain."
+behavior_after: "The thirty types come from kumwe/content-model 0.2.0; ContentService and ContentModelService stay in Kumwe\\App\\Content\\Application and import the package ports and values explicitly, ContainerFactory re-keys the Doctrine content, translation-group and content-model repositories, the shared validator, checker and built-in workflow under the package names, and App keeps the two services, the transition authorizer, the Doctrine adapters, authorization, the transaction, the audit records, the Studio authoring and projection services, the demo installers, the migrations and every delivery surface."
+public_api_impact: "None for callers; the values, ports and refusals keep their names and shapes under the package namespace, while the package constructors now snapshot content data and schemas as bounded JSON (refusing objects, resources, invalid UTF-8 and non-finite numbers) and WorkflowDefinition refuses non-list or oversized state and transition sets and members of a foreign type."
+dependency_impact: "Adds kumwe/content-model 0.2.0 exactly; its dependencies kumwe/access-context 0.1.2, kumwe/access-control 0.1.2, kumwe/localization 0.1.1 and ramsey/uuid ^4.9 were already locked, and no other lock entry changes."
+compatibility: "Drop-in for every consumer that already passed JSON-decodable arrays and typed workflow members, which the Doctrine adapters, the migrations and the demo installers do; the two self-checksumming migrations whose imports moved keep their pre-move checksums accepted."
+data_migration: None
+security_impact: "No authority change; capability checks, workflow transition pricing, transaction coupling, site ownership and every adapter stay in App, and the package never sees a connection or a request."
+performance:
+  claim: None
+  evidence: []
+operations_deployment: "None; no configuration, provider or schema change."
+recovery_rollback: "Revert the adoption pull request and restore the thirty removed classes and the nine moved unit tests; no persisted data changes."
+artifacts_evidence:
+  - docs/architecture/migrations/KUMWE-MIG-2026-034.yaml
+  - docs/architecture/migrations/change-sets/KUMWE-CS-2026-034.yaml
+  - docs/architecture/migrations/trains/KUMWE-TRAIN-2026-034.yaml
+  - docs/architecture/migrations/evidence/KUMWE-MIG-2026-034/RELEASE-ATTESTATION.yaml
+  - docs/architecture/capability-index.md
+known_gaps:
+  - "The extension-sdk 0.3.2 train and the administrator-contract, portal-contract and business-surface-contract adoptions that name the same change-set sequence follow as separate adoptions."
+owner: "eWɘyn"
+status: in-progress

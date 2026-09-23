@@ -6,11 +6,11 @@ namespace Kumwe\App\Administrator\Http\Handler;
 
 use Kumwe\App\Administrator\Http\AdministratorRequest;
 use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
-use Kumwe\App\Content\Application\ContentBrowseQuery;
+use Kumwe\Content\Application\ContentBrowseQuery;
 use Kumwe\App\Content\Application\ContentModelService;
-use Kumwe\App\Content\Application\ContentRecord;
+use Kumwe\Content\Application\ContentRecord;
 use Kumwe\App\Content\Application\ContentService;
-use Kumwe\App\Content\Domain\ContentTypeDefinition;
+use Kumwe\Content\Domain\ContentTypeDefinition;
 use Kumwe\App\Site\Application\PublicPageLocator;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Psr\Http\Message\ResponseInterface;

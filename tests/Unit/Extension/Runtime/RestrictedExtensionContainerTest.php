@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\Extension\Runtime;
 
 use InvalidArgumentException;
-use Kumwe\App\Content\Application\ContentRepository;
+use Kumwe\Content\Application\ContentRepository;
 use Kumwe\App\Extension\Application\ExtensionManager;
 use Kumwe\App\Extension\Application\Migration\ExtensionMigrationRunner;
 use Kumwe\App\Extension\Runtime\RestrictedExtensionContainer;

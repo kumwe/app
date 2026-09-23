@@ -6,9 +6,9 @@ namespace Kumwe\App\Tests\Unit\Studio\Application\Composition;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\App\Content\Application\ContentRecord;
-use Kumwe\App\Content\Domain\ContentEntry;
-use Kumwe\App\Content\Domain\ContentStatus;
+use Kumwe\Content\Application\ContentRecord;
+use Kumwe\Content\Domain\ContentEntry;
+use Kumwe\Content\Domain\ContentStatus;
 use Kumwe\App\Studio\Application\Composition\StudioPublishedStylesheet;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;

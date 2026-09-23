@@ -6,12 +6,12 @@ namespace Kumwe\App\Tests\Unit\Studio\Application\Authoring;
 
 use DateTimeImmutable;
 use Kumwe\Access\AuthorizationDenied;
-use Kumwe\App\Content\Application\ContentRecord;
+use Kumwe\Content\Application\ContentRecord;
 use Kumwe\App\Content\Application\ContentService;
-use Kumwe\App\Content\Domain\ContentEntry;
-use Kumwe\App\Content\Domain\ContentStatus;
-use Kumwe\App\Content\Domain\ContentTypeDefinition;
-use Kumwe\App\Content\Domain\PublicationWindow;
+use Kumwe\Content\Domain\ContentEntry;
+use Kumwe\Content\Domain\ContentStatus;
+use Kumwe\Content\Domain\ContentTypeDefinition;
+use Kumwe\Content\Domain\PublicationWindow;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringTarget;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringTargetMismatch;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringTargetResolver;

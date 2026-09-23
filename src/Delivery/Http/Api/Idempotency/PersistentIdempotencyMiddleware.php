@@ -101,11 +101,11 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
      * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not perform the
      *          mutation, or may not delegate a capability it would hand on — checked before the ledger is
      *          touched.
-     * @throws  \Kumwe\App\Content\Application\ContentNotFound  When a workflow transition names an entry
+     * @throws  \Kumwe\Content\Application\ContentNotFound  When a workflow transition names an entry
      *          the context cannot reach.
-     * @throws  \Kumwe\App\Content\Application\ContentModelNotFound  When the entry's pinned workflow
+     * @throws  \Kumwe\Content\Application\ContentModelNotFound  When the entry's pinned workflow
      *          version is no longer published.
-     * @throws  \Kumwe\App\Workflow\Domain\InvalidWorkflowTransition  When the workflow declares no edge to
+     * @throws  \Kumwe\Content\Workflow\Domain\InvalidWorkflowTransition  When the workflow declares no edge to
      *          the requested status.
      *
      * @since   2.0.0

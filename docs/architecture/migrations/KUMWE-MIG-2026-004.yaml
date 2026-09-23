@@ -261,7 +261,7 @@ retained_tests:
   - tests/Unit/Studio/Domain/Projection/EntryCompositionOverridesTest.php
   - tests/Unit/Studio/Infrastructure/Persistence/DoctrineContentProjectionBindingRepositoryTest.php
   - tests/Unit/Support/TransientBusinessDefinitionFixtureScopeTest.php
-  - tests/Unit/Workflow/Domain/WorkflowTest.php
+  - tests/Unit/Workflow/Application/ContentTransitionAuthorizerTest.php
 di_changes: []
 capability_index_entries:
   - kumwe/access-context

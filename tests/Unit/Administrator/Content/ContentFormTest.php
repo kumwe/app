@@ -8,7 +8,7 @@ use DateTimeImmutable;
 use Kumwe\App\Administrator\Content\ContentFormDataMapper;
 use Kumwe\App\Administrator\Content\ContentFormPresenter;
 use Kumwe\App\Administrator\Content\ContentModelFormMapper;
-use Kumwe\App\Content\Domain\ContentTypeDefinition;
+use Kumwe\Content\Domain\ContentTypeDefinition;
 use Kumwe\Context\Value\SiteContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
@@ -17,7 +17,6 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass(ContentFormDataMapper::class)]
 #[CoversClass(ContentFormPresenter::class)]
 #[CoversClass(ContentModelFormMapper::class)]
-#[UsesClass(ContentTypeDefinition::class)]
 final class ContentFormTest extends TestCase
 {
     public function testPresentsAndMapsTypedSchemaFieldsWithoutJsonAuthoring(): void

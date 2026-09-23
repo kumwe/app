@@ -7,7 +7,7 @@ namespace Kumwe\App\Tests\Unit\Administrator\Http\Handler;
 use DateTimeImmutable;
 use Kumwe\App\Administrator\Http\Handler\AdministratorContentEditorHandler;
 use Kumwe\App\Content\Application\ContentService;
-use Kumwe\App\Content\Domain\ContentTypeDefinition;
+use Kumwe\Content\Domain\ContentTypeDefinition;
 use Kumwe\Context\Value\SiteContext;
 use Laminas\Diactoros\ServerRequestFactory;
 use PHPUnit\Framework\Attributes\CoversClass;

@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Kumwe\App\Studio\Application\Projection;
 
 use Kumwe\Access\AuthorizationDenied;
-use Kumwe\App\Content\Application\ContentModelNotFound;
+use Kumwe\Content\Application\ContentModelNotFound;
 use Kumwe\App\Content\Application\ContentModelService;
-use Kumwe\App\Content\Application\ContentNotFound;
+use Kumwe\Content\Application\ContentNotFound;
 use Kumwe\App\Content\Application\ContentService;
 use Kumwe\App\Studio\Domain\Projection\StudioProjectionRejection;
 use Kumwe\Context\Value\ExecutionContext;

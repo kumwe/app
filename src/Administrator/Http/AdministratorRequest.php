@@ -8,7 +8,7 @@ use DateTimeImmutable;
 use InvalidArgumentException;
 use JsonException;
 use Kumwe\App\Application\Authorization\ExecutionContextAttribute;
-use Kumwe\App\Content\Domain\PublicationWindow;
+use Kumwe\Content\Domain\PublicationWindow;
 use Kumwe\App\Identity\Application\Administration\AdministratorSession;
 use Kumwe\Context\Value\ExecutionContext;
 use Psr\Http\Message\ServerRequestInterface;

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Unit\Infrastructure\Persistence\Migration;
 
-use Kumwe\App\Content\Domain\JsonSchemaValidator;
+use Kumwe\Content\Domain\JsonSchemaValidator;
 use Kumwe\App\Infrastructure\Persistence\Migration\DocumentContentTypesMigration;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
@@ -18,7 +18,6 @@ use ReflectionMethod;
  * @since  2.0.0
  */
 #[CoversClass(DocumentContentTypesMigration::class)]
-#[UsesClass(JsonSchemaValidator::class)]
 final class DocumentContentTypesMigrationTest extends TestCase
 {
     /**

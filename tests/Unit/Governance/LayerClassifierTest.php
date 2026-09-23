@@ -106,7 +106,7 @@ final class LayerClassifierTest extends TestCase
         self::assertSame('kernel', $classifier->classify('Kumwe\\App\\Kernel\\ContainerFactory'));
         self::assertSame(
             'domain',
-            $classifier->classify('Kumwe\\App\\Content\\Domain\\Application'),
+            $classifier->classify('Kumwe\\App\\BusinessDefinition\\Domain\\Application'),
             'The short name does not count.',
         );
         self::assertTrue(LayerClassifier::isPortable('domain'));

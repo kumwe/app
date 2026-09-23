@@ -48,8 +48,8 @@ final readonly class AdministratorRestoreContentHandler implements RequestHandle
      *
      * @throws  \InvalidArgumentException  When the route carries no identifier or `version` is not a positive integer.
      * @throws  \Kumwe\Access\AuthorizationDenied  When `content.restore` is refused.
-     * @throws  \Kumwe\App\Content\Application\ContentNotFound  When no entry matches within reach of the context.
-     * @throws  \Kumwe\App\Content\Domain\VersionConflict  When another writer moved the entry on first.
+     * @throws  \Kumwe\Content\Application\ContentNotFound  When no entry matches within reach of the context.
+     * @throws  \Kumwe\Content\Domain\VersionConflict  When another writer moved the entry on first.
      *
      * @since   2.0.0
      */
