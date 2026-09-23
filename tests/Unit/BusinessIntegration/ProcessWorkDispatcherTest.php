@@ -7,18 +7,18 @@ namespace Kumwe\App\Tests\Unit\BusinessIntegration;
 use DateTimeImmutable;
 use Kumwe\App\Application\Authorization\SystemIdentity;
 use Kumwe\App\Application\Authorization\SystemPrincipal;
-use Kumwe\App\Application\Automation\JitterSource;
-use Kumwe\App\Application\Automation\JobQueue;
-use Kumwe\App\Application\Automation\RetryPolicy;
+use Kumwe\Automation\JitterSource;
+use Kumwe\Automation\JobQueue;
+use Kumwe\Automation\RetryPolicy;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\App\BusinessIntegration\Application\JobQueueProcessWorkHandler;
-use Kumwe\App\BusinessIntegration\Application\ProcessManagerStore;
+use Kumwe\Integration\ProcessManagerStore;
 use Kumwe\App\BusinessIntegration\Application\ProcessWorkDispatcher;
 use Kumwe\App\BusinessIntegration\Application\ProcessWorkHandler;
-use Kumwe\App\BusinessIntegration\Application\ProcessWorkLease;
+use Kumwe\Integration\ProcessWorkLease;
 use Kumwe\App\BusinessIntegration\Application\TrustedRuntimeGenerationGuard;
-use Kumwe\App\BusinessIntegration\Domain\ProcessWorkItem;
-use Kumwe\App\BusinessIntegration\Domain\ProcessWorkKind;
+use Kumwe\Integration\ProcessWorkItem;
+use Kumwe\Integration\ProcessWorkKind;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Context\Value\SiteContext;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -26,6 +26,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
 use Psr\Log\NullLogger;
 use Ramsey\Uuid\Uuid;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(ProcessWorkDispatcher::class)]
 #[CoversClass(JobQueueProcessWorkHandler::class)]
@@ -40,6 +41,7 @@ final class ProcessWorkDispatcherTest extends TestCase
             'secondary',
             'organization-7',
             new ProcessWorkItem(
+                new DeterministicCanonicalEncoder(),
                 Uuid::uuid7()->toString(),
                 ProcessWorkKind::COMMAND,
                 'acme.inventory.reserve',
@@ -104,6 +106,7 @@ final class ProcessWorkDispatcherTest extends TestCase
             'secondary',
             'organization-7',
             new ProcessWorkItem(
+                new DeterministicCanonicalEncoder(),
                 Uuid::uuid7()->toString(),
                 ProcessWorkKind::COMPENSATION,
                 'acme.inventory.release',

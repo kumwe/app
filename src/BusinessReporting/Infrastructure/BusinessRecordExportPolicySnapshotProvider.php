@@ -12,7 +12,7 @@ use Kumwe\App\BusinessRecord\Application\BusinessRecordDefinitionResolver;
 use Kumwe\Extension\Spi\BusinessRecord\Application\BusinessRecordQueryPurpose;
 use Kumwe\Record\Model\RecordScope;
 use Kumwe\App\BusinessReporting\Application\ExportPolicySnapshotProvider;
-use Kumwe\App\BusinessReporting\Domain\ReportDefinition;
+use Kumwe\Reporting\Domain\ReportDefinition;
 use Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessController;
 
 /**

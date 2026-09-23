@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace Kumwe\App\Application\Automation;
 
 use Kumwe\App\Application\Authorization\SystemIdentity;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\JobContributionDefinition;
+use Kumwe\Automation\JobContributionDefinition;
 use LogicException;
+use Kumwe\Automation\JobExecutionClass;
 
 /**
  * Classifies built-in jobs whose effect is installation-wide rather than site-local.

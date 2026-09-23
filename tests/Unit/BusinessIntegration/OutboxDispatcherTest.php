@@ -5,26 +5,27 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\BusinessIntegration;
 
 use DateTimeImmutable;
-use Kumwe\App\Application\Automation\FailureClassification;
-use Kumwe\App\Application\Automation\JitterSource;
-use Kumwe\App\Application\Automation\RetryPolicy;
-use Kumwe\App\BusinessIntegration\Application\EventContractRegistry;
+use Kumwe\Automation\FailureClassification;
+use Kumwe\Automation\JitterSource;
+use Kumwe\Automation\RetryPolicy;
+use Kumwe\Integration\EventContractRegistry;
 use Kumwe\App\BusinessIntegration\Application\IntegrationDeliveryBackpressure;
 use Kumwe\App\BusinessIntegration\Application\IntegrationEventFanout;
 use Kumwe\App\BusinessIntegration\Application\OutboxDispatcher;
-use Kumwe\App\BusinessIntegration\Application\OutboxLease;
-use Kumwe\App\BusinessIntegration\Application\OutboxStore;
+use Kumwe\Integration\OutboxLease;
+use Kumwe\Integration\OutboxStore;
 use Kumwe\App\BusinessIntegration\Application\TrustedRuntimeGenerationGuard;
-use Kumwe\App\BusinessIntegration\Domain\EventSchemaDefinition;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventSensitivity;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationEvent;
-use Kumwe\App\BusinessIntegration\Domain\RecordedIntegrationEvent;
+use Kumwe\Integration\EventSchemaDefinition;
+use Kumwe\Integration\EventSensitivity;
+use Kumwe\Integration\IntegrationEvent;
+use Kumwe\Integration\RecordedIntegrationEvent;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
 use Psr\Log\AbstractLogger;
 use Ramsey\Uuid\Uuid;
 use Throwable;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(OutboxDispatcher::class)]
 #[CoversClass(IntegrationDeliveryBackpressure::class)]
@@ -33,6 +34,7 @@ final class OutboxDispatcherTest extends TestCase
     public function testQueueBackpressureDefersWithoutRecordingAFailedAttempt(): void
     {
         $event = new RecordedIntegrationEvent(
+            new DeterministicCanonicalEncoder(),
             'acme.record.changed',
             1,
             Uuid::uuid7()->toString(),
@@ -57,7 +59,8 @@ final class OutboxDispatcherTest extends TestCase
             Uuid::uuid7()->toString(),
             '7',
         ));
-        $contracts = new EventContractRegistry([new EventSchemaDefinition(
+        $contracts = new EventContractRegistry(new DeterministicCanonicalEncoder(), [new EventSchemaDefinition(
+            new DeterministicCanonicalEncoder(),
             'acme.record.changed',
             1,
             EventSensitivity::INTERNAL,

@@ -5,26 +5,27 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\BusinessIntegration\Application;
 
 use DateTimeImmutable;
-use Kumwe\App\Application\Automation\JitterSource;
-use Kumwe\App\Application\Automation\RetryPolicy;
+use Kumwe\Automation\JitterSource;
+use Kumwe\Automation\RetryPolicy;
 use Kumwe\App\BusinessIntegration\Application\DurableOutboundAdapterDispatcher;
-use Kumwe\App\BusinessIntegration\Application\EventContractRegistry;
-use Kumwe\App\BusinessIntegration\Application\InboxClaimResult;
-use Kumwe\App\BusinessIntegration\Application\InboxDisposition;
-use Kumwe\App\BusinessIntegration\Application\InboxLease;
-use Kumwe\App\BusinessIntegration\Application\InboxStore;
+use Kumwe\Integration\EventContractRegistry;
+use Kumwe\Integration\InboxClaimResult;
+use Kumwe\Integration\InboxDisposition;
+use Kumwe\Integration\InboxLease;
+use Kumwe\Integration\InboxStore;
 use Kumwe\App\BusinessIntegration\Application\TrustedRuntimeGenerationGuard;
-use Kumwe\App\BusinessIntegration\Domain\EventSchemaDefinition;
-use Kumwe\App\BusinessIntegration\Domain\RecordedIntegrationEvent;
+use Kumwe\Integration\EventSchemaDefinition;
+use Kumwe\Integration\RecordedIntegrationEvent;
 use Kumwe\Extension\Spi\BusinessIntegration\Application\IntegrationEventTransport;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventConsumerDefinition;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventSensitivity;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\WebhookContributionDefinition;
+use Kumwe\Integration\EventConsumerDefinition;
+use Kumwe\Integration\EventSensitivity;
+use Kumwe\Integration\WebhookContributionDefinition;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
 use Psr\Log\NullLogger;
 use Ramsey\Uuid\Uuid;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(DurableOutboundAdapterDispatcher::class)]
 /**
@@ -44,6 +45,7 @@ final class DurableOutboundAdapterDeliveryTest extends TestCase
     public function testAClaimedDeliveryPublishesAndCompletesItsReceipt(): void
     {
         $event = new RecordedIntegrationEvent(
+            new DeterministicCanonicalEncoder(),
             'acme.record.changed',
             1,
             Uuid::uuid7()->toString(),
@@ -82,7 +84,8 @@ final class DurableOutboundAdapterDeliveryTest extends TestCase
         $inbox->expects(self::never())->method('fail');
         $adapter = $this->createMock(IntegrationEventTransport::class);
         $adapter->expects(self::once())->method('publish')->with($definition, $event);
-        $contracts = new EventContractRegistry([new EventSchemaDefinition(
+        $contracts = new EventContractRegistry(new DeterministicCanonicalEncoder(), [new EventSchemaDefinition(
+            new DeterministicCanonicalEncoder(),
             'acme.record.changed',
             1,
             EventSensitivity::INTERNAL,

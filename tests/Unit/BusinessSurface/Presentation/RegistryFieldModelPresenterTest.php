@@ -10,17 +10,18 @@ use Kumwe\BusinessDefinition\Domain\FieldTypeDefinition;
 use Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition;
 use Kumwe\App\BusinessSurface\Application\FieldModelContext;
 use Kumwe\App\BusinessSurface\Application\PresentedField;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationContext;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationInput;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationModel;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresenter;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresentationContext;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresentationInput;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresentationModel;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresenter;
 use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationRegistry;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldWidget;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldWidget;
 use Kumwe\App\BusinessSurface\Presentation\Field\RegistryFieldModelPresenter;
 use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(RegistryFieldModelPresenter::class)]
 #[CoversClass(FieldModelContext::class)]
@@ -217,6 +218,7 @@ final class RegistryFieldModelPresenterTest extends TestCase
                         $editable ? $request->value : null,
                         $editable,
                         $request->required,
+                        new DeterministicCanonicalEncoder(),
                         $request->errors,
                     );
                 }

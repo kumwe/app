@@ -1,0 +1,149 @@
+schema: kumwe-migration-ledger/v1
+migration_id: KUMWE-MIG-2026-027
+change_set: KUMWE-CS-2026-027
+package: kumwe/integration
+version: 0.2.4
+artifact_digest: "a921390bc35604cbe79c986fe0eb5fa122d003831df25c2230e84599662b6007"
+handoff_path: vendor/kumwe/integration/docs/release-record.md
+handoff_sha256: "ae5fdfc81daf02e0936f0a8d205cd58c579ca0fa4460386e86895067978a85c5"
+release_attestation: docs/architecture/migrations/evidence/KUMWE-MIG-2026-027/RELEASE-ATTESTATION.yaml
+old_namespace_roots:
+  - "Kumwe\\App\\BusinessIntegration\\Domain\\"
+  - "Kumwe\\Extension\\Spi\\BusinessIntegration\\Domain\\"
+symbols:
+  - old_fqcn: Kumwe\App\BusinessIntegration\Domain\EventSchemaDefinition
+    new_fqcn: Kumwe\Integration\EventSchemaDefinition
+  - old_fqcn: Kumwe\App\BusinessIntegration\Domain\ProcessInstance
+    new_fqcn: Kumwe\Integration\ProcessInstance
+  - old_fqcn: Kumwe\App\BusinessIntegration\Domain\ProcessStatus
+    new_fqcn: Kumwe\Integration\ProcessStatus
+  - old_fqcn: Kumwe\App\BusinessIntegration\Domain\ProcessTransition
+    new_fqcn: Kumwe\Integration\ProcessTransition
+  - old_fqcn: Kumwe\App\BusinessIntegration\Domain\ProcessWorkItem
+    new_fqcn: Kumwe\Integration\ProcessWorkItem
+  - old_fqcn: Kumwe\App\BusinessIntegration\Domain\ProcessWorkKind
+    new_fqcn: Kumwe\Integration\ProcessWorkKind
+  - old_fqcn: Kumwe\App\BusinessIntegration\Domain\RecordedDomainEvent
+    new_fqcn: Kumwe\Integration\RecordedDomainEvent
+  - old_fqcn: Kumwe\App\BusinessIntegration\Domain\RecordedEventEnvelope
+    new_fqcn: Kumwe\Integration\RecordedEventEnvelope
+  - old_fqcn: Kumwe\App\BusinessIntegration\Domain\RecordedIntegrationEvent
+    new_fqcn: Kumwe\Integration\RecordedIntegrationEvent
+  - old_fqcn: Kumwe\App\BusinessIntegration\Application\OutboxStore
+    new_fqcn: Kumwe\Integration\OutboxStore
+  - old_fqcn: Kumwe\App\BusinessIntegration\Application\InboxStore
+    new_fqcn: Kumwe\Integration\InboxStore
+  - old_fqcn: Kumwe\App\BusinessIntegration\Application\ProcessManagerStore
+    new_fqcn: Kumwe\Integration\ProcessManagerStore
+  - old_fqcn: Kumwe\App\BusinessIntegration\Application\ProcessManagerHandler
+    new_fqcn: Kumwe\Integration\ProcessManagerHandler
+  - old_fqcn: Kumwe\App\BusinessIntegration\Application\EventContractRegistry
+    new_fqcn: Kumwe\Integration\EventContractRegistry
+  - old_fqcn: Kumwe\App\BusinessIntegration\Application\PayloadSchemaValidator
+    new_fqcn: Kumwe\Integration\PayloadSchemaValidator
+  - old_fqcn: Kumwe\App\BusinessIntegration\Application\InboxDisposition
+    new_fqcn: Kumwe\Integration\InboxDisposition
+  - old_fqcn: Kumwe\App\BusinessIntegration\Application\InboxClaimResult
+    new_fqcn: Kumwe\Integration\InboxClaimResult
+  - old_fqcn: Kumwe\App\BusinessIntegration\Application\InboxLease
+    new_fqcn: Kumwe\Integration\InboxLease
+  - old_fqcn: Kumwe\App\BusinessIntegration\Application\OutboxLease
+    new_fqcn: Kumwe\Integration\OutboxLease
+  - old_fqcn: Kumwe\App\BusinessIntegration\Application\ProcessWorkLease
+    new_fqcn: Kumwe\Integration\ProcessWorkLease
+  - old_fqcn: Kumwe\Extension\Spi\BusinessIntegration\Domain\ConsumerIdempotency
+    new_fqcn: Kumwe\Integration\ConsumerIdempotency
+  - old_fqcn: Kumwe\Extension\Spi\BusinessIntegration\Domain\DomainEvent
+    new_fqcn: Kumwe\Integration\DomainEvent
+  - old_fqcn: Kumwe\Extension\Spi\BusinessIntegration\Domain\DomainListenerDeclaration
+    new_fqcn: Kumwe\Integration\DomainListenerDeclaration
+  - old_fqcn: Kumwe\Extension\Spi\BusinessIntegration\Domain\DomainListenerDefinition
+    new_fqcn: Kumwe\Integration\DomainListenerDefinition
+  - old_fqcn: Kumwe\Extension\Spi\BusinessIntegration\Domain\EventConsumerDeclaration
+    new_fqcn: Kumwe\Integration\EventConsumerDeclaration
+  - old_fqcn: Kumwe\Extension\Spi\BusinessIntegration\Domain\EventConsumerDefinition
+    new_fqcn: Kumwe\Integration\EventConsumerDefinition
+  - old_fqcn: Kumwe\Extension\Spi\BusinessIntegration\Domain\EventEnvelope
+    new_fqcn: Kumwe\Integration\EventEnvelope
+  - old_fqcn: Kumwe\Extension\Spi\BusinessIntegration\Domain\EventSensitivity
+    new_fqcn: Kumwe\Integration\EventSensitivity
+  - old_fqcn: Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationContract
+    new_fqcn: Kumwe\Integration\IntegrationContract
+  - old_fqcn: Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationContractValidator
+    new_fqcn: Kumwe\Integration\IntegrationContractValidator
+  - old_fqcn: Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationEvent
+    new_fqcn: Kumwe\Integration\IntegrationEvent
+  - old_fqcn: Kumwe\Extension\Spi\BusinessIntegration\Domain\WebhookContributionDefinition
+    new_fqcn: Kumwe\Integration\WebhookContributionDefinition
+  - old_fqcn: Kumwe\Extension\Spi\BusinessIntegration\Domain\WebhookDeclaration
+    new_fqcn: Kumwe\Integration\WebhookDeclaration
+removed_paths:
+  - src/BusinessIntegration/Domain/EventSchemaDefinition.php
+  - src/BusinessIntegration/Domain/ProcessInstance.php
+  - src/BusinessIntegration/Domain/ProcessStatus.php
+  - src/BusinessIntegration/Domain/ProcessTransition.php
+  - src/BusinessIntegration/Domain/ProcessWorkItem.php
+  - src/BusinessIntegration/Domain/ProcessWorkKind.php
+  - src/BusinessIntegration/Domain/RecordedDomainEvent.php
+  - src/BusinessIntegration/Domain/RecordedEventEnvelope.php
+  - src/BusinessIntegration/Domain/RecordedIntegrationEvent.php
+  - src/BusinessIntegration/Application/OutboxStore.php
+  - src/BusinessIntegration/Application/InboxStore.php
+  - src/BusinessIntegration/Application/ProcessManagerStore.php
+  - src/BusinessIntegration/Application/ProcessManagerHandler.php
+  - src/BusinessIntegration/Application/EventContractRegistry.php
+  - src/BusinessIntegration/Application/PayloadSchemaValidator.php
+  - src/BusinessIntegration/Application/InboxDisposition.php
+  - src/BusinessIntegration/Application/InboxClaimResult.php
+  - src/BusinessIntegration/Application/InboxLease.php
+  - src/BusinessIntegration/Application/OutboxLease.php
+  - src/BusinessIntegration/Application/ProcessWorkLease.php
+removed_tests:
+  - tests/Unit/BusinessIntegration/Domain/IntegrationContributionDefinitionTest.php
+  - tests/Unit/BusinessIntegration/EventContractTest.php
+  - tests/Unit/BusinessIntegration/ProcessInstanceTest.php
+retained_tests:
+  - tests/Functional/Extension/LiveSurfaceContractParityTest.php
+  - tests/Integration/BusinessIntegration/BusinessIntegrationPersistenceTest.php
+  - tests/Integration/BusinessIntegration/HungEndpointDeadlineIntegrationTest.php
+  - tests/Integration/BusinessIntegration/OutboxInboxClaimContentionIntegrationTest.php
+  - tests/Integration/BusinessIntegration/PoisonAndDeadLetterIntegrationTest.php
+  - tests/Integration/BusinessIntegration/ProjectionRuntimePersistenceTest.php
+  - tests/Integration/Extension/GeneratedExtensionLifecycleIntegrationTest.php
+  - tests/Integration/Persistence/TransactionBoundaryEngineIntegrationTest.php
+  - tests/Support/AssetInspectionDeploymentAcceptance.php
+  - tests/Unit/BusinessIntegration/Application/BusinessRecordMutationEventPublisherTest.php
+  - tests/Unit/BusinessIntegration/Application/DurableOutboundAdapterDeliveryTest.php
+  - tests/Unit/BusinessIntegration/Application/JobQueueIntegrationEventHandlerTest.php
+  - tests/Unit/BusinessIntegration/ConsumerDispatcherTest.php
+  - tests/Unit/BusinessIntegration/DurableOutboundAdapterDispatcherTest.php
+  - tests/Unit/BusinessIntegration/Infrastructure/RuntimeIntegrationEventTransportTest.php
+  - tests/Unit/BusinessIntegration/IntegrationOperationsServiceTest.php
+  - tests/Unit/BusinessIntegration/OutboxDispatcherTest.php
+  - tests/Unit/BusinessIntegration/ProcessCancellationWorkTest.php
+  - tests/Unit/BusinessIntegration/ProcessWorkDispatcherTest.php
+  - tests/Unit/BusinessRecord/Application/BusinessRecordMutationPublicationTest.php
+  - tests/Unit/Extension/Contribution/ExtensionBindingSurfaceTest.php
+  - tests/Unit/Extension/Contribution/OwnedBindingCanonicalDriftTest.php
+di_changes:
+  - service: Kumwe\Integration\EventContractRegistry
+    factory: Kumwe\App\Kernel\ContainerFactory
+    note: "Intentional host binding: the package EventContractRegistryFactory builds the registry from kumwe.integration.schemas and consumers configuration, which cannot express the catalog ExtensionContributionRegistrySet validates from admitted extension contributions and replaces under generation transitions, so Kumwe\\Integration\\ConfigProvider is not installed and the host shares the contribution-built registry under the package name."
+  - service: Kumwe\Integration\OutboxStore
+    factory: Kumwe\App\Kernel\ContainerFactory
+    note: "Host port binding re-keyed from the retired App name to the package port; DoctrineOutboxStore implements it, receives the canonical encoder for RecordedIntegrationEvent hydration and fails with Kumwe\\Automation\\FailureClassification."
+  - service: Kumwe\Integration\InboxStore
+    factory: Kumwe\App\Kernel\ContainerFactory
+    note: "Host port binding re-keyed from the retired App name to the package port; DoctrineInboxStore implements it with the same encoder and failure classification."
+  - service: Kumwe\Integration\ProcessManagerStore
+    factory: Kumwe\App\Kernel\ContainerFactory
+    note: "Host port binding re-keyed from the retired App name to the package port; DoctrineProcessManagerStore implements it, hydrates ProcessInstance and ProcessWorkItem through the canonical encoder and fails work with Kumwe\\Automation\\FailureClassification."
+capability_index_entries:
+  - kumwe/integration
+release_evidence:
+  - docs/architecture/migrations/evidence/KUMWE-MIG-2026-027/RELEASE-ATTESTATION.yaml
+app_pull_request: "https://github.com/kumwe/app/pull/151"
+roadmap_refs: []
+non_roadmap_refs:
+  - NRM-2026-049
+conflicts: []

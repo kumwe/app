@@ -11,14 +11,14 @@ use Kumwe\App\BusinessRecord\Application\BusinessRecordService;
 use Kumwe\App\BusinessRecord\Application\Command\CreateRecordCommand;
 use Kumwe\App\BusinessRecord\Application\PolicyBusinessRecordReader;
 use Kumwe\App\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordReadRepository;
-use Kumwe\Extension\Spi\BusinessRecord\Query\RecordProjection;
-use Kumwe\Extension\Spi\BusinessRecord\Query\RecordQuerySpecification;
+use Kumwe\Record\Query\RecordProjection;
+use Kumwe\Record\Query\RecordQuerySpecification;
 use Kumwe\App\BusinessSecurity\Application\Administration\BusinessSecurityAdministrationRepository;
 use Kumwe\App\BusinessSecurity\Infrastructure\Persistence\DoctrineBusinessRecordAccessController;
 use Kumwe\BusinessPolicy\Policy\RecordPolicyComparison;
 use Kumwe\BusinessPolicy\Policy\RecordPolicyComparisonOperator;
 use Kumwe\BusinessPolicy\Policy\RecordPolicyValueType;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewQuery;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessViewQuery;
 use Kumwe\Access\Capability;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\App\Tests\Support\NeutralBusinessFixture;
@@ -27,7 +27,6 @@ use KumweExample\AssetInspection\Application\InspectionSummaryViewHandler;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
-use Kumwe\App\Extension\Runtime\ExtensionExecutionContext;
 
 /**
  * Exercises the example custom view against the real record service and persisted row/field policies.
@@ -211,7 +210,7 @@ final class AssetInspectionCustomViewIntegrationTest extends TestCase
         $handler = new InspectionSummaryViewHandler(new PolicyBusinessRecordReader($records));
 
         $result = $handler->handle(new CustomBusinessViewQuery(
-            ExtensionExecutionContext::of($viewer),
+            $viewer,
             $definition->handle,
             'inspection_risk_summary',
             new RecordQuerySpecification(

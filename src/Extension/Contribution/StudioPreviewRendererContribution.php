@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Extension\Contribution;
 
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
-use Kumwe\Extension\Spi\Contribution\ContributionDefinition;
+use Kumwe\Contribution\ContributionOwner;
+use Kumwe\Extension\Manifest\ManifestIdentifierPolicies;
+use Kumwe\Contribution\ContributionDefinition;
 use Kumwe\Extension\Spi\Contribution\CompositionHostBinding;
 use Kumwe\Extension\Spi\Contribution\CanonicalCompositionKind;
 use Kumwe\Extension\Spi\Contribution\CanonicalCompositionDocument;
@@ -136,8 +137,11 @@ final readonly class StudioPreviewRendererContribution implements ContributionDe
         if ($this->blockType !== $document->identity() || !str_starts_with($this->documentOwner, $studioPrefix)) {
             throw new InvalidArgumentException('A Studio preview block document contradicts its package owner.');
         }
-        $owner->assertOwns($this->renderer, 'studio preview renderer');
-        $owner->assertOwns($this->previewCapability, 'preview renderer capability');
+        $owner->assertOwns($this->renderer, ManifestIdentifierPolicies::forKind('studio preview renderer'));
+        $owner->assertOwns(
+            $this->previewCapability,
+            ManifestIdentifierPolicies::forKind('preview renderer capability'),
+        );
     }
 
     /**

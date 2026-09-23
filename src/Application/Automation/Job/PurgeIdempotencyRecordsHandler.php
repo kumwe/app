@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Application\Automation\Job;
 
 use Kumwe\Idempotency\IdempotencyPurger;
-use Kumwe\App\Application\Automation\JobHandler;
+use Kumwe\Automation\JobHandler;
 use Kumwe\Access\AuthorizationGateway;
 use Kumwe\Access\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;

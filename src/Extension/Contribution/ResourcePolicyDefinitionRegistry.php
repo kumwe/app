@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Extension\Contribution;
 
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Contribution\ContributionOwner;
+use Kumwe\Extension\Manifest\ManifestIdentifierPolicies;
 use InvalidArgumentException;
 use Kumwe\Access\AuthorizationPolicyRegistry;
 use Kumwe\Access\ResourcePolicyDefinition as AuthorizationResourcePolicyDefinition;
 use Kumwe\App\Application\Authorization\SystemIdentity;
 use Kumwe\Access\Capability;
+use Kumwe\Contribution\ContributionSurface;
 
 /**
  * Contribution surface mirroring owner-bound resource policies into the authorization runtime.
@@ -58,7 +60,7 @@ final class ResourcePolicyDefinitionRegistry implements ContributionSurface
      */
     public function register(ContributionOwner $owner, ResourcePolicyDefinition $definition): void
     {
-        $owner->assertOwns($definition->id, 'resource policy');
+        $owner->assertOwns($definition->id, ManifestIdentifierPolicies::forKind('resource policy'));
         if (isset($this->definitions[$definition->id])) {
             throw new InvalidArgumentException(sprintf(
                 'Resource-policy contribution %s is already owned by %s.',

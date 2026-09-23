@@ -483,7 +483,7 @@ PHP);
 
 namespace Kumwe\App\Demo\Domain;
 
-use Kumwe\Extension\Spi\BusinessReporting\Domain\ProjectionDefinition;
+use Kumwe\Reporting\Domain\ProjectionDefinition;
 
 final class Probe
 {
@@ -510,7 +510,7 @@ PHP);
 
 namespace Kumwe\App\Demo\Domain;
 
-use Kumwe\Extension\Spi\BusinessRecord\Query\RecordQuerySpecification;
+use Kumwe\Record\Query\RecordQuerySpecification;
 use Kumwe\Record\Value\ZonedDateTimeValue;
 
 final class Probe

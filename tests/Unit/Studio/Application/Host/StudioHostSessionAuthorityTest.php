@@ -30,6 +30,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 /**
  * Pins mode-specific authorization, trusted scope binding and generation invalidation.
@@ -274,6 +275,7 @@ final class StudioHostSessionAuthorityTest extends TestCase
         $theme = new StudioPublishedTheme(
             $settings,
             new ActiveExtensionSet(new ExtensionContributionRegistrySet(
+                new DeterministicCanonicalEncoder(),
                 new SdkFieldConfigurationAdmission(),
                 withCore: false,
             )),

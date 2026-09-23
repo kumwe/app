@@ -244,7 +244,10 @@ final class ContributedContentTranslationIntegrationTest extends TestCase
             new TranslationSetItemAssociation('rival/pages', $set);
             self::fail('Another owner\'s set must be refused.');
         } catch (InvalidArgumentException $exception) {
-            self::assertStringContainsString('cannot claim content translation group', $exception->getMessage());
+            self::assertStringContainsString(
+                'Contribution namespace does not belong to its owner.',
+                $exception->getMessage(),
+            );
         }
 
         $unchanged = $content->get($context, $entry->entry->id());

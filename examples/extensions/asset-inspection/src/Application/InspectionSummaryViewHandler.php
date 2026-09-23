@@ -6,11 +6,11 @@ namespace KumweExample\AssetInspection\Application;
 
 use Kumwe\Extension\Spi\BusinessRecord\Application\BusinessRecordReader;
 use Kumwe\Extension\Spi\BusinessRecord\Application\BusinessRecordReadRequest;
-use Kumwe\Extension\Spi\BusinessRecord\Query\RecordProjection;
-use Kumwe\Extension\Spi\BusinessRecord\Query\RecordQuerySpecification;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewHandler;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewQuery;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewResult;
+use Kumwe\Record\Query\RecordProjection;
+use Kumwe\Record\Query\RecordQuerySpecification;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessViewHandler;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessViewQuery;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessViewResult;
 
 /**
  * Projects a bounded inspection summary through the canonical record-service policy boundary.

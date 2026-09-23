@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace Kumwe\App\BusinessIntegration\Application;
 
-use Kumwe\App\Application\Automation\JobHandler;
+use Kumwe\Automation\JobHandler;
 use Kumwe\App\Extension\Runtime\ExtensionExecutionContext;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Extension\Spi\Application\Automation\JobHandler as ContributedJobHandler;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\JobContributionDefinition;
+use Kumwe\Automation\JobContributionDefinition;
+use Kumwe\Integration\PayloadSchemaValidator;
 
 /**
  * Enforces a signed payload contract before invoking one active extension job implementation.

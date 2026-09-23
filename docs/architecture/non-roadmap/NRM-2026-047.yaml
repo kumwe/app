@@ -1,0 +1,31 @@
+schema: kumwe-non-roadmap-record/v1
+id: NRM-2026-047
+nrm_ref: NRM-2026-047
+roadmap_impact: None
+rationale: "Adopt verified kumwe/contribution 0.1.1, the owner of the neutral contribution owner, the contribution definition and surface interfaces, the surface identifier policy, the contribution refusal and the snapshot registry."
+repositories:
+  - kumwe/app
+  - kumwe/contribution
+behavior_before: "App declared its ContributionSurface interface and consumed the SDK copies of ContributionOwner and ContributionDefinition, whose assertOwns decided ownership from a kind string with hard-coded studio and graphical kind lists."
+behavior_after: "The three types come from kumwe/contribution 0.1.1; every App registry and static ownership check names an explicit SurfaceIdentifierPolicy, projected from the manifest kind by the SDK ManifestIdentifierPolicies or written out for the canonical composition documents, and refusals are ContributionRejected. App keeps the executable runtime registries, the registry set, admission and the trusted lifecycle composition."
+public_api_impact: "None for callers of the interfaces; OwnedRuntimeContributionRegistry takes an optional SurfaceIdentifierPolicy as its third constructor argument and every assertOwns call site passes a policy instead of a kind string."
+dependency_impact: "Adds kumwe/contribution 0.1.1 exactly, which requires only PHP; the extension-sdk 0.3.3 candidate and the other train packages pin the same release."
+compatibility: "Identifiers, owners and stored contribution rows are unchanged; ownership refusals carry the package messages, which one App integration test now asserts."
+data_migration: None
+security_impact: "No authority change; ownership is asserted by the host-chosen policy per surface and admission stays in App."
+performance:
+  claim: None
+  evidence: []
+operations_deployment: "None; no configuration or schema change."
+recovery_rollback: "Revert the adoption pull request; no persisted data changes."
+artifacts_evidence:
+  - docs/architecture/migrations/KUMWE-MIG-2026-006.yaml
+  - docs/architecture/migrations/change-sets/KUMWE-CS-2026-006.yaml
+  - docs/architecture/migrations/trains/KUMWE-TRAIN-2026-006.yaml
+  - docs/architecture/migrations/evidence/KUMWE-MIG-2026-006/RELEASE-ATTESTATION.yaml
+  - docs/architecture/capability-index.md
+known_gaps:
+  - "The GitHub release and workflow run of v0.1.1 were not observable from the verification run, so the attestation binds the git archive of the tag commit."
+  - "kumwe/extension-sdk 0.3.3 is adopted from its unpublished candidate in the same train (NRM-2026-057); the lock is re-pointed at the published distribution once it exists."
+owner: "eWɘyn"
+status: in-progress

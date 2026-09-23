@@ -11,7 +11,7 @@ use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\DBAL\Types\Types;
 use Kumwe\App\Kernel\Container;
-use Kumwe\App\Application\Automation\JobExecutionClass;
+use Kumwe\Automation\JobExecutionClass;
 use Kumwe\App\Application\Automation\ScheduleOccurrenceKey;
 use Kumwe\App\Application\Automation\Scheduler;
 use Kumwe\App\Infrastructure\Automation\DoctrineScheduler;

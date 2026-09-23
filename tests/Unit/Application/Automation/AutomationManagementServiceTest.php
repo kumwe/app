@@ -8,22 +8,20 @@ use DateTimeImmutable;
 use InvalidArgumentException;
 use Kumwe\App\Application\Automation\AutomationManagementService;
 use Kumwe\App\Application\Automation\Job\ScheduleRepository;
-use Kumwe\App\Application\Automation\JobHandler;
-use Kumwe\App\Application\Automation\JobHandlerRegistry;
-use Kumwe\App\Application\Automation\JobQueue;
+use Kumwe\Automation\JobHandler;
+use Kumwe\Automation\JobHandlerRegistry;
+use Kumwe\Automation\JobQueue;
 use Kumwe\App\Application\Automation\QueueRuntimeOperations;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Audit\Application\AuditRecorder;
 use Kumwe\Audit\Domain\AuditEvent;
 use PHPUnit\Framework\Attributes\CoversClass;
-use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
 use Kumwe\App\Tests\Support\AuthorizationContext;
 
 #[CoversClass(AutomationManagementService::class)]
-#[UsesClass(JobHandlerRegistry::class)]
 final class AutomationManagementServiceTest extends TestCase
 {
     private const ACTOR = '018f22e2-7c8b-7ab0-8f3a-88e8026bb301';

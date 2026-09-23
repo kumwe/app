@@ -18,6 +18,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use Twig\Error\LoaderError;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(IsolatedTwigEnvironmentFactory::class)]
 #[CoversClass(ContractRestrictedLoader::class)]
@@ -111,6 +112,7 @@ final class IsolatedTwigEnvironmentFactoryTest extends TestCase
         $renderer = new AdministratorRenderer(
             $factory->administrator(),
             new RecoveryAdministratorRenderer($factory->recoveryAdministrator()),
+            new DeterministicCanonicalEncoder(),
         );
 
         self::assertSame('core:page', $renderer->render('shell'));
@@ -120,6 +122,7 @@ final class IsolatedTwigEnvironmentFactoryTest extends TestCase
     public function testOnlyOneThemeCanBeLoadedPerSurface(): void
     {
         $active = new ActiveExtensionSet(new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
             new SdkFieldConfigurationAdmission(),
             withCore: false,
         ));
@@ -147,6 +150,7 @@ final class IsolatedTwigEnvironmentFactoryTest extends TestCase
         $first = IsolatedTwigEnvironmentFactory::extensionNamespace('ac-me/x');
         $second = IsolatedTwigEnvironmentFactory::extensionNamespace('ac/me-x');
         $active = new ActiveExtensionSet(new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
             new SdkFieldConfigurationAdmission(),
             withCore: false,
         ));
@@ -162,6 +166,7 @@ final class IsolatedTwigEnvironmentFactoryTest extends TestCase
     private function activeExtensions(): ActiveExtensionSet
     {
         $active = new ActiveExtensionSet(new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
             new SdkFieldConfigurationAdmission(),
             withCore: false,
         ));

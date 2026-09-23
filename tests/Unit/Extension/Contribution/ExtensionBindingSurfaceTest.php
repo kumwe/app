@@ -32,26 +32,28 @@ use Kumwe\Extension\Spi\Binding\Http\PortalRouteRenderer;
 use Kumwe\Extension\Spi\BusinessIntegration\Application\DomainEventHandler;
 use Kumwe\Extension\Spi\BusinessIntegration\Application\IntegrationEventHandler;
 use Kumwe\Extension\Spi\BusinessIntegration\Application\IntegrationEventTransport;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\DomainEvent;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\DomainListenerDefinition;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventConsumerDefinition;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationEvent;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\JobContributionDefinition;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\WebhookContributionDefinition;
-use Kumwe\Extension\Spi\BusinessReporting\Application\ProjectionBuilder;
-use Kumwe\Extension\Spi\BusinessReporting\Application\ProjectionEvent;
-use Kumwe\Extension\Spi\BusinessReporting\Application\ProjectionWriter;
-use Kumwe\Extension\Spi\BusinessReporting\Domain\ProjectionDefinition;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionCommand;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionHandler;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionResult;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewHandler;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewQuery;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewResult;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationInput;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationModel;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresenter;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Integration\DomainEvent;
+use Kumwe\Integration\DomainListenerDefinition;
+use Kumwe\Integration\EventConsumerDefinition;
+use Kumwe\Integration\IntegrationEvent;
+use Kumwe\Automation\JobContributionDefinition;
+use Kumwe\Integration\WebhookContributionDefinition;
+use Kumwe\Reporting\Contract\ProjectionBuilder;
+use Kumwe\Reporting\Contract\ProjectionEvent;
+use Kumwe\Reporting\Contract\ProjectionWriter;
+use Kumwe\Reporting\Domain\ProjectionDefinition;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessActionCommand;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessActionHandler;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessActionResult;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessViewHandler;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessViewQuery;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessViewResult;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresentationInput;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresentationModel;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldWidget;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresentationContext;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresenter;
+use Kumwe\Contribution\ContributionOwner;
 use Kumwe\Extension\Spi\Studio\Application\Preview\StudioPreviewBindingResult;
 use Kumwe\Extension\Spi\Studio\Application\Preview\StudioPreviewBlock;
 use Kumwe\Extension\Spi\Studio\Application\Preview\StudioPreviewBlockFragment;
@@ -68,6 +70,7 @@ use Psr\Http\Server\RequestHandlerInterface;
 use ReflectionClass;
 use RuntimeException;
 use Twig\Loader\ArrayLoader;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(AdministratorRouteRegistry::class)]
 #[CoversClass(BusinessContributionSurface::class)]
@@ -93,7 +96,11 @@ final class ExtensionBindingSurfaceTest extends TestCase
     public function testCanonicalIntegrationDeclarationsBindTheirExecutables(): void
     {
         $manifest = self::generationManifest(4);
-        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+            withCore: false,
+        );
         $registrar = $registries->activateManifest(
             $manifest,
             self::trustStore(),
@@ -143,7 +150,11 @@ final class ExtensionBindingSurfaceTest extends TestCase
      */
     public function testAJobHandlerWithoutRuntimeProvenanceIsRefused(): void
     {
-        $registrar = (new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false))
+        $registrar = (new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+            withCore: false,
+        ))
             ->activateManifest(self::generationManifest(4));
 
         $this->expectException(LogicException::class);
@@ -161,7 +172,11 @@ final class ExtensionBindingSurfaceTest extends TestCase
      */
     public function testSemanticBusinessAndPortalDeclarationsBindTheirExecutables(): void
     {
-        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+            withCore: false,
+        );
         $registrar = $registries->activateManifest(self::probeManifest());
 
         $registrar->fieldPresenter('acme.probe.color', self::fieldPresenter());
@@ -193,7 +208,11 @@ final class ExtensionBindingSurfaceTest extends TestCase
      */
     public function testAnAdministratorRouteBindsAndMountsThroughItsRegistry(): void
     {
-        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+            withCore: false,
+        );
         $registrar = $registries->activateManifest(self::routesManifest());
         $factory = self::administratorRouteFactory();
         $registrar->administratorRoute('acme.routes.index', $factory);
@@ -228,7 +247,11 @@ final class ExtensionBindingSurfaceTest extends TestCase
      */
     public function testARepeatedExecutableBindingIsRefused(): void
     {
-        $registrar = (new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false))
+        $registrar = (new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+            withCore: false,
+        ))
             ->activateManifest(self::routesManifest());
         $registrar->administratorRoute('acme.routes.index', self::administratorRouteFactory());
 
@@ -247,7 +270,11 @@ final class ExtensionBindingSurfaceTest extends TestCase
      */
     public function testABindingAfterCompletionIsRefused(): void
     {
-        $registrar = (new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false))
+        $registrar = (new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+            withCore: false,
+        ))
             ->activateManifest(self::routesManifest());
         $registrar->administratorRoute('acme.routes.index', self::administratorRouteFactory());
         $registrar->complete();
@@ -267,7 +294,11 @@ final class ExtensionBindingSurfaceTest extends TestCase
      */
     public function testACanonicalStudioRendererBindsToItsSignedBlocks(): void
     {
-        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+            withCore: false,
+        );
         $registrar = $registries->activateManifest(
             self::generationManifest(6),
             self::trustStore(),
@@ -300,7 +331,11 @@ final class ExtensionBindingSurfaceTest extends TestCase
      */
     public function testAStudioRendererWithoutRuntimeProvenanceIsRefused(): void
     {
-        $registrar = (new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false))
+        $registrar = (new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+            withCore: false,
+        ))
             ->activateManifest(self::generationManifest(6));
 
         $this->expectException(LogicException::class);
@@ -330,8 +365,13 @@ final class ExtensionBindingSurfaceTest extends TestCase
             JSON_THROW_ON_ERROR,
         );
         self::assertIsArray($announcements);
-        $surfaces = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
+        $surfaces = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+            withCore: false,
+        );
         $surfaces->activateManifest(ManifestContributions::fromManifest(
+            new DeterministicCanonicalEncoder(),
             ExtensionIdentifier::fromString('kumwe/announcements-example'),
             $announcements['contributions'],
             4,
@@ -339,8 +379,13 @@ final class ExtensionBindingSurfaceTest extends TestCase
         $announcer = ContributionOwner::extension('kumwe/announcements-example');
         self::assertCount(1, $surfaces->interfaceSurfaces()->ownedBy($announcer));
 
-        $content = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
+        $content = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+            withCore: false,
+        );
         $content->activateManifest(ManifestContributions::fromManifest(
+            new DeterministicCanonicalEncoder(),
             ExtensionIdentifier::fromString('acme/probe'),
             [
                 'version' => 2,
@@ -379,6 +424,7 @@ final class ExtensionBindingSurfaceTest extends TestCase
         self::assertIsArray($document['contributions']);
 
         return ManifestContributions::fromManifest(
+            new DeterministicCanonicalEncoder(),
             ExtensionIdentifier::fromString($document['name']),
             $document['contributions'],
             $generation,
@@ -400,70 +446,75 @@ final class ExtensionBindingSurfaceTest extends TestCase
             'properties' => [$marker => ['type' => 'string']],
         ];
 
-        return ManifestContributions::fromManifest(ExtensionIdentifier::fromString('acme/probe'), [
-            'version' => 1,
-            'capabilities' => [[
-                'id' => 'acme.probe.use',
-                'label' => 'Use probe',
-                'description' => 'Use the probe portal surfaces.',
-            ]],
-            'resource_policies' => [[
-                'id' => 'acme.probe.portal-access',
-                'capability' => 'acme.probe.use',
-                'resources' => [['type' => 'portal_session', 'identifiers' => []]],
-            ]],
-            'portal' => [
-                'templates' => [['name' => 'acme.probe.home', 'template' => 'home.twig']],
-                'routes' => [[
-                    'name' => 'acme.probe.home',
-                    'path' => '/',
-                    'methods' => ['GET'],
+        return ManifestContributions::fromManifest(
+            new DeterministicCanonicalEncoder(),
+            ExtensionIdentifier::fromString('acme/probe'),
+            [
+                'version' => 1,
+                'capabilities' => [[
+                    'id' => 'acme.probe.use',
+                    'label' => 'Use probe',
+                    'description' => 'Use the probe portal surfaces.',
+                ]],
+                'resource_policies' => [[
+                    'id' => 'acme.probe.portal-access',
                     'capability' => 'acme.probe.use',
-                    'template' => 'acme.probe.home',
+                    'resources' => [['type' => 'portal_session', 'identifiers' => []]],
                 ]],
-            ],
-            'business' => [
-                'field_types' => [[
-                    'id' => 'acme.probe.color',
-                    'label' => 'Color',
-                    'description' => 'A named color value.',
-                    'value_type' => 'string',
-                    'storage_type' => 'string',
-                ]],
-                'field_presentations' => [[
-                    'field_type' => 'acme.probe.color',
-                    'contexts' => ['list', 'detail'],
-                ]],
-                'view_handlers' => [
-                    [
-                        'handler' => 'acme.probe.views.first',
-                        'schema' => 'acme.probe.schemas.first-view-v1',
-                        'query_schema' => $schema('q1'),
-                        'result_schema' => $schema('r1'),
+                'portal' => [
+                    'templates' => [['name' => 'acme.probe.home', 'template' => 'home.twig']],
+                    'routes' => [[
+                        'name' => 'acme.probe.home',
+                        'path' => '/',
+                        'methods' => ['GET'],
+                        'capability' => 'acme.probe.use',
+                        'template' => 'acme.probe.home',
+                    ]],
+                ],
+                'business' => [
+                    'field_types' => [[
+                        'id' => 'acme.probe.color',
+                        'label' => 'Color',
+                        'description' => 'A named color value.',
+                        'value_type' => 'string',
+                        'storage_type' => 'string',
+                    ]],
+                    'field_presentations' => [[
+                        'field_type' => 'acme.probe.color',
+                        'contexts' => ['list', 'detail'],
+                    ]],
+                    'view_handlers' => [
+                        [
+                            'handler' => 'acme.probe.views.first',
+                            'schema' => 'acme.probe.schemas.first-view-v1',
+                            'query_schema' => $schema('q1'),
+                            'result_schema' => $schema('r1'),
+                        ],
+                        [
+                            'handler' => 'acme.probe.views.second',
+                            'schema' => 'acme.probe.schemas.second-view-v1',
+                            'query_schema' => $schema('q2'),
+                            'result_schema' => $schema('r2'),
+                        ],
                     ],
-                    [
-                        'handler' => 'acme.probe.views.second',
-                        'schema' => 'acme.probe.schemas.second-view-v1',
-                        'query_schema' => $schema('q2'),
-                        'result_schema' => $schema('r2'),
+                    'action_handlers' => [
+                        [
+                            'handler' => 'acme.probe.actions.first',
+                            'schema' => 'acme.probe.schemas.first-action-v1',
+                            'command_schema' => $schema('c1'),
+                            'result_schema' => $schema('r3'),
+                        ],
+                        [
+                            'handler' => 'acme.probe.actions.second',
+                            'schema' => 'acme.probe.schemas.second-action-v1',
+                            'command_schema' => $schema('c2'),
+                            'result_schema' => $schema('r4'),
+                        ],
                     ],
                 ],
-                'action_handlers' => [
-                    [
-                        'handler' => 'acme.probe.actions.first',
-                        'schema' => 'acme.probe.schemas.first-action-v1',
-                        'command_schema' => $schema('c1'),
-                        'result_schema' => $schema('r3'),
-                    ],
-                    [
-                        'handler' => 'acme.probe.actions.second',
-                        'schema' => 'acme.probe.schemas.second-action-v1',
-                        'command_schema' => $schema('c2'),
-                        'result_schema' => $schema('r4'),
-                    ],
-                ],
             ],
-        ], 3);
+            3,
+        );
     }
 
     /**
@@ -475,24 +526,29 @@ final class ExtensionBindingSurfaceTest extends TestCase
      */
     private static function routesManifest(): ManifestContributions
     {
-        return ManifestContributions::fromManifest(ExtensionIdentifier::fromString('acme/routes'), [
-            'version' => 1,
-            'capabilities' => [[
-                'id' => 'acme.routes.view',
-                'label' => 'View routes',
-                'description' => 'Open the exact extension route.',
-            ]],
-            'administrator' => [
-                'views' => [['name' => 'acme.routes.index', 'template' => 'index.twig']],
-                'routes' => [[
-                    'name' => 'acme.routes.index',
-                    'path' => '/',
-                    'methods' => ['GET'],
-                    'capability' => 'acme.routes.view',
-                    'view' => 'acme.routes.index',
+        return ManifestContributions::fromManifest(
+            new DeterministicCanonicalEncoder(),
+            ExtensionIdentifier::fromString('acme/routes'),
+            [
+                'version' => 1,
+                'capabilities' => [[
+                    'id' => 'acme.routes.view',
+                    'label' => 'View routes',
+                    'description' => 'Open the exact extension route.',
                 ]],
+                'administrator' => [
+                    'views' => [['name' => 'acme.routes.index', 'template' => 'index.twig']],
+                    'routes' => [[
+                        'name' => 'acme.routes.index',
+                        'path' => '/',
+                        'methods' => ['GET'],
+                        'capability' => 'acme.routes.view',
+                        'view' => 'acme.routes.index',
+                    ]],
+                ],
             ],
-        ], 2);
+            2,
+        );
     }
 
     /**
@@ -665,7 +721,17 @@ final class ExtensionBindingSurfaceTest extends TestCase
             {
                 unset($input);
 
-                return new FieldPresentationModel('text', ['value' => 'probe']);
+                return new FieldPresentationModel(
+                    'text',
+                    'Text',
+                    FieldPresentationContext::AdministratorForm,
+                    FieldWidget::Text,
+                    'probe',
+                    'probe',
+                    true,
+                    false,
+                    new DeterministicCanonicalEncoder(),
+                );
             }
         };
     }
@@ -913,6 +979,7 @@ final class ExtensionBindingSurfaceTest extends TestCase
         return new AdministratorRenderer(
             new AdministratorTwigEnvironment(new ArrayLoader([])),
             new RecoveryAdministratorRenderer(new RecoveryAdministratorTwigEnvironment(new ArrayLoader([]))),
+            new DeterministicCanonicalEncoder(),
             extensionRequestProvenance: new \stdClass(),
         );
     }

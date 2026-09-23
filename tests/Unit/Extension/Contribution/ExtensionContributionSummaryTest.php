@@ -8,6 +8,7 @@ use Kumwe\App\Extension\Contribution\ExtensionContributionSummary;
 use Kumwe\Extension\Manifest\ExtensionManifest;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 /**
  * Proves the contribution summary maps each declared contribution to where it surfaces.
@@ -33,7 +34,11 @@ final class ExtensionContributionSummaryTest extends TestCase
      */
     public function testAdministratorScreenIsLinkedAtItsMountedPath(): void
     {
-        $summary = ExtensionContributionSummary::project($this->manifest('announcements'), true);
+        $summary = ExtensionContributionSummary::project(
+            new DeterministicCanonicalEncoder(),
+            $this->manifest('announcements'),
+            true,
+        );
         $administrator = $this->group($summary, 'administrator');
 
         $screen = $administrator['entries'][0];
@@ -54,7 +59,11 @@ final class ExtensionContributionSummaryTest extends TestCase
      */
     public function testCapabilitiesPointAtTheAccessScreen(): void
     {
-        $summary = ExtensionContributionSummary::project($this->manifest('announcements'), true);
+        $summary = ExtensionContributionSummary::project(
+            new DeterministicCanonicalEncoder(),
+            $this->manifest('announcements'),
+            true,
+        );
         $capabilities = $this->group($summary, 'capabilities');
 
         self::assertSame('kumwe.announcements-example.manage', $capabilities['entries'][0]['label']);
@@ -71,7 +80,11 @@ final class ExtensionContributionSummaryTest extends TestCase
      */
     public function testBusinessDefinitionsLinkToTheirWorkspaces(): void
     {
-        $summary = ExtensionContributionSummary::project($this->manifest('announcements'), true);
+        $summary = ExtensionContributionSummary::project(
+            new DeterministicCanonicalEncoder(),
+            $this->manifest('announcements'),
+            true,
+        );
         $content = $this->group($summary, 'content');
 
         $hrefs = array_column($content['entries'], 'href', 'label');
@@ -97,7 +110,11 @@ final class ExtensionContributionSummaryTest extends TestCase
      */
     public function testPortalViewsAndReportsAreLinked(): void
     {
-        $summary = ExtensionContributionSummary::project($this->manifest('asset-inspection'), true);
+        $summary = ExtensionContributionSummary::project(
+            new DeterministicCanonicalEncoder(),
+            $this->manifest('asset-inspection'),
+            true,
+        );
         $portal = $this->group($summary, 'portal');
 
         $hrefs = array_column($portal['entries'], 'href', 'label');
@@ -124,7 +141,11 @@ final class ExtensionContributionSummaryTest extends TestCase
      */
     public function testAutomationEntriesNameWhereTheirOutputGoes(): void
     {
-        $summary = ExtensionContributionSummary::project($this->manifest('asset-inspection'), true);
+        $summary = ExtensionContributionSummary::project(
+            new DeterministicCanonicalEncoder(),
+            $this->manifest('asset-inspection'),
+            true,
+        );
         $automation = $this->group($summary, 'automation');
 
         $byLabel = [];
@@ -155,6 +176,7 @@ final class ExtensionContributionSummaryTest extends TestCase
     public function testSelectableThemeExplainsItsActivationStep(): void
     {
         $summary = ExtensionContributionSummary::project(
+            new DeterministicCanonicalEncoder(),
             $this->manifest('horizon-theme'),
             false,
             [],
@@ -178,6 +200,7 @@ final class ExtensionContributionSummaryTest extends TestCase
     public function testActivatedThemeLinksToTheSiteItDresses(): void
     {
         $summary = ExtensionContributionSummary::project(
+            new DeterministicCanonicalEncoder(),
             $this->manifest('horizon-theme'),
             false,
             ['site'],
@@ -199,7 +222,11 @@ final class ExtensionContributionSummaryTest extends TestCase
      */
     public function testDisabledExtensionStillListsItsContributionsAsInactive(): void
     {
-        $summary = ExtensionContributionSummary::project($this->manifest('announcements'), false);
+        $summary = ExtensionContributionSummary::project(
+            new DeterministicCanonicalEncoder(),
+            $this->manifest('announcements'),
+            false,
+        );
 
         self::assertNotSame([], $summary);
         foreach ($summary as $group) {
@@ -224,7 +251,11 @@ final class ExtensionContributionSummaryTest extends TestCase
     public function testLinesReportEachEntryFactually(): void
     {
         $active = ExtensionContributionSummary::lines(
-            ExtensionContributionSummary::project($this->manifest('announcements'), true),
+            ExtensionContributionSummary::project(
+                new DeterministicCanonicalEncoder(),
+                $this->manifest('announcements'),
+                true,
+            ),
         );
         self::assertContains(
             'adds administrator screen Announcements at /administrator/extensions/kumwe/announcements-example'
@@ -234,7 +265,11 @@ final class ExtensionContributionSummaryTest extends TestCase
         );
 
         $inactive = ExtensionContributionSummary::lines(
-            ExtensionContributionSummary::project($this->manifest('announcements'), false),
+            ExtensionContributionSummary::project(
+                new DeterministicCanonicalEncoder(),
+                $this->manifest('announcements'),
+                false,
+            ),
         );
         self::assertNotSame([], $inactive);
         foreach ($inactive as $line) {
@@ -275,7 +310,7 @@ final class ExtensionContributionSummaryTest extends TestCase
         ));
         self::assertIsString($json);
 
-        return ExtensionManifest::fromJson($json);
+        return ExtensionManifest::fromJson(new DeterministicCanonicalEncoder(), $json);
     }
 
     /**

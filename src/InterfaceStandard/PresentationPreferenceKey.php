@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Kumwe\App\InterfaceStandard;
 
 use InvalidArgumentException;
+use Kumwe\InterfaceStandard\CustomizationScope;
+use Kumwe\InterfaceStandard\CustomizationSlot;
+use Kumwe\InterfaceStandard\SurfaceId;
 
 /**
  * Durable identity of one presentation slot at one exact customization layer.

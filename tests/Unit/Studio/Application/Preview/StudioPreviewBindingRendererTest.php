@@ -40,6 +40,7 @@ use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use stdClass;
 use Twig\Loader\ArrayLoader;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(CanonicalStudioPreviewRenderer::class)]
 #[CoversClass(StudioPreviewBindingResolver::class)]
@@ -587,6 +588,7 @@ final class StudioPreviewBindingRendererTest extends TestCase
         $theme = new StudioPublishedTheme(
             $settings,
             new ActiveExtensionSet(new ExtensionContributionRegistrySet(
+                new DeterministicCanonicalEncoder(),
                 new SdkFieldConfigurationAdmission(),
                 withCore: false,
             )),
@@ -620,7 +622,10 @@ final class StudioPreviewBindingRendererTest extends TestCase
     private static function runtime(): StudioBlockRendererRuntime
     {
         return new StudioBlockRendererRuntime(
-            new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission()),
+            new ExtensionContributionRegistrySet(
+                new DeterministicCanonicalEncoder(),
+                new SdkFieldConfigurationAdmission(),
+            ),
             new StudioContentFieldBlockRenderer(),
         );
     }

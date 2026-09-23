@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Extension\Contribution;
 
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Contribution\ContributionOwner;
+use Kumwe\Extension\Manifest\ManifestIdentifierPolicies;
 use InvalidArgumentException;
 use Kumwe\Access\AuthorizationPolicyRegistry;
 use Kumwe\Access\CapabilityDefinition as AuthorizationCapabilityDefinition;
 use Kumwe\App\Application\Authorization\HostAccessPolicy;
 use Kumwe\Access\Capability;
+use Kumwe\Contribution\ContributionSurface;
 
 /**
  * The capability identifiers the running process recognises, each held by exactly one owner.
@@ -68,7 +70,7 @@ final class CapabilityDefinitionRegistry implements ContributionSurface
      */
     public function register(ContributionOwner $owner, CapabilityDefinition $definition): void
     {
-        $owner->assertOwns($definition->id, 'capability');
+        $owner->assertOwns($definition->id, ManifestIdentifierPolicies::forKind('capability'));
         if (isset($this->definitions[$definition->id])) {
             throw new InvalidArgumentException(sprintf(
                 'Capability contribution %s is already owned by %s.',

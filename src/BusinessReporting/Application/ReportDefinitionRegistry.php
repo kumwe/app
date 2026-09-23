@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessReporting\Application;
 
 use InvalidArgumentException;
-use Kumwe\App\BusinessReporting\Domain\ReportDefinition;
+use Kumwe\Reporting\Domain\ReportDefinition;
 use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 
 /**

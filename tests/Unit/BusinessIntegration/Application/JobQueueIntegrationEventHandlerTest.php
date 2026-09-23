@@ -5,22 +5,23 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\BusinessIntegration\Application;
 
 use DateTimeImmutable;
-use Kumwe\App\Application\Automation\JobQueue;
+use Kumwe\Automation\JobQueue;
 use Kumwe\App\BusinessIntegration\Application\JobQueueIntegrationEventHandler;
-use Kumwe\App\BusinessIntegration\Domain\RecordedEventEnvelope;
-use Kumwe\App\BusinessIntegration\Domain\RecordedIntegrationEvent;
+use Kumwe\Integration\RecordedEventEnvelope;
+use Kumwe\Integration\RecordedIntegrationEvent;
 use Kumwe\App\Extension\Runtime\ExtensionExecutionContext;
 use Kumwe\App\Tests\Support\AuthorizationContext;
 use Kumwe\Context\Value\AuthenticationStrength;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\Extension\Spi\Application\ExecutionContext;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventConsumerDefinition;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventSensitivity;
+use Kumwe\Integration\EventConsumerDefinition;
+use Kumwe\Integration\EventSensitivity;
 use LogicException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
 use ReflectionClass;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(JobQueueIntegrationEventHandler::class)]
 /**
@@ -55,6 +56,7 @@ final class JobQueueIntegrationEventHandlerTest extends TestCase
             'sensitivity_ceiling' => 'restricted',
         ]);
         $event = new RecordedIntegrationEvent(
+            new DeterministicCanonicalEncoder(),
             'acme.sample.changed',
             1,
             '018f22e2-7c8b-7ab0-8f3a-88e8026bb902',
@@ -184,6 +186,7 @@ final class JobQueueIntegrationEventHandlerTest extends TestCase
             'sensitivity_ceiling' => 'restricted',
         ]);
         $event = new RecordedIntegrationEvent(
+            new DeterministicCanonicalEncoder(),
             'acme.sample.changed',
             1,
             '018f22e2-7c8b-7ab0-8f3a-88e8026bb912',

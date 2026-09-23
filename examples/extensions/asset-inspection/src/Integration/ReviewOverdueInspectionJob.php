@@ -7,7 +7,7 @@ namespace KumweExample\AssetInspection\Integration;
 use InvalidArgumentException;
 use Kumwe\Extension\Spi\Application\Automation\JobHandler;
 use Kumwe\Extension\Spi\Application\ExecutionContext;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\JobContributionDefinition;
+use Kumwe\Automation\JobContributionDefinition;
 
 /**
  * Evaluates the bounded overdue-review window scheduled by the proof component.

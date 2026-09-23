@@ -13,7 +13,7 @@ use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\DBAL\Schema\PrimaryKeyConstraint;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\App\Application\Automation\JobExecutionClass;
+use Kumwe\Automation\JobExecutionClass;
 use Kumwe\Audit\Domain\AuditEnforcementState;
 use Kumwe\Audit\Domain\AuditEventDigest;
 use Kumwe\App\Audit\Infrastructure\Persistence\AuditAppendOnlyGuard;

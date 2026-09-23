@@ -56,6 +56,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
 use RuntimeException;
 use ZipArchive;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(DoctrineExtensionManager::class)]
 #[CoversClass(DoctrineAdministratorThemeRecovery::class)]
@@ -346,6 +347,7 @@ final class DoctrineThemeManagerIntegrationTest extends TestCase
         );
         file_put_contents($this->administratorThemePath() . '/layout.twig', '{% broken', FILE_APPEND);
         $compiler = new ExtensionRuntimeMapCompiler(
+            new DeterministicCanonicalEncoder(),
             $this->database,
             $this->tables,
             $this->map,
@@ -399,6 +401,7 @@ final class DoctrineThemeManagerIntegrationTest extends TestCase
             FILE_APPEND,
         );
         $compiler = new ExtensionRuntimeMapCompiler(
+            new DeterministicCanonicalEncoder(),
             $this->database,
             $this->tables,
             $this->map,
@@ -507,6 +510,7 @@ final class DoctrineThemeManagerIntegrationTest extends TestCase
         $manager->install($this->pluginArchive('1.0.0'), self::context(), lease: $this->lease());
         $manager->activate('acme/plugin', self::context(), lease: $this->lease());
         $compiler = new ExtensionRuntimeMapCompiler(
+            new DeterministicCanonicalEncoder(),
             $this->database,
             $this->tables,
             $this->map,
@@ -646,6 +650,7 @@ final class DoctrineThemeManagerIntegrationTest extends TestCase
         $transactions = new DoctrineTransactionManager($this->database);
         $authorization = AuthorizationContext::gateway();
         $compiler = new ExtensionRuntimeMapCompiler(
+            new DeterministicCanonicalEncoder(),
             $this->database,
             $this->tables,
             $this->map,
@@ -657,6 +662,7 @@ final class DoctrineThemeManagerIntegrationTest extends TestCase
             new RuntimeArtifactDigester(),
         );
         $trust = new TrustStore(
+            new DeterministicCanonicalEncoder(),
             $this->createStub(TrustStoreRepository::class),
             $this->createStub(PublicKeyPackageSignatureVerifier::class),
             $this->createStub(ExtensionArtifactVerifier::class),
@@ -669,11 +675,12 @@ final class DoctrineThemeManagerIntegrationTest extends TestCase
         );
 
         return new DoctrineExtensionManager(
+            new DeterministicCanonicalEncoder(),
             $this->database,
             $this->tables,
             $this->root . '/extensions',
             $this->root . '/public',
-            new PackageInspector(),
+            new PackageInspector(new DeterministicCanonicalEncoder()),
             new ZipArchiveContentReader(),
             new PackageEvidenceInspector(new ZipArchiveContentReader(), new PackageCodeConformance()),
             new PackageAdmissionPolicy(),

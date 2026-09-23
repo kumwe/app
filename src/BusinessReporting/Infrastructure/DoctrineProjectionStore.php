@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessReporting\Infrastructure;
 
 use Doctrine\DBAL\Connection;
+use Kumwe\CanonicalJson\CanonicalEncoder;
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Types\Types;
@@ -12,16 +13,16 @@ use InvalidArgumentException;
 use JsonException;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\BusinessDefinition\Domain\CanonicalDefinitionJson;
-use Kumwe\App\BusinessIntegration\Domain\RecordedIntegrationEvent;
+use Kumwe\Integration\RecordedIntegrationEvent;
 use Kumwe\App\BusinessReporting\Application\JournalProjectionEvent;
 use Kumwe\App\BusinessReporting\Application\ProjectionEventSource;
 use Kumwe\App\BusinessReporting\Application\ProjectionGenerationWriter;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Shared\Domain\CanonicalJson;
-use Kumwe\Extension\Spi\BusinessReporting\Application\ProjectionBuilder;
-use Kumwe\Extension\Spi\BusinessReporting\Application\ProjectionEvent;
-use Kumwe\Extension\Spi\BusinessReporting\Domain\ProjectionDefinition;
-use Kumwe\Extension\Spi\BusinessReporting\Domain\ProjectionFieldDefinition;
+use Kumwe\Reporting\Contract\ProjectionBuilder;
+use Kumwe\Reporting\Contract\ProjectionEvent;
+use Kumwe\Reporting\Domain\ProjectionDefinition;
+use Kumwe\Reporting\Domain\ProjectionFieldDefinition;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
@@ -72,10 +73,11 @@ final class DoctrineProjectionStore implements ProjectionEventSource, Projection
     /**
      * Bind one stateful writer session to the shared durable projection tables.
      *
-     * @param  Connection          $database      Shared authoritative database connection.
-     * @param  TableNames          $tables        Portable physical table-name compiler.
-     * @param  TransactionManager  $transactions  Atomic live-apply and generation-activation boundary.
-     * @param  ClockInterface      $clock         Authoritative persistence clock.
+     * @param  Connection          $database          Shared authoritative database connection.
+     * @param  TableNames          $tables            Portable physical table-name compiler.
+     * @param  TransactionManager  $transactions      Atomic live-apply and generation-activation boundary.
+     * @param  ClockInterface      $clock             Authoritative persistence clock.
+     * @param  CanonicalEncoder    $canonicalEncoder  Host encoder stored source envelopes are rebuilt with.
      *
      * @since  2.0.0
      */
@@ -84,6 +86,7 @@ final class DoctrineProjectionStore implements ProjectionEventSource, Projection
         private readonly TableNames $tables,
         private readonly TransactionManager $transactions,
         private readonly ClockInterface $clock,
+        private readonly CanonicalEncoder $canonicalEncoder,
     ) {
     }
 
@@ -506,7 +509,7 @@ final class DoctrineProjectionStore implements ProjectionEventSource, Projection
         if (!hash_equals($expectedChecksum, CanonicalJson::digest($envelope))) {
             throw new RuntimeException('A projection source envelope checksum does not match.');
         }
-        $event = RecordedIntegrationEvent::fromArray($envelope);
+        $event = RecordedIntegrationEvent::fromArray($this->canonicalEncoder, $envelope);
         if (
             $event->eventId() !== ($row['event_id'] ?? null)
             || $event->eventType() !== ($row['event_type'] ?? null)

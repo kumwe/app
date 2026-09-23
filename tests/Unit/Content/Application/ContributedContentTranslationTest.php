@@ -17,7 +17,7 @@ use Kumwe\App\Content\Application\ContentService;
 use Kumwe\Content\Application\TranslationGroupRepository;
 use Kumwe\Content\Domain\ContentEntry;
 use Kumwe\Content\Domain\ContentStatus;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\OwnedRuntimeContributionRegistry;
 use Kumwe\App\Extension\Contribution\TranslationGroupDeclaration;
 use Kumwe\Extension\Spi\Contribution\TranslationSetItemAssociation;

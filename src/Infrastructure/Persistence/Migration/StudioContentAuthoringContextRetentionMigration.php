@@ -9,7 +9,7 @@ use DateTimeZone;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
 use Kumwe\App\Application\Automation\Job\PurgeStudioContentAuthoringContextsHandler;
-use Kumwe\App\Application\Automation\JobExecutionClass;
+use Kumwe\Automation\JobExecutionClass;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use RuntimeException;
 

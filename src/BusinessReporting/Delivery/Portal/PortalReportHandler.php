@@ -17,7 +17,7 @@ use Kumwe\App\BusinessReporting\Application\ReportService;
 use Kumwe\App\BusinessReporting\Application\ReportUnavailable;
 use Kumwe\App\BusinessReporting\Delivery\Api\ReportApiPresenter;
 use Kumwe\App\BusinessReporting\Delivery\Browser\ReportParameterInput;
-use Kumwe\App\BusinessReporting\Domain\ReportDefinition;
+use Kumwe\Reporting\Domain\ReportDefinition;
 use Kumwe\App\Portal\Http\PortalRequest;
 use Kumwe\App\Portal\Http\Middleware\PortalCsrfMiddleware;
 use Kumwe\App\Portal\Presentation\PortalRenderer;

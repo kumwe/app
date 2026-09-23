@@ -1,0 +1,94 @@
+schema: kumwe-release-attestation/v2
+artifact_kind: framework_php
+migration_id: KUMWE-MIG-2026-037
+change_set: KUMWE-CS-2026-037
+repository: "https://github.com/kumwe/portal-contract"
+merge_commit: "25acd85873f0660ee8a67d4bc4ed0adf0f74085e"
+version: "0.2.2"
+tag: v0.2.2
+source_archive:
+  url: "https://github.com/kumwe/portal-contract/archive/refs/tags/v0.2.2.tar.gz"
+  sha256: "b90cd3e66dd666a6e22483b2d9285fa105d64e98e07a322e26c2d9c82e5dfbc1"
+artifacts:
+  - identity: "kumwe/portal-contract:0.2.2"
+    url: "https://github.com/kumwe/portal-contract/archive/refs/tags/v0.2.2.tar.gz"
+    sha256: "b90cd3e66dd666a6e22483b2d9285fa105d64e98e07a322e26c2d9c82e5dfbc1"
+manifests_and_corpora:
+  - path: resources/public-api/v1.json
+    sha256: "74893824d51a7f56c8a43b6a8332b4b4bbe208c5dd83df68155162d4bf92aa28"
+  - path: resources/capabilities/v1.json
+    sha256: "7f8ee0c99d61a129ee78323f71705472cdea84d94173911fd1d2913eabf22a0b"
+  - path: resources/service-map/v1.json
+    sha256: "bfd8a1ff475ef17626b116895e305f9b9eb99963dc068e35cfe967f73799203e"
+  - path: resources/release-readiness.json
+    sha256: "3384f7e4ef020ca8c809969165bf7d3b1bd2faafc5368b1763da4db1f7adadeb"
+  - path: docs/release-record.md
+    sha256: "45c41ceeb1f6752b6ee5b698098214a72d0bb70afe3f3e5832ee8f28207415d9"
+abi_and_capabilities: null
+sbom:
+  url: null
+  sha256: null
+provenance: "Release on record run 35842737236 (push, attempt 1) published release 394493906 as github-actions[bot]"
+release_workflow: "https://github.com/kumwe/portal-contract/actions/runs/35842737236 success on the tag commit"
+registry_or_pie_verification:
+  - "git ls-remote https://github.com/kumwe/portal-contract refs/tags/v0.2.2 returned one line for refs/tags/v0.2.2"
+  - "Tag commit from git ls-remote: 25acd85873f0660ee8a67d4bc4ed0adf0f74085e; no peeled ^{} line (lightweight tag)"
+  - "git clone --quiet --depth 1 --branch v0.2.2 of the repository: HEAD 25acd85873f0660ee8a67d4bc4ed0adf0f74085e, tree 781cd96b365b3ff2afa0cac950d6695fb48d1d00"
+  - "In the clone git cat-file -t v0.2.2 is commit; subject: Release 0.2.2: align the change set with KUMWE-MIG-2026-037"
+  - "Tag commit committed 2026-09-23T11:24:18+02:00 by eWɘyn; parent 08f15db2866c75a9f2906d68d3e3419bee3df64b"
+  - "A full clone shows refs/heads/main at 73560d0bb1376e726c2232415e5115a014f55275 does not contain the tag commit; the main tree 781cd96b365b3ff2afa0cac950d6695fb48d1d00 equals the tag tree"
+  - "Packagist p2 observed 2026-09-23T18:20:42Z at repo.packagist.org/p2/kumwe/portal-contract.json (HTTP 200)"
+  - "Packagist lists v0.2.2 newest of v0.2.2, v0.2.1, v0.2.0, v0.1.0; time 2026-09-23T09:24:18+00:00"
+  - "Packagist source: git https://github.com/kumwe/portal-contract.git at 25acd85873f0660ee8a67d4bc4ed0adf0f74085e"
+  - "Packagist dist: zip at reference 25acd85873f0660ee8a67d4bc4ed0adf0f74085e (api.github.com zipball URL)"
+  - "Packagist source and dist references both equal the tag commit and the clone HEAD"
+  - "Packagist dist shasum is an empty string; license Apache-2.0; psr-4 Kumwe\\Portal\\Contract\\ => src/"
+  - "Packagist require: php ^8.5, ext-mbstring *, kumwe/access-control 0.1.2, kumwe/contribution 0.1.1"
+  - "curl -sS -L of the archive/refs/tags/v0.2.2.tar.gz URL above: HTTP 200, 22835 bytes"
+  - "The download resolved to codeload.github.com/kumwe/portal-contract/tar.gz/refs/tags/v0.2.2"
+  - "file reports gzip compressed data for both downloads"
+  - "sha256 b90cd3e66dd666a6e22483b2d9285fa105d64e98e07a322e26c2d9c82e5dfbc1 covers the tar.gz bytes"
+  - "The same URL was fetched twice and both downloads produced that digest"
+  - "git archive --format=tar --prefix=portal-contract-0.2.2/ v0.2.2 | sha256sum gave f11015f88a7b9c91"
+  - "Full local git archive digest: f11015f88a7b9c911d20a9bcc40f8c51d19b97d7f03a12cb22fff3edc594c297"
+  - "Extracted portal-contract-0.2.2/ holds 28 files; diff -r reports no content difference against the clone"
+  - "diff -r --exclude=.git differs only by the export-ignore paths of .gitattributes: .github, tests, tools, composer.lock, phpunit.xml, phpstan.neon and phpcs.xml"
+  - "The clone tracks 53 files; the archive omits the 25 export-ignore files and nothing else"
+  - "GitHub release v0.2.2 id 394493906: author github-actions[bot], published_at 2026-09-23T09:25:05Z"
+  - "GitHub release v0.2.2: draft false, prerelease false, immutable true, target_commitish main, no assets"
+  - "Release on record run 35842737236: push, attempt 1, run number 17, head_sha 25acd85873f0660ee8a67d4bc4ed0adf0f74085e"
+  - "Release on record run 35842737236: status completed, conclusion success, created 2026-09-23T09:24:21Z"
+  - "GitHub MCP tools answered every query; no access-denied response was observed"
+clean_consumer_or_build_verification:
+  - "Inspection only: no package script or example was executed; archive, clone and vendor copy were compared"
+  - "resources/public-api/v1.json: valid against package-public-api.v1.schema.json (App SchemaValidator)"
+  - "resources/capabilities/v1.json: valid against package-capabilities.v1.schema.json (App SchemaValidator)"
+  - "resources/service-map/v1.json: valid against package-service-map.v1.schema.json (App SchemaValidator)"
+  - "All three manifests carry package kumwe/portal-contract and release 0.2.2"
+  - "The shipped record is docs/release-record.md; no MIGRATION-HANDOFF.md exists in the archive"
+  - "docs/release-record.md front matter parsed by PackageManifests::parseReleaseRecord"
+  - "docs/release-record.md front matter: valid against package-release-record.v1.schema.json (App SchemaValidator)"
+  - "Record front matter: kumwe-package-release-record/v1, KUMWE-MIG-2026-037, KUMWE-CS-2026-037, framework_php"
+  - "Record artifact_identity kumwe/portal-contract; canonical namespace Kumwe\\Portal\\Contract\\"
+  - "Record framework_php.composer_package kumwe/portal-contract"
+  - "Record ownership.public_manifests digests equal the locally computed manifest digests listed above"
+  - "CHANGELOG.md newest release heading is ## [0.2.2] - 2026-09-23 above ## [0.2.1] - 2026-09-08, below an ## Unreleased section"
+  - "Package composer.json require: php ^8.5, ext-mbstring *, kumwe/access-control 0.1.2, kumwe/contribution 0.1.1"
+  - "App composer.lock: kumwe/portal-contract v0.2.2 at 25acd85873f0660ee8a67d4bc4ed0adf0f74085e"
+  - "App composer.lock: kumwe/access-control v0.1.2 at c2420d1ed03bc39eaf5d8b9f5540580c297e3b57 satisfies 0.1.2 (exact)"
+  - "App composer.lock: kumwe/contribution v0.1.1 at 2fc75742aa5a7d78418d2f586fa3043271e70082 satisfies 0.1.1 (exact)"
+  - "App composer.lock platform: php ^8.5 with ext-json and ext-mbstring (they satisfy the package requirements)"
+  - "The App vendor copy of docs/release-record.md and of the manifests carries the digests above"
+  - "Validator: tools/Governance bootstrap, SchemaValidator, PackageManifests and StrictYaml loaded by a scratch script on PHP 8.4.19"
+verified_at: "2026-09-23T18:20:42Z"
+verified_by: "Independent release verification, inspection only, in the adoption worktree before the Phase 2 records were written"
+status: verified
+known_gaps:
+  - "The Packagist dist zipball was not downloaded; Packagist publishes an empty dist shasum for it"
+  - "The attested archive is the GitHub tag tar.gz, whose bytes differ from the Packagist zipball of the same commit"
+  - "Tag protection and rulesets were not queried"
+  - "The tag commit is not an ancestor of main; the main tree equals the tag tree, so no content diverged"
+  - "The verification was performed by the adopting party in the adoption worktree, not by a separate isolated verifier"
+  - "No clean consumer install, smoke test or example run was performed; the verification was restricted to inspection and the App lock install"
+  - "No SBOM and no release assets exist for v0.2.2; abi_and_capabilities does not apply to a framework_php artifact"
+  - "The schema checks used the App's fixed JSON Schema 2020-12 subset validator, not a full implementation"

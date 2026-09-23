@@ -6,17 +6,18 @@ namespace Kumwe\App\Tests\Unit\BusinessIntegration;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\App\BusinessIntegration\Application\EventContractRegistry;
+use Kumwe\Integration\EventContractRegistry;
 use Kumwe\App\BusinessIntegration\Application\ProcessManagerService;
-use Kumwe\App\BusinessIntegration\Application\ProcessManagerStore;
-use Kumwe\App\BusinessIntegration\Domain\ProcessInstance;
-use Kumwe\App\BusinessIntegration\Domain\ProcessStatus;
-use Kumwe\App\BusinessIntegration\Domain\ProcessWorkItem;
-use Kumwe\App\BusinessIntegration\Domain\ProcessWorkKind;
+use Kumwe\Integration\ProcessManagerStore;
+use Kumwe\Integration\ProcessInstance;
+use Kumwe\Integration\ProcessStatus;
+use Kumwe\Integration\ProcessWorkItem;
+use Kumwe\Integration\ProcessWorkKind;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 /**
  * Pins what an operator may enqueue while cancelling a running process.
@@ -43,6 +44,7 @@ final class ProcessCancellationWorkTest extends TestCase
         $clock = new ProcessCancellationClock();
         $running = $this->running();
         $compensation = new ProcessWorkItem(
+            new DeterministicCanonicalEncoder(),
             Uuid::uuid7()->toString(),
             ProcessWorkKind::COMPENSATION,
             'acme.inventory.release',
@@ -113,6 +115,7 @@ final class ProcessCancellationWorkTest extends TestCase
             'operator-1',
             'Stock was returned to the supplier.',
             [new ProcessWorkItem(
+                new DeterministicCanonicalEncoder(),
                 Uuid::uuid7()->toString(),
                 $kind,
                 'acme.inventory.reserve',
@@ -134,7 +137,12 @@ final class ProcessCancellationWorkTest extends TestCase
      */
     private function service(ProcessManagerStore $store, ClockInterface $clock): ProcessManagerService
     {
-        return new ProcessManagerService($store, new EventContractRegistry([], []), $clock);
+        return new ProcessManagerService(
+            $store,
+            new EventContractRegistry(new DeterministicCanonicalEncoder(), [], []),
+            $clock,
+            new DeterministicCanonicalEncoder(),
+        );
     }
 
     /**
@@ -149,6 +157,7 @@ final class ProcessCancellationWorkTest extends TestCase
         $at = new DateTimeImmutable('2026-08-10T10:00:00+00:00');
 
         return new ProcessInstance(
+            new DeterministicCanonicalEncoder(),
             Uuid::uuid7()->toString(),
             'acme.order.fulfilment',
             'order-4711',

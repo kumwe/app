@@ -300,9 +300,9 @@
       "result_summary": "All 1,448 PHP files parse and the docblock gate reports 0 violations across 1,050 classes. Focused WASM checks ran during implementation, but the canonical native PHPUnit suite is unavailable and no aggregate unit pass is claimed.",
       "artifact_paths": [
         "tests/Unit/InterfaceProgramme/InterfaceProgrammeEvidenceGateTest.php",
-        "tests/Unit/InterfaceStandard/SurfaceDefinitionTest.php",
+        "vendor/kumwe/interface-standard/tests/run.php",
         "tests/Unit/InterfaceStandard/InterfaceStandardSchemaTest.php",
-        "tests/Unit/InterfaceStandard/SurfaceIdentifierParityTest.php",
+        "tests/Architecture/InterfaceStandardBoundaryTest.php",
         "tests/Unit/InterfaceStandard/PresentationPreferenceManagerTest.php",
         "tests/Unit/Presentation/Application/ThemePackageValidatorTest.php",
         "tests/Architecture/BusinessWorkspaceParityManifestTest.php"

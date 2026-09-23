@@ -7,7 +7,7 @@ namespace Kumwe\App\Studio\Application\Composition;
 use Kumwe\Extension\Spi\Contribution\CanonicalCompositionDocument;
 use Kumwe\Extension\Spi\Contribution\CanonicalCompositionKind;
 use Kumwe\Extension\Spi\Contribution\CompositionHostBinding;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\Extension\Contribution\StudioPreviewRendererContribution;
 use Kumwe\App\Studio\Application\Rendering\StudioBlockRendererRuntime;

@@ -12,7 +12,7 @@ use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\App\Tests\Support\NeutralBusinessFixture;
 use Kumwe\App\Tests\Support\TestKernelFactory;
 use Kumwe\Extension\Spi\BusinessRecord\Application\BusinessRecordReadRequest;
-use Kumwe\Extension\Spi\BusinessRecord\Query\RecordQuerySpecification;
+use Kumwe\Record\Query\RecordQuerySpecification;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;

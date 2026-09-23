@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessIntegration\Application;
 
 use Kumwe\Extension\Spi\BusinessIntegration\Application\DomainEventHandler;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\DomainEvent;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\DomainListenerDefinition;
+use Kumwe\Integration\DomainEvent;
+use Kumwe\Integration\DomainListenerDefinition;
+use Kumwe\Integration\EventContractRegistry;
 
 /**
  * Synchronously invokes matching domain listeners after validating the event contract.

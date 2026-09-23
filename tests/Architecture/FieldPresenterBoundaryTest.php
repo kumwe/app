@@ -36,7 +36,7 @@ final class FieldPresenterBoundaryTest extends TestCase
             ] as $file
         ) {
             $contracts .= $this->source(
-                'vendor/kumwe/extension-sdk/src/Spi/BusinessSurface/Presentation/Field/' . $file,
+                'vendor/kumwe/business-surface-contract/src/Presentation/Field/' . $file,
             );
         }
         $contracts .= $this->source('src/BusinessSurface/Presentation/Field/FieldPresentationCoverage.php');

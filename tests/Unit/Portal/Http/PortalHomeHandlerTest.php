@@ -11,14 +11,14 @@ use Kumwe\App\Application\Presentation\Dashboard\DashboardPreferenceAccessGroupS
 use Kumwe\App\Application\Presentation\Dashboard\DashboardPreferenceService;
 use Kumwe\App\Application\Presentation\Dashboard\DashboardPreferenceState;
 use Kumwe\App\Delivery\Http\Dashboard\DashboardPreferenceQueryDecoder;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\App\Portal\Application\PortalSession;
 use Kumwe\App\Portal\Application\PortalSessionIdentity;
-use Kumwe\Extension\Spi\Portal\Contribution\PortalNavigationDefinition;
-use Kumwe\Extension\Spi\Portal\Contribution\PortalWorkspaceDefinition;
+use Kumwe\Portal\Contract\PortalNavigationDefinition;
+use Kumwe\Portal\Contract\PortalWorkspaceDefinition;
 use Kumwe\App\Portal\Application\PortalContext;
 use Kumwe\App\Portal\Http\Handler\PortalHomeHandler;
 use Kumwe\App\Portal\Presentation\PortalNavigationVisibility;
@@ -40,6 +40,7 @@ use PHPUnit\Framework\TestCase;
 use Twig\Environment;
 use Twig\Loader\ArrayLoader;
 use Kumwe\App\Application\Authorization\ExecutionContextAttribute;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 /**
  * Proves the portal home consumes the shared widget engine and exact portal navigation projection.
@@ -70,7 +71,10 @@ final class PortalHomeHandlerTest extends TestCase
         $session = $this->session();
         $visibility = $this->createStub(PortalNavigationVisibility::class);
         $visibility->method('visible')->willReturn(true);
-        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+        );
         $renderer = new PortalRenderer(
             new Environment(new ArrayLoader([
                 'portal/home.twig' => 'widgets:{{ dashboard.widgets|length }};'
@@ -122,7 +126,10 @@ final class PortalHomeHandlerTest extends TestCase
         $session = $this->session();
         $visibility = $this->createStub(PortalNavigationVisibility::class);
         $visibility->method('visible')->willReturn(true);
-        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+        );
         $owner = ContributionOwner::core();
         $registries->portalWorkspaces()->register($owner, new PortalWorkspaceDefinition(
             'core.portal-dashboard-volume',
@@ -191,7 +198,10 @@ final class PortalHomeHandlerTest extends TestCase
         $session = $this->session();
         $visibility = $this->createStub(PortalNavigationVisibility::class);
         $visibility->method('visible')->willReturn(true);
-        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+        );
         $renderer = new PortalRenderer(
             new Environment(new ArrayLoader([
                 'portal/home.twig' => "saved:{{ dashboard.preference_saved ? 'yes' : 'no' }};"

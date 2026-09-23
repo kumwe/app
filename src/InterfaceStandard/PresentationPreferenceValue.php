@@ -6,6 +6,8 @@ namespace Kumwe\App\InterfaceStandard;
 
 use InvalidArgumentException;
 use JsonException;
+use Kumwe\InterfaceStandard\CustomizationSlot;
+use Kumwe\InterfaceStandard\SurfaceId;
 
 /**
  * One normalized value from the closed KIS presentation-preference vocabulary.

@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\Administrator\Navigation;
 
 use Kumwe\App\Administrator\Navigation\AdministratorNavigationRegistry;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Contribution\ContributionOwner;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 /**
  * Proves the core administrator menu and the protected shell layout agree on one icon sprite.
@@ -45,7 +46,9 @@ final class AdministratorNavigationRegistryTest extends TestCase
         self::assertNotSame([], $symbols, 'The protected administrator layout defines no icon symbols.');
         self::assertSame($symbols, array_values(array_unique($symbols)), 'Administrator icon symbols must be unique.');
 
-        $navigation = AdministratorNavigationRegistry::core()->ownedBy(ContributionOwner::core());
+        $navigation = AdministratorNavigationRegistry::core(
+            new DeterministicCanonicalEncoder(),
+        )->ownedBy(ContributionOwner::core());
         self::assertNotSame([], $navigation, 'Core ships no administrator navigation.');
         $navigationIcons = array_values(array_unique(array_map(
             static fn (array $item): string => (string) $item['icon'],

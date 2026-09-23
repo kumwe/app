@@ -9,7 +9,7 @@ use InvalidArgumentException;
 use Kumwe\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\Access\GrantScope;
 use Kumwe\Context\Value\AuthenticatedSurface;
-use Kumwe\Extension\Spi\BusinessReporting\Domain\ReportDefinitionGuard;
+use Kumwe\Reporting\Domain\ReportDefinitionGuard;
 use Kumwe\Access\Capability;
 use LogicException;
 

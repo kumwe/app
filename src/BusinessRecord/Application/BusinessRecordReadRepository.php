@@ -7,7 +7,7 @@ namespace Kumwe\App\BusinessRecord\Application;
 use Kumwe\BusinessDefinition\Domain\RelationshipDefinition;
 use Kumwe\Record\Model\BusinessRecord;
 use Kumwe\Record\Model\RecordScope;
-use Kumwe\Extension\Spi\BusinessRecord\Query\RecordQuerySpecification;
+use Kumwe\Record\Query\RecordQuerySpecification;
 use Kumwe\BusinessPolicy\Application\BusinessRecordAccessPlan;
 
 /**

@@ -46,6 +46,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
 use Throwable;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(IsolateThemeSurfacesMigration::class)]
 #[CoversClass(ExtensionRuntimeMapCompiler::class)]
@@ -211,6 +212,7 @@ final class ThemePersistenceIntegrationTest extends TestCase
 
         try {
             (new ExtensionRuntimeMapCompiler(
+                new DeterministicCanonicalEncoder(),
                 $database,
                 $tables,
                 $map,
@@ -245,6 +247,7 @@ final class ThemePersistenceIntegrationTest extends TestCase
         self::assertTrue(mkdir($directory . '/extensions', 0700, true));
         self::assertTrue(mkdir($directory . '/assets', 0700, true));
         $first = new ExtensionRuntimeMapCompiler(
+            new DeterministicCanonicalEncoder(),
             $database,
             $tables,
             $directory . '/replica-a.json',
@@ -256,6 +259,7 @@ final class ThemePersistenceIntegrationTest extends TestCase
             new RuntimeArtifactDigester(),
         );
         $second = new ExtensionRuntimeMapCompiler(
+            new DeterministicCanonicalEncoder(),
             $database,
             $tables,
             $directory . '/replica-b.json',
@@ -345,6 +349,7 @@ final class ThemePersistenceIntegrationTest extends TestCase
         ]);
         $clock = new MutableIntegrationClock();
         $old = new ExtensionRuntimeMapCompiler(
+            new DeterministicCanonicalEncoder(),
             $database,
             $tables,
             $directory . '/old.json',
@@ -358,6 +363,7 @@ final class ThemePersistenceIntegrationTest extends TestCase
             300,
         );
         $new = new ExtensionRuntimeMapCompiler(
+            new DeterministicCanonicalEncoder(),
             $database,
             $tables,
             $directory . '/new.json',
@@ -415,6 +421,7 @@ final class ThemePersistenceIntegrationTest extends TestCase
         self::assertTrue(mkdir($directory . '/assets', 0700, true));
         $map = $directory . '/extensions.json';
         $compiler = new ExtensionRuntimeMapCompiler(
+            new DeterministicCanonicalEncoder(),
             $database,
             $tables,
             $map,
@@ -453,6 +460,7 @@ final class ThemePersistenceIntegrationTest extends TestCase
         self::assertTrue(mkdir($directory . '/assets', 0700, true));
         $map = $directory . '/extensions.json';
         $compiler = new ExtensionRuntimeMapCompiler(
+            new DeterministicCanonicalEncoder(),
             $database,
             $tables,
             $map,
@@ -502,6 +510,7 @@ final class ThemePersistenceIntegrationTest extends TestCase
         self::assertTrue(mkdir($directory . '/assets', 0700, true));
         $map = $directory . '/extensions.json';
         $compiler = new ExtensionRuntimeMapCompiler(
+            new DeterministicCanonicalEncoder(),
             $database,
             $tables,
             $map,
@@ -544,6 +553,7 @@ final class ThemePersistenceIntegrationTest extends TestCase
         $oldKey = str_repeat('old-runtime-key-', 3);
         $newKey = str_repeat('new-runtime-key-', 3);
         $old = new ExtensionRuntimeMapCompiler(
+            new DeterministicCanonicalEncoder(),
             $database,
             $tables,
             $map,
@@ -556,6 +566,7 @@ final class ThemePersistenceIntegrationTest extends TestCase
         );
         $first = $old->reconcileAndMaterialize();
         $withoutOverlap = new ExtensionRuntimeMapCompiler(
+            new DeterministicCanonicalEncoder(),
             $database,
             $tables,
             $map,
@@ -577,6 +588,7 @@ final class ThemePersistenceIntegrationTest extends TestCase
             )));
         }
         $rotated = new ExtensionRuntimeMapCompiler(
+            new DeterministicCanonicalEncoder(),
             $database,
             $tables,
             $map,
@@ -593,6 +605,7 @@ final class ThemePersistenceIntegrationTest extends TestCase
             $rotatedState = $rotated->reconcileAndMaterialize();
             self::assertSame($first->generation + 1, $rotatedState->generation);
             $newKeyOnly = new ExtensionRuntimeMapCompiler(
+                new DeterministicCanonicalEncoder(),
                 $database,
                 $tables,
                 $map,
@@ -627,7 +640,7 @@ final class ThemePersistenceIntegrationTest extends TestCase
         (new IsolateThemeSurfacesMigration($tables))->up($database);
         (new BusinessDefinitionCatalogMigration($tables))->up($database);
         (new BusinessTransactionalRuntimeMigration($tables))->up($database);
-        (new BusinessSecurityPortalMigration($tables))->up($database);
+        (new BusinessSecurityPortalMigration($tables, new DeterministicCanonicalEncoder()))->up($database);
         (new InstallationGlobalAutomationMigration($tables))->up($database);
         (new AuditTamperEvidenceMigration(
             $tables,
@@ -656,7 +669,10 @@ final class ThemePersistenceIntegrationTest extends TestCase
             $this->createStub(AccessTokenQuotaPolicy::class),
             str_repeat('s', 32),
             AuthorizationContext::gateway(),
-            (new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission()))->authorizationPolicies(),
+            (new ExtensionContributionRegistrySet(
+                new DeterministicCanonicalEncoder(),
+                new SdkFieldConfigurationAdmission(),
+            ))->authorizationPolicies(),
             (new \ReflectionClass(TokenDelegationPreauthorizer::class))->newInstanceWithoutConstructor(),
             (new \ReflectionClass(TokenRotationPreauthorizer::class))->newInstanceWithoutConstructor(),
             AuthorizationContext::ownershipWriter(),

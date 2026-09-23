@@ -6,6 +6,7 @@ namespace Kumwe\App\Extension\Runtime;
 
 use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use InvalidArgumentException;
+use Kumwe\CanonicalJson\CanonicalEncoder;
 use Kumwe\Extension\Spi\Application\ExtensionServiceProvider;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\Extension\Manifest\ExtensionIdentifier;
@@ -34,19 +35,22 @@ final readonly class ExtensionRuntimeLoader
     /**
      * Bind the loader to the publication it will execute and the storage it may execute from.
      *
-     * @param  VerifiedRuntimePublication  $publication    Compiled runtime map, re-verified on every load
+     * @param  CanonicalEncoder            $canonicalEncoder  Host encoder the strict runtime contribution graph
+     *         is admitted with.
+     * @param  VerifiedRuntimePublication  $publication       Compiled runtime map, re-verified on every load
      *         rather than trusted from whoever read it.
-     * @param  string                      $extensionRoot  Absolute path of extension storage; no extension
+     * @param  string                      $extensionRoot     Absolute path of extension storage; no extension
      *         root may resolve outside it.
-     * @param  RuntimePublicationKeyRing   $keys           Key ring the publication's own signature is
+     * @param  RuntimePublicationKeyRing   $keys              Key ring the publication's own signature is
      *         checked against, including keys it was rotated from.
-     * @param  TrustStore                  $trust          Trust boundary handed to the active set, its
+     * @param  TrustStore                  $trust             Trust boundary handed to the active set, its
      *         routes, and each extension's event listeners.
-     * @param  ExtensionExecutionGate      $execution      Live generation gate attached to resident listeners.
+     * @param  ExtensionExecutionGate      $execution         Live generation gate attached to resident listeners.
      *
      * @since  2.0.0
      */
     public function __construct(
+        private CanonicalEncoder $canonicalEncoder,
         private VerifiedRuntimePublication $publication,
         private string $extensionRoot,
         private RuntimePublicationKeyRing $keys,
@@ -153,6 +157,7 @@ final readonly class ExtensionRuntimeLoader
                     $contributionMembers[$member] = $value;
                 }
                 $declared = ManifestContributions::fromManifest(
+                    $this->canonicalEncoder,
                     $extensionIdentifier,
                     $contributionMembers,
                     $manifestSchema,

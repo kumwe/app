@@ -9,7 +9,7 @@ use Kumwe\Extension\Spi\Runtime\ExtensionContainer;
 use Kumwe\Extension\Spi\Application\ExtensionServiceProvider;
 use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
 use Kumwe\App\Extension\Domain\ThemeSurface;

@@ -13,8 +13,8 @@ use Kumwe\Audit\Domain\AuditEvent;
 use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\BusinessDefinition\Domain\ScopeMode;
 use Kumwe\App\BusinessIntegration\Application\BusinessRecordMutationEventPublisher;
-use Kumwe\App\BusinessIntegration\Application\OutboxStore;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\Integration\OutboxStore;
+use Kumwe\Integration\IntegrationEvent;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordMutationPublication;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordRevisionRepository;
 use Kumwe\App\BusinessRecord\Application\RecordFingerprint;
@@ -27,6 +27,7 @@ use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 /**
  * Pins the independently testable revision, audit and event publication seam.
@@ -73,7 +74,10 @@ final class BusinessRecordMutationPublicationTest extends TestCase
                 $order[] = 'event';
                 $integrationEvent = $entry;
             });
-        $contributions = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
+        $contributions = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+        );
         $execution = $this->createMock(ExtensionExecutionGate::class);
         $execution->expects(self::never())->method('assertCurrent');
         $events = new BusinessRecordMutationEventPublisher(
@@ -81,6 +85,7 @@ final class BusinessRecordMutationPublicationTest extends TestCase
             $contributions,
             $outbox,
             $execution,
+            new DeterministicCanonicalEncoder(),
         );
         $publication = new BusinessRecordMutationPublication(
             $revisions,

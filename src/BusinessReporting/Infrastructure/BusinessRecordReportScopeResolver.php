@@ -8,7 +8,7 @@ use InvalidArgumentException;
 use Kumwe\BusinessDefinition\Domain\ScopeMode;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordDefinitionResolver;
 use Kumwe\App\BusinessReporting\Application\ReportScopeResolver;
-use Kumwe\App\BusinessReporting\Domain\ReportDefinition;
+use Kumwe\Reporting\Domain\ReportDefinition;
 use Kumwe\Context\Value\ExecutionContext;
 
 /**

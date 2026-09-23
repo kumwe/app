@@ -6,8 +6,8 @@ namespace Kumwe\App\Delivery\Http\Dashboard;
 
 use InvalidArgumentException;
 use Kumwe\App\Application\Presentation\Dashboard\DashboardPreferenceMutation;
-use Kumwe\App\InterfaceStandard\CustomizationScope;
-use Kumwe\App\InterfaceStandard\CustomizationSlot;
+use Kumwe\InterfaceStandard\CustomizationScope;
+use Kumwe\InterfaceStandard\CustomizationSlot;
 
 /**
  * Translates one flat browser form into the typed dashboard preference application command.

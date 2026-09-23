@@ -16,7 +16,7 @@ use Kumwe\Access\SiteGroupRegistry;
 use Kumwe\Access\SiteGroupUnknown;
 use Kumwe\App\BusinessReporting\Application\ConsolidatedGroupReportScope;
 use Kumwe\App\Extension\Contribution\CapabilityDefinition;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\App\Extension\Contribution\ResourcePolicyDefinition;
@@ -26,6 +26,7 @@ use Kumwe\Access\Capability;
 use Kumwe\App\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 /**
  * Walks the four-business installation the ownership model exists to serve.
@@ -300,7 +301,10 @@ final class BusinessGroupOwnershipTest extends TestCase
      */
     private function policies(): \Kumwe\Access\AuthorizationPolicyRegistry
     {
-        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+        );
         $owner = ContributionOwner::extension('kumwe/payroll');
         foreach ([self::READ => 'Read', self::WRITE => 'Change'] as $capability => $verb) {
             $registries->capabilities()->register($owner, new CapabilityDefinition(

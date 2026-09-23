@@ -8,10 +8,10 @@ use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use InvalidArgumentException;
-use Kumwe\App\BusinessIntegration\Application\EventContractRegistry;
+use Kumwe\Integration\EventContractRegistry;
 use Kumwe\App\BusinessIntegration\Application\TrustedRuntimeGenerationGuard;
-use Kumwe\App\BusinessIntegration\Domain\EventSchemaDefinition;
-use Kumwe\App\BusinessIntegration\Domain\RecordedIntegrationEvent;
+use Kumwe\Integration\EventSchemaDefinition;
+use Kumwe\Integration\RecordedIntegrationEvent;
 use Kumwe\App\BusinessIntegration\Infrastructure\DoctrineOutboxStore;
 use Kumwe\App\BusinessReporting\Application\JournalProjectionEvent;
 use Kumwe\App\BusinessReporting\Application\ProjectionRebuildService;
@@ -21,20 +21,21 @@ use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
 use Kumwe\App\Infrastructure\Persistence\DoctrineTransactionManager;
 use Kumwe\App\Infrastructure\Persistence\Migration\BusinessIntegrationSdkMigration;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventSensitivity;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationEvent;
-use Kumwe\Extension\Spi\BusinessReporting\Application\ProjectionBuilder;
-use Kumwe\Extension\Spi\BusinessReporting\Application\ProjectionEvent;
-use Kumwe\Extension\Spi\BusinessReporting\Application\ProjectionWriter;
-use Kumwe\Extension\Spi\BusinessReporting\Domain\ProjectionDefinition;
-use Kumwe\Extension\Spi\BusinessReporting\Domain\ProjectionFieldDefinition;
-use Kumwe\Extension\Spi\BusinessReporting\Domain\ProjectionSourceDefinition;
-use Kumwe\Extension\Spi\BusinessReporting\Domain\ReportValueType;
+use Kumwe\Integration\EventSensitivity;
+use Kumwe\Integration\IntegrationEvent;
+use Kumwe\Reporting\Contract\ProjectionBuilder;
+use Kumwe\Reporting\Contract\ProjectionEvent;
+use Kumwe\Reporting\Contract\ProjectionWriter;
+use Kumwe\Reporting\Domain\ProjectionDefinition;
+use Kumwe\Reporting\Domain\ProjectionFieldDefinition;
+use Kumwe\Reporting\Domain\ProjectionSourceDefinition;
+use Kumwe\Reporting\Domain\ReportValueType;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(DoctrineProjectionStore::class)]
 #[CoversClass(DoctrineProjectionRuntime::class)]
@@ -61,6 +62,7 @@ final class ProjectionRuntimePersistenceTest extends TestCase
         $this->transactions = new DoctrineTransactionManager($this->database);
         $this->clock = new ProjectionRuntimeClock();
         $schema = new EventSchemaDefinition(
+            new DeterministicCanonicalEncoder(),
             'business.record.changed',
             1,
             EventSensitivity::INTERNAL,
@@ -74,7 +76,7 @@ final class ProjectionRuntimePersistenceTest extends TestCase
                 'additionalProperties' => false,
             ],
         );
-        $contracts = new EventContractRegistry([$schema], []);
+        $contracts = new EventContractRegistry(new DeterministicCanonicalEncoder(), [$schema], []);
         $migration = new BusinessIntegrationSdkMigration($this->tables);
         $migration->up($this->database);
         $migration->up($this->database);
@@ -84,6 +86,7 @@ final class ProjectionRuntimePersistenceTest extends TestCase
             $this->transactions,
             $this->clock,
             $contracts,
+            new DeterministicCanonicalEncoder(),
         );
         $this->definition = new ProjectionDefinition(
             'acme.record_activity',
@@ -182,6 +185,7 @@ final class ProjectionRuntimePersistenceTest extends TestCase
             $this->tables,
             $this->transactions,
             $this->clock,
+            new DeterministicCanonicalEncoder(),
             new ProjectionRuntimeGenerationGuard(),
             new RuntimeMaterializationState('projection-test', 7, '', '', true),
             [['definition' => $this->definition, 'implementation' => $builder]],
@@ -198,6 +202,7 @@ final class ProjectionRuntimePersistenceTest extends TestCase
     private function event(int $version, string $value): IntegrationEvent
     {
         return new RecordedIntegrationEvent(
+            new DeterministicCanonicalEncoder(),
             'business.record.changed',
             1,
             Uuid::uuid7()->toString(),

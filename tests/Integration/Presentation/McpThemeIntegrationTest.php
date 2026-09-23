@@ -41,6 +41,7 @@ use Kumwe\App\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(KumweMcpHandlers::class)]
 final class McpThemeIntegrationTest extends TestCase
@@ -188,6 +189,7 @@ final class McpThemeIntegrationTest extends TestCase
             static fn (callable $operation): mixed => $operation(),
         );
         $trust = new TrustStore(
+            new DeterministicCanonicalEncoder(),
             $repository,
             $this->createStub(PublicKeyPackageSignatureVerifier::class),
             $this->createStub(ExtensionArtifactVerifier::class),

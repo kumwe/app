@@ -8,7 +8,7 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Kumwe\App\Kernel\Container;
-use Kumwe\App\Application\Automation\JobQueue;
+use Kumwe\Automation\JobQueue;
 use Kumwe\App\Infrastructure\Automation\DoctrineJobQueue;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Kernel\Configuration\ApplicationConfiguration;

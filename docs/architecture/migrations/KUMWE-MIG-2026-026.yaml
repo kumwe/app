@@ -1,0 +1,148 @@
+schema: kumwe-migration-ledger/v1
+migration_id: KUMWE-MIG-2026-026
+change_set: KUMWE-CS-2026-026
+package: kumwe/automation
+version: 0.2.2
+artifact_digest: "0472a8b05b54ba23f01606409066625045028c6aae3961de7c447f53115b0423"
+handoff_path: vendor/kumwe/automation/MIGRATION-HANDOFF.md
+handoff_sha256: "d52dedae51cdbaea29be213a447c2206f5a5517cb191e3fca464913804b0af07"
+release_attestation: docs/architecture/migrations/evidence/KUMWE-MIG-2026-026/RELEASE-ATTESTATION.yaml
+old_namespace_roots: []
+symbols:
+  - old_fqcn: Kumwe\App\Automation\Domain\CronExpression
+    new_fqcn: Kumwe\Automation\CronExpression
+  - old_fqcn: Kumwe\App\Application\Automation\RetryPolicy
+    new_fqcn: Kumwe\Automation\RetryPolicy
+  - old_fqcn: Kumwe\App\Application\Automation\RetryDecision
+    new_fqcn: Kumwe\Automation\RetryDecision
+  - old_fqcn: Kumwe\App\Application\Automation\JitterSource
+    new_fqcn: Kumwe\Automation\JitterSource
+  - old_fqcn: Kumwe\App\Application\Automation\CryptographicJitterSource
+    new_fqcn: Kumwe\Automation\CryptographicJitterSource
+  - old_fqcn: Kumwe\App\Application\Automation\FailureClassification
+    new_fqcn: Kumwe\Automation\FailureClassification
+  - old_fqcn: Kumwe\App\Application\Automation\PermanentFailure
+    new_fqcn: Kumwe\Automation\PermanentFailure
+  - old_fqcn: Kumwe\App\Application\Automation\TransientFailure
+    new_fqcn: Kumwe\Automation\TransientFailure
+  - old_fqcn: Kumwe\App\Application\Automation\JobEnvelope
+    new_fqcn: Kumwe\Automation\JobEnvelope
+  - old_fqcn: Kumwe\App\Application\Automation\JobLease
+    new_fqcn: Kumwe\Automation\JobLease
+  - old_fqcn: Kumwe\App\Application\Automation\JobStatus
+    new_fqcn: Kumwe\Automation\JobStatus
+  - old_fqcn: Kumwe\App\Application\Automation\StoredJob
+    new_fqcn: Kumwe\Automation\StoredJob
+  - old_fqcn: Kumwe\App\Application\Automation\JobExecutionClass
+    new_fqcn: Kumwe\Automation\JobExecutionClass
+  - old_fqcn: Kumwe\App\Application\Automation\JobQueue
+    new_fqcn: Kumwe\Automation\JobQueue
+  - old_fqcn: Kumwe\App\Application\Automation\JobHandler
+    new_fqcn: Kumwe\Automation\JobHandler
+  - old_fqcn: Kumwe\App\Application\Automation\JobHandlerRegistry
+    new_fqcn: Kumwe\Automation\JobHandlerRegistry
+  - old_fqcn: Kumwe\App\Application\Automation\QueueRuntimePolicy
+    new_fqcn: Kumwe\Automation\QueueRuntimePolicy
+  - old_fqcn: Kumwe\App\Application\Automation\QueueRuntimePolicyCatalog
+    new_fqcn: Kumwe\Automation\QueueRuntimePolicyCatalog
+  - old_fqcn: Kumwe\App\Application\Automation\ExpiredJobLease
+    new_fqcn: Kumwe\Automation\ExpiredJobLease
+  - old_fqcn: Kumwe\App\Application\Automation\AutomationNotFound
+    new_fqcn: Kumwe\Automation\AutomationNotFound
+  - old_fqcn: Kumwe\App\BusinessIntegration\Domain\QueueContributionDefinition
+    new_fqcn: Kumwe\Automation\QueueContributionDefinition
+  - old_fqcn: Kumwe\App\BusinessIntegration\Domain\ScheduleContributionDefinition
+    new_fqcn: Kumwe\Automation\ScheduleContributionDefinition
+  - old_fqcn: Kumwe\Extension\Spi\Application\Automation\JobDeclaration
+    new_fqcn: Kumwe\Automation\JobDeclaration
+  - old_fqcn: Kumwe\Extension\Spi\BusinessIntegration\Domain\JobContributionDefinition
+    new_fqcn: Kumwe\Automation\JobContributionDefinition
+removed_paths:
+  - src/Automation/Domain/CronExpression.php
+  - src/Application/Automation/RetryPolicy.php
+  - src/Application/Automation/RetryDecision.php
+  - src/Application/Automation/JitterSource.php
+  - src/Application/Automation/CryptographicJitterSource.php
+  - src/Application/Automation/FailureClassification.php
+  - src/Application/Automation/PermanentFailure.php
+  - src/Application/Automation/TransientFailure.php
+  - src/Application/Automation/JobEnvelope.php
+  - src/Application/Automation/JobLease.php
+  - src/Application/Automation/JobStatus.php
+  - src/Application/Automation/StoredJob.php
+  - src/Application/Automation/JobExecutionClass.php
+  - src/Application/Automation/JobQueue.php
+  - src/Application/Automation/JobHandler.php
+  - src/Application/Automation/JobHandlerRegistry.php
+  - src/Application/Automation/QueueRuntimePolicy.php
+  - src/Application/Automation/QueueRuntimePolicyCatalog.php
+  - src/Application/Automation/ExpiredJobLease.php
+  - src/Application/Automation/AutomationNotFound.php
+  - src/BusinessIntegration/Domain/QueueContributionDefinition.php
+  - src/BusinessIntegration/Domain/ScheduleContributionDefinition.php
+removed_tests:
+  - tests/Unit/Application/Automation/CronExpressionTest.php
+  - tests/Unit/Application/Automation/JobEnvelopeTest.php
+  - tests/Unit/Application/Automation/JobLeaseTest.php
+  - tests/Unit/Application/Automation/RetryPolicyTest.php
+retained_tests:
+  - tests/Architecture/TransactionSeamBoundaryTest.php
+  - tests/Functional/Extension/LiveSurfaceContractParityTest.php
+  - tests/Integration/Automation/AutomationManagementIntegrationTest.php
+  - tests/Integration/Automation/DatabaseLossRecoveryIntegrationTest.php
+  - tests/Integration/Automation/KilledWorkerRecoveryIntegrationTest.php
+  - tests/Integration/Automation/SchedulerOccurrenceContentionIntegrationTest.php
+  - tests/Integration/Automation/WorkerConnectionLossKillPointIntegrationTest.php
+  - tests/Integration/BusinessIntegration/BusinessIntegrationPersistenceTest.php
+  - tests/Integration/BusinessIntegration/HungEndpointDeadlineIntegrationTest.php
+  - tests/Integration/BusinessIntegration/PoisonAndDeadLetterIntegrationTest.php
+  - tests/Integration/Extension/GeneratedExtensionLifecycleIntegrationTest.php
+  - tests/Integration/Extension/ManifestGenerationLifecycleIntegrationTest.php
+  - tests/Integration/Persistence/MigrationIntegrationTest.php
+  - tests/Support/DrillDirectedJobHandler.php
+  - tests/Support/killable-worker.php
+  - tests/Unit/Application/Authorization/AdapterAuthorizationParityTest.php
+  - tests/Unit/Application/Automation/AutomationManagementServiceTest.php
+  - tests/Unit/Application/Automation/WorkerTest.php
+  - tests/Unit/BusinessIntegration/Application/DurableOutboundAdapterDeliveryTest.php
+  - tests/Unit/BusinessIntegration/Application/JobQueueIntegrationEventHandlerTest.php
+  - tests/Unit/BusinessIntegration/Application/ValidatedContributedJobHandlerTest.php
+  - tests/Unit/BusinessIntegration/ConsumerDispatcherTest.php
+  - tests/Unit/BusinessIntegration/DurableOutboundAdapterDispatcherTest.php
+  - tests/Unit/BusinessIntegration/Infrastructure/RuntimeIntegrationEventTransportTest.php
+  - tests/Unit/BusinessIntegration/OutboxDispatcherTest.php
+  - tests/Unit/BusinessIntegration/ProcessWorkDispatcherTest.php
+  - tests/Unit/BusinessIntegration/QueueRuntimePolicyTest.php
+  - tests/Unit/Delivery/Console/Command/QueueWorkCommandTest.php
+  - tests/Unit/Delivery/Http/Api/Automation/AutomationApiHandlerTest.php
+  - tests/Unit/Extension/Contribution/ExtensionBindingSurfaceTest.php
+  - tests/Unit/Extension/Contribution/OwnedBindingCanonicalDriftTest.php
+  - tests/Unit/Extension/Runtime/TrustEnforcingJobHandlerTest.php
+di_changes:
+  - service: Kumwe\Automation\CryptographicJitterSource
+    factory: Kumwe\Automation\Container\CryptographicJitterSourceFactory
+    note: "Package factory installed through Kumwe\\Automation\\ConfigProvider; the kernel admits only the two container factories the package exports (this one and RetryPolicyFactory) and the provider aliases, because the provider documents them as bare class names. The host share of the App CryptographicJitterSource under the App JitterSource port is removed."
+  - service: Kumwe\Automation\RetryPolicy
+    factory: Kumwe\Automation\Container\RetryPolicyFactory
+    note: "Package factory installed through the same provider; it reads the clock the kernel binds and the kumwe.automation base_delay_seconds 1 and maximum_delay_seconds 300 the config service now carries, which are the delays the removed host closure passed by hand."
+  - service: Kumwe\Automation\JitterSource
+    factory: Kumwe\Automation\ConfigProvider
+    note: "Provider alias to the package CryptographicJitterSource, replacing the host share that bound the App port to the App source."
+  - service: Kumwe\Automation\JobHandlerRegistry
+    factory: Kumwe\App\Kernel\ContainerFactory
+    note: "Intentional host binding: the package JobHandlerRegistryFactory resolves static service ids from kumwe.automation.handlers and cannot wrap contributed handlers in the trust-enforcing adapter, so the kernel does not admit it and keeps building the registry from the twelve core handlers and the admitted extension contributions; kumwe.automation.handlers stays empty."
+  - service: Kumwe\Automation\JobQueue
+    factory: Kumwe\App\Kernel\ContainerFactory
+    note: "Host port binding re-keyed from the retired App name to the package port; DoctrineJobQueue is unchanged."
+  - service: Kumwe\Automation\QueueRuntimePolicyCatalog
+    factory: Kumwe\App\Kernel\ContainerFactory
+    note: "Host port binding re-keyed from the retired App name to the package port; ContributedQueueRuntimePolicyCatalog is unchanged."
+capability_index_entries:
+  - kumwe/automation
+release_evidence:
+  - docs/architecture/migrations/evidence/KUMWE-MIG-2026-026/RELEASE-ATTESTATION.yaml
+app_pull_request: "https://github.com/kumwe/app/pull/151"
+roadmap_refs: []
+non_roadmap_refs:
+  - NRM-2026-048
+conflicts: []

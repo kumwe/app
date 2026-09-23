@@ -42,7 +42,7 @@ use Kumwe\App\Studio\Application\Rendering\StudioContentFieldBlockRenderer;
 use Kumwe\Extension\Spi\Contribution\CanonicalCompositionDocument;
 use Kumwe\Extension\Spi\Contribution\CanonicalCompositionKind;
 use Kumwe\Extension\Spi\Contribution\CompositionHostBinding;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Contribution\ContributionOwner;
 use Kumwe\Producer\Canonical\CanonicalJson;
 use Kumwe\Producer\Error\HostRefusal;
 use Kumwe\Extension\Spi\Studio\Application\Preview\StudioPreviewBindingResult;
@@ -63,6 +63,7 @@ use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
 use ReflectionProperty;
 use stdClass;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 /**
  * Pins the exact fail-closed public Content-to-Blueprint runtime and its deliberate legacy fallback.
@@ -802,7 +803,11 @@ final class StudioPublishedContentRendererTest extends TestCase
         }
 
         $owner = ContributionOwner::extension('kumwe/contract-manifest-six');
-        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+            withCore: false,
+        );
         $document = new CanonicalCompositionDocument(
             CanonicalCompositionKind::BlockDefinition,
             $canonical,
@@ -877,7 +882,10 @@ final class StudioPublishedContentRendererTest extends TestCase
         $artifacts = $this->createStub(StudioArtifactRepository::class);
         $artifacts->method('current')->willReturn($artifact);
         $artifacts->method('revision')->willReturn($artifact);
-        $registries ??= new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
+        $registries ??= new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+        );
         $runtime = new StudioBlockRendererRuntime($registries, new StudioContentFieldBlockRenderer());
         $resolver = new StudioPreviewBindingResolver();
 
@@ -914,7 +922,10 @@ final class StudioPublishedContentRendererTest extends TestCase
             $models->method('contentType')->willReturn($this->definition());
         }
 
-        $registries ??= new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
+        $registries ??= new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+        );
 
         return new StudioPublishedCompositionGuard(
             self::admission(),
@@ -1110,6 +1121,7 @@ final class StudioPublishedContentRendererTest extends TestCase
         return new StudioPublishedTheme(
             $settings,
             new ActiveExtensionSet(new ExtensionContributionRegistrySet(
+                new DeterministicCanonicalEncoder(),
                 new SdkFieldConfigurationAdmission(),
                 withCore: false,
             )),

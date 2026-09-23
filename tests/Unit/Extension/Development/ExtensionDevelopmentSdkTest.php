@@ -17,7 +17,7 @@ use Kumwe\Extension\Spi\Application\ExtensionServiceProvider;
 use Kumwe\Extension\Spi\Binding\ExtensionBindingProvider;
 use Kumwe\Extension\Spi\BusinessIntegration\Application\DomainEventHandler;
 use Kumwe\Extension\Spi\BusinessIntegration\Application\IntegrationEventHandler;
-use Kumwe\Extension\Spi\BusinessReporting\Application\ProjectionBuilder;
+use Kumwe\Reporting\Contract\ProjectionBuilder;
 use Kumwe\Extension\Spi\Migration\ExtensionMigration;
 use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
@@ -37,6 +37,7 @@ use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use ReflectionClass;
 use SplFileInfo;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(BuildExtensionCommand::class)]
 #[CoversClass(InspectExtensionCommand::class)]
@@ -146,7 +147,7 @@ final class ExtensionDevelopmentSdkTest extends TestCase
 
         $manifestJson = file_get_contents($source . '/kumwe.json');
         self::assertIsString($manifestJson);
-        $manifest = ExtensionManifest::fromJson($manifestJson);
+        $manifest = ExtensionManifest::fromJson(new DeterministicCanonicalEncoder(), $manifestJson);
         $providerClass = $namespace . '\\Provider';
         $migrationClass = $namespace . '\\Migration\\CreateComponentRecords';
         $provider = new $providerClass();
@@ -155,7 +156,10 @@ final class ExtensionDevelopmentSdkTest extends TestCase
         self::assertInstanceOf(ExtensionMigration::class, new $migrationClass());
 
         $declarations = $manifest->contributions();
-        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+        );
         $container = new RestrictedExtensionContainer($manifest->identifier()->value(), []);
         $provider->register($container);
         $registrar = $registries->activateManifest(
@@ -220,8 +224,8 @@ final class ExtensionDevelopmentSdkTest extends TestCase
         $inspector = $this->inspector();
         /** @var list<Command> $commands */
         $commands = [
-            new ScaffoldExtensionCommand(new ComponentScaffolder()),
-            new BuildExtensionCommand(new DeterministicPackageBuilder($inspector)),
+            new ScaffoldExtensionCommand(new ComponentScaffolder(new DeterministicCanonicalEncoder())),
+            new BuildExtensionCommand(new DeterministicPackageBuilder(new DeterministicCanonicalEncoder(), $inspector)),
             new InspectExtensionCommand($inspector),
             new RunExtensionConformanceCommand(new StaticConformanceRunner($inspector)),
             new SignExtensionCommand(new PackageSigner(new ProtectedSigningKeyReader(), $inspector)),
@@ -271,6 +275,6 @@ final class ExtensionDevelopmentSdkTest extends TestCase
      */
     private function inspector(): PackageInspector
     {
-        return new PackageInspector();
+        return new PackageInspector(new DeterministicCanonicalEncoder());
     }
 }

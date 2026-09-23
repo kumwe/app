@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\InterfaceStandard;
 
 use InvalidArgumentException;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
-use Kumwe\App\InterfaceStandard\CustomizationScope;
-use Kumwe\App\InterfaceStandard\CustomizationSlot;
+use Kumwe\Contribution\ContributionOwner;
+use Kumwe\InterfaceStandard\CustomizationScope;
+use Kumwe\InterfaceStandard\CustomizationSlot;
 use Kumwe\App\InterfaceStandard\PresentationPreference;
 use Kumwe\App\InterfaceStandard\PresentationPreferenceKey;
 use Kumwe\App\InterfaceStandard\PresentationPreferenceValue;
-use Kumwe\App\InterfaceStandard\SurfaceId;
+use Kumwe\InterfaceStandard\SurfaceId;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;

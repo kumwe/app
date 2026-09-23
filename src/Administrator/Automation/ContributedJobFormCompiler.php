@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Administrator\Automation;
 
 use InvalidArgumentException;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\JobContributionDefinition;
+use Kumwe\Automation\JobContributionDefinition;
 
 /**
  * Compiles the bounded job payload schema into the graphical schedule form.

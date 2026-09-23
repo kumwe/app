@@ -12,14 +12,14 @@ use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\DBAL\Exception as DbalException;
 use Doctrine\DBAL\Types\Types;
 use Kumwe\App\Kernel\Container;
-use Kumwe\App\BusinessIntegration\Application\EventContractRegistry;
-use Kumwe\App\BusinessIntegration\Application\InboxDisposition;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\ConsumerIdempotency;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventConsumerDefinition;
-use Kumwe\App\BusinessIntegration\Domain\EventSchemaDefinition;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventSensitivity;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationEvent;
-use Kumwe\App\BusinessIntegration\Domain\RecordedIntegrationEvent;
+use Kumwe\Integration\EventContractRegistry;
+use Kumwe\Integration\InboxDisposition;
+use Kumwe\Integration\ConsumerIdempotency;
+use Kumwe\Integration\EventConsumerDefinition;
+use Kumwe\Integration\EventSchemaDefinition;
+use Kumwe\Integration\EventSensitivity;
+use Kumwe\Integration\IntegrationEvent;
+use Kumwe\Integration\RecordedIntegrationEvent;
 use Kumwe\App\BusinessIntegration\Infrastructure\DoctrineInboxStore;
 use Kumwe\App\BusinessIntegration\Infrastructure\DoctrineOutboxStore;
 use Kumwe\App\Infrastructure\Persistence\DoctrineTransactionManager;
@@ -31,6 +31,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 /**
  * Proves outbox and inbox claim arbitration on the configured engine, across two real connections.
@@ -250,6 +251,7 @@ final class OutboxInboxClaimContentionIntegrationTest extends TestCase
             $this->transactions($container),
             $clock,
             $this->contracts(),
+            new DeterministicCanonicalEncoder(),
         );
     }
 
@@ -266,13 +268,19 @@ final class OutboxInboxClaimContentionIntegrationTest extends TestCase
 
     private function contracts(): EventContractRegistry
     {
-        return new EventContractRegistry([
-            new EventSchemaDefinition(self::EVENT_TYPE, 1, EventSensitivity::INTERNAL, [
-                'type' => 'object',
-                'required' => ['record_id'],
-                'properties' => ['record_id' => ['type' => 'string']],
-                'additionalProperties' => false,
-            ]),
+        return new EventContractRegistry(new DeterministicCanonicalEncoder(), [
+            new EventSchemaDefinition(
+                new DeterministicCanonicalEncoder(),
+                self::EVENT_TYPE,
+                1,
+                EventSensitivity::INTERNAL,
+                [
+                    'type' => 'object',
+                    'required' => ['record_id'],
+                    'properties' => ['record_id' => ['type' => 'string']],
+                    'additionalProperties' => false,
+                ],
+            ),
         ], [$this->consumer()]);
     }
 
@@ -294,6 +302,7 @@ final class OutboxInboxClaimContentionIntegrationTest extends TestCase
         $aggregateId ??= 'record-contention-' . $aggregateVersion;
 
         return new RecordedIntegrationEvent(
+            new DeterministicCanonicalEncoder(),
             self::EVENT_TYPE,
             1,
             Uuid::uuid7()->toString(),

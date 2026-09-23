@@ -43,7 +43,7 @@ final readonly class CanonicalManifestActivator
     {
         $owner = $manifest->owner;
         $businessOwner = DefinitionOwner::extension($owner->identifier());
-        $host = new CanonicalManifestInterpreter($manifest);
+        $host = new CanonicalManifestInterpreter($this->registries->canonicalEncoder(), $manifest);
 
         foreach ($host->capabilities() as $definition) {
             $this->registries->capabilities()->register($owner, $definition);

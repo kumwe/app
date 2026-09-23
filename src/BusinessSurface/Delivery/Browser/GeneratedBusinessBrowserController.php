@@ -7,7 +7,7 @@ namespace Kumwe\App\BusinessSurface\Delivery\Browser;
 use InvalidArgumentException;
 use JsonException;
 use Kumwe\Context\Value\ExecutionContext;
-use Kumwe\Extension\Spi\Application\Automation\IdempotencyKey;
+use Kumwe\Idempotency\IdempotencyKey;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordNotFound;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordValidationFailed;

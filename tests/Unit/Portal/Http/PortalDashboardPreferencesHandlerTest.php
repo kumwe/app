@@ -7,17 +7,17 @@ namespace Kumwe\App\Tests\Unit\Portal\Http;
 use DateTimeImmutable;
 use Kumwe\Context\Value\AuthenticationStrength;
 use Kumwe\Context\Value\SiteContext;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
-use Kumwe\App\InterfaceStandard\CustomizationScope;
-use Kumwe\App\InterfaceStandard\CustomizationSlot;
+use Kumwe\InterfaceStandard\CustomizationScope;
+use Kumwe\InterfaceStandard\CustomizationSlot;
 use Kumwe\App\InterfaceStandard\PresentationPreferenceKey;
-use Kumwe\App\InterfaceStandard\SurfaceId;
+use Kumwe\InterfaceStandard\SurfaceId;
 use Kumwe\App\Portal\Application\PortalSession;
 use Kumwe\App\Portal\Application\PortalSessionIdentity;
-use Kumwe\Extension\Spi\Portal\Contribution\PortalNavigationDefinition;
-use Kumwe\Extension\Spi\Portal\Contribution\PortalWorkspaceDefinition;
+use Kumwe\Portal\Contract\PortalNavigationDefinition;
+use Kumwe\Portal\Contract\PortalWorkspaceDefinition;
 use Kumwe\App\Portal\Application\PortalContext;
 use Kumwe\App\Portal\Http\Handler\PortalDashboardPreferencesHandler;
 use Kumwe\App\Portal\Presentation\PortalNavigationVisibility;
@@ -36,6 +36,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use Twig\Environment;
 use Twig\Loader\ArrayLoader;
 use Kumwe\App\Application\Authorization\ExecutionContextAttribute;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 /**
  * Verifies portal POST delivery uses the resolved session catalog and preserves role authorization boundaries.
@@ -151,7 +152,10 @@ final class PortalDashboardPreferencesHandlerTest extends TestCase
      */
     public function testSavesAWorkflowBeyondTheFormerRendererPrefix(): void
     {
-        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+        );
         $owner = ContributionOwner::core();
         $registries->portalWorkspaces()->register($owner, new PortalWorkspaceDefinition(
             'core.portal-dashboard-volume',
@@ -284,7 +288,10 @@ final class PortalDashboardPreferencesHandlerTest extends TestCase
     {
         $visibility = $this->createStub(PortalNavigationVisibility::class);
         $visibility->method('visible')->willReturn(true);
-        $registries ??= new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
+        $registries ??= new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+        );
 
         return new PortalRenderer(
             new Environment(new ArrayLoader()),

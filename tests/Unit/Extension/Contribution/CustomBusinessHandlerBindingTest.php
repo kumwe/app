@@ -13,15 +13,16 @@ use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\App\Extension\Contribution\OwnedExtensionBindingRegistrar;
 use Kumwe\Extension\Manifest\ExtensionIdentifier;
 use Kumwe\Extension\Manifest\ManifestContributions;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionHandler;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionCommand;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionResult;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewHandler;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewQuery;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewResult;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessActionHandler;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessActionCommand;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessActionResult;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessViewHandler;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessViewQuery;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessViewResult;
 use LogicException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(CanonicalManifestInterpreter::class)]
 #[CoversClass(OwnedExtensionBindingRegistrar::class)]
@@ -43,7 +44,11 @@ final class CustomBusinessHandlerBindingTest extends TestCase
      */
     public function testSignedViewAndActionHandlersBindToTheirContracts(): void
     {
-        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+            withCore: false,
+        );
         $manifest = self::manifest();
         $registrar = $registries->activateManifest($manifest);
         self::assertInstanceOf(OwnedExtensionBindingRegistrar::class, $registrar);
@@ -105,7 +110,11 @@ final class CustomBusinessHandlerBindingTest extends TestCase
      */
     public function testAnUndeclaredHandlerIdentifierIsRefused(): void
     {
-        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+            withCore: false,
+        );
         $registrar = $registries->activateManifest(self::manifest());
         $view = new class implements CustomBusinessViewHandler {
             /**
@@ -167,6 +176,7 @@ final class CustomBusinessHandlerBindingTest extends TestCase
         ];
 
         return ManifestContributions::fromManifest(
+            new DeterministicCanonicalEncoder(),
             ExtensionIdentifier::fromString('kumwe/asset-inspection-example'),
             $contributions,
             4,

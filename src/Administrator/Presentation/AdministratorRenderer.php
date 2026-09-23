@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace Kumwe\App\Administrator\Presentation;
 
 use JsonException;
+use Kumwe\CanonicalJson\CanonicalEncoder;
 use Kumwe\App\Administrator\Navigation\AdministratorNavigationRegistry;
 use Kumwe\App\Extension\Contribution\AdministratorViewRegistry;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Contribution\ContributionOwner;
 use Kumwe\App\Presentation\Asset\ViteAssetManifest;
 use Kumwe\App\Presentation\Twig\AdministratorTwigEnvironment;
 use Kumwe\App\Presentation\Twig\IsolatedTwigEnvironmentFactory;
@@ -37,6 +38,8 @@ final readonly class AdministratorRenderer
      *         administrator templates, the activated theme layout, and extension views.
      * @param  RecoveryAdministratorRenderer     $recovery                    Theme-free renderer a failed render falls
      *         back to.
+     * @param  CanonicalEncoder                  $canonicalEncoder            Host encoder the core-only recovery
+     *         menu registers its contribution set with.
      * @param  ?AdministratorNavigationRegistry  $navigation                  Registry the menu is built from; null uses
      *         the core-only registry.
      * @param  ?ViteAssetManifest                $assets                      Manifest of built frontend files; null
@@ -51,6 +54,7 @@ final readonly class AdministratorRenderer
     public function __construct(
         private AdministratorTwigEnvironment $twig,
         private RecoveryAdministratorRenderer $recovery,
+        private CanonicalEncoder $canonicalEncoder,
         private ?AdministratorNavigationRegistry $navigation = null,
         private ?ViteAssetManifest $assets = null,
         private ?AdministratorViewRegistry $extensionViews = null,
@@ -87,7 +91,7 @@ final readonly class AdministratorRenderer
         } catch (Error) {
             return $this->recovery->render(
                 $template,
-                $this->sharedData($data, AdministratorNavigationRegistry::core()),
+                $this->sharedData($data, AdministratorNavigationRegistry::core($this->canonicalEncoder)),
             );
         }
     }
@@ -161,7 +165,9 @@ final readonly class AdministratorRenderer
      */
     public function visibleNavigation(array $capabilities): array
     {
-        return ($this->navigation ?? AdministratorNavigationRegistry::core())->visible($capabilities);
+        $registry = $this->navigation ?? AdministratorNavigationRegistry::core($this->canonicalEncoder);
+
+        return $registry->visible($capabilities);
     }
 
     /**
@@ -229,7 +235,7 @@ final readonly class AdministratorRenderer
         } catch (Error) {
             return $this->recovery->render(
                 'extension-error',
-                $this->sharedData($data, AdministratorNavigationRegistry::core()),
+                $this->sharedData($data, AdministratorNavigationRegistry::core($this->canonicalEncoder)),
             );
         }
     }
@@ -266,7 +272,9 @@ final readonly class AdministratorRenderer
             $capabilities = [];
         }
         /** @var array<string, true> $capabilities */
-        $registry = $navigationRegistry ?? $this->navigation ?? AdministratorNavigationRegistry::core();
+        $registry = $navigationRegistry
+            ?? $this->navigation
+            ?? AdministratorNavigationRegistry::core($this->canonicalEncoder);
         $navigation = $navigationRegistry === null
             ? $this->visibleNavigation($capabilities)
             : $registry->visible($capabilities);

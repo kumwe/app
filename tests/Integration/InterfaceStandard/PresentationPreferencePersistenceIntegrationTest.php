@@ -6,14 +6,14 @@ namespace Kumwe\App\Tests\Integration\InterfaceStandard;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\DriverManager;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Contribution\ContributionOwner;
 use Kumwe\App\Infrastructure\Persistence\Migration\InterfacePresentationPreferenceMigration;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
-use Kumwe\App\InterfaceStandard\CustomizationScope;
-use Kumwe\App\InterfaceStandard\CustomizationSlot;
+use Kumwe\InterfaceStandard\CustomizationScope;
+use Kumwe\InterfaceStandard\CustomizationSlot;
 use Kumwe\App\InterfaceStandard\PresentationPreference;
 use Kumwe\App\InterfaceStandard\PresentationPreferenceKey;
-use Kumwe\App\InterfaceStandard\SurfaceId;
+use Kumwe\InterfaceStandard\SurfaceId;
 use Kumwe\App\Application\Presentation\Preference\PresentationPreferenceVersionConflict;
 use Kumwe\App\Infrastructure\Presentation\Persistence\DoctrinePresentationPreferenceRepository;
 use PHPUnit\Framework\Attributes\CoversClass;

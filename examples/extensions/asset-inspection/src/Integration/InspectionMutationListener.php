@@ -6,8 +6,8 @@ namespace KumweExample\AssetInspection\Integration;
 
 use InvalidArgumentException;
 use Kumwe\Extension\Spi\BusinessIntegration\Application\DomainEventHandler;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\DomainEvent;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\DomainListenerDefinition;
+use Kumwe\Integration\DomainEvent;
+use Kumwe\Integration\DomainListenerDefinition;
 
 /**
  * Performs transaction-local validation of inspection mutation metadata without external side effects.

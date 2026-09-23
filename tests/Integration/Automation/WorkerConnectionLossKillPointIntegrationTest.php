@@ -11,7 +11,7 @@ use Kumwe\App\Kernel\Container;
 use Kumwe\Access\AuthorizationGateway;
 use Kumwe\Access\ResourceSiteOwnershipWriter;
 use Kumwe\App\Application\Automation\JobExecutionScope;
-use Kumwe\App\Application\Automation\QueueRuntimePolicyCatalog;
+use Kumwe\Automation\QueueRuntimePolicyCatalog;
 use Kumwe\App\Infrastructure\Automation\DoctrineJobQueue;
 use Kumwe\App\Infrastructure\Persistence\DoctrineTransactionManager;
 use Kumwe\App\Infrastructure\Persistence\TableNames;

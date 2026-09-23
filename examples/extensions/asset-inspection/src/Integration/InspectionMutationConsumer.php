@@ -7,8 +7,8 @@ namespace KumweExample\AssetInspection\Integration;
 use InvalidArgumentException;
 use Kumwe\Extension\Spi\Application\ExecutionContext;
 use Kumwe\Extension\Spi\BusinessIntegration\Application\IntegrationEventHandler;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventConsumerDefinition;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\Integration\EventConsumerDefinition;
+use Kumwe\Integration\IntegrationEvent;
 
 /**
  * Handles durable, inbox-deduplicated inspection mutation events under the worker's site context.

@@ -1,0 +1,91 @@
+schema: kumwe-change-set/v2
+change_set: KUMWE-CS-2026-036
+migration_id: KUMWE-MIG-2026-036
+roadmap_source:
+  title: Kumwe ERP-Extensibility Foundation Roadmap
+  sha256: a202155ef1a65f5ab293d4f8397ebf4ac430db7f1e877c776bbe7851e6fe18d8
+roadmap_refs: []
+state: app-pr-ready
+phase_1:
+  source_repository: kumwe/app
+  source_sha: null
+  target_repository: kumwe/administrator-contract
+  package_pr: null
+  tested_sha: null
+  public_api_digest: "cf513a9e5a2f0b551caef23cd4e6ff332327846e96f500a3abdc92dd8bf9a952"
+  capability_digest: "7c49d8126aada61ad8814fa1b3c665c058e5d34d74c919899bbed5dcea5e8ad1"
+  service_map_digest: "1ad01050ac4d1610364006fee02373db022b9a8c8fbabd00a8c54291610a1758"
+  handoff_digest: "233f3f79a2f72676bdd9601e8c694c1b0175bd7cc39b5d898d0678857311ba3c"
+release:
+  version: 0.2.2
+  source_sha: "78f4261ce017c613426f3c6af9fc8ce09f454aad"
+  artifact_digest: "6337312f1f8cf2d06a67c113f3afe520987e55a7e56902ba918f53bbece96881"
+  clean_consumer_evidence:
+    - docs/architecture/migrations/evidence/KUMWE-MIG-2026-036/RELEASE-ATTESTATION.yaml
+phase_2:
+  app_pr: "https://github.com/kumwe/app/pull/151"
+  tested_sha: null
+  merged_sha: null
+  exact_dependency: "kumwe/administrator-contract 0.2.2"
+  composer_lock_digest: "04b6bdc0e61ef498055023db3aa6243d6c1e05566aa6428729a2117cb9c00612"
+  removed_app_symbols:
+    - Kumwe\Extension\Spi\Contribution\AdministratorNavigationDefinition
+    - Kumwe\Extension\Spi\Contribution\AdministratorRouteDefinition
+    - Kumwe\Extension\Spi\Contribution\AdministratorViewDefinition
+    - Kumwe\Extension\Spi\Contribution\AdministratorWorkspaceDefinition
+  moved_unit_tests: []
+  retained_app_tests:
+    - tests/Unit/Administrator/Http/Handler/AdministratorDashboardPreferencesHandlerTest.php
+    - tests/Unit/Administrator/Navigation/AdministratorNavigationRegistryTest.php
+    - tests/Unit/Administrator/Presentation/AdministratorContributionRendererTest.php
+    - tests/Unit/InterfaceProgramme/InterfaceProgrammeEvidenceGateTest.php
+evidence:
+  package:
+    - docs/architecture/migrations/evidence/KUMWE-MIG-2026-036/RELEASE-ATTESTATION.yaml
+    - "https://github.com/kumwe/administrator-contract/actions/runs/35842753125; release on record on tag commit 78f4261ce017c613426f3c6af9fc8ce09f454aad"
+    - "https://github.com/kumwe/administrator-contract/releases/tag/v0.2.2; release 394494111"
+  app_composition:
+    - tests/Unit/Administrator/Http/Handler/AdministratorDashboardPreferencesHandlerTest.php
+    - tests/Unit/Administrator/Navigation/AdministratorNavigationRegistryTest.php
+    - tests/Unit/Administrator/Presentation/AdministratorContributionRendererTest.php
+    - tests/Unit/InterfaceProgramme/InterfaceProgrammeEvidenceGateTest.php
+    - tests/Unit/Governance/ComposerLockTest.php
+    - tests/Unit/Governance/CoreGrowthGateTest.php
+    - tests/Architecture/CapabilityIndexGateTest.php
+    - "composer update of the train packages; one lock regeneration for the whole train, kumwe/administrator-contract at 0.2.2"
+    - "composer kumwe:capability-index, kumwe:core-growth-record, baseline:record, then the composer qa gates and the unit and architecture suites, run locally on PHP 8.4 without ext-kumwe_engine"
+  database_matrix:
+    - "To be exercised by the pull request's hosted workflows on MariaDB, MySQL and PostgreSQL."
+  concurrency:
+    - "Claim contention, leases, recovery and dead-letter paths; to be exercised by the pull request's hosted workflows."
+  authorization_security:
+    - "Capability checks, admission and trust decisions stay in App; the hosted source-and-image security scans run on the pull request."
+  lifecycle_recovery:
+    - "Lifecycle, recovery and migration paths; to be exercised by the pull request's hosted workflows."
+  delivery_browser:
+    - tests/Unit/Administrator/Http/Handler/AdministratorDashboardPreferencesHandlerTest.php
+    - tests/Unit/Administrator/Presentation/AdministratorContributionRendererTest.php
+    - "The administrator, portal and API delivery read the package values through the unchanged App handlers; the browser suites run in the pull request's hosted workflows."
+  deployment_backup_restore:
+    - "Signed backup, clean restore and deployment acceptance on three engines; to be exercised by the pull request's hosted workflows."
+  native_parity_abi:
+    - tests/Unit/Kernel/NativeComputationFactoryTest.php
+    - "The package ships no native component; the canonical encoder it receives is the container's native encoder binding and no native cutover is claimed."
+  performance_capacity:
+    - tests/Integration/Performance/HotPlanRegressionIntegrationTest.php
+    - "No performance claim is made; the hosted lanes exercise the hot plan and query budgets."
+compatibility: "Drop-in for the four SDK administrator definitions, which keep their names and shapes under Kumwe\\Administrator\\Contract; the App registries, navigation registry, renderer and dashboard handlers consume them unchanged, and the package admission envelope is not adopted."
+migration_recovery: null
+security_impact: "None on authority: administrator registries, capability checks, rendering and dashboard preferences stay in App; the package owns the definition values."
+performance_claim: null
+rollback: "Revert the App pull request; the SDK 0.2.4 definitions return with the train baseline and no persisted data changes."
+known_gaps:
+  - "The local sandbox runs PHP 8.4 without ext-kumwe_engine and without a database server, so the integration and functional lanes, PHP 8.5 and the demo profile installations are proven by the App CI on this pull request."
+  - "One Composer lock regeneration covers the whole train, so composer_lock_digest is the digest of the train lock rather than of a lock that adds this package alone."
+  - "The tag commit is not an ancestor of the repository main branch; the main head tree is byte-identical to the tag tree, and the release-on-record workflow ran on the tag commit itself."
+  - "The package CHANGELOG.md carries an Unreleased section above the 0.2.2 record."
+  - "The release record names tests/Unit/InterfaceStandard/SurfaceIdentifierParityTest.php among the tests to retain; it is removed under KUMWE-MIG-2026-025 because every grammar it compared is now package-owned."
+  - "The package composer.json carries a vcs repository for kumwe/access-control; the App declares none and locks the Packagist release."
+  - "kumwe/extension-sdk 0.3.3 is adopted from its unpublished candidate, pull request 22 at commit b54022b05075944e884dc1df038cbcb63f723472, through a temporary package repository entry in composer.json; the entry is removed and the lock re-pointed at the Packagist distribution once v0.3.3 is published (KUMWE-CS-2026-033)."
+completion_claim: false
+accepted_by: null

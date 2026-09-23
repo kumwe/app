@@ -1,0 +1,31 @@
+schema: kumwe-non-roadmap-record/v1
+id: NRM-2026-050
+nrm_ref: NRM-2026-050
+roadmap_impact: None
+rationale: "Adopt verified kumwe/record-query 0.1.4, the owner of the record query specification, the comparison, boolean, text, set, null and relation filters with their operators and quantifiers, the sort, projection and aggregate values, the search and cursor values, the query canonicalizer and the query graph guard."
+repositories:
+  - kumwe/app
+  - kumwe/record-query
+behavior_before: "App consumed the SDK copies of the twenty-seven record query grammar types under Kumwe\\Extension\\Spi\\BusinessRecord\\Query."
+behavior_after: "The grammar comes from kumwe/record-query 0.1.4; the App cursor codec, query compiler, read repository, surface query factory and the SDK reader port consume the package types, and SQL execution, policy-before-query and cursor key custody stay in App."
+public_api_impact: "None; the types keep their names and shapes and no App signature changes beyond the namespace."
+dependency_impact: "Adds kumwe/record-query 0.1.4 exactly; it requires kumwe/record-values 0.1.4, kumwe/business-definition 0.1.2 and kumwe/conversion 0.1.5, all locked."
+compatibility: "Query digests, cursors and stored search state are unchanged."
+data_migration: None
+security_impact: "No authority change."
+performance:
+  claim: None
+  evidence: []
+operations_deployment: "None; no configuration or schema change."
+recovery_rollback: "Revert the adoption pull request; no persisted data changes."
+artifacts_evidence:
+  - docs/architecture/migrations/KUMWE-MIG-2026-039.yaml
+  - docs/architecture/migrations/change-sets/KUMWE-CS-2026-039.yaml
+  - docs/architecture/migrations/trains/KUMWE-TRAIN-2026-039.yaml
+  - docs/architecture/migrations/evidence/KUMWE-MIG-2026-039/RELEASE-ATTESTATION.yaml
+  - docs/architecture/capability-index.md
+known_gaps:
+  - "The tag commit is not an ancestor of main although the trees are identical."
+  - "kumwe/extension-sdk 0.3.3 is adopted from its unpublished candidate in the same train (NRM-2026-057); the lock is re-pointed at the published distribution once it exists."
+owner: "eWɘyn"
+status: in-progress

@@ -23,7 +23,7 @@ use Kumwe\Extension\Spi\Studio\Application\Preview\StudioPreviewBlockFragment;
 use Kumwe\Extension\Spi\Studio\Application\Preview\StudioPreviewBlockRenderer;
 use Kumwe\Extension\Spi\Contribution\CanonicalCompositionKind;
 use Kumwe\Extension\Spi\Contribution\CompositionHostBinding;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Contribution\ContributionOwner;
 use Kumwe\Producer\Canonical\CanonicalJson;
 use Kumwe\Producer\Schema\StudioContractResources;
 use Kumwe\App\Tests\Support\TrustFencedStudioPreviewRenderers;
@@ -31,6 +31,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use stdClass;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 /**
  * Proves the authoring catalog retains trusted ownership and an exact immutable block lock.
@@ -61,7 +62,12 @@ final class StudioCompositionContributionCatalogTest extends TestCase
      */
     public function testSupportedBlocksProduceADeterministicTrustedLock(): void
     {
-        $catalog = self::catalog(new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission()));
+        $catalog = self::catalog(
+            new ExtensionContributionRegistrySet(
+                new DeterministicCanonicalEncoder(),
+                new SdkFieldConfigurationAdmission(),
+            ),
+        );
 
         $first = $catalog->project([], ['core.renderer/field', 'core.renderer/layout']);
         $second = $catalog->project([], ['core.renderer/layout', 'core.renderer/field']);
@@ -99,7 +105,12 @@ final class StudioCompositionContributionCatalogTest extends TestCase
      */
     public function testExistingLocksIntersectBlocksAndPatternsExactly(): void
     {
-        $catalog = self::catalog(new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission()));
+        $catalog = self::catalog(
+            new ExtensionContributionRegistrySet(
+                new DeterministicCanonicalEncoder(),
+                new SdkFieldConfigurationAdmission(),
+            ),
+        );
         $exactSection = (object) [
             'type' => 'studio.core/section',
             'version' => '1.0.0',
@@ -120,7 +131,12 @@ final class StudioCompositionContributionCatalogTest extends TestCase
      */
     public function testAnActiveBlockWithAMismatchedLockedRevisionFailsProjection(): void
     {
-        $catalog = self::catalog(new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission()));
+        $catalog = self::catalog(
+            new ExtensionContributionRegistrySet(
+                new DeterministicCanonicalEncoder(),
+                new SdkFieldConfigurationAdmission(),
+            ),
+        );
 
         $this->expectException(StudioCompositionLockMismatch::class);
         $this->expectExceptionMessage('studio.core/section');
@@ -140,7 +156,12 @@ final class StudioCompositionContributionCatalogTest extends TestCase
      */
     public function testAnActiveBlockWithAMismatchedLockedVersionFailsProjection(): void
     {
-        $catalog = self::catalog(new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission()));
+        $catalog = self::catalog(
+            new ExtensionContributionRegistrySet(
+                new DeterministicCanonicalEncoder(),
+                new SdkFieldConfigurationAdmission(),
+            ),
+        );
 
         $this->expectException(StudioCompositionLockMismatch::class);
         $this->expectExceptionMessage('studio.core/section');
@@ -160,7 +181,12 @@ final class StudioCompositionContributionCatalogTest extends TestCase
      */
     public function testAMissingLockedDefinitionRemainsOmittedAndRepresentable(): void
     {
-        $catalog = self::catalog(new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission()));
+        $catalog = self::catalog(
+            new ExtensionContributionRegistrySet(
+                new DeterministicCanonicalEncoder(),
+                new SdkFieldConfigurationAdmission(),
+            ),
+        );
         $missing = $catalog->project([], ['core.renderer/field', 'core.renderer/layout'], [(object) [
             'type' => 'withdrawn.vendor/card',
             'version' => '1.0.0',
@@ -212,7 +238,10 @@ final class StudioCompositionContributionCatalogTest extends TestCase
             'acme.shop/grid-preview',
             'acme.shop.catalog.edit',
         );
-        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+        );
         $registries->canonicalCompositionDocuments()->register($owner, $canonical);
         $registries->compositionHostBindings()->register($owner, $binding);
         $withoutRuntime = self::catalog($registries);

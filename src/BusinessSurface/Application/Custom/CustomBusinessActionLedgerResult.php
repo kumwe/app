@@ -8,10 +8,10 @@ use InvalidArgumentException;
 use Kumwe\BusinessDefinition\Domain\ActionDefinition;
 use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\App\BusinessRecord\Application\RecordRequestGuard;
-use Kumwe\Extension\Spi\Application\Automation\IdempotencyKey;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionResult;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessPayload;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessReference;
+use Kumwe\Idempotency\IdempotencyKey;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessActionResult;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessPayload;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessReference;
 use Ramsey\Uuid\Uuid;
 
 /**

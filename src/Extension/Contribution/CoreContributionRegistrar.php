@@ -6,17 +6,17 @@ namespace Kumwe\App\Extension\Contribution;
 
 use Kumwe\BusinessDefinition\Domain\DefinitionOwner;
 use Kumwe\BusinessDefinition\Domain\FieldTypeDefinition;
-use Kumwe\App\BusinessIntegration\Domain\EventSchemaDefinition;
-use Kumwe\App\InterfaceStandard\SurfaceDefinition;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationContribution;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresenter;
-use Kumwe\Extension\Spi\Contribution\AdministratorNavigationDefinition;
-use Kumwe\Extension\Spi\Contribution\AdministratorWorkspaceDefinition;
+use Kumwe\Integration\EventSchemaDefinition;
+use Kumwe\InterfaceStandard\SurfaceDefinition;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresentationContribution;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresenter;
+use Kumwe\Administrator\Contract\AdministratorNavigationDefinition;
+use Kumwe\Administrator\Contract\AdministratorWorkspaceDefinition;
 use Kumwe\Extension\Spi\Contribution\CanonicalCompositionDocument;
 use Kumwe\Extension\Spi\Contribution\CompositionHostBinding;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
-use Kumwe\Extension\Spi\Portal\Contribution\PortalNavigationDefinition;
-use Kumwe\Extension\Spi\Portal\Contribution\PortalWorkspaceDefinition;
+use Kumwe\Contribution\ContributionOwner;
+use Kumwe\Portal\Contract\PortalNavigationDefinition;
+use Kumwe\Portal\Contract\PortalWorkspaceDefinition;
 
 /**
  * Internal composition helper for the App's built-in declarations.

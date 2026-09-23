@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessIntegration\Application;
 
 use Kumwe\App\Application\Authorization\SystemPrincipal;
-use Kumwe\App\Application\Automation\RetryPolicy;
+use Kumwe\Automation\RetryPolicy;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Context\Value\SiteContext;
 use LogicException;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use Kumwe\Integration\ProcessManagerStore;
 
 /**
  * Claims and executes one process timer, command or compensation under a trusted generation.

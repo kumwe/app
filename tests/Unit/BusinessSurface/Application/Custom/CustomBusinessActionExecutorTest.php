@@ -39,17 +39,16 @@ use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewHandlerRegist
 use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
 use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use Kumwe\App\Tests\Support\AuthorizationContext;
-use Kumwe\Extension\Spi\Application\Automation\IdempotencyKey;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionCommand;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionDeclaration;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionHandler;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionResult;
+use Kumwe\Idempotency\IdempotencyKey;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessActionCommand;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessActionDeclaration;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessActionHandler;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessActionResult;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
 use ReflectionClass;
-use Kumwe\App\Extension\Runtime\ExtensionExecutionContext;
 
 #[CoversClass(CustomBusinessActionExecutor::class)]
 #[CoversClass(CustomBusinessActionLedgerResult::class)]
@@ -154,35 +153,6 @@ final class CustomBusinessActionExecutorTest extends TestCase
     }
 
     /**
-     * Prove the reusable SDK command cannot substitute its own authorization context at the App boundary.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    public function testRejectsACommandCarryingAForeignExecutionContext(): void
-    {
-        [$executor, $command] = $this->fixture(1);
-        $executor->execute($command);
-
-        try {
-            $executor->execute(new CustomBusinessActionCommand(
-                $this->createStub(\Kumwe\Extension\Spi\Application\ExecutionContext::class),
-                $command->definitionIdentifier,
-                $command->recordId,
-                $command->expectedVersion,
-                $command->action,
-                IdempotencyKey::fromString('operation:foreign-context-0001'),
-                $command->input,
-                $command->organizationIdentifier,
-            ));
-            self::fail('A foreign execution context entered the App mutation boundary.');
-        } catch (BusinessRecordDefinitionUnavailable) {
-            self::addToAssertionCount(1);
-        }
-    }
-
-    /**
      * Assemble one fully fenced custom executor around a mutable in-memory mock ledger.
      *
      * @param   int  $lookups  Expected number of ledger lookups across the test.
@@ -263,7 +233,7 @@ final class CustomBusinessActionExecutorTest extends TestCase
             ),
         );
         $command = new CustomBusinessActionCommand(
-            ExtensionExecutionContext::of($context),
+            $context,
             $definition->handle,
             '018f4f24-98d8-7ad4-8f3f-38c909178b70',
             2,

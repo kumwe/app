@@ -235,7 +235,7 @@ use Kumwe\App\BusinessRecord\Application\Command\DocumentLineInput;
 use Kumwe\App\BusinessRecord\Application\Command\WriteDocumentCommand;
 use Kumwe\App\BusinessRecord\Application\Query\BrowseRecordsQuery;
 use Kumwe\App\BusinessRecord\Application\Query\ReadRecordQuery;
-use Kumwe\Extension\Spi\BusinessRecord\Query\RecordQuerySpecification;
+use Kumwe\Record\Query\RecordQuerySpecification;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaInstallationRepository;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;

@@ -1,0 +1,36 @@
+schema: kumwe-migration-ledger/v1
+migration_id: KUMWE-MIG-2026-036
+change_set: KUMWE-CS-2026-036
+package: kumwe/administrator-contract
+version: 0.2.2
+artifact_digest: "6337312f1f8cf2d06a67c113f3afe520987e55a7e56902ba918f53bbece96881"
+handoff_path: vendor/kumwe/administrator-contract/docs/release-record.md
+handoff_sha256: "233f3f79a2f72676bdd9601e8c694c1b0175bd7cc39b5d898d0678857311ba3c"
+release_attestation: docs/architecture/migrations/evidence/KUMWE-MIG-2026-036/RELEASE-ATTESTATION.yaml
+old_namespace_roots: []
+symbols:
+  - old_fqcn: Kumwe\Extension\Spi\Contribution\AdministratorNavigationDefinition
+    new_fqcn: Kumwe\Administrator\Contract\AdministratorNavigationDefinition
+  - old_fqcn: Kumwe\Extension\Spi\Contribution\AdministratorRouteDefinition
+    new_fqcn: Kumwe\Administrator\Contract\AdministratorRouteDefinition
+  - old_fqcn: Kumwe\Extension\Spi\Contribution\AdministratorViewDefinition
+    new_fqcn: Kumwe\Administrator\Contract\AdministratorViewDefinition
+  - old_fqcn: Kumwe\Extension\Spi\Contribution\AdministratorWorkspaceDefinition
+    new_fqcn: Kumwe\Administrator\Contract\AdministratorWorkspaceDefinition
+removed_paths: []
+removed_tests: []
+retained_tests:
+  - tests/Unit/Administrator/Http/Handler/AdministratorDashboardPreferencesHandlerTest.php
+  - tests/Unit/Administrator/Navigation/AdministratorNavigationRegistryTest.php
+  - tests/Unit/Administrator/Presentation/AdministratorContributionRendererTest.php
+  - tests/Unit/InterfaceProgramme/InterfaceProgrammeEvidenceGateTest.php
+di_changes: []
+capability_index_entries:
+  - kumwe/administrator-contract
+release_evidence:
+  - docs/architecture/migrations/evidence/KUMWE-MIG-2026-036/RELEASE-ATTESTATION.yaml
+app_pull_request: "https://github.com/kumwe/app/pull/151"
+roadmap_refs: []
+non_roadmap_refs:
+  - NRM-2026-054
+conflicts: []

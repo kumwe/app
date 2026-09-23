@@ -12,6 +12,7 @@ use Kumwe\App\Infrastructure\Persistence\TableNames;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(BusinessSecurityPortalMigration::class)]
 final class BusinessSecurityPortalMigrationTest extends TestCase
@@ -19,7 +20,10 @@ final class BusinessSecurityPortalMigrationTest extends TestCase
     public function testNewSiteColumnsCopyTheCanonicalCharacterDefinition(): void
     {
         $database = $this->createStub(Connection::class);
-        $migration = new BusinessSecurityPortalMigration(new TableNames($database, 'kumwe_'));
+        $migration = new BusinessSecurityPortalMigration(
+            new TableNames($database, 'kumwe_'),
+            new DeterministicCanonicalEncoder(),
+        );
         $sites = new Table('kumwe_sites');
         $siteIdentifier = $sites->addColumn('identifier', Types::STRING, [
             'length' => 191,

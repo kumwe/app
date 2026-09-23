@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace Kumwe\App\BusinessIntegration\Application;
 
-use Kumwe\App\BusinessIntegration\Domain\ProcessWorkKind;
+use Kumwe\Integration\ProcessWorkKind;
 use Kumwe\Context\Value\ExecutionContext;
+use Kumwe\Integration\ProcessWorkLease;
 
 /**
  * Idempotent handler for one durable process work contract.

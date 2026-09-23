@@ -1,0 +1,31 @@
+schema: kumwe-non-roadmap-record/v1
+id: NRM-2026-052
+nrm_ref: NRM-2026-052
+roadmap_impact: None
+rationale: "Adopt verified kumwe/interface-standard 0.1.2, the owner of the surface identifier, actor, area, intent, pattern and state vocabulary, the surface declaration and definition, the conformance validator, report, violation, diagnostic and severity, the customization scope, slot and permission, the responsive element and priority, the icon and resource names and the interface standard version."
+repositories:
+  - kumwe/app
+  - kumwe/interface-standard
+behavior_before: "App declared the twenty-one interface standard vocabulary, declaration, definition and conformance types under Kumwe\\App\\InterfaceStandard."
+behavior_after: "The types come from kumwe/interface-standard 0.1.2; the interface-surface registry, presentation preference policies and the programme verifier consume them, and PresentationPreference with its key and value stays in App."
+public_api_impact: "None; the types keep their names and shapes."
+dependency_impact: "Adds kumwe/interface-standard 0.1.2 exactly; it requires kumwe/contribution 0.1.1 and kumwe/access-control 0.1.2, both locked."
+compatibility: "Surface declarations, conformance reports and stored presentation preferences are unchanged."
+data_migration: None
+security_impact: "No authority change."
+performance:
+  claim: None
+  evidence: []
+operations_deployment: "None; no configuration or schema change."
+recovery_rollback: "Revert the adoption pull request and restore the twenty-one removed classes and two unit tests; no persisted data changes."
+artifacts_evidence:
+  - docs/architecture/migrations/KUMWE-MIG-2026-025.yaml
+  - docs/architecture/migrations/change-sets/KUMWE-CS-2026-025.yaml
+  - docs/architecture/migrations/trains/KUMWE-TRAIN-2026-025.yaml
+  - docs/architecture/migrations/evidence/KUMWE-MIG-2026-025/RELEASE-ATTESTATION.yaml
+  - docs/architecture/capability-index.md
+known_gaps:
+  - "GitHub release v0.1.2 is not immutable."
+  - "kumwe/extension-sdk 0.3.3 is adopted from its unpublished candidate in the same train (NRM-2026-057); the lock is re-pointed at the published distribution once it exists."
+owner: "eWɘyn"
+status: in-progress

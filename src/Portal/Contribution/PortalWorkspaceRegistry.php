@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Portal\Contribution;
 
-use Kumwe\Extension\Spi\Portal\Contribution\PortalWorkspaceDefinition;
+use Kumwe\Portal\Contract\PortalWorkspaceDefinition;
 use InvalidArgumentException;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
-use Kumwe\App\Extension\Contribution\ContributionSurface;
+use Kumwe\Contribution\ContributionOwner;
+use Kumwe\Extension\Manifest\ManifestIdentifierPolicies;
+use Kumwe\Contribution\ContributionSurface;
 
 /**
  * Owner-aware collision-safe registry of portal navigation workspaces.
@@ -38,7 +39,7 @@ final class PortalWorkspaceRegistry implements ContributionSurface
      */
     public function register(ContributionOwner $owner, PortalWorkspaceDefinition $definition): void
     {
-        $owner->assertOwns($definition->id, 'workspace');
+        $owner->assertOwns($definition->id, ManifestIdentifierPolicies::forKind('workspace'));
         if (isset($this->definitions[$definition->id])) {
             throw new InvalidArgumentException('A portal workspace identifier is already owned.');
         }

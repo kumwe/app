@@ -6,9 +6,9 @@ namespace Kumwe\App\Application\Presentation\Dashboard;
 
 use InvalidArgumentException;
 use Kumwe\App\Application\Presentation\Preference\PresentationAccessGroup;
-use Kumwe\App\InterfaceStandard\CustomizationScope;
-use Kumwe\App\InterfaceStandard\CustomizationSlot;
-use Kumwe\App\InterfaceStandard\SurfaceId;
+use Kumwe\InterfaceStandard\CustomizationScope;
+use Kumwe\InterfaceStandard\CustomizationSlot;
+use Kumwe\InterfaceStandard\SurfaceId;
 
 /**
  * Typed application command for one dashboard preference save or reset.

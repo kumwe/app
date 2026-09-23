@@ -15,8 +15,8 @@ use Doctrine\DBAL\Schema\Table;
 use Doctrine\DBAL\Types\BigIntType;
 use Doctrine\DBAL\Types\Types;
 use Kumwe\App\Application\Automation\Job\PurgeStudioContentAuthoringContextsHandler;
-use Kumwe\App\Application\Automation\JobExecutionClass;
-use Kumwe\App\Application\Automation\JobHandlerRegistry;
+use Kumwe\Automation\JobExecutionClass;
+use Kumwe\Automation\JobHandlerRegistry;
 use Kumwe\App\Delivery\Console\Command\MigrateCommand;
 use Kumwe\App\Delivery\Console\Output;
 use Kumwe\Context\Value\SiteContext;
@@ -56,6 +56,7 @@ use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
 use ReflectionMethod;
 use RuntimeException;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(MigrationRunner::class)]
 #[CoversClass(DoctrineMigrationLock::class)]
@@ -819,7 +820,7 @@ final class MigrationIntegrationTest extends TestCase
 
         try {
             $manager = $database->createSchemaManager();
-            $migration = new BusinessSecurityPortalMigration($tables);
+            $migration = new BusinessSecurityPortalMigration($tables, new DeterministicCanonicalEncoder());
             $siteIdentifier = $manager->introspectTableByUnquotedName(
                 $tables->raw('sites'),
             )->getColumn('identifier');
@@ -886,7 +887,7 @@ final class MigrationIntegrationTest extends TestCase
             $tables->quoted('resource_site_ownership'),
         ), ['business_record', $resourceId]));
 
-        (new BusinessSecurityPortalMigration($tables))->up($database);
+        (new BusinessSecurityPortalMigration($tables, new DeterministicCanonicalEncoder()))->up($database);
 
         self::assertSame(SiteContext::DEFAULT, $database->fetchOne(sprintf(
             'SELECT site_identifier FROM %s WHERE resource_type = ? AND resource_id = ?',

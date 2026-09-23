@@ -18,6 +18,7 @@ use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
 use ReflectionMethod;
 use RuntimeException;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 /**
  * Proves two prefixed Kumwe installations can live in one schema, which a shared name made impossible.
@@ -266,7 +267,7 @@ final class ConstraintNameIsolationIntegrationTest extends TestCase
         $created[] = $tables->raw('sites');
 
         $manager = $database->createSchemaManager();
-        $migration = new BusinessSecurityPortalMigration($tables);
+        $migration = new BusinessSecurityPortalMigration($tables, new DeterministicCanonicalEncoder());
         $identifier = $manager->introspectTableByUnquotedName($tables->raw('sites'))->getColumn('identifier');
         /** @var array<string, mixed> $options */
         $options = (new ReflectionMethod($migration, 'siteIdentifierOptions'))->invoke($migration, $identifier);

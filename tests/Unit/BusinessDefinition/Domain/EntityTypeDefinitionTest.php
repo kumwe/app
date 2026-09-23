@@ -12,8 +12,8 @@ use Kumwe\BusinessDefinition\Application\FieldTypeRegistry;
 use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\BusinessDefinition\Domain\FieldDefinition;
 use Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationConfiguration;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationContext;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresentationConfiguration;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresentationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

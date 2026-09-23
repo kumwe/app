@@ -1,0 +1,101 @@
+schema: kumwe-release-attestation/v2
+artifact_kind: framework_php
+migration_id: KUMWE-MIG-2026-038
+change_set: KUMWE-CS-2026-038
+repository: "https://github.com/kumwe/business-surface-contract"
+merge_commit: "c948cd42972f57c3975888c846a54f6630fd4805"
+version: "0.1.4"
+tag: v0.1.4
+source_archive:
+  url: "https://github.com/kumwe/business-surface-contract/archive/refs/tags/v0.1.4.tar.gz"
+  sha256: "8b7838d1962e886066050f2f2b2cfbdc639c85783f1190ea151a719f119dc1b3"
+artifacts:
+  - identity: "kumwe/business-surface-contract:0.1.4"
+    url: "https://github.com/kumwe/business-surface-contract/archive/refs/tags/v0.1.4.tar.gz"
+    sha256: "8b7838d1962e886066050f2f2b2cfbdc639c85783f1190ea151a719f119dc1b3"
+manifests_and_corpora:
+  - path: resources/public-api/v1.json
+    sha256: "5b8f77f5098c012e79cc57d508f890616b40cc14f1d631d7f684fc067f353f94"
+  - path: resources/capabilities/v1.json
+    sha256: "e3eb1bfe192d537c2885fe677ead17643d657096358948d7780e80bab50223f8"
+  - path: resources/service-map/v1.json
+    sha256: "95fbb8892ab06bf4100a1812a43009fe2d5ebb21e01a2deb1409f196df77a265"
+  - path: resources/release-readiness.json
+    sha256: "9ca7054c164ecd8f97d6a48150bd91925a7badc31e32ee298c47334384c83047"
+  - path: docs/release-record.md
+    sha256: "f320c1358b2b156f6a4dea91fd68e98cb9767832bb4f729c5b6319a12b861b1d"
+abi_and_capabilities: null
+sbom:
+  url: null
+  sha256: null
+provenance: "Release on record run 35878555732 (push, attempt 1) published release 394778262 as github-actions[bot]"
+release_workflow: "https://github.com/kumwe/business-surface-contract/actions/runs/35878555732 success on the tag commit"
+registry_or_pie_verification:
+  - "git ls-remote https://github.com/kumwe/business-surface-contract refs/tags/v0.1.4 returned one line for refs/tags/v0.1.4"
+  - "Tag commit from git ls-remote: c948cd42972f57c3975888c846a54f6630fd4805; no peeled ^{} line (lightweight tag)"
+  - "git clone --quiet --depth 1 --branch v0.1.4 of the repository: HEAD c948cd42972f57c3975888c846a54f6630fd4805, tree cb1f3967968af116217c0648935d158369541943"
+  - "In the clone git cat-file -t v0.1.4 is commit; subject: Release 0.1.4: align the change set with KUMWE-MIG-2026-038 and select the corrected successors"
+  - "Tag commit committed 2026-09-23T17:01:55+02:00 by eWɘyn; parent 6713c52becf0f8195a5685233781a644d3e50479"
+  - "A full clone shows refs/heads/main at c948cd42972f57c3975888c846a54f6630fd4805 contains the tag commit"
+  - "Packagist p2 observed 2026-09-23T18:23:42Z at repo.packagist.org/p2/kumwe/business-surface-contract.json (HTTP 200)"
+  - "Packagist lists v0.1.4 newest of v0.1.4, v0.1.3, v0.1.2, v0.1.1, v0.1.0; time 2026-09-23T15:01:55+00:00"
+  - "Packagist source: git https://github.com/kumwe/business-surface-contract.git at c948cd42972f57c3975888c846a54f6630fd4805"
+  - "Packagist dist: zip at reference c948cd42972f57c3975888c846a54f6630fd4805 (api.github.com zipball URL)"
+  - "Packagist source and dist references both equal the tag commit and the clone HEAD"
+  - "Packagist dist shasum is an empty string; license Apache-2.0; psr-4 Kumwe\\BusinessSurface\\Contract\\ => src/"
+  - "Packagist require: php ^8.5, ext-mbstring *, kumwe/access-context 0.1.2, kumwe/contribution 0.1.1, kumwe/conversion 0.1.5"
+  - "Packagist require also names kumwe/canonical-json 0.1.1, kumwe/idempotency 0.1.3, kumwe/record-model 0.1.4, kumwe/record-query 0.1.4 and kumwe/record-values 0.1.4"
+  - "curl -sS -L of the archive/refs/tags/v0.1.4.tar.gz URL above: HTTP 200, 50947 bytes"
+  - "The download resolved to codeload.github.com/kumwe/business-surface-contract/tar.gz/refs/tags/v0.1.4"
+  - "file reports gzip compressed data for both downloads"
+  - "sha256 8b7838d1962e886066050f2f2b2cfbdc639c85783f1190ea151a719f119dc1b3 covers the tar.gz bytes"
+  - "The same URL was fetched twice and both downloads produced that digest"
+  - "git archive --format=tar --prefix=business-surface-contract-0.1.4/ v0.1.4 | sha256sum gave 9f3aac51273657e7"
+  - "Full local git archive digest: 9f3aac51273657e7da925fb3b43b38e93f23429daa4bbcd113ed044e8e1e1e53"
+  - "Extracted business-surface-contract-0.1.4/ holds 43 files; diff -r reports no content difference against the clone"
+  - "diff -r --exclude=.git differs only by the export-ignore paths of .gitattributes: .github, tests, tools, composer.lock, phpunit.xml, phpstan.neon and phpcs.xml"
+  - "The clone tracks 78 files; the archive omits the 35 export-ignore files and nothing else"
+  - "GitHub release v0.1.4 id 394778262: author github-actions[bot], published_at 2026-09-23T15:03:04Z"
+  - "GitHub release v0.1.4: draft false, prerelease false, immutable true, target_commitish main, no assets"
+  - "Release on record run 35878555732: push, attempt 1, run number 26, head_sha c948cd42972f57c3975888c846a54f6630fd4805"
+  - "Release on record run 35878555732: status completed, conclusion success, created 2026-09-23T15:01:59Z"
+  - "GitHub MCP tools answered every query; no access-denied response was observed"
+clean_consumer_or_build_verification:
+  - "Inspection only: no package script or example was executed; archive, clone and vendor copy were compared"
+  - "resources/public-api/v1.json: valid against package-public-api.v1.schema.json (App SchemaValidator)"
+  - "resources/capabilities/v1.json: valid against package-capabilities.v1.schema.json (App SchemaValidator)"
+  - "resources/service-map/v1.json: valid against package-service-map.v1.schema.json (App SchemaValidator)"
+  - "All three manifests carry package kumwe/business-surface-contract and release 0.1.4"
+  - "The shipped record is docs/release-record.md; no MIGRATION-HANDOFF.md exists in the archive"
+  - "docs/release-record.md front matter parsed by PackageManifests::parseReleaseRecord"
+  - "docs/release-record.md front matter: valid against package-release-record.v1.schema.json (App SchemaValidator)"
+  - "Record front matter: kumwe-package-release-record/v1, KUMWE-MIG-2026-038, KUMWE-CS-2026-038, framework_php"
+  - "Record artifact_identity kumwe/business-surface-contract; canonical namespace Kumwe\\BusinessSurface\\Contract\\"
+  - "Record framework_php.composer_package kumwe/business-surface-contract"
+  - "Record ownership.public_manifests digests equal the locally computed manifest digests listed above"
+  - "CHANGELOG.md newest release heading is ## [0.1.4] above ## [0.1.3], below an ## Unreleased section"
+  - "Package composer.json require: php ^8.5, ext-mbstring *, kumwe/access-context 0.1.2, kumwe/contribution 0.1.1, kumwe/conversion 0.1.5"
+  - "Package composer.json require also names kumwe/canonical-json 0.1.1, kumwe/idempotency 0.1.3, kumwe/record-model 0.1.4, kumwe/record-query 0.1.4 and kumwe/record-values 0.1.4"
+  - "App composer.lock: kumwe/business-surface-contract v0.1.4 at c948cd42972f57c3975888c846a54f6630fd4805"
+  - "App composer.lock: kumwe/access-context v0.1.2 at 132c3cd7c229ceda4398e19140d1477512c27ebf satisfies 0.1.2 (exact)"
+  - "App composer.lock: kumwe/canonical-json v0.1.1 at e7006a2580a49a1c8ab507b0d7b9c3403b4f9f58 satisfies 0.1.1 (exact)"
+  - "App composer.lock: kumwe/contribution v0.1.1 at 2fc75742aa5a7d78418d2f586fa3043271e70082 satisfies 0.1.1 (exact)"
+  - "App composer.lock: kumwe/conversion v0.1.5 at b291f3a31314644fd88150dc9a9e911fe0617fe7 satisfies 0.1.5 (exact)"
+  - "App composer.lock: kumwe/idempotency v0.1.3 at 351f5491d193babf6193ddb4af064edc7ce62ea5 satisfies 0.1.3 (exact)"
+  - "App composer.lock: kumwe/record-model v0.1.4 at 907d5175fe4c6fe1d30e8fa92560dc569631d98d satisfies 0.1.4 (exact)"
+  - "App composer.lock: kumwe/record-query v0.1.4 at 92bdb42cf6c62aabd2da25377359043238559ff3 satisfies 0.1.4 (exact)"
+  - "App composer.lock: kumwe/record-values v0.1.4 at 04a3f5f8094861771682b3ba83536ec8828dc704 satisfies 0.1.4 (exact)"
+  - "App composer.lock platform: php ^8.5 with ext-json and ext-mbstring (they satisfy the package requirements)"
+  - "The App vendor copy of docs/release-record.md and of the manifests carries the digests above"
+  - "Validator: tools/Governance bootstrap, SchemaValidator, PackageManifests and StrictYaml loaded by a scratch script on PHP 8.4.19"
+verified_at: "2026-09-23T18:23:42Z"
+verified_by: "Independent release verification, inspection only, in the adoption worktree before the Phase 2 records were written"
+status: verified
+known_gaps:
+  - "The Packagist dist zipball was not downloaded; Packagist publishes an empty dist shasum for it"
+  - "The attested archive is the GitHub tag tar.gz, whose bytes differ from the Packagist zipball of the same commit"
+  - "Tag protection and rulesets were not queried"
+  - "The verification was performed by the adopting party in the adoption worktree, not by a separate isolated verifier"
+  - "No clean consumer install, smoke test or example run was performed; the verification was restricted to inspection and the App lock install"
+  - "No SBOM and no release assets exist for v0.1.4; abi_and_capabilities does not apply to a framework_php artifact"
+  - "The schema checks used the App's fixed JSON Schema 2020-12 subset validator, not a full implementation"

@@ -6,13 +6,13 @@ namespace Kumwe\App\BusinessIntegration\Application;
 
 use LogicException;
 use Kumwe\Context\Value\ExecutionContext as HostExecutionContext;
-use Kumwe\App\Application\Automation\JobQueue;
-use Kumwe\App\BusinessIntegration\Domain\RecordedEventEnvelope;
+use Kumwe\Automation\JobQueue;
+use Kumwe\Integration\RecordedEventEnvelope;
 use Kumwe\Extension\Spi\Application\ExecutionContext;
 use Kumwe\Extension\Spi\BusinessIntegration\Application\IntegrationEventHandler;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventConsumerDefinition;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationContractValidator;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\Integration\EventConsumerDefinition;
+use Kumwe\Integration\IntegrationContractValidator;
+use Kumwe\Integration\IntegrationEvent;
 use Psr\Clock\ClockInterface;
 use Kumwe\App\Extension\Runtime\ExtensionExecutionContext;
 

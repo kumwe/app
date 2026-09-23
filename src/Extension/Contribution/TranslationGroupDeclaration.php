@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Extension\Contribution;
 
-use Kumwe\Extension\Spi\Contribution\ContributionDefinition;
+use Kumwe\Contribution\ContributionDefinition;
 use InvalidArgumentException;
 use Kumwe\Content\Domain\TranslationGroup;
 use Kumwe\Localization\Domain\InvalidLocaleTag;

@@ -21,6 +21,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
 use ReflectionClass;
 use RuntimeException;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 /**
  * Proves the example installer discovers the shipped set and stays idempotent per identifier.
@@ -266,6 +267,7 @@ final class DemoExampleExtensionInstallerTest extends TestCase
         );
 
         return new TrustStore(
+            new DeterministicCanonicalEncoder(),
             $repository,
             $this->createStub(PublicKeyPackageSignatureVerifier::class),
             $this->createStub(ExtensionArtifactVerifier::class),

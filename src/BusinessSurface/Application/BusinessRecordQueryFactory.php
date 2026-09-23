@@ -5,25 +5,25 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessSurface\Application;
 
 use InvalidArgumentException;
-use Kumwe\Extension\Spi\BusinessRecord\Query\AggregateFunction;
-use Kumwe\Extension\Spi\BusinessRecord\Query\BooleanFilter;
-use Kumwe\Extension\Spi\BusinessRecord\Query\BooleanOperator;
-use Kumwe\Extension\Spi\BusinessRecord\Query\ComparisonFilter;
-use Kumwe\Extension\Spi\BusinessRecord\Query\ComparisonOperator;
-use Kumwe\Extension\Spi\BusinessRecord\Query\NullFilter;
-use Kumwe\Extension\Spi\BusinessRecord\Query\RecordAggregate;
-use Kumwe\Extension\Spi\BusinessRecord\Query\RecordCursor;
-use Kumwe\Extension\Spi\BusinessRecord\Query\RecordFilter;
-use Kumwe\Extension\Spi\BusinessRecord\Query\RecordProjection;
-use Kumwe\Extension\Spi\BusinessRecord\Query\RecordQuerySpecification;
-use Kumwe\Extension\Spi\BusinessRecord\Query\RecordSearch;
-use Kumwe\Extension\Spi\BusinessRecord\Query\RecordSort;
-use Kumwe\Extension\Spi\BusinessRecord\Query\RelationFilter;
-use Kumwe\Extension\Spi\BusinessRecord\Query\RelationQuantifier;
-use Kumwe\Extension\Spi\BusinessRecord\Query\SetFilter;
-use Kumwe\Extension\Spi\BusinessRecord\Query\SortDirection;
-use Kumwe\Extension\Spi\BusinessRecord\Query\TextFilter;
-use Kumwe\Extension\Spi\BusinessRecord\Query\TextOperator;
+use Kumwe\Record\Query\AggregateFunction;
+use Kumwe\Record\Query\BooleanFilter;
+use Kumwe\Record\Query\BooleanOperator;
+use Kumwe\Record\Query\ComparisonFilter;
+use Kumwe\Record\Query\ComparisonOperator;
+use Kumwe\Record\Query\NullFilter;
+use Kumwe\Record\Query\RecordAggregate;
+use Kumwe\Record\Query\RecordCursor;
+use Kumwe\Record\Query\RecordFilter;
+use Kumwe\Record\Query\RecordProjection;
+use Kumwe\Record\Query\RecordQuerySpecification;
+use Kumwe\Record\Query\RecordSearch;
+use Kumwe\Record\Query\RecordSort;
+use Kumwe\Record\Query\RelationFilter;
+use Kumwe\Record\Query\RelationQuantifier;
+use Kumwe\Record\Query\SetFilter;
+use Kumwe\Record\Query\SortDirection;
+use Kumwe\Record\Query\TextFilter;
+use Kumwe\Record\Query\TextOperator;
 
 /**
  * Compiles one transport-neutral record-query document into the bounded domain query tree.

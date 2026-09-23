@@ -1,0 +1,107 @@
+schema: kumwe-migration-ledger/v1
+migration_id: KUMWE-MIG-2026-025
+change_set: KUMWE-CS-2026-025
+package: kumwe/interface-standard
+version: 0.1.2
+artifact_digest: "9ed388dc66ba5e8148856a9d0a1391682a6682a3728f81bc40119a066f6cbd8b"
+handoff_path: vendor/kumwe/interface-standard/MIGRATION-HANDOFF.md
+handoff_sha256: "18e93b04ca1042c69c4d5deb319df53e0b220cd35fa483c9d2bcbacf7793dc05"
+release_attestation: docs/architecture/migrations/evidence/KUMWE-MIG-2026-025/RELEASE-ATTESTATION.yaml
+old_namespace_roots: []
+symbols:
+  - old_fqcn: Kumwe\App\InterfaceStandard\ConformanceDiagnostic
+    new_fqcn: Kumwe\InterfaceStandard\ConformanceDiagnostic
+  - old_fqcn: Kumwe\App\InterfaceStandard\ConformanceSeverity
+    new_fqcn: Kumwe\InterfaceStandard\ConformanceSeverity
+  - old_fqcn: Kumwe\App\InterfaceStandard\CustomizationPermission
+    new_fqcn: Kumwe\InterfaceStandard\CustomizationPermission
+  - old_fqcn: Kumwe\App\InterfaceStandard\CustomizationScope
+    new_fqcn: Kumwe\InterfaceStandard\CustomizationScope
+  - old_fqcn: Kumwe\App\InterfaceStandard\CustomizationSlot
+    new_fqcn: Kumwe\InterfaceStandard\CustomizationSlot
+  - old_fqcn: Kumwe\App\InterfaceStandard\IconName
+    new_fqcn: Kumwe\InterfaceStandard\IconName
+  - old_fqcn: Kumwe\App\InterfaceStandard\InterfaceStandardVersion
+    new_fqcn: Kumwe\InterfaceStandard\InterfaceStandardVersion
+  - old_fqcn: Kumwe\App\InterfaceStandard\ResourceName
+    new_fqcn: Kumwe\InterfaceStandard\ResourceName
+  - old_fqcn: Kumwe\App\InterfaceStandard\ResponsiveElement
+    new_fqcn: Kumwe\InterfaceStandard\ResponsiveElement
+  - old_fqcn: Kumwe\App\InterfaceStandard\ResponsivePriority
+    new_fqcn: Kumwe\InterfaceStandard\ResponsivePriority
+  - old_fqcn: Kumwe\App\InterfaceStandard\SurfaceActor
+    new_fqcn: Kumwe\InterfaceStandard\SurfaceActor
+  - old_fqcn: Kumwe\App\InterfaceStandard\SurfaceArea
+    new_fqcn: Kumwe\InterfaceStandard\SurfaceArea
+  - old_fqcn: Kumwe\App\InterfaceStandard\SurfaceConformanceReport
+    new_fqcn: Kumwe\InterfaceStandard\SurfaceConformanceReport
+  - old_fqcn: Kumwe\App\InterfaceStandard\SurfaceConformanceValidator
+    new_fqcn: Kumwe\InterfaceStandard\SurfaceConformanceValidator
+  - old_fqcn: Kumwe\App\InterfaceStandard\SurfaceConformanceViolation
+    new_fqcn: Kumwe\InterfaceStandard\SurfaceConformanceViolation
+  - old_fqcn: Kumwe\App\InterfaceStandard\SurfaceDeclaration
+    new_fqcn: Kumwe\InterfaceStandard\SurfaceDeclaration
+  - old_fqcn: Kumwe\App\InterfaceStandard\SurfaceDefinition
+    new_fqcn: Kumwe\InterfaceStandard\SurfaceDefinition
+  - old_fqcn: Kumwe\App\InterfaceStandard\SurfaceId
+    new_fqcn: Kumwe\InterfaceStandard\SurfaceId
+  - old_fqcn: Kumwe\App\InterfaceStandard\SurfaceIntent
+    new_fqcn: Kumwe\InterfaceStandard\SurfaceIntent
+  - old_fqcn: Kumwe\App\InterfaceStandard\SurfacePattern
+    new_fqcn: Kumwe\InterfaceStandard\SurfacePattern
+  - old_fqcn: Kumwe\App\InterfaceStandard\SurfaceState
+    new_fqcn: Kumwe\InterfaceStandard\SurfaceState
+removed_paths:
+  - src/InterfaceStandard/ConformanceDiagnostic.php
+  - src/InterfaceStandard/ConformanceSeverity.php
+  - src/InterfaceStandard/CustomizationPermission.php
+  - src/InterfaceStandard/CustomizationScope.php
+  - src/InterfaceStandard/CustomizationSlot.php
+  - src/InterfaceStandard/IconName.php
+  - src/InterfaceStandard/InterfaceStandardVersion.php
+  - src/InterfaceStandard/ResourceName.php
+  - src/InterfaceStandard/ResponsiveElement.php
+  - src/InterfaceStandard/ResponsivePriority.php
+  - src/InterfaceStandard/SurfaceActor.php
+  - src/InterfaceStandard/SurfaceArea.php
+  - src/InterfaceStandard/SurfaceConformanceReport.php
+  - src/InterfaceStandard/SurfaceConformanceValidator.php
+  - src/InterfaceStandard/SurfaceConformanceViolation.php
+  - src/InterfaceStandard/SurfaceDeclaration.php
+  - src/InterfaceStandard/SurfaceDefinition.php
+  - src/InterfaceStandard/SurfaceId.php
+  - src/InterfaceStandard/SurfaceIntent.php
+  - src/InterfaceStandard/SurfacePattern.php
+  - src/InterfaceStandard/SurfaceState.php
+removed_tests:
+  - tests/Unit/InterfaceStandard/SurfaceDefinitionTest.php
+  - tests/Unit/InterfaceStandard/SurfaceIdentifierParityTest.php
+retained_tests:
+  - tests/Architecture/BusinessWorkspaceInterfaceStandardTest.php
+  - tests/Architecture/InterfaceStandardBoundaryTest.php
+  - tests/Integration/InterfaceStandard/PresentationPreferencePersistenceIntegrationTest.php
+  - tests/Support/DashboardPreferenceTestRuntime.php
+  - tests/Unit/Administrator/Http/Handler/AdministratorDashboardPreferencesHandlerTest.php
+  - tests/Unit/Application/Presentation/Dashboard/DashboardPreferenceMutationTest.php
+  - tests/Unit/Application/Presentation/Dashboard/DashboardPreferenceServiceTest.php
+  - tests/Unit/Application/Presentation/Dashboard/DashboardPreferenceStateTest.php
+  - tests/Unit/Delivery/Http/Dashboard/DashboardPreferenceFormDecoderTest.php
+  - tests/Unit/Delivery/Http/Dashboard/DashboardPreferenceQueryDecoderTest.php
+  - tests/Unit/Governance/LayerClassifierTest.php
+  - tests/Unit/InterfaceStandard/InterfaceStandardSchemaTest.php
+  - tests/Unit/InterfaceStandard/PresentationPreferenceManagerTest.php
+  - tests/Unit/InterfaceStandard/PresentationPreferenceResolverTest.php
+  - tests/Unit/InterfaceStandard/PresentationPreferenceTest.php
+  - tests/Unit/Portal/Http/PortalDashboardPreferencesHandlerTest.php
+  - tests/Unit/Presentation/Application/Dashboard/DashboardComposerTest.php
+  - tests/Unit/Presentation/Application/Dashboard/DashboardPreferenceFormPresenterTest.php
+di_changes: []
+capability_index_entries:
+  - kumwe/interface-standard
+release_evidence:
+  - docs/architecture/migrations/evidence/KUMWE-MIG-2026-025/RELEASE-ATTESTATION.yaml
+app_pull_request: "https://github.com/kumwe/app/pull/151"
+roadmap_refs: []
+non_roadmap_refs:
+  - NRM-2026-052
+conflicts: []

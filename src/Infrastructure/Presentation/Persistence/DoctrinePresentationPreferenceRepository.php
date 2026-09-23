@@ -12,7 +12,7 @@ use InvalidArgumentException;
 use JsonException;
 use Kumwe\App\Application\Presentation\Preference\PresentationPreferenceRepository;
 use Kumwe\App\Application\Presentation\Preference\PresentationPreferenceVersionConflict;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Contribution\ContributionOwner;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\InterfaceStandard\PresentationPreference;
 use Kumwe\App\InterfaceStandard\PresentationPreferenceKey;

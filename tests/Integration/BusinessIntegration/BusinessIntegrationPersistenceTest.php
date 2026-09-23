@@ -8,21 +8,21 @@ use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\App\Application\Automation\FailureClassification;
-use Kumwe\App\Application\Automation\QueueRuntimePolicy;
-use Kumwe\App\Application\Automation\QueueRuntimePolicyCatalog;
-use Kumwe\App\BusinessIntegration\Application\EventContractRegistry;
-use Kumwe\App\BusinessIntegration\Application\InboxDisposition;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\ConsumerIdempotency;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventConsumerDefinition;
-use Kumwe\App\BusinessIntegration\Domain\EventSchemaDefinition;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventSensitivity;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationEvent;
-use Kumwe\App\BusinessIntegration\Domain\RecordedIntegrationEvent;
-use Kumwe\App\BusinessIntegration\Domain\ProcessInstance;
-use Kumwe\App\BusinessIntegration\Domain\ProcessStatus;
-use Kumwe\App\BusinessIntegration\Domain\ProcessWorkItem;
-use Kumwe\App\BusinessIntegration\Domain\ProcessWorkKind;
+use Kumwe\Automation\FailureClassification;
+use Kumwe\Automation\QueueRuntimePolicy;
+use Kumwe\Automation\QueueRuntimePolicyCatalog;
+use Kumwe\Integration\EventContractRegistry;
+use Kumwe\Integration\InboxDisposition;
+use Kumwe\Integration\ConsumerIdempotency;
+use Kumwe\Integration\EventConsumerDefinition;
+use Kumwe\Integration\EventSchemaDefinition;
+use Kumwe\Integration\EventSensitivity;
+use Kumwe\Integration\IntegrationEvent;
+use Kumwe\Integration\RecordedIntegrationEvent;
+use Kumwe\Integration\ProcessInstance;
+use Kumwe\Integration\ProcessStatus;
+use Kumwe\Integration\ProcessWorkItem;
+use Kumwe\Integration\ProcessWorkKind;
 use Kumwe\App\BusinessIntegration\Infrastructure\DoctrineInboxStore;
 use Kumwe\App\BusinessIntegration\Infrastructure\DoctrineOutboxStore;
 use Kumwe\App\BusinessIntegration\Infrastructure\DoctrineProcessManagerStore;
@@ -35,6 +35,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(BusinessIntegrationSdkMigration::class)]
 #[CoversClass(DoctrineOutboxStore::class)]
@@ -59,6 +60,7 @@ final class BusinessIntegrationPersistenceTest extends TestCase
         $this->transactions = new DoctrineTransactionManager($this->database);
         $this->clock = new FixedBusinessIntegrationClock(new DateTimeImmutable('2026-08-10T10:00:00+00:00'));
         $schema = new EventSchemaDefinition(
+            new DeterministicCanonicalEncoder(),
             'business.record.changed',
             1,
             EventSensitivity::INTERNAL,
@@ -78,7 +80,7 @@ final class BusinessIntegrationPersistenceTest extends TestCase
             true,
             ConsumerIdempotency::AGGREGATE_VERSION,
         );
-        $this->contracts = new EventContractRegistry([$schema], [$consumer]);
+        $this->contracts = new EventContractRegistry(new DeterministicCanonicalEncoder(), [$schema], [$consumer]);
         (new CoreSchemaMigration($this->tables))->up($this->database);
         $migration = new BusinessIntegrationSdkMigration($this->tables);
         $migration->up($this->database);
@@ -93,6 +95,7 @@ final class BusinessIntegrationPersistenceTest extends TestCase
             $this->transactions,
             $this->clock,
             $this->contracts,
+            new DeterministicCanonicalEncoder(),
         );
         $rolledBack = $this->event(1);
         try {
@@ -134,6 +137,7 @@ final class BusinessIntegrationPersistenceTest extends TestCase
             $this->transactions,
             $this->clock,
             $this->contracts,
+            new DeterministicCanonicalEncoder(),
         );
         $event = $this->event(1);
         $outbox->append($event, 1);
@@ -153,6 +157,7 @@ final class BusinessIntegrationPersistenceTest extends TestCase
             $this->transactions,
             new FixedBusinessIntegrationClock($this->clock->now()->modify('+5 seconds')),
             $this->contracts,
+            new DeterministicCanonicalEncoder(),
         );
         $second = $later->claim('integration-worker-2', '7', 60);
         self::assertNotNull($second);
@@ -200,6 +205,7 @@ final class BusinessIntegrationPersistenceTest extends TestCase
     {
         $schemaOne = $this->contracts->schema('business.record.changed', 1);
         $schemaTwo = new EventSchemaDefinition(
+            new DeterministicCanonicalEncoder(),
             'business.record.changed',
             2,
             EventSensitivity::INTERNAL,
@@ -211,7 +217,11 @@ final class BusinessIntegrationPersistenceTest extends TestCase
             [1],
             '1.0.0',
         );
-        $originalRegistry = new EventContractRegistry([$schemaOne, $schemaTwo], [$original]);
+        $originalRegistry = new EventContractRegistry(
+            new DeterministicCanonicalEncoder(),
+            [$schemaOne, $schemaTwo],
+            [$original],
+        );
         $inbox = new DoctrineInboxStore(
             $this->database,
             $this->tables,
@@ -232,7 +242,11 @@ final class BusinessIntegrationPersistenceTest extends TestCase
             [1, 2],
             '2.0.0',
         );
-        $upgradedRegistry = new EventContractRegistry([$schemaOne, $schemaTwo], [$upgraded]);
+        $upgradedRegistry = new EventContractRegistry(
+            new DeterministicCanonicalEncoder(),
+            [$schemaOne, $schemaTwo],
+            [$upgraded],
+        );
         $upgradedInbox = new DoctrineInboxStore(
             $this->database,
             $this->tables,
@@ -285,6 +299,7 @@ final class BusinessIntegrationPersistenceTest extends TestCase
             $consumer->sensitivityCeiling(),
         );
         $upgradedRegistry = new EventContractRegistry(
+            new DeterministicCanonicalEncoder(),
             [$this->contracts->schema('business.record.changed', 1)],
             [$upgraded],
         );
@@ -355,6 +370,7 @@ final class BusinessIntegrationPersistenceTest extends TestCase
             8,
         );
         $contracts = new EventContractRegistry(
+            new DeterministicCanonicalEncoder(),
             [$this->contracts->schema('business.record.changed', 1)],
             [$consumer],
         );
@@ -493,8 +509,10 @@ final class BusinessIntegrationPersistenceTest extends TestCase
             $this->tables,
             $this->transactions,
             $this->clock,
+            new DeterministicCanonicalEncoder(),
         );
         $process = new ProcessInstance(
+            new DeterministicCanonicalEncoder(),
             Uuid::uuid7()->toString(),
             'purchase.fulfilment',
             'order-77',
@@ -509,6 +527,7 @@ final class BusinessIntegrationPersistenceTest extends TestCase
             $this->clock->now(),
         );
         $work = new ProcessWorkItem(
+            new DeterministicCanonicalEncoder(),
             Uuid::uuid7()->toString(),
             ProcessWorkKind::COMMAND,
             'inventory.reserve',
@@ -518,6 +537,7 @@ final class BusinessIntegrationPersistenceTest extends TestCase
         $store->create($process, [$work]);
 
         $otherSite = new ProcessInstance(
+            new DeterministicCanonicalEncoder(),
             Uuid::uuid7()->toString(),
             $process->processType(),
             $process->correlationId(),
@@ -563,6 +583,7 @@ final class BusinessIntegrationPersistenceTest extends TestCase
         ?string $organizationId = 'organization-1',
     ): IntegrationEvent {
         return new RecordedIntegrationEvent(
+            new DeterministicCanonicalEncoder(),
             'business.record.changed',
             $schemaVersion,
             Uuid::uuid7()->toString(),

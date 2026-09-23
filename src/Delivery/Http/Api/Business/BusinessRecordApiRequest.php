@@ -6,11 +6,10 @@ namespace Kumwe\App\Delivery\Http\Api\Business;
 
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\Extension\Spi\Application\Automation\IdempotencyKey as ApplicationIdempotencyKey;
+use Kumwe\Idempotency\IdempotencyKey;
 use Kumwe\App\Delivery\Http\Api\Concurrency\EntityTag;
 use Kumwe\App\Delivery\Http\Api\Concurrency\IfMatch;
 use Kumwe\App\Delivery\Http\Api\Concurrency\RequireIfMatchMiddleware;
-use Kumwe\Idempotency\IdempotencyKey as HttpIdempotencyKey;
 use Kumwe\App\Delivery\Http\Api\Idempotency\RequireIdempotencyKeyMiddleware;
 use Psr\Http\Message\ServerRequestInterface;
 use stdClass;
@@ -343,25 +342,25 @@ final class BusinessRecordApiRequest
      * Require the parsed idempotency attribute installed by `RequireIdempotencyKeyMiddleware`.
      *
      * The raw header is never reparsed here. A route that omits the middleware fails closed instead of
-     * accepting a mutation under a second parser, and the application key receives the already-normalized
-     * transport value verbatim.
+     * accepting a mutation under a second parser, and the business-record command carries the one package key
+     * the transport already normalized.
      *
      * @param   ServerRequestInterface  $request  Mutation request after idempotency middleware.
      *
-     * @return  ApplicationIdempotencyKey  Key type carried by business-record commands.
+     * @return  IdempotencyKey  Key carried by business-record commands.
      *
      * @throws  InvalidArgumentException  When the parsed attribute is absent.
      *
      * @since   2.0.0
      */
-    public static function idempotencyKey(ServerRequestInterface $request): ApplicationIdempotencyKey
+    public static function idempotencyKey(ServerRequestInterface $request): IdempotencyKey
     {
         $key = $request->getAttribute(RequireIdempotencyKeyMiddleware::ATTRIBUTE);
-        if (!$key instanceof HttpIdempotencyKey) {
+        if (!$key instanceof IdempotencyKey) {
             throw new InvalidArgumentException('A parsed Idempotency-Key is required for this mutation.');
         }
 
-        return ApplicationIdempotencyKey::fromString((string) $key);
+        return $key;
     }
 
     /**

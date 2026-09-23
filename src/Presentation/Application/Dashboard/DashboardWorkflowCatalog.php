@@ -7,9 +7,9 @@ namespace Kumwe\App\Presentation\Application\Dashboard;
 use InvalidArgumentException;
 use Kumwe\App\Application\Presentation\Dashboard\DashboardPreferenceMutation;
 use Kumwe\App\Application\Presentation\Dashboard\DashboardPreferenceQuery;
-use Kumwe\App\InterfaceStandard\CustomizationSlot;
-use Kumwe\App\InterfaceStandard\SurfaceArea;
-use Kumwe\App\InterfaceStandard\SurfaceId;
+use Kumwe\InterfaceStandard\CustomizationSlot;
+use Kumwe\InterfaceStandard\SurfaceArea;
+use Kumwe\InterfaceStandard\SurfaceId;
 
 /**
  * Request-local projection of the ordinary filtered navigation catalogue for dashboard selection.

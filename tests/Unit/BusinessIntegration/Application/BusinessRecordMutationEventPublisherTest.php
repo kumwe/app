@@ -10,18 +10,19 @@ use Kumwe\Context\Value\SiteContext;
 use Kumwe\App\Application\Authorization\SystemIdentity;
 use Kumwe\App\BusinessIntegration\Application\BusinessRecordMutationEventPublisher;
 use Kumwe\Extension\Spi\BusinessIntegration\Application\DomainEventHandler;
-use Kumwe\App\BusinessIntegration\Application\OutboxStore;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\DomainEvent;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\DomainListenerDefinition;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\Integration\OutboxStore;
+use Kumwe\Integration\DomainEvent;
+use Kumwe\Integration\DomainListenerDefinition;
+use Kumwe\Integration\IntegrationEvent;
 use Kumwe\App\Extension\Application\ExtensionExecutionGate;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use Kumwe\App\BusinessIntegration\Application\DomainEventDispatcher;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 /**
  * Proves extension generation authority is checked before contributed mutation listeners execute.
@@ -62,7 +63,10 @@ final class BusinessRecordMutationEventPublisherTest extends TestCase
                 self::assertSame($definition, $dispatched);
                 self::assertSame('core.business_record.mutated', $event->eventType());
             });
-        $contributions = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
+        $contributions = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+        );
         $contributions->domainListeners()->register(
             ContributionOwner::extension('acme/listener'),
             $definition,
@@ -86,6 +90,7 @@ final class BusinessRecordMutationEventPublisherTest extends TestCase
             $contributions,
             $outbox,
             $execution,
+            new DeterministicCanonicalEncoder(),
         );
 
         $publisher->publish(
@@ -132,7 +137,10 @@ final class BusinessRecordMutationEventPublisherTest extends TestCase
 
             return $handler;
         };
-        $contributions = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
+        $contributions = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+        );
         $contributions->domainListeners()->register(
             ContributionOwner::extension('acme/listener'),
             new DomainListenerDefinition('acme.listener.beta', 'core.business_record.mutated', [1], '1.0.0'),
@@ -148,6 +156,7 @@ final class BusinessRecordMutationEventPublisherTest extends TestCase
             $contributions,
             $this->createStub(OutboxStore::class),
             $this->createStub(ExtensionExecutionGate::class),
+            new DeterministicCanonicalEncoder(),
         );
 
         $publisher->publish(
@@ -187,7 +196,10 @@ final class BusinessRecordMutationEventPublisherTest extends TestCase
         );
         $handler = $this->createMock(DomainEventHandler::class);
         $handler->expects(self::never())->method('handle');
-        $contributions = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
+        $contributions = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+        );
         $contributions->domainListeners()->register(
             ContributionOwner::extension('acme/listener'),
             $definition,
@@ -204,6 +216,7 @@ final class BusinessRecordMutationEventPublisherTest extends TestCase
             $contributions,
             $outbox,
             $execution,
+            new DeterministicCanonicalEncoder(),
         );
 
         $this->expectException(RuntimeException::class);

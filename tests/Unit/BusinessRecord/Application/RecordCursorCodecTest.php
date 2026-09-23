@@ -6,8 +6,8 @@ namespace Kumwe\App\Tests\Unit\BusinessRecord\Application;
 
 use InvalidArgumentException;
 use Kumwe\App\BusinessRecord\Application\RecordCursorCodec;
-use Kumwe\Extension\Spi\BusinessRecord\Query\CursorPosition;
-use Kumwe\Extension\Spi\BusinessRecord\Query\RecordCursor;
+use Kumwe\Record\Query\CursorPosition;
+use Kumwe\Record\Query\RecordCursor;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

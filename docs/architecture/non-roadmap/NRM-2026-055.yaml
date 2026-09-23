@@ -1,0 +1,31 @@
+schema: kumwe-non-roadmap-record/v1
+id: NRM-2026-055
+nrm_ref: NRM-2026-055
+roadmap_impact: None
+rationale: "Adopt verified kumwe/portal-contract 0.2.2, the owner of the portal workspace, navigation, route and template contribution definitions and the portal contribution admission envelope."
+repositories:
+  - kumwe/app
+  - kumwe/portal-contract
+behavior_before: "App consumed the SDK copies of the portal workspace, navigation, route and template definitions under Kumwe\\Extension\\Spi\\Portal\\Contribution."
+behavior_after: "The four definitions come from kumwe/portal-contract 0.2.2; the App portal registries, renderer and handlers consume them, and the package admission envelope is not adopted."
+public_api_impact: "None; the definitions keep their names and shapes."
+dependency_impact: "Adds kumwe/portal-contract 0.2.2 exactly; it requires kumwe/access-control 0.1.2 and kumwe/contribution 0.1.1, both locked."
+compatibility: "Portal contributions and stored dashboard preferences are unchanged."
+data_migration: None
+security_impact: "No authority change; capability checks and rendering stay in App."
+performance:
+  claim: None
+  evidence: []
+operations_deployment: "None; no configuration or schema change."
+recovery_rollback: "Revert the adoption pull request; no persisted data changes."
+artifacts_evidence:
+  - docs/architecture/migrations/KUMWE-MIG-2026-037.yaml
+  - docs/architecture/migrations/change-sets/KUMWE-CS-2026-037.yaml
+  - docs/architecture/migrations/trains/KUMWE-TRAIN-2026-037.yaml
+  - docs/architecture/migrations/evidence/KUMWE-MIG-2026-037/RELEASE-ATTESTATION.yaml
+  - docs/architecture/capability-index.md
+known_gaps:
+  - "The tag commit is not an ancestor of main although the trees are identical."
+  - "kumwe/extension-sdk 0.3.3 is adopted from its unpublished candidate in the same train (NRM-2026-057); the lock is re-pointed at the published distribution once it exists."
+owner: "eWɘyn"
+status: in-progress

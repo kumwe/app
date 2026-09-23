@@ -575,13 +575,13 @@
     },
     {
       "id": "p6-006-graphical-fail-closed",
-      "path": "vendor/kumwe/extension-sdk/tests/Case/TypedDefinitionTest.php",
-      "kind": "phpunit",
-      "marker": "testGraphicalPackageCannotOmitItsInterfaceDeclaration",
+      "path": "vendor/kumwe/extension-sdk/src/Manifest/ManifestContributionGraphValidator.php",
+      "kind": "executable-php",
+      "marker": "private static function assertKisRouteCoverage(",
       "owner": "ci-quality",
       "must_contain": [
-        "unset($undeclared['contributions']['interface'])",
-        "declare every administrator graphical GET route as a surface"
+        "if ($surface === null || $surface['area'] !== $area) {",
+        "'A KIS-enabled package must declare every %s graphical GET route as a surface.'"
       ]
     },
     {

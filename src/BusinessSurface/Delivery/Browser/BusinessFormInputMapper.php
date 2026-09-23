@@ -6,8 +6,8 @@ namespace Kumwe\App\BusinessSurface\Delivery\Browser;
 
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationModel;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldWidget;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresentationModel;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldWidget;
 
 /**
  * Maps browser form input through the authorized field presentation rather than mass assignment.

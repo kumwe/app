@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Architecture;
 
-use Kumwe\App\Application\Automation\JobQueue;
+use Kumwe\Automation\JobQueue;
 use Kumwe\App\Application\Automation\Job\ScheduleRepository;
 use Kumwe\App\Application\Automation\QueueRuntimeOperations;
 use Kumwe\App\Application\Automation\Scheduler;
@@ -151,7 +151,7 @@ final class TransactionSeamBoundaryTest extends TestCase
     }
 
     /**
-     * The automation adapters sit in Infrastructure and answer application-owned contracts.
+     * The automation adapters sit in Infrastructure and answer application-owned or automation package contracts.
      *
      * @return  void
      *
@@ -175,7 +175,11 @@ final class TransactionSeamBoundaryTest extends TestCase
             );
             foreach ($ports as $port) {
                 self::assertTrue($class->implementsInterface($port), sprintf('%s must answer %s.', $adapter, $port));
-                self::assertStringStartsWith('Kumwe\\App\\Application\\', $port);
+                self::assertMatchesRegularExpression(
+                    '/^Kumwe\\\\(App\\\\Application|Automation)\\\\/',
+                    $port,
+                    sprintf('%s must be an application-owned or automation package port.', $port),
+                );
             }
         }
     }

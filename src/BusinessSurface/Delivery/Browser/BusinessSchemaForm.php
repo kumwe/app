@@ -6,7 +6,7 @@ namespace Kumwe\App\BusinessSurface\Delivery\Browser;
 
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessSchema;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessSchema;
 use Kumwe\Localization\Application\Translator;
 
 /**

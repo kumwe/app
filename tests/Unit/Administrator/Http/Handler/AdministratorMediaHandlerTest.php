@@ -25,6 +25,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
 use Twig\Loader\ArrayLoader;
 use Kumwe\App\Application\Authorization\ExecutionContextAttribute;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 /**
  * Pins the one media refusal an operator reads in place, rather than as a redirect.
@@ -52,6 +53,7 @@ final class AdministratorMediaHandlerTest extends TestCase
             new AdministratorRenderer(
                 new AdministratorTwigEnvironment(new ArrayLoader(['media.twig' => '{{ error }}|{{ total }}'])),
                 new RecoveryAdministratorRenderer(new RecoveryAdministratorTwigEnvironment(new ArrayLoader())),
+                new DeterministicCanonicalEncoder(),
             ),
             InterfaceTranslation::translator(),
             sys_get_temp_dir() . '/kumwe-media-refusal-' . bin2hex(random_bytes(6)),

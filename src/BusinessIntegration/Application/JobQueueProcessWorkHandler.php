@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessIntegration\Application;
 
 use Kumwe\Context\Value\ExecutionContext;
-use Kumwe\App\Application\Automation\JobQueue;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationContractValidator;
-use Kumwe\App\BusinessIntegration\Domain\ProcessWorkKind;
+use Kumwe\Automation\JobQueue;
+use Kumwe\Integration\IntegrationContractValidator;
+use Kumwe\Integration\ProcessWorkKind;
 use Psr\Clock\ClockInterface;
+use Kumwe\Integration\ProcessWorkLease;
 
 /**
  * Adapter that hands process commands and compensations to the existing durable job queue.

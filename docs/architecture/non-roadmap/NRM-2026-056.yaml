@@ -1,0 +1,31 @@
+schema: kumwe-non-roadmap-record/v1
+id: NRM-2026-056
+nrm_ref: NRM-2026-056
+roadmap_impact: None
+rationale: "Adopt verified kumwe/business-surface-contract 0.1.4, the owner of the custom business action command, view query, handler binding and result contracts, the custom business handler and view handler ports, and the field presentation model, input, widget and presenter contracts."
+repositories:
+  - kumwe/app
+  - kumwe/business-surface-contract
+behavior_before: "App consumed the SDK copies of the custom business action, view, handler and result contracts and of the field presentation model, input, widget and presenter contracts, wrapping the host execution context in an extension execution context for the SDK commands."
+behavior_after: "The eighteen contracts come from kumwe/business-surface-contract 0.1.4; the commands carry the host ExecutionContext and IdempotencyKey directly, FieldPresentationModel takes the canonical encoder, and CoreFieldPresenter and the example presenter are constructed with it. Handler admission, binding, authorization, the action ledger and rendering stay in App."
+public_api_impact: "CoreFieldPresenter takes the canonical encoder in its constructor; BusinessSurfaceService, the custom dispatcher and executor pass the host context directly, and BusinessRecordApiRequest returns the package idempotency key."
+dependency_impact: "Adds kumwe/business-surface-contract 0.1.4 exactly; it requires kumwe/access-context 0.1.2, kumwe/contribution 0.1.1, kumwe/conversion 0.1.5, kumwe/canonical-json 0.1.1, kumwe/idempotency 0.1.3, kumwe/record-model 0.1.4, kumwe/record-query 0.1.4 and kumwe/record-values 0.1.4, all locked."
+compatibility: "Rendered field models and stored custom action results are unchanged; the foreign-context refusal the App tested is now enforced by the package type."
+data_migration: None
+security_impact: "No authority change; the package commands are typed on the host context and the executor still authorizes every action."
+performance:
+  claim: None
+  evidence: []
+operations_deployment: "None; no configuration or schema change."
+recovery_rollback: "Revert the adoption pull request; no persisted data changes."
+artifacts_evidence:
+  - docs/architecture/migrations/KUMWE-MIG-2026-038.yaml
+  - docs/architecture/migrations/change-sets/KUMWE-CS-2026-038.yaml
+  - docs/architecture/migrations/trains/KUMWE-TRAIN-2026-038.yaml
+  - docs/architecture/migrations/evidence/KUMWE-MIG-2026-038/RELEASE-ATTESTATION.yaml
+  - docs/architecture/capability-index.md
+known_gaps:
+  - "Two App test methods that proved foreign-context refusal are removed because the package command type makes the case unrepresentable."
+  - "kumwe/extension-sdk 0.3.3 is adopted from its unpublished candidate in the same train (NRM-2026-057); the lock is re-pointed at the published distribution once it exists."
+owner: "eWɘyn"
+status: in-progress

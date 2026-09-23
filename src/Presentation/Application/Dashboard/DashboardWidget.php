@@ -6,7 +6,7 @@ namespace Kumwe\App\Presentation\Application\Dashboard;
 
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\App\InterfaceStandard\SurfaceId;
+use Kumwe\InterfaceStandard\SurfaceId;
 
 /**
  * Immutable, bounded semantic dashboard widget rendered only by core-owned templates.

@@ -11,20 +11,20 @@ use Kumwe\Access\ResourcePolicyTarget;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Extension\Contribution\CapabilityDefinition;
 use Kumwe\App\Extension\Contribution\CapabilityDefinitionRegistry;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\App\Extension\Contribution\ResourcePolicyDefinition;
 use Kumwe\App\Extension\Contribution\ResourcePolicyDefinitionRegistry;
 use Kumwe\Extension\Manifest\ExtensionIdentifier;
 use Kumwe\Extension\Manifest\ManifestContributions;
-use Kumwe\Extension\Spi\Portal\Contribution\PortalNavigationDefinition;
+use Kumwe\Portal\Contract\PortalNavigationDefinition;
 use Kumwe\App\Portal\Contribution\PortalNavigationRegistry;
-use Kumwe\Extension\Spi\Portal\Contribution\PortalRouteDefinition;
+use Kumwe\Portal\Contract\PortalRouteDefinition;
 use Kumwe\App\Portal\Contribution\PortalRouteRegistry;
-use Kumwe\Extension\Spi\Portal\Contribution\PortalTemplateDefinition;
+use Kumwe\Portal\Contract\PortalTemplateDefinition;
 use Kumwe\App\Portal\Contribution\PortalTemplateRegistry;
-use Kumwe\Extension\Spi\Portal\Contribution\PortalWorkspaceDefinition;
+use Kumwe\Portal\Contract\PortalWorkspaceDefinition;
 use Kumwe\App\Portal\Contribution\PortalWorkspaceRegistry;
 use Kumwe\App\Portal\Http\Handler\PortalExtensionRootRedirectHandler;
 use Kumwe\App\Portal\Http\Middleware\PortalAuthorizationMiddleware;
@@ -50,6 +50,7 @@ use Psr\Http\Server\RequestHandlerInterface;
 use Twig\Environment;
 use Twig\Loader\ArrayLoader;
 use Kumwe\App\Extension\Contribution\OwnedExtensionBindingRegistrar;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(OwnedExtensionBindingRegistrar::class)]
 #[CoversClass(PortalWorkspaceRegistry::class)]
@@ -327,15 +328,21 @@ final class PortalContributionRegistryTest extends TestCase
             ],
         ];
         $declared = ManifestContributions::fromManifest(
+            new DeterministicCanonicalEncoder(),
             ExtensionIdentifier::fromString('acme/orders'),
             $manifest,
         );
         self::assertSame($declared->declarations(), ManifestContributions::fromManifest(
+            new DeterministicCanonicalEncoder(),
             ExtensionIdentifier::fromString('acme/orders'),
             $declared->declarations(),
         )->declarations());
 
-        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+            withCore: false,
+        );
         $bindings = $registries->activateManifest($declared);
         $bindings->portalRoute('acme.orders.index', $this->factory());
         $bindings->complete();

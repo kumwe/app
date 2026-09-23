@@ -5,17 +5,20 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessIntegration\Application;
 
 use InvalidArgumentException;
-use Kumwe\App\Application\Automation\PermanentFailure;
-use Kumwe\App\Application\Automation\QueueRuntimePolicyCatalog;
-use Kumwe\App\Application\Automation\RetryPolicy;
+use Kumwe\Automation\PermanentFailure;
+use Kumwe\Automation\QueueRuntimePolicyCatalog;
+use Kumwe\Automation\RetryPolicy;
 use Kumwe\Extension\Spi\BusinessIntegration\Application\IntegrationEventTransport;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\ConsumerIdempotency;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventConsumerDefinition;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationEvent;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\WebhookContributionDefinition;
+use Kumwe\Integration\ConsumerIdempotency;
+use Kumwe\Integration\EventConsumerDefinition;
+use Kumwe\Integration\IntegrationEvent;
+use Kumwe\Integration\WebhookContributionDefinition;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
+use Kumwe\Integration\EventContractRegistry;
+use Kumwe\Integration\InboxDisposition;
+use Kumwe\Integration\InboxStore;
 
 /**
  * Applies one outbound adapter behind the same durable inbox used by internal consumers.

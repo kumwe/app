@@ -16,6 +16,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
 use ReflectionClass;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(ExtensionMigrationRunner::class)]
 /**
@@ -118,7 +119,7 @@ final class ExtensionMigrationRunnerTest extends TestCase
      */
     private static function manifest(): ExtensionManifest
     {
-        return ExtensionManifest::fromJson((string) json_encode([
+        return ExtensionManifest::fromJson(new DeterministicCanonicalEncoder(), (string) json_encode([
             'schema' => 3,
             'name' => 'acme/probe',
             'type' => 'component',

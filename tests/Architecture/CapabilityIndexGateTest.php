@@ -14,10 +14,9 @@ use PHPUnit\Framework\TestCase;
  * Proves the capability index gate holds for this repository and is registered in every lane that must run it.
  *
  * The committed `docs/architecture/capability-index.md` matches what the installed Kumwe packages generate, the
- * generator is deterministic, a stale digest is refused, the one remaining pre-Version-2 package appears only as
- * an approved legacy-unmanifested entry that cannot satisfy a release gate while `kumwe/canonical-json`,
- * `kumwe/conversion` and `kumwe/producer` are indexed from their Version 2 manifests and ledger records, and the
- * check is wired into `composer qa`, the quality contract, both CI steps and the coverage contract.
+ * generator is deterministic, a stale digest is refused, every installed package is indexed from its Version 2
+ * manifests and ledger record now that `kumwe/extension-sdk` has left the legacy registry, and the check is wired
+ * into `composer qa`, the quality contract, both CI steps and the coverage contract.
  *
  * @since  2.0.0
  */
@@ -69,7 +68,7 @@ final class CapabilityIndexGateTest extends TestCase
         $check = GovernanceFixture::run(['--check']);
 
         self::assertSame(0, $check['status'], $check['output']);
-        self::assertStringContainsString('Capability index verified (21 packages; digest sha256:', $check['output']);
+        self::assertStringContainsString('Capability index verified (30 packages; digest sha256:', $check['output']);
 
         $digest = GovernanceFixture::run(['--digest']);
         self::assertSame(0, $digest['status'], $digest['output']);
@@ -184,11 +183,10 @@ final class CapabilityIndexGateTest extends TestCase
     }
 
     /**
-     * One pre-Version-2 package remains a legacy-unmanifested transitional entry that cannot satisfy a release
-     * gate. The twenty manifested packages retain their release metadata; the conversion re-pin binds the JSON
-     * handoff its release ships, the transaction, localization and secret-envelope adoptions preserve the
-     * access-context and sequence handoffs and removed-symbol mappings, and the navigation adoption retires its
-     * App domain root.
+     * No legacy-unmanifested entry remains: the thirty installed packages are Version 2 adoptions with release
+     * metadata, the extension-sdk train binds the SDK release record and retires its three legacy App roots, the
+     * transaction, localization and secret-envelope adoptions preserve the access-context and sequence handoffs
+     * and removed-symbol mappings, and the navigation adoption retires its App domain root.
      *
      * @return  void
      *
@@ -204,36 +202,42 @@ final class CapabilityIndexGateTest extends TestCase
             [
                 'kumwe/access-context',
                 'kumwe/access-control',
+                'kumwe/administrator-contract',
                 'kumwe/approval',
                 'kumwe/audit',
+                'kumwe/automation',
                 'kumwe/business-definition',
                 'kumwe/business-policy',
                 'kumwe/business-schema',
+                'kumwe/business-surface-contract',
                 'kumwe/canonical-json',
                 'kumwe/computation',
                 'kumwe/content-model',
+                'kumwe/contribution',
                 'kumwe/conversion',
                 'kumwe/extension-sdk',
                 'kumwe/idempotency',
+                'kumwe/integration',
+                'kumwe/interface-standard',
                 'kumwe/localization',
                 'kumwe/navigation',
+                'kumwe/portal-contract',
                 'kumwe/producer',
                 'kumwe/record-model',
+                'kumwe/record-query',
                 'kumwe/record-values',
+                'kumwe/reporting',
                 'kumwe/secret-envelope',
                 'kumwe/sequence',
                 'kumwe/transaction',
             ],
             array_column($packages, 'package'),
         );
-        foreach ([$packages[11]] as $package) {
-            self::assertSame('legacy-unmanifested', $package['manifest_status'], (string) $package['package']);
-            self::assertFalse($package['release_gate_eligible'], (string) $package['package']);
-            self::assertIsArray($package['legacy']);
-            self::assertSame('eWɘyn', $package['legacy']['approved_by']);
-            self::assertSame('2026-09-02', $package['legacy']['approved_on']);
-            self::assertNull($package['handoff']);
-            self::assertNotEmpty($package['public_symbols']);
+        foreach ($packages as $package) {
+            self::assertSame('v2-manifested', $package['manifest_status'], (string) $package['package']);
+            self::assertTrue($package['release_gate_eligible'], (string) $package['package']);
+            self::assertNull($package['legacy'], (string) $package['package']);
+            self::assertIsArray($package['handoff'], (string) $package['package']);
         }
         $access = $packages[0];
         self::assertSame('v2-manifested', $access['manifest_status']);
@@ -244,7 +248,7 @@ final class CapabilityIndexGateTest extends TestCase
         self::assertSame('KUMWE-CS-2026-004', $access['handoff']['change_set']);
         self::assertSame('vendor/kumwe/access-context/MIGRATION-HANDOFF.md', $access['handoff']['path']);
         self::assertContains('Kumwe\\Context\\Value\\ExecutionContext', $access['public_symbols']);
-        $canonical = $packages[7];
+        $canonical = $packages[10];
         self::assertSame('v2-manifested', $canonical['manifest_status']);
         self::assertTrue($canonical['release_gate_eligible']);
         self::assertNull($canonical['legacy']);
@@ -253,7 +257,7 @@ final class CapabilityIndexGateTest extends TestCase
         self::assertSame('KUMWE-CS-2026-007', $canonical['handoff']['change_set']);
         self::assertSame('vendor/kumwe/canonical-json/MIGRATION-HANDOFF.md', $canonical['handoff']['path']);
         self::assertContains('Kumwe\\CanonicalJson\\Profile', $canonical['public_symbols']);
-        $conversion = $packages[10];
+        $conversion = $packages[14];
         self::assertSame('v2-manifested', $conversion['manifest_status']);
         self::assertTrue($conversion['release_gate_eligible']);
         self::assertNull($conversion['legacy']);
@@ -262,7 +266,7 @@ final class CapabilityIndexGateTest extends TestCase
         self::assertSame('KUMWE-CS-2026-031', $conversion['handoff']['change_set']);
         self::assertSame('vendor/kumwe/conversion/MIGRATION-HANDOFF.md', $conversion['handoff']['path']);
         self::assertContains('Kumwe\\Conversion\\Decimal\\ExactDecimal', $conversion['public_symbols']);
-        $producer = $packages[15];
+        $producer = $packages[22];
         self::assertSame('v2-manifested', $producer['manifest_status']);
         self::assertTrue($producer['release_gate_eligible']);
         self::assertNull($producer['legacy']);
@@ -275,28 +279,45 @@ final class CapabilityIndexGateTest extends TestCase
         self::assertSame('manifest:resources/public-api/v1.json', $sources['kumwe/access-context']);
         self::assertSame('manifest:resources/public-api/v1.json', $sources['kumwe/canonical-json']);
         self::assertSame('manifest:resources/public-api/v1.json', $sources['kumwe/conversion']);
-        self::assertSame('source-scan', $sources['kumwe/extension-sdk']);
+        self::assertSame('manifest:resources/public-api/v1.json', $sources['kumwe/extension-sdk']);
+        $sdk = $packages[15];
+        self::assertSame('kumwe/extension-sdk', $sdk['package']);
+        self::assertIsArray($sdk['handoff']);
+        self::assertSame('KUMWE-MIG-2026-033', $sdk['handoff']['migration_id']);
+        self::assertSame('KUMWE-CS-2026-033', $sdk['handoff']['change_set']);
+        self::assertSame('vendor/kumwe/extension-sdk/docs/release-record.md', $sdk['handoff']['path']);
+        self::assertCount(96, $sdk['public_symbols']);
+        self::assertContains('Kumwe\\Extension\\Manifest\\ExtensionManifest', $sdk['public_symbols']);
         self::assertSame('manifest:resources/public-api/v1.json', $sources['kumwe/producer']);
         self::assertSame(
             [
                 'v0.1.2',
                 'v0.1.2',
+                'v0.2.2',
                 'v0.1.2',
                 'v0.1.2',
+                'v0.2.2',
                 'v0.1.2',
                 'v0.1.1',
                 'v0.1.3',
+                'v0.1.4',
                 'v0.1.1',
                 'v0.3.3',
                 'v0.2.0',
+                'v0.1.1',
                 'v0.1.5',
-                'v0.2.4',
+                'v0.3.3',
                 'v0.1.3',
+                'v0.2.4',
+                'v0.1.2',
                 'v0.1.1',
                 'v0.1.3',
+                'v0.2.2',
                 'v0.3.0',
                 'v0.1.4',
                 'v0.1.4',
+                'v0.1.4',
+                'v0.1.5',
                 'v0.1.1',
                 'v0.2.1',
                 'v0.1.2',
@@ -316,6 +337,16 @@ final class CapabilityIndexGateTest extends TestCase
                     'migration_id' => 'KUMWE-MIG-2026-001',
                 ],
                 [
+                    'old_namespace' => 'Kumwe\\App\\BusinessIntegration\\Domain\\',
+                    'package' => 'kumwe/integration',
+                    'migration_id' => 'KUMWE-MIG-2026-027',
+                ],
+                [
+                    'old_namespace' => 'Kumwe\\App\\BusinessRecord\\Query\\',
+                    'package' => 'kumwe/extension-sdk',
+                    'migration_id' => 'KUMWE-MIG-2026-033',
+                ],
+                [
                     'old_namespace' => 'Kumwe\\App\\BusinessSecurity\\Application\\Approval\\',
                     'package' => 'kumwe/approval',
                     'migration_id' => 'KUMWE-MIG-2026-023',
@@ -329,6 +360,16 @@ final class CapabilityIndexGateTest extends TestCase
                     'old_namespace' => 'Kumwe\\App\\Content\\Domain\\',
                     'package' => 'kumwe/content-model',
                     'migration_id' => 'KUMWE-MIG-2026-034',
+                ],
+                [
+                    'old_namespace' => 'Kumwe\\App\\Extension\\Development\\',
+                    'package' => 'kumwe/extension-sdk',
+                    'migration_id' => 'KUMWE-MIG-2026-033',
+                ],
+                [
+                    'old_namespace' => 'Kumwe\\App\\Extension\\Infrastructure\\Package\\',
+                    'package' => 'kumwe/extension-sdk',
+                    'migration_id' => 'KUMWE-MIG-2026-033',
                 ],
                 [
                     'old_namespace' => 'Kumwe\\App\\Localization\\Domain\\',
@@ -346,9 +387,39 @@ final class CapabilityIndexGateTest extends TestCase
                     'migration_id' => 'KUMWE-MIG-2026-034',
                 ],
                 [
+                    'old_namespace' => 'Kumwe\\Extension\\Spi\\BusinessIntegration\\Domain\\',
+                    'package' => 'kumwe/integration',
+                    'migration_id' => 'KUMWE-MIG-2026-027',
+                ],
+                [
+                    'old_namespace' => 'Kumwe\\Extension\\Spi\\BusinessRecord\\Query\\',
+                    'package' => 'kumwe/record-query',
+                    'migration_id' => 'KUMWE-MIG-2026-039',
+                ],
+                [
+                    'old_namespace' => 'Kumwe\\Extension\\Spi\\BusinessReporting\\Application\\',
+                    'package' => 'kumwe/reporting',
+                    'migration_id' => 'KUMWE-MIG-2026-041',
+                ],
+                [
+                    'old_namespace' => 'Kumwe\\Extension\\Spi\\BusinessReporting\\Domain\\',
+                    'package' => 'kumwe/reporting',
+                    'migration_id' => 'KUMWE-MIG-2026-041',
+                ],
+                [
                     'old_namespace' => 'Kumwe\\Extension\\Spi\\BusinessSecurity\\',
                     'package' => 'kumwe/business-policy',
                     'migration_id' => 'KUMWE-MIG-2026-022',
+                ],
+                [
+                    'old_namespace' => 'Kumwe\\Extension\\Spi\\BusinessSurface\\',
+                    'package' => 'kumwe/business-surface-contract',
+                    'migration_id' => 'KUMWE-MIG-2026-038',
+                ],
+                [
+                    'old_namespace' => 'Kumwe\\Extension\\Spi\\Portal\\Contribution\\',
+                    'package' => 'kumwe/portal-contract',
+                    'migration_id' => 'KUMWE-MIG-2026-037',
                 ],
             ],
             $document['extracted_namespaces'],
@@ -359,21 +430,31 @@ final class CapabilityIndexGateTest extends TestCase
             [
                 'kumwe/access-context' => 8,
                 'kumwe/access-control' => 37,
+                'kumwe/automation' => 24,
                 'kumwe/idempotency' => 7,
                 'kumwe/transaction' => 3,
                 'kumwe/audit' => 13,
                 'kumwe/business-definition' => 36,
                 'kumwe/sequence' => 4,
+                'kumwe/integration' => 33,
                 'kumwe/conversion' => 23,
                 'kumwe/record-model' => 6,
                 'kumwe/secret-envelope' => 9,
                 'kumwe/record-values' => 3,
+                'kumwe/reporting' => 21,
                 'kumwe/business-schema' => 22,
                 'kumwe/approval' => 12,
                 'kumwe/business-policy' => 14,
                 'kumwe/content-model' => 30,
+                'kumwe/contribution' => 3,
+                'kumwe/interface-standard' => 21,
                 'kumwe/localization' => 23,
                 'kumwe/navigation' => 8,
+                'kumwe/extension-sdk' => 1,
+                'kumwe/record-query' => 27,
+                'kumwe/business-surface-contract' => 18,
+                'kumwe/administrator-contract' => 4,
+                'kumwe/portal-contract' => 4,
             ],
             array_count_values(array_column($removed, 'package')),
         );
@@ -410,7 +491,15 @@ final class CapabilityIndexGateTest extends TestCase
             ['kumwe/access-context', 'kumwe/sequence'],
             array_values(array_unique(array_column($removed, 'package'))),
         );
-        self::assertContains('Kumwe\\App\\BusinessRecord\\Query\\', $packages[11]['legacy']['retired_app_namespaces']);
+        self::assertContains(
+            [
+                'old_fqcn' => 'Kumwe\\Extension\\Spi\\Application\\Automation\\IdempotencyKey',
+                'new_fqcn' => 'Kumwe\\Idempotency\\IdempotencyKey',
+                'package' => 'kumwe/extension-sdk',
+                'migration_id' => 'KUMWE-MIG-2026-033',
+            ],
+            $document['removed_symbols'],
+        );
     }
 
     /**

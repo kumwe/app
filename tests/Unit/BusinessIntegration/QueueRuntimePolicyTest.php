@@ -5,32 +5,37 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\BusinessIntegration;
 
 use InvalidArgumentException;
-use Kumwe\App\Application\Automation\QueueRuntimePolicy;
-use Kumwe\App\BusinessIntegration\Domain\QueueContributionDefinition;
+use Kumwe\Automation\QueueRuntimePolicy;
+use Kumwe\Automation\QueueContributionDefinition;
 use Kumwe\App\BusinessIntegration\Infrastructure\ContributedQueueRuntimePolicyCatalog;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
 use Kumwe\Extension\Spi\Application\Automation\JobHandler;
 use Kumwe\Extension\Spi\Application\ExecutionContext;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\JobContributionDefinition;
+use Kumwe\Automation\JobContributionDefinition;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
-#[CoversClass(QueueRuntimePolicy::class)]
 #[CoversClass(ContributedQueueRuntimePolicyCatalog::class)]
 final class QueueRuntimePolicyTest extends TestCase
 {
     public function testTrustedCatalogIntersectsProducerHandlerAndQueueAttemptBudgets(): void
     {
         $owner = ContributionOwner::extension('acme/example');
-        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+            withCore: false,
+        );
         $registries->queues()->register(
             $owner,
             new QueueContributionDefinition('acme.example.priority', 45, 3, 2, 14),
         );
         $registries->jobs()->register($owner, new JobContributionDefinition(
+            new DeterministicCanonicalEncoder(),
             'acme.example.reconcile',
             1,
             '1.0.0',

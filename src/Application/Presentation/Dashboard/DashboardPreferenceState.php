@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Kumwe\App\Application\Presentation\Dashboard;
 
 use InvalidArgumentException;
-use Kumwe\App\InterfaceStandard\CustomizationScope;
-use Kumwe\App\InterfaceStandard\CustomizationSlot;
+use Kumwe\InterfaceStandard\CustomizationScope;
+use Kumwe\InterfaceStandard\CustomizationSlot;
 use Kumwe\App\InterfaceStandard\PresentationPreference;
-use Kumwe\App\InterfaceStandard\SurfaceId;
+use Kumwe\InterfaceStandard\SurfaceId;
 
 /**
  * Bounded authorized dashboard preference state returned by the application query use case.

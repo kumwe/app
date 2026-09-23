@@ -93,13 +93,13 @@ enum ConvertedMoneySurface: string
             self::Administrator => [
                 'src/BusinessSurface/Presentation/Field/CoreFieldPresenter.php',
                 'src/BusinessSurface/Presentation/Field/FieldPresentationRegistry.php',
-                'vendor/kumwe/extension-sdk/src/Spi/BusinessSurface/Presentation/Field/FieldPresentationModel.php',
+                'vendor/kumwe/business-surface-contract/src/Presentation/Field/FieldPresentationModel.php',
                 'templates/administrator/_business-fields.twig',
             ],
             self::Portal => [
                 'src/BusinessSurface/Presentation/Field/CoreFieldPresenter.php',
                 'src/BusinessSurface/Presentation/Field/FieldPresentationRegistry.php',
-                'vendor/kumwe/extension-sdk/src/Spi/BusinessSurface/Presentation/Field/FieldPresentationModel.php',
+                'vendor/kumwe/business-surface-contract/src/Presentation/Field/FieldPresentationModel.php',
                 'templates/portal/_business-fields.twig',
             ],
             self::Document => [
@@ -118,7 +118,7 @@ enum ConvertedMoneySurface: string
             ],
             self::Report => [
                 'src/BusinessReporting/Application/ReportService.php',
-                'vendor/kumwe/extension-sdk/src/Spi/BusinessReporting/Domain/ReportValueType.php',
+                'vendor/kumwe/reporting/src/Domain/ReportValueType.php',
             ],
             self::Export => [
                 'src/BusinessReporting/Application/ReportCsvEncoder.php',

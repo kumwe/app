@@ -54,7 +54,7 @@ use Kumwe\BusinessPolicy\Policy\RecordPolicySet;
 use Kumwe\App\Tests\Support\AuthorizationContext;
 use Kumwe\App\Tests\Support\NeutralBusinessFixture;
 use Kumwe\Conversion\Decimal\ExactDecimal;
-use Kumwe\Extension\Spi\Application\Automation\IdempotencyKey;
+use Kumwe\Idempotency\IdempotencyKey;
 use Kumwe\BusinessPolicy\Application\FieldAccessUsage;
 use Kumwe\BusinessPolicy\Application\FieldDisclosurePlan;
 use Kumwe\Secret\Cipher\SodiumEnvelopeCipher;

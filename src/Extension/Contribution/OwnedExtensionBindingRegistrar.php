@@ -21,13 +21,13 @@ use Kumwe\Extension\Spi\Binding\Http\PortalRouteHandlerFactory;
 use Kumwe\Extension\Spi\BusinessIntegration\Application\DomainEventHandler;
 use Kumwe\Extension\Spi\BusinessIntegration\Application\IntegrationEventHandler;
 use Kumwe\Extension\Spi\BusinessIntegration\Application\IntegrationEventTransport;
-use Kumwe\Extension\Spi\BusinessReporting\Application\ProjectionBuilder;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionHandler;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewHandler;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresenter;
+use Kumwe\Reporting\Contract\ProjectionBuilder;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessActionHandler;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessViewHandler;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresenter;
 use Kumwe\Extension\Spi\Contribution\CanonicalCompositionKind;
 use Kumwe\Extension\Spi\Contribution\CanonicalCompositionDocument;
-use Kumwe\Extension\Spi\Contribution\ContributionDefinition;
+use Kumwe\Contribution\ContributionDefinition;
 use Kumwe\Extension\Spi\Studio\Application\Preview\StudioPreviewBlockRenderer;
 use LogicException;
 
@@ -86,7 +86,7 @@ final class OwnedExtensionBindingRegistrar implements ExtensionBindingRegistrar
         private readonly ?string $runtimeVersion = null,
         private readonly ?array $runtimeEntry = null,
     ) {
-        $this->host = new CanonicalManifestInterpreter($manifest);
+        $this->host = new CanonicalManifestInterpreter($registries->canonicalEncoder(), $manifest);
     }
 
     /**

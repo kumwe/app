@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Extension\Infrastructure;
 
 use Doctrine\DBAL\Connection;
+use Kumwe\CanonicalJson\CanonicalEncoder;
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
@@ -31,7 +32,7 @@ use Kumwe\Extension\Package\PackageEvidenceInspector;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Extension\Contribution\CanonicalManifestInterpreter;
 use Kumwe\App\Extension\Contribution\ContributionDefinitionChecksum;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionSummary;
 use Kumwe\Extension\Manifest\ExtensionIdentifier;
 use Kumwe\Extension\Manifest\ExtensionManifest;
@@ -103,6 +104,8 @@ final readonly class DoctrineExtensionManager
     /**
      * Wire the registry to its database, its two storage roots and the collaborators a lifecycle change needs.
      *
+     * @param  CanonicalEncoder                $canonicalEncoder      Host encoder every stored manifest is
+     *         parsed and interpreted with.
      * @param  Connection                      $database              Connection every extension table read
      *         and write goes through.
      * @param  TableNames                      $tables                Prefix-aware resolver for the extension
@@ -149,6 +152,7 @@ final readonly class DoctrineExtensionManager
      * @since  2.0.0
      */
     public function __construct(
+        private CanonicalEncoder $canonicalEncoder,
         private Connection $database,
         private TableNames $tables,
         private string $extensionRoot,
@@ -248,7 +252,7 @@ final readonly class DoctrineExtensionManager
             $extension['theme_surfaces'] = is_string($identifier) ? ($byIdentifier[$identifier] ?? []) : [];
             $manifestValue = $extension['manifest'] ?? null;
             if (is_string($identifier) && (is_string($manifestValue) || is_array($manifestValue))) {
-                $manifest = ExtensionManifest::fromJson(is_string($manifestValue)
+                $manifest = ExtensionManifest::fromJson($this->canonicalEncoder, is_string($manifestValue)
                     ? $manifestValue
                     : json_encode($manifestValue, JSON_THROW_ON_ERROR));
                 $extension['manifest_schema'] = $manifest->schemaVersion();
@@ -258,6 +262,7 @@ final readonly class DoctrineExtensionManager
                 );
                 $runtimePath = $extension['runtime_path'] ?? null;
                 $extension['contribution_summary'] = ExtensionContributionSummary::project(
+                    $this->canonicalEncoder,
                     $manifest,
                     ($extension['status'] ?? null) === 'active',
                     $extension['theme_surfaces'],
@@ -1342,7 +1347,7 @@ final readonly class DoctrineExtensionManager
             if (($installed['status'] ?? null) === 'active' && $this->activationAdmission !== null) {
                 $this->activationAdmission->admit($manifest, $site, $this->activeManifests());
             }
-            $contributions = CanonicalManifestInterpreter::fromManifest($manifest);
+            $contributions = CanonicalManifestInterpreter::fromManifest($this->canonicalEncoder, $manifest);
             $this->businessDefinitions?->synchronize(
                 $identifier,
                 (string) $manifest->version(),
@@ -1541,7 +1546,7 @@ final readonly class DoctrineExtensionManager
     private function synchronizeContributionCapabilities(ExtensionManifest $manifest, string $extensionId): void
     {
         $contributionOwner = ContributionOwner::extension($manifest->identifier()->value());
-        $contributions = CanonicalManifestInterpreter::fromManifest($manifest);
+        $contributions = CanonicalManifestInterpreter::fromManifest($this->canonicalEncoder, $manifest);
         $definitions = [];
         foreach ($contributions->capabilities() as $definition) {
             $definitions[$definition->id] = $definition;
@@ -1659,7 +1664,7 @@ final readonly class DoctrineExtensionManager
         string $extensionId,
     ): void {
         $owner = ContributionOwner::extension($manifest->identifier()->value());
-        $contributions = CanonicalManifestInterpreter::fromManifest($manifest);
+        $contributions = CanonicalManifestInterpreter::fromManifest($this->canonicalEncoder, $manifest);
         $definitions = [];
         foreach ($contributions->resourcePolicies() as $definition) {
             $definitions[$definition->id] = $definition;
@@ -3223,7 +3228,7 @@ final readonly class DoctrineExtensionManager
             throw new RuntimeException('The installed extension manifest is unavailable.');
         }
 
-        return ExtensionManifest::fromJson($manifest);
+        return ExtensionManifest::fromJson($this->canonicalEncoder, $manifest);
     }
 
     /**
@@ -3260,7 +3265,7 @@ final readonly class DoctrineExtensionManager
             if (!is_string($value)) {
                 throw new RuntimeException('An active extension manifest is unavailable.');
             }
-            $manifests[] = ExtensionManifest::fromJson($value);
+            $manifests[] = ExtensionManifest::fromJson($this->canonicalEncoder, $value);
         }
 
         return $manifests;

@@ -5,15 +5,18 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessIntegration\Application;
 
 use DateTimeImmutable;
-use Kumwe\App\BusinessIntegration\Domain\RecordedDomainEvent;
-use Kumwe\App\BusinessIntegration\Domain\RecordedIntegrationEvent;
+use Kumwe\Integration\RecordedDomainEvent;
+use Kumwe\Integration\RecordedIntegrationEvent;
 use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Extension\Spi\BusinessIntegration\Application\DomainEventHandler;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\DomainListenerDefinition;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventSensitivity;
+use Kumwe\Integration\DomainListenerDefinition;
+use Kumwe\Integration\EventSensitivity;
 use Ramsey\Uuid\Uuid;
+use Kumwe\CanonicalJson\CanonicalEncoder;
+use Kumwe\Integration\EventContractRegistry;
+use Kumwe\Integration\OutboxStore;
 
 /**
  * Publishes the disclosure-safe core record fact inside the authoritative mutation transaction.
@@ -30,10 +33,11 @@ final readonly class BusinessRecordMutationEventPublisher
     /**
      * Bind event publication to the active contracts, listeners, and transactional outbox.
      *
-     * @param  EventContractRegistry             $contracts      Exact trusted event contracts.
-     * @param  ExtensionContributionRegistrySet  $contributions  Live owner-bound listener registry.
-     * @param  OutboxStore                       $outbox         Transactional durable event store.
-     * @param  ExtensionExecutionGate            $execution      Live authority for contributed listeners.
+     * @param  EventContractRegistry             $contracts         Exact trusted event contracts.
+     * @param  ExtensionContributionRegistrySet  $contributions     Live owner-bound listener registry.
+     * @param  OutboxStore                       $outbox            Transactional durable event store.
+     * @param  ExtensionExecutionGate            $execution         Live authority for contributed listeners.
+     * @param  CanonicalEncoder                  $canonicalEncoder  Host encoder the recorded event is bounded with.
      *
      * @since  2.0.0
      */
@@ -42,6 +46,7 @@ final readonly class BusinessRecordMutationEventPublisher
         private ExtensionContributionRegistrySet $contributions,
         private OutboxStore $outbox,
         private ExtensionExecutionGate $execution,
+        private CanonicalEncoder $canonicalEncoder,
     ) {
     }
 
@@ -74,6 +79,7 @@ final readonly class BusinessRecordMutationEventPublisher
         sort($disclosedFields, SORT_STRING);
         $systemIdentity = $context->systemActor()?->identifier();
         $event = new RecordedDomainEvent(
+            $this->canonicalEncoder,
             'core.business_record.mutated',
             1,
             Uuid::uuid7()->toString(),
@@ -118,7 +124,7 @@ final readonly class BusinessRecordMutationEventPublisher
             $this->contracts,
             $handlers,
         ))->dispatch($event);
-        $this->outbox->append(RecordedIntegrationEvent::fromDomain($event));
+        $this->outbox->append(RecordedIntegrationEvent::fromDomain($this->canonicalEncoder, $event));
 
         return $event->eventId();
     }

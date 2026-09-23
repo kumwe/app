@@ -1,0 +1,138 @@
+schema: kumwe-change-set/v2
+change_set: KUMWE-CS-2026-025
+migration_id: KUMWE-MIG-2026-025
+roadmap_source:
+  title: Kumwe ERP-Extensibility Foundation Roadmap
+  sha256: a202155ef1a65f5ab293d4f8397ebf4ac430db7f1e877c776bbe7851e6fe18d8
+roadmap_refs: []
+state: app-pr-ready
+phase_1:
+  source_repository: kumwe/app
+  source_sha: "24ecf956423c18933e824b43cea1bfb9127a79a9"
+  target_repository: kumwe/interface-standard
+  package_pr: "https://github.com/kumwe/interface-standard/pull/5"
+  tested_sha: null
+  public_api_digest: "b43cbc7230bb74355750d386a92567e75939c9435db2d743bf6e21e4a4a886ea"
+  capability_digest: "03b227f67703e57edc36502bc8b7129f33d002fcfbd285f56d59495545e44c2d"
+  service_map_digest: "0becbd85cc64870926e3798628b3b126d955180e633f1db8354ed9e50d481401"
+  handoff_digest: "18e93b04ca1042c69c4d5deb319df53e0b220cd35fa483c9d2bcbacf7793dc05"
+release:
+  version: 0.1.2
+  source_sha: "93d4637fda7c0881f7e00aae132c2d470b5eceac"
+  artifact_digest: "9ed388dc66ba5e8148856a9d0a1391682a6682a3728f81bc40119a066f6cbd8b"
+  clean_consumer_evidence:
+    - docs/architecture/migrations/evidence/KUMWE-MIG-2026-025/RELEASE-ATTESTATION.yaml
+phase_2:
+  app_pr: "https://github.com/kumwe/app/pull/151"
+  tested_sha: null
+  merged_sha: null
+  exact_dependency: "kumwe/interface-standard 0.1.2"
+  composer_lock_digest: "04b6bdc0e61ef498055023db3aa6243d6c1e05566aa6428729a2117cb9c00612"
+  removed_app_symbols:
+    - Kumwe\App\InterfaceStandard\ConformanceDiagnostic
+    - Kumwe\App\InterfaceStandard\ConformanceSeverity
+    - Kumwe\App\InterfaceStandard\CustomizationPermission
+    - Kumwe\App\InterfaceStandard\CustomizationScope
+    - Kumwe\App\InterfaceStandard\CustomizationSlot
+    - Kumwe\App\InterfaceStandard\IconName
+    - Kumwe\App\InterfaceStandard\InterfaceStandardVersion
+    - Kumwe\App\InterfaceStandard\ResourceName
+    - Kumwe\App\InterfaceStandard\ResponsiveElement
+    - Kumwe\App\InterfaceStandard\ResponsivePriority
+    - Kumwe\App\InterfaceStandard\SurfaceActor
+    - Kumwe\App\InterfaceStandard\SurfaceArea
+    - Kumwe\App\InterfaceStandard\SurfaceConformanceReport
+    - Kumwe\App\InterfaceStandard\SurfaceConformanceValidator
+    - Kumwe\App\InterfaceStandard\SurfaceConformanceViolation
+    - Kumwe\App\InterfaceStandard\SurfaceDeclaration
+    - Kumwe\App\InterfaceStandard\SurfaceDefinition
+    - Kumwe\App\InterfaceStandard\SurfaceId
+    - Kumwe\App\InterfaceStandard\SurfaceIntent
+    - Kumwe\App\InterfaceStandard\SurfacePattern
+    - Kumwe\App\InterfaceStandard\SurfaceState
+  moved_unit_tests:
+    - tests/Unit/InterfaceStandard/SurfaceDefinitionTest.php
+    - tests/Unit/InterfaceStandard/SurfaceIdentifierParityTest.php
+  retained_app_tests:
+    - tests/Architecture/BusinessWorkspaceInterfaceStandardTest.php
+    - tests/Architecture/InterfaceStandardBoundaryTest.php
+    - tests/Integration/InterfaceStandard/PresentationPreferencePersistenceIntegrationTest.php
+    - tests/Support/DashboardPreferenceTestRuntime.php
+    - tests/Unit/Administrator/Http/Handler/AdministratorDashboardPreferencesHandlerTest.php
+    - tests/Unit/Application/Presentation/Dashboard/DashboardPreferenceMutationTest.php
+    - tests/Unit/Application/Presentation/Dashboard/DashboardPreferenceServiceTest.php
+    - tests/Unit/Application/Presentation/Dashboard/DashboardPreferenceStateTest.php
+    - tests/Unit/Delivery/Http/Dashboard/DashboardPreferenceFormDecoderTest.php
+    - tests/Unit/Delivery/Http/Dashboard/DashboardPreferenceQueryDecoderTest.php
+    - tests/Unit/Governance/LayerClassifierTest.php
+    - tests/Unit/InterfaceStandard/InterfaceStandardSchemaTest.php
+    - tests/Unit/InterfaceStandard/PresentationPreferenceManagerTest.php
+    - tests/Unit/InterfaceStandard/PresentationPreferenceResolverTest.php
+    - tests/Unit/InterfaceStandard/PresentationPreferenceTest.php
+    - tests/Unit/Portal/Http/PortalDashboardPreferencesHandlerTest.php
+    - tests/Unit/Presentation/Application/Dashboard/DashboardComposerTest.php
+    - tests/Unit/Presentation/Application/Dashboard/DashboardPreferenceFormPresenterTest.php
+evidence:
+  package:
+    - docs/architecture/migrations/evidence/KUMWE-MIG-2026-025/RELEASE-ATTESTATION.yaml
+    - "https://github.com/kumwe/interface-standard/actions/runs/34249249675; release on record on tag commit 93d4637fda7c0881f7e00aae132c2d470b5eceac"
+    - "https://github.com/kumwe/interface-standard/releases/tag/v0.1.2; release 384883674"
+  app_composition:
+    - tests/Architecture/BusinessWorkspaceInterfaceStandardTest.php
+    - tests/Architecture/InterfaceStandardBoundaryTest.php
+    - tests/Unit/Administrator/Http/Handler/AdministratorDashboardPreferencesHandlerTest.php
+    - tests/Unit/Application/Presentation/Dashboard/DashboardPreferenceMutationTest.php
+    - tests/Unit/Application/Presentation/Dashboard/DashboardPreferenceServiceTest.php
+    - tests/Unit/Application/Presentation/Dashboard/DashboardPreferenceStateTest.php
+    - tests/Unit/Delivery/Http/Dashboard/DashboardPreferenceFormDecoderTest.php
+    - tests/Unit/Delivery/Http/Dashboard/DashboardPreferenceQueryDecoderTest.php
+    - tests/Unit/Governance/LayerClassifierTest.php
+    - tests/Unit/InterfaceStandard/InterfaceStandardSchemaTest.php
+    - tests/Unit/InterfaceStandard/PresentationPreferenceManagerTest.php
+    - tests/Unit/InterfaceStandard/PresentationPreferenceResolverTest.php
+    - tests/Unit/Governance/ComposerLockTest.php
+    - tests/Unit/Governance/CoreGrowthGateTest.php
+    - tests/Architecture/CapabilityIndexGateTest.php
+    - "composer update of the train packages; one lock regeneration for the whole train, kumwe/interface-standard at 0.1.2"
+    - "composer kumwe:capability-index, kumwe:core-growth-record, baseline:record, then the composer qa gates and the unit and architecture suites, run locally on PHP 8.4 without ext-kumwe_engine"
+  database_matrix:
+    - tests/Integration/InterfaceStandard/PresentationPreferencePersistenceIntegrationTest.php
+    - "To be exercised by the pull request's hosted workflows on MariaDB, MySQL and PostgreSQL."
+  concurrency:
+    - "Claim contention, leases, recovery and dead-letter paths; to be exercised by the pull request's hosted workflows."
+  authorization_security:
+    - tests/Architecture/InterfaceStandardBoundaryTest.php
+    - "Capability checks, admission and trust decisions stay in App; the hosted source-and-image security scans run on the pull request."
+  lifecycle_recovery:
+    - "Lifecycle, recovery and migration paths; to be exercised by the pull request's hosted workflows."
+  delivery_browser:
+    - tests/Integration/InterfaceStandard/PresentationPreferencePersistenceIntegrationTest.php
+    - tests/Unit/Administrator/Http/Handler/AdministratorDashboardPreferencesHandlerTest.php
+    - tests/Unit/Application/Presentation/Dashboard/DashboardPreferenceMutationTest.php
+    - tests/Unit/Application/Presentation/Dashboard/DashboardPreferenceServiceTest.php
+    - tests/Unit/Application/Presentation/Dashboard/DashboardPreferenceStateTest.php
+    - tests/Unit/Delivery/Http/Dashboard/DashboardPreferenceFormDecoderTest.php
+    - "The administrator, portal and API delivery read the package values through the unchanged App handlers; the browser suites run in the pull request's hosted workflows."
+  deployment_backup_restore:
+    - "Signed backup, clean restore and deployment acceptance on three engines; to be exercised by the pull request's hosted workflows."
+  native_parity_abi:
+    - tests/Unit/Kernel/NativeComputationFactoryTest.php
+    - "The package ships no native component; the canonical encoder it receives is the container's native encoder binding and no native cutover is claimed."
+  performance_capacity:
+    - tests/Integration/Performance/HotPlanRegressionIntegrationTest.php
+    - "No performance claim is made; the hosted lanes exercise the hot plan and query budgets."
+compatibility: "Drop-in for the twenty-one namespace-only moves; SurfaceDefinition implements the package ContributionDefinition, the interface-surface registry and presentation preference policies retype to it, and the programme verifier reads the core surface definitions from the installed package source. PresentationPreference, its key and value stay in App."
+migration_recovery: null
+security_impact: "None on authority: presentation preference persistence, policy and the programme verification stay in App; the package owns the declaration vocabulary and the conformance validator."
+performance_claim: null
+rollback: "Revert the App pull request; the twenty-one removed classes and two unit tests return with the train baseline and no persisted data changes."
+known_gaps:
+  - "The local sandbox runs PHP 8.4 without ext-kumwe_engine and without a database server, so the integration and functional lanes, PHP 8.5 and the demo profile installations are proven by the App CI on this pull request."
+  - "One Composer lock regeneration covers the whole train, so composer_lock_digest is the digest of the train lock rather than of a lock that adds this package alone."
+  - "GitHub release v0.1.2 reports immutable false; tag protection and rulesets were not queried."
+  - "The tag archive carries no export-ignore rules, so the released tree ships its tests, tools and CI configuration; the sixty-eight tracked files are the archive."
+  - "The handoff lists SurfaceDefinitionTest and SurfaceIdentifierParityTest among the tests to retain; the former tests only the moved definition and the latter compares identifier grammars of types every train package now owns, so both are removed and the programme evidence records repoint to the package suite and the retained boundary test."
+  - "The handoff retires Kumwe\\App\\InterfaceStandard\\ wholesale; PresentationPreference, PresentationPreferenceKey and PresentationPreferenceValue remain App-owned under that root, so the ledger retires no root and lists the symbols."
+  - "kumwe/extension-sdk 0.3.3 is adopted from its unpublished candidate, pull request 22 at commit b54022b05075944e884dc1df038cbcb63f723472, through a temporary package repository entry in composer.json; the entry is removed and the lock re-pointed at the Packagist distribution once v0.3.3 is published (KUMWE-CS-2026-033)."
+completion_claim: false
+accepted_by: null

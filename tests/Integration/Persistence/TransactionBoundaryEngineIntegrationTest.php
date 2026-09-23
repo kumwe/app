@@ -21,11 +21,11 @@ use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Audit\Application\AuditRecorder;
 use Kumwe\Audit\Domain\AuditEvent;
 use Kumwe\App\Audit\Infrastructure\Persistence\DoctrineAuditRecorder;
-use Kumwe\App\BusinessIntegration\Application\EventContractRegistry;
-use Kumwe\App\BusinessIntegration\Domain\EventSchemaDefinition;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventSensitivity;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationEvent;
-use Kumwe\App\BusinessIntegration\Domain\RecordedIntegrationEvent;
+use Kumwe\Integration\EventContractRegistry;
+use Kumwe\Integration\EventSchemaDefinition;
+use Kumwe\Integration\EventSensitivity;
+use Kumwe\Integration\IntegrationEvent;
+use Kumwe\Integration\RecordedIntegrationEvent;
 use Kumwe\App\BusinessIntegration\Infrastructure\DoctrineOutboxStore;
 use Kumwe\Sequence\Contract\NumberSequenceAllocator;
 use Kumwe\App\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessNumberSequenceAllocator;
@@ -38,6 +38,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(DoctrineTransactionManager::class)]
 #[CoversClass(DoctrineBusinessNumberSequenceAllocator::class)]
@@ -382,7 +383,14 @@ final class TransactionBoundaryEngineIntegrationTest extends TestCase
         $clock = $container->get(ClockInterface::class);
         self::assertInstanceOf(AuditRecorder::class, $audit);
         self::assertInstanceOf(ClockInterface::class, $clock);
-        $outbox = new DoctrineOutboxStore($database, $tables, $transactions, $clock, $this->contracts());
+        $outbox = new DoctrineOutboxStore(
+            $database,
+            $tables,
+            $transactions,
+            $clock,
+            $this->contracts(),
+            new DeterministicCanonicalEncoder(),
+        );
         $observerTables = new TableNames($observer, $tables->prefix());
         $count = static fn (string $table, string $column, string $value): int => (int) $observer->fetchOne(
             sprintf('SELECT COUNT(*) FROM %s WHERE %s = ?', $observerTables->quoted($table), $column),
@@ -716,13 +724,19 @@ final class TransactionBoundaryEngineIntegrationTest extends TestCase
      */
     private function contracts(): EventContractRegistry
     {
-        return new EventContractRegistry([
-            new EventSchemaDefinition('business.record.changed', 1, EventSensitivity::INTERNAL, [
-                'type' => 'object',
-                'required' => ['record_id'],
-                'properties' => ['record_id' => ['type' => 'string']],
-                'additionalProperties' => false,
-            ]),
+        return new EventContractRegistry(new DeterministicCanonicalEncoder(), [
+            new EventSchemaDefinition(
+                new DeterministicCanonicalEncoder(),
+                'business.record.changed',
+                1,
+                EventSensitivity::INTERNAL,
+                [
+                    'type' => 'object',
+                    'required' => ['record_id'],
+                    'properties' => ['record_id' => ['type' => 'string']],
+                    'additionalProperties' => false,
+                ],
+            ),
         ], []);
     }
 
@@ -738,6 +752,7 @@ final class TransactionBoundaryEngineIntegrationTest extends TestCase
         $aggregateId = 'boundary-' . bin2hex(random_bytes(8));
 
         return new RecordedIntegrationEvent(
+            new DeterministicCanonicalEncoder(),
             'business.record.changed',
             1,
             Uuid::uuid7()->toString(),

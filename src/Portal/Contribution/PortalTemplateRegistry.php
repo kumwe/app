@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Portal\Contribution;
 
-use Kumwe\Extension\Spi\Portal\Contribution\PortalTemplateDefinition;
+use Kumwe\Portal\Contract\PortalTemplateDefinition;
 use InvalidArgumentException;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
-use Kumwe\App\Extension\Contribution\ContributionSurface;
+use Kumwe\Contribution\ContributionOwner;
+use Kumwe\Extension\Manifest\ManifestIdentifierPolicies;
+use Kumwe\Contribution\ContributionSurface;
 
 /**
  * Owner-aware registry that is the only route from a portal template id to an isolated Twig path.
@@ -38,7 +39,7 @@ final class PortalTemplateRegistry implements ContributionSurface
      */
     public function register(ContributionOwner $owner, PortalTemplateDefinition $definition): void
     {
-        $owner->assertOwns($definition->name, 'template');
+        $owner->assertOwns($definition->name, ManifestIdentifierPolicies::forKind('template'));
         if (isset($this->definitions[$definition->name])) {
             throw new InvalidArgumentException('A portal template identifier is already owned.');
         }

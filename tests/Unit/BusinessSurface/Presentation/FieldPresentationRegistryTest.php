@@ -12,20 +12,21 @@ use Kumwe\BusinessDefinition\Domain\FieldTypeDefinition;
 use Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition;
 use Kumwe\App\BusinessSurface\Presentation\Field\CoreFieldPresenter;
 use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationInputFactory;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationContext;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationInput;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationModel;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresenter;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresentationContext;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresentationInput;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresentationModel;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresenter;
 use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationCoverage;
 use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationRegistry;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldWidget;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldWidget;
+use Kumwe\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\Extension\Manifest\ExtensionIdentifier;
 use Kumwe\Extension\Manifest\ManifestContributions;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(FieldPresentationInputFactory::class)]
 #[CoversClass(FieldPresentationCoverage::class)]
@@ -48,14 +49,19 @@ final class FieldPresentationRegistryTest extends TestCase
     {
         $type = self::type();
         $declarations = ManifestContributions::fromManifest(
+            new DeterministicCanonicalEncoder(),
             ExtensionIdentifier::fromString('acme/editor'),
             self::manifestDocument($type),
             3,
         );
-        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+            withCore: false,
+        );
         $owner = ContributionOwner::extension('acme/editor');
         $registrar = $registries->activateManifest($declarations);
-        $registrar->fieldPresenter($type->id, new CoreFieldPresenter());
+        $registrar->fieldPresenter($type->id, new CoreFieldPresenter(new DeterministicCanonicalEncoder()));
         $registrar->complete();
 
         self::assertSame(['detail', 'update'], $registries->fieldPresentations()->contexts($type->id));
@@ -80,8 +86,13 @@ final class FieldPresentationRegistryTest extends TestCase
     public function testCanonicalBindingRejectsAnUndeclaredFieldType(): void
     {
         $type = self::type();
-        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+            withCore: false,
+        );
         $registrar = $registries->activateManifest(ManifestContributions::fromManifest(
+            new DeterministicCanonicalEncoder(),
             ExtensionIdentifier::fromString('acme/editor'),
             self::manifestDocument($type),
             3,
@@ -90,7 +101,7 @@ final class FieldPresentationRegistryTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $registrar->fieldPresenter(
             'acme.editor.undeclared',
-            new CoreFieldPresenter(),
+            new CoreFieldPresenter(new DeterministicCanonicalEncoder()),
         );
     }
 
@@ -104,8 +115,13 @@ final class FieldPresentationRegistryTest extends TestCase
     public function testOmittedPresenterFailsExactManifestReconciliation(): void
     {
         $type = self::type();
-        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+            withCore: false,
+        );
         $registrar = $registries->activateManifest(ManifestContributions::fromManifest(
+            new DeterministicCanonicalEncoder(),
             ExtensionIdentifier::fromString('acme/editor'),
             self::manifestDocument($type),
             3,
@@ -128,14 +144,19 @@ final class FieldPresentationRegistryTest extends TestCase
         $type = self::type();
         $owner = DefinitionOwner::extension('acme/editor');
         $registry = new FieldPresentationRegistry();
-        $registry->register($owner, $type->id, [FieldPresentationContext::Detail], new CoreFieldPresenter());
+        $registry->register(
+            $owner,
+            $type->id,
+            [FieldPresentationContext::Detail],
+            new CoreFieldPresenter(new DeterministicCanonicalEncoder()),
+        );
 
         try {
             $registry->register(
                 $owner,
                 $type->id,
                 [FieldPresentationContext::Create, FieldPresentationContext::Detail],
-                new CoreFieldPresenter(),
+                new CoreFieldPresenter(new DeterministicCanonicalEncoder()),
             );
             self::fail('A colliding context set must be rejected atomically.');
         } catch (InvalidArgumentException) {
@@ -181,6 +202,7 @@ final class FieldPresentationRegistryTest extends TestCase
                         $request->value,
                         true,
                         $request->required,
+                        new DeterministicCanonicalEncoder(),
                         $request->errors,
                     );
                 }
@@ -211,6 +233,7 @@ final class FieldPresentationRegistryTest extends TestCase
         $document = self::manifestDocument($type);
         $document['business']['definitions'] = [self::definitionDocument($type)];
         $contributions = ManifestContributions::fromManifest(
+            new DeterministicCanonicalEncoder(),
             ExtensionIdentifier::fromString('acme/editor'),
             $document,
             3,
@@ -220,7 +243,10 @@ final class FieldPresentationRegistryTest extends TestCase
             'The structural manifest boundary admits the declaration; coverage is host admission policy.',
         );
 
-        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+        );
         $registries->fieldTypes()->register(DefinitionOwner::extension('acme/editor'), $type);
         $registries->businessDefinitions()->register(
             DefinitionOwner::extension('acme/editor'),
@@ -246,7 +272,10 @@ final class FieldPresentationRegistryTest extends TestCase
         $document['owner'] = ['type' => 'extension', 'identifier' => 'consumer/forms'];
         $document['handle'] = 'consumer.forms.asset';
         $definition = EntityTypeDefinition::fromArray($document);
-        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+        );
         $registries->fieldTypes()->register(DefinitionOwner::extension('acme/editor'), $type);
         $registries->businessDefinitions()->register(
             DefinitionOwner::extension('consumer/forms'),

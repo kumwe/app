@@ -1,0 +1,32 @@
+schema: kumwe-non-roadmap-record/v1
+id: NRM-2026-048
+nrm_ref: NRM-2026-048
+roadmap_impact: None
+rationale: "Adopt verified kumwe/automation 0.2.2, the owner of the cron expression, the retry policy, decision and jitter source, the failure classification, the job envelope, lease, status, execution class and stored job, the job queue, handler and handler registry ports, the queue runtime policy and catalog, and the job, queue and schedule contribution definitions."
+repositories:
+  - kumwe/app
+  - kumwe/automation
+behavior_before: "App declared the cron expression, retry policy and jitter values, the failure classification, the job envelope, lease, status, execution class and stored job, the queue, handler and handler registry ports, the queue runtime policy and catalog and the queue and schedule contribution definitions itself, and consumed the SDK copies of JobDeclaration and JobContributionDefinition."
+behavior_after: "The twenty-four types come from kumwe/automation 0.2.2, whose ConfigProvider factories build the shared jitter source and retry policy from the kernel clock and the kumwe.automation delays; the host keeps building the JobHandlerRegistry from the twelve core handlers and the admitted extension contributions, re-keys its JobQueue and QueueRuntimePolicyCatalog port bindings to the package names, and keeps the worker, scheduler, automation management, execution scope and Doctrine queue."
+public_api_impact: "None for the namespace-only moves; JobEnvelope::pending and the job and schedule contribution factories take the canonical encoder first, and the integration store ports fail with the package FailureClassification."
+dependency_impact: "Adds kumwe/automation 0.2.2 exactly; its dependencies kumwe/canonical-json 0.1.1, kumwe/contribution 0.1.1 and kumwe/access-context 0.1.2 are locked, psr/clock 1.0.3 and psr/container 2.0.2 satisfy its constraints."
+compatibility: "Persisted jobs, schedules, leases and idempotency keys are unchanged; retry delays are the values the removed host closure passed by hand."
+data_migration: None
+security_impact: "No authority change; trust-enforcing handler wrapping and queue execution stay in App."
+performance:
+  claim: None
+  evidence: []
+operations_deployment: "The kumwe.automation configuration block (base_delay_seconds 1, maximum_delay_seconds 300, handlers []) is carried by the kernel config service; no deployment change."
+recovery_rollback: "Revert the adoption pull request and restore the twenty-two removed classes and four unit tests; no persisted data changes."
+artifacts_evidence:
+  - docs/architecture/migrations/KUMWE-MIG-2026-026.yaml
+  - docs/architecture/migrations/change-sets/KUMWE-CS-2026-026.yaml
+  - docs/architecture/migrations/trains/KUMWE-TRAIN-2026-026.yaml
+  - docs/architecture/migrations/evidence/KUMWE-MIG-2026-026/RELEASE-ATTESTATION.yaml
+  - docs/architecture/capability-index.md
+known_gaps:
+  - "The GitHub release and workflow run of v0.2.2 were not observable from the verification run, so the attestation binds the git archive of the tag commit."
+  - "The package JobHandlerRegistry factory is not admitted; the host binding is recorded under di_changes."
+  - "kumwe/extension-sdk 0.3.3 is adopted from its unpublished candidate in the same train (NRM-2026-057); the lock is re-pointed at the published distribution once it exists."
+owner: "eWɘyn"
+status: in-progress

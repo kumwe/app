@@ -143,7 +143,7 @@
       "result": "All 42 inventoried graphical surfaces, 73 templates, 23 navigation entries, 12 generated instances, and Phase 3-6 implementations reconcile with their declared KIS contracts.",
       "artifact_paths": [
         "docs/interface-standard/programme/surface-inventory.json",
-        "src/InterfaceStandard/SurfaceDefinition.php",
+        "vendor/kumwe/interface-standard/src/SurfaceDefinition.php",
         "tests/Fixtures/InterfaceStandard/phase-six-journey-qualification.json"
       ],
       "supports": [

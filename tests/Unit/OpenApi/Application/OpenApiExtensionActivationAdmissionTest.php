@@ -24,6 +24,7 @@ use Kumwe\App\OpenApi\Application\OpenApiComponentClaimAdmission;
 use Kumwe\App\OpenApi\Application\OpenApiExtensionActivationAdmission;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(OpenApiExtensionActivationAdmission::class)]
 /**
@@ -44,7 +45,10 @@ final class OpenApiExtensionActivationAdmissionTest extends TestCase
     {
         $candidate = self::manifest('acme/foo-bar', 'acme.foo-bar.item', '018f5200-0000-7000-8000-000000000001');
         $existing = self::manifest('acme/foo_bar', 'acme.foo_bar.item', '018f5200-0000-7000-8000-000000000002');
-        $admission = new OpenApiExtensionActivationAdmission(new OpenApiComponentClaimAdmission(self::core()));
+        $admission = new OpenApiExtensionActivationAdmission(
+            new DeterministicCanonicalEncoder(),
+            new OpenApiComponentClaimAdmission(self::core()),
+        );
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('collides or is unsafe');
@@ -66,7 +70,10 @@ final class OpenApiExtensionActivationAdmissionTest extends TestCase
         $core['components']['schemas']['GeneratedBusinessRecord'] = ['type' => 'object'];
         $core['x-kumwe-generated-components'] = ['GeneratedBusinessRecord'];
 
-        (new OpenApiExtensionActivationAdmission(new OpenApiComponentClaimAdmission($core)))->admit(
+        (new OpenApiExtensionActivationAdmission(
+            new DeterministicCanonicalEncoder(),
+            new OpenApiComponentClaimAdmission($core),
+        ))->admit(
             $candidate,
             SiteContext::default(),
             [$candidate],
@@ -117,6 +124,7 @@ final class OpenApiExtensionActivationAdmissionTest extends TestCase
         $repository->method('catalog')->willReturn([$entry]);
         $repository->method('publishedBatch')->willReturn([$siteDefinition->id => $record]);
         $admission = new OpenApiExtensionActivationAdmission(
+            new DeterministicCanonicalEncoder(),
             new OpenApiComponentClaimAdmission(self::core()),
             static fn (): BusinessDefinitionRepository => $repository,
         );
@@ -183,7 +191,7 @@ final class OpenApiExtensionActivationAdmissionTest extends TestCase
             serviceProvider: 'Acme\\Extension\\Provider',
             kumweCompatibility: VersionConstraint::fromString('^2.0.0'),
             phpCompatibility: VersionConstraint::fromString('^8.5.0'),
-            contributions: ManifestContributions::fromManifest($extension, [
+            contributions: ManifestContributions::fromManifest(new DeterministicCanonicalEncoder(), $extension, [
                 'version' => 1,
                 'business' => ['definitions' => [$definition->toArray()]],
             ]),

@@ -1,0 +1,96 @@
+schema: kumwe-release-attestation/v2
+artifact_kind: framework_php
+migration_id: KUMWE-MIG-2026-025
+change_set: KUMWE-CS-2026-025
+repository: "https://github.com/kumwe/interface-standard"
+merge_commit: "93d4637fda7c0881f7e00aae132c2d470b5eceac"
+version: "0.1.2"
+tag: v0.1.2
+source_archive:
+  url: "https://github.com/kumwe/interface-standard/archive/refs/tags/v0.1.2.tar.gz"
+  sha256: "9ed388dc66ba5e8148856a9d0a1391682a6682a3728f81bc40119a066f6cbd8b"
+artifacts:
+  - identity: "kumwe/interface-standard:0.1.2"
+    url: "https://github.com/kumwe/interface-standard/archive/refs/tags/v0.1.2.tar.gz"
+    sha256: "9ed388dc66ba5e8148856a9d0a1391682a6682a3728f81bc40119a066f6cbd8b"
+manifests_and_corpora:
+  - path: resources/public-api/v1.json
+    sha256: "b43cbc7230bb74355750d386a92567e75939c9435db2d743bf6e21e4a4a886ea"
+  - path: resources/capabilities/v1.json
+    sha256: "03b227f67703e57edc36502bc8b7129f33d002fcfbd285f56d59495545e44c2d"
+  - path: resources/service-map/v1.json
+    sha256: "0becbd85cc64870926e3798628b3b126d955180e633f1db8354ed9e50d481401"
+  - path: resources/release-readiness.json
+    sha256: "70bc5a426ebcab221049aba76ed26e955e27b208a7d2bfcccbe1fa394dc2968e"
+  - path: MIGRATION-HANDOFF.md
+    sha256: "18e93b04ca1042c69c4d5deb319df53e0b220cd35fa483c9d2bcbacf7793dc05"
+abi_and_capabilities: null
+sbom:
+  url: null
+  sha256: null
+provenance: "Release on record run 34249249675 (push, attempt 1) published release 384883674 as github-actions[bot]"
+release_workflow: "https://github.com/kumwe/interface-standard/actions/runs/34249249675 success on the tag commit"
+registry_or_pie_verification:
+  - "git ls-remote https://github.com/kumwe/interface-standard refs/tags/v0.1.2 returned one line for refs/tags/v0.1.2"
+  - "Tag commit from git ls-remote: 93d4637fda7c0881f7e00aae132c2d470b5eceac; no peeled ^{} line (lightweight tag)"
+  - "git clone --quiet --depth 1 --branch v0.1.2 of the repository: HEAD 93d4637fda7c0881f7e00aae132c2d470b5eceac, tree c5fd4e1e5bca6f3cb45fd1eb57e2ba5236d6c28c"
+  - "In the clone git cat-file -t v0.1.2 is commit; subject: Verify the published Access Control 0.1.2 source identity in source CI"
+  - "Tag commit committed 2026-09-08T18:08:41+02:00 by eWɘyn; parent ef98abf20462d12a1a2e92b1799c0622417e4dde"
+  - "A full clone shows refs/heads/main at 9ebb7a4e9122a7cfab506be03ead381716897b1d contains the tag commit"
+  - "Packagist p2 observed 2026-09-23T18:20:28Z at repo.packagist.org/p2/kumwe/interface-standard.json (HTTP 200)"
+  - "Packagist lists v0.1.2 newest of v0.1.2, v0.1.1, v0.1.0; time 2026-09-08T16:08:41+00:00"
+  - "Packagist source: git https://github.com/kumwe/interface-standard.git at 93d4637fda7c0881f7e00aae132c2d470b5eceac"
+  - "Packagist dist: zip at reference 93d4637fda7c0881f7e00aae132c2d470b5eceac (api.github.com zipball URL)"
+  - "Packagist source and dist references both equal the tag commit and the clone HEAD"
+  - "Packagist dist shasum is an empty string; license Apache-2.0; psr-4 Kumwe\\InterfaceStandard\\ => src/"
+  - "Packagist require: php ^8.5, ext-mbstring *, kumwe/contribution 0.1.1, kumwe/access-control 0.1.2"
+  - "curl -sS -L of the archive/refs/tags/v0.1.2.tar.gz URL above: HTTP 200, 73693 bytes"
+  - "The download resolved to codeload.github.com/kumwe/interface-standard/tar.gz/refs/tags/v0.1.2"
+  - "file reports gzip compressed data for both downloads"
+  - "sha256 9ed388dc66ba5e8148856a9d0a1391682a6682a3728f81bc40119a066f6cbd8b covers the tar.gz bytes"
+  - "The same URL was fetched twice and both downloads produced that digest"
+  - "git archive --format=tar --prefix=interface-standard-0.1.2/ v0.1.2 | sha256sum gave f30473f8a9c48366"
+  - "Full local git archive digest: f30473f8a9c4836658a8a5c2e1386085a1a8a6487a9d8797a3f08d6f8d40e068"
+  - "Extracted interface-standard-0.1.2/ holds 68 files; diff -r reports no content difference against the clone"
+  - "The repository carries no export-ignore rules: the archive and the clone both hold the 68 tracked files, including tests and tools"
+  - "GitHub release v0.1.2 id 384883674: author github-actions[bot], published_at 2026-09-08T16:10:10Z"
+  - "GitHub release v0.1.2: draft false, prerelease false, immutable false, target_commitish main, no assets"
+  - "Release on record run 34249249675: push, attempt 1, run number 12, head_sha 93d4637fda7c0881f7e00aae132c2d470b5eceac"
+  - "Release on record run 34249249675: status completed, conclusion success, created 2026-09-08T16:08:44Z"
+  - "GitHub MCP tools answered every query; no access-denied response was observed"
+  - "The package composer.json carries a vcs repository for kumwe/access-control; the App declares none for it"
+clean_consumer_or_build_verification:
+  - "Inspection only: no package script or example was executed; archive, clone and vendor copy were compared"
+  - "resources/public-api/v1.json: valid against package-public-api.v1.schema.json (App SchemaValidator)"
+  - "resources/capabilities/v1.json: valid against package-capabilities.v1.schema.json (App SchemaValidator)"
+  - "resources/service-map/v1.json: valid against package-service-map.v1.schema.json (App SchemaValidator)"
+  - "All three manifests carry package kumwe/interface-standard and release 0.1.2"
+  - "docs/release-record.md does not exist at v0.1.2; the shipped record is MIGRATION-HANDOFF.md"
+  - "Governance README section 3.11 admits MIGRATION-HANDOFF.md for published releases"
+  - "MIGRATION-HANDOFF.md front matter parsed by PackageManifests::parseReleaseRecord"
+  - "MIGRATION-HANDOFF.md front matter: valid against migration-handoff.v2.schema.json (App SchemaValidator)"
+  - "Record front matter: kumwe-migration-handoff/v2, KUMWE-MIG-2026-025, KUMWE-CS-2026-025, framework_php"
+  - "Record state draft_pr_open; target https://github.com/kumwe/interface-standard"
+  - "Record artifact_identity kumwe/interface-standard; canonical namespace Kumwe\\InterfaceStandard"
+  - "Record framework_php.composer_package kumwe/interface-standard"
+  - "Record ownership.public_manifests digests equal the locally computed manifest digests listed above"
+  - "CHANGELOG.md newest release heading is ## 0.1.2 above ## 0.1.1 and ## 0.1.0 - 2026-09-07; no Unreleased section"
+  - "Package composer.json require: php ^8.5, ext-mbstring *, kumwe/contribution 0.1.1, kumwe/access-control 0.1.2"
+  - "App composer.lock: kumwe/interface-standard v0.1.2 at 93d4637fda7c0881f7e00aae132c2d470b5eceac"
+  - "App composer.lock: kumwe/access-control v0.1.2 at c2420d1ed03bc39eaf5d8b9f5540580c297e3b57 satisfies 0.1.2 (exact)"
+  - "App composer.lock: kumwe/contribution v0.1.1 at 2fc75742aa5a7d78418d2f586fa3043271e70082 satisfies 0.1.1 (exact)"
+  - "App composer.lock platform: php ^8.5 with ext-json and ext-mbstring (they satisfy the package requirements)"
+  - "The App vendor copy of MIGRATION-HANDOFF.md and of the manifests carries the digests above"
+  - "Validator: tools/Governance bootstrap, SchemaValidator, PackageManifests and StrictYaml loaded by a scratch script on PHP 8.4.19"
+verified_at: "2026-09-23T18:20:28Z"
+verified_by: "Independent release verification, inspection only, in the adoption worktree before the Phase 2 records were written"
+status: verified
+known_gaps:
+  - "The Packagist dist zipball was not downloaded; Packagist publishes an empty dist shasum for it"
+  - "The attested archive is the GitHub tag tar.gz, whose bytes differ from the Packagist zipball of the same commit"
+  - "GitHub release v0.1.2 reports immutable false; tag protection and rulesets were not queried"
+  - "The archive ships the repository tests, tools and CI configuration because .gitattributes declares no export-ignore"
+  - "The verification was performed by the adopting party in the adoption worktree, not by a separate isolated verifier"
+  - "No clean consumer install, smoke test or example run was performed; the verification was restricted to inspection and the App lock install"
+  - "No SBOM and no release assets exist for v0.1.2; abi_and_capabilities does not apply to a framework_php artifact"
+  - "The schema checks used the App's fixed JSON Schema 2020-12 subset validator, not a full implementation"

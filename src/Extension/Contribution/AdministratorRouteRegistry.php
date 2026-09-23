@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Extension\Contribution;
 
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
-use Kumwe\Extension\Spi\Contribution\AdministratorRouteDefinition;
+use Kumwe\Contribution\ContributionOwner;
+use Kumwe\Extension\Manifest\ManifestIdentifierPolicies;
+use Kumwe\Administrator\Contract\AdministratorRouteDefinition;
 use InvalidArgumentException;
 use Kumwe\App\Administrator\Http\Middleware\AdministratorAuthorizationMiddleware;
 use Kumwe\App\Administrator\Http\Middleware\AdministratorCsrfMiddleware;
@@ -14,6 +15,7 @@ use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Extension\Runtime\TrustEnforcingRequestHandler;
 use Kumwe\Extension\Spi\Binding\Http\AdministratorRouteHandlerFactory;
 use Mezzio\Application;
+use Kumwe\Contribution\ContributionSurface;
 
 /**
  * Holds contributed administrator routes and mounts them on the Mezzio application.
@@ -88,7 +90,7 @@ final class AdministratorRouteRegistry implements ContributionSurface
         AdministratorRouteDefinition $definition,
         AdministratorRouteHandlerFactory $factory,
     ): void {
-        $owner->assertOwns($definition->name, 'route');
+        $owner->assertOwns($definition->name, ManifestIdentifierPolicies::forKind('route'));
         if (!$this->capabilities->isOwnedBy($definition->capability, $owner)) {
             throw new InvalidArgumentException('An administrator route capability must be owned by its contributor.');
         }

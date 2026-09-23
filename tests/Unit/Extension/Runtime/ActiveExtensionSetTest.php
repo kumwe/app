@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\Extension\Runtime;
 
 use Kumwe\Extension\Spi\Application\ExtensionServiceProvider;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\App\Extension\Domain\ThemeSurface;
@@ -18,6 +18,7 @@ use Kumwe\App\Extension\Runtime\RestrictedExtensionContainer;
 use LogicException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(ActiveExtensionSet::class)]
 #[CoversClass(DeferredExtensionRuntimeWithdrawal::class)]
@@ -38,7 +39,7 @@ final class ActiveExtensionSetTest extends TestCase
     public function testExecutableManifestRequirementsCannotActivateWithoutABindingProvider(): void
     {
         $identifier = ExtensionIdentifier::fromString('acme/routes');
-        $manifest = ManifestContributions::fromManifest($identifier, [
+        $manifest = ManifestContributions::fromManifest(new DeterministicCanonicalEncoder(), $identifier, [
             'version' => 1,
             'capabilities' => [[
                 'id' => 'acme.routes.view',
@@ -60,6 +61,7 @@ final class ActiveExtensionSetTest extends TestCase
             ],
         ], 2);
         $active = new ActiveExtensionSet(new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
             new SdkFieldConfigurationAdmission(),
             withCore: false,
         ));
@@ -84,12 +86,17 @@ final class ActiveExtensionSetTest extends TestCase
      */
     public function testWithdrawAllRemovesProvidersRegistriesThemesViewsTemplatesAndCatalogues(): void
     {
-        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+            withCore: false,
+        );
         $active = new ActiveExtensionSet($registries);
         foreach (['acme/editor', 'vendor/rates'] as $identifier) {
             $owner = ContributionOwner::extension($identifier);
             $namespace = $owner->namespace();
             $declared = ManifestContributions::fromManifest(
+                new DeterministicCanonicalEncoder(),
                 ExtensionIdentifier::fromString($identifier),
                 [
                     'version' => 1,

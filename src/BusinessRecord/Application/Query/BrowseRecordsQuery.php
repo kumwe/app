@@ -7,7 +7,7 @@ namespace Kumwe\App\BusinessRecord\Application\Query;
 use Kumwe\App\BusinessRecord\Application\RecordRequestGuard;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Extension\Spi\BusinessRecord\Application\BusinessRecordQueryPurpose;
-use Kumwe\Extension\Spi\BusinessRecord\Query\RecordQuerySpecification;
+use Kumwe\Record\Query\RecordQuerySpecification;
 
 /**
  * Request to list records of one definition, pairing the caller's context with a query specification.

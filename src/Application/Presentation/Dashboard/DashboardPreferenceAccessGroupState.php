@@ -6,10 +6,10 @@ namespace Kumwe\App\Application\Presentation\Dashboard;
 
 use InvalidArgumentException;
 use Kumwe\App\Application\Presentation\Preference\PresentationAccessGroup;
-use Kumwe\App\InterfaceStandard\CustomizationScope;
-use Kumwe\App\InterfaceStandard\CustomizationSlot;
+use Kumwe\InterfaceStandard\CustomizationScope;
+use Kumwe\InterfaceStandard\CustomizationSlot;
 use Kumwe\App\InterfaceStandard\PresentationPreference;
-use Kumwe\App\InterfaceStandard\SurfaceId;
+use Kumwe\InterfaceStandard\SurfaceId;
 
 /**
  * Exact stored dashboard choices for one authorized canonical access group.

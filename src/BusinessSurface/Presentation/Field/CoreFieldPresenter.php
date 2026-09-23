@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace Kumwe\App\BusinessSurface\Presentation\Field;
 
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationInput;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationModel;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresenter;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldWidget;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresentationInput;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresentationModel;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresenter;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldWidget;
 use DateTimeImmutable;
+use Kumwe\CanonicalJson\CanonicalEncoder;
 use Kumwe\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition;
 use Kumwe\Conversion\Value\ConvertedMoneyValue;
@@ -36,6 +37,17 @@ use Kumwe\Record\Value\ZonedDateTimeValue;
 final readonly class CoreFieldPresenter implements FieldPresenter
 {
     /**
+     * Bind the presenter to the host encoder every field view model bounds its bytes with.
+     *
+     * @param  CanonicalEncoder  $canonicalEncoder  Host canonical encoder the package model validates with.
+     *
+     * @since  2.0.0
+     */
+    public function __construct(private CanonicalEncoder $canonicalEncoder)
+    {
+    }
+
+    /**
      * Present one core field using an allow-listed semantic widget.
      *
      * @param   FieldPresentationInput  $request  Validated declarative field presentation input.
@@ -61,6 +73,7 @@ final readonly class CoreFieldPresenter implements FieldPresenter
                 null,
                 false,
                 $request->required,
+                $this->canonicalEncoder,
                 $request->errors,
                 [],
                 [],
@@ -83,6 +96,7 @@ final readonly class CoreFieldPresenter implements FieldPresenter
             $secret ? null : $this->input($request->value, $request->fieldType),
             $editing,
             $request->required,
+            $this->canonicalEncoder,
             $request->errors,
             $this->options($request),
             $this->attributes($request),

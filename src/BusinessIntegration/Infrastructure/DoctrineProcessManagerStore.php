@@ -7,19 +7,20 @@ namespace Kumwe\App\BusinessIntegration\Infrastructure;
 use DateInterval;
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
+use Kumwe\CanonicalJson\CanonicalEncoder;
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\App\Application\Automation\FailureClassification;
+use Kumwe\Automation\FailureClassification;
 use Kumwe\Transaction\Contract\TransactionManager;
-use Kumwe\App\BusinessIntegration\Application\ProcessManagerStore;
-use Kumwe\App\BusinessIntegration\Application\ProcessWorkLease;
-use Kumwe\App\BusinessIntegration\Domain\ProcessInstance;
-use Kumwe\App\BusinessIntegration\Domain\ProcessStatus;
-use Kumwe\App\BusinessIntegration\Domain\ProcessWorkItem;
-use Kumwe\App\BusinessIntegration\Domain\ProcessWorkKind;
+use Kumwe\Integration\ProcessManagerStore;
+use Kumwe\Integration\ProcessWorkLease;
+use Kumwe\Integration\ProcessInstance;
+use Kumwe\Integration\ProcessStatus;
+use Kumwe\Integration\ProcessWorkItem;
+use Kumwe\Integration\ProcessWorkKind;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
@@ -36,10 +37,11 @@ final readonly class DoctrineProcessManagerStore implements ProcessManagerStore
     /**
      * Bind process state and work to the shared transaction boundary.
      *
-     * @param  Connection          $database      Application connection.
-     * @param  TableNames          $tables        Physical table-name compiler.
-     * @param  TransactionManager  $transactions  Atomic state/work and settlement boundary.
-     * @param  ClockInterface      $clock         Lease and lifecycle clock.
+     * @param  Connection          $database          Application connection.
+     * @param  TableNames          $tables            Physical table-name compiler.
+     * @param  TransactionManager  $transactions      Atomic state/work and settlement boundary.
+     * @param  ClockInterface      $clock             Lease and lifecycle clock.
+     * @param  CanonicalEncoder    $canonicalEncoder  Host encoder stored process state and work are rebuilt with.
      *
      * @since  2.0.0
      */
@@ -48,6 +50,7 @@ final readonly class DoctrineProcessManagerStore implements ProcessManagerStore
         private TableNames $tables,
         private TransactionManager $transactions,
         private ClockInterface $clock,
+        private CanonicalEncoder $canonicalEncoder,
     ) {
     }
 
@@ -467,6 +470,7 @@ final readonly class DoctrineProcessManagerStore implements ProcessManagerStore
         $status = ProcessStatus::tryFrom($this->requiredString($row, 'status'))
             ?? throw new RuntimeException('A stored process status is invalid.');
         return new ProcessInstance(
+            $this->canonicalEncoder,
             $this->requiredString($row, 'process_id'),
             $this->requiredString($row, 'process_type'),
             $this->requiredString($row, 'correlation_id'),
@@ -498,6 +502,7 @@ final readonly class DoctrineProcessManagerStore implements ProcessManagerStore
         $kind = ProcessWorkKind::tryFrom($this->requiredString($row, 'work_kind'))
             ?? throw new RuntimeException('A stored process work kind is invalid.');
         return new ProcessWorkItem(
+            $this->canonicalEncoder,
             $this->requiredString($row, 'work_id'),
             $kind,
             $this->requiredString($row, 'work_name'),

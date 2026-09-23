@@ -59,7 +59,7 @@ use Kumwe\Extension\Spi\Studio\Application\Preview\StudioPreviewBlockFragment;
 use Kumwe\Extension\Spi\Studio\Application\Preview\StudioPreviewBlockRenderer;
 use Kumwe\Extension\Spi\Contribution\CanonicalCompositionKind;
 use Kumwe\Extension\Spi\Contribution\CompositionHostBinding;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Contribution\ContributionOwner;
 use Kumwe\Producer\Canonical\CanonicalJson;
 use Kumwe\Producer\Schema\StudioContractResources;
 use Kumwe\Producer\Schema\StudioDocumentSchemaRegistry;
@@ -92,6 +92,7 @@ use RuntimeException;
 use Laminas\Diactoros\ServerRequestFactory;
 use Twig\Loader\ArrayLoader;
 use Kumwe\App\Application\Authorization\ExecutionContextAttribute;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 /**
  * Proves the Studio Content read boundary delegates only through authorized, version-pinned services.
@@ -336,6 +337,7 @@ final class StudioContentProjectionServiceTest extends TestCase
         $theme = new StudioPublishedTheme(
             $settings,
             new ActiveExtensionSet(new ExtensionContributionRegistrySet(
+                new DeterministicCanonicalEncoder(),
                 new SdkFieldConfigurationAdmission(),
                 withCore: false,
             )),
@@ -413,6 +415,7 @@ final class StudioContentProjectionServiceTest extends TestCase
             new RecoveryAdministratorRenderer(
                 new RecoveryAdministratorTwigEnvironment(new ArrayLoader()),
             ),
+            new DeterministicCanonicalEncoder(),
         );
         $studioReleaseBytes = file_get_contents(
             dirname(__DIR__, 5) . '/resources/studio-contract/studio-release.json',
@@ -677,6 +680,7 @@ final class StudioContentProjectionServiceTest extends TestCase
         $theme = new StudioPublishedTheme(
             $settings,
             new ActiveExtensionSet(new ExtensionContributionRegistrySet(
+                new DeterministicCanonicalEncoder(),
                 new SdkFieldConfigurationAdmission(),
                 withCore: false,
             )),
@@ -1300,7 +1304,10 @@ final class StudioContentProjectionServiceTest extends TestCase
             'acme.shop/grid-preview',
             'acme.shop.catalog.edit',
         );
-        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+        );
         $registries->canonicalCompositionDocuments()->register($owner, $canonical);
         $registries->compositionHostBindings()->register($owner, $binding);
         $preview = new class implements StudioPreviewBlockRenderer {

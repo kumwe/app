@@ -38,22 +38,31 @@
     "doctrine/dbal": "^4.4",
     "kumwe/access-context": "0.1.2",
     "kumwe/access-control": "0.1.2",
+    "kumwe/administrator-contract": "0.2.2",
     "kumwe/approval": "0.1.2",
     "kumwe/audit": "0.1.2",
+    "kumwe/automation": "0.2.2",
     "kumwe/business-definition": "0.1.2",
     "kumwe/business-policy": "0.1.1",
     "kumwe/business-schema": "0.1.3",
+    "kumwe/business-surface-contract": "0.1.4",
     "kumwe/canonical-json": "0.1.1",
     "kumwe/computation": "0.3.3",
     "kumwe/content-model": "0.2.0",
+    "kumwe/contribution": "0.1.1",
     "kumwe/conversion": "0.1.5",
-    "kumwe/extension-sdk": "0.2.4",
+    "kumwe/extension-sdk": "0.3.3",
     "kumwe/idempotency": "0.1.3",
+    "kumwe/integration": "0.2.4",
+    "kumwe/interface-standard": "0.1.2",
     "kumwe/localization": "0.1.1",
     "kumwe/navigation": "0.1.3",
-    "kumwe/producer": "0.3.0 as 0.2.99",
+    "kumwe/portal-contract": "0.2.2",
+    "kumwe/producer": "0.3.0",
     "kumwe/record-model": "0.1.4",
+    "kumwe/record-query": "0.1.4",
     "kumwe/record-values": "0.1.4",
+    "kumwe/reporting": "0.1.5",
     "kumwe/secret-envelope": "0.1.1",
     "kumwe/sequence": "0.2.1",
     "kumwe/transaction": "0.1.2",
@@ -202,5 +211,74 @@
     ]
   },
   "minimum-stability": "stable",
-  "prefer-stable": true
+  "prefer-stable": true,
+  "repositories": {
+    "kumwe-extension-sdk-candidate": {
+      "type": "package",
+      "package": {
+        "name": "kumwe/extension-sdk",
+        "version": "v0.3.3",
+        "type": "library",
+        "description": "Canonical Kumwe extension contracts, manifest parsing, author SPI and neutral package inspection tooling.",
+        "homepage": "https://github.com/kumwe/extension-sdk",
+        "license": "Apache-2.0",
+        "support": {
+          "issues": "https://github.com/kumwe/extension-sdk/issues",
+          "source": "https://github.com/kumwe/extension-sdk"
+        },
+        "source": {
+          "type": "git",
+          "url": "https://github.com/kumwe/extension-sdk.git",
+          "reference": "b54022b05075944e884dc1df038cbcb63f723472"
+        },
+        "dist": {
+          "type": "zip",
+          "url": "https://api.github.com/repos/kumwe/extension-sdk/zipball/b54022b05075944e884dc1df038cbcb63f723472",
+          "reference": "b54022b05075944e884dc1df038cbcb63f723472",
+          "shasum": ""
+        },
+        "require": {
+          "doctrine/dbal": "^4.3",
+          "ext-json": "*",
+          "ext-mbstring": "*",
+          "ext-sodium": "*",
+          "ext-zip": "*",
+          "kumwe/access-control": "0.1.2",
+          "kumwe/administrator-contract": "0.2.2",
+          "kumwe/automation": "0.2.2",
+          "kumwe/business-policy": "0.1.1",
+          "kumwe/business-surface-contract": "0.1.4",
+          "kumwe/canonical-json": "0.1.1",
+          "kumwe/contribution": "0.1.1",
+          "kumwe/conversion": "0.1.5",
+          "kumwe/idempotency": "0.1.3",
+          "kumwe/integration": "0.2.4",
+          "kumwe/portal-contract": "0.2.2",
+          "kumwe/producer": "0.3.0",
+          "kumwe/record-model": "0.1.4",
+          "kumwe/record-query": "0.1.4",
+          "kumwe/record-values": "0.1.4",
+          "kumwe/reporting": "0.1.5",
+          "php": "^8.5",
+          "psr/http-message": "^1.1 || ^2.0",
+          "psr/http-server-handler": "^1.0",
+          "ramsey/uuid": "^4.7"
+        },
+        "require-dev": {
+          "phpstan/phpstan": "^2.1",
+          "phpunit/phpunit": "^12.0",
+          "kumwe/computation": "0.2.1"
+        },
+        "suggest": {
+          "kumwe/computation": "Required by the native CLI composition root; install the documented candidate with ext-kumwe_engine and an exact compatibility tuple."
+        },
+        "bin": ["bin/kumwe-extension"],
+        "autoload": {
+          "psr-4": {
+            "Kumwe\\Extension\\": "src/"
+          }
+        }
+      }
+    }
+  }
 }

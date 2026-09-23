@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Kumwe\App\BusinessSurface\Presentation\Field;
 
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationContribution;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationContext;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationInput;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationModel;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresenter;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresentationContribution;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresentationContext;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresentationInput;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresentationModel;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresenter;
 use InvalidArgumentException;
 use Kumwe\BusinessDefinition\Domain\DefinitionOwner;
 use Kumwe\BusinessDefinition\Domain\DefinitionStatus;

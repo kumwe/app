@@ -8,7 +8,7 @@ use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\Extension\Spi\Application\Automation\JobHandler;
 use Kumwe\Extension\Spi\Application\ExecutionContext;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\JobContributionDefinition;
+use Kumwe\Automation\JobContributionDefinition;
 
 /**
  * Re-establishes exact runtime-generation and package trust before extension job code executes.

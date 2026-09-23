@@ -12,6 +12,7 @@ use Kumwe\App\Extension\Domain\ThemeSurface;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 /**
  * Verifies theme activation rejects broken packages and protected public or administrator shell omissions.
@@ -570,7 +571,7 @@ final class ThemePackageValidatorTest extends TestCase
      */
     private function legacyCompatibility(): TemplateKisCompatibility
     {
-        $manifest = ExtensionManifest::fromJson(<<<'JSON'
+        $manifest = ExtensionManifest::fromJson(new DeterministicCanonicalEncoder(), <<<'JSON'
 {
   "schema": 1,
   "name": "acme/legacy-template",

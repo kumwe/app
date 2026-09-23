@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Kumwe\App\BusinessReporting\Application;
 
-use Kumwe\Extension\Spi\BusinessReporting\Application\ProjectionWriter;
-use Kumwe\Extension\Spi\BusinessReporting\Domain\ProjectionDefinition;
+use Kumwe\Reporting\Contract\ProjectionWriter;
+use Kumwe\Reporting\Domain\ProjectionDefinition;
 
 /**
  * Host-owned atomic generation lifecycle around the SDK row-writer surface.

@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Extension\Contribution;
 
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
-use Kumwe\Extension\Spi\Contribution\ContributionDefinition;
+use Kumwe\Contribution\ContributionOwner;
+use Kumwe\Contribution\ContributionDefinition;
+use Kumwe\Contribution\SurfaceIdentifierPolicy;
 use ArrayObject;
+use Kumwe\CanonicalJson\CanonicalEncoder;
 use Kumwe\App\Administrator\Navigation\AdministratorNavigationRegistry;
 use Kumwe\Access\AuthorizationPolicyRegistry;
 use Kumwe\App\Application\Authorization\HostAccessPolicy;
@@ -16,19 +18,19 @@ use Kumwe\BusinessDefinition\Application\FieldConfigurationAdmission;
 use Kumwe\BusinessDefinition\Application\FieldTypeRegistry;
 use Kumwe\Extension\Spi\Application\Automation\JobHandler;
 use Kumwe\Extension\Spi\BusinessIntegration\Application\DomainEventHandler;
-use Kumwe\App\BusinessIntegration\Application\EventContractRegistry;
+use Kumwe\Integration\EventContractRegistry;
 use Kumwe\Extension\Spi\BusinessIntegration\Application\IntegrationEventHandler;
 use Kumwe\Extension\Spi\BusinessIntegration\Application\IntegrationEventTransport;
-use Kumwe\App\BusinessIntegration\Application\PayloadSchemaValidator;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\DomainListenerDefinition;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventConsumerDefinition;
-use Kumwe\App\BusinessIntegration\Domain\EventSchemaDefinition;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\WebhookContributionDefinition;
+use Kumwe\Integration\PayloadSchemaValidator;
+use Kumwe\Integration\DomainListenerDefinition;
+use Kumwe\Integration\EventConsumerDefinition;
+use Kumwe\Integration\EventSchemaDefinition;
+use Kumwe\Integration\WebhookContributionDefinition;
 use Kumwe\Conversion\Provider\MoneyRateProvider;
 use Kumwe\Conversion\Provider\UnitConversionProvider;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionHandlerRegistry;
-use Kumwe\Extension\Spi\BusinessReporting\Application\ProjectionBuilder;
-use Kumwe\Extension\Spi\BusinessReporting\Domain\ProjectionDefinition;
+use Kumwe\Reporting\Contract\ProjectionBuilder;
+use Kumwe\Reporting\Domain\ProjectionDefinition;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessReferenceRegistry;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewHandlerRegistry;
 use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationRegistry;
@@ -38,7 +40,9 @@ use Kumwe\App\Portal\Contribution\PortalRouteRegistry;
 use Kumwe\App\Portal\Contribution\PortalTemplateRegistry;
 use Kumwe\App\Portal\Contribution\PortalWorkspaceRegistry;
 use Kumwe\Extension\Manifest\ManifestContributions;
+use Kumwe\Extension\Spi\Contribution\CanonicalCompositionKind;
 use Kumwe\Extension\Spi\Studio\Application\Preview\StudioPreviewBlockRenderer;
+use Kumwe\Contribution\ContributionSurface;
 
 /**
  * The one place every contribution registry in a process is created, wired together, and reached.
@@ -395,6 +399,8 @@ final readonly class ExtensionContributionRegistrySet
      * broken the normal render. Suppressing core leaves a wholly empty set, which is what a test
      * isolating one extension's contributions wants.
      *
+     * @param  CanonicalEncoder              $canonicalEncoder       Host encoder the core contributions and the
+     *         event contract registry bound their declaration bytes with.
      * @param  FieldConfigurationAdmission   $fieldConfiguration     Host admission of field presentation
      *         configuration for the business-definition validator; the App binds its SDK-backed adapter and
      *         the package ships no permissive default.
@@ -407,6 +413,7 @@ final readonly class ExtensionContributionRegistrySet
      * @since  2.0.0
      */
     public function __construct(
+        private CanonicalEncoder $canonicalEncoder,
         FieldConfigurationAdmission $fieldConfiguration,
         ?TrustStore $trust = null,
         bool $withCore = true,
@@ -481,8 +488,19 @@ final readonly class ExtensionContributionRegistrySet
             'composition design vocabulary',
         );
         $this->compositionMigrations = new OwnedRuntimeContributionRegistry('composition migration');
+        // A canonical composition document registers under its kind-prefixed identifier, so its policy strips
+        // the kind the way the SDK manifest grammar does for host bindings before checking the owner.
         $this->canonicalCompositionDocuments = new OwnedRuntimeContributionRegistry(
             'canonical composition document',
+            null,
+            SurfaceIdentifierPolicy::slash(
+                'canonical-composition-document',
+                ['core', 'studio.core'],
+                array_map(
+                    static fn (CanonicalCompositionKind $kind): string => $kind->value,
+                    CanonicalCompositionKind::cases(),
+                ),
+            ),
         );
         $this->compositionHostBindings = new OwnedRuntimeContributionRegistry('composition_host_binding');
         $this->studioPreviewRenderers = new OwnedRuntimeContributionRegistry(
@@ -534,7 +552,7 @@ final readonly class ExtensionContributionRegistrySet
             'composition.host_bindings' => $this->compositionHostBindings,
         ];
         if ($withCore) {
-            CoreExtensionContributions::register(new CoreContributionRegistrar($this));
+            CoreExtensionContributions::register(new CoreContributionRegistrar($this), $this->canonicalEncoder);
         }
     }
 
@@ -635,6 +653,21 @@ final readonly class ExtensionContributionRegistrySet
     public function resourcePolicies(): ResourcePolicyDefinitionRegistry
     {
         return $this->resourcePolicies;
+    }
+
+    /**
+     * Reach the host canonical encoder this contribution set registers encoder-bound package values with.
+     *
+     * The manifest activator and the owner-bound binding registrar interpret canonical graphs against the
+     * same encoder, so a declaration admitted here and one admitted at binding time bound their bytes alike.
+     *
+     * @return  CanonicalEncoder  Host canonical encoder handed in by the composition root.
+     *
+     * @since   2.0.0
+     */
+    public function canonicalEncoder(): CanonicalEncoder
+    {
+        return $this->canonicalEncoder;
     }
 
     /**
@@ -1127,7 +1160,12 @@ final readonly class ExtensionContributionRegistrySet
     {
         $schemas = $this->definitionsOf($this->eventSchemas, EventSchemaDefinition::class);
         $consumers = $this->definitionsOf($this->eventConsumers, EventConsumerDefinition::class);
-        $catalog = new EventContractRegistry($schemas, $consumers, new PayloadSchemaValidator());
+        $catalog = new EventContractRegistry(
+            $this->canonicalEncoder,
+            $schemas,
+            $consumers,
+            new PayloadSchemaValidator(),
+        );
 
         foreach ($this->definitionsOf($this->domainListeners, DomainListenerDefinition::class) as $listener) {
             foreach ($listener->schemaVersions() as $version) {

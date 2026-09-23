@@ -6,7 +6,7 @@ namespace Kumwe\App\BusinessSurface\Presentation\Field;
 
 use InvalidArgumentException;
 use Kumwe\BusinessDefinition\Application\FieldConfigurationAdmission;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationConfiguration;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresentationConfiguration;
 
 /**
  * Admits a field's configuration through the extension SDK's portable presentation profile.

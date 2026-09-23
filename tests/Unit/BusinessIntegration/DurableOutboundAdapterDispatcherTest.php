@@ -5,29 +5,30 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\BusinessIntegration;
 
 use DateTimeImmutable;
-use Kumwe\App\Application\Automation\JitterSource;
-use Kumwe\App\Application\Automation\QueueRuntimePolicy;
-use Kumwe\App\Application\Automation\QueueRuntimePolicyCatalog;
-use Kumwe\App\Application\Automation\RetryPolicy;
+use Kumwe\Automation\JitterSource;
+use Kumwe\Automation\QueueRuntimePolicy;
+use Kumwe\Automation\QueueRuntimePolicyCatalog;
+use Kumwe\Automation\RetryPolicy;
 use Kumwe\App\BusinessIntegration\Application\DurableOutboundAdapterDispatcher;
-use Kumwe\App\BusinessIntegration\Application\EventContractRegistry;
-use Kumwe\App\BusinessIntegration\Application\InboxClaimResult;
-use Kumwe\App\BusinessIntegration\Application\InboxDisposition;
-use Kumwe\App\BusinessIntegration\Application\InboxStore;
+use Kumwe\Integration\EventContractRegistry;
+use Kumwe\Integration\InboxClaimResult;
+use Kumwe\Integration\InboxDisposition;
+use Kumwe\Integration\InboxStore;
 use Kumwe\Extension\Spi\BusinessIntegration\Application\IntegrationEventTransport;
 use Kumwe\App\BusinessIntegration\Application\TrustedRuntimeGenerationGuard;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\ConsumerIdempotency;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventConsumerDefinition;
-use Kumwe\App\BusinessIntegration\Domain\EventSchemaDefinition;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventSensitivity;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationEvent;
-use Kumwe\App\BusinessIntegration\Domain\RecordedIntegrationEvent;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\WebhookContributionDefinition;
+use Kumwe\Integration\ConsumerIdempotency;
+use Kumwe\Integration\EventConsumerDefinition;
+use Kumwe\Integration\EventSchemaDefinition;
+use Kumwe\Integration\EventSensitivity;
+use Kumwe\Integration\IntegrationEvent;
+use Kumwe\Integration\RecordedIntegrationEvent;
+use Kumwe\Integration\WebhookContributionDefinition;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
 use Psr\Log\NullLogger;
 use Ramsey\Uuid\Uuid;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(DurableOutboundAdapterDispatcher::class)]
 final class DurableOutboundAdapterDispatcherTest extends TestCase
@@ -35,6 +36,7 @@ final class DurableOutboundAdapterDispatcherTest extends TestCase
     public function testAggregateVersionIdempotencyCompilesToAnOrderedDurableReceipt(): void
     {
         $event = new RecordedIntegrationEvent(
+            new DeterministicCanonicalEncoder(),
             'acme.record.changed',
             1,
             Uuid::uuid7()->toString(),
@@ -69,7 +71,8 @@ final class DurableOutboundAdapterDispatcherTest extends TestCase
             60,
         )->willReturn(new InboxClaimResult(InboxDisposition::DUPLICATE));
         $adapter = $this->createStub(IntegrationEventTransport::class);
-        $contracts = new EventContractRegistry([new EventSchemaDefinition(
+        $contracts = new EventContractRegistry(new DeterministicCanonicalEncoder(), [new EventSchemaDefinition(
+            new DeterministicCanonicalEncoder(),
             'acme.record.changed',
             1,
             EventSensitivity::INTERNAL,
@@ -114,6 +117,7 @@ final class DurableOutboundAdapterDispatcherTest extends TestCase
     public function testQueueLeaseDefaultsAndSensitivityRejectionUseTheDurableReceipt(): void
     {
         $event = new RecordedIntegrationEvent(
+            new DeterministicCanonicalEncoder(),
             'acme.record.changed',
             1,
             Uuid::uuid7()->toString(),
@@ -149,7 +153,8 @@ final class DurableOutboundAdapterDispatcherTest extends TestCase
         )->willReturn(new InboxClaimResult(InboxDisposition::UNAVAILABLE));
         $adapter = $this->createMock(IntegrationEventTransport::class);
         $adapter->expects(self::never())->method('publish');
-        $contracts = new EventContractRegistry([new EventSchemaDefinition(
+        $contracts = new EventContractRegistry(new DeterministicCanonicalEncoder(), [new EventSchemaDefinition(
+            new DeterministicCanonicalEncoder(),
             'acme.record.changed',
             1,
             EventSensitivity::INTERNAL,

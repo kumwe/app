@@ -16,6 +16,9 @@ use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Access\Capability;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
+use Kumwe\Automation\AutomationNotFound;
+use Kumwe\Automation\JobHandlerRegistry;
+use Kumwe\Automation\JobQueue;
 
 /**
  * The one use-case surface an operator administers automation through: schedules and queued jobs.
