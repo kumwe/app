@@ -9,6 +9,7 @@ use Kumwe\Context\Value\AuthenticationStrength;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\App\InterfaceStandard\CustomizationScope;
 use Kumwe\App\InterfaceStandard\CustomizationSlot;
 use Kumwe\App\InterfaceStandard\PresentationPreferenceKey;
@@ -150,7 +151,7 @@ final class PortalDashboardPreferencesHandlerTest extends TestCase
      */
     public function testSavesAWorkflowBeyondTheFormerRendererPrefix(): void
     {
-        $registries = new ExtensionContributionRegistrySet();
+        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
         $owner = ContributionOwner::core();
         $registries->portalWorkspaces()->register($owner, new PortalWorkspaceDefinition(
             'core.portal-dashboard-volume',
@@ -283,7 +284,7 @@ final class PortalDashboardPreferencesHandlerTest extends TestCase
     {
         $visibility = $this->createStub(PortalNavigationVisibility::class);
         $visibility->method('visible')->willReturn(true);
-        $registries ??= new ExtensionContributionRegistrySet();
+        $registries ??= new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
 
         return new PortalRenderer(
             new Environment(new ArrayLoader()),

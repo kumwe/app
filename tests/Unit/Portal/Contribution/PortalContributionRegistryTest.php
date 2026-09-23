@@ -13,6 +13,7 @@ use Kumwe\App\Extension\Contribution\CapabilityDefinition;
 use Kumwe\App\Extension\Contribution\CapabilityDefinitionRegistry;
 use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\App\Extension\Contribution\ResourcePolicyDefinition;
 use Kumwe\App\Extension\Contribution\ResourcePolicyDefinitionRegistry;
 use Kumwe\Extension\Manifest\ExtensionIdentifier;
@@ -334,7 +335,7 @@ final class PortalContributionRegistryTest extends TestCase
             $declared->declarations(),
         )->declarations());
 
-        $registries = new ExtensionContributionRegistrySet(withCore: false);
+        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
         $bindings = $registries->activateManifest($declared);
         $bindings->portalRoute('acme.orders.index', $this->factory());
         $bindings->complete();

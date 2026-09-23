@@ -7,8 +7,8 @@ namespace Kumwe\App\OpenApi\Application;
 use Closure;
 use InvalidArgumentException;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionRepository;
-use Kumwe\App\BusinessDefinition\Domain\DefinitionOwnerType;
-use Kumwe\App\BusinessDefinition\Domain\DefinitionStatus;
+use Kumwe\BusinessDefinition\Domain\DefinitionOwnerType;
+use Kumwe\BusinessDefinition\Domain\DefinitionStatus;
 use Kumwe\App\Extension\Application\Package\ExtensionActivationAdmission;
 use Kumwe\App\Extension\Contribution\CanonicalManifestInterpreter;
 use Kumwe\Context\Value\SiteContext;
@@ -94,7 +94,7 @@ final readonly class OpenApiExtensionActivationAdmission implements ExtensionAct
      *
      * @param   SiteContext  $site  Site whose post-activation component namespace is being checked.
      *
-     * @return  array<string, \Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition>  Definitions by handle.
+     * @return  array<string, \Kumwe\BusinessDefinition\Domain\EntityTypeDefinition>  Definitions by handle.
      *
      * @throws  InvalidArgumentException  When the late repository is invalid or a published head is unavailable.
      * @throws  \LogicException  When activation admission is invoked outside its lifecycle transaction.

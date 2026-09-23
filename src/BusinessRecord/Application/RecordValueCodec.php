@@ -8,11 +8,11 @@ use DateTimeImmutable;
 use DateTimeZone;
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\App\BusinessDefinition\Application\FieldTypeRegistry;
-use Kumwe\App\BusinessDefinition\Domain\ComputationMode;
-use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\App\BusinessDefinition\Domain\FieldDefinition;
-use Kumwe\App\BusinessDefinition\Domain\IdentityStrategy;
+use Kumwe\BusinessDefinition\Application\FieldTypeRegistry;
+use Kumwe\BusinessDefinition\Domain\ComputationMode;
+use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\BusinessDefinition\Domain\FieldDefinition;
+use Kumwe\BusinessDefinition\Domain\IdentityStrategy;
 use Kumwe\App\BusinessRecord\Domain\RecordValueGuard;
 use Kumwe\App\BusinessSchema\Domain\PhysicalColumnBlueprint;
 use Kumwe\App\BusinessSchema\Domain\PhysicalTableBlueprint;
@@ -145,7 +145,7 @@ final readonly class RecordValueCodec
      *
      * @throws  InvalidArgumentException  When the value is a float, breaks the field's type, length,
      *          format, or option rules, or the field names a normalizer this codec does not implement.
-     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When a contributed field
+     * @throws  \Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition  When a contributed field
      *          type is not registered in this process.
      *
      * @since   2.0.0
@@ -1168,7 +1168,7 @@ final readonly class RecordValueCodec
      *
      * @throws  InvalidArgumentException  When the value breaks the borrowed rule, or the type declares a
      *          storage family this codec has no conversion for.
-     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the field type is
+     * @throws  \Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition  When the field type is
      *          not registered in this process.
      *
      * @since   2.0.0

@@ -11,18 +11,19 @@ use Kumwe\Access\ResourceSiteOwnershipWriter;
 use Kumwe\App\Application\Authorization\SystemIdentity;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Audit\Application\AuditRecorder;
-use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionCompatibilityAnalyzer;
+use Kumwe\BusinessDefinition\Application\BusinessDefinitionCompatibilityAnalyzer;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionContractAdmission;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionRepository;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionService;
-use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionValidator;
-use Kumwe\App\BusinessDefinition\Application\DefinitionCatalogEntry;
-use Kumwe\App\BusinessDefinition\Application\DefinitionVersionRecord;
-use Kumwe\App\BusinessDefinition\Application\FieldTypeRegistry;
-use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
-use Kumwe\App\BusinessDefinition\Domain\CompatibilityPlan;
-use Kumwe\App\BusinessDefinition\Domain\DefinitionStatus;
-use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\BusinessDefinition\Application\BusinessDefinitionValidator;
+use Kumwe\BusinessDefinition\Application\DefinitionCatalogEntry;
+use Kumwe\BusinessDefinition\Application\DefinitionVersionRecord;
+use Kumwe\BusinessDefinition\Application\FieldTypeRegistry;
+use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
+use Kumwe\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\BusinessDefinition\Domain\CompatibilityPlan;
+use Kumwe\BusinessDefinition\Domain\DefinitionStatus;
+use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordService;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaService;
 use Kumwe\App\Demo\Application\DemoProfileLedger;
@@ -471,7 +472,7 @@ final class VdmBusinessDemoInstallerTest extends TestCase
 
         return new BusinessDefinitionService(
             $repository,
-            new BusinessDefinitionValidator(new FieldTypeRegistry()),
+            new BusinessDefinitionValidator(new FieldTypeRegistry(), new SdkFieldConfigurationAdmission()),
             new BusinessDefinitionCompatibilityAnalyzer(),
             $this->createStub(BusinessDefinitionContractAdmission::class),
             $this->createStub(AuthorizationGateway::class),

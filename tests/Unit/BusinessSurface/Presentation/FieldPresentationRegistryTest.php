@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\BusinessSurface\Presentation;
 
 use InvalidArgumentException;
-use Kumwe\App\BusinessDefinition\Domain\DefinitionOwner;
-use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\App\BusinessDefinition\Domain\FieldDefinition;
-use Kumwe\App\BusinessDefinition\Domain\FieldTypeDefinition;
-use Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition;
+use Kumwe\BusinessDefinition\Domain\DefinitionOwner;
+use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\BusinessDefinition\Domain\FieldDefinition;
+use Kumwe\BusinessDefinition\Domain\FieldTypeDefinition;
+use Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition;
 use Kumwe\App\BusinessSurface\Presentation\Field\CoreFieldPresenter;
 use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationInputFactory;
 use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationContext;
@@ -21,6 +21,7 @@ use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationRegistry;
 use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldWidget;
 use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\Extension\Manifest\ExtensionIdentifier;
 use Kumwe\Extension\Manifest\ManifestContributions;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -51,7 +52,7 @@ final class FieldPresentationRegistryTest extends TestCase
             self::manifestDocument($type),
             3,
         );
-        $registries = new ExtensionContributionRegistrySet(withCore: false);
+        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
         $owner = ContributionOwner::extension('acme/editor');
         $registrar = $registries->activateManifest($declarations);
         $registrar->fieldPresenter($type->id, new CoreFieldPresenter());
@@ -79,7 +80,7 @@ final class FieldPresentationRegistryTest extends TestCase
     public function testCanonicalBindingRejectsAnUndeclaredFieldType(): void
     {
         $type = self::type();
-        $registries = new ExtensionContributionRegistrySet(withCore: false);
+        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
         $registrar = $registries->activateManifest(ManifestContributions::fromManifest(
             ExtensionIdentifier::fromString('acme/editor'),
             self::manifestDocument($type),
@@ -103,7 +104,7 @@ final class FieldPresentationRegistryTest extends TestCase
     public function testOmittedPresenterFailsExactManifestReconciliation(): void
     {
         $type = self::type();
-        $registries = new ExtensionContributionRegistrySet(withCore: false);
+        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
         $registrar = $registries->activateManifest(ManifestContributions::fromManifest(
             ExtensionIdentifier::fromString('acme/editor'),
             self::manifestDocument($type),
@@ -219,7 +220,7 @@ final class FieldPresentationRegistryTest extends TestCase
             'The structural manifest boundary admits the declaration; coverage is host admission policy.',
         );
 
-        $registries = new ExtensionContributionRegistrySet();
+        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
         $registries->fieldTypes()->register(DefinitionOwner::extension('acme/editor'), $type);
         $registries->businessDefinitions()->register(
             DefinitionOwner::extension('acme/editor'),
@@ -245,7 +246,7 @@ final class FieldPresentationRegistryTest extends TestCase
         $document['owner'] = ['type' => 'extension', 'identifier' => 'consumer/forms'];
         $document['handle'] = 'consumer.forms.asset';
         $definition = EntityTypeDefinition::fromArray($document);
-        $registries = new ExtensionContributionRegistrySet();
+        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
         $registries->fieldTypes()->register(DefinitionOwner::extension('acme/editor'), $type);
         $registries->businessDefinitions()->register(
             DefinitionOwner::extension('consumer/forms'),

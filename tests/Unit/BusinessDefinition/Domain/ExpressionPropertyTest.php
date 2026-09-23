@@ -4,14 +4,16 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Unit\BusinessDefinition\Domain;
 
-use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
-use Kumwe\App\BusinessDefinition\Domain\Expression;
-use Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition;
+use Kumwe\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\App\BusinessDefinition\Domain\DecimalValue;
+use Kumwe\BusinessDefinition\Domain\Expression;
+use Kumwe\App\BusinessDefinition\Domain\ExpressionEvaluator;
+use Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
-#[CoversClass(Expression::class)]
-#[CoversClass(CanonicalDefinitionJson::class)]
+#[CoversClass(ExpressionEvaluator::class)]
+#[CoversClass(DecimalValue::class)]
 final class ExpressionPropertyTest extends TestCase
 {
     public function testIntegerAndExactDecimalOperatorsRemainDeterministicAcrossGeneratedInputs(): void
@@ -26,7 +28,7 @@ final class ExpressionPropertyTest extends TestCase
                     ['op' => 'literal', 'type' => 'integer', 'value' => $right],
                 ],
             ]);
-            self::assertSame($left + $right, $integer->evaluate([]));
+            self::assertSame($left + $right, ExpressionEvaluator::evaluate($integer, []));
 
             $decimal = Expression::fromArray([
                 'op' => 'multiply', 'type' => 'decimal', 'args' => [
@@ -34,7 +36,10 @@ final class ExpressionPropertyTest extends TestCase
                     ['op' => 'literal', 'type' => 'decimal', 'value' => '4'],
                 ],
             ]);
-            self::assertSame((string) (($left * 4) + ($left < 0 ? -1 : 1)), $decimal->evaluate([]));
+            self::assertSame(
+                (string) (($left * 4) + ($left < 0 ? -1 : 1)),
+                ExpressionEvaluator::evaluate($decimal, []),
+            );
         }
     }
 
@@ -102,7 +107,7 @@ final class ExpressionPropertyTest extends TestCase
     {
         $field = Expression::fromArray(['op' => 'field', 'type' => 'integer', 'field' => 'amount']);
         try {
-            $field->evaluate(['amount' => '1']);
+            ExpressionEvaluator::evaluate($field, ['amount' => '1']);
             self::fail('A runtime value that conflicts with its AST type was accepted.');
         } catch (InvalidBusinessDefinition) {
             self::assertTrue(true);
@@ -115,6 +120,6 @@ final class ExpressionPropertyTest extends TestCase
             ],
         ]);
         $this->expectException(InvalidBusinessDefinition::class);
-        $overflow->evaluate([]);
+        ExpressionEvaluator::evaluate($overflow, []);
     }
 }

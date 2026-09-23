@@ -15,6 +15,7 @@ use Kumwe\App\Content\Domain\ContentTypeDefinition;
 use Kumwe\App\Content\Domain\JsonSchemaValidator;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\App\Extension\Contribution\StudioPreviewRendererContribution;
 use Kumwe\App\Extension\Runtime\ActiveExtensionSet;
 use Kumwe\App\Extension\Runtime\TrustEnforcingStudioPreviewBlockRenderer;
@@ -801,7 +802,7 @@ final class StudioPublishedContentRendererTest extends TestCase
         }
 
         $owner = ContributionOwner::extension('kumwe/contract-manifest-six');
-        $registries = new ExtensionContributionRegistrySet(withCore: false);
+        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
         $document = new CanonicalCompositionDocument(
             CanonicalCompositionKind::BlockDefinition,
             $canonical,
@@ -876,7 +877,7 @@ final class StudioPublishedContentRendererTest extends TestCase
         $artifacts = $this->createStub(StudioArtifactRepository::class);
         $artifacts->method('current')->willReturn($artifact);
         $artifacts->method('revision')->willReturn($artifact);
-        $registries ??= new ExtensionContributionRegistrySet();
+        $registries ??= new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
         $runtime = new StudioBlockRendererRuntime($registries, new StudioContentFieldBlockRenderer());
         $resolver = new StudioPreviewBindingResolver();
 
@@ -913,7 +914,7 @@ final class StudioPublishedContentRendererTest extends TestCase
             $models->method('contentType')->willReturn($this->definition());
         }
 
-        $registries ??= new ExtensionContributionRegistrySet();
+        $registries ??= new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
 
         return new StudioPublishedCompositionGuard(
             self::admission(),
@@ -1108,7 +1109,10 @@ final class StudioPublishedContentRendererTest extends TestCase
 
         return new StudioPublishedTheme(
             $settings,
-            new ActiveExtensionSet(new ExtensionContributionRegistrySet(withCore: false)),
+            new ActiveExtensionSet(new ExtensionContributionRegistrySet(
+                new SdkFieldConfigurationAdmission(),
+                withCore: false,
+            )),
             new StudioBuiltInThemeRelease(str_repeat('a', 64)),
         );
     }

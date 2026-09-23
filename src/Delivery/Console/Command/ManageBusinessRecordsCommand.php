@@ -7,7 +7,7 @@ namespace Kumwe\App\Delivery\Console\Command;
 use InvalidArgumentException;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Extension\Spi\Application\Automation\IdempotencyKey;
-use Kumwe\App\BusinessDefinition\Domain\ScopeMode;
+use Kumwe\BusinessDefinition\Domain\ScopeMode;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordService;
 use Kumwe\App\BusinessRecord\Application\Command\ArchiveRecordCommand;
 use Kumwe\App\BusinessRecord\Application\Command\CreateRecordCommand;

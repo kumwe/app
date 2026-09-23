@@ -6,8 +6,8 @@ namespace Kumwe\App\BusinessRecord\Application;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\App\BusinessDefinition\Domain\Sensitivity;
+use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\BusinessDefinition\Domain\Sensitivity;
 use Kumwe\App\BusinessRecord\Domain\BusinessRecord;
 use Kumwe\Extension\Spi\BusinessRecord\Application\BusinessRecordView as BusinessRecordViewContract;
 use Kumwe\BusinessPolicy\Application\FieldAccessUsage;

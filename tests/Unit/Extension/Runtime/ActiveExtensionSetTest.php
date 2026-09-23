@@ -7,6 +7,7 @@ namespace Kumwe\App\Tests\Unit\Extension\Runtime;
 use Kumwe\Extension\Spi\Application\ExtensionServiceProvider;
 use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\App\Extension\Domain\ThemeSurface;
 use Kumwe\App\Extension\Runtime\ActiveExtensionSet;
 use Kumwe\App\Extension\Runtime\DeferredExtensionRuntimeWithdrawal;
@@ -58,7 +59,10 @@ final class ActiveExtensionSetTest extends TestCase
                 ]],
             ],
         ], 2);
-        $active = new ActiveExtensionSet(new ExtensionContributionRegistrySet(withCore: false));
+        $active = new ActiveExtensionSet(new ExtensionContributionRegistrySet(
+            new SdkFieldConfigurationAdmission(),
+            withCore: false,
+        ));
         $active->add(
             $identifier->value(),
             new ActiveExtensionProviderProbe(),
@@ -80,7 +84,7 @@ final class ActiveExtensionSetTest extends TestCase
      */
     public function testWithdrawAllRemovesProvidersRegistriesThemesViewsTemplatesAndCatalogues(): void
     {
-        $registries = new ExtensionContributionRegistrySet(withCore: false);
+        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
         $active = new ActiveExtensionSet($registries);
         foreach (['acme/editor', 'vendor/rates'] as $identifier) {
             $owner = ContributionOwner::extension($identifier);

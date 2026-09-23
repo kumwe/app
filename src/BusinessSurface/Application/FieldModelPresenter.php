@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Kumwe\App\BusinessSurface\Application;
 
-use Kumwe\App\BusinessDefinition\Domain\FieldDefinition;
-use Kumwe\App\BusinessDefinition\Domain\FieldTypeDefinition;
+use Kumwe\BusinessDefinition\Domain\FieldDefinition;
+use Kumwe\BusinessDefinition\Domain\FieldTypeDefinition;
 
 /**
  * Rendering contract through which business-surface application code obtains generated field models.
@@ -35,7 +35,7 @@ interface FieldModelPresenter
      *
      * @return  PresentedField  Display text, conversion provenance and the exported semantic model.
      *
-     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When no safe presenter
+     * @throws  \Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition  When no safe presenter
      *          covers the pair, the strategy answers for another field, it widens editability, or it
      *          drops the provenance of a converted amount.
      * @throws  \InvalidArgumentException  When a value marked as converted cannot prove the conversion

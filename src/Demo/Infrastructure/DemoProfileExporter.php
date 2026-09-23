@@ -6,7 +6,7 @@ namespace Kumwe\App\Demo\Infrastructure;
 
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\App\Content\Application\ContentRecord;
 use Kumwe\App\Content\Application\ContentService;
 use Kumwe\App\Demo\Application\DemoProfileLedger;

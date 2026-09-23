@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Extension\Contribution;
 
-use Kumwe\App\BusinessDefinition\Domain\DefinitionOwner;
-use Kumwe\App\BusinessDefinition\Domain\FieldTypeDefinition;
+use Kumwe\BusinessDefinition\Domain\DefinitionOwner;
+use Kumwe\BusinessDefinition\Domain\FieldTypeDefinition;
 use Kumwe\App\BusinessIntegration\Domain\EventSchemaDefinition;
 use Kumwe\App\InterfaceStandard\SurfaceDefinition;
 use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationContribution;

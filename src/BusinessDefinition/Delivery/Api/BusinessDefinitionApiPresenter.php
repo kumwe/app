@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Kumwe\App\BusinessDefinition\Delivery\Api;
 
-use Kumwe\App\BusinessDefinition\Application\DefinitionCatalogEntry;
-use Kumwe\App\BusinessDefinition\Application\DefinitionDraft;
-use Kumwe\App\BusinessDefinition\Application\DefinitionVersionRecord;
-use Kumwe\App\BusinessDefinition\Domain\CompatibilityPlan;
+use Kumwe\BusinessDefinition\Application\DefinitionCatalogEntry;
+use Kumwe\BusinessDefinition\Application\DefinitionDraft;
+use Kumwe\BusinessDefinition\Application\DefinitionVersionRecord;
+use Kumwe\BusinessDefinition\Domain\CompatibilityPlan;
 
 /**
  * Renders business-definition application results as stable REST documents.

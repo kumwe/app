@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessSurface\Application\Custom;
 
 use InvalidArgumentException;
-use Kumwe\App\BusinessDefinition\Domain\DefinitionOwner;
+use Kumwe\BusinessDefinition\Domain\DefinitionOwner;
 
 /**
  * Coordinates handler and schema reference claims across both custom contribution families.

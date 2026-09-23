@@ -20,7 +20,7 @@ use Kumwe\Context\Value\SiteContext;
 use Kumwe\Context\Value\StepUpProof;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Audit\Application\AuditRecorder;
-use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\App\BusinessSecurity\Application\Administration\BusinessSecurityAdministrationRepository;
 use Kumwe\App\BusinessSecurity\Application\Administration\BusinessSecurityAdministrationService;
 use Kumwe\App\BusinessSecurity\Application\Administration\BusinessSecurityScopeDenied;
@@ -31,6 +31,7 @@ use Kumwe\Access\MembershipDirectory;
 use Kumwe\App\Extension\Contribution\CapabilityDefinition;
 use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\App\Extension\Contribution\ResourcePolicyDefinition;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\Access\Capability;
@@ -294,7 +295,7 @@ final class BusinessSecurityAdministrationServiceTest extends TestCase
     {
         $now = new DateTimeImmutable('2026-08-09T10:00:00+00:00');
         $context = $this->multiFactorContext('business.security.resource_policy.create', $now);
-        $registries = new ExtensionContributionRegistrySet();
+        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
         $owner = ContributionOwner::extension('acme/invoices');
         $capability = new CapabilityDefinition(
             'acme.invoices.record.audit',
@@ -481,7 +482,9 @@ final class BusinessSecurityAdministrationServiceTest extends TestCase
         return new BusinessSecurityAdministrationService(
             $repository,
             $authorization,
-            $policies ?? (new ExtensionContributionRegistrySet())->authorizationPolicies(),
+            $policies ?? (new ExtensionContributionRegistrySet(
+                new SdkFieldConfigurationAdmission(),
+            ))->authorizationPolicies(),
             $memberships,
             $stepUp,
             $transactions,

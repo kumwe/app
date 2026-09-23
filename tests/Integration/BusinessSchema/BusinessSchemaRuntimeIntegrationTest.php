@@ -6,7 +6,7 @@ namespace Kumwe\App\Tests\Integration\BusinessSchema;
 
 use Doctrine\DBAL\Connection;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionService;
-use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaService;
 use Kumwe\App\BusinessSchema\Domain\SchemaInstallationStatus;
 use Kumwe\App\BusinessSchema\Domain\SchemaPlanStatus;

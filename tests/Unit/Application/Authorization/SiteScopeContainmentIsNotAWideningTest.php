@@ -12,6 +12,7 @@ use Kumwe\Access\ResourceSiteOwnership;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\App\Application\Authorization\StructuredLogAuthorizationDecisionRecorder;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\Access\Capability;
 use Kumwe\App\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -131,7 +132,7 @@ final class SiteScopeContainmentIsNotAWideningTest extends TestCase
     {
         $gateway = new DenyByDefaultAuthorizationGateway(
             AuthorizationContext::provenance(),
-            (new ExtensionContributionRegistrySet())->authorizationPolicies(),
+            (new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission()))->authorizationPolicies(),
             $this->createStub(MembershipContextValidator::class),
             AuthorizationContext::ownership(),
             new StructuredLogAuthorizationDecisionRecorder(new NullLogger()),
@@ -161,7 +162,7 @@ final class SiteScopeContainmentIsNotAWideningTest extends TestCase
 
         $decision = new DenyByDefaultAuthorizationGateway(
             AuthorizationContext::provenance(),
-            (new ExtensionContributionRegistrySet())->authorizationPolicies(),
+            (new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission()))->authorizationPolicies(),
             $this->createStub(MembershipContextValidator::class),
             $unowned,
             new StructuredLogAuthorizationDecisionRecorder(new NullLogger()),
@@ -211,7 +212,7 @@ final class SiteScopeContainmentIsNotAWideningTest extends TestCase
     {
         return new DenyByDefaultAuthorizationGateway(
             AuthorizationContext::provenance(),
-            (new ExtensionContributionRegistrySet())->authorizationPolicies(),
+            (new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission()))->authorizationPolicies(),
             $this->createStub(MembershipContextValidator::class),
             $this->ownedBy($owner),
             new StructuredLogAuthorizationDecisionRecorder(new NullLogger()),

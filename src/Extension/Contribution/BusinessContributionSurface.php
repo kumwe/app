@@ -6,11 +6,11 @@ namespace Kumwe\App\Extension\Contribution;
 
 use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Closure;
-use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionContributionRegistry;
-use Kumwe\App\BusinessDefinition\Application\FieldTypeRegistry;
-use Kumwe\App\BusinessDefinition\Domain\DefinitionOwner;
-use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\App\BusinessDefinition\Domain\FieldTypeDefinition;
+use Kumwe\BusinessDefinition\Application\BusinessDefinitionContributionRegistry;
+use Kumwe\BusinessDefinition\Application\FieldTypeRegistry;
+use Kumwe\BusinessDefinition\Domain\DefinitionOwner;
+use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\BusinessDefinition\Domain\FieldTypeDefinition;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionHandlerRegistry;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewHandlerRegistry;
 use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionDeclaration;

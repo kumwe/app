@@ -14,6 +14,7 @@ use Kumwe\App\Extension\Application\Trust\TrustRuntimeInvalidator;
 use Kumwe\App\Extension\Application\Trust\RuntimePublicationMismatch;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\App\Extension\Application\Trust\TrustStoreRepository;
 use Kumwe\App\Extension\Application\Trust\UntrustedPackage;
 use Kumwe\Extension\Spi\Application\ExtensionServiceProvider;
@@ -64,7 +65,7 @@ final class TrustStoreTest extends TestCase
             $keys,
             $store,
             $this->createStub(ExtensionExecutionGate::class),
-        ))->load([], new ExtensionContributionRegistrySet(withCore: false));
+        ))->load([], new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false));
         self::assertSame(0, $active->count());
     }
 
@@ -125,7 +126,7 @@ final class TrustStoreTest extends TestCase
             $keys,
             $store,
             $this->createStub(ExtensionExecutionGate::class),
-        ))->load([], new ExtensionContributionRegistrySet(withCore: false));
+        ))->load([], new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false));
         self::assertSame(1, $active->count());
     }
 

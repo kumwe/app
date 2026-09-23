@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Kumwe\App\BusinessDefinition\Domain;
 
+use Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition;
+
 /**
  * Exact base-10 arithmetic on canonical decimal strings, used by definition formulas without PHP floats.
  *

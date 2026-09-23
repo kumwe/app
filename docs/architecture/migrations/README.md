@@ -28,6 +28,7 @@ change set is `core-integrated` only once the merged master commit is recorded (
 | `kumwe/conversion` | `0.1.5` | `KUMWE-MIG-2026-031` | `KUMWE-CS-2026-031` | `app-pr-ready` | #151 | — |
 | `kumwe/idempotency` | `0.1.3` | `KUMWE-MIG-2026-020` | `KUMWE-CS-2026-020` | `app-pr-ready` | #151 | — |
 | `kumwe/access-control` | `0.1.2` | `KUMWE-MIG-2026-009` | `KUMWE-CS-2026-009` | `app-pr-ready` | — | — |
+| `kumwe/business-definition` | `0.1.2` | `KUMWE-MIG-2026-010` | `KUMWE-CS-2026-010` | `app-pr-ready` | #151 | — |
 
 `kumwe/extension-sdk 0.2.4` remains the one legacy-unmanifested entry of
 [`legacy-packages.json`](../governance/legacy-packages.json); its Version 2 successor `0.3.2` is published and
@@ -35,8 +36,7 @@ it leaves the registry when that is adopted, as `kumwe/conversion` did at `0.1.5
 
 ### The remaining catalogue
 
-The Version 2 catalogue has thirty targets ([audit of 2026-09-07](audits/2026-09-07/requirements.md)); fourteen
-The Version 2 catalogue has thirty targets ([audit of 2026-09-07](audits/2026-09-07/requirements.md)); twelve
+The Version 2 catalogue has thirty targets ([audit of 2026-09-07](audits/2026-09-07/requirements.md)); sixteen
 are adopted above (the Engine and its binding are provisioned as `ext-kumwe_engine 1.0.3`). Every remaining
 PHP package is published on Packagist with Version 2 manifests and a release record, and each record
 pre-allocates the ledger and change-set identifiers the App must use (the capability index refuses a ledger
@@ -48,7 +48,6 @@ identifier.
 | Package | Release | Record ids | Kumwe requirements | Identifier status |
 |---|---|---|---|---|
 | `kumwe/contribution` | `0.1.1` | `MIG-006` / `CS-006` | — | free |
-| `kumwe/business-definition` | `0.1.2` | `MIG-010` / `CS-010` | localization, sequence | free |
 | `kumwe/idempotency` | `0.1.2` | `MIG-020` / `CS-020` | canonical-json | free |
 | `kumwe/business-policy` | `0.1.1` | `MIG-022` / `CS-022` | — | free |
 | `kumwe/approval` | `0.1.2` | `MIG-023` / `CS-023` | access-context, access-control, audit, transaction | free |
@@ -71,8 +70,8 @@ The extension-sdk `0.3.2` train selects, at exact versions, access-control `0.1.
 `0.2.1`, automation `0.2.2`, business-policy `0.1.1`, business-surface-contract `0.1.3`, canonical-json `0.1.1`,
 contribution `0.1.1`, conversion `0.1.5`, idempotency `0.1.2`, integration `0.2.3`, portal-contract `0.2.1`,
 producer `0.3.0`, record-model `0.1.3`, record-query `0.1.3`, record-values `0.1.4` and reporting `0.1.4`.
-Composer resolved that whole set together with approval, business-definition, business-schema,
-content-model, conversion-extension and interface-standard against the lock as it stood before
+Composer resolved that whole set together with approval, business-schema, content-model,
+conversion-extension and interface-standard against the lock as it stood before
 `kumwe/idempotency 0.1.3` was adopted; the train's exact idempotency `0.1.2` pin no longer resolves beside the
 locked `0.1.3`, so an extension-sdk successor pinning `0.1.3` (as `kumwe/business-surface-contract 0.1.4` already
 does) precedes that train.

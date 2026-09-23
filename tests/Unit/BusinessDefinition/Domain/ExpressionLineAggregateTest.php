@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\BusinessDefinition\Domain;
 
 use Kumwe\App\BusinessDefinition\Domain\DecimalValue;
-use Kumwe\App\BusinessDefinition\Domain\Expression;
+use Kumwe\BusinessDefinition\Domain\Expression;
 use Kumwe\App\BusinessDefinition\Domain\ExpressionEvaluator;
-use Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition;
+use Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
@@ -21,7 +21,6 @@ use PHPUnit\Framework\TestCase;
  *
  * @since  2.0.0
  */
-#[CoversClass(Expression::class)]
 #[CoversClass(ExpressionEvaluator::class)]
 #[CoversClass(DecimalValue::class)]
 final class ExpressionLineAggregateTest extends TestCase
@@ -37,11 +36,11 @@ final class ExpressionLineAggregateTest extends TestCase
     {
         $expression = self::totalEqualsLineSum();
 
-        self::assertTrue($expression->evaluate(['total' => '30.75'], ['lines' => [
+        self::assertTrue(ExpressionEvaluator::evaluate($expression, ['total' => '30.75'], ['lines' => [
             ['amount' => '10.25'],
             ['amount' => '20.50'],
         ]]));
-        self::assertFalse($expression->evaluate(['total' => '30.76'], ['lines' => [
+        self::assertFalse(ExpressionEvaluator::evaluate($expression, ['total' => '30.76'], ['lines' => [
             ['amount' => '10.25'],
             ['amount' => '20.50'],
         ]]));
@@ -62,7 +61,7 @@ final class ExpressionLineAggregateTest extends TestCase
             $lines[] = ['amount' => '0.10'];
         }
 
-        $total = $expression->evaluate([], ['lines' => $lines]);
+        $total = ExpressionEvaluator::evaluate($expression, [], ['lines' => $lines]);
 
         self::assertIsString($total);
         self::assertSame('100', $total);
@@ -77,7 +76,7 @@ final class ExpressionLineAggregateTest extends TestCase
      */
     public function testTheTotalRuleIsJudgedByValueRatherThanBySpelling(): void
     {
-        self::assertTrue(self::totalEqualsLineSum()->evaluate(['total' => '30.750'], ['lines' => [
+        self::assertTrue(ExpressionEvaluator::evaluate(self::totalEqualsLineSum(), ['total' => '30.750'], ['lines' => [
             ['amount' => '10.250'],
             ['amount' => '20.500'],
         ]]));
@@ -94,7 +93,7 @@ final class ExpressionLineAggregateTest extends TestCase
     {
         $expression = Expression::fromArray(self::sumNode());
 
-        self::assertSame('5', $expression->evaluate([], ['lines' => [
+        self::assertSame('5', ExpressionEvaluator::evaluate($expression, [], ['lines' => [
             ['amount' => '5.00'],
             ['amount' => null],
         ]]));
@@ -109,13 +108,16 @@ final class ExpressionLineAggregateTest extends TestCase
      */
     public function testAnEmptyCollectionCountsZeroAndSumsToZero(): void
     {
-        self::assertSame('0', Expression::fromArray(self::sumNode())->evaluate([], ['lines' => []]));
-        self::assertSame(0, Expression::fromArray([
+        self::assertSame(
+            '0',
+            ExpressionEvaluator::evaluate(Expression::fromArray(self::sumNode()), [], ['lines' => []]),
+        );
+        self::assertSame(0, ExpressionEvaluator::evaluate(Expression::fromArray([
             'op' => 'line_aggregate',
             'type' => 'integer',
             'lines' => 'lines',
             'aggregate' => 'count',
-        ])->evaluate([], ['lines' => []]));
+        ]), [], ['lines' => []]));
     }
 
     /**
@@ -128,7 +130,7 @@ final class ExpressionLineAggregateTest extends TestCase
     public function testAnUngatheredCollectionIsRefusedRatherThanJudgedAgainstNothing(): void
     {
         $this->expectException(InvalidBusinessDefinition::class);
-        Expression::fromArray(self::sumNode())->evaluate([], []);
+        ExpressionEvaluator::evaluate(Expression::fromArray(self::sumNode()), [], []);
     }
 
     /**
@@ -163,7 +165,10 @@ final class ExpressionLineAggregateTest extends TestCase
         ]);
 
         self::assertSame(['lines' => []], $expression->lineDependencies());
-        self::assertSame(2, $expression->evaluate([], ['lines' => [['amount' => '1'], ['amount' => '2']]]));
+        self::assertSame(
+            2,
+            ExpressionEvaluator::evaluate($expression, [], ['lines' => [['amount' => '1'], ['amount' => '2']]]),
+        );
     }
 
     /**
@@ -304,7 +309,11 @@ final class ExpressionLineAggregateTest extends TestCase
     public function testASumRefusesALineValueThatIsNotAnExactDecimal(): void
     {
         $this->expectException(InvalidBusinessDefinition::class);
-        Expression::fromArray(self::sumNode())->evaluate([], ['lines' => [['amount' => 'twelve']]]);
+        ExpressionEvaluator::evaluate(
+            Expression::fromArray(self::sumNode()),
+            [],
+            ['lines' => [['amount' => 'twelve']]],
+        );
     }
 
     /**

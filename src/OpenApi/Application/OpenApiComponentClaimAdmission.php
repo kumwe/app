@@ -6,8 +6,8 @@ namespace Kumwe\App\OpenApi\Application;
 
 use InvalidArgumentException;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionContractAdmission;
-use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition;
+use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition;
 use Kumwe\Context\Value\SiteContext;
 
 /**

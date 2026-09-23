@@ -59,7 +59,7 @@ final readonly class DoctrineBusinessSchemaInstallationRepository implements Bus
      * @throws  RuntimeException  When a stored column is absent, empty, or holds the wrong type.
      * @throws  \Kumwe\App\BusinessSchema\Domain\InvalidBusinessSchema  When the row no longer satisfies the
      *          installation invariants, such as a blueprint that disagrees with its recorded checksum.
-     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When a stored table's options
+     * @throws  \Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition  When a stored table's options
      *          cannot be canonically encoded.
      *
      * @since   2.0.0
@@ -135,7 +135,7 @@ final readonly class DoctrineBusinessSchemaInstallationRepository implements Bus
      * @throws  RuntimeException  When a column is absent, empty, wrongly typed, or holds invalid JSON.
      * @throws  \Kumwe\App\BusinessSchema\Domain\InvalidBusinessSchema  When the assembled document breaks an
      *          installation invariant, or the stored status is not one this build knows.
-     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When a stored table's options
+     * @throws  \Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition  When a stored table's options
      *          cannot be canonically encoded.
      *
      * @since   2.0.0
@@ -262,7 +262,7 @@ final readonly class DoctrineBusinessSchemaInstallationRepository implements Bus
      * @throws  RuntimeException  When a stored column is absent, empty, or holds the wrong type.
      * @throws  \Kumwe\App\BusinessSchema\Domain\InvalidBusinessSchema  When a locked row no longer satisfies
      *          the installation invariants.
-     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When a stored table's options
+     * @throws  \Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition  When a stored table's options
      *          cannot be canonically encoded.
      *
      * @since   2.0.0

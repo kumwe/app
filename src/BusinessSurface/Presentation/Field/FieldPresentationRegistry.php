@@ -10,10 +10,10 @@ use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationInpu
 use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationModel;
 use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresenter;
 use InvalidArgumentException;
-use Kumwe\App\BusinessDefinition\Domain\DefinitionOwner;
-use Kumwe\App\BusinessDefinition\Domain\DefinitionStatus;
-use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition;
+use Kumwe\BusinessDefinition\Domain\DefinitionOwner;
+use Kumwe\BusinessDefinition\Domain\DefinitionStatus;
+use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition;
 use Kumwe\Conversion\Value\ConvertedMoneyValue;
 
 /**

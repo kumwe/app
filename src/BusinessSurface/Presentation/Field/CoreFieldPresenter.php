@@ -9,8 +9,8 @@ use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationMode
 use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresenter;
 use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldWidget;
 use DateTimeImmutable;
-use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
-use Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition;
+use Kumwe\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition;
 use Kumwe\Conversion\Value\ConvertedMoneyValue;
 use Kumwe\Conversion\Decimal\ExactDecimal;
 use Kumwe\Conversion\Value\MoneyValue;

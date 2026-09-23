@@ -9,7 +9,7 @@ use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use FilesystemIterator;
 use Kumwe\App\Application\Authorization\SystemPrincipal;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionService;
-use Kumwe\App\BusinessDefinition\Domain\DefinitionOwnerType;
+use Kumwe\BusinessDefinition\Domain\DefinitionOwnerType;
 use Kumwe\App\Delivery\Console\Command\MigrateCommand;
 use Kumwe\App\Demo\Application\DemoBusinessTemplateProjector;
 use Kumwe\App\Demo\Application\DemoProfileLedger;

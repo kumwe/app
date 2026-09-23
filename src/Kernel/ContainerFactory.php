@@ -116,12 +116,14 @@ use Kumwe\App\Audit\Infrastructure\Persistence\DoctrineAuditRetentionService;
 use Kumwe\App\Audit\Infrastructure\Persistence\DoctrineAuditTrailExporter;
 use Kumwe\App\Audit\Infrastructure\Persistence\DoctrineAuditTrailVerifier;
 use Kumwe\App\Audit\Infrastructure\Storage\FilesystemAuditArchiveStorage;
-use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionCompatibilityAnalyzer;
+use Kumwe\BusinessDefinition\Application\BusinessDefinitionCompatibilityAnalyzer;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionContractAdmission;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionRepository;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionService;
-use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionValidator;
-use Kumwe\App\BusinessDefinition\Application\FieldTypeRegistry;
+use Kumwe\BusinessDefinition\Application\BusinessDefinitionValidator;
+use Kumwe\BusinessDefinition\Application\FieldConfigurationAdmission;
+use Kumwe\BusinessDefinition\Application\FieldTypeRegistry;
+use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\App\BusinessDefinition\Application\PackageDefinitionSynchronizer;
 use Kumwe\App\BusinessDefinition\Administrator\BusinessDefinitionFormMapper;
 use Kumwe\App\BusinessDefinition\Delivery\Api\BusinessDefinitionApiHandler;
@@ -2844,6 +2846,7 @@ final class ContainerFactory
             self::service($container, TableNames::class),
             self::service($container, BusinessDefinitionRepository::class),
             self::service($container, BusinessDefinitionCompatibilityAnalyzer::class),
+            self::service($container, FieldConfigurationAdmission::class),
             self::service($container, ResourceSiteOwnershipWriter::class),
             self::service($container, AuditRecorder::class),
             self::service($container, ClockInterface::class),
@@ -2916,7 +2919,10 @@ final class ContainerFactory
         $compiler = self::service($container, ExtensionRuntimeMapCompiler::class);
         $materialization = $compiler->inspectLocal();
         $container->share(RuntimeMaterializationState::class, $materialization, true);
+        $fieldConfiguration = new SdkFieldConfigurationAdmission();
+        $container->share(FieldConfigurationAdmission::class, $fieldConfiguration, true);
         $contributionRegistries = new ExtensionContributionRegistrySet(
+            $fieldConfiguration,
             self::service($container, TrustStore::class),
             authorizationPolicies: self::service($container, AuthorizationPolicyRegistry::class),
         );
@@ -3321,7 +3327,7 @@ final class ContainerFactory
         ), true);
         $container->share(
             BusinessDefinitionValidator::class,
-            new BusinessDefinitionValidator($contributionRegistries->fieldTypes()),
+            new BusinessDefinitionValidator($contributionRegistries->fieldTypes(), $fieldConfiguration),
             true,
         );
         $container->share(BusinessDefinitionService::class, static fn (

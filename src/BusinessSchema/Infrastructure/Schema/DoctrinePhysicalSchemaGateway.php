@@ -16,7 +16,8 @@ use Doctrine\DBAL\Schema\PrimaryKeyConstraint;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\DBAL\Schema\Table;
 use Doctrine\DBAL\Types\Type;
-use Kumwe\App\BusinessDefinition\Domain\Expression;
+use Kumwe\BusinessDefinition\Domain\Expression;
+use Kumwe\App\BusinessDefinition\Domain\ExpressionEvaluator;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaConflict;
 use Kumwe\App\BusinessSchema\Application\PhysicalSchemaGateway;
 use Kumwe\App\BusinessSchema\Application\SchemaChunkResult;
@@ -327,7 +328,7 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
      *          cannot be stored exactly.
      * @throws  BusinessSchemaConflict  When a visited row carries an identity that is neither an integer
      *          nor a string, so it cannot be bound as a parameter.
-     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the stored expression
+     * @throws  \Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition  When the stored expression
      *          cannot be rebuilt, or evaluating it against a row's values fails.
      *
      * @since   2.0.0
@@ -431,7 +432,7 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
                         $row[$aliases[$logical]] ?? null,
                     );
                 }
-                $value = $expression->evaluate($fields);
+                $value = ExpressionEvaluator::evaluate($expression, $fields);
             }
             if ($value === null || is_float($value) || is_array($value) || is_object($value)) {
                 throw new InvalidBusinessSchema('A schema backfill produced a non-exact or null result.');
@@ -481,7 +482,7 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
      *          computed value cannot be stored exactly.
      * @throws  BusinessSchemaConflict  When a visited row carries an identity that is neither an integer
      *          nor a string, so it cannot be bound as a parameter.
-     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the stored expression
+     * @throws  \Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition  When the stored expression
      *          cannot be rebuilt, or evaluating it against a row's values fails.
      *
      * @since   2.0.0
@@ -580,7 +581,7 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
                     $row[$aliases[$logical]] ?? null,
                 );
             }
-            $result = $expression->evaluate($values);
+            $result = ExpressionEvaluator::evaluate($expression, $values);
             if (is_float($result) || is_array($result) || is_object($result)) {
                 throw new InvalidBusinessSchema('A schema transform produced a non-exact scalar result.');
             }

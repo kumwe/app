@@ -9,7 +9,7 @@ use InvalidArgumentException;
 use Kumwe\Access\AuthorizationDenied;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionNotFound;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionRevisionConflict;
-use Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition;
+use Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaConflict;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaNotFound;
 use Kumwe\App\BusinessSchema\Domain\InvalidBusinessSchema;

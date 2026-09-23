@@ -7,7 +7,7 @@ namespace Kumwe\App\Tests\Integration\Demo\Infrastructure;
 use FilesystemIterator;
 use Kumwe\Extension\Spi\Application\Automation\IdempotencyKey;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordService;
-use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\App\BusinessRecord\Application\Command\CreateRecordCommand;
 use Kumwe\App\Demo\Application\DemoBusinessTemplateProjector;
 use Kumwe\App\Demo\Infrastructure\DemoBusinessProfileExporter;

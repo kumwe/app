@@ -6,7 +6,7 @@ namespace Kumwe\App\BusinessReporting\Application;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\Extension\Spi\BusinessReporting\Application\ProjectionEvent;
 use Kumwe\Extension\Spi\BusinessReporting\Domain\ReportDefinitionGuard;
 

@@ -217,7 +217,7 @@ final class ImmutableRecordBoundaryTest extends TestCase
      */
     public function testTheExemptionsAreExactlyTheOnesTheDecisionRecordMakes(): void
     {
-        $binding = self::source('src/BusinessDefinition/Domain/WorkflowBinding.php');
+        $binding = self::source('vendor/kumwe/business-definition/src/Domain/WorkflowBinding.php');
         self::assertStringContainsString(
             '|| $state === $initialState',
             $binding,

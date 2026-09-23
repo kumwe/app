@@ -29,7 +29,7 @@ use Kumwe\Navigation\Application\MenuRecord;
 use Kumwe\Navigation\Application\MenuItemRecord;
 use Kumwe\App\Navigation\Application\NavigationService;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionService;
-use Kumwe\App\BusinessDefinition\Application\DefinitionVersionRecord;
+use Kumwe\BusinessDefinition\Application\DefinitionVersionRecord;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaService;
 use Kumwe\App\BusinessSchema\Domain\SchemaPlan;
 use Kumwe\App\BusinessSchema\Domain\SchemaPlanStep;
@@ -2628,7 +2628,7 @@ final readonly class KumweMcpHandlers
      * @return  array{items: list<array<string, mixed>>}  Plans under `items`, most recently created first.
      *
      * @throws  InsufficientCapability  When no principal is bound, or it does not hold `business.schema.read`.
-     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When a plan holds more than 512
+     * @throws  \Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition  When a plan holds more than 512
      *          operations, which the canonical encoder refuses to fingerprint.
      *
      * @since   2.0.0
@@ -2652,7 +2652,7 @@ final readonly class KumweMcpHandlers
      *          ordinal order.
      *
      * @throws  InsufficientCapability  When no principal is bound, or it does not hold `business.schema.read`.
-     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the plan holds more than 512
+     * @throws  \Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition  When the plan holds more than 512
      *          operations, which the canonical encoder refuses to fingerprint.
      *
      * @since   2.0.0
@@ -2857,7 +2857,7 @@ final readonly class KumweMcpHandlers
      * @return  array<string, mixed>  Version number, status, checksum, publisher, publication instant,
      *          compatibility plan and the definition document itself.
      *
-     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the definition cannot be
+     * @throws  \Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition  When the definition cannot be
      *          canonically encoded, so no checksum can be computed for it.
      *
      * @since   2.0.0
@@ -2885,7 +2885,7 @@ final readonly class KumweMcpHandlers
      *
      * @return  array<string, mixed>  The plan's own fields plus its `checksum`.
      *
-     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the plan holds more than 512
+     * @throws  \Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition  When the plan holds more than 512
      *          operations, which the canonical encoder refuses to fingerprint.
      *
      * @since   2.0.0

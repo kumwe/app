@@ -18,6 +18,7 @@ use Kumwe\App\BusinessReporting\Application\ConsolidatedGroupReportScope;
 use Kumwe\App\Extension\Contribution\CapabilityDefinition;
 use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\App\Extension\Contribution\ResourcePolicyDefinition;
 use Kumwe\Access\ResourcePolicyTarget;
 use Kumwe\App\Application\Authorization\StructuredLogAuthorizationDecisionRecorder;
@@ -299,7 +300,7 @@ final class BusinessGroupOwnershipTest extends TestCase
      */
     private function policies(): \Kumwe\Access\AuthorizationPolicyRegistry
     {
-        $registries = new ExtensionContributionRegistrySet();
+        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
         $owner = ContributionOwner::extension('kumwe/payroll');
         foreach ([self::READ => 'Read', self::WRITE => 'Change'] as $capability => $verb) {
             $registries->capabilities()->register($owner, new CapabilityDefinition(

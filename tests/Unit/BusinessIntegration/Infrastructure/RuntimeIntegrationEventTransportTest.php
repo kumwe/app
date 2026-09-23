@@ -24,6 +24,7 @@ use Kumwe\App\BusinessIntegration\Infrastructure\RuntimeIntegrationEventTranspor
 use Kumwe\App\BusinessReporting\Application\ProjectionRebuildResult;
 use Kumwe\App\BusinessReporting\Application\ProjectionRuntime;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
 use Kumwe\Extension\Spi\Application\ExecutionContext;
 use Kumwe\Extension\Spi\BusinessIntegration\Application\IntegrationEventHandler;
@@ -57,7 +58,7 @@ final class RuntimeIntegrationEventTransportTest extends TestCase
      */
     public function testAConsumerEntryWithoutItsContractFailsPermanently(): void
     {
-        $registries = new ExtensionContributionRegistrySet(withCore: false);
+        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
         $registries->eventConsumers()->register(
             ContributionOwner::extension('acme/probe'),
             self::degradedDefinition(),
@@ -94,7 +95,7 @@ final class RuntimeIntegrationEventTransportTest extends TestCase
             [1],
             '1.0.0',
         );
-        $registries = new ExtensionContributionRegistrySet(withCore: false);
+        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
         $registries->eventConsumers()->register(
             ContributionOwner::extension('acme/probe'),
             $definition,

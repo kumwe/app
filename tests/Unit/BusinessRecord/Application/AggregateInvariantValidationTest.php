@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Unit\BusinessRecord\Application;
 
-use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordValidationFailed;
 use Kumwe\App\BusinessRecord\Application\RecordRuleValidator;
 use Kumwe\App\BusinessRecord\Application\RecordValueCodec;
@@ -155,6 +155,50 @@ final class AggregateInvariantValidationTest extends TestCase
     }
 
     /**
+     * Proves a rule whose condition yields no verdict is reported as invalid, never as satisfied.
+     *
+     * The package admits a boolean condition that falls through `coalesce` to `null`, so the host executor
+     * can hand back no boolean at all; the validator refuses that as `invariant_invalid` rather than reading
+     * the absent verdict as a pass.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testARuleWhoseConditionYieldsNoBooleanIsReportedInvalid(): void
+    {
+        try {
+            self::rules()->create(
+                self::definition([[
+                    'handle' => 'undecidable',
+                    'message' => 'The rule must decide.',
+                    'condition' => [
+                        'op' => 'coalesce',
+                        'type' => 'boolean',
+                        'args' => [
+                            ['op' => 'literal', 'type' => 'null', 'value' => null],
+                            ['op' => 'literal', 'type' => 'null', 'value' => null],
+                        ],
+                    ],
+                ]]),
+                ['total' => '30.75'],
+                'default',
+                self::RECORD,
+                self::RECORD,
+            );
+            self::fail('A rule that produced no boolean verdict was accepted.');
+        } catch (BusinessRecordValidationFailed $exception) {
+            self::assertSame(
+                [['invariant_invalid', 'A record invariant produced a non-boolean result.']],
+                array_map(
+                    static fn (ValidationViolation $violation): array => [$violation->code, $violation->message],
+                    $exception->violations,
+                ),
+            );
+        }
+    }
+
+    /**
      * Proves an aggregate rule is left unjudged, not reported, by a caller that suspends it deliberately.
      *
      * @return  void
@@ -218,11 +262,14 @@ final class AggregateInvariantValidationTest extends TestCase
     /**
      * Build the document header declaring one owned-line collection and the rule that reduces it.
      *
-     * @return  EntityTypeDefinition  A published-shaped definition with one aggregate invariant.
+     * @param   ?list<array<string, mixed>>  $invariants  Record invariants to declare instead of the aggregate
+     *          rule; null keeps the rule that reduces the lines.
+     *
+     * @return  EntityTypeDefinition  A published-shaped definition with the declared invariants.
      *
      * @since   2.0.0
      */
-    private static function definition(): EntityTypeDefinition
+    private static function definition(?array $invariants = null): EntityTypeDefinition
     {
         return EntityTypeDefinition::fromArray([
             'id' => Uuid::uuid7()->toString(),
@@ -276,7 +323,7 @@ final class AggregateInvariantValidationTest extends TestCase
             'administrator_exposure' => true,
             'portal_exposure' => false,
             'public_exposure' => false,
-            'record_invariants' => [[
+            'record_invariants' => $invariants ?? [[
                 'handle' => 'total_agrees_with_lines',
                 'message' => 'The document total must equal the sum of its lines.',
                 'condition' => [

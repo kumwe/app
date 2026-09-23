@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessRecord\Application;
 
 use InvalidArgumentException;
-use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\App\BusinessDefinition\Domain\ExpressionEvaluator;
 
 /**
  * Resolves definition-level read visibility against one complete normalized record value set.
@@ -41,7 +42,7 @@ final class RecordFieldVisibility
             }
             if ($field->visibilityCondition !== null) {
                 try {
-                    if ($field->visibilityCondition->evaluate($conditionValues) !== true) {
+                    if (ExpressionEvaluator::evaluate($field->visibilityCondition, $conditionValues) !== true) {
                         continue;
                     }
                 } catch (InvalidArgumentException) {

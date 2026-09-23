@@ -17,6 +17,7 @@ use Kumwe\App\Content\Application\ContentRepository;
 use Kumwe\App\Content\Domain\JsonSchemaValidator;
 use Kumwe\App\Content\Domain\SchemaCompatibilityChecker;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\App\Extension\Runtime\ActiveExtensionSet;
 use Kumwe\Localization\Application\ActiveLocale;
 use Kumwe\Localization\Application\SupportedLocales;
@@ -358,7 +359,7 @@ final class HostedContentStudioAuthoringConfigurationProviderTest extends TestCa
             'timezone' => 'Africa/Windhoek',
             'presentation' => SitePresentation::defaults(),
         ]);
-        $registries = new ExtensionContributionRegistrySet();
+        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
         $theme = new StudioPublishedTheme(
             $settings,
             new ActiveExtensionSet($registries),

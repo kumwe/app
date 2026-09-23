@@ -10,8 +10,8 @@ use Kumwe\Context\Value\SiteContext;
 use Kumwe\App\Application\Authorization\SystemIdentity;
 use Kumwe\Audit\Application\AuditRecorder;
 use Kumwe\Audit\Domain\AuditEvent;
-use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\App\BusinessDefinition\Domain\ScopeMode;
+use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\BusinessDefinition\Domain\ScopeMode;
 use Kumwe\App\BusinessIntegration\Application\BusinessRecordMutationEventPublisher;
 use Kumwe\App\BusinessIntegration\Application\OutboxStore;
 use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationEvent;
@@ -24,6 +24,7 @@ use Kumwe\App\BusinessRecord\Domain\BusinessRecordRevision;
 use Kumwe\App\BusinessRecord\Domain\RecordScope;
 use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
@@ -72,7 +73,7 @@ final class BusinessRecordMutationPublicationTest extends TestCase
                 $order[] = 'event';
                 $integrationEvent = $entry;
             });
-        $contributions = new ExtensionContributionRegistrySet();
+        $contributions = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
         $execution = $this->createMock(ExtensionExecutionGate::class);
         $execution->expects(self::never())->method('assertCurrent');
         $events = new BusinessRecordMutationEventPublisher(

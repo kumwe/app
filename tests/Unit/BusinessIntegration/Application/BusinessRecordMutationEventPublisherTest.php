@@ -17,6 +17,7 @@ use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationEvent;
 use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
@@ -61,7 +62,7 @@ final class BusinessRecordMutationEventPublisherTest extends TestCase
                 self::assertSame($definition, $dispatched);
                 self::assertSame('core.business_record.mutated', $event->eventType());
             });
-        $contributions = new ExtensionContributionRegistrySet();
+        $contributions = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
         $contributions->domainListeners()->register(
             ContributionOwner::extension('acme/listener'),
             $definition,
@@ -131,7 +132,7 @@ final class BusinessRecordMutationEventPublisherTest extends TestCase
 
             return $handler;
         };
-        $contributions = new ExtensionContributionRegistrySet();
+        $contributions = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
         $contributions->domainListeners()->register(
             ContributionOwner::extension('acme/listener'),
             new DomainListenerDefinition('acme.listener.beta', 'core.business_record.mutated', [1], '1.0.0'),
@@ -186,7 +187,7 @@ final class BusinessRecordMutationEventPublisherTest extends TestCase
         );
         $handler = $this->createMock(DomainEventHandler::class);
         $handler->expects(self::never())->method('handle');
-        $contributions = new ExtensionContributionRegistrySet();
+        $contributions = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
         $contributions->domainListeners()->register(
             ContributionOwner::extension('acme/listener'),
             $definition,

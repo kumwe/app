@@ -69,7 +69,8 @@
     "Kumwe\\Audit",
     "Kumwe\\BusinessPolicy",
     "Kumwe\\Idempotency",
-    "Kumwe\\Access"
+    "Kumwe\\Access",
+    "Kumwe\\BusinessDefinition"
   ],
   "namespace_segments": {
     "Shared": "shared",
@@ -186,6 +187,11 @@
     "Kumwe\\Idempotency": "shared",
     "Kumwe\\Access": "shared",
     "Kumwe\\Access\\Container": "kernel",
-    "Kumwe\\Access\\ConfigProvider": "kernel"
+    "Kumwe\\Access\\ConfigProvider": "kernel",
+    "Kumwe\\BusinessDefinition\\Domain": "domain",
+    "Kumwe\\BusinessDefinition\\Application": "application",
+    "Kumwe\\BusinessDefinition\\Internal": "domain",
+    "Kumwe\\BusinessDefinition\\Container": "kernel",
+    "Kumwe\\BusinessDefinition\\ConfigProvider": "kernel"
   }
 }

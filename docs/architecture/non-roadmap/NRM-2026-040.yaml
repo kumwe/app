@@ -1,0 +1,31 @@
+schema: kumwe-non-roadmap-record/v1
+id: NRM-2026-040
+nrm_ref: NRM-2026-040
+roadmap_impact: None
+rationale: "Adopt verified kumwe/business-definition 0.1.2, the owner of the immutable definition metadata, the bounded formula and condition ASTs, the canonical definition profile, structural validation, compatibility classification and the field-type and contribution registries."
+repositories:
+  - kumwe/app
+  - kumwe/business-definition
+behavior_before: "App declared the thirty-six definition types itself: the entity, field, relationship, view, document-view, action, workflow-binding and record-invariant values and their enums, the expression tree with its PHP evaluate() method, the canonical JSON profile, the compatibility plan and analyzer, the validator that called the extension SDK's FieldPresentationConfiguration directly, the draft, version and catalog records and the field-type and contribution registries."
+behavior_after: "The thirty-six types come from kumwe/business-definition 0.1.2; the App binds the package's mandatory FieldConfigurationAdmission port to its SDK-backed SdkFieldConfigurationAdmission, keeps the contribution-fed FieldTypeRegistry and shared validator under the package names, and evaluates every runtime expression and record invariant through its retained ExpressionEvaluator and DecimalValue, which stay until Computation Phase 2. App keeps the definition service, repository, contract admission, package synchronizer, persistence, administrator and API delivery."
+public_api_impact: "None for callers of the thirty-three namespace-only moves; BusinessDefinitionValidator takes the host admission port as a second constructor argument, ExtensionContributionRegistrySet requires it as its first, and Expression::evaluate() and RecordInvariantDefinition::isSatisfied() are replaced by ExpressionEvaluator::evaluate() at every call site."
+dependency_impact: "Adds kumwe/business-definition 0.1.2 exactly; its dependencies kumwe/localization 0.1.1 and kumwe/sequence 0.2.1 were already locked, psr/container 2.0.2 and ramsey/uuid 4.9.3 satisfy its constraints, and no other lock entry changes."
+compatibility: "Canonical definition bytes and checksums are unchanged. The package validator refuses expression reads outside their field's scalar family, non-boolean field conditions at construction and over-long text defaults, and classifies entity label-translation changes as behaviour-changing; the neutral fixture and the VDM definitions admit unchanged."
+data_migration: None
+security_impact: "No authority change; publication authorization, ownership, extension trust, transaction coupling and audit stay in App, and the admission adapter keeps the SDK presentation budget in force."
+performance:
+  claim: None
+  evidence: []
+operations_deployment: "None; no configuration or schema change. ext-mbstring, which the package requires for text-default admission, is already a platform requirement of the App."
+recovery_rollback: "Revert the adoption pull request and restore the thirty-six removed classes and the eleven moved unit tests; no persisted data changes."
+artifacts_evidence:
+  - docs/architecture/migrations/KUMWE-MIG-2026-010.yaml
+  - docs/architecture/migrations/change-sets/KUMWE-CS-2026-010.yaml
+  - docs/architecture/migrations/trains/KUMWE-TRAIN-2026-010.yaml
+  - docs/architecture/migrations/evidence/KUMWE-MIG-2026-010/RELEASE-ATTESTATION.yaml
+  - docs/architecture/capability-index.md
+known_gaps:
+  - "kumwe/business-schema 0.1.3, kumwe/record-model 0.1.3, kumwe/record-query 0.1.3 and kumwe/reporting 0.1.4 depend on this adoption and follow as separate adoptions."
+  - "Retiring the App ExpressionEvaluator and DecimalValue is Computation Phase 2, not this adoption."
+owner: "eWɘyn"
+status: in-progress

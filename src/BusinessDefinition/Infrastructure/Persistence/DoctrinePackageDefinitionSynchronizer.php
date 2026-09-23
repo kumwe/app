@@ -11,18 +11,19 @@ use Kumwe\Access\ResourceSiteOwnershipWriter;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\Audit\Application\AuditRecorder;
 use Kumwe\Audit\Domain\AuditEvent;
-use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionCompatibilityAnalyzer;
+use Kumwe\BusinessDefinition\Application\BusinessDefinitionCompatibilityAnalyzer;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionRepository;
-use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionValidator;
-use Kumwe\App\BusinessDefinition\Application\FieldTypeRegistry;
+use Kumwe\BusinessDefinition\Application\BusinessDefinitionValidator;
+use Kumwe\BusinessDefinition\Application\FieldConfigurationAdmission;
+use Kumwe\BusinessDefinition\Application\FieldTypeRegistry;
 use Kumwe\App\BusinessDefinition\Application\PackageDefinitionSynchronizer;
-use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
-use Kumwe\App\BusinessDefinition\Domain\DefinitionOwner;
-use Kumwe\App\BusinessDefinition\Domain\DefinitionOwnerType;
-use Kumwe\App\BusinessDefinition\Domain\DefinitionStatus;
-use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\App\BusinessDefinition\Domain\FieldTypeDefinition;
-use Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition;
+use Kumwe\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\BusinessDefinition\Domain\DefinitionOwner;
+use Kumwe\BusinessDefinition\Domain\DefinitionOwnerType;
+use Kumwe\BusinessDefinition\Domain\DefinitionStatus;
+use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\BusinessDefinition\Domain\FieldTypeDefinition;
+use Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition;
 use Kumwe\App\BusinessSchema\Application\PublishedDefinitionSchemaObserver;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaLifecycleObserver;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
@@ -54,23 +55,25 @@ final readonly class DoctrinePackageDefinitionSynchronizer implements PackageDef
     /**
      * Wire the synchronizer to the catalog, the field-type table and the observers it notifies.
      *
-     * @param  Connection                               $database         Connection this class reads and
+     * @param  Connection                               $database            Connection this class reads and
      *         writes the field-type table on, and whose already open transaction the work joins.
-     * @param  TableNames                               $tables           Physical name compiler for the
+     * @param  TableNames                               $tables              Physical name compiler for the
      *         `business_field_types` table.
-     * @param  BusinessDefinitionRepository             $repository       Catalog the entity definitions
+     * @param  BusinessDefinitionRepository             $repository          Catalog the entity definitions
      *         are read from, drafted into and published through.
-     * @param  BusinessDefinitionCompatibilityAnalyzer  $compatibility    Prices each publication against
+     * @param  BusinessDefinitionCompatibilityAnalyzer  $compatibility       Prices each publication against
      *         the version it replaces; the resulting plan is stored beside the version it describes.
-     * @param  ResourceSiteOwnershipWriter              $ownership        Records the owning site for each
+     * @param  FieldConfigurationAdmission              $fieldConfiguration  Host admission of field
+     *         presentation configuration, handed to the validator that judges the resulting graph.
+     * @param  ResourceSiteOwnershipWriter              $ownership           Records the owning site for each
      *         definition the release introduces, so authorization can resolve it afterwards.
-     * @param  AuditRecorder                            $audit            Sink the synchronization and
+     * @param  AuditRecorder                            $audit               Sink the synchronization and
      *         activation entries are recorded to.
-     * @param  ClockInterface                           $clock            Supplies every timestamp written
+     * @param  ClockInterface                           $clock               Supplies every timestamp written
      *         to the field-type rows, the catalog and the audit trail.
-     * @param  ?PublishedDefinitionSchemaObserver       $schemaObserver   Handed the complete published
+     * @param  ?PublishedDefinitionSchemaObserver       $schemaObserver      Handed the complete published
      *         graph so schema plans exist for it; null where the installation runs no schema services.
-     * @param  ?BusinessSchemaLifecycleObserver         $schemaLifecycle  Told when the package's
+     * @param  ?BusinessSchemaLifecycleObserver         $schemaLifecycle     Told when the package's
      *         availability changes, so its physical installations follow; null in the same case.
      *
      * @since  2.0.0
@@ -80,6 +83,7 @@ final readonly class DoctrinePackageDefinitionSynchronizer implements PackageDef
         private TableNames $tables,
         private BusinessDefinitionRepository $repository,
         private BusinessDefinitionCompatibilityAnalyzer $compatibility,
+        private FieldConfigurationAdmission $fieldConfiguration,
         private ResourceSiteOwnershipWriter $ownership,
         private AuditRecorder $audit,
         private ClockInterface $clock,
@@ -173,7 +177,8 @@ final readonly class DoctrinePackageDefinitionSynchronizer implements PackageDef
         }
         $resultingGraph = $this->existingDefinitionGraph($site, $owner, $definitions);
         if ($resultingGraph !== []) {
-            (new BusinessDefinitionValidator($validationTypes))->validateGraph($resultingGraph);
+            (new BusinessDefinitionValidator($validationTypes, $this->fieldConfiguration))
+                ->validateGraph($resultingGraph);
         }
         $this->synchronizeFieldTypes($owner, $releaseVersion, $fieldTypes, $active);
         $this->synchronizeDefinitions($owner, $site, $definitions, $actorId);

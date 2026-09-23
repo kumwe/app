@@ -17,6 +17,7 @@ use Kumwe\App\Extension\Runtime\RuntimeIdentity;
 use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
 use Kumwe\App\Extension\Runtime\RuntimePublicationKeyRing;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\App\Extension\Infrastructure\Trust\FilesystemExtensionArtifactVerifier;
 use Kumwe\App\Identity\Application\Administration\AuthenticationRateLimiter;
 use Kumwe\App\Identity\Application\Administration\AccessTokenQuotaPolicy;
@@ -655,7 +656,7 @@ final class ThemePersistenceIntegrationTest extends TestCase
             $this->createStub(AccessTokenQuotaPolicy::class),
             str_repeat('s', 32),
             AuthorizationContext::gateway(),
-            (new ExtensionContributionRegistrySet())->authorizationPolicies(),
+            (new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission()))->authorizationPolicies(),
             (new \ReflectionClass(TokenDelegationPreauthorizer::class))->newInstanceWithoutConstructor(),
             (new \ReflectionClass(TokenRotationPreauthorizer::class))->newInstanceWithoutConstructor(),
             AuthorizationContext::ownershipWriter(),

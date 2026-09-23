@@ -10,7 +10,7 @@ use Kumwe\App\Automation\Domain\CronExpression;
 use Kumwe\App\Application\Automation\JobExecutionClass;
 use Kumwe\App\Application\Automation\QueueRuntimePolicyCatalog;
 use Kumwe\Transaction\Contract\TransactionManager;
-use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\App\BusinessIntegration\Application\PayloadSchemaValidator;
 use Kumwe\App\BusinessIntegration\Application\ScheduleRuntimeSynchronizer;
 use Kumwe\Extension\Spi\BusinessIntegration\Domain\JobContributionDefinition;

@@ -6,6 +6,7 @@ namespace Kumwe\App\Tests\Unit\Extension\Contribution;
 
 use Kumwe\App\Extension\Contribution\CoreExtensionContributions;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
@@ -27,7 +28,7 @@ final class CoreContributionActivationTest extends TestCase
      */
     public function testCoreActivationContributesCanonicalStudioDocuments(): void
     {
-        $registries = new ExtensionContributionRegistrySet();
+        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
         $core = ContributionOwner::core();
 
         $documents = $registries->canonicalCompositionDocuments()->ownedBy($core);

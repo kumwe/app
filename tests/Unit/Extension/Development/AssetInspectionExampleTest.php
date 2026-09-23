@@ -8,6 +8,7 @@ use Closure;
 use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\App\Extension\Runtime\ActiveExtensionSet;
 use Kumwe\App\Extension\Runtime\RestrictedExtensionContainer;
 use Kumwe\Extension\Manifest\ExtensionManifest;
@@ -153,7 +154,7 @@ final class AssetInspectionExampleTest extends TestCase
             BusinessRecordReader::class => new AssetInspectionRecordReaderProbe(),
         ]);
         $provider->register($container);
-        $registries = new ExtensionContributionRegistrySet();
+        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
         $active = new ActiveExtensionSet(
             $registries,
             (new ReflectionClass(TrustStore::class))->newInstanceWithoutConstructor(),

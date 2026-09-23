@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessSurface\Application\Custom;
 
 use InvalidArgumentException;
-use Kumwe\App\BusinessDefinition\Domain\DefinitionOwner;
+use Kumwe\BusinessDefinition\Domain\DefinitionOwner;
 use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessReference;
 use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewDeclaration;
 use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewHandler;

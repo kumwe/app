@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Demo\Application;
 
-use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
-use Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition;
+use Kumwe\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition;
 use RuntimeException;
 
 /**

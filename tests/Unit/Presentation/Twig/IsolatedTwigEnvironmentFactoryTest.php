@@ -9,6 +9,7 @@ use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
 use Kumwe\App\Administrator\Presentation\RecoveryAdministratorRenderer;
 use Kumwe\App\Extension\Runtime\ActiveExtensionSet;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\App\Extension\Domain\ThemeSurface;
 use Kumwe\App\Presentation\Twig\ContractRestrictedLoader;
 use Kumwe\App\Presentation\Twig\IsolatedTwigEnvironmentFactory;
@@ -118,7 +119,10 @@ final class IsolatedTwigEnvironmentFactoryTest extends TestCase
 
     public function testOnlyOneThemeCanBeLoadedPerSurface(): void
     {
-        $active = new ActiveExtensionSet(new ExtensionContributionRegistrySet(withCore: false));
+        $active = new ActiveExtensionSet(new ExtensionContributionRegistrySet(
+            new SdkFieldConfigurationAdmission(),
+            withCore: false,
+        ));
         $active->setSiteThemePath('default', $this->root . '/site-theme');
         $this->expectException(LogicException::class);
 
@@ -142,7 +146,10 @@ final class IsolatedTwigEnvironmentFactoryTest extends TestCase
     {
         $first = IsolatedTwigEnvironmentFactory::extensionNamespace('ac-me/x');
         $second = IsolatedTwigEnvironmentFactory::extensionNamespace('ac/me-x');
-        $active = new ActiveExtensionSet(new ExtensionContributionRegistrySet(withCore: false));
+        $active = new ActiveExtensionSet(new ExtensionContributionRegistrySet(
+            new SdkFieldConfigurationAdmission(),
+            withCore: false,
+        ));
         $active->addExtensionViewPath(ThemeSurface::Site, 'ac-me/x', $this->root . '/extension/collision-a');
         $active->addExtensionViewPath(ThemeSurface::Site, 'ac/me-x', $this->root . '/extension/collision-b');
         $twig = $this->factory($active)->site();
@@ -154,7 +161,10 @@ final class IsolatedTwigEnvironmentFactoryTest extends TestCase
 
     private function activeExtensions(): ActiveExtensionSet
     {
-        $active = new ActiveExtensionSet(new ExtensionContributionRegistrySet(withCore: false));
+        $active = new ActiveExtensionSet(new ExtensionContributionRegistrySet(
+            new SdkFieldConfigurationAdmission(),
+            withCore: false,
+        ));
         $active->setSiteThemePath('default', $this->root . '/site-theme');
         $active->setThemePath(ThemeSurface::Administrator, $this->root . '/admin-theme');
         $active->addExtensionViewPath(ThemeSurface::Site, 'acme/tools', $this->root . '/extension/site');

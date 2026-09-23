@@ -15,6 +15,7 @@ use Kumwe\Extension\Spi\Contribution\AdministratorNavigationDefinition;
 use Kumwe\Extension\Spi\Contribution\AdministratorWorkspaceDefinition;
 use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\App\Identity\Application\Administration\AdministratorSession;
 use Kumwe\App\InterfaceStandard\CustomizationScope;
 use Kumwe\App\InterfaceStandard\CustomizationSlot;
@@ -140,7 +141,7 @@ final class AdministratorDashboardPreferencesHandlerTest extends TestCase
      */
     public function testSavesAWorkflowBeyondTheFormerRendererPrefix(): void
     {
-        $registries = new ExtensionContributionRegistrySet();
+        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
         $owner = ContributionOwner::core();
         $registries->workspaces()->register($owner, new AdministratorWorkspaceDefinition(
             'core.dashboard-volume',

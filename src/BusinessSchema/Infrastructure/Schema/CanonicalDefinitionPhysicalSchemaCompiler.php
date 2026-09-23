@@ -5,15 +5,15 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessSchema\Infrastructure\Schema;
 
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionRepository;
-use Kumwe\App\BusinessDefinition\Application\FieldTypeDefinitionResolver;
-use Kumwe\App\BusinessDefinition\Domain\ComputationMode;
-use Kumwe\App\BusinessDefinition\Domain\DeleteBehavior;
-use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\App\BusinessDefinition\Domain\FieldDefinition;
-use Kumwe\App\BusinessDefinition\Domain\IdentityStrategy;
-use Kumwe\App\BusinessDefinition\Domain\RelationshipDefinition;
-use Kumwe\App\BusinessDefinition\Domain\RelationshipKind;
-use Kumwe\App\BusinessDefinition\Domain\ScopeMode;
+use Kumwe\BusinessDefinition\Application\FieldTypeDefinitionResolver;
+use Kumwe\BusinessDefinition\Domain\ComputationMode;
+use Kumwe\BusinessDefinition\Domain\DeleteBehavior;
+use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\BusinessDefinition\Domain\FieldDefinition;
+use Kumwe\BusinessDefinition\Domain\IdentityStrategy;
+use Kumwe\BusinessDefinition\Domain\RelationshipDefinition;
+use Kumwe\BusinessDefinition\Domain\RelationshipKind;
+use Kumwe\BusinessDefinition\Domain\ScopeMode;
 use Kumwe\App\BusinessSchema\Application\DefinitionPhysicalSchemaCompiler;
 use Kumwe\App\BusinessSchema\Domain\InvalidBusinessSchema;
 use Kumwe\App\BusinessSchema\Domain\PhysicalColumnBlueprint;
@@ -89,7 +89,7 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
      *          version, an ordered-line field declares no string target, a target definition is
      *          unavailable or not published at the pinned version, or a compiled table breaks a
      *          physical-schema rule.
-     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When a field names a type
+     * @throws  \Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition  When a field names a type
      *          the resolver cannot produce, or the definition's own canonical document cannot be encoded.
      *
      * @since   2.0.0
@@ -876,7 +876,7 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
      * @return  PhysicalColumnBlueprint  The single column the resolved storage kind maps to.
      *
      * @throws  InvalidBusinessSchema  When the registered storage kind has no portable Doctrine mapping.
-     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the field type cannot
+     * @throws  \Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition  When the field type cannot
      *          be resolved at all.
      *
      * @since   2.0.0

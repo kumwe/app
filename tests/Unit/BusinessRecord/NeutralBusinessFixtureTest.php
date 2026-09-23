@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Unit\BusinessRecord;
 
-use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionValidator;
-use Kumwe\App\BusinessDefinition\Application\FieldTypeRegistry;
-use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\App\BusinessDefinition\Domain\Expression;
-use Kumwe\App\BusinessDefinition\Domain\IdentityStrategy;
-use Kumwe\App\BusinessDefinition\Domain\RelationshipDefinition;
+use Kumwe\BusinessDefinition\Application\BusinessDefinitionValidator;
+use Kumwe\BusinessDefinition\Application\FieldTypeRegistry;
+use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
+use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\BusinessDefinition\Domain\Expression;
+use Kumwe\BusinessDefinition\Domain\IdentityStrategy;
+use Kumwe\BusinessDefinition\Domain\RelationshipDefinition;
 use Kumwe\App\BusinessSchema\Domain\SchemaEvolutionHints;
 use Kumwe\App\Tests\Support\NeutralBusinessFixture;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -23,7 +24,8 @@ final class NeutralBusinessFixtureTest extends TestCase
     public function testStandaloneBackupDefinitionIsStableAndValid(): void
     {
         $definition = EntityTypeDefinition::fromArray(NeutralBusinessFixture::backupDocument());
-        (new BusinessDefinitionValidator(new FieldTypeRegistry()))->validateGraph([$definition]);
+        (new BusinessDefinitionValidator(new FieldTypeRegistry(), new SdkFieldConfigurationAdmission()))
+            ->validateGraph([$definition]);
 
         self::assertSame(NeutralBusinessFixture::DEFINITION_ID, $definition->id);
         self::assertSame(NeutralBusinessFixture::HANDLE, $definition->handle);
@@ -52,7 +54,8 @@ final class NeutralBusinessFixtureTest extends TestCase
             $target->handle,
             $line->handle,
         ));
-        (new BusinessDefinitionValidator(new FieldTypeRegistry()))->validateGraph([$target, $line, $owner]);
+        (new BusinessDefinitionValidator(new FieldTypeRegistry(), new SdkFieldConfigurationAdmission()))
+            ->validateGraph([$target, $line, $owner]);
 
         self::assertSame(
             ['one_to_one', 'many_to_one', 'one_to_many', 'many_to_many', 'owned_line_collection'],
@@ -81,7 +84,7 @@ final class NeutralBusinessFixtureTest extends TestCase
             $suffix,
             $definitionId,
         ));
-        $validator = new BusinessDefinitionValidator(new FieldTypeRegistry());
+        $validator = new BusinessDefinitionValidator(new FieldTypeRegistry(), new SdkFieldConfigurationAdmission());
         $validator->validateGraph([$v1]);
         $validator->validateGraph([$v2]);
         $hints = SchemaEvolutionHints::fromDefinition($v2);

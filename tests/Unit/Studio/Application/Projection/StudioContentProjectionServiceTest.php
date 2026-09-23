@@ -25,6 +25,7 @@ use Kumwe\App\Content\Domain\PublicationWindow;
 use Kumwe\App\Content\Domain\SchemaCompatibilityChecker;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\App\Extension\Contribution\StudioPreviewRendererContribution;
 use Kumwe\App\Extension\Runtime\ActiveExtensionSet;
 use Kumwe\App\Extension\Runtime\TrustEnforcingStudioPreviewBlockRenderer;
@@ -342,7 +343,10 @@ final class StudioContentProjectionServiceTest extends TestCase
         );
         $theme = new StudioPublishedTheme(
             $settings,
-            new ActiveExtensionSet(new ExtensionContributionRegistrySet(withCore: false)),
+            new ActiveExtensionSet(new ExtensionContributionRegistrySet(
+                new SdkFieldConfigurationAdmission(),
+                withCore: false,
+            )),
             new StudioBuiltInThemeRelease(str_repeat('a', 64)),
         );
         $admission = new StudioArtifactAdmission(StudioDocumentSchemaRegistry::fromVendoredCorpus());
@@ -680,7 +684,10 @@ final class StudioContentProjectionServiceTest extends TestCase
         $settings->method('current')->willReturn(['presentation' => SitePresentation::defaults(), 'timezone' => []]);
         $theme = new StudioPublishedTheme(
             $settings,
-            new ActiveExtensionSet(new ExtensionContributionRegistrySet(withCore: false)),
+            new ActiveExtensionSet(new ExtensionContributionRegistrySet(
+                new SdkFieldConfigurationAdmission(),
+                withCore: false,
+            )),
             new StudioBuiltInThemeRelease(str_repeat('a', 64)),
         );
         $service = $this->compositionService(
@@ -1301,7 +1308,7 @@ final class StudioContentProjectionServiceTest extends TestCase
             'acme.shop/grid-preview',
             'acme.shop.catalog.edit',
         );
-        $registries = new ExtensionContributionRegistrySet();
+        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
         $registries->canonicalCompositionDocuments()->register($owner, $canonical);
         $registries->compositionHostBindings()->register($owner, $binding);
         $preview = new class implements StudioPreviewBlockRenderer {

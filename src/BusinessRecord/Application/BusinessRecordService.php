@@ -10,14 +10,15 @@ use Kumwe\Access\AuthorizationGateway;
 use Kumwe\Access\AuthorizationResource;
 use Kumwe\Access\ResourceSiteOwnershipWriter;
 use Kumwe\Transaction\Contract\TransactionManager;
-use Kumwe\App\BusinessDefinition\Domain\ActionDefinition;
-use Kumwe\App\BusinessDefinition\Domain\DeleteBehavior;
-use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\App\BusinessDefinition\Domain\FieldDefinition;
-use Kumwe\App\BusinessDefinition\Domain\IdentityStrategy;
-use Kumwe\App\BusinessDefinition\Domain\PortalOperation;
-use Kumwe\App\BusinessDefinition\Domain\RelationshipKind;
-use Kumwe\App\BusinessDefinition\Domain\ScopeMode;
+use Kumwe\BusinessDefinition\Domain\ActionDefinition;
+use Kumwe\App\BusinessDefinition\Domain\ExpressionEvaluator;
+use Kumwe\BusinessDefinition\Domain\DeleteBehavior;
+use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\BusinessDefinition\Domain\FieldDefinition;
+use Kumwe\BusinessDefinition\Domain\IdentityStrategy;
+use Kumwe\BusinessDefinition\Domain\PortalOperation;
+use Kumwe\BusinessDefinition\Domain\RelationshipKind;
+use Kumwe\BusinessDefinition\Domain\ScopeMode;
 use Kumwe\App\BusinessRecord\Application\Command\ArchiveRecordCommand;
 use Kumwe\App\BusinessRecord\Application\Command\CreateRecordCommand;
 use Kumwe\App\BusinessRecord\Application\Command\DeleteRecordCommand;
@@ -1055,7 +1056,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                 );
                 if (
                     $action->condition !== null
-                    && $action->condition->evaluate($this->expressionValues($record)) !== true
+                    && ExpressionEvaluator::evaluate($action->condition, $this->expressionValues($record)) !== true
                 ) {
                     throw new BusinessRecordActionRejected('The action precondition rejected this record.');
                 }
@@ -1156,7 +1157,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
         );
         if (
             $action->condition !== null
-            && $action->condition->evaluate($this->expressionValues($record)) !== true
+            && ExpressionEvaluator::evaluate($action->condition, $this->expressionValues($record)) !== true
         ) {
             throw new BusinessRecordActionRejected('The action precondition rejected this record.');
         }
@@ -1263,7 +1264,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                 );
                 if (
                     $action->condition !== null
-                    && $action->condition->evaluate($this->expressionValues($record)) !== true
+                    && ExpressionEvaluator::evaluate($action->condition, $this->expressionValues($record)) !== true
                 ) {
                     throw new BusinessRecordActionRejected('The action precondition rejected this record.');
                 }

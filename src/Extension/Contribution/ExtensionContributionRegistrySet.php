@@ -10,9 +10,10 @@ use ArrayObject;
 use Kumwe\App\Administrator\Navigation\AdministratorNavigationRegistry;
 use Kumwe\Access\AuthorizationPolicyRegistry;
 use Kumwe\App\Application\Authorization\HostAccessPolicy;
-use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionContributionRegistry;
-use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionValidator;
-use Kumwe\App\BusinessDefinition\Application\FieldTypeRegistry;
+use Kumwe\BusinessDefinition\Application\BusinessDefinitionContributionRegistry;
+use Kumwe\BusinessDefinition\Application\BusinessDefinitionValidator;
+use Kumwe\BusinessDefinition\Application\FieldConfigurationAdmission;
+use Kumwe\BusinessDefinition\Application\FieldTypeRegistry;
 use Kumwe\Extension\Spi\Application\Automation\JobHandler;
 use Kumwe\Extension\Spi\BusinessIntegration\Application\DomainEventHandler;
 use Kumwe\App\BusinessIntegration\Application\EventContractRegistry;
@@ -394,6 +395,9 @@ final readonly class ExtensionContributionRegistrySet
      * broken the normal render. Suppressing core leaves a wholly empty set, which is what a test
      * isolating one extension's contributions wants.
      *
+     * @param  FieldConfigurationAdmission   $fieldConfiguration     Host admission of field presentation
+     *         configuration for the business-definition validator; the App binds its SDK-backed adapter and
+     *         the package ships no permissive default.
      * @param  ?TrustStore                   $trust                  Source of live trust used to hide
      *         navigation whose owner is no longer trusted and active; null skips that filtering entirely.
      * @param  bool                          $withCore               Whether to register shipped core contributions.
@@ -403,6 +407,7 @@ final readonly class ExtensionContributionRegistrySet
      * @since  2.0.0
      */
     public function __construct(
+        FieldConfigurationAdmission $fieldConfiguration,
         ?TrustStore $trust = null,
         bool $withCore = true,
         ?AuthorizationPolicyRegistry $authorizationPolicies = null,
@@ -439,7 +444,7 @@ final readonly class ExtensionContributionRegistrySet
         $this->fieldTypes = new FieldTypeRegistry(false);
         $this->fieldPresentations = new FieldPresentationRegistry();
         $this->businessDefinitions = new BusinessDefinitionContributionRegistry(
-            new BusinessDefinitionValidator($this->fieldTypes),
+            new BusinessDefinitionValidator($this->fieldTypes, $fieldConfiguration),
         );
         $customBusinessReferences = new CustomBusinessReferenceRegistry();
         $this->customBusinessViewHandlers = new CustomBusinessViewHandlerRegistry($customBusinessReferences);
@@ -1091,7 +1096,7 @@ final readonly class ExtensionContributionRegistrySet
      *
      * @return  void
      *
-     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the assembled graph or
+     * @throws  \Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition  When the assembled graph or
      *          its presentation coverage is incomplete.
      *
      * @since   2.0.0

@@ -12,6 +12,7 @@ use Kumwe\Extension\Spi\Contribution\AdministratorNavigationDefinition;
 use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ContributionSurface;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 
 /**
  * Holds every administrator menu entry, core and contributed, and presents the subset an actor may see.
@@ -244,7 +245,7 @@ final class AdministratorNavigationRegistry implements ContributionSurface
      */
     public static function core(): self
     {
-        return (new ExtensionContributionRegistrySet())->navigation();
+        return (new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission()))->navigation();
     }
 
     /**

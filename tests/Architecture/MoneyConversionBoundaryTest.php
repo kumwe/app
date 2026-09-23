@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Architecture;
 
 use InvalidArgumentException;
-use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\App\BusinessDefinition\Domain\FieldDefinition;
+use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\BusinessDefinition\Domain\FieldDefinition;
 use Kumwe\App\BusinessRecord\Application\RecordValueCodec;
 use Kumwe\Conversion\Value\ConvertedMoneyValue;
 use Kumwe\Conversion\Decimal\ExactDecimal;

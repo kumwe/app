@@ -6,13 +6,14 @@ namespace Kumwe\App\Tests\Unit\Demo\Infrastructure;
 
 use DateTimeImmutable;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionRepository;
-use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionValidator;
-use Kumwe\App\BusinessDefinition\Application\DefinitionCatalogEntry;
-use Kumwe\App\BusinessDefinition\Application\DefinitionVersionRecord;
-use Kumwe\App\BusinessDefinition\Application\FieldTypeRegistry;
-use Kumwe\App\BusinessDefinition\Domain\CompatibilityPlan;
-use Kumwe\App\BusinessDefinition\Domain\DefinitionStatus;
-use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\BusinessDefinition\Application\BusinessDefinitionValidator;
+use Kumwe\BusinessDefinition\Application\DefinitionCatalogEntry;
+use Kumwe\BusinessDefinition\Application\DefinitionVersionRecord;
+use Kumwe\BusinessDefinition\Application\FieldTypeRegistry;
+use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
+use Kumwe\BusinessDefinition\Domain\CompatibilityPlan;
+use Kumwe\BusinessDefinition\Domain\DefinitionStatus;
+use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\App\BusinessSchema\Domain\PhysicalNameCompiler;
 use Kumwe\App\BusinessSchema\Infrastructure\Schema\CanonicalDefinitionPhysicalSchemaCompiler;
 use Kumwe\App\Demo\Infrastructure\FilesystemDemoManifestCatalog;
@@ -54,7 +55,7 @@ final class VdmBusinessDefinitionSchemaTest extends TestCase
         self::assertCount(12, $drafts);
 
         $fieldTypes = new FieldTypeRegistry();
-        (new BusinessDefinitionValidator($fieldTypes))->validateGraph($drafts);
+        (new BusinessDefinitionValidator($fieldTypes, new SdkFieldConfigurationAdmission()))->validateGraph($drafts);
 
         $definitions = [];
         foreach ($drafts as $draft) {

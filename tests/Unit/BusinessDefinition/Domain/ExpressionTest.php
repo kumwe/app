@@ -5,13 +5,12 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\BusinessDefinition\Domain;
 
 use Kumwe\App\BusinessDefinition\Domain\DecimalValue;
-use Kumwe\App\BusinessDefinition\Domain\Expression;
+use Kumwe\BusinessDefinition\Domain\Expression;
 use Kumwe\App\BusinessDefinition\Domain\ExpressionEvaluator;
-use Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition;
+use Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
-#[CoversClass(Expression::class)]
 #[CoversClass(ExpressionEvaluator::class)]
 #[CoversClass(DecimalValue::class)]
 final class ExpressionTest extends TestCase
@@ -28,7 +27,7 @@ final class ExpressionTest extends TestCase
         ]);
 
         self::assertSame(['quantity', 'unit_price'], $expression->dependencies());
-        self::assertSame('24691357802469135780', $expression->evaluate([
+        self::assertSame('24691357802469135780', ExpressionEvaluator::evaluate($expression, [
             'quantity' => '2.00',
             'unit_price' => '12345678901234567890.00',
         ]));
@@ -46,7 +45,7 @@ final class ExpressionTest extends TestCase
             ],
         ]);
 
-        self::assertSame('1.6667', $expression->evaluate([]));
+        self::assertSame('1.6667', ExpressionEvaluator::evaluate($expression, []));
     }
 
     public function testFormulaRejectsStoredExecutableCodeAndFloatLiterals(): void
@@ -69,6 +68,6 @@ final class ExpressionTest extends TestCase
         ]);
 
         $this->expectException(InvalidBusinessDefinition::class);
-        $expression->evaluate([]);
+        ExpressionEvaluator::evaluate($expression, []);
     }
 }

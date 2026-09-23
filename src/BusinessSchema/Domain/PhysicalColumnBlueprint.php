@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\BusinessSchema\Domain;
 
-use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\BusinessDefinition\Domain\CanonicalDefinitionJson;
 
 /**
  * Canonical description of one column of a physical table, restricted to the portable Doctrine subset.
@@ -83,7 +83,7 @@ final readonly class PhysicalColumnBlueprint
      *          and scale, a length or fixed option is malformed or sits on a type that carries no length, an
      *          autoincrement column is nullable or not an integer, the comment is not a string of at most 255
      *          bytes, or the default does not match the column's exact type.
-     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the options hold a value
+     * @throws  \Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition  When the options hold a value
      *          canonical JSON cannot reproduce, such as a float or an object.
      *
      * @since   2.0.0
@@ -170,7 +170,7 @@ final readonly class PhysicalColumnBlueprint
      *
      * @throws  InvalidBusinessSchema  When the document carries an unknown property, a field is missing or
      *          misshapen, or any column rule fails.
-     * @throws  \Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition  When the stored options hold a
+     * @throws  \Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition  When the stored options hold a
      *          value canonical JSON cannot reproduce.
      *
      * @since   2.0.0

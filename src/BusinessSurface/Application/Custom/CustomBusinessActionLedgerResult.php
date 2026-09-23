@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessSurface\Application\Custom;
 
 use InvalidArgumentException;
-use Kumwe\App\BusinessDefinition\Domain\ActionDefinition;
-use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\BusinessDefinition\Domain\ActionDefinition;
+use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\App\BusinessRecord\Application\RecordRequestGuard;
 use Kumwe\Extension\Spi\Application\Automation\IdempotencyKey;
 use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionResult;

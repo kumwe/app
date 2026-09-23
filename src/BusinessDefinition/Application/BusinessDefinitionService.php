@@ -13,17 +13,22 @@ use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\Audit\Application\AuditRecorder;
 use Kumwe\Audit\Domain\AuditEvent;
-use Kumwe\App\BusinessDefinition\Domain\CompatibilityPlan;
-use Kumwe\App\BusinessDefinition\Domain\DefinitionOwnerType;
-use Kumwe\App\BusinessDefinition\Domain\DefinitionStatus;
-use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition;
+use Kumwe\BusinessDefinition\Domain\CompatibilityPlan;
+use Kumwe\BusinessDefinition\Domain\DefinitionOwnerType;
+use Kumwe\BusinessDefinition\Domain\DefinitionStatus;
+use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition;
 use Kumwe\App\BusinessSchema\Application\PublishedDefinitionSchemaObserver;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Access\Capability;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use Throwable;
+use Kumwe\BusinessDefinition\Application\BusinessDefinitionCompatibilityAnalyzer;
+use Kumwe\BusinessDefinition\Application\BusinessDefinitionValidator;
+use Kumwe\BusinessDefinition\Application\DefinitionCatalogEntry;
+use Kumwe\BusinessDefinition\Application\DefinitionDraft;
+use Kumwe\BusinessDefinition\Application\DefinitionVersionRecord;
 
 /**
  * The single path by which a business definition is drafted, validated, priced, published and retired.
