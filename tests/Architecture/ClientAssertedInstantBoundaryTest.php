@@ -5,25 +5,23 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Architecture;
 
 use DateTimeImmutable;
-use DateTimeZone;
-use InvalidArgumentException;
 use Kumwe\App\BusinessRecord\Domain\BusinessRecordReplayWindow;
-use Kumwe\App\BusinessRecord\Domain\ClientAssertedInstant;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use SplFileInfo;
 
-#[CoversClass(ClientAssertedInstant::class)]
 #[CoversClass(BusinessRecordReplayWindow::class)]
 /**
  * Holds the boundary decision D14 draws around a client's clock: it may be recorded, and it decides nothing.
  *
  * A terminal that captures work while disconnected has to be able to say when the work happened, and the
- * platform has to be able to record that without ever believing it. The two halves are tested here
- * together because either one alone is worthless: a claim nobody records cannot be reconciled, and a
- * claim something orders by is a clock an untrusted client controls.
+ * platform has to be able to record that without ever believing it. The claim itself is
+ * `Kumwe\Record\Value\ClientAssertedInstant`, whose grammar, UTC normalisation and range refusals
+ * kumwe/record-values proves; what App owns, and what is pinned here, is the boundary around it: which paths
+ * may carry the claim, that no path deciding ordering, expiry, period assignment or numbering can read it,
+ * and that the replay horizon runs from the server's own instant.
  *
  * @since  2.0.0
  */
@@ -51,7 +49,7 @@ final class ClientAssertedInstantBoundaryTest extends TestCase
     ];
 
     /**
-     * Files that may name the type at all: the value, the command that carries it, and the trail.
+     * Files that may name the type at all: the command that carries it and the trail that records it.
      *
      * @var    list<string>
      * @since  2.0.0
@@ -59,7 +57,6 @@ final class ClientAssertedInstantBoundaryTest extends TestCase
     private const CARRIERS = [
         'src/BusinessRecord/Application/BusinessRecordMutationPublication.php',
         'src/BusinessRecord/Application/Command/WriteDocumentCommand.php',
-        'src/BusinessRecord/Domain/ClientAssertedInstant.php',
     ];
 
     /**
@@ -85,7 +82,7 @@ final class ClientAssertedInstantBoundaryTest extends TestCase
     }
 
     /**
-     * Only the value, the aggregate command and the trail may name the type anywhere under `src/`.
+     * Only the aggregate command and the trail may name the type anywhere under `src/`.
      *
      * @return  void
      *
@@ -118,54 +115,6 @@ final class ClientAssertedInstantBoundaryTest extends TestCase
             $naming,
             'A client-asserted instant reached code that is not declared as one of its carriers.',
         );
-    }
-
-    /**
-     * The claim says whose clock it came from, and cannot be mistaken for the server's own instant.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    public function testTheClaimIsMarkedAsTheClientsAndNormalizesToUtc(): void
-    {
-        $asserted = new ClientAssertedInstant(
-            new DateTimeImmutable('2026-08-14T11:30:00.000000', new DateTimeZone('+02:00')),
-        );
-
-        self::assertSame(
-            ['asserted_by_client' => true, 'captured_at' => '2026-08-14T09:30:00.000000+00:00'],
-            $asserted->toArray(),
-        );
-        self::assertSame(
-            $asserted->toArray(),
-            ClientAssertedInstant::fromPortableString($asserted->toPortableString())->toArray(),
-        );
-        self::assertArrayNotHasKey(
-            'amount',
-            $asserted->toArray(),
-            'The export must stay a claim about a clock rather than acquire business meaning.',
-        );
-    }
-
-    /**
-     * A clock reading that cannot be a clock reading is refused rather than recorded.
-     *
-     * A terminal a week fast is exactly what this type exists to record, so the bound is on what can be a
-     * clock at all and is never measured against the server's own instant.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    public function testACorruptClockReadingIsRefused(): void
-    {
-        $tolerated = new ClientAssertedInstant(new DateTimeImmutable('2099-12-31T23:59:59+00:00'));
-        self::assertStringStartsWith('2099-12-31', $tolerated->toPortableString());
-
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('outside the recordable range');
-        new ClientAssertedInstant(new DateTimeImmutable('1999-12-31T23:59:59+00:00'));
     }
 
     /**

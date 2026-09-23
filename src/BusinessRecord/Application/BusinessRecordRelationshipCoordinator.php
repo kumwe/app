@@ -23,11 +23,12 @@ use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordValidationFaile
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRelationshipRejected;
 use Kumwe\App\BusinessRecord\Domain\BusinessRecord;
 use Kumwe\App\BusinessRecord\Domain\RecordScope;
-use Kumwe\App\BusinessRecord\Domain\RecordValueGuard;
+use Kumwe\App\BusinessRecord\Domain\RecordValueProtection;
 use Kumwe\BusinessPolicy\Application\BusinessRecordAccessPlan;
 use Kumwe\Context\Value\AuthenticatedSurface;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\BusinessPolicy\Application\FieldAccessUsage;
+use Kumwe\Record\Value\RecordValueGuard;
 use Ramsey\Uuid\Uuid;
 use Throwable;
 
@@ -1425,8 +1426,8 @@ final readonly class BusinessRecordRelationshipCoordinator
         $handles = array_unique([...array_keys($before), ...array_keys($after)]);
         foreach ($handles as $handle) {
             if (
-                RecordValueGuard::canonical($before[$handle] ?? null)
-                !== RecordValueGuard::canonical($after[$handle] ?? null)
+                RecordValueGuard::canonical(RecordValueProtection::protect($before[$handle] ?? null))
+                !== RecordValueGuard::canonical(RecordValueProtection::protect($after[$handle] ?? null))
             ) {
                 return true;
             }

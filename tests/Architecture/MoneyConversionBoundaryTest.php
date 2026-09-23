@@ -16,7 +16,7 @@ use Kumwe\Conversion\Contract\MoneyConverter;
 use Kumwe\Conversion\Value\MoneyExchangeRate;
 use Kumwe\Conversion\Value\MoneyRoundingMode;
 use Kumwe\Conversion\Value\MoneyValue;
-use Kumwe\App\BusinessRecord\Domain\RecordValueGuard;
+use Kumwe\Record\Value\RecordValueGuard;
 use Kumwe\Secret\Cipher\SodiumEnvelopeCipher;
 use Kumwe\Secret\Value\KeyMaterial;
 use Kumwe\App\Tests\Support\NeutralBusinessFixture;

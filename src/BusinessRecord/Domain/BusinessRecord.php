@@ -6,6 +6,7 @@ namespace Kumwe\App\BusinessRecord\Domain;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
+use Kumwe\Record\Value\RecordValueGuard;
 use Ramsey\Uuid\Uuid;
 
 /**
@@ -126,7 +127,7 @@ final readonly class BusinessRecord
             if (!is_string($handle) || preg_match('/^[a-z][a-z0-9_]{0,62}$/D', $handle) !== 1) {
                 throw new InvalidArgumentException('A business record contains an invalid field handle.');
             }
-            RecordValueGuard::assertValue($value);
+            RecordValueGuard::assertValue(RecordValueProtection::protect($value));
         }
         ksort($values, SORT_STRING);
         $this->values = $values;

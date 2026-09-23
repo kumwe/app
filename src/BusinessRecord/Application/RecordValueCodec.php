@@ -13,13 +13,14 @@ use Kumwe\BusinessDefinition\Domain\ComputationMode;
 use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\BusinessDefinition\Domain\FieldDefinition;
 use Kumwe\BusinessDefinition\Domain\IdentityStrategy;
-use Kumwe\App\BusinessRecord\Domain\RecordValueGuard;
+use Kumwe\App\BusinessRecord\Domain\RecordValueProtection;
 use Kumwe\App\BusinessSchema\Domain\PhysicalColumnBlueprint;
 use Kumwe\App\BusinessSchema\Domain\PhysicalTableBlueprint;
 use Kumwe\Conversion\Decimal\ExactDecimal;
 use Kumwe\Conversion\Value\MoneyValue;
 use Kumwe\Conversion\Value\QuantityValue;
-use Kumwe\Extension\Spi\BusinessRecord\Value\ZonedDateTimeValue;
+use Kumwe\Record\Value\RecordValueGuard;
+use Kumwe\Record\Value\ZonedDateTimeValue;
 use Kumwe\Secret\Contract\EnvelopeCipher;
 use Kumwe\Secret\Value\EncryptedEnvelope;
 use Kumwe\Sequence\Value\NumberSequenceFormat;
@@ -1099,8 +1100,9 @@ final readonly class RecordValueCodec
      */
     private function boundedJson(mixed $value, FieldDefinition $field): mixed
     {
-        RecordValueGuard::assertValue($value);
-        $canonical = RecordValueGuard::canonical($value);
+        $protected = RecordValueProtection::protect($value);
+        RecordValueGuard::assertValue($protected);
+        $canonical = RecordValueGuard::canonical($protected);
         try {
             $json = json_encode($canonical, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
         } catch (JsonException $exception) {

@@ -17,9 +17,10 @@ use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailab
 use Kumwe\App\BusinessRecord\Application\ResolvedBusinessDefinition;
 use Kumwe\App\BusinessRecord\Domain\BusinessRecordRevision;
 use Kumwe\App\BusinessRecord\Domain\RecordScope;
-use Kumwe\App\BusinessRecord\Domain\RecordValueGuard;
+use Kumwe\App\BusinessRecord\Domain\RecordValueProtection;
 use Kumwe\BusinessPolicy\Application\BusinessRecordAccessPlan;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\Record\Value\RecordValueGuard;
 use LogicException;
 
 /**
@@ -92,7 +93,7 @@ final readonly class DoctrineBusinessRecordRevisionRepository implements Busines
             'revision_number' => $revision->revisionNumber,
             'action' => $revision->operation,
             'actor_id' => $revision->actorId,
-            'snapshot' => RecordValueGuard::canonical($revision->snapshot()),
+            'snapshot' => RecordValueGuard::canonical(RecordValueProtection::protect($revision->snapshot())),
             'checksum' => $revision->checksum(),
             'changed_fields' => $revision->changedFields(),
             'created_at' => $revision->occurredAt,

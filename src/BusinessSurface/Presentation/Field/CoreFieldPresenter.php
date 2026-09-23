@@ -15,7 +15,7 @@ use Kumwe\Conversion\Value\ConvertedMoneyValue;
 use Kumwe\Conversion\Decimal\ExactDecimal;
 use Kumwe\Conversion\Value\MoneyValue;
 use Kumwe\Conversion\Value\QuantityValue;
-use Kumwe\Extension\Spi\BusinessRecord\Value\ZonedDateTimeValue;
+use Kumwe\Record\Value\ZonedDateTimeValue;
 
 /**
  * Semantic presenter for the complete core business field-type catalogue.

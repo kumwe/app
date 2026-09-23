@@ -28,7 +28,7 @@ use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\Conversion\Decimal\ExactDecimal;
 use Kumwe\Conversion\Value\MoneyValue;
 use Kumwe\Conversion\Value\QuantityValue;
-use Kumwe\Extension\Spi\BusinessRecord\Value\ZonedDateTimeValue;
+use Kumwe\Record\Value\ZonedDateTimeValue;
 use Kumwe\Secret\Contract\EnvelopeCipher;
 use Kumwe\Secret\Value\EncryptedEnvelope;
 use Ramsey\Uuid\Uuid;

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "c03e35dce070697cbed7a3c65391d104",
+    "content-hash": "204e8de9b2a91543c1168fd90e2372d8",
     "packages": [
         {
             "name": "brick/math",
@@ -894,6 +894,51 @@
                 "source": "https://github.com/kumwe/producer"
             },
             "time": "2026-09-09T13:50:26+00:00"
+        },
+        {
+            "name": "kumwe/record-values",
+            "version": "v0.1.4",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/kumwe/record-values.git",
+                "reference": "04a3f5f8094861771682b3ba83536ec8828dc704"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/kumwe/record-values/zipball/04a3f5f8094861771682b3ba83536ec8828dc704",
+                "reference": "04a3f5f8094861771682b3ba83536ec8828dc704",
+                "shasum": ""
+            },
+            "require": {
+                "ext-json": "*",
+                "ext-mbstring": "*",
+                "kumwe/conversion": "0.1.5",
+                "php": "^8.5",
+                "php-64bit": "*"
+            },
+            "require-dev": {
+                "ext-zip": "*",
+                "phpstan/phpstan": "^2.1",
+                "phpunit/phpunit": "^12.0 || ^13.0",
+                "squizlabs/php_codesniffer": "^4.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Kumwe\\Record\\Value\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "Apache-2.0"
+            ],
+            "description": "Portable bounded record values, exact numeric normalization and temporal semantics.",
+            "homepage": "https://github.com/kumwe/record-values",
+            "support": {
+                "issues": "https://github.com/kumwe/record-values/issues",
+                "source": "https://github.com/kumwe/record-values/tree/v0.1.4"
+            },
+            "time": "2026-09-08T16:48:40+00:00"
         },
         {
             "name": "kumwe/secret-envelope",

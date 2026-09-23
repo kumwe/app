@@ -19,7 +19,7 @@ use Kumwe\App\Tests\Support\NeutralBusinessFixture;
 use Kumwe\Conversion\Decimal\ExactDecimal;
 use Kumwe\Conversion\Value\MoneyValue;
 use Kumwe\Conversion\Value\QuantityValue;
-use Kumwe\Extension\Spi\BusinessRecord\Value\ZonedDateTimeValue;
+use Kumwe\Record\Value\ZonedDateTimeValue;
 use Kumwe\Secret\Cipher\SodiumEnvelopeCipher;
 use Kumwe\Secret\Value\EncryptedEnvelope;
 use Kumwe\Secret\Value\KeyMaterial;

@@ -1,0 +1,112 @@
+schema: kumwe-release-attestation/v2
+artifact_kind: framework_php
+migration_id: KUMWE-MIG-2026-029
+change_set: KUMWE-CS-2026-029
+repository: "https://github.com/kumwe/record-values"
+merge_commit: "04a3f5f8094861771682b3ba83536ec8828dc704"
+version: "0.1.4"
+tag: v0.1.4
+source_archive:
+  url: "https://github.com/kumwe/record-values/archive/refs/tags/v0.1.4.tar.gz"
+  sha256: "337253ed85d5e2d20d823637ec9c46989a1fbccf22fed012e1f113ec6318f122"
+artifacts:
+  - identity: "kumwe/record-values:0.1.4"
+    url: "https://github.com/kumwe/record-values/archive/refs/tags/v0.1.4.tar.gz"
+    sha256: "337253ed85d5e2d20d823637ec9c46989a1fbccf22fed012e1f113ec6318f122"
+manifests_and_corpora:
+  - path: resources/public-api/v1.json
+    sha256: "ca6e82ea1697041424ce2644b5fa0566c805d60da2f8d36ada2c19b16756b8b3"
+  - path: resources/capabilities/v1.json
+    sha256: "fa79ef590b02bae4f958bbbd8544e9a1f7a271cde45d2f2bac761e6a01b4308c"
+  - path: resources/service-map/v1.json
+    sha256: "b266081c33d866630f97b49b5e164eb090f0c54811a426031f9a4456f3fed111"
+  - path: resources/test-ownership/v1.json
+    sha256: "843a739040638f4bcc14cc7932826ac1b23aa8eb0ba503d3a441ec77e6031703"
+  - path: resources/release-dependencies/v1.json
+    sha256: "66b51f8846bca5563fa0cf7978e9d8d12cf7b0ce196918b000692d6f8b52f7d9"
+  - path: MIGRATION-HANDOFF.md
+    sha256: "90ad098f4f1c05d1d78f99d65fbef9c327abfb2260efe60d916dd6807bbc1160"
+abi_and_capabilities: null
+sbom:
+  url: null
+  sha256: null
+provenance: "Release on record run 34253329842 (push, attempt 1) published release 384907933 as github-actions[bot]"
+release_workflow: "https://github.com/kumwe/record-values/actions/runs/34253329842 success on the tag commit"
+registry_or_pie_verification:
+  - "git ls-remote https://github.com/kumwe/record-values refs/tags/v0.1.4 returned one line for refs/tags/v0.1.4"
+  - "Tag commit from git ls-remote: 04a3f5f8094861771682b3ba83536ec8828dc704; no peeled ^{} line (lightweight tag)"
+  - "git ls-remote --tags lists v0.1.0, v0.1.1, v0.1.2, v0.1.3 and v0.1.4; refs/heads/main is c897fd95345617b3e17e8f09fecd6c1dc692959d"
+  - "git clone --quiet --depth 1 --branch v0.1.4 of the repository: HEAD 04a3f5f8094861771682b3ba83536ec8828dc704"
+  - "In the clone git cat-file -t v0.1.4 is commit; GitHub git/ref/tags/v0.1.4 object type commit, same sha"
+  - "A full fetch of the repository shows the tag commit has one parent, 06589fb67f6e0233870793998ad621da02612b4c"
+  - "Tag commit subject: Bind final governed dependency handoff to its successor PR; committed 2026-09-08T16:48:40Z by eWɘyn"
+  - "Packagist p2 observed 2026-09-23T16:25:03Z at https://repo.packagist.org/p2/kumwe/record-values.json (HTTP 200)"
+  - "Packagist lists v0.1.4 newest of v0.1.4, v0.1.3, v0.1.2, v0.1.1, v0.1.0; time 2026-09-08T16:48:40+00:00"
+  - "Packagist source: git https://github.com/kumwe/record-values.git at 04a3f5f8094861771682b3ba83536ec8828dc704"
+  - "Packagist dist: zip at reference 04a3f5f8094861771682b3ba83536ec8828dc704 (api.github.com zipball URL)"
+  - "Packagist source and dist references both equal the tag commit and the clone HEAD"
+  - "Packagist dist shasum is an empty string; license Apache-2.0; autoload psr-4 Kumwe\\Record\\Value\\ => src/"
+  - "Packagist require: php ^8.5, php-64bit *, ext-json *, ext-mbstring *, kumwe/conversion 0.1.5"
+  - "curl -sS -L of https://github.com/kumwe/record-values/archive/refs/tags/v0.1.4.tar.gz: HTTP 200, 29565 bytes"
+  - "The download resolved to codeload.github.com/kumwe/record-values/tar.gz/refs/tags/v0.1.4; file reports gzip data"
+  - "sha256 337253ed85d5e2d20d823637ec9c46989a1fbccf22fed012e1f113ec6318f122 covers the hosted tar.gz bytes"
+  - "The same URL was fetched twice in this verification and both downloads produced that digest"
+  - "git archive --format=tar --prefix=record-values-0.1.4/ v0.1.4 | sha256sum gave 86f1ac177dc1b8046488fed55933ec27"
+  - "Full local git archive digest: 86f1ac177dc1b8046488fed55933ec2715c2f2b3fc99a8b30fced4629f9bc6a0"
+  - "Extracted record-values-0.1.4/ holds 27 files, byte-identical (diff -r) to the clone's tracked files minus export-ignore"
+  - "diff -r --exclude=.git differs only by .github, composer.lock, phpcs.xml, phpstan.neon, phpunit.xml, tests and tools"
+  - "Every path diff -r reports is export-ignore in .gitattributes; .gitattributes and .gitignore themselves ship in the archive"
+  - "The clone tracks 67 files; the archive omits the 40 export-ignore files and nothing else"
+  - "Archive top level: .gitattributes, .gitignore, CHANGELOG.md, CHARTER.md, LICENSE, MIGRATION-HANDOFF.md, README.md, composer.json"
+  - "Archive top-level directories: docs, examples, resources, src; LICENSE is Apache License Version 2.0"
+  - "CHARTER.md, README.md, docs/, resources/ and src/ are all present in the archive"
+  - "GitHub release v0.1.4 id 384907933: author github-actions[bot], created_at 2026-09-08T16:48:40Z, published_at 2026-09-08T16:50:01Z"
+  - "GitHub release v0.1.4: draft false, prerelease false, immutable false, target_commitish main, no assets"
+  - "GitHub release v0.1.4 body: See CHANGELOG.md section 0.1.4 for this package release."
+  - "Release on record run 34253329842: push, attempt 1, head_sha 04a3f5f8094861771682b3ba83536ec8828dc704"
+  - "Release on record run 34253329842: status completed, conclusion success, created 2026-09-08T16:48:44Z"
+  - "Run 34253329842 jobs: check / Release automation tests, check / PHP 8.5 source and archive, check / Package gate all success"
+  - "Run 34253329842 job Release the recorded version: success, completed 2026-09-08T16:50:04Z"
+  - "Package CI run 34253329608: completed, success, on the same commit, created 2026-09-08T16:48:43Z"
+  - "PR https://github.com/kumwe/record-values/pull/7 merged 2026-09-08T16:48:41Z by Llewellynvdm into main"
+  - "PR 7 head was dab3531ce6128eef074ffad41fa59f054732fe45 on fix/final-governed-dependencies over base 8f472c9cafe003748fdc3203a261d48fe5dac111 (the v0.1.3 tag commit)"
+  - "PR 7 carried two commits; the tag commit is the main commit that merge produced, and the release run started three seconds after it"
+  - "GitHub MCP tools answered every query; no access-denied response was observed"
+clean_consumer_or_build_verification:
+  - "Inspection and the App lock install only: no package script, test or example was executed"
+  - "resources/public-api/v1.json: valid against package-public-api.v1.schema.json (App SchemaValidator)"
+  - "resources/capabilities/v1.json: valid against package-capabilities.v1.schema.json (App SchemaValidator)"
+  - "resources/service-map/v1.json: valid against package-service-map.v1.schema.json (App SchemaValidator)"
+  - "All three manifests carry package kumwe/record-values and release 0.1.4; capabilities native_requirements is null"
+  - "docs/release-record.md does not exist at v0.1.4; the shipped record is MIGRATION-HANDOFF.md with YAML front matter"
+  - "MIGRATION-HANDOFF.md front matter parsed by StrictYaml::parseFrontMatter"
+  - "MIGRATION-HANDOFF.md front matter: valid against migration-handoff.v2.schema.json (App SchemaValidator)"
+  - "Record front matter: kumwe-migration-handoff/v2, KUMWE-MIG-2026-029, KUMWE-CS-2026-029, framework_php"
+  - "Record state draft_pr_open; target https://github.com/kumwe/record-values, pull request 7, artifact_identity kumwe/record-values"
+  - "Record canonical namespace Kumwe\\Record\\Value\\; composer_package kumwe/record-values; dependency_injection mode direct, provider null"
+  - "Record ownership.public_manifests digests equal the four locally computed digests: public API, capabilities, service map, test ownership"
+  - "Record next_task.consumer_repository is https://github.com/kumwe/app; files_to_remove names the two App classes and the SDK ZonedDateTimeValue"
+  - "Record next_task.tests_to_remove names only the extension-sdk ZonedDateTimeValueTest at baseline e8ec23f155c5836c6bd083f154a8efb6e50aec66"
+  - "Record body headings: the eight standard handoff headings, then Maintenance review 2026-09-07, Dependency readiness update — 0.1.2 and Conversion dependency handoff — 0.1.3"
+  - "PackageManifests::read of the installed package: manifest_status v2-manifested, four public symbols from resources/public-api/v1.json"
+  - "resources/release-dependencies/v1.json: kumwe/conversion 0.1.5 with independently_verified false and attestation null, by package design"
+  - "CHANGELOG.md newest release heading is ## 0.1.4, undated, above ## 0.1.3; no Unreleased section"
+  - "Package composer.json require: php ^8.5, php-64bit *, ext-json *, ext-mbstring *, kumwe/conversion 0.1.5"
+  - "App composer.lock after composer require kumwe/record-values:0.1.4: 1 install, 0 updates, 0 removals"
+  - "App composer.lock: kumwe/conversion v0.1.5 at b291f3a31314644fd88150dc9a9e911fe0617fe7 (exact), the release the package requires"
+  - "App composer install from that lock succeeded; diff -r of vendor/kumwe/record-values against the clone reports only the export-ignored paths"
+  - "src/ of the tag holds ClientAssertedInstant.php, ProtectedRecordValue.php, RecordValueGuard.php and ZonedDateTimeValue.php, the four exported symbols"
+  - "Validator: tools/Governance bootstrap, SchemaValidator and StrictYaml loaded by a scratch script on PHP 8.4.19"
+verified_at: "2026-09-23T16:25:03Z"
+verified_by: "Independent release verification agent (fresh depth-1 checkout of the tag at Phase 2 start, no Phase 1 context)"
+status: verified
+known_gaps:
+  - "GitHub release v0.1.4 reports immutable false; tag protection and rulesets were not queried"
+  - "No clean consumer install, smoke test or example run was performed beyond the App lock install; no package script or test was executed"
+  - "The Packagist dist zipball was not downloaded; Packagist publishes an empty dist shasum for it"
+  - "The attested archive is the GitHub tag tar.gz, whose bytes differ from the Packagist zipball of the same commit"
+  - "The verification was performed by the Phase 2 preparer from a fresh checkout of the tag before any App record was written, not by a separate isolated verification run (D-GOV-11)"
+  - "CHANGELOG.md's 0.1.4 heading carries no date; the release-on-record workflow reads the first versioned heading"
+  - "resources/release-dependencies/v1.json marks kumwe/conversion 0.1.5 independently_verified false with a null attestation, by package design; the App's KUMWE-MIG-2026-031 attestation covers that release"
+  - "No SBOM and no release assets exist for v0.1.4; abi_and_capabilities does not apply to a framework_php artifact"
+  - "The schema checks used the App's fixed JSON Schema 2020-12 subset validator, not a full implementation"

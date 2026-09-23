@@ -511,7 +511,7 @@ PHP);
 namespace Kumwe\App\Demo\Domain;
 
 use Kumwe\Extension\Spi\BusinessRecord\Query\RecordQuerySpecification;
-use Kumwe\Extension\Spi\BusinessRecord\Value\ZonedDateTimeValue;
+use Kumwe\Record\Value\ZonedDateTimeValue;
 
 final class Probe
 {

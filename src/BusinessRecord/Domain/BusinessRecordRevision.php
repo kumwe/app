@@ -7,6 +7,7 @@ namespace Kumwe\App\BusinessRecord\Domain;
 use DateTimeImmutable;
 use InvalidArgumentException;
 use JsonException;
+use Kumwe\Record\Value\RecordValueGuard;
 use Ramsey\Uuid\Uuid;
 
 /**
@@ -117,7 +118,7 @@ final readonly class BusinessRecordRevision
             if (!is_string($handle) || preg_match('/^[a-z][a-z0-9_]{0,62}$/D', $handle) !== 1) {
                 throw new InvalidArgumentException('A business-record revision contains an invalid field handle.');
             }
-            RecordValueGuard::assertValue($value);
+            RecordValueGuard::assertValue(RecordValueProtection::protect($value));
         }
         foreach ($changedFields as $handle) {
             if (preg_match('/^[a-z][a-z0-9_]{0,62}$/D', $handle) !== 1) {
@@ -175,7 +176,7 @@ final readonly class BusinessRecordRevision
     {
         try {
             $json = json_encode(
-                RecordValueGuard::canonical([
+                RecordValueGuard::canonical(RecordValueProtection::protect([
                     'revision_id' => $this->revisionId,
                     'definition_id' => $this->definitionId,
                     'definition_version' => $this->definitionVersion,
@@ -190,7 +191,7 @@ final readonly class BusinessRecordRevision
                     'changed_fields' => $this->changedFields,
                     'actor_id' => $this->actorId,
                     'occurred_at' => $this->occurredAt->format('Y-m-d\TH:i:s.uP'),
-                ]),
+                ])),
                 JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR,
             );
         } catch (JsonException $exception) {

@@ -125,7 +125,7 @@ enum ConvertedMoneySurface: string
             ],
             self::Event => [
                 'src/BusinessRecord/Application/RecordValueCodec.php',
-                'src/BusinessRecord/Domain/RecordValueGuard.php',
+                'vendor/kumwe/record-values/src/RecordValueGuard.php',
             ],
         };
     }

@@ -21,7 +21,6 @@ use Kumwe\Conversion\Contract\MoneyConverter;
 use Kumwe\Conversion\Value\MoneyExchangeRate;
 use Kumwe\Conversion\Value\MoneyRoundingMode;
 use Kumwe\Conversion\Value\MoneyValue;
-use Kumwe\App\BusinessRecord\Domain\RecordValueGuard;
 use Kumwe\App\BusinessReporting\Application\ReportCsvEncoder;
 use Kumwe\App\BusinessReporting\Application\ReportExecutionResult;
 use Kumwe\Extension\Spi\BusinessReporting\Domain\ReportValueType;
@@ -36,6 +35,7 @@ use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationMode
 use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresenter;
 use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationRegistry;
 use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldWidget;
+use Kumwe\Record\Value\RecordValueGuard;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;

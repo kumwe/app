@@ -1,0 +1,32 @@
+schema: kumwe-non-roadmap-record/v1
+id: NRM-2026-042
+nrm_ref: NRM-2026-042
+roadmap_impact: None
+rationale: "Adopt verified kumwe/record-values 0.1.4, the owner of the portable bounded record values: the record-value guard, the client-asserted capture instant, the zoned date-time value and the opaque protected storage a host supplies for a sealed secret."
+repositories:
+  - kumwe/app
+  - kumwe/record-values
+behavior_before: "App declared the record-value guard and the client-asserted instant itself, admitted Kumwe\\Secret\\Value\\EncryptedEnvelope directly in the guard, and typed its zoned date-times from the Kumwe\\Extension\\Spi\\BusinessRecord\\Value copy kumwe/extension-sdk 0.2.4 ships."
+behavior_after: "The three types come from kumwe/record-values 0.1.4 together with ProtectedRecordValue; App keeps the value codec, column encoding, secret sealing, key custody and rotation, the request guard, fingerprints, revisions, persistence and delivery, and its RecordValueProtection adapter substitutes the opaque protected storage for every sealed envelope before the package guard sees it, so every stored checksum, fingerprint and revision byte is unchanged."
+public_api_impact: "None for callers: the guard, the client-asserted instant and the zoned date-time keep their names and public members under the package namespace. The guard refuses a raw EncryptedEnvelope, which App wraps, applies its depth and node budget to the whole tree canonical() reduces, and the client-asserted instant narrows its offset grammar to -14:00..+14:00, refuses calendar coercion and holds capturedAt in UTC; no HTTP or OpenAPI surface reads that instant."
+dependency_impact: "Adds kumwe/record-values 0.1.4 exactly; it requires kumwe/conversion 0.1.5 exactly, already locked, with ext-json and ext-mbstring, and no other lock entry changes. kumwe/extension-sdk 0.2.4 stays locked with its ZonedDateTimeValue copy unreferenced by App until the 0.3.2 train removes it."
+compatibility: "Drop-in for stored data: the protected storage canonicalises as the same four envelope strings in the same order the App checksummed before, and the value codec and column encoding are unchanged."
+data_migration: None
+security_impact: "No authority change; sealing, decryption, associated data, key custody and rotation stay in App, the package performs no cryptography and never sees a connection or a request, and the client-asserted instant still reaches no ordering, expiry, period or numbering path."
+performance:
+  claim: None
+  evidence: []
+operations_deployment: "None; no configuration, provider or schema change."
+recovery_rollback: "Revert the adoption pull request and restore the two removed classes and the two moved unit tests; no persisted data changes."
+artifacts_evidence:
+  - docs/architecture/migrations/KUMWE-MIG-2026-029.yaml
+  - docs/architecture/migrations/change-sets/KUMWE-CS-2026-029.yaml
+  - docs/architecture/migrations/trains/KUMWE-TRAIN-2026-029.yaml
+  - docs/architecture/migrations/evidence/KUMWE-MIG-2026-029/RELEASE-ATTESTATION.yaml
+  - docs/architecture/core-growth/KUMWE-CGR-2026-009.md
+  - docs/architecture/capability-index.md
+known_gaps:
+  - "kumwe/extension-sdk 0.3.2 (KUMWE-MIG-2026-033) removes the Kumwe\\Extension\\Spi\\BusinessRecord\\Value\\ZonedDateTimeValue copy this adoption stops referencing and follows as a separate adoption; until then the SDK QueryValue admits only its own copy, which App never hands it."
+  - "kumwe/record-query 0.1.4, kumwe/record-model 0.1.4 and kumwe/business-surface-contract 0.1.4 pin this release exactly and follow as separate adoptions."
+owner: "eWɘyn"
+status: in-progress

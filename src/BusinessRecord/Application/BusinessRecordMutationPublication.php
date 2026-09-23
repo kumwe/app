@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessRecord\Application;
 
 use DateTimeImmutable;
+use Kumwe\App\BusinessRecord\Domain\RecordValueProtection;
 use Kumwe\Audit\Application\AuditRecorder;
 use Kumwe\Audit\Domain\AuditEvent;
 use Kumwe\BusinessDefinition\Domain\ComputationMode;
@@ -15,9 +16,9 @@ use Kumwe\App\BusinessIntegration\Application\BusinessRecordMutationEventPublish
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable;
 use Kumwe\App\BusinessRecord\Domain\BusinessRecord;
 use Kumwe\App\BusinessRecord\Domain\BusinessRecordRevision;
-use Kumwe\App\BusinessRecord\Domain\ClientAssertedInstant;
-use Kumwe\App\BusinessRecord\Domain\RecordValueGuard;
 use Kumwe\Context\Value\ExecutionContext;
+use Kumwe\Record\Value\ClientAssertedInstant;
+use Kumwe\Record\Value\RecordValueGuard;
 use Ramsey\Uuid\Uuid;
 
 /**
@@ -94,7 +95,9 @@ final readonly class BusinessRecordMutationPublication
             if (array_key_exists('runtime_relation_evidence', $snapshot)) {
                 throw new BusinessRecordSchemaUnavailable('A definition collides with reserved revision evidence.');
             }
-            $snapshot['runtime_relation_evidence'] = RecordValueGuard::canonical($evidence);
+            $snapshot['runtime_relation_evidence'] = RecordValueGuard::canonical(
+                RecordValueProtection::protect($evidence),
+            );
         }
         if ($definition->revisionsEnabled) {
             $revisionStart = hrtime(true);
@@ -147,7 +150,7 @@ final readonly class BusinessRecordMutationPublication
                 'record_identity_digest' => $this->fingerprints->digest($record->recordId),
                 'organization_identifier' => $record->scope->organizationIdentifier,
                 'changed_fields' => $metadata,
-                'mutation_evidence' => RecordValueGuard::canonical($evidence),
+                'mutation_evidence' => RecordValueGuard::canonical(RecordValueProtection::protect($evidence)),
                 'client_captured_at' => $capturedAt?->toArray(),
             ],
         ));
@@ -186,7 +189,9 @@ final readonly class BusinessRecordMutationPublication
             if (!array_key_exists($field->handle, $record->values())) {
                 continue;
             }
-            $snapshot[$field->handle] = RecordValueGuard::canonical($record->values()[$field->handle]);
+            $snapshot[$field->handle] = RecordValueGuard::canonical(
+                RecordValueProtection::protect($record->values()[$field->handle]),
+            );
         }
 
         return $snapshot;
