@@ -6,7 +6,7 @@ namespace Kumwe\App\BusinessRecord\Application;
 
 use Kumwe\App\BusinessRecord\Domain\BusinessRecordRevision;
 use Kumwe\App\BusinessRecord\Domain\RecordScope;
-use Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessPlan;
+use Kumwe\BusinessPolicy\Application\BusinessRecordAccessPlan;
 
 /**
  * Port for the append-only log that keeps every past state of a business record.

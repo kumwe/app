@@ -8,7 +8,7 @@
   "recorded_from": [
     "https://github.com/kumwe/app/actions/runs/32251426675"
   ],
-  "entry_count": 3416,
+  "entry_count": 3399,
   "entries": [
     {
       "file": "tests/Architecture/BusinessDefinitionBoundaryTest.php",
@@ -21471,86 +21471,6 @@
       "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
     },
     {
-      "file": "tests/Unit/BusinessSecurity/Application/BusinessRecordAccessPlanTest.php",
-      "line": 24,
-      "member": "BusinessRecordAccessPlanTest",
-      "code": "MISSING_DOC",
-      "owner": "quality-engineering",
-      "finding": "V2-QA-010",
-      "expires": "2027-06-30",
-      "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-    },
-    {
-      "file": "tests/Unit/BusinessSecurity/Application/BusinessRecordAccessPlanTest.php",
-      "line": 54,
-      "member": "BusinessRecordAccessPlanTest::testDigestBindsDisclosureRelationAndAuthorizationFingerprint()",
-      "code": "MISSING_DOC",
-      "owner": "quality-engineering",
-      "finding": "V2-QA-010",
-      "expires": "2027-06-30",
-      "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-    },
-    {
-      "file": "tests/Unit/BusinessSecurity/Application/BusinessRecordAccessPlanTest.php",
-      "line": 171,
-      "member": "BusinessRecordAccessPlanTest::testDisclosureBoundSupportsEveryFieldAtEveryUsage()",
-      "code": "MISSING_DOC",
-      "owner": "quality-engineering",
-      "finding": "V2-QA-010",
-      "expires": "2027-06-30",
-      "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-    },
-    {
-      "file": "tests/Unit/BusinessSecurity/Application/BusinessRecordAccessPlanTest.php",
-      "line": 143,
-      "member": "BusinessRecordAccessPlanTest::testDurableDigestDefaultsToTheStrictDigest()",
-      "code": "MISSING_DOC",
-      "owner": "quality-engineering",
-      "finding": "V2-QA-010",
-      "expires": "2027-06-30",
-      "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-    },
-    {
-      "file": "tests/Unit/BusinessSecurity/Application/BusinessRecordAccessPlanTest.php",
-      "line": 157,
-      "member": "BusinessRecordAccessPlanTest::testDurableDigestRejectsAnInvalidAuthorizationFingerprint()",
-      "code": "MISSING_DOC",
-      "owner": "quality-engineering",
-      "finding": "V2-QA-010",
-      "expires": "2027-06-30",
-      "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-    },
-    {
-      "file": "tests/Unit/BusinessSecurity/Application/BusinessRecordAccessPlanTest.php",
-      "line": 83,
-      "member": "BusinessRecordAccessPlanTest::testDurableDigestSeparatesCredentialIdentityAndRecursesThroughRelatedPlans()",
-      "code": "MISSING_DOC",
-      "owner": "quality-engineering",
-      "finding": "V2-QA-010",
-      "expires": "2027-06-30",
-      "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-    },
-    {
-      "file": "tests/Unit/BusinessSecurity/Application/BusinessRecordAccessPlanTest.php",
-      "line": 26,
-      "member": "BusinessRecordAccessPlanTest::testEmptyFieldSetsStayEmptyAndNeverMeanAllFields()",
-      "code": "MISSING_DOC",
-      "owner": "quality-engineering",
-      "finding": "V2-QA-010",
-      "expires": "2027-06-30",
-      "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-    },
-    {
-      "file": "tests/Unit/BusinessSecurity/Application/BusinessRecordAccessPlanTest.php",
-      "line": 189,
-      "member": "BusinessRecordAccessPlanTest::testRelatedPlanBoundMatchesTheMaximumDefinitionTargetCount()",
-      "code": "MISSING_DOC",
-      "owner": "quality-engineering",
-      "finding": "V2-QA-010",
-      "expires": "2027-06-30",
-      "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-    },
-    {
       "file": "tests/Unit/BusinessSecurity/Application/BusinessSecurityAdministrationServiceTest.php",
       "line": 44,
       "member": "BusinessSecurityAdministrationServiceTest",
@@ -21964,96 +21884,6 @@
       "file": "tests/Unit/BusinessSecurity/Infrastructure/Persistence/DoctrineStepUpProofConsumerTest.php",
       "line": 28,
       "member": "DoctrineStepUpProofConsumerTest::SUBJECT",
-      "code": "MISSING_DOC",
-      "owner": "quality-engineering",
-      "finding": "V2-QA-010",
-      "expires": "2027-06-30",
-      "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-    },
-    {
-      "file": "tests/Unit/BusinessSecurity/Policy/RecordPolicyTest.php",
-      "line": 30,
-      "member": "RecordPolicyTest",
-      "code": "MISSING_DOC",
-      "owner": "quality-engineering",
-      "finding": "V2-QA-010",
-      "expires": "2027-06-30",
-      "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-    },
-    {
-      "file": "tests/Unit/BusinessSecurity/Policy/RecordPolicyTest.php",
-      "line": 94,
-      "member": "RecordPolicyTest::testCanonicalOrderDoesNotChangePolicyDocument()",
-      "code": "MISSING_DOC",
-      "owner": "quality-engineering",
-      "finding": "V2-QA-010",
-      "expires": "2027-06-30",
-      "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-    },
-    {
-      "file": "tests/Unit/BusinessSecurity/Policy/RecordPolicyTest.php",
-      "line": 166,
-      "member": "RecordPolicyTest::testDepthBoundRejectsNineLevelTree()",
-      "code": "MISSING_DOC",
-      "owner": "quality-engineering",
-      "finding": "V2-QA-010",
-      "expires": "2027-06-30",
-      "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-    },
-    {
-      "file": "tests/Unit/BusinessSecurity/Policy/RecordPolicyTest.php",
-      "line": 63,
-      "member": "RecordPolicyTest::testEvaluatorUsesDefiniteNullAndExactDecimalSemantics()",
-      "code": "MISSING_DOC",
-      "owner": "quality-engineering",
-      "finding": "V2-QA-010",
-      "expires": "2027-06-30",
-      "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-    },
-    {
-      "file": "tests/Unit/BusinessSecurity/Policy/RecordPolicyTest.php",
-      "line": 32,
-      "member": "RecordPolicyTest::testNoAllowDeniesAndMatchingDenyOverridesAllow()",
-      "code": "MISSING_DOC",
-      "owner": "quality-engineering",
-      "finding": "V2-QA-010",
-      "expires": "2027-06-30",
-      "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-    },
-    {
-      "file": "tests/Unit/BusinessSecurity/Policy/RecordPolicyTest.php",
-      "line": 135,
-      "member": "RecordPolicyTest::testOperationBoundRejectsOversizedTrees()",
-      "code": "MISSING_DOC",
-      "owner": "quality-engineering",
-      "finding": "V2-QA-010",
-      "expires": "2027-06-30",
-      "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-    },
-    {
-      "file": "tests/Unit/BusinessSecurity/Policy/RecordPolicyTest.php",
-      "line": 153,
-      "member": "RecordPolicyTest::testSchemaBoundMatchesTheMaximumBusinessDefinitionFieldCount()",
-      "code": "MISSING_DOC",
-      "owner": "quality-engineering",
-      "finding": "V2-QA-010",
-      "expires": "2027-06-30",
-      "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-    },
-    {
-      "file": "tests/Unit/BusinessSecurity/Policy/RecordPolicyTest.php",
-      "line": 194,
-      "member": "RecordPolicyTest::testTemporalEvaluatorUsesTheSameDateTimeAndInstantDomainsAsPersistence()",
-      "code": "MISSING_DOC",
-      "owner": "quality-engineering",
-      "finding": "V2-QA-010",
-      "expires": "2027-06-30",
-      "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-    },
-    {
-      "file": "tests/Unit/BusinessSecurity/Policy/RecordPolicyTest.php",
-      "line": 123,
-      "member": "RecordPolicyTest::testTypeAndComplexityBoundsAreEnforcedBeforeEvaluation()",
       "code": "MISSING_DOC",
       "owner": "quality-engineering",
       "finding": "V2-QA-010",

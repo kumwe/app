@@ -10,8 +10,8 @@ use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\App\BusinessDefinition\Domain\Sensitivity;
 use Kumwe\App\BusinessRecord\Domain\BusinessRecord;
 use Kumwe\Extension\Spi\BusinessRecord\Application\BusinessRecordView as BusinessRecordViewContract;
-use Kumwe\Extension\Spi\BusinessSecurity\Application\FieldAccessUsage;
-use Kumwe\Extension\Spi\BusinessSecurity\Application\FieldDisclosurePlan;
+use Kumwe\BusinessPolicy\Application\FieldAccessUsage;
+use Kumwe\BusinessPolicy\Application\FieldDisclosurePlan;
 
 /**
  * Disclosure-safe projection of one stored business record, as the read side hands it to a caller.

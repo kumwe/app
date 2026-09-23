@@ -1,0 +1,77 @@
+schema: kumwe-migration-ledger/v1
+migration_id: KUMWE-MIG-2026-022
+change_set: KUMWE-CS-2026-022
+package: kumwe/business-policy
+version: 0.1.1
+artifact_digest: "43086e1460ede6e2a4459fc18371397d4967bbec932da0cc9227181ab1faa580"
+handoff_path: vendor/kumwe/business-policy/MIGRATION-HANDOFF.md
+handoff_sha256: "f6ad8ef8f2b54c4788939a6bdb4f29c9a7ee1b12df388a284f3d3542d5635df5"
+release_attestation: docs/architecture/migrations/evidence/KUMWE-MIG-2026-022/RELEASE-ATTESTATION.yaml
+old_namespace_roots:
+  - Kumwe\App\BusinessSecurity\Policy\
+  - Kumwe\Extension\Spi\BusinessSecurity\
+symbols:
+  - old_fqcn: Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessPlan
+    new_fqcn: Kumwe\BusinessPolicy\Application\BusinessRecordAccessPlan
+  - old_fqcn: Kumwe\Extension\Spi\BusinessSecurity\Application\FieldAccessUsage
+    new_fqcn: Kumwe\BusinessPolicy\Application\FieldAccessUsage
+  - old_fqcn: Kumwe\Extension\Spi\BusinessSecurity\Application\FieldDisclosurePlan
+    new_fqcn: Kumwe\BusinessPolicy\Application\FieldDisclosurePlan
+  - old_fqcn: Kumwe\App\BusinessSecurity\Policy\RecordPolicyBoolean
+    new_fqcn: Kumwe\BusinessPolicy\Policy\RecordPolicyBoolean
+  - old_fqcn: Kumwe\App\BusinessSecurity\Policy\RecordPolicyBooleanOperator
+    new_fqcn: Kumwe\BusinessPolicy\Policy\RecordPolicyBooleanOperator
+  - old_fqcn: Kumwe\Extension\Spi\BusinessSecurity\Policy\RecordPolicyComparison
+    new_fqcn: Kumwe\BusinessPolicy\Policy\RecordPolicyComparison
+  - old_fqcn: Kumwe\Extension\Spi\BusinessSecurity\Policy\RecordPolicyComparisonOperator
+    new_fqcn: Kumwe\BusinessPolicy\Policy\RecordPolicyComparisonOperator
+  - old_fqcn: Kumwe\App\BusinessSecurity\Policy\RecordPolicyConstant
+    new_fqcn: Kumwe\BusinessPolicy\Policy\RecordPolicyConstant
+  - old_fqcn: Kumwe\App\BusinessSecurity\Policy\RecordPolicyEvaluator
+    new_fqcn: Kumwe\BusinessPolicy\Policy\RecordPolicyEvaluator
+  - old_fqcn: Kumwe\App\BusinessSecurity\Policy\RecordPolicyNullCheck
+    new_fqcn: Kumwe\BusinessPolicy\Policy\RecordPolicyNullCheck
+  - old_fqcn: Kumwe\Extension\Spi\BusinessSecurity\Policy\RecordPolicyPredicate
+    new_fqcn: Kumwe\BusinessPolicy\Policy\RecordPolicyPredicate
+  - old_fqcn: Kumwe\App\BusinessSecurity\Policy\RecordPolicySchema
+    new_fqcn: Kumwe\BusinessPolicy\Policy\RecordPolicySchema
+  - old_fqcn: Kumwe\App\BusinessSecurity\Policy\RecordPolicySet
+    new_fqcn: Kumwe\BusinessPolicy\Policy\RecordPolicySet
+  - old_fqcn: Kumwe\Extension\Spi\BusinessSecurity\Policy\RecordPolicyValueType
+    new_fqcn: Kumwe\BusinessPolicy\Policy\RecordPolicyValueType
+removed_paths:
+  - src/BusinessSecurity/Application/BusinessRecordAccessPlan.php
+  - src/BusinessSecurity/Policy/RecordPolicyBoolean.php
+  - src/BusinessSecurity/Policy/RecordPolicyBooleanOperator.php
+  - src/BusinessSecurity/Policy/RecordPolicyConstant.php
+  - src/BusinessSecurity/Policy/RecordPolicyEvaluator.php
+  - src/BusinessSecurity/Policy/RecordPolicyNullCheck.php
+  - src/BusinessSecurity/Policy/RecordPolicySchema.php
+  - src/BusinessSecurity/Policy/RecordPolicySet.php
+removed_tests:
+  - tests/Unit/BusinessSecurity/Policy/RecordPolicyTest.php
+retained_tests:
+  - tests/Integration/BusinessRecord/BusinessRecordPolicyCompilerIntegrationTest.php
+  - tests/Integration/BusinessRecord/BusinessRecordPolicyEnforcementIntegrationTest.php
+  - tests/Integration/Extension/AssetInspectionCustomViewIntegrationTest.php
+  - tests/Support/NeutralBusinessFixture.php
+  - tests/Unit/BusinessRecord/Application/BusinessRecordRelationshipCoordinatorTest.php
+  - tests/Unit/BusinessSecurity/Application/BusinessRecordAccessPlanTest.php
+  - tests/Unit/BusinessSecurity/Application/BusinessSecurityAdministrationServiceTest.php
+  - tests/Unit/BusinessSecurity/Infrastructure/Persistence/DoctrineBusinessRecordAccessControllerTest.php
+  - tests/Unit/BusinessSurface/Application/BusinessMutationPlanServiceTest.php
+  - tests/Unit/BusinessSurface/Application/BusinessSurfaceCatalogTest.php
+  - tests/Unit/BusinessSurface/Application/Custom/CustomBusinessActionExecutorTest.php
+  - tests/Unit/Delivery/Http/Api/Business/BusinessOperationStatusApiHandlerTest.php
+  - tests/Unit/Governance/ComposerLockTest.php
+  - tests/Architecture/CapabilityIndexGateTest.php
+di_changes: []
+capability_index_entries:
+  - kumwe/business-policy
+release_evidence:
+  - docs/architecture/migrations/evidence/KUMWE-MIG-2026-022/RELEASE-ATTESTATION.yaml
+app_pull_request: "https://github.com/kumwe/app/pull/151"
+roadmap_refs: []
+non_roadmap_refs:
+  - NRM-2026-038
+conflicts: []

@@ -48,16 +48,16 @@ use Kumwe\App\BusinessSchema\Domain\PhysicalColumnBlueprint;
 use Kumwe\App\BusinessSchema\Domain\PhysicalTableBlueprint;
 use Kumwe\App\BusinessSchema\Domain\SchemaEvolutionHints;
 use Kumwe\App\BusinessSchema\Domain\SchemaInstallationStatus;
-use Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessPlan;
-use Kumwe\Extension\Spi\BusinessSecurity\Application\FieldAccessUsage;
-use Kumwe\App\BusinessSecurity\Policy\RecordPolicyBoolean;
-use Kumwe\App\BusinessSecurity\Policy\RecordPolicyBooleanOperator;
-use Kumwe\Extension\Spi\BusinessSecurity\Policy\RecordPolicyComparison;
-use Kumwe\Extension\Spi\BusinessSecurity\Policy\RecordPolicyComparisonOperator;
-use Kumwe\App\BusinessSecurity\Policy\RecordPolicyConstant;
-use Kumwe\App\BusinessSecurity\Policy\RecordPolicyNullCheck;
-use Kumwe\Extension\Spi\BusinessSecurity\Policy\RecordPolicyPredicate;
-use Kumwe\Extension\Spi\BusinessSecurity\Policy\RecordPolicyValueType;
+use Kumwe\BusinessPolicy\Application\BusinessRecordAccessPlan;
+use Kumwe\BusinessPolicy\Application\FieldAccessUsage;
+use Kumwe\BusinessPolicy\Policy\RecordPolicyBoolean;
+use Kumwe\BusinessPolicy\Policy\RecordPolicyBooleanOperator;
+use Kumwe\BusinessPolicy\Policy\RecordPolicyComparison;
+use Kumwe\BusinessPolicy\Policy\RecordPolicyComparisonOperator;
+use Kumwe\BusinessPolicy\Policy\RecordPolicyConstant;
+use Kumwe\BusinessPolicy\Policy\RecordPolicyNullCheck;
+use Kumwe\BusinessPolicy\Policy\RecordPolicyPredicate;
+use Kumwe\BusinessPolicy\Policy\RecordPolicyValueType;
 use Ramsey\Uuid\Uuid;
 
 /**

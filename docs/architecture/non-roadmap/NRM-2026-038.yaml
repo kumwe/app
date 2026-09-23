@@ -1,0 +1,30 @@
+schema: kumwe-non-roadmap-record/v1
+id: NRM-2026-038
+nrm_ref: NRM-2026-038
+roadmap_impact: None
+rationale: "Adopt verified kumwe/business-policy 0.1.1, the owner of the closed bounded record-policy language, its deterministic deny-overrides evaluator, explicit field disclosure and the immutable access plan."
+repositories:
+  - kumwe/app
+  - kumwe/business-policy
+behavior_before: "App declared the access plan, the boolean, constant and null-check predicates, the policy schema, the policy set and the in-memory evaluator itself, and typed its comparisons, comparison operators, predicate contract, value types, field usages and disclosure plans from the Kumwe\\Extension\\Spi\\BusinessSecurity copies kumwe/extension-sdk 0.2.4 ships."
+behavior_after: "The fourteen types come from kumwe/business-policy 0.1.1; App keeps the Doctrine access controller that selects the active policy and loads actor, attribute and resource state, the query compiler, post-load filtering, the administration service, the planners, approvals, final authorization and step-up, audit and delivery."
+public_api_impact: "None for callers; the values, predicates and plans keep their names and shapes under the package namespace, while the package refuses operation names over 127 bytes, foreign or over-complex boolean children and non-UTF-8 literals at construction, and compares oversized or malformed runtime strings and oversized decimals fail closed."
+dependency_impact: "Adds kumwe/business-policy 0.1.1 exactly; it requires only php and ext-json, and no other lock entry changes. kumwe/extension-sdk 0.2.4 stays locked with its six duplicate contracts unreferenced until the 0.3.2 train removes them."
+compatibility: "Drop-in for every stored resource policy within the bounds App already enforced before evaluation; policy documents and digests keep their canonical JSON bytes."
+data_migration: None
+security_impact: "No authority change; final authorization, step-up, active policy selection, actor and attribute loading, query compilation and post-load filtering stay in App. A NotEqual string policy over a stored value longer than 4096 bytes is now false in the in-memory evaluator while the compiled query still evaluates it as true; the change set records the gap."
+performance:
+  claim: None
+  evidence: []
+operations_deployment: "None; no configuration, provider or schema change."
+recovery_rollback: "Revert the adoption pull request and restore the eight removed classes and the moved unit test; no persisted data changes."
+artifacts_evidence:
+  - docs/architecture/migrations/KUMWE-MIG-2026-022.yaml
+  - docs/architecture/migrations/change-sets/KUMWE-CS-2026-022.yaml
+  - docs/architecture/migrations/trains/KUMWE-TRAIN-2026-022.yaml
+  - docs/architecture/migrations/evidence/KUMWE-MIG-2026-022/RELEASE-ATTESTATION.yaml
+  - docs/architecture/capability-index.md
+known_gaps:
+  - "kumwe/extension-sdk 0.3.2 (KUMWE-MIG-2026-033) removes the six Kumwe\\Extension\\Spi\\BusinessSecurity duplicates this adoption stops referencing and follows as a separate adoption."
+owner: "eWɘyn"
+status: in-progress
