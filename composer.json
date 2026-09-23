@@ -43,6 +43,7 @@
     "kumwe/computation": "0.3.3",
     "kumwe/conversion": "0.1.5",
     "kumwe/extension-sdk": "0.2.4",
+    "kumwe/idempotency": "0.1.3",
     "kumwe/localization": "0.1.1",
     "kumwe/navigation": "0.1.3",
     "kumwe/producer": "0.3.0 as 0.2.99",

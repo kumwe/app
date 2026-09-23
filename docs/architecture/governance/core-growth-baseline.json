@@ -594,30 +594,6 @@
             "surface": "0a632d1f07a3b6ccc8df9e8f",
             "growth": null
         },
-        "Kumwe\\App\\Application\\Automation\\IdempotencyPurger": {
-            "kind": "interface",
-            "layer": "application",
-            "surface": "b142276704a28f83c3200106",
-            "growth": null
-        },
-        "Kumwe\\App\\Application\\Automation\\IdempotencyRecord": {
-            "kind": "class",
-            "layer": "application",
-            "surface": "e6fa41bb860043e2f3c481d5",
-            "growth": null
-        },
-        "Kumwe\\App\\Application\\Automation\\IdempotencyResult": {
-            "kind": "class",
-            "layer": "application",
-            "surface": "f6e6ea29fa2e75ebe64f09f8",
-            "growth": null
-        },
-        "Kumwe\\App\\Application\\Automation\\IdempotencyState": {
-            "kind": "enum",
-            "layer": "application",
-            "surface": "0c0b269c270e8fbd5351b3ca",
-            "growth": null
-        },
         "Kumwe\\App\\Application\\Automation\\JitterSource": {
             "kind": "interface",
             "layer": "application",
@@ -699,7 +675,7 @@
         "Kumwe\\App\\Application\\Automation\\Job\\PurgeIdempotencyRecordsHandler": {
             "kind": "class",
             "layer": "application",
-            "surface": "598e65bb9f24d2e531eeba60",
+            "surface": "afdf7e3dea981aeee31cfbb0",
             "growth": null
         },
         "Kumwe\\App\\Application\\Automation\\Job\\PurgeStudioContentAuthoringContextsHandler": {
@@ -826,18 +802,6 @@
             "kind": "class",
             "layer": "application",
             "surface": "aafcfc11c3845347f64f5572",
-            "growth": null
-        },
-        "Kumwe\\App\\Application\\Idempotency\\IdempotencyLedger": {
-            "kind": "interface",
-            "layer": "application",
-            "surface": "deab399b9e608eac7f7368ac",
-            "growth": null
-        },
-        "Kumwe\\App\\Application\\Idempotency\\SecretOnceIdempotencyLedger": {
-            "kind": "interface",
-            "layer": "application",
-            "surface": "565e265479c8b4e43a1b9632",
             "growth": null
         },
         "Kumwe\\App\\Application\\Operations\\ExpiredMigrationLockRecovery": {
@@ -4289,12 +4253,6 @@
             "surface": "671dd0b202aa61bb460a4516",
             "growth": null
         },
-        "Kumwe\\App\\Delivery\\Http\\Api\\Idempotency\\IdempotencyKey": {
-            "kind": "class",
-            "layer": "delivery",
-            "surface": "b93f200a1f709661e895905a",
-            "growth": null
-        },
         "Kumwe\\App\\Delivery\\Http\\Api\\Idempotency\\InvalidReportExportRequest": {
             "kind": "class",
             "layer": "delivery",
@@ -4304,7 +4262,7 @@
         "Kumwe\\App\\Delivery\\Http\\Api\\Idempotency\\PersistentIdempotencyMiddleware": {
             "kind": "class",
             "layer": "delivery",
-            "surface": "a594d69cb905453617b62524",
+            "surface": "2cb4c554d9b983b4fdff3df5",
             "growth": null
         },
         "Kumwe\\App\\Delivery\\Http\\Api\\Idempotency\\RequireIdempotencyKeyMiddleware": {
@@ -4316,7 +4274,7 @@
         "Kumwe\\App\\Delivery\\Http\\Api\\Idempotency\\SecretOnceIdempotencyMiddleware": {
             "kind": "class",
             "layer": "delivery",
-            "surface": "1e860498f291478b469089c5",
+            "surface": "dea40911a053c5555fabf252",
             "growth": null
         },
         "Kumwe\\App\\Delivery\\Http\\Api\\Idempotency\\SecretOnceResponseRollback": {
@@ -5659,7 +5617,7 @@
         "Kumwe\\App\\Infrastructure\\Automation\\DoctrineIdempotencyPurger": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "8ed58c678621b048b4ec0c6f",
+            "surface": "f7794e7d04b9883a24ae6ac8",
             "growth": null
         },
         "Kumwe\\App\\Infrastructure\\Automation\\DoctrineJobQueue": {
@@ -5916,13 +5874,13 @@
         "Kumwe\\App\\Infrastructure\\Persistence\\DoctrineIdempotencyLedger": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "c52d7f8e6e70a069469296a7",
+            "surface": "07bce62e8c7970f7e7f9a16e",
             "growth": null
         },
         "Kumwe\\App\\Infrastructure\\Persistence\\DoctrineSecretOnceIdempotencyLedger": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "9712d7a18e37a8797fed7bf0",
+            "surface": "8e500c1957eda989eace72b6",
             "growth": null
         },
         "Kumwe\\App\\Infrastructure\\Persistence\\DoctrineTransactionManager": {

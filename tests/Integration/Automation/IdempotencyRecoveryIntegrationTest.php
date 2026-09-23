@@ -8,7 +8,7 @@ use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
 use Kumwe\App\Application\Authorization\ExecutionContextAttribute;
-use Kumwe\App\Delivery\Http\Api\Idempotency\IdempotencyKey;
+use Kumwe\Idempotency\IdempotencyKey;
 use Kumwe\App\Delivery\Http\Api\Idempotency\PersistentIdempotencyMiddleware;
 use Kumwe\App\Delivery\Http\Api\Idempotency\RequireIdempotencyKeyMiddleware;
 use Kumwe\App\Delivery\Http\Api\Idempotency\ServerFailureResponse;

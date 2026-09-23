@@ -10,7 +10,7 @@ use Kumwe\Extension\Spi\Application\Automation\IdempotencyKey as ApplicationIdem
 use Kumwe\App\Delivery\Http\Api\Concurrency\EntityTag;
 use Kumwe\App\Delivery\Http\Api\Concurrency\IfMatch;
 use Kumwe\App\Delivery\Http\Api\Concurrency\RequireIfMatchMiddleware;
-use Kumwe\App\Delivery\Http\Api\Idempotency\IdempotencyKey as HttpIdempotencyKey;
+use Kumwe\Idempotency\IdempotencyKey as HttpIdempotencyKey;
 use Kumwe\App\Delivery\Http\Api\Idempotency\RequireIdempotencyKeyMiddleware;
 use Psr\Http\Message\ServerRequestInterface;
 use stdClass;

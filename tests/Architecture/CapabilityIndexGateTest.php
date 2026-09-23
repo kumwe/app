@@ -209,6 +209,7 @@ final class CapabilityIndexGateTest extends TestCase
                 'kumwe/computation',
                 'kumwe/conversion',
                 'kumwe/extension-sdk',
+                'kumwe/idempotency',
                 'kumwe/localization',
                 'kumwe/navigation',
                 'kumwe/producer',
@@ -254,7 +255,7 @@ final class CapabilityIndexGateTest extends TestCase
         self::assertSame('KUMWE-CS-2026-031', $conversion['handoff']['change_set']);
         self::assertSame('vendor/kumwe/conversion/MIGRATION-HANDOFF.md', $conversion['handoff']['path']);
         self::assertContains('Kumwe\\Conversion\\Decimal\\ExactDecimal', $conversion['public_symbols']);
-        $producer = $packages[9];
+        $producer = $packages[10];
         self::assertSame('v2-manifested', $producer['manifest_status']);
         self::assertTrue($producer['release_gate_eligible']);
         self::assertNull($producer['legacy']);
@@ -278,6 +279,7 @@ final class CapabilityIndexGateTest extends TestCase
                 'v0.3.3',
                 'v0.1.5',
                 'v0.2.4',
+                'v0.1.3',
                 'v0.1.1',
                 'v0.1.3',
                 'v0.3.0',
@@ -289,6 +291,11 @@ final class CapabilityIndexGateTest extends TestCase
         );
         self::assertSame(
             [
+                [
+                    'old_namespace' => 'Kumwe\\App\\Application\\Idempotency\\',
+                    'package' => 'kumwe/idempotency',
+                    'migration_id' => 'KUMWE-MIG-2026-020',
+                ],
                 [
                     'old_namespace' => 'Kumwe\\App\\Application\\Persistence\\',
                     'package' => 'kumwe/transaction',
@@ -322,6 +329,7 @@ final class CapabilityIndexGateTest extends TestCase
         self::assertSame(
             [
                 'kumwe/access-context' => 8,
+                'kumwe/idempotency' => 7,
                 'kumwe/transaction' => 3,
                 'kumwe/audit' => 13,
                 'kumwe/sequence' => 4,

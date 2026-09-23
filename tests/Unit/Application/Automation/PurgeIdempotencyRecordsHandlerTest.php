@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Unit\Application\Automation;
 
-use Kumwe\App\Application\Automation\IdempotencyPurger;
+use Kumwe\Idempotency\IdempotencyPurger;
 use Kumwe\App\Application\Automation\Job\PurgeIdempotencyRecordsHandler;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\App\Application\Authorization\SystemIdentity;

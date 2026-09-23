@@ -1,0 +1,90 @@
+schema: kumwe-release-attestation/v2
+artifact_kind: framework_php
+migration_id: KUMWE-MIG-2026-020
+change_set: KUMWE-CS-2026-020
+repository: "https://github.com/kumwe/idempotency"
+merge_commit: "283ddd7d862295078e354ebe7ebfa6e41af1dd94"
+version: "0.1.2"
+tag: v0.1.2
+source_archive:
+  url: "https://github.com/kumwe/idempotency/archive/refs/tags/v0.1.2.tar.gz"
+  sha256: "023b434f314213cf9935db5939b7139fabd24df3e57108ef01175202bb7dde4c"
+artifacts:
+  - identity: "kumwe/idempotency:0.1.2"
+    url: "https://api.github.com/repos/kumwe/idempotency/zipball/283ddd7d862295078e354ebe7ebfa6e41af1dd94"
+    sha256: "023b434f314213cf9935db5939b7139fabd24df3e57108ef01175202bb7dde4c"
+manifests_and_corpora:
+  - path: resources/public-api/v1.json
+    sha256: "eb2b62d538984de8b0caa603b2dc8a2c82a30c8848686c9683182b620ef92104"
+  - path: resources/capabilities/v1.json
+    sha256: "1239150786e1ac847d0229b0dc56b3092fc92961aa77d342ec23a3943e54b981"
+  - path: resources/service-map/v1.json
+    sha256: "1243b15876b134c88b20990836e4ff60d7b7d32aa3155f41f7f3ec2e7b70846d"
+  - path: MIGRATION-HANDOFF.md
+    sha256: "4881ff9c927eb5437995162fe5f276832768fa9775c2b5a19548bf9a4113449a"
+abi_and_capabilities: null
+sbom:
+  url: null
+  sha256: null
+provenance: "Release on record run 34253802898 (push, attempt 1) published release 384910402 as github-actions[bot]"
+release_workflow: "https://github.com/kumwe/idempotency/actions/runs/34253802898 success on the tag commit"
+registry_or_pie_verification:
+  - "git ls-remote https://github.com/kumwe/idempotency refs/tags/v0.1.2 (and ^{}) observed 2026-09-23T09:13:26Z"
+  - "ls-remote: 283ddd7d862295078e354ebe7ebfa6e41af1dd94 refs/tags/v0.1.2; no peeled ^{} line (lightweight tag)"
+  - "git clone --quiet --depth 1 --branch v0.1.2: git rev-parse HEAD 283ddd7d862295078e354ebe7ebfa6e41af1dd94"
+  - "git cat-file -t v0.1.2 in the clone: commit (lightweight tag); HEAD commit dated 2026-09-08 18:53:26 +0200"
+  - "Tag commit, clone HEAD, Packagist source and dist reference all equal 283ddd7d862295078e354ebe7ebfa6e41af1dd94"
+  - "curl -sS -L --max-time 60 archive/refs/tags/v0.1.2.tar.gz: http_code=200 via codeload.github.com, 36289 B, gzip"
+  - "sha256sum idempotency-v0.1.2.tar.gz: 023b434f314213cf9935db5939b7139fabd24df3e57108ef01175202bb7dde4c"
+  - "The archive digest covers the bytes GitHub served for the hosted tar.gz at verification time"
+  - "diff -r of the extracted idempotency-0.1.2/ tree against git archive v0.1.2 of the clone: identical"
+  - "diff -r --exclude=.git against the clone working tree differs only in the .gitattributes export-ignore paths"
+  - "Archive top level: CHANGELOG.md CHARTER.md LICENSE MIGRATION-HANDOFF.md README.md composer.json docs examples"
+  - "Archive top level (continued): resources src; CHARTER.md, README.md, docs/, resources/ and src/ are present"
+  - "Archive omits .github/, tests/, tools/, phpcs.xml, phpstan.neon, phpunit.xml, .gitignore and .gitattributes"
+  - "The package ships MIGRATION-HANDOFF.md and no docs/release-record.md; the record row above is the handoff digest"
+  - "Packagist p2 observed 2026-09-23T09:10:53Z: v0.1.2 (0.1.2.0) is the newest of v0.1.2, v0.1.1, v0.1.0"
+  - "Packagist time 2026-09-08T16:53:26+00:00, published-time 2026-09-08T16:54:20+00:00"
+  - "Packagist source: git https://github.com/kumwe/idempotency.git at 283ddd7d862295078e354ebe7ebfa6e41af1dd94"
+  - "Packagist dist: zip at reference 283ddd7d862295078e354ebe7ebfa6e41af1dd94, url equal to the artifacts url above"
+  - "Packagist dist shasum is an empty string; license Apache-2.0; autoload psr-4 Kumwe\\Idempotency\\ => src/"
+  - "Packagist require: php ^8.5, ext-json *, kumwe/canonical-json 0.1.1 (equal to the clone composer.json)"
+  - "GitHub release v0.1.2 id 384910402: author github-actions[bot], published_at 2026-09-08T16:54:18Z"
+  - "GitHub release v0.1.2: draft false, prerelease false, immutable false, target_commitish main, no assets"
+  - "Release on record run 34253802898 on 283ddd7d862295078e354ebe7ebfa6e41af1dd94: push, attempt 1, success"
+  - "Run 34253802898 jobs: check / Release automation tests, check / PHP 8.5, check / Package gate all success"
+  - "Run 34253802898 job Release the recorded version (102154575679) success, done 2026-09-08T16:54:20Z"
+  - "Idempotency CI run 34253802637 on the same commit: completed, success"
+  - "GitHub MCP tools answered for kumwe/idempotency; no access denial was observed"
+clean_consumer_or_build_verification:
+  - "Inspection only per the brief: no package PHP, script or example was executed and composer was not run"
+  - "public-api/v1.json validates against package-public-api.v1.schema.json with the App SchemaValidator: VALID"
+  - "capabilities/v1.json validates against package-capabilities.v1.schema.json with the App SchemaValidator: VALID"
+  - "service-map/v1.json validates against package-service-map.v1.schema.json with the App SchemaValidator: VALID"
+  - "All three manifests carry package kumwe/idempotency and release 0.1.2"
+  - "MIGRATION-HANDOFF.md front matter through App StrictYaml::parseFrontMatter: REFUSED at line 40"
+  - "StrictYaml refusal: unexpected indentation of 4 spaces inside a mapping at 2 (folded plain scalar)"
+  - "Line 40 continues ownership.responsibility onto a second line; 13 such continuation lines exist"
+  - "Supplementary only: a permissive YAML parse of the front matter, re-fed as JSON, is VALID for the v2 schema"
+  - "Handoff front matter read directly: migration_id KUMWE-MIG-2026-020, change_set KUMWE-CS-2026-020"
+  - "Handoff front matter state: draft_pr_open"
+  - "Handoff ownership.public_manifests digests equal the three locally computed manifest digests"
+  - "Handoff target: kumwe/idempotency, Kumwe\\Idempotency\\, branch agent/canonical-governance-v2, pull request 5"
+  - "CHANGELOG.md newest release heading is 0.1.2 (undated), above 0.1.1 and 0.1.0"
+  - "CHANGELOG.md closing note calls the 0.1.2 heading a proposed corrective successor pending verification"
+  - "composer.json require: php ^8.5, ext-json *, kumwe/canonical-json 0.1.1; no other kumwe/* or ext-* requirement"
+  - "App composer.lock: kumwe/canonical-json v0.1.1 at e7006a2580a49a1c8ab507b0d7b9c3403b4f9f58 (exact match)"
+  - "App composer.lock platform lists ext-json *; kumwe/idempotency itself is not yet in the App lock"
+  - "Schema checks used the App validator (tools/Governance SchemaValidator and StrictYaml) on PHP 8.4.19 CLI"
+verified_at: "2026-09-23T09:13:26Z"
+verified_by: "Independent release verification agent (isolated session, no Phase 1 or Phase 2 context)"
+status: failed
+known_gaps:
+  - "MIGRATION-HANDOFF.md front matter is outside the App StrictYaml subset (line 40 folded scalar): not validatable"
+  - "The decision rule needs the record valid under the App validator; it does not, so status is failed"
+  - "The repository later ran Release on record 34701380019: fix: serialize release record in Core StrictYaml subset"
+  - "That later commit f5f1eb2f4a00e5318e439b55ec44646e22d19597 is not in v0.1.2; a successor release needs verifying"
+  - "GitHub release v0.1.2 reports immutable false; no tag protection evidence was gathered"
+  - "The hosted tar.gz digest is a point-in-time observation; Packagist publishes an empty dist shasum"
+  - "No SBOM and no release assets exist for v0.1.2; abi_and_capabilities does not apply to a framework_php artifact"
+  - "No clean-consumer install was performed: the brief restricts this session to inspection"

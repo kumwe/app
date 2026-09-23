@@ -1,0 +1,83 @@
+schema: kumwe-migration-ledger/v1
+migration_id: KUMWE-MIG-2026-020
+change_set: KUMWE-CS-2026-020
+package: kumwe/idempotency
+version: 0.1.3
+artifact_digest: "14bd663620be28df61cc7d74f1b9decc696fc6f44c9d5b01bba42bab89433b46"
+handoff_path: vendor/kumwe/idempotency/docs/release-record.md
+handoff_sha256: "6448a8df51d0ce0cfd0262d19445c532f09cb888fe631d32e10c54a3fc3088ba"
+release_attestation: docs/architecture/migrations/evidence/KUMWE-MIG-2026-020/RELEASE-ATTESTATION.yaml
+old_namespace_roots:
+  - "Kumwe\\App\\Application\\Idempotency\\"
+symbols:
+  - old_fqcn: Kumwe\App\Delivery\Http\Api\Idempotency\IdempotencyKey
+    new_fqcn: Kumwe\Idempotency\IdempotencyKey
+  - old_fqcn: Kumwe\App\Application\Idempotency\IdempotencyLedger
+    new_fqcn: Kumwe\Idempotency\IdempotencyLedger
+  - old_fqcn: Kumwe\App\Application\Automation\IdempotencyPurger
+    new_fqcn: Kumwe\Idempotency\IdempotencyPurger
+  - old_fqcn: Kumwe\App\Application\Automation\IdempotencyRecord
+    new_fqcn: Kumwe\Idempotency\IdempotencyRecord
+  - old_fqcn: Kumwe\App\Application\Automation\IdempotencyResult
+    new_fqcn: Kumwe\Idempotency\IdempotencyResult
+  - old_fqcn: Kumwe\App\Application\Automation\IdempotencyState
+    new_fqcn: Kumwe\Idempotency\IdempotencyState
+  - old_fqcn: Kumwe\App\Application\Idempotency\SecretOnceIdempotencyLedger
+    new_fqcn: Kumwe\Idempotency\SecretOnceIdempotencyLedger
+removed_paths:
+  - src/Delivery/Http/Api/Idempotency/IdempotencyKey.php
+  - src/Application/Idempotency/IdempotencyLedger.php
+  - src/Application/Automation/IdempotencyPurger.php
+  - src/Application/Automation/IdempotencyRecord.php
+  - src/Application/Automation/IdempotencyResult.php
+  - src/Application/Automation/IdempotencyState.php
+  - src/Application/Idempotency/SecretOnceIdempotencyLedger.php
+removed_tests:
+  - tests/Unit/Delivery/Http/Api/Idempotency/IdempotencyKeyTest.php
+  - tests/Unit/Application/Automation/IdempotencyRecordTest.php
+retained_tests:
+  - tests/Architecture/IdempotencySeamBoundaryTest.php
+  - tests/Functional/BusinessSurface/GeneratedBusinessAdapterParityTest.php
+  - tests/Integration/Automation/IdempotencyFirstClaimContentionIntegrationTest.php
+  - tests/Integration/Automation/IdempotencyRecoveryIntegrationTest.php
+  - tests/Integration/BusinessRecord/BusinessNumberSequenceContentionIntegrationTest.php
+  - tests/Integration/BusinessRecord/BusinessNumberSequenceIdentityIntegrationTest.php
+  - tests/Integration/BusinessRecord/BusinessRecordClientReferenceIntegrationTest.php
+  - tests/Integration/BusinessRecord/CorrectionAfterPeriodCloseIntegrationTest.php
+  - tests/Integration/BusinessRecord/FiscalPeriodSequenceIntegrationTest.php
+  - tests/Integration/BusinessRecord/PostingPeriodLockIntegrationTest.php
+  - tests/Integration/Delivery/Http/Api/Idempotency/SecretOnceIdempotencyMiddlewareTest.php
+  - tests/Integration/Demo/Infrastructure/DemoBusinessProfileExporterTest.php
+  - tests/Support/NeutralBusinessFixture.php
+  - tests/Unit/Application/Automation/PurgeIdempotencyRecordsHandlerTest.php
+  - tests/Unit/BusinessRecord/Application/BusinessRecordRelationshipCoordinatorTest.php
+  - tests/Unit/BusinessRecord/Application/WriteDocumentCommandTest.php
+  - tests/Unit/BusinessSurface/Application/Custom/CustomBusinessActionExecutorTest.php
+  - tests/Unit/BusinessSurface/Application/Custom/CustomBusinessHandlerRegistryTest.php
+  - tests/Unit/Delivery/Http/Api/ApiPreconditionMiddlewareTest.php
+  - tests/Unit/Delivery/Http/Api/Business/BusinessOperationStatusApiHandlerTest.php
+  - tests/Unit/Delivery/Http/Api/Business/BusinessRecordApiHandlerTest.php
+  - tests/Unit/Delivery/Http/Api/Business/BusinessRecordApiRequestTest.php
+  - tests/Unit/Delivery/Http/Api/Idempotency/PersistentIdempotencyAuthorizationTest.php
+  - tests/Unit/Delivery/Http/Api/Idempotency/PersistentIdempotencyMiddlewareTest.php
+  - tests/Unit/Delivery/Http/Api/Plan/PlanPreviewHandlerTest.php
+di_changes:
+  - service: Kumwe\Idempotency\IdempotencyLedger
+    factory: Kumwe\App\Kernel\ContainerFactory
+    note: "Host binds the package ledger port to DoctrineIdempotencyLedger over the shared idempotency table with the container clock, consumed by PersistentIdempotencyMiddleware; the package ships no provider (service map config_provider null)."
+  - service: Kumwe\Idempotency\SecretOnceIdempotencyLedger
+    factory: Kumwe\App\Kernel\ContainerFactory
+    note: "Host binds the package secret-once ledger port to DoctrineSecretOnceIdempotencyLedger, consumed by SecretOnceIdempotencyMiddleware; no package provider."
+  - service: Kumwe\Idempotency\IdempotencyPurger
+    factory: Kumwe\App\Kernel\ContainerFactory
+    note: "Host binds the package purge port to DoctrineIdempotencyPurger, consumed by PurgeIdempotencyRecordsHandler under the maintenance principal; no package provider. No CanonicalEncoder binding is added because no App production code constructs the package IdempotencyRecord or IdempotencyResult."
+capability_index_entries:
+  - kumwe/idempotency
+release_evidence:
+  - docs/architecture/migrations/evidence/KUMWE-MIG-2026-020/RELEASE-ATTESTATION.yaml
+  - docs/architecture/migrations/evidence/KUMWE-MIG-2026-020/RELEASE-VERIFICATION-FAILED.yaml
+app_pull_request: "https://github.com/kumwe/app/pull/151"
+roadmap_refs: []
+non_roadmap_refs:
+  - NRM-2026-039
+conflicts: []

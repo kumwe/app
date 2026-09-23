@@ -6,7 +6,8 @@ namespace Kumwe\App\Delivery\Http\Api\Idempotency;
 
 use JsonException;
 use Kumwe\App\Application\Authorization\ExecutionContextAttribute;
-use Kumwe\App\Application\Idempotency\SecretOnceIdempotencyLedger;
+use Kumwe\Idempotency\IdempotencyKey;
+use Kumwe\Idempotency\SecretOnceIdempotencyLedger;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\App\Delivery\Http\Api\ProblemDetailsResponseFactory;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
@@ -29,7 +30,7 @@ use Throwable;
  * but strips `token` from the body before storing it and marks the stored copy `secret_returned: false`,
  * so a replay proves the operation already happened without reissuing the secret. A caller that loses
  * the original response has lost the credential and must mint another. Every read and write goes through
- * the application-owned `SecretOnceIdempotencyLedger`, whose lease is deliberately short — two minutes,
+ * the `SecretOnceIdempotencyLedger` port of kumwe/idempotency, whose lease is deliberately short — two minutes,
  * against the persistent ledger's fifteen — because a token mutation is a single quick write and a long
  * lease would strand the key after a crash. Anything other than a 2xx or a 5xx is stored as-is, since a
  * refusal carries no secret to strip; a 5xx is rolled back and its reservation deleted, leaving the key
@@ -42,7 +43,7 @@ final readonly class SecretOnceIdempotencyMiddleware implements MiddlewareInterf
     /**
      * Wire the middleware to the ledger and the policy check a reservation depends on.
      *
-     * @param  SecretOnceIdempotencyLedger    $ledger            Application-owned ledger the reservation
+     * @param  SecretOnceIdempotencyLedger    $ledger            Package ledger port the reservation
      *         lifecycle runs against.
      * @param  ProblemDetailsResponseFactory  $problems          Renders the refusals a reused key answers
      *         with.

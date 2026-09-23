@@ -32,7 +32,7 @@ use Kumwe\App\Delivery\Http\Api\Business\BusinessDefinitionDiscoveryApiHandler;
 use Kumwe\App\Delivery\Http\Api\Business\BusinessRecordApiHandler;
 use Kumwe\App\Delivery\Http\Api\Concurrency\IfMatch;
 use Kumwe\App\Delivery\Http\Api\Concurrency\RequireIfMatchMiddleware;
-use Kumwe\App\Delivery\Http\Api\Idempotency\IdempotencyKey as HttpIdempotencyKey;
+use Kumwe\Idempotency\IdempotencyKey as HttpIdempotencyKey;
 use Kumwe\App\Delivery\Http\Api\Idempotency\RequireIdempotencyKeyMiddleware;
 use Kumwe\App\Identity\Application\Authentication\AccessTokenVerifier;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;

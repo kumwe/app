@@ -1,0 +1,133 @@
+schema: kumwe-change-set/v2
+change_set: KUMWE-CS-2026-020
+migration_id: KUMWE-MIG-2026-020
+roadmap_source:
+  title: Kumwe ERP-Extensibility Foundation Roadmap
+  sha256: a202155ef1a65f5ab293d4f8397ebf4ac430db7f1e877c776bbe7851e6fe18d8
+roadmap_refs: []
+state: app-pr-ready
+phase_1:
+  source_repository: kumwe/app
+  source_sha: "24ecf956423c18933e824b43cea1bfb9127a79a9"
+  target_repository: kumwe/idempotency
+  package_pr: "https://github.com/kumwe/idempotency/pull/7"
+  tested_sha: null
+  public_api_digest: "fdf88a404e3e120fcb230641f45a3203c2984365a229fb554a1ff1e1cc593ab8"
+  capability_digest: "4aba0ad34309591469d9421b60355a729a3a5b2ef892253634b695288d5f09f2"
+  service_map_digest: "f545183e4ec69bf23f3ed7570c59689e0af077044ef09c4280400c95e56335a6"
+  handoff_digest: "6448a8df51d0ce0cfd0262d19445c532f09cb888fe631d32e10c54a3fc3088ba"
+release:
+  version: 0.1.3
+  source_sha: "351f5491d193babf6193ddb4af064edc7ce62ea5"
+  artifact_digest: "14bd663620be28df61cc7d74f1b9decc696fc6f44c9d5b01bba42bab89433b46"
+  clean_consumer_evidence:
+    - docs/architecture/migrations/evidence/KUMWE-MIG-2026-020/RELEASE-ATTESTATION.yaml
+phase_2:
+  app_pr: "https://github.com/kumwe/app/pull/151"
+  tested_sha: null
+  merged_sha: null
+  exact_dependency: "kumwe/idempotency 0.1.3"
+  composer_lock_digest: "b62facce41dc2a40343a3399e9ead156da07d45104e60e2f0d3a06c9c087cd00"
+  removed_app_symbols:
+    - Kumwe\App\Delivery\Http\Api\Idempotency\IdempotencyKey
+    - Kumwe\App\Application\Idempotency\IdempotencyLedger
+    - Kumwe\App\Application\Automation\IdempotencyPurger
+    - Kumwe\App\Application\Automation\IdempotencyRecord
+    - Kumwe\App\Application\Automation\IdempotencyResult
+    - Kumwe\App\Application\Automation\IdempotencyState
+    - Kumwe\App\Application\Idempotency\SecretOnceIdempotencyLedger
+  moved_unit_tests:
+    - tests/Unit/Delivery/Http/Api/Idempotency/IdempotencyKeyTest.php
+    - tests/Unit/Application/Automation/IdempotencyRecordTest.php
+  retained_app_tests:
+    - tests/Architecture/IdempotencySeamBoundaryTest.php
+    - tests/Functional/BusinessSurface/GeneratedBusinessAdapterParityTest.php
+    - tests/Integration/Automation/IdempotencyFirstClaimContentionIntegrationTest.php
+    - tests/Integration/Automation/IdempotencyRecoveryIntegrationTest.php
+    - tests/Integration/BusinessRecord/BusinessNumberSequenceContentionIntegrationTest.php
+    - tests/Integration/BusinessRecord/BusinessNumberSequenceIdentityIntegrationTest.php
+    - tests/Integration/BusinessRecord/BusinessRecordClientReferenceIntegrationTest.php
+    - tests/Integration/BusinessRecord/CorrectionAfterPeriodCloseIntegrationTest.php
+    - tests/Integration/BusinessRecord/FiscalPeriodSequenceIntegrationTest.php
+    - tests/Integration/BusinessRecord/PostingPeriodLockIntegrationTest.php
+    - tests/Integration/Delivery/Http/Api/Idempotency/SecretOnceIdempotencyMiddlewareTest.php
+    - tests/Integration/Demo/Infrastructure/DemoBusinessProfileExporterTest.php
+    - tests/Support/NeutralBusinessFixture.php
+    - tests/Unit/Application/Automation/PurgeIdempotencyRecordsHandlerTest.php
+    - tests/Unit/BusinessRecord/Application/BusinessRecordRelationshipCoordinatorTest.php
+    - tests/Unit/BusinessRecord/Application/WriteDocumentCommandTest.php
+    - tests/Unit/BusinessSurface/Application/Custom/CustomBusinessActionExecutorTest.php
+    - tests/Unit/BusinessSurface/Application/Custom/CustomBusinessHandlerRegistryTest.php
+    - tests/Unit/Delivery/Http/Api/ApiPreconditionMiddlewareTest.php
+    - tests/Unit/Delivery/Http/Api/Business/BusinessOperationStatusApiHandlerTest.php
+    - tests/Unit/Delivery/Http/Api/Business/BusinessRecordApiHandlerTest.php
+    - tests/Unit/Delivery/Http/Api/Business/BusinessRecordApiRequestTest.php
+    - tests/Unit/Delivery/Http/Api/Idempotency/PersistentIdempotencyAuthorizationTest.php
+    - tests/Unit/Delivery/Http/Api/Idempotency/PersistentIdempotencyMiddlewareTest.php
+    - tests/Unit/Delivery/Http/Api/Plan/PlanPreviewHandlerTest.php
+evidence:
+  package:
+    - docs/architecture/migrations/evidence/KUMWE-MIG-2026-020/RELEASE-ATTESTATION.yaml
+    - docs/architecture/migrations/evidence/KUMWE-MIG-2026-020/RELEASE-VERIFICATION-FAILED.yaml
+    - "https://github.com/kumwe/idempotency/actions/runs/35843895621; release on record on tag commit 351f5491d193babf6193ddb4af064edc7ce62ea5"
+    - "https://github.com/kumwe/idempotency/actions/runs/35843894991; package CI on the same commit"
+    - "The independent verification of v0.1.2 (283ddd7d862295078e354ebe7ebfa6e41af1dd94, 2026-09-23T09:13:26Z) failed because MIGRATION-HANDOFF.md carried a folded scalar outside the App StrictYaml subset; v0.1.3 ships the record as docs/release-record.md in that subset with src/ and examples/ byte-identical to v0.1.2, and the failed record is kept above as history."
+  app_composition:
+    - tests/Architecture/IdempotencySeamBoundaryTest.php
+    - tests/Unit/Application/Automation/PurgeIdempotencyRecordsHandlerTest.php
+    - tests/Unit/Delivery/Http/Api/ApiPreconditionMiddlewareTest.php
+    - tests/Unit/Delivery/Http/Api/Idempotency/PersistentIdempotencyMiddlewareTest.php
+    - tests/Unit/Delivery/Http/Api/Business/BusinessRecordApiRequestTest.php
+    - tests/Unit/Governance/ComposerLockTest.php
+    - tests/Unit/Governance/CoreGrowthGateTest.php
+    - tests/Architecture/CapabilityIndexGateTest.php
+    - "composer require kumwe/idempotency:0.1.3; one lock install, no other lock change"
+    - "composer kumwe:capability-index, kumwe:core-growth-record, baseline:record, then the composer qa gates and the unit and architecture suites, run locally on PHP 8.4 without ext-kumwe_engine"
+  database_matrix:
+    - tests/Integration/Automation/IdempotencyRecoveryIntegrationTest.php
+    - tests/Integration/Automation/IdempotencyFirstClaimContentionIntegrationTest.php
+    - tests/Integration/Delivery/Http/Api/Idempotency/SecretOnceIdempotencyMiddlewareTest.php
+    - "To be exercised by the pull request's hosted workflows on MariaDB, MySQL and PostgreSQL."
+  concurrency:
+    - tests/Integration/Automation/IdempotencyFirstClaimContentionIntegrationTest.php
+    - tests/Integration/Automation/IdempotencyRecoveryIntegrationTest.php
+    - tests/Integration/BusinessRecord/BusinessNumberSequenceContentionIntegrationTest.php
+    - "Concurrent first-writer reservation, stale-ownership takeover and the purge-versus-reacquire race; to be exercised by the pull request's hosted workflows."
+  authorization_security:
+    - tests/Unit/Delivery/Http/Api/Idempotency/PersistentIdempotencyAuthorizationTest.php
+    - tests/Unit/Delivery/Http/Api/Idempotency/PersistentIdempotencyMiddlewareTest.php
+    - tests/Unit/Application/Automation/PurgeIdempotencyRecordsHandlerTest.php
+    - "Exact route preauthorization before any ledger read, the credential-fingerprint refusals and the purge capability stay in the App middleware, adapters and job handler; the hosted source-and-image security scans run on the pull request."
+  lifecycle_recovery:
+    - tests/Integration/Automation/IdempotencyRecoveryIntegrationTest.php
+    - tests/Integration/Delivery/Http/Api/Idempotency/SecretOnceIdempotencyMiddlewareTest.php
+    - "Reservation release on a 5xx, expired and failed takeovers, secret-once rollback and bounded purge; to be exercised by the pull request's hosted workflows."
+  delivery_browser:
+    - tests/Unit/Delivery/Http/Api/ApiPreconditionMiddlewareTest.php
+    - tests/Unit/Delivery/Http/Api/Business/BusinessRecordApiHandlerTest.php
+    - tests/Unit/Delivery/Http/Api/Plan/PlanPreviewHandlerTest.php
+    - tests/Functional/BusinessSurface/GeneratedBusinessAdapterParityTest.php
+    - "The Idempotency-Key header contract, the business-record and plan-preview routes and the generated business adapter parity; the functional and browser suites run in the pull request's hosted workflows."
+  deployment_backup_restore:
+    - tests/Support/BusinessRuntimeBackupAcceptance.php
+    - "No schema, configuration, provider or scheduled-job change; the idempotency table and its retention migrations are unchanged. Signed backup, clean restore and production acceptance on three engines run in the pull request's hosted workflows."
+  native_parity_abi:
+    - tests/Unit/Kernel/NativeComputationFactoryTest.php
+    - tests/Architecture/CanonicalJsonSemanticIdentityGateTest.php
+    - "The App middleware digests request parts itself and never constructs the package IdempotencyRecord or IdempotencyResult, so no host CanonicalEncoder binding is added and no persisted fingerprint changes; the hosted workflows run with ext-kumwe_engine 1.0.3."
+  performance_capacity:
+    - tests/Integration/Automation/IdempotencyRecoveryIntegrationTest.php
+    - "Bounded purge batches and unique-index reservation are unchanged; no performance claim is made."
+compatibility: "Drop-in for consumers: the seven types keep their names and shapes under Kumwe\\Idempotency; IdempotencyKey gains fromString() and value(), and IdempotencyRecord::begin() and IdempotencyResult take an explicit CanonicalEncoder, which no App production code calls. The HTTP key is now the package key while business-record commands keep the kumwe/extension-sdk 0.2.4 key, bridged in BusinessRecordApiRequest::idempotencyKey()."
+migration_recovery: null
+security_impact: "None on authority: exact route preauthorization, credential fingerprints, transaction coupling, the secret-once body stripping and the purge capability stay in the App middleware, adapters and job handler; the package never sees a request, a connection or a credential."
+performance_claim: null
+rollback: "Revert the App pull request and restore the seven removed classes and two unit tests from the baseline commit; no persisted data changes, since the idempotency table, its request digests and its retention migrations are untouched."
+known_gaps:
+  - "The local sandbox runs PHP 8.4 without ext-kumwe_engine and without a database server, so the integration and functional lanes, PHP 8.5 and the native encoder path are proven by the App CI on this pull request."
+  - "Mixed key types remain until the extension-sdk train: the HTTP key is Kumwe\\Idempotency\\IdempotencyKey while business-record commands and the kumwe/extension-sdk 0.2.4 CustomBusinessActionCommand and CustomBusinessActionResult still take Kumwe\\Extension\\Spi\\Application\\Automation\\IdempotencyKey; BusinessRecordApiRequest::idempotencyKey() bridges with fromString((string) $key), and the 34 App files importing the SDK key swap with that train."
+  - "kumwe/extension-sdk 0.3.2 requires kumwe/idempotency 0.1.2 exactly, so its train can no longer resolve against a lock holding 0.1.3; an extension-sdk successor pinning 0.1.3 (as kumwe/business-surface-contract 0.1.4 already does) precedes that train."
+  - "The release record's old_namespace_roots name Kumwe\\App\\Application\\Automation\\, Kumwe\\App\\Delivery\\Http\\Api\\Idempotency\\ and the SDK root, which App still populates; the ledger retires only the vacated Kumwe\\App\\Application\\Idempotency\\ and enumerates the seven symbols."
+  - "The release attestation was produced in the adoption worktree before the Phase 2 edits rather than in a separate context, and the package's own export-ignored test suite was not executed there."
+completion_claim: false
+accepted_by: null

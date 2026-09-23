@@ -10,7 +10,7 @@ use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Types\Types;
 use Kumwe\App\Kernel\Container;
 use Kumwe\Context\Value\ExecutionContext;
-use Kumwe\App\Delivery\Http\Api\Idempotency\IdempotencyKey;
+use Kumwe\Idempotency\IdempotencyKey;
 use Kumwe\App\Delivery\Http\Api\Idempotency\PersistentIdempotencyMiddleware;
 use Kumwe\App\Delivery\Http\Api\Idempotency\RequireIdempotencyKeyMiddleware;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;

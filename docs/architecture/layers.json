@@ -67,7 +67,8 @@
     "Kumwe\\Secret",
     "Kumwe\\Navigation",
     "Kumwe\\Audit",
-    "Kumwe\\BusinessPolicy"
+    "Kumwe\\BusinessPolicy",
+    "Kumwe\\Idempotency"
   ],
   "namespace_segments": {
     "Shared": "shared",
@@ -180,6 +181,7 @@
     "Kumwe\\Audit\\Application": "application",
     "Kumwe\\Audit\\Domain": "domain",
     "Kumwe\\BusinessPolicy\\Application": "application",
-    "Kumwe\\BusinessPolicy\\Policy": "domain"
+    "Kumwe\\BusinessPolicy\\Policy": "domain",
+    "Kumwe\\Idempotency": "shared"
   }
 }
