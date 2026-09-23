@@ -79,6 +79,28 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Added
 
+- **2026-09-23 — `kumwe/conversion` 0.1.5 is the governed owner of the exact decimal kernel, the money and quantity
+  values, the conversion contract and the provider ports.**
+  The conversion package leaves the legacy registry through the migration ledger (`NRM-2026-041`):
+  `KUMWE-MIG-2026-031`, its change set, the integration train `KUMWE-TRAIN-2026-031` and the independent release
+  attestation record the verified `v0.1.5` release, and `composer.json` re-pins it exactly from `0.1.2` (one lock
+  update; `kumwe/extension-sdk` 0.2.4 requires `^0.1`, so no other lock entry moves). The release changes no
+  runtime byte: its `src/` is identical to `0.1.2` and the twenty-three `Kumwe\Conversion` types the App adopted
+  on 2026-08-28 (`7ff0aa3c`) keep their shapes, so no App class is removed here; the ledger enumerates the
+  twenty-three retired `Kumwe\App\BusinessRecord` symbols instead and retires no namespace root, because that
+  root remains a live App namespace. What the release adds is Version 2 governance: the `MIGRATION-HANDOFF.md`
+  record bound to `KUMWE-MIG-2026-031`, the capabilities and service-map manifests (direct construction, no
+  provider), a canonical `kumwe-package-public-api/v1` manifest and the byte-identical `extension-provider-v1`
+  profile preserved at `resources/public-api/legacy-v1.json`, which `tools/verify-conversion-api.php` now reads;
+  the profile digest and fifteen-type closure in `docs/architecture/conversion-api-profile.json` are unchanged.
+  `ContainerFactory` keeps sharing the two runtime catalogs and constructing the two pipelines directly, recorded
+  as host composition in the ledger. `tests/Unit/BusinessRecord/Domain/ExactDecimalTest.php`, the duplicate the
+  record prohibits, is retired and its one host assertion, that `RecordValueGuard` refuses a PHP float, moves to
+  `RecordValueGuardTest`. The published record carries JSON front matter and titles its seventh and eighth
+  narrative sections "Concurrency and conflict record" and "Validation and remaining gates", so the
+  package-record reader accepts JSON front matter on either record path and exactly those two published titles
+  at those positions, with the schema, digest and duplicate-key checks unchanged; `kumwe/extension-sdk` 0.2.4 is
+  now the only legacy-unmanifested entry. (#151)
 - **2026-09-23 — `kumwe/business-policy` 0.1.1 owns the record-policy language, its evaluator, field disclosure and
   the access plan.** The business-policy package enters App through the migration ledger (`NRM-2026-038`):
   `KUMWE-MIG-2026-022`, its change set, the integration train `KUMWE-TRAIN-2026-022` and the independent release

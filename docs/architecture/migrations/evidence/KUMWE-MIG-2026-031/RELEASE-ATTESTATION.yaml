@@ -1,0 +1,96 @@
+schema: kumwe-release-attestation/v2
+artifact_kind: framework_php
+migration_id: KUMWE-MIG-2026-031
+change_set: KUMWE-CS-2026-031
+repository: "https://github.com/kumwe/conversion"
+merge_commit: "b291f3a31314644fd88150dc9a9e911fe0617fe7"
+version: "0.1.5"
+tag: v0.1.5
+source_archive:
+  url: "https://github.com/kumwe/conversion/tree/v0.1.5"
+  sha256: "0ae9770ff793f11c6de2b959e170fc8a82af3548655f1824958680784b0ea232"
+artifacts:
+  - identity: "kumwe/conversion:0.1.5"
+    url: "https://github.com/kumwe/conversion/tree/v0.1.5"
+    sha256: "0ae9770ff793f11c6de2b959e170fc8a82af3548655f1824958680784b0ea232"
+manifests_and_corpora:
+  - path: resources/public-api/v1.json
+    sha256: "e2e3c0e3fb5127d38b382cb4779ff7d0343ab0ee0c3ea48264472e75b30298e3"
+  - path: resources/public-api/legacy-v1.json
+    sha256: "aa8302264a28005c0ff67148a2c9e61c11c956be85f3fa020d6f21688e98ba0d"
+  - path: resources/capabilities/v1.json
+    sha256: "fd7946e41e724ee071dc619105cd06ac6c29f90e159e40b5ad5267d3d6c4237b"
+  - path: resources/service-map/v1.json
+    sha256: "bc9a36835e305643cc24af4e698551726750425c1869fc525411f561c73fc4d7"
+  - path: resources/conformance/decimal-v1.tsv
+    sha256: "635db251898707828e24f12b1abb672273552f5f633186a725cc9f50ac08140c"
+  - path: MIGRATION-HANDOFF.md
+    sha256: "d4deb9a6fb3892f6c38dc006c551149fe4b658befba320685c302894ed41687a"
+abi_and_capabilities: null
+sbom:
+  url: null
+  sha256: null
+provenance: null
+release_workflow: "https://github.com/kumwe/conversion/actions/workflows/release-on-record.yml (release-on-record; the v0.1.5 run was not observable from this environment)"
+registry_or_pie_verification:
+  - "git ls-remote https://github.com/kumwe/conversion refs/tags/v0.1.5 returned one line for refs/tags/v0.1.5"
+  - "Tag commit from git ls-remote: b291f3a31314644fd88150dc9a9e911fe0617fe7; no peeled ^{} line (lightweight tag)"
+  - "git ls-remote --tags lists v0.1.1, v0.1.2, v0.1.3, v0.1.4 and v0.1.5; refs/heads/main is ba6462e57df4b50b7f3d77c7e555d4f6b4d26eef"
+  - "git clone --quiet --depth 1 --branch v0.1.5 of the repository: HEAD b291f3a31314644fd88150dc9a9e911fe0617fe7"
+  - "In the clone git cat-file -t v0.1.5 is commit; the commit has one parent, a3505d3c04cdcfa3c19ecf2ebc91c31ff6e7d947"
+  - "Tag commit subject: Bind corrected schema handoff to actual successor review; committed 2026-09-08T16:42:56Z by eWɘyn"
+  - "Packagist p2 observed 2026-09-23T15:31:48Z at https://repo.packagist.org/p2/kumwe/conversion.json (HTTP 200)"
+  - "Packagist lists v0.1.5 (0.1.5.0) newest of v0.1.5, v0.1.4, v0.1.3, v0.1.2, v0.1.1, v0.1.0; time 2026-09-08T16:42:56+00:00"
+  - "Packagist published-time for v0.1.5 is 2026-09-08T16:43:43+00:00, forty-seven seconds after the tag commit"
+  - "Packagist source: git https://github.com/kumwe/conversion.git at b291f3a31314644fd88150dc9a9e911fe0617fe7"
+  - "Packagist dist: zip at reference b291f3a31314644fd88150dc9a9e911fe0617fe7 (api.github.com zipball URL)"
+  - "Packagist source and dist references both equal the tag commit and the clone HEAD"
+  - "Packagist dist shasum is an empty string; license Apache-2.0; autoload psr-4 Kumwe\\Conversion\\ => src/"
+  - "Packagist require: php ^8.5 only; require-dev adds ext-zip beside the phpstan and phpcs tools"
+  - "curl -sS -L of https://github.com/kumwe/conversion/archive/refs/tags/v0.1.5.tar.gz: HTTP 403 from the egress policy, twice"
+  - "The policy names this repository as not enabled for archive or API access; codeload.github.com and api.github.com answered 403 too"
+  - "git archive --format=tar --prefix=conversion-0.1.5/ v0.1.5 | sha256sum (git 2.43.0) gave 0ae9770ff793f11c6de2b959e170fc8a"
+  - "Full git archive digest: 0ae9770ff793f11c6de2b959e170fc8a82af3548655f1824958680784b0ea232; it is the attested source archive"
+  - "The same command in the App's installed source checkout vendor/kumwe/conversion at that commit reproduced the digest"
+  - "Extracted conversion-0.1.5/ holds 47 files; diff -r --exclude=.git against the clone reports only paths absent from the archive"
+  - "The clone tracks 104 files; the archive omits the 57 export-ignore files under .editorconfig, .gitattributes, .github, .gitignore, AGENTS.md, phpcs.xml, phpstan.neon, tests and tools, and nothing else"
+  - "Archive top level: CHANGELOG.md, CHARTER.md, LICENSE, MIGRATION-HANDOFF.md, README.md, composer.json"
+  - "Archive top-level directories: docs, examples, resources, src; LICENSE is Apache License Version 2.0"
+  - "CHARTER.md, README.md, docs/, resources/ and src/ are all present in the archive"
+  - "diff -r --exclude=.git of the installed vendor/kumwe/conversion (Composer source checkout at the tag commit) against the clone reports no difference"
+  - "The GitHub release object, its id, the release-on-record workflow run and pull request 12 could not be queried: the GitHub API for this repository was denied in this environment"
+  - "git ls-remote shows refs/pull/12/head f72a7b97070dcf073d19b3262217b910c184a6bf and refs/pull/13/head f5caf44b81a169b4564e7b9c782986fd150e38e1; their merge state was not observed"
+clean_consumer_or_build_verification:
+  - "Inspection and the App lock install only: no package script, test or example was executed"
+  - "resources/public-api/v1.json: valid against package-public-api.v1.schema.json (App SchemaValidator)"
+  - "resources/capabilities/v1.json: valid against package-capabilities.v1.schema.json (App SchemaValidator)"
+  - "resources/service-map/v1.json: valid against package-service-map.v1.schema.json (App SchemaValidator)"
+  - "All three manifests carry package kumwe/conversion and release 0.1.5; capabilities native_requirements is null"
+  - "docs/release-record.md does not exist at v0.1.5; the shipped record is MIGRATION-HANDOFF.md with a JSON object as front matter"
+  - "MIGRATION-HANDOFF.md front matter parsed as JSON without duplicate members: valid against migration-handoff.v2.schema.json"
+  - "Record front matter: kumwe-migration-handoff/v2, KUMWE-MIG-2026-031, KUMWE-CS-2026-031, framework_php"
+  - "Record state draft_pr_open; target https://github.com/kumwe/conversion, pull request 12, artifact_identity kumwe/conversion"
+  - "Record canonical namespace Kumwe\\Conversion\\; composer_package kumwe/conversion; dependency_injection mode direct, provider null"
+  - "Record ownership.public_manifests digests equal the five locally computed digests: two public-api manifests, capabilities, service map, decimal corpus"
+  - "Record next_task.consumer_repository is https://github.com/kumwe/extension-sdk with empty files_to_remove and tests_to_remove"
+  - "Record body headings: the six standard handoff headings, then Concurrency and conflict record and Validation and remaining gates"
+  - "resources/public-api/legacy-v1.json is byte-identical to resources/public-api/v1.json of the locked 0.1.2 (digest aa8302264a28005c)"
+  - "src/ of the tag is byte-identical (diff -r) to the installed 0.1.2 src/: the twenty-three runtime types are unchanged"
+  - "CHANGELOG.md newest release heading is ## 0.1.5 — 2026-09-08 above ## 0.1.4; an ## Unreleased section with two entries precedes it"
+  - "Package composer.json require: php ^8.5; no Kumwe or third-party runtime dependency"
+  - "App composer.lock after composer require kumwe/conversion:0.1.5: 0 installs, 1 update, 0 removals; kumwe/extension-sdk 0.2.4 requires ^0.1"
+  - "App composer install from that lock succeeded; the installed checkout is the tag commit"
+  - "Validator: tools/Governance bootstrap, SchemaValidator and StrictYaml loaded by a scratch script on PHP 8.4.19"
+verified_at: "2026-09-23T15:31:48Z"
+verified_by: "Independent release verification agent (fresh depth-1 checkout of the tag at Phase 2 start, no Phase 1 context)"
+status: verified
+known_gaps:
+  - "The hosted tag tar.gz and the Packagist dist zipball were not downloaded: the egress policy answered HTTP 403 for github.com archive, codeload and api.github.com requests for this repository"
+  - "The attested source archive is therefore the deterministic git archive of the tag commit, reproducible with git archive --format=tar --prefix=conversion-0.1.5/ v0.1.5, not the hosted bytes"
+  - "The GitHub release object, its id, the release-on-record workflow run and the merge state of pull request 12 were not observed; the tag commit ships .github/workflows/release-on-record.yml"
+  - "The verification was performed by the Phase 2 preparer from a fresh checkout of the tag before any App record was written, not by a separate isolated verification run (D-GOV-11)"
+  - "No package script, test or example was executed, and no clean consumer beyond the App lock install was created"
+  - "The shipped MIGRATION-HANDOFF.md uses JSON front matter and titles its seventh and eighth sections differently from the eight handoff headings the App reader requires; App records the reader accommodation in KUMWE-MIG-2026-031 and NRM-2026-041"
+  - "CHANGELOG.md at the tag carries an Unreleased section above the 0.1.5 heading; the release-on-record workflow reads the first versioned heading"
+  - "No SBOM and no release assets were observed; abi_and_capabilities does not apply to a framework_php artifact"
+  - "The schema checks used the App's fixed JSON Schema 2020-12 subset validator, not a full implementation"

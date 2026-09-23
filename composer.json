@@ -41,7 +41,7 @@
     "kumwe/business-policy": "0.1.1",
     "kumwe/canonical-json": "0.1.1",
     "kumwe/computation": "0.3.3",
-    "kumwe/conversion": "0.1.2",
+    "kumwe/conversion": "0.1.5",
     "kumwe/extension-sdk": "0.2.4",
     "kumwe/localization": "0.1.1",
     "kumwe/navigation": "0.1.3",

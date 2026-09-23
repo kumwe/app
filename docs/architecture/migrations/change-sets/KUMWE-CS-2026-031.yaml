@@ -1,0 +1,139 @@
+schema: kumwe-change-set/v2
+change_set: KUMWE-CS-2026-031
+migration_id: KUMWE-MIG-2026-031
+roadmap_source:
+  title: Kumwe ERP-Extensibility Foundation Roadmap
+  sha256: a202155ef1a65f5ab293d4f8397ebf4ac430db7f1e877c776bbe7851e6fe18d8
+roadmap_refs: []
+state: app-pr-ready
+phase_1:
+  source_repository: kumwe/app
+  source_sha: "24ecf956423c18933e824b43cea1bfb9127a79a9"
+  target_repository: kumwe/conversion
+  package_pr: "https://github.com/kumwe/conversion/pull/12"
+  tested_sha: null
+  public_api_digest: "e2e3c0e3fb5127d38b382cb4779ff7d0343ab0ee0c3ea48264472e75b30298e3"
+  capability_digest: "fd7946e41e724ee071dc619105cd06ac6c29f90e159e40b5ad5267d3d6c4237b"
+  service_map_digest: "bc9a36835e305643cc24af4e698551726750425c1869fc525411f561c73fc4d7"
+  handoff_digest: "d4deb9a6fb3892f6c38dc006c551149fe4b658befba320685c302894ed41687a"
+release:
+  version: 0.1.5
+  source_sha: "b291f3a31314644fd88150dc9a9e911fe0617fe7"
+  artifact_digest: "0ae9770ff793f11c6de2b959e170fc8a82af3548655f1824958680784b0ea232"
+  clean_consumer_evidence:
+    - docs/architecture/migrations/evidence/KUMWE-MIG-2026-031/RELEASE-ATTESTATION.yaml
+phase_2:
+  app_pr: "https://github.com/kumwe/app/pull/151"
+  tested_sha: null
+  merged_sha: null
+  exact_dependency: "kumwe/conversion 0.1.5"
+  composer_lock_digest: "7a71ca55236dcff30ba35ca9b37c437c52a303bebd7e4062d93044467e0161db"
+  removed_app_symbols:
+    - Kumwe\App\BusinessRecord\Domain\ExactDecimal
+    - Kumwe\App\BusinessRecord\Domain\ExactDecimalArithmetic
+    - Kumwe\App\BusinessRecord\Domain\ExactRoundingRule
+    - Kumwe\App\BusinessRecord\Domain\MoneyValue
+    - Kumwe\App\BusinessRecord\Domain\QuantityValue
+    - Kumwe\App\BusinessRecord\Domain\MoneyRoundingMode
+    - Kumwe\App\BusinessRecord\Domain\QuantityRoundingMode
+    - Kumwe\App\BusinessRecord\Domain\MoneyExchangeRate
+    - Kumwe\App\BusinessRecord\Domain\UnitConversionFactor
+    - Kumwe\App\BusinessRecord\Domain\ConvertedMoneyValue
+    - Kumwe\App\BusinessRecord\Domain\ConvertedQuantityValue
+    - Kumwe\App\BusinessRecord\Domain\MoneyConversionRequest
+    - Kumwe\App\BusinessRecord\Domain\UnitConversionRequest
+    - Kumwe\App\BusinessRecord\Domain\MoneyConverter
+    - Kumwe\App\BusinessRecord\Domain\QuantityConverter
+    - Kumwe\App\BusinessRecord\Application\MoneyRateProvider
+    - Kumwe\App\BusinessRecord\Application\UnitConversionProvider
+    - Kumwe\App\BusinessRecord\Application\MoneyRateProviderCatalog
+    - Kumwe\App\BusinessRecord\Application\UnitConversionProviderCatalog
+    - Kumwe\App\BusinessRecord\Application\MoneyRateUnavailable
+    - Kumwe\App\BusinessRecord\Application\UnitConversionUnavailable
+    - Kumwe\App\BusinessRecord\Application\MoneyConversionPipeline
+    - Kumwe\App\BusinessRecord\Application\UnitConversionPipeline
+  moved_unit_tests:
+    - tests/Unit/BusinessRecord/Domain/ExactDecimalTest.php
+  retained_app_tests:
+    - tests/Architecture/MoneyConversionBoundaryTest.php
+    - tests/Architecture/UnitConversionBoundaryTest.php
+    - tests/Architecture/ConvertedMoneySurfaceCoverageTest.php
+    - tests/Architecture/ConversionApiConsumerGateTest.php
+    - tests/Unit/BusinessRecord/Domain/ExactValueCodecTest.php
+    - tests/Unit/BusinessRecord/Domain/RecordValueGuardTest.php
+    - tests/Unit/BusinessRecord/Application/MoneyRateProviderContributionTest.php
+    - tests/Unit/BusinessRecord/Application/UnitConversionProviderContributionTest.php
+    - tests/Unit/Extension/Contribution/UnitConversionProviderDeclarationTest.php
+    - tests/Unit/BusinessReporting/ConvertedMoneyProvenanceTest.php
+    - tests/Unit/BusinessReporting/ConvertedQuantityProvenanceTest.php
+    - tests/Unit/BusinessRecord/Application/RecordRuleValidatorTest.php
+    - tests/Unit/BusinessRecord/Application/BusinessRecordRelationshipCoordinatorTest.php
+    - tests/Integration/BusinessRecord/AggregateDocumentIntegrationTest.php
+    - tests/Integration/BusinessRecord/BusinessRecordRelationshipIntegrationTest.php
+    - tests/Integration/BusinessRecord/BusinessRecordRuntimeIntegrationTest.php
+    - tests/Support/BusinessRuntimeBackupAcceptance.php
+    - tests/Architecture/TruthfulQualityGateTest.php
+    - tests/Unit/Governance/LayerClassifierTest.php
+    - tests/Unit/Governance/ComposerLockTest.php
+    - tests/Unit/Governance/PackageManifestsTest.php
+    - tests/Architecture/CapabilityIndexGateTest.php
+    - tests/Architecture/StudioDependencyPinGateTest.php
+evidence:
+  package:
+    - docs/architecture/migrations/evidence/KUMWE-MIG-2026-031/RELEASE-ATTESTATION.yaml
+    - "https://github.com/kumwe/conversion/pull/12; the handoff names it as the Phase 1 pull request, and the tag commit b291f3a31314644fd88150dc9a9e911fe0617fe7 is the published release"
+    - "Packagist kumwe/conversion v0.1.5 published 2026-09-08T16:43:43+00:00 with source and dist at the tag commit; the release workflow run was not observable from the verification environment (attestation known_gaps)"
+  app_composition:
+    - tests/Unit/Governance/ComposerLockTest.php
+    - tests/Unit/Governance/CoreGrowthGateTest.php
+    - tests/Unit/Governance/PackageManifestsTest.php
+    - tests/Unit/Governance/LayerClassifierTest.php
+    - tests/Architecture/CapabilityIndexGateTest.php
+    - tests/Architecture/ConversionApiConsumerGateTest.php
+    - tests/Architecture/TruthfulQualityGateTest.php
+    - "composer require kumwe/conversion:0.1.5; one lock update from v0.1.2, no other lock change (kumwe/extension-sdk 0.2.4 requires ^0.1)"
+    - "composer kumwe:capability-index, kumwe:core-growth-record, baseline:record, then the composer qa gates and the unit and architecture suites, run locally on PHP 8.4 without ext-kumwe_engine"
+  database_matrix:
+    - tests/Integration/BusinessRecord/AggregateDocumentIntegrationTest.php
+    - tests/Integration/BusinessRecord/BusinessRecordRelationshipIntegrationTest.php
+    - tests/Integration/BusinessRecord/BusinessRecordRuntimeIntegrationTest.php
+    - "To be exercised by the pull request's hosted workflows on MariaDB, MySQL and PostgreSQL; the exact value codec and column encoding are unchanged."
+  concurrency:
+    - tests/Integration/BusinessRecord/BusinessRecordRuntimeIntegrationTest.php
+    - "The package pipelines are final readonly and hold no request state; catalog lifetime and thread safety are host-owned and unchanged; to be exercised by the pull request's hosted workflows."
+  authorization_security:
+    - tests/Unit/BusinessRecord/Application/MoneyRateProviderContributionTest.php
+    - tests/Unit/BusinessRecord/Application/UnitConversionProviderContributionTest.php
+    - tests/Architecture/MoneyConversionBoundaryTest.php
+    - tests/Architecture/UnitConversionBoundaryTest.php
+    - "Rates and tables stay outside core, providers reach the catalogs only through trusted activation, and the hosted source-and-image security scans run on the pull request."
+  lifecycle_recovery:
+    - tests/Unit/BusinessRecord/Application/MoneyRateProviderContributionTest.php
+    - tests/Unit/BusinessRecord/Application/UnitConversionProviderContributionTest.php
+    - tests/Support/BusinessRuntimeBackupAcceptance.php
+    - "Provider contributions disappear with their package on disable, uninstall or trust revocation; to be exercised by the pull request's hosted workflows."
+  delivery_browser:
+    - tests/Architecture/ConvertedMoneySurfaceCoverageTest.php
+    - tests/Unit/BusinessReporting/ConvertedMoneyProvenanceTest.php
+    - tests/Unit/BusinessReporting/ConvertedQuantityProvenanceTest.php
+    - "The rendering half of the conversion contract stays in App; the browser suites run in the pull request's hosted workflows."
+  deployment_backup_restore:
+    - tests/Support/BusinessRuntimeBackupAcceptance.php
+    - "Signed backup, clean restore and production acceptance on three engines; to be exercised by the pull request's hosted workflows."
+  native_parity_abi:
+    - tests/Unit/BusinessRecord/Domain/ExactValueCodecTest.php
+    - "The package is PHP-only (native_requirements null) and its decimal corpus resources/conformance/decimal-v1.tsv is unchanged; the native decimal cutover remains Computation-owned and is not claimed here."
+  performance_capacity:
+    - tests/Unit/BusinessRecord/Domain/ExactValueCodecTest.php
+    - "No performance claim is made; the package source is byte-identical to the locked 0.1.2."
+compatibility: "Drop-in for consumers: the twenty-three types keep their names and shapes under Kumwe\\Conversion, the extension-provider-v1 profile digest and fifteen-type closure are unchanged, and the consumer gate reads the preserved profile at resources/public-api/legacy-v1.json."
+migration_recovery: null
+security_impact: "None on authority: rates and tables, authorization, trusted activation, storage refusals and provenance rendering stay in the App adapters; the package never sees a connection or a request."
+performance_claim: null
+rollback: "Revert the App pull request: the pin returns to 0.1.2, the legacy registry entry and the retired duplicate test return from the baseline commit, and no persisted data changes."
+known_gaps:
+  - "The local sandbox runs PHP 8.4 without ext-kumwe_engine and without a database server, so the integration and functional lanes, PHP 8.5 and the native runtime are proven by the App CI on this pull request."
+  - "The published 0.1.5 record is a MIGRATION-HANDOFF.md with JSON front matter and two renamed narrative sections; the package-record reader accepts exactly those published facts, and the docs/release-record.md path is exercised by a later successor release."
+  - "The hosted tag archive, the Packagist dist zipball, the GitHub release object and the release workflow run were not reachable from the verification environment; the attestation binds the reproducible git archive of the tag commit and records those gaps."
+completion_claim: false
+accepted_by: null

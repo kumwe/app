@@ -59,6 +59,23 @@ final readonly class PackageManifests
     ];
 
     /**
+     * Published equivalents of two handoff headings, keyed by the heading each stands for.
+     *
+     * kumwe/conversion 0.1.5 (tag commit b291f3a31314644fd88150dc9a9e911fe0617fe7), the release every package
+     * of the extension-sdk 0.3.2 train pins exactly, titles its seventh and eighth sections this way. An
+     * immutable release cannot be re-titled, so the reader accepts exactly these titles in place of the two
+     * headings they stand for and nothing else; the other six headings, the schema, the manifest digests and
+     * the duplicate-key refusal are unchanged.
+     *
+     * @var    array<string, list<string>>
+     * @since  2.0.0
+     */
+    public const HANDOFF_SECTION_EQUIVALENTS = [
+        'Drift check' => ['Concurrency and conflict record'],
+        'Validation recipe and observed local results' => ['Validation and remaining gates'],
+    ];
+
+    /**
      * Handoff `framework_php` fields naming the manifests, mapped to the `MANIFEST_PATHS` keys.
      *
      * @var    array<string, string>
@@ -593,8 +610,14 @@ final readonly class PackageManifests
         }
         $sections = $recordPath === 'docs/release-record.md'
             ? self::RELEASE_RECORD_SECTIONS : self::HANDOFF_SECTIONS;
+        $equivalents = $recordPath === 'docs/release-record.md' ? [] : self::HANDOFF_SECTION_EQUIVALENTS;
         foreach ($sections as $section) {
-            if (preg_match('/^##\s+(?:[0-9]+\.\s+)?' . preg_quote($section, '/') . '\s*$/m', $parsed['body']) !== 1) {
+            $titles = array_map(
+                static fn (string $title): string => preg_quote($title, '/'),
+                [$section, ...($equivalents[$section] ?? [])],
+            );
+            $heading = '/^##\s+(?:[0-9]+\.\s+)?(?:' . implode('|', $titles) . ')\s*$/m';
+            if (preg_match($heading, $parsed['body']) !== 1) {
                 throw GovernanceViolation::at(
                     $relative,
                     sprintf('the narrative section "## %s" is missing', $section),
@@ -642,11 +665,13 @@ final readonly class PackageManifests
     }
 
     /**
-     * Parse a current record as block YAML or JSON-compatible YAML, preserving strict duplicate-key refusal.
+     * Parse a package record as block YAML or JSON-compatible YAML, preserving strict duplicate-key refusal.
      *
-     * Legacy records retain the existing StrictYaml subset. JSON is accepted only for the production path.
-     * Counting object-member tokens before and after decoding rejects overwritten duplicate keys, including
-     * escaped spellings and duplicates inside nested objects. Quoted value contents are consumed as one token.
+     * Either recognised record path may carry a JSON object as its front matter: `docs/release-record.md` by
+     * design, and `MIGRATION-HANDOFF.md` because kumwe/conversion 0.1.5 published one and an immutable release
+     * cannot be re-encoded. Any other path retains the StrictYaml subset. Counting object-member tokens before
+     * and after decoding rejects overwritten duplicate keys, including escaped spellings and duplicates inside
+     * nested objects. Quoted value contents are consumed as one token.
      *
      * @param   string  $bytes     Complete markdown record.
      * @param   string  $relative  Installed record path for diagnostics and format selection.
@@ -660,7 +685,7 @@ final readonly class PackageManifests
     public static function parseReleaseRecord(string $bytes, string $relative): array
     {
         if (
-            !str_ends_with($relative, '/docs/release-record.md')
+            preg_match('~/(?:docs/release-record|MIGRATION-HANDOFF)\.md$~D', $relative) !== 1
             || preg_match('/\A---\r?\n(\{[\s\S]*?)\r?\n---(?:\r?\n|\z)/', $bytes, $match) !== 1
         ) {
             return StrictYaml::parseFrontMatter($bytes, $relative);

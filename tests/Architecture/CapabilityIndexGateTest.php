@@ -14,10 +14,10 @@ use PHPUnit\Framework\TestCase;
  * Proves the capability index gate holds for this repository and is registered in every lane that must run it.
  *
  * The committed `docs/architecture/capability-index.md` matches what the installed Kumwe packages generate, the
- * generator is deterministic, a stale digest is refused, the two remaining pre-Version-2 packages appear only as
- * approved legacy-unmanifested entries that cannot satisfy a release gate while `kumwe/canonical-json` and
- * `kumwe/producer` are indexed from their Version 2 manifests and ledger records, and the check is wired into
- * `composer qa`, the quality contract, both CI steps and the coverage contract.
+ * generator is deterministic, a stale digest is refused, the one remaining pre-Version-2 package appears only as
+ * an approved legacy-unmanifested entry that cannot satisfy a release gate while `kumwe/canonical-json`,
+ * `kumwe/conversion` and `kumwe/producer` are indexed from their Version 2 manifests and ledger records, and the
+ * check is wired into `composer qa`, the quality contract, both CI steps and the coverage contract.
  *
  * @since  2.0.0
  */
@@ -184,10 +184,11 @@ final class CapabilityIndexGateTest extends TestCase
     }
 
     /**
-     * Two pre-Version-2 packages remain legacy-unmanifested transitional entries that cannot satisfy a release
-     * gate. The nine manifested packages retain their release metadata; the transaction, localization and
-     * secret-envelope adoptions preserve the access-context and sequence handoffs and removed-symbol mappings,
-     * and the navigation adoption retires its App domain root.
+     * One pre-Version-2 package remains a legacy-unmanifested transitional entry that cannot satisfy a release
+     * gate. The eleven manifested packages retain their release metadata; the conversion re-pin binds the JSON
+     * handoff its release ships, the transaction, localization and secret-envelope adoptions preserve the
+     * access-context and sequence handoffs and removed-symbol mappings, and the navigation adoption retires its
+     * App domain root.
      *
      * @return  void
      *
@@ -217,7 +218,7 @@ final class CapabilityIndexGateTest extends TestCase
             ],
             array_column($packages, 'package'),
         );
-        foreach ([$packages[5], $packages[6]] as $package) {
+        foreach ([$packages[6]] as $package) {
             self::assertSame('legacy-unmanifested', $package['manifest_status'], (string) $package['package']);
             self::assertFalse($package['release_gate_eligible'], (string) $package['package']);
             self::assertIsArray($package['legacy']);
@@ -244,6 +245,15 @@ final class CapabilityIndexGateTest extends TestCase
         self::assertSame('KUMWE-CS-2026-007', $canonical['handoff']['change_set']);
         self::assertSame('vendor/kumwe/canonical-json/MIGRATION-HANDOFF.md', $canonical['handoff']['path']);
         self::assertContains('Kumwe\\CanonicalJson\\Profile', $canonical['public_symbols']);
+        $conversion = $packages[5];
+        self::assertSame('v2-manifested', $conversion['manifest_status']);
+        self::assertTrue($conversion['release_gate_eligible']);
+        self::assertNull($conversion['legacy']);
+        self::assertIsArray($conversion['handoff']);
+        self::assertSame('KUMWE-MIG-2026-031', $conversion['handoff']['migration_id']);
+        self::assertSame('KUMWE-CS-2026-031', $conversion['handoff']['change_set']);
+        self::assertSame('vendor/kumwe/conversion/MIGRATION-HANDOFF.md', $conversion['handoff']['path']);
+        self::assertContains('Kumwe\\Conversion\\Decimal\\ExactDecimal', $conversion['public_symbols']);
         $producer = $packages[9];
         self::assertSame('v2-manifested', $producer['manifest_status']);
         self::assertTrue($producer['release_gate_eligible']);
@@ -266,7 +276,7 @@ final class CapabilityIndexGateTest extends TestCase
                 'v0.1.1',
                 'v0.1.1',
                 'v0.3.3',
-                'v0.1.2',
+                'v0.1.5',
                 'v0.2.4',
                 'v0.1.1',
                 'v0.1.3',
@@ -315,6 +325,7 @@ final class CapabilityIndexGateTest extends TestCase
                 'kumwe/transaction' => 3,
                 'kumwe/audit' => 13,
                 'kumwe/sequence' => 4,
+                'kumwe/conversion' => 23,
                 'kumwe/secret-envelope' => 9,
                 'kumwe/business-policy' => 14,
                 'kumwe/localization' => 23,

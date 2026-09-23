@@ -1,0 +1,32 @@
+schema: kumwe-non-roadmap-record/v1
+id: NRM-2026-041
+nrm_ref: NRM-2026-041
+roadmap_impact: None
+rationale: "Re-pin the approved legacy kumwe/conversion 0.1.2 to its verified Version 2 successor 0.1.5, the governed owner of the exact decimal kernel, the money and quantity values, the conversion contract and the provider ports, and move it from the legacy registry into the migration ledger."
+repositories:
+  - kumwe/app
+  - kumwe/conversion
+behavior_before: "App installed kumwe/conversion 0.1.2 as an approved legacy-unmanifested entry: its twenty-three Kumwe\\Conversion types were already the App's since 2026-08-28, but the release shipped no capabilities or service-map manifest and no handoff, so no ledger record could adopt it, and tools/verify-conversion-api.php read the extension-provider-v1 profile from resources/public-api/v1.json."
+behavior_after: "The same twenty-three types come from kumwe/conversion 0.1.5, whose src/ is byte-identical to 0.1.2; the release adds the MIGRATION-HANDOFF.md record bound to KUMWE-MIG-2026-031, the capabilities and service-map manifests, the canonical kumwe-package-public-api/v1 manifest and the preserved extension-provider-v1 profile at resources/public-api/legacy-v1.json, which the consumer gate now reads. App keeps the runtime catalogs, the direct pipeline construction, authorization, trusted activation, storage refusals, provenance rendering and reporting, and the package-record reader accepts the JSON front matter and the two published section titles the immutable release carries."
+public_api_impact: "None for callers; every public type, member and decimal corpus byte is unchanged, and the extension-provider-v1 profile digest and fifteen-type closure App pins are unchanged."
+dependency_impact: "Moves kumwe/conversion from 0.1.2 to 0.1.5 exactly; kumwe/extension-sdk 0.2.4 requires ^0.1, so no other lock entry changes."
+compatibility: "Drop-in: no runtime symbol, signature or corpus byte changes; the legacy registry entry is removed in the same change because a re-pinned legacy entry cannot stand beside a ledger record."
+data_migration: None
+security_impact: "No authority change; rates and tables, authorization, trusted activation and storage refusals stay in App, and the package never sees a connection or a request."
+performance:
+  claim: None
+  evidence: []
+operations_deployment: "None; no configuration, provider or schema change."
+recovery_rollback: "Revert the adoption pull request: the pin returns to 0.1.2, the legacy registry entry and the retired duplicate test return, and no persisted data changes."
+artifacts_evidence:
+  - docs/architecture/migrations/KUMWE-MIG-2026-031.yaml
+  - docs/architecture/migrations/change-sets/KUMWE-CS-2026-031.yaml
+  - docs/architecture/migrations/trains/KUMWE-TRAIN-2026-031.yaml
+  - docs/architecture/migrations/evidence/KUMWE-MIG-2026-031/RELEASE-ATTESTATION.yaml
+  - docs/architecture/capability-index.md
+known_gaps:
+  - "The published 0.1.5 record is a MIGRATION-HANDOFF.md with JSON front matter whose seventh and eighth sections are titled Concurrency and conflict record and Validation and remaining gates, not the docs/release-record.md the package carries on its unreleased main; the reader accommodation is bounded to those published facts, and a later successor release exercises the release-record path."
+  - "The hosted tag archive, the Packagist dist and the release workflow run could not be fetched from the verification environment; the attestation binds the reproducible git archive of the tag commit and lists those gaps."
+  - "kumwe/record-values 0.1.4, kumwe/record-query 0.1.4, kumwe/conversion-extension 0.1.4 and kumwe/extension-sdk 0.3.2 pin this release exactly and follow as separate adoptions."
+owner: "eWɘyn"
+status: in-progress
