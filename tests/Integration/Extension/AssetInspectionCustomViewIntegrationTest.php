@@ -11,6 +11,7 @@ use Kumwe\App\BusinessRecord\Application\BusinessRecordService;
 use Kumwe\App\BusinessRecord\Application\Command\CreateRecordCommand;
 use Kumwe\App\BusinessRecord\Application\PolicyBusinessRecordReader;
 use Kumwe\App\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordReadRepository;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessInvocationScope;
 use Kumwe\Record\Query\RecordProjection;
 use Kumwe\Record\Query\RecordQuerySpecification;
 use Kumwe\App\BusinessSecurity\Application\Administration\BusinessSecurityAdministrationRepository;
@@ -27,6 +28,7 @@ use KumweExample\AssetInspection\Application\InspectionSummaryViewHandler;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
+use RuntimeException;
 
 /**
  * Exercises the example custom view against the real record service and persisted row/field policies.
@@ -207,9 +209,10 @@ final class AssetInspectionCustomViewIntegrationTest extends TestCase
             ['business.record.browse'],
             array_map(static fn (Capability $capability): string => $capability->value(), $principal->capabilities()),
         );
-        $handler = new InspectionSummaryViewHandler(new PolicyBusinessRecordReader($records));
-
-        $result = $handler->handle(new CustomBusinessViewQuery(
+        $invocations = $container->get(CustomBusinessInvocationScope::class);
+        self::assertInstanceOf(CustomBusinessInvocationScope::class, $invocations);
+        $handler = new InspectionSummaryViewHandler(new PolicyBusinessRecordReader($records, $invocations));
+        $query = new CustomBusinessViewQuery(
             $viewer,
             $definition->handle,
             'inspection_risk_summary',
@@ -217,7 +220,20 @@ final class AssetInspectionCustomViewIntegrationTest extends TestCase
                 pageSize: 200,
                 projection: new RecordProjection(['reference', 'risk_score', 'internal_note']),
             ),
-        ));
+        );
+
+        try {
+            $handler->handle($query);
+            self::fail('The custom view read records outside its invocation.');
+        } catch (RuntimeException $exception) {
+            self::assertStringContainsString('host-issued execution context', $exception->getMessage());
+        }
+        $invocations->enter($viewer);
+        try {
+            $result = $handler->handle($query);
+        } finally {
+            $invocations->leave();
+        }
 
         self::assertCount(11, $result->data['inspections']);
         self::assertFalse($result->data['restricted_fields_disclosed']);

@@ -60,7 +60,7 @@ final readonly class InspectionSummaryViewHandler implements CustomBusinessViewH
             $requested->includeDeleted,
         );
         $page = $this->records->readPage(new BusinessRecordReadRequest(
-            $query->context,
+            InvocationExecutionContext::of($query->context),
             $query->definitionIdentifier,
             $specification,
             $query->organizationIdentifier,

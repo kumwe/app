@@ -34,6 +34,7 @@ use Kumwe\App\BusinessSurface\Application\BusinessRecordProjector;
 use Kumwe\App\BusinessSurface\Application\BusinessSurfaceCatalog;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionHandlerRegistry;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionLedgerResult;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessInvocationScope;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessReferenceRegistry;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessSurfaceDispatcher;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewHandlerRegistry;
@@ -399,6 +400,7 @@ final class BusinessOperationStatusApiHandlerTest extends TestCase
                 new CustomBusinessActionHandlerRegistry($references),
                 $authorization,
                 $this->createStub(ExtensionExecutionGate::class),
+                new CustomBusinessInvocationScope(),
             );
         }
         $catalog = new BusinessSurfaceCatalog(
@@ -585,6 +587,7 @@ final class BusinessOperationStatusApiHandlerTest extends TestCase
             $actions,
             $this->createStub(AuthorizationGateway::class),
             $this->createStub(ExtensionExecutionGate::class),
+            new CustomBusinessInvocationScope(),
         );
     }
 

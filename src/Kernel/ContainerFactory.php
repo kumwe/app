@@ -247,6 +247,7 @@ use Kumwe\App\BusinessSurface\Application\BusinessSurfaceCatalog;
 use Kumwe\App\BusinessSurface\Application\BusinessSurfaceService;
 use Kumwe\App\BusinessSurface\Application\CustomBusinessActionExecutor;
 use Kumwe\App\BusinessSurface\Application\FieldModelPresenter;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessInvocationScope;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessSurfaceDispatcher;
 use Kumwe\App\BusinessSurface\Application\GeneratedBusinessActionStepUp;
 use Kumwe\App\BusinessSurface\Application\MutationPlanCipher;
@@ -3552,6 +3553,8 @@ final class ContainerFactory
         $container->alias(ExtensionInstallReconciler::class, ExtensionManager::class);
         $execution = new CurrentExtensionExecutionGate($compiler, $materialization);
         $container->share(ExtensionExecutionGate::class, $execution, true);
+        $invocations = new CustomBusinessInvocationScope();
+        $container->share(CustomBusinessInvocationScope::class, $invocations, true);
         $active = $loadRuntime
             && $materialization->trusted
             && $materialization->publication !== null
@@ -3566,6 +3569,7 @@ final class ContainerFactory
                 CanonicalEncoder::class => self::service($container, CanonicalEncoder::class),
                 BusinessRecordReader::class => new PolicyBusinessRecordReader(
                     self::service($container, BusinessRecordService::class),
+                    $invocations,
                 ),
                 BusinessRecordService::class => self::service($container, BusinessRecordService::class),
                 ContentService::class => self::service($container, ContentService::class),
@@ -3867,6 +3871,7 @@ final class ContainerFactory
             self::service($container, ExtensionContributionRegistrySet::class)->customBusinessActionHandlers(),
             self::service($container, AuthorizationGateway::class),
             self::service($container, ExtensionExecutionGate::class),
+            self::service($container, CustomBusinessInvocationScope::class),
         ), true);
         $container->share(CustomBusinessActionExecutor::class, static fn (
             Container $container,

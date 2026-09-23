@@ -5,7 +5,12 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\BusinessRecord\Application;
 
 use Kumwe\App\BusinessRecord\Application\BusinessRecordService;
+use Kumwe\App\Application\Authorization\SystemIdentity;
 use Kumwe\App\BusinessRecord\Application\PolicyBusinessRecordReader;
+use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessInvocationScope;
+use Kumwe\App\Tests\Support\CoordinateExecutionContext;
+use Kumwe\Context\Value\ExecutionContext as HostExecutionContext;
+use Kumwe\Context\Value\SiteContext;
 use Kumwe\Extension\Spi\Application\ExecutionContext;
 use Kumwe\Extension\Spi\BusinessRecord\Application\BusinessRecordReadRequest;
 use Kumwe\Record\Query\RecordQuerySpecification;
@@ -13,6 +18,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use RuntimeException;
+use stdClass;
 
 #[CoversClass(PolicyBusinessRecordReader::class)]
 /**
@@ -132,5 +138,75 @@ final class PolicyBusinessRecordReaderTest extends TestCase
             'acme.assets.item',
             new RecordQuerySpecification(),
         ));
+    }
+
+    /**
+     * Prove a configured invocation scope resolves nothing while no custom invocation is executing.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAContextNamingAHostContextIsRefusedOutsideAnyCustomInvocation(): void
+    {
+        $service = (new ReflectionClass(BusinessRecordService::class))->newInstanceWithoutConstructor();
+        $reader = new PolicyBusinessRecordReader($service, new CustomBusinessInvocationScope());
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('host-issued execution context');
+
+        $reader->readPage(new BusinessRecordReadRequest(
+            new CoordinateExecutionContext(self::host('request-1')),
+            'acme.assets.item',
+            new RecordQuerySpecification(),
+        ));
+    }
+
+    /**
+     * Prove a context naming another request than the executing invocation is refused inside the scope.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAContextNamingAnotherInvocationIsRefusedInsideTheScope(): void
+    {
+        $service = (new ReflectionClass(BusinessRecordService::class))->newInstanceWithoutConstructor();
+        $invocations = new CustomBusinessInvocationScope();
+        $reader = new PolicyBusinessRecordReader($service, $invocations);
+        $request = new BusinessRecordReadRequest(
+            new CoordinateExecutionContext(self::host('request-2')),
+            'acme.assets.item',
+            new RecordQuerySpecification(),
+        );
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('host-issued execution context');
+
+        $invocations->enter(self::host('request-1'));
+        try {
+            $reader->readPage($request);
+        } finally {
+            $invocations->leave();
+        }
+    }
+
+    /**
+     * Issue a system context on the default site for one request identifier.
+     *
+     * @param   string  $requestId  Request identifier distinguishing the context.
+     *
+     * @return  HostExecutionContext  Host-issued context.
+     *
+     * @since   2.0.0
+     */
+    private static function host(string $requestId): HostExecutionContext
+    {
+        return HostExecutionContext::issueSystem(
+            new stdClass(),
+            SystemIdentity::Worker,
+            SiteContext::default(),
+            $requestId,
+        );
     }
 }

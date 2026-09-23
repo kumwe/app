@@ -1359,8 +1359,10 @@
         "Kumwe\\App\\BusinessRecord\\Application\\PolicyBusinessRecordReader": {
             "kind": "class",
             "layer": "application",
-            "surface": "8c60c118552f6384be21ae3b",
-            "growth": null
+            "surface": "ac781d8e17a73e1a7573b53f",
+            "growth": {
+                "record": "KUMWE-CGR-2026-014"
+            }
         },
         "Kumwe\\App\\BusinessRecord\\Application\\PostingPeriodCalendar": {
             "kind": "interface",
@@ -2469,6 +2471,14 @@
             "surface": "03d825e8a547d430bb709993",
             "growth": null
         },
+        "Kumwe\\App\\BusinessSurface\\Application\\Custom\\CustomBusinessInvocationScope": {
+            "kind": "class",
+            "layer": "application",
+            "surface": "c5b291f0c3010494e638bdbc",
+            "growth": {
+                "record": "KUMWE-CGR-2026-014"
+            }
+        },
         "Kumwe\\App\\BusinessSurface\\Application\\Custom\\CustomBusinessReferenceRegistry": {
             "kind": "class",
             "layer": "application",
@@ -2478,8 +2488,10 @@
         "Kumwe\\App\\BusinessSurface\\Application\\Custom\\CustomBusinessSurfaceDispatcher": {
             "kind": "class",
             "layer": "application",
-            "surface": "bee75c9b08e949350584405f",
-            "growth": null
+            "surface": "de360f00411c33f2bf00be3a",
+            "growth": {
+                "record": "KUMWE-CGR-2026-014"
+            }
         },
         "Kumwe\\App\\BusinessSurface\\Application\\Custom\\CustomBusinessViewHandlerRegistry": {
             "kind": "class",
