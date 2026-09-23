@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessSchema\Application;
 
 use DateTimeImmutable;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\Transaction\Contract\TransactionManager;
@@ -29,7 +29,7 @@ use Kumwe\App\BusinessSchema\Domain\SchemaPlan;
 use Kumwe\App\BusinessSchema\Domain\SchemaPlanStatus;
 use Kumwe\App\BusinessSchema\Domain\SchemaPlanStep;
 use Kumwe\App\BusinessSchema\Domain\SchemaRisk;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 
@@ -108,7 +108,7 @@ final readonly class BusinessSchemaPlanner implements PublishedDefinitionSchemaO
      *
      * @return  SchemaPlan  A plan awaiting approval, or the identical plan already on record for it.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not exercise
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not exercise
      *          `business.schema.plan` over the business-schema collection.
      * @throws  BusinessSchemaNotFound  When this site publishes no definition under that identifier, or a
      *          handle the definition references resolves to no published version.
@@ -157,7 +157,7 @@ final readonly class BusinessSchemaPlanner implements PublishedDefinitionSchemaO
      *
      * @return  SchemaPlan  A destructive plan awaiting its own approval and recovery evidence.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not exercise
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not exercise
      *          `business.schema.destructive` over the business-schema collection.
      * @throws  BusinessSchemaNotFound  When this site has nothing installed under that identifier, when the
      *          installation belongs to another site, or when the definition is no longer published.

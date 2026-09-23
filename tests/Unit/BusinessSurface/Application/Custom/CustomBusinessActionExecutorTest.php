@@ -6,7 +6,7 @@ namespace Kumwe\App\Tests\Unit\BusinessSurface\Application\Custom;
 
 use DateTimeImmutable;
 use Kumwe\Context\Value\AuthenticationStrength;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\Access\AuthorizationGateway;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\Transaction\Contract\TransactionManager;

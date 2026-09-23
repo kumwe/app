@@ -6,8 +6,8 @@ namespace Kumwe\App\Tests\Unit\Navigation\Application;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
-use Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter;
+use Kumwe\Access\AuthorizationResource;
+use Kumwe\Access\ResourceSiteOwnershipWriter;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\Audit\Application\AuditRecorder;

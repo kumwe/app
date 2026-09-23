@@ -6,8 +6,8 @@ namespace Kumwe\App\BusinessRecord\Infrastructure\Persistence;
 
 use Doctrine\DBAL\Connection;
 use InvalidArgumentException;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationResource;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Audit\Application\AuditRecorder;
@@ -23,7 +23,7 @@ use Kumwe\App\BusinessSchema\Application\BusinessSchemaInstallationRepository;
 use Kumwe\App\BusinessSchema\Domain\PhysicalTableBlueprint;
 use Kumwe\App\BusinessSchema\Domain\SchemaInstallation;
 use Kumwe\App\BusinessSchema\Domain\SchemaInstallationStatus;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Kumwe\Secret\Contract\EnvelopeCipher;
 use Kumwe\Secret\Contract\KeyProvider;
 use Kumwe\Secret\Exception\KeyUnavailable;
@@ -118,7 +118,7 @@ final readonly class DoctrineRecordSecretRotation implements RecordSecretRotatio
      * @return  RecordSecretRotationReport  Counts, skipped installations, and whether work remains.
      *
      * @throws  InvalidArgumentException  When the batch size falls outside its range.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not re-key.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not re-key.
      * @throws  KeyUnavailable  When a stored envelope names a key
      *          this deployment does not hold.
      * @throws  \RuntimeException  When a stored envelope fails authenticated decryption.

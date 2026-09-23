@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Unit\Application\Authorization;
 
-use Kumwe\App\Application\Authorization\AuthorizationDecision;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\Access\AuthorizationDecision;
+use Kumwe\Access\DecisionState;
+use Kumwe\Access\AuthorizationResource;
 use Kumwe\App\Application\Authorization\StructuredLogAuthorizationDecisionRecorder;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Kumwe\App\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
@@ -32,6 +33,7 @@ final class StructuredLogAuthorizationDecisionRecorderTest extends TestCase
                 'correlation_id' => 'test-request-0001',
                 'policy' => 'core.scoped-grants.v1',
                 'reason' => 'matching_effective_grant',
+                'state' => 'allow',
                 'allowed' => true,
             ]),
         );
@@ -40,7 +42,7 @@ final class StructuredLogAuthorizationDecisionRecorderTest extends TestCase
             AuthorizationContext::human(['content.read']),
             Capability::fromString('content.read'),
             AuthorizationResource::item('content', 'page-1'),
-            new AuthorizationDecision(true, 'core.scoped-grants.v1', 'matching_effective_grant'),
+            new AuthorizationDecision(DecisionState::Allow, 'core.scoped-grants.v1', 'matching_effective_grant'),
         );
     }
 
@@ -50,6 +52,7 @@ final class StructuredLogAuthorizationDecisionRecorderTest extends TestCase
         $logger->expects(self::once())->method('warning')->with(
             'Authorization decision.',
             self::callback(static fn (array $record): bool => $record['allowed'] === false
+                && $record['state'] === 'deny'
                 && $record['policy'] === 'core.registry.v1'
                 && $record['reason'] === 'unsupported_action_resource'),
         );
@@ -58,7 +61,7 @@ final class StructuredLogAuthorizationDecisionRecorderTest extends TestCase
             AuthorizationContext::human(['content.read']),
             Capability::fromString('content.read'),
             AuthorizationResource::item('content', 'page-1'),
-            new AuthorizationDecision(false, 'core.registry.v1', 'unsupported_action_resource'),
+            new AuthorizationDecision(DecisionState::Deny, 'core.registry.v1', 'unsupported_action_resource'),
         );
     }
 }

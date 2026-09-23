@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\Extension\Contribution;
 
 use InvalidArgumentException;
-use Kumwe\App\Application\Authorization\AuthorizationDefinitionLifecycle;
+use Kumwe\Access\AuthorizationDefinitionLifecycle;
 use Kumwe\App\Extension\Contribution\CapabilityDefinition;
 use Kumwe\App\Extension\Contribution\ContributionDefinitionChecksum;
 use Kumwe\Extension\Spi\Contribution\ContributionOwner;

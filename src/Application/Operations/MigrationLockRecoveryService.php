@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Application\Operations;
 
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use RuntimeException;
 
 /**
@@ -54,7 +54,7 @@ final readonly class MigrationLockRecoveryService
      *
      * @throws  RuntimeException  When quiescence has not been asserted, when the token is not 64
      *          lowercase hex digits, or when the row no longer matches the token or has not expired.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the caller may not
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the caller may not
      *          migrate the schema.
      *
      * @since   2.0.0

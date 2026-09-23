@@ -4,67 +4,94 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Unit\Application\Authorization;
 
-use Kumwe\App\Application\Authorization\AuthorizationDefinitionLifecycle;
-use Kumwe\App\Application\Authorization\AuthorizationPolicyRegistry;
-use Kumwe\App\Application\Authorization\CapabilityDefinition;
-use Kumwe\App\Application\Authorization\ResourcePolicyDefinition;
-use Kumwe\App\Application\Authorization\ResourcePolicyTarget;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\AuthorizationDefinitionLifecycle;
+use Kumwe\Access\AuthorizationPolicyRegistry;
+use Kumwe\Access\AuthorizationResource;
+use Kumwe\Access\Capability;
+use Kumwe\Access\CapabilityDefinition;
+use Kumwe\Access\ResourcePolicyDefinition;
+use Kumwe\Access\ResourcePolicyTarget;
+use Kumwe\Access\ResourcePolicyTarget as Target;
+use Kumwe\App\Application\Authorization\HostAccessPolicy;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
-#[CoversClass(AuthorizationPolicyRegistry::class)]
+/**
+ * Pins the membership-sensitive resource types this build hands the package policy registry.
+ *
+ * The generic registry behaviour is owned by kumwe/access-control; what stays here is the exact host
+ * table: which typed targets make a delegated credential require a live organization membership, and
+ * that the answer follows targets rather than capability names.
+ *
+ * @since  2.0.0
+ */
+#[CoversClass(HostAccessPolicy::class)]
 final class AuthorizationPolicyRegistryTest extends TestCase
 {
-    public function testExtensionBusinessRecordTargetRequiresMembershipWithoutNamespaceConvention(): void
+    /**
+     * The host table names exactly the seven organization-sensitive resource types.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheHostMembershipTableNamesExactlyTheSevenSensitiveTypes(): void
     {
-        $registry = new AuthorizationPolicyRegistry();
-        $capability = Capability::fromString('acme.invoice.inspect');
-        $registry->registerCapability(new CapabilityDefinition(
-            $capability,
-            'acme/invoice',
-            ['business_record'],
-            true,
-            false,
-            AuthorizationDefinitionLifecycle::Active,
-            1,
-        ));
-        $registry->registerResourcePolicy(new ResourcePolicyDefinition(
-            'acme.invoice.record-policy',
-            'acme/invoice',
-            $capability,
-            [new ResourcePolicyTarget('business_record')],
-            false,
-            [],
-            AuthorizationDefinitionLifecycle::Active,
-            1,
-        ));
+        $expected = [
+            'approval_request',
+            'business_record',
+            'organization',
+            'organization_membership',
+            'resource_policy',
+            'separation_duty_rule',
+            'workspace',
+        ];
 
-        self::assertTrue($registry->requiresMembershipContext($capability));
+        self::assertSame($expected, HostAccessPolicy::membershipResourceTypes());
+        self::assertSame($expected, HostAccessPolicy::membershipRequirement()->resourceTypes);
     }
 
+    /**
+     * Every host-sensitive target makes its capability membership-sensitive, even for an extension owner.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testEveryHostSensitiveTargetRequiresMembershipWithoutNamespaceConvention(): void
+    {
+        foreach (HostAccessPolicy::membershipResourceTypes() as $type) {
+            $registry = self::registry();
+            $capability = Capability::fromString('acme.invoice.inspect');
+            $registry->registerCapability(self::capability($capability, [$type]));
+            $registry->registerResourcePolicy(self::policy(
+                'acme.invoice.record-policy',
+                $capability,
+                new Target($type),
+                AuthorizationDefinitionLifecycle::Active,
+            ));
+
+            self::assertTrue($registry->requiresMembershipContext($capability), $type);
+        }
+    }
+
+    /**
+     * A capability whose name mentions a sensitive type is not constrained while its targets are not sensitive.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function testCapabilityNameDoesNotImplyMembershipWithoutSensitiveTarget(): void
     {
-        $registry = new AuthorizationPolicyRegistry();
+        $registry = self::registry();
         $capability = Capability::fromString('acme.invoice.business-record-report');
-        $registry->registerCapability(new CapabilityDefinition(
-            $capability,
-            'acme/invoice',
-            ['site'],
-            true,
-            false,
-            AuthorizationDefinitionLifecycle::Active,
-            1,
-        ));
-        $registry->registerResourcePolicy(new ResourcePolicyDefinition(
+        $registry->registerCapability(self::capability($capability, ['site']));
+        $registry->registerResourcePolicy(self::policy(
             'acme.invoice.site-policy',
-            'acme/invoice',
             $capability,
-            [new ResourcePolicyTarget('site')],
-            false,
-            [],
+            new Target('site'),
             AuthorizationDefinitionLifecycle::Active,
-            1,
         ));
 
         self::assertFalse($registry->requiresMembershipContext($capability));
@@ -73,36 +100,79 @@ final class AuthorizationPolicyRegistryTest extends TestCase
     /**
      * Prove a retained disabled resource policy cannot authorize or impose credential scope.
      *
-     * @since  2.0.0
+     * @return  void
+     *
+     * @since   2.0.0
      */
     public function testDisabledResourcePolicyFailsClosed(): void
     {
-        $registry = new AuthorizationPolicyRegistry();
+        $registry = self::registry();
         $capability = Capability::fromString('acme.invoice.inspect');
-        $registry->registerCapability(new CapabilityDefinition(
+        $registry->registerCapability(self::capability($capability, ['business_record']));
+        $registry->registerResourcePolicy(self::policy(
+            'acme.invoice.retired-record-policy',
+            $capability,
+            new Target('business_record'),
+            AuthorizationDefinitionLifecycle::Disabled,
+        ));
+
+        self::assertFalse($registry->supports($capability, AuthorizationResource::collection('business_record')));
+        self::assertFalse($registry->requiresMembershipContext($capability));
+    }
+
+    /**
+     * Build a registry carrying the host membership table, exactly as the composition root configures it.
+     *
+     * @return  AuthorizationPolicyRegistry  An empty registry with the seven sensitive types.
+     *
+     * @since   2.0.0
+     */
+    private static function registry(): AuthorizationPolicyRegistry
+    {
+        return new AuthorizationPolicyRegistry(HostAccessPolicy::membershipRequirement());
+    }
+
+    /**
+     * Build an active, delegatable extension capability definition over the given scopes.
+     *
+     * @param   Capability    $capability  Capability being defined.
+     * @param   list<string>  $scopes      Grant-scope types the capability admits.
+     *
+     * @return  CapabilityDefinition  The definition owned by `acme/invoice`.
+     *
+     * @since   2.0.0
+     */
+    private static function capability(Capability $capability, array $scopes): CapabilityDefinition
+    {
+        return new CapabilityDefinition(
             $capability,
             'acme/invoice',
-            ['business_record'],
+            $scopes,
             true,
             false,
             AuthorizationDefinitionLifecycle::Active,
             1,
-        ));
-        $registry->registerResourcePolicy(new ResourcePolicyDefinition(
-            'acme.invoice.retired-record-policy',
-            'acme/invoice',
-            $capability,
-            [new ResourcePolicyTarget('business_record')],
-            false,
-            [],
-            AuthorizationDefinitionLifecycle::Disabled,
-            2,
-        ));
+        );
+    }
 
-        self::assertFalse($registry->supports(
-            $capability,
-            \Kumwe\App\Application\Authorization\AuthorizationResource::collection('business_record'),
-        ));
-        self::assertFalse($registry->requiresMembershipContext($capability));
+    /**
+     * Build an `acme/invoice` resource policy binding one capability to one target.
+     *
+     * @param   string                            $id          Policy identifier under the owner namespace.
+     * @param   Capability                        $capability  Capability the policy binds.
+     * @param   ResourcePolicyTarget              $target      The single resource selector.
+     * @param   AuthorizationDefinitionLifecycle  $lifecycle   Enforceability state of the binding.
+     *
+     * @return  ResourcePolicyDefinition  The definition, at version one.
+     *
+     * @since   2.0.0
+     */
+    private static function policy(
+        string $id,
+        Capability $capability,
+        ResourcePolicyTarget $target,
+        AuthorizationDefinitionLifecycle $lifecycle,
+    ): ResourcePolicyDefinition {
+        return new ResourcePolicyDefinition($id, 'acme/invoice', $capability, [$target], false, [], $lifecycle, 1);
     }
 }

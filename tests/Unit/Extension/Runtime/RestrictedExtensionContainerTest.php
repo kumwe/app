@@ -33,9 +33,9 @@ final class RestrictedExtensionContainerTest extends TestCase
     public static function privilegedServiceIds(): iterable
     {
         yield 'execution context' => [\Kumwe\Context\Value\ExecutionContext::class];
-        yield 'authorization gateway' => [\Kumwe\App\Application\Authorization\AuthorizationGateway::class];
-        yield 'site ownership registry' => [\Kumwe\App\Application\Authorization\ResourceSiteOwnership::class];
-        yield 'site ownership writer' => [\Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter::class];
+        yield 'authorization gateway' => [\Kumwe\Access\AuthorizationGateway::class];
+        yield 'site ownership registry' => [\Kumwe\Access\ResourceSiteOwnership::class];
+        yield 'site ownership writer' => [\Kumwe\Access\ResourceSiteOwnershipWriter::class];
         yield 'root container' => [\Kumwe\App\Kernel\Container::class];
         yield 'database connection' => [\Doctrine\DBAL\Connection::class];
         yield 'raw event manager' => [\Laminas\EventManager\EventManagerInterface::class];

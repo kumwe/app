@@ -7,7 +7,7 @@ namespace Kumwe\App\Tests\Unit\Delivery\Console\Command;
 use Kumwe\App\Tests\Support\TranslatesConsoleOutput;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Context\Value\SiteContext;
-use Kumwe\App\BusinessSecurity\Application\MembershipDirectory;
+use Kumwe\Access\MembershipDirectory;
 use Kumwe\App\Delivery\Console\Command\ConsoleAuthorizer;
 use Kumwe\App\Delivery\Console\Command\CreateAccessTokenCommand;
 use Kumwe\App\Delivery\Console\Output;

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\BusinessSecurity\Application;
 
 use DateTimeImmutable;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
-use Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\ResourceSiteOwnershipWriter;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\Context\Value\StepUpProof;
@@ -18,7 +18,7 @@ use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalRequest;
 use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalService;
 use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalStatus;
 use Kumwe\App\BusinessSecurity\Application\Approval\StepUpProofConsumer;
-use Kumwe\App\BusinessSecurity\Application\MembershipDirectory;
+use Kumwe\Access\MembershipDirectory;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\Context\Value\AuthenticatedSurface;
 use Kumwe\Context\Value\AuthenticationStrength;
@@ -98,7 +98,7 @@ final class ApprovalServiceTest extends TestCase
         $authorization->method('assertAllowed')->willReturnCallback(
             static function (
                 ExecutionContext $unusedContext,
-                \Kumwe\Extension\Spi\Identity\Domain\Capability $capability,
+                \Kumwe\Access\Capability $capability,
             ) use (&$checked): void {
                 $checked[] = $capability->value();
             },
@@ -197,7 +197,7 @@ final class ApprovalServiceTest extends TestCase
         $authorization->method('assertAllowed')->willReturnCallback(
             static function (
                 ExecutionContext $unusedContext,
-                \Kumwe\Extension\Spi\Identity\Domain\Capability $capability,
+                \Kumwe\Access\Capability $capability,
             ) use (&$checked): void {
                 $checked[] = $capability->value();
             },

@@ -64,7 +64,7 @@ final readonly class TrustStoreApiHandler implements RequestHandlerInterface
      * @return  ResponseInterface  The key listing or quarantine result as JSON, an empty 201 or 204 after a
      *          successful mutation, or a 422 problem document explaining the refusal.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not manage
      *          extensions, which this handler passes on rather than rendering itself.
      *
      * @since   2.0.0

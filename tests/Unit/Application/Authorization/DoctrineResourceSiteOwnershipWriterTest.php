@@ -5,14 +5,15 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\Application\Authorization;
 
 use Doctrine\DBAL\Connection;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
-use Kumwe\App\Application\Authorization\AuthorizationResourceOwnershipUnknown;
-use Kumwe\App\Application\Authorization\OwnershipScope;
-use Kumwe\App\Application\Authorization\OwnershipScopeLevel;
-use Kumwe\App\Application\Authorization\ResourceOwnership;
-use Kumwe\App\Application\Authorization\ResourceOwnershipScopePolicy;
-use Kumwe\App\Application\Authorization\ResourceSiteOwnershipConflict;
-use Kumwe\App\Application\Authorization\SiteGroup;
+use Kumwe\Access\AuthorizationResource;
+use Kumwe\Access\AuthorizationResourceOwnershipUnknown;
+use Kumwe\Access\OwnershipScope;
+use Kumwe\Access\OwnershipScopeLevel;
+use Kumwe\Access\ResourceOwnership;
+use Kumwe\Access\ResourceOwnershipScopePolicy;
+use Kumwe\App\Application\Authorization\HostAccessPolicy;
+use Kumwe\Access\ResourceSiteOwnershipConflict;
+use Kumwe\Access\SiteGroup;
 use Kumwe\App\Infrastructure\Authorization\DoctrineResourceSiteOwnershipWriter;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\Context\Value\SiteContext;
@@ -20,7 +21,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(DoctrineResourceSiteOwnershipWriter::class)]
-#[CoversClass(ResourceSiteOwnershipConflict::class)]
 final class DoctrineResourceSiteOwnershipWriterTest extends TestCase
 {
     public function testRecordsAuthoritativeOwnership(): void
@@ -131,7 +131,7 @@ final class DoctrineResourceSiteOwnershipWriterTest extends TestCase
                     'manufacturing',
                     'retail',
                 ])),
-                new ResourceOwnershipScopePolicy(),
+                HostAccessPolicy::ownershipScopePolicy(),
             ),
             OwnershipScope::site(SiteContext::fromString('manufacturing')),
         );
@@ -155,7 +155,7 @@ final class DoctrineResourceSiteOwnershipWriterTest extends TestCase
             ResourceOwnership::of(
                 AuthorizationResource::item('person', '018f22e2-7c8b-7ab0-8f3a-88e8026bb501'),
                 OwnershipScope::group(new SiteGroup('kumwe-group', 'Kumwe group', ['manufacturing'])),
-                new ResourceOwnershipScopePolicy(),
+                HostAccessPolicy::ownershipScopePolicy(),
             ),
             OwnershipScope::site(SiteContext::fromString('manufacturing')),
         );

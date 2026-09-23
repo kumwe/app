@@ -30,7 +30,7 @@ interface AuditRetentionService
      *
      * @throws  \InvalidArgumentException  When the window is not a positive number of days.
      * @throws  \RuntimeException  When archiving or the guarded delete cannot complete safely.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not manage
      *          the audit trail.
      *
      * @since   2.0.0

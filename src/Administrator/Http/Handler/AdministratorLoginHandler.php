@@ -8,7 +8,7 @@ use Kumwe\App\Administrator\Http\AdministratorRequest;
 use Kumwe\App\Administrator\Http\Middleware\AdministratorSessionMiddleware;
 use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
 use Kumwe\Context\Value\AuthenticationStrength;
-use Kumwe\App\Application\Authorization\AuthorizationDenied;
+use Kumwe\Access\AuthorizationDenied;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\App\Identity\Application\Administration\AdministratorIdentityGateway;
 use Kumwe\App\Identity\Application\Administration\AdministratorSessionStore;

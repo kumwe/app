@@ -7,7 +7,7 @@ namespace Kumwe\App\Administrator\Http\Handler;
 use DateTimeImmutable;
 use InvalidArgumentException;
 use Kumwe\App\Administrator\Http\AdministratorRequest;
-use Kumwe\App\Application\Authorization\AuthorizationDenied;
+use Kumwe\Access\AuthorizationDenied;
 use Kumwe\App\Extension\Application\ExtensionManager;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Identity\Application\Administration\AuthenticationThrottled;

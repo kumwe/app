@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Unit\Studio\Application\Media;
 
-use Kumwe\App\Application\Authorization\AuthorizationDenied;
+use Kumwe\Access\AuthorizationDenied;
 use Kumwe\App\Studio\Application\Media\StudioMediaHostPort;
 use Kumwe\App\Studio\Application\Media\StudioMediaOperations;
 use Kumwe\App\Tests\Support\StudioProducerRequest;

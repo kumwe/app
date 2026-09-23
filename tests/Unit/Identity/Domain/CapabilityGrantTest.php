@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Unit\Identity\Domain;
 
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Kumwe\App\Identity\Domain\CapabilityGrant;
 use Kumwe\App\Identity\Domain\EmailAddress;
-use Kumwe\App\Identity\Domain\GrantScope;
+use Kumwe\Access\GrantScope;
 use Kumwe\App\Identity\Domain\User;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;

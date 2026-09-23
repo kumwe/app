@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Unit\Application\Authorization;
 
-use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\Access\AuthorizationResource;
 use Kumwe\App\Application\Authorization\DenyByDefaultAuthorizationGateway;
-use Kumwe\App\Application\Authorization\MembershipContextValidator;
-use Kumwe\App\Application\Authorization\OwnershipScope;
-use Kumwe\App\Application\Authorization\ResourceSiteOwnership;
+use Kumwe\Access\MembershipContextValidator;
+use Kumwe\Access\OwnershipScope;
+use Kumwe\Access\ResourceSiteOwnership;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\App\Application\Authorization\StructuredLogAuthorizationDecisionRecorder;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Kumwe\App\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
@@ -34,7 +34,6 @@ use Psr\Log\NullLogger;
  * @since  2.0.0
  */
 #[CoversClass(DenyByDefaultAuthorizationGateway::class)]
-#[CoversClass(OwnershipScope::class)]
 final class SiteScopeContainmentIsNotAWideningTest extends TestCase
 {
     /**
@@ -145,13 +144,13 @@ final class SiteScopeContainmentIsNotAWideningTest extends TestCase
              *
              * @return  OwnershipScope  Never returned.
              *
-             * @throws  \Kumwe\App\Application\Authorization\AuthorizationResourceOwnershipUnknown  Always.
+             * @throws  \Kumwe\Access\AuthorizationResourceOwnershipUnknown  Always.
              *
              * @since   2.0.0
              */
             public function scopeFor(AuthorizationResource $resource): OwnershipScope
             {
-                throw new \Kumwe\App\Application\Authorization\AuthorizationResourceOwnershipUnknown($resource);
+                throw new \Kumwe\Access\AuthorizationResourceOwnershipUnknown($resource);
             }
         };
         self::assertTrue($gateway->decide(

@@ -12,15 +12,14 @@ use Kumwe\Context\Value\SiteContext;
 use Kumwe\App\Application\Authorization\SystemIdentity;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\App\Identity\Application\Authentication\PrincipalGrant;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
-use Kumwe\App\Identity\Domain\GrantScope;
+use Kumwe\Access\Capability;
+use Kumwe\Access\GrantScope;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use Kumwe\App\Tests\Support\AuthorizationContext;
 
 #[CoversClass(AuthenticatedPrincipal::class)]
-#[UsesClass(GrantScope::class)]
 #[UsesClass(PrincipalGrant::class)]
 final class AuthenticatedPrincipalTest extends TestCase
 {

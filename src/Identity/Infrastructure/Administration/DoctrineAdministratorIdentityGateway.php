@@ -9,11 +9,11 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
-use Kumwe\App\Application\Authorization\AuthorizationPolicyRegistry;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationPolicyRegistry;
+use Kumwe\Access\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
-use Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter;
+use Kumwe\Access\ResourceSiteOwnershipWriter;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Audit\Application\AuditRecorder;
@@ -27,7 +27,7 @@ use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\App\Identity\Application\Authentication\AccessTokenContext;
 use Kumwe\App\Identity\Application\Security\PasswordHasher;
 use Kumwe\App\Identity\Domain\EmailAddress;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
@@ -197,7 +197,7 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
      *
      * @return  string  UUID of the created user, already assigned the administrator role.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the context does not carry
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the context does not carry
      *          the bootstrap capability.
      * @throws  InvalidArgumentException  When the display name is empty or over 191 characters, the
      *          address is malformed or already taken, or the password cannot be hashed.
@@ -575,7 +575,7 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
      * @return  array{token: string, token_id: string}  The plaintext secret under `token`, seen only
      *          here, and the stored row's UUID under `token_id`.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not act for
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not act for
      *          the subject, or may not delegate one of the capabilities.
      * @throws  InvalidArgumentException  When the name, expiry, `rotatedFrom` identifier or capability set
      *          is unusable, the subject does not hold a requested capability, or the quota is full.
@@ -848,7 +848,7 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
      * @return  array{token: string, token_id: string}  The replacement's plaintext secret under `token`
      *          and its new UUID under `token_id`.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not manage
      *          the token, or may no longer delegate the capabilities it carries.
      * @throws  InvalidArgumentException  When the token is absent, already dead, outside the site, the
      *          replacement's name or expiry is unusable, or the subject's quota refuses the replacement.

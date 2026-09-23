@@ -11,7 +11,7 @@ use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
 use Kumwe\App\Administrator\Presentation\RecoveryAdministratorRenderer;
 use Kumwe\App\Identity\Application\Administration\AdministratorSession;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Kumwe\Localization\Application\ActiveLocale;
 use Kumwe\Localization\Application\CatalogueTranslator;
 use Kumwe\Localization\Application\SupportedLocales;

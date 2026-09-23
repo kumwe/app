@@ -19,7 +19,7 @@ use Kumwe\BusinessPolicy\Policy\RecordPolicyComparison;
 use Kumwe\BusinessPolicy\Policy\RecordPolicyComparisonOperator;
 use Kumwe\BusinessPolicy\Policy\RecordPolicyValueType;
 use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewQuery;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\App\Tests\Support\NeutralBusinessFixture;
 use Kumwe\App\Tests\Support\TestKernelFactory;

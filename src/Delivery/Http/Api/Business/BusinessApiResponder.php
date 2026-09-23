@@ -6,7 +6,7 @@ namespace Kumwe\App\Delivery\Http\Api\Business;
 
 use DomainException;
 use InvalidArgumentException;
-use Kumwe\App\Application\Authorization\AuthorizationDenied;
+use Kumwe\Access\AuthorizationDenied;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionNotFound;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionRevisionConflict;
 use Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition;

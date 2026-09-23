@@ -1,0 +1,250 @@
+schema: kumwe-change-set/v2
+change_set: KUMWE-CS-2026-009
+migration_id: KUMWE-MIG-2026-009
+roadmap_source:
+  title: Kumwe ERP-Extensibility Foundation Roadmap
+  sha256: a202155ef1a65f5ab293d4f8397ebf4ac430db7f1e877c776bbe7851e6fe18d8
+roadmap_refs: []
+state: app-pr-ready
+phase_1:
+  source_repository: kumwe/app
+  source_sha: "960ce8ec00cf724a7cae03e5ba09c4852c9ab54e"
+  target_repository: kumwe/access-control
+  package_pr: "https://github.com/kumwe/access-control/pull/7"
+  tested_sha: null
+  public_api_digest: "7ccd1fc48e4effd48df82a0b649336ccdc4cba37122977e977cbe4c99279655e"
+  capability_digest: "64bc44385cf4a90cf60d59123424d2c5224d0eff7832070defc7fc0c58a3e237"
+  service_map_digest: "830928ca5a3dd5715026f4b481689407d05a59cd87879516f57ce4d7387e5a82"
+  handoff_digest: "b773fac93bb440cf3088102b3894275697fc435402d3220a615d695787f76437"
+release:
+  version: 0.1.2
+  source_sha: "c2420d1ed03bc39eaf5d8b9f5540580c297e3b57"
+  artifact_digest: "719197b39572fcb651f8236ddb9c01929381c01d0b711bf08653b5af18c8c8a6"
+  clean_consumer_evidence:
+    - docs/architecture/migrations/evidence/KUMWE-MIG-2026-009/RELEASE-ATTESTATION.yaml
+phase_2:
+  app_pr: null
+  tested_sha: null
+  merged_sha: null
+  exact_dependency: "kumwe/access-control 0.1.2"
+  composer_lock_digest: "9263f7f65be755b98c35aba33434ce3c9c3155d051b4f2307165fde650021e27"
+  removed_app_symbols:
+    - Kumwe\App\Application\Authorization\AuthorizationDecision
+    - Kumwe\App\Application\Authorization\AuthorizationDecisionRecorder
+    - Kumwe\App\Application\Authorization\AuthorizationDefinitionLifecycle
+    - Kumwe\App\Application\Authorization\AuthorizationDenied
+    - Kumwe\App\Application\Authorization\AuthorizationGateway
+    - Kumwe\App\Application\Authorization\AuthorizationPolicyRegistry
+    - Kumwe\App\Application\Authorization\AuthorizationResource
+    - Kumwe\App\Application\Authorization\AuthorizationResourceOwnershipUnknown
+    - Kumwe\App\Application\Authorization\CapabilityDefinition
+    - Kumwe\App\Application\Authorization\CapabilityDefinitionRegistry
+    - Kumwe\App\Application\Authorization\CompositeResourceOwnershipReferences
+    - Kumwe\App\Application\Authorization\MembershipContextValidator
+    - Kumwe\App\Application\Authorization\OwnershipNarrowingRefused
+    - Kumwe\App\Application\Authorization\OwnershipNarrowingUnbounded
+    - Kumwe\App\Application\Authorization\OwnershipScope
+    - Kumwe\App\Application\Authorization\OwnershipScopeChangeRejected
+    - Kumwe\App\Application\Authorization\OwnershipScopeLevel
+    - Kumwe\App\Application\Authorization\OwnershipScopeNotPermitted
+    - Kumwe\App\Application\Authorization\OwnershipScopeNotSiteBound
+    - Kumwe\App\Application\Authorization\OwnershipScopeRule
+    - Kumwe\App\Application\Authorization\ResourceOwnership
+    - Kumwe\App\Application\Authorization\ResourceOwnershipReferences
+    - Kumwe\App\Application\Authorization\ResourceOwnershipScopePolicy
+    - Kumwe\App\Application\Authorization\ResourcePolicyDefinition
+    - Kumwe\App\Application\Authorization\ResourcePolicyRegistry
+    - Kumwe\App\Application\Authorization\ResourcePolicyTarget
+    - Kumwe\App\Application\Authorization\ResourceSiteOwnership
+    - Kumwe\App\Application\Authorization\ResourceSiteOwnershipConflict
+    - Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter
+    - Kumwe\App\Application\Authorization\SiteGroup
+    - Kumwe\App\Application\Authorization\SiteGroupRegistry
+    - Kumwe\App\Application\Authorization\SiteGroupUnknown
+    - Kumwe\App\Application\Authorization\SiteGroupWriter
+    - Kumwe\App\Identity\Domain\GrantScope
+    - Kumwe\App\Identity\Domain\AuthorizationDecision
+    - Kumwe\Extension\Spi\Identity\Domain\Capability
+    - Kumwe\App\BusinessSecurity\Application\MembershipDirectory
+  moved_unit_tests:
+    - tests/Unit/Identity/Domain/GrantScopeTest.php
+    - tests/Unit/Identity/Domain/AuthorizationDecisionTest.php
+    - tests/Unit/Application/Authorization/ResourcePolicyDefinitionTest.php
+    - tests/Unit/Application/Authorization/ResourcePolicyRegistryTest.php
+  retained_app_tests:
+    - tests/Unit/Application/Authorization/OwnershipScopeModelTest.php
+    - tests/Unit/Application/Authorization/AuthorizationPolicyRegistryTest.php
+    - tests/Functional/Extension/LiveSurfaceContractParityTest.php
+    - tests/Integration/Authorization/BusinessGroupOwnershipEngineIntegrationTest.php
+    - tests/Integration/Extension/ExtensionOwnershipLifecycleIntegrationTest.php
+    - tests/Unit/Application/Authorization/ApplicationAuthorizationTest.php
+    - tests/Unit/Application/Authorization/BusinessGroupOwnershipTest.php
+    - tests/Unit/Application/Authorization/DoctrineResourceSiteOwnershipWriterTest.php
+    - tests/Unit/Application/Authorization/ResourceOwnershipScopeServiceTest.php
+    - tests/Unit/Application/Authorization/SiteGroupAdministrationTest.php
+    - tests/Unit/Application/Authorization/SiteScopeContainmentIsNotAWideningTest.php
+    - tests/Unit/Identity/Application/Authentication/AuthenticatedPrincipalTest.php
+    - tests/Unit/Identity/Infrastructure/Authentication/DoctrineAccessTokenVerifierTest.php
+    - tests/Unit/Navigation/Application/PublicNavigationTest.php
+    - tests/Unit/Application/Authorization/StructuredLogAuthorizationDecisionRecorderTest.php
+    - tests/Unit/BusinessReporting/ReportPolicyInferenceTest.php
+    - tests/Unit/BusinessReporting/ExportServiceTransactionTest.php
+    - tests/Unit/BusinessReporting/ExportGenerationPolicyFenceTest.php
+    - tests/Unit/BusinessReporting/RecordExportPipelineTest.php
+    - tests/Unit/Delivery/Http/Api/Business/BusinessRecordApiHandlerTest.php
+    - tests/Unit/Delivery/Http/Api/Business/BusinessOperationStatusApiHandlerTest.php
+    - tests/Unit/BusinessSurface/Application/BusinessMutationPlanServiceTest.php
+    - tests/Unit/BusinessSurface/Application/BusinessSurfaceServiceTest.php
+    - tests/Unit/BusinessReporting/ReportBrowserErrorResponseTest.php
+    - tests/Unit/Portal/Presentation/PortalRendererAssetTest.php
+    - tests/Unit/Portal/Presentation/PortalContributionRendererTest.php
+    - tests/Unit/Portal/Contribution/PortalContributionRegistryTest.php
+    - tests/Unit/Portal/Http/PortalSecurityHandlerTest.php
+    - tests/Unit/Portal/Http/PortalLoginHandlerTest.php
+    - tests/Unit/Extension/Contribution/ExtensionContributionRegistrySetTest.php
+    - tests/Unit/Identity/Application/Authorization/AuthorizationServiceTest.php
+    - tests/Unit/Identity/Application/Authorization/RoleGrantPolicyTest.php
+    - tests/Unit/Identity/Domain/CapabilityGrantTest.php
+    - tests/Integration/Automation/AutomationManagementIntegrationTest.php
+    - tests/Integration/Automation/WorkerConnectionLossKillPointIntegrationTest.php
+    - tests/Integration/BusinessRecord/BusinessNumberSequenceIdentityIntegrationTest.php
+    - tests/Integration/BusinessRecord/PostingPeriodLockIntegrationTest.php
+    - tests/Integration/BusinessSurface/GeneratedBusinessQueryBudgetIntegrationTest.php
+    - tests/Integration/Extension/AssetInspectionCustomViewIntegrationTest.php
+    - tests/Integration/Extension/GeneratedExtensionLifecycleIntegrationTest.php
+    - tests/Integration/Identity/AccessControlIntegrationTest.php
+    - tests/Integration/Identity/AdministratorProvisioningIntegrationTest.php
+    - tests/Integration/Localization/MessageOverrideIntegrationTest.php
+    - tests/Support/AllowingAuditAuthorization.php
+    - tests/Support/AuthorizationContext.php
+    - tests/Support/CapabilityThemeAuthorizer.php
+    - tests/Support/DashboardPreferenceTestRuntime.php
+    - tests/Support/RestoreSecurityAcceptance.php
+    - tests/Support/prepare-browser-contribution.php
+    - tests/Unit/Administrator/Http/Handler/AdministratorAccessControlHandlerTest.php
+    - tests/Unit/Administrator/Http/Handler/AdministratorContentEditorRetentionTest.php
+    - tests/Unit/Administrator/Http/Handler/AdministratorLoginHandlerTest.php
+    - tests/Unit/Administrator/Http/Middleware/AdministratorAuthorizationMiddlewareTest.php
+    - tests/Unit/Application/Authorization/AdapterAuthorizationParityTest.php
+    - tests/Unit/Application/Authorization/DoctrineResourceSiteOwnershipTest.php
+    - tests/Unit/Application/Automation/PurgeBusinessRecordIdempotencyHandlerTest.php
+    - tests/Unit/Application/Automation/PurgeIdempotencyRecordsHandlerTest.php
+    - tests/Unit/Application/Automation/PurgeStudioContentAuthoringContextsHandlerTest.php
+    - tests/Unit/Application/Automation/WorkerTest.php
+    - tests/Unit/Application/Presentation/Dashboard/DashboardPreferenceServiceTest.php
+    - tests/Unit/BusinessIntegration/IntegrationOperationsServiceTest.php
+    - tests/Unit/BusinessRecord/Application/PostingPeriodServiceTest.php
+    - tests/Unit/BusinessReporting/LiveExportExecutionContextResolverTest.php
+    - tests/Unit/BusinessReporting/ReportApiDiscoveryTest.php
+    - tests/Unit/BusinessSecurity/Application/ApprovalServiceTest.php
+    - tests/Unit/BusinessSecurity/Application/BusinessSecurityAdministrationServiceTest.php
+    - tests/Unit/BusinessSurface/Application/BusinessApprovalSurfaceServiceTest.php
+    - tests/Unit/BusinessSurface/Application/BusinessSurfaceCatalogTest.php
+    - tests/Unit/BusinessSurface/Application/Custom/CustomBusinessActionExecutorTest.php
+    - tests/Unit/BusinessSurface/Application/Custom/CustomBusinessHandlerRegistryTest.php
+    - tests/Unit/Content/Application/ContentTranslationServiceTest.php
+    - tests/Unit/Content/Application/ContributedContentTranslationTest.php
+    - tests/Unit/Delivery/Console/Command/BusinessConsoleFailureMapperTest.php
+    - tests/Unit/Delivery/Console/Command/DemoInstallCommandTest.php
+    - tests/Unit/Delivery/Http/Api/Extension/ExtensionApiHandlerTest.php
+    - tests/Unit/Delivery/Http/Api/Idempotency/PersistentIdempotencyAuthorizationTest.php
+    - tests/Unit/Demo/Infrastructure/VdmBusinessDemoInstallerTest.php
+    - tests/Unit/Extension/Application/Trust/TrustStoreTest.php
+    - tests/Unit/Extension/Contribution/ContributionDefinitionChecksumTest.php
+    - tests/Unit/Extension/Infrastructure/RedisLockedExtensionManagerTest.php
+    - tests/Unit/Extension/Runtime/RestrictedExtensionContainerTest.php
+    - tests/Unit/Identity/Application/Administration/AccessControlServiceTest.php
+    - tests/Unit/Identity/Application/Administration/TokenDelegationPreauthorizerTest.php
+    - tests/Unit/Identity/Infrastructure/Administration/DoctrineAdministratorSessionStoreTest.php
+    - tests/Unit/InterfaceStandard/PresentationPreferenceManagerTest.php
+    - tests/Unit/Localization/Application/MessageOverrideServiceTest.php
+    - tests/Unit/Navigation/Application/NavigationServiceTest.php
+    - tests/Unit/Portal/Http/PortalSecurityBoundaryTest.php
+    - tests/Unit/Portal/Infrastructure/Identity/DoctrinePortalPrincipalLoaderTest.php
+    - tests/Unit/Site/Infrastructure/Persistence/DoctrineSiteSettingsTest.php
+    - tests/Unit/Studio/Application/Authoring/ContentStudioAuthoringContextAuthorityTest.php
+    - tests/Unit/Studio/Application/Authoring/ContentStudioAuthoringTargetResolverTest.php
+    - tests/Unit/Studio/Application/Media/StudioMediaHostPortTest.php
+    - tests/Unit/Workflow/Domain/WorkflowTest.php
+    - tests/Unit/BusinessSecurity/Infrastructure/Persistence/DoctrineBusinessRecordAccessControllerTest.php
+    - tests/Unit/Portal/Application/MembershipPortalSessionIdentityLoaderTest.php
+    - tests/Unit/Delivery/Console/Command/CreateAccessTokenCommandTest.php
+    - tests/Unit/Governance/ComposerLockTest.php
+    - tests/Architecture/CapabilityIndexGateTest.php
+    - tests/Architecture/ExtensionContributionBoundaryTest.php
+    - tests/Unit/Infrastructure/Mcp/McpMachineContractTest.php
+evidence:
+  package:
+    - docs/architecture/migrations/evidence/KUMWE-MIG-2026-009/RELEASE-ATTESTATION.yaml
+    - "https://github.com/kumwe/access-control/actions/runs/34248219134; release on record on tag commit c2420d1ed03bc39eaf5d8b9f5540580c297e3b57"
+    - "https://github.com/kumwe/access-control/actions/runs/34248218620; package CI on the same commit"
+  app_composition:
+    - tests/Unit/Application/Authorization/AuthorizationPolicyRegistryTest.php
+    - tests/Unit/Application/Authorization/OwnershipScopeModelTest.php
+    - tests/Unit/Extension/Contribution/ExtensionContributionRegistrySetTest.php
+    - tests/Unit/Portal/Contribution/PortalContributionRegistryTest.php
+    - tests/Unit/Governance/ComposerLockTest.php
+    - tests/Unit/Governance/CoreGrowthGateTest.php
+    - tests/Architecture/CapabilityIndexGateTest.php
+    - tests/Architecture/ExtensionContributionBoundaryTest.php
+    - tests/Unit/Infrastructure/Mcp/McpMachineContractTest.php
+    - "composer require kumwe/access-control:0.1.2; one lock install, no other lock change"
+    - "composer kumwe:capability-index, kumwe:core-growth-record, baseline:record, then the composer qa gates and the unit and architecture suites, run locally on PHP 8.4 without ext-kumwe_engine"
+  database_matrix:
+    - tests/Integration/Authorization/BusinessGroupOwnershipEngineIntegrationTest.php
+    - tests/Integration/Identity/AccessControlIntegrationTest.php
+    - tests/Integration/Identity/AdministratorProvisioningIntegrationTest.php
+    - tests/Integration/Extension/ExtensionOwnershipLifecycleIntegrationTest.php
+    - tests/Integration/BusinessSurface/GeneratedBusinessQueryBudgetIntegrationTest.php
+    - "To be exercised by the pull request's hosted workflows on MariaDB, MySQL and PostgreSQL."
+  concurrency:
+    - tests/Integration/Authorization/BusinessGroupOwnershipEngineIntegrationTest.php
+    - tests/Integration/Automation/WorkerConnectionLossKillPointIntegrationTest.php
+    - "Ownership compare-and-set under concurrent scope changes and worker recovery; to be exercised by the pull request's hosted workflows."
+  authorization_security:
+    - tests/Unit/Application/Authorization/ApplicationAuthorizationTest.php
+    - tests/Unit/Application/Authorization/AdapterAuthorizationParityTest.php
+    - tests/Unit/Application/Authorization/SiteScopeContainmentIsNotAWideningTest.php
+    - tests/Unit/Application/Authorization/BusinessGroupOwnershipTest.php
+    - tests/Unit/Application/Authorization/StructuredLogAuthorizationDecisionRecorderTest.php
+    - tests/Unit/Identity/Application/Authorization/AuthorizationServiceTest.php
+    - tests/Unit/Identity/Application/Authorization/RoleGrantPolicyTest.php
+    - tests/Unit/Identity/Application/Authentication/AuthenticatedPrincipalTest.php
+    - tests/Unit/Delivery/Http/Api/Idempotency/PersistentIdempotencyAuthorizationTest.php
+    - "Deny-by-default, provenance, containment, delegation ceiling, membership freshness and system-identity confinement stay in the App gateway and identity service; the hosted source-and-image security scans run on the pull request."
+  lifecycle_recovery:
+    - tests/Integration/Extension/ExtensionOwnershipLifecycleIntegrationTest.php
+    - tests/Integration/Extension/GeneratedExtensionLifecycleIntegrationTest.php
+    - tests/Integration/Localization/MessageOverrideIntegrationTest.php
+    - "Extension ownership lifecycle and the four self-checksumming migrations whose pre-move checksums stay accepted; to be exercised by the pull request's hosted workflows."
+  delivery_browser:
+    - tests/Unit/Administrator/Http/Middleware/AdministratorAuthorizationMiddlewareTest.php
+    - tests/Unit/Administrator/Http/Handler/AdministratorAccessControlHandlerTest.php
+    - tests/Unit/Portal/Http/PortalSecurityHandlerTest.php
+    - tests/Unit/Delivery/Http/Api/Business/BusinessRecordApiHandlerTest.php
+    - tests/Unit/Delivery/Console/Command/BusinessConsoleFailureMapperTest.php
+    - tests/Functional/Extension/LiveSurfaceContractParityTest.php
+    - "Administrator, portal, REST and console delivery of the same decisions; the browser suites run in the pull request's hosted workflows."
+  deployment_backup_restore:
+    - tests/Support/RestoreSecurityAcceptance.php
+    - tests/Integration/Identity/AdministratorProvisioningIntegrationTest.php
+    - "Restore-security acceptance and administrator provisioning on three engines; to be exercised by the pull request's hosted workflows."
+  native_parity_abi:
+    - tests/Unit/Kernel/NativeComputationFactoryTest.php
+    - "No native code is involved; the package is pure PHP and the engine binding is untouched. The suite that needs ext-kumwe_engine runs in the pull request's hosted workflows."
+  performance_capacity:
+    - tests/Unit/Application/Authorization/ApplicationAuthorizationTest.php
+    - "The registries and decisions are the same in-memory structures with bounded iteration guards; no performance claim is made."
+compatibility: "The thirty-six moved types keep their names and shapes under Kumwe\\Access, and the SDK Capability is read as Kumwe\\Access\\Capability by every App consumer while extension-sdk 0.2.4 keeps its own class for its internal string conversions. The two App decision models merge into the four-state AuthorizationDecision: the gateway constructs DecisionState verdicts, the identity service and role-grant policy attribute theirs to core.identity-authorization.v1 and core.role-grant.v1, and the structured decision log gains a state field. The policy registry and the ownership-scope policy now take the host tables explicitly, which HostAccessPolicy states; system identities cross into the package policy as their system: codes. The retained MCP machine contract mcp-v1 keeps every tool, error code, message and retry flag; its authorization.denied classification now names the package exception, so the generation's registry and contract digests move with that one string."
+migration_recovery: null
+security_impact: "None on authority: the deny-by-default gateway, provenance, containment, delegation ceiling, membership freshness, system-identity confinement, principal issuance and every Doctrine adapter stay in App. The seven membership-sensitive types and the forty-four reserved ownership categories move from class constants to HostAccessPolicy, are handed to the package factories as configuration that refuses to build without them, and are pinned by the retained unit tests; a step-up decision from an identity policy now outranks an allowance instead of being unrepresentable."
+performance_claim: null
+rollback: "Revert the App pull request and restore the thirty-six removed classes and four unit tests from the baseline commit; no persisted data changes, and the four self-checksumming migrations whose imports moved keep their pre-move checksums accepted."
+known_gaps:
+  - "The local sandbox runs PHP 8.4 without ext-kumwe_engine and without a database server, so the integration and functional lanes, PHP 8.5 and the native runtime path are proven by the App CI on this pull request."
+  - "The App pull request did not exist when this record was written; app_pr, the ledger app_pull_request and the train merge order are completed when it is opened, and the CHANGELOG entry then cites it."
+  - "kumwe/extension-sdk 0.2.4 still declares Kumwe\\Extension\\Spi\\Identity\\Domain\\Capability for its own route and navigation definitions; both classes coexist without an alias until the verified extension-sdk 0.3.2 train retires the SDK copy."
+  - "The package documents the MembershipDirectory extraction in docs/membership-source-map.json under KUMWE-MIG-2026-023 rather than in its extracted_symbols; this ledger records the swap of the twenty-two App consumers to the package port so that kumwe/approval resolves the same service id."
+  - "The release attestation was produced in the adoption worktree rather than by an isolated verifier; it records the tag, archive, registry and workflow facts observed there."
+completion_claim: false
+accepted_by: null

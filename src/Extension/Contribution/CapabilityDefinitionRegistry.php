@@ -6,9 +6,10 @@ namespace Kumwe\App\Extension\Contribution;
 
 use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use InvalidArgumentException;
-use Kumwe\App\Application\Authorization\AuthorizationPolicyRegistry;
-use Kumwe\App\Application\Authorization\CapabilityDefinition as AuthorizationCapabilityDefinition;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\AuthorizationPolicyRegistry;
+use Kumwe\Access\CapabilityDefinition as AuthorizationCapabilityDefinition;
+use Kumwe\App\Application\Authorization\HostAccessPolicy;
+use Kumwe\Access\Capability;
 
 /**
  * The capability identifiers the running process recognises, each held by exactly one owner.
@@ -42,14 +43,15 @@ final class CapabilityDefinitionRegistry implements ContributionSurface
     /**
      * Build the contribution surface over the canonical operational authorization registry.
      *
-     * @param  ?AuthorizationPolicyRegistry  $authorization  Shared live registry; a private empty one is
-     *         created only for isolated uses of this contribution surface.
+     * @param  ?AuthorizationPolicyRegistry  $authorization  Shared live registry; a private empty one carrying
+     *         the host membership policy is created only for isolated uses of this contribution surface.
      *
      * @since  2.0.0
      */
     public function __construct(?AuthorizationPolicyRegistry $authorization = null)
     {
-        $this->authorization = $authorization ?? new AuthorizationPolicyRegistry();
+        $this->authorization = $authorization
+            ?? new AuthorizationPolicyRegistry(HostAccessPolicy::membershipRequirement());
     }
 
     /**

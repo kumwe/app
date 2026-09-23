@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\Extension\Contribution;
 
 use InvalidArgumentException;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\Access\AuthorizationResource;
 use Kumwe\App\Application\Authorization\SystemIdentity;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\Extension\Contribution\OwnedExtensionBindingRegistrar;
 use Kumwe\Extension\Manifest\ExtensionIdentifier;
 use Kumwe\Extension\Manifest\ManifestContributions;
 use Kumwe\Extension\Spi\Contribution\ContributionOwner;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
@@ -128,12 +128,12 @@ final class ExtensionContributionRegistrySetTest extends TestCase
         self::assertTrue($policies->allowsSystemIdentity(
             Capability::fromString('content.read'),
             AuthorizationResource::item('content', 'page'),
-            SystemIdentity::Worker,
+            SystemIdentity::Worker->value,
         ));
         self::assertFalse($policies->allowsSystemIdentity(
             Capability::fromString('content.read'),
             AuthorizationResource::item('content', 'page'),
-            SystemIdentity::Scheduler,
+            SystemIdentity::Scheduler->value,
         ));
         self::assertFalse($policies->supports(
             Capability::fromString('themes.site.manage'),

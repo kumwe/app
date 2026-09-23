@@ -8,7 +8,7 @@ use InvalidArgumentException;
 use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
 use Kumwe\App\Identity\Application\Administration\AdministratorSession;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Laminas\Diactoros\Response\JsonResponse;
 use LogicException;

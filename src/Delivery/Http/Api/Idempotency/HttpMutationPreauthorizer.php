@@ -6,8 +6,8 @@ namespace Kumwe\App\Delivery\Http\Api\Idempotency;
 
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Extension\Spi\BusinessReporting\Domain\ReportDefinitionGuard;
 use Kumwe\App\Content\Application\ContentService;
@@ -15,8 +15,8 @@ use Kumwe\App\Content\Application\ContentModelRepository;
 use Kumwe\App\Identity\Application\Administration\AccessControlRepository;
 use Kumwe\App\Identity\Application\Administration\TokenDelegationPreauthorizer;
 use Kumwe\App\Identity\Application\Administration\TokenRotationPreauthorizer;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
-use Kumwe\App\Identity\Domain\GrantScope;
+use Kumwe\Access\Capability;
+use Kumwe\Access\GrantScope;
 use Psr\Http\Message\ServerRequestInterface;
 
 /**
@@ -83,7 +83,7 @@ final readonly class HttpMutationPreauthorizer
      * @throws  InvalidArgumentException  When the route carries no policy, the method and path are not a
      *          supported content mutation, a report or other path segment is not a usable resource identifier,
      *          the body is not a JSON object, a required body field is missing or blank, or a named grant is gone.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not perform the
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not perform the
      *          mutation, or may not delegate a capability the request would hand on.
      * @throws  \Kumwe\App\Content\Application\ContentNotFound  When a transition names an entry the context
      *          cannot reach.
@@ -336,7 +336,7 @@ final readonly class HttpMutationPreauthorizer
      *
      * @throws  InvalidArgumentException  When the body is not a JSON object or carries no non-empty
      *          `status`.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not read the
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not read the
      *          entry.
      * @throws  \Kumwe\App\Content\Application\ContentNotFound  When no entry matches within reach of the
      *          context.
@@ -369,7 +369,7 @@ final readonly class HttpMutationPreauthorizer
      * @return  void
      *
      * @throws  InvalidArgumentException  When the action is not a well-formed capability code.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses the actor that
+     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses the actor that
      *          action on that resource.
      *
      * @since   2.0.0

@@ -7,12 +7,12 @@ namespace Kumwe\App\Infrastructure\Persistence\Migration;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationResource;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\App\Infrastructure\Persistence\SchemaCollationConvergence;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 
 /**
  * Applies the schema migrations this binary ships and records each one in the ledger.
@@ -83,7 +83,7 @@ final readonly class MigrationRunner
      * @return  MigrationResult  The IDs this pass recorded, empty when the ledger was already current,
      *          together with the tables converged on the database default collation.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not exercise
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not exercise
      *          `system.migrate` over the database schema.
      * @throws  \RuntimeException  When the lock is held elsewhere, the ledger does not match the plan, a
      *          recorded checksum has drifted, or an interrupted migration has no proven way to resume.
@@ -156,7 +156,7 @@ final readonly class MigrationRunner
      * @return  list<Migration>  The tail of the plan the ledger does not cover, in apply order; empty
      *          when the schema is current.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not exercise
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not exercise
      *          `system.migrate` over the database schema.
      * @throws  \RuntimeException  When the recovery journal holds an unknown attempt, the ledger is not an
      *          exact prefix of the plan, or a recorded checksum has drifted.
@@ -179,7 +179,7 @@ final readonly class MigrationRunner
      *
      * @return  void
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses the actor
+     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses the actor
      *          this capability.
      *
      * @since   2.0.0

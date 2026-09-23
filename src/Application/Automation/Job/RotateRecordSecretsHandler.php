@@ -64,7 +64,7 @@ final readonly class RotateRecordSecretsHandler implements JobHandler
      * @return  void
      *
      * @throws  InvalidArgumentException  When the configured batch size is not a positive integer.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the job context may not
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the job context may not
      *          re-key business-record secrets on its site.
      *
      * @since   2.0.0

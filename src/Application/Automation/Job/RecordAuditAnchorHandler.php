@@ -53,7 +53,7 @@ final readonly class RecordAuditAnchorHandler implements JobHandler
      *
      * @return  void
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the job context may not
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the job context may not
      *          manage the audit trail.
      *
      * @since   2.0.0

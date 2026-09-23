@@ -8,7 +8,8 @@ use Kumwe\App\Identity\Application\StepUp\StepUpRejected;
 use Kumwe\App\Identity\Application\Administration\AuthenticationThrottled;
 use Kumwe\App\Tests\Support\InterfaceTranslation;
 use DateTimeImmutable;
-use Kumwe\App\Application\Authorization\AuthorizationPolicyRegistry;
+use Kumwe\Access\AuthorizationPolicyRegistry;
+use Kumwe\App\Application\Authorization\HostAccessPolicy;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\App\Extension\Contribution\CapabilityDefinitionRegistry;
 use Kumwe\App\Http\Middleware\TrustedProxyMiddleware;
@@ -260,7 +261,11 @@ final class PortalSecurityHandlerTest extends TestCase
                 'portal/security.twig' => '{{ portal_session.id }} {{ notice }} {{ error }} '
                     . '{% for code in recovery_codes %}{{ code }} {% endfor %}',
             ]), ['strict_variables' => true]),
-            new PortalNavigationRegistry($workspaces, $capabilities, new AuthorizationPolicyRegistry()),
+            new PortalNavigationRegistry(
+                $workspaces,
+                $capabilities,
+                new AuthorizationPolicyRegistry(HostAccessPolicy::membershipRequirement()),
+            ),
             new PortalTemplateRegistry(),
             $this->createStub(PortalNavigationVisibility::class),
         );

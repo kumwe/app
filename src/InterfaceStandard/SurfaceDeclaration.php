@@ -6,7 +6,7 @@ namespace Kumwe\App\InterfaceStandard;
 
 use InvalidArgumentException;
 use Kumwe\Extension\Spi\Contribution\ContributionOwner;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 
 /**
  * Typed semantic candidate for one core, extension, or installable-template interface surface.

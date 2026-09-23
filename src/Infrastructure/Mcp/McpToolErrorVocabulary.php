@@ -6,7 +6,7 @@ namespace Kumwe\App\Infrastructure\Mcp;
 
 use DomainException;
 use InvalidArgumentException;
-use Kumwe\App\Application\Authorization\AuthorizationDenied;
+use Kumwe\Access\AuthorizationDenied;
 use Kumwe\App\Application\Automation\AutomationNotFound;
 use Kumwe\App\Application\Security\StepUpAuthorizationRequired;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionNotFound;

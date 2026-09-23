@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\Extension\Application\Trust;
 
 use DateTimeImmutable;
-use Kumwe\App\Application\Authorization\AuthorizationDenied;
+use Kumwe\Access\AuthorizationDenied;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Audit\Application\AuditRecorder;
 use Kumwe\App\Extension\Application\Trust\ExtensionArtifactVerifier;

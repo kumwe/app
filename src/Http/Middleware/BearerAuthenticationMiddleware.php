@@ -12,7 +12,7 @@ use Kumwe\Context\Value\SiteContext;
 use Kumwe\App\Identity\Application\Authentication\AccessTokenVerifier;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\App\Identity\Application\Authentication\ScopedAccessTokenVerifier;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Laminas\Diactoros\Response\JsonResponse;
 use LogicException;
 use Mezzio\Router\Route;

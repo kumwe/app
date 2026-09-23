@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Unit\Portal\Presentation;
 
-use Kumwe\App\Application\Authorization\AuthorizationPolicyRegistry;
+use Kumwe\Access\AuthorizationPolicyRegistry;
+use Kumwe\App\Application\Authorization\HostAccessPolicy;
 use Kumwe\App\Extension\Contribution\CapabilityDefinitionRegistry;
 use Kumwe\App\Portal\Contribution\PortalNavigationRegistry;
 use Kumwe\App\Portal\Contribution\PortalTemplateRegistry;
@@ -66,7 +67,7 @@ final class PortalRendererAssetTest extends TestCase
             new PortalNavigationRegistry(
                 new PortalWorkspaceRegistry(),
                 new CapabilityDefinitionRegistry(),
-                new AuthorizationPolicyRegistry(),
+                new AuthorizationPolicyRegistry(HostAccessPolicy::membershipRequirement()),
             ),
             new PortalTemplateRegistry(),
             $this->createStub(PortalNavigationVisibility::class),

@@ -7,20 +7,21 @@ namespace Kumwe\App\Tests\Unit\BusinessSurface\Application;
 use DateTimeImmutable;
 use Kumwe\Context\Value\AuthenticatedSurface;
 use Kumwe\Context\Value\AuthenticationStrength;
-use Kumwe\App\Application\Authorization\AuthorizationDecision;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\Access\AuthorizationDecision;
+use Kumwe\Access\DecisionState;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalQueryRepository;
 use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalQueryService;
 use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalRequestView;
 use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalStatus;
-use Kumwe\App\BusinessSecurity\Application\MembershipDirectory;
+use Kumwe\Access\MembershipDirectory;
 use Kumwe\App\BusinessSurface\Application\BusinessApprovalExposureCatalog;
 use Kumwe\App\BusinessSurface\Application\BusinessApprovalSurfaceService;
 use Kumwe\App\BusinessSurface\Application\BusinessSurface;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Kumwe\App\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
@@ -162,7 +163,7 @@ final class BusinessApprovalSurfaceServiceTest extends TestCase
                 Capability $capability,
                 AuthorizationResource $_resource,
             ): AuthorizationDecision => new AuthorizationDecision(
-                $capability->value() === 'business.approval.approve',
+                $capability->value() === 'business.approval.approve' ? DecisionState::Allow : DecisionState::Deny,
                 'test',
                 $capability->value() === 'business.approval.approve' ? 'allowed' : 'denied',
             ),

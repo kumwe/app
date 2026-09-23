@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Kumwe\App\Studio\Application\Host;
 
 use Kumwe\Context\Value\AuthenticatedSurface;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Kumwe\App\Studio\Application\Composition\StudioPublishedTheme;
 use Kumwe\App\Studio\Domain\Host\StudioHostSession;
 use Kumwe\App\Studio\Domain\Host\StudioResourceKind;

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\Extension\Infrastructure;
 
 use Doctrine\DBAL\Connection;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\Access\AuthorizationGateway;
 use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use Kumwe\App\Extension\Application\ExtensionRuntimeWithdrawal;
 use Kumwe\App\Extension\Application\Trust\TrustStore;

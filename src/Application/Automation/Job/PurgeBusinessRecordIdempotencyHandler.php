@@ -6,11 +6,11 @@ namespace Kumwe\App\Application\Automation\Job;
 
 use InvalidArgumentException;
 use Kumwe\App\Application\Automation\JobHandler;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordIdempotencyPurger;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 
 /**
  * Bounded retention driver for the business-record command idempotency ledger.
@@ -76,7 +76,7 @@ final readonly class PurgeBusinessRecordIdempotencyHandler implements JobHandler
      * @return  void
      *
      * @throws  InvalidArgumentException  When either limit is not an integer or falls outside its range.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the job context may not
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the job context may not
      *          manage this installation-wide job type.
      *
      * @since   2.0.0

@@ -7,7 +7,7 @@ namespace Kumwe\App\BusinessSecurity\Infrastructure\Persistence;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\SQLitePlatform;
 use InvalidArgumentException;
-use Kumwe\App\BusinessSecurity\Application\MembershipDirectory;
+use Kumwe\Access\MembershipDirectory;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\Context\Value\MembershipContext;
 use Kumwe\Context\Value\OrganizationContext;

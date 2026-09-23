@@ -11,14 +11,14 @@ use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Context\Value\MembershipContext;
-use Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter;
+use Kumwe\Access\ResourceSiteOwnershipWriter;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\Transaction\Contract\TransactionManager;
-use Kumwe\App\BusinessSecurity\Application\MembershipDirectory;
+use Kumwe\Access\MembershipDirectory;
 use Kumwe\App\Identity\Application\Administration\AdministratorSession;
 use Kumwe\App\Identity\Application\Administration\AdministratorSessionStore;
 use Kumwe\App\Identity\Application\Administration\CreatedAdministratorSession;
@@ -27,7 +27,7 @@ use Kumwe\App\Identity\Application\StepUp\StepUpRejected;
 use Kumwe\App\Identity\Application\StepUp\StepUpSessionRotator;
 use Kumwe\App\Identity\Domain\StepUp\RotatedStepUpSession;
 use Kumwe\App\Identity\Domain\StepUp\StepUpIntent;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
@@ -109,7 +109,7 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
      *
      * @return  CreatedAdministratorSession  The stored session paired with the plaintext cookie token.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not hold an
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not hold an
      *          administrator session.
      * @throws  InvalidArgumentException  When the context carries no human principal to sign in as.
      * @throws  \Doctrine\DBAL\Exception  When the driver rejects the insert.
@@ -580,12 +580,12 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
      *
      * @return  void
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not end this
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not end this
      *          session.
      * @throws  InvalidArgumentException  When no row carries that identifier, so nothing was ended.
-     * @throws  \Kumwe\App\Application\Authorization\ResourceSiteOwnershipConflict  When the session's
+     * @throws  \Kumwe\Access\ResourceSiteOwnershipConflict  When the session's
      *          ownership row names a site other than the context's.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationResourceOwnershipUnknown  When the
+     * @throws  \Kumwe\Access\AuthorizationResourceOwnershipUnknown  When the
      *          session carries no ownership row to withdraw.
      * @throws  \Doctrine\DBAL\Exception  When the driver rejects the delete.
      *
@@ -635,7 +635,7 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
      *
      * @return  int  How many live sessions were ended, zero when the user held none.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not manage
      *          this user.
      * @throws  RuntimeException  When a selected identifier is not usable, a locked row no longer
      *          existed when its delete ran, or a session records no site to withdraw ownership for.
@@ -698,13 +698,13 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
      *
      * @return  int  How many expired sessions were removed, zero when there was nothing to clear.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not run
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not run
      *          administrator housekeeping.
      * @throws  RuntimeException  When a selected identifier is not a usable string, or a locked row no
      *          longer existed when its delete ran.
-     * @throws  \Kumwe\App\Application\Authorization\ResourceSiteOwnershipConflict  When a session's
+     * @throws  \Kumwe\Access\ResourceSiteOwnershipConflict  When a session's
      *          ownership row names a site other than the context's.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationResourceOwnershipUnknown  When a session
+     * @throws  \Kumwe\Access\AuthorizationResourceOwnershipUnknown  When a session
      *          carries no ownership row to withdraw.
      * @throws  \Doctrine\DBAL\Exception  When the driver rejects the candidate read or one of the deletes.
      *

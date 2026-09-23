@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\BusinessReporting;
 
 use DateTimeImmutable;
-use Kumwe\App\Application\Authorization\AuthorizationDecision;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\Access\AuthorizationDecision;
+use Kumwe\Access\DecisionState;
+use Kumwe\Access\AuthorizationGateway;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Audit\Application\AuditRecorder;
@@ -165,7 +166,7 @@ final class RecordExportPipelineTest extends TestCase
         };
         $authorization = $this->createStub(AuthorizationGateway::class);
         $authorization->method('decide')
-            ->willReturn(new AuthorizationDecision(true, 'business.record.export', 'allowed'));
+            ->willReturn(new AuthorizationDecision(DecisionState::Allow, 'business.record.export', 'allowed'));
         $service = new ReportService(
             new ReportDefinitionRegistry([]),
             $reader,
@@ -198,7 +199,13 @@ final class RecordExportPipelineTest extends TestCase
     ): ExportService {
         $authorization = $this->createStub(AuthorizationGateway::class);
         $authorization->method('decide')
-            ->willReturn(new AuthorizationDecision($allowed, 'business.record.export', 'tested'));
+            ->willReturn(
+                new AuthorizationDecision(
+                    $allowed ? DecisionState::Allow : DecisionState::Deny,
+                    'business.record.export',
+                    'tested',
+                ),
+            );
         $policies = $this->createStub(ExportPolicySnapshotProvider::class);
         $policies->method('snapshot')->willReturn(str_repeat('a', 64));
         $clock = $this->createStub(ClockInterface::class);

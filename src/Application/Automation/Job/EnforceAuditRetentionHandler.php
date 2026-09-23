@@ -54,7 +54,7 @@ final readonly class EnforceAuditRetentionHandler implements JobHandler
      * @return  void
      *
      * @throws  InvalidArgumentException  When the configured window is not a non-negative integer.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the job context may not
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the job context may not
      *          manage the audit trail.
      *
      * @since   2.0.0

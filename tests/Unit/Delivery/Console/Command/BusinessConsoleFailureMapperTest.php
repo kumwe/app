@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Unit\Delivery\Console\Command;
 
-use Kumwe\App\Application\Authorization\AuthorizationDenied;
+use Kumwe\Access\AuthorizationDenied;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordNotFound;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordValidationFailed;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordVersionConflict;

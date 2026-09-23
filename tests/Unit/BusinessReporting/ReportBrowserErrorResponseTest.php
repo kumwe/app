@@ -9,8 +9,9 @@ use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
 use Kumwe\App\Administrator\Presentation\RecoveryAdministratorRenderer;
 use Kumwe\Context\Value\AuthenticatedSurface;
 use Kumwe\Context\Value\AuthenticationStrength;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
-use Kumwe\App\Application\Authorization\AuthorizationPolicyRegistry;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationPolicyRegistry;
+use Kumwe\App\Application\Authorization\HostAccessPolicy;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\Extension\Spi\BusinessRecord\Application\BusinessRecordQueryPurpose;
@@ -183,7 +184,11 @@ final class ReportBrowserErrorResponseTest extends TestCase
             new Environment(new ArrayLoader([
                 'portal/business-report.twig' => '<div role="alert">{{ report_error }}</div>',
             ]), ['strict_variables' => true]),
-            new PortalNavigationRegistry($workspaces, $capabilities, new AuthorizationPolicyRegistry()),
+            new PortalNavigationRegistry(
+                $workspaces,
+                $capabilities,
+                new AuthorizationPolicyRegistry(HostAccessPolicy::membershipRequirement()),
+            ),
             new PortalTemplateRegistry(),
             $this->createStub(PortalNavigationVisibility::class),
         );

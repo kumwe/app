@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Application\Automation;
 
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
-use Kumwe\App\Application\Authorization\AuthorizationDenied;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
-use Kumwe\App\Application\Authorization\AuthorizationResourceOwnershipUnknown;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationDenied;
+use Kumwe\Access\AuthorizationResource;
+use Kumwe\Access\AuthorizationResourceOwnershipUnknown;
 use Kumwe\Context\Value\ExecutionContext;
-use Kumwe\App\Application\Authorization\ResourceSiteOwnership;
+use Kumwe\Access\ResourceSiteOwnership;
 use Kumwe\App\Application\Authorization\SystemPrincipal;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use RuntimeException;
 use Throwable;
 

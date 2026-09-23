@@ -28,7 +28,7 @@ interface ThemeMutationAuthorizer
      *
      * @return  void
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses the actor.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses the actor.
      * @throws  \Kumwe\App\Identity\Application\Authorization\InsufficientCapability  When no grant backs it.
      *
      * @since   2.0.0

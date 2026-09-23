@@ -1,0 +1,106 @@
+schema: kumwe-release-attestation/v2
+artifact_kind: framework_php
+migration_id: KUMWE-MIG-2026-009
+change_set: KUMWE-CS-2026-009
+repository: "https://github.com/kumwe/access-control"
+merge_commit: "c2420d1ed03bc39eaf5d8b9f5540580c297e3b57"
+version: "0.1.2"
+tag: v0.1.2
+source_archive:
+  url: "https://github.com/kumwe/access-control/archive/refs/tags/v0.1.2.tar.gz"
+  sha256: "719197b39572fcb651f8236ddb9c01929381c01d0b711bf08653b5af18c8c8a6"
+artifacts:
+  - identity: "kumwe/access-control:0.1.2"
+    url: "https://github.com/kumwe/access-control/archive/refs/tags/v0.1.2.tar.gz"
+    sha256: "719197b39572fcb651f8236ddb9c01929381c01d0b711bf08653b5af18c8c8a6"
+manifests_and_corpora:
+  - path: resources/public-api/v1.json
+    sha256: "7ccd1fc48e4effd48df82a0b649336ccdc4cba37122977e977cbe4c99279655e"
+  - path: resources/capabilities/v1.json
+    sha256: "64bc44385cf4a90cf60d59123424d2c5224d0eff7832070defc7fc0c58a3e237"
+  - path: resources/service-map/v1.json
+    sha256: "830928ca5a3dd5715026f4b481689407d05a59cd87879516f57ce4d7387e5a82"
+  - path: resources/conformance/decisions-v1.json
+    sha256: "dbcf8d9713b6081664cebc5783211fc70431a9964e3aa1fbabc425e6e2a22e45"
+  - path: MIGRATION-HANDOFF.md
+    sha256: "b773fac93bb440cf3088102b3894275697fc435402d3220a615d695787f76437"
+abi_and_capabilities: null
+sbom:
+  url: null
+  sha256: null
+provenance: "Release on record run 34248219134 (push, attempt 1) published release 384876959 as github-actions[bot]"
+release_workflow: "https://github.com/kumwe/access-control/actions/runs/34248219134 success on the tag commit"
+registry_or_pie_verification:
+  - "git ls-remote https://github.com/kumwe/access-control refs/tags/v0.1.2 returned one line for refs/tags/v0.1.2"
+  - "Tag commit from git ls-remote: c2420d1ed03bc39eaf5d8b9f5540580c297e3b57; no peeled ^{} line (lightweight tag)"
+  - "git clone --quiet --depth 1 --branch v0.1.2 of the repository: HEAD c2420d1ed03bc39eaf5d8b9f5540580c297e3b57"
+  - "In the clone git cat-file -t v0.1.2 is commit; GitHub git/ref/tags/v0.1.2 object type commit, same sha"
+  - "The plan text named 434c16204931c906ac9c34e47387eba476ab1e46; that is a later main commit (docs only), not the tag"
+  - "Packagist p2 observed 2026-09-23T15:31:07Z at https://repo.packagist.org/p2/kumwe/access-control.json (HTTP 200)"
+  - "Packagist lists v0.1.2 (0.1.2.0) newest of v0.1.2, v0.1.1, v0.1.0; time 2026-09-08T15:58:54+00:00"
+  - "Packagist published-time 2026-09-10T18:38:17+00:00; the release predates the registry publication"
+  - "Packagist source: git https://github.com/kumwe/access-control.git at c2420d1ed03bc39eaf5d8b9f5540580c297e3b57"
+  - "Packagist dist: zip at reference c2420d1ed03bc39eaf5d8b9f5540580c297e3b57 (api.github.com zipball URL)"
+  - "Packagist source and dist references both equal the tag commit and the clone HEAD"
+  - "Packagist dist shasum is an empty string; license Apache-2.0; autoload psr-4 Kumwe\\Access\\ => src/"
+  - "Packagist require: php ^8.5, kumwe/access-context 0.1.2, psr/container ^2.0"
+  - "curl -sS -L of https://github.com/kumwe/access-control/archive/refs/tags/v0.1.2.tar.gz: HTTP 200, 99255 bytes"
+  - "The download resolved to codeload.github.com/kumwe/access-control/tar.gz/refs/tags/v0.1.2; file reports gzip data"
+  - "sha256 719197b39572fcb651f8236ddb9c01929381c01d0b711bf08653b5af18c8c8a6 covers the hosted tar.gz bytes"
+  - "The same URL was fetched twice and both downloads produced that digest"
+  - "git archive --format=tar --prefix=access-control-0.1.2/ v0.1.2 | sha256sum gave 45524326b21a5b4b30a071d272e5149a"
+  - "Full local git archive digest: 45524326b21a5b4b30a071d272e5149a0a7c8fbb1cdc97d82eb1666bfeee6e85"
+  - "Extracted access-control-0.1.2/ holds 71 files; diff -r reports no content difference against the clone"
+  - "diff -r --exclude=.git differs only by .editorconfig, .gitattributes, .github, .gitignore, AGENTS.md, phpcs.xml, phpstan.neon"
+  - "diff -r also reports tests and tools only in the clone; every reported path is export-ignore in .gitattributes"
+  - "The clone tracks 116 files; the archive omits the 45 export-ignore files and nothing else"
+  - "Archive top level: CHANGELOG.md, CHARTER.md, LICENSE, MIGRATION-HANDOFF.md, README.md, composer.json"
+  - "Archive top-level directories: docs, examples, resources, src; LICENSE is Apache License Version 2.0"
+  - "CHARTER.md, README.md, docs/, resources/ and src/ are all present in the archive"
+  - "GitHub release v0.1.2 id 384876959: author github-actions[bot], published_at 2026-09-08T16:00:25Z"
+  - "GitHub release v0.1.2: draft false, prerelease false, immutable false, target_commitish main, no assets"
+  - "Release on record run 34248219134: push, attempt 1, head_sha c2420d1ed03bc39eaf5d8b9f5540580c297e3b57"
+  - "Release on record run 34248219134: status completed, conclusion success, created 2026-09-08T15:58:57Z"
+  - "Run 34248219134 jobs: check / PHP 8.5, check / Release automation tests, check / Package gate all success"
+  - "Run 34248219134 job Release the recorded version: success, completed 2026-09-08T16:00:27Z"
+  - "Access CI run 34248218620: completed, success, on the same commit"
+  - "PR https://github.com/kumwe/access-control/pull/7 merged 2026-09-08T15:58:54Z by Llewellynvdm into main"
+  - "PR 7 head was 0c25f5e9162c68e53c5b1ae6904ef27b7b4036e6; the tag commit is the main commit that merge produced"
+  - "GitHub MCP tools answered every query; no access-denied response was observed"
+clean_consumer_or_build_verification:
+  - "No package PHP, script or example was executed; the package was installed into App through Composer only"
+  - "resources/public-api/v1.json: valid against package-public-api.v1.schema.json (App SchemaValidator)"
+  - "resources/capabilities/v1.json: valid against package-capabilities.v1.schema.json (App SchemaValidator)"
+  - "resources/service-map/v1.json: valid against package-service-map.v1.schema.json (App SchemaValidator)"
+  - "All three manifests carry package kumwe/access-control and release 0.1.2; public-api exports 43 symbols"
+  - "docs/release-record.md does not exist at v0.1.2; the shipped record is MIGRATION-HANDOFF.md"
+  - "Governance README section 3.11 admits MIGRATION-HANDOFF.md for published releases"
+  - "MIGRATION-HANDOFF.md front matter parsed by PackageManifests::parseReleaseRecord"
+  - "MIGRATION-HANDOFF.md front matter: valid against migration-handoff.v2.schema.json (App SchemaValidator)"
+  - "Record front matter: kumwe-migration-handoff/v2, KUMWE-MIG-2026-009, KUMWE-CS-2026-009, framework_php"
+  - "Record state draft_pr_open; target https://github.com/kumwe/access-control, artifact_identity kumwe/access-control"
+  - "Record canonical namespace Kumwe\\Access; composer_package kumwe/access-control"
+  - "Record ownership.public_manifests digests equal the three locally computed manifest digests"
+  - "Record tests.corpora names resources/conformance/decisions-v1.json, digested above"
+  - "Record blockers: independent verification of this successor and exact dependencies before App adoption"
+  - "CHANGELOG.md newest release heading is ## 0.1.2 above ## 0.1.1; an ## Unreleased section sits above ## 0.1.0"
+  - "Package composer.json require: php ^8.5, kumwe/access-context 0.1.2, psr/container ^2.0"
+  - "App composer.lock: kumwe/access-context v0.1.2 at 132c3cd7c229ceda4398e19140d1477512c27ebf (exact)"
+  - "App composer.lock platform: php ^8.5 (satisfies the package requirement)"
+  - "App composer.lock after the pin: kumwe/access-control v0.1.2 at c2420d1ed03bc39eaf5d8b9f5540580c297e3b57, one lock install"
+  - "PackageManifests::read of the installed package succeeds and selects resources/public-api/v1.json"
+  - "Validator: tools/Governance bootstrap, SchemaValidator, PackageManifests and StrictYaml loaded by a scratch script on PHP 8.4.19"
+verified_at: "2026-09-23T15:31:07Z"
+verified_by: "Independent release verification agent (adoption worktree, no Phase 1 context)"
+status: verified
+known_gaps:
+  - "GitHub release v0.1.2 reports immutable false; tag protection and rulesets were not queried"
+  - "No smoke test or example run was performed; the only consumer install is the App lock install of this adoption"
+  - "The Packagist dist zipball was not downloaded; Packagist publishes an empty dist shasum for it"
+  - "The attested archive is the GitHub tag tar.gz, whose bytes differ from the Packagist zipball of the same commit"
+  - "CHANGELOG.md carries an ## Unreleased section between ## 0.1.1 and ## 0.1.0 with two entries"
+  - "CHANGELOG.md ends with the sentence: Publication is blocked pending verified Access Context dependency evidence."
+  - "resources/release-readiness.json reports status blocked with a null dependency attestation, by package design"
+  - "No SBOM and no release assets exist for v0.1.2; abi_and_capabilities does not apply to a framework_php artifact"
+  - "The schema checks used the App's fixed JSON Schema 2020-12 subset validator, not a full implementation"
+  - "The verification ran in the adoption worktree rather than in isolation; Phase 2 context was present, Phase 1 context was not"

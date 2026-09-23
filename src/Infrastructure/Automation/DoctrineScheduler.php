@@ -12,12 +12,12 @@ use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
-use Kumwe\App\Application\Authorization\AuthorizationResourceOwnershipUnknown;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationResource;
+use Kumwe\Access\AuthorizationResourceOwnershipUnknown;
 use Kumwe\Context\Value\ExecutionContext;
-use Kumwe\App\Application\Authorization\ResourceSiteOwnership;
-use Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter;
+use Kumwe\Access\ResourceSiteOwnership;
+use Kumwe\Access\ResourceSiteOwnershipWriter;
 use Kumwe\App\Application\Authorization\SystemPrincipal;
 use Kumwe\App\Automation\Domain\CronExpression;
 use Kumwe\App\Application\Automation\JobExecutionClass;
@@ -28,7 +28,7 @@ use Kumwe\App\Application\Automation\Scheduler;
 use Kumwe\App\Application\Automation\Job\ScheduleRepository;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\App\BusinessIntegration\Application\ScheduleRuntimeSynchronizer;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
@@ -114,7 +114,7 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
      *
      * @throws  InvalidArgumentException  When the limit is outside 1 to 1000.
      * @throws  RuntimeException  When a claimed row is malformed or its recurrence has no next occurrence.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the caller may not dispatch
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the caller may not dispatch
      *          schedules, or may not dispatch one that a site owns.
      *
      * @since   2.0.0
@@ -228,7 +228,7 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
      * @throws  InvalidArgumentException  When the name, cron expression, timezone, job type or queue
      *          name is not acceptable.
      * @throws  UniqueConstraintViolationException  When another schedule already carries the same name.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the caller may not manage
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the caller may not manage
      *          automation, or may not schedule this installation-wide job type.
      *
      * @since   2.0.0
@@ -349,7 +349,7 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
      * @return  array<string, mixed>|null  The normalized row, or null when no such schedule exists.
      *
      * @throws  RuntimeException  When the stored row carries an unusable payload, version or job type.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the caller may not manage
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the caller may not manage
      *          this schedule.
      *
      * @since   2.0.0
@@ -387,7 +387,7 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
      * @throws  InvalidArgumentException  When the schedule does not exist, the expected version is not
      *          positive, or the stored version has already moved on.
      * @throws  RuntimeException  When the stored row carries an unusable job type or execution scope.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the caller may not manage
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the caller may not manage
      *          this schedule.
      *
      * @since   2.0.0
@@ -435,7 +435,7 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
      * @throws  InvalidArgumentException  When the schedule does not exist, the expected version is not
      *          positive, or the stored version has already moved on.
      * @throws  RuntimeException  When the stored row carries an unusable job type or execution scope.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the caller may not manage
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the caller may not manage
      *          this schedule.
      *
      * @since   2.0.0
@@ -737,7 +737,7 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
      *
      * @return  void
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the context does not hold
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the context does not hold
      *          `automation.manage` over the resource.
      *
      * @since   2.0.0
@@ -763,7 +763,7 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
      *
      * @return  void
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the context may not manage
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the context may not manage
      *          this installation-wide job type.
      *
      * @since   2.0.0
@@ -829,7 +829,7 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
      * @return  JobExecutionClass  Whether the schedule is installation-wide or site-local.
      *
      * @throws  RuntimeException  When the row has no usable job type, execution scope or identifier.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the context may not manage
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the context may not manage
      *          this schedule.
      *
      * @since   2.0.0

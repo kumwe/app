@@ -6,7 +6,7 @@ namespace Kumwe\App\Tests\Support;
 
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\App\Identity\Application\Authorization\InsufficientCapability;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Kumwe\App\Presentation\Application\ThemeMutationAuthorizer;
 use Kumwe\App\Extension\Domain\ThemeSurface;
 

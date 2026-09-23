@@ -6,9 +6,9 @@ namespace Kumwe\App\Infrastructure\Authorization;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
-use Kumwe\App\Application\Authorization\OwnershipScopeLevel;
-use Kumwe\App\Application\Authorization\ResourceOwnershipReferences;
+use Kumwe\Access\AuthorizationResource;
+use Kumwe\Access\OwnershipScopeLevel;
+use Kumwe\Access\ResourceOwnershipReferences;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 
 /**

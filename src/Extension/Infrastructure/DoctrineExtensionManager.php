@@ -10,10 +10,10 @@ use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
 use JsonException;
 use LogicException;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
-use Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter;
+use Kumwe\Access\ResourceSiteOwnershipWriter;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Audit\Application\AuditRecorder;
@@ -43,7 +43,7 @@ use Kumwe\Extension\Manifest\SemanticVersion;
 use Kumwe\App\Extension\Infrastructure\Trust\FilesystemExtensionArtifactVerifier;
 use Kumwe\App\Extension\Runtime\ExtensionRuntimeMapCompiler;
 use Kumwe\App\Extension\Runtime\LaminasLifecycleEvent;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Presentation\Application\ThemeActivationGuard;
 use Kumwe\App\Application\Presentation\ThemePackageValidator;
@@ -441,7 +441,7 @@ final readonly class DoctrineExtensionManager
      * @return  array<string, mixed>  Registry row for the extension as it now stands, carrying the version
      *          just installed and the runtime path its files were published to.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not manage
      *          extensions.
      * @throws  \Kumwe\App\Extension\Application\Trust\UntrustedPackage  When the trust store refuses the
      *          package's digest or signature.
@@ -847,7 +847,7 @@ final readonly class DoctrineExtensionManager
      *
      * @return  array<string, mixed>  Registry row for the extension after the status change.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage this
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not manage this
      *          extension, or may not manage the requested surface.
      * @throws  \Kumwe\App\Presentation\Application\StepUpAuthenticationRequired  When the surface demands a
      *          step-up the supplied credential does not satisfy.
@@ -929,7 +929,7 @@ final readonly class DoctrineExtensionManager
      * @return  array<string, mixed>  Registry row for the extension after the change; its status is still
      *          `active` when another site's binding survives.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage this
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not manage this
      *          extension, or may not manage a surface it is bound to.
      * @throws  \Kumwe\App\Presentation\Application\StepUpAuthenticationRequired  When the administrator
      *          surface demands a step-up the supplied credential does not satisfy.
@@ -989,7 +989,7 @@ final readonly class DoctrineExtensionManager
      *
      * @return  void
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage this
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not manage this
      *          extension, or may not manage a surface it is bound to.
      * @throws  \Kumwe\App\Presentation\Application\StepUpAuthenticationRequired  When the administrator
      *          surface demands a step-up the supplied credential does not satisfy.
@@ -1089,7 +1089,7 @@ final readonly class DoctrineExtensionManager
      * @return  array<string, mixed>  Registry row read back inside the same transaction, so it already
      *          reflects the status actually persisted.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage a
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not manage a
      *          surface this change binds or releases.
      * @throws  InvalidArgumentException  When no such extension is installed.
      * @throws  RuntimeException  When the lease has been fenced, a theme change arrives without an
@@ -2163,7 +2163,7 @@ final readonly class DoctrineExtensionManager
      *
      * @return  void
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage a
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not manage a
      *          surface this extension is bound to.
      * @throws  RuntimeException  When the row carries no usable id, a stored surface or site assignment is
      *          invalid, or the theme is still bound by another site.
@@ -2218,7 +2218,7 @@ final readonly class DoctrineExtensionManager
      *
      * @return  void
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage a
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not manage a
      *          surface this change would release.
      * @throws  RuntimeException  When the row carries no usable id, or a binding count cannot be read back
      *          as an integer.
@@ -2250,7 +2250,7 @@ final readonly class DoctrineExtensionManager
      *
      * @return  void
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses the actor this
+     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses the actor this
      *          surface.
      *
      * @since   2.0.0
@@ -2273,7 +2273,7 @@ final readonly class DoctrineExtensionManager
      *
      * @return  void
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses the actor this
+     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses the actor this
      *          action on this resource.
      *
      * @since   2.0.0

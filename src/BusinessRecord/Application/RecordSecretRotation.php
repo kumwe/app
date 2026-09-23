@@ -49,7 +49,7 @@ interface RecordSecretRotation
      * @return  RecordSecretRotationReport  Counts, skipped installations, and whether anything is left.
      *
      * @throws  InvalidArgumentException  When the batch size falls outside its range.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not re-key
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not re-key
      *          business-record secrets on this site.
      * @throws  KeyUnavailable  When a stored envelope names a key
      *          this deployment does not hold; the pass stops rather than skipping the row, because a row

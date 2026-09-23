@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Kumwe\App\Identity\Application\Authentication;
 
 use InvalidArgumentException;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
-use Kumwe\App\Identity\Domain\GrantScope;
+use Kumwe\Access\Capability;
+use Kumwe\Access\GrantScope;
 use Kumwe\Context\Contract\Principal;
 use Kumwe\Context\Value\AuthenticatedSurface;
 use Kumwe\Context\Value\AuthenticationStrength;

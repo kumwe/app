@@ -8,8 +8,8 @@ use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Audit\Application\AuditRecorder;
@@ -18,7 +18,7 @@ use Kumwe\App\Audit\Application\AuditRetentionService;
 use Kumwe\Audit\Application\AuditTrailExporter;
 use Kumwe\Audit\Domain\AuditAnchorDigest;
 use Kumwe\Audit\Domain\AuditEvent;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\CanonicalJson\CanonicalEncoder;
 use Psr\Clock\ClockInterface;
@@ -85,7 +85,7 @@ final readonly class DoctrineAuditRetentionService implements AuditRetentionServ
      *
      * @throws  InvalidArgumentException  When the window is not a positive number of days.
      * @throws  RuntimeException  When the guarded delete does not remove exactly the archived range.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not manage
      *          the audit trail.
      *
      * @since   2.0.0

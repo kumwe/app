@@ -6,7 +6,7 @@ namespace Kumwe\App\Delivery\Http\Api\Navigation;
 
 use DomainException;
 use InvalidArgumentException;
-use Kumwe\App\Application\Authorization\AuthorizationDenied;
+use Kumwe\Access\AuthorizationDenied;
 use Kumwe\App\Delivery\Http\Api\Concurrency\EntityTag;
 use Kumwe\App\Delivery\Http\Api\ProblemDetailsResponseFactory;
 use Kumwe\Navigation\Application\MenuItemRecord;

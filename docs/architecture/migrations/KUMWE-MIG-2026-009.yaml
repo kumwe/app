@@ -1,0 +1,272 @@
+schema: kumwe-migration-ledger/v1
+migration_id: KUMWE-MIG-2026-009
+change_set: KUMWE-CS-2026-009
+package: kumwe/access-control
+version: 0.1.2
+artifact_digest: "719197b39572fcb651f8236ddb9c01929381c01d0b711bf08653b5af18c8c8a6"
+handoff_path: vendor/kumwe/access-control/MIGRATION-HANDOFF.md
+handoff_sha256: "b773fac93bb440cf3088102b3894275697fc435402d3220a615d695787f76437"
+release_attestation: docs/architecture/migrations/evidence/KUMWE-MIG-2026-009/RELEASE-ATTESTATION.yaml
+old_namespace_roots: []
+symbols:
+  - old_fqcn: Kumwe\App\Application\Authorization\AuthorizationDecision
+    new_fqcn: Kumwe\Access\AuthorizationDecision
+  - old_fqcn: Kumwe\App\Application\Authorization\AuthorizationDecisionRecorder
+    new_fqcn: Kumwe\Access\AuthorizationDecisionRecorder
+  - old_fqcn: Kumwe\App\Application\Authorization\AuthorizationDefinitionLifecycle
+    new_fqcn: Kumwe\Access\AuthorizationDefinitionLifecycle
+  - old_fqcn: Kumwe\App\Application\Authorization\AuthorizationDenied
+    new_fqcn: Kumwe\Access\AuthorizationDenied
+  - old_fqcn: Kumwe\App\Application\Authorization\AuthorizationGateway
+    new_fqcn: Kumwe\Access\AuthorizationGateway
+  - old_fqcn: Kumwe\App\Application\Authorization\AuthorizationPolicyRegistry
+    new_fqcn: Kumwe\Access\AuthorizationPolicyRegistry
+  - old_fqcn: Kumwe\App\Application\Authorization\AuthorizationResource
+    new_fqcn: Kumwe\Access\AuthorizationResource
+  - old_fqcn: Kumwe\App\Application\Authorization\AuthorizationResourceOwnershipUnknown
+    new_fqcn: Kumwe\Access\AuthorizationResourceOwnershipUnknown
+  - old_fqcn: Kumwe\App\Application\Authorization\CapabilityDefinition
+    new_fqcn: Kumwe\Access\CapabilityDefinition
+  - old_fqcn: Kumwe\App\Application\Authorization\CapabilityDefinitionRegistry
+    new_fqcn: Kumwe\Access\CapabilityDefinitionRegistry
+  - old_fqcn: Kumwe\App\Application\Authorization\CompositeResourceOwnershipReferences
+    new_fqcn: Kumwe\Access\CompositeResourceOwnershipReferences
+  - old_fqcn: Kumwe\App\Application\Authorization\MembershipContextValidator
+    new_fqcn: Kumwe\Access\MembershipContextValidator
+  - old_fqcn: Kumwe\App\Application\Authorization\OwnershipNarrowingRefused
+    new_fqcn: Kumwe\Access\OwnershipNarrowingRefused
+  - old_fqcn: Kumwe\App\Application\Authorization\OwnershipNarrowingUnbounded
+    new_fqcn: Kumwe\Access\OwnershipNarrowingUnbounded
+  - old_fqcn: Kumwe\App\Application\Authorization\OwnershipScope
+    new_fqcn: Kumwe\Access\OwnershipScope
+  - old_fqcn: Kumwe\App\Application\Authorization\OwnershipScopeChangeRejected
+    new_fqcn: Kumwe\Access\OwnershipScopeChangeRejected
+  - old_fqcn: Kumwe\App\Application\Authorization\OwnershipScopeLevel
+    new_fqcn: Kumwe\Access\OwnershipScopeLevel
+  - old_fqcn: Kumwe\App\Application\Authorization\OwnershipScopeNotPermitted
+    new_fqcn: Kumwe\Access\OwnershipScopeNotPermitted
+  - old_fqcn: Kumwe\App\Application\Authorization\OwnershipScopeNotSiteBound
+    new_fqcn: Kumwe\Access\OwnershipScopeNotSiteBound
+  - old_fqcn: Kumwe\App\Application\Authorization\OwnershipScopeRule
+    new_fqcn: Kumwe\Access\OwnershipScopeRule
+  - old_fqcn: Kumwe\App\Application\Authorization\ResourceOwnership
+    new_fqcn: Kumwe\Access\ResourceOwnership
+  - old_fqcn: Kumwe\App\Application\Authorization\ResourceOwnershipReferences
+    new_fqcn: Kumwe\Access\ResourceOwnershipReferences
+  - old_fqcn: Kumwe\App\Application\Authorization\ResourceOwnershipScopePolicy
+    new_fqcn: Kumwe\Access\ResourceOwnershipScopePolicy
+  - old_fqcn: Kumwe\App\Application\Authorization\ResourcePolicyDefinition
+    new_fqcn: Kumwe\Access\ResourcePolicyDefinition
+  - old_fqcn: Kumwe\App\Application\Authorization\ResourcePolicyRegistry
+    new_fqcn: Kumwe\Access\ResourcePolicyRegistry
+  - old_fqcn: Kumwe\App\Application\Authorization\ResourcePolicyTarget
+    new_fqcn: Kumwe\Access\ResourcePolicyTarget
+  - old_fqcn: Kumwe\App\Application\Authorization\ResourceSiteOwnership
+    new_fqcn: Kumwe\Access\ResourceSiteOwnership
+  - old_fqcn: Kumwe\App\Application\Authorization\ResourceSiteOwnershipConflict
+    new_fqcn: Kumwe\Access\ResourceSiteOwnershipConflict
+  - old_fqcn: Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter
+    new_fqcn: Kumwe\Access\ResourceSiteOwnershipWriter
+  - old_fqcn: Kumwe\App\Application\Authorization\SiteGroup
+    new_fqcn: Kumwe\Access\SiteGroup
+  - old_fqcn: Kumwe\App\Application\Authorization\SiteGroupRegistry
+    new_fqcn: Kumwe\Access\SiteGroupRegistry
+  - old_fqcn: Kumwe\App\Application\Authorization\SiteGroupUnknown
+    new_fqcn: Kumwe\Access\SiteGroupUnknown
+  - old_fqcn: Kumwe\App\Application\Authorization\SiteGroupWriter
+    new_fqcn: Kumwe\Access\SiteGroupWriter
+  - old_fqcn: Kumwe\App\Identity\Domain\GrantScope
+    new_fqcn: Kumwe\Access\GrantScope
+  - old_fqcn: Kumwe\App\Identity\Domain\AuthorizationDecision
+    new_fqcn: Kumwe\Access\AuthorizationDecision
+  - old_fqcn: Kumwe\Extension\Spi\Identity\Domain\Capability
+    new_fqcn: Kumwe\Access\Capability
+  - old_fqcn: Kumwe\App\BusinessSecurity\Application\MembershipDirectory
+    new_fqcn: Kumwe\Access\MembershipDirectory
+removed_paths:
+  - src/Application/Authorization/AuthorizationDecision.php
+  - src/Application/Authorization/AuthorizationDecisionRecorder.php
+  - src/Application/Authorization/AuthorizationDefinitionLifecycle.php
+  - src/Application/Authorization/AuthorizationDenied.php
+  - src/Application/Authorization/AuthorizationGateway.php
+  - src/Application/Authorization/AuthorizationPolicyRegistry.php
+  - src/Application/Authorization/AuthorizationResource.php
+  - src/Application/Authorization/AuthorizationResourceOwnershipUnknown.php
+  - src/Application/Authorization/CapabilityDefinition.php
+  - src/Application/Authorization/CapabilityDefinitionRegistry.php
+  - src/Application/Authorization/CompositeResourceOwnershipReferences.php
+  - src/Application/Authorization/MembershipContextValidator.php
+  - src/Application/Authorization/OwnershipNarrowingRefused.php
+  - src/Application/Authorization/OwnershipNarrowingUnbounded.php
+  - src/Application/Authorization/OwnershipScope.php
+  - src/Application/Authorization/OwnershipScopeChangeRejected.php
+  - src/Application/Authorization/OwnershipScopeLevel.php
+  - src/Application/Authorization/OwnershipScopeNotPermitted.php
+  - src/Application/Authorization/OwnershipScopeNotSiteBound.php
+  - src/Application/Authorization/OwnershipScopeRule.php
+  - src/Application/Authorization/ResourceOwnership.php
+  - src/Application/Authorization/ResourceOwnershipReferences.php
+  - src/Application/Authorization/ResourceOwnershipScopePolicy.php
+  - src/Application/Authorization/ResourcePolicyDefinition.php
+  - src/Application/Authorization/ResourcePolicyRegistry.php
+  - src/Application/Authorization/ResourcePolicyTarget.php
+  - src/Application/Authorization/ResourceSiteOwnership.php
+  - src/Application/Authorization/ResourceSiteOwnershipConflict.php
+  - src/Application/Authorization/ResourceSiteOwnershipWriter.php
+  - src/Application/Authorization/SiteGroup.php
+  - src/Application/Authorization/SiteGroupRegistry.php
+  - src/Application/Authorization/SiteGroupUnknown.php
+  - src/Application/Authorization/SiteGroupWriter.php
+  - src/Identity/Domain/GrantScope.php
+  - src/Identity/Domain/AuthorizationDecision.php
+  - src/BusinessSecurity/Application/MembershipDirectory.php
+removed_tests:
+  - tests/Unit/Identity/Domain/GrantScopeTest.php
+  - tests/Unit/Identity/Domain/AuthorizationDecisionTest.php
+  - tests/Unit/Application/Authorization/ResourcePolicyDefinitionTest.php
+  - tests/Unit/Application/Authorization/ResourcePolicyRegistryTest.php
+retained_tests:
+  - tests/Unit/Application/Authorization/OwnershipScopeModelTest.php
+  - tests/Unit/Application/Authorization/AuthorizationPolicyRegistryTest.php
+  - tests/Functional/Extension/LiveSurfaceContractParityTest.php
+  - tests/Integration/Authorization/BusinessGroupOwnershipEngineIntegrationTest.php
+  - tests/Integration/Extension/ExtensionOwnershipLifecycleIntegrationTest.php
+  - tests/Unit/Application/Authorization/ApplicationAuthorizationTest.php
+  - tests/Unit/Application/Authorization/BusinessGroupOwnershipTest.php
+  - tests/Unit/Application/Authorization/DoctrineResourceSiteOwnershipWriterTest.php
+  - tests/Unit/Application/Authorization/ResourceOwnershipScopeServiceTest.php
+  - tests/Unit/Application/Authorization/SiteGroupAdministrationTest.php
+  - tests/Unit/Application/Authorization/SiteScopeContainmentIsNotAWideningTest.php
+  - tests/Unit/Identity/Application/Authentication/AuthenticatedPrincipalTest.php
+  - tests/Unit/Identity/Infrastructure/Authentication/DoctrineAccessTokenVerifierTest.php
+  - tests/Unit/Navigation/Application/PublicNavigationTest.php
+  - tests/Unit/Application/Authorization/StructuredLogAuthorizationDecisionRecorderTest.php
+  - tests/Unit/BusinessReporting/ReportPolicyInferenceTest.php
+  - tests/Unit/BusinessReporting/ExportServiceTransactionTest.php
+  - tests/Unit/BusinessReporting/ExportGenerationPolicyFenceTest.php
+  - tests/Unit/BusinessReporting/RecordExportPipelineTest.php
+  - tests/Unit/Delivery/Http/Api/Business/BusinessRecordApiHandlerTest.php
+  - tests/Unit/Delivery/Http/Api/Business/BusinessOperationStatusApiHandlerTest.php
+  - tests/Unit/BusinessSurface/Application/BusinessMutationPlanServiceTest.php
+  - tests/Unit/BusinessSurface/Application/BusinessSurfaceServiceTest.php
+  - tests/Unit/BusinessReporting/ReportBrowserErrorResponseTest.php
+  - tests/Unit/Portal/Presentation/PortalRendererAssetTest.php
+  - tests/Unit/Portal/Presentation/PortalContributionRendererTest.php
+  - tests/Unit/Portal/Contribution/PortalContributionRegistryTest.php
+  - tests/Unit/Portal/Http/PortalSecurityHandlerTest.php
+  - tests/Unit/Portal/Http/PortalLoginHandlerTest.php
+  - tests/Unit/Extension/Contribution/ExtensionContributionRegistrySetTest.php
+  - tests/Unit/Identity/Application/Authorization/AuthorizationServiceTest.php
+  - tests/Unit/Identity/Application/Authorization/RoleGrantPolicyTest.php
+  - tests/Unit/Identity/Domain/CapabilityGrantTest.php
+  - tests/Integration/Automation/AutomationManagementIntegrationTest.php
+  - tests/Integration/Automation/WorkerConnectionLossKillPointIntegrationTest.php
+  - tests/Integration/BusinessRecord/BusinessNumberSequenceIdentityIntegrationTest.php
+  - tests/Integration/BusinessRecord/PostingPeriodLockIntegrationTest.php
+  - tests/Integration/BusinessSurface/GeneratedBusinessQueryBudgetIntegrationTest.php
+  - tests/Integration/Extension/AssetInspectionCustomViewIntegrationTest.php
+  - tests/Integration/Extension/GeneratedExtensionLifecycleIntegrationTest.php
+  - tests/Integration/Identity/AccessControlIntegrationTest.php
+  - tests/Integration/Identity/AdministratorProvisioningIntegrationTest.php
+  - tests/Integration/Localization/MessageOverrideIntegrationTest.php
+  - tests/Support/AllowingAuditAuthorization.php
+  - tests/Support/AuthorizationContext.php
+  - tests/Support/CapabilityThemeAuthorizer.php
+  - tests/Support/DashboardPreferenceTestRuntime.php
+  - tests/Support/RestoreSecurityAcceptance.php
+  - tests/Support/prepare-browser-contribution.php
+  - tests/Unit/Administrator/Http/Handler/AdministratorAccessControlHandlerTest.php
+  - tests/Unit/Administrator/Http/Handler/AdministratorContentEditorRetentionTest.php
+  - tests/Unit/Administrator/Http/Handler/AdministratorLoginHandlerTest.php
+  - tests/Unit/Administrator/Http/Middleware/AdministratorAuthorizationMiddlewareTest.php
+  - tests/Unit/Application/Authorization/AdapterAuthorizationParityTest.php
+  - tests/Unit/Application/Authorization/DoctrineResourceSiteOwnershipTest.php
+  - tests/Unit/Application/Automation/PurgeBusinessRecordIdempotencyHandlerTest.php
+  - tests/Unit/Application/Automation/PurgeIdempotencyRecordsHandlerTest.php
+  - tests/Unit/Application/Automation/PurgeStudioContentAuthoringContextsHandlerTest.php
+  - tests/Unit/Application/Automation/WorkerTest.php
+  - tests/Unit/Application/Presentation/Dashboard/DashboardPreferenceServiceTest.php
+  - tests/Unit/BusinessIntegration/IntegrationOperationsServiceTest.php
+  - tests/Unit/BusinessRecord/Application/PostingPeriodServiceTest.php
+  - tests/Unit/BusinessReporting/LiveExportExecutionContextResolverTest.php
+  - tests/Unit/BusinessReporting/ReportApiDiscoveryTest.php
+  - tests/Unit/BusinessSecurity/Application/ApprovalServiceTest.php
+  - tests/Unit/BusinessSecurity/Application/BusinessSecurityAdministrationServiceTest.php
+  - tests/Unit/BusinessSurface/Application/BusinessApprovalSurfaceServiceTest.php
+  - tests/Unit/BusinessSurface/Application/BusinessSurfaceCatalogTest.php
+  - tests/Unit/BusinessSurface/Application/Custom/CustomBusinessActionExecutorTest.php
+  - tests/Unit/BusinessSurface/Application/Custom/CustomBusinessHandlerRegistryTest.php
+  - tests/Unit/Content/Application/ContentTranslationServiceTest.php
+  - tests/Unit/Content/Application/ContributedContentTranslationTest.php
+  - tests/Unit/Delivery/Console/Command/BusinessConsoleFailureMapperTest.php
+  - tests/Unit/Delivery/Console/Command/DemoInstallCommandTest.php
+  - tests/Unit/Delivery/Http/Api/Extension/ExtensionApiHandlerTest.php
+  - tests/Unit/Delivery/Http/Api/Idempotency/PersistentIdempotencyAuthorizationTest.php
+  - tests/Unit/Demo/Infrastructure/VdmBusinessDemoInstallerTest.php
+  - tests/Unit/Extension/Application/Trust/TrustStoreTest.php
+  - tests/Unit/Extension/Contribution/ContributionDefinitionChecksumTest.php
+  - tests/Unit/Extension/Infrastructure/RedisLockedExtensionManagerTest.php
+  - tests/Unit/Extension/Runtime/RestrictedExtensionContainerTest.php
+  - tests/Unit/Identity/Application/Administration/AccessControlServiceTest.php
+  - tests/Unit/Identity/Application/Administration/TokenDelegationPreauthorizerTest.php
+  - tests/Unit/Identity/Infrastructure/Administration/DoctrineAdministratorSessionStoreTest.php
+  - tests/Unit/InterfaceStandard/PresentationPreferenceManagerTest.php
+  - tests/Unit/Localization/Application/MessageOverrideServiceTest.php
+  - tests/Unit/Navigation/Application/NavigationServiceTest.php
+  - tests/Unit/Portal/Http/PortalSecurityBoundaryTest.php
+  - tests/Unit/Portal/Infrastructure/Identity/DoctrinePortalPrincipalLoaderTest.php
+  - tests/Unit/Site/Infrastructure/Persistence/DoctrineSiteSettingsTest.php
+  - tests/Unit/Studio/Application/Authoring/ContentStudioAuthoringContextAuthorityTest.php
+  - tests/Unit/Studio/Application/Authoring/ContentStudioAuthoringTargetResolverTest.php
+  - tests/Unit/Studio/Application/Media/StudioMediaHostPortTest.php
+  - tests/Unit/Workflow/Domain/WorkflowTest.php
+  - tests/Unit/BusinessSecurity/Infrastructure/Persistence/DoctrineBusinessRecordAccessControllerTest.php
+  - tests/Unit/Portal/Application/MembershipPortalSessionIdentityLoaderTest.php
+  - tests/Unit/Delivery/Console/Command/CreateAccessTokenCommandTest.php
+  - tests/Unit/Governance/ComposerLockTest.php
+  - tests/Architecture/CapabilityIndexGateTest.php
+  - tests/Architecture/ExtensionContributionBoundaryTest.php
+  - tests/Unit/Infrastructure/Mcp/McpMachineContractTest.php
+di_changes:
+  - service: Kumwe\Access\AuthorizationPolicyRegistry
+    factory: Kumwe\Access\Container\AuthorizationPolicyRegistryFactory
+    note: "Package factory installed through Kumwe\\Access\\ConfigProvider; it builds the shared registry from kumwe.access.membership_resource_types, the seven membership-sensitive types HostAccessPolicy states, replacing the App registry the kernel constructed and shared itself."
+  - service: Kumwe\Access\ResourceOwnershipScopePolicy
+    factory: Kumwe\Access\Container\ResourceOwnershipScopePolicyFactory
+    note: "Package factory installed through the same provider; it builds the shared policy from kumwe.access.reserved_ownership_rules, the forty-four reserved categories HostAccessPolicy states as wire values, replacing the App policy whose table was a class constant."
+  - service: Kumwe\Access\CompositeResourceOwnershipReferences
+    factory: Kumwe\Access\Container\CompositeResourceOwnershipReferencesFactory
+    note: "Package factory installed through the same provider; it resolves kumwe.access.reference_inspectors, which names the shared DoctrineGrantScopeOwnershipReferences service the host now registers, and the host aliases the package ResourceOwnershipReferences port to it because the package installs no alias."
+  - service: Kumwe\Access\ResourceOwnershipReferences
+    factory: Kumwe\App\Kernel\ContainerFactory
+    note: "Host alias of the package port to the package composite, replacing the inline App composite the kernel built around the Doctrine grant-scope inspector."
+  - service: Kumwe\Access\AuthorizationGateway
+    factory: Kumwe\App\Kernel\ContainerFactory
+    note: "Host binds the package gateway port to DenyByDefaultAuthorizationGateway, which now returns four-state decisions, converts SystemIdentity to its neutral code before the package policy allowlist, and records through the App StructuredLogAuthorizationDecisionRecorder implementing the package recorder port."
+  - service: Kumwe\Access\ResourceSiteOwnership
+    factory: Kumwe\App\Kernel\ContainerFactory
+    note: "Host binds the package ownership-reader port to DoctrineResourceSiteOwnership."
+  - service: Kumwe\Access\ResourceSiteOwnershipWriter
+    factory: Kumwe\App\Kernel\ContainerFactory
+    note: "Host binds the package ownership-writer port to DoctrineResourceSiteOwnershipWriter."
+  - service: Kumwe\Access\SiteGroupRegistry
+    factory: Kumwe\App\Kernel\ContainerFactory
+    note: "Host aliases the package site-group registry port to DoctrineSiteGroupRegistry."
+  - service: Kumwe\Access\SiteGroupWriter
+    factory: Kumwe\App\Kernel\ContainerFactory
+    note: "Host binds the package site-group writer port to DoctrineSiteGroupWriter."
+  - service: Kumwe\Access\MembershipDirectory
+    factory: Kumwe\App\Kernel\ContainerFactory
+    note: "Host binds the package membership directory port to DoctrineMembershipDirectory; the App interface of the same shape is removed and its twenty-two consumers read the package port."
+  - service: Kumwe\Access\MembershipContextValidator
+    factory: Kumwe\App\Kernel\ContainerFactory
+    note: "Host aliases the package membership freshness port to the package MembershipDirectory binding, so the gateway revalidates memberships against live storage."
+capability_index_entries:
+  - kumwe/access-control
+release_evidence:
+  - docs/architecture/migrations/evidence/KUMWE-MIG-2026-009/RELEASE-ATTESTATION.yaml
+app_pull_request: null
+roadmap_refs: []
+non_roadmap_refs:
+  - NRM-2026-037
+conflicts: []

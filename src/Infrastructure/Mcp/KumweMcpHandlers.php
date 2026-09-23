@@ -9,8 +9,8 @@ use InvalidArgumentException;
 use JsonException;
 use Kumwe\Context\Value\AuthenticationStrength;
 use Kumwe\Context\Value\AuthenticatedSurface;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\App\Application\Automation\AutomationManagementService;
@@ -24,7 +24,7 @@ use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\App\Identity\Application\Authentication\AccessTokenVerifier;
 use Kumwe\App\Identity\Application\Authentication\ScopedAccessTokenVerifier;
 use Kumwe\App\Identity\Application\Authorization\InsufficientCapability;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Kumwe\Navigation\Application\MenuRecord;
 use Kumwe\Navigation\Application\MenuItemRecord;
 use Kumwe\App\Navigation\Application\NavigationService;
@@ -288,7 +288,7 @@ final readonly class KumweMcpHandlers
      *          has to quote back.
      *
      * @throws  InsufficientCapability  When no principal is bound, or it does not hold `content.create`.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses `content.create` on the
+     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses `content.create` on the
      *          content collection.
      * @throws  InvalidArgumentException  When the operation identifier is malformed, or was already used for this
      *          operation with different arguments.
@@ -339,7 +339,7 @@ final readonly class KumweMcpHandlers
      * @return  array<string, mixed>  The stored record with its version incremented.
      *
      * @throws  InsufficientCapability  When no principal is bound, or it does not hold `content.update`.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses `content.update` on this
+     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses `content.update` on this
      *          entry.
      * @throws  InvalidArgumentException  When the operation identifier is malformed, or was already used for this
      *          operation with different arguments.
@@ -389,7 +389,7 @@ final readonly class KumweMcpHandlers
      * @return  array<string, mixed>  The stored record in its new state, with its version incremented.
      *
      * @throws  InsufficientCapability  When no principal is bound to these handlers.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses the resolved transition
+     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses the resolved transition
      *          capability on this entry.
      * @throws  InvalidArgumentException  When the operation identifier is malformed, or was already used for this
      *          operation with different arguments.
@@ -430,7 +430,7 @@ final readonly class KumweMcpHandlers
      * @return  array<string, mixed>  The stored record in its trashed state.
      *
      * @throws  InsufficientCapability  When no principal is bound, or it does not hold `content.delete`.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses `content.delete` on this
+     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses `content.delete` on this
      *          entry.
      * @throws  InvalidArgumentException  When the operation identifier is malformed, or was already used for this
      *          operation with different arguments.
@@ -462,7 +462,7 @@ final readonly class KumweMcpHandlers
      * @return  array<string, mixed>  The stored record in the state it is restored to.
      *
      * @throws  InsufficientCapability  When no principal is bound, or it does not hold `content.restore`.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses `content.restore` on this
+     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses `content.restore` on this
      *          entry.
      * @throws  InvalidArgumentException  When the operation identifier is malformed, or was already used for this
      *          operation with different arguments.
@@ -513,7 +513,7 @@ final readonly class KumweMcpHandlers
      * @return  array<string, mixed>  The stored menu, carrying the identifier its items are created against.
      *
      * @throws  InsufficientCapability  When no principal is bound, or it does not hold `navigation.manage`.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses `navigation.manage` on the
+     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses `navigation.manage` on the
      *          menu collection.
      * @throws  InvalidArgumentException  When the operation identifier is malformed, or was already used for this
      *          operation with different arguments.
@@ -600,7 +600,7 @@ final readonly class KumweMcpHandlers
      * @return  array<string, mixed>  The stored item, with the path resolved from its parent and slug.
      *
      * @throws  InsufficientCapability  When no principal is bound, or it does not hold `navigation.manage`.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses `navigation.manage` on
+     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses `navigation.manage` on
      *          this menu.
      * @throws  InvalidArgumentException  When the operation identifier is malformed, or was already used for this
      *          operation with different arguments.
@@ -678,7 +678,7 @@ final readonly class KumweMcpHandlers
      * @return  array<string, mixed>  The stored item, with its version incremented and its path re-resolved.
      *
      * @throws  InsufficientCapability  When no principal is bound, or it does not hold `navigation.manage`.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses `navigation.manage` on
+     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses `navigation.manage` on
      *          this item.
      * @throws  InvalidArgumentException  When the operation identifier is malformed, or was already used for this
      *          operation with different arguments.
@@ -749,7 +749,7 @@ final readonly class KumweMcpHandlers
      * @return  array{deleted: bool}  Always `deleted: true`; a refusal arrives as an exception, never as false.
      *
      * @throws  InsufficientCapability  When no principal is bound, or it does not hold `navigation.manage`.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses `navigation.manage` on
+     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses `navigation.manage` on
      *          this item.
      * @throws  InvalidArgumentException  When the operation identifier is malformed, or was already used for this
      *          operation with different arguments.
@@ -811,7 +811,7 @@ final readonly class KumweMcpHandlers
      * @return  array<string, mixed>  The settings document as it stands after the write.
      *
      * @throws  InsufficientCapability  When no principal is bound, or it does not hold `settings.manage`.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses `settings.manage` on this
+     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses `settings.manage` on this
      *          site.
      * @throws  InvalidArgumentException  When the operation identifier is malformed, or was already used for this
      *          operation with different arguments.
@@ -916,7 +916,7 @@ final readonly class KumweMcpHandlers
      * @return  array{updated: bool}  Always `updated: true`; a refusal arrives as an exception.
      *
      * @throws  InsufficientCapability  When no principal is bound, or it does not hold `users.manage`.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses `users.manage` on this
+     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses `users.manage` on this
      *          user.
      * @throws  \ValueError  When the status is not one of the stored account states.
      * @throws  InvalidArgumentException  When the operation identifier is malformed, or was already used for this
@@ -967,7 +967,7 @@ final readonly class KumweMcpHandlers
      * @return  array{id: string}  UUID of the stored role, under `id`.
      *
      * @throws  InsufficientCapability  When no principal is bound, or it does not hold `users.manage`.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses `users.manage` on the role
+     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses `users.manage` on the role
      *          collection.
      * @throws  InvalidArgumentException  When the operation identifier is malformed, or was already used for this
      *          operation with different arguments.
@@ -1017,7 +1017,7 @@ final readonly class KumweMcpHandlers
      * @return  array{revoked: bool}  Always `revoked: true`; a refusal arrives as an exception.
      *
      * @throws  InsufficientCapability  When no principal is bound, or it does not hold `users.manage`.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses `users.manage` on this
+     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses `users.manage` on this
      *          token.
      * @throws  InvalidArgumentException  When the operation identifier is malformed, or was already used for this
      *          operation with different arguments.
@@ -1059,7 +1059,7 @@ final readonly class KumweMcpHandlers
      *          subject held none.
      *
      * @throws  InsufficientCapability  When no principal is bound, or it does not hold `users.manage`.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses `users.manage` on this
+     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses `users.manage` on this
      *          user.
      * @throws  InvalidArgumentException  When the operation identifier is malformed, or was already used for this
      *          operation with different arguments.
@@ -1102,7 +1102,7 @@ final readonly class KumweMcpHandlers
      * @return  array{revoked: int}  How many of this site's tokens were revoked, under `revoked`.
      *
      * @throws  InsufficientCapability  When no principal is bound, or it does not hold `users.manage`.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses `users.manage` on this
+     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses `users.manage` on this
      *          site.
      * @throws  InvalidArgumentException  When the operation identifier is malformed, or was already used for this
      *          operation with different arguments.
@@ -1168,7 +1168,7 @@ final readonly class KumweMcpHandlers
      * @return  array{updated: bool}  Always `updated: true`; a refusal arrives as an exception.
      *
      * @throws  InsufficientCapability  When no principal is bound, or it does not hold `extensions.manage`.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses `extensions.manage` on the
+     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses `extensions.manage` on the
      *          trust key collection.
      * @throws  InvalidArgumentException  When the identifier, key, namespace, pattern or expiry fails
      *          validation, or the operation identifier is malformed or reused with different arguments.
@@ -1239,7 +1239,7 @@ final readonly class KumweMcpHandlers
      * @return  array{updated: bool}  Always `updated: true`; a refusal arrives as an exception.
      *
      * @throws  InsufficientCapability  When no principal is bound, or it does not hold `extensions.manage`.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses `extensions.manage` on the
+     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses `extensions.manage` on the
      *          superseded key.
      * @throws  InvalidArgumentException  When an argument fails validation, no active key carries the old
      *          identifier, the replacement changes the namespace constraints, or the operation identifier is
@@ -1320,7 +1320,7 @@ final readonly class KumweMcpHandlers
      *          `updated: true`.
      *
      * @throws  InsufficientCapability  When no principal is bound, or it does not hold `extensions.manage`.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses `extensions.manage` on
+     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses `extensions.manage` on
      *          this key.
      * @throws  InvalidArgumentException  When the identifier or reason is rejected, no active key carries the
      *          identifier, releases still depend on it, or the operation identifier is malformed or reused
@@ -1394,7 +1394,7 @@ final readonly class KumweMcpHandlers
      * @return  array<string, mixed>  The registry row for the extension after the status change.
      *
      * @throws  InsufficientCapability  When no principal is bound, or it does not hold `extensions.manage`.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses `extensions.manage` on
+     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses `extensions.manage` on
      *          this extension.
      * @throws  \Kumwe\App\Presentation\Application\StepUpAuthenticationRequired  When the change would take over
      *          the administrator surface, which no machine caller may prove.
@@ -1454,7 +1454,7 @@ final readonly class KumweMcpHandlers
      * @return  array<string, mixed>  The registry row for the extension after the status change.
      *
      * @throws  InsufficientCapability  When no principal is bound, or it does not hold `extensions.manage`.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses `extensions.manage` on
+     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses `extensions.manage` on
      *          this extension.
      * @throws  \Kumwe\App\Presentation\Application\StepUpAuthenticationRequired  When the extension is the live
      *          administrator theme, which no machine caller may prove a step-up for.
@@ -1501,7 +1501,7 @@ final readonly class KumweMcpHandlers
      * @return  array{uninstalled: bool}  Always `uninstalled: true`; a refusal arrives as an exception.
      *
      * @throws  InsufficientCapability  When no principal is bound, or it does not hold `extensions.manage`.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses `extensions.manage` on
+     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses `extensions.manage` on
      *          this extension.
      * @throws  \Kumwe\App\Presentation\Application\StepUpAuthenticationRequired  When the extension is the live
      *          administrator theme, which no machine caller may prove a step-up for.
@@ -1588,7 +1588,7 @@ final readonly class KumweMcpHandlers
      * @return  array{id: string}  UUID of the stored schedule, under `id`.
      *
      * @throws  InsufficientCapability  When no principal is bound, or it does not hold `automation.manage`.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses `automation.manage` on the
+     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses `automation.manage` on the
      *          schedule collection.
      * @throws  InvalidArgumentException  When no handler is registered for the job type, the cron expression
      *          or timezone is rejected, or the operation identifier is malformed or reused with different
@@ -1638,7 +1638,7 @@ final readonly class KumweMcpHandlers
      * @return  array{updated: bool}  Always `updated: true`; a refusal arrives as an exception.
      *
      * @throws  InsufficientCapability  When no principal is bound, or it does not hold `automation.manage`.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses `automation.manage` on
+     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses `automation.manage` on
      *          this schedule.
      * @throws  InvalidArgumentException  When the operation identifier is malformed, or was already used for this
      *          operation with different arguments.
@@ -1677,7 +1677,7 @@ final readonly class KumweMcpHandlers
      * @return  array{deleted: bool}  Always `deleted: true`; a refusal arrives as an exception.
      *
      * @throws  InsufficientCapability  When no principal is bound, or it does not hold `automation.manage`.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses `automation.manage` on
+     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses `automation.manage` on
      *          this schedule.
      * @throws  InvalidArgumentException  When the operation identifier is malformed, or was already used for this
      *          operation with different arguments.
@@ -1711,7 +1711,7 @@ final readonly class KumweMcpHandlers
      * @return  array{updated: bool}  Always `updated: true`; a refusal arrives as an exception.
      *
      * @throws  InsufficientCapability  When no principal is bound, or it does not hold `automation.manage`.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses `automation.manage` on
+     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses `automation.manage` on
      *          this job.
      * @throws  InvalidArgumentException  When no dead job carries that identifier, or the operation identifier
      *          is malformed or reused with different arguments.
@@ -1734,7 +1734,7 @@ final readonly class KumweMcpHandlers
      * @return  array{updated: bool}  Always `updated: true`; a refusal arrives as an exception.
      *
      * @throws  InsufficientCapability  When no principal is bound, or it does not hold `automation.manage`.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses `automation.manage` on
+     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses `automation.manage` on
      *          this job.
      * @throws  InvalidArgumentException  When no pending job carries that identifier, or the operation
      *          identifier is malformed or reused with different arguments.
@@ -1761,7 +1761,7 @@ final readonly class KumweMcpHandlers
      * @return  array{updated: bool}  Always `updated: true`; a refusal arrives as an exception.
      *
      * @throws  InsufficientCapability  When no principal is bound, or it does not hold `automation.manage`.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses `automation.manage` on
+     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses `automation.manage` on
      *          this job.
      * @throws  InvalidArgumentException  When no job in the required state carries that identifier, or the
      *          operation identifier is malformed or reused with different arguments.
@@ -2573,7 +2573,7 @@ final readonly class KumweMcpHandlers
      *          compatibility plan.
      *
      * @throws  InsufficientCapability  When no principal is bound, or it does not hold `content.update`.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses `content.update` on the
+     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses `content.update` on the
      *          business definition collection.
      * @throws  InvalidArgumentException  When the operation identifier is malformed, or was already used for this
      *          operation with different arguments.
@@ -2683,7 +2683,7 @@ final readonly class KumweMcpHandlers
      * @return  array<string, mixed>  The proposed plan, carrying the checksum an approval must match.
      *
      * @throws  InsufficientCapability  When no principal is bound, or it does not hold `business.schema.plan`.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses `business.schema.plan` on
+     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses `business.schema.plan` on
      *          the schema collection.
      * @throws  InvalidArgumentException  When the operation identifier is malformed, or was already used for this
      *          operation with different arguments.
@@ -2724,7 +2724,7 @@ final readonly class KumweMcpHandlers
      * @return  array<string, mixed>  The plan in its approved state, at the revision the approval wrote.
      *
      * @throws  InsufficientCapability  When no principal is bound, or it does not hold `business.schema.approve`.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses `business.schema.approve`,
+     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses `business.schema.approve`,
      *          or `business.schema.destructive` for a destructive plan, on this plan.
      * @throws  InvalidArgumentException  When the operation identifier is malformed, or was already used for this
      *          operation with different arguments.
@@ -2779,7 +2779,7 @@ final readonly class KumweMcpHandlers
      *          the resulting schema checksum.
      *
      * @throws  InsufficientCapability  When no principal is bound, or it does not hold `business.schema.execute`.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses `business.schema.execute`,
+     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses `business.schema.execute`,
      *          or `business.schema.destructive` for a destructive plan, on this plan.
      * @throws  InvalidArgumentException  When the operation identifier is malformed, or was already used for this
      *          operation with different arguments.
@@ -2819,7 +2819,7 @@ final readonly class KumweMcpHandlers
      * @return  array<string, mixed>  The same outcome shape as a first run, marked as resumed.
      *
      * @throws  InsufficientCapability  When no principal is bound, or it does not hold `business.schema.recover`.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses `business.schema.recover`
+     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses `business.schema.recover`
      *          on this plan.
      * @throws  InvalidArgumentException  When the operation identifier is malformed, or was already used for this
      *          operation with different arguments.
@@ -3009,7 +3009,7 @@ final readonly class KumweMcpHandlers
      * @return  ExecutionContext  MCP child context carrying the same operation identity.
      *
      * @throws  InsufficientCapability  When the credential lacks the operation's capability.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses the collection write.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses the collection write.
      * @throws  InvalidArgumentException  When the operation or operation identity is invalid.
      *
      * @since   2.0.0
@@ -3125,7 +3125,7 @@ final readonly class KumweMcpHandlers
      * @return  void
      *
      * @throws  InsufficientCapability  When no principal is bound to these handlers.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses this actor the action on
+     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses this actor the action on
      *          this resource.
      * @throws  InvalidArgumentException  When the code is not a valid capability identifier, or the operation
      *          identifier cannot serve as a request identifier.

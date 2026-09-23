@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\BusinessReporting;
 
 use DateTimeImmutable;
-use Kumwe\App\Application\Authorization\AuthorizationDecision;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\Access\AuthorizationDecision;
+use Kumwe\Access\DecisionState;
+use Kumwe\Access\AuthorizationGateway;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Audit\Application\AuditRecorder;
@@ -55,7 +56,9 @@ final class ExportGenerationPolicyFenceTest extends TestCase
         $storage = new GenerationFenceStorage($transactions);
         $audit = new GenerationFenceAudit($transactions);
         $authorization = $this->createStub(AuthorizationGateway::class);
-        $authorization->method('decide')->willReturn(new AuthorizationDecision(true, 'test', 'allowed'));
+        $authorization->method('decide')->willReturn(
+            new AuthorizationDecision(DecisionState::Allow, 'test', 'allowed'),
+        );
         $scope = new GenerationFenceScope($transactions);
         $reports = new ReportDefinitionRegistry([$report]);
         $exports = new ExportService(
@@ -246,7 +249,9 @@ final class ExportGenerationPolicyFenceTest extends TestCase
         ReportDefinition $report,
     ): ExportGenerationService {
         $authorization = $this->createStub(AuthorizationGateway::class);
-        $authorization->method('decide')->willReturn(new AuthorizationDecision(true, 'test', 'allowed'));
+        $authorization->method('decide')->willReturn(
+            new AuthorizationDecision(DecisionState::Allow, 'test', 'allowed'),
+        );
         $scope = $this->createStub(ReportScopeResolver::class);
         $policies = $this->createStub(ExportPolicySnapshotProvider::class);
         $policies->method('snapshot')->willReturn(str_repeat('a', 64));

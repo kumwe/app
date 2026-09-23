@@ -6,9 +6,9 @@ namespace Kumwe\App\BusinessRecord\Application;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
-use Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationResource;
+use Kumwe\Access\ResourceSiteOwnershipWriter;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\App\BusinessDefinition\Domain\ActionDefinition;
 use Kumwe\App\BusinessDefinition\Domain\DeleteBehavior;
@@ -68,7 +68,7 @@ use Kumwe\Extension\Spi\Application\Automation\IdempotencyKey;
 use Kumwe\Extension\Spi\BusinessRecord\Application\BusinessRecordQueryPurpose;
 use Kumwe\Extension\Spi\BusinessRecord\Value\ZonedDateTimeValue;
 use Kumwe\BusinessPolicy\Application\FieldAccessUsage;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Kumwe\Sequence\Contract\NumberSequenceAllocator;
 use Kumwe\Sequence\Exception\NumberSequenceUnavailable;
 use Kumwe\Sequence\Value\NumberSequenceFormat;
@@ -208,7 +208,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      * @return  RecordMutationResult  Keys, version and workflow state of the stored record; `replayed` is
      *          true when an earlier command under the same key produced it and nothing was written now.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not create
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not create
      *          business records.
      * @throws  BusinessRecordIdempotencyConflict  When the key was reused for a different request or
      *          authority, has expired, or its stored entry cannot be replayed.
@@ -359,7 +359,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      * @return  BusinessRecordView  The record narrowed to the readable fields the projection kept, with
      *          restricted, secret and unresolved-reference handles omitted.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not read
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not read
      *          business records.
      * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When no
      *          definition on this site matches the identifier, or its owner is disabled.
@@ -430,7 +430,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      * @return  RecordBrowseResult  Projected records for this page, a continuation cursor present only
      *          while further rows remain, and any aggregates the specification asked for.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not browse
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not browse
      *          business records.
      * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When no
      *          definition on this site matches the identifier, or its owner is disabled.
@@ -497,7 +497,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      *
      * @return  RelatedRecordBrowseResult  Active target definition and its policy-filtered page.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor cannot relate records.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor cannot relate records.
      * @throws  BusinessRecordNotFound  When the source handle, nested access plan, target, or scope is unavailable.
      * @throws  BusinessRecordTemporarilyUnavailable  When either installation changes under its shared fence.
      *
@@ -597,7 +597,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      *
      * @return  RelatedRecordBrowseResult  Policy-filtered entity-reference target choices.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When relate authority is absent.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When relate authority is absent.
      * @throws  BusinessRecordNotFound  When either target, scope, field, or nested plan is unavailable.
      * @throws  BusinessRecordTemporarilyUnavailable  When an installation changes under its shared fence.
      *
@@ -694,7 +694,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      *
      * @return  OwnedLineFormResult  Pinned target definition and policy-authorized create handles.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When relate authority is absent.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When relate authority is absent.
      * @throws  BusinessRecordNotFound  When the source, relationship, target, scope, or nested plan is unavailable.
      * @throws  BusinessRecordTemporarilyUnavailable  When an installation changes under a shared fence.
      *
@@ -773,7 +773,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      * @return  RecordMutationResult  Keys, new version and workflow state of the stored record; `replayed`
      *          is true when an earlier command under the same key produced it.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not update
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not update
      *          business records.
      * @throws  BusinessRecordIdempotencyConflict  When the key was reused for a different request or
      *          authority, has expired, or its stored entry cannot be replayed.
@@ -879,7 +879,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      * @return  RecordMutationResult  Keys, new version and workflow state of the archived record;
      *          `replayed` is true when an earlier command under the same key produced it.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not archive
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not archive
      *          business records.
      * @throws  BusinessRecordIdempotencyConflict  When the key was reused for a different request or
      *          authority, has expired, or its stored entry cannot be replayed.
@@ -918,7 +918,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      * @return  RecordMutationResult  Keys and new version of the record, with `deleted` raised; the
      *          version is reported even on the hard-delete path, where no row survives to carry it.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not delete
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not delete
      *          business records.
      * @throws  BusinessRecordIdempotencyConflict  When the key was reused for a different request or
      *          authority, has expired, or its stored entry cannot be replayed.
@@ -958,7 +958,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      * @return  RecordMutationResult  Keys, new version and workflow state of the live record; `replayed`
      *          is true when an earlier command under the same key produced it.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not restore
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not restore
      *          business records.
      * @throws  BusinessRecordIdempotencyConflict  When the key was reused for a different request or
      *          authority, has expired, or its stored entry cannot be replayed.
@@ -999,7 +999,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      * @return  RecordMutationResult  Keys, new version and the workflow state the record was moved into;
      *          `replayed` is true when an earlier command under the same key produced it.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor holds neither the
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor holds neither the
      *          action capability nor the transition capability, or may not run record actions at all.
      * @throws  BusinessRecordActionRejected  When the command carries action input, the pinned definition
      *          declares no such action, its condition does not evaluate to true, or it names no transition
@@ -1335,7 +1335,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      * @return  RecordMutationResult  Keys and new version of the source record; the target's own new
      *          version, where one was written, is recorded in the trail rather than returned here.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not relate
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not relate
      *          business records.
      * @throws  BusinessRecordIdempotencyConflict  When the key was reused for a different request or
      *          authority, has expired, or its stored entry cannot be replayed.
@@ -1522,7 +1522,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      * @return  RecordMutationResult  Keys and new version of the source record; the target's own new
      *          version, where one was written, is recorded in the trail rather than returned here.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not relate
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not relate
      *          business records.
      * @throws  BusinessRecordIdempotencyConflict  When the key was reused for a different request or
      *          authority, has expired, or its stored entry cannot be replayed.
@@ -1684,7 +1684,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      * @return  RecordMutationResult  Keys and new version of the owning record, whose collection is
      *          renumbered from zero in the order given.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not relate
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not relate
      *          business records.
      * @throws  BusinessRecordIdempotencyConflict  When the key was reused for a different request or
      *          authority, has expired, or its stored entry cannot be replayed.
@@ -1855,7 +1855,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      *          `replayed` is true when an earlier command under the same key wrote this document and
      *          nothing was written now.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not create or
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not create or
      *          update business records, or may not relate them.
      * @throws  BusinessRecordImmutable  When an amendment reaches a document the definition's workflow
      *          closes in its current state; a closed document is corrected by a linked reversal.
@@ -1948,7 +1948,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      * @return  RecordHistoryResult  Up to `$query->limit` revision views, newest first, and whether older
      *          revisions remain — established by fetching one row past the limit and discarding it.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not read
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not read
      *          business-record history.
      * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When no
      *          definition on this site matches the identifier, or the requested version is not published.
@@ -3809,7 +3809,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      *
      * @return  void
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses the actor this
+     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses the actor this
      *          operation on business records in this site.
      *
      * @since   2.0.0

@@ -6,10 +6,10 @@ namespace Kumwe\App\Content\Application;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
-use Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter;
+use Kumwe\Access\ResourceSiteOwnershipWriter;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Audit\Application\AuditRecorder;
@@ -23,7 +23,7 @@ use Kumwe\App\Content\Domain\PublicationWindow;
 use Kumwe\App\Extension\Contribution\OwnedRuntimeContributionRegistry;
 use Kumwe\App\Extension\Contribution\TranslationGroupDeclaration;
 use Kumwe\Extension\Spi\Contribution\TranslationSetItemAssociation;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Kumwe\Localization\Domain\LocaleTag;
 use Kumwe\App\Workflow\Domain\Workflow;
 use LogicException;
@@ -234,7 +234,7 @@ final readonly class ContentService
      *
      * @return  ContentRecord  The stored record, with its site and pinned definition versions.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `content.read` is refused.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When `content.read` is refused.
      * @throws  ContentNotFound  When no entry matches within reach of the context.
      *
      * @since   2.0.0
@@ -320,7 +320,7 @@ final readonly class ContentService
      *
      * @return  ContentRecord  The stored record at version one, definition versions pinned.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `content.create` is refused.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When `content.create` is refused.
      * @throws  InvalidArgumentException  When the slug is reserved, or a domain rule rejects the entry.
      * @throws  ContentModelNotFound  When the content type, or the workflow it names, is not published here.
      * @throws  \Kumwe\App\Content\Domain\InvalidContentData  When the body does not satisfy the type's schema.
@@ -410,7 +410,7 @@ final readonly class ContentService
      *
      * @return  ContentRecord  The stored record, one version higher.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `content.update` is refused.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When `content.update` is refused.
      * @throws  InvalidArgumentException  When the slug is reserved, or a domain rule rejects the entry.
      * @throws  ContentNotFound  When no entry matches within reach of the context.
      * @throws  ContentModelNotFound  When the pinned content type version is no longer published.
@@ -479,7 +479,7 @@ final readonly class ContentService
      *
      * @return  ContentRecord  The stored record, pinned to the adopted type and workflow versions.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `content.update` is refused.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When `content.update` is refused.
      * @throws  ContentNotFound  When no entry matches within reach of the context.
      * @throws  ContentModelNotFound  When the adopted content type version is not published here.
      * @throws  InvalidArgumentException  When the adopted version follows a different workflow.
@@ -556,7 +556,7 @@ final readonly class ContentService
      *
      * @return  ContentRecord  The stored record, one version higher, carrying its locale and group.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `content.update` is refused.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When `content.update` is refused.
      * @throws  ContentNotFound  When no entry matches within reach of the context.
      * @throws  \LogicException  When no translation-group store is wired.
      * @throws  \Kumwe\App\Content\Domain\VersionConflict  When another writer moved the entry on first.
@@ -601,7 +601,7 @@ final readonly class ContentService
      *
      * @return  ContentRecord  The stored record, one version higher, carrying its locale and group.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `content.update` is refused.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When `content.update` is refused.
      * @throws  ContentNotFound  When no entry matches within reach of the context.
      * @throws  InvalidArgumentException  When the set is not an active declaration of the association's
      *          owner, or the locale is not one the declaration carries.
@@ -672,7 +672,7 @@ final readonly class ContentService
      *
      * @return  ContentRecord  The stored record, one version higher, carrying its locale and group.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `content.update` is refused.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When `content.update` is refused.
      * @throws  ContentNotFound  When no entry matches within reach of the context.
      * @throws  \LogicException  When no translation-group store is wired.
      * @throws  \Kumwe\App\Content\Domain\VersionConflict  When another writer moved the entry on first.
@@ -734,7 +734,7 @@ final readonly class ContentService
      *
      * @return  ContentRecord  The stored record, one version higher and in the new state.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the edge's capability is refused.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the edge's capability is refused.
      * @throws  ContentNotFound  When no entry matches within reach of the context.
      * @throws  ContentModelNotFound  When the pinned workflow version is no longer published.
      * @throws  \DomainException  When a custom state is named but no persisted workflow is configured.
@@ -793,7 +793,7 @@ final readonly class ContentService
      *
      * @return  Capability  The capability the actor would need to make this exact move.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `content.read` is refused.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When `content.read` is refused.
      * @throws  ContentNotFound  When no entry matches within reach of the context.
      * @throws  ContentModelNotFound  When the pinned workflow version is no longer published.
      * @throws  \DomainException  When a custom state is named but no persisted workflow is configured.
@@ -880,7 +880,7 @@ final readonly class ContentService
      *
      * @return  ContentRecord  The trashed record, its `deletedAt` now set.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `content.delete` is refused.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When `content.delete` is refused.
      * @throws  ContentNotFound  When no entry matches within reach of the context.
      * @throws  \Kumwe\App\Content\Domain\VersionConflict  When another writer moved the entry on first.
      *
@@ -920,7 +920,7 @@ final readonly class ContentService
      *
      * @return  ContentRecord  The live record, or the unchanged one when it was never trashed.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `content.restore` is refused.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When `content.restore` is refused.
      * @throws  ContentNotFound  When no entry matches within reach of the context.
      * @throws  \Kumwe\App\Content\Domain\VersionConflict  When another writer moved the entry on first.
      * @throws  \Kumwe\App\Content\Domain\InvalidTranslationGroup  When restoring a translated entry would
@@ -1002,7 +1002,7 @@ final readonly class ContentService
      *
      * @return  void
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor lacks the capability.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor lacks the capability.
      *
      * @since   2.0.0
      */

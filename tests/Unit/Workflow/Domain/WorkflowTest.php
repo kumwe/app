@@ -8,7 +8,7 @@ use Kumwe\App\Content\Domain\ContentStatus;
 use DateTimeImmutable;
 use InvalidArgumentException;
 use Kumwe\Context\Value\SiteContext;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Kumwe\App\Workflow\Domain\InvalidWorkflowTransition;
 use Kumwe\App\Workflow\Domain\Workflow;
 use Kumwe\App\Workflow\Domain\WorkflowDefinition;

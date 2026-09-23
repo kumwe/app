@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Support;
 
-use Kumwe\App\Application\Authorization\AuthorizationDecision;
-use Kumwe\App\Application\Authorization\AuthorizationDecisionRecorder;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\Access\AuthorizationDecision;
+use Kumwe\Access\AuthorizationDecisionRecorder;
+use Kumwe\Access\AuthorizationResource;
 use Kumwe\App\Application\Authorization\DenyByDefaultAuthorizationGateway;
-use Kumwe\App\Application\Authorization\MembershipContextValidator;
-use Kumwe\App\Application\Authorization\OwnershipScope;
-use Kumwe\App\Application\Authorization\ResourceOwnership;
-use Kumwe\App\Application\Authorization\ResourceSiteOwnership;
-use Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter;
+use Kumwe\Access\MembershipContextValidator;
+use Kumwe\Access\OwnershipScope;
+use Kumwe\Access\ResourceOwnership;
+use Kumwe\Access\ResourceSiteOwnership;
+use Kumwe\Access\ResourceSiteOwnershipWriter;
 use Kumwe\App\Application\Authorization\SystemIdentity;
 use Kumwe\App\Application\Authorization\SystemPrincipal;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
@@ -23,7 +23,7 @@ use Kumwe\Context\Value\MembershipContext;
 use Kumwe\Context\Value\OrganizationContext;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\Context\Value\WorkspaceContext;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 
 final class AuthorizationContext
 {

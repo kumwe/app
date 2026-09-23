@@ -67,7 +67,7 @@ final readonly class RecordBusinessSchemaRecoveryEvidenceHandler implements Requ
      *
      * @throws  InvalidArgumentException  When a required field is missing or blank, a timestamp cannot be
      *          read, a clean-target proof was not confirmed, or the plan has no installed source schema.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not read schema
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not read schema
      *          plans or may not record recovery evidence.
      * @throws  \Kumwe\App\BusinessSchema\Application\BusinessSchemaNotFound  When no plan with that identifier
      *          belongs to this site.

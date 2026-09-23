@@ -6,9 +6,10 @@ namespace Kumwe\App\Extension\Contribution;
 
 use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use InvalidArgumentException;
-use Kumwe\App\Application\Authorization\AuthorizationPolicyRegistry;
-use Kumwe\App\Application\Authorization\ResourcePolicyDefinition as AuthorizationResourcePolicyDefinition;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\AuthorizationPolicyRegistry;
+use Kumwe\Access\ResourcePolicyDefinition as AuthorizationResourcePolicyDefinition;
+use Kumwe\App\Application\Authorization\SystemIdentity;
+use Kumwe\Access\Capability;
 
 /**
  * Contribution surface mirroring owner-bound resource policies into the authorization runtime.
@@ -16,6 +17,8 @@ use Kumwe\Extension\Spi\Identity\Domain\Capability;
  * The outer registry retains manifest wording and inventory shape, while the shared operational
  * registry enforces capability ownership and action/resource collision safety. Both are written in
  * the same registration call, so a policy rejected by the authorization layer never appears active.
+ * This is the trusted boundary where core's typed `SystemIdentity` allowlist becomes the neutral
+ * `system:` codes the package binding holds; extension definitions carry none.
  *
  * @since  2.0.0
  */
@@ -70,7 +73,10 @@ final class ResourcePolicyDefinitionRegistry implements ContributionSurface
             Capability::fromString($definition->capability),
             $definition->resources,
             $definition->installationGlobal,
-            $definition->systemIdentities,
+            array_map(
+                static fn (SystemIdentity $identity): string => $identity->value,
+                $definition->systemIdentities,
+            ),
             $definition->lifecycle,
             $definition->version,
         ));

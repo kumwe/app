@@ -37,6 +37,7 @@
     "ext-zip": "*",
     "doctrine/dbal": "^4.4",
     "kumwe/access-context": "0.1.2",
+    "kumwe/access-control": "0.1.2",
     "kumwe/audit": "0.1.2",
     "kumwe/business-policy": "0.1.1",
     "kumwe/canonical-json": "0.1.1",

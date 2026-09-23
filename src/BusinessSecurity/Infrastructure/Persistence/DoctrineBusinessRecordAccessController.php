@@ -27,7 +27,7 @@ use Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessOperationCatalogP
 use Kumwe\BusinessPolicy\Application\BusinessRecordAccessPlan;
 use Kumwe\BusinessPolicy\Application\FieldAccessUsage;
 use Kumwe\BusinessPolicy\Application\FieldDisclosurePlan;
-use Kumwe\App\BusinessSecurity\Application\MembershipDirectory;
+use Kumwe\Access\MembershipDirectory;
 use Kumwe\BusinessPolicy\Policy\RecordPolicyBoolean;
 use Kumwe\BusinessPolicy\Policy\RecordPolicyBooleanOperator;
 use Kumwe\BusinessPolicy\Policy\RecordPolicyComparison;

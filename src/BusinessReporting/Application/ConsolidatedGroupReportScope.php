@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Kumwe\App\BusinessReporting\Application;
 
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
-use Kumwe\App\Application\Authorization\SiteGroupRegistry;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationResource;
+use Kumwe\Access\SiteGroupRegistry;
 use Kumwe\Context\Value\ExecutionContext;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 
 /**
  * Resolves the sites a consolidated report may read across, once the caller has proven it may.
@@ -60,9 +60,9 @@ final readonly class ConsolidatedGroupReportScope
      * @return  list<string>  Member site identifiers, in site-identifier order, for a query to restrict
      *          itself to; never wider than the declared membership and never empty.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the caller may not read
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the caller may not read
      *          consolidated reports for this group, or is not itself inside it.
-     * @throws  \Kumwe\App\Application\Authorization\SiteGroupUnknown  When the group resolves to nothing.
+     * @throws  \Kumwe\Access\SiteGroupUnknown  When the group resolves to nothing.
      *
      * @since   2.0.0
      */

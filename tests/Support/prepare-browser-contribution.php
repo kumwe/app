@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use Doctrine\DBAL\Connection;
 use Kumwe\Context\Value\AuthenticationStrength;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
-use Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter;
+use Kumwe\Access\AuthorizationResource;
+use Kumwe\Access\ResourceSiteOwnershipWriter;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Kumwe\App\Extension\Contribution;
 
 use LogicException;
-use Kumwe\App\Application\Authorization\AuthorizationDefinitionLifecycle;
-use Kumwe\App\Application\Authorization\ResourcePolicyTarget;
+use Kumwe\Access\AuthorizationDefinitionLifecycle;
+use Kumwe\Access\ResourcePolicyTarget;
 use Kumwe\App\BusinessDefinition\Domain\DefinitionOwner;
 use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\App\BusinessDefinition\Domain\FieldTypeDefinition;

@@ -6,7 +6,7 @@ namespace Kumwe\App\Delivery\Console\Command;
 
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\App\Application\Authorization\AuthorizationDenied;
+use Kumwe\Access\AuthorizationDenied;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordActionRejected;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordException;

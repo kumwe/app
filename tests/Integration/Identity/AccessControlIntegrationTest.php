@@ -6,13 +6,13 @@ namespace Kumwe\App\Tests\Integration\Identity;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\App\Application\Authorization\AuthorizationDenied;
+use Kumwe\Access\AuthorizationDenied;
 use Kumwe\Context\Value\AuthenticationStrength;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\App\Identity\Application\Administration\AccessControlService;
 use Kumwe\App\Identity\Application\Administration\AdministratorIdentityGateway;
 use Kumwe\App\Identity\Application\Authentication\AccessTokenVerifier;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Kumwe\App\Identity\Domain\UserStatus;
 use Kumwe\App\Identity\Infrastructure\Administration\DoctrineAccessControlRepository;
 use Kumwe\App\Infrastructure\Persistence\TableNames;

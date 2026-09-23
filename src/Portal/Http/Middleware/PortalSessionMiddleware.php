@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Kumwe\App\Portal\Http\Middleware;
 
 use Kumwe\Extension\Spi\Http\ExtensionRequest;
-use Kumwe\App\Application\Authorization\AuthorizationDenied;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\Access\AuthorizationDenied;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationResource;
 use Kumwe\App\Http\Middleware\RequestIdMiddleware;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Kumwe\App\Portal\Application\PortalExecutionContextFactory;
 use Kumwe\App\Portal\Application\PortalSession;
 use Kumwe\App\Portal\Application\PortalSessionStore;

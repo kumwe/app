@@ -51,7 +51,7 @@ final readonly class CreateBusinessSchemaPlanHandler implements RequestHandlerIn
      *
      * @throws  \InvalidArgumentException  When `definition_id` is absent or blank, or the route was
      *          mounted without administrator authorization.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `business.schema.plan` is
+     * @throws  \Kumwe\Access\AuthorizationDenied  When `business.schema.plan` is
      *          refused.
      * @throws  \Kumwe\App\BusinessSchema\Application\BusinessSchemaNotFound  When no published definition
      *          matches within the site.

@@ -5,8 +5,12 @@ declare(strict_types=1);
 namespace Kumwe\App\Application\Authorization;
 
 use Kumwe\Context\Value\ExecutionContext;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Psr\Log\LoggerInterface;
+use Kumwe\Access\AuthorizationDecision;
+use Kumwe\Access\AuthorizationDecisionRecorder;
+use Kumwe\Access\AuthorizationDenied;
+use Kumwe\Access\AuthorizationResource;
 
 /**
  * Writes each authorization decision to the PSR-3 log as one structured record.
@@ -37,9 +41,9 @@ final readonly class StructuredLogAuthorizationDecisionRecorder implements Autho
     /**
      * Log one decision together with the actor, action, resource and request identity behind it.
      *
-     * The record holds identifiers, the policy name and its reason token only — never a credential, a
-     * grant listing or a request body — because it lands in the ordinary application log rather than in
-     * the tamper-evident audit store. `request_id` and `correlation_id` are carried so that the
+     * The record holds identifiers, the policy name, its reason token and the decision state only — never a
+     * credential, a grant listing or a request body — because it lands in the ordinary application log
+     * rather than in the tamper-evident audit store. `request_id` and `correlation_id` are carried so that the
      * decisions taken across one request, or one chain of dispatched work, can be gathered afterwards.
      *
      * @param   ExecutionContext       $context   Actor, site and request identity the decision was made for.
@@ -68,6 +72,7 @@ final readonly class StructuredLogAuthorizationDecisionRecorder implements Autho
             'correlation_id' => $context->correlationId(),
             'policy' => $decision->policy,
             'reason' => $decision->reason,
+            'state' => $decision->state->value,
             'allowed' => $decision->allowed,
         ];
 

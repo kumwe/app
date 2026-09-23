@@ -9,7 +9,7 @@ use Kumwe\Context\Value\MembershipContext;
 use Kumwe\Context\Value\OrganizationContext;
 use Kumwe\Context\Value\WorkspaceContext;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Portal\Infrastructure\Identity\DoctrinePortalPrincipalLoader;
 use Kumwe\App\Tests\Support\AuthorizationContext;

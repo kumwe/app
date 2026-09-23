@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Media\Application;
 
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationResource;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Audit\Application\AuditRecorder;
 use Kumwe\Audit\Domain\AuditEvent;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 
@@ -69,7 +69,7 @@ final readonly class MediaService
      *
      * @return  MediaPage  The requested slice plus the counters the pager renders from.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `content.read` is refused.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When `content.read` is refused.
      *
      * @since   2.0.0
      */
@@ -116,7 +116,7 @@ final readonly class MediaService
      *
      * @return  list<MediaAsset>  Validated assets safe to identify in a generated selector.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `content.read` is refused.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When `content.read` is refused.
      * @throws  \InvalidArgumentException  When the query or limit is outside the selector bounds.
      * @throws  \RuntimeException  When the configured storage cannot guarantee bounded choice work.
      *
@@ -143,7 +143,7 @@ final readonly class MediaService
      *
      * @return  list<MediaAsset>  Newest-first validated assets.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `content.read` is refused.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When `content.read` is refused.
      *
      * @since   2.0.0
      */
@@ -162,7 +162,7 @@ final readonly class MediaService
      *
      * @return  MediaAsset|null  Validated asset or null when absent from this site.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `content.read` is refused.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When `content.read` is refused.
      *
      * @since   2.0.0
      */
@@ -186,7 +186,7 @@ final readonly class MediaService
      *
      * @return  MediaAsset  The stored asset, with the identifier and media type the storage assigned.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `content.update` is refused.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When `content.update` is refused.
      * @throws  \InvalidArgumentException  When the source is unreadable, empty, oversized, or unsupported.
      * @throws  \RuntimeException  When the storage cannot write the file or its metadata.
      *
@@ -240,7 +240,7 @@ final readonly class MediaService
      *
      * @return  void
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `content.delete` is refused.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When `content.delete` is refused.
      * @throws  \RuntimeException  When the storage cannot remove the file or its metadata.
      *
      * @since   2.0.0
@@ -277,7 +277,7 @@ final readonly class MediaService
      *
      * @return  void
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the gateway refuses it.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the gateway refuses it.
      *
      * @since   2.0.0
      */

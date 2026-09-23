@@ -7,7 +7,7 @@ namespace Kumwe\App\Tests\Unit\Site\Infrastructure\Persistence;
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\Access\AuthorizationGateway;
 use Kumwe\App\Application\Authorization\SystemIdentity;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Audit\Application\AuditRecorder;

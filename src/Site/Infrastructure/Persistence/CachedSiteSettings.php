@@ -136,7 +136,7 @@ final readonly class CachedSiteSettings implements SiteSettings
      *
      * @return  array<string, mixed>  Every public setting key, defaults included for keys never stored.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage settings.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not manage settings.
      *
      * @since   2.0.0
      */
@@ -157,7 +157,7 @@ final readonly class CachedSiteSettings implements SiteSettings
      *
      * @return  void
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage settings.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not manage settings.
      * @throws  \InvalidArgumentException  When the name or the slug fails validation.
      *
      * @since   2.0.0
@@ -179,7 +179,7 @@ final readonly class CachedSiteSettings implements SiteSettings
      *
      * @return  void
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage settings.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not manage settings.
      * @throws  \InvalidArgumentException  When a value, the nominated homepage, or the primary menu is
      *          rejected.
      *

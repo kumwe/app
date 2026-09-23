@@ -7,7 +7,7 @@ namespace Kumwe\App\Tests\Unit\Delivery\Console\Command;
 use Kumwe\App\Tests\Support\TranslatesConsoleOutput;
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\Access\AuthorizationGateway;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\App\Application\Security\HighImpactCredentialGuard;
 use Kumwe\Audit\Application\AuditRecorder;

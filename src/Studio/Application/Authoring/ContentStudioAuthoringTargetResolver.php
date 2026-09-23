@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Studio\Application\Authoring;
 
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\App\Content\Application\ContentRecord;
 use Kumwe\App\Content\Domain\ContentTypeDefinition;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Kumwe\App\Studio\Application\Projection\ContentStudioProjector;
 use Kumwe\App\Studio\Domain\Authoring\StudioAuthoringIntent;
 
@@ -48,7 +48,7 @@ final readonly class ContentStudioAuthoringTargetResolver
      *
      * @return  ContentStudioAuthoringTarget  Trusted create target with no previous Entry values.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When create is refused.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When create is refused.
      * @throws  ContentStudioAuthoringTargetMismatch  When the selected definition belongs to another site.
      *
      * @since   2.0.0
@@ -94,7 +94,7 @@ final readonly class ContentStudioAuthoringTargetResolver
      *
      * @return  ContentStudioAuthoringTarget  Trusted edit target with exact Model and Entry revisions.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When update is refused.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When update is refused.
      * @throws  ContentStudioAuthoringTargetMismatch  When record and definition coordinates disagree.
      *
      * @since   2.0.0

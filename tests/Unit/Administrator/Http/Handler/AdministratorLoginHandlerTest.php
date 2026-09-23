@@ -10,7 +10,7 @@ use DateTimeImmutable;
 use Kumwe\App\Administrator\Http\Handler\AdministratorLoginHandler;
 use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
 use Kumwe\App\Administrator\Presentation\RecoveryAdministratorRenderer;
-use Kumwe\App\Application\Authorization\AuthorizationDenied;
+use Kumwe\Access\AuthorizationDenied;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\App\Identity\Application\Administration\AdministratorIdentityGateway;

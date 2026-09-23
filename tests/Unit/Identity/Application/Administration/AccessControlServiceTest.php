@@ -6,9 +6,9 @@ namespace Kumwe\App\Tests\Unit\Identity\Application\Administration;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\App\Application\Authorization\AuthorizationDenied;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
-use Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter;
+use Kumwe\Access\AuthorizationDenied;
+use Kumwe\Access\AuthorizationResource;
+use Kumwe\Access\ResourceSiteOwnershipWriter;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\App\Application\Security\HighImpactAuthenticationRequired;

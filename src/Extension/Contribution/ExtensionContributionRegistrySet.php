@@ -8,7 +8,8 @@ use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\Extension\Spi\Contribution\ContributionDefinition;
 use ArrayObject;
 use Kumwe\App\Administrator\Navigation\AdministratorNavigationRegistry;
-use Kumwe\App\Application\Authorization\AuthorizationPolicyRegistry;
+use Kumwe\Access\AuthorizationPolicyRegistry;
+use Kumwe\App\Application\Authorization\HostAccessPolicy;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionContributionRegistry;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionValidator;
 use Kumwe\App\BusinessDefinition\Application\FieldTypeRegistry;
@@ -397,7 +398,7 @@ final readonly class ExtensionContributionRegistrySet
      *         navigation whose owner is no longer trusted and active; null skips that filtering entirely.
      * @param  bool                          $withCore               Whether to register shipped core contributions.
      * @param  ?AuthorizationPolicyRegistry  $authorizationPolicies  Shared operational registry; a private
-     *         empty registry is created for isolated sets.
+     *         empty registry carrying the host membership policy is created for isolated sets.
      *
      * @since  2.0.0
      */
@@ -409,7 +410,8 @@ final readonly class ExtensionContributionRegistrySet
         /** @var array<string, string> $ownerNamespaces */
         $ownerNamespaces = [];
         $this->ownerNamespaces = new ArrayObject($ownerNamespaces);
-        $this->authorizationPolicies = $authorizationPolicies ?? new AuthorizationPolicyRegistry();
+        $this->authorizationPolicies = $authorizationPolicies
+            ?? new AuthorizationPolicyRegistry(HostAccessPolicy::membershipRequirement());
         $this->capabilities = new CapabilityDefinitionRegistry($this->authorizationPolicies);
         $this->resourcePolicies = new ResourcePolicyDefinitionRegistry($this->authorizationPolicies);
         $this->workspaces = new AdministratorWorkspaceRegistry();

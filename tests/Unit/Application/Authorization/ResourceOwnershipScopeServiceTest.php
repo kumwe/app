@@ -6,20 +6,21 @@ namespace Kumwe\App\Tests\Unit\Application\Authorization;
 
 use DateTimeImmutable;
 use DateTimeZone;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
-use Kumwe\App\Application\Authorization\OwnershipNarrowingRefused;
-use Kumwe\App\Application\Authorization\OwnershipNarrowingUnbounded;
-use Kumwe\App\Application\Authorization\OwnershipScope;
-use Kumwe\App\Application\Authorization\OwnershipScopeChangeRejected;
-use Kumwe\App\Application\Authorization\OwnershipScopeLevel;
-use Kumwe\App\Application\Authorization\OwnershipScopeNotPermitted;
-use Kumwe\App\Application\Authorization\ResourceOwnership;
-use Kumwe\App\Application\Authorization\ResourceOwnershipReferences;
-use Kumwe\App\Application\Authorization\ResourceOwnershipScopePolicy;
+use Kumwe\Access\AuthorizationResource;
+use Kumwe\Access\OwnershipNarrowingRefused;
+use Kumwe\Access\OwnershipNarrowingUnbounded;
+use Kumwe\Access\OwnershipScope;
+use Kumwe\Access\OwnershipScopeChangeRejected;
+use Kumwe\Access\OwnershipScopeLevel;
+use Kumwe\Access\OwnershipScopeNotPermitted;
+use Kumwe\Access\ResourceOwnership;
+use Kumwe\Access\ResourceOwnershipReferences;
+use Kumwe\Access\ResourceOwnershipScopePolicy;
+use Kumwe\App\Application\Authorization\HostAccessPolicy;
 use Kumwe\App\Application\Authorization\ResourceOwnershipScopeService;
-use Kumwe\App\Application\Authorization\ResourceSiteOwnership;
-use Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter;
-use Kumwe\App\Application\Authorization\SiteGroup;
+use Kumwe\Access\ResourceSiteOwnership;
+use Kumwe\Access\ResourceSiteOwnershipWriter;
+use Kumwe\Access\SiteGroup;
 use Kumwe\Audit\Application\AuditRecorder;
 use Kumwe\Audit\Domain\AuditEvent;
 use Kumwe\App\Tests\Support\AllowingAuditAuthorization;
@@ -36,9 +37,6 @@ use Psr\Clock\ClockInterface;
  * @since  2.0.0
  */
 #[CoversClass(ResourceOwnershipScopeService::class)]
-#[CoversClass(OwnershipNarrowingRefused::class)]
-#[CoversClass(OwnershipNarrowingUnbounded::class)]
-#[CoversClass(OwnershipScopeChangeRejected::class)]
 final class ResourceOwnershipScopeServiceTest extends TestCase
 {
     /**
@@ -314,7 +312,7 @@ final class ResourceOwnershipScopeServiceTest extends TestCase
                 }
             },
             $writer,
-            new ResourceOwnershipScopePolicy(),
+            HostAccessPolicy::ownershipScopePolicy(),
             new class ($references) implements ResourceOwnershipReferences {
                 /**
                  * Hold the sites reported as still referring to the resource.

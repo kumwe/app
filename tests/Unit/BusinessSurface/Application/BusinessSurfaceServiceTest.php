@@ -6,8 +6,9 @@ namespace Kumwe\App\Tests\Unit\BusinessSurface\Application;
 
 use Kumwe\Context\Value\AuthenticatedSurface;
 use Kumwe\Context\Value\AuthenticationStrength;
-use Kumwe\App\Application\Authorization\AuthorizationDecision;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\Access\AuthorizationDecision;
+use Kumwe\Access\DecisionState;
+use Kumwe\Access\AuthorizationGateway;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\Transaction\Contract\TransactionManager;
@@ -127,7 +128,9 @@ final class BusinessSurfaceServiceTest extends TestCase
         $definitions = $this->createStub(BusinessRecordDefinitionResolver::class);
         $definitions->method('activeInstalled')->willReturn([]);
         $authorization = $this->createStub(AuthorizationGateway::class);
-        $authorization->method('decide')->willReturn(new AuthorizationDecision(true, 'test', 'allowed'));
+        $authorization->method('decide')->willReturn(
+            new AuthorizationDecision(DecisionState::Allow, 'test', 'allowed'),
+        );
         $transactions = $this->createStub(TransactionManager::class);
         $transactions->method('transactional')->willReturnCallback(
             static fn (callable $operation): mixed => $operation(),

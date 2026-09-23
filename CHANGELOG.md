@@ -79,6 +79,31 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Added
 
+- **2026-09-23 — `kumwe/access-control` 0.1.2 owns the authorization decisions, registries, scopes and ports.**
+  The access-control package enters App through the migration ledger (`NRM-2026-037`): `KUMWE-MIG-2026-009`, its
+  change set, the integration train `KUMWE-TRAIN-2026-009` and the independent release attestation record the
+  verified `v0.1.2` release, and `composer.json` pins it exactly. As the released record prescribes, the App's
+  thirty-three `Kumwe\App\Application\Authorization` values, ports and registries, the identity-layer `GrantScope`
+  and `AuthorizationDecision` and the `MembershipDirectory` port are removed together with the four duplicated unit
+  tests the package now owns, every consumer reads the package types, and the SDK `Capability` is read as
+  `Kumwe\Access\Capability` in all one hundred and twenty-nine consumers without an alias. The two App decision
+  models merge into the four-state `Kumwe\Access\AuthorizationDecision`: the gateway constructs `DecisionState`
+  verdicts, the identity `AuthorizationService` and `RoleGrantPolicy` attribute theirs to
+  `core.identity-authorization.v1` and `core.role-grant.v1` and treat a step-up as non-permission that outranks an
+  allowance, and the structured
+  decision log gains a `state` field. `ContainerFactory` installs the package `ConfigProvider`, states the seven
+  membership-sensitive resource types and the forty-four reserved ownership categories through the new
+  `HostAccessPolicy` (`KUMWE-CGR-2026-006`) as the `kumwe.access` configuration its factories refuse to build
+  without, registers the Doctrine grant-scope inspector the composite references resolve, and binds the nine
+  authority ports to the App gateway, recorder and Doctrine adapters. System identities cross into the package
+  policy as their `system:` codes at the gateway and the resource-policy registrar, and the four self-checksumming
+  migrations whose imports moved keep their pre-move checksums accepted, and the retained `mcp-v1` machine contract
+  keeps every tool and error code while its `authorization.denied` classification names the package exception. The
+  deny-by-default gateway, `SystemIdentity`
+  and principal issuance, the ownership-scope service, site-group administration and every adapter stay in App, so no
+  `Kumwe\App\Application\Authorization\` root is retired and the ledger enumerates the thirty-seven symbols
+  instead. The layer graph admits `Kumwe\Access` as a shared package with its container factories in the kernel.
+  The installed release ships its record as `MIGRATION-HANDOFF.md`, which the ledger binds by path and digest.
 - **2026-09-23 — `kumwe/idempotency` 0.1.3 owns the replay key, the replay values and the ledger ports.**
   The idempotency package enters App through the migration ledger (`NRM-2026-039`): `KUMWE-MIG-2026-020`, its change
   set, the integration train `KUMWE-TRAIN-2026-020` and the release attestation record the verified `v0.1.3` release,

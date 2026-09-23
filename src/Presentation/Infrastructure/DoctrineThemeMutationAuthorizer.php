@@ -6,12 +6,12 @@ namespace Kumwe\App\Presentation\Infrastructure;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\SQLitePlatform;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Identity\Application\Authorization\InsufficientCapability;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Kumwe\App\Presentation\Application\ThemeMutationAuthorizer;
 use Kumwe\App\Extension\Domain\ThemeSurface;
 
@@ -61,7 +61,7 @@ final readonly class DoctrineThemeMutationAuthorizer implements ThemeMutationAut
      *
      * @return  void
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the gateway refuses the
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the gateway refuses the
      *          capability for this context and resource.
      * @throws  InsufficientCapability  When the gateway allowed it but no live grant backs it, because
      *          the grant was revoked or the user is no longer active.

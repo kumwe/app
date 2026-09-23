@@ -61,7 +61,7 @@ interface AdministratorIdentityGateway
      *
      * @return  string  UUID of the created user, already holding the full administrator role.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the context does not carry
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the context does not carry
      *          the bootstrap authority.
      * @throws  \InvalidArgumentException  When the display name is unusable or the email is already taken.
      *
@@ -98,7 +98,7 @@ interface AdministratorIdentityGateway
      * @return  array{token: string, token_id: string}  The plaintext secret, shown only here, under
      *          `token`, and the stored record's UUID under `token_id`.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not act for
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not act for
      *          the subject or may not delegate one of the capabilities.
      * @throws  \InvalidArgumentException  When the name, expiry, capability set or quota forbids the token.
      *
@@ -133,7 +133,7 @@ interface AdministratorIdentityGateway
      * @return  array{token: string, token_id: string}  The replacement's plaintext secret under `token`
      *          and its new UUID under `token_id`.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage the
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not manage the
      *          token or may not delegate the capabilities it carries.
      * @throws  \InvalidArgumentException  When the token is absent, already dead, outside the site, or the
      *          replacement's name or expiry is unusable.

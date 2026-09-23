@@ -6,9 +6,9 @@ namespace Kumwe\App\BusinessSecurity\Application\Administration;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
-use Kumwe\App\Application\Authorization\AuthorizationPolicyRegistry;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationPolicyRegistry;
+use Kumwe\Access\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Audit\Application\AuditRecorder;
@@ -16,7 +16,7 @@ use Kumwe\Audit\Domain\AuditEvent;
 use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\App\BusinessSecurity\Application\Approval\StepUpProofConsumer;
 use Kumwe\BusinessPolicy\Application\FieldAccessUsage;
-use Kumwe\App\BusinessSecurity\Application\MembershipDirectory;
+use Kumwe\Access\MembershipDirectory;
 use Kumwe\BusinessPolicy\Policy\RecordPolicyComparison;
 use Kumwe\BusinessPolicy\Policy\RecordPolicyComparisonOperator;
 use Kumwe\BusinessPolicy\Policy\RecordPolicyConstant;
@@ -24,7 +24,7 @@ use Kumwe\BusinessPolicy\Policy\RecordPolicyNullCheck;
 use Kumwe\BusinessPolicy\Policy\RecordPolicyPredicate;
 use Kumwe\BusinessPolicy\Policy\RecordPolicySchema;
 use Kumwe\BusinessPolicy\Policy\RecordPolicyValueType;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
@@ -914,8 +914,8 @@ final readonly class BusinessSecurityAdministrationService
     {
         foreach ($this->repository->roleGrants($roleId) as $grant) {
             $scope = $grant['scope_type'] === 'global'
-                ? \Kumwe\App\Identity\Domain\GrantScope::global()
-                : \Kumwe\App\Identity\Domain\GrantScope::named(
+                ? \Kumwe\Access\GrantScope::global()
+                : \Kumwe\Access\GrantScope::named(
                     $grant['scope_type'],
                     $grant['scope_identifier'] ?? '',
                 );

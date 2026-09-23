@@ -6,8 +6,8 @@ namespace Kumwe\App\BusinessRecord\Application;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationResource;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Audit\Application\AuditRecorder;
@@ -15,7 +15,7 @@ use Kumwe\Audit\Domain\AuditEvent;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordPostingPeriodConflict;
 use Kumwe\App\BusinessRecord\Domain\PostingPeriod;
 use Kumwe\App\BusinessRecord\Domain\PostingPeriodStatus;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 
@@ -89,7 +89,7 @@ final readonly class PostingPeriodService
      *
      * @return  PostingPeriod  The declaration as now stored, closed.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not manage
      *          posting periods.
      * @throws  InvalidArgumentException  When the key, range or organization is malformed.
      * @throws  BusinessRecordPostingPeriodConflict  When the key is already declared over a different
@@ -158,7 +158,7 @@ final readonly class PostingPeriodService
      *
      * @return  PostingPeriod  The declaration as now stored, open.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not manage
      *          posting periods.
      * @throws  BusinessRecordPostingPeriodConflict  When the key names no declaration in this scope,
      *          or the period is not closed.
@@ -204,7 +204,7 @@ final readonly class PostingPeriodService
      *
      * @return  list<PostingPeriod>  Declarations ordered by their range start and then by key.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not read
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not read
      *          posting periods.
      *
      * @since   2.0.0
@@ -224,7 +224,7 @@ final readonly class PostingPeriodService
      *
      * @return  void
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the capability is absent.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the capability is absent.
      *
      * @since   2.0.0
      */

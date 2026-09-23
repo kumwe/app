@@ -8,17 +8,17 @@ use ArrayObject;
 use DateTimeImmutable;
 use Kumwe\Context\Value\AuthenticationStrength;
 use Kumwe\App\Application\Authorization\AuthorizationAuditUnavailable;
-use Kumwe\App\Application\Authorization\AuthorizationDecision;
-use Kumwe\App\Application\Authorization\AuthorizationDecisionRecorder;
-use Kumwe\App\Application\Authorization\AuthorizationDenied;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\Access\AuthorizationDecision;
+use Kumwe\Access\AuthorizationDecisionRecorder;
+use Kumwe\Access\AuthorizationDenied;
+use Kumwe\Access\AuthorizationResource;
 use Kumwe\App\Application\Authorization\DenyByDefaultAuthorizationGateway;
 use Kumwe\Context\Value\ExecutionContext;
-use Kumwe\App\Application\Authorization\MembershipContextValidator;
-use Kumwe\App\Application\Authorization\OwnershipScope;
-use Kumwe\App\Application\Authorization\ResourceSiteOwnership;
-use Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter;
-use Kumwe\App\Application\Authorization\ResourcePolicyTarget;
+use Kumwe\Access\MembershipContextValidator;
+use Kumwe\Access\OwnershipScope;
+use Kumwe\Access\ResourceSiteOwnership;
+use Kumwe\Access\ResourceSiteOwnershipWriter;
+use Kumwe\Access\ResourcePolicyTarget;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\App\Application\Authorization\SystemIdentity;
 use Kumwe\Transaction\Contract\TransactionManager;
@@ -35,8 +35,8 @@ use Kumwe\App\Extension\Contribution\CapabilityDefinition as ExtensionCapability
 use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ResourcePolicyDefinition as ExtensionResourcePolicyDefinition;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
-use Kumwe\App\Identity\Domain\GrantScope;
+use Kumwe\Access\Capability;
+use Kumwe\Access\GrantScope;
 use Kumwe\App\Tests\Support\AuthorizationContext;
 use Kumwe\App\Workflow\Domain\Workflow;
 use Laminas\Diactoros\ServerRequestFactory;
@@ -48,8 +48,6 @@ use Psr\Clock\ClockInterface;
 use Kumwe\App\Application\Authorization\ExecutionContextAttribute;
 
 #[CoversClass(DenyByDefaultAuthorizationGateway::class)]
-#[UsesClass(AuthorizationDenied::class)]
-#[UsesClass(AuthorizationResource::class)]
 final class ApplicationAuthorizationTest extends TestCase
 {
     private const SUBJECT = '018f22e2-7c8b-7ab0-8f3a-88e8026bb301';

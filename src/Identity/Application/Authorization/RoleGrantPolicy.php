@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Identity\Application\Authorization;
 
-use Kumwe\App\Identity\Domain\AuthorizationDecision;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
-use Kumwe\App\Identity\Domain\GrantScope;
+use Kumwe\Access\AuthorizationDecision;
+use Kumwe\Access\Capability;
+use Kumwe\Access\DecisionState;
+use Kumwe\Access\GrantScope;
 use Kumwe\App\Identity\Domain\User;
 
 /**
@@ -25,10 +26,19 @@ use Kumwe\App\Identity\Domain\User;
 final readonly class RoleGrantPolicy implements AuthorizationPolicy
 {
     /**
+     * Stable policy code every allowance this rule produces is attributed to.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const POLICY = 'core.role-grant.v1';
+
+    /**
      * Allow the request as soon as one supplied grant covers it, and abstain when none does.
      *
      * Grants are scanned in the order they were supplied and the first match wins, so the allowance
-     * always reads `role.grant` and never records which grant carried it.
+     * always reads `role.grant` under the `core.role-grant.v1` policy and never records which grant
+     * carried it.
      *
      * @param   User                                              $user        Actor whose roles the grants match.
      * @param   Capability                                        $capability  Capability the actor is exercising.
@@ -48,7 +58,7 @@ final readonly class RoleGrantPolicy implements AuthorizationPolicy
     ): ?AuthorizationDecision {
         foreach ($grants as $grant) {
             if ($grant->appliesTo($user, $capability, $scope)) {
-                return AuthorizationDecision::allow('role.grant');
+                return new AuthorizationDecision(DecisionState::Allow, self::POLICY, 'role.grant');
             }
         }
 

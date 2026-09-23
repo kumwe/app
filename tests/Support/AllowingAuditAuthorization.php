@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Support;
 
-use Kumwe\App\Application\Authorization\AuthorizationDecision;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\Access\AuthorizationDecision;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
-use Kumwe\App\Identity\Domain\GrantScope;
+use Kumwe\Access\Capability;
+use Kumwe\Access\GrantScope;
 use LogicException;
 
 /** Gateway double: authorization itself is proven by the application suite, not by a persistence test. */

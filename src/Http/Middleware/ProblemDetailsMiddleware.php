@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Http\Middleware;
 
-use Kumwe\App\Application\Authorization\AuthorizationDenied;
+use Kumwe\Access\AuthorizationDenied;
 use Kumwe\App\Application\Security\HighImpactAuthenticationRequired;
 use Kumwe\App\Delivery\Http\Api\ProblemDetailsResponseFactory;
 use Kumwe\App\Identity\Application\Administration\AuthenticationThrottled;

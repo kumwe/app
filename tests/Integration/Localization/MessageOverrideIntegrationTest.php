@@ -8,7 +8,7 @@ use Kumwe\App\Tests\Support\InterfaceTranslation;
 use DateTimeImmutable;
 use DateTimeZone;
 use Kumwe\App\Kernel\Container;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\Access\AuthorizationGateway;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Audit\Application\AuditRecorder;

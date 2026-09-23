@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\Content\Application;
 
 use DateTimeImmutable;
-use Kumwe\App\Application\Authorization\AuthorizationDenied;
+use Kumwe\Access\AuthorizationDenied;
 use Kumwe\Audit\Application\AuditRecorder;
 use Kumwe\Audit\Domain\AuditEvent;
 use Kumwe\App\Content\Application\ContentRecord;
