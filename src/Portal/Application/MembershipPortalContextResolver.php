@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Portal\Application;
 
-use Kumwe\App\BusinessSecurity\Application\MembershipDirectory;
+use Kumwe\Access\MembershipDirectory;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\App\Portal\Application\PortalContext;
 use Kumwe\Context\Value\SiteContext;

@@ -6,13 +6,13 @@ namespace Kumwe\App\Tests\Unit\InterfaceStandard;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\App\Application\Authorization\AuthorizationDenied;
-use Kumwe\App\Application\Authorization\AuthorizationDecision;
-use Kumwe\App\Application\Authorization\AuthorizationDecisionRecorder;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\Access\AuthorizationDenied;
+use Kumwe\Access\AuthorizationDecision;
+use Kumwe\Access\AuthorizationDecisionRecorder;
+use Kumwe\Access\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Context\Value\MembershipContext;
-use Kumwe\App\Application\Authorization\MembershipContextValidator;
+use Kumwe\Access\MembershipContextValidator;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\App\Application\Authorization\SystemIdentity;
 use Kumwe\App\Application\Presentation\Preference\PresentationAccessGroup;
@@ -23,7 +23,7 @@ use Kumwe\App\Application\Presentation\Preference\PresentationPreferenceVersionC
 use Kumwe\Audit\Application\AuditRecorder;
 use Kumwe\Audit\Domain\AuditEvent;
 use Kumwe\Extension\Spi\Contribution\ContributionOwner;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Kumwe\App\InterfaceStandard\CustomizationScope;
 use Kumwe\App\InterfaceStandard\CustomizationSlot;
 use Kumwe\App\InterfaceStandard\PresentationPreference;

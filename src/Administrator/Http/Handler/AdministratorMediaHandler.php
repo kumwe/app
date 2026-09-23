@@ -64,7 +64,7 @@ final readonly class AdministratorMediaHandler implements RequestHandlerInterfac
      * @return  ResponseInterface  The rendered library, or a 303 back to it after a successful change.
      *
      * @throws  InvalidArgumentException  When the route was mounted without administrator authorization.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not read or change media.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not read or change media.
      * @throws  \RuntimeException  When the storage cannot write or remove the asset or its metadata.
      *
      * @since   2.0.0
@@ -125,7 +125,7 @@ final readonly class AdministratorMediaHandler implements RequestHandlerInterfac
      * @return  ResponseInterface  The rendered library, marked `no-store` because it carries a CSRF token.
      *
      * @throws  InvalidArgumentException  When the route was mounted without administrator session middleware.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `content.read` is refused.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When `content.read` is refused.
      *
      * @since   2.0.0
      */

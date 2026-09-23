@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\Portal\Contribution;
 
 use InvalidArgumentException;
-use Kumwe\App\Application\Authorization\AuthorizationPolicyRegistry;
-use Kumwe\App\Application\Authorization\ResourcePolicyTarget;
+use Kumwe\Access\AuthorizationPolicyRegistry;
+use Kumwe\App\Application\Authorization\HostAccessPolicy;
+use Kumwe\Access\ResourcePolicyTarget;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Extension\Contribution\CapabilityDefinition;
 use Kumwe\App\Extension\Contribution\CapabilityDefinitionRegistry;
@@ -60,7 +61,7 @@ final class PortalContributionRegistryTest extends TestCase
     public function testOwnedCapabilityTemplateNavigationAndRouteStayInTheExtensionPortalNamespace(): void
     {
         $owner = ContributionOwner::extension('acme/orders');
-        $authorization = new AuthorizationPolicyRegistry();
+        $authorization = new AuthorizationPolicyRegistry(HostAccessPolicy::membershipRequirement());
         $capabilities = new CapabilityDefinitionRegistry($authorization);
         $capabilities->register($owner, new CapabilityDefinition(
             'acme.orders.read',
@@ -142,7 +143,7 @@ final class PortalContributionRegistryTest extends TestCase
     public function testRouteRejectsAnOwnedCapabilityWithoutAPortalSessionPolicy(): void
     {
         $owner = ContributionOwner::extension('acme/orders');
-        $authorization = new AuthorizationPolicyRegistry();
+        $authorization = new AuthorizationPolicyRegistry(HostAccessPolicy::membershipRequirement());
         $capabilities = new CapabilityDefinitionRegistry($authorization);
         $capabilities->register($owner, new CapabilityDefinition(
             'acme.orders.read',
@@ -167,7 +168,7 @@ final class PortalContributionRegistryTest extends TestCase
     public function testRootSlashAliasIsProtectedAndWinsOverThePublicSiteCatchAll(): void
     {
         $owner = ContributionOwner::extension('acme/orders');
-        $authorization = new AuthorizationPolicyRegistry();
+        $authorization = new AuthorizationPolicyRegistry(HostAccessPolicy::membershipRequirement());
         $capabilities = new CapabilityDefinitionRegistry($authorization);
         $capabilities->register($owner, new CapabilityDefinition(
             'acme.orders.read',
@@ -249,7 +250,7 @@ final class PortalContributionRegistryTest extends TestCase
     public function testNavigationRejectsAnOwnedCapabilityWithoutAPortalSessionPolicy(): void
     {
         $owner = ContributionOwner::extension('acme/orders');
-        $authorization = new AuthorizationPolicyRegistry();
+        $authorization = new AuthorizationPolicyRegistry(HostAccessPolicy::membershipRequirement());
         $capabilities = new CapabilityDefinitionRegistry($authorization);
         $capabilities->register($owner, new CapabilityDefinition(
             'acme.orders.read',

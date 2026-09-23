@@ -15,25 +15,25 @@ use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Types\Types;
 use Kumwe\App\Kernel\Container;
-use Kumwe\App\Application\Authorization\AuthorizationDenied;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\Access\AuthorizationDenied;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationResource;
 use Kumwe\App\Application\Authorization\DenyByDefaultAuthorizationGateway;
 use Kumwe\Context\Value\ExecutionContext;
-use Kumwe\App\Application\Authorization\OwnershipNarrowingRefused;
-use Kumwe\App\Application\Authorization\OwnershipScope;
-use Kumwe\App\Application\Authorization\OwnershipScopeLevel;
-use Kumwe\App\Application\Authorization\OwnershipScopeNotPermitted;
-use Kumwe\App\Application\Authorization\ResourceOwnership;
-use Kumwe\App\Application\Authorization\ResourceOwnershipScopePolicy;
+use Kumwe\Access\OwnershipNarrowingRefused;
+use Kumwe\Access\OwnershipScope;
+use Kumwe\Access\OwnershipScopeLevel;
+use Kumwe\Access\OwnershipScopeNotPermitted;
+use Kumwe\Access\ResourceOwnership;
+use Kumwe\Access\ResourceOwnershipScopePolicy;
 use Kumwe\App\Application\Authorization\ResourceOwnershipScopeService;
-use Kumwe\App\Application\Authorization\ResourceSiteOwnership;
-use Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter;
+use Kumwe\Access\ResourceSiteOwnership;
+use Kumwe\Access\ResourceSiteOwnershipWriter;
 use Kumwe\Context\Value\SiteContext;
-use Kumwe\App\Application\Authorization\SiteGroup;
+use Kumwe\Access\SiteGroup;
 use Kumwe\App\Application\Authorization\SiteGroupAdministration;
 use Kumwe\App\BusinessReporting\Application\ConsolidatedGroupReportScope;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Kumwe\App\Infrastructure\Authorization\DoctrineGrantScopeOwnershipReferences;
 use Kumwe\App\Infrastructure\Authorization\DoctrineResourceSiteOwnership;
 use Kumwe\App\Infrastructure\Authorization\DoctrineResourceSiteOwnershipWriter;
@@ -59,9 +59,6 @@ use Ramsey\Uuid\Uuid;
 #[CoversClass(SiteGroupAdministration::class)]
 #[CoversClass(ConsolidatedGroupReportScope::class)]
 #[CoversClass(DenyByDefaultAuthorizationGateway::class)]
-#[CoversClass(ResourceOwnership::class)]
-#[CoversClass(ResourceOwnershipScopePolicy::class)]
-#[CoversClass(OwnershipScope::class)]
 /**
  * Proves the business-group ownership model of ADR 0001 against the stored registry on a real engine.
  *

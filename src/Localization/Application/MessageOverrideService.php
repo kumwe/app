@@ -13,13 +13,13 @@ use Kumwe\Localization\Application\SupportedLocales;
 use Kumwe\Localization\Application\Translator;
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Audit\Application\AuditRecorder;
 use Kumwe\Audit\Domain\AuditEvent;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Kumwe\Localization\Domain\InvalidLocaleTag;
 use Kumwe\Localization\Domain\LocaleTag;
 use Kumwe\Localization\Domain\MessageCatalogueLayer;
@@ -128,7 +128,7 @@ final readonly class MessageOverrideService
      *
      * @return  list<MessageOverrideRecord>  Stored overrides in a stable order.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage wording.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not manage wording.
      * @throws  InvalidArgumentException  When the layer is not administered, or the locale is not carried.
      *
      * @since   2.0.0
@@ -159,7 +159,7 @@ final readonly class MessageOverrideService
      *
      * @return  MessageOverrideRecord  The stored override, carrying the instant it was written.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage wording.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not manage wording.
      * @throws  \Kumwe\Localization\Domain\InvalidMessageIdentifier  When the identifier breaks the grammar.
      * @throws  InvalidArgumentException  When the layer is not administered, the locale is not carried, the
      *          pattern is blank or too long, no file-shipped layer declares the identifier, or the scope
@@ -240,7 +240,7 @@ final readonly class MessageOverrideService
      *
      * @return  bool  True when an override was withdrawn, false when the scope carried none.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage wording.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not manage wording.
      * @throws  \Kumwe\Localization\Domain\InvalidMessageIdentifier  When the identifier breaks the grammar.
      * @throws  InvalidArgumentException  When the layer is not administered or the locale is not carried.
      *
@@ -304,7 +304,7 @@ final readonly class MessageOverrideService
      * @return  list<array{identifier: string, pattern: string, layer: string}>  Matches in identifier
      *          order, each naming the file-shipped layer the wording came from.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage wording.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not manage wording.
      * @throws  InvalidArgumentException  When the locale is not one this installation carries.
      *
      * @since   2.0.0
@@ -644,7 +644,7 @@ final readonly class MessageOverrideService
      *
      * @return  void
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the capability is absent.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the capability is absent.
      *
      * @since   2.0.0
      */

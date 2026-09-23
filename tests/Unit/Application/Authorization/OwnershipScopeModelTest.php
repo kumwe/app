@@ -5,132 +5,48 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\Application\Authorization;
 
 use InvalidArgumentException;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
-use Kumwe\App\Application\Authorization\OwnershipScope;
-use Kumwe\App\Application\Authorization\OwnershipScopeLevel;
-use Kumwe\App\Application\Authorization\OwnershipScopeNotPermitted;
-use Kumwe\App\Application\Authorization\OwnershipScopeNotSiteBound;
-use Kumwe\App\Application\Authorization\OwnershipScopeRule;
-use Kumwe\App\Application\Authorization\ResourceOwnership;
-use Kumwe\App\Application\Authorization\ResourceOwnershipScopePolicy;
-use Kumwe\App\Application\Authorization\SiteGroup;
-use Kumwe\Context\Value\SiteContext;
+use Kumwe\Access\AuthorizationResource;
+use Kumwe\Access\OwnershipScope;
+use Kumwe\Access\OwnershipScopeLevel;
+use Kumwe\Access\OwnershipScopeNotPermitted;
+use Kumwe\Access\OwnershipScopeRule;
+use Kumwe\Access\ResourceOwnership;
+use Kumwe\Access\SiteGroup;
+use Kumwe\App\Application\Authorization\HostAccessPolicy;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Pins the shapes an owner may take and the categories each shape is admitted for.
+ * Pins the reserved ownership table this build hands the package scope policy and the categories it admits.
+ *
+ * The scope shapes, containment and rule mechanics are owned by kumwe/access-control; what stays here is
+ * the exact host table and what it means: accounting is isolated by design, shared master data may be
+ * widened, every category still admits a site owner, an unknown category stays isolated, and nothing
+ * loaded later can reclassify a reserved category.
  *
  * @since  2.0.0
  */
-#[CoversClass(OwnershipScope::class)]
-#[CoversClass(OwnershipScopeLevel::class)]
-#[CoversClass(OwnershipScopeNotPermitted::class)]
-#[CoversClass(OwnershipScopeNotSiteBound::class)]
-#[CoversClass(OwnershipScopeRule::class)]
-#[CoversClass(ResourceOwnership::class)]
-#[CoversClass(ResourceOwnershipScopePolicy::class)]
-#[CoversClass(SiteGroup::class)]
+#[CoversClass(HostAccessPolicy::class)]
 final class OwnershipScopeModelTest extends TestCase
 {
     /**
-     * A site scope contains exactly the site it names, which is the equality it replaces.
+     * The host table fixes exactly forty-four categories and the policy built from it answers them all.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    public function testSiteScopeContainsOnlyItsOwnSite(): void
+    public function testTheReservedTableIsTheFortyFourCategoriesThisBuildFixes(): void
     {
-        $scope = OwnershipScope::site(SiteContext::fromString('manufacturing'));
+        $reserved = HostAccessPolicy::reservedOwnershipRules();
+        $expected = $reserved;
+        ksort($expected, SORT_STRING);
 
-        self::assertTrue($scope->contains(SiteContext::fromString('manufacturing')));
-        self::assertFalse($scope->contains(SiteContext::fromString('retail')));
-        self::assertSame(['manufacturing'], $scope->sites);
-        self::assertSame('site:manufacturing', $scope->describe());
-    }
-
-    /**
-     * A group scope contains its declared members and nobody else, in either direction.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    public function testGroupScopeContainsDeclaredMembersAndNoOthers(): void
-    {
-        $scope = OwnershipScope::group(new SiteGroup('kumwe-group', 'Kumwe group', [
-            'manufacturing',
-            'retail',
-        ]));
-
-        self::assertTrue($scope->contains(SiteContext::fromString('manufacturing')));
-        self::assertTrue($scope->contains(SiteContext::fromString('retail')));
-        self::assertFalse($scope->contains(SiteContext::fromString('logistics')));
-        self::assertFalse($scope->contains(SiteContext::default()));
-    }
-
-    /**
-     * A group with no declared member is refused, since it would own resources nobody could reach.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    public function testAGroupCannotBeDeclaredWithoutMembers(): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-        new SiteGroup('kumwe-group', 'Kumwe group', []);
-    }
-
-    /**
-     * Membership is normalised, so two declarations of the same set compare equal.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    public function testGroupMembershipIsDeduplicatedAndSorted(): void
-    {
-        $group = new SiteGroup(' KUMWE-Group ', 'Kumwe group', [
-            'retail',
-            'Manufacturing',
-            'retail',
-        ]);
-
-        self::assertSame('kumwe-group', $group->identifier);
-        self::assertSame(['manufacturing', 'retail'], $group->members);
-    }
-
-    /**
-     * Work that must run as one site refuses a scope that names several rather than electing one.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    public function testWorkRefusesToRunOnBehalfOfAScopeNamingSeveralSites(): void
-    {
-        $scope = OwnershipScope::group(new SiteGroup('kumwe-group', 'Kumwe group', ['manufacturing']));
-
-        self::assertNull($scope->siteOrNull());
-        $this->expectException(OwnershipScopeNotSiteBound::class);
-        $scope->requireSite();
-    }
-
-    /**
-     * Levels are ordered by reach, which is how a change is classified without a table of cases.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    public function testLevelsAreOrderedByReach(): void
-    {
-        self::assertTrue(OwnershipScopeLevel::Group->widerThan(OwnershipScopeLevel::Site));
-        self::assertTrue(OwnershipScopeLevel::Installation->widerThan(OwnershipScopeLevel::Group));
-        self::assertFalse(OwnershipScopeLevel::Site->widerThan(OwnershipScopeLevel::Site));
-        self::assertFalse(OwnershipScopeLevel::Site->widerThan(OwnershipScopeLevel::Installation));
+        self::assertCount(44, $reserved);
+        self::assertSame($expected, HostAccessPolicy::ownershipScopePolicy()->table());
+        foreach ($reserved as $category => $rule) {
+            self::assertSame($rule, OwnershipScopeRule::from($rule->value), $category);
+        }
     }
 
     /**
@@ -142,7 +58,7 @@ final class OwnershipScopeModelTest extends TestCase
      */
     public function testAccountingCategoriesCannotBeConstructedAtGroupScope(): void
     {
-        $policy = new ResourceOwnershipScopePolicy();
+        $policy = HostAccessPolicy::ownershipScopePolicy();
         $group = OwnershipScope::group(new SiteGroup('kumwe-group', 'Kumwe group', [
             'manufacturing',
             'retail',
@@ -172,7 +88,7 @@ final class OwnershipScopeModelTest extends TestCase
      */
     public function testSharedMasterDataCategoriesAreAdmittedAtGroupScope(): void
     {
-        $policy = new ResourceOwnershipScopePolicy();
+        $policy = HostAccessPolicy::ownershipScopePolicy();
         $group = OwnershipScope::group(new SiteGroup('kumwe-group', 'Kumwe group', ['manufacturing']));
 
         foreach (['client', 'person', 'price_list', 'product_service'] as $category) {
@@ -195,7 +111,7 @@ final class OwnershipScopeModelTest extends TestCase
      */
     public function testEveryDeclaredCategoryStillAdmitsASiteOwner(): void
     {
-        $policy = new ResourceOwnershipScopePolicy();
+        $policy = HostAccessPolicy::ownershipScopePolicy();
 
         foreach ($policy->table() as $category => $rule) {
             self::assertTrue(
@@ -216,27 +132,8 @@ final class OwnershipScopeModelTest extends TestCase
     {
         self::assertSame(
             OwnershipScopeRule::SiteOnly,
-            (new ResourceOwnershipScopePolicy())->rule('some_extension_category'),
+            HostAccessPolicy::ownershipScopePolicy()->rule('some_extension_category'),
         );
-    }
-
-    /**
-     * An extension declares its own category once, and may not restate it differently.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    public function testAContributedCategoryIsDeclaredOnceAndThenFixed(): void
-    {
-        $policy = new ResourceOwnershipScopePolicy();
-        $policy->register('inspection_asset', OwnershipScopeRule::SiteOrGroup);
-        $policy->register('inspection_asset', OwnershipScopeRule::SiteOrGroup);
-
-        self::assertSame(OwnershipScopeRule::SiteOrGroup, $policy->rule('inspection_asset'));
-
-        $this->expectException(InvalidArgumentException::class);
-        $policy->register('inspection_asset', OwnershipScopeRule::SiteOnly);
     }
 
     /**
@@ -248,7 +145,7 @@ final class OwnershipScopeModelTest extends TestCase
      */
     public function testReservedCategoriesCannotBeRedeclaredByAContribution(): void
     {
-        $policy = new ResourceOwnershipScopePolicy();
+        $policy = HostAccessPolicy::ownershipScopePolicy();
 
         foreach (['ledger', 'pay_run', 'accounting_document', 'client'] as $category) {
             try {
@@ -258,41 +155,5 @@ final class OwnershipScopeModelTest extends TestCase
                 self::assertStringContainsString($category, $refused->getMessage());
             }
         }
-    }
-
-    /**
-     * A collection names a family, so it can never be paired with an owner.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    public function testACollectionHasNoOwnerToRecord(): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-        ResourceOwnership::of(
-            AuthorizationResource::collection('client'),
-            OwnershipScope::site(SiteContext::default()),
-            new ResourceOwnershipScopePolicy(),
-        );
-    }
-
-    /**
-     * Two readings of one owner are the same owner, which is what a compare-and-set must mean.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    public function testScopeEqualityIgnoresAMembershipChangeUnderTheSameName(): void
-    {
-        $before = OwnershipScope::group(new SiteGroup('kumwe-group', 'Kumwe group', ['manufacturing']));
-        $after = OwnershipScope::group(new SiteGroup('kumwe-group', 'Kumwe group', [
-            'manufacturing',
-            'retail',
-        ]));
-
-        self::assertTrue($before->equals($after));
-        self::assertFalse($before->equals(OwnershipScope::site(SiteContext::fromString('manufacturing'))));
     }
 }

@@ -1,0 +1,31 @@
+schema: kumwe-non-roadmap-record/v1
+id: NRM-2026-037
+nrm_ref: NRM-2026-037
+roadmap_impact: None
+rationale: "Adopt verified kumwe/access-control 0.1.2, the owner of the portable authorization decisions, the owner-bound capability and resource-policy registries, the grant and ownership scopes, the reserved-category vocabulary and the host authority ports."
+repositories:
+  - kumwe/app
+  - kumwe/access-control
+behavior_before: "App declared the authorization decision, gateway, recorder, policy registry, capability and resource-policy definitions and registries, resource and scope values, ownership refusals, the membership validator and directory, the site-group ports and the grant scope itself, read the SDK Capability class, kept a second boolean decision model in the identity layer, and baked the seven membership-sensitive resource types and the forty-four reserved ownership categories into two class constants."
+behavior_after: "The thirty-seven types come from kumwe/access-control 0.1.2; every consumer reads Kumwe\\Access\\Capability; both decision models are the four-state Kumwe\\Access\\AuthorizationDecision; HostAccessPolicy states the two host tables, the composition root hands them to the package ConfigProvider factories through kumwe.access and binds the nine authority ports to the App gateway, recorder and Doctrine adapters; App keeps the deny-by-default gateway, SystemIdentity and principal issuance, the structured decision log, the ownership-scope service, site-group administration and every adapter."
+public_api_impact: "None for callers of the ports and values, which keep their names and shapes under the package namespace; AuthorizationDecision is constructed with a DecisionState instead of a boolean and exports a state field, the policy registry and the ownership-scope policy take the host tables explicitly, resource policies hold system identities as neutral codes, and the identity-layer decision gains a policy code and the step-up and not-applicable states."
+dependency_impact: "Adds kumwe/access-control 0.1.2 exactly; its only Kumwe dependency kumwe/access-context 0.1.2 was already locked, and no other lock entry changes."
+compatibility: "Drop-in for every consumer that constructed decisions through the gateway; direct constructors pass a DecisionState, and the four self-checksumming migrations whose imports moved keep their pre-move checksums accepted."
+data_migration: None
+security_impact: "No authority change; the gateway, provenance, containment, delegation ceiling, membership freshness, system-identity confinement and every adapter stay in App, and the host tables the package refuses to default now live in one App class pinned by tests."
+performance:
+  claim: None
+  evidence: []
+operations_deployment: "None; the configuration the package factories read is stated in App code and materializes with the container, so no environment variable, settings row or manifest key is added."
+recovery_rollback: "Revert the adoption pull request and restore the thirty-six removed classes and the four moved unit tests; no persisted data changes."
+artifacts_evidence:
+  - docs/architecture/migrations/KUMWE-MIG-2026-009.yaml
+  - docs/architecture/migrations/change-sets/KUMWE-CS-2026-009.yaml
+  - docs/architecture/migrations/trains/KUMWE-TRAIN-2026-009.yaml
+  - docs/architecture/migrations/evidence/KUMWE-MIG-2026-009/RELEASE-ATTESTATION.yaml
+  - docs/architecture/core-growth/KUMWE-CGR-2026-006.md
+  - docs/architecture/capability-index.md
+known_gaps:
+  - "kumwe/approval 0.1.2 (KUMWE-MIG-2026-023), kumwe/content-model 0.2.0 (KUMWE-MIG-2026-034) and the extension-sdk 0.3.2 train depend on this adoption and follow as separate adoptions."
+owner: "eWɘyn"
+status: in-progress

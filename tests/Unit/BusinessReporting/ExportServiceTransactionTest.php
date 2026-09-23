@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\BusinessReporting;
 
 use DateTimeImmutable;
-use Kumwe\App\Application\Authorization\AuthorizationDecision;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\Access\AuthorizationDecision;
+use Kumwe\Access\DecisionState;
+use Kumwe\Access\AuthorizationGateway;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Audit\Application\AuditRecorder;
@@ -110,7 +111,9 @@ final class ExportServiceTransactionTest extends TestCase
                 $auditActions[] = $event->action();
             });
         $authorization = $this->createStub(AuthorizationGateway::class);
-        $authorization->method('decide')->willReturn(new AuthorizationDecision(true, 'test.export', 'allowed'));
+        $authorization->method('decide')->willReturn(
+            new AuthorizationDecision(DecisionState::Allow, 'test.export', 'allowed'),
+        );
         $clock = $this->createStub(ClockInterface::class);
         $clock->method('now')->willReturn(new DateTimeImmutable('2026-08-10T12:00:00+00:00'));
         $storage = $this->createMock(ExportArtifactStorage::class);
@@ -364,7 +367,9 @@ final class ExportServiceTransactionTest extends TestCase
         ?ExportPolicySnapshotProvider $policies = null,
     ): ExportService {
         $authorization = $this->createStub(AuthorizationGateway::class);
-        $authorization->method('decide')->willReturn(new AuthorizationDecision(true, 'test.export', 'allowed'));
+        $authorization->method('decide')->willReturn(
+            new AuthorizationDecision(DecisionState::Allow, 'test.export', 'allowed'),
+        );
         if ($policies === null) {
             $policies = $this->createStub(ExportPolicySnapshotProvider::class);
             $policies->method('snapshot')->willReturn(str_repeat('a', 64));

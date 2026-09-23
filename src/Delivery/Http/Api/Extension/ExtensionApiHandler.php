@@ -6,7 +6,7 @@ namespace Kumwe\App\Delivery\Http\Api\Extension;
 
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\App\Application\Authorization\AuthorizationDenied;
+use Kumwe\Access\AuthorizationDenied;
 use Kumwe\App\Delivery\Http\Api\ProblemDetailsResponseFactory;
 use Kumwe\App\Delivery\Http\Api\ApiExecutionContext;
 use Kumwe\App\Extension\Application\ExtensionManager;

@@ -74,7 +74,7 @@ final readonly class AdministratorUpdateContentHandler implements RequestHandler
      * @throws  \InvalidArgumentException  When the route carries no identifier, a required field is missing, the
      *          JSON body is not an object, or a generated field does not parse.
      * @throws  \DateMalformedStringException  When a publication window field is not a readable date and time.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `content.update` is refused.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When `content.update` is refused.
      * @throws  \Kumwe\App\Content\Application\ContentNotFound  When no entry matches within reach of the context.
      * @throws  \Kumwe\App\Content\Application\ContentModelNotFound  When the entry's pinned content type version is
      *          no longer published.

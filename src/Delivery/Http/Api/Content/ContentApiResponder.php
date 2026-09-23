@@ -6,7 +6,7 @@ namespace Kumwe\App\Delivery\Http\Api\Content;
 
 use DomainException;
 use InvalidArgumentException;
-use Kumwe\App\Application\Authorization\AuthorizationDenied;
+use Kumwe\Access\AuthorizationDenied;
 use Kumwe\App\Content\Application\ContentNotFound;
 use Kumwe\App\Content\Application\ContentModelNotFound;
 use Kumwe\App\Content\Application\ContentRecord;

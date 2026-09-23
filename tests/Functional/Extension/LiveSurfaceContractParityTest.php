@@ -7,7 +7,7 @@ namespace Kumwe\App\Tests\Functional\Extension;
 use Kumwe\App\Kernel\Container;
 use Kumwe\App\Administrator\Http\Middleware\AdministratorAuthorizationMiddleware;
 use Kumwe\App\Administrator\Navigation\AdministratorNavigationRegistry;
-use Kumwe\App\Application\Authorization\AuthorizationPolicyRegistry;
+use Kumwe\Access\AuthorizationPolicyRegistry;
 use Kumwe\App\Application\Automation\JobExecutionScope;
 use Kumwe\App\Application\Automation\JobHandlerRegistry;
 use Kumwe\App\Application\Automation\QueueRuntimePolicyCatalog;
@@ -22,7 +22,7 @@ use Kumwe\App\BusinessIntegration\Domain\ScheduleContributionDefinition;
 use Kumwe\App\BusinessIntegration\Infrastructure\ContributedQueueRuntimePolicyCatalog;
 use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Kumwe\App\Kernel\ContainerFactory;
 use Kumwe\App\Portal\Contribution\PortalNavigationRegistry;
 use Kumwe\App\Portal\Http\Middleware\PortalAuthorizationMiddleware;
@@ -46,7 +46,6 @@ use ReflectionProperty;
  * @since  2.0.0
  */
 #[CoversClass(AdministratorNavigationRegistry::class)]
-#[CoversClass(AuthorizationPolicyRegistry::class)]
 #[CoversClass(ContainerFactory::class)]
 #[CoversClass(EventContractRegistry::class)]
 #[CoversClass(ExtensionContributionRegistrySet::class)]

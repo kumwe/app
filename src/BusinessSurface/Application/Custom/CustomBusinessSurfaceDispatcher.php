@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Kumwe\App\BusinessSurface\Application\Custom;
 
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\App\BusinessDefinition\Domain\ActionDefinition;
 use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
@@ -19,7 +19,7 @@ use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionC
 use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionResult;
 use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewQuery;
 use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewResult;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Kumwe\App\Extension\Runtime\ExtensionExecutionContext;
 
 /**
@@ -246,7 +246,7 @@ final readonly class CustomBusinessSurfaceDispatcher
      * @return  CustomBusinessActionResult  Contract-validated, operation-bound result.
      *
      * @throws  BusinessRecordDefinitionUnavailable  When the declaration or live contract is unavailable.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the action capability is denied.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the action capability is denied.
      * @throws  \InvalidArgumentException  When command input or result data violates the signed contract.
      * @throws  CustomBusinessHandlerFailed  When extension application code raises any throwable.
      *

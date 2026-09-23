@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "133b1dac127f56e088567be5c3672601",
+    "content-hash": "ce17487db7755800e3d4aad0a263512d",
     "packages": [
         {
             "name": "brick/math",
@@ -364,6 +364,50 @@
                 "source": "https://github.com/kumwe/access-context"
             },
             "time": "2026-09-08T14:30:31+00:00"
+        },
+        {
+            "name": "kumwe/access-control",
+            "version": "v0.1.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/kumwe/access-control.git",
+                "reference": "c2420d1ed03bc39eaf5d8b9f5540580c297e3b57"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/kumwe/access-control/zipball/c2420d1ed03bc39eaf5d8b9f5540580c297e3b57",
+                "reference": "c2420d1ed03bc39eaf5d8b9f5540580c297e3b57",
+                "shasum": ""
+            },
+            "require": {
+                "kumwe/access-context": "0.1.2",
+                "php": "^8.5",
+                "psr/container": "^2.0"
+            },
+            "require-dev": {
+                "laminas/laminas-servicemanager": "^4.0",
+                "phpstan/phpstan": "^2.1",
+                "phpstan/phpstan-deprecation-rules": "^2.0",
+                "phpstan/phpstan-strict-rules": "^2.0",
+                "squizlabs/php_codesniffer": "^4.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Kumwe\\Access\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "Apache-2.0"
+            ],
+            "description": "Portable authorization decisions, owner-bound policy registries, scopes and explicit authority ports.",
+            "homepage": "https://github.com/kumwe/access-control",
+            "support": {
+                "issues": "https://github.com/kumwe/access-control/issues",
+                "source": "https://github.com/kumwe/access-control"
+            },
+            "time": "2026-09-08T15:58:54+00:00"
         },
         {
             "name": "kumwe/audit",

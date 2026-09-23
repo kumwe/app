@@ -6,8 +6,8 @@ namespace Kumwe\App\Extension\Application\Trust;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Audit\Application\AuditRecorder;
@@ -20,7 +20,7 @@ use Kumwe\Extension\Package\PackageChecksum;
 use Kumwe\Extension\Package\PublicKeyPackageSignatureVerifier;
 use Kumwe\Extension\Package\PackageSignature;
 use Kumwe\App\Extension\Runtime\RuntimeCanonicalJson;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use Throwable;
@@ -97,7 +97,7 @@ final readonly class TrustStore
      *
      * @return  list<array<string, mixed>>  Key rows, each carrying an extra `affected_extensions` list.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not manage
      *          extensions.
      *
      * @since   2.0.0
@@ -253,7 +253,7 @@ final readonly class TrustStore
      *
      * @return  void
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not manage
      *          extensions.
      * @throws  InvalidArgumentException  When the key identifier, public key, namespace constraint or
      *          expiry window fails validation.
@@ -312,7 +312,7 @@ final readonly class TrustStore
      *
      * @return  void
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not manage
      *          extensions.
      * @throws  InvalidArgumentException  When an argument fails validation, no active key carries the old
      *          identifier, or the replacement would change the namespace constraints.
@@ -376,7 +376,7 @@ final readonly class TrustStore
      *
      * @return  void
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not manage
      *          extensions.
      * @throws  InvalidArgumentException  When the key identifier or reason is invalid, the key is not
      *          active, or installed releases still require it.
@@ -405,7 +405,7 @@ final readonly class TrustStore
      *
      * @return  void
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not manage
      *          extensions.
      * @throws  InvalidArgumentException  When the key identifier or reason is invalid, the key is not
      *          active, or installed releases still require it.
@@ -457,7 +457,7 @@ final readonly class TrustStore
      * @return  list<string>  Identifiers quarantined as a result, empty when the key signed nothing
      *          active.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not manage
      *          extensions.
      * @throws  InvalidArgumentException  When the key identifier or reason is invalid, or no active key
      *          carries that identifier.
@@ -830,7 +830,7 @@ final readonly class TrustStore
      *
      * @return  void
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses the actor
+     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses the actor
      *          this capability on that resource.
      *
      * @since   2.0.0

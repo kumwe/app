@@ -68,7 +68,7 @@ final readonly class AdministratorWordingHandler implements RequestHandlerInterf
      *
      * @throws  InvalidArgumentException  When the request carries no administrator session or execution
      *          context, or the posted action is unknown.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the capability is refused.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the capability is refused.
      *
      * @since   2.0.0
      */
@@ -123,7 +123,7 @@ final readonly class AdministratorWordingHandler implements RequestHandlerInterf
      *
      * @throws  InvalidArgumentException  When the request carries no administrator session or execution
      *          context, or the requested locale is not carried.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the capability is refused.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the capability is refused.
      *
      * @since   2.0.0
      */

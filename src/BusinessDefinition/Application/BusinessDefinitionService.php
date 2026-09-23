@@ -6,9 +6,9 @@ namespace Kumwe\App\BusinessDefinition\Application;
 
 use DateTimeImmutable;
 use JsonException;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
-use Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationResource;
+use Kumwe\Access\ResourceSiteOwnershipWriter;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\Audit\Application\AuditRecorder;
@@ -20,7 +20,7 @@ use Kumwe\App\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\App\BusinessDefinition\Domain\InvalidBusinessDefinition;
 use Kumwe\App\BusinessSchema\Application\PublishedDefinitionSchemaObserver;
 use Kumwe\Context\Value\ExecutionContext;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use Throwable;
@@ -97,7 +97,7 @@ final readonly class BusinessDefinitionService
      * @return  list<DefinitionCatalogEntry>  Where each handle stands — draft revision, published version
      *          and publication state; empty when the site holds no definitions.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not read
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not read
      *          business definitions in this site.
      *
      * @since   2.0.0
@@ -123,7 +123,7 @@ final readonly class BusinessDefinitionService
      *
      * @throws  BusinessDefinitionNotFound  When this site holds no such definition, or its draft was
      *          consumed by a publication.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not read this
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not read this
      *          definition.
      *
      * @since   2.0.0
@@ -147,7 +147,7 @@ final readonly class BusinessDefinitionService
      *
      * @throws  BusinessDefinitionNotFound  When this site holds no such definition, or it never published
      *          that version.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not read this
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not read this
      *          definition.
      *
      * @since   2.0.0
@@ -173,7 +173,7 @@ final readonly class BusinessDefinitionService
      *          has never been published.
      *
      * @throws  BusinessDefinitionNotFound  When this site holds no such definition.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not read this
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not read this
      *          definition.
      *
      * @since   2.0.0
@@ -206,7 +206,7 @@ final readonly class BusinessDefinitionService
      * @throws  InvalidBusinessDefinition  When the document cannot be parsed into a definition, names a
      *          handle the acting site does not own, or fails graph validation.
      * @throws  BusinessDefinitionRevisionConflict  When the stored draft is not at the expected revision.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not update
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not update
      *          this definition.
      *
      * @since   2.0.0
@@ -256,7 +256,7 @@ final readonly class BusinessDefinitionService
      * @throws  InvalidBusinessDefinition  When the payload is not valid JSON, is not a JSON object, or
      *          fails any of the checks `importDraft()` applies.
      * @throws  BusinessDefinitionRevisionConflict  When the stored draft is not at the expected revision.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not update
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not update
      *          business definitions.
      *
      * @since   2.0.0
@@ -306,7 +306,7 @@ final readonly class BusinessDefinitionService
      * @throws  InvalidBusinessDefinition  When the definition is not a version-zero draft, is not owned by
      *          the acting site, or fails graph validation.
      * @throws  BusinessDefinitionRevisionConflict  When the stored draft is not at the expected revision.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not update
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not update
      *          this definition.
      *
      * @since   2.0.0
@@ -348,7 +348,7 @@ final readonly class BusinessDefinitionService
      * @throws  InvalidBusinessDefinition  When the definition is not a version-zero draft, is not owned by
      *          the acting site, or fails graph validation.
      * @throws  BusinessDefinitionRevisionConflict  When the stored draft is not at the expected revision.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not update
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not update
      *          this definition.
      *
      * @since   2.0.0
@@ -432,7 +432,7 @@ final readonly class BusinessDefinitionService
      *
      * @throws  BusinessDefinitionNotFound  When this site holds no such definition, or it has no draft.
      * @throws  InvalidBusinessDefinition  When the draft, or a definition it reaches, breaks a rule.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not read or
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not read or
      *          update this definition.
      *
      * @since   2.0.0
@@ -477,7 +477,7 @@ final readonly class BusinessDefinitionService
      *
      * @throws  BusinessDefinitionNotFound  When this site holds no such definition, or it has no draft.
      * @throws  InvalidBusinessDefinition  When the draft, or a definition it reaches, breaks a rule.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not read or
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not read or
      *          update this definition.
      *
      * @since   2.0.0
@@ -513,7 +513,7 @@ final readonly class BusinessDefinitionService
      *
      * @throws  BusinessDefinitionNotFound  When this site holds no such definition, or it has no draft.
      * @throws  InvalidBusinessDefinition  When the draft, or a definition it reaches, breaks a rule.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not read this
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not read this
      *          definition.
      *
      * @since   2.0.0
@@ -551,7 +551,7 @@ final readonly class BusinessDefinitionService
      *          that was not given, or the published graph exceeds 128 entities.
      * @throws  BusinessDefinitionRevisionConflict  When the stored draft is no longer at the expected
      *          revision, so it moved after the plan was analysed.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not update
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not update
      *          this definition.
      *
      * @since   2.0.0
@@ -733,7 +733,7 @@ final readonly class BusinessDefinitionService
      * @throws  BusinessDefinitionNotFound  When this site holds no such definition.
      * @throws  InvalidBusinessDefinition  When the definition is owned by core or an extension, whose
      *          version status follows the package lifecycle instead.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not update
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not update
      *          this definition.
      *
      * @since   2.0.0
@@ -758,7 +758,7 @@ final readonly class BusinessDefinitionService
      * @throws  BusinessDefinitionNotFound  When this site holds no such definition.
      * @throws  InvalidBusinessDefinition  When the definition is owned by core or an extension, whose
      *          version status follows the package lifecycle instead.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not update
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not update
      *          this definition.
      *
      * @since   2.0.0
@@ -784,7 +784,7 @@ final readonly class BusinessDefinitionService
      * @throws  BusinessDefinitionNotFound  When this site holds no such definition.
      * @throws  InvalidBusinessDefinition  When the definition is owned by core or an extension, whose
      *          version status follows the package lifecycle instead.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not update
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not update
      *          this definition.
      *
      * @since   2.0.0
@@ -858,7 +858,7 @@ final readonly class BusinessDefinitionService
      *
      * @throws  BusinessDefinitionNotFound  When this site holds no such definition.
      * @throws  InvalidBusinessDefinition  When the definition is owned by core or an extension.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not update
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not update
      *          this definition.
      *
      * @since   2.0.0
@@ -926,7 +926,7 @@ final readonly class BusinessDefinitionService
      *          capability.
      *
      * @throws  BusinessDefinitionNotFound  When this site holds no such definition.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not exercise
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not exercise
      *          the capability on it.
      *
      * @since   2.0.0
@@ -954,7 +954,7 @@ final readonly class BusinessDefinitionService
      *
      * @return  void
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses the actor
+     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses the actor
      *          this action on this resource.
      *
      * @since   2.0.0

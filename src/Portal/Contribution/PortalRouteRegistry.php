@@ -6,14 +6,14 @@ namespace Kumwe\App\Portal\Contribution;
 
 use Kumwe\Extension\Spi\Portal\Contribution\PortalRouteDefinition;
 use InvalidArgumentException;
-use Kumwe\App\Application\Authorization\AuthorizationPolicyRegistry;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\Access\AuthorizationPolicyRegistry;
+use Kumwe\Access\AuthorizationResource;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Extension\Contribution\CapabilityDefinitionRegistry;
 use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ContributionSurface;
 use Kumwe\App\Extension\Runtime\TrustEnforcingRequestHandler;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Kumwe\App\Portal\Http\Handler\PortalExtensionRootRedirectHandler;
 use Kumwe\App\Portal\Http\Middleware\PortalAuthorizationMiddleware;
 use Kumwe\App\Portal\Http\Middleware\PortalCsrfMiddleware;

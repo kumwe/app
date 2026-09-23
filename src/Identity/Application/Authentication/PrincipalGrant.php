@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Identity\Application\Authentication;
 
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
-use Kumwe\App\Identity\Domain\GrantScope;
+use Kumwe\Access\Capability;
+use Kumwe\Access\GrantScope;
 
 /**
  * One capability paired with the reach it was granted over: the unit of a principal's authority.

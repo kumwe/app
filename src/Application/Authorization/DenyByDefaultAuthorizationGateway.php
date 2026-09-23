@@ -4,11 +4,22 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Application\Authorization;
 
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
-use Kumwe\App\Identity\Domain\GrantScope;
+use Kumwe\Access\Capability;
+use Kumwe\Access\GrantScope;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Context\Value\MembershipContext;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\Access\AuthorizationDecision;
+use Kumwe\Access\AuthorizationDecisionRecorder;
+use Kumwe\Access\AuthorizationDenied;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationPolicyRegistry;
+use Kumwe\Access\AuthorizationResource;
+use Kumwe\Access\AuthorizationResourceOwnershipUnknown;
+use Kumwe\Access\DecisionState;
+use Kumwe\Access\MembershipContextValidator;
+use Kumwe\Access\OwnershipScope;
+use Kumwe\Access\ResourceSiteOwnership;
 
 /**
  * The authorization gateway every guarded operation in Kumwe runs through, refusing whatever it cannot
@@ -18,8 +29,10 @@ use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
  * installation's own authority, the policy registry declares the action legal on that resource type, the
  * site the caller is executing in is inside the scope that owns the resource, and the caller's authority
  * covers the request — a principal's scoped grants, or the system identities explicitly named by the
- * matching typed resource policy. For a resource owned by a single site — which is every resource on an
- * installation that declares no group — the containment test is the identifier equality it replaced,
+ * matching typed resource policy, which the gateway compares by the neutral `system:` code the closed
+ * `SystemIdentity` enum backs, since the package policy holds no host enum. For a resource owned by a
+ * single site — which is every resource on an installation that declares no group — the containment
+ * test is the identifier equality it replaced,
  * evaluated on the same one value, so nothing an installation could reach before or after has changed.
  * Every other outcome denies, and each decision names the policy and reason that settled it, so the audit
  * trail explains itself rather than merely recording a verdict. Recording happens before the decision is
@@ -169,7 +182,11 @@ final readonly class DenyByDefaultAuthorizationGateway implements AuthorizationG
                 || $scope->type() === 'site'
                 || $this->scopeFor($context, $resource)->contains($context->site());
         } catch (AuthorizationResourceOwnershipUnknown) {
-            $decision = new AuthorizationDecision(false, 'core.site-ownership.v1', 'resource_site_unknown');
+            $decision = new AuthorizationDecision(
+                DecisionState::Deny,
+                'core.site-ownership.v1',
+                'resource_site_unknown',
+            );
             $this->record($context, $action, $resource, $decision);
             $this->deny($context, $action, $resource, $decision);
         }
@@ -188,7 +205,7 @@ final readonly class DenyByDefaultAuthorizationGateway implements AuthorizationG
             && $principal !== null
             && ($withinEffectiveAuthority || $extensionBootstrap);
         $decision = new AuthorizationDecision(
-            $allowed,
+            $allowed ? DecisionState::Allow : DecisionState::Deny,
             $extensionBootstrap && !$withinEffectiveAuthority
                 ? 'core.extension-delegation-bootstrap.v1'
                 : 'core.delegation-ceiling.v1',
@@ -231,26 +248,30 @@ final readonly class DenyByDefaultAuthorizationGateway implements AuthorizationG
         AuthorizationResource $resource,
     ): AuthorizationDecision {
         if (!$context->hasProvenance($this->provenance)) {
-            return new AuthorizationDecision(false, 'core.provenance.v1', 'untrusted_execution_context');
+            return new AuthorizationDecision(DecisionState::Deny, 'core.provenance.v1', 'untrusted_execution_context');
         }
 
         $resourcePolicy = $this->policies->resourcePolicy($action, $resource);
         if ($resourcePolicy === null) {
-            return new AuthorizationDecision(false, 'core.registry.v1', 'unsupported_action_resource');
+            return new AuthorizationDecision(DecisionState::Deny, 'core.registry.v1', 'unsupported_action_resource');
         }
 
         try {
             $owner = $this->scopeFor($context, $resource);
         } catch (AuthorizationResourceOwnershipUnknown) {
-            return new AuthorizationDecision(false, 'core.site-ownership.v1', 'resource_site_unknown');
+            return new AuthorizationDecision(DecisionState::Deny, 'core.site-ownership.v1', 'resource_site_unknown');
         }
         $globalGrantRequired = $resourcePolicy->installationGlobal || $owner->isInstallation();
         if (!$globalGrantRequired && !$owner->contains($context->site())) {
-            return new AuthorizationDecision(false, 'core.site-ownership.v1', 'resource_site_mismatch');
+            return new AuthorizationDecision(DecisionState::Deny, 'core.site-ownership.v1', 'resource_site_mismatch');
         }
 
         if ($context->principal() !== null && !$this->policies->allowsHumanGrant($action)) {
-            return new AuthorizationDecision(false, 'core.system-identity.v1', 'system_identity_required');
+            return new AuthorizationDecision(
+                DecisionState::Deny,
+                'core.system-identity.v1',
+                'system_identity_required',
+            );
         }
         $principal = AuthenticatedPrincipal::of($context);
         $actor = $context->systemActor();
@@ -261,10 +282,10 @@ final readonly class DenyByDefaultAuthorizationGateway implements AuthorizationG
                     ? [GrantScope::global()]
                     : $this->effectiveScopes($context, $resource),
             )
-            : $actor instanceof SystemIdentity && $resourcePolicy->allowsSystemIdentity($actor);
+            : $actor instanceof SystemIdentity && $resourcePolicy->allowsSystemIdentity($actor->value);
 
         return new AuthorizationDecision(
-            $allowed,
+            $allowed ? DecisionState::Allow : DecisionState::Deny,
             'core.scoped-grants.v1',
             $allowed
                 ? ($globalGrantRequired ? 'matching_global_grant' : 'matching_effective_grant')

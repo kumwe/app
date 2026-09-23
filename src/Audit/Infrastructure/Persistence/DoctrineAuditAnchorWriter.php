@@ -7,15 +7,15 @@ namespace Kumwe\App\Audit\Infrastructure\Persistence;
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\App\Audit\Application\AuditAnchorWriter;
 use Kumwe\Audit\Application\AuditRecorder;
 use Kumwe\Audit\Domain\AuditAnchorDigest;
 use Kumwe\Audit\Domain\AuditEvent;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\CanonicalJson\CanonicalEncoder;
 use Psr\Clock\ClockInterface;
@@ -88,7 +88,7 @@ final readonly class DoctrineAuditAnchorWriter implements AuditAnchorWriter
      * @return  ?int  Sequence number of the anchor written, or null when nothing settled is unsealed.
      *
      * @throws  RuntimeException  When the ledger or a walked row is malformed.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not manage
      *          the audit trail.
      *
      * @since   2.0.0

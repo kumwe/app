@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Kumwe\App\Application\Presentation\Dashboard;
 
 use InvalidArgumentException;
-use Kumwe\App\Application\Authorization\AuthorizationDenied;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\Access\AuthorizationDenied;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\App\Application\Presentation\Preference\PresentationAccessGroupRepository;
 use Kumwe\App\Application\Presentation\Preference\PresentationPreferenceManager;
@@ -18,7 +18,7 @@ use Kumwe\App\InterfaceStandard\PresentationPreference;
 use Kumwe\App\InterfaceStandard\PresentationPreferenceKey;
 use Kumwe\App\InterfaceStandard\SurfaceArea;
 use Kumwe\App\InterfaceStandard\SurfaceId;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use RuntimeException;
 
 /**
@@ -239,7 +239,7 @@ final readonly class DashboardPreferenceService
      * @return  void
      *
      * @throws  InvalidArgumentException  When target or the current live catalogue is invalid.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses the target.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses the target.
      * @throws  \Kumwe\App\Application\Presentation\Preference\PresentationPreferenceVersionConflict
      *          When the exact stored row changed after its version was observed.
      *

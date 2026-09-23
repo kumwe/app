@@ -6,12 +6,12 @@ namespace Kumwe\App\Tests\Unit\Application\Authorization;
 
 use DateTimeImmutable;
 use DateTimeZone;
-use Kumwe\App\Application\Authorization\OwnershipNarrowingRefused;
-use Kumwe\App\Application\Authorization\SiteGroup;
+use Kumwe\Access\OwnershipNarrowingRefused;
+use Kumwe\Access\SiteGroup;
 use Kumwe\App\Application\Authorization\SiteGroupAdministration;
-use Kumwe\App\Application\Authorization\SiteGroupRegistry;
-use Kumwe\App\Application\Authorization\SiteGroupUnknown;
-use Kumwe\App\Application\Authorization\SiteGroupWriter;
+use Kumwe\Access\SiteGroupRegistry;
+use Kumwe\Access\SiteGroupUnknown;
+use Kumwe\Access\SiteGroupWriter;
 use Kumwe\App\Tests\Support\AllowingAuditAuthorization;
 use Kumwe\App\Tests\Support\AuthorizationContext;
 use Kumwe\Transaction\Testing\ImmediateTransactionManager;
@@ -26,7 +26,6 @@ use Psr\Clock\ClockInterface;
  * @since  2.0.0
  */
 #[CoversClass(SiteGroupAdministration::class)]
-#[CoversClass(SiteGroupUnknown::class)]
 final class SiteGroupAdministrationTest extends TestCase
 {
     /**

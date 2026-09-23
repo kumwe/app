@@ -6,7 +6,7 @@ namespace Kumwe\App\Portal\Http\Handler;
 
 use Kumwe\Context\Value\AuthenticatedSurface;
 use Kumwe\Context\Value\AuthenticationStrength;
-use Kumwe\App\Application\Authorization\AuthorizationDenied;
+use Kumwe\Access\AuthorizationDenied;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalDenied;
 use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalRequestView;

@@ -6,10 +6,10 @@ namespace Kumwe\App\Extension\Contribution;
 
 use Kumwe\Extension\Spi\Contribution\ContributionDefinition;
 use InvalidArgumentException;
-use Kumwe\App\Application\Authorization\AuthorizationDefinitionLifecycle;
-use Kumwe\App\Application\Authorization\ResourcePolicyTarget;
+use Kumwe\Access\AuthorizationDefinitionLifecycle;
+use Kumwe\Access\ResourcePolicyTarget;
 use Kumwe\App\Application\Authorization\SystemIdentity;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 
 /**
  * Declarative contribution binding one owned capability to bounded resource selectors.

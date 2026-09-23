@@ -6,7 +6,8 @@ namespace Kumwe\App\Tests\Unit\Portal\Http;
 
 use Kumwe\App\Identity\Application\Administration\AuthenticationThrottled;
 use Kumwe\App\Tests\Support\InterfaceTranslation;
-use Kumwe\App\Application\Authorization\AuthorizationPolicyRegistry;
+use Kumwe\Access\AuthorizationPolicyRegistry;
+use Kumwe\App\Application\Authorization\HostAccessPolicy;
 use Kumwe\App\Extension\Contribution\CapabilityDefinitionRegistry;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\App\Portal\Application\CreatedPortalSession;
@@ -121,7 +122,7 @@ final class PortalLoginHandlerTest extends TestCase
         $navigation = new PortalNavigationRegistry(
             new PortalWorkspaceRegistry(),
             $capabilities,
-            new AuthorizationPolicyRegistry(),
+            new AuthorizationPolicyRegistry(HostAccessPolicy::membershipRequirement()),
         );
         $renderer = new PortalRenderer(
             new Environment(new ArrayLoader([

@@ -7,8 +7,8 @@ namespace Kumwe\App\BusinessReporting\Application;
 use DateTimeInterface;
 use InvalidArgumentException;
 use Kumwe\Context\Value\AuthenticatedSurface;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\App\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\App\BusinessDefinition\Domain\DecimalValue;
@@ -42,7 +42,7 @@ use Kumwe\App\BusinessReporting\Domain\ReportRelationQuantifier;
 use Kumwe\App\BusinessReporting\Domain\ReportSortDefinition;
 use Kumwe\App\BusinessReporting\Domain\ReportSortDirection;
 use Kumwe\Extension\Spi\BusinessReporting\Domain\ReportValueType;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Throwable;
 
 /**

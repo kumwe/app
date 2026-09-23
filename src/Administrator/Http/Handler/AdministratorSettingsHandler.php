@@ -72,7 +72,7 @@ final readonly class AdministratorSettingsHandler implements RequestHandlerInter
      *          redirect after a successful save.
      *
      * @throws  \InvalidArgumentException  When the request carries no administrator session or execution context.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `settings.manage` is refused.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When `settings.manage` is refused.
      *
      * @since   2.0.0
      */
@@ -114,7 +114,7 @@ final readonly class AdministratorSettingsHandler implements RequestHandlerInter
      * @return  ResponseInterface  The rendered form, marked `no-store` because it carries the CSRF token.
      *
      * @throws  \InvalidArgumentException  When the request carries no administrator session or execution context.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `settings.manage` is refused.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When `settings.manage` is refused.
      *
      * @since   2.0.0
      */

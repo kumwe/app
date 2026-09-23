@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\BusinessReporting;
 
 use DateTimeImmutable;
-use Kumwe\App\Application\Authorization\AuthorizationDecision;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
+use Kumwe\Access\AuthorizationDecision;
+use Kumwe\Access\DecisionState;
+use Kumwe\Access\AuthorizationGateway;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Extension\Spi\BusinessRecord\Application\BusinessRecordQueryPurpose;
 use Kumwe\App\BusinessRecord\Application\RecordBrowseResult;
@@ -195,7 +196,7 @@ final class ReportApiDiscoveryTest extends TestCase
         $authorization = $this->createStub(AuthorizationGateway::class);
         $authorization->method('decide')->willReturnCallback(
             static fn (): AuthorizationDecision => new AuthorizationDecision(
-                $allowed,
+                $allowed ? DecisionState::Allow : DecisionState::Deny,
                 'test.report',
                 $allowed ? 'allowed' : 'denied',
             ),

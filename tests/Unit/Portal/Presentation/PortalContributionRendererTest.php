@@ -8,7 +8,8 @@ use DateTimeImmutable;
 use InvalidArgumentException;
 use Kumwe\Context\Value\AuthenticatedSurface;
 use Kumwe\Context\Value\AuthenticationStrength;
-use Kumwe\App\Application\Authorization\AuthorizationPolicyRegistry;
+use Kumwe\Access\AuthorizationPolicyRegistry;
+use Kumwe\App\Application\Authorization\HostAccessPolicy;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\App\Extension\Contribution\CapabilityDefinitionRegistry;
@@ -127,7 +128,7 @@ final class PortalContributionRendererTest extends TestCase
         $navigation = new PortalNavigationRegistry(
             new PortalWorkspaceRegistry(),
             new CapabilityDefinitionRegistry(),
-            new AuthorizationPolicyRegistry(),
+            new AuthorizationPolicyRegistry(HostAccessPolicy::membershipRequirement()),
         );
 
         return [new PortalRenderer(

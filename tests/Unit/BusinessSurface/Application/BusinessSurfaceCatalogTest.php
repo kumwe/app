@@ -6,9 +6,10 @@ namespace Kumwe\App\Tests\Unit\BusinessSurface\Application;
 
 use Kumwe\Context\Value\AuthenticatedSurface;
 use Kumwe\Context\Value\AuthenticationStrength;
-use Kumwe\App\Application\Authorization\AuthorizationDecision;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\Access\AuthorizationDecision;
+use Kumwe\Access\DecisionState;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\Transaction\Contract\TransactionManager;
@@ -31,7 +32,7 @@ use Kumwe\App\BusinessSurface\Application\BusinessSurface;
 use Kumwe\App\BusinessSurface\Application\BusinessSurfaceCatalog;
 use Kumwe\App\BusinessSurface\Application\BusinessSurfaceOperation;
 use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Kumwe\Localization\Application\ActiveLocale;
 use Kumwe\Localization\Application\SupportedLocales;
 use Kumwe\Localization\Domain\LocaleTag;
@@ -247,7 +248,7 @@ final class BusinessSurfaceCatalogTest extends TestCase
             Capability $capability,
             AuthorizationResource $_resource,
         ): AuthorizationDecision => new AuthorizationDecision(
-            $capability->value() === 'business.record.read',
+            $capability->value() === 'business.record.read' ? DecisionState::Allow : DecisionState::Deny,
             'test',
             $capability->value() === 'business.record.read' ? 'allowed' : 'denied',
         ));
@@ -321,7 +322,7 @@ final class BusinessSurfaceCatalogTest extends TestCase
                 AuthorizationResource $_resource,
             ): AuthorizationDecision =>
                 new AuthorizationDecision(
-                    $capability->value() === $plan->operation,
+                    $capability->value() === $plan->operation ? DecisionState::Allow : DecisionState::Deny,
                     'test',
                     $capability->value() === $plan->operation ? 'allowed' : 'denied',
                 ),

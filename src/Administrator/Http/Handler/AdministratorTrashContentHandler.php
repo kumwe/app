@@ -47,7 +47,7 @@ final readonly class AdministratorTrashContentHandler implements RequestHandlerI
      * @return  ResponseInterface  A 303 redirect to `/administrator/content`.
      *
      * @throws  \InvalidArgumentException  When the route carries no identifier or `version` is not a positive integer.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `content.delete` is refused.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When `content.delete` is refused.
      * @throws  \Kumwe\App\Content\Application\ContentNotFound  When no entry matches within reach of the context.
      * @throws  \Kumwe\App\Content\Domain\VersionConflict  When another writer moved the entry on first.
      *

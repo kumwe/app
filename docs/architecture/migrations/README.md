@@ -27,6 +27,7 @@ change set is `core-integrated` only once the merged master commit is recorded (
 | `kumwe/business-policy` | `0.1.1` | `KUMWE-MIG-2026-022` | `KUMWE-CS-2026-022` | `app-pr-ready` | #151 | — |
 | `kumwe/conversion` | `0.1.5` | `KUMWE-MIG-2026-031` | `KUMWE-CS-2026-031` | `app-pr-ready` | #151 | — |
 | `kumwe/idempotency` | `0.1.3` | `KUMWE-MIG-2026-020` | `KUMWE-CS-2026-020` | `app-pr-ready` | #151 | — |
+| `kumwe/access-control` | `0.1.2` | `KUMWE-MIG-2026-009` | `KUMWE-CS-2026-009` | `app-pr-ready` | — | — |
 
 `kumwe/extension-sdk 0.2.4` remains the one legacy-unmanifested entry of
 [`legacy-packages.json`](../governance/legacy-packages.json); its Version 2 successor `0.3.2` is published and
@@ -35,6 +36,7 @@ it leaves the registry when that is adopted, as `kumwe/conversion` did at `0.1.5
 ### The remaining catalogue
 
 The Version 2 catalogue has thirty targets ([audit of 2026-09-07](audits/2026-09-07/requirements.md)); fourteen
+The Version 2 catalogue has thirty targets ([audit of 2026-09-07](audits/2026-09-07/requirements.md)); twelve
 are adopted above (the Engine and its binding are provisioned as `ext-kumwe_engine 1.0.3`). Every remaining
 PHP package is published on Packagist with Version 2 manifests and a release record, and each record
 pre-allocates the ledger and change-set identifiers the App must use (the capability index refuses a ledger
@@ -46,7 +48,6 @@ identifier.
 | Package | Release | Record ids | Kumwe requirements | Identifier status |
 |---|---|---|---|---|
 | `kumwe/contribution` | `0.1.1` | `MIG-006` / `CS-006` | — | free |
-| `kumwe/access-control` | `0.1.2` | `MIG-009` / `CS-009` | access-context | free |
 | `kumwe/business-definition` | `0.1.2` | `MIG-010` / `CS-010` | localization, sequence | free |
 | `kumwe/idempotency` | `0.1.2` | `MIG-020` / `CS-020` | canonical-json | free |
 | `kumwe/business-policy` | `0.1.1` | `MIG-022` / `CS-022` | — | free |

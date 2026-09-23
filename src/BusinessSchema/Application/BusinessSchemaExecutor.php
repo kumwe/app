@@ -6,8 +6,8 @@ namespace Kumwe\App\BusinessSchema\Application;
 
 use DateInterval;
 use DateTimeImmutable;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationResource;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Audit\Application\AuditRecorder;
@@ -24,7 +24,7 @@ use Kumwe\App\BusinessSchema\Domain\SchemaPlan;
 use Kumwe\App\BusinessSchema\Domain\SchemaPlanStatus;
 use Kumwe\App\BusinessSchema\Domain\SchemaPlanStep;
 use Kumwe\App\BusinessSchema\Domain\SchemaStepStatus;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use Throwable;
@@ -137,7 +137,7 @@ final readonly class BusinessSchemaExecutor
      * @return  SchemaExecutionOutcome  The fence the run held, the steps it applied and skipped, and the
      *          checksum of the schema it left behind.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `business.schema.execute`,
+     * @throws  \Kumwe\Access\AuthorizationDenied  When `business.schema.execute`,
      *          or `business.schema.destructive` for a destructive plan, is refused.
      * @throws  BusinessSchemaNotFound  When this site holds no plan under that identifier, or the plan's
      *          definition, published version, or recovery evidence can no longer be resolved.
@@ -171,7 +171,7 @@ final readonly class BusinessSchemaExecutor
      * @return  SchemaExecutionOutcome  The same report a first run produces, marked as resumed, with the
      *          steps an earlier attempt had finished counted as skipped.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `business.schema.recover`,
+     * @throws  \Kumwe\Access\AuthorizationDenied  When `business.schema.recover`,
      *          or `business.schema.destructive` for a destructive plan, is refused.
      * @throws  BusinessSchemaNotFound  When this site holds no plan under that identifier, or the plan's
      *          definition, published version, or recovery evidence can no longer be resolved.
@@ -211,7 +211,7 @@ final readonly class BusinessSchemaExecutor
      *
      * @return  SchemaExecutionOutcome  The report of the completed install, marked as resumed.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `business.schema.execute`,
+     * @throws  \Kumwe\Access\AuthorizationDenied  When `business.schema.execute`,
      *          or `business.schema.destructive` for a destructive plan, is refused.
      * @throws  BusinessSchemaNotFound  When this site holds no plan under that identifier, or the plan's
      *          definition, published version, or recovery evidence can no longer be resolved.
@@ -329,7 +329,7 @@ final readonly class BusinessSchemaExecutor
      * @return  SchemaExecutionOutcome  What this attempt applied and skipped, and the checksum the schema
      *          ended on — the purge sentinel when the plan dropped the installation.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When a destructive plan's
+     * @throws  \Kumwe\Access\AuthorizationDenied  When a destructive plan's
      *          `business.schema.destructive` capability is refused.
      * @throws  BusinessSchemaNotFound  When the definition, its published version, or the recovery
      *          evidence the plan cites cannot be resolved for this site.
@@ -1733,7 +1733,7 @@ final readonly class BusinessSchemaExecutor
      *
      * @return  void
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses the actor
+     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses the actor
      *          that capability on this site.
      *
      * @since   2.0.0

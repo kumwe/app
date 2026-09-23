@@ -61,7 +61,7 @@ final readonly class CreateBusinessSchemaPurgePlanHandler implements RequestHand
      *          repeat the definition identifier exactly.
      * @throws  \Kumwe\App\Application\Security\HighImpactAuthenticationRequired  When the re-entered
      *          password is absent, wrong, or the context has no human principal behind it.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `business.schema.destructive`
+     * @throws  \Kumwe\Access\AuthorizationDenied  When `business.schema.destructive`
      *          is refused.
      * @throws  \Kumwe\App\BusinessSchema\Application\BusinessSchemaNotFound  When the definition is not
      *          published, or has no installed schema in this site.

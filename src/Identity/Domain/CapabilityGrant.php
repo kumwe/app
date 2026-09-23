@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Identity\Domain;
 
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use InvalidArgumentException;
+use Kumwe\Access\GrantScope;
 
 /**
  * A role's permission to exercise one capability over one scope.

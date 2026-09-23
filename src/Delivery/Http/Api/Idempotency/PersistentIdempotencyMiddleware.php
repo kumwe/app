@@ -98,7 +98,7 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
      * @throws  \InvalidArgumentException  When the route carries no policy in `HttpMutationPreauthorizer`,
      *          a path segment is not a usable resource identifier, or the body that policy reads is not a
      *          usable JSON object.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not perform the
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not perform the
      *          mutation, or may not delegate a capability it would hand on — checked before the ledger is
      *          touched.
      * @throws  \Kumwe\App\Content\Application\ContentNotFound  When a workflow transition names an entry

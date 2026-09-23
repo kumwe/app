@@ -191,7 +191,7 @@ final readonly class ManageAccessCommand implements Command
      *
      * @throws  \InvalidArgumentException  When `user` or `role` is missing, or when an actor tries to
      *          take the administrator role off their own account.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not
      *          delegate one of the capabilities the role grants.
      *
      * @since   2.0.0

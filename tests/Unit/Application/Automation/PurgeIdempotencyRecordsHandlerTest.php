@@ -39,7 +39,7 @@ final class PurgeIdempotencyRecordsHandlerTest extends TestCase
     {
         $purger = new CountingIdempotencyPurger([]);
 
-        $this->expectException(\Kumwe\App\Application\Authorization\AuthorizationDenied::class);
+        $this->expectException(\Kumwe\Access\AuthorizationDenied::class);
         $this->handler($purger)->handle([], AuthorizationContext::system(SystemIdentity::Worker)->context(
             SiteContext::default(),
             'wrong-global-principal',

@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Kumwe\App\Content\Application;
 
 use DateTimeImmutable;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
-use Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter;
+use Kumwe\Access\ResourceSiteOwnershipWriter;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Audit\Application\AuditRecorder;
 use Kumwe\Audit\Domain\AuditEvent;
@@ -16,7 +16,7 @@ use Kumwe\App\Content\Domain\ContentTypeDefinition;
 use Kumwe\App\Content\Domain\JsonSchemaValidator;
 use Kumwe\App\Content\Domain\SchemaCompatibilityChecker;
 use Kumwe\App\Content\Domain\VersionConflict;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Kumwe\App\Workflow\Domain\WorkflowDefinition;
 use Kumwe\App\Workflow\Domain\WorkflowStateDefinition;
 use Kumwe\App\Workflow\Domain\WorkflowTransitionDefinition;
@@ -74,7 +74,7 @@ final readonly class ContentModelService
      *
      * @return  list<ContentTypeDefinition>  Head versions only, ordered by handle.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor lacks `content.read`.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor lacks `content.read`.
      *
      * @since   2.0.0
      */
@@ -102,7 +102,7 @@ final readonly class ContentModelService
      * @return  ContentTypeDefinition  The definition at the requested version.
      *
      * @throws  ContentModelNotFound  When the site publishes no such content type at that version.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor lacks `content.read`.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor lacks `content.read`.
      *
      * @since   2.0.0
      */
@@ -137,7 +137,7 @@ final readonly class ContentModelService
      *
      * @return  ContentTypeDefinition  The stored definition, at version one with its workflow pinned.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor lacks `content.update`.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor lacks `content.update`.
      * @throws  \InvalidArgumentException  When the schema uses keywords the validator cannot enforce.
      * @throws  ContentModelNotFound  When the site publishes no workflow under that identifier.
      *
@@ -199,7 +199,7 @@ final readonly class ContentModelService
      * @return  ContentTypeDefinition  The stored definition, one version past the expected one.
      *
      * @throws  ContentModelNotFound  When the content type, or the named workflow, is not published here.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor lacks `content.update`.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor lacks `content.update`.
      * @throws  VersionConflict  When another operator published a version after this one was loaded.
      * @throws  \InvalidArgumentException  When the schema uses keywords the validator cannot enforce.
      * @throws  IncompatibleDefinition  When the change is breaking and the operator did not opt in.
@@ -274,7 +274,7 @@ final readonly class ContentModelService
      *
      * @return  list<WorkflowDefinition>  Head versions only, ordered by handle.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor lacks `content.read`.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor lacks `content.read`.
      *
      * @since   2.0.0
      */
@@ -301,7 +301,7 @@ final readonly class ContentModelService
      * @return  WorkflowDefinition  The definition at the requested version.
      *
      * @throws  ContentModelNotFound  When the site publishes no such workflow at that version.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor lacks `content.read`.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor lacks `content.read`.
      *
      * @since   2.0.0
      */
@@ -335,7 +335,7 @@ final readonly class ContentModelService
      *
      * @return  WorkflowDefinition  The stored definition, at version one.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor lacks `content.update`.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor lacks `content.update`.
      * @throws  \InvalidArgumentException  When the documents break a structural or capability rule.
      *
      * @since   2.0.0
@@ -392,7 +392,7 @@ final readonly class ContentModelService
      * @return  WorkflowDefinition  The stored definition, one version past the expected one.
      *
      * @throws  ContentModelNotFound  When the site publishes no workflow under that identifier.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor lacks `content.update`.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor lacks `content.update`.
      * @throws  VersionConflict  When another operator published a version after this one was loaded.
      * @throws  \InvalidArgumentException  When the documents break a structural or capability rule.
      * @throws  IncompatibleDefinition  When the change is breaking and the operator did not opt in.

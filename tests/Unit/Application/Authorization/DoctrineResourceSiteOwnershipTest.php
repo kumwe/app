@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\Application\Authorization;
 
 use Doctrine\DBAL\Connection;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
-use Kumwe\App\Application\Authorization\AuthorizationResourceOwnershipUnknown;
-use Kumwe\App\Application\Authorization\OwnershipScopeLevel;
-use Kumwe\App\Application\Authorization\SiteGroup;
-use Kumwe\App\Application\Authorization\SiteGroupRegistry;
-use Kumwe\App\Application\Authorization\SiteGroupUnknown;
+use Kumwe\Access\AuthorizationResource;
+use Kumwe\Access\AuthorizationResourceOwnershipUnknown;
+use Kumwe\Access\OwnershipScopeLevel;
+use Kumwe\Access\SiteGroup;
+use Kumwe\Access\SiteGroupRegistry;
+use Kumwe\Access\SiteGroupUnknown;
 use Kumwe\App\Infrastructure\Authorization\DoctrineResourceSiteOwnership;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use PHPUnit\Framework\Attributes\CoversClass;

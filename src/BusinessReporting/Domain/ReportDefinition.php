@@ -10,7 +10,7 @@ use Kumwe\App\BusinessDefinition\Domain\Expression;
 use Kumwe\Extension\Spi\BusinessReporting\Domain\ReportDefinitionGuard;
 use Kumwe\Extension\Spi\BusinessReporting\Domain\ReportValueType;
 use Kumwe\Extension\Spi\Contribution\ContributionDefinition;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 
 /**
  * Immutable, bounded and manifest-comparable business report definition.

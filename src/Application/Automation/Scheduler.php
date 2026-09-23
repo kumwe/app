@@ -30,7 +30,7 @@ interface Scheduler
      *
      * @return  int  How many schedules this pass dispatched and advanced.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the caller may not
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the caller may not
      *          dispatch schedules.
      *
      * @since   2.0.0

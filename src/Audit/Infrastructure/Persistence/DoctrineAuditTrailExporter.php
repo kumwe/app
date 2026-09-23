@@ -7,8 +7,8 @@ namespace Kumwe\App\Audit\Infrastructure\Persistence;
 use Doctrine\DBAL\Connection;
 use Generator;
 use InvalidArgumentException;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Audit\Application\AuditArchiveStorage;
@@ -17,7 +17,7 @@ use Kumwe\Audit\Application\AuditRecorder;
 use Kumwe\Audit\Application\AuditTrailExport;
 use Kumwe\Audit\Application\AuditTrailExporter;
 use Kumwe\Audit\Domain\AuditEvent;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
@@ -85,7 +85,7 @@ final readonly class DoctrineAuditTrailExporter implements AuditTrailExporter
      *
      * @throws  InvalidArgumentException  When the requested range is inverted or not positive.
      * @throws  RuntimeException  When the range holds no events or the archive cannot be written.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not export
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not export
      *          the audit trail.
      *
      * @since   2.0.0

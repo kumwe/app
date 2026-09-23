@@ -55,7 +55,7 @@ final class IntegrationOperationsServiceTest extends TestCase
         $outbox = $this->createMock(OutboxStore::class);
         $outbox->expects(self::never())->method('recent');
 
-        $this->expectException(\Kumwe\App\Application\Authorization\AuthorizationDenied::class);
+        $this->expectException(\Kumwe\Access\AuthorizationDenied::class);
         $this->service($outbox)->outbox(AuthorizationContext::human([]));
     }
 

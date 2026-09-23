@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Kumwe\App\Identity\Application\Administration;
 
 use InvalidArgumentException;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Kumwe\App\Identity\Domain\EmailAddress;
-use Kumwe\App\Identity\Domain\GrantScope;
+use Kumwe\Access\GrantScope;
 
 /**
  * The single delegation check every path that mints an API token must clear before one is written.
@@ -63,7 +63,7 @@ final readonly class TokenDelegationPreauthorizer
      * @throws  InvalidArgumentException  When the capability list is empty, is not a list, holds a
      *          non-string, names an unparseable capability or email, points at a subject that does not
      *          exist, or names a capability the subject is not granted.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage the
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not manage the
      *          site or the subject, or may not delegate one of the capabilities at the scope it is held.
      *
      * @since   2.0.0

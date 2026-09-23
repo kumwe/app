@@ -73,7 +73,7 @@ final readonly class AccessControlApiHandler implements RequestHandlerInterface
      * @return  ResponseInterface  The operation's JSON or 204 response, or a 422 problem document when the
      *          route, body or route parameter was unusable.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not perform the
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not perform the
      *          operation; it is re-thrown deliberately so it is answered as a refusal, not as a 422.
      *
      * @since   2.0.0

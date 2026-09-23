@@ -6,8 +6,8 @@ namespace Kumwe\App\Audit\Infrastructure\Persistence;
 
 use Doctrine\DBAL\Connection;
 use InvalidArgumentException;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Audit\Application\AuditTrailVerifier;
 use Kumwe\Audit\Domain\AuditAnchorDigest;
@@ -15,7 +15,7 @@ use Kumwe\Audit\Domain\AuditEnforcementState;
 use Kumwe\Audit\Domain\AuditEventDigest;
 use Kumwe\Audit\Domain\AuditVerificationFinding;
 use Kumwe\Audit\Domain\AuditVerificationReport;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\CanonicalJson\CanonicalEncoder;
 use RuntimeException;
@@ -89,7 +89,7 @@ final readonly class DoctrineAuditTrailVerifier implements AuditTrailVerifier
      *          observed on this server, and the first divergence if any.
      *
      * @throws  InvalidArgumentException  When the batch size is outside its bounds.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not verify
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not verify
      *          the audit trail.
      *
      * @since   2.0.0

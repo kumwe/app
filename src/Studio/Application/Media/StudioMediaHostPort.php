@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Studio\Application\Media;
 
 use InvalidArgumentException;
-use Kumwe\App\Application\Authorization\AuthorizationDenied;
+use Kumwe\Access\AuthorizationDenied;
 use Kumwe\App\Studio\Application\Host\StudioProducerError;
 use Kumwe\App\Studio\Application\Host\StudioProducerRequestAuthority;
 use Kumwe\App\Studio\Domain\Media\StudioMediaUploadRequest;

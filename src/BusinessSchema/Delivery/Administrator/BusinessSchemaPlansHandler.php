@@ -112,7 +112,7 @@ final readonly class BusinessSchemaPlansHandler implements RequestHandlerInterfa
      *
      * @throws  \InvalidArgumentException  When the route was mounted without administrator authentication
      *          or authorization, so no session or execution context is attached.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `business.schema.read` is
+     * @throws  \Kumwe\Access\AuthorizationDenied  When `business.schema.read` is
      *          refused.
      * @throws  \Kumwe\App\BusinessSchema\Application\BusinessSchemaNotFound  When the `plan` parameter
      *          names a plan outside this site.

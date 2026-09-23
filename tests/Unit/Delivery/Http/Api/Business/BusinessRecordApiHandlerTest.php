@@ -6,9 +6,10 @@ namespace Kumwe\App\Tests\Unit\Delivery\Http\Api\Business;
 
 use Kumwe\Context\Value\AuthenticationStrength;
 use Kumwe\Context\Value\AuthenticatedSurface;
-use Kumwe\App\Application\Authorization\AuthorizationDecision;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\Access\AuthorizationDecision;
+use Kumwe\Access\DecisionState;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\Transaction\Contract\TransactionManager;
@@ -31,7 +32,7 @@ use Kumwe\App\Delivery\Http\Api\Idempotency\RequireIdempotencyKeyMiddleware;
 use Kumwe\App\Delivery\Http\Api\ProblemDetailsResponseFactory;
 use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Kumwe\App\Tests\Support\AuthorizationContext;
 use Laminas\Diactoros\ServerRequestFactory;
 use Laminas\Diactoros\StreamFactory;
@@ -363,7 +364,7 @@ final class BusinessRecordApiHandlerTest extends TestCase
             self::callback(
                 static fn (AuthorizationResource $resource): bool => $resource->type() === 'business_record',
             ),
-        )->willReturn(new AuthorizationDecision(false, 'test', 'denied'));
+        )->willReturn(new AuthorizationDecision(DecisionState::Deny, 'test', 'denied'));
         $catalog = new BusinessSurfaceCatalog(
             $this->createStub(BusinessRecordDefinitionResolver::class),
             $this->createStub(BusinessRecordAccessController::class),

@@ -8,14 +8,14 @@ use Kumwe\App\Tests\Support\InterfaceTranslation;
 use DateTimeImmutable;
 use Kumwe\Context\Value\AuthenticatedSurface;
 use Kumwe\Context\Value\AuthenticationStrength;
-use Kumwe\App\Application\Authorization\AuthorizationDecision;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\Access\AuthorizationDecision;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
-use Kumwe\App\Identity\Domain\GrantScope;
+use Kumwe\Access\Capability;
+use Kumwe\Access\GrantScope;
 use Kumwe\App\Portal\Application\CreatedPortalSession;
 use Kumwe\App\Portal\Application\PortalExecutionContextFactory;
 use Kumwe\App\Portal\Application\PortalPasswordIdentity;
@@ -262,7 +262,7 @@ final class AllowingPortalAuthorization implements AuthorizationGateway
     ): void {
         $this->attempts[] = [$action->value(), $resource->type(), $resource->identifier()];
         if (!$this->allow) {
-            throw new \Kumwe\App\Application\Authorization\AuthorizationDenied(
+            throw new \Kumwe\Access\AuthorizationDenied(
                 $context->actorId(),
                 $action->value(),
                 $resource->type(),

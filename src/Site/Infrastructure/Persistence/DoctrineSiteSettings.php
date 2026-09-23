@@ -7,15 +7,15 @@ namespace Kumwe\App\Site\Infrastructure\Persistence;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Audit\Application\AuditRecorder;
 use Kumwe\Audit\Domain\AuditEvent;
 use Kumwe\App\Content\Application\ContentService;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Kumwe\App\Presentation\Application\SitePresentation;
 use Kumwe\App\Site\Application\SiteSettings;
 use Psr\Clock\ClockInterface;
@@ -125,7 +125,7 @@ final readonly class DoctrineSiteSettings implements SiteSettings
      *
      * @return  array<string, mixed>  Every public setting key, defaults included for keys never stored.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage settings.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not manage settings.
      *
      * @since   2.0.0
      */
@@ -148,7 +148,7 @@ final readonly class DoctrineSiteSettings implements SiteSettings
      *
      * @return  void
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage settings.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not manage settings.
      * @throws  InvalidArgumentException  When the name or the slug fails validation.
      * @throws  \Doctrine\DBAL\Exception  When the driver rejects a read or a write.
      *
@@ -183,7 +183,7 @@ final readonly class DoctrineSiteSettings implements SiteSettings
      *
      * @return  void
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage settings.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not manage settings.
      * @throws  InvalidArgumentException  When a value fails validation, the homepage is not a published
      *          content entry of this site, or the primary menu is not a menu this site owns.
      * @throws  \Doctrine\DBAL\Exception  When the driver rejects a read or a write.
@@ -246,7 +246,7 @@ final readonly class DoctrineSiteSettings implements SiteSettings
      *
      * @return  void
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses the actor.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses the actor.
      *
      * @since   2.0.0
      */

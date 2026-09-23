@@ -26,7 +26,7 @@ interface AuditAnchorWriter
      *
      * @return  ?int  Sequence number of the anchor written, or null when no unsealed rows existed.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not manage
      *          the audit trail.
      *
      * @since   2.0.0

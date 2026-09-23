@@ -7,11 +7,11 @@ namespace Kumwe\App\Tests\Integration\Extension;
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
-use Kumwe\App\Application\Authorization\AuthorizationResourceOwnershipUnknown;
-use Kumwe\App\Application\Authorization\ResourceSiteOwnership;
-use Kumwe\App\Application\Authorization\ResourceSiteOwnershipConflict;
-use Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter;
+use Kumwe\Access\AuthorizationResource;
+use Kumwe\Access\AuthorizationResourceOwnershipUnknown;
+use Kumwe\Access\ResourceSiteOwnership;
+use Kumwe\Access\ResourceSiteOwnershipConflict;
+use Kumwe\Access\ResourceSiteOwnershipWriter;
 use Kumwe\App\Extension\Application\ExtensionManager;
 use Kumwe\App\Extension\Infrastructure\DoctrineExtensionManager;
 use Kumwe\App\Extension\Infrastructure\RedisLockedExtensionManager;
@@ -29,7 +29,6 @@ use ZipArchive;
 #[CoversClass(DoctrineExtensionManager::class)]
 #[CoversClass(RedisLockedExtensionManager::class)]
 #[CoversClass(DoctrineResourceSiteOwnershipWriter::class)]
-#[CoversClass(ResourceSiteOwnershipConflict::class)]
 final class ExtensionOwnershipLifecycleIntegrationTest extends TestCase
 {
     public function testUninstallRemovesOwnershipAndAllowsSameIdentifierToBeReinstalled(): void

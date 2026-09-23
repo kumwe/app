@@ -53,7 +53,7 @@ final readonly class ExecuteBusinessSchemaPlanHandler implements RequestHandlerI
      *
      * @throws  \InvalidArgumentException  When the route carries no identifier, or was mounted without
      *          administrator authorization.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `business.schema.execute` or
+     * @throws  \Kumwe\Access\AuthorizationDenied  When `business.schema.execute` or
      *          `business.schema.destructive` is refused.
      * @throws  \Kumwe\App\BusinessSchema\Application\BusinessSchemaNotFound  When no plan matches within
      *          the site.

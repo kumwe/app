@@ -7,7 +7,7 @@ namespace Kumwe\App\Tests\Unit\Application\Automation;
 use DateTimeImmutable;
 use InvalidArgumentException;
 use Kumwe\App\Application\Automation\Job\PurgeBusinessRecordIdempotencyHandler;
-use Kumwe\App\Application\Authorization\AuthorizationDenied;
+use Kumwe\Access\AuthorizationDenied;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\App\Application\Authorization\SystemIdentity;

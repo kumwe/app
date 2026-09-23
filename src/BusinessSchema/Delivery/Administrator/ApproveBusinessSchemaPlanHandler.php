@@ -64,7 +64,7 @@ final readonly class ApproveBusinessSchemaPlanHandler implements RequestHandlerI
      *          repeat the plan's current checksum.
      * @throws  \Kumwe\App\Application\Security\HighImpactAuthenticationRequired  When the re-entered
      *          password is absent, wrong, or the context has no human principal behind it.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When `business.schema.read`,
+     * @throws  \Kumwe\Access\AuthorizationDenied  When `business.schema.read`,
      *          `business.schema.approve`, or `business.schema.destructive` is refused.
      * @throws  \Kumwe\App\BusinessSchema\Application\BusinessSchemaNotFound  When no plan or referenced
      *          recovery evidence matches within the site.

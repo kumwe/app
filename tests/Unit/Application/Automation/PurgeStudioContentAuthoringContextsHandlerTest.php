@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\Application\Automation;
 
 use InvalidArgumentException;
-use Kumwe\App\Application\Authorization\AuthorizationDenied;
+use Kumwe\Access\AuthorizationDenied;
 use Kumwe\App\Application\Authorization\SystemIdentity;
 use Kumwe\App\Application\Automation\Job\PurgeStudioContentAuthoringContextsHandler;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringContextPurger;

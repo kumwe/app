@@ -110,12 +110,11 @@ final class ExtensionContributionBoundaryTest extends TestCase
     public function testGatewayContainsNoClosedActionResourceOrSystemCapabilityCatalog(): void
     {
         $gateway = $this->contents('src/Application/Authorization/DenyByDefaultAuthorizationGateway.php');
-        $registry = $this->contents('src/Application/Authorization/AuthorizationPolicyRegistry.php');
         $core = $this->contents('src/Extension/Contribution/CoreExtensionContributions.php');
 
         self::assertStringNotContainsString('SYSTEM_CAPABILITIES', $gateway);
         self::assertStringNotContainsString('INSTALLATION_GLOBAL_SYSTEM_IDENTITIES', $gateway);
-        self::assertStringNotContainsString('ACTION_RESOURCES', $registry);
+        self::assertFileDoesNotExist($this->root . '/src/Application/Authorization/AuthorizationPolicyRegistry.php');
         self::assertStringContainsString('$registrar->capability(', $core);
         self::assertStringContainsString('$registrar->resourcePolicy(', $core);
     }

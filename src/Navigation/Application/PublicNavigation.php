@@ -7,9 +7,9 @@ namespace Kumwe\App\Navigation\Application;
 use Kumwe\Navigation\Application\MenuItemRecord;
 use Kumwe\Navigation\Application\MenuRecord;
 use Kumwe\Navigation\Application\NavigationRepository;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
-use Kumwe\App\Application\Authorization\AuthorizationResourceOwnershipUnknown;
-use Kumwe\App\Application\Authorization\ResourceSiteOwnership;
+use Kumwe\Access\AuthorizationResource;
+use Kumwe\Access\AuthorizationResourceOwnershipUnknown;
+use Kumwe\Access\ResourceSiteOwnership;
 use Kumwe\Context\Value\SiteContext;
 
 /**

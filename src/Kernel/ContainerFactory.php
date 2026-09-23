@@ -37,20 +37,23 @@ use Kumwe\Idempotency\IdempotencyLedger;
 use Kumwe\Idempotency\SecretOnceIdempotencyLedger;
 use Kumwe\App\Application\Automation\Scheduler;
 use Kumwe\App\Application\Automation\Worker;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
-use Kumwe\App\Application\Authorization\AuthorizationPolicyRegistry;
-use Kumwe\App\Application\Authorization\CompositeResourceOwnershipReferences;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationPolicyRegistry;
+use Kumwe\Access\ConfigProvider as AccessConfigProvider;
+use Kumwe\Access\OwnershipScopeRule;
+use Kumwe\Access\CompositeResourceOwnershipReferences;
 use Kumwe\App\Application\Authorization\DenyByDefaultAuthorizationGateway;
-use Kumwe\App\Application\Authorization\MembershipContextValidator;
-use Kumwe\App\Application\Authorization\ResourceOwnershipReferences;
-use Kumwe\App\Application\Authorization\ResourceOwnershipScopePolicy;
+use Kumwe\Access\MembershipContextValidator;
+use Kumwe\Access\ResourceOwnershipReferences;
+use Kumwe\Access\ResourceOwnershipScopePolicy;
+use Kumwe\App\Application\Authorization\HostAccessPolicy;
 use Kumwe\App\Application\Authorization\ResourceOwnershipScopeService;
-use Kumwe\App\Application\Authorization\ResourceSiteOwnership;
-use Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter;
+use Kumwe\Access\ResourceSiteOwnership;
+use Kumwe\Access\ResourceSiteOwnershipWriter;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\App\Application\Authorization\SiteGroupAdministration;
-use Kumwe\App\Application\Authorization\SiteGroupRegistry;
-use Kumwe\App\Application\Authorization\SiteGroupWriter;
+use Kumwe\Access\SiteGroupRegistry;
+use Kumwe\Access\SiteGroupWriter;
 use Kumwe\App\Application\Authorization\StructuredLogAuthorizationDecisionRecorder;
 use Kumwe\App\Application\Authorization\SystemIdentity;
 use Kumwe\App\Application\Authorization\SystemPrincipal;
@@ -263,7 +266,7 @@ use Kumwe\App\BusinessSecurity\Application\Approval\StepUpProofConsumer;
 use Kumwe\App\BusinessSecurity\Application\Administration\BusinessSecurityAdministrationRepository;
 use Kumwe\App\BusinessSecurity\Application\Administration\BusinessSecurityAdministrationService;
 use Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessController;
-use Kumwe\App\BusinessSecurity\Application\MembershipDirectory;
+use Kumwe\Access\MembershipDirectory;
 use Kumwe\App\BusinessSecurity\Infrastructure\Persistence\DoctrineApprovalRepository;
 use Kumwe\App\BusinessSecurity\Infrastructure\Persistence\DoctrineApprovalQueryRepository;
 use Kumwe\App\BusinessSecurity\Infrastructure\Persistence\DoctrineBusinessRecordAccessController;
@@ -947,6 +950,27 @@ final class ContainerFactory
         $container->share(EventManager::class, new EventManager(), true);
         $container->alias(EventManagerInterface::class, EventManager::class);
 
+        // The `config` service materializes on first use: the access-control factories read it while the
+        // extension registrar builds the contribution registries, and its route cache name needs the local
+        // runtime materialization state that registrar records first.
+        $container->share('config', static fn (Container $container): array => [
+            'debug' => $configuration->debug,
+            'router' => [
+                'detect_duplicates' => true,
+                'fastroute' => [
+                    'cache_enabled' => $configuration->isProduction(),
+                    'cache_file' => self::routeCacheFile(
+                        $root,
+                        $configuration->release,
+                        $loadRuntime,
+                        self::service($container, RuntimeMaterializationState::class),
+                    ),
+                ],
+            ],
+            'kumwe' => [
+                'access' => self::accessConfiguration(),
+            ],
+        ], true);
         $this->registerObservability($container, $configuration, $root, $console);
         $this->registerLogging($container, $configuration);
         $this->registerPersistence($container, $configuration, $root, $kernelProof, $loadRuntime);
@@ -958,16 +982,6 @@ final class ContainerFactory
             $loadRuntime,
             self::service($container, RuntimeMaterializationState::class),
         );
-        $container->share('config', [
-            'debug' => $configuration->debug,
-            'router' => [
-                'detect_duplicates' => true,
-                'fastroute' => [
-                    'cache_enabled' => $configuration->isProduction(),
-                    'cache_file' => $routeCacheFile,
-                ],
-            ],
-        ], true);
         $this->registerBusinessSurfaces($container, $root, $kernelProof);
         $this->registerMcp($container, $root);
         $this->registerHttp($container, $configuration, $root, $routeCacheFile, $kernelProof, $loadRuntime);
@@ -976,6 +990,33 @@ final class ContainerFactory
         }
 
         return $container;
+    }
+
+    /**
+     * The explicit host policy kumwe/access-control's factories build their shared services from.
+     *
+     * The package ships no default sensitive category, reserved category or inspector: every table is
+     * stated here from `HostAccessPolicy`, as the wire values its factories validate, so a missing key
+     * refuses construction instead of weakening membership or ownership enforcement silently.
+     *
+     * @return  array{
+     *              membership_resource_types: list<string>,
+     *              reserved_ownership_rules: array<string, string>,
+     *              reference_inspectors: list<class-string>
+     *          }  The three `kumwe.access` keys the package factories require.
+     *
+     * @since   2.0.0
+     */
+    private static function accessConfiguration(): array
+    {
+        return [
+            'membership_resource_types' => HostAccessPolicy::membershipResourceTypes(),
+            'reserved_ownership_rules' => array_map(
+                static fn (OwnershipScopeRule $rule): string => $rule->value,
+                HostAccessPolicy::reservedOwnershipRules(),
+            ),
+            'reference_inspectors' => [DoctrineGrantScopeOwnershipReferences::class],
+        ];
     }
 
     /**
@@ -1181,6 +1222,9 @@ final class ContainerFactory
             // KUMWE-MIG-2026-004 moved the site and execution-context values to kumwe/access-context.
             // The nine migrations that name them changed only their imports; their statements are
             // unchanged, so databases migrated before the move keep the checksums recorded then.
+            // KUMWE-MIG-2026-009 then moved the capability, resource and ownership-scope values to
+            // kumwe/access-control; the four of them that name those changed only their imports again,
+            // so each list also keeps the checksum recorded between the two moves.
             ApplicationAuthorizationMigration::ID => [
                 '484705ff88bf14bc4f92a63cff2fcb613a739aa147a0e76c152e4f564f129bf0',
             ],
@@ -1198,15 +1242,19 @@ final class ContainerFactory
             ],
             ResourceOwnershipScopeMigration::ID => [
                 '71ee7868025464ddf3465f00f9b2e7825ea9c450307d547bee58a48071386e86',
+                'bcc5b6d7d8c1f43647de7ee19f9bf60b93e8ce9e1db03b41219d29ee3fb1cbee',
             ],
             InterfaceMessageOverrideMigration::ID => [
                 '069b5375c77fb60dccf65d57152dc8a8f9da57a3355dd410c8621e96d9d1bec6',
+                '658c91fdab26db42e1d28b87b190e9e254f38284c8ad644ca75e3c017b8c7c92',
             ],
             PeriodPostingLockMigration::ID => [
                 'e887d43fd7c155f2f633bab2220d699a8007dd2edd930d617083fc969b6364a0',
+                '224a3ba56b5cae62321045062fd51eb4e6a91808feb60de3e790f7425d25be91',
             ],
             StudioHostSessionMigration::ID => [
                 '9579330402183aedb650109583b9c10531fa84ba5172e0a377319d9cf4c61eda',
+                'fb18983a24241ecad938fe3136352f018405d37cb3d485118b52e1f29fae85d2',
             ],
             // KUMWE-MIG-2026-021 moved the audit values, ports and digests to kumwe/audit. The tamper-evidence
             // migration now receives the host canonical encoder its backfill digests with; its statements are
@@ -1275,8 +1323,15 @@ final class ContainerFactory
         ), true);
         $container->share(AccessTokenQuotaPolicy::class, new FixedAccessTokenQuotaPolicy(), true);
         $container->share(Workflow::class, new Workflow(), true);
-        $authorizationPolicies = new AuthorizationPolicyRegistry();
-        $container->share(AuthorizationPolicyRegistry::class, $authorizationPolicies, true);
+        // kumwe/access-control builds the shared policy registry, the ownership-scope policy and the composite
+        // reference inspector from the explicit host tables the `config` service carries under `kumwe.access`
+        // (KUMWE-MIG-2026-009); the package installs no alias for its authority ports, so the host binds them.
+        $accessDependencies = (new AccessConfigProvider())()['dependencies'];
+        $container->configure([
+            'factories' => $accessDependencies['factories'],
+            'aliases' => [],
+            'shared' => $accessDependencies['shared'],
+        ]);
         $container->share(AuthorizationGateway::class, static fn (Container $container): AuthorizationGateway =>
             new DenyByDefaultAuthorizationGateway(
                 $provenance,
@@ -1307,15 +1362,13 @@ final class ContainerFactory
                 self::service($container, DoctrineSiteGroupRegistry::class),
                 self::service($container, ClockInterface::class),
             ), true);
-        $container->share(ResourceOwnershipScopePolicy::class, new ResourceOwnershipScopePolicy(), true);
-        $container->share(ResourceOwnershipReferences::class, static fn (
+        $container->share(DoctrineGrantScopeOwnershipReferences::class, static fn (
             Container $container,
-        ): ResourceOwnershipReferences => new CompositeResourceOwnershipReferences([
-            new DoctrineGrantScopeOwnershipReferences(
-                self::service($container, Connection::class),
-                self::service($container, TableNames::class),
-            ),
-        ]), true);
+        ): DoctrineGrantScopeOwnershipReferences => new DoctrineGrantScopeOwnershipReferences(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+        ), true);
+        $container->alias(ResourceOwnershipReferences::class, CompositeResourceOwnershipReferences::class);
         $container->share(SiteGroupAdministration::class, static fn (
             Container $container,
         ): SiteGroupAdministration => new SiteGroupAdministration(
@@ -2858,6 +2911,11 @@ final class ContainerFactory
             self::service($container, ClockInterface::class),
             self::service($container, LoggerInterface::class),
         ), true);
+        // The local materialization state is recorded before the contribution registries resolve the package
+        // policy registry, whose factory reads the `config` service that names the route cache after it.
+        $compiler = self::service($container, ExtensionRuntimeMapCompiler::class);
+        $materialization = $compiler->inspectLocal();
+        $container->share(RuntimeMaterializationState::class, $materialization, true);
         $contributionRegistries = new ExtensionContributionRegistrySet(
             self::service($container, TrustStore::class),
             authorizationPolicies: self::service($container, AuthorizationPolicyRegistry::class),
@@ -3351,9 +3409,6 @@ final class ContainerFactory
                 self::service($container, ExtensionExecutionGate::class),
             ), true);
         $container->alias(ExtensionInstallReconciler::class, ExtensionManager::class);
-        $compiler = self::service($container, ExtensionRuntimeMapCompiler::class);
-        $materialization = $compiler->inspectLocal();
-        $container->share(RuntimeMaterializationState::class, $materialization, true);
         $execution = new CurrentExtensionExecutionGate($compiler, $materialization);
         $container->share(ExtensionExecutionGate::class, $execution, true);
         $active = $loadRuntime

@@ -68,7 +68,8 @@
     "Kumwe\\Navigation",
     "Kumwe\\Audit",
     "Kumwe\\BusinessPolicy",
-    "Kumwe\\Idempotency"
+    "Kumwe\\Idempotency",
+    "Kumwe\\Access"
   ],
   "namespace_segments": {
     "Shared": "shared",
@@ -182,6 +183,9 @@
     "Kumwe\\Audit\\Domain": "domain",
     "Kumwe\\BusinessPolicy\\Application": "application",
     "Kumwe\\BusinessPolicy\\Policy": "domain",
-    "Kumwe\\Idempotency": "shared"
+    "Kumwe\\Idempotency": "shared",
+    "Kumwe\\Access": "shared",
+    "Kumwe\\Access\\Container": "kernel",
+    "Kumwe\\Access\\ConfigProvider": "kernel"
   }
 }

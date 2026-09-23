@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Unit\Delivery\Http\Api\Extension;
 
-use Kumwe\App\Application\Authorization\AuthorizationDenied;
+use Kumwe\Access\AuthorizationDenied;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\App\Delivery\Http\Api\Extension\ExtensionApiHandler;
 use Kumwe\App\Delivery\Http\Api\ProblemDetailsResponseFactory;

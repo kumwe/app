@@ -6,10 +6,10 @@ namespace Kumwe\App\Application\Automation\Job;
 
 use InvalidArgumentException;
 use Kumwe\App\Application\Automation\JobHandler;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringContextPurger;
 
 /**
@@ -77,7 +77,7 @@ final readonly class PurgeStudioContentAuthoringContextsHandler implements JobHa
      * @return  void
      *
      * @throws  InvalidArgumentException  When a limit is malformed or outside its supported range.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When maintenance authority is absent.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When maintenance authority is absent.
      *
      * @since   2.0.0
      */

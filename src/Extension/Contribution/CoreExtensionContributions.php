@@ -7,7 +7,7 @@ namespace Kumwe\App\Extension\Contribution;
 use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\Extension\Spi\Contribution\AdministratorWorkspaceDefinition;
 use Kumwe\Extension\Spi\Contribution\AdministratorNavigationDefinition;
-use Kumwe\App\Application\Authorization\ResourcePolicyTarget;
+use Kumwe\Access\ResourcePolicyTarget;
 use Kumwe\App\Application\Authorization\SystemIdentity;
 use Kumwe\App\BusinessDefinition\Domain\BuiltInFieldTypes;
 use Kumwe\App\BusinessIntegration\Domain\EventSchemaDefinition;

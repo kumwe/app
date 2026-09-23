@@ -6,8 +6,8 @@ namespace Kumwe\App\Extension\Contribution;
 
 use Kumwe\Extension\Spi\Contribution\ContributionDefinition;
 use InvalidArgumentException;
-use Kumwe\App\Application\Authorization\AuthorizationDefinitionLifecycle;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\AuthorizationDefinitionLifecycle;
+use Kumwe\Access\Capability;
 
 /**
  * One capability a contributor adds to the permission vocabulary, with the wording an operator reads.

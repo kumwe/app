@@ -49,7 +49,7 @@ final readonly class RecoverBusinessSchemaPlanHandler implements RequestHandlerI
      *
      * @throws  \InvalidArgumentException  When the route carries no plan identifier, or the route was mounted
      *          without the authorization middleware that attaches the execution context.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not recover schemas,
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not recover schemas,
      *          or may not run a plan that destroys data.
      * @throws  \Kumwe\App\BusinessSchema\Application\BusinessSchemaNotFound  When no plan with that identifier
      *          belongs to this site.

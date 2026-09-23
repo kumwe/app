@@ -9,9 +9,18 @@ use Kumwe\Audit\Application\AuditRecorder;
 use Kumwe\Audit\Domain\AuditEvent;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Context\Value\SiteContext;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
+use Kumwe\Access\AuthorizationDenied;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationResource;
+use Kumwe\Access\OwnershipNarrowingRefused;
+use Kumwe\Access\OwnershipScope;
+use Kumwe\Access\SiteGroup;
+use Kumwe\Access\SiteGroupRegistry;
+use Kumwe\Access\SiteGroupUnknown;
+use Kumwe\Access\SiteGroupWriter;
 
 /**
  * Declares site groups and changes their membership, under one capability and one audit trail.

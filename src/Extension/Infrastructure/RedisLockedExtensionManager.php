@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Extension\Infrastructure;
 
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\App\Extension\Application\ExtensionManager;
 use Kumwe\App\Extension\Application\ExtensionExecutionGate;
@@ -13,7 +13,7 @@ use Kumwe\App\Extension\Application\ExtensionRuntimeWithdrawal;
 use Kumwe\App\Extension\Application\Install\ExtensionInstallReconciler;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Infrastructure\Redis\RedisRuntime;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Kumwe\App\Extension\Domain\ThemeSurface;
 use RuntimeException;
 use Throwable;
@@ -145,7 +145,7 @@ final readonly class RedisLockedExtensionManager implements ExtensionManager, Ex
      * @return  array<string, mixed>  Registry row for the extension as it now stands, carrying the
      *          version just installed and the runtime path its files were published to.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not manage
      *          extensions.
      * @throws  RuntimeException  When another lifecycle operation already holds the extension lock or
      *          the registry lease.
@@ -190,7 +190,7 @@ final readonly class RedisLockedExtensionManager implements ExtensionManager, Ex
      *
      * @return  array<string, mixed>  Registry row for the extension after the status change.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not manage
      *          this extension.
      * @throws  RuntimeException  When another lifecycle operation already holds the extension lock or
      *          the registry lease.
@@ -231,7 +231,7 @@ final readonly class RedisLockedExtensionManager implements ExtensionManager, Ex
      *
      * @return  array<string, mixed>  Registry row for the extension after the status change.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not manage
      *          this extension.
      * @throws  RuntimeException  When another lifecycle operation already holds the extension lock or
      *          the registry lease.
@@ -270,7 +270,7 @@ final readonly class RedisLockedExtensionManager implements ExtensionManager, Ex
      *
      * @return  void
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not manage
      *          this extension.
      * @throws  RuntimeException  When another lifecycle operation already holds the extension lock or
      *          the registry lease.
@@ -327,7 +327,7 @@ final readonly class RedisLockedExtensionManager implements ExtensionManager, Ex
      *
      * @return  void
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses the actor
+     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses the actor
      *          this action on this resource.
      *
      * @since   2.0.0

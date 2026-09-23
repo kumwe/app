@@ -8,13 +8,14 @@ use DateTimeImmutable;
 use InvalidArgumentException;
 use Kumwe\Context\Value\AuthenticatedSurface;
 use Kumwe\Context\Value\AuthenticationStrength;
-use Kumwe\App\Application\Authorization\AuthorizationDecision;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
-use Kumwe\App\Application\Authorization\AuthorizationPolicyRegistry;
+use Kumwe\Access\AuthorizationDecision;
+use Kumwe\Access\DecisionState;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationPolicyRegistry;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Context\Value\MembershipContext;
 use Kumwe\Context\Value\OrganizationContext;
-use Kumwe\App\Application\Authorization\ResourcePolicyTarget;
+use Kumwe\Access\ResourcePolicyTarget;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\Context\Value\StepUpProof;
 use Kumwe\Transaction\Contract\TransactionManager;
@@ -26,14 +27,14 @@ use Kumwe\App\BusinessSecurity\Application\Administration\BusinessSecurityScopeD
 use Kumwe\App\BusinessSecurity\Application\Administration\SelfEscalationDenied;
 use Kumwe\App\BusinessSecurity\Application\Approval\StepUpProofConsumer;
 use Kumwe\BusinessPolicy\Application\FieldAccessUsage;
-use Kumwe\App\BusinessSecurity\Application\MembershipDirectory;
+use Kumwe\Access\MembershipDirectory;
 use Kumwe\App\Extension\Contribution\CapabilityDefinition;
 use Kumwe\Extension\Spi\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\Extension\Contribution\ResourcePolicyDefinition;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
-use Kumwe\App\Identity\Domain\GrantScope;
+use Kumwe\Access\Capability;
+use Kumwe\Access\GrantScope;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
@@ -75,7 +76,7 @@ final class BusinessSecurityAdministrationServiceTest extends TestCase
         ]);
         $authorization = $this->createStub(AuthorizationGateway::class);
         $authorization->method('decide')->willReturn(new AuthorizationDecision(
-            true,
+            DecisionState::Allow,
             'test.business-security-overview.v1',
             'test_allow',
         ));

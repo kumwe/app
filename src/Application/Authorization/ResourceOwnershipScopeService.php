@@ -8,9 +8,24 @@ use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Audit\Application\AuditRecorder;
 use Kumwe\Audit\Domain\AuditEvent;
 use Kumwe\Context\Value\ExecutionContext;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
+use Kumwe\Access\AuthorizationDenied;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationResource;
+use Kumwe\Access\AuthorizationResourceOwnershipUnknown;
+use Kumwe\Access\OwnershipNarrowingRefused;
+use Kumwe\Access\OwnershipNarrowingUnbounded;
+use Kumwe\Access\OwnershipScope;
+use Kumwe\Access\OwnershipScopeChangeRejected;
+use Kumwe\Access\OwnershipScopeNotPermitted;
+use Kumwe\Access\ResourceOwnership;
+use Kumwe\Access\ResourceOwnershipReferences;
+use Kumwe\Access\ResourceOwnershipScopePolicy;
+use Kumwe\Access\ResourceSiteOwnership;
+use Kumwe\Access\ResourceSiteOwnershipConflict;
+use Kumwe\Access\ResourceSiteOwnershipWriter;
 
 /**
  * Changes which scope owns a living resource, in the one direction the caller asked for.

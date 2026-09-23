@@ -6,14 +6,14 @@ namespace Kumwe\App\Application\Automation;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\App\Application\Authorization\AuthorizationGateway;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\Access\AuthorizationResource;
 use Kumwe\App\Application\Automation\Job\ScheduleRepository;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Audit\Application\AuditRecorder;
 use Kumwe\Audit\Domain\AuditEvent;
 use Kumwe\Context\Value\ExecutionContext;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 
@@ -189,7 +189,7 @@ final readonly class AutomationManagementService
      *
      * @return  list<string>  Usable job type identifiers, in the registry's byte order.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not manage
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not manage
      *          automation at all.
      *
      * @since   2.0.0
@@ -227,7 +227,7 @@ final readonly class AutomationManagementService
      *
      * @return  string  Canonical UUID of the stored schedule.
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not create
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not create
      *          schedules, or may not use this job type.
      * @throws  InvalidArgumentException  When no handler is registered for the job type, or the
      *          repository rejects the cron expression, timezone, queue or name.
@@ -436,7 +436,7 @@ final readonly class AutomationManagementService
      *
      * @return  void
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When policy refuses the actor.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses the actor.
      *
      * @since   2.0.0
      */

@@ -55,7 +55,7 @@ final readonly class PurgeAdministratorSessionsHandler implements JobHandler
      *
      * @return  void
      *
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the job context may not
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the job context may not
      *          manage automation for that site.
      *
      * @since   2.0.0

@@ -50,7 +50,7 @@ use Kumwe\Extension\Spi\BusinessReporting\Application\ProjectionEvent;
 use Kumwe\Extension\Spi\BusinessReporting\Application\ProjectionWriter;
 use Kumwe\Extension\Spi\BusinessReporting\Domain\ProjectionDefinition;
 use Kumwe\Extension\Spi\Contribution\ContributionOwner;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
+use Kumwe\Access\Capability;
 use Kumwe\Extension\Toolchain\ComponentScaffolder;
 use Kumwe\Extension\Toolchain\DeterministicPackageBuilder;
 use Kumwe\Extension\Toolchain\PackageInspector;

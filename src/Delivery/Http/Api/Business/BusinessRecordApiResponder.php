@@ -6,7 +6,7 @@ namespace Kumwe\App\Delivery\Http\Api\Business;
 
 use DomainException;
 use InvalidArgumentException;
-use Kumwe\App\Application\Authorization\AuthorizationDenied;
+use Kumwe\Access\AuthorizationDenied;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordView;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordActionRejected;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;

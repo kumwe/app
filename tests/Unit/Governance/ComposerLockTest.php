@@ -46,6 +46,7 @@ final class ComposerLockTest extends TestCase
         self::assertSame(
             [
                 'kumwe/access-context',
+                'kumwe/access-control',
                 'kumwe/audit',
                 'kumwe/business-policy',
                 'kumwe/canonical-json',

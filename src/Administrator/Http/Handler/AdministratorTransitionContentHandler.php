@@ -50,7 +50,7 @@ final readonly class AdministratorTransitionContentHandler implements RequestHan
      *
      * @throws  \InvalidArgumentException  When the route carries no identifier, or `version` or `status` is
      *          missing or malformed.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the edge's own capability is refused.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the edge's own capability is refused.
      * @throws  \Kumwe\App\Content\Application\ContentNotFound  When no entry matches within reach of the context.
      * @throws  \Kumwe\App\Content\Application\ContentModelNotFound  When the entry's pinned workflow version is
      *          no longer published.

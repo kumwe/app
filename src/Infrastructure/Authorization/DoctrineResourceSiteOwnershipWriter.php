@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace Kumwe\App\Infrastructure\Authorization;
 
 use Doctrine\DBAL\Connection;
-use Kumwe\App\Application\Authorization\AuthorizationResource;
-use Kumwe\App\Application\Authorization\AuthorizationResourceOwnershipUnknown;
-use Kumwe\App\Application\Authorization\OwnershipScope;
-use Kumwe\App\Application\Authorization\OwnershipScopeLevel;
-use Kumwe\App\Application\Authorization\ResourceOwnership;
-use Kumwe\App\Application\Authorization\ResourceSiteOwnershipWriter;
-use Kumwe\App\Application\Authorization\ResourceSiteOwnershipConflict;
+use Kumwe\Access\AuthorizationResource;
+use Kumwe\Access\AuthorizationResourceOwnershipUnknown;
+use Kumwe\Access\OwnershipScope;
+use Kumwe\Access\OwnershipScopeLevel;
+use Kumwe\Access\ResourceOwnership;
+use Kumwe\Access\ResourceSiteOwnershipWriter;
+use Kumwe\Access\ResourceSiteOwnershipConflict;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 
@@ -220,7 +220,7 @@ final readonly class DoctrineResourceSiteOwnershipWriter implements ResourceSite
             return OwnershipScope::site(SiteContext::fromString($site));
         }
         if ($level === OwnershipScopeLevel::Group && is_string($group) && $group !== '') {
-            return OwnershipScope::group(new \Kumwe\App\Application\Authorization\SiteGroup(
+            return OwnershipScope::group(new \Kumwe\Access\SiteGroup(
                 $group,
                 $group,
                 [SiteContext::DEFAULT],

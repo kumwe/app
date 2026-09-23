@@ -63,7 +63,7 @@ final readonly class VerifyAuditTrailHandler implements JobHandler
      *
      * @throws  InvalidArgumentException  When the batch size is not an integer in range.
      * @throws  RuntimeException  When the trail diverges from its recomputed evidence.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the job context may not
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the job context may not
      *          manage the audit trail.
      *
      * @since   2.0.0

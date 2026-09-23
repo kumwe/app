@@ -1,0 +1,33 @@
+schema: kumwe-integration-train/v1
+train: KUMWE-TRAIN-2026-009
+packages:
+  - package: kumwe/access-control
+    version: 0.1.2
+merge_order:
+  - "The App pull request opened from branch agent/b2-access-control"
+custodian: "eWɘyn"
+hotspots:
+  - composer.json
+  - composer.lock
+  - src/Kernel/ContainerFactory.php
+  - src/Application/Authorization/DenyByDefaultAuthorizationGateway.php
+  - src/Application/Authorization/HostAccessPolicy.php
+  - src/Extension/Contribution/ExtensionContributionRegistrySet.php
+  - src/Extension/Contribution/CapabilityDefinitionRegistry.php
+  - src/Extension/Contribution/ResourcePolicyDefinitionRegistry.php
+  - src/Identity/Application/Authorization/AuthorizationService.php
+  - docs/architecture/layers.json
+  - docs/machine-contract/mcp-v1.json
+  - docs/architecture/capability-index.md
+  - docs/architecture/governance/core-growth-baseline.json
+  - docs/quality/baseline.json
+  - docs/quality/test-docblock-baseline.json
+  - CHANGELOG.md
+commands:
+  - "composer install"
+  - "composer kumwe:capability-index"
+  - "composer kumwe:core-growth-record"
+  - "composer baseline:record"
+  - "composer qa"
+conflict_ledger: docs/architecture/migrations/conflicts
+serialized_by: "eWɘyn, rebase-merging the green pull request under the standing maintainer mandate"

@@ -10,8 +10,8 @@ use Doctrine\DBAL\Platforms\MySQL84Platform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\App\Identity\Application\Authentication\PrincipalGrant;
-use Kumwe\Extension\Spi\Identity\Domain\Capability;
-use Kumwe\App\Identity\Domain\GrantScope;
+use Kumwe\Access\Capability;
+use Kumwe\Access\GrantScope;
 use Kumwe\App\Identity\Infrastructure\Authentication\DoctrineAccessTokenVerifier;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -22,7 +22,6 @@ use Kumwe\App\Tests\Support\AuthorizationContext;
 
 #[CoversClass(DoctrineAccessTokenVerifier::class)]
 #[UsesClass(AuthenticatedPrincipal::class)]
-#[UsesClass(GrantScope::class)]
 #[UsesClass(PrincipalGrant::class)]
 final class DoctrineAccessTokenVerifierTest extends TestCase
 {

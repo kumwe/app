@@ -7,7 +7,7 @@ namespace Kumwe\App\BusinessReporting\Infrastructure;
 use Kumwe\App\BusinessReporting\Application\ExportExecutionContextResolver;
 use Kumwe\App\BusinessReporting\Application\ExportGenerationRejected;
 use Kumwe\App\BusinessReporting\Domain\ExportArtifact;
-use Kumwe\App\BusinessSecurity\Application\MembershipDirectory;
+use Kumwe\Access\MembershipDirectory;
 use Kumwe\App\Portal\Application\PortalPrincipalLoader;
 use Kumwe\Context\Value\AuthenticationStrength;
 use Kumwe\Context\Value\ExecutionContext;

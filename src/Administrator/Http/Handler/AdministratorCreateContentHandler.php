@@ -74,7 +74,7 @@ final readonly class AdministratorCreateContentHandler implements RequestHandler
      * @throws  \Kumwe\App\Content\Application\ContentModelNotFound  When the named content type is not published.
      * @throws  \Kumwe\App\Content\Domain\InvalidContentData  When the body does not satisfy the type's schema and
      *          no editor is wired to redraw the form.
-     * @throws  \Kumwe\App\Application\Authorization\AuthorizationDenied  When the actor may not create content, or
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not create content, or
      *          may not read the content type it named.
      *
      * @since   2.0.0
