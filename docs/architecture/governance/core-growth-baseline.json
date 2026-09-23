@@ -1703,7 +1703,7 @@
         "Kumwe\\App\\BusinessRecord\\Application\\BusinessRecordReadRepository": {
             "kind": "interface",
             "layer": "application",
-            "surface": "b88eda0e5ff1405bac1e8c3e",
+            "surface": "65975d455b44d80b40bfdde3",
             "growth": null
         },
         "Kumwe\\App\\BusinessRecord\\Application\\BusinessRecordRelationView": {
@@ -1715,7 +1715,7 @@
         "Kumwe\\App\\BusinessRecord\\Application\\BusinessRecordRelationshipCoordinator": {
             "kind": "class",
             "layer": "application",
-            "surface": "dfef7393bb9f44a25be6dd00",
+            "surface": "dab19675b3df414d86160642",
             "growth": null
         },
         "Kumwe\\App\\BusinessRecord\\Application\\BusinessRecordRevisionCursor": {
@@ -1727,13 +1727,13 @@
         "Kumwe\\App\\BusinessRecord\\Application\\BusinessRecordRevisionRepository": {
             "kind": "interface",
             "layer": "application",
-            "surface": "3b8fb875bd9086b4eb37597d",
+            "surface": "45af88ff25f379af46e15030",
             "growth": null
         },
         "Kumwe\\App\\BusinessRecord\\Application\\BusinessRecordRevisionView": {
             "kind": "class",
             "layer": "application",
-            "surface": "7e3240128533121007e0246f",
+            "surface": "8aceac6adc594e2862caa241",
             "growth": null
         },
         "Kumwe\\App\\BusinessRecord\\Application\\BusinessRecordService": {
@@ -1747,7 +1747,7 @@
         "Kumwe\\App\\BusinessRecord\\Application\\BusinessRecordView": {
             "kind": "class",
             "layer": "application",
-            "surface": "b634d2ad1db2a13d64e81aa6",
+            "surface": "748238b37efa5958ecb64076",
             "growth": null
         },
         "Kumwe\\App\\BusinessRecord\\Application\\BusinessRecordWriteRepository": {
@@ -2295,19 +2295,19 @@
         "Kumwe\\App\\BusinessRecord\\Infrastructure\\Persistence\\DoctrineBusinessRecordQueryCompiler": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "98b9d64fc3ef2c0f3ba1b9fa",
+            "surface": "5c7ee3a9c220cc02c1a56145",
             "growth": null
         },
         "Kumwe\\App\\BusinessRecord\\Infrastructure\\Persistence\\DoctrineBusinessRecordReadRepository": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "65cc716cf5d4f027a2848b3c",
+            "surface": "82e0de95c7aed37e316b4564",
             "growth": null
         },
         "Kumwe\\App\\BusinessRecord\\Infrastructure\\Persistence\\DoctrineBusinessRecordRevisionRepository": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "833351fff1d0ca762285da95",
+            "surface": "722746ea7ba10d47451becd1",
             "growth": null
         },
         "Kumwe\\App\\BusinessRecord\\Infrastructure\\Persistence\\DoctrineBusinessRecordWriteRepository": {
@@ -3215,19 +3215,13 @@
         "Kumwe\\App\\BusinessSecurity\\Application\\BusinessRecordAccessController": {
             "kind": "interface",
             "layer": "application",
-            "surface": "dc5fa5fa880991031eefc3e0",
+            "surface": "da4ec0f9c9434ae93f01698b",
             "growth": null
         },
         "Kumwe\\App\\BusinessSecurity\\Application\\BusinessRecordAccessOperationCatalogPlanner": {
             "kind": "interface",
             "layer": "application",
             "surface": "cfd224fc4f22c9e6e9324dac",
-            "growth": null
-        },
-        "Kumwe\\App\\BusinessSecurity\\Application\\BusinessRecordAccessPlan": {
-            "kind": "class",
-            "layer": "application",
-            "surface": "029d43277bad3178e87a190e",
             "growth": null
         },
         "Kumwe\\App\\BusinessSecurity\\Application\\MembershipDirectory": {
@@ -3251,7 +3245,7 @@
         "Kumwe\\App\\BusinessSecurity\\Infrastructure\\Persistence\\DoctrineBusinessRecordAccessController": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "1061052d16bd1e7ab6eead19",
+            "surface": "1a6aa4e7bd80ba230bd3da90",
             "growth": null
         },
         "Kumwe\\App\\BusinessSecurity\\Infrastructure\\Persistence\\DoctrineBusinessSecurityAdministrationRepository": {
@@ -3270,48 +3264,6 @@
             "kind": "class",
             "layer": "infrastructure",
             "surface": "6bbef2f67cda48561a3b6a8d",
-            "growth": null
-        },
-        "Kumwe\\App\\BusinessSecurity\\Policy\\RecordPolicyBoolean": {
-            "kind": "class",
-            "layer": "domain",
-            "surface": "1c95357c0fb48023eb24e4a1",
-            "growth": null
-        },
-        "Kumwe\\App\\BusinessSecurity\\Policy\\RecordPolicyBooleanOperator": {
-            "kind": "enum",
-            "layer": "domain",
-            "surface": "e89cf4a59960db97433c3668",
-            "growth": null
-        },
-        "Kumwe\\App\\BusinessSecurity\\Policy\\RecordPolicyConstant": {
-            "kind": "class",
-            "layer": "domain",
-            "surface": "98c0f7358434210d063fa580",
-            "growth": null
-        },
-        "Kumwe\\App\\BusinessSecurity\\Policy\\RecordPolicyEvaluator": {
-            "kind": "class",
-            "layer": "domain",
-            "surface": "8ff1c67543be27c94fac5043",
-            "growth": null
-        },
-        "Kumwe\\App\\BusinessSecurity\\Policy\\RecordPolicyNullCheck": {
-            "kind": "class",
-            "layer": "domain",
-            "surface": "7c6d9dc10f60d7bdc2dad9ce",
-            "growth": null
-        },
-        "Kumwe\\App\\BusinessSecurity\\Policy\\RecordPolicySchema": {
-            "kind": "class",
-            "layer": "domain",
-            "surface": "479a3286603deb7740c0caa3",
-            "growth": null
-        },
-        "Kumwe\\App\\BusinessSecurity\\Policy\\RecordPolicySet": {
-            "kind": "class",
-            "layer": "domain",
-            "surface": "2b662ace36b3f5666440c441",
             "growth": null
         },
         "Kumwe\\App\\BusinessSurface\\Application\\BusinessApprovalExposureCatalog": {
@@ -3395,7 +3347,7 @@
         "Kumwe\\App\\BusinessSurface\\Application\\BusinessSurfaceOperation": {
             "kind": "enum",
             "layer": "application",
-            "surface": "52c7474a4cb7b0396536c900",
+            "surface": "a1d0fc80a3c3d91ddc6a382f",
             "growth": null
         },
         "Kumwe\\App\\BusinessSurface\\Application\\BusinessSurfaceService": {

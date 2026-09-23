@@ -22,11 +22,11 @@ use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnava
 use Kumwe\App\BusinessRecord\Application\ResolvedBusinessDefinition;
 use Kumwe\App\BusinessRecord\Domain\RecordScope;
 use Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessController;
-use Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessPlan;
-use Kumwe\Extension\Spi\BusinessSecurity\Application\FieldDisclosurePlan;
-use Kumwe\App\BusinessSecurity\Policy\RecordPolicyConstant;
-use Kumwe\App\BusinessSecurity\Policy\RecordPolicySchema;
-use Kumwe\App\BusinessSecurity\Policy\RecordPolicySet;
+use Kumwe\BusinessPolicy\Application\BusinessRecordAccessPlan;
+use Kumwe\BusinessPolicy\Application\FieldDisclosurePlan;
+use Kumwe\BusinessPolicy\Policy\RecordPolicyConstant;
+use Kumwe\BusinessPolicy\Policy\RecordPolicySchema;
+use Kumwe\BusinessPolicy\Policy\RecordPolicySet;
 use Kumwe\App\BusinessSurface\Application\BusinessSurface;
 use Kumwe\App\BusinessSurface\Application\BusinessSurfaceCatalog;
 use Kumwe\App\BusinessSurface\Application\BusinessSurfaceOperation;

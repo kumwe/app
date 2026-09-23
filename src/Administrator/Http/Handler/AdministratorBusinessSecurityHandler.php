@@ -16,7 +16,7 @@ use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\App\BusinessSecurity\Application\Administration\BusinessSecurityAdministrationService;
 use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalService;
-use Kumwe\Extension\Spi\BusinessSecurity\Application\FieldAccessUsage;
+use Kumwe\BusinessPolicy\Application\FieldAccessUsage;
 use Kumwe\App\Http\Middleware\TrustedProxyMiddleware;
 use Kumwe\App\Identity\Application\StepUp\AdministratorStepUpProvider;
 use Kumwe\App\Identity\Application\StepUp\AuthorizationStepUpProofAdapter;

@@ -24,6 +24,7 @@ change set is `core-integrated` only once the merged master commit is recorded (
 | `kumwe/producer` | `0.3.0` | `KUMWE-MIG-2026-032` | `KUMWE-CS-2026-032` | `core-integrated` | #137 | `7f851278` |
 | `kumwe/navigation` | `0.1.3` | `KUMWE-MIG-2026-035` | `KUMWE-CS-2026-035` | `core-integrated` | #146 | `008237a0` |
 | `kumwe/audit` | `0.1.2` | `KUMWE-MIG-2026-021` | `KUMWE-CS-2026-021` | `app-pr-ready` | #151 | — |
+| `kumwe/business-policy` | `0.1.1` | `KUMWE-MIG-2026-022` | `KUMWE-CS-2026-022` | `app-pr-ready` | #151 | — |
 
 `kumwe/conversion 0.1.2` and `kumwe/extension-sdk 0.2.4` remain the two legacy-unmanifested entries of
 [`legacy-packages.json`](../governance/legacy-packages.json); both have Version 2 successors published
@@ -31,7 +32,7 @@ change set is `core-integrated` only once the merged master commit is recorded (
 
 ### The remaining catalogue
 
-The Version 2 catalogue has thirty targets ([audit of 2026-09-07](audits/2026-09-07/requirements.md)); eleven
+The Version 2 catalogue has thirty targets ([audit of 2026-09-07](audits/2026-09-07/requirements.md)); twelve
 are adopted above (the Engine and its binding are provisioned as `ext-kumwe_engine 1.0.3`). Every remaining
 PHP package is published on Packagist with Version 2 manifests and a release record, and each record
 pre-allocates the ledger and change-set identifiers the App must use (the capability index refuses a ledger
@@ -46,7 +47,6 @@ identifier.
 | `kumwe/access-control` | `0.1.2` | `MIG-009` / `CS-009` | access-context | free |
 | `kumwe/business-definition` | `0.1.2` | `MIG-010` / `CS-010` | localization, sequence | free |
 | `kumwe/idempotency` | `0.1.2` | `MIG-020` / `CS-020` | canonical-json | free |
-| `kumwe/business-policy` | `0.1.1` | `MIG-022` / `CS-022` | — | free |
 | `kumwe/approval` | `0.1.2` | `MIG-023` / `CS-023` | access-context, access-control, audit, transaction | free |
 | `kumwe/interface-standard` | `0.1.2` | `MIG-025` / `CS-025` | contribution, access-control | free |
 | `kumwe/automation` | `0.2.2` | `MIG-026` / `CS-026` | canonical-json, contribution, access-context | free |

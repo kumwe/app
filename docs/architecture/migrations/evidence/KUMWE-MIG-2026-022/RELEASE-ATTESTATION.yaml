@@ -1,0 +1,105 @@
+schema: kumwe-release-attestation/v2
+artifact_kind: framework_php
+migration_id: KUMWE-MIG-2026-022
+change_set: KUMWE-CS-2026-022
+repository: "https://github.com/kumwe/business-policy"
+merge_commit: "96c68447a7a7beccbdb5d152e53306595ae0d7a1"
+version: "0.1.1"
+tag: v0.1.1
+source_archive:
+  url: "https://github.com/kumwe/business-policy/archive/refs/tags/v0.1.1.tar.gz"
+  sha256: "43086e1460ede6e2a4459fc18371397d4967bbec932da0cc9227181ab1faa580"
+artifacts:
+  - identity: "kumwe/business-policy:0.1.1"
+    url: "https://github.com/kumwe/business-policy/archive/refs/tags/v0.1.1.tar.gz"
+    sha256: "43086e1460ede6e2a4459fc18371397d4967bbec932da0cc9227181ab1faa580"
+manifests_and_corpora:
+  - path: resources/public-api/v1.json
+    sha256: "ea84598cfc3e7149da76119bf20d6ca641d29490585c18297b611dd032b9fabd"
+  - path: resources/capabilities/v1.json
+    sha256: "7b64637adad6a6c9067d39d1635f66d4748cc1423f0e1d318c6ec3172e9fa362"
+  - path: resources/service-map/v1.json
+    sha256: "8361cc187e2dd3093e748290d2ccf7b52d53ae6273b2100980eae82e3a5b92e7"
+  - path: resources/policy-corpus/v1.json
+    sha256: "4534b98bfe121b2d9cf27cecc1990910c68db91708a60e3e135a058eca9d4419"
+  - path: resources/policy-corpus/canonical-v1.json
+    sha256: "412b7ad71b4a434cc842a677c93c6689cb0d8f78fd5824c02a2a31c281fb9f8d"
+  - path: MIGRATION-HANDOFF.md
+    sha256: "f6ad8ef8f2b54c4788939a6bdb4f29c9a7ee1b12df388a284f3d3542d5635df5"
+abi_and_capabilities: null
+sbom:
+  url: null
+  sha256: null
+provenance: "Release on record run 34238830213 (push, attempt 1) published release 384806526 as github-actions[bot]"
+release_workflow: "https://github.com/kumwe/business-policy/actions/runs/34238830213 success on the tag commit"
+registry_or_pie_verification:
+  - "git ls-remote https://github.com/kumwe/business-policy refs/tags/v0.1.1 returned one line for refs/tags/v0.1.1"
+  - "Tag commit from git ls-remote: 96c68447a7a7beccbdb5d152e53306595ae0d7a1; no peeled ^{} line (lightweight tag)"
+  - "git clone --quiet --depth 1 --branch v0.1.1 of the repository: HEAD 96c68447a7a7beccbdb5d152e53306595ae0d7a1"
+  - "In the clone git cat-file -t v0.1.1 is commit; GitHub git/ref/tags/v0.1.1 object type commit, same sha"
+  - "Packagist p2 observed 2026-09-23T15:38:32Z at https://repo.packagist.org/p2/kumwe/business-policy.json (HTTP 200)"
+  - "Packagist lists v0.1.1 (0.1.1.0) newest of v0.1.1, v0.1.0; time 2026-09-08T14:31:36+00:00"
+  - "Packagist source: git https://github.com/kumwe/business-policy.git at 96c68447a7a7beccbdb5d152e53306595ae0d7a1"
+  - "Packagist dist: zip at reference 96c68447a7a7beccbdb5d152e53306595ae0d7a1 (api.github.com zipball URL)"
+  - "Packagist source and dist references both equal the tag commit and the clone HEAD"
+  - "Packagist dist shasum is an empty string; license Apache-2.0; autoload psr-4 Kumwe\\BusinessPolicy\\ => src/"
+  - "Packagist require: php ^8.5, ext-json *; no kumwe/* requirement"
+  - "curl -sS -L of https://github.com/kumwe/business-policy/archive/refs/tags/v0.1.1.tar.gz: HTTP 200, 38467 bytes"
+  - "The download resolved to codeload.github.com/kumwe/business-policy/tar.gz/refs/tags/v0.1.1; file reports gzip data"
+  - "sha256 43086e1460ede6e2a4459fc18371397d4967bbec932da0cc9227181ab1faa580 covers the hosted tar.gz bytes"
+  - "The same URL was fetched twice in this verification and both downloads produced that digest"
+  - "git archive --format=tar --prefix=business-policy-0.1.1/ v0.1.1 | sha256sum gave a2fa7aabb670f8616c1be80d4f6da604"
+  - "Full local git archive digest: a2fa7aabb670f8616c1be80d4f6da604c8165246e4bbc473715740392c03500b"
+  - "Extracted business-policy-0.1.1/ holds 33 files, byte-identical (cmp) to the clone's tracked files minus export-ignore"
+  - "diff -r --exclude=.git differs only by .gitattributes, .github, .gitignore, phpcs.xml, phpstan.neon, phpunit.xml"
+  - "diff -r also reports tests and tools only in the clone; every reported path is export-ignore in .gitattributes"
+  - "The clone tracks 65 files; the archive omits the 32 export-ignore files and nothing else"
+  - "Archive top level: CHANGELOG.md, CHARTER.md, LICENSE, MIGRATION-HANDOFF.md, README.md, composer.json"
+  - "Archive top-level directories: docs, examples, resources, src; LICENSE is Apache License Version 2.0"
+  - "CHARTER.md, README.md, docs/, resources/ and src/ are all present in the archive"
+  - "GitHub release v0.1.1 id 384806526: author github-actions[bot], published_at 2026-09-08T14:32:37Z"
+  - "GitHub release v0.1.1: draft false, prerelease false, immutable false, target_commitish main, no assets"
+  - "Release on record run 34238830213: push, attempt 1, head_sha 96c68447a7a7beccbdb5d152e53306595ae0d7a1"
+  - "Release on record run 34238830213: status completed, conclusion success, created 2026-09-08T14:31:41Z"
+  - "Run 34238830213 jobs: check / PHP 8.5, check / Release automation tests, check / Package gate all success"
+  - "Run 34238830213 job Release the recorded version: success, completed 2026-09-08T14:32:41Z"
+  - "BusinessPolicy CI run 34238830183: completed, success, on the same commit"
+  - "PR https://github.com/kumwe/business-policy/pull/3 merged 2026-09-08T14:31:36Z by Llewellynvdm into main"
+  - "PR 3 head was 92b8056683963108bef903c0abf5a37780ce3a4a; the tag commit is the main commit that merge produced"
+  - "GitHub MCP tools answered every query; no access-denied response was observed"
+clean_consumer_or_build_verification:
+  - "No package script, example or test was executed; the package runs only through the App suites of this adoption"
+  - "resources/public-api/v1.json: valid against package-public-api.v1.schema.json (App SchemaValidator)"
+  - "resources/capabilities/v1.json: valid against package-capabilities.v1.schema.json (App SchemaValidator)"
+  - "resources/service-map/v1.json: valid against package-service-map.v1.schema.json (App SchemaValidator)"
+  - "All three manifests carry package kumwe/business-policy and release 0.1.1"
+  - "docs/release-record.md does not exist at v0.1.1; the shipped record is MIGRATION-HANDOFF.md"
+  - "Governance README section 3.11 admits MIGRATION-HANDOFF.md for published releases"
+  - "MIGRATION-HANDOFF.md front matter parsed by StrictYaml::parseFrontMatter"
+  - "MIGRATION-HANDOFF.md front matter: valid against migration-handoff.v2.schema.json (App SchemaValidator)"
+  - "Record front matter: kumwe-migration-handoff/v2, KUMWE-MIG-2026-022, KUMWE-CS-2026-022, framework_php"
+  - "Record state draft_pr_open; target https://github.com/kumwe/business-policy, artifact_identity kumwe/business-policy"
+  - "Record canonical namespace Kumwe\\BusinessPolicy; composer_package kumwe/business-policy"
+  - "Record ownership.public_manifests digests equal the three locally computed manifest digests"
+  - "Record tests.corpora digests for resources/policy-corpus/v1.json and canonical-v1.json equal the local digests"
+  - "Record blockers: adoption waits for externally verified immutable package and SDK releases"
+  - "CHANGELOG.md newest release heading is ## 0.1.1 above ## 0.1.0; no Unreleased section"
+  - "Package composer.json require: php ^8.5, ext-json *; no kumwe/* dependency to pin"
+  - "App composer.lock: kumwe/business-policy v0.1.1 at 96c68447a7a7beccbdb5d152e53306595ae0d7a1 (source and dist)"
+  - "App composer.lock platform: php ^8.5 and ext-json * (both satisfy the package requirements)"
+  - "Installed vendor/kumwe/business-policy is byte-identical (diff -r) to the extracted tag archive"
+  - "composer validate --strict passes on the App; composer audit --abandoned=fail reports no advisories"
+  - "Validator: tools/Governance bootstrap, SchemaValidator and StrictYaml loaded by a scratch script on PHP 8.4.19"
+verified_at: "2026-09-23T15:38:32Z"
+verified_by: "Independent release verification agent (isolated session, no Phase 1 or Phase 2 context)"
+status: verified
+known_gaps:
+  - "GitHub release v0.1.1 reports immutable false; tag protection and rulesets were not queried"
+  - "No package script, example or test was run outside the App suites; this verification was restricted to inspection"
+  - "The Packagist dist zipball was not downloaded; Packagist publishes an empty dist shasum for it"
+  - "The attested archive is the GitHub tag tar.gz, whose bytes differ from the Packagist zipball of the same commit"
+  - "CHANGELOG.md 0.1.0 cites NRM-2026-022, which the App never allocated; this adoption records NRM-2026-038"
+  - "The handoff expects an SDK duplicate-removal release before App composition; extension-sdk 0.2.4 stays locked"
+  - "No SBOM and no release assets exist for v0.1.1; abi_and_capabilities does not apply to a framework_php artifact"
+  - "The schema checks used the App's fixed JSON Schema 2020-12 subset validator, not a full implementation"
+  - "This verification ran in the adoption worktree after the exact pin was installed, not in a separate clean tree"

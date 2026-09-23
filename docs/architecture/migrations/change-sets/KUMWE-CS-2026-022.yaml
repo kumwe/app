@@ -1,0 +1,119 @@
+schema: kumwe-change-set/v2
+change_set: KUMWE-CS-2026-022
+migration_id: KUMWE-MIG-2026-022
+roadmap_source:
+  title: Kumwe ERP-Extensibility Foundation Roadmap
+  sha256: a202155ef1a65f5ab293d4f8397ebf4ac430db7f1e877c776bbe7851e6fe18d8
+roadmap_refs: []
+state: app-pr-ready
+phase_1:
+  source_repository: kumwe/app
+  source_sha: "24ecf956423c18933e824b43cea1bfb9127a79a9"
+  target_repository: kumwe/business-policy
+  package_pr: "https://github.com/kumwe/business-policy/pull/3"
+  tested_sha: null
+  public_api_digest: "ea84598cfc3e7149da76119bf20d6ca641d29490585c18297b611dd032b9fabd"
+  capability_digest: "7b64637adad6a6c9067d39d1635f66d4748cc1423f0e1d318c6ec3172e9fa362"
+  service_map_digest: "8361cc187e2dd3093e748290d2ccf7b52d53ae6273b2100980eae82e3a5b92e7"
+  handoff_digest: "f6ad8ef8f2b54c4788939a6bdb4f29c9a7ee1b12df388a284f3d3542d5635df5"
+release:
+  version: 0.1.1
+  source_sha: "96c68447a7a7beccbdb5d152e53306595ae0d7a1"
+  artifact_digest: "43086e1460ede6e2a4459fc18371397d4967bbec932da0cc9227181ab1faa580"
+  clean_consumer_evidence:
+    - docs/architecture/migrations/evidence/KUMWE-MIG-2026-022/RELEASE-ATTESTATION.yaml
+phase_2:
+  app_pr: "https://github.com/kumwe/app/pull/151"
+  tested_sha: null
+  merged_sha: null
+  exact_dependency: "kumwe/business-policy 0.1.1"
+  composer_lock_digest: "2d04fc594478c2e048638bb793ff9c35b0436b6651d5a1d327cf35d79be49b82"
+  removed_app_symbols:
+    - Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessPlan
+    - Kumwe\App\BusinessSecurity\Policy\RecordPolicyBoolean
+    - Kumwe\App\BusinessSecurity\Policy\RecordPolicyBooleanOperator
+    - Kumwe\App\BusinessSecurity\Policy\RecordPolicyConstant
+    - Kumwe\App\BusinessSecurity\Policy\RecordPolicyEvaluator
+    - Kumwe\App\BusinessSecurity\Policy\RecordPolicyNullCheck
+    - Kumwe\App\BusinessSecurity\Policy\RecordPolicySchema
+    - Kumwe\App\BusinessSecurity\Policy\RecordPolicySet
+  moved_unit_tests:
+    - tests/Unit/BusinessSecurity/Policy/RecordPolicyTest.php
+  retained_app_tests:
+    - tests/Integration/BusinessRecord/BusinessRecordPolicyCompilerIntegrationTest.php
+    - tests/Integration/BusinessRecord/BusinessRecordPolicyEnforcementIntegrationTest.php
+    - tests/Integration/Extension/AssetInspectionCustomViewIntegrationTest.php
+    - tests/Support/NeutralBusinessFixture.php
+    - tests/Unit/BusinessRecord/Application/BusinessRecordRelationshipCoordinatorTest.php
+    - tests/Unit/BusinessSecurity/Application/BusinessRecordAccessPlanTest.php
+    - tests/Unit/BusinessSecurity/Application/BusinessSecurityAdministrationServiceTest.php
+    - tests/Unit/BusinessSecurity/Infrastructure/Persistence/DoctrineBusinessRecordAccessControllerTest.php
+    - tests/Unit/BusinessSurface/Application/BusinessMutationPlanServiceTest.php
+    - tests/Unit/BusinessSurface/Application/BusinessSurfaceCatalogTest.php
+    - tests/Unit/BusinessSurface/Application/Custom/CustomBusinessActionExecutorTest.php
+    - tests/Unit/Delivery/Http/Api/Business/BusinessOperationStatusApiHandlerTest.php
+    - tests/Unit/Governance/ComposerLockTest.php
+    - tests/Architecture/CapabilityIndexGateTest.php
+evidence:
+  package:
+    - docs/architecture/migrations/evidence/KUMWE-MIG-2026-022/RELEASE-ATTESTATION.yaml
+    - "https://github.com/kumwe/business-policy/actions/runs/34238830213; release on record on tag commit 96c68447a7a7beccbdb5d152e53306595ae0d7a1"
+    - "https://github.com/kumwe/business-policy/actions/runs/34238830183; package CI on the same commit"
+  app_composition:
+    - tests/Unit/BusinessSecurity/Infrastructure/Persistence/DoctrineBusinessRecordAccessControllerTest.php
+    - tests/Unit/BusinessSecurity/Application/BusinessSecurityAdministrationServiceTest.php
+    - tests/Unit/BusinessSecurity/Application/BusinessRecordAccessPlanTest.php
+    - tests/Unit/BusinessRecord/Application/BusinessRecordRelationshipCoordinatorTest.php
+    - tests/Unit/BusinessSurface/Application/BusinessSurfaceCatalogTest.php
+    - tests/Unit/BusinessSurface/Application/BusinessMutationPlanServiceTest.php
+    - tests/Unit/BusinessSurface/Application/Custom/CustomBusinessActionExecutorTest.php
+    - tests/Unit/Governance/ComposerLockTest.php
+    - tests/Unit/Governance/CoreGrowthGateTest.php
+    - tests/Architecture/CapabilityIndexGateTest.php
+    - "composer require kumwe/business-policy:0.1.1; one lock install, no other lock change"
+    - "composer kumwe:capability-index, kumwe:core-growth-record, baseline:record, then the composer qa gates and the unit and architecture suites, run locally on PHP 8.4 without ext-kumwe_engine"
+  database_matrix:
+    - tests/Integration/BusinessRecord/BusinessRecordPolicyCompilerIntegrationTest.php
+    - tests/Integration/BusinessRecord/BusinessRecordPolicyEnforcementIntegrationTest.php
+    - tests/Integration/Extension/AssetInspectionCustomViewIntegrationTest.php
+    - "To be exercised by the pull request's hosted workflows on MariaDB, MySQL and PostgreSQL."
+  concurrency:
+    - tests/Integration/BusinessRecord/BusinessRecordPolicyEnforcementIntegrationTest.php
+    - tests/Integration/BusinessRecord/BusinessRecordRuntimeIntegrationTest.php
+    - "Policy evaluation precedes every page, count, aggregate, include and relation read and the mutation fence pins the policy generation under concurrent sessions; to be exercised by the pull request's hosted workflows."
+  authorization_security:
+    - tests/Unit/BusinessSecurity/Infrastructure/Persistence/DoctrineBusinessRecordAccessControllerTest.php
+    - tests/Unit/BusinessSecurity/Application/BusinessSecurityAdministrationServiceTest.php
+    - tests/Integration/BusinessRecord/BusinessRecordPolicyEnforcementIntegrationTest.php
+    - tests/Integration/Extension/AssetInspectionCustomViewIntegrationTest.php
+    - "Final authorization, step-up, active policy selection, actor and attribute loading, deny-overrides compilation and self-escalation refusal stay in the App access controller, query compiler and administration service; the hosted source-and-image security scans run on the pull request."
+  lifecycle_recovery:
+    - tests/Integration/BusinessRecord/BusinessRecordPolicyEnforcementIntegrationTest.php
+    - tests/Integration/Extension/AssetInspectionCustomViewIntegrationTest.php
+    - "Stored resource-policy rows are rebuilt through the package constructors on every access decision, so a row the tightened package refuses fails closed instead of evaluating; to be exercised by the pull request's hosted workflows."
+  delivery_browser:
+    - tests/Unit/Delivery/Http/Api/Business/BusinessOperationStatusApiHandlerTest.php
+    - tests/Unit/BusinessSurface/Application/Custom/CustomBusinessActionExecutorTest.php
+    - "The business operation status API and the custom action executor deliver package access plans and disclosure; the browser suites run in the pull request's hosted workflows."
+  deployment_backup_restore:
+    - tests/Support/BusinessRuntimeBackupAcceptance.php
+    - tests/Integration/BusinessRecord/BusinessRecordPolicyEnforcementIntegrationTest.php
+    - "Signed backup, clean restore and production acceptance on three engines; to be exercised by the pull request's hosted workflows."
+  native_parity_abi:
+    - tests/Architecture/CapabilityIndexGateTest.php
+    - "Not applicable: kumwe/business-policy requires only php and ext-json, exports no native capability and keeps the canonical policy document bytes; the hosted workflows run the same suites with ext-kumwe_engine 1.0.3."
+  performance_capacity:
+    - tests/Integration/BusinessRecord/BusinessRecordPolicyCompilerIntegrationTest.php
+    - "The construction-time complexity bounds (depth eight, sixty-four operations, 256 schema fields, 384 related plans) equal the bounds App enforced before evaluation, the compiled SQL is unchanged and no performance claim is made."
+compatibility: "Drop-in for consumers: the fourteen types keep their names and shapes under Kumwe\\BusinessPolicy; the package additionally refuses operation names over 127 bytes, boolean children outside its closed tree and over-complex trees at construction and non-UTF-8 string literals, answers false for a comparison whose runtime string exceeds 4096 bytes or is not valid UTF-8 or whose decimal exceeds 4096 bytes, and compares decimal digit runs with strcmp instead of the numeric spaceship. DoctrineBusinessRecordQueryCompiler compiles the same SQL as before: its exact DECIMAL and NUMERIC casts match the lexical decimal rule, string policies only admit Equal and NotEqual and its byte-wise equality agrees with the fail-closed rule; only NotEqual over a stored string longer than 4096 bytes now differs, as recorded under known_gaps."
+migration_recovery: null
+security_impact: "None on authority: final authorization, step-up, active policy selection, actor and attribute loading, query compilation and post-load filtering stay in the App access controller and query compiler; the package tightens construction bounds and refuses foreign predicate implementations before evaluating them. The compiled query and the in-memory evaluator disagree only for a NotEqual string policy over a stored value longer than 4096 bytes, which is recorded under known_gaps."
+performance_claim: null
+rollback: "Revert the App pull request and restore the eight removed classes and the moved unit test from the baseline commit; no persisted data changes, and stored resource-policy rows keep their canonical JSON documents and digests."
+known_gaps:
+  - "The local sandbox runs PHP 8.4 without ext-kumwe_engine and without a database server, so the integration and functional lanes, PHP 8.5 and the hosted database engines are proven by the App CI on this pull request."
+  - "consumer_contract permitted_only_when clause 'the selected SDK release uses the same canonical package types' is satisfied by the pending extension-sdk 0.3.2 train (KUMWE-MIG-2026-033), not by the locked kumwe/extension-sdk 0.2.4, which still ships its own Kumwe\\Extension\\Spi\\BusinessSecurity copies: no SDK SPI outside that directory names them, examples/asset-inspection passes policies as toArray() documents, and the maintainer's order of 2026-09-09 (KUMWE-CS-2026-032, docs/roadmap/STATUS.md) lands the train package by package in dependency order; the six copies stay unreferenced vendor code, and the ledger retires Kumwe\\Extension\\Spi\\BusinessSecurity\\ so nothing under src/, tests/, config/, bootstrap/, resources/ or examples/ can name them again."
+  - "SQL parity of DoctrineBusinessRecordQueryCompiler with RecordPolicyEvaluator 0.1.1 was re-checked: a string policy compiles to BINARY column <> BINARY ? on MySQL and column <> ? on PostgreSQL (revision snapshots through JSON_UNQUOTE and convert_to), which is true for a stored value longer than 4096 bytes where the evaluator now answers false; string fields admit up to 1,000,000 characters, so a NotEqual string policy over such a record can be included by a compiled list, count, aggregate or export query and refused by the in-memory detail, mutation, revision and relation checks, or the reverse under a deny predicate. Equal comparisons, null semantics, booleans, integers, temporals and decimals agree, stored text cannot be invalid UTF-8 on the utf8mb4 and UTF8 databases, and no installed decimal column can reach 4096 bytes. Closing the gap is a compiler guard on the stored octet length, to be proven on the three hosted database engines in a follow-up rather than in this adoption."
+  - "The release attestation was produced in this adoption's worktree after the exact pin was installed; the tag, archive, Packagist and workflow identities were verified and the installed vendor copy compared byte for byte against the tag archive, but no clean consumer install outside App was executed."
+completion_claim: false
+accepted_by: null

@@ -18,7 +18,7 @@ use Kumwe\App\BusinessRecord\Application\ResolvedBusinessDefinition;
 use Kumwe\App\BusinessRecord\Domain\BusinessRecordRevision;
 use Kumwe\App\BusinessRecord\Domain\RecordScope;
 use Kumwe\App\BusinessRecord\Domain\RecordValueGuard;
-use Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessPlan;
+use Kumwe\BusinessPolicy\Application\BusinessRecordAccessPlan;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use LogicException;
 

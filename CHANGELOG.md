@@ -79,6 +79,30 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Added
 
+- **2026-09-23 — `kumwe/business-policy` 0.1.1 owns the record-policy language, its evaluator, field disclosure and
+  the access plan.** The business-policy package enters App through the migration ledger (`NRM-2026-038`):
+  `KUMWE-MIG-2026-022`, its change set, the integration train `KUMWE-TRAIN-2026-022` and the independent release
+  attestation record the verified `v0.1.1` release, and `composer.json` pins it exactly. As the released record
+  prescribes, the App's `BusinessRecordAccessPlan`, `RecordPolicyBoolean`, `RecordPolicyBooleanOperator`,
+  `RecordPolicyConstant`, `RecordPolicyEvaluator`, `RecordPolicyNullCheck`, `RecordPolicySchema` and
+  `RecordPolicySet` are removed together with the duplicated unit test the package now owns, the access-plan unit
+  test keeps only its host projection assertion, and every consumer reads the package types, including the six
+  `FieldAccessUsage`, `FieldDisclosurePlan`, `RecordPolicyComparison`, `RecordPolicyComparisonOperator`,
+  `RecordPolicyPredicate` and `RecordPolicyValueType` contracts that `kumwe/extension-sdk` 0.2.4 still ships as
+  unreferenced copies until the 0.3.2 train removes them. The package exports no provider, so `ContainerFactory` is
+  unchanged; the Doctrine access controller, the query compiler, the administration service, the planners, final
+  authorization, active policy selection and delivery stay in App. The ledger retires the
+  `Kumwe\App\BusinessSecurity\Policy\` and `Kumwe\Extension\Spi\BusinessSecurity\` roots and enumerates
+  `BusinessRecordAccessPlan` as a symbol, because `Kumwe\App\BusinessSecurity\Application\` keeps its controllers,
+  planners, approvals and administration. The package is a strict hardened superset of the removed code: operation
+  names are bounded at 127 bytes, boolean trees are closed and bounded at construction, non-UTF-8 literals are
+  refused, runtime strings over 4096 bytes or invalid UTF-8 and decimals over 4096 bytes compare fail closed, and
+  decimal digit runs compare lexically. `DoctrineBusinessRecordQueryCompiler` compiles the same SQL as before: its
+  exact `DECIMAL` and `NUMERIC` casts match the lexical decimal rule and its byte-wise string equality agrees with
+  the fail-closed rule, while a `NotEqual` string policy over a stored value longer than 4096 bytes now differs
+  between the compiled query and the in-memory evaluator, which the change set records as a known gap. The layer
+  graph admits `Kumwe\BusinessPolicy` as an application and domain package. The installed release ships its record
+  as `MIGRATION-HANDOFF.md`, which the ledger binds by path and digest. (#151)
 - **2026-09-23 — `kumwe/audit` 0.1.2 owns the audit event, redaction, digests, evidence values and storage ports.**
   The audit package enters App through the migration ledger (`NRM-2026-036`): `KUMWE-MIG-2026-021`, its change set,
   the integration train `KUMWE-TRAIN-2026-021` and the independent release attestation record the verified `v0.1.2`

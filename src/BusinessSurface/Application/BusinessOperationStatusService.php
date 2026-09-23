@@ -15,7 +15,7 @@ use Kumwe\App\BusinessRecord\Application\RecordMutationResult;
 use Kumwe\App\BusinessRecord\Domain\BusinessRecordIdempotencyState;
 use Kumwe\App\BusinessRecord\Domain\RecordScope;
 use Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessController;
-use Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessPlan;
+use Kumwe\BusinessPolicy\Application\BusinessRecordAccessPlan;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionLedgerResult;
 use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessSchema;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessSurfaceDispatcher;

@@ -65,7 +65,9 @@ longest-prefix rule. Rules that surprise people:
 - `Kumwe\App\Http` → delivery (public site + shared middleware)
 - `Kumwe\App\InterfaceStandard` → domain
 - `Kumwe\App\Extension\{Contribution,Runtime,Development}` → application
-- `Kumwe\App\BusinessSecurity\Policy` → domain
+- `Kumwe\BusinessPolicy\Policy` → domain and `Kumwe\BusinessPolicy\Application` → application
+  (`kumwe/business-policy` owns the bounded record-policy language, its evaluator, field disclosure and the
+  immutable access plan; the App access controller, query compiler and administration stay host code)
 - `Kumwe\Context\{Contract,Exception,Value}` → shared (`kumwe/access-context` owns the site,
   organization, workspace, membership, surface, strength, step-up and execution-context values the
   ADR 0012 in-place classification of `SiteContext` and `AuthenticatedSurface` anticipated)
@@ -244,7 +246,7 @@ Touch the right one.
 |---|---|
 | May this actor do X on this surface? | `Application\Authorization\AuthorizationGateway` |
 | How are grants stored on a user? | `Identity\Application\Authorization` |
-| Which rows and fields may this membership see? | `BusinessSecurity\Policy` |
+| Which rows and fields may this membership see? | `DoctrineBusinessRecordAccessController` composing `Kumwe\BusinessPolicy\Policy` |
 
 ---
 

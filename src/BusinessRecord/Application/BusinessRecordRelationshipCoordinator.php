@@ -24,10 +24,10 @@ use Kumwe\App\BusinessRecord\Application\Exception\BusinessRelationshipRejected;
 use Kumwe\App\BusinessRecord\Domain\BusinessRecord;
 use Kumwe\App\BusinessRecord\Domain\RecordScope;
 use Kumwe\App\BusinessRecord\Domain\RecordValueGuard;
-use Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessPlan;
+use Kumwe\BusinessPolicy\Application\BusinessRecordAccessPlan;
 use Kumwe\Context\Value\AuthenticatedSurface;
 use Kumwe\Context\Value\ExecutionContext;
-use Kumwe\Extension\Spi\BusinessSecurity\Application\FieldAccessUsage;
+use Kumwe\BusinessPolicy\Application\FieldAccessUsage;
 use Ramsey\Uuid\Uuid;
 use Throwable;
 
