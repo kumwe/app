@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Delivery\Http\Api\Business;
 
 use InvalidArgumentException;
-use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalDenied;
+use Kumwe\Approval\ApprovalDenied;
 use Kumwe\App\BusinessSurface\Application\BusinessApprovalSurfaceService;
 use Kumwe\App\BusinessSurface\Application\BusinessSurface;
 use Kumwe\App\Delivery\Http\Api\ApiExecutionContext;

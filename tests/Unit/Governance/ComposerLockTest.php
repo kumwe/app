@@ -47,6 +47,7 @@ final class ComposerLockTest extends TestCase
             [
                 'kumwe/access-context',
                 'kumwe/access-control',
+                'kumwe/approval',
                 'kumwe/audit',
                 'kumwe/business-definition',
                 'kumwe/business-policy',

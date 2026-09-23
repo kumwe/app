@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessSurface\Application;
 
 use InvalidArgumentException;
-use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalQueryService;
-use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalRequestView;
+use Kumwe\Approval\ApprovalQueryService;
+use Kumwe\Approval\ApprovalRequestView;
 use Kumwe\Context\Value\ExecutionContext;
 use Ramsey\Uuid\Uuid;
 

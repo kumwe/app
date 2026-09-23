@@ -15,7 +15,7 @@ use Kumwe\Context\Value\AuthenticationStrength;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\App\BusinessSecurity\Application\Administration\BusinessSecurityAdministrationService;
-use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalService;
+use Kumwe\Approval\ApprovalService;
 use Kumwe\BusinessPolicy\Application\FieldAccessUsage;
 use Kumwe\App\Http\Middleware\TrustedProxyMiddleware;
 use Kumwe\App\Identity\Application\StepUp\AdministratorStepUpProvider;

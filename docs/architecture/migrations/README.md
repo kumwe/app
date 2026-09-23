@@ -31,6 +31,7 @@ change set is `core-integrated` only once the merged master commit is recorded (
 | `kumwe/business-definition` | `0.1.2` | `KUMWE-MIG-2026-010` | `KUMWE-CS-2026-010` | `app-pr-ready` | #151 | — |
 | `kumwe/record-values` | `0.1.4` | `KUMWE-MIG-2026-029` | `KUMWE-CS-2026-029` | `app-pr-ready` | #151 | — |
 | `kumwe/content-model` | `0.2.0` | `KUMWE-MIG-2026-034` | `KUMWE-CS-2026-034` | `app-pr-ready` | #151 | — |
+| `kumwe/approval` | `0.1.2` | `KUMWE-MIG-2026-023` | `KUMWE-CS-2026-023` | `app-pr-ready` | #151 | — |
 
 `kumwe/extension-sdk 0.2.4` remains the one legacy-unmanifested entry of
 [`legacy-packages.json`](../governance/legacy-packages.json); its Version 2 successor `0.3.2` is published and
@@ -38,7 +39,7 @@ it leaves the registry when that is adopted, as `kumwe/conversion` did at `0.1.5
 
 ### The remaining catalogue
 
-The Version 2 catalogue has thirty targets ([audit of 2026-09-07](audits/2026-09-07/requirements.md)); eighteen
+The Version 2 catalogue has thirty targets ([audit of 2026-09-07](audits/2026-09-07/requirements.md)); nineteen
 are adopted above (the Engine and its binding are provisioned as `ext-kumwe_engine 1.0.3`). Every remaining
 PHP package is published on Packagist with Version 2 manifests and a release record, and each record
 pre-allocates the ledger and change-set identifiers the App must use (the capability index refuses a ledger
@@ -52,7 +53,6 @@ identifier.
 | `kumwe/contribution` | `0.1.1` | `MIG-006` / `CS-006` | — | free |
 | `kumwe/idempotency` | `0.1.2` | `MIG-020` / `CS-020` | canonical-json | free |
 | `kumwe/business-policy` | `0.1.1` | `MIG-022` / `CS-022` | — | free |
-| `kumwe/approval` | `0.1.2` | `MIG-023` / `CS-023` | access-context, access-control, audit, transaction | free |
 | `kumwe/interface-standard` | `0.1.2` | `MIG-025` / `CS-025` | contribution, access-control | free |
 | `kumwe/automation` | `0.2.2` | `MIG-026` / `CS-026` | canonical-json, contribution, access-context | free |
 | `kumwe/integration` | `0.2.3` | `MIG-027` / `CS-035` | canonical-json, contribution, access-context, automation | **conflict** — `CS-035` is `kumwe/navigation`'s, and a change set must share its ledger record's sequence (D-GOV-2) |
@@ -72,6 +72,8 @@ contribution `0.1.1`, conversion `0.1.5`, idempotency `0.1.2`, integration `0.2.
 producer `0.3.0`, record-model `0.1.3`, record-query `0.1.3`, record-values `0.1.4` and reporting `0.1.4`.
 Composer resolved that whole set together with approval, business-schema, content-model,
 conversion-extension and interface-standard against the lock as it stood before
+Composer resolved that whole set together with business-definition, business-schema,
+content-model, conversion-extension and interface-standard against the lock as it stood before
 `kumwe/idempotency 0.1.3` was adopted; the train's exact idempotency `0.1.2` pin no longer resolves beside the
 locked `0.1.3`, so an extension-sdk successor pinning `0.1.3` (as `kumwe/business-surface-contract 0.1.4` already
 does) precedes that train.

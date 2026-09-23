@@ -37,7 +37,7 @@ use Kumwe\App\BusinessReporting\Application\ExportVersionConflict;
 use Kumwe\App\BusinessReporting\Application\ReportUnavailable;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaConflict;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaNotFound;
-use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalDenied;
+use Kumwe\Approval\ApprovalDenied;
 use Kumwe\App\BusinessSurface\Application\BusinessOperationNotFound;
 use Kumwe\Content\Application\ContentModelNotFound;
 use Kumwe\Content\Application\ContentNotFound;

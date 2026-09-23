@@ -72,7 +72,8 @@
     "Kumwe\\Access",
     "Kumwe\\BusinessDefinition",
     "Kumwe\\Record",
-    "Kumwe\\Content"
+    "Kumwe\\Content",
+    "Kumwe\\Approval"
   ],
   "namespace_segments": {
     "Shared": "shared",
@@ -198,6 +199,9 @@
     "Kumwe\\Record\\Value": "shared",
     "Kumwe\\Content\\Application": "application",
     "Kumwe\\Content\\Domain": "domain",
-    "Kumwe\\Content\\Workflow\\Domain": "domain"
+    "Kumwe\\Content\\Workflow\\Domain": "domain",
+    "Kumwe\\Approval": "application",
+    "Kumwe\\Approval\\Container": "kernel",
+    "Kumwe\\Approval\\ConfigProvider": "kernel"
   }
 }

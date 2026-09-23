@@ -25,7 +25,6 @@ symbols:
   - Kumwe\App\BusinessSchema\Application\BusinessSchemaPlanner
   - Kumwe\App\BusinessSchema\Application\BusinessSchemaService
   - Kumwe\App\BusinessSecurity\Application\Administration\BusinessSecurityAdministrationService
-  - Kumwe\App\BusinessSecurity\Application\Approval\ApprovalService
   - Kumwe\App\BusinessSurface\Application\BusinessMutationPlanService
   - Kumwe\App\BusinessSurface\Application\BusinessOperationStatusService
   - Kumwe\App\BusinessSurface\Application\BusinessSurfaceCatalog

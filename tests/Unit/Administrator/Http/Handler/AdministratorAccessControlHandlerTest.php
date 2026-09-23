@@ -15,7 +15,7 @@ use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\App\Application\Security\HighImpactCredentialGuard;
 use Kumwe\Audit\Application\AuditRecorder;
-use Kumwe\App\BusinessSecurity\Application\Approval\StepUpProofConsumer;
+use Kumwe\Approval\StepUpProofConsumer;
 use Kumwe\Access\MembershipDirectory;
 use Kumwe\App\Identity\Application\Administration\AccessControlRepository;
 use Kumwe\App\Identity\Application\Administration\AccessControlService;

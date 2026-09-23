@@ -10,11 +10,11 @@ use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
-use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalBinding;
-use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalRepository;
-use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalRequest;
-use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalRule;
-use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalStatus;
+use Kumwe\Approval\ApprovalBinding;
+use Kumwe\Approval\ApprovalRepository;
+use Kumwe\Approval\ApprovalRequest;
+use Kumwe\Approval\ApprovalRule;
+use Kumwe\Approval\ApprovalStatus;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\Context\Value\ExecutionContext;
 use RuntimeException;
@@ -41,13 +41,17 @@ final readonly class DoctrineApprovalRepository implements ApprovalRepository
     /**
      * Resolve the single active site and organization-specific rule for a binding.
      *
+     * With `$lock` the matching rule rows are held until the surrounding transaction ends, so a request
+     * creation or a rule-freshness assertion cannot interleave with a rule version change or deactivation.
+     *
      * @param   ApprovalBinding  $binding  Exact protected action and scope.
+     * @param   bool             $lock     Whether to hold the matching rule rows until the transaction ends.
      *
      * @return  ?ApprovalRule  Matching active rule, or null when approval is not configured.
      *
      * @since   2.0.0
      */
-    public function rule(ApprovalBinding $binding): ?ApprovalRule
+    public function rule(ApprovalBinding $binding, bool $lock = false): ?ApprovalRule
     {
         $rows = $this->database->fetchAllAssociative(sprintf(
             'SELECT r.id, r.organization_id, r.rule_code, r.approval_action, r.quorum, r.distinct_actors, '
@@ -56,9 +60,10 @@ final readonly class DoctrineApprovalRepository implements ApprovalRepository
             . "WHERE r.status = 'active' AND r.site_identifier = ? "
             . 'AND r.resource_type = ? AND r.request_action = ? '
             . 'AND (r.organization_id IS NULL OR (o.identifier = ? AND o.site_identifier = ?)) '
-            . 'ORDER BY CASE WHEN r.organization_id IS NULL THEN 1 ELSE 0 END, r.rule_code',
+            . 'ORDER BY CASE WHEN r.organization_id IS NULL THEN 1 ELSE 0 END, r.rule_code%s',
             $this->tables->quoted('separation_duty_rules'),
             $this->tables->quoted('organizations'),
+            $lock ? $this->lockClause('r') : '',
         ), [
             $binding->siteIdentifier(),
             $binding->resourceType(),
@@ -221,7 +226,7 @@ final readonly class DoctrineApprovalRepository implements ApprovalRepository
             $this->tables->quoted('approval_requests'),
             $this->tables->quoted('organizations'),
             $this->tables->quoted('workspaces'),
-            $this->lockClause(),
+            $this->lockClause('a'),
         ), [$id]);
         if ($row === false) {
             return null;
@@ -323,6 +328,9 @@ final readonly class DoctrineApprovalRepository implements ApprovalRepository
     /**
      * Apply one optimistic request lifecycle transition and its terminal timestamp.
      *
+     * Consumption and revocation keep their own columns; approval, rejection, cancellation and the
+     * materialized expiry the package service applies all resolve the request, so they share `resolved_at`.
+     *
      * @param   string             $requestId        Request UUID.
      * @param   ApprovalStatus     $from             Required current state.
      * @param   ApprovalStatus     $to               Target state.
@@ -345,7 +353,8 @@ final readonly class DoctrineApprovalRepository implements ApprovalRepository
             ApprovalStatus::Revoked => 'revoked_at',
             ApprovalStatus::Approved,
             ApprovalStatus::Rejected,
-            ApprovalStatus::Cancelled => 'resolved_at',
+            ApprovalStatus::Cancelled,
+            ApprovalStatus::Expired => 'resolved_at',
             ApprovalStatus::Pending => throw new InvalidArgumentException(
                 'Approval requests cannot return to pending.',
             ),
@@ -539,15 +548,26 @@ final readonly class DoctrineApprovalRepository implements ApprovalRepository
         return $id;
     }
 
-    /** Return the platform's row-lock suffix. @return string SQL lock suffix where supported. @since 2.0.0 */
-    private function lockClause(): string
+    /**
+     * Return the platform's row-lock suffix for one query alias.
+     *
+     * PostgreSQL refuses `FOR UPDATE` on the nullable side of an outer join, so the lock names the alias whose
+     * rows must be held; MySQL and MariaDB lock every joined row, and SQLite has no row lock.
+     *
+     * @param   string  $alias  Alias of the table whose rows the lock must hold.
+     *
+     * @return  string  SQL lock suffix where supported.
+     *
+     * @since   2.0.0
+     */
+    private function lockClause(string $alias): string
     {
         $platform = $this->database->getDatabasePlatform();
         if ($platform instanceof SQLitePlatform) {
             return '';
         }
 
-        return $platform instanceof PostgreSQLPlatform ? ' FOR UPDATE OF a' : ' FOR UPDATE';
+        return $platform instanceof PostgreSQLPlatform ? ' FOR UPDATE OF ' . $alias : ' FOR UPDATE';
     }
 
     /**

@@ -1,0 +1,94 @@
+schema: kumwe-migration-ledger/v1
+migration_id: KUMWE-MIG-2026-023
+change_set: KUMWE-CS-2026-023
+package: kumwe/approval
+version: 0.1.2
+artifact_digest: "fa1940d7a23dd6e767db01ec0be32f66c624028c8613fe715da9cfc5fa9ad35a"
+handoff_path: vendor/kumwe/approval/MIGRATION-HANDOFF.md
+handoff_sha256: "d82232c8cedefa79e43339d05086804558f6a69d3fad40766520edc5fa336a07"
+release_attestation: docs/architecture/migrations/evidence/KUMWE-MIG-2026-023/RELEASE-ATTESTATION.yaml
+old_namespace_roots:
+  - Kumwe\App\BusinessSecurity\Application\Approval\
+symbols:
+  - old_fqcn: Kumwe\App\BusinessSecurity\Application\Approval\ApprovalBinding
+    new_fqcn: Kumwe\Approval\ApprovalBinding
+  - old_fqcn: Kumwe\App\BusinessSecurity\Application\Approval\ApprovalDenied
+    new_fqcn: Kumwe\Approval\ApprovalDenied
+  - old_fqcn: Kumwe\App\BusinessSecurity\Application\Approval\ApprovalQueryRepository
+    new_fqcn: Kumwe\Approval\ApprovalQueryRepository
+  - old_fqcn: Kumwe\App\BusinessSecurity\Application\Approval\ApprovalQueryService
+    new_fqcn: Kumwe\Approval\ApprovalQueryService
+  - old_fqcn: Kumwe\App\BusinessSecurity\Application\Approval\ApprovalRepository
+    new_fqcn: Kumwe\Approval\ApprovalRepository
+  - old_fqcn: Kumwe\App\BusinessSecurity\Application\Approval\ApprovalRequest
+    new_fqcn: Kumwe\Approval\ApprovalRequest
+  - old_fqcn: Kumwe\App\BusinessSecurity\Application\Approval\ApprovalRequestView
+    new_fqcn: Kumwe\Approval\ApprovalRequestView
+  - old_fqcn: Kumwe\App\BusinessSecurity\Application\Approval\ApprovalRule
+    new_fqcn: Kumwe\Approval\ApprovalRule
+  - old_fqcn: Kumwe\App\BusinessSecurity\Application\Approval\ApprovalService
+    new_fqcn: Kumwe\Approval\ApprovalService
+  - old_fqcn: Kumwe\App\BusinessSecurity\Application\Approval\ApprovalStatus
+    new_fqcn: Kumwe\Approval\ApprovalStatus
+  - old_fqcn: Kumwe\App\BusinessSecurity\Application\Approval\ApprovalVoteView
+    new_fqcn: Kumwe\Approval\ApprovalVoteView
+  - old_fqcn: Kumwe\App\BusinessSecurity\Application\Approval\StepUpProofConsumer
+    new_fqcn: Kumwe\Approval\StepUpProofConsumer
+removed_paths:
+  - src/BusinessSecurity/Application/Approval/ApprovalBinding.php
+  - src/BusinessSecurity/Application/Approval/ApprovalDenied.php
+  - src/BusinessSecurity/Application/Approval/ApprovalQueryRepository.php
+  - src/BusinessSecurity/Application/Approval/ApprovalQueryService.php
+  - src/BusinessSecurity/Application/Approval/ApprovalRepository.php
+  - src/BusinessSecurity/Application/Approval/ApprovalRequest.php
+  - src/BusinessSecurity/Application/Approval/ApprovalRequestView.php
+  - src/BusinessSecurity/Application/Approval/ApprovalRule.php
+  - src/BusinessSecurity/Application/Approval/ApprovalService.php
+  - src/BusinessSecurity/Application/Approval/ApprovalStatus.php
+  - src/BusinessSecurity/Application/Approval/ApprovalVoteView.php
+  - src/BusinessSecurity/Application/Approval/StepUpProofConsumer.php
+removed_tests:
+  - tests/Unit/BusinessSecurity/Application/ApprovalServiceTest.php
+retained_tests:
+  - tests/Integration/BusinessSecurity/CompetingApproverContentionIntegrationTest.php
+  - tests/Integration/BusinessSecurity/DoctrineApprovalQueryRepositoryIntegrationTest.php
+  - tests/Unit/Administrator/Http/Handler/AdministratorAccessControlHandlerTest.php
+  - tests/Unit/BusinessSecurity/Application/BusinessSecurityAdministrationServiceTest.php
+  - tests/Unit/BusinessSecurity/Infrastructure/Persistence/DoctrineApprovalRepositoryTest.php
+  - tests/Unit/BusinessSecurity/Infrastructure/Persistence/DoctrineStepUpProofConsumerTest.php
+  - tests/Unit/BusinessSurface/Application/BusinessApprovalSurfaceServiceTest.php
+  - tests/Unit/Delivery/Console/Command/BusinessRecordConsolePresenterTest.php
+  - tests/Unit/Delivery/Http/Api/Business/BusinessApprovalApiPresenterTest.php
+  - tests/Unit/Delivery/Http/Api/Business/BusinessRecordApiResponderTest.php
+  - tests/Architecture/PhaseThreeSecurityIdentityParityTest.php
+  - tests/Unit/Infrastructure/Mcp/McpMachineContractTest.php
+  - tests/Unit/Governance/ComposerLockTest.php
+  - tests/Architecture/CapabilityIndexGateTest.php
+di_changes:
+  - service: Kumwe\Approval\ApprovalService
+    factory: Kumwe\Approval\Container\ApprovalServiceFactory
+    note: "Package factory installed through Kumwe\\Approval\\ConfigProvider; it builds the shared maker-checker workflow from the nine host-bound ports and replaces the App closure that constructed the retired App service with eight arguments and static uuid7 identities."
+  - service: Kumwe\Approval\ApprovalQueryService
+    factory: Kumwe\Approval\Container\ApprovalQueryServiceFactory
+    note: "Package factory installed through the same provider; it builds the shared scoped query service from the query repository, the package authorization gateway, the membership directory and the clock, replacing the App closure of the same shape."
+  - service: Kumwe\Approval\ApprovalRepository
+    factory: Kumwe\App\Kernel\ContainerFactory
+    note: "Host binds the package repository port to DoctrineApprovalRepository, re-keyed from the retired App port; the adapter now honours rule($binding, lock: true) with a platform row lock on the rule rows and records the package's Expired transition in resolved_at."
+  - service: Kumwe\Approval\ApprovalQueryRepository
+    factory: Kumwe\App\Kernel\ContainerFactory
+    note: "Host binds the package query port to DoctrineApprovalQueryRepository, re-keyed from the retired App port; expired rows are projected as terminal rows without decision, cancel or revoke controls, exactly as rejected and cancelled rows are."
+  - service: Kumwe\Approval\StepUpProofConsumer
+    factory: Kumwe\App\Kernel\ContainerFactory
+    note: "Host binds the package replay-fence port to DoctrineStepUpProofConsumer, re-keyed from the retired App port; BusinessSecurityAdministrationService and the administrator access-control handler consume the same binding."
+  - service: Ramsey\Uuid\UuidFactoryInterface
+    factory: Kumwe\App\Kernel\ContainerFactory
+    note: "Host shares a Ramsey UuidFactory so the package service factory resolves its explicit identity source; approval request, vote and audit identities are uuid4 from this factory instead of the retired service's static uuid7 calls."
+capability_index_entries:
+  - kumwe/approval
+release_evidence:
+  - docs/architecture/migrations/evidence/KUMWE-MIG-2026-023/RELEASE-ATTESTATION.yaml
+app_pull_request: "https://github.com/kumwe/app/pull/151"
+roadmap_refs: []
+non_roadmap_refs:
+  - NRM-2026-044
+conflicts: []
