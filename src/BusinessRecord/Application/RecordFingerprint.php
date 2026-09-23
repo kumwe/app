@@ -76,10 +76,13 @@ final readonly class RecordFingerprint
     /**
      * Reduce a value to the byte-stable shape the digest is actually taken over.
      *
-     * `RecordValueGuard::canonical()` does the substitution — decimals, money, quantities, timestamps and
-     * encrypted envelopes become their storage spellings, and anything it cannot represent is refused.
-     * The walk here re-applies that to every element and sorts string-keyed arrays with `SORT_STRING`, so
-     * key order never reaches the hash while list order, which carries meaning, is left as it stands.
+     * The walk here descends every array itself and hands each leaf to `RecordValueGuard::canonical()`, which
+     * does the substitution — decimals, money, quantities, timestamps and protected secrets become their
+     * storage spellings, and anything it cannot represent is refused. Guarding leaf by leaf keeps the
+     * package guard's depth and node budget a per-value bound, as the record layer has always applied it,
+     * so an aggregate document of up to the batch limit of lines fingerprints as a whole; string-keyed
+     * arrays are sorted with `SORT_STRING`, so key order never reaches the hash while list order, which
+     * carries meaning, is left as it stands.
      *
      * @param   mixed  $value  Value to reduce.
      *
@@ -92,7 +95,7 @@ final readonly class RecordFingerprint
      */
     private function canonical(mixed $value): mixed
     {
-        $value = RecordValueGuard::canonical(RecordValueProtection::protect($value));
+        $value = RecordValueProtection::protect($value);
         if (is_array($value)) {
             foreach ($value as $key => $item) {
                 $value[$key] = $this->canonical($item);
@@ -100,8 +103,10 @@ final readonly class RecordFingerprint
             if (!array_is_list($value)) {
                 ksort($value, SORT_STRING);
             }
+
+            return $value;
         }
 
-        return $value;
+        return RecordValueGuard::canonical($value);
     }
 }
