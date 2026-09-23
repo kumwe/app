@@ -24,7 +24,10 @@ artifacts_evidence:
   - docs/architecture/migrations/trains/KUMWE-TRAIN-2026-003.yaml
   - docs/architecture/migrations/evidence/KUMWE-MIG-2026-002/RELEASE-ATTESTATION.yaml
   - docs/architecture/capability-index.md
+  - https://github.com/kumwe/app/pull/139
+  - https://github.com/kumwe/app/commit/d1a22ebf933f14a6c465185dc2356746a018c83c
+  - https://github.com/kumwe/app/commit/32d6a6f3fd3ee2db98a38a21e2498979f7618a2b
 known_gaps:
   - "The remaining extension-sdk train packages follow as separate adoptions in dependency order."
 owner: "eWɘyn"
-status: in-progress
+status: delivered

@@ -24,9 +24,12 @@ artifacts_evidence:
   - docs/architecture/migrations/trains/KUMWE-TRAIN-2026-001.yaml
   - docs/architecture/migrations/evidence/KUMWE-MIG-2026-032/RELEASE-ATTESTATION.yaml
   - docs/architecture/capability-index.md
+  - https://github.com/kumwe/app/pull/137
+  - https://github.com/kumwe/app/commit/194219cc15cbb62cd61aa052bb0eedf2d72d8547
+  - https://github.com/kumwe/app/commit/7f85127895ce3488df58d8506ff04513d2cc91b0
 known_gaps:
   - "No released kumwe/extension-sdk admits kumwe/producer 0.3.0; the exact 0.2.99 alias bridges it."
   - "The alias retires when App adopts the extension-sdk release train that selects Producer 0.3.0."
   - "KUMWE-CGR-2026-001 awaits reviewer approval before the core-growth baseline is re-recorded."
 owner: "eWɘyn"
-status: in-progress
+status: delivered

@@ -5,7 +5,7 @@ roadmap_source:
   title: Kumwe ERP-Extensibility Foundation Roadmap
   sha256: a202155ef1a65f5ab293d4f8397ebf4ac430db7f1e877c776bbe7851e6fe18d8
 roadmap_refs: []
-state: app-pr-ready
+state: core-integrated
 phase_1:
   source_repository: kumwe/app
   source_sha: "960ce8ec00cf724a7cae03e5ba09c4852c9ab54e"
@@ -25,8 +25,8 @@ release:
     - "https://github.com/kumwe/canonical-json/actions/runs/34157162566"
 phase_2:
   app_pr: "https://github.com/kumwe/app/pull/138"
-  tested_sha: null
-  merged_sha: null
+  tested_sha: "98aa64eace547345b97b31546e03ace11ab4eb45"
+  merged_sha: "1e768cbb16b28f7393ed46cfe6e33261ae86ac75"
   exact_dependency: "kumwe/canonical-json 0.1.1"
   composer_lock_digest: "be88728dc69a8506235939d99bfa8e4a78846b0fc21068ef0bd613a0bbbcf742"
   removed_app_symbols: []

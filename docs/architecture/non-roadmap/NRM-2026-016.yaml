@@ -28,8 +28,11 @@ artifacts_evidence:
   - "resources/native-runtime/source.json"
   - "tools/install-native-engine.sh"
   - "tests/Unit/Kernel/NativeComputationFactoryTest.php"
+  - "https://github.com/kumwe/app/pull/140"
+  - "https://github.com/kumwe/app/commit/7ffdf803f9ebb364db009fedd521c39f813f212e"
+  - "https://github.com/kumwe/app/commit/4774e0d5bd2bc8596fd58a7019edc2353254cd67"
 known_gaps:
   - "Legacy calculation consumers migrate with their owning packages after this prerequisite lands."
   - "The final App commit must pass all required hosted checks before merge."
 owner: "Codex under maintainer delegation"
-status: "in-progress"
+status: "delivered"
