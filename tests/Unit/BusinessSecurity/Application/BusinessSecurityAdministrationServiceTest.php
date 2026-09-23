@@ -29,7 +29,7 @@ use Kumwe\Approval\StepUpProofConsumer;
 use Kumwe\BusinessPolicy\Application\FieldAccessUsage;
 use Kumwe\Access\MembershipDirectory;
 use Kumwe\App\Extension\Contribution\CapabilityDefinition;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\App\Extension\Contribution\ResourcePolicyDefinition;
@@ -39,6 +39,7 @@ use Kumwe\Access\GrantScope;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(BusinessSecurityAdministrationService::class)]
 #[CoversClass(SelfEscalationDenied::class)]
@@ -295,7 +296,10 @@ final class BusinessSecurityAdministrationServiceTest extends TestCase
     {
         $now = new DateTimeImmutable('2026-08-09T10:00:00+00:00');
         $context = $this->multiFactorContext('business.security.resource_policy.create', $now);
-        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+        );
         $owner = ContributionOwner::extension('acme/invoices');
         $capability = new CapabilityDefinition(
             'acme.invoices.record.audit',
@@ -483,6 +487,7 @@ final class BusinessSecurityAdministrationServiceTest extends TestCase
             $repository,
             $authorization,
             $policies ?? (new ExtensionContributionRegistrySet(
+                new DeterministicCanonicalEncoder(),
                 new SdkFieldConfigurationAdmission(),
             ))->authorizationPolicies(),
             $memberships,

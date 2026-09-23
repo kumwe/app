@@ -8,14 +8,14 @@ use InvalidArgumentException;
 use Kumwe\App\Application\Presentation\Preference\PresentationAccessGroupCatalog;
 use Kumwe\App\Application\Presentation\Preference\PresentationPreferencePolicy;
 use Kumwe\App\Application\Presentation\Preference\PresentationPreferenceRepository;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
-use Kumwe\App\InterfaceStandard\CustomizationScope;
-use Kumwe\App\InterfaceStandard\CustomizationSlot;
+use Kumwe\Contribution\ContributionOwner;
+use Kumwe\InterfaceStandard\CustomizationScope;
+use Kumwe\InterfaceStandard\CustomizationSlot;
 use Kumwe\App\InterfaceStandard\PresentationPreference;
 use Kumwe\App\InterfaceStandard\PresentationPreferenceKey;
 use Kumwe\App\InterfaceStandard\PresentationPreferenceValue;
-use Kumwe\App\InterfaceStandard\SurfaceArea;
-use Kumwe\App\InterfaceStandard\SurfaceId;
+use Kumwe\InterfaceStandard\SurfaceArea;
+use Kumwe\InterfaceStandard\SurfaceId;
 use RuntimeException;
 
 /**

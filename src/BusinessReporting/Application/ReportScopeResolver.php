@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\BusinessReporting\Application;
 
-use Kumwe\App\BusinessReporting\Domain\ReportDefinition;
+use Kumwe\Reporting\Domain\ReportDefinition;
 use Kumwe\Context\Value\ExecutionContext;
 
 /**

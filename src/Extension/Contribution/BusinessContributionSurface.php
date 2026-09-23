@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Extension\Contribution;
 
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Contribution\ContributionOwner;
 use Closure;
 use Kumwe\BusinessDefinition\Application\BusinessDefinitionContributionRegistry;
 use Kumwe\BusinessDefinition\Application\FieldTypeRegistry;
@@ -13,10 +13,11 @@ use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\BusinessDefinition\Domain\FieldTypeDefinition;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionHandlerRegistry;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewHandlerRegistry;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionDeclaration;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewDeclaration;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationContribution;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessActionDeclaration;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessViewDeclaration;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresentationContribution;
 use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationRegistry;
+use Kumwe\Contribution\ContributionSurface;
 
 /**
  * Presents a business-definition registry as a contribution surface.

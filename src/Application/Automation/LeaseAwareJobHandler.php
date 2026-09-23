@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Application\Automation;
 
 use Kumwe\Context\Value\ExecutionContext;
+use Kumwe\Automation\JobHandler;
 
 /**
  * Opt-in contract for work that may outlive the lease it was claimed under.

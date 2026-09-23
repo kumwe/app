@@ -25,6 +25,7 @@ use Kumwe\Context\Value\OrganizationContext;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\Context\Value\WorkspaceContext;
 use Kumwe\Access\Capability;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 final class AuthorizationContext
 {
@@ -131,7 +132,10 @@ final class AuthorizationContext
     ): DenyByDefaultAuthorizationGateway {
         return new DenyByDefaultAuthorizationGateway(
             self::provenance(),
-            (new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission()))->authorizationPolicies(),
+            (new ExtensionContributionRegistrySet(
+                new DeterministicCanonicalEncoder(),
+                new SdkFieldConfigurationAdmission(),
+            ))->authorizationPolicies(),
             $memberships ?? new class implements MembershipContextValidator {
                 /**
                  * Fail closed when a test did not explicitly supply live membership state.

@@ -1,0 +1,31 @@
+schema: kumwe-non-roadmap-record/v1
+id: NRM-2026-051
+nrm_ref: NRM-2026-051
+roadmap_impact: None
+rationale: "Adopt verified kumwe/reporting 0.1.5, the owner of the report definition with its aggregate definition and function, its parameter, filter, sort, column and value types, the report scope and format vocabulary, the report and projection contribution definitions and the projection builder, state and materialization contracts."
+repositories:
+  - kumwe/app
+  - kumwe/reporting
+behavior_before: "App declared the report definition and its aggregate, parameter, filter, sort, column, scope, format and value types itself and consumed the SDK copies of the report and projection contribution definitions and the projection builder, state and materialization contracts."
+behavior_after: "The twenty-one types come from kumwe/reporting 0.1.5; the report definition registry, report service, scope resolver, export service, projection runtime and Doctrine projection store stay App-owned and consume the package types."
+public_api_impact: "None for the namespace-only moves; DoctrineProjectionStore and DoctrineProjectionRuntime take the canonical encoder after the clock."
+dependency_impact: "Adds kumwe/reporting 0.1.5 exactly; it requires kumwe/business-definition 0.1.2, kumwe/contribution 0.1.1, kumwe/integration 0.2.4, kumwe/access-context 0.1.2, kumwe/conversion 0.1.5 and kumwe/access-control 0.1.2, all locked."
+compatibility: "Report definitions, projections and exports are unchanged."
+data_migration: None
+security_impact: "No authority change; report scope resolution and export authorization stay in App."
+performance:
+  claim: None
+  evidence: []
+operations_deployment: "None; no configuration or schema change."
+recovery_rollback: "Revert the adoption pull request and restore the thirteen removed classes and the unit test; no persisted data changes."
+artifacts_evidence:
+  - docs/architecture/migrations/KUMWE-MIG-2026-041.yaml
+  - docs/architecture/migrations/change-sets/KUMWE-CS-2026-041.yaml
+  - docs/architecture/migrations/trains/KUMWE-TRAIN-2026-041.yaml
+  - docs/architecture/migrations/evidence/KUMWE-MIG-2026-041/RELEASE-ATTESTATION.yaml
+  - docs/architecture/capability-index.md
+known_gaps:
+  - "The tag commit is not an ancestor of main although the trees are identical."
+  - "kumwe/extension-sdk 0.3.3 is adopted from its unpublished candidate in the same train (NRM-2026-057); the lock is re-pointed at the published distribution once it exists."
+owner: "eWɘyn"
+status: in-progress

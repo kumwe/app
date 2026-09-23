@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Kumwe\App\BusinessIntegration\Infrastructure;
 
-use Kumwe\App\Application\Automation\QueueRuntimePolicy;
-use Kumwe\App\Application\Automation\QueueRuntimePolicyCatalog;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\JobContributionDefinition;
-use Kumwe\App\BusinessIntegration\Domain\QueueContributionDefinition;
+use Kumwe\Automation\QueueRuntimePolicy;
+use Kumwe\Automation\QueueRuntimePolicyCatalog;
+use Kumwe\Automation\JobContributionDefinition;
+use Kumwe\Automation\QueueContributionDefinition;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
 use RuntimeException;

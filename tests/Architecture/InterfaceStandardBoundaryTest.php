@@ -28,7 +28,7 @@ final class InterfaceStandardBoundaryTest extends TestCase
     public function testSemanticDefinitionsReuseTheExistingContributionBoundary(): void
     {
         $root = dirname(__DIR__, 2);
-        $definition = $this->contents($root . '/src/InterfaceStandard/SurfaceDefinition.php');
+        $definition = $this->contents($root . '/vendor/kumwe/interface-standard/src/SurfaceDefinition.php');
 
         self::assertStringContainsString('implements ContributionDefinition', $definition);
         self::assertStringNotContainsString('class SurfaceRegistry', $definition);

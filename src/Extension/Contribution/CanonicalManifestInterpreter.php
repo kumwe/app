@@ -5,21 +5,23 @@ declare(strict_types=1);
 namespace Kumwe\App\Extension\Contribution;
 
 use LogicException;
+use Kumwe\CanonicalJson\CanonicalEncoder;
 use Kumwe\Access\AuthorizationDefinitionLifecycle;
 use Kumwe\Access\ResourcePolicyTarget;
 use Kumwe\BusinessDefinition\Domain\DefinitionOwner;
 use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\BusinessDefinition\Domain\FieldTypeDefinition;
-use Kumwe\App\BusinessIntegration\Domain\EventSchemaDefinition;
-use Kumwe\App\BusinessIntegration\Domain\QueueContributionDefinition;
-use Kumwe\App\BusinessIntegration\Domain\ScheduleContributionDefinition;
+use Kumwe\Integration\EventSchemaDefinition;
+use Kumwe\Automation\QueueContributionDefinition;
+use Kumwe\Automation\ScheduleContributionDefinition;
 use Kumwe\App\BusinessRecord\Domain\MoneyRateProviderDefinition;
-use Kumwe\App\BusinessReporting\Domain\ReportDefinition;
-use Kumwe\App\InterfaceStandard\SurfaceDefinition;
+use Kumwe\Reporting\Domain\ReportDefinition;
+use Kumwe\InterfaceStandard\SurfaceDefinition;
 use Kumwe\Extension\Manifest\ExtensionManifest;
 use Kumwe\Extension\Manifest\ManifestContributions;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionDeclaration;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewDeclaration;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessActionDeclaration;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessViewDeclaration;
+use Kumwe\App\Extension\Contribution\UnitConversionProviderDefinition;
 
 /**
  * Applies host-domain meaning to the SDK's one canonical manifest contribution graph.
@@ -36,26 +38,31 @@ final readonly class CanonicalManifestInterpreter
     /**
      * Bind host interpretation to one canonical SDK graph.
      *
-     * @param  ManifestContributions  $canonical  SDK-validated package declaration graph.
+     * @param  CanonicalEncoder       $canonicalEncoder  Host encoder the event-schema and schedule values bound
+     *         their declaration bytes with.
+     * @param  ManifestContributions  $canonical         SDK-validated package declaration graph.
      *
      * @since  2.0.0
      */
-    public function __construct(private ManifestContributions $canonical)
-    {
+    public function __construct(
+        private CanonicalEncoder $canonicalEncoder,
+        private ManifestContributions $canonical,
+    ) {
     }
 
     /**
      * Create an interpreter from an already parsed SDK manifest.
      *
-     * @param   ExtensionManifest  $manifest  Canonical SDK manifest.
+     * @param   CanonicalEncoder   $canonicalEncoder  Host encoder handed to the encoder-bound package values.
+     * @param   ExtensionManifest  $manifest          Canonical SDK manifest.
      *
      * @return  self  Host semantic view of its canonical contributions.
      *
      * @since   2.0.0
      */
-    public static function fromManifest(ExtensionManifest $manifest): self
+    public static function fromManifest(CanonicalEncoder $canonicalEncoder, ExtensionManifest $manifest): self
     {
-        return new self($manifest->contributions());
+        return new self($canonicalEncoder, $manifest->contributions());
     }
 
     /**
@@ -222,8 +229,10 @@ final readonly class CanonicalManifestInterpreter
      */
     public function eventSchemas(): array
     {
+        $encoder = $this->canonicalEncoder;
+
         return array_map(
-            static fn (array $item): EventSchemaDefinition => EventSchemaDefinition::fromArray($item),
+            static fn (array $item): EventSchemaDefinition => EventSchemaDefinition::fromArray($encoder, $item),
             $this->list('integration', 'event_schemas'),
         );
     }
@@ -252,8 +261,13 @@ final readonly class CanonicalManifestInterpreter
      */
     public function schedules(): array
     {
+        $encoder = $this->canonicalEncoder;
+
         return array_map(
-            static fn (array $item): ScheduleContributionDefinition => ScheduleContributionDefinition::fromArray($item),
+            static fn (array $item): ScheduleContributionDefinition => ScheduleContributionDefinition::fromArray(
+                $encoder,
+                $item,
+            ),
             $this->list('integration', 'schedules'),
         );
     }

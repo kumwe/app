@@ -8,18 +8,19 @@ use DateTimeImmutable;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Audit\Application\AuditRecorder;
 use Kumwe\Audit\Domain\AuditEvent;
-use Kumwe\App\BusinessIntegration\Application\EventContractRegistry;
-use Kumwe\App\BusinessIntegration\Application\InboxStore;
+use Kumwe\Integration\EventContractRegistry;
+use Kumwe\Integration\InboxStore;
 use Kumwe\App\BusinessIntegration\Application\IntegrationOperationsService;
-use Kumwe\App\BusinessIntegration\Application\OutboxStore;
+use Kumwe\Integration\OutboxStore;
 use Kumwe\App\BusinessIntegration\Application\ProcessManagerService;
-use Kumwe\App\BusinessIntegration\Application\ProcessManagerStore;
+use Kumwe\Integration\ProcessManagerStore;
 use Kumwe\App\BusinessReporting\Application\ProjectionRebuildResult;
 use Kumwe\App\BusinessReporting\Application\ProjectionRuntime;
 use Kumwe\App\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(IntegrationOperationsService::class)]
 final class IntegrationOperationsServiceTest extends TestCase
@@ -131,7 +132,12 @@ final class IntegrationOperationsServiceTest extends TestCase
             $outbox,
             $this->createStub(InboxStore::class),
             $processes,
-            new ProcessManagerService($processes, new EventContractRegistry([], []), $clock),
+            new ProcessManagerService(
+                $processes,
+                new EventContractRegistry(new DeterministicCanonicalEncoder(), [], []),
+                $clock,
+                new DeterministicCanonicalEncoder(),
+            ),
             AuthorizationContext::gateway(),
             $transactions,
             $audit ?? $this->createStub(AuditRecorder::class),

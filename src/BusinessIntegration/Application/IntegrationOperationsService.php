@@ -11,11 +11,14 @@ use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Audit\Application\AuditRecorder;
 use Kumwe\Audit\Domain\AuditEvent;
-use Kumwe\App\BusinessIntegration\Domain\ProcessInstance;
+use Kumwe\Integration\ProcessInstance;
 use Kumwe\App\BusinessReporting\Application\ProjectionRuntime;
 use Kumwe\Access\Capability;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
+use Kumwe\Integration\InboxStore;
+use Kumwe\Integration\OutboxStore;
+use Kumwe\Integration\ProcessManagerStore;
 
 /**
  * Authorized operator surface for integration visibility, replay, retention and process cancellation.

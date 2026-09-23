@@ -6,8 +6,8 @@ namespace Kumwe\App\Tests\Unit\BusinessReporting\Delivery\Browser;
 
 use InvalidArgumentException;
 use Kumwe\App\BusinessReporting\Delivery\Browser\ReportParameterInput;
-use Kumwe\App\BusinessReporting\Domain\ReportParameterDefinition;
-use Kumwe\Extension\Spi\BusinessReporting\Domain\ReportValueType;
+use Kumwe\Reporting\Domain\ReportParameterDefinition;
+use Kumwe\Reporting\Domain\ReportValueType;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

@@ -1,0 +1,164 @@
+schema: kumwe-change-set/v2
+change_set: KUMWE-CS-2026-006
+migration_id: KUMWE-MIG-2026-006
+roadmap_source:
+  title: Kumwe ERP-Extensibility Foundation Roadmap
+  sha256: a202155ef1a65f5ab293d4f8397ebf4ac430db7f1e877c776bbe7851e6fe18d8
+roadmap_refs: []
+state: app-pr-ready
+phase_1:
+  source_repository: kumwe/app
+  source_sha: "960ce8ec00cf724a7cae03e5ba09c4852c9ab54e"
+  target_repository: kumwe/contribution
+  package_pr: "https://github.com/kumwe/contribution/pull/2"
+  tested_sha: null
+  public_api_digest: "85202012eef68919fd3eed8894e5e17d7760dbc2a751d65ae244f3a2abea2cf6"
+  capability_digest: "e50defb725e5f03e74480fe8b6965ff020147be57dedd5915a495f6175c2f785"
+  service_map_digest: "12d4602942c1ebd9f01e5046f7c7f3457f673fb1b655c3b4c95399ff085ef742"
+  handoff_digest: "07478d94f2bf239298d9800996c6a4dcab77ca7aceafc7224cb031f9614d5d70"
+release:
+  version: 0.1.1
+  source_sha: "2fc75742aa5a7d78418d2f586fa3043271e70082"
+  artifact_digest: "ea0e9dec653d4280f1eda5dd144a122ec5325e2844fe2202b0a8e4fd7702a48e"
+  clean_consumer_evidence:
+    - docs/architecture/migrations/evidence/KUMWE-MIG-2026-006/RELEASE-ATTESTATION.yaml
+phase_2:
+  app_pr: "https://github.com/kumwe/app/pull/151"
+  tested_sha: null
+  merged_sha: null
+  exact_dependency: "kumwe/contribution 0.1.1"
+  composer_lock_digest: "04b6bdc0e61ef498055023db3aa6243d6c1e05566aa6428729a2117cb9c00612"
+  removed_app_symbols:
+    - Kumwe\App\Extension\Contribution\ContributionSurface
+    - Kumwe\Extension\Spi\Contribution\ContributionDefinition
+    - Kumwe\Extension\Spi\Contribution\ContributionOwner
+  moved_unit_tests: []
+  retained_app_tests:
+    - tests/Architecture/InterfaceStandardBoundaryTest.php
+    - tests/Functional/Extension/LiveSurfaceContractParityTest.php
+    - tests/Integration/Extension/ContributedContentTranslationIntegrationTest.php
+    - tests/Integration/Extension/ExtensionContributionLifecycleIntegrationTest.php
+    - tests/Integration/Extension/GeneratedExtensionLifecycleIntegrationTest.php
+    - tests/Integration/Extension/ManifestGenerationLifecycleIntegrationTest.php
+    - tests/Integration/InterfaceStandard/PresentationPreferencePersistenceIntegrationTest.php
+    - tests/Support/AssetInspectionDeploymentAcceptance.php
+    - tests/Support/DashboardPreferenceTestRuntime.php
+    - tests/Support/InMemoryPresentationPreferenceRepository.php
+    - tests/Unit/Administrator/Http/Handler/AdministratorDashboardPreferencesHandlerTest.php
+    - tests/Unit/Administrator/Navigation/AdministratorNavigationRegistryTest.php
+    - tests/Unit/Administrator/Presentation/AdministratorContributionRendererTest.php
+    - tests/Unit/Application/Authorization/ApplicationAuthorizationTest.php
+    - tests/Unit/Application/Authorization/BusinessGroupOwnershipTest.php
+    - tests/Unit/Application/Presentation/Dashboard/DashboardPreferenceServiceTest.php
+    - tests/Unit/BusinessIntegration/Application/BusinessRecordMutationEventPublisherTest.php
+    - tests/Unit/BusinessIntegration/Application/DurableOutboundAdapterDeliveryTest.php
+    - tests/Unit/BusinessIntegration/Application/ValidatedContributedJobHandlerTest.php
+    - tests/Unit/BusinessIntegration/DurableOutboundAdapterDispatcherTest.php
+    - tests/Unit/BusinessIntegration/Infrastructure/RuntimeIntegrationEventTransportTest.php
+    - tests/Unit/BusinessIntegration/QueueRuntimePolicyTest.php
+    - tests/Unit/BusinessRecord/Application/MoneyRateProviderContributionTest.php
+    - tests/Unit/BusinessRecord/Application/UnitConversionProviderContributionTest.php
+    - tests/Unit/BusinessSecurity/Application/BusinessSecurityAdministrationServiceTest.php
+    - tests/Unit/BusinessSurface/Presentation/FieldPresentationRegistryTest.php
+    - tests/Unit/Content/Application/ContributedContentTranslationTest.php
+    - tests/Unit/Content/Application/ExtensionContentTranslationTest.php
+    - tests/Unit/Extension/Contribution/CanonicalManifestInterpreterDriftTest.php
+    - tests/Unit/Extension/Contribution/ContributionDefinitionChecksumTest.php
+    - tests/Unit/Extension/Contribution/CoreContributionActivationTest.php
+    - tests/Unit/Extension/Contribution/ExtensionBindingSurfaceTest.php
+    - tests/Unit/Extension/Contribution/ExtensionContributionRegistrySetTest.php
+    - tests/Unit/Extension/Contribution/OwnedBindingCanonicalDriftTest.php
+    - tests/Unit/Extension/Contribution/StudioPreviewRendererContributionTest.php
+    - tests/Unit/Extension/Development/AssetInspectionExampleTest.php
+    - tests/Unit/Extension/Runtime/ActiveExtensionSetTest.php
+    - tests/Unit/Extension/Runtime/TrustEnforcingJobHandlerTest.php
+    - tests/Unit/Governance/LayerClassifierTest.php
+    - tests/Unit/InterfaceStandard/InterfaceStandardSchemaTest.php
+    - tests/Unit/InterfaceStandard/PresentationPreferenceManagerTest.php
+    - tests/Unit/InterfaceStandard/PresentationPreferenceResolverTest.php
+    - tests/Unit/InterfaceStandard/PresentationPreferenceTest.php
+    - tests/Unit/Portal/Contribution/PortalContributionRegistryTest.php
+    - tests/Unit/Portal/Http/PortalDashboardPreferencesHandlerTest.php
+    - tests/Unit/Portal/Http/PortalHomeHandlerTest.php
+    - tests/Unit/Portal/Presentation/PortalContributionRendererTest.php
+    - tests/Unit/Presentation/Application/Dashboard/DashboardComposerTest.php
+    - tests/Unit/Presentation/Application/Dashboard/DashboardPreferenceFormPresenterTest.php
+    - tests/Unit/Studio/Application/Authoring/ContentStudioAuthoringCatalogTest.php
+    - tests/Unit/Studio/Application/Composition/StudioCompositionContributionCatalogTest.php
+    - tests/Unit/Studio/Application/Composition/StudioPublishedContentRendererTest.php
+    - tests/Unit/Studio/Application/Projection/StudioContentProjectionServiceTest.php
+    - tests/Unit/Studio/Application/Rendering/StudioBlockRendererRuntimeTest.php
+evidence:
+  package:
+    - docs/architecture/migrations/evidence/KUMWE-MIG-2026-006/RELEASE-ATTESTATION.yaml
+    - "git ls-remote and a depth-1 clone of tag v0.1.1 at 2fc75742aa5a7d78418d2f586fa3043271e70082; the GitHub release and workflow run were not observable from the verification run"
+  app_composition:
+    - tests/Architecture/InterfaceStandardBoundaryTest.php
+    - tests/Unit/Administrator/Http/Handler/AdministratorDashboardPreferencesHandlerTest.php
+    - tests/Unit/Administrator/Navigation/AdministratorNavigationRegistryTest.php
+    - tests/Unit/Administrator/Presentation/AdministratorContributionRendererTest.php
+    - tests/Unit/Application/Authorization/ApplicationAuthorizationTest.php
+    - tests/Unit/Application/Authorization/BusinessGroupOwnershipTest.php
+    - tests/Unit/Application/Presentation/Dashboard/DashboardPreferenceServiceTest.php
+    - tests/Unit/BusinessIntegration/Application/BusinessRecordMutationEventPublisherTest.php
+    - tests/Unit/BusinessIntegration/Application/DurableOutboundAdapterDeliveryTest.php
+    - tests/Unit/BusinessIntegration/Application/ValidatedContributedJobHandlerTest.php
+    - tests/Unit/BusinessIntegration/DurableOutboundAdapterDispatcherTest.php
+    - tests/Unit/BusinessIntegration/Infrastructure/RuntimeIntegrationEventTransportTest.php
+    - tests/Unit/Governance/ComposerLockTest.php
+    - tests/Unit/Governance/CoreGrowthGateTest.php
+    - tests/Architecture/CapabilityIndexGateTest.php
+    - "composer update of the train packages; one lock regeneration for the whole train, kumwe/contribution at 0.1.1"
+    - "composer kumwe:capability-index, kumwe:core-growth-record, baseline:record, then the composer qa gates and the unit and architecture suites, run locally on PHP 8.4 without ext-kumwe_engine"
+  database_matrix:
+    - tests/Integration/Extension/ContributedContentTranslationIntegrationTest.php
+    - tests/Integration/Extension/ExtensionContributionLifecycleIntegrationTest.php
+    - tests/Integration/Extension/GeneratedExtensionLifecycleIntegrationTest.php
+    - tests/Integration/Extension/ManifestGenerationLifecycleIntegrationTest.php
+    - tests/Integration/InterfaceStandard/PresentationPreferencePersistenceIntegrationTest.php
+    - "To be exercised by the pull request's hosted workflows on MariaDB, MySQL and PostgreSQL."
+  concurrency:
+    - "Claim contention, leases, recovery and dead-letter paths; to be exercised by the pull request's hosted workflows."
+  authorization_security:
+    - tests/Architecture/InterfaceStandardBoundaryTest.php
+    - tests/Unit/Application/Authorization/ApplicationAuthorizationTest.php
+    - tests/Unit/Application/Authorization/BusinessGroupOwnershipTest.php
+    - tests/Unit/BusinessIntegration/QueueRuntimePolicyTest.php
+    - tests/Unit/Extension/Runtime/TrustEnforcingJobHandlerTest.php
+    - "Capability checks, admission and trust decisions stay in App; the hosted source-and-image security scans run on the pull request."
+  lifecycle_recovery:
+    - tests/Integration/Extension/ExtensionContributionLifecycleIntegrationTest.php
+    - tests/Integration/Extension/GeneratedExtensionLifecycleIntegrationTest.php
+    - tests/Integration/Extension/ManifestGenerationLifecycleIntegrationTest.php
+    - tests/Support/AssetInspectionDeploymentAcceptance.php
+    - "Lifecycle, recovery and migration paths; to be exercised by the pull request's hosted workflows."
+  delivery_browser:
+    - tests/Functional/Extension/LiveSurfaceContractParityTest.php
+    - tests/Integration/InterfaceStandard/PresentationPreferencePersistenceIntegrationTest.php
+    - tests/Support/InMemoryPresentationPreferenceRepository.php
+    - tests/Unit/Administrator/Http/Handler/AdministratorDashboardPreferencesHandlerTest.php
+    - tests/Unit/Administrator/Presentation/AdministratorContributionRendererTest.php
+    - tests/Unit/Application/Presentation/Dashboard/DashboardPreferenceServiceTest.php
+    - "The administrator, portal and API delivery read the package values through the unchanged App handlers; the browser suites run in the pull request's hosted workflows."
+  deployment_backup_restore:
+    - tests/Support/AssetInspectionDeploymentAcceptance.php
+    - "Signed backup, clean restore and deployment acceptance on three engines; to be exercised by the pull request's hosted workflows."
+  native_parity_abi:
+    - tests/Unit/Kernel/NativeComputationFactoryTest.php
+    - "The package ships no native component; the canonical encoder it receives is the container's native encoder binding and no native cutover is claimed."
+  performance_capacity:
+    - tests/Integration/Performance/HotPlanRegressionIntegrationTest.php
+    - "No performance claim is made; the hosted lanes exercise the hot plan and query budgets."
+compatibility: "Drop-in for the definition and surface interfaces, whose members are unchanged. ContributionOwner::assertOwns now takes a SurfaceIdentifierPolicy instead of a kind string and refuses with ContributionRejected, an InvalidArgumentException subclass, so every App registry and static call site names its policy explicitly, through the SDK ManifestIdentifierPolicies::forKind projection or an explicit slash policy for the canonical composition documents; identifiers, owners and stored contribution rows are unchanged."
+migration_recovery: null
+security_impact: "None on authority: ownership assertion moves from a kind string to an explicit per-surface policy that the host chooses, and the trusted lifecycle composition, executable registries and admission stay in App."
+performance_claim: null
+rollback: "Revert the App pull request; the removed ContributionSurface interface returns with the train baseline and no persisted data changes."
+known_gaps:
+  - "The local sandbox runs PHP 8.4 without ext-kumwe_engine and without a database server, so the integration and functional lanes, PHP 8.5 and the demo profile installations are proven by the App CI on this pull request."
+  - "One Composer lock regeneration covers the whole train, so composer_lock_digest is the digest of the train lock rather than of a lock that adds this package alone."
+  - "The hosted GitHub tag tar.gz and the Packagist zipball were not downloaded: the outbound proxy of the verification run refused HTTP access to kumwe/contribution, so the attested digest is of the uncompressed git archive of the tag commit and the GitHub release and workflow run were not queried."
+  - "ContributionRejected replaces the InvalidArgumentException messages the App asserted; the one App test that read the message now asserts the package message."
+  - "kumwe/extension-sdk 0.3.3 is adopted from its unpublished candidate, pull request 22 at commit b54022b05075944e884dc1df038cbcb63f723472, through a temporary package repository entry in composer.json; the entry is removed and the lock re-pointed at the Packagist distribution once v0.3.3 is published (KUMWE-CS-2026-033)."
+completion_claim: false
+accepted_by: null

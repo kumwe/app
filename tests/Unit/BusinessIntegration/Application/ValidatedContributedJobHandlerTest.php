@@ -13,9 +13,10 @@ use Kumwe\Context\Value\ExecutionContext as HostExecutionContext;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\Extension\Spi\Application\Automation\JobHandler;
 use Kumwe\Extension\Spi\Application\ExecutionContext;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\JobContributionDefinition;
+use Kumwe\Automation\JobContributionDefinition;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(ValidatedContributedJobHandler::class)]
 /**
@@ -123,7 +124,7 @@ final class ValidatedContributedJobHandlerTest extends TestCase
      */
     private static function definition(): JobContributionDefinition
     {
-        return JobContributionDefinition::fromArray([
+        return JobContributionDefinition::fromArray(new DeterministicCanonicalEncoder(), [
             'job_type' => 'acme.sample.review',
             'schema_version' => 1,
             'handler_version' => '1.0.0',

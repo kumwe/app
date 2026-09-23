@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Extension\Contribution;
 
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
-use Kumwe\Extension\Spi\Contribution\AdministratorWorkspaceDefinition;
+use Kumwe\Contribution\ContributionOwner;
+use Kumwe\Extension\Manifest\ManifestIdentifierPolicies;
+use Kumwe\Administrator\Contract\AdministratorWorkspaceDefinition;
 use InvalidArgumentException;
+use Kumwe\Contribution\ContributionSurface;
 
 /**
  * Owns the administrator workspaces navigation may be filed under, one contributor per id.
@@ -43,7 +45,7 @@ final class AdministratorWorkspaceRegistry implements ContributionSurface
      */
     public function register(ContributionOwner $owner, AdministratorWorkspaceDefinition $definition): void
     {
-        $owner->assertOwns($definition->id, 'workspace');
+        $owner->assertOwns($definition->id, ManifestIdentifierPolicies::forKind('workspace'));
         if (isset($this->definitions[$definition->id])) {
             throw new InvalidArgumentException(sprintf(
                 'Administrator workspace %s is already owned by %s.',

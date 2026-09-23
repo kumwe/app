@@ -6,10 +6,10 @@ namespace Kumwe\App\Tests\Unit\BusinessRecord\Application;
 
 use InvalidArgumentException;
 use Kumwe\App\BusinessRecord\Application\Query\BrowseOwnedLineFieldChoicesQuery;
-use Kumwe\Extension\Spi\BusinessRecord\Query\AggregateFunction;
-use Kumwe\Extension\Spi\BusinessRecord\Query\RecordProjection;
-use Kumwe\Extension\Spi\BusinessRecord\Query\RecordQuerySpecification;
-use Kumwe\Extension\Spi\BusinessRecord\Query\RecordAggregate;
+use Kumwe\Record\Query\AggregateFunction;
+use Kumwe\Record\Query\RecordProjection;
+use Kumwe\Record\Query\RecordQuerySpecification;
+use Kumwe\Record\Query\RecordAggregate;
 use Kumwe\App\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;

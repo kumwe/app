@@ -7,8 +7,8 @@ namespace Kumwe\App\BusinessReporting\Application;
 use DateTimeImmutable;
 use InvalidArgumentException;
 use Kumwe\BusinessDefinition\Domain\CanonicalDefinitionJson;
-use Kumwe\Extension\Spi\BusinessReporting\Application\ProjectionEvent;
-use Kumwe\Extension\Spi\BusinessReporting\Domain\ReportDefinitionGuard;
+use Kumwe\Reporting\Contract\ProjectionEvent;
+use Kumwe\Reporting\Domain\ReportDefinitionGuard;
 
 /**
  * Immutable journal event supplied directly to an SDK projection builder.

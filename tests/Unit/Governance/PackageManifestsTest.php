@@ -303,9 +303,13 @@ final class PackageManifestsTest extends TestCase
         self::assertCount(23, $conversion->publicSymbols());
 
         $sdk = self::read(GovernanceFixture::repositoryRoot(), 'extension-sdk');
-        self::assertSame('source-scan', $sdk->publicSymbolsSource());
+        self::assertSame('v2-manifested', $sdk->manifestStatus());
+        self::assertSame('manifest:resources/public-api/v1.json', $sdk->publicSymbolsSource());
+        self::assertCount(96, $sdk->publicSymbols());
         self::assertNotContains('Kumwe\\Extension\\Manifest\\ExtensionManifestGrammar', $sdk->publicSymbols());
         self::assertContains('Kumwe\\Extension\\Manifest\\ExtensionManifest', $sdk->publicSymbols());
+        self::assertNotContains('Kumwe\\Extension\\Spi\\Contribution\\ContributionOwner', $sdk->publicSymbols());
+        self::assertNotNull($sdk->handoff());
     }
 
     /**

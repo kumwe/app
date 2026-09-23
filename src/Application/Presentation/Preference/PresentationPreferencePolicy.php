@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Application\Presentation\Preference;
 
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
-use Kumwe\App\InterfaceStandard\CustomizationScope;
-use Kumwe\App\InterfaceStandard\CustomizationSlot;
-use Kumwe\App\InterfaceStandard\SurfaceId;
+use Kumwe\Contribution\ContributionOwner;
+use Kumwe\InterfaceStandard\CustomizationScope;
+use Kumwe\InterfaceStandard\CustomizationSlot;
+use Kumwe\InterfaceStandard\SurfaceId;
 
 /**
  * Live surface-admission boundary for stored presentation preferences.

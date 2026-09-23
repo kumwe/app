@@ -8,16 +8,16 @@ use Kumwe\App\Tests\Support\TranslatesConsoleOutput;
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
-use Kumwe\App\Application\Automation\RetryPolicy;
-use Kumwe\App\BusinessIntegration\Application\EventContractRegistry;
+use Kumwe\Automation\RetryPolicy;
+use Kumwe\Integration\EventContractRegistry;
 use Kumwe\App\BusinessIntegration\Application\IntegrationEventFanout;
 use Kumwe\App\BusinessIntegration\Application\OutboxDispatcher;
 use Kumwe\App\BusinessIntegration\Application\ProcessWorkDispatcher;
 use Kumwe\App\BusinessIntegration\Application\TrustedRuntimeGenerationGuard;
-use Kumwe\App\BusinessIntegration\Domain\EventSchemaDefinition;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventSensitivity;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationEvent;
-use Kumwe\App\BusinessIntegration\Domain\RecordedIntegrationEvent;
+use Kumwe\Integration\EventSchemaDefinition;
+use Kumwe\Integration\EventSensitivity;
+use Kumwe\Integration\IntegrationEvent;
+use Kumwe\Integration\RecordedIntegrationEvent;
 use Kumwe\App\BusinessIntegration\Infrastructure\DoctrineOutboxStore;
 use Kumwe\App\Delivery\Console\Command\IntegrationWorkCommand;
 use Kumwe\App\Delivery\Console\Output;
@@ -35,6 +35,7 @@ use Psr\Clock\ClockInterface;
 use Psr\Log\NullLogger;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 /**
  * Proves a hung outbound endpoint cannot pin an integration worker for the rest of its life.
@@ -67,7 +68,7 @@ final class HungEndpointDeadlineIntegrationTest extends TestCase
         $container = TestKernelFactory::create(Environment::fromGlobals());
         $connection = $this->outboxDatabase();
         $tables = new TableNames($connection, 'kumwe_');
-        $contracts = new EventContractRegistry([$this->schema()], []);
+        $contracts = new EventContractRegistry(new DeterministicCanonicalEncoder(), [$this->schema()], []);
         $clock = $container->get(ClockInterface::class);
         $retries = $container->get(RetryPolicy::class);
         $guard = $container->get(TrustedRuntimeGenerationGuard::class);
@@ -91,6 +92,7 @@ final class HungEndpointDeadlineIntegrationTest extends TestCase
             new DoctrineTransactionManager($connection),
             $clock,
             $contracts,
+            new DeterministicCanonicalEncoder(),
         );
         $transport = new HungOutboundEndpoint(self::ENDPOINT_HANG_SECONDS);
         $command = new IntegrationWorkCommand(
@@ -132,6 +134,7 @@ final class HungEndpointDeadlineIntegrationTest extends TestCase
     private function schema(): EventSchemaDefinition
     {
         return new EventSchemaDefinition(
+            new DeterministicCanonicalEncoder(),
             'deadline.drill.raised',
             1,
             EventSensitivity::INTERNAL,
@@ -147,6 +150,7 @@ final class HungEndpointDeadlineIntegrationTest extends TestCase
     private function event(): IntegrationEvent
     {
         return new RecordedIntegrationEvent(
+            new DeterministicCanonicalEncoder(),
             'deadline.drill.raised',
             1,
             Uuid::uuid7()->toString(),

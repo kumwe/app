@@ -8,7 +8,7 @@ use InvalidArgumentException;
 use Kumwe\Access\AuthorizationDefinitionLifecycle;
 use Kumwe\App\Extension\Contribution\CapabilityDefinition;
 use Kumwe\App\Extension\Contribution\ContributionDefinitionChecksum;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Contribution\ContributionOwner;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

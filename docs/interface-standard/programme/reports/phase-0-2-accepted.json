@@ -274,9 +274,9 @@
       "result_summary": "Passed; durable run: https://github.com/kumwe/app/actions/runs/31549497432",
       "artifact_paths": [
         "tests/Unit/InterfaceProgramme/InterfaceProgrammeEvidenceGateTest.php",
-        "tests/Unit/InterfaceStandard/SurfaceDefinitionTest.php",
+        "vendor/kumwe/interface-standard/tests/run.php",
         "tests/Unit/InterfaceStandard/InterfaceStandardSchemaTest.php",
-        "tests/Unit/InterfaceStandard/SurfaceIdentifierParityTest.php",
+        "tests/Architecture/InterfaceStandardBoundaryTest.php",
         "tests/Unit/InterfaceStandard/PresentationPreferenceManagerTest.php",
         "tests/Unit/Presentation/Application/ThemePackageValidatorTest.php",
         "tests/Architecture/BusinessWorkspaceParityManifestTest.php"

@@ -9,18 +9,18 @@ use Kumwe\App\Administrator\Http\Middleware\AdministratorAuthorizationMiddleware
 use Kumwe\App\Administrator\Navigation\AdministratorNavigationRegistry;
 use Kumwe\Access\AuthorizationPolicyRegistry;
 use Kumwe\App\Application\Automation\JobExecutionScope;
-use Kumwe\App\Application\Automation\JobHandlerRegistry;
-use Kumwe\App\Application\Automation\QueueRuntimePolicyCatalog;
+use Kumwe\Automation\JobHandlerRegistry;
+use Kumwe\Automation\QueueRuntimePolicyCatalog;
 use Kumwe\BusinessDefinition\Application\FieldTypeRegistry;
-use Kumwe\App\BusinessIntegration\Application\EventContractRegistry;
-use Kumwe\App\BusinessIntegration\Application\PayloadSchemaValidator;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventConsumerDefinition;
-use Kumwe\App\BusinessIntegration\Domain\EventSchemaDefinition;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\JobContributionDefinition;
-use Kumwe\App\BusinessIntegration\Domain\QueueContributionDefinition;
-use Kumwe\App\BusinessIntegration\Domain\ScheduleContributionDefinition;
+use Kumwe\Integration\EventContractRegistry;
+use Kumwe\Integration\PayloadSchemaValidator;
+use Kumwe\Integration\EventConsumerDefinition;
+use Kumwe\Integration\EventSchemaDefinition;
+use Kumwe\Automation\JobContributionDefinition;
+use Kumwe\Automation\QueueContributionDefinition;
+use Kumwe\Automation\ScheduleContributionDefinition;
 use Kumwe\App\BusinessIntegration\Infrastructure\ContributedQueueRuntimePolicyCatalog;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\Access\Capability;
 use Kumwe\App\Kernel\ContainerFactory;
@@ -47,11 +47,8 @@ use ReflectionProperty;
  */
 #[CoversClass(AdministratorNavigationRegistry::class)]
 #[CoversClass(ContainerFactory::class)]
-#[CoversClass(EventContractRegistry::class)]
 #[CoversClass(ExtensionContributionRegistrySet::class)]
 #[CoversClass(JobExecutionScope::class)]
-#[CoversClass(JobHandlerRegistry::class)]
-#[CoversClass(PayloadSchemaValidator::class)]
 #[CoversClass(PortalNavigationRegistry::class)]
 #[CoversClass(ContributedQueueRuntimePolicyCatalog::class)]
 final class LiveSurfaceContractParityTest extends TestCase

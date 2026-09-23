@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Support;
 
-use Kumwe\App\Application\Automation\JobHandler;
+use Kumwe\Automation\JobHandler;
 use Kumwe\Context\Value\ExecutionContext;
 
 /**

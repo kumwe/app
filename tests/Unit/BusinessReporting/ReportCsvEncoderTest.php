@@ -6,7 +6,7 @@ namespace Kumwe\App\Tests\Unit\BusinessReporting;
 
 use Kumwe\App\BusinessReporting\Application\ReportCsvEncoder;
 use Kumwe\App\BusinessReporting\Application\ReportExecutionResult;
-use Kumwe\Extension\Spi\BusinessReporting\Domain\ReportValueType;
+use Kumwe\Reporting\Domain\ReportValueType;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 

@@ -9,12 +9,13 @@ use Kumwe\BusinessDefinition\Domain\FieldDefinition;
 use Kumwe\BusinessDefinition\Domain\FieldTypeDefinition;
 use Kumwe\App\BusinessSurface\Presentation\Field\CoreFieldPresenter;
 use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationInputFactory;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationConfiguration;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationContext;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationInput;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldWidget;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresentationConfiguration;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresentationContext;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresentationInput;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldWidget;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 /**
  * Proves the core catalogue presenter emits only allow-listed semantic widgets with bounded data.
@@ -34,7 +35,7 @@ final class CoreFieldPresenterTest extends TestCase
      */
     public function testEditableEnumPresentsClosedSelectorOptions(): void
     {
-        $presentation = (new CoreFieldPresenter())->present(self::input(
+        $presentation = (new CoreFieldPresenter(new DeterministicCanonicalEncoder()))->present(self::input(
             'core.enum',
             'open',
             configuration: FieldPresentationConfiguration::fromArray(['options' => ['open', 'in_review']]),
@@ -67,7 +68,9 @@ final class CoreFieldPresenterTest extends TestCase
      */
     public function testEditableSecretDisclosesNoValue(): void
     {
-        $presentation = (new CoreFieldPresenter())->present(self::input('core.secret', 'hunter2'));
+        $presentation = (new CoreFieldPresenter(
+            new DeterministicCanonicalEncoder(),
+        ))->present(self::input('core.secret', 'hunter2'));
 
         self::assertSame(FieldWidget::Secret, $presentation->widget);
         self::assertTrue($presentation->editable);
@@ -85,7 +88,9 @@ final class CoreFieldPresenterTest extends TestCase
      */
     public function testEditableIntegerCarriesNumericAttributes(): void
     {
-        $presentation = (new CoreFieldPresenter())->present(self::input('core.integer', 42, length: 5));
+        $presentation = (new CoreFieldPresenter(
+            new DeterministicCanonicalEncoder(),
+        ))->present(self::input('core.integer', 42, length: 5));
 
         self::assertSame(FieldWidget::Integer, $presentation->widget);
         self::assertSame('42', $presentation->display);
@@ -102,7 +107,9 @@ final class CoreFieldPresenterTest extends TestCase
      */
     public function testEditableDecimalKeepsExactStringInput(): void
     {
-        $presentation = (new CoreFieldPresenter())->present(self::input('core.decimal', '1234.5'));
+        $presentation = (new CoreFieldPresenter(
+            new DeterministicCanonicalEncoder(),
+        ))->present(self::input('core.decimal', '1234.5'));
 
         self::assertSame(FieldWidget::Decimal, $presentation->widget);
         self::assertSame('1,234.5', $presentation->display);
@@ -119,7 +126,9 @@ final class CoreFieldPresenterTest extends TestCase
      */
     public function testEditableRichTextUsesBoundedTextarea(): void
     {
-        $presentation = (new CoreFieldPresenter())->present(self::input('core.rich_text', "Hello\nWorld"));
+        $presentation = (new CoreFieldPresenter(
+            new DeterministicCanonicalEncoder(),
+        ))->present(self::input('core.rich_text', "Hello\nWorld"));
 
         self::assertSame(FieldWidget::Textarea, $presentation->widget);
         self::assertSame("Hello\nWorld", $presentation->display);
@@ -136,7 +145,7 @@ final class CoreFieldPresenterTest extends TestCase
      */
     public function testAReadContextPresentsEscapedOutput(): void
     {
-        $presentation = (new CoreFieldPresenter())->present(self::input(
+        $presentation = (new CoreFieldPresenter(new DeterministicCanonicalEncoder()))->present(self::input(
             'core.text',
             'plain value',
             context: FieldPresentationContext::Detail,
@@ -165,7 +174,9 @@ final class CoreFieldPresenterTest extends TestCase
 
         foreach ($candidates as $configuration) {
             try {
-                (new CoreFieldPresenter())->present(self::input('core.enum', 'open', configuration: $configuration));
+                (new CoreFieldPresenter(new DeterministicCanonicalEncoder()))->present(
+                    self::input('core.enum', 'open', configuration: $configuration),
+                );
                 self::fail('Malformed enum presentation options must be refused.');
             } catch (InvalidArgumentException $exception) {
                 self::assertStringContainsString('invalid presentation options', $exception->getMessage());

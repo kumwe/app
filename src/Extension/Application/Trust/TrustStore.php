@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Extension\Application\Trust;
 
 use DateTimeImmutable;
+use Kumwe\CanonicalJson\CanonicalEncoder;
 use InvalidArgumentException;
 use Kumwe\Access\AuthorizationGateway;
 use Kumwe\Access\AuthorizationResource;
@@ -46,6 +47,8 @@ final readonly class TrustStore
     /**
      * Wire the trust boundary to its store, its verifiers, the runtime publisher and the audit trail.
      *
+     * @param  CanonicalEncoder                   $canonicalEncoder            Host encoder every stored
+     *         release manifest is parsed with.
      * @param  TrustStoreRepository               $repository                  Store holding the trust keys,
      *         the installed-release trust records and the lifecycle lock.
      * @param  PublicKeyPackageSignatureVerifier  $verifier                    SDK verifier for a package signature
@@ -73,6 +76,7 @@ final readonly class TrustStore
      * @since  2.0.0
      */
     public function __construct(
+        private CanonicalEncoder $canonicalEncoder,
         private TrustStoreRepository $repository,
         private PublicKeyPackageSignatureVerifier $verifier,
         private ExtensionArtifactVerifier $artifacts,
@@ -686,7 +690,7 @@ final readonly class TrustStore
         ExtensionIdentifier $extension,
     ): void {
         $manifestValue = $release['manifest'] ?? null;
-        $manifest = ExtensionManifest::fromJson(is_string($manifestValue)
+        $manifest = ExtensionManifest::fromJson($this->canonicalEncoder, is_string($manifestValue)
             ? $manifestValue
             : json_encode($manifestValue, JSON_THROW_ON_ERROR));
         if (

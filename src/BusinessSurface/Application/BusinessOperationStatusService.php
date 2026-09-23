@@ -17,7 +17,7 @@ use Kumwe\Record\Model\RecordScope;
 use Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessController;
 use Kumwe\BusinessPolicy\Application\BusinessRecordAccessPlan;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionLedgerResult;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessSchema;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessSchema;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessSurfaceDispatcher;
 use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
 use Psr\Clock\ClockInterface;

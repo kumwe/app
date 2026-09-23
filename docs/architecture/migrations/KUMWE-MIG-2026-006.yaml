@@ -1,0 +1,85 @@
+schema: kumwe-migration-ledger/v1
+migration_id: KUMWE-MIG-2026-006
+change_set: KUMWE-CS-2026-006
+package: kumwe/contribution
+version: 0.1.1
+artifact_digest: "ea0e9dec653d4280f1eda5dd144a122ec5325e2844fe2202b0a8e4fd7702a48e"
+handoff_path: vendor/kumwe/contribution/MIGRATION-HANDOFF.md
+handoff_sha256: "07478d94f2bf239298d9800996c6a4dcab77ca7aceafc7224cb031f9614d5d70"
+release_attestation: docs/architecture/migrations/evidence/KUMWE-MIG-2026-006/RELEASE-ATTESTATION.yaml
+old_namespace_roots: []
+symbols:
+  - old_fqcn: Kumwe\App\Extension\Contribution\ContributionSurface
+    new_fqcn: Kumwe\Contribution\ContributionSurface
+  - old_fqcn: Kumwe\Extension\Spi\Contribution\ContributionDefinition
+    new_fqcn: Kumwe\Contribution\ContributionDefinition
+  - old_fqcn: Kumwe\Extension\Spi\Contribution\ContributionOwner
+    new_fqcn: Kumwe\Contribution\ContributionOwner
+removed_paths:
+  - src/Extension/Contribution/ContributionSurface.php
+removed_tests: []
+retained_tests:
+  - tests/Architecture/InterfaceStandardBoundaryTest.php
+  - tests/Functional/Extension/LiveSurfaceContractParityTest.php
+  - tests/Integration/Extension/ContributedContentTranslationIntegrationTest.php
+  - tests/Integration/Extension/ExtensionContributionLifecycleIntegrationTest.php
+  - tests/Integration/Extension/GeneratedExtensionLifecycleIntegrationTest.php
+  - tests/Integration/Extension/ManifestGenerationLifecycleIntegrationTest.php
+  - tests/Integration/InterfaceStandard/PresentationPreferencePersistenceIntegrationTest.php
+  - tests/Support/AssetInspectionDeploymentAcceptance.php
+  - tests/Support/DashboardPreferenceTestRuntime.php
+  - tests/Support/InMemoryPresentationPreferenceRepository.php
+  - tests/Unit/Administrator/Http/Handler/AdministratorDashboardPreferencesHandlerTest.php
+  - tests/Unit/Administrator/Navigation/AdministratorNavigationRegistryTest.php
+  - tests/Unit/Administrator/Presentation/AdministratorContributionRendererTest.php
+  - tests/Unit/Application/Authorization/ApplicationAuthorizationTest.php
+  - tests/Unit/Application/Authorization/BusinessGroupOwnershipTest.php
+  - tests/Unit/Application/Presentation/Dashboard/DashboardPreferenceServiceTest.php
+  - tests/Unit/BusinessIntegration/Application/BusinessRecordMutationEventPublisherTest.php
+  - tests/Unit/BusinessIntegration/Application/DurableOutboundAdapterDeliveryTest.php
+  - tests/Unit/BusinessIntegration/Application/ValidatedContributedJobHandlerTest.php
+  - tests/Unit/BusinessIntegration/DurableOutboundAdapterDispatcherTest.php
+  - tests/Unit/BusinessIntegration/Infrastructure/RuntimeIntegrationEventTransportTest.php
+  - tests/Unit/BusinessIntegration/QueueRuntimePolicyTest.php
+  - tests/Unit/BusinessRecord/Application/MoneyRateProviderContributionTest.php
+  - tests/Unit/BusinessRecord/Application/UnitConversionProviderContributionTest.php
+  - tests/Unit/BusinessSecurity/Application/BusinessSecurityAdministrationServiceTest.php
+  - tests/Unit/BusinessSurface/Presentation/FieldPresentationRegistryTest.php
+  - tests/Unit/Content/Application/ContributedContentTranslationTest.php
+  - tests/Unit/Content/Application/ExtensionContentTranslationTest.php
+  - tests/Unit/Extension/Contribution/CanonicalManifestInterpreterDriftTest.php
+  - tests/Unit/Extension/Contribution/ContributionDefinitionChecksumTest.php
+  - tests/Unit/Extension/Contribution/CoreContributionActivationTest.php
+  - tests/Unit/Extension/Contribution/ExtensionBindingSurfaceTest.php
+  - tests/Unit/Extension/Contribution/ExtensionContributionRegistrySetTest.php
+  - tests/Unit/Extension/Contribution/OwnedBindingCanonicalDriftTest.php
+  - tests/Unit/Extension/Contribution/StudioPreviewRendererContributionTest.php
+  - tests/Unit/Extension/Development/AssetInspectionExampleTest.php
+  - tests/Unit/Extension/Runtime/ActiveExtensionSetTest.php
+  - tests/Unit/Extension/Runtime/TrustEnforcingJobHandlerTest.php
+  - tests/Unit/Governance/LayerClassifierTest.php
+  - tests/Unit/InterfaceStandard/InterfaceStandardSchemaTest.php
+  - tests/Unit/InterfaceStandard/PresentationPreferenceManagerTest.php
+  - tests/Unit/InterfaceStandard/PresentationPreferenceResolverTest.php
+  - tests/Unit/InterfaceStandard/PresentationPreferenceTest.php
+  - tests/Unit/Portal/Contribution/PortalContributionRegistryTest.php
+  - tests/Unit/Portal/Http/PortalDashboardPreferencesHandlerTest.php
+  - tests/Unit/Portal/Http/PortalHomeHandlerTest.php
+  - tests/Unit/Portal/Presentation/PortalContributionRendererTest.php
+  - tests/Unit/Presentation/Application/Dashboard/DashboardComposerTest.php
+  - tests/Unit/Presentation/Application/Dashboard/DashboardPreferenceFormPresenterTest.php
+  - tests/Unit/Studio/Application/Authoring/ContentStudioAuthoringCatalogTest.php
+  - tests/Unit/Studio/Application/Composition/StudioCompositionContributionCatalogTest.php
+  - tests/Unit/Studio/Application/Composition/StudioPublishedContentRendererTest.php
+  - tests/Unit/Studio/Application/Projection/StudioContentProjectionServiceTest.php
+  - tests/Unit/Studio/Application/Rendering/StudioBlockRendererRuntimeTest.php
+di_changes: []
+capability_index_entries:
+  - kumwe/contribution
+release_evidence:
+  - docs/architecture/migrations/evidence/KUMWE-MIG-2026-006/RELEASE-ATTESTATION.yaml
+app_pull_request: "https://github.com/kumwe/app/pull/151"
+roadmap_refs: []
+non_roadmap_refs:
+  - NRM-2026-047
+conflicts: []

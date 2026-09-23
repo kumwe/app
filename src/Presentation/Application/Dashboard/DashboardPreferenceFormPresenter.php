@@ -6,9 +6,9 @@ namespace Kumwe\App\Presentation\Application\Dashboard;
 
 use InvalidArgumentException;
 use Kumwe\App\Application\Presentation\Dashboard\DashboardPreferenceState;
-use Kumwe\App\InterfaceStandard\CustomizationScope;
+use Kumwe\InterfaceStandard\CustomizationScope;
 use Kumwe\App\InterfaceStandard\PresentationPreference;
-use Kumwe\App\InterfaceStandard\SurfaceId;
+use Kumwe\InterfaceStandard\SurfaceId;
 use RuntimeException;
 
 /**

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Delivery\Console\Command;
 
 use InvalidArgumentException;
-use Kumwe\App\Application\Automation\QueueRuntimePolicyCatalog;
+use Kumwe\Automation\QueueRuntimePolicyCatalog;
 use Kumwe\App\Application\Automation\Worker;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Context\Value\SiteContext;

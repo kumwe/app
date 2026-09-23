@@ -11,13 +11,13 @@ use Kumwe\Access\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\App\Application\Presentation\Preference\PresentationAccessGroupRepository;
 use Kumwe\App\Application\Presentation\Preference\PresentationPreferenceManager;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
-use Kumwe\App\InterfaceStandard\CustomizationScope;
-use Kumwe\App\InterfaceStandard\CustomizationSlot;
+use Kumwe\Contribution\ContributionOwner;
+use Kumwe\InterfaceStandard\CustomizationScope;
+use Kumwe\InterfaceStandard\CustomizationSlot;
 use Kumwe\App\InterfaceStandard\PresentationPreference;
 use Kumwe\App\InterfaceStandard\PresentationPreferenceKey;
-use Kumwe\App\InterfaceStandard\SurfaceArea;
-use Kumwe\App\InterfaceStandard\SurfaceId;
+use Kumwe\InterfaceStandard\SurfaceArea;
+use Kumwe\InterfaceStandard\SurfaceId;
 use Kumwe\Access\Capability;
 use RuntimeException;
 

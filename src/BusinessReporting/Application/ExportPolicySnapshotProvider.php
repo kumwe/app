@@ -6,7 +6,7 @@ namespace Kumwe\App\BusinessReporting\Application;
 
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Extension\Spi\BusinessRecord\Application\BusinessRecordQueryPurpose;
-use Kumwe\App\BusinessReporting\Domain\ReportDefinition;
+use Kumwe\Reporting\Domain\ReportDefinition;
 
 /**
  * Resolves the current row, field, relation and authority decision for an export.

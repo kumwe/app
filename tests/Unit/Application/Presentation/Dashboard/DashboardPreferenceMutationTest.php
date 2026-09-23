@@ -7,9 +7,9 @@ namespace Kumwe\App\Tests\Unit\Application\Presentation\Dashboard;
 use InvalidArgumentException;
 use Kumwe\App\Application\Presentation\Dashboard\DashboardPreferenceMutation;
 use Kumwe\App\Application\Presentation\Preference\PresentationAccessGroup;
-use Kumwe\App\InterfaceStandard\CustomizationScope;
-use Kumwe\App\InterfaceStandard\CustomizationSlot;
-use Kumwe\App\InterfaceStandard\SurfaceId;
+use Kumwe\InterfaceStandard\CustomizationScope;
+use Kumwe\InterfaceStandard\CustomizationSlot;
+use Kumwe\InterfaceStandard\SurfaceId;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\UsesClass;
@@ -22,7 +22,6 @@ use PHPUnit\Framework\TestCase;
  */
 #[CoversClass(DashboardPreferenceMutation::class)]
 #[UsesClass(PresentationAccessGroup::class)]
-#[UsesClass(SurfaceId::class)]
 final class DashboardPreferenceMutationTest extends TestCase
 {
     /**

@@ -6,6 +6,7 @@ namespace Kumwe\App\BusinessReporting\Infrastructure;
 
 use DateTimeInterface;
 use Doctrine\DBAL\Connection;
+use Kumwe\CanonicalJson\CanonicalEncoder;
 use InvalidArgumentException;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\App\BusinessIntegration\Application\TrustedRuntimeGenerationGuard;
@@ -14,9 +15,9 @@ use Kumwe\App\BusinessReporting\Application\ProjectionRebuildService;
 use Kumwe\App\BusinessReporting\Application\ProjectionRuntime;
 use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationEvent;
-use Kumwe\Extension\Spi\BusinessReporting\Application\ProjectionBuilder;
-use Kumwe\Extension\Spi\BusinessReporting\Domain\ProjectionDefinition;
+use Kumwe\Integration\IntegrationEvent;
+use Kumwe\Reporting\Contract\ProjectionBuilder;
+use Kumwe\Reporting\Domain\ProjectionDefinition;
 use Psr\Clock\ClockInterface;
 use RuntimeException;
 
@@ -38,13 +39,14 @@ final readonly class DoctrineProjectionRuntime implements ProjectionRuntime
     /**
      * Capture active projection implementations and durable-store dependencies.
      *
-     * @param   Connection                     $database       Shared authoritative database connection.
-     * @param   TableNames                     $tables         Portable physical table-name compiler.
-     * @param   TransactionManager             $transactions   Atomic generation and live-apply boundary.
-     * @param   ClockInterface                 $clock          Authoritative persistence clock.
-     * @param   TrustedRuntimeGenerationGuard  $runtime        Staleness fence for worker and operator execution.
-     * @param   RuntimeMaterializationState    $loadedRuntime  Exact trusted generation loaded by this process.
-     * @param   iterable<mixed>                $entries        Active registry entries containing definitions and
+     * @param   Connection                     $database          Shared authoritative database connection.
+     * @param   TableNames                     $tables            Portable physical table-name compiler.
+     * @param   TransactionManager             $transactions      Atomic generation and live-apply boundary.
+     * @param   ClockInterface                 $clock             Authoritative persistence clock.
+     * @param   CanonicalEncoder               $canonicalEncoder  Host encoder the store rebuilds envelopes with.
+     * @param   TrustedRuntimeGenerationGuard  $runtime           Staleness fence for worker and operator execution.
+     * @param   RuntimeMaterializationState    $loadedRuntime     Exact trusted generation loaded by this process.
+     * @param   iterable<mixed>                $entries           Active registry entries containing definitions and
      *          builders.
      *
      * @throws  InvalidArgumentException  When an entry is malformed or duplicated.
@@ -56,6 +58,7 @@ final readonly class DoctrineProjectionRuntime implements ProjectionRuntime
         private TableNames $tables,
         private TransactionManager $transactions,
         private ClockInterface $clock,
+        private CanonicalEncoder $canonicalEncoder,
         private TrustedRuntimeGenerationGuard $runtime,
         private RuntimeMaterializationState $loadedRuntime,
         iterable $entries,
@@ -227,6 +230,7 @@ final readonly class DoctrineProjectionRuntime implements ProjectionRuntime
             $this->tables,
             $this->transactions,
             $this->clock,
+            $this->canonicalEncoder,
         );
     }
 

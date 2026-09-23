@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Integration\Automation;
 
 use Kumwe\App\Kernel\Container;
-use Kumwe\App\Application\Automation\JobHandler;
-use Kumwe\App\Application\Automation\JobHandlerRegistry;
-use Kumwe\App\Application\Automation\JobQueue;
+use Kumwe\Automation\JobHandler;
+use Kumwe\Automation\JobHandlerRegistry;
+use Kumwe\Automation\JobQueue;
 use Kumwe\App\Application\Automation\Worker;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\App\Infrastructure\Automation\DoctrineJobQueue;

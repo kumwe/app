@@ -1,0 +1,108 @@
+schema: kumwe-migration-ledger/v1
+migration_id: KUMWE-MIG-2026-041
+change_set: KUMWE-CS-2026-041
+package: kumwe/reporting
+version: 0.1.5
+artifact_digest: "25813ad47359cd7ff7500110666dff92da4fee096614ad8a05847687d6bfd4c6"
+handoff_path: vendor/kumwe/reporting/docs/release-record.md
+handoff_sha256: "37ad7ff68ff332528b10b8bf2c772d64b7241789fb0b7434141fddc17e515631"
+release_attestation: docs/architecture/migrations/evidence/KUMWE-MIG-2026-041/RELEASE-ATTESTATION.yaml
+old_namespace_roots:
+  - "Kumwe\\Extension\\Spi\\BusinessReporting\\Application\\"
+  - "Kumwe\\Extension\\Spi\\BusinessReporting\\Domain\\"
+symbols:
+  - old_fqcn: Kumwe\App\BusinessReporting\Domain\ReportAggregateDefinition
+    new_fqcn: Kumwe\Reporting\Domain\ReportAggregateDefinition
+  - old_fqcn: Kumwe\App\BusinessReporting\Domain\ReportAggregateFunction
+    new_fqcn: Kumwe\Reporting\Domain\ReportAggregateFunction
+  - old_fqcn: Kumwe\App\BusinessReporting\Domain\ReportColumnDefinition
+    new_fqcn: Kumwe\Reporting\Domain\ReportColumnDefinition
+  - old_fqcn: Kumwe\App\BusinessReporting\Domain\ReportDefinition
+    new_fqcn: Kumwe\Reporting\Domain\ReportDefinition
+  - old_fqcn: Kumwe\App\BusinessReporting\Domain\ReportDrillDownDefinition
+    new_fqcn: Kumwe\Reporting\Domain\ReportDrillDownDefinition
+  - old_fqcn: Kumwe\App\BusinessReporting\Domain\ReportFilterDefinition
+    new_fqcn: Kumwe\Reporting\Domain\ReportFilterDefinition
+  - old_fqcn: Kumwe\App\BusinessReporting\Domain\ReportFilterOperator
+    new_fqcn: Kumwe\Reporting\Domain\ReportFilterOperator
+  - old_fqcn: Kumwe\App\BusinessReporting\Domain\ReportFormulaDefinition
+    new_fqcn: Kumwe\Reporting\Domain\ReportFormulaDefinition
+  - old_fqcn: Kumwe\App\BusinessReporting\Domain\ReportGroupDefinition
+    new_fqcn: Kumwe\Reporting\Domain\ReportGroupDefinition
+  - old_fqcn: Kumwe\App\BusinessReporting\Domain\ReportParameterDefinition
+    new_fqcn: Kumwe\Reporting\Domain\ReportParameterDefinition
+  - old_fqcn: Kumwe\App\BusinessReporting\Domain\ReportRelationQuantifier
+    new_fqcn: Kumwe\Reporting\Domain\ReportRelationQuantifier
+  - old_fqcn: Kumwe\App\BusinessReporting\Domain\ReportSortDefinition
+    new_fqcn: Kumwe\Reporting\Domain\ReportSortDefinition
+  - old_fqcn: Kumwe\App\BusinessReporting\Domain\ReportSortDirection
+    new_fqcn: Kumwe\Reporting\Domain\ReportSortDirection
+  - old_fqcn: Kumwe\Extension\Spi\BusinessReporting\Application\ProjectionBuilder
+    new_fqcn: Kumwe\Reporting\Contract\ProjectionBuilder
+  - old_fqcn: Kumwe\Extension\Spi\BusinessReporting\Application\ProjectionEvent
+    new_fqcn: Kumwe\Reporting\Contract\ProjectionEvent
+  - old_fqcn: Kumwe\Extension\Spi\BusinessReporting\Application\ProjectionWriter
+    new_fqcn: Kumwe\Reporting\Contract\ProjectionWriter
+  - old_fqcn: Kumwe\Extension\Spi\BusinessReporting\Domain\ProjectionDefinition
+    new_fqcn: Kumwe\Reporting\Domain\ProjectionDefinition
+  - old_fqcn: Kumwe\Extension\Spi\BusinessReporting\Domain\ProjectionFieldDefinition
+    new_fqcn: Kumwe\Reporting\Domain\ProjectionFieldDefinition
+  - old_fqcn: Kumwe\Extension\Spi\BusinessReporting\Domain\ProjectionSourceDefinition
+    new_fqcn: Kumwe\Reporting\Domain\ProjectionSourceDefinition
+  - old_fqcn: Kumwe\Extension\Spi\BusinessReporting\Domain\ReportDefinitionGuard
+    new_fqcn: Kumwe\Reporting\Domain\ReportDefinitionGuard
+  - old_fqcn: Kumwe\Extension\Spi\BusinessReporting\Domain\ReportValueType
+    new_fqcn: Kumwe\Reporting\Domain\ReportValueType
+removed_paths:
+  - src/BusinessReporting/Domain/ReportAggregateDefinition.php
+  - src/BusinessReporting/Domain/ReportAggregateFunction.php
+  - src/BusinessReporting/Domain/ReportColumnDefinition.php
+  - src/BusinessReporting/Domain/ReportDefinition.php
+  - src/BusinessReporting/Domain/ReportDrillDownDefinition.php
+  - src/BusinessReporting/Domain/ReportFilterDefinition.php
+  - src/BusinessReporting/Domain/ReportFilterOperator.php
+  - src/BusinessReporting/Domain/ReportFormulaDefinition.php
+  - src/BusinessReporting/Domain/ReportGroupDefinition.php
+  - src/BusinessReporting/Domain/ReportParameterDefinition.php
+  - src/BusinessReporting/Domain/ReportRelationQuantifier.php
+  - src/BusinessReporting/Domain/ReportSortDefinition.php
+  - src/BusinessReporting/Domain/ReportSortDirection.php
+removed_tests:
+  - tests/Unit/BusinessReporting/ReportDefinitionTest.php
+retained_tests:
+  - tests/Architecture/ConvertedMoneySurfaceCoverageTest.php
+  - tests/Architecture/TruthfulQualityGateTest.php
+  - tests/Integration/BusinessIntegration/ProjectionRuntimePersistenceTest.php
+  - tests/Integration/BusinessReporting/ExportArtifactPersistenceTest.php
+  - tests/Integration/BusinessReporting/ExportAttemptPublisherTest.php
+  - tests/Integration/BusinessReporting/FilesystemExportArtifactStorageTest.php
+  - tests/Integration/Extension/GeneratedExtensionLifecycleIntegrationTest.php
+  - tests/Unit/BusinessReporting/ConvertedMoneyProvenanceTest.php
+  - tests/Unit/BusinessReporting/ConvertedQuantityProvenanceTest.php
+  - tests/Unit/BusinessReporting/Delivery/Browser/ReportParameterInputTest.php
+  - tests/Unit/BusinessReporting/ExportArtifactTest.php
+  - tests/Unit/BusinessReporting/ExportGenerationPolicyFenceTest.php
+  - tests/Unit/BusinessReporting/ExportServiceTransactionTest.php
+  - tests/Unit/BusinessReporting/LiveExportExecutionContextResolverTest.php
+  - tests/Unit/BusinessReporting/RecordExportPipelineTest.php
+  - tests/Unit/BusinessReporting/RecordExportReportProviderTest.php
+  - tests/Unit/BusinessReporting/ReportApiDiscoveryTest.php
+  - tests/Unit/BusinessReporting/ReportBrowserErrorResponseTest.php
+  - tests/Unit/BusinessReporting/ReportCommandDownloadTest.php
+  - tests/Unit/BusinessReporting/ReportCsvEncoderTest.php
+  - tests/Unit/BusinessReporting/ReportDeliveryPresenterTest.php
+  - tests/Unit/BusinessReporting/ReportPolicyInferenceTest.php
+  - tests/Unit/Extension/Contribution/ExtensionBindingSurfaceTest.php
+  - tests/Unit/Extension/Contribution/OwnedBindingCanonicalDriftTest.php
+  - tests/Unit/Extension/Development/ExtensionDevelopmentSdkTest.php
+  - tests/Unit/Governance/ComposerLockTest.php
+di_changes: []
+capability_index_entries:
+  - kumwe/reporting
+release_evidence:
+  - docs/architecture/migrations/evidence/KUMWE-MIG-2026-041/RELEASE-ATTESTATION.yaml
+app_pull_request: "https://github.com/kumwe/app/pull/151"
+roadmap_refs: []
+non_roadmap_refs:
+  - NRM-2026-051
+conflicts: []

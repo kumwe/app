@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Application\Automation\Job;
 
 use InvalidArgumentException;
-use Kumwe\App\Application\Automation\JobHandler;
+use Kumwe\Automation\JobHandler;
 use Kumwe\App\Audit\Application\AuditRetentionService;
 use Kumwe\Context\Value\ExecutionContext;
 

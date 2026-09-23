@@ -17,24 +17,26 @@ use Kumwe\Extension\Spi\Binding\Http\PortalRouteRenderer;
 use Kumwe\Extension\Spi\BusinessIntegration\Application\DomainEventHandler;
 use Kumwe\Extension\Spi\BusinessIntegration\Application\IntegrationEventHandler;
 use Kumwe\Extension\Spi\BusinessIntegration\Application\IntegrationEventTransport;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\DomainEvent;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\DomainListenerDefinition;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventConsumerDefinition;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationEvent;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\JobContributionDefinition;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\WebhookContributionDefinition;
-use Kumwe\Extension\Spi\BusinessReporting\Application\ProjectionBuilder;
-use Kumwe\Extension\Spi\BusinessReporting\Application\ProjectionEvent;
-use Kumwe\Extension\Spi\BusinessReporting\Application\ProjectionWriter;
-use Kumwe\Extension\Spi\BusinessReporting\Domain\ProjectionDefinition;
+use Kumwe\Integration\DomainEvent;
+use Kumwe\Integration\DomainListenerDefinition;
+use Kumwe\Integration\EventConsumerDefinition;
+use Kumwe\Integration\IntegrationEvent;
+use Kumwe\Automation\JobContributionDefinition;
+use Kumwe\Integration\WebhookContributionDefinition;
+use Kumwe\Reporting\Contract\ProjectionBuilder;
+use Kumwe\Reporting\Contract\ProjectionEvent;
+use Kumwe\Reporting\Contract\ProjectionWriter;
+use Kumwe\Reporting\Domain\ProjectionDefinition;
 use Kumwe\Extension\Spi\Binding\Http\AdministratorRouteHandlerFactory;
 use Kumwe\Extension\Spi\Binding\Http\AdministratorRouteRenderer;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationInput;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationModel;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresenter;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresentationInput;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresentationModel;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldWidget;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresentationContext;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresenter;
 use Kumwe\Extension\Spi\Contribution\CanonicalCompositionKind;
 use Kumwe\Extension\Spi\Contribution\CompositionHostBinding;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Contribution\ContributionOwner;
 use Kumwe\Extension\Spi\Studio\Application\Preview\StudioPreviewBindingResult;
 use Kumwe\Extension\Spi\Studio\Application\Preview\StudioPreviewBlock;
 use Kumwe\Extension\Spi\Studio\Application\Preview\StudioPreviewBlockFragment;
@@ -47,6 +49,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use ReflectionClass;
 use RuntimeException;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(OwnedExtensionBindingRegistrar::class)]
 /**
@@ -299,7 +302,11 @@ final class OwnedBindingCanonicalDriftTest extends TestCase
         bool $provenance = false,
     ): OwnedExtensionBindingRegistrar {
         $manifest = self::driftedManifest($declarations, $overrides);
-        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+            withCore: false,
+        );
         if (!$provenance) {
             return new OwnedExtensionBindingRegistrar($manifest, $registries);
         }
@@ -365,7 +372,17 @@ final class OwnedBindingCanonicalDriftTest extends TestCase
             {
                 unset($input);
 
-                return new FieldPresentationModel('text', ['value' => 'probe']);
+                return new FieldPresentationModel(
+                    'text',
+                    'Text',
+                    FieldPresentationContext::AdministratorForm,
+                    FieldWidget::Text,
+                    'probe',
+                    'probe',
+                    true,
+                    false,
+                    new DeterministicCanonicalEncoder(),
+                );
             }
         };
     }

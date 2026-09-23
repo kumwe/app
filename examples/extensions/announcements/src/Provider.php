@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace KumweExample\Announcements;
 
 use LogicException;
+use Kumwe\CanonicalJson\CanonicalEncoder;
 use Kumwe\Extension\Spi\Binding\ExtensionBindingProvider;
 use Kumwe\Extension\Spi\Binding\ExtensionBindingRegistrar;
 use Kumwe\Extension\Spi\Binding\Http\AdministratorRouteHandlerFactory;
@@ -45,9 +46,14 @@ final class Provider implements ExtensionServiceProvider, ExtensionBindingProvid
             throw new LogicException('The announcements administrator handler factory is unavailable.');
         }
 
+        $encoder = $container->get(CanonicalEncoder::class);
+        if (!$encoder instanceof CanonicalEncoder) {
+            throw new LogicException('The host canonical encoder is unavailable to the announcements component.');
+        }
+
         $bindings->fieldPresenter(
             'kumwe.announcements-example.severity',
-            new SeverityFieldPresenter(),
+            new SeverityFieldPresenter(new DeterministicCanonicalEncoder(), $encoder),
         );
         $bindings->administratorRoute('kumwe.announcements-example.index', $factory);
     }

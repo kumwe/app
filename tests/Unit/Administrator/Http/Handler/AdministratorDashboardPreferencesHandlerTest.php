@@ -11,16 +11,16 @@ use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
 use Kumwe\App\Administrator\Presentation\RecoveryAdministratorRenderer;
 use Kumwe\Context\Value\AuthenticationStrength;
 use Kumwe\Context\Value\SiteContext;
-use Kumwe\Extension\Spi\Contribution\AdministratorNavigationDefinition;
-use Kumwe\Extension\Spi\Contribution\AdministratorWorkspaceDefinition;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Administrator\Contract\AdministratorNavigationDefinition;
+use Kumwe\Administrator\Contract\AdministratorWorkspaceDefinition;
+use Kumwe\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\App\Identity\Application\Administration\AdministratorSession;
-use Kumwe\App\InterfaceStandard\CustomizationScope;
-use Kumwe\App\InterfaceStandard\CustomizationSlot;
+use Kumwe\InterfaceStandard\CustomizationScope;
+use Kumwe\InterfaceStandard\CustomizationSlot;
 use Kumwe\App\InterfaceStandard\PresentationPreferenceKey;
-use Kumwe\App\InterfaceStandard\SurfaceId;
+use Kumwe\InterfaceStandard\SurfaceId;
 use Kumwe\App\Presentation\Application\Dashboard\DashboardComposer;
 use Kumwe\App\Application\Presentation\Dashboard\DashboardPreferenceService;
 use Kumwe\App\Delivery\Http\Dashboard\DashboardPreferenceQueryDecoder;
@@ -35,6 +35,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ServerRequestInterface;
 use Twig\Loader\ArrayLoader;
 use Kumwe\App\Application\Authorization\ExecutionContextAttribute;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 /**
  * Verifies administrator POST delivery derives a live catalog and exposes only closed redirect results.
@@ -141,7 +142,10 @@ final class AdministratorDashboardPreferencesHandlerTest extends TestCase
      */
     public function testSavesAWorkflowBeyondTheFormerRendererPrefix(): void
     {
-        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+        );
         $owner = ContributionOwner::core();
         $registries->workspaces()->register($owner, new AdministratorWorkspaceDefinition(
             'core.dashboard-volume',
@@ -272,6 +276,7 @@ final class AdministratorDashboardPreferencesHandlerTest extends TestCase
         return new AdministratorRenderer(
             new AdministratorTwigEnvironment(new ArrayLoader()),
             new RecoveryAdministratorRenderer(new RecoveryAdministratorTwigEnvironment(new ArrayLoader())),
+            new DeterministicCanonicalEncoder(),
             $navigation,
         );
     }

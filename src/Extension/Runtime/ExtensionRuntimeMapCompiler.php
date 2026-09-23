@@ -6,6 +6,7 @@ namespace Kumwe\App\Extension\Runtime;
 
 use DateInterval;
 use Doctrine\DBAL\Connection;
+use Kumwe\CanonicalJson\CanonicalEncoder;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\DBAL\Types\Types;
@@ -45,6 +46,8 @@ final readonly class ExtensionRuntimeMapCompiler implements TrustRuntimeInvalida
     /**
      * Wire the compiler to the registry, the local cache location and the signing key ring.
      *
+     * @param   CanonicalEncoder           $canonicalEncoder     Host encoder every stored manifest is parsed
+     *          with.
      * @param   Connection                 $database             Registry connection; publication and
      *          materialization both run through it.
      * @param   TableNames                 $tables               Prefixed physical names of the registry tables.
@@ -71,6 +74,7 @@ final readonly class ExtensionRuntimeMapCompiler implements TrustRuntimeInvalida
      * @since   2.0.0
      */
     public function __construct(
+        private CanonicalEncoder $canonicalEncoder,
         private Connection $database,
         private TableNames $tables,
         private string $mapFile,
@@ -979,7 +983,7 @@ final readonly class ExtensionRuntimeMapCompiler implements TrustRuntimeInvalida
                 throw new RuntimeException('An active extension has incomplete runtime metadata.');
             }
 
-            $manifest = ExtensionManifest::fromJson(is_string($manifestJson)
+            $manifest = ExtensionManifest::fromJson($this->canonicalEncoder, is_string($manifestJson)
                 ? $manifestJson
                 : json_encode($manifestJson, JSON_THROW_ON_ERROR));
             $extensions[] = [

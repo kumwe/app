@@ -7,12 +7,13 @@ namespace Kumwe\App\Tests\Unit\BusinessSurface\Presentation;
 use InvalidArgumentException;
 use Kumwe\BusinessDefinition\Domain\FieldDefinition;
 use Kumwe\BusinessDefinition\Domain\FieldTypeDefinition;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationContext;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresentationContext;
 use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationInputFactory;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldWidget;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldWidget;
 use KumweExample\Announcements\Presentation\SeverityFieldPresenter;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 /**
  * Proves the shipped schema-3 example presenter remains markup-free, closed, and non-widening.
@@ -44,7 +45,9 @@ final class SeverityFieldPresenterTest extends TestCase
      */
     public function testPresentsClosedSeveritySelectorWhenEditingIsPermitted(): void
     {
-        $presentation = (new SeverityFieldPresenter())->present(FieldPresentationInputFactory::fromDefinition(
+        $presentation = (new SeverityFieldPresenter(
+            new DeterministicCanonicalEncoder(),
+        ))->present(FieldPresentationInputFactory::fromDefinition(
             self::field(),
             self::type(),
             FieldPresentationContext::Create,
@@ -76,7 +79,9 @@ final class SeverityFieldPresenterTest extends TestCase
      */
     public function testPresentsReadOnlySeverityWithoutRetainedInput(): void
     {
-        $presentation = (new SeverityFieldPresenter())->present(FieldPresentationInputFactory::fromDefinition(
+        $presentation = (new SeverityFieldPresenter(
+            new DeterministicCanonicalEncoder(),
+        ))->present(FieldPresentationInputFactory::fromDefinition(
             self::field(),
             self::type(),
             FieldPresentationContext::Detail,
@@ -103,7 +108,9 @@ final class SeverityFieldPresenterTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('outside its declared options');
 
-        (new SeverityFieldPresenter())->present(FieldPresentationInputFactory::fromDefinition(
+        (new SeverityFieldPresenter(
+            new DeterministicCanonicalEncoder(),
+        ))->present(FieldPresentationInputFactory::fromDefinition(
             self::field(),
             self::type(),
             FieldPresentationContext::Detail,

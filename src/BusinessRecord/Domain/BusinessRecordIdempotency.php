@@ -7,6 +7,7 @@ namespace Kumwe\App\BusinessRecord\Domain;
 use DateTimeImmutable;
 use InvalidArgumentException;
 use Ramsey\Uuid\Uuid;
+use Kumwe\Record\Model\BusinessRecordReplayWindow;
 
 /**
  * One at-most-once claim over a business-record command, carrying the result a retry replays.

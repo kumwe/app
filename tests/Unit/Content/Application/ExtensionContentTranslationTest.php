@@ -7,7 +7,7 @@ namespace Kumwe\App\Tests\Unit\Content\Application;
 use InvalidArgumentException;
 use Kumwe\Content\Domain\TranslationGroup;
 use Kumwe\App\Extension\Contribution\TranslationGroupDeclaration;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\Extension\Manifest\ExtensionIdentifier;
@@ -16,6 +16,7 @@ use Kumwe\Localization\Domain\LocaleTag;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(TranslationGroupDeclaration::class)]
 #[UsesClass(ExtensionContributionRegistrySet::class)]
@@ -40,7 +41,11 @@ final class ExtensionContentTranslationTest extends TestCase
      */
     public function testAnExtensionDeclaresLocaleVariantsThroughItsCanonicalManifest(): void
     {
-        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+            withCore: false,
+        );
         $owner = ContributionOwner::extension('acme/blog');
         $declaration = new TranslationGroupDeclaration('acme.blog.articles', ['en-GB', 'af', 'de'], 'en-GB');
         $registrar = $registries->activateManifest(self::manifest($declaration));
@@ -63,7 +68,10 @@ final class ExtensionContentTranslationTest extends TestCase
      */
     public function testCoreContributesNoContentTranslationGroup(): void
     {
-        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+        );
 
         self::assertSame([], $registries->contentTranslationGroups()->definitions());
     }
@@ -77,7 +85,11 @@ final class ExtensionContentTranslationTest extends TestCase
      */
     public function testRemovingThePackageWithdrawsItsContentTranslationGroups(): void
     {
-        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+            withCore: false,
+        );
         $owner = ContributionOwner::extension('acme/blog');
         $declaration = new TranslationGroupDeclaration('acme.blog.articles', ['en-GB', 'de'], 'en-GB');
         $registrar = $registries->activateManifest(self::manifest($declaration));
@@ -200,6 +212,7 @@ final class ExtensionContentTranslationTest extends TestCase
     private static function manifest(TranslationGroupDeclaration $declaration): ManifestContributions
     {
         return ManifestContributions::fromManifest(
+            new DeterministicCanonicalEncoder(),
             ExtensionIdentifier::fromString('acme/blog'),
             [
                 'version' => 2,

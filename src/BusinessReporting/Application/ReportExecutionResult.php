@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessReporting\Application;
 
 use InvalidArgumentException;
-use Kumwe\App\BusinessReporting\Domain\ReportDrillDownDefinition;
-use Kumwe\Extension\Spi\BusinessReporting\Domain\ReportValueType;
+use Kumwe\Reporting\Domain\ReportDrillDownDefinition;
+use Kumwe\Reporting\Domain\ReportValueType;
 
 /**
  * Bounded report result whose rows contain disclosure-safe scalar output only.

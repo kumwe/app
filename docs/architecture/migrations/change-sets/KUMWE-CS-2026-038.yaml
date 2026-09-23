@@ -1,0 +1,133 @@
+schema: kumwe-change-set/v2
+change_set: KUMWE-CS-2026-038
+migration_id: KUMWE-MIG-2026-038
+roadmap_source:
+  title: Kumwe ERP-Extensibility Foundation Roadmap
+  sha256: a202155ef1a65f5ab293d4f8397ebf4ac430db7f1e877c776bbe7851e6fe18d8
+roadmap_refs: []
+state: app-pr-ready
+phase_1:
+  source_repository: kumwe/app
+  source_sha: null
+  target_repository: kumwe/business-surface-contract
+  package_pr: null
+  tested_sha: null
+  public_api_digest: "5b8f77f5098c012e79cc57d508f890616b40cc14f1d631d7f684fc067f353f94"
+  capability_digest: "e3eb1bfe192d537c2885fe677ead17643d657096358948d7780e80bab50223f8"
+  service_map_digest: "95fbb8892ab06bf4100a1812a43009fe2d5ebb21e01a2deb1409f196df77a265"
+  handoff_digest: "f320c1358b2b156f6a4dea91fd68e98cb9767832bb4f729c5b6319a12b861b1d"
+release:
+  version: 0.1.4
+  source_sha: "c948cd42972f57c3975888c846a54f6630fd4805"
+  artifact_digest: "8b7838d1962e886066050f2f2b2cfbdc639c85783f1190ea151a719f119dc1b3"
+  clean_consumer_evidence:
+    - docs/architecture/migrations/evidence/KUMWE-MIG-2026-038/RELEASE-ATTESTATION.yaml
+phase_2:
+  app_pr: "https://github.com/kumwe/app/pull/151"
+  tested_sha: null
+  merged_sha: null
+  exact_dependency: "kumwe/business-surface-contract 0.1.4"
+  composer_lock_digest: "04b6bdc0e61ef498055023db3aa6243d6c1e05566aa6428729a2117cb9c00612"
+  removed_app_symbols:
+    - Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionCommand
+    - Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionDeclaration
+    - Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionHandler
+    - Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionResult
+    - Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessPayload
+    - Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessReference
+    - Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessSchema
+    - Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewDeclaration
+    - Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewHandler
+    - Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewQuery
+    - Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewResult
+    - Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationConfiguration
+    - Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationContext
+    - Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationContribution
+    - Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationInput
+    - Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationModel
+    - Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresenter
+    - Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldWidget
+  moved_unit_tests: []
+  retained_app_tests:
+    - tests/Architecture/BusinessSurfaceRenderingSeamTest.php
+    - tests/Architecture/ConvertedMoneySurfaceCoverageTest.php
+    - tests/Architecture/CustomBusinessHandlerBoundaryTest.php
+    - tests/Integration/BusinessSurface/GeneratedBusinessBrowserIntegrationTest.php
+    - tests/Integration/Extension/AssetInspectionCustomViewIntegrationTest.php
+    - tests/Unit/BusinessDefinition/Domain/EntityTypeDefinitionTest.php
+    - tests/Unit/BusinessSurface/Application/Custom/CustomBusinessActionExecutorTest.php
+    - tests/Unit/BusinessSurface/Application/Custom/CustomBusinessHandlerRegistryTest.php
+    - tests/Unit/BusinessSurface/Delivery/Browser/BusinessFormInputMapperTest.php
+    - tests/Unit/BusinessSurface/Presentation/Field/CoreFieldPresenterTest.php
+    - tests/Unit/BusinessSurface/Presentation/FieldPresentationRegistryTest.php
+    - tests/Unit/BusinessSurface/Presentation/RegistryFieldModelPresenterTest.php
+    - tests/Unit/BusinessSurface/Presentation/SeverityFieldPresenterTest.php
+    - tests/Unit/Delivery/Http/Api/Business/BusinessOperationStatusApiHandlerTest.php
+    - tests/Unit/Extension/Contribution/CustomBusinessHandlerBindingTest.php
+    - tests/Unit/Extension/Contribution/ExtensionBindingSurfaceTest.php
+    - tests/Unit/Extension/Contribution/OwnedBindingCanonicalDriftTest.php
+    - tests/Unit/Governance/ComposerLockTest.php
+evidence:
+  package:
+    - docs/architecture/migrations/evidence/KUMWE-MIG-2026-038/RELEASE-ATTESTATION.yaml
+    - "https://github.com/kumwe/business-surface-contract/actions/runs/35878555732; release on record on tag commit c948cd42972f57c3975888c846a54f6630fd4805"
+    - "https://github.com/kumwe/business-surface-contract/releases/tag/v0.1.4; release 394778262"
+  app_composition:
+    - tests/Architecture/BusinessSurfaceRenderingSeamTest.php
+    - tests/Architecture/ConvertedMoneySurfaceCoverageTest.php
+    - tests/Architecture/CustomBusinessHandlerBoundaryTest.php
+    - tests/Unit/BusinessDefinition/Domain/EntityTypeDefinitionTest.php
+    - tests/Unit/BusinessSurface/Application/Custom/CustomBusinessActionExecutorTest.php
+    - tests/Unit/BusinessSurface/Application/Custom/CustomBusinessHandlerRegistryTest.php
+    - tests/Unit/BusinessSurface/Delivery/Browser/BusinessFormInputMapperTest.php
+    - tests/Unit/BusinessSurface/Presentation/Field/CoreFieldPresenterTest.php
+    - tests/Unit/BusinessSurface/Presentation/FieldPresentationRegistryTest.php
+    - tests/Unit/BusinessSurface/Presentation/RegistryFieldModelPresenterTest.php
+    - tests/Unit/BusinessSurface/Presentation/SeverityFieldPresenterTest.php
+    - tests/Unit/Delivery/Http/Api/Business/BusinessOperationStatusApiHandlerTest.php
+    - tests/Unit/Governance/ComposerLockTest.php
+    - tests/Unit/Governance/CoreGrowthGateTest.php
+    - tests/Architecture/CapabilityIndexGateTest.php
+    - "composer update of the train packages; one lock regeneration for the whole train, kumwe/business-surface-contract at 0.1.4"
+    - "composer kumwe:capability-index, kumwe:core-growth-record, baseline:record, then the composer qa gates and the unit and architecture suites, run locally on PHP 8.4 without ext-kumwe_engine"
+  database_matrix:
+    - tests/Integration/BusinessSurface/GeneratedBusinessBrowserIntegrationTest.php
+    - tests/Integration/Extension/AssetInspectionCustomViewIntegrationTest.php
+    - "To be exercised by the pull request's hosted workflows on MariaDB, MySQL and PostgreSQL."
+  concurrency:
+    - "Claim contention, leases, recovery and dead-letter paths; to be exercised by the pull request's hosted workflows."
+  authorization_security:
+    - tests/Architecture/CustomBusinessHandlerBoundaryTest.php
+    - "Capability checks, admission and trust decisions stay in App; the hosted source-and-image security scans run on the pull request."
+  lifecycle_recovery:
+    - "Lifecycle, recovery and migration paths; to be exercised by the pull request's hosted workflows."
+  delivery_browser:
+    - tests/Architecture/CustomBusinessHandlerBoundaryTest.php
+    - tests/Integration/BusinessSurface/GeneratedBusinessBrowserIntegrationTest.php
+    - tests/Unit/BusinessSurface/Application/Custom/CustomBusinessHandlerRegistryTest.php
+    - tests/Unit/BusinessSurface/Delivery/Browser/BusinessFormInputMapperTest.php
+    - tests/Unit/BusinessSurface/Presentation/Field/CoreFieldPresenterTest.php
+    - tests/Unit/BusinessSurface/Presentation/FieldPresentationRegistryTest.php
+    - "The administrator, portal and API delivery read the package values through the unchanged App handlers; the browser suites run in the pull request's hosted workflows."
+  deployment_backup_restore:
+    - "Signed backup, clean restore and deployment acceptance on three engines; to be exercised by the pull request's hosted workflows."
+  native_parity_abi:
+    - tests/Unit/Kernel/NativeComputationFactoryTest.php
+    - "The package ships no native component; the canonical encoder it receives is the container's native encoder binding and no native cutover is claimed."
+  performance_capacity:
+    - tests/Integration/Performance/HotPlanRegressionIntegrationTest.php
+    - "No performance claim is made; the hosted lanes exercise the hot plan and query budgets."
+compatibility: "Drop-in for the eighteen SDK contracts except for three signature changes: FieldPresentationModel takes the canonical encoder as its ninth positional argument, and CustomBusinessActionCommand and CustomBusinessViewQuery carry Kumwe\\Context\\Value\\ExecutionContext and Kumwe\\Idempotency\\IdempotencyKey directly, so the App dispatcher and executor stop wrapping the host context and the API request stops re-wrapping the idempotency key. Rendered models and persisted action ledgers are unchanged."
+migration_recovery: null
+security_impact: "None on authority: custom handler admission, binding, authorization, the action ledger and rendering stay in App; the package owns the command, query, handler and presentation contracts."
+performance_claim: null
+rollback: "Revert the App pull request; the SDK 0.2.4 contracts and the removed foreign-context refusal tests return with the train baseline and no persisted data changes."
+known_gaps:
+  - "The local sandbox runs PHP 8.4 without ext-kumwe_engine and without a database server, so the integration and functional lanes, PHP 8.5 and the demo profile installations are proven by the App CI on this pull request."
+  - "One Composer lock regeneration covers the whole train, so composer_lock_digest is the digest of the train lock rather than of a lock that adds this package alone."
+  - "The package CHANGELOG.md carries an Unreleased section above the 0.1.4 record."
+  - "The package commands are typed on the concrete host ExecutionContext, so the App tests that proved refusal of a foreign extension execution context (CustomBusinessActionExecutorTest and CustomBusinessHandlerRegistryTest) no longer have a subject and those methods are removed; the remaining methods stay."
+  - "The Packagist p2 fetch was reset by the peer on the first attempt at 2026-09-23T18:20:46Z and succeeded on the retry recorded in the attestation."
+  - "kumwe/extension-sdk 0.3.3 is adopted from its unpublished candidate, pull request 22 at commit b54022b05075944e884dc1df038cbcb63f723472, through a temporary package repository entry in composer.json; the entry is removed and the lock re-pointed at the Packagist distribution once v0.3.3 is published (KUMWE-CS-2026-033)."
+completion_claim: false
+accepted_by: null

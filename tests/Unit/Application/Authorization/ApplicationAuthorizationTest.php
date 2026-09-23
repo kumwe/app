@@ -33,7 +33,7 @@ use Kumwe\App\Delivery\Http\Api\ProblemDetailsResponseFactory;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\App\Extension\Contribution\CapabilityDefinition as ExtensionCapabilityDefinition;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ResourcePolicyDefinition as ExtensionResourcePolicyDefinition;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\Access\Capability;
@@ -47,6 +47,7 @@ use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
 use Kumwe\App\Application\Authorization\ExecutionContextAttribute;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(DenyByDefaultAuthorizationGateway::class)]
 final class ApplicationAuthorizationTest extends TestCase
@@ -154,7 +155,10 @@ final class ApplicationAuthorizationTest extends TestCase
      */
     public function testGlobalExtensionManagerMayBootstrapOnlyExtensionOwnedDelegation(): void
     {
-        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+        );
         $owner = ContributionOwner::extension('acme/inspection');
         $registries->capabilities()->register($owner, new ExtensionCapabilityDefinition(
             'acme.inspection.view',
@@ -223,7 +227,10 @@ final class ApplicationAuthorizationTest extends TestCase
     {
         $gateway = new DenyByDefaultAuthorizationGateway(
             AuthorizationContext::provenance(),
-            (new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission()))->authorizationPolicies(),
+            (new ExtensionContributionRegistrySet(
+                new DeterministicCanonicalEncoder(),
+                new SdkFieldConfigurationAdmission(),
+            ))->authorizationPolicies(),
             $this->createStub(MembershipContextValidator::class),
             new class implements ResourceSiteOwnership {
                 public function scopeFor(AuthorizationResource $resource): OwnershipScope

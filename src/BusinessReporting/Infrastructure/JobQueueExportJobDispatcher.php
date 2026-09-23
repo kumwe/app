@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\BusinessReporting\Infrastructure;
 
-use Kumwe\App\Application\Automation\JobQueue;
+use Kumwe\Automation\JobQueue;
 use Kumwe\App\BusinessReporting\Application\ExportJobDispatcher;
 use Kumwe\App\BusinessReporting\Application\ExportQueueProducerContextProvider;
 use Kumwe\Context\Value\ExecutionContext;

@@ -19,6 +19,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use Twig\Loader\FilesystemLoader;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 /**
  * Proves the production KIS gallery renders the typed dashboard contract without an active mutation path.
@@ -103,6 +104,7 @@ final class AdministratorInterfaceStandardHandlerTest extends TestCase
         return new AdministratorRenderer(
             $twig,
             new RecoveryAdministratorRenderer(new RecoveryAdministratorTwigEnvironment(new FilesystemLoader())),
+            new DeterministicCanonicalEncoder(),
         );
     }
 }

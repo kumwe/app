@@ -24,6 +24,7 @@ use Kumwe\App\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 /**
  * Proves the containment decision is not a widening for any resource owned by a single site.
@@ -138,7 +139,10 @@ final class SiteScopeContainmentIsNotAWideningTest extends TestCase
     {
         $gateway = new DenyByDefaultAuthorizationGateway(
             AuthorizationContext::provenance(),
-            (new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission()))->authorizationPolicies(),
+            (new ExtensionContributionRegistrySet(
+                new DeterministicCanonicalEncoder(),
+                new SdkFieldConfigurationAdmission(),
+            ))->authorizationPolicies(),
             $this->createStub(MembershipContextValidator::class),
             AuthorizationContext::ownership(),
             new StructuredLogAuthorizationDecisionRecorder(new NullLogger()),
@@ -152,7 +156,10 @@ final class SiteScopeContainmentIsNotAWideningTest extends TestCase
 
         $decision = new DenyByDefaultAuthorizationGateway(
             AuthorizationContext::provenance(),
-            (new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission()))->authorizationPolicies(),
+            (new ExtensionContributionRegistrySet(
+                new DeterministicCanonicalEncoder(),
+                new SdkFieldConfigurationAdmission(),
+            ))->authorizationPolicies(),
             $this->createStub(MembershipContextValidator::class),
             $unowned,
             new StructuredLogAuthorizationDecisionRecorder(new NullLogger()),
@@ -200,7 +207,10 @@ final class SiteScopeContainmentIsNotAWideningTest extends TestCase
         );
         $gateway = new DenyByDefaultAuthorizationGateway(
             AuthorizationContext::provenance(),
-            (new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission()))->authorizationPolicies(),
+            (new ExtensionContributionRegistrySet(
+                new DeterministicCanonicalEncoder(),
+                new SdkFieldConfigurationAdmission(),
+            ))->authorizationPolicies(),
             $this->createStub(MembershipContextValidator::class),
             $this->unowned(),
             $recorder,
@@ -262,7 +272,10 @@ final class SiteScopeContainmentIsNotAWideningTest extends TestCase
     {
         return new DenyByDefaultAuthorizationGateway(
             AuthorizationContext::provenance(),
-            (new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission()))->authorizationPolicies(),
+            (new ExtensionContributionRegistrySet(
+                new DeterministicCanonicalEncoder(),
+                new SdkFieldConfigurationAdmission(),
+            ))->authorizationPolicies(),
             $this->createStub(MembershipContextValidator::class),
             $this->ownedBy($owner),
             new StructuredLogAuthorizationDecisionRecorder(new NullLogger()),

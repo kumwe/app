@@ -14,6 +14,10 @@ use Kumwe\App\Application\Authorization\SystemPrincipal;
 use Kumwe\Access\Capability;
 use RuntimeException;
 use Throwable;
+use Kumwe\Automation\JobExecutionClass;
+use Kumwe\Automation\JobHandlerRegistry;
+use Kumwe\Automation\JobQueue;
+use Kumwe\Automation\PermanentFailure;
 
 /**
  * The durable half of job execution: claim one job, run its handler under a fence, settle the row.

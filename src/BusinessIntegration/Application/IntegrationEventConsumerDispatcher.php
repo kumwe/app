@@ -5,16 +5,19 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessIntegration\Application;
 
 use InvalidArgumentException;
-use Kumwe\App\Application\Automation\QueueRuntimePolicyCatalog;
-use Kumwe\App\Application\Automation\RetryPolicy;
+use Kumwe\Automation\QueueRuntimePolicyCatalog;
+use Kumwe\Automation\RetryPolicy;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\App\Extension\Runtime\ExtensionExecutionContext;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Extension\Spi\BusinessIntegration\Application\IntegrationEventHandler;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventConsumerDefinition;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\Integration\EventConsumerDefinition;
+use Kumwe\Integration\IntegrationEvent;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use Kumwe\Integration\EventContractRegistry;
+use Kumwe\Integration\InboxDisposition;
+use Kumwe\Integration\InboxStore;
 
 /**
  * Applies one integration event through a durable consumer inbox under a pinned runtime generation.

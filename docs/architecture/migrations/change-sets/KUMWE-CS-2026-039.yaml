@@ -1,0 +1,161 @@
+schema: kumwe-change-set/v2
+change_set: KUMWE-CS-2026-039
+migration_id: KUMWE-MIG-2026-039
+roadmap_source:
+  title: Kumwe ERP-Extensibility Foundation Roadmap
+  sha256: a202155ef1a65f5ab293d4f8397ebf4ac430db7f1e877c776bbe7851e6fe18d8
+roadmap_refs: []
+state: app-pr-ready
+phase_1:
+  source_repository: kumwe/app
+  source_sha: "24ecf956423c18933e824b43cea1bfb9127a79a9"
+  target_repository: kumwe/record-query
+  package_pr: null
+  tested_sha: null
+  public_api_digest: "74fd522527e7b08a4714927188870ba5e9b46ab15b768f2a982330285702da5e"
+  capability_digest: "c39d3d6dfbe3b687f243aa4a19dd334b26f7fe6ac866a404f854ae8fa9d66b2e"
+  service_map_digest: "5732bd188105f4bd641bce4f46b24ac4c7039af29738978c49971433b99382eb"
+  handoff_digest: "b3472a363e9937ce6d22fd120a06c65a0472361c77c02e4e3017eb6f65c7af3a"
+release:
+  version: 0.1.4
+  source_sha: "92bdb42cf6c62aabd2da25377359043238559ff3"
+  artifact_digest: "c1ba765b8a233f147c4e323aac4f7d0a7f8de55a8abd32c6c5e5a2a4e1eb82f2"
+  clean_consumer_evidence:
+    - docs/architecture/migrations/evidence/KUMWE-MIG-2026-039/RELEASE-ATTESTATION.yaml
+phase_2:
+  app_pr: "https://github.com/kumwe/app/pull/151"
+  tested_sha: null
+  merged_sha: null
+  exact_dependency: "kumwe/record-query 0.1.4"
+  composer_lock_digest: "04b6bdc0e61ef498055023db3aa6243d6c1e05566aa6428729a2117cb9c00612"
+  removed_app_symbols:
+    - Kumwe\Extension\Spi\BusinessRecord\Query\AggregateFunction
+    - Kumwe\Extension\Spi\BusinessRecord\Query\BooleanFilter
+    - Kumwe\Extension\Spi\BusinessRecord\Query\BooleanOperator
+    - Kumwe\Extension\Spi\BusinessRecord\Query\BusinessRecordCursor
+    - Kumwe\Extension\Spi\BusinessRecord\Query\BusinessRecordSearch
+    - Kumwe\Extension\Spi\BusinessRecord\Query\BusinessRecordSort
+    - Kumwe\Extension\Spi\BusinessRecord\Query\ComparisonFilter
+    - Kumwe\Extension\Spi\BusinessRecord\Query\ComparisonOperator
+    - Kumwe\Extension\Spi\BusinessRecord\Query\CursorPosition
+    - Kumwe\Extension\Spi\BusinessRecord\Query\NullFilter
+    - Kumwe\Extension\Spi\BusinessRecord\Query\QueryCanonicalizer
+    - Kumwe\Extension\Spi\BusinessRecord\Query\QueryGraphGuard
+    - Kumwe\Extension\Spi\BusinessRecord\Query\QueryIdentifier
+    - Kumwe\Extension\Spi\BusinessRecord\Query\QueryValue
+    - Kumwe\Extension\Spi\BusinessRecord\Query\RecordAggregate
+    - Kumwe\Extension\Spi\BusinessRecord\Query\RecordCursor
+    - Kumwe\Extension\Spi\BusinessRecord\Query\RecordFilter
+    - Kumwe\Extension\Spi\BusinessRecord\Query\RecordProjection
+    - Kumwe\Extension\Spi\BusinessRecord\Query\RecordQuerySpecification
+    - Kumwe\Extension\Spi\BusinessRecord\Query\RecordSearch
+    - Kumwe\Extension\Spi\BusinessRecord\Query\RecordSort
+    - Kumwe\Extension\Spi\BusinessRecord\Query\RelationFilter
+    - Kumwe\Extension\Spi\BusinessRecord\Query\RelationQuantifier
+    - Kumwe\Extension\Spi\BusinessRecord\Query\SetFilter
+    - Kumwe\Extension\Spi\BusinessRecord\Query\SortDirection
+    - Kumwe\Extension\Spi\BusinessRecord\Query\TextFilter
+    - Kumwe\Extension\Spi\BusinessRecord\Query\TextOperator
+  moved_unit_tests: []
+  retained_app_tests:
+    - tests/Architecture/TruthfulQualityGateTest.php
+    - tests/Integration/BusinessRecord/BusinessRecordEvolutionIntegrationTest.php
+    - tests/Integration/BusinessRecord/BusinessRecordInverseRelationshipIntegrationTest.php
+    - tests/Integration/BusinessRecord/BusinessRecordLargeDatasetIntegrationTest.php
+    - tests/Integration/BusinessRecord/BusinessRecordPolicyCompilerIntegrationTest.php
+    - tests/Integration/BusinessRecord/BusinessRecordPolicyEnforcementIntegrationTest.php
+    - tests/Integration/BusinessRecord/BusinessRecordReferenceIdentityIntegrationTest.php
+    - tests/Integration/BusinessRecord/BusinessRecordRelationshipIntegrationTest.php
+    - tests/Integration/BusinessRecord/BusinessRecordRuntimeIntegrationTest.php
+    - tests/Integration/BusinessRecord/ImmutableRecordReversalIntegrationTest.php
+    - tests/Integration/BusinessRecord/SdkBusinessRecordReaderIntegrationTest.php
+    - tests/Integration/BusinessSurface/GeneratedBusinessBrowserIntegrationTest.php
+    - tests/Integration/BusinessSurface/GeneratedBusinessQueryBudgetIntegrationTest.php
+    - tests/Integration/BusinessSurface/GeneratedBusinessRelatedPolicyIntegrationTest.php
+    - tests/Integration/Extension/AssetInspectionCustomViewIntegrationTest.php
+    - tests/Integration/Performance/HotPlanRegressionIntegrationTest.php
+    - tests/Unit/BusinessRecord/Application/BrowseOwnedLineFieldChoicesQueryTest.php
+    - tests/Unit/BusinessRecord/Application/BrowseRelatedRecordsQueryTest.php
+    - tests/Unit/BusinessRecord/Application/PolicyBusinessRecordReaderTest.php
+    - tests/Unit/BusinessRecord/Application/RecordCursorCodecTest.php
+    - tests/Unit/BusinessReporting/ExportGenerationPolicyFenceTest.php
+    - tests/Unit/BusinessReporting/RecordExportPipelineTest.php
+    - tests/Unit/BusinessReporting/ReportApiDiscoveryTest.php
+    - tests/Unit/BusinessReporting/ReportBrowserErrorResponseTest.php
+    - tests/Unit/BusinessReporting/ReportPolicyInferenceTest.php
+    - tests/Unit/BusinessSurface/Application/BusinessRecordQueryFactoryTest.php
+    - tests/Unit/BusinessSurface/Application/BusinessSurfaceServiceTest.php
+    - tests/Unit/BusinessSurface/Application/Custom/CustomBusinessHandlerRegistryTest.php
+    - tests/Unit/Governance/LayerClassifierTest.php
+evidence:
+  package:
+    - docs/architecture/migrations/evidence/KUMWE-MIG-2026-039/RELEASE-ATTESTATION.yaml
+    - "https://github.com/kumwe/record-query/actions/runs/35842727415; release on record on tag commit 92bdb42cf6c62aabd2da25377359043238559ff3"
+    - "https://github.com/kumwe/record-query/releases/tag/v0.1.4; release 394494165"
+  app_composition:
+    - tests/Architecture/TruthfulQualityGateTest.php
+    - tests/Unit/BusinessRecord/Application/BrowseOwnedLineFieldChoicesQueryTest.php
+    - tests/Unit/BusinessRecord/Application/BrowseRelatedRecordsQueryTest.php
+    - tests/Unit/BusinessRecord/Application/PolicyBusinessRecordReaderTest.php
+    - tests/Unit/BusinessRecord/Application/RecordCursorCodecTest.php
+    - tests/Unit/BusinessReporting/ExportGenerationPolicyFenceTest.php
+    - tests/Unit/BusinessReporting/RecordExportPipelineTest.php
+    - tests/Unit/BusinessReporting/ReportApiDiscoveryTest.php
+    - tests/Unit/BusinessReporting/ReportBrowserErrorResponseTest.php
+    - tests/Unit/BusinessReporting/ReportPolicyInferenceTest.php
+    - tests/Unit/BusinessSurface/Application/BusinessRecordQueryFactoryTest.php
+    - tests/Unit/BusinessSurface/Application/BusinessSurfaceServiceTest.php
+    - tests/Unit/Governance/ComposerLockTest.php
+    - tests/Unit/Governance/CoreGrowthGateTest.php
+    - tests/Architecture/CapabilityIndexGateTest.php
+    - "composer update of the train packages; one lock regeneration for the whole train, kumwe/record-query at 0.1.4"
+    - "composer kumwe:capability-index, kumwe:core-growth-record, baseline:record, then the composer qa gates and the unit and architecture suites, run locally on PHP 8.4 without ext-kumwe_engine"
+  database_matrix:
+    - tests/Integration/BusinessRecord/BusinessRecordEvolutionIntegrationTest.php
+    - tests/Integration/BusinessRecord/BusinessRecordInverseRelationshipIntegrationTest.php
+    - tests/Integration/BusinessRecord/BusinessRecordLargeDatasetIntegrationTest.php
+    - tests/Integration/BusinessRecord/BusinessRecordPolicyCompilerIntegrationTest.php
+    - tests/Integration/BusinessRecord/BusinessRecordPolicyEnforcementIntegrationTest.php
+    - tests/Integration/BusinessRecord/BusinessRecordReferenceIdentityIntegrationTest.php
+    - tests/Integration/BusinessRecord/BusinessRecordRelationshipIntegrationTest.php
+    - tests/Integration/BusinessRecord/BusinessRecordRuntimeIntegrationTest.php
+    - "To be exercised by the pull request's hosted workflows on MariaDB, MySQL and PostgreSQL."
+  concurrency:
+    - "Claim contention, leases, recovery and dead-letter paths; to be exercised by the pull request's hosted workflows."
+  authorization_security:
+    - tests/Integration/BusinessRecord/BusinessRecordPolicyCompilerIntegrationTest.php
+    - tests/Integration/BusinessRecord/BusinessRecordPolicyEnforcementIntegrationTest.php
+    - tests/Integration/BusinessSurface/GeneratedBusinessRelatedPolicyIntegrationTest.php
+    - tests/Unit/BusinessRecord/Application/PolicyBusinessRecordReaderTest.php
+    - tests/Unit/BusinessReporting/ExportGenerationPolicyFenceTest.php
+    - tests/Unit/BusinessReporting/ReportPolicyInferenceTest.php
+    - "Capability checks, admission and trust decisions stay in App; the hosted source-and-image security scans run on the pull request."
+  lifecycle_recovery:
+    - "Lifecycle, recovery and migration paths; to be exercised by the pull request's hosted workflows."
+  delivery_browser:
+    - tests/Integration/BusinessSurface/GeneratedBusinessBrowserIntegrationTest.php
+    - tests/Unit/BusinessReporting/ReportBrowserErrorResponseTest.php
+    - tests/Unit/BusinessSurface/Application/Custom/CustomBusinessHandlerRegistryTest.php
+    - "The administrator, portal and API delivery read the package values through the unchanged App handlers; the browser suites run in the pull request's hosted workflows."
+  deployment_backup_restore:
+    - "Signed backup, clean restore and deployment acceptance on three engines; to be exercised by the pull request's hosted workflows."
+  native_parity_abi:
+    - tests/Unit/Kernel/NativeComputationFactoryTest.php
+    - "The package ships no native component; the canonical encoder it receives is the container's native encoder binding and no native cutover is claimed."
+  performance_capacity:
+    - tests/Integration/BusinessSurface/GeneratedBusinessQueryBudgetIntegrationTest.php
+    - tests/Integration/Performance/HotPlanRegressionIntegrationTest.php
+    - "No performance claim is made; the hosted lanes exercise the hot plan and query budgets."
+compatibility: "Drop-in for the twenty-seven SDK query types, which keep their names and shapes under Kumwe\\Record\\Query; the App cursor codec, query compiler, read repository and surface query factory consume them unchanged, and the SDK BusinessRecordReader port types the package specification in 0.3.3."
+migration_recovery: null
+security_impact: "None on authority: policy-before-query, authorization and generation fences, cursor key custody and SQL execution stay in App; the package owns the bounded query grammar and its canonical digest."
+performance_claim: null
+rollback: "Revert the App pull request; the SDK 0.2.4 query types return with the train baseline and no persisted data changes."
+known_gaps:
+  - "The local sandbox runs PHP 8.4 without ext-kumwe_engine and without a database server, so the integration and functional lanes, PHP 8.5 and the demo profile installations are proven by the App CI on this pull request."
+  - "One Composer lock regeneration covers the whole train, so composer_lock_digest is the digest of the train lock rather than of a lock that adds this package alone."
+  - "The tag commit is not an ancestor of the repository main branch; the main head tree is byte-identical to the tag tree, and the release-on-record workflow ran on the tag commit itself."
+  - "The release record names two extension-sdk test files to remove; they belong to the SDK repository, not to App, so the ledger records no App test removal for this package."
+  - "kumwe/extension-sdk 0.3.3 is adopted from its unpublished candidate, pull request 22 at commit b54022b05075944e884dc1df038cbcb63f723472, through a temporary package repository entry in composer.json; the entry is removed and the lock re-pointed at the Packagist distribution once v0.3.3 is published (KUMWE-CS-2026-033)."
+completion_claim: false
+accepted_by: null

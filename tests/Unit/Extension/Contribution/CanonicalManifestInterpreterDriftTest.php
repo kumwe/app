@@ -6,11 +6,12 @@ namespace Kumwe\App\Tests\Unit\Extension\Contribution;
 
 use Kumwe\App\Extension\Contribution\CanonicalManifestInterpreter;
 use Kumwe\Extension\Manifest\ManifestContributions;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Contribution\ContributionOwner;
 use LogicException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(CanonicalManifestInterpreter::class)]
 /**
@@ -242,6 +243,6 @@ final class CanonicalManifestInterpreterDriftTest extends TestCase
             $property->setValue($manifest, $value);
         }
 
-        return new CanonicalManifestInterpreter($manifest);
+        return new CanonicalManifestInterpreter(new DeterministicCanonicalEncoder(), $manifest);
     }
 }

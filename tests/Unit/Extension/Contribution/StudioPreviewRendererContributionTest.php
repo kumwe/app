@@ -10,10 +10,11 @@ use Kumwe\Extension\Manifest\ManifestContributions;
 use Kumwe\Extension\Spi\Contribution\CanonicalCompositionDocument;
 use Kumwe\Extension\Spi\Contribution\CanonicalCompositionKind;
 use Kumwe\Extension\Spi\Contribution\CompositionHostBinding;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Contribution\ContributionOwner;
 use Kumwe\Producer\Render\BlockCoordinate;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(StudioPreviewRendererContribution::class)]
 /**
@@ -96,6 +97,7 @@ final class StudioPreviewRendererContributionTest extends TestCase
         );
         self::assertIsArray($fixture);
         $manifest = ManifestContributions::fromManifest(
+            new DeterministicCanonicalEncoder(),
             ExtensionIdentifier::fromString('kumwe/contract-manifest-six'),
             $fixture['contributions'],
             6,

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Portal\Presentation;
 
 use Kumwe\Extension\Spi\Binding\Http\PortalRouteRenderer;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Contribution\ContributionOwner;
 use Kumwe\App\Portal\Application\PortalSession;
 use Kumwe\App\Portal\Contribution\PortalNavigationRegistry;
 use Kumwe\App\Portal\Contribution\PortalTemplateRegistry;

@@ -13,10 +13,10 @@ use Kumwe\BusinessDefinition\Domain\PortalOperation;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordDefinitionResolver;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable;
-use Kumwe\App\BusinessReporting\Domain\ReportColumnDefinition;
-use Kumwe\App\BusinessReporting\Domain\ReportDefinition;
+use Kumwe\Reporting\Domain\ReportColumnDefinition;
+use Kumwe\Reporting\Domain\ReportDefinition;
 use Kumwe\Context\Value\ExecutionContext;
-use Kumwe\Extension\Spi\BusinessReporting\Domain\ReportValueType;
+use Kumwe\Reporting\Domain\ReportValueType;
 
 /**
  * Derives the record-set CSV export report for one installed business definition.

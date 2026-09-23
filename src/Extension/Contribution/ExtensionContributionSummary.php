@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Extension\Contribution;
 
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Contribution\ContributionOwner;
+use Kumwe\CanonicalJson\CanonicalEncoder;
 use Kumwe\Extension\Manifest\ExtensionManifest;
 use Kumwe\Extension\Manifest\ManifestContributions;
 use Kumwe\Extension\Manifest\ExtensionType;
@@ -43,6 +44,7 @@ final readonly class ExtensionContributionSummary
      * surface activation records — so a disabled package's declarations render as promises rather
      * than links to pages that would refuse the request.
      *
+     * @param   CanonicalEncoder   $canonicalEncoder   Host encoder the canonical graph is interpreted with.
      * @param   ExtensionManifest  $manifest           Installed release manifest the summary is read from.
      * @param   bool               $active             Whether the registry currently lists the extension
      *          as `active`.
@@ -57,13 +59,14 @@ final readonly class ExtensionContributionSummary
      * @since   2.0.0
      */
     public static function project(
+        CanonicalEncoder $canonicalEncoder,
         ExtensionManifest $manifest,
         bool $active,
         array $themeSurfaces = [],
         array $dressableSurfaces = [],
     ): array {
         $contributions = $manifest->contributions();
-        $host = new CanonicalManifestInterpreter($contributions);
+        $host = new CanonicalManifestInterpreter($canonicalEncoder, $contributions);
         $owner = $contributions->owner;
         $groups = [
             self::group('administrator', 'Administrator screens', self::administratorEntries(

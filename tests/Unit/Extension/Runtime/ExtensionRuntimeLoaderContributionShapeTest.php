@@ -16,6 +16,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use RuntimeException;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(ExtensionRuntimeLoader::class)]
 /**
@@ -61,6 +62,7 @@ final class ExtensionRuntimeLoaderContributionShapeTest extends TestCase
         ];
         $checksum = hash('sha256', RuntimeCanonicalJson::encode($base));
         $loader = new ExtensionRuntimeLoader(
+            new DeterministicCanonicalEncoder(),
             new VerifiedRuntimePublication($base + [
                 'publication_sha256' => $checksum,
                 'trust_hmac' => $keys->sign('1:' . $checksum),
@@ -74,7 +76,14 @@ final class ExtensionRuntimeLoaderContributionShapeTest extends TestCase
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Strict runtime contributions are unavailable.');
 
-        $loader->load([], new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false));
+        $loader->load(
+            [],
+            new ExtensionContributionRegistrySet(
+                new DeterministicCanonicalEncoder(),
+                new SdkFieldConfigurationAdmission(),
+                withCore: false,
+            ),
+        );
     }
 
     /**

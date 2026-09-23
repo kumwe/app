@@ -7,9 +7,10 @@ namespace Kumwe\App\Tests\Unit\Extension\Contribution;
 use Kumwe\App\Extension\Contribution\CoreExtensionContributions;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Contribution\ContributionOwner;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(CoreExtensionContributions::class)]
 /**
@@ -28,7 +29,10 @@ final class CoreContributionActivationTest extends TestCase
      */
     public function testCoreActivationContributesCanonicalStudioDocuments(): void
     {
-        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+        );
         $core = ContributionOwner::core();
 
         $documents = $registries->canonicalCompositionDocuments()->ownedBy($core);

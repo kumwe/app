@@ -6,7 +6,7 @@ namespace Kumwe\App\BusinessRecord\Application\Command;
 
 use InvalidArgumentException;
 use Kumwe\Context\Value\ExecutionContext;
-use Kumwe\Extension\Spi\Application\Automation\IdempotencyKey;
+use Kumwe\Idempotency\IdempotencyKey;
 use Kumwe\App\BusinessRecord\Application\RecordRequestGuard;
 use Kumwe\Record\Value\ClientAssertedInstant;
 

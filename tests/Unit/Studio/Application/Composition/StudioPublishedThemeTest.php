@@ -26,6 +26,7 @@ use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use RuntimeException;
 use SplFileInfo;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 /**
  * Verifies public-theme locks are exact to trusted runtime bytes and validated presentation.
@@ -208,7 +209,11 @@ final class StudioPublishedThemeTest extends TestCase
                 return $settingsDocument;
             },
         );
-        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+            withCore: false,
+        );
         $extensions = new ActiveExtensionSet($registries);
         $extensions->add(
             'acme/public-theme',
@@ -250,6 +255,7 @@ final class StudioPublishedThemeTest extends TestCase
         $projection = new StudioPublishedTheme(
             $settings,
             new ActiveExtensionSet(new ExtensionContributionRegistrySet(
+                new DeterministicCanonicalEncoder(),
                 new SdkFieldConfigurationAdmission(),
                 withCore: false,
             )),

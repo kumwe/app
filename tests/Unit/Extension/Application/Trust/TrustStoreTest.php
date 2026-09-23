@@ -34,6 +34,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(TrustStore::class)]
 #[UsesClass(ExtensionRuntimeLoader::class)]
@@ -60,12 +61,20 @@ final class TrustStoreTest extends TestCase
         $store = $this->store($repository);
         $keys = $this->runtimeKeys();
         $active = (new ExtensionRuntimeLoader(
+            new DeterministicCanonicalEncoder(),
             $this->publication([], $keys),
             sys_get_temp_dir(),
             $keys,
             $store,
             $this->createStub(ExtensionExecutionGate::class),
-        ))->load([], new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false));
+        ))->load(
+            [],
+            new ExtensionContributionRegistrySet(
+                new DeterministicCanonicalEncoder(),
+                new SdkFieldConfigurationAdmission(),
+                withCore: false,
+            ),
+        );
         self::assertSame(0, $active->count());
     }
 
@@ -110,6 +119,7 @@ final class TrustStoreTest extends TestCase
         ];
         $keys = $this->runtimeKeys();
         $active = (new ExtensionRuntimeLoader(
+            new DeterministicCanonicalEncoder(),
             $this->publication([[
                 'identifier' => 'acme/catalog',
                 'version' => '1.0.0',
@@ -126,7 +136,14 @@ final class TrustStoreTest extends TestCase
             $keys,
             $store,
             $this->createStub(ExtensionExecutionGate::class),
-        ))->load([], new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false));
+        ))->load(
+            [],
+            new ExtensionContributionRegistrySet(
+                new DeterministicCanonicalEncoder(),
+                new SdkFieldConfigurationAdmission(),
+                withCore: false,
+            ),
+        );
         self::assertSame(1, $active->count());
     }
 
@@ -268,7 +285,7 @@ final class TrustStoreTest extends TestCase
             'trust_state' => 'verified',
         ];
 
-        $parsedManifest = ExtensionManifest::fromJson($manifest);
+        $parsedManifest = ExtensionManifest::fromJson(new DeterministicCanonicalEncoder(), $manifest);
         $expectedContributions = $parsedManifest->contributions()->declarations();
         $runtimeEntry = [
             'identifier' => 'acme/catalog',
@@ -393,6 +410,7 @@ final class TrustStoreTest extends TestCase
                 : $this->now(),
         );
         return new TrustStore(
+            new DeterministicCanonicalEncoder(),
             $repository,
             $verifier,
             $artifacts,

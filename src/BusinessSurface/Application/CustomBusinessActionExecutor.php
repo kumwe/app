@@ -31,13 +31,12 @@ use Kumwe\Record\Model\RecordScope;
 use Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessController;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessActionLedgerResult;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessSurfaceDispatcher;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionCommand;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionResult;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessSchema;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessActionCommand;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessActionResult;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessSchema;
 use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
-use Kumwe\App\Extension\Runtime\ExtensionExecutionContext;
 
 /**
  * Executes typed custom actions through the canonical transaction, fence, policy and idempotency ledger.
@@ -98,7 +97,7 @@ final readonly class CustomBusinessActionExecutor
      */
     public function execute(CustomBusinessActionCommand $command): CustomBusinessActionResult
     {
-        $context = self::context($command);
+        $context = $command->context;
         if (
             !$this->runtime->trusted
             || $this->runtime->generation < 0
@@ -405,21 +404,5 @@ final readonly class CustomBusinessActionExecutor
         } catch (InvalidArgumentException) {
             throw new BusinessRecordDefinitionUnavailable();
         }
-    }
-
-    /**
-     * Recover the host-issued authorization context from the reusable SDK command envelope.
-     *
-     * @param   CustomBusinessActionCommand  $command  Canonical command received by the host boundary.
-     *
-     * @return  ExecutionContext  Exact App authority context originally placed in the command.
-     *
-     * @throws  BusinessRecordDefinitionUnavailable  When a caller supplies a foreign context implementation.
-     *
-     * @since   2.0.0
-     */
-    private static function context(CustomBusinessActionCommand $command): ExecutionContext
-    {
-        return ExtensionExecutionContext::host($command->context) ?? throw new BusinessRecordDefinitionUnavailable();
     }
 }

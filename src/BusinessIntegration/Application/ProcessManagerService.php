@@ -6,13 +6,17 @@ namespace Kumwe\App\BusinessIntegration\Application;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationEvent;
-use Kumwe\App\BusinessIntegration\Domain\ProcessInstance;
-use Kumwe\App\BusinessIntegration\Domain\ProcessStatus;
-use Kumwe\App\BusinessIntegration\Domain\ProcessTransition;
-use Kumwe\App\BusinessIntegration\Domain\ProcessWorkItem;
+use Kumwe\Integration\IntegrationEvent;
+use Kumwe\Integration\ProcessInstance;
+use Kumwe\Integration\ProcessStatus;
+use Kumwe\Integration\ProcessTransition;
+use Kumwe\Integration\ProcessWorkItem;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
+use Kumwe\CanonicalJson\CanonicalEncoder;
+use Kumwe\Integration\EventContractRegistry;
+use Kumwe\Integration\ProcessManagerHandler;
+use Kumwe\Integration\ProcessManagerStore;
 
 /**
  * Executes pure process decisions against an optimistic durable state repository.
@@ -24,9 +28,10 @@ final readonly class ProcessManagerService
     /**
      * Bind process decisions to storage and exact event contracts.
      *
-     * @param  ProcessManagerStore    $store      Durable state and work repository.
-     * @param  EventContractRegistry  $contracts  Exact event catalog.
-     * @param  ClockInterface         $clock      Transition clock.
+     * @param  ProcessManagerStore    $store             Durable state and work repository.
+     * @param  EventContractRegistry  $contracts         Exact event catalog.
+     * @param  ClockInterface         $clock             Transition clock.
+     * @param  CanonicalEncoder       $canonicalEncoder  Host encoder a started process bounds its state with.
      *
      * @since  2.0.0
      */
@@ -34,6 +39,7 @@ final readonly class ProcessManagerService
         private ProcessManagerStore $store,
         private EventContractRegistry $contracts,
         private ClockInterface $clock,
+        private CanonicalEncoder $canonicalEncoder,
     ) {
     }
 
@@ -63,6 +69,7 @@ final readonly class ProcessManagerService
         if ($current === null) {
             $transition = $handler->start($event);
             $process = new ProcessInstance(
+                $this->canonicalEncoder,
                 Uuid::uuid7()->toString(),
                 $handler->processType(),
                 $correlation,
@@ -118,7 +125,7 @@ final readonly class ProcessManagerService
         }
         $items = [];
         foreach ($compensations as $work) {
-            if ($work->kind() !== \Kumwe\App\BusinessIntegration\Domain\ProcessWorkKind::COMPENSATION) {
+            if ($work->kind() !== \Kumwe\Integration\ProcessWorkKind::COMPENSATION) {
                 throw new InvalidArgumentException('Cancellation may enqueue only compensation work.');
             }
             $items[] = $work;

@@ -20,7 +20,7 @@ use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnava
 use Kumwe\Extension\Spi\BusinessRecord\Application\BusinessRecordQueryPurpose;
 use Kumwe\App\BusinessRecord\Application\RecordBrowseResult;
 use Kumwe\App\BusinessRecord\Application\ResolvedBusinessDefinition;
-use Kumwe\Extension\Spi\BusinessRecord\Query\RecordQuerySpecification;
+use Kumwe\Record\Query\RecordQuerySpecification;
 use Kumwe\App\BusinessReporting\Application\BusinessRecordReportReader;
 use Kumwe\App\BusinessReporting\Application\ExportArtifactRepository;
 use Kumwe\App\BusinessReporting\Application\ExportArtifactStorage;
@@ -35,7 +35,7 @@ use Kumwe\App\BusinessReporting\Application\ReportService;
 use Kumwe\App\BusinessReporting\Application\ReportUnavailable;
 use Kumwe\App\BusinessReporting\Domain\ExportArtifact;
 use Kumwe\App\BusinessReporting\Domain\ExportArtifactStatus;
-use Kumwe\App\BusinessReporting\Domain\ReportDefinition;
+use Kumwe\Reporting\Domain\ReportDefinition;
 use Kumwe\BusinessSchema\Domain\PhysicalColumnBlueprint;
 use Kumwe\BusinessSchema\Domain\PhysicalSchemaBlueprint;
 use Kumwe\BusinessSchema\Domain\PhysicalTableBlueprint;

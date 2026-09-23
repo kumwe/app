@@ -6,16 +6,16 @@ namespace Kumwe\App\Tests\Unit\InterfaceStandard;
 
 use BackedEnum;
 use InvalidArgumentException;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
-use Kumwe\App\InterfaceStandard\CustomizationScope;
-use Kumwe\App\InterfaceStandard\CustomizationSlot;
-use Kumwe\App\InterfaceStandard\ResponsivePriority;
-use Kumwe\App\InterfaceStandard\SurfaceActor;
-use Kumwe\App\InterfaceStandard\SurfaceArea;
-use Kumwe\App\InterfaceStandard\SurfaceDefinition;
-use Kumwe\App\InterfaceStandard\SurfaceIntent;
-use Kumwe\App\InterfaceStandard\SurfacePattern;
-use Kumwe\App\InterfaceStandard\SurfaceState;
+use Kumwe\Contribution\ContributionOwner;
+use Kumwe\InterfaceStandard\CustomizationScope;
+use Kumwe\InterfaceStandard\CustomizationSlot;
+use Kumwe\InterfaceStandard\ResponsivePriority;
+use Kumwe\InterfaceStandard\SurfaceActor;
+use Kumwe\InterfaceStandard\SurfaceArea;
+use Kumwe\InterfaceStandard\SurfaceDefinition;
+use Kumwe\InterfaceStandard\SurfaceIntent;
+use Kumwe\InterfaceStandard\SurfacePattern;
+use Kumwe\InterfaceStandard\SurfaceState;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 

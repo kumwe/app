@@ -7,19 +7,19 @@ namespace Kumwe\App\Tests\Unit\BusinessIntegration\Infrastructure;
 use DateTimeImmutable;
 use Kumwe\App\Application\Authorization\SystemIdentity;
 use Kumwe\App\Application\Authorization\SystemPrincipal;
-use Kumwe\App\Application\Automation\JitterSource;
-use Kumwe\App\Application\Automation\PermanentFailure;
-use Kumwe\App\Application\Automation\RetryPolicy;
+use Kumwe\Automation\JitterSource;
+use Kumwe\Automation\PermanentFailure;
+use Kumwe\Automation\RetryPolicy;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\App\BusinessIntegration\Application\DurableOutboundAdapterDispatcher;
-use Kumwe\App\BusinessIntegration\Application\EventContractRegistry;
-use Kumwe\App\BusinessIntegration\Application\InboxClaimResult;
-use Kumwe\App\BusinessIntegration\Application\InboxDisposition;
-use Kumwe\App\BusinessIntegration\Application\InboxStore;
+use Kumwe\Integration\EventContractRegistry;
+use Kumwe\Integration\InboxClaimResult;
+use Kumwe\Integration\InboxDisposition;
+use Kumwe\Integration\InboxStore;
 use Kumwe\App\BusinessIntegration\Application\IntegrationEventConsumerDispatcher;
 use Kumwe\App\BusinessIntegration\Application\TrustedRuntimeGenerationGuard;
-use Kumwe\App\BusinessIntegration\Domain\EventSchemaDefinition;
-use Kumwe\App\BusinessIntegration\Domain\RecordedIntegrationEvent;
+use Kumwe\Integration\EventSchemaDefinition;
+use Kumwe\Integration\RecordedIntegrationEvent;
 use Kumwe\App\BusinessIntegration\Infrastructure\RuntimeIntegrationEventTransport;
 use Kumwe\App\BusinessReporting\Application\ProjectionRebuildResult;
 use Kumwe\App\BusinessReporting\Application\ProjectionRuntime;
@@ -28,11 +28,11 @@ use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
 use Kumwe\Extension\Spi\Application\ExecutionContext;
 use Kumwe\Extension\Spi\BusinessIntegration\Application\IntegrationEventHandler;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventConsumerDefinition;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventSensitivity;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationEvent;
-use Kumwe\Extension\Spi\Contribution\ContributionDefinition;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Integration\EventConsumerDefinition;
+use Kumwe\Integration\EventSensitivity;
+use Kumwe\Integration\IntegrationEvent;
+use Kumwe\Contribution\ContributionDefinition;
+use Kumwe\Contribution\ContributionOwner;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
@@ -40,6 +40,7 @@ use Psr\Log\NullLogger;
 use Ramsey\Uuid\Uuid;
 use ReflectionClass;
 use RuntimeException;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(RuntimeIntegrationEventTransport::class)]
 /**
@@ -58,7 +59,11 @@ final class RuntimeIntegrationEventTransportTest extends TestCase
      */
     public function testAConsumerEntryWithoutItsContractFailsPermanently(): void
     {
-        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+            withCore: false,
+        );
         $registries->eventConsumers()->register(
             ContributionOwner::extension('acme/probe'),
             self::degradedDefinition(),
@@ -95,13 +100,18 @@ final class RuntimeIntegrationEventTransportTest extends TestCase
             [1],
             '1.0.0',
         );
-        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+            withCore: false,
+        );
         $registries->eventConsumers()->register(
             ContributionOwner::extension('acme/probe'),
             $definition,
             self::integrationEventHandler(),
         );
-        $contracts = new EventContractRegistry([new EventSchemaDefinition(
+        $contracts = new EventContractRegistry(new DeterministicCanonicalEncoder(), [new EventSchemaDefinition(
+            new DeterministicCanonicalEncoder(),
             'acme.probe.observed',
             1,
             EventSensitivity::INTERNAL,
@@ -148,6 +158,7 @@ final class RuntimeIntegrationEventTransportTest extends TestCase
     private static function event(): RecordedIntegrationEvent
     {
         return new RecordedIntegrationEvent(
+            new DeterministicCanonicalEncoder(),
             'acme.probe.observed',
             1,
             Uuid::uuid7()->toString(),

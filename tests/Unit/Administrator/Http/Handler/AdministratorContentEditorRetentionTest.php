@@ -48,6 +48,7 @@ use Psr\Clock\ClockInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Twig\Loader\ArrayLoader;
 use Kumwe\App\Application\Authorization\ExecutionContextAttribute;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(AdministratorContentEditorHandler::class)]
 #[CoversClass(AdministratorCreateContentHandler::class)]
@@ -460,6 +461,7 @@ final class AdministratorContentEditorRetentionTest extends TestCase
             new RecoveryAdministratorRenderer(
                 new RecoveryAdministratorTwigEnvironment(new ArrayLoader()),
             ),
+            new DeterministicCanonicalEncoder(),
         );
     }
 

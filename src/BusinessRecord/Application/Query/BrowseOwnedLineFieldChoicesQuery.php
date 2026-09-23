@@ -7,7 +7,7 @@ namespace Kumwe\App\BusinessRecord\Application\Query;
 use InvalidArgumentException;
 use Kumwe\App\BusinessRecord\Application\RecordRequestGuard;
 use Kumwe\Context\Value\ExecutionContext;
-use Kumwe\Extension\Spi\BusinessRecord\Query\RecordQuerySpecification;
+use Kumwe\Record\Query\RecordQuerySpecification;
 
 /**
  * Bounded selector request for an entity-reference field inside a new owned-line target.

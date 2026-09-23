@@ -24,6 +24,7 @@ use Laminas\Diactoros\ServerRequestFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Twig\Loader\ArrayLoader;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(AdministratorLoginHandler::class)]
 final class AdministratorLoginHandlerTest extends TestCase
@@ -212,6 +213,7 @@ final class AdministratorLoginHandlerTest extends TestCase
                     'login.twig' => '{{ error }}|{{ email }}',
                 ])),
                 new RecoveryAdministratorRenderer(new RecoveryAdministratorTwigEnvironment(new ArrayLoader())),
+                new DeterministicCanonicalEncoder(),
             ),
             InterfaceTranslation::translator(),
             false,
@@ -239,6 +241,7 @@ final class AdministratorLoginHandlerTest extends TestCase
         return new AdministratorRenderer(
             new AdministratorTwigEnvironment(new ArrayLoader()),
             new RecoveryAdministratorRenderer(new RecoveryAdministratorTwigEnvironment(new ArrayLoader())),
+            new DeterministicCanonicalEncoder(),
         );
     }
 }

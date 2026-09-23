@@ -1,0 +1,177 @@
+schema: kumwe-change-set/v2
+change_set: KUMWE-CS-2026-026
+migration_id: KUMWE-MIG-2026-026
+roadmap_source:
+  title: Kumwe ERP-Extensibility Foundation Roadmap
+  sha256: a202155ef1a65f5ab293d4f8397ebf4ac430db7f1e877c776bbe7851e6fe18d8
+roadmap_refs: []
+state: app-pr-ready
+phase_1:
+  source_repository: kumwe/app
+  source_sha: "24ecf956423c18933e824b43cea1bfb9127a79a9"
+  target_repository: kumwe/automation
+  package_pr: "https://github.com/kumwe/automation/pull/7"
+  tested_sha: null
+  public_api_digest: "5528055c23afaea3711de77e0e66f84b0e122df520542fb61c8b8fd9f0c8cf53"
+  capability_digest: "4cebd820f960ccdaf3b988231e54555d75291861a5d3bfbb8ba0dcefe7694e1a"
+  service_map_digest: "4bacfb7a2eb2b2dc4046b85826bf53bda5c4ef24a23c5b9b69c2ad0bf62b05c6"
+  handoff_digest: "d52dedae51cdbaea29be213a447c2206f5a5517cb191e3fca464913804b0af07"
+release:
+  version: 0.2.2
+  source_sha: "cef19174a9c8a7a6008fe284481a235d13eec195"
+  artifact_digest: "0472a8b05b54ba23f01606409066625045028c6aae3961de7c447f53115b0423"
+  clean_consumer_evidence:
+    - docs/architecture/migrations/evidence/KUMWE-MIG-2026-026/RELEASE-ATTESTATION.yaml
+phase_2:
+  app_pr: "https://github.com/kumwe/app/pull/151"
+  tested_sha: null
+  merged_sha: null
+  exact_dependency: "kumwe/automation 0.2.2"
+  composer_lock_digest: "04b6bdc0e61ef498055023db3aa6243d6c1e05566aa6428729a2117cb9c00612"
+  removed_app_symbols:
+    - Kumwe\App\Automation\Domain\CronExpression
+    - Kumwe\App\Application\Automation\RetryPolicy
+    - Kumwe\App\Application\Automation\RetryDecision
+    - Kumwe\App\Application\Automation\JitterSource
+    - Kumwe\App\Application\Automation\CryptographicJitterSource
+    - Kumwe\App\Application\Automation\FailureClassification
+    - Kumwe\App\Application\Automation\PermanentFailure
+    - Kumwe\App\Application\Automation\TransientFailure
+    - Kumwe\App\Application\Automation\JobEnvelope
+    - Kumwe\App\Application\Automation\JobLease
+    - Kumwe\App\Application\Automation\JobStatus
+    - Kumwe\App\Application\Automation\StoredJob
+    - Kumwe\App\Application\Automation\JobExecutionClass
+    - Kumwe\App\Application\Automation\JobQueue
+    - Kumwe\App\Application\Automation\JobHandler
+    - Kumwe\App\Application\Automation\JobHandlerRegistry
+    - Kumwe\App\Application\Automation\QueueRuntimePolicy
+    - Kumwe\App\Application\Automation\QueueRuntimePolicyCatalog
+    - Kumwe\App\Application\Automation\ExpiredJobLease
+    - Kumwe\App\Application\Automation\AutomationNotFound
+    - Kumwe\App\BusinessIntegration\Domain\QueueContributionDefinition
+    - Kumwe\App\BusinessIntegration\Domain\ScheduleContributionDefinition
+    - Kumwe\Extension\Spi\Application\Automation\JobDeclaration
+    - Kumwe\Extension\Spi\BusinessIntegration\Domain\JobContributionDefinition
+  moved_unit_tests:
+    - tests/Unit/Application/Automation/CronExpressionTest.php
+    - tests/Unit/Application/Automation/JobEnvelopeTest.php
+    - tests/Unit/Application/Automation/JobLeaseTest.php
+    - tests/Unit/Application/Automation/RetryPolicyTest.php
+  retained_app_tests:
+    - tests/Architecture/TransactionSeamBoundaryTest.php
+    - tests/Functional/Extension/LiveSurfaceContractParityTest.php
+    - tests/Integration/Automation/AutomationManagementIntegrationTest.php
+    - tests/Integration/Automation/DatabaseLossRecoveryIntegrationTest.php
+    - tests/Integration/Automation/KilledWorkerRecoveryIntegrationTest.php
+    - tests/Integration/Automation/SchedulerOccurrenceContentionIntegrationTest.php
+    - tests/Integration/Automation/WorkerConnectionLossKillPointIntegrationTest.php
+    - tests/Integration/BusinessIntegration/BusinessIntegrationPersistenceTest.php
+    - tests/Integration/BusinessIntegration/HungEndpointDeadlineIntegrationTest.php
+    - tests/Integration/BusinessIntegration/PoisonAndDeadLetterIntegrationTest.php
+    - tests/Integration/Extension/GeneratedExtensionLifecycleIntegrationTest.php
+    - tests/Integration/Extension/ManifestGenerationLifecycleIntegrationTest.php
+    - tests/Integration/Persistence/MigrationIntegrationTest.php
+    - tests/Support/DrillDirectedJobHandler.php
+    - tests/Support/killable-worker.php
+    - tests/Unit/Application/Authorization/AdapterAuthorizationParityTest.php
+    - tests/Unit/Application/Automation/AutomationManagementServiceTest.php
+    - tests/Unit/Application/Automation/WorkerTest.php
+    - tests/Unit/BusinessIntegration/Application/DurableOutboundAdapterDeliveryTest.php
+    - tests/Unit/BusinessIntegration/Application/JobQueueIntegrationEventHandlerTest.php
+    - tests/Unit/BusinessIntegration/Application/ValidatedContributedJobHandlerTest.php
+    - tests/Unit/BusinessIntegration/ConsumerDispatcherTest.php
+    - tests/Unit/BusinessIntegration/DurableOutboundAdapterDispatcherTest.php
+    - tests/Unit/BusinessIntegration/Infrastructure/RuntimeIntegrationEventTransportTest.php
+    - tests/Unit/BusinessIntegration/OutboxDispatcherTest.php
+    - tests/Unit/BusinessIntegration/ProcessWorkDispatcherTest.php
+    - tests/Unit/BusinessIntegration/QueueRuntimePolicyTest.php
+    - tests/Unit/Delivery/Console/Command/QueueWorkCommandTest.php
+    - tests/Unit/Delivery/Http/Api/Automation/AutomationApiHandlerTest.php
+    - tests/Unit/Extension/Contribution/ExtensionBindingSurfaceTest.php
+    - tests/Unit/Extension/Contribution/OwnedBindingCanonicalDriftTest.php
+    - tests/Unit/Extension/Runtime/TrustEnforcingJobHandlerTest.php
+evidence:
+  package:
+    - docs/architecture/migrations/evidence/KUMWE-MIG-2026-026/RELEASE-ATTESTATION.yaml
+    - "git ls-remote and a depth-1 clone of tag v0.2.2 at cef19174a9c8a7a6008fe284481a235d13eec195; the GitHub release and workflow run were not observable from the verification run"
+  app_composition:
+    - tests/Architecture/TransactionSeamBoundaryTest.php
+    - tests/Unit/Application/Authorization/AdapterAuthorizationParityTest.php
+    - tests/Unit/Application/Automation/AutomationManagementServiceTest.php
+    - tests/Unit/Application/Automation/WorkerTest.php
+    - tests/Unit/BusinessIntegration/Application/DurableOutboundAdapterDeliveryTest.php
+    - tests/Unit/BusinessIntegration/Application/JobQueueIntegrationEventHandlerTest.php
+    - tests/Unit/BusinessIntegration/Application/ValidatedContributedJobHandlerTest.php
+    - tests/Unit/BusinessIntegration/ConsumerDispatcherTest.php
+    - tests/Unit/BusinessIntegration/DurableOutboundAdapterDispatcherTest.php
+    - tests/Unit/BusinessIntegration/Infrastructure/RuntimeIntegrationEventTransportTest.php
+    - tests/Unit/BusinessIntegration/OutboxDispatcherTest.php
+    - tests/Unit/BusinessIntegration/ProcessWorkDispatcherTest.php
+    - tests/Unit/Governance/ComposerLockTest.php
+    - tests/Unit/Governance/CoreGrowthGateTest.php
+    - tests/Architecture/CapabilityIndexGateTest.php
+    - "composer update of the train packages; one lock regeneration for the whole train, kumwe/automation at 0.2.2"
+    - "composer kumwe:capability-index, kumwe:core-growth-record, baseline:record, then the composer qa gates and the unit and architecture suites, run locally on PHP 8.4 without ext-kumwe_engine"
+  database_matrix:
+    - tests/Integration/Automation/AutomationManagementIntegrationTest.php
+    - tests/Integration/Automation/DatabaseLossRecoveryIntegrationTest.php
+    - tests/Integration/Automation/KilledWorkerRecoveryIntegrationTest.php
+    - tests/Integration/Automation/SchedulerOccurrenceContentionIntegrationTest.php
+    - tests/Integration/Automation/WorkerConnectionLossKillPointIntegrationTest.php
+    - tests/Integration/BusinessIntegration/BusinessIntegrationPersistenceTest.php
+    - tests/Integration/BusinessIntegration/HungEndpointDeadlineIntegrationTest.php
+    - tests/Integration/BusinessIntegration/PoisonAndDeadLetterIntegrationTest.php
+    - "To be exercised by the pull request's hosted workflows on MariaDB, MySQL and PostgreSQL."
+  concurrency:
+    - tests/Integration/Automation/DatabaseLossRecoveryIntegrationTest.php
+    - tests/Integration/Automation/KilledWorkerRecoveryIntegrationTest.php
+    - tests/Integration/Automation/SchedulerOccurrenceContentionIntegrationTest.php
+    - tests/Integration/BusinessIntegration/HungEndpointDeadlineIntegrationTest.php
+    - tests/Integration/BusinessIntegration/PoisonAndDeadLetterIntegrationTest.php
+    - "Claim contention, leases, recovery and dead-letter paths; to be exercised by the pull request's hosted workflows."
+  authorization_security:
+    - tests/Architecture/TransactionSeamBoundaryTest.php
+    - tests/Unit/Application/Authorization/AdapterAuthorizationParityTest.php
+    - tests/Unit/BusinessIntegration/QueueRuntimePolicyTest.php
+    - tests/Unit/Extension/Runtime/TrustEnforcingJobHandlerTest.php
+    - "Capability checks, admission and trust decisions stay in App; the hosted source-and-image security scans run on the pull request."
+  lifecycle_recovery:
+    - tests/Integration/Automation/DatabaseLossRecoveryIntegrationTest.php
+    - tests/Integration/Automation/KilledWorkerRecoveryIntegrationTest.php
+    - tests/Integration/Extension/GeneratedExtensionLifecycleIntegrationTest.php
+    - tests/Integration/Extension/ManifestGenerationLifecycleIntegrationTest.php
+    - tests/Integration/Persistence/MigrationIntegrationTest.php
+    - "Lifecycle, recovery and migration paths; to be exercised by the pull request's hosted workflows."
+  delivery_browser:
+    - tests/Functional/Extension/LiveSurfaceContractParityTest.php
+    - tests/Support/DrillDirectedJobHandler.php
+    - tests/Unit/BusinessIntegration/Application/DurableOutboundAdapterDeliveryTest.php
+    - tests/Unit/BusinessIntegration/Application/JobQueueIntegrationEventHandlerTest.php
+    - tests/Unit/BusinessIntegration/Application/ValidatedContributedJobHandlerTest.php
+    - tests/Unit/Delivery/Console/Command/QueueWorkCommandTest.php
+    - "The administrator, portal and API delivery read the package values through the unchanged App handlers; the browser suites run in the pull request's hosted workflows."
+  deployment_backup_restore:
+    - "Signed backup, clean restore and deployment acceptance on three engines; to be exercised by the pull request's hosted workflows."
+  native_parity_abi:
+    - tests/Unit/Kernel/NativeComputationFactoryTest.php
+    - "The package ships no native component; the canonical encoder it receives is the container's native encoder binding and no native cutover is claimed."
+  performance_capacity:
+    - tests/Integration/Performance/HotPlanRegressionIntegrationTest.php
+    - "No performance claim is made; the hosted lanes exercise the hot plan and query budgets."
+compatibility: "Drop-in for the namespace-only moves of the cron expression, retry values, job envelope, lease, status, execution class, stored job, queue and handler ports and the queue runtime policy; JobEnvelope::pending, JobContributionDefinition::fromArray and ScheduleContributionDefinition::fromArray take the canonical encoder as their first argument, and the FailureClassification the integration store ports receive is the package enum. Persisted job rows, schedules and idempotency keys are unchanged."
+migration_recovery: null
+security_impact: "None on authority: trust-enforcing handler wrapping, the queue worker, the scheduler, automation management and the lease-aware execution scope stay in App; the package receives already admitted handlers and configuration."
+performance_claim: null
+rollback: "Revert the App pull request; the twenty-two removed classes and four unit tests return with the train baseline and no persisted data changes."
+known_gaps:
+  - "The local sandbox runs PHP 8.4 without ext-kumwe_engine and without a database server, so the integration and functional lanes, PHP 8.5 and the demo profile installations are proven by the App CI on this pull request."
+  - "One Composer lock regeneration covers the whole train, so composer_lock_digest is the digest of the train lock rather than of a lock that adds this package alone."
+  - "The hosted GitHub tag tar.gz and the Packagist zipball were not downloaded: the outbound proxy of the verification run refused HTTP access to kumwe/automation, so the attested digest is of the uncompressed git archive of the tag commit and the GitHub release and workflow run were not queried."
+  - "The tag archive carries no export-ignore rules, so the released tree ships its tests, tools and CI configuration; the seventy-seven tracked files are the archive."
+  - "The package JobHandlerRegistryFactory is not admitted because it cannot express the trust-gated contributed handler set; the host keeps building JobHandlerRegistry and records the binding under di_changes."
+  - "The handoff records Kumwe\\App\\Application\\Automation\\ and Kumwe\\App\\BusinessIntegration\\Domain\\ as retired roots wholesale; the App keeps Worker, Scheduler, AutomationManagementService and the other host classes under the former, so the ledger retires no root for this package and lists the twenty-four symbols instead; the latter is retired by KUMWE-MIG-2026-027."
+  - "The handoff lists CronExpressionTest, JobEnvelopeTest, JobLeaseTest and RetryPolicyTest among the tests to retain; they test only the moved values, which the package suite now owns, so they are removed as implementation tests."
+  - "kumwe/extension-sdk 0.3.3 is adopted from its unpublished candidate, pull request 22 at commit b54022b05075944e884dc1df038cbcb63f723472, through a temporary package repository entry in composer.json; the entry is removed and the lock re-pointed at the Packagist distribution once v0.3.3 is published (KUMWE-CS-2026-033)."
+completion_claim: false
+accepted_by: null

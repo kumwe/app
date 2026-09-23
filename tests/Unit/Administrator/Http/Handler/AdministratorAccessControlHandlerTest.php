@@ -37,6 +37,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
 use Twig\Loader\ArrayLoader;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 /**
  * Pins focused workspace state across administrator membership-context rotation.
@@ -245,6 +246,7 @@ final class AdministratorAccessControlHandlerTest extends TestCase
             new RecoveryAdministratorRenderer(
                 new RecoveryAdministratorTwigEnvironment(new ArrayLoader()),
             ),
+            new DeterministicCanonicalEncoder(),
         );
 
         return new AdministratorAccessControlHandler(

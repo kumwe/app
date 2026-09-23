@@ -1,0 +1,87 @@
+schema: kumwe-release-attestation/v2
+artifact_kind: framework_php
+migration_id: KUMWE-MIG-2026-006
+change_set: KUMWE-CS-2026-006
+repository: "https://github.com/kumwe/contribution"
+merge_commit: "2fc75742aa5a7d78418d2f586fa3043271e70082"
+version: "0.1.1"
+tag: v0.1.1
+source_archive:
+  url: "https://github.com/kumwe/contribution.git"
+  sha256: "ea0e9dec653d4280f1eda5dd144a122ec5325e2844fe2202b0a8e4fd7702a48e"
+artifacts:
+  - identity: "kumwe/contribution:0.1.1"
+    url: "https://github.com/kumwe/contribution.git"
+    sha256: "ea0e9dec653d4280f1eda5dd144a122ec5325e2844fe2202b0a8e4fd7702a48e"
+manifests_and_corpora:
+  - path: resources/public-api/v1.json
+    sha256: "85202012eef68919fd3eed8894e5e17d7760dbc2a751d65ae244f3a2abea2cf6"
+  - path: resources/capabilities/v1.json
+    sha256: "e50defb725e5f03e74480fe8b6965ff020147be57dedd5915a495f6175c2f785"
+  - path: resources/service-map/v1.json
+    sha256: "12d4602942c1ebd9f01e5046f7c7f3457f673fb1b655c3b4c95399ff085ef742"
+  - path: MIGRATION-HANDOFF.md
+    sha256: "07478d94f2bf239298d9800996c6a4dcab77ca7aceafc7224cb031f9614d5d70"
+abi_and_capabilities: null
+sbom:
+  url: null
+  sha256: null
+provenance: "Not observed: the GitHub release and the release-on-record run of the tag commit could not be queried"
+release_workflow: "https://github.com/kumwe/contribution/actions; the run on tag commit 2fc75742 was not observable from the verification run"
+registry_or_pie_verification:
+  - "git ls-remote https://github.com/kumwe/contribution refs/tags/v0.1.1 returned one line for refs/tags/v0.1.1"
+  - "Tag commit from git ls-remote: 2fc75742aa5a7d78418d2f586fa3043271e70082; no peeled ^{} line (lightweight tag)"
+  - "git clone --quiet --depth 1 --branch v0.1.1 of the repository: HEAD 2fc75742aa5a7d78418d2f586fa3043271e70082, tree cbddeb7191e456d8f4d1781f0a079fe35d4e4c28"
+  - "In the clone git cat-file -t v0.1.1 is commit; subject: fix(release): publish tested packages without optional policy gates"
+  - "Tag commit committed 2026-09-07T21:20:02+02:00 by eWɘyn; parent cd277958d203ca0004cdba8b7590aa554abbf6db"
+  - "A full clone shows refs/heads/main at 300b8905ffdf0bc980d6b8109e93b216937351ce contains the tag commit"
+  - "Packagist p2 observed 2026-09-23T18:20:01Z at repo.packagist.org/p2/kumwe/contribution.json (HTTP 200)"
+  - "Packagist lists v0.1.1 newest of v0.1.1, v0.1.0; time 2026-09-07T19:20:02+00:00"
+  - "Packagist source: git https://github.com/kumwe/contribution.git at 2fc75742aa5a7d78418d2f586fa3043271e70082"
+  - "Packagist dist: zip at reference 2fc75742aa5a7d78418d2f586fa3043271e70082 (api.github.com zipball URL)"
+  - "Packagist source and dist references both equal the tag commit and the clone HEAD"
+  - "Packagist dist shasum is an empty string; license Apache-2.0; psr-4 Kumwe\\Contribution\\ => src/"
+  - "Packagist require: php ^8.5"
+  - "curl -sS -L of https://github.com/kumwe/contribution/archive/refs/tags/v0.1.1.tar.gz: HTTP 403 from the outbound proxy of the verification run"
+  - "The proxy answered that GitHub HTTP access to kumwe/contribution is not enabled for the verification run; git reads are served"
+  - "The fetch was repeated and answered 403 again; the hosted tar.gz and zipball bytes were therefore not observed"
+  - "git archive --format=tar --prefix=contribution-0.1.1/ v0.1.1 | sha256sum in the depth-1 clone gave ea0e9dec653d4280"
+  - "Full local git archive digest: ea0e9dec653d4280f1eda5dd144a122ec5325e2844fe2202b0a8e4fd7702a48e (uncompressed tar)"
+  - "Extracted contribution-0.1.1/ holds 27 files; diff -r reports no content difference against the clone"
+  - "diff -r --exclude=.git differs only by the export-ignore paths of .gitattributes: .editorconfig, .gitattributes, .github, .gitignore, .phpstan.cache, composer.lock, dist, phpcs.xml, phpstan.neon, tests, tools, vendor and AGENTS.md"
+  - "The clone tracks 57 files; the archive omits the 30 export-ignore files and nothing else"
+  - "The GitHub MCP tools refuse kumwe/contribution as a repository not configured for the verification run; no access was granted"
+  - "GitHub release v0.1.1, the release-on-record workflow run and the package pull request were therefore not queried"
+clean_consumer_or_build_verification:
+  - "Inspection only: no package script or example was executed; archive, clone and vendor copy were compared"
+  - "resources/public-api/v1.json: valid against package-public-api.v1.schema.json (App SchemaValidator)"
+  - "resources/capabilities/v1.json: valid against package-capabilities.v1.schema.json (App SchemaValidator)"
+  - "resources/service-map/v1.json: valid against package-service-map.v1.schema.json (App SchemaValidator)"
+  - "All three manifests carry package kumwe/contribution and release 0.1.1"
+  - "docs/release-record.md does not exist at v0.1.1; the shipped record is MIGRATION-HANDOFF.md"
+  - "Governance README section 3.11 admits MIGRATION-HANDOFF.md for published releases"
+  - "MIGRATION-HANDOFF.md front matter parsed by PackageManifests::parseReleaseRecord"
+  - "MIGRATION-HANDOFF.md front matter: valid against migration-handoff.v2.schema.json (App SchemaValidator)"
+  - "Record front matter: kumwe-migration-handoff/v2, KUMWE-MIG-2026-006, KUMWE-CS-2026-006, framework_php"
+  - "Record state draft_pr_open; target https://github.com/kumwe/contribution"
+  - "Record artifact_identity kumwe/contribution; canonical namespace Kumwe\\Contribution"
+  - "Record framework_php.composer_package kumwe/contribution"
+  - "Record ownership.public_manifests digests equal the locally computed manifest digests listed above"
+  - "CHANGELOG.md newest release heading is ## 0.1.1 above ## 0.1.0; no Unreleased section"
+  - "Package composer.json require: php ^8.5"
+  - "App composer.lock: kumwe/contribution v0.1.1 at 2fc75742aa5a7d78418d2f586fa3043271e70082"
+  - "App composer.lock platform: php ^8.5 with ext-json and ext-mbstring (they satisfy the package requirements)"
+  - "The App vendor copy of MIGRATION-HANDOFF.md and of the manifests carries the digests above"
+  - "Validator: tools/Governance bootstrap, SchemaValidator, PackageManifests and StrictYaml loaded by a scratch script on PHP 8.4.19"
+verified_at: "2026-09-23T18:20:01Z"
+verified_by: "Independent release verification, inspection only, in the adoption worktree before the Phase 2 records were written"
+status: verified
+known_gaps:
+  - "The hosted GitHub tag tar.gz and the Packagist zipball were not downloaded: the outbound proxy of the verification run refused kumwe/contribution"
+  - "The attested digest is of the uncompressed git archive of the tag commit, not of any hosted archive bytes"
+  - "GitHub release v0.1.1, the release-on-record workflow run and the package pull request were not queried (access refused)"
+  - "Tag protection and rulesets were not queried"
+  - "The verification was performed by the adopting party in the adoption worktree, not by a separate isolated verifier"
+  - "No clean consumer install, smoke test or example run was performed; the verification was restricted to inspection and the App lock install"
+  - "No SBOM and no release assets exist for v0.1.1; abi_and_capabilities does not apply to a framework_php artifact"
+  - "The schema checks used the App's fixed JSON Schema 2020-12 subset validator, not a full implementation"

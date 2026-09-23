@@ -1,0 +1,32 @@
+schema: kumwe-non-roadmap-record/v1
+id: NRM-2026-049
+nrm_ref: NRM-2026-049
+roadmap_impact: None
+rationale: "Adopt verified kumwe/integration 0.2.4, the owner of the domain, integration and recorded event values and envelopes, the event schema, consumer, listener and webhook declarations and definitions, the integration contract and its validator, the payload schema validator, the event contract registry, the outbox, inbox and process manager store ports with their leases, claims and dispositions, and the process instance, status, transition and work item values."
+repositories:
+  - kumwe/app
+  - kumwe/integration
+behavior_before: "App declared the integration event, envelope, schema, process and recorded values, the outbox, inbox and process manager ports with their leases, claims and dispositions, the event contract registry and payload schema validator itself, and consumed the SDK copies of the domain event, consumer, listener, contract and webhook declarations."
+behavior_after: "The thirty-three types come from kumwe/integration 0.2.4; the host shares the contribution-built EventContractRegistry under the package name instead of installing the package provider, re-keys the three store ports to the package names, and its Doctrine stores, process manager service and mutation event publisher receive the canonical encoder and fail with the automation package classification. Dispatch, adapters, transport, cancellation and persistence stay in App."
+public_api_impact: "None for the namespace-only moves; the recorded events, envelopes and process values hydrate through the canonical encoder and the store ports type Kumwe\\Automation\\FailureClassification."
+dependency_impact: "Adds kumwe/integration 0.2.4 exactly; it requires kumwe/canonical-json 0.1.1, kumwe/contribution 0.1.1, kumwe/access-context 0.1.2 and kumwe/automation 0.2.2, all locked, with ramsey/uuid and psr/container satisfied."
+compatibility: "Outbox, inbox and process rows and their checksums are unchanged."
+data_migration: None
+security_impact: "No authority change; consumer authorization, transport and persistence stay in App."
+performance:
+  claim: None
+  evidence: []
+operations_deployment: "None; no configuration or schema change."
+recovery_rollback: "Revert the adoption pull request and restore the twenty removed classes and three unit tests; no persisted data changes."
+artifacts_evidence:
+  - docs/architecture/migrations/KUMWE-MIG-2026-027.yaml
+  - docs/architecture/migrations/change-sets/KUMWE-CS-2026-027.yaml
+  - docs/architecture/migrations/trains/KUMWE-TRAIN-2026-027.yaml
+  - docs/architecture/migrations/evidence/KUMWE-MIG-2026-027/RELEASE-ATTESTATION.yaml
+  - docs/architecture/capability-index.md
+known_gaps:
+  - "Kumwe\\Integration\\ConfigProvider is not installed; the host-built registry binding is recorded under di_changes."
+  - "The tag commit is not an ancestor of main although the trees are identical."
+  - "kumwe/extension-sdk 0.3.3 is adopted from its unpublished candidate in the same train (NRM-2026-057); the lock is re-pointed at the published distribution once it exists."
+owner: "eWɘyn"
+status: in-progress

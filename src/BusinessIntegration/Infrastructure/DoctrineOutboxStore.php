@@ -8,19 +8,20 @@ use DateInterval;
 use DateTimeImmutable;
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
+use Kumwe\CanonicalJson\CanonicalEncoder;
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\App\Application\Automation\FailureClassification;
+use Kumwe\Automation\FailureClassification;
 use Kumwe\Transaction\Contract\TransactionManager;
-use Kumwe\App\BusinessIntegration\Application\EventContractRegistry;
-use Kumwe\App\BusinessIntegration\Application\OutboxLease;
-use Kumwe\App\BusinessIntegration\Application\OutboxStore;
-use Kumwe\App\BusinessIntegration\Domain\RecordedEventEnvelope;
-use Kumwe\App\BusinessIntegration\Domain\RecordedIntegrationEvent;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\Integration\EventContractRegistry;
+use Kumwe\Integration\OutboxLease;
+use Kumwe\Integration\OutboxStore;
+use Kumwe\Integration\RecordedEventEnvelope;
+use Kumwe\Integration\RecordedIntegrationEvent;
+use Kumwe\Integration\IntegrationEvent;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Shared\Domain\CanonicalJson;
 use Psr\Clock\ClockInterface;
@@ -54,12 +55,13 @@ final readonly class DoctrineOutboxStore implements OutboxStore
     /**
      * Bind the durable store to its transaction and schema collaborators.
      *
-     * @param   Connection             $database       Shared authoritative connection.
-     * @param   TableNames             $tables         Physical table-name compiler.
-     * @param   TransactionManager     $transactions   Short dispatch transaction boundary.
-     * @param   ClockInterface         $clock          Lease and lifecycle clock.
-     * @param   EventContractRegistry  $contracts      Exact trusted event contracts.
-     * @param   int                    $retentionDays  Terminal-row retention window.
+     * @param   Connection             $database          Shared authoritative connection.
+     * @param   TableNames             $tables            Physical table-name compiler.
+     * @param   TransactionManager     $transactions      Short dispatch transaction boundary.
+     * @param   ClockInterface         $clock             Lease and lifecycle clock.
+     * @param   EventContractRegistry  $contracts         Exact trusted event contracts.
+     * @param   CanonicalEncoder       $canonicalEncoder  Host encoder stored envelopes are rebuilt with.
+     * @param   int                    $retentionDays     Terminal-row retention window.
      *
      * @throws  InvalidArgumentException  When retention falls outside 1 to 3650 days.
      *
@@ -71,6 +73,7 @@ final readonly class DoctrineOutboxStore implements OutboxStore
         private TransactionManager $transactions,
         private ClockInterface $clock,
         private EventContractRegistry $contracts,
+        private CanonicalEncoder $canonicalEncoder,
         private int $retentionDays = 90,
     ) {
         if ($retentionDays < 1 || $retentionDays > 3_650) {
@@ -561,7 +564,7 @@ final readonly class DoctrineOutboxStore implements OutboxStore
             throw new RuntimeException('An outbox envelope must be a JSON object.');
         }
         /** @var array<string, mixed> $envelope */
-        $event = RecordedIntegrationEvent::fromArray($envelope);
+        $event = RecordedIntegrationEvent::fromArray($this->canonicalEncoder, $envelope);
         $this->contracts->assertEvent($event);
         return $event;
     }

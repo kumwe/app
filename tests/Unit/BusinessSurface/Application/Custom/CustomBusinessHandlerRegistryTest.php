@@ -18,21 +18,20 @@ use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessSurfaceDispatcher
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessViewHandlerRegistry;
 use Kumwe\App\BusinessSurface\Application\BusinessSurfaceOperation;
 use Kumwe\App\Extension\Application\ExtensionExecutionGate;
-use Kumwe\Extension\Spi\Application\Automation\IdempotencyKey;
-use Kumwe\Extension\Spi\BusinessRecord\Query\RecordQuerySpecification;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionCommand;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionDeclaration;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionHandler;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionResult;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewDeclaration;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewHandler;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewQuery;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewResult;
+use Kumwe\Idempotency\IdempotencyKey;
+use Kumwe\Record\Query\RecordQuerySpecification;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessActionCommand;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessActionDeclaration;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessActionHandler;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessActionResult;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessViewDeclaration;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessViewHandler;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessViewQuery;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessViewResult;
 use LogicException;
 use RuntimeException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
-use Kumwe\App\Extension\Runtime\ExtensionExecutionContext;
 
 #[CoversClass(CustomBusinessActionHandlerRegistry::class)]
 #[CoversClass(CustomBusinessHandlerFailed::class)]
@@ -369,34 +368,6 @@ final class CustomBusinessHandlerRegistryTest extends TestCase
         self::assertSame('ready', $result->workflowState);
         self::assertTrue($result->operationId->equals($operation));
 
-        $foreignContext = $this->createStub(\Kumwe\Extension\Spi\Application\ExecutionContext::class);
-        try {
-            $dispatcher->view($definition, new CustomBusinessViewQuery(
-                $foreignContext,
-                $definition->handle,
-                'summary',
-                new RecordQuerySpecification(pageSize: 10),
-                ['term' => 'north'],
-            ));
-            self::fail('A foreign execution context entered a custom view handler.');
-        } catch (BusinessRecordDefinitionUnavailable) {
-            self::addToAssertionCount(1);
-        }
-        try {
-            $dispatcher->action($definition, new CustomBusinessActionCommand(
-                $foreignContext,
-                $definition->handle,
-                'asset-1',
-                1,
-                'recalculate',
-                IdempotencyKey::fromString('operation:foreign-dispatch-0001'),
-                ['mode' => 'full'],
-            ));
-            self::fail('A foreign execution context entered a custom action handler.');
-        } catch (BusinessRecordDefinitionUnavailable) {
-            self::addToAssertionCount(1);
-        }
-
         $inactive = new CustomBusinessSurfaceDispatcher(
             new CustomBusinessViewHandlerRegistry(),
             new CustomBusinessActionHandlerRegistry(),
@@ -600,17 +571,17 @@ final class CustomBusinessHandlerRegistryTest extends TestCase
     /**
      * Mint a trusted system context without introducing any delivery-layer dependency.
      *
-     * @return  ExtensionExecutionContext  Background context, as typed handler input.
+     * @return  ExecutionContext  Background context, as typed handler input.
      *
      * @since   2.0.0
      */
-    private static function context(): ExtensionExecutionContext
+    private static function context(): ExecutionContext
     {
-        return ExtensionExecutionContext::of(ExecutionContext::issueSystem(
+        return ExecutionContext::issueSystem(
             new \stdClass(),
             SystemIdentity::Worker,
             SiteContext::default(),
             'custom-business-test',
-        ));
+        );
     }
 }

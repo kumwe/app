@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Extension\Contribution;
 
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
-use Kumwe\Extension\Spi\Contribution\ContributionDefinition;
+use Kumwe\Contribution\ContributionOwner;
+use Kumwe\Contribution\ContributionDefinition;
 use Kumwe\App\Extension\Runtime\RuntimeCanonicalJson;
+use Kumwe\Extension\Manifest\ManifestIdentifierPolicies;
 
 /**
  * Produces owner-bound digests for persisted contribution declarations.
@@ -40,7 +41,7 @@ final class ContributionDefinitionChecksum
             $definition instanceof ResourcePolicyDefinition => 'resource policy',
             default => 'contribution',
         };
-        $owner->assertOwns($definition->identifier(), $kind);
+        $owner->assertOwns($definition->identifier(), ManifestIdentifierPolicies::forKind($kind));
 
         return hash('sha256', RuntimeCanonicalJson::encode([
             'owner' => $owner->identifier(),

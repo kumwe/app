@@ -21,8 +21,8 @@ use Kumwe\App\Presentation\Twig\AdministratorTwigEnvironment;
 use Kumwe\App\Presentation\Twig\IsolatedTwigEnvironmentFactory;
 use Kumwe\App\Presentation\Twig\RecoveryAdministratorTwigEnvironment;
 use Kumwe\Extension\Spi\Binding\Http\AdministratorRouteRenderer;
-use Kumwe\Extension\Spi\Contribution\AdministratorViewDefinition;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Administrator\Contract\AdministratorViewDefinition;
+use Kumwe\Contribution\ContributionOwner;
 use Laminas\Diactoros\ServerRequestFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
@@ -30,6 +30,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use stdClass;
 use Twig\Loader\ArrayLoader;
 use Kumwe\App\Application\Authorization\ExecutionContextAttribute;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(AdministratorContributionRenderer::class)]
 #[CoversClass(AdministratorRenderer::class)]
@@ -126,7 +127,8 @@ final class AdministratorContributionRendererTest extends TestCase
         return [new AdministratorRenderer(
             $twig,
             new RecoveryAdministratorRenderer(new RecoveryAdministratorTwigEnvironment(new ArrayLoader())),
-            AdministratorNavigationRegistry::core(),
+            new DeterministicCanonicalEncoder(),
+            AdministratorNavigationRegistry::core(new DeterministicCanonicalEncoder()),
             extensionViews: $views,
             extensionRequestProvenance: $provenance,
         ), $owner, $provenance];

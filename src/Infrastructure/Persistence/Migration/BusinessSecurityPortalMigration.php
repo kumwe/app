@@ -6,6 +6,7 @@ namespace Kumwe\App\Infrastructure\Persistence\Migration;
 
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
+use Kumwe\CanonicalJson\CanonicalEncoder;
 use Doctrine\DBAL\Schema\Column;
 use Doctrine\DBAL\Schema\PrimaryKeyConstraint;
 use Doctrine\DBAL\Schema\Table;
@@ -21,7 +22,7 @@ use Kumwe\App\Extension\Contribution\CoreExtensionContributions;
 use Kumwe\App\Extension\Runtime\RuntimeCanonicalJson;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\Extension\Manifest\ExtensionManifest;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Contribution\ContributionOwner;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
 
@@ -40,14 +41,17 @@ final readonly class BusinessSecurityPortalMigration implements Migration
     public const string ID = '20260809010000_business_security_portal';
 
     /**
-     * Bind the migration to the installation's table-name compiler.
+     * Bind the migration to the installation's table-name compiler and the host canonical encoder.
      *
-     * @param  TableNames  $tables  Portable physical table names.
+     * @param  TableNames        $tables            Portable physical table names.
+     * @param  CanonicalEncoder  $canonicalEncoder  Host encoder the stored release manifests are parsed with.
      *
      * @since  2.0.0
      */
-    public function __construct(private TableNames $tables)
-    {
+    public function __construct(
+        private TableNames $tables,
+        private CanonicalEncoder $canonicalEncoder,
+    ) {
     }
 
     /** @return string Stable ordered migration identity. @since 2.0.0 */
@@ -871,7 +875,7 @@ final readonly class BusinessSecurityPortalMigration implements Migration
             ) {
                 throw new RuntimeException('An installed extension release has invalid authorization metadata.');
             }
-            $manifest = ExtensionManifest::fromJson(is_string($manifestValue)
+            $manifest = ExtensionManifest::fromJson($this->canonicalEncoder, is_string($manifestValue)
                 ? $manifestValue
                 : json_encode($manifestValue, JSON_THROW_ON_ERROR));
             if ($manifest->identifier()->value() !== $identifier) {
@@ -879,7 +883,7 @@ final readonly class BusinessSecurityPortalMigration implements Migration
             }
             $owner = ContributionOwner::extension($identifier);
 
-            $contributions = CanonicalManifestInterpreter::fromManifest($manifest);
+            $contributions = CanonicalManifestInterpreter::fromManifest($this->canonicalEncoder, $manifest);
             foreach ($contributions->capabilities() as $definition) {
                 $recordedOwner = $database->fetchOne(sprintf(
                     'SELECT extension_id FROM %s WHERE capability_code = ?',

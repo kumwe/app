@@ -1,0 +1,38 @@
+schema: kumwe-migration-ledger/v1
+migration_id: KUMWE-MIG-2026-037
+change_set: KUMWE-CS-2026-037
+package: kumwe/portal-contract
+version: 0.2.2
+artifact_digest: "b90cd3e66dd666a6e22483b2d9285fa105d64e98e07a322e26c2d9c82e5dfbc1"
+handoff_path: vendor/kumwe/portal-contract/docs/release-record.md
+handoff_sha256: "45c41ceeb1f6752b6ee5b698098214a72d0bb70afe3f3e5832ee8f28207415d9"
+release_attestation: docs/architecture/migrations/evidence/KUMWE-MIG-2026-037/RELEASE-ATTESTATION.yaml
+old_namespace_roots:
+  - "Kumwe\\Extension\\Spi\\Portal\\Contribution\\"
+symbols:
+  - old_fqcn: Kumwe\Extension\Spi\Portal\Contribution\PortalNavigationDefinition
+    new_fqcn: Kumwe\Portal\Contract\PortalNavigationDefinition
+  - old_fqcn: Kumwe\Extension\Spi\Portal\Contribution\PortalRouteDefinition
+    new_fqcn: Kumwe\Portal\Contract\PortalRouteDefinition
+  - old_fqcn: Kumwe\Extension\Spi\Portal\Contribution\PortalTemplateDefinition
+    new_fqcn: Kumwe\Portal\Contract\PortalTemplateDefinition
+  - old_fqcn: Kumwe\Extension\Spi\Portal\Contribution\PortalWorkspaceDefinition
+    new_fqcn: Kumwe\Portal\Contract\PortalWorkspaceDefinition
+removed_paths: []
+removed_tests: []
+retained_tests:
+  - tests/Unit/InterfaceProgramme/InterfaceProgrammeEvidenceGateTest.php
+  - tests/Unit/Portal/Contribution/PortalContributionRegistryTest.php
+  - tests/Unit/Portal/Http/PortalDashboardPreferencesHandlerTest.php
+  - tests/Unit/Portal/Http/PortalHomeHandlerTest.php
+  - tests/Unit/Portal/Presentation/PortalContributionRendererTest.php
+di_changes: []
+capability_index_entries:
+  - kumwe/portal-contract
+release_evidence:
+  - docs/architecture/migrations/evidence/KUMWE-MIG-2026-037/RELEASE-ATTESTATION.yaml
+app_pull_request: "https://github.com/kumwe/app/pull/151"
+roadmap_refs: []
+non_roadmap_refs:
+  - NRM-2026-055
+conflicts: []

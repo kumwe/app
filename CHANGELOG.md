@@ -79,6 +79,137 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Added
 
+- **2026-09-23 — `kumwe/extension-sdk` 0.3.3 composes the extension contracts over the extracted capability
+  packages and closes the release train.**
+  The SDK candidate enters App through the migration ledger (`NRM-2026-057`): `KUMWE-MIG-2026-033`, its change
+  set, the integration train `KUMWE-TRAIN-2026-033`, which carries the ten train packages and their merge order,
+  and the release attestation record the candidate commit of pull request 22, and `composer.json`
+  pins `0.3.3` exactly through a temporary package repository entry that names the candidate's zipball; the
+  entry leaves once `v0.3.3` is published. The SDK is now a Version 2 manifested package with 96 exports, so it
+  leaves the legacy registry, which is empty, and its three retired App roots move to the ledger. The eighty-eight
+  duplicate declarations the SDK dropped resolve to their canonical owners through the train ledgers, and the SDK
+  `IdempotencyKey` copy maps to `Kumwe\Idempotency\IdempotencyKey`. `ExtensionManifest::fromJson`,
+  `ManifestContributions::fromManifest`, `ExtensionContributionSummary::project` and the manifest declaration
+  factories take the container's `CanonicalEncoder`, so `DoctrineExtensionManager`, `ExtensionRuntimeMapCompiler`,
+  `ExtensionRuntimeLoader`, `TrustStore`, `BusinessSecurityPortalMigration`, `ExtensionContributionRegistrySet`,
+  `CanonicalManifestInterpreter`, `CoreExtensionContributions`, `OpenApiExtensionActivationAdmission` and
+  `AdministratorRenderer` receive it, `ContainerFactory` rebinds `ComponentScaffolder`, `PackageInspector` and
+  `DeterministicPackageBuilder` with it, and `ManifestIdentifierPolicies::forKind` projects every manifest kind
+  onto the contribution package's identifier policies. The `kumwe/producer` `0.3.0 as 0.2.99` alias is retired
+  for the exact `0.3.0` pin. `tests/Support/DeterministicCanonicalEncoder` is the test double the unit suite hands
+  to package values. `KUMWE-CGR-2026-012` and `KUMWE-CGR-2026-013` record the application-layer surfaces the
+  encoder injection and the idempotency-key rename changed. `kumwe/conversion-extension` 0.1.4 stays out of the
+  train: its shipped record carries multi-line scalars outside the StrictYaml subset the capability index reads,
+  so App keeps `MoneyRateProviderDefinition` and `UnitConversionProviderDefinition` over the package
+  `ContributionDefinition` until a conforming successor ships. (#151)
+
+- **2026-09-23 — `kumwe/business-surface-contract` 0.1.4 owns the custom business action, view and handler
+  contracts and the field presentation model, input and presenter contracts.**
+  The package enters App through the migration ledger (`NRM-2026-056`): `KUMWE-MIG-2026-038`, its change set,
+  `KUMWE-TRAIN-2026-038` and the independent release attestation record the verified `v0.1.4` release, and
+  `composer.json` pins it exactly. The eighteen SDK copies under `Kumwe\Extension\Spi\BusinessSurface` are
+  retired: `CustomBusinessActionCommand` and `CustomBusinessViewQuery` carry `Kumwe\Context\Value\ExecutionContext`
+  and `Kumwe\Idempotency\IdempotencyKey` directly, so `BusinessSurfaceService`, the custom dispatcher and the
+  executor stop wrapping the host context and `BusinessRecordApiRequest` returns the package key;
+  `FieldPresentationModel` takes the canonical encoder as its ninth argument, which `CoreFieldPresenter` and the
+  announcements example presenter now receive. The two App tests that proved refusal of a foreign extension
+  execution context are removed because the package command type makes the case unrepresentable. Handler
+  admission, binding, authorization, the action ledger and rendering stay in App. (#151)
+
+- **2026-09-23 — `kumwe/portal-contract` 0.2.2 owns the portal workspace, navigation, route and template
+  contribution definitions.**
+  The package enters App through the migration ledger (`NRM-2026-055`): `KUMWE-MIG-2026-037`, its change set,
+  `KUMWE-TRAIN-2026-037` and the independent release attestation record the verified `v0.2.2` release, and
+  `composer.json` pins it exactly. The four SDK copies under `Kumwe\Extension\Spi\Portal\Contribution` are
+  retired and that root leaves the layer graph; the portal registries, renderer and handlers read the package
+  definitions with the portal identifier policies, and the package admission envelope is not adopted. (#151)
+
+- **2026-09-23 — `kumwe/administrator-contract` 0.2.2 owns the administrator workspace, navigation, route and
+  view contribution definitions.**
+  The package enters App through the migration ledger (`NRM-2026-054`): `KUMWE-MIG-2026-036`, its change set,
+  `KUMWE-TRAIN-2026-036` and the independent release attestation record the verified `v0.2.2` release, and
+  `composer.json` pins it exactly. The four SDK copies under `Kumwe\Extension\Spi\Contribution` are retired;
+  the administrator registries, navigation registry, renderer and dashboard handlers read the package
+  definitions with the administrator identifier policies, and the package admission envelope is not adopted. (#151)
+
+- **2026-09-23 — `kumwe/interface-standard` 0.1.2 owns the interface standard surface declaration, definition
+  and conformance vocabulary.**
+  The package enters App through the migration ledger (`NRM-2026-052`): `KUMWE-MIG-2026-025`, its change set,
+  `KUMWE-TRAIN-2026-025` and the independent release attestation record the verified `v0.1.2` release, and
+  `composer.json` pins it exactly. As the released record prescribes, the twenty-one App types under
+  `Kumwe\App\InterfaceStandard` — from `SurfaceDefinition`, `SurfaceDeclaration` and `SurfaceId` through the
+  conformance validator, report, violation, diagnostic and severity to the customization, responsive, icon and
+  resource vocabulary — are removed with `SurfaceDefinitionTest` and `SurfaceIdentifierParityTest`, whose subjects
+  every train package now owns; the interface-surface registry and presentation preference policies read the
+  package types, the programme verifier reads the core surface definitions from the installed package source,
+  and `PresentationPreference` with its key and value stays in App. (#151)
+
+- **2026-09-23 — `kumwe/reporting` 0.1.5 owns the report definition, its aggregate, filter, sort and value
+  contracts, the projection builder and the report contribution contracts.**
+  The package enters App through the migration ledger (`NRM-2026-051`): `KUMWE-MIG-2026-041`, its change set,
+  `KUMWE-TRAIN-2026-041` and the independent release attestation record the verified `v0.1.5` release, and
+  `composer.json` pins it exactly. As the released record prescribes, the thirteen App report definition types
+  under `Kumwe\App\BusinessReporting\Domain` are removed with `ReportDefinitionTest`, the eight SDK copies under
+  `Kumwe\Extension\Spi\BusinessReporting` are retired and those roots leave the layer graph; the report
+  definition registry, report service, scope resolver, export service, projection runtime and Doctrine projection
+  store stay App-owned, the last two taking the canonical encoder after the clock. (#151)
+
+- **2026-09-23 — `kumwe/record-query` 0.1.4 owns the record query grammar: specification, filters, sorts,
+  projections, aggregates, cursors and the query guard.**
+  The package enters App through the migration ledger (`NRM-2026-050`): `KUMWE-MIG-2026-039`, its change set,
+  `KUMWE-TRAIN-2026-039` and the independent release attestation record the verified `v0.1.4` release, and
+  `composer.json` pins it exactly. The twenty-seven SDK copies under `Kumwe\Extension\Spi\BusinessRecord\Query`
+  are retired and that root leaves the layer graph; the App cursor codec, query compiler, read repository and
+  surface query factory read the package types, and SQL execution, policy-before-query and cursor key custody
+  stay in App. (#151)
+
+- **2026-09-23 — `kumwe/integration` 0.2.4 owns the integration event, envelope, contract, schema, consumer,
+  listener and webhook contracts and the outbox, inbox and process manager ports.**
+  The package enters App through the migration ledger (`NRM-2026-049`): `KUMWE-MIG-2026-027`, its change set,
+  `KUMWE-TRAIN-2026-027` and the independent release attestation record the verified `v0.2.4` release, and
+  `composer.json` pins it exactly. As the released record prescribes, the twenty App types under
+  `Kumwe\App\BusinessIntegration\Domain` and `Application` — the event schema definition, the process instance,
+  status, transition, work item and kind, the recorded events and envelope, the outbox, inbox and process manager
+  ports with their leases, claims and dispositions, the event contract registry and the payload schema validator —
+  are removed with `EventContractTest`, `ProcessInstanceTest` and `IntegrationContributionDefinitionTest`, the
+  thirteen SDK copies under `Kumwe\Extension\Spi\BusinessIntegration\Domain` are retired and both roots leave
+  the layer graph. `ContainerFactory` re-keys the three store ports to the package names and keeps sharing the
+  contribution-built `EventContractRegistry` under the package name instead of installing the package provider,
+  whose configuration-built registry cannot express the admitted extension catalog; `DoctrineOutboxStore`,
+  `DoctrineInboxStore`, `DoctrineProcessManagerStore`, `ProcessManagerService` and
+  `BusinessRecordMutationEventPublisher` take the canonical encoder and fail with
+  `Kumwe\Automation\FailureClassification`. (#151)
+
+- **2026-09-23 — `kumwe/automation` 0.2.2 owns the cron expression, retry policy, job envelope, lease, queue
+  and handler contracts and the automation contribution definitions.**
+  The package enters App through the migration ledger (`NRM-2026-048`): `KUMWE-MIG-2026-026`, its change set,
+  `KUMWE-TRAIN-2026-026` and the independent release attestation record the verified `v0.2.2` release, and
+  `composer.json` pins it exactly. As the released record prescribes, the twenty-two App types — `CronExpression`,
+  the retry policy, decision and jitter source, the failure classification, the job envelope, lease, status,
+  execution class and stored job, the job queue, handler and handler registry ports, the queue runtime policy and
+  catalog and the queue and schedule contribution definitions — are removed with `CronExpressionTest`,
+  `JobEnvelopeTest`, `JobLeaseTest` and `RetryPolicyTest`, and the SDK `JobDeclaration` and
+  `JobContributionDefinition` copies are retired. `ContainerFactory` installs the package `ConfigProvider`
+  after admitting only its two container factories, which build the shared jitter source and retry policy from the
+  kernel clock and the `kumwe.automation` delays the config service now carries, drops the host jitter and retry
+  shares those factories replace, keeps building `JobHandlerRegistry` from the core handlers and the admitted
+  extension contributions because the package factory cannot wrap them in the trust-enforcing adapter, and re-keys
+  the `JobQueue` and `QueueRuntimePolicyCatalog` port bindings. The worker, scheduler, automation management,
+  execution scope and Doctrine queue stay in App. (#151)
+
+- **2026-09-23 — `kumwe/contribution` 0.1.1 owns the contribution owner, definition and surface contracts and
+  the per-surface identifier policy.**
+  The package enters App through the migration ledger (`NRM-2026-047`): `KUMWE-MIG-2026-006`, its change set,
+  `KUMWE-TRAIN-2026-006` and the independent release attestation record the verified `v0.1.1` release, and
+  `composer.json` pins it exactly. The App `ContributionSurface` interface is removed and the SDK
+  `ContributionOwner` and `ContributionDefinition` copies are retired; because `ContributionOwner::assertOwns`
+  now takes a `SurfaceIdentifierPolicy` and refuses with `ContributionRejected`, `OwnedRuntimeContributionRegistry`
+  holds the policy for its kind, projected through the SDK `ManifestIdentifierPolicies` unless the registry set
+  names one, the canonical composition document registry names the slash policy over the composition kinds, and
+  every static ownership check in the resource policy, capability, administrator, portal, presentation preference,
+  preview renderer and checksum sites names its policy. The layer graph admits `Kumwe\Contribution` as a shared
+  namespace. (#151)
+
 - **2026-09-23 — `kumwe/business-schema` 0.1.3 owns the physical schema blueprints, the definition-to-blueprint
   compiler, the ordered change planner and the plan, step, installation and recovery values.**
   The business-schema package enters App through the migration ledger (`NRM-2026-045`): `KUMWE-MIG-2026-030`,

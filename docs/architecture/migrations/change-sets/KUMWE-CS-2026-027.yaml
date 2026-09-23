@@ -1,0 +1,164 @@
+schema: kumwe-change-set/v2
+change_set: KUMWE-CS-2026-027
+migration_id: KUMWE-MIG-2026-027
+roadmap_source:
+  title: Kumwe ERP-Extensibility Foundation Roadmap
+  sha256: a202155ef1a65f5ab293d4f8397ebf4ac430db7f1e877c776bbe7851e6fe18d8
+roadmap_refs: []
+state: app-pr-ready
+phase_1:
+  source_repository: kumwe/app
+  source_sha: "24ecf956423c18933e824b43cea1bfb9127a79a9"
+  target_repository: kumwe/integration
+  package_pr: null
+  tested_sha: null
+  public_api_digest: "9a3c173bfe6706739c0307abb075b5acf8ff181b63fedf5bf8e4fc5191cb3ad2"
+  capability_digest: "8d36acad4402dc46623cd7a39d038e1f36c667409628ce6195ddd3735f36481b"
+  service_map_digest: "2c28cbf4329709e68f6284fe1d6fb0943b2ce97fd197f700751af9e134cf51e7"
+  handoff_digest: "ae5fdfc81daf02e0936f0a8d205cd58c579ca0fa4460386e86895067978a85c5"
+release:
+  version: 0.2.4
+  source_sha: "592dcc549fa5130dc7f2b09f399d94991012b826"
+  artifact_digest: "a921390bc35604cbe79c986fe0eb5fa122d003831df25c2230e84599662b6007"
+  clean_consumer_evidence:
+    - docs/architecture/migrations/evidence/KUMWE-MIG-2026-027/RELEASE-ATTESTATION.yaml
+phase_2:
+  app_pr: "https://github.com/kumwe/app/pull/151"
+  tested_sha: null
+  merged_sha: null
+  exact_dependency: "kumwe/integration 0.2.4"
+  composer_lock_digest: "04b6bdc0e61ef498055023db3aa6243d6c1e05566aa6428729a2117cb9c00612"
+  removed_app_symbols:
+    - Kumwe\App\BusinessIntegration\Domain\EventSchemaDefinition
+    - Kumwe\App\BusinessIntegration\Domain\ProcessInstance
+    - Kumwe\App\BusinessIntegration\Domain\ProcessStatus
+    - Kumwe\App\BusinessIntegration\Domain\ProcessTransition
+    - Kumwe\App\BusinessIntegration\Domain\ProcessWorkItem
+    - Kumwe\App\BusinessIntegration\Domain\ProcessWorkKind
+    - Kumwe\App\BusinessIntegration\Domain\RecordedDomainEvent
+    - Kumwe\App\BusinessIntegration\Domain\RecordedEventEnvelope
+    - Kumwe\App\BusinessIntegration\Domain\RecordedIntegrationEvent
+    - Kumwe\App\BusinessIntegration\Application\OutboxStore
+    - Kumwe\App\BusinessIntegration\Application\InboxStore
+    - Kumwe\App\BusinessIntegration\Application\ProcessManagerStore
+    - Kumwe\App\BusinessIntegration\Application\ProcessManagerHandler
+    - Kumwe\App\BusinessIntegration\Application\EventContractRegistry
+    - Kumwe\App\BusinessIntegration\Application\PayloadSchemaValidator
+    - Kumwe\App\BusinessIntegration\Application\InboxDisposition
+    - Kumwe\App\BusinessIntegration\Application\InboxClaimResult
+    - Kumwe\App\BusinessIntegration\Application\InboxLease
+    - Kumwe\App\BusinessIntegration\Application\OutboxLease
+    - Kumwe\App\BusinessIntegration\Application\ProcessWorkLease
+    - Kumwe\Extension\Spi\BusinessIntegration\Domain\ConsumerIdempotency
+    - Kumwe\Extension\Spi\BusinessIntegration\Domain\DomainEvent
+    - Kumwe\Extension\Spi\BusinessIntegration\Domain\DomainListenerDeclaration
+    - Kumwe\Extension\Spi\BusinessIntegration\Domain\DomainListenerDefinition
+    - Kumwe\Extension\Spi\BusinessIntegration\Domain\EventConsumerDeclaration
+    - Kumwe\Extension\Spi\BusinessIntegration\Domain\EventConsumerDefinition
+    - Kumwe\Extension\Spi\BusinessIntegration\Domain\EventEnvelope
+    - Kumwe\Extension\Spi\BusinessIntegration\Domain\EventSensitivity
+    - Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationContract
+    - Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationContractValidator
+    - Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationEvent
+    - Kumwe\Extension\Spi\BusinessIntegration\Domain\WebhookContributionDefinition
+    - Kumwe\Extension\Spi\BusinessIntegration\Domain\WebhookDeclaration
+  moved_unit_tests:
+    - tests/Unit/BusinessIntegration/Domain/IntegrationContributionDefinitionTest.php
+    - tests/Unit/BusinessIntegration/EventContractTest.php
+    - tests/Unit/BusinessIntegration/ProcessInstanceTest.php
+  retained_app_tests:
+    - tests/Functional/Extension/LiveSurfaceContractParityTest.php
+    - tests/Integration/BusinessIntegration/BusinessIntegrationPersistenceTest.php
+    - tests/Integration/BusinessIntegration/HungEndpointDeadlineIntegrationTest.php
+    - tests/Integration/BusinessIntegration/OutboxInboxClaimContentionIntegrationTest.php
+    - tests/Integration/BusinessIntegration/PoisonAndDeadLetterIntegrationTest.php
+    - tests/Integration/BusinessIntegration/ProjectionRuntimePersistenceTest.php
+    - tests/Integration/Extension/GeneratedExtensionLifecycleIntegrationTest.php
+    - tests/Integration/Persistence/TransactionBoundaryEngineIntegrationTest.php
+    - tests/Support/AssetInspectionDeploymentAcceptance.php
+    - tests/Unit/BusinessIntegration/Application/BusinessRecordMutationEventPublisherTest.php
+    - tests/Unit/BusinessIntegration/Application/DurableOutboundAdapterDeliveryTest.php
+    - tests/Unit/BusinessIntegration/Application/JobQueueIntegrationEventHandlerTest.php
+    - tests/Unit/BusinessIntegration/ConsumerDispatcherTest.php
+    - tests/Unit/BusinessIntegration/DurableOutboundAdapterDispatcherTest.php
+    - tests/Unit/BusinessIntegration/Infrastructure/RuntimeIntegrationEventTransportTest.php
+    - tests/Unit/BusinessIntegration/IntegrationOperationsServiceTest.php
+    - tests/Unit/BusinessIntegration/OutboxDispatcherTest.php
+    - tests/Unit/BusinessIntegration/ProcessCancellationWorkTest.php
+    - tests/Unit/BusinessIntegration/ProcessWorkDispatcherTest.php
+    - tests/Unit/BusinessRecord/Application/BusinessRecordMutationPublicationTest.php
+    - tests/Unit/Extension/Contribution/ExtensionBindingSurfaceTest.php
+    - tests/Unit/Extension/Contribution/OwnedBindingCanonicalDriftTest.php
+evidence:
+  package:
+    - docs/architecture/migrations/evidence/KUMWE-MIG-2026-027/RELEASE-ATTESTATION.yaml
+    - "https://github.com/kumwe/integration/actions/runs/35842732027; release on record on tag commit 592dcc549fa5130dc7f2b09f399d94991012b826"
+    - "https://github.com/kumwe/integration/releases/tag/v0.2.4; release 394494639"
+  app_composition:
+    - tests/Unit/BusinessIntegration/Application/BusinessRecordMutationEventPublisherTest.php
+    - tests/Unit/BusinessIntegration/Application/DurableOutboundAdapterDeliveryTest.php
+    - tests/Unit/BusinessIntegration/Application/JobQueueIntegrationEventHandlerTest.php
+    - tests/Unit/BusinessIntegration/ConsumerDispatcherTest.php
+    - tests/Unit/BusinessIntegration/DurableOutboundAdapterDispatcherTest.php
+    - tests/Unit/BusinessIntegration/Infrastructure/RuntimeIntegrationEventTransportTest.php
+    - tests/Unit/BusinessIntegration/IntegrationOperationsServiceTest.php
+    - tests/Unit/BusinessIntegration/OutboxDispatcherTest.php
+    - tests/Unit/BusinessIntegration/ProcessCancellationWorkTest.php
+    - tests/Unit/BusinessIntegration/ProcessWorkDispatcherTest.php
+    - tests/Unit/BusinessRecord/Application/BusinessRecordMutationPublicationTest.php
+    - tests/Unit/Extension/Contribution/ExtensionBindingSurfaceTest.php
+    - tests/Unit/Governance/ComposerLockTest.php
+    - tests/Unit/Governance/CoreGrowthGateTest.php
+    - tests/Architecture/CapabilityIndexGateTest.php
+    - "composer update of the train packages; one lock regeneration for the whole train, kumwe/integration at 0.2.4"
+    - "composer kumwe:capability-index, kumwe:core-growth-record, baseline:record, then the composer qa gates and the unit and architecture suites, run locally on PHP 8.4 without ext-kumwe_engine"
+  database_matrix:
+    - tests/Integration/BusinessIntegration/BusinessIntegrationPersistenceTest.php
+    - tests/Integration/BusinessIntegration/HungEndpointDeadlineIntegrationTest.php
+    - tests/Integration/BusinessIntegration/OutboxInboxClaimContentionIntegrationTest.php
+    - tests/Integration/BusinessIntegration/PoisonAndDeadLetterIntegrationTest.php
+    - tests/Integration/BusinessIntegration/ProjectionRuntimePersistenceTest.php
+    - tests/Integration/Extension/GeneratedExtensionLifecycleIntegrationTest.php
+    - tests/Integration/Persistence/TransactionBoundaryEngineIntegrationTest.php
+    - "To be exercised by the pull request's hosted workflows on MariaDB, MySQL and PostgreSQL."
+  concurrency:
+    - tests/Integration/BusinessIntegration/HungEndpointDeadlineIntegrationTest.php
+    - tests/Integration/BusinessIntegration/OutboxInboxClaimContentionIntegrationTest.php
+    - tests/Integration/BusinessIntegration/PoisonAndDeadLetterIntegrationTest.php
+    - "Claim contention, leases, recovery and dead-letter paths; to be exercised by the pull request's hosted workflows."
+  authorization_security:
+    - tests/Integration/Persistence/TransactionBoundaryEngineIntegrationTest.php
+    - "Capability checks, admission and trust decisions stay in App; the hosted source-and-image security scans run on the pull request."
+  lifecycle_recovery:
+    - tests/Integration/Extension/GeneratedExtensionLifecycleIntegrationTest.php
+    - tests/Support/AssetInspectionDeploymentAcceptance.php
+    - "Lifecycle, recovery and migration paths; to be exercised by the pull request's hosted workflows."
+  delivery_browser:
+    - tests/Functional/Extension/LiveSurfaceContractParityTest.php
+    - tests/Unit/BusinessIntegration/Application/DurableOutboundAdapterDeliveryTest.php
+    - tests/Unit/BusinessIntegration/Application/JobQueueIntegrationEventHandlerTest.php
+    - "The administrator, portal and API delivery read the package values through the unchanged App handlers; the browser suites run in the pull request's hosted workflows."
+  deployment_backup_restore:
+    - tests/Support/AssetInspectionDeploymentAcceptance.php
+    - "Signed backup, clean restore and deployment acceptance on three engines; to be exercised by the pull request's hosted workflows."
+  native_parity_abi:
+    - tests/Unit/Kernel/NativeComputationFactoryTest.php
+    - "The package ships no native component; the canonical encoder it receives is the container's native encoder binding and no native cutover is claimed."
+  performance_capacity:
+    - tests/Integration/Performance/HotPlanRegressionIntegrationTest.php
+    - "No performance claim is made; the hosted lanes exercise the hot plan and query budgets."
+compatibility: "Drop-in for the namespace-only moves; RecordedDomainEvent, RecordedIntegrationEvent, EventSchemaDefinition::fromArray, ProcessInstance and ProcessWorkItem hydration take the canonical encoder, the outbox, inbox and process manager ports fail with Kumwe\\Automation\\FailureClassification, and OwnedRuntimeContributionRegistry admits the package definitions. Persisted outbox, inbox and process rows and their checksums are unchanged."
+migration_recovery: null
+security_impact: "None on authority: consumer dispatch, durable outbound adapters, process cancellation, transport and the Doctrine stores stay in App; the package validates contracts and payloads it is handed."
+performance_claim: null
+rollback: "Revert the App pull request; the twenty removed classes and three unit tests return with the train baseline and no persisted data changes."
+known_gaps:
+  - "The local sandbox runs PHP 8.4 without ext-kumwe_engine and without a database server, so the integration and functional lanes, PHP 8.5 and the demo profile installations are proven by the App CI on this pull request."
+  - "One Composer lock regeneration covers the whole train, so composer_lock_digest is the digest of the train lock rather than of a lock that adds this package alone."
+  - "The tag commit is not an ancestor of the repository main branch; the main head tree is byte-identical to the tag tree, and the release-on-record workflow ran on the tag commit itself."
+  - "The tag archive carries no export-ignore rules, so the released tree ships its tests, tools and CI configuration; the eighty-seven tracked files are the archive."
+  - "Kumwe\\Integration\\ConfigProvider is not installed: its EventContractRegistryFactory reads schemas and consumers from configuration, which cannot express the catalog the extension contribution registry set validates and replaces under generation transitions, so the host shares that registry under the package name and records the binding under di_changes."
+  - "The handoff lists EventContractTest, ProcessInstanceTest and IntegrationContributionDefinitionTest among the tests to retain; they test only the moved values, which the package suite now owns, so they are removed as implementation tests."
+  - "kumwe/extension-sdk 0.3.3 is adopted from its unpublished candidate, pull request 22 at commit b54022b05075944e884dc1df038cbcb63f723472, through a temporary package repository entry in composer.json; the entry is removed and the lock re-pointed at the Packagist distribution once v0.3.3 is published (KUMWE-CS-2026-033)."
+completion_claim: false
+accepted_by: null

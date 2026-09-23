@@ -15,6 +15,7 @@ use Kumwe\Extension\Spi\Runtime\ExtensionContainer;
 use LogicException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(ActiveExtensionSet::class)]
 /**
@@ -34,6 +35,7 @@ final class ActiveExtensionSetOwnershipTest extends TestCase
     public function testAForeignManifestContributionGraphIsRefused(): void
     {
         $active = new ActiveExtensionSet(new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
             new SdkFieldConfigurationAdmission(),
             withCore: false,
         ));

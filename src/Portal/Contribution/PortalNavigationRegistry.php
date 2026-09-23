@@ -9,10 +9,11 @@ use Kumwe\Access\AuthorizationPolicyRegistry;
 use Kumwe\Access\AuthorizationResource;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Extension\Contribution\CapabilityDefinitionRegistry;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
-use Kumwe\App\Extension\Contribution\ContributionSurface;
+use Kumwe\Contribution\ContributionOwner;
+use Kumwe\Extension\Manifest\ManifestIdentifierPolicies;
+use Kumwe\Contribution\ContributionSurface;
 use Kumwe\Access\Capability;
-use Kumwe\Extension\Spi\Portal\Contribution\PortalNavigationDefinition;
+use Kumwe\Portal\Contract\PortalNavigationDefinition;
 
 /**
  * Capability-, owner-, and live-trust-filtered portal navigation registry.
@@ -61,7 +62,7 @@ final class PortalNavigationRegistry implements ContributionSurface
      */
     public function register(ContributionOwner $owner, PortalNavigationDefinition $definition): void
     {
-        $owner->assertOwns($definition->id, 'navigation');
+        $owner->assertOwns($definition->id, ManifestIdentifierPolicies::forKind('navigation'));
         if (!$this->workspaces->isOwnedBy($definition->workspace, $owner)) {
             throw new InvalidArgumentException('Portal navigation must reference an owned workspace.');
         }

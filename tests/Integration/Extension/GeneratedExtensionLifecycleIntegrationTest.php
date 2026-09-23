@@ -10,11 +10,11 @@ use Doctrine\DBAL\Connection;
 use FilesystemIterator;
 use InvalidArgumentException;
 use Kumwe\App\Administrator\Http\Middleware\AdministratorSessionMiddleware;
-use Kumwe\App\Application\Automation\JobHandlerRegistry;
+use Kumwe\Automation\JobHandlerRegistry;
 use Kumwe\App\BusinessIntegration\Application\DomainEventDispatcher;
-use Kumwe\App\BusinessIntegration\Application\EventContractRegistry;
+use Kumwe\Integration\EventContractRegistry;
 use Kumwe\App\BusinessIntegration\Application\ValidatedContributedJobHandler;
-use Kumwe\App\BusinessIntegration\Domain\RecordedDomainEvent;
+use Kumwe\Integration\RecordedDomainEvent;
 use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use Kumwe\App\Extension\Application\ExtensionManager;
 use Kumwe\App\Extension\Application\Migration\ScopedExtensionTableNames;
@@ -43,13 +43,13 @@ use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\Extension\Manifest\ExtensionIdentifier;
 use Kumwe\Extension\Spi\BusinessIntegration\Application\DomainEventHandler;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\DomainListenerDefinition;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventSensitivity;
-use Kumwe\Extension\Spi\BusinessReporting\Application\ProjectionBuilder;
-use Kumwe\Extension\Spi\BusinessReporting\Application\ProjectionEvent;
-use Kumwe\Extension\Spi\BusinessReporting\Application\ProjectionWriter;
-use Kumwe\Extension\Spi\BusinessReporting\Domain\ProjectionDefinition;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Integration\DomainListenerDefinition;
+use Kumwe\Integration\EventSensitivity;
+use Kumwe\Reporting\Contract\ProjectionBuilder;
+use Kumwe\Reporting\Contract\ProjectionEvent;
+use Kumwe\Reporting\Contract\ProjectionWriter;
+use Kumwe\Reporting\Domain\ProjectionDefinition;
+use Kumwe\Contribution\ContributionOwner;
 use Kumwe\Access\Capability;
 use Kumwe\Extension\Toolchain\ComponentScaffolder;
 use Kumwe\Extension\Toolchain\DeterministicPackageBuilder;
@@ -69,6 +69,7 @@ use RecursiveIteratorIterator;
 use RuntimeException;
 use SplFileInfo;
 use Throwable;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 /**
  * Proves one SDK scaffold crosses the complete production extension lifecycle, executables included.
@@ -157,7 +158,7 @@ final class GeneratedExtensionLifecycleIntegrationTest extends TestCase
 
         self::assertTrue(mkdir($temporary, 0700));
         try {
-            $scaffold = (new ComponentScaffolder())->scaffold(new ScaffoldRequest(
+            $scaffold = (new ComponentScaffolder(new DeterministicCanonicalEncoder()))->scaffold(new ScaffoldRequest(
                 $identifier,
                 'Integration\\Generated' . ucfirst($marker),
                 $source,
@@ -166,8 +167,9 @@ final class GeneratedExtensionLifecycleIntegrationTest extends TestCase
             self::assertSame($source, $scaffold->directory);
             self::lowerPhpFloor($source . '/kumwe.json');
 
-            $inspector = new PackageInspector();
-            $build = (new DeterministicPackageBuilder($inspector))->build($source, $archive);
+            $inspector = new PackageInspector(new DeterministicCanonicalEncoder());
+            $builder = new DeterministicPackageBuilder(new DeterministicCanonicalEncoder(), $inspector);
+            $build = $builder->build($source, $archive);
             $report = (new StaticConformanceRunner($inspector))->run($build->archive);
             self::assertTrue($report->conforms());
 
@@ -543,6 +545,7 @@ final class GeneratedExtensionLifecycleIntegrationTest extends TestCase
     private static function domainEvent(string $dotted, ExecutionContext $context, array $payload): RecordedDomainEvent
     {
         return new RecordedDomainEvent(
+            new DeterministicCanonicalEncoder(),
             $dotted . '.item_observed',
             1,
             Uuid::uuid7()->toString(),

@@ -7,26 +7,26 @@ namespace Kumwe\App\Tests\Integration\BusinessIntegration;
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Kumwe\App\Kernel\Container;
-use Kumwe\App\Application\Automation\JitterSource;
-use Kumwe\App\Application\Automation\JobHandler;
-use Kumwe\App\Application\Automation\JobHandlerRegistry;
-use Kumwe\App\Application\Automation\JobQueue;
-use Kumwe\App\Application\Automation\RetryPolicy;
+use Kumwe\Automation\JitterSource;
+use Kumwe\Automation\JobHandler;
+use Kumwe\Automation\JobHandlerRegistry;
+use Kumwe\Automation\JobQueue;
+use Kumwe\Automation\RetryPolicy;
 use Kumwe\App\Application\Automation\Worker;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Transaction\Contract\TransactionManager;
-use Kumwe\App\BusinessIntegration\Application\EventContractRegistry;
-use Kumwe\App\BusinessIntegration\Application\InboxDisposition;
+use Kumwe\Integration\EventContractRegistry;
+use Kumwe\Integration\InboxDisposition;
 use Kumwe\App\BusinessIntegration\Application\IntegrationEventConsumerDispatcher;
 use Kumwe\App\BusinessIntegration\Application\TrustedRuntimeGenerationGuard;
 use Kumwe\Extension\Spi\Application\ExecutionContext as ExtensionExecutionContext;
 use Kumwe\Extension\Spi\BusinessIntegration\Application\IntegrationEventHandler;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\ConsumerIdempotency;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventConsumerDefinition;
-use Kumwe\App\BusinessIntegration\Domain\EventSchemaDefinition;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventSensitivity;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationEvent;
-use Kumwe\App\BusinessIntegration\Domain\RecordedIntegrationEvent;
+use Kumwe\Integration\ConsumerIdempotency;
+use Kumwe\Integration\EventConsumerDefinition;
+use Kumwe\Integration\EventSchemaDefinition;
+use Kumwe\Integration\EventSensitivity;
+use Kumwe\Integration\IntegrationEvent;
+use Kumwe\Integration\RecordedIntegrationEvent;
 use Kumwe\App\BusinessIntegration\Infrastructure\DoctrineInboxStore;
 use Kumwe\App\Infrastructure\Automation\DoctrineJobQueue;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
@@ -40,6 +40,7 @@ use Ramsey\Uuid\Uuid;
 use ReflectionProperty;
 use RuntimeException;
 use Throwable;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 /**
  * Runs work that cannot succeed until the platform gives up on it, and checks where it ends up.
@@ -246,6 +247,7 @@ final class PoisonAndDeadLetterIntegrationTest extends TestCase
         TrustedRuntimeGenerationGuard $guard,
     ): IntegrationEventConsumerDispatcher {
         $contracts = new EventContractRegistry(
+            new DeterministicCanonicalEncoder(),
             [$this->schema($eventType)],
             [$definition],
         );
@@ -284,6 +286,7 @@ final class PoisonAndDeadLetterIntegrationTest extends TestCase
     private function schema(string $eventType): EventSchemaDefinition
     {
         return new EventSchemaDefinition(
+            new DeterministicCanonicalEncoder(),
             $eventType,
             1,
             EventSensitivity::INTERNAL,
@@ -299,6 +302,7 @@ final class PoisonAndDeadLetterIntegrationTest extends TestCase
     private function event(string $eventType): IntegrationEvent
     {
         return new RecordedIntegrationEvent(
+            new DeterministicCanonicalEncoder(),
             $eventType,
             1,
             Uuid::uuid7()->toString(),

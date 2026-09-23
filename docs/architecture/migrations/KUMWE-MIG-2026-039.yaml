@@ -1,0 +1,108 @@
+schema: kumwe-migration-ledger/v1
+migration_id: KUMWE-MIG-2026-039
+change_set: KUMWE-CS-2026-039
+package: kumwe/record-query
+version: 0.1.4
+artifact_digest: "c1ba765b8a233f147c4e323aac4f7d0a7f8de55a8abd32c6c5e5a2a4e1eb82f2"
+handoff_path: vendor/kumwe/record-query/docs/release-record.md
+handoff_sha256: "b3472a363e9937ce6d22fd120a06c65a0472361c77c02e4e3017eb6f65c7af3a"
+release_attestation: docs/architecture/migrations/evidence/KUMWE-MIG-2026-039/RELEASE-ATTESTATION.yaml
+old_namespace_roots:
+  - "Kumwe\\Extension\\Spi\\BusinessRecord\\Query\\"
+symbols:
+  - old_fqcn: Kumwe\Extension\Spi\BusinessRecord\Query\AggregateFunction
+    new_fqcn: Kumwe\Record\Query\AggregateFunction
+  - old_fqcn: Kumwe\Extension\Spi\BusinessRecord\Query\BooleanFilter
+    new_fqcn: Kumwe\Record\Query\BooleanFilter
+  - old_fqcn: Kumwe\Extension\Spi\BusinessRecord\Query\BooleanOperator
+    new_fqcn: Kumwe\Record\Query\BooleanOperator
+  - old_fqcn: Kumwe\Extension\Spi\BusinessRecord\Query\BusinessRecordCursor
+    new_fqcn: Kumwe\Record\Query\BusinessRecordCursor
+  - old_fqcn: Kumwe\Extension\Spi\BusinessRecord\Query\BusinessRecordSearch
+    new_fqcn: Kumwe\Record\Query\BusinessRecordSearch
+  - old_fqcn: Kumwe\Extension\Spi\BusinessRecord\Query\BusinessRecordSort
+    new_fqcn: Kumwe\Record\Query\BusinessRecordSort
+  - old_fqcn: Kumwe\Extension\Spi\BusinessRecord\Query\ComparisonFilter
+    new_fqcn: Kumwe\Record\Query\ComparisonFilter
+  - old_fqcn: Kumwe\Extension\Spi\BusinessRecord\Query\ComparisonOperator
+    new_fqcn: Kumwe\Record\Query\ComparisonOperator
+  - old_fqcn: Kumwe\Extension\Spi\BusinessRecord\Query\CursorPosition
+    new_fqcn: Kumwe\Record\Query\CursorPosition
+  - old_fqcn: Kumwe\Extension\Spi\BusinessRecord\Query\NullFilter
+    new_fqcn: Kumwe\Record\Query\NullFilter
+  - old_fqcn: Kumwe\Extension\Spi\BusinessRecord\Query\QueryCanonicalizer
+    new_fqcn: Kumwe\Record\Query\QueryCanonicalizer
+  - old_fqcn: Kumwe\Extension\Spi\BusinessRecord\Query\QueryGraphGuard
+    new_fqcn: Kumwe\Record\Query\QueryGraphGuard
+  - old_fqcn: Kumwe\Extension\Spi\BusinessRecord\Query\QueryIdentifier
+    new_fqcn: Kumwe\Record\Query\QueryIdentifier
+  - old_fqcn: Kumwe\Extension\Spi\BusinessRecord\Query\QueryValue
+    new_fqcn: Kumwe\Record\Query\QueryValue
+  - old_fqcn: Kumwe\Extension\Spi\BusinessRecord\Query\RecordAggregate
+    new_fqcn: Kumwe\Record\Query\RecordAggregate
+  - old_fqcn: Kumwe\Extension\Spi\BusinessRecord\Query\RecordCursor
+    new_fqcn: Kumwe\Record\Query\RecordCursor
+  - old_fqcn: Kumwe\Extension\Spi\BusinessRecord\Query\RecordFilter
+    new_fqcn: Kumwe\Record\Query\RecordFilter
+  - old_fqcn: Kumwe\Extension\Spi\BusinessRecord\Query\RecordProjection
+    new_fqcn: Kumwe\Record\Query\RecordProjection
+  - old_fqcn: Kumwe\Extension\Spi\BusinessRecord\Query\RecordQuerySpecification
+    new_fqcn: Kumwe\Record\Query\RecordQuerySpecification
+  - old_fqcn: Kumwe\Extension\Spi\BusinessRecord\Query\RecordSearch
+    new_fqcn: Kumwe\Record\Query\RecordSearch
+  - old_fqcn: Kumwe\Extension\Spi\BusinessRecord\Query\RecordSort
+    new_fqcn: Kumwe\Record\Query\RecordSort
+  - old_fqcn: Kumwe\Extension\Spi\BusinessRecord\Query\RelationFilter
+    new_fqcn: Kumwe\Record\Query\RelationFilter
+  - old_fqcn: Kumwe\Extension\Spi\BusinessRecord\Query\RelationQuantifier
+    new_fqcn: Kumwe\Record\Query\RelationQuantifier
+  - old_fqcn: Kumwe\Extension\Spi\BusinessRecord\Query\SetFilter
+    new_fqcn: Kumwe\Record\Query\SetFilter
+  - old_fqcn: Kumwe\Extension\Spi\BusinessRecord\Query\SortDirection
+    new_fqcn: Kumwe\Record\Query\SortDirection
+  - old_fqcn: Kumwe\Extension\Spi\BusinessRecord\Query\TextFilter
+    new_fqcn: Kumwe\Record\Query\TextFilter
+  - old_fqcn: Kumwe\Extension\Spi\BusinessRecord\Query\TextOperator
+    new_fqcn: Kumwe\Record\Query\TextOperator
+removed_paths: []
+removed_tests: []
+retained_tests:
+  - tests/Architecture/TruthfulQualityGateTest.php
+  - tests/Integration/BusinessRecord/BusinessRecordEvolutionIntegrationTest.php
+  - tests/Integration/BusinessRecord/BusinessRecordInverseRelationshipIntegrationTest.php
+  - tests/Integration/BusinessRecord/BusinessRecordLargeDatasetIntegrationTest.php
+  - tests/Integration/BusinessRecord/BusinessRecordPolicyCompilerIntegrationTest.php
+  - tests/Integration/BusinessRecord/BusinessRecordPolicyEnforcementIntegrationTest.php
+  - tests/Integration/BusinessRecord/BusinessRecordReferenceIdentityIntegrationTest.php
+  - tests/Integration/BusinessRecord/BusinessRecordRelationshipIntegrationTest.php
+  - tests/Integration/BusinessRecord/BusinessRecordRuntimeIntegrationTest.php
+  - tests/Integration/BusinessRecord/ImmutableRecordReversalIntegrationTest.php
+  - tests/Integration/BusinessRecord/SdkBusinessRecordReaderIntegrationTest.php
+  - tests/Integration/BusinessSurface/GeneratedBusinessBrowserIntegrationTest.php
+  - tests/Integration/BusinessSurface/GeneratedBusinessQueryBudgetIntegrationTest.php
+  - tests/Integration/BusinessSurface/GeneratedBusinessRelatedPolicyIntegrationTest.php
+  - tests/Integration/Extension/AssetInspectionCustomViewIntegrationTest.php
+  - tests/Integration/Performance/HotPlanRegressionIntegrationTest.php
+  - tests/Unit/BusinessRecord/Application/BrowseOwnedLineFieldChoicesQueryTest.php
+  - tests/Unit/BusinessRecord/Application/BrowseRelatedRecordsQueryTest.php
+  - tests/Unit/BusinessRecord/Application/PolicyBusinessRecordReaderTest.php
+  - tests/Unit/BusinessRecord/Application/RecordCursorCodecTest.php
+  - tests/Unit/BusinessReporting/ExportGenerationPolicyFenceTest.php
+  - tests/Unit/BusinessReporting/RecordExportPipelineTest.php
+  - tests/Unit/BusinessReporting/ReportApiDiscoveryTest.php
+  - tests/Unit/BusinessReporting/ReportBrowserErrorResponseTest.php
+  - tests/Unit/BusinessReporting/ReportPolicyInferenceTest.php
+  - tests/Unit/BusinessSurface/Application/BusinessRecordQueryFactoryTest.php
+  - tests/Unit/BusinessSurface/Application/BusinessSurfaceServiceTest.php
+  - tests/Unit/BusinessSurface/Application/Custom/CustomBusinessHandlerRegistryTest.php
+  - tests/Unit/Governance/LayerClassifierTest.php
+di_changes: []
+capability_index_entries:
+  - kumwe/record-query
+release_evidence:
+  - docs/architecture/migrations/evidence/KUMWE-MIG-2026-039/RELEASE-ATTESTATION.yaml
+app_pull_request: "https://github.com/kumwe/app/pull/151"
+roadmap_refs: []
+non_roadmap_refs:
+  - NRM-2026-050
+conflicts: []

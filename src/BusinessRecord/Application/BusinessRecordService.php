@@ -68,7 +68,7 @@ use Kumwe\BusinessPolicy\Policy\RecordPolicyConstant;
 use Kumwe\Context\Value\AuthenticatedSurface;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Conversion\Decimal\ExactDecimal;
-use Kumwe\Extension\Spi\Application\Automation\IdempotencyKey;
+use Kumwe\Idempotency\IdempotencyKey;
 use Kumwe\Extension\Spi\BusinessRecord\Application\BusinessRecordQueryPurpose;
 use Kumwe\BusinessPolicy\Application\FieldAccessUsage;
 use Kumwe\Access\Capability;

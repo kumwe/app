@@ -39,6 +39,7 @@ use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Twig\Loader\ArrayLoader;
 use Kumwe\App\Application\Authorization\ExecutionContextAttribute;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(AdministratorAuthorizationMiddleware::class)]
 #[UsesClass(AuthenticatedPrincipal::class)]
@@ -295,7 +296,8 @@ final class AdministratorAuthorizationMiddlewareTest extends TestCase
             new RecoveryAdministratorRenderer(
                 new RecoveryAdministratorTwigEnvironment(new ArrayLoader()),
             ),
-            AdministratorNavigationRegistry::core(),
+            new DeterministicCanonicalEncoder(),
+            AdministratorNavigationRegistry::core(new DeterministicCanonicalEncoder()),
         );
     }
 
@@ -336,7 +338,8 @@ final class AdministratorAuthorizationMiddlewareTest extends TestCase
             new RecoveryAdministratorRenderer(
                 new RecoveryAdministratorTwigEnvironment(new ArrayLoader()),
             ),
-            AdministratorNavigationRegistry::core(),
+            new DeterministicCanonicalEncoder(),
+            AdministratorNavigationRegistry::core(new DeterministicCanonicalEncoder()),
         );
     }
 

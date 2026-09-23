@@ -22,6 +22,7 @@ use ReflectionClass;
 use RuntimeException;
 use SplFileInfo;
 use ZipArchive;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(DoctrineExtensionManager::class)]
 /**
@@ -87,7 +88,10 @@ final class DoctrineExtensionManagerTest extends TestCase
         file_put_contents($source, $original);
         $reflection = new ReflectionClass(DoctrineExtensionManager::class);
         $manager = $reflection->newInstanceWithoutConstructor();
-        $reflection->getProperty('packages')->setValue($manager, new PackageInspector());
+        $reflection->getProperty('packages')->setValue(
+            $manager,
+            new PackageInspector(new DeterministicCanonicalEncoder()),
+        );
         $snapshot = $reflection->getMethod('snapshotArchive')->invoke($manager, $source, $root . '/operation');
         file_put_contents($source, 'attacker replacement after the snapshot boundary');
 
@@ -111,7 +115,9 @@ final class DoctrineExtensionManagerTest extends TestCase
         file_put_contents($source, str_repeat('x', 33));
         $reflection = new ReflectionClass(DoctrineExtensionManager::class);
         $manager = $reflection->newInstanceWithoutConstructor();
-        $reflection->getProperty('packages')->setValue($manager, new PackageInspector(new PackageLimits(
+        $reflection->getProperty(
+            'packages',
+        )->setValue($manager, new PackageInspector(new DeterministicCanonicalEncoder(), new PackageLimits(
             maximumArchiveBytes: 32,
         )));
 
@@ -286,7 +292,7 @@ final class DoctrineExtensionManagerTest extends TestCase
         $reflection = new ReflectionClass(DoctrineExtensionManager::class);
         $manager = $reflection->newInstanceWithoutConstructor();
         $method = $reflection->getMethod('contributionDiagnostics');
-        $manifest = ExtensionManifest::fromJson(json_encode([
+        $manifest = ExtensionManifest::fromJson(new DeterministicCanonicalEncoder(), json_encode([
             'schema' => 3,
             'name' => 'acme/editor',
             'type' => 'component',
@@ -420,7 +426,7 @@ final class DoctrineExtensionManagerTest extends TestCase
         self::assertTrue($zip->close());
         $canonical = realpath($archive);
         self::assertIsString($canonical);
-        $package = InspectedPackage::inspect($canonical);
+        $package = InspectedPackage::inspect(new DeterministicCanonicalEncoder(), $canonical);
         $reflection = new ReflectionClass(DoctrineExtensionManager::class);
         $manager = $reflection->newInstanceWithoutConstructor();
         $extensionRoot = $root . '/extensions';

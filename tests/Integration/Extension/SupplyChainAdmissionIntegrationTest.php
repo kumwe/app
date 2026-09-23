@@ -43,6 +43,7 @@ use RuntimeException;
 use SplFileInfo;
 use Throwable;
 use ZipArchive;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(RevocationFeedSynchronizer::class)]
 #[CoversClass(DoctrineRevocationFeedStateStore::class)]
@@ -389,7 +390,7 @@ final class SupplyChainAdmissionIntegrationTest extends TestCase
     private function buildPackage(string $identifier, string $label): string
     {
         $source = $this->temporary . '/' . $label;
-        (new ComponentScaffolder())->scaffold(new ScaffoldRequest(
+        (new ComponentScaffolder(new DeterministicCanonicalEncoder()))->scaffold(new ScaffoldRequest(
             $identifier,
             'Integration\\Supply' . ucfirst($label),
             $source,
@@ -397,7 +398,8 @@ final class SupplyChainAdmissionIntegrationTest extends TestCase
         ));
 
         return (new DeterministicPackageBuilder(
-            new PackageInspector(),
+            new DeterministicCanonicalEncoder(),
+            new PackageInspector(new DeterministicCanonicalEncoder()),
         ))->build($source, $this->temporary . '/' . $label . '.zip')->archive;
     }
 

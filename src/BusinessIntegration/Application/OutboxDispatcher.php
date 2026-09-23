@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Kumwe\App\BusinessIntegration\Application;
 
-use Kumwe\App\Application\Automation\RetryPolicy;
+use Kumwe\Automation\RetryPolicy;
 use LogicException;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use Kumwe\Integration\EventContractRegistry;
+use Kumwe\Integration\OutboxStore;
 
 /**
  * Claims, validates and publishes one outbox event under an exact trusted runtime generation.

@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Portal\Contribution;
 
-use Kumwe\Extension\Spi\Portal\Contribution\PortalRouteDefinition;
+use Kumwe\Portal\Contract\PortalRouteDefinition;
 use InvalidArgumentException;
 use Kumwe\Access\AuthorizationPolicyRegistry;
 use Kumwe\Access\AuthorizationResource;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Extension\Contribution\CapabilityDefinitionRegistry;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
-use Kumwe\App\Extension\Contribution\ContributionSurface;
+use Kumwe\Contribution\ContributionOwner;
+use Kumwe\Extension\Manifest\ManifestIdentifierPolicies;
+use Kumwe\Contribution\ContributionSurface;
 use Kumwe\App\Extension\Runtime\TrustEnforcingRequestHandler;
 use Kumwe\Access\Capability;
 use Kumwe\App\Portal\Http\Handler\PortalExtensionRootRedirectHandler;
@@ -80,7 +81,7 @@ final class PortalRouteRegistry implements ContributionSurface
         PortalRouteDefinition $definition,
         PortalRouteHandlerFactory $factory,
     ): void {
-        $owner->assertOwns($definition->name, 'route');
+        $owner->assertOwns($definition->name, ManifestIdentifierPolicies::forKind('route'));
         if (!$this->capabilities->isOwnedBy($definition->capability, $owner)) {
             throw new InvalidArgumentException('A portal route capability must be owned by its contributor.');
         }

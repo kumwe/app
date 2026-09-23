@@ -16,7 +16,7 @@ use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\Extension\Spi\BusinessRecord\Application\BusinessRecordQueryPurpose;
 use Kumwe\App\BusinessRecord\Application\RecordBrowseResult;
-use Kumwe\Extension\Spi\BusinessRecord\Query\RecordQuerySpecification;
+use Kumwe\Record\Query\RecordQuerySpecification;
 use Kumwe\App\BusinessReporting\Application\BusinessRecordReportReader;
 use Kumwe\App\BusinessReporting\Application\ExportService;
 use Kumwe\App\BusinessReporting\Application\ReportDefinitionRegistry;
@@ -25,7 +25,7 @@ use Kumwe\App\BusinessReporting\Application\ReportService;
 use Kumwe\App\BusinessReporting\Delivery\Administrator\AdministratorReportHandler;
 use Kumwe\App\BusinessReporting\Delivery\Api\ReportApiPresenter;
 use Kumwe\App\BusinessReporting\Delivery\Portal\PortalReportHandler;
-use Kumwe\App\BusinessReporting\Domain\ReportDefinition;
+use Kumwe\Reporting\Domain\ReportDefinition;
 use Kumwe\App\Extension\Contribution\CapabilityDefinitionRegistry;
 use Kumwe\App\Identity\Application\Administration\AdministratorSession;
 use Kumwe\App\Portal\Application\PortalSession;
@@ -47,6 +47,7 @@ use ReflectionClass;
 use Twig\Environment;
 use Twig\Loader\ArrayLoader;
 use Kumwe\App\Application\Authorization\ExecutionContextAttribute;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(AdministratorReportHandler::class)]
 #[CoversClass(PortalReportHandler::class)]
@@ -173,6 +174,7 @@ final class ReportBrowserErrorResponseTest extends TestCase
             new RecoveryAdministratorRenderer(new RecoveryAdministratorTwigEnvironment(
                 new ArrayLoader(['business-report.twig' => $template]),
             )),
+            new DeterministicCanonicalEncoder(),
         );
     }
 

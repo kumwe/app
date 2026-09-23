@@ -13,8 +13,8 @@ use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnava
 use Kumwe\App\BusinessRecord\Application\ResolvedBusinessDefinition;
 use Kumwe\App\BusinessReporting\Application\RecordExportReportProvider;
 use Kumwe\App\BusinessReporting\Application\ReportUnavailable;
-use Kumwe\App\BusinessReporting\Domain\ReportColumnDefinition;
-use Kumwe\Extension\Spi\BusinessReporting\Domain\ReportValueType;
+use Kumwe\Reporting\Domain\ReportColumnDefinition;
+use Kumwe\Reporting\Domain\ReportValueType;
 use Kumwe\BusinessSchema\Domain\PhysicalColumnBlueprint;
 use Kumwe\BusinessSchema\Domain\PhysicalSchemaBlueprint;
 use Kumwe\BusinessSchema\Domain\PhysicalTableBlueprint;

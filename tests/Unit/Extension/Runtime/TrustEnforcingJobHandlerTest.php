@@ -19,7 +19,7 @@ use Kumwe\App\Tests\Support\AuthorizationContext;
 use Kumwe\Extension\Package\PublicKeyPackageSignatureVerifier;
 use Kumwe\Extension\Spi\Application\Automation\JobHandler;
 use Kumwe\Extension\Spi\Application\ExecutionContext;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\JobContributionDefinition;
+use Kumwe\Automation\JobContributionDefinition;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -27,6 +27,7 @@ use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
 use RuntimeException;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(TrustEnforcingJobHandler::class)]
 #[UsesClass(TrustStore::class)]
@@ -301,6 +302,7 @@ final class TrustEnforcingJobHandlerTest extends TestCase
         $clock->method('now')->willReturn(new DateTimeImmutable('2026-08-05T08:00:00+00:00'));
 
         return new TrustStore(
+            new DeterministicCanonicalEncoder(),
             $repository,
             $verifier,
             $this->createStub(ExtensionArtifactVerifier::class),
@@ -383,7 +385,7 @@ final class TrustEnforcingJobHandlerTest extends TestCase
      */
     private static function definition(): JobContributionDefinition
     {
-        return JobContributionDefinition::fromArray([
+        return JobContributionDefinition::fromArray(new DeterministicCanonicalEncoder(), [
             'job_type' => 'acme.probe.summarize',
             'schema_version' => 1,
             'handler_version' => '1.0.0',

@@ -12,10 +12,11 @@ use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\App\Extension\Contribution\OwnedExtensionBindingRegistrar;
 use Kumwe\Extension\Manifest\ExtensionIdentifier;
 use Kumwe\Extension\Manifest\ManifestContributions;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Contribution\ContributionOwner;
 use Kumwe\Access\Capability;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(ExtensionContributionRegistrySet::class)]
 /**
@@ -34,7 +35,11 @@ final class ExtensionContributionRegistrySetTest extends TestCase
      */
     public function testEveryDeclaredSurfaceAppearsInInventoryAndIsWithdrawnOnRemoval(): void
     {
-        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+            withCore: false,
+        );
         $owner = ContributionOwner::extension('acme/editor');
         $registries->activateManifest(self::manifest());
 
@@ -81,7 +86,11 @@ final class ExtensionContributionRegistrySetTest extends TestCase
      */
     public function testAmbiguousOwnerNamespacesFailBeforeRegistrationAndReleaseOnRemoval(): void
     {
-        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+            withCore: false,
+        );
         $first = ContributionOwner::extension('a.b/c');
         $registries->activateManifest(self::emptyManifest('a.b/c'));
 
@@ -116,6 +125,7 @@ final class ExtensionContributionRegistrySetTest extends TestCase
     public function testCorePublishesCompleteTypedCapabilityAndSystemPolicyMetadata(): void
     {
         $policies = (new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
             new SdkFieldConfigurationAdmission(),
         ))->authorizationPolicies();
         $delete = $policies->capability(Capability::fromString('content.delete'));
@@ -180,6 +190,7 @@ final class ExtensionContributionRegistrySetTest extends TestCase
     private static function emptyManifest(string $identifier): ManifestContributions
     {
         return ManifestContributions::fromManifest(
+            new DeterministicCanonicalEncoder(),
             ExtensionIdentifier::fromString($identifier),
             ['version' => 2],
             4,
@@ -196,6 +207,7 @@ final class ExtensionContributionRegistrySetTest extends TestCase
     private static function manifest(): ManifestContributions
     {
         return ManifestContributions::fromManifest(
+            new DeterministicCanonicalEncoder(),
             ExtensionIdentifier::fromString('acme/editor'),
             [
                 'version' => 2,

@@ -18,6 +18,7 @@ use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
 use ReflectionMethod;
 use RuntimeException;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 /**
  * Drives the index-renaming repair against the configured engine, on the tables the release ships.
@@ -346,7 +347,7 @@ final class IndexNameIsolationIntegrationTest extends TestCase
         $created[] = $tables->raw('sites');
 
         $manager = $database->createSchemaManager();
-        $migration = new BusinessSecurityPortalMigration($tables);
+        $migration = new BusinessSecurityPortalMigration($tables, new DeterministicCanonicalEncoder());
         $identifier = $manager->introspectTableByUnquotedName($tables->raw('sites'))->getColumn('identifier');
         /** @var array<string, mixed> $options */
         $options = (new ReflectionMethod($migration, 'siteIdentifierOptions'))->invoke($migration, $identifier);

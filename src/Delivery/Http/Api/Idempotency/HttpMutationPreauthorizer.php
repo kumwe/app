@@ -9,7 +9,7 @@ use JsonException;
 use Kumwe\Access\AuthorizationGateway;
 use Kumwe\Access\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
-use Kumwe\Extension\Spi\BusinessReporting\Domain\ReportDefinitionGuard;
+use Kumwe\Reporting\Domain\ReportDefinitionGuard;
 use Kumwe\App\Content\Application\ContentService;
 use Kumwe\Content\Application\ContentModelRepository;
 use Kumwe\App\Identity\Application\Administration\AccessControlRepository;

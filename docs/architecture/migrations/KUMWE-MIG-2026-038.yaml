@@ -1,0 +1,79 @@
+schema: kumwe-migration-ledger/v1
+migration_id: KUMWE-MIG-2026-038
+change_set: KUMWE-CS-2026-038
+package: kumwe/business-surface-contract
+version: 0.1.4
+artifact_digest: "8b7838d1962e886066050f2f2b2cfbdc639c85783f1190ea151a719f119dc1b3"
+handoff_path: vendor/kumwe/business-surface-contract/docs/release-record.md
+handoff_sha256: "f320c1358b2b156f6a4dea91fd68e98cb9767832bb4f729c5b6319a12b861b1d"
+release_attestation: docs/architecture/migrations/evidence/KUMWE-MIG-2026-038/RELEASE-ATTESTATION.yaml
+old_namespace_roots:
+  - "Kumwe\\Extension\\Spi\\BusinessSurface\\"
+symbols:
+  - old_fqcn: Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionCommand
+    new_fqcn: Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessActionCommand
+  - old_fqcn: Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionDeclaration
+    new_fqcn: Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessActionDeclaration
+  - old_fqcn: Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionHandler
+    new_fqcn: Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessActionHandler
+  - old_fqcn: Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionResult
+    new_fqcn: Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessActionResult
+  - old_fqcn: Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessPayload
+    new_fqcn: Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessPayload
+  - old_fqcn: Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessReference
+    new_fqcn: Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessReference
+  - old_fqcn: Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessSchema
+    new_fqcn: Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessSchema
+  - old_fqcn: Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewDeclaration
+    new_fqcn: Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessViewDeclaration
+  - old_fqcn: Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewHandler
+    new_fqcn: Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessViewHandler
+  - old_fqcn: Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewQuery
+    new_fqcn: Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessViewQuery
+  - old_fqcn: Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewResult
+    new_fqcn: Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessViewResult
+  - old_fqcn: Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationConfiguration
+    new_fqcn: Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresentationConfiguration
+  - old_fqcn: Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationContext
+    new_fqcn: Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresentationContext
+  - old_fqcn: Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationContribution
+    new_fqcn: Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresentationContribution
+  - old_fqcn: Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationInput
+    new_fqcn: Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresentationInput
+  - old_fqcn: Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationModel
+    new_fqcn: Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresentationModel
+  - old_fqcn: Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresenter
+    new_fqcn: Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresenter
+  - old_fqcn: Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldWidget
+    new_fqcn: Kumwe\BusinessSurface\Contract\Presentation\Field\FieldWidget
+removed_paths: []
+removed_tests: []
+retained_tests:
+  - tests/Architecture/BusinessSurfaceRenderingSeamTest.php
+  - tests/Architecture/ConvertedMoneySurfaceCoverageTest.php
+  - tests/Architecture/CustomBusinessHandlerBoundaryTest.php
+  - tests/Integration/BusinessSurface/GeneratedBusinessBrowserIntegrationTest.php
+  - tests/Integration/Extension/AssetInspectionCustomViewIntegrationTest.php
+  - tests/Unit/BusinessDefinition/Domain/EntityTypeDefinitionTest.php
+  - tests/Unit/BusinessSurface/Application/Custom/CustomBusinessActionExecutorTest.php
+  - tests/Unit/BusinessSurface/Application/Custom/CustomBusinessHandlerRegistryTest.php
+  - tests/Unit/BusinessSurface/Delivery/Browser/BusinessFormInputMapperTest.php
+  - tests/Unit/BusinessSurface/Presentation/Field/CoreFieldPresenterTest.php
+  - tests/Unit/BusinessSurface/Presentation/FieldPresentationRegistryTest.php
+  - tests/Unit/BusinessSurface/Presentation/RegistryFieldModelPresenterTest.php
+  - tests/Unit/BusinessSurface/Presentation/SeverityFieldPresenterTest.php
+  - tests/Unit/Delivery/Http/Api/Business/BusinessOperationStatusApiHandlerTest.php
+  - tests/Unit/Extension/Contribution/CustomBusinessHandlerBindingTest.php
+  - tests/Unit/Extension/Contribution/ExtensionBindingSurfaceTest.php
+  - tests/Unit/Extension/Contribution/OwnedBindingCanonicalDriftTest.php
+  - tests/Unit/Governance/ComposerLockTest.php
+di_changes: []
+capability_index_entries:
+  - kumwe/business-surface-contract
+release_evidence:
+  - docs/architecture/migrations/evidence/KUMWE-MIG-2026-038/RELEASE-ATTESTATION.yaml
+app_pull_request: "https://github.com/kumwe/app/pull/151"
+roadmap_refs: []
+non_roadmap_refs:
+  - NRM-2026-056
+conflicts: []

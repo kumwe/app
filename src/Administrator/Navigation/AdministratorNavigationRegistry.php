@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace Kumwe\App\Administrator\Navigation;
 
 use InvalidArgumentException;
+use Kumwe\CanonicalJson\CanonicalEncoder;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Extension\Contribution\AdministratorWorkspaceRegistry;
 use Kumwe\App\Extension\Contribution\CapabilityDefinitionRegistry;
-use Kumwe\Extension\Spi\Contribution\AdministratorNavigationDefinition;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
-use Kumwe\App\Extension\Contribution\ContributionSurface;
+use Kumwe\Administrator\Contract\AdministratorNavigationDefinition;
+use Kumwe\Contribution\ContributionOwner;
+use Kumwe\Extension\Manifest\ManifestIdentifierPolicies;
+use Kumwe\Contribution\ContributionSurface;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 
@@ -80,7 +82,7 @@ final class AdministratorNavigationRegistry implements ContributionSurface
         ContributionOwner $owner,
         AdministratorNavigationDefinition $definition,
     ): void {
-        $owner->assertOwns($definition->id, 'navigation');
+        $owner->assertOwns($definition->id, ManifestIdentifierPolicies::forKind('navigation'));
         if (!$this->workspaces->isOwnedBy($definition->workspace, $owner)) {
             throw new InvalidArgumentException('Administrator navigation must reference an owned workspace.');
         }
@@ -239,13 +241,16 @@ final class AdministratorNavigationRegistry implements ContributionSurface
      * fallback down with it. No trust store is wired, which costs nothing for a menu that has no
      * extension entries to filter.
      *
+     * @param   CanonicalEncoder  $canonicalEncoder  Host encoder the core contribution set is registered with.
+     *
      * @return  self  A fresh registry populated from the core contribution set alone.
      *
      * @since   2.0.0
      */
-    public static function core(): self
+    public static function core(CanonicalEncoder $canonicalEncoder): self
     {
-        return (new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission()))->navigation();
+        return (new ExtensionContributionRegistrySet($canonicalEncoder, new SdkFieldConfigurationAdmission()))
+            ->navigation();
     }
 
     /**

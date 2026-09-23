@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace Kumwe\App\Application\Presentation\Preference;
 
 use InvalidArgumentException;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\OwnedRuntimeContributionRegistry;
-use Kumwe\App\InterfaceStandard\CustomizationScope;
-use Kumwe\App\InterfaceStandard\CustomizationSlot;
-use Kumwe\App\InterfaceStandard\SurfaceArea;
-use Kumwe\App\InterfaceStandard\SurfaceConformanceValidator;
-use Kumwe\App\InterfaceStandard\SurfaceDefinition;
-use Kumwe\App\InterfaceStandard\SurfaceId;
+use Kumwe\InterfaceStandard\CustomizationScope;
+use Kumwe\InterfaceStandard\CustomizationSlot;
+use Kumwe\InterfaceStandard\SurfaceArea;
+use Kumwe\InterfaceStandard\SurfaceConformanceValidator;
+use Kumwe\InterfaceStandard\SurfaceDefinition;
+use Kumwe\InterfaceStandard\SurfaceId;
 
 /**
  * Resolves customization admission from the live owner-bound KIS surface registry.

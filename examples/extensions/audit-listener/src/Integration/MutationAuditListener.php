@@ -6,8 +6,8 @@ namespace KumweExample\AuditListener\Integration;
 
 use InvalidArgumentException;
 use Kumwe\Extension\Spi\BusinessIntegration\Application\DomainEventHandler;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\DomainEvent;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\DomainListenerDefinition;
+use Kumwe\Integration\DomainEvent;
+use Kumwe\Integration\DomainListenerDefinition;
 
 /**
  * Observes every business-record mutation the platform publishes and records its identity.

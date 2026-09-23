@@ -29,7 +29,7 @@
 
 declare(strict_types=1);
 
-use Kumwe\App\Application\Automation\JobHandlerRegistry;
+use Kumwe\Automation\JobHandlerRegistry;
 use Kumwe\App\Application\Automation\Worker;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\App\Tests\Support\DrillDirectedJobHandler;

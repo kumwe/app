@@ -16,7 +16,7 @@ use Kumwe\App\Tests\Support\TrustFencedStudioPreviewRenderers;
 use Kumwe\Extension\Spi\Contribution\CanonicalCompositionDocument;
 use Kumwe\Extension\Spi\Contribution\CanonicalCompositionKind;
 use Kumwe\Extension\Spi\Contribution\CompositionHostBinding;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Contribution\ContributionOwner;
 use Kumwe\Extension\Spi\Studio\Application\Preview\StudioPreviewBindingResult;
 use Kumwe\Extension\Spi\Studio\Application\Preview\StudioPreviewBlock;
 use Kumwe\Extension\Spi\Studio\Application\Preview\StudioPreviewBlockFragment;
@@ -27,6 +27,7 @@ use LogicException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use stdClass;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 /**
  * Proves the authoring catalogue's block locks are the pinned core coordinates plus the App's active
@@ -50,7 +51,10 @@ final class ContentStudioAuthoringCatalogTest extends TestCase
      */
     public function testCoreCoordinatesAndActiveContributionsFormTheLocks(): void
     {
-        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+        );
         self::contributeBlock($registries, 'acme.shop/grid', '1.0.0');
         $catalog = self::catalog($registries);
 
@@ -97,7 +101,13 @@ final class ContentStudioAuthoringCatalogTest extends TestCase
         self::assertNotFalse(file_put_contents($file, json_encode($record, JSON_THROW_ON_ERROR)));
 
         try {
-            $catalog = self::catalog(new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission()), $file);
+            $catalog = self::catalog(
+                new ExtensionContributionRegistrySet(
+                    new DeterministicCanonicalEncoder(),
+                    new SdkFieldConfigurationAdmission(),
+                ),
+                $file,
+            );
             $this->expectException(LogicException::class);
             $this->expectExceptionMessage('studio.core/section is declared at a coordinate');
             $catalog->blockLocks();

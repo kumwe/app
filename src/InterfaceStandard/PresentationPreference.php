@@ -7,8 +7,12 @@ namespace Kumwe\App\InterfaceStandard;
 use DateTimeImmutable;
 use DateTimeZone;
 use InvalidArgumentException;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Contribution\ContributionOwner;
+use Kumwe\Extension\Manifest\ManifestIdentifierPolicies;
 use ValueError;
+use Kumwe\InterfaceStandard\CustomizationScope;
+use Kumwe\InterfaceStandard\CustomizationSlot;
+use Kumwe\InterfaceStandard\SurfaceId;
 
 /**
  * Portable, owner-bound, optimistic-versioned record for one KIS customization slot.
@@ -95,7 +99,7 @@ final readonly class PresentationPreference
         string $updatedBy,
         DateTimeImmutable $updatedAt,
     ): self {
-        $owner->assertOwns($surface->value(), 'interface surface');
+        $owner->assertOwns($surface->value(), ManifestIdentifierPolicies::forKind('interface surface'));
         PresentationPreferenceKey::assertScopeId($scopeId);
         PresentationPreferenceKey::assertScopeIdentity($scope, $scopeId);
         self::assertScopeSlot($scope, $slot);

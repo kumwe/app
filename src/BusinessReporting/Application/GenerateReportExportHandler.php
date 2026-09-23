@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessReporting\Application;
 
 use InvalidArgumentException;
-use Kumwe\App\Application\Automation\JobHandler;
-use Kumwe\App\Application\Automation\PermanentFailure;
+use Kumwe\Automation\JobHandler;
+use Kumwe\Automation\PermanentFailure;
 use Kumwe\Context\Value\ExecutionContext;
 
 /**

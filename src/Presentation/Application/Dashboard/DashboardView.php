@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Presentation\Application\Dashboard;
 
 use InvalidArgumentException;
-use Kumwe\App\InterfaceStandard\CustomizationScope;
+use Kumwe\InterfaceStandard\CustomizationScope;
 use Kumwe\App\Presentation\Application\Preference\PresentationPreferenceResolution;
 
 /**

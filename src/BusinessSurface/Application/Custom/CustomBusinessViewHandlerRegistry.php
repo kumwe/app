@@ -6,11 +6,11 @@ namespace Kumwe\App\BusinessSurface\Application\Custom;
 
 use InvalidArgumentException;
 use Kumwe\BusinessDefinition\Domain\DefinitionOwner;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessReference;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewDeclaration;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewHandler;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewQuery;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewResult;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessReference;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessViewDeclaration;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessViewHandler;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessViewQuery;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessViewResult;
 use LogicException;
 use Throwable;
 

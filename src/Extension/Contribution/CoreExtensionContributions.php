@@ -4,20 +4,21 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Extension\Contribution;
 
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
-use Kumwe\Extension\Spi\Contribution\AdministratorWorkspaceDefinition;
-use Kumwe\Extension\Spi\Contribution\AdministratorNavigationDefinition;
+use Kumwe\Contribution\ContributionOwner;
+use Kumwe\CanonicalJson\CanonicalEncoder;
+use Kumwe\Administrator\Contract\AdministratorWorkspaceDefinition;
+use Kumwe\Administrator\Contract\AdministratorNavigationDefinition;
 use Kumwe\Access\ResourcePolicyTarget;
 use Kumwe\App\Application\Authorization\SystemIdentity;
 use Kumwe\BusinessDefinition\Domain\BuiltInFieldTypes;
-use Kumwe\App\BusinessIntegration\Domain\EventSchemaDefinition;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventSensitivity;
+use Kumwe\Integration\EventSchemaDefinition;
+use Kumwe\Integration\EventSensitivity;
 use Kumwe\App\BusinessSurface\Presentation\Field\CoreFieldPresenter;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationContext;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationContribution;
-use Kumwe\App\InterfaceStandard\SurfaceDefinition;
-use Kumwe\Extension\Spi\Portal\Contribution\PortalNavigationDefinition;
-use Kumwe\Extension\Spi\Portal\Contribution\PortalWorkspaceDefinition;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresentationContext;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresentationContribution;
+use Kumwe\InterfaceStandard\SurfaceDefinition;
+use Kumwe\Portal\Contract\PortalNavigationDefinition;
+use Kumwe\Portal\Contract\PortalWorkspaceDefinition;
 
 /**
  * Everything the CMS contributes to the contribution registries on its own behalf.
@@ -155,16 +156,19 @@ final class CoreExtensionContributions
      * title-cased — so the capability map only has to carry descriptions. Core is registered through
      * a non-strict registrar, so unlike an extension it is not matched against a manifest declaration.
      *
-     * @param   CoreContributionRegistrar  $registrar  Concrete host helper for built-in declarations.
+     * @param   CoreContributionRegistrar  $registrar         Concrete host helper for built-in declarations.
+     * @param   CanonicalEncoder           $canonicalEncoder  Host encoder the core event schema and field
+     *          presenter bound their bytes with.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    public static function register(CoreContributionRegistrar $registrar): void
+    public static function register(CoreContributionRegistrar $registrar, CanonicalEncoder $canonicalEncoder): void
     {
         CoreStudioCompositionContributions::register($registrar);
         $registrar->eventSchema(new EventSchemaDefinition(
+            $canonicalEncoder,
             'core.business_record.mutated',
             1,
             EventSensitivity::INTERNAL,
@@ -184,7 +188,7 @@ final class CoreExtensionContributions
                 'additionalProperties' => false,
             ],
         ));
-        $fieldPresenter = new CoreFieldPresenter();
+        $fieldPresenter = new CoreFieldPresenter($canonicalEncoder);
         foreach (BuiltInFieldTypes::all() as $fieldType) {
             $registrar->fieldType($fieldType);
             $registrar->fieldPresentation(

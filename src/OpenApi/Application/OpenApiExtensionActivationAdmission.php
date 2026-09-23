@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\OpenApi\Application;
 
 use Closure;
+use Kumwe\CanonicalJson\CanonicalEncoder;
 use InvalidArgumentException;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionRepository;
 use Kumwe\BusinessDefinition\Domain\DefinitionOwnerType;
@@ -30,12 +31,15 @@ final readonly class OpenApiExtensionActivationAdmission implements ExtensionAct
     /**
      * Bind extension activation to the same component claims used by site publication.
      *
-     * @param  OpenApiComponentClaimAdmission            $claims       Shared declarative component-name admission.
-     * @param  ?Closure(): BusinessDefinitionRepository  $definitions  Late repository lookup for core/site heads.
+     * @param  CanonicalEncoder                          $canonicalEncoder  Host encoder the active manifests are
+     *         interpreted with.
+     * @param  OpenApiComponentClaimAdmission            $claims            Shared declarative component-name admission.
+     * @param  ?Closure(): BusinessDefinitionRepository  $definitions       Late repository lookup for core/site heads.
      *
      * @since  2.0.0
      */
     public function __construct(
+        private CanonicalEncoder $canonicalEncoder,
         private OpenApiComponentClaimAdmission $claims,
         private ?Closure $definitions = null,
     ) {
@@ -75,7 +79,8 @@ final readonly class OpenApiExtensionActivationAdmission implements ExtensionAct
                     throw new InvalidArgumentException('The candidate extension contract version is stale.');
                 }
             }
-            foreach (CanonicalManifestInterpreter::fromManifest($manifest)->businessDefinitions() as $definition) {
+            $contributions = CanonicalManifestInterpreter::fromManifest($this->canonicalEncoder, $manifest);
+            foreach ($contributions->businessDefinitions() as $definition) {
                 if ($definition->siteIdentifier !== $site->identifier()) {
                     continue;
                 }

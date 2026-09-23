@@ -16,7 +16,7 @@ use Kumwe\App\Extension\Contribution\StudioPreviewRendererContribution;
 use Kumwe\Extension\Spi\Contribution\CanonicalCompositionDocument;
 use Kumwe\Extension\Spi\Contribution\CanonicalCompositionKind;
 use Kumwe\Extension\Spi\Contribution\CompositionHostBinding;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Contribution\ContributionOwner;
 use Kumwe\Extension\Spi\Studio\Application\Preview\StudioPreviewBindingResult;
 use Kumwe\Extension\Spi\Studio\Application\Preview\StudioPreviewBlock;
 use Kumwe\Extension\Spi\Studio\Application\Preview\StudioPreviewBlockFragment;
@@ -34,7 +34,7 @@ use Kumwe\Producer\Render\RenderResult;
 use Kumwe\Producer\Render\RenderState;
 use Kumwe\Producer\Schema\StudioContractResources;
 use Kumwe\App\Tests\Support\TrustFencedStudioPreviewRenderers;
-use Kumwe\Extension\Spi\Contribution\ContributionDefinition;
+use Kumwe\Contribution\ContributionDefinition;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
@@ -43,6 +43,7 @@ use ReflectionClass;
 use ReflectionMethod;
 use ReflectionProperty;
 use stdClass;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(StudioBlockRendererRuntime::class)]
 #[CoversClass(StudioContentFieldBlockRenderer::class)]
@@ -68,7 +69,10 @@ final class StudioBlockRendererRuntimeTest extends TestCase
      */
     public function testItBindsCoreCoordinatesDirectlyAndReturnsCompleteProducerOutput(): void
     {
-        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+        );
         $runtime = new StudioBlockRendererRuntime($registries, new StudioContentFieldBlockRenderer());
         $registry = $runtime->registry();
         self::assertTrue($registry->supports(new BlockCoordinate(
@@ -139,7 +143,10 @@ final class StudioBlockRendererRuntimeTest extends TestCase
      */
     public function testEachRegistryReflectsCurrentOwnerAuthorityWithoutSnapshotReuse(): void
     {
-        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+        );
         $runtime = new StudioBlockRendererRuntime($registries, new StudioContentFieldBlockRenderer());
         $coordinate = new BlockCoordinate('core/field-text', '1.0.0', 'core-block-r1');
 
@@ -158,7 +165,10 @@ final class StudioBlockRendererRuntimeTest extends TestCase
     public function testHiddenBindingIsRetainedOnlyAsProducerWrapperState(): void
     {
         $runtime = new StudioBlockRendererRuntime(
-            new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission()),
+            new ExtensionContributionRegistrySet(
+                new DeterministicCanonicalEncoder(),
+                new SdkFieldConfigurationAdmission(),
+            ),
             new StudioContentFieldBlockRenderer(),
         );
         $document = (object) [
@@ -341,7 +351,10 @@ final class StudioBlockRendererRuntimeTest extends TestCase
      */
     public function testCoreOwnedEntriesKeepTheirDirectPathWithoutTheExtensionFence(): void
     {
-        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+        );
         $runtime = new StudioBlockRendererRuntime($registries, new StudioContentFieldBlockRenderer());
         $registry = $runtime->registry();
 
@@ -414,7 +427,11 @@ final class StudioBlockRendererRuntimeTest extends TestCase
      */
     public function testForgedCanonicalStateWithoutExactCoordinatesCannotRegister(): void
     {
-        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+            withCore: false,
+        );
         $missingOwner = ContributionOwner::extension('acme/forge');
         $registries->canonicalCompositionDocuments()->register($missingOwner, self::forgedDocument(
             '{"kind":"block-definition","type":"acme.forge/block","version":"1.0.0"}',
@@ -600,7 +617,11 @@ final class StudioBlockRendererRuntimeTest extends TestCase
         if ($fenced && $renderer instanceof StudioPreviewBlockRenderer) {
             $renderer = self::trustFencedPreviewRenderer($renderer, 'acme/shop');
         }
-        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission(), withCore: false);
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+            withCore: false,
+        );
         $registries->canonicalCompositionDocuments()->register($owner, $canonical);
         $registries->compositionHostBindings()->register($owner, $binding);
         $registries->studioPreviewRenderers()->register(

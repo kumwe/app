@@ -63,7 +63,8 @@ longest-prefix rule. Rules that surprise people:
   schema types are shared while its error taxonomy, CSS, render, and wire engines are
   application mechanics;
 - `Kumwe\App\Http` → delivery (public site + shared middleware)
-- `Kumwe\App\InterfaceStandard` → domain
+- `Kumwe\App\InterfaceStandard` → domain (the presentation-preference value, key and record; the surface
+  declarations, identifiers, customization vocabulary and conformance validator are `Kumwe\InterfaceStandard` → domain)
 - `Kumwe\App\Extension\{Contribution,Runtime,Development}` → application
 - `Kumwe\BusinessPolicy\Policy` → domain and `Kumwe\BusinessPolicy\Application` → application
   (`kumwe/business-policy` owns the bounded record-policy language, its evaluator, field disclosure and the

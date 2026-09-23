@@ -23,24 +23,25 @@ use Kumwe\Conversion\Value\MoneyRoundingMode;
 use Kumwe\Conversion\Value\MoneyValue;
 use Kumwe\App\BusinessReporting\Application\ReportCsvEncoder;
 use Kumwe\App\BusinessReporting\Application\ReportExecutionResult;
-use Kumwe\Extension\Spi\BusinessReporting\Domain\ReportValueType;
+use Kumwe\Reporting\Domain\ReportValueType;
 use Kumwe\App\BusinessSurface\Application\BusinessRecordProjector;
 use Kumwe\App\BusinessSurface\Delivery\Browser\BusinessDocumentPresenter;
 use Kumwe\App\BusinessSurface\Presentation\Field\ConvertedMoneySurface;
 use Kumwe\App\BusinessSurface\Presentation\Field\CoreFieldPresenter;
 use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationInputFactory;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationContext;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationInput;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationModel;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresenter;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresentationContext;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresentationInput;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresentationModel;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresenter;
 use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationRegistry;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldWidget;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldWidget;
 use Kumwe\Record\Value\RecordValueGuard;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use SplFileInfo;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(ConvertedMoneySurface::class)]
 #[CoversClass(CoreFieldPresenter::class)]
@@ -260,6 +261,7 @@ final class ConvertedMoneySurfaceCoverageTest extends TestCase
                         null,
                         false,
                         $request->required,
+                        new DeterministicCanonicalEncoder(),
                         $request->errors,
                     );
                 }
@@ -473,7 +475,7 @@ final class ConvertedMoneySurfaceCoverageTest extends TestCase
                 FieldPresentationContext::Relation,
                 FieldPresentationContext::Update,
             ],
-            new CoreFieldPresenter(),
+            new CoreFieldPresenter(new DeterministicCanonicalEncoder()),
         );
 
         return $registry;

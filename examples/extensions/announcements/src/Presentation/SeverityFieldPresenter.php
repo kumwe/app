@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace KumweExample\Announcements\Presentation;
 
 use InvalidArgumentException;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationInput;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationModel;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresenter;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldWidget;
+use Kumwe\CanonicalJson\CanonicalEncoder;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresentationInput;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresentationModel;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresenter;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldWidget;
 
 /**
  * Presents the announcements component's bounded severity field through core-owned widgets.
@@ -17,6 +18,17 @@ use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldWidget;
  */
 final readonly class SeverityFieldPresenter implements FieldPresenter
 {
+    /**
+     * Bind the presenter to the host canonical encoder the field model bounds its bytes with.
+     *
+     * @param  CanonicalEncoder  $canonicalEncoder  Host encoder exposed to the extension container.
+     *
+     * @since  2.0.0
+     */
+    public function __construct(private CanonicalEncoder $canonicalEncoder)
+    {
+    }
+
     /**
      * Render a disclosed severity as text or as a closed selector when server policy permits editing.
      *
@@ -49,6 +61,7 @@ final readonly class SeverityFieldPresenter implements FieldPresenter
             $editing ? $value : null,
             $editing,
             $input->required,
+            $this->canonicalEncoder,
             $input->errors,
             $editing ? $options : [],
         );

@@ -10,7 +10,7 @@ use DomainException;
 use InvalidArgumentException;
 use JsonException;
 use Kumwe\App\Application\Automation\AutomationManagementService;
-use Kumwe\App\Application\Automation\AutomationNotFound;
+use Kumwe\Automation\AutomationNotFound;
 use Kumwe\App\Delivery\Http\Api\Concurrency\EntityTag;
 use Kumwe\App\Delivery\Http\Api\Concurrency\IfMatch;
 use Kumwe\App\Delivery\Http\Api\Concurrency\RequireIfMatchMiddleware;

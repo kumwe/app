@@ -7,7 +7,7 @@ namespace Kumwe\App\Tests\Unit\Delivery\Http\Dashboard;
 use InvalidArgumentException;
 use Kumwe\App\Application\Presentation\Dashboard\DashboardPreferenceQuery;
 use Kumwe\App\Delivery\Http\Dashboard\DashboardPreferenceQueryDecoder;
-use Kumwe\App\InterfaceStandard\SurfaceArea;
+use Kumwe\InterfaceStandard\SurfaceArea;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;

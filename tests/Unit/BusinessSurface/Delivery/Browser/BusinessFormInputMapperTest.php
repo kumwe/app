@@ -7,11 +7,12 @@ namespace Kumwe\App\Tests\Unit\BusinessSurface\Delivery\Browser;
 use InvalidArgumentException;
 use JsonException;
 use Kumwe\App\BusinessSurface\Delivery\Browser\BusinessFormInputMapper;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationModel;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldPresentationContext;
-use Kumwe\Extension\Spi\BusinessSurface\Presentation\Field\FieldWidget;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresentationModel;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldPresentationContext;
+use Kumwe\BusinessSurface\Contract\Presentation\Field\FieldWidget;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(BusinessFormInputMapper::class)]
 /**
@@ -394,6 +395,7 @@ final class BusinessFormInputMapperTest extends TestCase
             null,
             $editable,
             $required,
+            new DeterministicCanonicalEncoder(),
         );
     }
 }

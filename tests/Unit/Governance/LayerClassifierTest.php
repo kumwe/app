@@ -76,7 +76,7 @@ final class LayerClassifierTest extends TestCase
         self::assertSame('domain', $classifier->classify('Kumwe\\App\\InterfaceStandard\\Domain\\Surface'));
         self::assertSame('shared', $classifier->classify('Kumwe\\Conversion\\Value\\MoneyValue'));
         self::assertSame('application', $classifier->classify('Kumwe\\Conversion\\Provider\\MoneyConversionPipeline'));
-        self::assertSame('domain', $classifier->classify('Kumwe\\Extension\\Spi\\BusinessRecord\\Query\\RecordFilter'));
+        self::assertSame('domain', $classifier->classify('Kumwe\\Record\\Query\\RecordFilter'));
         self::assertTrue($classifier->isFirstParty('Kumwe\\Producer\\Wire\\Dispatcher'));
         self::assertFalse($classifier->isFirstParty('Kumwe\\Producerish\\Thing'));
         self::assertSame(

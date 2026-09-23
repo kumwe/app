@@ -1,0 +1,94 @@
+schema: kumwe-release-attestation/v2
+artifact_kind: framework_php
+migration_id: KUMWE-MIG-2026-026
+change_set: KUMWE-CS-2026-026
+repository: "https://github.com/kumwe/automation"
+merge_commit: "cef19174a9c8a7a6008fe284481a235d13eec195"
+version: "0.2.2"
+tag: v0.2.2
+source_archive:
+  url: "https://github.com/kumwe/automation.git"
+  sha256: "0472a8b05b54ba23f01606409066625045028c6aae3961de7c447f53115b0423"
+artifacts:
+  - identity: "kumwe/automation:0.2.2"
+    url: "https://github.com/kumwe/automation.git"
+    sha256: "0472a8b05b54ba23f01606409066625045028c6aae3961de7c447f53115b0423"
+manifests_and_corpora:
+  - path: resources/public-api/v1.json
+    sha256: "5528055c23afaea3711de77e0e66f84b0e122df520542fb61c8b8fd9f0c8cf53"
+  - path: resources/capabilities/v1.json
+    sha256: "4cebd820f960ccdaf3b988231e54555d75291861a5d3bfbb8ba0dcefe7694e1a"
+  - path: resources/service-map/v1.json
+    sha256: "4bacfb7a2eb2b2dc4046b85826bf53bda5c4ef24a23c5b9b69c2ad0bf62b05c6"
+  - path: resources/release-readiness.json
+    sha256: "f0110039b4b6b9e961453d0453302c9876487c9d25dea7ea3190775a5fd07cc0"
+  - path: MIGRATION-HANDOFF.md
+    sha256: "d52dedae51cdbaea29be213a447c2206f5a5517cb191e3fca464913804b0af07"
+abi_and_capabilities: null
+sbom:
+  url: null
+  sha256: null
+provenance: "Not observed: the GitHub release and the release-on-record run of the tag commit could not be queried"
+release_workflow: "https://github.com/kumwe/automation/actions; the run on tag commit cef19174 was not observable from the verification run"
+registry_or_pie_verification:
+  - "git ls-remote https://github.com/kumwe/automation refs/tags/v0.2.2 returned one line for refs/tags/v0.2.2"
+  - "Tag commit from git ls-remote: cef19174a9c8a7a6008fe284481a235d13eec195; no peeled ^{} line (lightweight tag)"
+  - "git clone --quiet --depth 1 --branch v0.2.2 of the repository: HEAD cef19174a9c8a7a6008fe284481a235d13eec195, tree e64660213a7c80297a4eb5ecfc8cc787cae02864"
+  - "In the clone git cat-file -t v0.2.2 is commit; subject: Record actual successor pull request in handoff"
+  - "Tag commit committed 2026-09-08T19:37:54+02:00 by eWɘyn; parent 89fd7611b3c69229964154f398c7232a581161cc"
+  - "A full clone shows refs/heads/main at 728b79f62f96fe6a3193cb678f08120645f7d62f contains the tag commit"
+  - "Packagist p2 observed 2026-09-23T18:20:07Z at repo.packagist.org/p2/kumwe/automation.json (HTTP 200)"
+  - "Packagist lists v0.2.2 newest of v0.2.2, v0.2.1, v0.2.0, v0.1.0; time 2026-09-08T17:37:54+00:00"
+  - "Packagist source: git https://github.com/kumwe/automation.git at cef19174a9c8a7a6008fe284481a235d13eec195"
+  - "Packagist dist: zip at reference cef19174a9c8a7a6008fe284481a235d13eec195 (api.github.com zipball URL)"
+  - "Packagist source and dist references both equal the tag commit and the clone HEAD"
+  - "Packagist dist shasum is an empty string; license Apache-2.0; psr-4 Kumwe\\Automation\\ => src/"
+  - "Packagist require: php ^8.5, kumwe/canonical-json 0.1.1, kumwe/contribution 0.1.1, kumwe/access-context 0.1.2"
+  - "Packagist require also names psr/clock ^1.0 and psr/container ^2.0"
+  - "curl -sS -L of https://github.com/kumwe/automation/archive/refs/tags/v0.2.2.tar.gz: HTTP 403 from the outbound proxy of the verification run"
+  - "The proxy answered that GitHub HTTP access to kumwe/automation is not enabled for the verification run; git reads are served"
+  - "The fetch was repeated and answered 403 again; the hosted tar.gz and zipball bytes were therefore not observed"
+  - "git archive --format=tar --prefix=automation-0.2.2/ v0.2.2 | sha256sum in the depth-1 clone gave 0472a8b05b54ba23"
+  - "Full local git archive digest: 0472a8b05b54ba23f01606409066625045028c6aae3961de7c447f53115b0423 (uncompressed tar)"
+  - "Extracted automation-0.2.2/ holds 77 files; diff -r reports no content difference against the clone"
+  - "The repository carries no export-ignore rules: the archive and the clone both hold the 77 tracked files, including tests and tools"
+  - "The GitHub MCP tools refuse kumwe/automation as a repository not configured for the verification run; no access was granted"
+  - "GitHub release v0.2.2, the release-on-record workflow run and the package pull request were therefore not queried"
+clean_consumer_or_build_verification:
+  - "Inspection only: no package script or example was executed; archive, clone and vendor copy were compared"
+  - "resources/public-api/v1.json: valid against package-public-api.v1.schema.json (App SchemaValidator)"
+  - "resources/capabilities/v1.json: valid against package-capabilities.v1.schema.json (App SchemaValidator)"
+  - "resources/service-map/v1.json: valid against package-service-map.v1.schema.json (App SchemaValidator)"
+  - "All three manifests carry package kumwe/automation and release 0.2.2"
+  - "docs/release-record.md does not exist at v0.2.2; the shipped record is MIGRATION-HANDOFF.md"
+  - "Governance README section 3.11 admits MIGRATION-HANDOFF.md for published releases"
+  - "MIGRATION-HANDOFF.md front matter parsed by PackageManifests::parseReleaseRecord"
+  - "MIGRATION-HANDOFF.md front matter: valid against migration-handoff.v2.schema.json (App SchemaValidator)"
+  - "Record front matter: kumwe-migration-handoff/v2, KUMWE-MIG-2026-026, KUMWE-CS-2026-026, framework_php"
+  - "Record state draft_pr_open; target https://github.com/kumwe/automation"
+  - "Record artifact_identity kumwe/automation; canonical namespace Kumwe\\Automation"
+  - "Record framework_php.composer_package kumwe/automation"
+  - "Record ownership.public_manifests digests equal the locally computed manifest digests listed above"
+  - "CHANGELOG.md newest release heading is ## 0.2.2 above ## 0.2.1 and ## 0.2.0; no Unreleased section"
+  - "Package composer.json require: php ^8.5, kumwe/canonical-json 0.1.1, kumwe/contribution 0.1.1, kumwe/access-context 0.1.2"
+  - "Package composer.json require also names psr/clock ^1.0 and psr/container ^2.0"
+  - "App composer.lock: kumwe/automation v0.2.2 at cef19174a9c8a7a6008fe284481a235d13eec195"
+  - "App composer.lock: kumwe/access-context v0.1.2 at 132c3cd7c229ceda4398e19140d1477512c27ebf satisfies 0.1.2 (exact)"
+  - "App composer.lock: kumwe/canonical-json v0.1.1 at e7006a2580a49a1c8ab507b0d7b9c3403b4f9f58 satisfies 0.1.1 (exact)"
+  - "App composer.lock: kumwe/contribution v0.1.1 at 2fc75742aa5a7d78418d2f586fa3043271e70082 satisfies 0.1.1 (exact)"
+  - "App composer.lock platform: php ^8.5 with ext-json and ext-mbstring (they satisfy the package requirements)"
+  - "The App vendor copy of MIGRATION-HANDOFF.md and of the manifests carries the digests above"
+  - "Validator: tools/Governance bootstrap, SchemaValidator, PackageManifests and StrictYaml loaded by a scratch script on PHP 8.4.19"
+verified_at: "2026-09-23T18:20:07Z"
+verified_by: "Independent release verification, inspection only, in the adoption worktree before the Phase 2 records were written"
+status: verified
+known_gaps:
+  - "The hosted GitHub tag tar.gz and the Packagist zipball were not downloaded: the outbound proxy of the verification run refused kumwe/automation"
+  - "The attested digest is of the uncompressed git archive of the tag commit, not of any hosted archive bytes"
+  - "GitHub release v0.2.2, the release-on-record workflow run and the package pull request were not queried (access refused)"
+  - "Tag protection and rulesets were not queried"
+  - "The archive ships the repository tests, tools and CI configuration because .gitattributes declares no export-ignore"
+  - "The verification was performed by the adopting party in the adoption worktree, not by a separate isolated verifier"
+  - "No clean consumer install, smoke test or example run was performed; the verification was restricted to inspection and the App lock install"
+  - "No SBOM and no release assets exist for v0.2.2; abi_and_capabilities does not apply to a framework_php artifact"
+  - "The schema checks used the App's fixed JSON Schema 2020-12 subset validator, not a full implementation"

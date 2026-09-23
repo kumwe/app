@@ -18,6 +18,7 @@ use Kumwe\Extension\Package\PublicKeyPackageSignatureVerifier;
 use Kumwe\Extension\Spi\Studio\Application\Preview\StudioPreviewBlockRenderer;
 use Psr\Clock\ClockInterface;
 use stdClass;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 /**
  * Fences unit-test preview renderers behind the exact live trust wrapper the extension registrar installs.
@@ -62,7 +63,7 @@ trait TrustFencedStudioPreviewRenderers
             'events' => [],
             'assets' => [],
         ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
-        $parsed = ExtensionManifest::fromJson($manifest);
+        $parsed = ExtensionManifest::fromJson(new DeterministicCanonicalEncoder(), $manifest);
         $release = [
             'identifier' => $extension,
             'installed_version' => '1.0.0',
@@ -105,6 +106,7 @@ trait TrustFencedStudioPreviewRenderers
         $execution = self::createStub(ExtensionExecutionGate::class);
         $execution->method('isCurrent')->willReturn(true);
         $trust = new TrustStore(
+            new DeterministicCanonicalEncoder(),
             $repository,
             $verifier,
             self::createStub(ExtensionArtifactVerifier::class),

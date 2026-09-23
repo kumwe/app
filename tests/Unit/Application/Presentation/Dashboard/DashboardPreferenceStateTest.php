@@ -9,7 +9,7 @@ use Kumwe\App\Application\Presentation\Dashboard\DashboardPreferenceAccessGroupS
 use Kumwe\App\Application\Presentation\Dashboard\DashboardPreferenceQuery;
 use Kumwe\App\Application\Presentation\Dashboard\DashboardPreferenceState;
 use Kumwe\App\Application\Presentation\Preference\PresentationAccessGroup;
-use Kumwe\App\InterfaceStandard\SurfaceId;
+use Kumwe\InterfaceStandard\SurfaceId;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\UsesClass;
@@ -24,7 +24,6 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass(DashboardPreferenceAccessGroupState::class)]
 #[UsesClass(DashboardPreferenceQuery::class)]
 #[UsesClass(PresentationAccessGroup::class)]
-#[UsesClass(SurfaceId::class)]
 final class DashboardPreferenceStateTest extends TestCase
 {
     /**

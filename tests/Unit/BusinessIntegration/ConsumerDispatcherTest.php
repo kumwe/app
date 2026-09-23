@@ -8,26 +8,26 @@ use DateTimeImmutable;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\App\Application\Authorization\SystemIdentity;
-use Kumwe\App\Application\Automation\FailureClassification;
-use Kumwe\App\Application\Automation\JitterSource;
-use Kumwe\App\Application\Automation\QueueRuntimePolicy;
-use Kumwe\App\Application\Automation\QueueRuntimePolicyCatalog;
-use Kumwe\App\Application\Automation\RetryPolicy;
+use Kumwe\Automation\FailureClassification;
+use Kumwe\Automation\JitterSource;
+use Kumwe\Automation\QueueRuntimePolicy;
+use Kumwe\Automation\QueueRuntimePolicyCatalog;
+use Kumwe\Automation\RetryPolicy;
 use Kumwe\Transaction\Contract\TransactionManager;
-use Kumwe\App\BusinessIntegration\Application\EventContractRegistry;
-use Kumwe\App\BusinessIntegration\Application\InboxClaimResult;
-use Kumwe\App\BusinessIntegration\Application\InboxDisposition;
-use Kumwe\App\BusinessIntegration\Application\InboxLease;
-use Kumwe\App\BusinessIntegration\Application\InboxStore;
+use Kumwe\Integration\EventContractRegistry;
+use Kumwe\Integration\InboxClaimResult;
+use Kumwe\Integration\InboxDisposition;
+use Kumwe\Integration\InboxLease;
+use Kumwe\Integration\InboxStore;
 use Kumwe\App\BusinessIntegration\Application\IntegrationEventConsumerDispatcher;
 use Kumwe\App\BusinessIntegration\Application\TrustedRuntimeGenerationGuard;
 use Kumwe\Extension\Spi\Application\ExecutionContext as ExtensionExecutionContext;
 use Kumwe\Extension\Spi\BusinessIntegration\Application\IntegrationEventHandler;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventConsumerDefinition;
-use Kumwe\App\BusinessIntegration\Domain\EventSchemaDefinition;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventSensitivity;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\IntegrationEvent;
-use Kumwe\App\BusinessIntegration\Domain\RecordedIntegrationEvent;
+use Kumwe\Integration\EventConsumerDefinition;
+use Kumwe\Integration\EventSchemaDefinition;
+use Kumwe\Integration\EventSensitivity;
+use Kumwe\Integration\IntegrationEvent;
+use Kumwe\Integration\RecordedIntegrationEvent;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
@@ -35,6 +35,7 @@ use Psr\Log\NullLogger;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
 use Throwable;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversClass(IntegrationEventConsumerDispatcher::class)]
 final class ConsumerDispatcherTest extends TestCase
@@ -51,6 +52,7 @@ final class ConsumerDispatcherTest extends TestCase
             false,
         );
         $event = new RecordedIntegrationEvent(
+            new DeterministicCanonicalEncoder(),
             'business.record.changed',
             1,
             Uuid::uuid7()->toString(),
@@ -67,7 +69,8 @@ final class ConsumerDispatcherTest extends TestCase
             EventSensitivity::INTERNAL,
             ['record_id' => 'record-8'],
         );
-        $registry = new EventContractRegistry([new EventSchemaDefinition(
+        $registry = new EventContractRegistry(new DeterministicCanonicalEncoder(), [new EventSchemaDefinition(
+            new DeterministicCanonicalEncoder(),
             'business.record.changed',
             1,
             EventSensitivity::INTERNAL,
@@ -137,6 +140,7 @@ final class ConsumerDispatcherTest extends TestCase
             '1.0.0',
         );
         $event = new RecordedIntegrationEvent(
+            new DeterministicCanonicalEncoder(),
             'business.record.changed',
             1,
             Uuid::uuid7()->toString(),
@@ -153,8 +157,9 @@ final class ConsumerDispatcherTest extends TestCase
             EventSensitivity::INTERNAL,
             ['record_id' => 'record-7'],
         );
-        $registry = new EventContractRegistry([
+        $registry = new EventContractRegistry(new DeterministicCanonicalEncoder(), [
             new EventSchemaDefinition(
+                new DeterministicCanonicalEncoder(),
                 'business.record.changed',
                 1,
                 EventSensitivity::INTERNAL,

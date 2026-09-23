@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace KumweExample\AssetInspection\Integration;
 
 use InvalidArgumentException;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventEnvelope;
+use Kumwe\Integration\EventEnvelope;
 
 /**
  * Validates the exact safe core mutation payload used by every example integration handler.

@@ -56,6 +56,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
 use Psr\Log\NullLogger;
 use stdClass;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 /**
  * Proves one Content editor mount opens its PHP bindings and emits a Producer-proven deployment.
@@ -359,7 +360,10 @@ final class HostedContentStudioAuthoringConfigurationProviderTest extends TestCa
             'timezone' => 'Africa/Windhoek',
             'presentation' => SitePresentation::defaults(),
         ]);
-        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+        );
         $theme = new StudioPublishedTheme(
             $settings,
             new ActiveExtensionSet($registries),

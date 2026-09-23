@@ -10,7 +10,7 @@ use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\App\Extension\Application\ExtensionManager;
 use Kumwe\App\Extension\Application\Migration\ScopedExtensionTableNames;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Contribution\ContributionOwner;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\Extension\Manifest\ExtensionIdentifier;
 use Kumwe\Extension\Package\PackageChecksum;

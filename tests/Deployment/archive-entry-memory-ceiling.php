@@ -19,6 +19,7 @@ declare(strict_types=1);
 use Kumwe\Extension\Package\InspectedPackage;
 use Kumwe\Extension\Package\ZipArchiveContentReader;
 use Kumwe\App\Tests\Deployment\CaseReport;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 require __DIR__ . '/../Support/deployment-drill-autoload.php';
 
@@ -82,7 +83,7 @@ try {
     if (!is_string($canonical)) {
         throw new RuntimeException('The package path could not be canonicalized.');
     }
-    $package = InspectedPackage::inspect($canonical);
+    $package = InspectedPackage::inspect(new DeterministicCanonicalEncoder(), $canonical);
 
     $before = memory_get_usage(true);
     $retained = [];

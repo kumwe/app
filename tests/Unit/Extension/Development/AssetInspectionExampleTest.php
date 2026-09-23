@@ -18,7 +18,7 @@ use Kumwe\Extension\Package\PackageSignatureMessage;
 use Kumwe\Extension\Spi\BusinessRecord\Application\BusinessRecordPage;
 use Kumwe\Extension\Spi\BusinessRecord\Application\BusinessRecordReader;
 use Kumwe\Extension\Spi\BusinessRecord\Application\BusinessRecordReadRequest;
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
+use Kumwe\Contribution\ContributionOwner;
 use Kumwe\Extension\Toolchain\DeterministicPackageBuilder;
 use Kumwe\Extension\Toolchain\PackageInspector;
 use Kumwe\Extension\Toolchain\PackageSigner;
@@ -31,6 +31,7 @@ use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use ReflectionClass;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 #[CoversNothing]
 /**
@@ -154,7 +155,10 @@ final class AssetInspectionExampleTest extends TestCase
             BusinessRecordReader::class => new AssetInspectionRecordReaderProbe(),
         ]);
         $provider->register($container);
-        $registries = new ExtensionContributionRegistrySet(new SdkFieldConfigurationAdmission());
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+        );
         $active = new ActiveExtensionSet(
             $registries,
             (new ReflectionClass(TrustStore::class))->newInstanceWithoutConstructor(),
@@ -199,8 +203,8 @@ final class AssetInspectionExampleTest extends TestCase
         $secondPath = $temporary . '/second.zip';
         $keyPath = $temporary . '/release.seed';
         try {
-            $inspector = new PackageInspector();
-            $builder = new DeterministicPackageBuilder($inspector);
+            $inspector = new PackageInspector(new DeterministicCanonicalEncoder());
+            $builder = new DeterministicPackageBuilder(new DeterministicCanonicalEncoder(), $inspector);
             $first = $builder->build(self::sourceDirectory(), $firstPath);
             $second = $builder->build(self::sourceDirectory(), $secondPath);
             self::assertSame(
@@ -244,7 +248,10 @@ final class AssetInspectionExampleTest extends TestCase
      */
     private static function manifest(): ExtensionManifest
     {
-        return ExtensionManifest::fromJson((string) file_get_contents(self::sourceDirectory() . '/kumwe.json'));
+        return ExtensionManifest::fromJson(
+            new DeterministicCanonicalEncoder(),
+            (string) file_get_contents(self::sourceDirectory() . '/kumwe.json'),
+        );
     }
 
     /**

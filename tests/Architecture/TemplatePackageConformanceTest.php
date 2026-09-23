@@ -10,6 +10,7 @@ use Kumwe\App\Presentation\Infrastructure\TwigThemePackageValidator;
 use Kumwe\App\Extension\Domain\ThemeSurface;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 
 /**
  * Pins the shipped template packages to their installable KIS 1.0 reference contract.
@@ -117,7 +118,7 @@ final class TemplatePackageConformanceTest extends TestCase
     private function assertPackageConforms(string $directory, ThemeSurface $surface): void
     {
         $package = $this->root . '/examples/extensions/' . $directory;
-        $manifest = ExtensionManifest::fromJson($this->contents(
+        $manifest = ExtensionManifest::fromJson(new DeterministicCanonicalEncoder(), $this->contents(
             'examples/extensions/' . $directory . '/kumwe.json',
         ));
 

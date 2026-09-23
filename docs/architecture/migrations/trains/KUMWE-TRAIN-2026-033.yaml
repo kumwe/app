@@ -1,0 +1,60 @@
+schema: kumwe-integration-train/v1
+train: KUMWE-TRAIN-2026-033
+packages:
+  - package: kumwe/contribution
+    version: 0.1.1
+  - package: kumwe/automation
+    version: 0.2.2
+  - package: kumwe/integration
+    version: 0.2.4
+  - package: kumwe/record-query
+    version: 0.1.4
+  - package: kumwe/reporting
+    version: 0.1.5
+  - package: kumwe/interface-standard
+    version: 0.1.2
+  - package: kumwe/administrator-contract
+    version: 0.2.2
+  - package: kumwe/portal-contract
+    version: 0.2.2
+  - package: kumwe/business-surface-contract
+    version: 0.1.4
+  - package: kumwe/extension-sdk
+    version: 0.3.3
+merge_order:
+  - "https://github.com/kumwe/app/pull/151"
+custodian: "eWɘyn"
+hotspots:
+  - composer.json
+  - composer.lock
+  - src/Kernel/ContainerFactory.php
+  - src/Extension/Contribution/ExtensionContributionRegistrySet.php
+  - src/Extension/Contribution/OwnedRuntimeContributionRegistry.php
+  - src/Extension/Contribution/CanonicalManifestInterpreter.php
+  - src/Extension/Contribution/CoreExtensionContributions.php
+  - src/Extension/Contribution/OwnedExtensionBindingRegistrar.php
+  - src/Extension/Infrastructure/DoctrineExtensionManager.php
+  - src/BusinessSurface/Application/BusinessSurfaceService.php
+  - src/BusinessIntegration/Application/ProcessManagerService.php
+  - src/BusinessIntegration/Application/BusinessRecordMutationEventPublisher.php
+  - src/BusinessSurface/Presentation/Field/CoreFieldPresenter.php
+  - docs/architecture/layers.json
+  - tests/Fixtures/Governance/clean/docs/architecture/layers.json
+  - docs/architecture/capability-index.md
+  - docs/architecture/governance/core-growth-baseline.json
+  - docs/architecture/governance/legacy-packages.json
+  - docs/quality/baseline.json
+  - docs/quality/test-docblock-baseline.json
+  - docs/machine-contract/mcp-v1.json
+  - docs/architecture/migrations/README.md
+  - CHANGELOG.md
+commands:
+  - "composer install"
+  - "php tools/generate-mcp-machine-contract.php"
+  - "composer kumwe:capability-index"
+  - "composer kumwe:core-growth-record"
+  - "composer baseline:record"
+  - "composer docs:format"
+  - "composer qa"
+conflict_ledger: docs/architecture/migrations/conflicts
+serialized_by: "eWɘyn, rebase-merging the green pull request under the standing maintainer mandate"

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Application\Automation\Job;
 
-use Kumwe\App\Application\Automation\JobHandler;
-use Kumwe\App\Application\Automation\PermanentFailure;
+use Kumwe\Automation\JobHandler;
+use Kumwe\Automation\PermanentFailure;
 use Kumwe\App\Extension\Application\Trust\RevocationFeedSynchronizer;
 use Kumwe\App\Extension\Application\Trust\RevocationListRefused;
 use Kumwe\Context\Value\ExecutionContext;

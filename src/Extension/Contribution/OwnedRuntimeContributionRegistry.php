@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Extension\Contribution;
 
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
-use Kumwe\Extension\Spi\Contribution\ContributionDefinition;
+use Kumwe\Contribution\ContributionOwner;
+use Kumwe\Contribution\ContributionDefinition;
+use Kumwe\Contribution\SurfaceIdentifierPolicy;
+use Kumwe\Extension\Manifest\ManifestIdentifierPolicies;
 use InvalidArgumentException;
 use LogicException;
+use Kumwe\Contribution\ContributionSurface;
 
 /**
  * Owner-aware registry for one declarative integration surface and its optional runtime implementation.
@@ -34,18 +37,31 @@ final class OwnedRuntimeContributionRegistry implements ContributionSurface
     private array $entries = [];
 
     /**
+     * Identifier grammar this surface admits, selected once from the manifest kind it is declared under.
+     *
+     * @var    SurfaceIdentifierPolicy
+     * @since  2.0.0
+     */
+    private readonly SurfaceIdentifierPolicy $policy;
+
+    /**
      * Describe and optionally type-restrict one contribution surface.
      *
-     * @param   string         $kind                Human-readable kind used in ownership failures.
-     * @param   ?class-string  $implementationType  Required implementation contract, or null for data-only entries.
+     * @param   string                    $kind                Human-readable kind used in ownership failures.
+     * @param   ?class-string             $implementationType  Required implementation contract, or null for data-only
+     *          entries.
+     * @param   ?SurfaceIdentifierPolicy  $policy              Identifier grammar the surface admits; null selects the
+     *          SDK manifest grammar for the kind.
      *
-     * @throws  InvalidArgumentException  When the kind or implementation contract is invalid.
+     * @throws  InvalidArgumentException  When the kind or implementation contract is invalid, or the kind names
+     *          no manifest identifier grammar.
      *
      * @since   2.0.0
      */
     public function __construct(
         private readonly string $kind,
         private readonly ?string $implementationType = null,
+        ?SurfaceIdentifierPolicy $policy = null,
     ) {
         if ($kind === '' || strlen($kind) > 80) {
             throw new InvalidArgumentException('A runtime contribution registry kind is required.');
@@ -57,6 +73,7 @@ final class OwnedRuntimeContributionRegistry implements ContributionSurface
         ) {
             throw new InvalidArgumentException('A runtime contribution implementation contract must exist.');
         }
+        $this->policy = $policy ?? ManifestIdentifierPolicies::forKind($kind);
     }
 
     /**
@@ -78,7 +95,7 @@ final class OwnedRuntimeContributionRegistry implements ContributionSurface
         ?object $implementation = null,
     ): void {
         $identifier = $definition->identifier();
-        $owner->assertOwns($identifier, $this->kind);
+        $owner->assertOwns($identifier, $this->policy);
         if (isset($this->entries[$identifier])) {
             throw new InvalidArgumentException(sprintf(
                 '%s contribution %s is already registered.',

@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Extension\Contribution;
 
-use Kumwe\Extension\Spi\Contribution\ContributionOwner;
-use Kumwe\Extension\Spi\Contribution\AdministratorViewDefinition;
+use Kumwe\Contribution\ContributionOwner;
+use Kumwe\Extension\Manifest\ManifestIdentifierPolicies;
+use Kumwe\Administrator\Contract\AdministratorViewDefinition;
 use InvalidArgumentException;
+use Kumwe\Contribution\ContributionSurface;
 
 /**
  * Owns the administrator view names contributions may render, one contributor per name.
@@ -43,7 +45,7 @@ final class AdministratorViewRegistry implements ContributionSurface
      */
     public function register(ContributionOwner $owner, AdministratorViewDefinition $definition): void
     {
-        $owner->assertOwns($definition->name, 'view');
+        $owner->assertOwns($definition->name, ManifestIdentifierPolicies::forKind('view'));
         if (isset($this->definitions[$definition->name])) {
             throw new InvalidArgumentException(sprintf(
                 'Administrator view %s is already owned by %s.',

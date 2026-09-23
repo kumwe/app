@@ -6,7 +6,7 @@ namespace Kumwe\App\BusinessSurface\Application;
 
 use InvalidArgumentException;
 use Kumwe\Context\Value\ExecutionContext;
-use Kumwe\Extension\Spi\Application\Automation\IdempotencyKey;
+use Kumwe\Idempotency\IdempotencyKey;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\BusinessDefinition\Application\FieldTypeDefinitionResolver;
 use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
@@ -37,17 +37,16 @@ use Kumwe\App\BusinessRecord\Application\Query\ReadRecordQuery;
 use Kumwe\App\BusinessRecord\Application\Query\RecordHistoryQuery;
 use Kumwe\App\BusinessRecord\Application\RecordExpressionValues;
 use Kumwe\App\BusinessRecord\Application\RelatedRecordBrowseResult;
-use Kumwe\Extension\Spi\BusinessRecord\Query\RecordProjection;
-use Kumwe\Extension\Spi\BusinessRecord\Query\RecordQuerySpecification;
+use Kumwe\Record\Query\RecordProjection;
+use Kumwe\Record\Query\RecordQuerySpecification;
 use Kumwe\App\BusinessSurface\Application\Custom\CustomBusinessSurfaceDispatcher;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessActionCommand;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessSchema;
-use Kumwe\Extension\Spi\BusinessSurface\Application\Custom\CustomBusinessViewQuery;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessActionCommand;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessSchema;
+use Kumwe\BusinessSurface\Contract\Application\Custom\CustomBusinessViewQuery;
 use Kumwe\Localization\Application\ActiveLocale;
 use Kumwe\App\Media\Application\MediaAsset;
 use Kumwe\App\Media\Application\MediaService;
 use Ramsey\Uuid\Uuid;
-use Kumwe\App\Extension\Runtime\ExtensionExecutionContext;
 
 /**
  * Shared generated-business use-case facade consumed by every delivery adapter.
@@ -161,7 +160,7 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
             $view,
         );
         $result = $this->customBusiness->view($resolved->definition, new CustomBusinessViewQuery(
-            ExtensionExecutionContext::of($context),
+            $context,
             $definition,
             $view,
             $specification,
@@ -1256,7 +1255,7 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
         $resolved = $this->definitions->forCreate($context, $definition);
         if ($this->customBusiness->handlesAction($resolved->definition, $action)) {
             $result = $this->customActions->execute(new CustomBusinessActionCommand(
-                ExtensionExecutionContext::of($context),
+                $context,
                 $definition,
                 $record,
                 $expectedVersion,

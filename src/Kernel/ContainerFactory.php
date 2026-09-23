@@ -7,7 +7,9 @@ namespace Kumwe\App\Kernel;
 use Kumwe\CanonicalJson\CanonicalEncoder;
 use Doctrine\DBAL\Connection;
 use Kumwe\App\Application\Automation\AutomationManagementService;
-use Kumwe\App\Application\Automation\CryptographicJitterSource;
+use Kumwe\Automation\ConfigProvider as AutomationConfigProvider;
+use Kumwe\Automation\Container\CryptographicJitterSourceFactory;
+use Kumwe\Automation\Container\RetryPolicyFactory;
 use Kumwe\App\Infrastructure\Automation\DoctrineJobQueue;
 use Kumwe\App\Infrastructure\Automation\DoctrineQueueRuntimeOperations;
 use Kumwe\App\Infrastructure\Automation\DoctrineScheduler;
@@ -23,15 +25,14 @@ use Kumwe\App\Application\Automation\Job\SynchronizeTrustRevocationsHandler;
 use Kumwe\App\Application\Automation\Job\VerifyAuditTrailHandler;
 use Kumwe\App\Application\Automation\Job\ScheduleRepository;
 use Kumwe\App\Application\Automation\Job\TransitionContentHandler;
-use Kumwe\App\Application\Automation\JobHandlerRegistry;
-use Kumwe\App\Application\Automation\JobHandler;
+use Kumwe\Automation\JobHandlerRegistry;
+use Kumwe\Automation\JobHandler;
 use Kumwe\App\Application\Automation\GlobalJobPrincipals;
 use Kumwe\App\Application\Automation\JobExecutionScope;
-use Kumwe\App\Application\Automation\JobQueue;
+use Kumwe\Automation\JobQueue;
 use Kumwe\App\Application\Automation\QueueRuntimeOperations;
-use Kumwe\App\Application\Automation\QueueRuntimePolicyCatalog;
-use Kumwe\App\Application\Automation\JitterSource;
-use Kumwe\App\Application\Automation\RetryPolicy;
+use Kumwe\Automation\QueueRuntimePolicyCatalog;
+use Kumwe\Automation\RetryPolicy;
 use Kumwe\Idempotency\IdempotencyPurger;
 use Kumwe\Idempotency\IdempotencyLedger;
 use Kumwe\Idempotency\SecretOnceIdempotencyLedger;
@@ -180,24 +181,24 @@ use Kumwe\Secret\ConfigProvider as SecretConfigProvider;
 use Kumwe\Secret\Provider\KeyRingKeyProvider;
 use Kumwe\App\BusinessIntegration\Application\BusinessRecordMutationEventPublisher;
 use Kumwe\App\BusinessIntegration\Application\DurableOutboundAdapterDispatcher;
-use Kumwe\App\BusinessIntegration\Application\EventContractRegistry;
-use Kumwe\App\BusinessIntegration\Application\InboxStore;
+use Kumwe\Integration\EventContractRegistry;
+use Kumwe\Integration\InboxStore;
 use Kumwe\App\BusinessIntegration\Application\IntegrationEventConsumerDispatcher;
 use Kumwe\App\BusinessIntegration\Application\IntegrationEventFanout;
 use Kumwe\App\BusinessIntegration\Application\IntegrationOperationsService;
 use Kumwe\App\BusinessIntegration\Application\JobQueueProcessWorkHandler;
 use Kumwe\App\BusinessIntegration\Application\OutboxDispatcher;
-use Kumwe\App\BusinessIntegration\Application\OutboxStore;
+use Kumwe\Integration\OutboxStore;
 use Kumwe\App\BusinessIntegration\Application\ScheduleRuntimeSynchronizer;
 use Kumwe\App\BusinessIntegration\Application\ProcessManagerService;
-use Kumwe\App\BusinessIntegration\Application\ProcessManagerStore;
+use Kumwe\Integration\ProcessManagerStore;
 use Kumwe\App\BusinessIntegration\Application\ProcessWorkDispatcher;
 use Kumwe\App\BusinessIntegration\Application\TrustedRuntimeGenerationGuard;
 use Kumwe\App\BusinessIntegration\Application\ValidatedContributedJobHandler;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\EventConsumerDefinition;
-use Kumwe\App\BusinessIntegration\Domain\EventSchemaDefinition;
+use Kumwe\Integration\EventConsumerDefinition;
+use Kumwe\Integration\EventSchemaDefinition;
 use Kumwe\Extension\Spi\Application\Automation\JobHandler as ContributedJobHandler;
-use Kumwe\Extension\Spi\BusinessIntegration\Domain\JobContributionDefinition;
+use Kumwe\Automation\JobContributionDefinition;
 use Kumwe\App\BusinessIntegration\Infrastructure\DoctrineInboxStore;
 use Kumwe\App\BusinessIntegration\Infrastructure\DoctrineOutboxStore;
 use Kumwe\App\BusinessIntegration\Infrastructure\DoctrineProcessManagerStore;
@@ -226,7 +227,7 @@ use Kumwe\App\BusinessReporting\Delivery\Api\ReportApiHandler;
 use Kumwe\App\BusinessReporting\Delivery\Api\ReportApiPresenter;
 use Kumwe\App\BusinessReporting\Delivery\Console\ReportCommand;
 use Kumwe\App\BusinessReporting\Delivery\Portal\PortalReportHandler;
-use Kumwe\App\BusinessReporting\Domain\ReportDefinition;
+use Kumwe\Reporting\Domain\ReportDefinition;
 use Kumwe\App\BusinessReporting\Infrastructure\BusinessRecordExportPolicySnapshotProvider;
 use Kumwe\App\BusinessReporting\Infrastructure\BusinessRecordReportScopeResolver;
 use Kumwe\App\BusinessReporting\Infrastructure\BusinessRecordServiceReportReader;
@@ -486,7 +487,7 @@ use Kumwe\App\Extension\Runtime\CurrentExtensionExecutionGate;
 use Kumwe\App\Extension\Runtime\DeferredExtensionRuntimeWithdrawal;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\Extension\Contribution\AdministratorViewRegistry;
-use Kumwe\Extension\Spi\Contribution\ContributionDefinition;
+use Kumwe\Contribution\ContributionDefinition;
 use Kumwe\App\Portal\Contribution\PortalNavigationRegistry;
 use Kumwe\App\Portal\Contribution\PortalTemplateRegistry;
 use Kumwe\App\Extension\Runtime\ExtensionRuntimeLoader;
@@ -958,11 +959,42 @@ final class ContainerFactory
         ): AutomationJobFormRegistry => AutomationJobFormRegistry::core(
             self::service($container, Translator::class),
         ), true);
-        $container->share(JitterSource::class, new CryptographicJitterSource(), true);
-        $container->share(RetryPolicy::class, static fn (Container $container): RetryPolicy => new RetryPolicy(
-            self::service($container, ClockInterface::class),
-            self::service($container, JitterSource::class),
-        ), true);
+        // kumwe/automation builds the shared jitter source and retry policy through the factories its
+        // ConfigProvider installs (KUMWE-MIG-2026-026), reading the `kumwe.automation` delays from the `config`
+        // service and the clock bound above, and aliases its JitterSource port to that source. Its
+        // JobHandlerRegistry factory is not admitted: it cannot wrap contributed handlers in the trust-enforcing
+        // adapter, so the host keeps building that registry itself further down.
+        $automationProvider = (new AutomationConfigProvider())();
+        $automationDependencies = $automationProvider['dependencies'] ?? null;
+        if (!is_array($automationDependencies)) {
+            throw new LogicException('kumwe/automation declares no container dependencies.');
+        }
+        $automationFactories = [];
+        $automationFactoryTable = $automationDependencies['factories'] ?? null;
+        foreach (is_array($automationFactoryTable) ? $automationFactoryTable : [] as $service => $factory) {
+            if (!is_string($service) || !is_string($factory) || !class_exists($service) || !class_exists($factory)) {
+                throw new LogicException('kumwe/automation installs a factory that is not a class name.');
+            }
+            if (
+                is_a($factory, CryptographicJitterSourceFactory::class, true)
+                || is_a($factory, RetryPolicyFactory::class, true)
+            ) {
+                $automationFactories[$service] = $factory;
+            }
+        }
+        $automationAliases = [];
+        $automationAliasTable = $automationDependencies['aliases'] ?? null;
+        foreach (is_array($automationAliasTable) ? $automationAliasTable : [] as $alias => $target) {
+            if (!is_string($alias) || !is_string($target) || !interface_exists($alias) || !class_exists($target)) {
+                throw new LogicException('kumwe/automation installs an alias that is not a class name.');
+            }
+            $automationAliases[$alias] = $target;
+        }
+        $container->configure([
+            'factories' => $automationFactories,
+            'aliases' => $automationAliases,
+            'shared' => array_fill_keys(array_keys($automationFactories), true),
+        ]);
         $container->share(EventManager::class, new EventManager(), true);
         $container->alias(EventManagerInterface::class, EventManager::class);
 
@@ -985,6 +1017,14 @@ final class ContainerFactory
             ],
             'kumwe' => [
                 'access' => self::accessConfiguration(),
+                // kumwe/automation reads its retry delays and configured handler services here
+                // (KUMWE-MIG-2026-026); the host keeps the package defaults and declares no handler service,
+                // because the job handler registry stays host-built.
+                'automation' => [
+                    'base_delay_seconds' => 1,
+                    'maximum_delay_seconds' => 300,
+                    'handlers' => [],
+                ],
             ],
         ], true);
         $this->registerObservability($container, $configuration, $root, $console);
@@ -1253,6 +1293,7 @@ final class ContainerFactory
             ],
             BusinessSecurityPortalMigration::ID => [
                 'adac395af8bed6dde8b179895e7b59e46eb220a736c902014f7ea1db85d754c9',
+                '6af4d4fd825cdfe7b64b3ced7e9f4260ad1768ec427c91aa63c9ca5425df3bf6',
             ],
             DocumentContentTypesMigration::ID => [
                 '939135ac28684c06cf09d41564524e56f060e9ec8448c05f4aab2e5de8821eff',
@@ -1260,24 +1301,44 @@ final class ContainerFactory
             ResourceOwnershipScopeMigration::ID => [
                 '71ee7868025464ddf3465f00f9b2e7825ea9c450307d547bee58a48071386e86',
                 'bcc5b6d7d8c1f43647de7ee19f9bf60b93e8ce9e1db03b41219d29ee3fb1cbee',
+                '9f8d994c567bc8cd370f9f6dcd427906736aa4a9b1ea3247e60e273a29f22e74',
             ],
             InterfaceMessageOverrideMigration::ID => [
                 '069b5375c77fb60dccf65d57152dc8a8f9da57a3355dd410c8621e96d9d1bec6',
                 '658c91fdab26db42e1d28b87b190e9e254f38284c8ad644ca75e3c017b8c7c92',
+                'f2bd03bea6f8b93949c9e801babcd52d1c736b65b592820f53140a1a8e295e93',
             ],
             PeriodPostingLockMigration::ID => [
                 'e887d43fd7c155f2f633bab2220d699a8007dd2edd930d617083fc969b6364a0',
                 '224a3ba56b5cae62321045062fd51eb4e6a91808feb60de3e790f7425d25be91',
+                '82a9530117da4a70281b06eab89219ca5838e881339201fcb2b7b80780f4610c',
             ],
             StudioHostSessionMigration::ID => [
                 '9579330402183aedb650109583b9c10531fa84ba5172e0a377319d9cf4c61eda',
                 'fb18983a24241ecad938fe3136352f018405d37cb3d485118b52e1f29fae85d2',
+                'dd1fdda54ce0ef3a27129551e3e1b6d9a063d61bf09e41385eeffa4b1e6643c6',
+            ],
+            // KUMWE-MIG-2026-006, -026, -027, -036, -037 and -038 (the extension-sdk 0.3.3 train) moved the
+            // contribution owner, the job execution class and the administrator and portal surface values to
+            // their packages, and the business-security portal migration now receives the host canonical encoder
+            // its stored manifests are parsed with. The nine migrations that name them changed only their
+            // imports and that constructor; their statements are unchanged, so databases migrated before the
+            // train keep the checksums recorded then.
+            BusinessRecordIdempotencyRetentionMigration::ID => [
+                '4b46e2a9433853d6d03190b734a6257e69a3016ccfc4b57bfa30b979d56efedf',
+            ],
+            InstallationGlobalAutomationMigration::ID => [
+                '43970f52bfc9204ac48f00357121c2e6b7d45fbb934a9a4d4869465762ab3cd6',
+            ],
+            StudioContentAuthoringContextRetentionMigration::ID => [
+                '85308dc4e12920c85f0116a6e339b69662b3e2cb7016e781f6e9b2ea2792f512',
             ],
             // KUMWE-MIG-2026-021 moved the audit values, ports and digests to kumwe/audit. The tamper-evidence
             // migration now receives the host canonical encoder its backfill digests with; its statements are
             // unchanged, so databases migrated before the move keep the checksum recorded then.
             AuditTamperEvidenceMigration::ID => [
                 'a34cfbeea195bfc724a6a30b6d3697fea2a8e605d15a0c427d68bc8d9c1194bf',
+                '55bd525a7c0fb80831671822b77b6b4f6e073a6a3e8f03f2bee2c1f8376a1a9f',
             ],
             // KUMWE-MIG-2026-034 moved the content entry, revision, status and publication window to
             // kumwe/content-model. The dynamic-site migration above keeps the checksum recorded between the
@@ -2437,7 +2498,10 @@ final class ContainerFactory
                     new BusinessDefinitionCatalogMigration(self::service($container, TableNames::class)),
                     new BusinessTransactionalRuntimeMigration(self::service($container, TableNames::class)),
                     new BusinessRecordIdempotencyRetentionMigration(self::service($container, TableNames::class)),
-                    new BusinessSecurityPortalMigration(self::service($container, TableNames::class)),
+                    new BusinessSecurityPortalMigration(
+                        self::service($container, TableNames::class),
+                        self::service($container, CanonicalEncoder::class),
+                    ),
                     new BusinessIntegrationSdkMigration(self::service($container, TableNames::class)),
                     new DemoProfileProvenanceMigration(self::service($container, TableNames::class)),
                     new ContentModelIdentifierCollationMigration(self::service($container, TableNames::class)),
@@ -2678,6 +2742,7 @@ final class ContainerFactory
             new AdministratorRenderer(
                 self::service($container, AdministratorTwigEnvironment::class),
                 self::service($container, RecoveryAdministratorRenderer::class),
+                self::service($container, CanonicalEncoder::class),
                 self::service($container, AdministratorNavigationRegistry::class),
                 self::service($container, ViteAssetManifest::class),
                 self::service($container, AdministratorViewRegistry::class),
@@ -2821,6 +2886,7 @@ final class ContainerFactory
         $container->share(
             ExtensionActivationAdmission::class,
             new OpenApiExtensionActivationAdmission(
+                self::service($container, CanonicalEncoder::class),
                 $componentClaims,
                 static fn (): BusinessDefinitionRepository => self::service(
                     $container,
@@ -2842,11 +2908,14 @@ final class ContainerFactory
             new PackageAdmissionPolicy($configuration->packageConformanceAdmission),
             true,
         );
-        $container->share(ComponentScaffolder::class, new ComponentScaffolder(), true);
-        $container->share(PackageInspector::class, new PackageInspector(), true);
+        $container->share(ComponentScaffolder::class, static fn (Container $container): ComponentScaffolder =>
+            new ComponentScaffolder(self::service($container, CanonicalEncoder::class)), true);
+        $container->share(PackageInspector::class, static fn (Container $container): PackageInspector =>
+            new PackageInspector(self::service($container, CanonicalEncoder::class)), true);
         $container->share(DeterministicPackageBuilder::class, static fn (
             Container $container,
         ): DeterministicPackageBuilder => new DeterministicPackageBuilder(
+            self::service($container, CanonicalEncoder::class),
             self::service($container, PackageInspector::class),
         ), true);
         $container->share(ProtectedSigningKeyReader::class, new ProtectedSigningKeyReader(), true);
@@ -2884,6 +2953,7 @@ final class ContainerFactory
         $container->share(ExtensionRuntimeMapCompiler::class, static fn (
             Container $container,
         ): ExtensionRuntimeMapCompiler => new ExtensionRuntimeMapCompiler(
+            self::service($container, CanonicalEncoder::class),
             self::service($container, Connection::class),
             self::service($container, TableNames::class),
             $mapFile,
@@ -2910,6 +2980,7 @@ final class ContainerFactory
             $extensionRoot,
         ), true);
         $container->share(TrustStore::class, static fn (Container $container): TrustStore => new TrustStore(
+            self::service($container, CanonicalEncoder::class),
             self::service($container, TrustStoreRepository::class),
             self::service($container, PublicKeyPackageSignatureVerifier::class),
             self::service($container, ExtensionArtifactVerifier::class),
@@ -2950,6 +3021,7 @@ final class ContainerFactory
         $fieldConfiguration = new SdkFieldConfigurationAdmission();
         $container->share(FieldConfigurationAdmission::class, $fieldConfiguration, true);
         $contributionRegistries = new ExtensionContributionRegistrySet(
+            self::service($container, CanonicalEncoder::class),
             $fieldConfiguration,
             self::service($container, TrustStore::class),
             authorizationPolicies: self::service($container, AuthorizationPolicyRegistry::class),
@@ -3026,6 +3098,7 @@ final class ContainerFactory
                 self::service($container, TransactionManager::class),
                 self::service($container, ClockInterface::class),
                 self::service($container, EventContractRegistry::class),
+                self::service($container, CanonicalEncoder::class),
             ), true);
         $container->share(InboxStore::class, static fn (Container $container): InboxStore =>
             new DoctrineInboxStore(
@@ -3042,6 +3115,7 @@ final class ContainerFactory
                 self::service($container, TableNames::class),
                 self::service($container, TransactionManager::class),
                 self::service($container, ClockInterface::class),
+                self::service($container, CanonicalEncoder::class),
             ), true);
         $container->share(ProcessManagerService::class, static fn (
             Container $container,
@@ -3049,6 +3123,7 @@ final class ContainerFactory
             self::service($container, ProcessManagerStore::class),
             self::service($container, EventContractRegistry::class),
             self::service($container, ClockInterface::class),
+            self::service($container, CanonicalEncoder::class),
         ), true);
         $container->share(IntegrationOperationsService::class, static fn (
             Container $container,
@@ -3070,6 +3145,7 @@ final class ContainerFactory
             self::service($container, ExtensionContributionRegistrySet::class),
             self::service($container, OutboxStore::class),
             self::service($container, ExtensionExecutionGate::class),
+            self::service($container, CanonicalEncoder::class),
         ), true);
         $container->share(FieldTypeRegistry::class, $contributionRegistries->fieldTypes(), true);
         $container->share(DoctrinePersistedFieldTypeDefinitionResolver::class, static fn (
@@ -3442,6 +3518,7 @@ final class ContainerFactory
         $container->share(ExtensionManager::class, static fn (Container $container): ExtensionManager =>
             new RedisLockedExtensionManager(
                 new DoctrineExtensionManager(
+                    self::service($container, CanonicalEncoder::class),
                     self::service($container, Connection::class),
                     self::service($container, TableNames::class),
                     $extensionRoot,
@@ -3479,6 +3556,7 @@ final class ContainerFactory
             && $materialization->trusted
             && $materialization->publication !== null
             ? (new ExtensionRuntimeLoader(
+                self::service($container, CanonicalEncoder::class),
                 $materialization->publication,
                 $extensionRoot,
                 $keyRing,
@@ -3552,6 +3630,7 @@ final class ContainerFactory
                 self::service($container, TableNames::class),
                 self::service($container, TransactionManager::class),
                 self::service($container, ClockInterface::class),
+                self::service($container, CanonicalEncoder::class),
                 self::service($container, TrustedRuntimeGenerationGuard::class),
                 self::service($container, RuntimeMaterializationState::class),
                 self::service($container, ExtensionContributionRegistrySet::class)
