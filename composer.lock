@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "10c2ed28d3d4732ec2c2a2fc234c46c1",
+    "content-hash": "eb63a260c90cc4454eb95457c2664cc5",
     "packages": [
         {
             "name": "brick/math",
@@ -1004,12 +1004,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/kumwe/extension-sdk.git",
-                "reference": "b54022b05075944e884dc1df038cbcb63f723472"
+                "reference": "3d91050261bc26a5d89966250f88b11705b4923b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/kumwe/extension-sdk/zipball/b54022b05075944e884dc1df038cbcb63f723472",
-                "reference": "b54022b05075944e884dc1df038cbcb63f723472",
+                "url": "https://api.github.com/repos/kumwe/extension-sdk/zipball/3d91050261bc26a5d89966250f88b11705b4923b",
+                "reference": "3d91050261bc26a5d89966250f88b11705b4923b",
                 "shasum": ""
             },
             "require": {
@@ -1056,6 +1056,7 @@
                     "Kumwe\\Extension\\": "src/"
                 }
             },
+            "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "Apache-2.0"
             ],
@@ -1064,7 +1065,8 @@
             "support": {
                 "issues": "https://github.com/kumwe/extension-sdk/issues",
                 "source": "https://github.com/kumwe/extension-sdk"
-            }
+            },
+            "time": "2026-09-23T21:08:52+00:00"
         },
         {
             "name": "kumwe/idempotency",

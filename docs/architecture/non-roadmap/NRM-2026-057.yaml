@@ -7,16 +7,16 @@ repositories:
   - kumwe/app
   - kumwe/extension-sdk
 behavior_before: "App locked kumwe/extension-sdk 0.2.4 as a legacy-unmanifested package with source-scanned symbols, its manifests parsed by a static canonical JSON helper, eighty-eight duplicate SDK declarations of values other packages own, and kumwe/producer pinned through the 0.3.0 as 0.2.99 alias."
-behavior_after: "App locks the 0.3.3 candidate at its commit through a temporary package repository entry: the SDK is a Version 2 manifested package with 96 exports, its runtime and toolchain receive the container canonical encoder, ManifestIdentifierPolicies projects manifest kinds onto the contribution policies, the dropped duplicates resolve to the ten adopted owners, the SDK IdempotencyKey copy maps to kumwe/idempotency, the producer alias is retired and the legacy registry is empty."
+behavior_after: "App locks the published 0.3.3 release from Packagist: the SDK is a Version 2 manifested package with 96 exports, its runtime and toolchain receive the container canonical encoder, ManifestIdentifierPolicies projects manifest kinds onto the contribution policies, the dropped duplicates resolve to the ten adopted owners, the SDK IdempotencyKey copy maps to kumwe/idempotency, the producer alias is retired and the legacy registry is empty."
 public_api_impact: "DoctrineExtensionManager, ExtensionRuntimeMapCompiler, ExtensionRuntimeLoader, TrustStore, BusinessSecurityPortalMigration, ExtensionContributionRegistrySet, CanonicalManifestInterpreter, CoreExtensionContributions, OpenApiExtensionActivationAdmission and AdministratorRenderer take the canonical encoder; ExtensionContributionSummary::project and CanonicalManifestInterpreter::fromManifest take it first."
-dependency_impact: "Moves kumwe/extension-sdk from 0.2.4 to the 0.3.3 candidate and kumwe/producer from 0.3.0 as 0.2.99 to 0.3.0; adds the ten train packages exactly; no other lock entry changes."
+dependency_impact: "Moves kumwe/extension-sdk from 0.2.4 to 0.3.3 and kumwe/producer from 0.3.0 as 0.2.99 to 0.3.0; adds the ten train packages exactly; no other lock entry changes."
 compatibility: "Manifests, generations, PIN.json, checksums and stored contribution rows are unchanged; the scaffold pins 0.3.3."
 data_migration: None
 security_impact: "No authority change; admission, trust, activation and key custody stay in App and the shared inspector is the container-composed one."
 performance:
   claim: None
   evidence: []
-operations_deployment: "After v0.3.3 is published the repository entry is removed and the lock re-pointed at the Packagist distribution; no schema change."
+operations_deployment: "The temporary package repository entry that named the candidate zipball while v0.3.3 was unpublished is removed and the lock names the Packagist distribution of the tag commit; no schema change."
 recovery_rollback: "Revert the adoption pull request and restore the 0.2.4 lock and the legacy registry entry; no persisted data changes."
 artifacts_evidence:
   - docs/architecture/migrations/KUMWE-MIG-2026-033.yaml
@@ -25,7 +25,6 @@ artifacts_evidence:
   - docs/architecture/migrations/evidence/KUMWE-MIG-2026-033/RELEASE-ATTESTATION.yaml
   - docs/architecture/capability-index.md
 known_gaps:
-  - "v0.3.3 is unpublished; the adoption binds the candidate commit and pull request 22."
   - "kumwe/conversion-extension 0.1.4 is not adopted because its shipped handoff is outside the StrictYaml subset; App keeps its two conversion provider definitions over the package ContributionDefinition."
 owner: "eWɘyn"
 status: in-progress

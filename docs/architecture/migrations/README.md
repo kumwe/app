@@ -47,9 +47,9 @@ change set is `core-integrated` only once the merged master commit is recorded (
 
 [`legacy-packages.json`](../governance/legacy-packages.json) holds no entry: `kumwe/extension-sdk` left the
 registry with `KUMWE-MIG-2026-033`, as `kumwe/conversion` did at `0.1.5` (`KUMWE-MIG-2026-031`). The SDK is
-locked at its unpublished `0.3.3` candidate (pull request 22, commit `b54022b0`) through a temporary package
-repository entry in `composer.json`; once `v0.3.3` is published, that entry is removed and the lock re-pointed
-at the Packagist distribution, and `KUMWE-CS-2026-033` records the re-verified digests.
+locked at the published `v0.3.3` (tag commit `3d910502`, the same tree as the candidate `b54022b0` it was
+first locked from through a temporary package repository entry); `KUMWE-CS-2026-033` and its attestation
+record the re-verified digests.
 
 ### The remaining catalogue
 

@@ -18,8 +18,8 @@ phase_1:
   handoff_digest: "a458c76e14f93ab8da801cc75c6b855f0ce9aaf2109a2b21d3c9045c0727eef6"
 release:
   version: 0.3.3
-  source_sha: "b54022b05075944e884dc1df038cbcb63f723472"
-  artifact_digest: "10018cfb06069907af7e7c79972a2065477e6782c0fc15e5af8dc906a1cbb9b1"
+  source_sha: "3d91050261bc26a5d89966250f88b11705b4923b"
+  artifact_digest: "e767374ebbaa5ecedb170b3c8a6a160773e4e12ea9fcfea15809b4343e863c77"
   clean_consumer_evidence:
     - docs/architecture/migrations/evidence/KUMWE-MIG-2026-033/RELEASE-ATTESTATION.yaml
 phase_2:
@@ -27,7 +27,7 @@ phase_2:
   tested_sha: null
   merged_sha: null
   exact_dependency: "kumwe/extension-sdk 0.3.3"
-  composer_lock_digest: "04b6bdc0e61ef498055023db3aa6243d6c1e05566aa6428729a2117cb9c00612"
+  composer_lock_digest: "27becef4e8f6728795b30c5aab8e4c4b547e202135044e42600b89808c86240b"
   removed_app_symbols:
     - Kumwe\Extension\Spi\Application\Automation\IdempotencyKey
   moved_unit_tests: []
@@ -213,9 +213,10 @@ phase_2:
 evidence:
   package:
     - docs/architecture/migrations/evidence/KUMWE-MIG-2026-033/RELEASE-ATTESTATION.yaml
-    - "https://github.com/kumwe/extension-sdk/pull/22; draft candidate at b54022b05075944e884dc1df038cbcb63f723472"
-    - "https://github.com/kumwe/extension-sdk/actions/runs/35882205909; Extension SDK CI success on the candidate commit"
-    - "https://github.com/kumwe/extension-sdk/actions/runs/35882205976; Native source candidate CI success on the same commit"
+    - "https://github.com/kumwe/extension-sdk/pull/22; merged into main as 9d553d3 and 3d91050261bc26a5d89966250f88b11705b4923b, the tag commit, whose tree 201445fd6dcd6eb1e1e17e79107860ee941afd72 equals the candidate b54022b05075944e884dc1df038cbcb63f723472 first locked by this change set"
+    - "https://github.com/kumwe/extension-sdk/actions/runs/35920600343; Extension SDK CI success on the tag commit"
+    - "https://github.com/kumwe/extension-sdk/actions/runs/35920600840; Release on record success, published release 395063406 as v0.3.3"
+    - "https://github.com/kumwe/extension-sdk/releases/tag/v0.3.3; Packagist lists v0.3.3 at the tag commit as source and dist"
   app_composition:
     - tests/Architecture/BusinessSurfaceRenderingSeamTest.php
     - tests/Architecture/ConvertedMoneySurfaceCoverageTest.php
@@ -294,8 +295,7 @@ rollback: "Revert the App pull request and restore the 0.2.4 lock and the legacy
 known_gaps:
   - "The local sandbox runs PHP 8.4 without ext-kumwe_engine and without a database server, so the integration and functional lanes, PHP 8.5 and the demo profile installations are proven by the App CI on this pull request."
   - "One Composer lock regeneration covers the whole train, so composer_lock_digest is the digest of the train lock rather than of a lock that adds this package alone."
-  - "kumwe/extension-sdk 0.3.3 is adopted from its unpublished candidate, pull request 22 at commit b54022b05075944e884dc1df038cbcb63f723472, through a temporary package repository entry in composer.json; the entry is removed and the lock re-pointed at the Packagist distribution once v0.3.3 is published (KUMWE-CS-2026-033)."
-  - "No GitHub release, tag or Packagist entry exists for v0.3.3; the attested archive is the api.github.com zipball of the candidate commit that Composer installed, whose 194 files equal the vendor copy, and the candidate pull request checks are the release evidence."
+  - "The 0.3.3 pin was first locked from the candidate commit b54022b05075944e884dc1df038cbcb63f723472 of pull request 22 through a temporary package repository entry in composer.json while v0.3.3 was unpublished; the entry is removed, the lock names the Packagist distribution of the tag commit 3d91050261bc26a5d89966250f88b11705b4923b (identical tree) and the attestation binds the tag tar.gz."
   - "kumwe/conversion-extension 0.1.4 is not adopted with this train: its shipped MIGRATION-HANDOFF.md carries multi-line plain scalars outside the StrictYaml subset the capability index reads, so the index refuses the installed package; App keeps its MoneyRateProviderDefinition and UnitConversionProviderDefinition over the package ContributionDefinition until a successor release ships a conforming record (KUMWE-MIG-2026-028 stays unallocated)."
   - "The legacy registry no longer lists kumwe/extension-sdk; its three retired App roots move to this ledger."
 completion_claim: false
