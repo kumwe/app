@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Kumwe\App\BusinessSchema\Application;
 
-use Kumwe\App\BusinessSchema\Domain\SchemaPlan;
-use Kumwe\App\BusinessSchema\Domain\SchemaPlanStep;
+use Kumwe\BusinessSchema\Domain\SchemaPlan;
+use Kumwe\BusinessSchema\Domain\SchemaPlanStep;
 use Kumwe\Context\Value\SiteContext;
 
 /**

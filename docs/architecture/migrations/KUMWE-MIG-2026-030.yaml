@@ -1,0 +1,144 @@
+schema: kumwe-migration-ledger/v1
+migration_id: KUMWE-MIG-2026-030
+change_set: KUMWE-CS-2026-030
+package: kumwe/business-schema
+version: 0.1.3
+artifact_digest: "51f20e334c39887c89035467c9d5847386f4a170470828b7d8f90ac30894c967"
+handoff_path: vendor/kumwe/business-schema/MIGRATION-HANDOFF.md
+handoff_sha256: "c9392c4fb52867e932c1aef08c52b4d641085ea390f113c18d8f4d20b2b665d8"
+release_attestation: docs/architecture/migrations/evidence/KUMWE-MIG-2026-030/RELEASE-ATTESTATION.yaml
+old_namespace_roots: []
+symbols:
+  - old_fqcn: Kumwe\App\BusinessSchema\Domain\InvalidBusinessSchema
+    new_fqcn: Kumwe\BusinessSchema\Domain\InvalidBusinessSchema
+  - old_fqcn: Kumwe\App\BusinessSchema\Domain\PhysicalColumnBlueprint
+    new_fqcn: Kumwe\BusinessSchema\Domain\PhysicalColumnBlueprint
+  - old_fqcn: Kumwe\App\BusinessSchema\Domain\PhysicalForeignKeyBlueprint
+    new_fqcn: Kumwe\BusinessSchema\Domain\PhysicalForeignKeyBlueprint
+  - old_fqcn: Kumwe\App\BusinessSchema\Domain\PhysicalIndexBlueprint
+    new_fqcn: Kumwe\BusinessSchema\Domain\PhysicalIndexBlueprint
+  - old_fqcn: Kumwe\App\BusinessSchema\Domain\PhysicalNameCompiler
+    new_fqcn: Kumwe\BusinessSchema\Domain\PhysicalNameCompiler
+  - old_fqcn: Kumwe\App\BusinessSchema\Domain\PhysicalSchemaBlueprint
+    new_fqcn: Kumwe\BusinessSchema\Domain\PhysicalSchemaBlueprint
+  - old_fqcn: Kumwe\App\BusinessSchema\Domain\PhysicalTableBlueprint
+    new_fqcn: Kumwe\BusinessSchema\Domain\PhysicalTableBlueprint
+  - old_fqcn: Kumwe\App\BusinessSchema\Domain\PhysicalTableKind
+    new_fqcn: Kumwe\BusinessSchema\Domain\PhysicalTableKind
+  - old_fqcn: Kumwe\App\BusinessSchema\Domain\SchemaDocument
+    new_fqcn: Kumwe\BusinessSchema\Domain\SchemaDocument
+  - old_fqcn: Kumwe\App\BusinessSchema\Domain\SchemaEvolutionHints
+    new_fqcn: Kumwe\BusinessSchema\Domain\SchemaEvolutionHints
+  - old_fqcn: Kumwe\App\BusinessSchema\Domain\SchemaInstallation
+    new_fqcn: Kumwe\BusinessSchema\Domain\SchemaInstallation
+  - old_fqcn: Kumwe\App\BusinessSchema\Domain\SchemaInstallationStatus
+    new_fqcn: Kumwe\BusinessSchema\Domain\SchemaInstallationStatus
+  - old_fqcn: Kumwe\App\BusinessSchema\Domain\SchemaOperation
+    new_fqcn: Kumwe\BusinessSchema\Domain\SchemaOperation
+  - old_fqcn: Kumwe\App\BusinessSchema\Domain\SchemaOperationKind
+    new_fqcn: Kumwe\BusinessSchema\Domain\SchemaOperationKind
+  - old_fqcn: Kumwe\App\BusinessSchema\Domain\SchemaPlan
+    new_fqcn: Kumwe\BusinessSchema\Domain\SchemaPlan
+  - old_fqcn: Kumwe\App\BusinessSchema\Domain\SchemaPlanApproval
+    new_fqcn: Kumwe\BusinessSchema\Domain\SchemaPlanApproval
+  - old_fqcn: Kumwe\App\BusinessSchema\Domain\SchemaPlanStatus
+    new_fqcn: Kumwe\BusinessSchema\Domain\SchemaPlanStatus
+  - old_fqcn: Kumwe\App\BusinessSchema\Domain\SchemaPlanStep
+    new_fqcn: Kumwe\BusinessSchema\Domain\SchemaPlanStep
+  - old_fqcn: Kumwe\App\BusinessSchema\Domain\SchemaRecoveryEvidence
+    new_fqcn: Kumwe\BusinessSchema\Domain\SchemaRecoveryEvidence
+  - old_fqcn: Kumwe\App\BusinessSchema\Domain\SchemaRisk
+    new_fqcn: Kumwe\BusinessSchema\Domain\SchemaRisk
+  - old_fqcn: Kumwe\App\BusinessSchema\Domain\SchemaStepStatus
+    new_fqcn: Kumwe\BusinessSchema\Domain\SchemaStepStatus
+  - old_fqcn: Kumwe\App\BusinessSchema\Infrastructure\Schema\CanonicalDefinitionPhysicalSchemaCompiler
+    new_fqcn: Kumwe\BusinessSchema\Compiler\CanonicalDefinitionPhysicalSchemaCompiler
+removed_paths:
+  - src/BusinessSchema/Domain/InvalidBusinessSchema.php
+  - src/BusinessSchema/Domain/PhysicalColumnBlueprint.php
+  - src/BusinessSchema/Domain/PhysicalForeignKeyBlueprint.php
+  - src/BusinessSchema/Domain/PhysicalIndexBlueprint.php
+  - src/BusinessSchema/Domain/PhysicalNameCompiler.php
+  - src/BusinessSchema/Domain/PhysicalSchemaBlueprint.php
+  - src/BusinessSchema/Domain/PhysicalTableBlueprint.php
+  - src/BusinessSchema/Domain/PhysicalTableKind.php
+  - src/BusinessSchema/Domain/SchemaDocument.php
+  - src/BusinessSchema/Domain/SchemaEvolutionHints.php
+  - src/BusinessSchema/Domain/SchemaInstallation.php
+  - src/BusinessSchema/Domain/SchemaInstallationStatus.php
+  - src/BusinessSchema/Domain/SchemaOperation.php
+  - src/BusinessSchema/Domain/SchemaOperationKind.php
+  - src/BusinessSchema/Domain/SchemaPlan.php
+  - src/BusinessSchema/Domain/SchemaPlanApproval.php
+  - src/BusinessSchema/Domain/SchemaPlanStatus.php
+  - src/BusinessSchema/Domain/SchemaPlanStep.php
+  - src/BusinessSchema/Domain/SchemaRecoveryEvidence.php
+  - src/BusinessSchema/Domain/SchemaRisk.php
+  - src/BusinessSchema/Domain/SchemaStepStatus.php
+  - src/BusinessSchema/Infrastructure/Schema/CanonicalDefinitionPhysicalSchemaCompiler.php
+removed_tests:
+  - tests/Unit/BusinessSchema/Domain/PhysicalNameCompilerTest.php
+  - tests/Unit/BusinessSchema/Domain/SchemaEvolutionHintsTest.php
+  - tests/Unit/BusinessSchema/Domain/SchemaInstallationTest.php
+  - tests/Unit/BusinessSchema/Domain/SchemaPlanTest.php
+  - tests/Unit/BusinessSchema/Domain/SchemaRecoveryContractTest.php
+  - tests/Unit/BusinessSchema/Infrastructure/CanonicalDefinitionPhysicalSchemaCompilerTest.php
+retained_tests:
+  - tests/Unit/BusinessSchema/Infrastructure/DoctrinePhysicalSchemaGatewayDefaultTest.php
+  - tests/Unit/BusinessSchema/Infrastructure/PortableDefinitionPhysicalSchemaCompilerTest.php
+  - tests/Unit/BusinessSchema/Infrastructure/PublishedDefinitionSchemaLookupTest.php
+  - tests/Unit/BusinessDefinition/Domain/EntityTypeDefinitionTest.php
+  - tests/Unit/BusinessRecord/NeutralBusinessFixtureTest.php
+  - tests/Unit/BusinessRecord/Application/BusinessRecordRelationshipCoordinatorTest.php
+  - tests/Unit/BusinessRecord/Domain/ExactValueCodecTest.php
+  - tests/Unit/BusinessReporting/RecordExportPipelineTest.php
+  - tests/Unit/BusinessReporting/RecordExportReportProviderTest.php
+  - tests/Unit/BusinessSurface/Application/Custom/CustomBusinessActionExecutorTest.php
+  - tests/Unit/Demo/Infrastructure/VdmBusinessDefinitionSchemaTest.php
+  - tests/Unit/Support/TransientBusinessDefinitionFixtureScopeTest.php
+  - tests/Support/AssetInspectionDeploymentAcceptance.php
+  - tests/Support/BusinessRuntimeBackupAcceptance.php
+  - tests/Support/NeutralBusinessFixture.php
+  - tests/Support/TransientBusinessDefinitionFixtureScope.php
+  - tests/Integration/BusinessSchema/BusinessSchemaColumnRelaxationIntegrationTest.php
+  - tests/Integration/BusinessSchema/BusinessSchemaExecutionStateGuardIntegrationTest.php
+  - tests/Integration/BusinessSchema/BusinessSchemaRecoveryIntegrationTest.php
+  - tests/Integration/BusinessSchema/BusinessSchemaRuntimeIntegrationTest.php
+  - tests/Integration/BusinessSchema/BusinessSchemaSourceBindingRecoveryIntegrationTest.php
+  - tests/Integration/BusinessRecord/BusinessRecordEvolutionIntegrationTest.php
+  - tests/Integration/BusinessRecord/BusinessRecordInverseRelationshipIntegrationTest.php
+  - tests/Integration/BusinessRecord/BusinessRecordMutationGenerationIntegrationTest.php
+  - tests/Integration/BusinessRecord/BusinessRecordRelationshipIntegrationTest.php
+  - tests/Integration/BusinessRecord/BusinessRecordRuntimeIntegrationTest.php
+  - tests/Integration/BusinessRecord/ImmutableRecordReversalIntegrationTest.php
+  - tests/Integration/Performance/HotPlanRegressionIntegrationTest.php
+  - tests/Unit/Governance/ComposerLockTest.php
+  - tests/Architecture/CapabilityIndexGateTest.php
+di_changes:
+  - service: Kumwe\BusinessSchema\Compiler\CanonicalDefinitionPhysicalSchemaCompiler
+    factory: Kumwe\BusinessSchema\Container\PhysicalSchemaCompilerFactory
+    note: "Package factory installed through Kumwe\\BusinessSchema\\ConfigProvider; it resolves the three typed host bindings below from the container and refuses to construct without them. The provider advertises its factories as bare class names, so the kernel admits only the two container factories the package exports before installing them. The App compiler under Kumwe\\App\\BusinessSchema\\Infrastructure\\Schema is removed."
+  - service: Kumwe\BusinessSchema\Planner\SchemaChangePlanner
+    factory: Kumwe\BusinessSchema\Container\SchemaChangePlannerFactory
+    note: "Package factory installed through the same provider; the shared stateless planner is injected into the retained App BusinessSchemaPlanner, whose private operations, containsPinnedRowBreakingChange, hasRecordRepin and dependencyHandles helpers it replaces. The App class keeps plan, purgePlan and observePublishedGraph, so no symbol pair names it."
+  - service: Kumwe\BusinessSchema\Contract\DefinitionSchemaLookup
+    factory: Kumwe\App\Kernel\ContainerFactory
+    note: "Host binds the package target-lookup port to the new PublishedDefinitionSchemaLookup, which answers it from BusinessDefinitionRepository::published() for the site identifier the compiler passes and the version a repin hint pins."
+  - service: Kumwe\BusinessDefinition\Application\FieldTypeDefinitionResolver
+    factory: Kumwe\App\Kernel\ContainerFactory
+    note: "Host aliases the package resolver port, which kumwe/business-definition's service map aliases to its FieldTypeRegistry and KUMWE-MIG-2026-010 deliberately left unbound, to DoctrinePersistedFieldTypeDefinitionResolver, the persisted resolver the removed App compiler was constructed with, because the package compiler factory resolves the port by name."
+  - service: Kumwe\BusinessSchema\Domain\PhysicalNameCompiler
+    factory: Kumwe\App\Kernel\ContainerFactory
+    note: "Re-keyed from the retired App name; the host keeps sharing new PhysicalNameCompiler over the configured database table prefix, which the package validates with the same 28-byte bound and grammar the App DatabaseTablePrefix states."
+  - service: Kumwe\App\BusinessSchema\Application\DefinitionPhysicalSchemaCompiler
+    factory: Kumwe\App\Kernel\ContainerFactory
+    note: "The App port stays and is rebound from the removed App compiler to the new PortableDefinitionPhysicalSchemaCompiler, which hands the package compiler the SiteContext identifier; its three consumers, the planner, executor and lifecycle manager, are unchanged."
+capability_index_entries:
+  - kumwe/business-schema
+release_evidence:
+  - docs/architecture/migrations/evidence/KUMWE-MIG-2026-030/RELEASE-ATTESTATION.yaml
+app_pull_request: "https://github.com/kumwe/app/pull/151"
+roadmap_refs: []
+non_roadmap_refs:
+  - NRM-2026-045
+conflicts: []

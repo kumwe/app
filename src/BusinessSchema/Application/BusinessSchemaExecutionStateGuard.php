@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\BusinessSchema\Application;
 
-use Kumwe\App\BusinessSchema\Domain\SchemaInstallationStatus;
+use Kumwe\BusinessSchema\Domain\SchemaInstallationStatus;
 use Kumwe\Context\Value\SiteContext;
 
 /**

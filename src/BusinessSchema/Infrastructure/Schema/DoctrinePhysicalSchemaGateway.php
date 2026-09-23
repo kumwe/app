@@ -21,14 +21,14 @@ use Kumwe\App\BusinessDefinition\Domain\ExpressionEvaluator;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaConflict;
 use Kumwe\App\BusinessSchema\Application\PhysicalSchemaGateway;
 use Kumwe\App\BusinessSchema\Application\SchemaChunkResult;
-use Kumwe\App\BusinessSchema\Domain\InvalidBusinessSchema;
-use Kumwe\App\BusinessSchema\Domain\PhysicalColumnBlueprint;
-use Kumwe\App\BusinessSchema\Domain\PhysicalForeignKeyBlueprint;
-use Kumwe\App\BusinessSchema\Domain\PhysicalIndexBlueprint;
-use Kumwe\App\BusinessSchema\Domain\PhysicalSchemaBlueprint;
-use Kumwe\App\BusinessSchema\Domain\PhysicalTableBlueprint;
-use Kumwe\App\BusinessSchema\Domain\SchemaOperation;
-use Kumwe\App\BusinessSchema\Domain\SchemaOperationKind;
+use Kumwe\BusinessSchema\Domain\InvalidBusinessSchema;
+use Kumwe\BusinessSchema\Domain\PhysicalColumnBlueprint;
+use Kumwe\BusinessSchema\Domain\PhysicalForeignKeyBlueprint;
+use Kumwe\BusinessSchema\Domain\PhysicalIndexBlueprint;
+use Kumwe\BusinessSchema\Domain\PhysicalSchemaBlueprint;
+use Kumwe\BusinessSchema\Domain\PhysicalTableBlueprint;
+use Kumwe\BusinessSchema\Domain\SchemaOperation;
+use Kumwe\BusinessSchema\Domain\SchemaOperationKind;
 use Throwable;
 
 /**

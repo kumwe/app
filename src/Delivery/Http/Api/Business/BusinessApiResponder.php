@@ -12,7 +12,7 @@ use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionRevisionConflict;
 use Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaConflict;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaNotFound;
-use Kumwe\App\BusinessSchema\Domain\InvalidBusinessSchema;
+use Kumwe\BusinessSchema\Domain\InvalidBusinessSchema;
 use Kumwe\App\Delivery\Http\Api\ProblemDetailsResponseFactory;
 use Kumwe\App\Identity\Application\Authorization\InsufficientCapability;
 use Psr\Http\Message\ResponseInterface;

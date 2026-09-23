@@ -14,9 +14,11 @@ use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\BusinessDefinition\Domain\CompatibilityPlan;
 use Kumwe\BusinessDefinition\Domain\DefinitionStatus;
 use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\App\BusinessSchema\Domain\PhysicalNameCompiler;
-use Kumwe\App\BusinessSchema\Infrastructure\Schema\CanonicalDefinitionPhysicalSchemaCompiler;
+use Kumwe\App\BusinessSchema\Infrastructure\Schema\PortableDefinitionPhysicalSchemaCompiler;
+use Kumwe\App\BusinessSchema\Infrastructure\Schema\PublishedDefinitionSchemaLookup;
 use Kumwe\App\Demo\Infrastructure\FilesystemDemoManifestCatalog;
+use Kumwe\BusinessSchema\Compiler\CanonicalDefinitionPhysicalSchemaCompiler;
+use Kumwe\BusinessSchema\Domain\PhysicalNameCompiler;
 use Kumwe\Context\Value\SiteContext;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
@@ -62,11 +64,11 @@ final class VdmBusinessDefinitionSchemaTest extends TestCase
             $published = $draft->published(1);
             $definitions[$published->handle] = $published;
         }
-        $compiler = new CanonicalDefinitionPhysicalSchemaCompiler(
-            $this->repository($definitions),
+        $compiler = new PortableDefinitionPhysicalSchemaCompiler(new CanonicalDefinitionPhysicalSchemaCompiler(
+            new PublishedDefinitionSchemaLookup($this->repository($definitions)),
             $fieldTypes,
             new PhysicalNameCompiler('kumwe_'),
-        );
+        ));
         foreach ($definitions as $definition) {
             $blueprint = $compiler->compile($definition, SiteContext::default());
             self::assertSame($definition->id, $blueprint->definitionId);

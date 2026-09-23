@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Kumwe\App\BusinessSchema\Application;
 
-use Kumwe\App\BusinessSchema\Domain\PhysicalSchemaBlueprint;
-use Kumwe\App\BusinessSchema\Domain\SchemaOperation;
+use Kumwe\BusinessSchema\Domain\PhysicalSchemaBlueprint;
+use Kumwe\BusinessSchema\Domain\SchemaOperation;
 
 /**
  * Port through which schema plans reach the live database, one approved operation at a time.

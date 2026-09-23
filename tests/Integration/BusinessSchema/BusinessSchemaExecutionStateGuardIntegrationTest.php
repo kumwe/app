@@ -20,9 +20,8 @@ use Kumwe\App\BusinessSchema\Application\BusinessSchemaInstallationRepository;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaPlanRepository;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaService;
 use Kumwe\App\BusinessSchema\Application\PhysicalSchemaGateway;
-use Kumwe\App\BusinessSchema\Domain\SchemaInstallation;
-use Kumwe\App\BusinessSchema\Domain\SchemaInstallationStatus;
-use Kumwe\App\BusinessSchema\Domain\SchemaPlanStatus;
+use Kumwe\BusinessSchema\Domain\SchemaInstallationStatus;
+use Kumwe\BusinessSchema\Domain\SchemaPlanStatus;
 use Kumwe\App\BusinessSchema\Infrastructure\Execution\DoctrineBusinessSchemaExecutionStateGuard;
 use Kumwe\App\BusinessSchema\Infrastructure\Persistence\DoctrineBusinessSchemaInstallationRepository;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
@@ -38,7 +37,6 @@ use Ramsey\Uuid\Uuid;
 #[CoversClass(DoctrinePackageDefinitionSynchronizer::class)]
 #[CoversClass(DoctrineBusinessSchemaExecutionStateGuard::class)]
 #[CoversClass(DoctrineBusinessSchemaInstallationRepository::class)]
-#[CoversClass(SchemaInstallation::class)]
 final class BusinessSchemaExecutionStateGuardIntegrationTest extends TestCase
 {
     public function testDisabledUpgradeCannotReactivateBeforeRecoveryThenRemainsPreserved(): void

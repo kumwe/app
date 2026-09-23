@@ -50,7 +50,7 @@ use Kumwe\Extension\Spi\BusinessRecord\Query\RecordQuerySpecification;
 use Kumwe\Extension\Spi\BusinessRecord\Query\RecordSearch;
 use Kumwe\Extension\Spi\BusinessRecord\Query\RecordSort;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaService;
-use Kumwe\App\BusinessSchema\Domain\SchemaInstallationStatus;
+use Kumwe\BusinessSchema\Domain\SchemaInstallationStatus;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\App\Tests\Support\NeutralBusinessFixture;

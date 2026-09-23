@@ -14,16 +14,16 @@ use Kumwe\Audit\Application\AuditRecorder;
 use Kumwe\Audit\Domain\AuditEvent;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionRepository;
 use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\App\BusinessSchema\Domain\PhysicalSchemaBlueprint;
-use Kumwe\App\BusinessSchema\Domain\PhysicalTableBlueprint;
-use Kumwe\App\BusinessSchema\Domain\SchemaInstallation;
-use Kumwe\App\BusinessSchema\Domain\SchemaInstallationStatus;
-use Kumwe\App\BusinessSchema\Domain\SchemaOperation;
-use Kumwe\App\BusinessSchema\Domain\SchemaOperationKind;
-use Kumwe\App\BusinessSchema\Domain\SchemaPlan;
-use Kumwe\App\BusinessSchema\Domain\SchemaPlanStatus;
-use Kumwe\App\BusinessSchema\Domain\SchemaPlanStep;
-use Kumwe\App\BusinessSchema\Domain\SchemaStepStatus;
+use Kumwe\BusinessSchema\Domain\PhysicalSchemaBlueprint;
+use Kumwe\BusinessSchema\Domain\PhysicalTableBlueprint;
+use Kumwe\BusinessSchema\Domain\SchemaInstallation;
+use Kumwe\BusinessSchema\Domain\SchemaInstallationStatus;
+use Kumwe\BusinessSchema\Domain\SchemaOperation;
+use Kumwe\BusinessSchema\Domain\SchemaOperationKind;
+use Kumwe\BusinessSchema\Domain\SchemaPlan;
+use Kumwe\BusinessSchema\Domain\SchemaPlanStatus;
+use Kumwe\BusinessSchema\Domain\SchemaPlanStep;
+use Kumwe\BusinessSchema\Domain\SchemaStepStatus;
 use Kumwe\Access\Capability;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
@@ -1678,8 +1678,8 @@ final readonly class BusinessSchemaExecutor
         if ($operation->before === null || $operation->after === null) {
             return false;
         }
-        $before = \Kumwe\App\BusinessSchema\Domain\PhysicalColumnBlueprint::fromArray($operation->before);
-        $after = \Kumwe\App\BusinessSchema\Domain\PhysicalColumnBlueprint::fromArray($operation->after);
+        $before = \Kumwe\BusinessSchema\Domain\PhysicalColumnBlueprint::fromArray($operation->before);
+        $after = \Kumwe\BusinessSchema\Domain\PhysicalColumnBlueprint::fromArray($operation->after);
         if (
             $before->logicalName !== $after->logicalName
             || $before->physicalName !== $after->physicalName

@@ -11,14 +11,13 @@ use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\BusinessDefinition\Domain\Expression;
 use Kumwe\BusinessDefinition\Domain\IdentityStrategy;
 use Kumwe\BusinessDefinition\Domain\RelationshipDefinition;
-use Kumwe\App\BusinessSchema\Domain\SchemaEvolutionHints;
+use Kumwe\BusinessSchema\Domain\SchemaEvolutionHints;
 use Kumwe\App\Tests\Support\NeutralBusinessFixture;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(BusinessDefinitionValidator::class)]
 #[CoversClass(EntityTypeDefinition::class)]
-#[CoversClass(SchemaEvolutionHints::class)]
 final class NeutralBusinessFixtureTest extends TestCase
 {
     public function testStandaloneBackupDefinitionIsStableAndValid(): void

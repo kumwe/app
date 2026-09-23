@@ -38,7 +38,7 @@ use Kumwe\BusinessPolicy\Policy\RecordPolicyPredicate;
 use Kumwe\BusinessPolicy\Policy\RecordPolicySchema;
 use Kumwe\BusinessPolicy\Policy\RecordPolicySet;
 use Kumwe\BusinessPolicy\Policy\RecordPolicyValueType;
-use Kumwe\App\BusinessSchema\Domain\SchemaEvolutionHints;
+use Kumwe\BusinessSchema\Domain\SchemaEvolutionHints;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Psr\Clock\ClockInterface;
 use RuntimeException;

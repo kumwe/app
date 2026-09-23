@@ -13,7 +13,7 @@ use Kumwe\App\BusinessRecord\Application\BusinessRecordMutationGeneration;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable;
-use Kumwe\App\BusinessSchema\Domain\SchemaInstallationStatus;
+use Kumwe\BusinessSchema\Domain\SchemaInstallationStatus;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Context\Value\SiteContext;

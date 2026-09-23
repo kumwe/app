@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessSchema\Application;
 
 use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\App\BusinessSchema\Domain\PhysicalSchemaBlueprint;
-use Kumwe\App\BusinessSchema\Domain\SchemaOperation;
+use Kumwe\BusinessSchema\Domain\PhysicalSchemaBlueprint;
+use Kumwe\BusinessSchema\Domain\SchemaOperation;
 
 /**
  * Port that revalidates stored records against a newer definition version and re-pins them to it.

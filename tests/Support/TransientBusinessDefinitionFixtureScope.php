@@ -10,7 +10,7 @@ use Kumwe\Context\Value\SiteContext;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionRepository;
 use Kumwe\BusinessDefinition\Domain\DefinitionStatus;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaInstallationRepository;
-use Kumwe\App\BusinessSchema\Domain\SchemaInstallationStatus;
+use Kumwe\BusinessSchema\Domain\SchemaInstallationStatus;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;

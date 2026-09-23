@@ -9,8 +9,8 @@ use Kumwe\BusinessDefinition\Domain\DefinitionStatus;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaInstallationRepository;
-use Kumwe\App\BusinessSchema\Domain\SchemaInstallation;
-use Kumwe\App\BusinessSchema\Domain\SchemaInstallationStatus;
+use Kumwe\BusinessSchema\Domain\SchemaInstallation;
+use Kumwe\BusinessSchema\Domain\SchemaInstallationStatus;
 use Kumwe\Context\Value\ExecutionContext;
 
 /**

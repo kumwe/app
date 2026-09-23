@@ -9,7 +9,7 @@ use Kumwe\App\Administrator\Http\AdministratorRequest;
 use Kumwe\App\Application\Security\HighImpactCredentialGuard;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaEnvironment;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaService;
-use Kumwe\App\BusinessSchema\Domain\SchemaRecoveryEvidence;
+use Kumwe\BusinessSchema\Domain\SchemaRecoveryEvidence;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
@@ -73,7 +73,7 @@ final readonly class RecordBusinessSchemaRecoveryEvidenceHandler implements Requ
      *          belongs to this site.
      * @throws  \Kumwe\App\Application\Security\HighImpactAuthenticationRequired  When the password step-up
      *          fails.
-     * @throws  \Kumwe\App\BusinessSchema\Domain\InvalidBusinessSchema  When a submitted checksum, reference or
+     * @throws  \Kumwe\BusinessSchema\Domain\InvalidBusinessSchema  When a submitted checksum, reference or
      *          timestamp breaks the evidence document's own rules.
      * @throws  \Kumwe\App\BusinessSchema\Application\BusinessSchemaConflict  When the drill does not match the
      *          authenticated site, environment and verifier, or is dated in the future.

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "eb8e11d93926b0346f63d3fac38e9277",
+    "content-hash": "defbf26b58da72b1e799bd2841f309c5",
     "packages": [
         {
             "name": "brick/math",
@@ -592,6 +592,55 @@
                 "source": "https://github.com/kumwe/business-policy/tree/v0.1.1"
             },
             "time": "2026-09-08T14:31:36+00:00"
+        },
+        {
+            "name": "kumwe/business-schema",
+            "version": "v0.1.3",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/kumwe/business-schema.git",
+                "reference": "5c442a147e98c702a50cf5dc2b7d8faf6499d8ef"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/kumwe/business-schema/zipball/5c442a147e98c702a50cf5dc2b7d8faf6499d8ef",
+                "reference": "5c442a147e98c702a50cf5dc2b7d8faf6499d8ef",
+                "shasum": ""
+            },
+            "require": {
+                "ext-json": "*",
+                "ext-mbstring": "*",
+                "kumwe/business-definition": "0.1.2",
+                "kumwe/sequence": "0.2.1",
+                "php": "^8.5",
+                "php-64bit": "*",
+                "psr/container": "^2.0",
+                "ramsey/uuid": "^4.9"
+            },
+            "require-dev": {
+                "ext-zip": "*",
+                "laminas/laminas-servicemanager": "^4.0",
+                "phpstan/phpstan": "^2.1",
+                "phpunit/phpunit": "^12.0 || ^13.0",
+                "squizlabs/php_codesniffer": "^4.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Kumwe\\BusinessSchema\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "Apache-2.0"
+            ],
+            "description": "Portable physical schema blueprints, deterministic change plans and recovery values.",
+            "homepage": "https://github.com/kumwe/business-schema",
+            "support": {
+                "issues": "https://github.com/kumwe/business-schema/issues",
+                "source": "https://github.com/kumwe/business-schema/tree/v0.1.3"
+            },
+            "time": "2026-09-10T18:45:51+00:00"
         },
         {
             "name": "kumwe/canonical-json",

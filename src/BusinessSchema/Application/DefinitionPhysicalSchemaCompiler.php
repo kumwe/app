@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessSchema\Application;
 
 use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\App\BusinessSchema\Domain\PhysicalSchemaBlueprint;
+use Kumwe\BusinessSchema\Domain\PhysicalSchemaBlueprint;
 use Kumwe\Context\Value\SiteContext;
 
 /**
@@ -31,7 +31,7 @@ interface DefinitionPhysicalSchemaCompiler
      *
      * @return  PhysicalSchemaBlueprint  Every table the version needs, checksummed for later comparison.
      *
-     * @throws  \Kumwe\App\BusinessSchema\Domain\InvalidBusinessSchema  When the definition belongs to
+     * @throws  \Kumwe\BusinessSchema\Domain\InvalidBusinessSchema  When the definition belongs to
      *          another site, or carries no published version number.
      *
      * @since   2.0.0
