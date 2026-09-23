@@ -6,7 +6,7 @@ namespace Kumwe\App\Administrator\Content;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\App\Content\Domain\ContentTypeDefinition;
+use Kumwe\Content\Domain\ContentTypeDefinition;
 
 /**
  * Rebuilds a content entry's data object from the flat `field__` inputs an editor form submits.

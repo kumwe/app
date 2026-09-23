@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\Presentation;
 
 use DateTimeImmutable;
-use Kumwe\App\Content\Application\ContentModelRepository;
-use Kumwe\App\Content\Application\ContentRecord;
-use Kumwe\App\Content\Domain\ContentEntry;
-use Kumwe\App\Content\Domain\ContentStatus;
-use Kumwe\App\Content\Domain\ContentTypeDefinition;
+use Kumwe\Content\Application\ContentModelRepository;
+use Kumwe\Content\Application\ContentRecord;
+use Kumwe\Content\Domain\ContentEntry;
+use Kumwe\Content\Domain\ContentStatus;
+use Kumwe\Content\Domain\ContentTypeDefinition;
 use Kumwe\App\Presentation\ContentLayoutCatalog;
 use Kumwe\Context\Value\SiteContext;
 use PHPUnit\Framework\Attributes\CoversClass;

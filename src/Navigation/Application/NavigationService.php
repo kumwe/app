@@ -321,7 +321,7 @@ final readonly class NavigationService
      * @throws  \Kumwe\Access\AuthorizationDenied  When the menu is out of reach.
      * @throws  NavigationNotFound  When no menu carries that identifier.
      * @throws  InvalidArgumentException  When a field, the parent, the target or the resolved path is rejected.
-     * @throws  \Kumwe\App\Content\Application\ContentNotFound  When the content target does not exist.
+     * @throws  \Kumwe\Content\Application\ContentNotFound  When the content target does not exist.
      *
      * @since   2.0.0
      */
@@ -421,7 +421,7 @@ final readonly class NavigationService
      * @throws  NavigationNotFound  When no item carries that identifier.
      * @throws  NavigationVersionConflict  When the stored item has moved past the expected version.
      * @throws  InvalidArgumentException  When a field, the move, the target or a resulting path is rejected.
-     * @throws  \Kumwe\App\Content\Application\ContentNotFound  When the content target does not exist.
+     * @throws  \Kumwe\Content\Application\ContentNotFound  When the content target does not exist.
      *
      * @since   2.0.0
      */
@@ -705,7 +705,7 @@ final readonly class NavigationService
      *
      * @throws  InvalidArgumentException  When the type is unknown, the combination is contradictory, or
      *          the fragment, URL or content identifier is unsafe.
-     * @throws  \Kumwe\App\Content\Application\ContentNotFound  When the referenced content does not exist.
+     * @throws  \Kumwe\Content\Application\ContentNotFound  When the referenced content does not exist.
      *
      * @since   2.0.0
      */

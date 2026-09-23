@@ -13,16 +13,16 @@ use Kumwe\Context\Value\AuthenticationStrength;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\Audit\Application\AuditRecorder;
-use Kumwe\App\Content\Application\ContentModelRepository;
+use Kumwe\Content\Application\ContentModelRepository;
 use Kumwe\App\Content\Application\ContentModelService;
-use Kumwe\App\Content\Application\ContentRecord;
-use Kumwe\App\Content\Application\ContentRepository;
+use Kumwe\Content\Application\ContentRecord;
+use Kumwe\Content\Application\ContentRepository;
 use Kumwe\App\Content\Application\ContentService;
-use Kumwe\App\Content\Domain\ContentEntry;
-use Kumwe\App\Content\Domain\ContentTypeDefinition;
-use Kumwe\App\Content\Domain\JsonSchemaValidator;
-use Kumwe\App\Content\Domain\PublicationWindow;
-use Kumwe\App\Content\Domain\SchemaCompatibilityChecker;
+use Kumwe\Content\Domain\ContentEntry;
+use Kumwe\Content\Domain\ContentTypeDefinition;
+use Kumwe\Content\Domain\JsonSchemaValidator;
+use Kumwe\Content\Domain\PublicationWindow;
+use Kumwe\Content\Domain\SchemaCompatibilityChecker;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
@@ -81,9 +81,9 @@ use Kumwe\Localization\Application\ActiveLocale;
 use Kumwe\Localization\Application\SupportedLocales;
 use Kumwe\App\Presentation\Twig\AdministratorTwigEnvironment;
 use Kumwe\App\Presentation\Twig\RecoveryAdministratorTwigEnvironment;
-use Kumwe\App\Workflow\Domain\Workflow;
-use Kumwe\App\Workflow\Domain\WorkflowDefinition;
-use Kumwe\App\Workflow\Domain\WorkflowStateDefinition;
+use Kumwe\Content\Workflow\Domain\Workflow;
+use Kumwe\Content\Workflow\Domain\WorkflowDefinition;
+use Kumwe\Content\Workflow\Domain\WorkflowStateDefinition;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
@@ -109,9 +109,6 @@ use Kumwe\App\Application\Authorization\ExecutionContextAttribute;
 #[UsesClass(ContentStudioProjector::class)]
 #[UsesClass(RecordAuthorizedStudioContentFieldDisclosure::class)]
 #[UsesClass(StudioProjectionRejected::class)]
-#[UsesClass(ContentTypeDefinition::class)]
-#[UsesClass(ContentEntry::class)]
-#[UsesClass(ContentRecord::class)]
 #[UsesClass(ContentBlueprintBinding::class)]
 #[UsesClass(ExtensionContributionRegistrySet::class)]
 #[UsesClass(StudioPreviewRendererContribution::class)]
@@ -120,11 +117,6 @@ use Kumwe\App\Application\Authorization\ExecutionContextAttribute;
 #[UsesClass(TrustEnforcingStudioPreviewBlockRenderer::class)]
 #[UsesClass(TrustStore::class)]
 #[UsesClass(EntryCompositionOverrides::class)]
-#[UsesClass(JsonSchemaValidator::class)]
-#[UsesClass(SchemaCompatibilityChecker::class)]
-#[UsesClass(Workflow::class)]
-#[UsesClass(WorkflowDefinition::class)]
-#[UsesClass(WorkflowStateDefinition::class)]
 final class StudioContentProjectionServiceTest extends TestCase
 {
     use TrustFencedStudioPreviewRenderers;

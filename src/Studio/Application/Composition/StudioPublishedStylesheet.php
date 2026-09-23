@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Studio\Application\Composition;
 
 use InvalidArgumentException;
-use Kumwe\App\Content\Application\ContentRecord;
+use Kumwe\Content\Application\ContentRecord;
 
 /**
  * Builds the same-origin, digest-addressed URL for one live published Producer stylesheet.

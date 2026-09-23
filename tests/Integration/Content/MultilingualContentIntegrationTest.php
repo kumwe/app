@@ -14,14 +14,12 @@ use Doctrine\DBAL\Schema\PrimaryKeyConstraint;
 use Doctrine\DBAL\Schema\Table;
 use Doctrine\DBAL\Types\Types;
 use Kumwe\Context\Value\ExecutionContext;
-use Kumwe\App\Content\Application\ContentRecord;
+use Kumwe\Content\Application\ContentRecord;
 use Kumwe\App\Content\Application\ContentService;
-use Kumwe\App\Content\Application\TranslationGroupRepository;
-use Kumwe\App\Content\Domain\ContentEntry;
-use Kumwe\App\Content\Domain\ContentStatus;
-use Kumwe\App\Content\Domain\InvalidTranslationGroup;
-use Kumwe\App\Content\Domain\TranslationGroup;
-use Kumwe\App\Content\Domain\TranslationGroupMember;
+use Kumwe\Content\Application\TranslationGroupRepository;
+use Kumwe\Content\Domain\ContentStatus;
+use Kumwe\Content\Domain\InvalidTranslationGroup;
+use Kumwe\Content\Domain\TranslationGroup;
 use Kumwe\App\Content\Infrastructure\Persistence\DoctrineContentRepository;
 use Kumwe\App\Content\Infrastructure\Persistence\DoctrineTranslationGroupRepository;
 use Kumwe\App\Content\Presentation\TranslationGroupPresenter;
@@ -51,9 +49,6 @@ use RuntimeException;
 #[CoversClass(DoctrineTranslationGroupRepository::class)]
 #[CoversClass(DoctrineContentRepository::class)]
 #[CoversClass(ContentService::class)]
-#[CoversClass(ContentEntry::class)]
-#[CoversClass(TranslationGroup::class)]
-#[CoversClass(TranslationGroupMember::class)]
 #[CoversClass(TranslationGroupPresenter::class)]
 #[CoversClass(PublishedContentHandler::class)]
 #[CoversClass(HomePageHandler::class)]

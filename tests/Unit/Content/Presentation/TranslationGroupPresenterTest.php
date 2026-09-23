@@ -7,15 +7,15 @@ namespace Kumwe\App\Tests\Unit\Content\Presentation;
 use DateTimeImmutable;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\Audit\Application\AuditRecorder;
-use Kumwe\App\Content\Application\ContentRecord;
+use Kumwe\Content\Application\ContentRecord;
 use Kumwe\App\Content\Application\ContentService;
-use Kumwe\App\Content\Application\SiteScopedContentRepository;
-use Kumwe\App\Content\Application\TranslationGroupRepository;
-use Kumwe\App\Content\Domain\ContentEntry;
-use Kumwe\App\Content\Domain\ContentStatus;
-use Kumwe\App\Content\Domain\PublicationWindow;
-use Kumwe\App\Content\Domain\TranslationGroup;
-use Kumwe\App\Content\Domain\TranslationGroupMember;
+use Kumwe\Content\Application\SiteScopedContentRepository;
+use Kumwe\Content\Application\TranslationGroupRepository;
+use Kumwe\Content\Domain\ContentEntry;
+use Kumwe\Content\Domain\ContentStatus;
+use Kumwe\Content\Domain\PublicationWindow;
+use Kumwe\Content\Domain\TranslationGroup;
+use Kumwe\Content\Domain\TranslationGroupMember;
 use Kumwe\App\Content\Presentation\TranslationGroupPresenter;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Localization\Application\ActiveLocale;
@@ -26,20 +26,16 @@ use Kumwe\App\Navigation\Application\PublicNavigation;
 use Kumwe\App\Site\Application\PublicPageLocator;
 use Kumwe\App\Site\Application\SiteSettings;
 use Kumwe\App\Tests\Support\AuthorizationContext;
-use Kumwe\App\Workflow\Domain\Workflow;
+use Kumwe\Content\Workflow\Domain\Workflow;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
 
 #[CoversClass(TranslationGroupPresenter::class)]
-#[UsesClass(ContentEntry::class)]
-#[UsesClass(ContentRecord::class)]
 #[UsesClass(ContentService::class)]
 #[UsesClass(PublicNavigation::class)]
 #[UsesClass(PublicPageLocator::class)]
-#[UsesClass(TranslationGroup::class)]
-#[UsesClass(TranslationGroupMember::class)]
 /**
  * Pins the two things decision D12 requires to ship by default: automatic `hreflang` and the selector.
  *

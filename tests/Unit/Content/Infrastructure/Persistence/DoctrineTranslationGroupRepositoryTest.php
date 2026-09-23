@@ -9,7 +9,7 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use DateTimeZone;
 use Doctrine\DBAL\Connection;
-use Kumwe\App\Content\Domain\InvalidTranslationGroup;
+use Kumwe\Content\Domain\InvalidTranslationGroup;
 use Kumwe\App\Content\Infrastructure\Persistence\DoctrineTranslationGroupRepository;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\Localization\Domain\LocaleTag;

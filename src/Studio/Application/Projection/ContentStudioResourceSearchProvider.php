@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Studio\Application\Projection;
 
-use Kumwe\App\Content\Application\ContentBrowseQuery;
+use Kumwe\Content\Application\ContentBrowseQuery;
 use Kumwe\App\Content\Application\ContentService;
 use Kumwe\App\Studio\Application\Host\StudioResourceSearchItem;
 use Kumwe\App\Studio\Application\Host\StudioResourceSearchPage;

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Site\Application;
 
-use Kumwe\App\Content\Application\ContentRecord;
+use Kumwe\Content\Application\ContentRecord;
 use Kumwe\App\Content\Application\ContentService;
 use Kumwe\App\Navigation\Application\PublicNavigation;
 use Kumwe\App\Presentation\Application\SitePresentation;

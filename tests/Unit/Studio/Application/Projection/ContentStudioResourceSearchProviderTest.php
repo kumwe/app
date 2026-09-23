@@ -7,20 +7,19 @@ namespace Kumwe\App\Tests\Unit\Studio\Application\Projection;
 use DateTimeImmutable;
 use Kumwe\Audit\Application\AuditRecorder;
 use Kumwe\Context\Value\SiteContext;
-use Kumwe\App\Content\Application\ContentBrowseQuery;
-use Kumwe\App\Content\Application\ContentPage;
-use Kumwe\App\Content\Application\ContentRecord;
-use Kumwe\App\Content\Application\ContentRepository;
-use Kumwe\App\Content\Application\ContentSearchRepository;
+use Kumwe\Content\Application\ContentBrowseQuery;
+use Kumwe\Content\Application\ContentRecord;
+use Kumwe\Content\Application\ContentRepository;
+use Kumwe\Content\Application\ContentSearchRepository;
 use Kumwe\App\Content\Application\ContentService;
-use Kumwe\App\Content\Domain\ContentEntry;
-use Kumwe\App\Content\Domain\ContentStatus;
+use Kumwe\Content\Domain\ContentEntry;
+use Kumwe\Content\Domain\ContentStatus;
 use Kumwe\App\Studio\Application\Host\StudioResourceSearchItem;
 use Kumwe\App\Studio\Application\Host\StudioResourceSearchPage;
 use Kumwe\App\Studio\Application\Projection\ContentStudioResourceSearchProvider;
 use Kumwe\App\Tests\Support\AuthorizationContext;
 use Kumwe\Transaction\Testing\ImmediateTransactionManager;
-use Kumwe\App\Workflow\Domain\Workflow;
+use Kumwe\Content\Workflow\Domain\Workflow;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\MockObject\Stub;
@@ -33,10 +32,6 @@ use Psr\Clock\ClockInterface;
  * @since  2.0.0
  */
 #[CoversClass(ContentStudioResourceSearchProvider::class)]
-#[UsesClass(ContentBrowseQuery::class)]
-#[UsesClass(ContentEntry::class)]
-#[UsesClass(ContentPage::class)]
-#[UsesClass(ContentRecord::class)]
 #[UsesClass(ContentService::class)]
 #[UsesClass(StudioResourceSearchItem::class)]
 #[UsesClass(StudioResourceSearchPage::class)]

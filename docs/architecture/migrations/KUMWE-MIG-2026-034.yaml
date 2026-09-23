@@ -1,0 +1,180 @@
+schema: kumwe-migration-ledger/v1
+migration_id: KUMWE-MIG-2026-034
+change_set: KUMWE-CS-2026-034
+package: kumwe/content-model
+version: 0.2.0
+artifact_digest: "d5edc8d11fccdfe9ce441a57c82926e42dcdbed400021932e1b3047acd43c68f"
+handoff_path: vendor/kumwe/content-model/MIGRATION-HANDOFF.md
+handoff_sha256: "71b63ce55ee4677bc0244cd89a186403c73480763daba99078cf933ac7f511f3"
+release_attestation: docs/architecture/migrations/evidence/KUMWE-MIG-2026-034/RELEASE-ATTESTATION.yaml
+old_namespace_roots:
+  - Kumwe\App\Content\Domain\
+  - Kumwe\App\Workflow\Domain\
+symbols:
+  - old_fqcn: Kumwe\App\Content\Domain\ContentEntry
+    new_fqcn: Kumwe\Content\Domain\ContentEntry
+  - old_fqcn: Kumwe\App\Content\Domain\ContentRevision
+    new_fqcn: Kumwe\Content\Domain\ContentRevision
+  - old_fqcn: Kumwe\App\Content\Domain\ContentStatus
+    new_fqcn: Kumwe\Content\Domain\ContentStatus
+  - old_fqcn: Kumwe\App\Content\Domain\ContentTypeDefinition
+    new_fqcn: Kumwe\Content\Domain\ContentTypeDefinition
+  - old_fqcn: Kumwe\App\Content\Domain\ExpectedVersion
+    new_fqcn: Kumwe\Content\Domain\ExpectedVersion
+  - old_fqcn: Kumwe\App\Content\Domain\FieldDefinition
+    new_fqcn: Kumwe\Content\Domain\FieldDefinition
+  - old_fqcn: Kumwe\App\Content\Domain\InvalidContentData
+    new_fqcn: Kumwe\Content\Domain\InvalidContentData
+  - old_fqcn: Kumwe\App\Content\Domain\InvalidTranslationGroup
+    new_fqcn: Kumwe\Content\Domain\InvalidTranslationGroup
+  - old_fqcn: Kumwe\App\Content\Domain\JsonSchemaValidator
+    new_fqcn: Kumwe\Content\Domain\JsonSchemaValidator
+  - old_fqcn: Kumwe\App\Content\Domain\PublicationWindow
+    new_fqcn: Kumwe\Content\Domain\PublicationWindow
+  - old_fqcn: Kumwe\App\Content\Domain\SchemaCompatibilityChecker
+    new_fqcn: Kumwe\Content\Domain\SchemaCompatibilityChecker
+  - old_fqcn: Kumwe\App\Content\Domain\TranslationGroup
+    new_fqcn: Kumwe\Content\Domain\TranslationGroup
+  - old_fqcn: Kumwe\App\Content\Domain\TranslationGroupMember
+    new_fqcn: Kumwe\Content\Domain\TranslationGroupMember
+  - old_fqcn: Kumwe\App\Content\Domain\VersionConflict
+    new_fqcn: Kumwe\Content\Domain\VersionConflict
+  - old_fqcn: Kumwe\App\Workflow\Domain\InvalidWorkflowTransition
+    new_fqcn: Kumwe\Content\Workflow\Domain\InvalidWorkflowTransition
+  - old_fqcn: Kumwe\App\Workflow\Domain\Workflow
+    new_fqcn: Kumwe\Content\Workflow\Domain\Workflow
+  - old_fqcn: Kumwe\App\Workflow\Domain\WorkflowDefinition
+    new_fqcn: Kumwe\Content\Workflow\Domain\WorkflowDefinition
+  - old_fqcn: Kumwe\App\Workflow\Domain\WorkflowStateDefinition
+    new_fqcn: Kumwe\Content\Workflow\Domain\WorkflowStateDefinition
+  - old_fqcn: Kumwe\App\Workflow\Domain\WorkflowTransitionDefinition
+    new_fqcn: Kumwe\Content\Workflow\Domain\WorkflowTransitionDefinition
+  - old_fqcn: Kumwe\App\Content\Application\ContentBrowseQuery
+    new_fqcn: Kumwe\Content\Application\ContentBrowseQuery
+  - old_fqcn: Kumwe\App\Content\Application\ContentModelNotFound
+    new_fqcn: Kumwe\Content\Application\ContentModelNotFound
+  - old_fqcn: Kumwe\App\Content\Application\ContentModelRepository
+    new_fqcn: Kumwe\Content\Application\ContentModelRepository
+  - old_fqcn: Kumwe\App\Content\Application\ContentNotFound
+    new_fqcn: Kumwe\Content\Application\ContentNotFound
+  - old_fqcn: Kumwe\App\Content\Application\ContentPage
+    new_fqcn: Kumwe\Content\Application\ContentPage
+  - old_fqcn: Kumwe\App\Content\Application\ContentRecord
+    new_fqcn: Kumwe\Content\Application\ContentRecord
+  - old_fqcn: Kumwe\App\Content\Application\ContentRepository
+    new_fqcn: Kumwe\Content\Application\ContentRepository
+  - old_fqcn: Kumwe\App\Content\Application\ContentSearchRepository
+    new_fqcn: Kumwe\Content\Application\ContentSearchRepository
+  - old_fqcn: Kumwe\App\Content\Application\IncompatibleDefinition
+    new_fqcn: Kumwe\Content\Application\IncompatibleDefinition
+  - old_fqcn: Kumwe\App\Content\Application\SiteScopedContentRepository
+    new_fqcn: Kumwe\Content\Application\SiteScopedContentRepository
+  - old_fqcn: Kumwe\App\Content\Application\TranslationGroupRepository
+    new_fqcn: Kumwe\Content\Application\TranslationGroupRepository
+removed_paths:
+  - src/Content/Domain/ContentEntry.php
+  - src/Content/Domain/ContentRevision.php
+  - src/Content/Domain/ContentStatus.php
+  - src/Content/Domain/ContentTypeDefinition.php
+  - src/Content/Domain/ExpectedVersion.php
+  - src/Content/Domain/FieldDefinition.php
+  - src/Content/Domain/InvalidContentData.php
+  - src/Content/Domain/InvalidTranslationGroup.php
+  - src/Content/Domain/JsonSchemaValidator.php
+  - src/Content/Domain/PublicationWindow.php
+  - src/Content/Domain/SchemaCompatibilityChecker.php
+  - src/Content/Domain/TranslationGroup.php
+  - src/Content/Domain/TranslationGroupMember.php
+  - src/Content/Domain/VersionConflict.php
+  - src/Workflow/Domain/InvalidWorkflowTransition.php
+  - src/Workflow/Domain/Workflow.php
+  - src/Workflow/Domain/WorkflowDefinition.php
+  - src/Workflow/Domain/WorkflowStateDefinition.php
+  - src/Workflow/Domain/WorkflowTransitionDefinition.php
+  - src/Content/Application/ContentBrowseQuery.php
+  - src/Content/Application/ContentModelNotFound.php
+  - src/Content/Application/ContentModelRepository.php
+  - src/Content/Application/ContentNotFound.php
+  - src/Content/Application/ContentPage.php
+  - src/Content/Application/ContentRecord.php
+  - src/Content/Application/ContentRepository.php
+  - src/Content/Application/ContentSearchRepository.php
+  - src/Content/Application/IncompatibleDefinition.php
+  - src/Content/Application/SiteScopedContentRepository.php
+  - src/Content/Application/TranslationGroupRepository.php
+removed_tests:
+  - tests/Unit/Content/Domain/ContentEntryTest.php
+  - tests/Unit/Content/Domain/ContentRevisionTest.php
+  - tests/Unit/Content/Domain/ContentStatusTest.php
+  - tests/Unit/Content/Domain/ExpectedVersionTest.php
+  - tests/Unit/Content/Domain/JsonSchemaValidatorTest.php
+  - tests/Unit/Content/Domain/PublicationWindowTest.php
+  - tests/Unit/Content/Domain/SchemaCompatibilityCheckerTest.php
+  - tests/Unit/Content/Domain/TranslationGroupTest.php
+  - tests/Unit/Workflow/Domain/WorkflowTest.php
+retained_tests:
+  - tests/Integration/Content/MultilingualContentIntegrationTest.php
+  - tests/Integration/Extension/ContributedContentTranslationIntegrationTest.php
+  - tests/Integration/Studio/StudioArtifactRecoveryVectorReplayIntegrationTest.php
+  - tests/Unit/Administrator/Content/ContentFormTest.php
+  - tests/Unit/Administrator/Http/Handler/AdministratorContentEditorHandlerTest.php
+  - tests/Unit/Administrator/Http/Handler/AdministratorContentEditorRetentionTest.php
+  - tests/Unit/Administrator/Http/Handler/AdministratorDashboardHandlerTest.php
+  - tests/Unit/Application/Authorization/AdapterAuthorizationParityTest.php
+  - tests/Unit/Application/Authorization/ApplicationAuthorizationTest.php
+  - tests/Unit/Content/Application/ContentTranslationServiceTest.php
+  - tests/Unit/Content/Application/ContributedContentTranslationTest.php
+  - tests/Unit/Content/Application/ExtensionContentTranslationTest.php
+  - tests/Unit/Content/Application/ContentServiceAdoptContentTypeTest.php
+  - tests/Unit/Content/Infrastructure/Persistence/DoctrineContentRepositoryTest.php
+  - tests/Unit/Content/Infrastructure/Persistence/DoctrineTranslationGroupRepositoryTest.php
+  - tests/Unit/Content/Presentation/TranslationGroupPresenterTest.php
+  - tests/Unit/Extension/Runtime/RestrictedExtensionContainerTest.php
+  - tests/Unit/Http/Handler/HomePageHandlerTest.php
+  - tests/Unit/Http/Handler/PublishedContentHandlerTest.php
+  - tests/Unit/Infrastructure/Persistence/Migration/DocumentContentTypesMigrationTest.php
+  - tests/Unit/Presentation/ContentLayoutCatalogTest.php
+  - tests/Unit/Site/Application/PublicPageLocatorTest.php
+  - tests/Unit/Site/Infrastructure/Persistence/DoctrineSiteSettingsTest.php
+  - tests/Unit/Studio/Application/Authoring/ContentStudioAuthoringContextAuthorityTest.php
+  - tests/Unit/Studio/Application/Authoring/ContentStudioAuthoringTargetResolverTest.php
+  - tests/Unit/Studio/Application/Authoring/HostedContentStudioAuthoringConfigurationProviderTest.php
+  - tests/Unit/Studio/Application/Composition/StudioPublishedContentRendererTest.php
+  - tests/Unit/Studio/Application/Composition/StudioPublishedStylesheetTest.php
+  - tests/Unit/Studio/Application/Preview/ContentStudioPreviewBindingSourceTest.php
+  - tests/Unit/Studio/Application/Projection/ContentStudioProjectorTest.php
+  - tests/Unit/Studio/Application/Projection/ContentStudioResourceSearchProviderTest.php
+  - tests/Unit/Studio/Application/Projection/RecordAuthorizedStudioContentFieldDisclosureTest.php
+  - tests/Unit/Studio/Application/Projection/StudioContentProjectionServiceTest.php
+  - tests/Unit/Workflow/Application/ContentTransitionAuthorizerTest.php
+  - tests/Unit/Governance/ComposerLockTest.php
+  - tests/Architecture/CapabilityIndexGateTest.php
+  - tests/Unit/Infrastructure/Mcp/McpMachineContractTest.php
+di_changes:
+  - service: Kumwe\Content\Application\ContentRepository
+    factory: Kumwe\App\Kernel\ContainerFactory
+    note: "Host re-keys the shared DoctrineContentRepository from the removed App port to the package port; the adapter already implements the adopt() method the 0.2.0 port requires, and ContentService resolves the same instance for its ContentSearchRepository and SiteScopedContentRepository parameters as before. The package ships no provider."
+  - service: Kumwe\Content\Application\TranslationGroupRepository
+    factory: Kumwe\App\Kernel\ContainerFactory
+    note: "Host re-keys the shared DoctrineTranslationGroupRepository from the removed App port to the package port."
+  - service: Kumwe\Content\Application\ContentModelRepository
+    factory: Kumwe\App\Kernel\ContainerFactory
+    note: "Host re-keys the shared DoctrineContentModelRepository from the removed App port to the package port; ContentModelService, ContentService, the Studio authoring authority and the content-model delivery handlers resolve it by the package name."
+  - service: Kumwe\Content\Domain\JsonSchemaValidator
+    factory: Kumwe\App\Kernel\ContainerFactory
+    note: "Host re-keys the shared stateless validator instance from the removed App class to the package class, which now snapshots the schema and value it validates; ContentModelService, ContentService, the Studio projector and the content-type migration resolve it by the package name."
+  - service: Kumwe\Content\Domain\SchemaCompatibilityChecker
+    factory: Kumwe\App\Kernel\ContainerFactory
+    note: "Host re-keys the shared stateless checker instance from the removed App class to the package class; ContentModelService resolves it by the package name."
+  - service: Kumwe\Content\Workflow\Domain\Workflow
+    factory: Kumwe\App\Kernel\ContainerFactory
+    note: "Host re-keys the shared built-in lifecycle instance from the removed App class to the package class; ContentService resolves it by the package name."
+capability_index_entries:
+  - kumwe/content-model
+release_evidence:
+  - docs/architecture/migrations/evidence/KUMWE-MIG-2026-034/RELEASE-ATTESTATION.yaml
+app_pull_request: "https://github.com/kumwe/app/pull/151"
+roadmap_refs: []
+non_roadmap_refs:
+  - NRM-2026-043
+conflicts: []

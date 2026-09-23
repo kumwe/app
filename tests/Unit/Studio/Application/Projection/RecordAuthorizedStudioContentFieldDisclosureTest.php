@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Unit\Studio\Application\Projection;
 
-use Kumwe\App\Content\Application\ContentRecord;
-use Kumwe\App\Content\Domain\ContentTypeDefinition;
+use Kumwe\Content\Application\ContentRecord;
+use Kumwe\Content\Domain\ContentTypeDefinition;
 use Kumwe\App\Studio\Application\Projection\RecordAuthorizedStudioContentFieldDisclosure;
 use Kumwe\Context\Value\ExecutionContext;
 use PHPUnit\Framework\Attributes\CoversClass;

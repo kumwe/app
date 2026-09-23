@@ -6,19 +6,19 @@ namespace Kumwe\App\Studio\Application\Projection;
 
 use InvalidArgumentException;
 use Kumwe\Context\Value\ExecutionContext;
-use Kumwe\App\Content\Application\ContentRecord;
+use Kumwe\Content\Application\ContentRecord;
 use Kumwe\App\Content\Application\ContentService;
-use Kumwe\App\Content\Domain\ContentStatus;
-use Kumwe\App\Content\Domain\ContentTypeDefinition;
-use Kumwe\App\Content\Domain\FieldDefinition;
-use Kumwe\App\Content\Domain\InvalidContentData;
-use Kumwe\App\Content\Domain\JsonSchemaValidator;
+use Kumwe\Content\Domain\ContentStatus;
+use Kumwe\Content\Domain\ContentTypeDefinition;
+use Kumwe\Content\Domain\FieldDefinition;
+use Kumwe\Content\Domain\InvalidContentData;
+use Kumwe\Content\Domain\JsonSchemaValidator;
 use Kumwe\App\Studio\Domain\Projection\ContentBlueprintBinding;
 use Kumwe\App\Studio\Domain\Projection\EntryCompositionOverrides;
 use Kumwe\Producer\Canonical\CanonicalJson;
 use Kumwe\Producer\Schema\StudioDocumentSchemaRegistry;
 use Kumwe\App\Studio\Domain\Projection\StudioProjectionRejection;
-use Kumwe\App\Workflow\Domain\WorkflowDefinition;
+use Kumwe\Content\Workflow\Domain\WorkflowDefinition;
 use stdClass;
 
 /**

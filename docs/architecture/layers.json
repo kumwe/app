@@ -71,7 +71,8 @@
     "Kumwe\\Idempotency",
     "Kumwe\\Access",
     "Kumwe\\BusinessDefinition",
-    "Kumwe\\Record"
+    "Kumwe\\Record",
+    "Kumwe\\Content"
   ],
   "namespace_segments": {
     "Shared": "shared",
@@ -194,6 +195,9 @@
     "Kumwe\\BusinessDefinition\\Internal": "domain",
     "Kumwe\\BusinessDefinition\\Container": "kernel",
     "Kumwe\\BusinessDefinition\\ConfigProvider": "kernel",
-    "Kumwe\\Record\\Value": "shared"
+    "Kumwe\\Record\\Value": "shared",
+    "Kumwe\\Content\\Application": "application",
+    "Kumwe\\Content\\Domain": "domain",
+    "Kumwe\\Content\\Workflow\\Domain": "domain"
   }
 }

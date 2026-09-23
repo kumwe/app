@@ -30,6 +30,7 @@ change set is `core-integrated` only once the merged master commit is recorded (
 | `kumwe/access-control` | `0.1.2` | `KUMWE-MIG-2026-009` | `KUMWE-CS-2026-009` | `app-pr-ready` | — | — |
 | `kumwe/business-definition` | `0.1.2` | `KUMWE-MIG-2026-010` | `KUMWE-CS-2026-010` | `app-pr-ready` | #151 | — |
 | `kumwe/record-values` | `0.1.4` | `KUMWE-MIG-2026-029` | `KUMWE-CS-2026-029` | `app-pr-ready` | #151 | — |
+| `kumwe/content-model` | `0.2.0` | `KUMWE-MIG-2026-034` | `KUMWE-CS-2026-034` | `app-pr-ready` | #151 | — |
 
 `kumwe/extension-sdk 0.2.4` remains the one legacy-unmanifested entry of
 [`legacy-packages.json`](../governance/legacy-packages.json); its Version 2 successor `0.3.2` is published and
@@ -37,7 +38,7 @@ it leaves the registry when that is adopted, as `kumwe/conversion` did at `0.1.5
 
 ### The remaining catalogue
 
-The Version 2 catalogue has thirty targets ([audit of 2026-09-07](audits/2026-09-07/requirements.md)); seventeen
+The Version 2 catalogue has thirty targets ([audit of 2026-09-07](audits/2026-09-07/requirements.md)); eighteen
 are adopted above (the Engine and its binding are provisioned as `ext-kumwe_engine 1.0.3`). Every remaining
 PHP package is published on Packagist with Version 2 manifests and a release record, and each record
 pre-allocates the ledger and change-set identifiers the App must use (the capability index refuses a ledger
@@ -61,7 +62,6 @@ identifier.
 | `kumwe/record-model` | `0.1.3` | `MIG-032` / `CS-032` | access-context, business-definition, record-values | **conflict** — `MIG-032` is `kumwe/producer`'s, already in this ledger |
 | `kumwe/extension-sdk` | `0.3.2` | `MIG-033` / `CS-033` | the sixteen-package train | **conflict** — `kumwe/reporting 0.1.4` claims the same pair |
 | `kumwe/reporting` | `0.1.4` | `MIG-033` / `CS-033` | business-definition, contribution, integration, access-context, conversion, access-control | **conflict** — see `kumwe/extension-sdk` |
-| `kumwe/content-model` | `0.2.0` | `MIG-034` / `CS-034` | access-context, access-control, localization | free, but three other records name `CS-034` |
 | `kumwe/administrator-contract` | `0.2.1` | `MIG-036` / `CS-034` | access-control, contribution | **conflict** — `CS-034` is not its sequence (D-GOV-2) |
 | `kumwe/portal-contract` | `0.2.1` | `MIG-037` / `CS-034` | access-control, contribution | **conflict** — as above |
 | `kumwe/business-surface-contract` | `0.1.3` | `MIG-038` / `CS-034` | access-context, contribution, conversion, canonical-json, idempotency, record-model, record-query, record-values | **conflict** — as above |

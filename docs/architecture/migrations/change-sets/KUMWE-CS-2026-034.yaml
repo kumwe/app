@@ -1,0 +1,183 @@
+schema: kumwe-change-set/v2
+change_set: KUMWE-CS-2026-034
+migration_id: KUMWE-MIG-2026-034
+roadmap_source:
+  title: Kumwe ERP-Extensibility Foundation Roadmap
+  sha256: a202155ef1a65f5ab293d4f8397ebf4ac430db7f1e877c776bbe7851e6fe18d8
+roadmap_refs: []
+state: app-pr-ready
+phase_1:
+  source_repository: kumwe/app
+  source_sha: "24ecf956423c18933e824b43cea1bfb9127a79a9"
+  target_repository: kumwe/content-model
+  package_pr: "https://github.com/kumwe/content-model/pull/6"
+  tested_sha: null
+  public_api_digest: "337556f5c7d7c8afeb7da7987bfe9624ef0645783463942e25ce10ceff3f6f61"
+  capability_digest: "7391c88b0f89aa3b9229af97c12e4b274166c547d80f9af31f988c0a93dbda24"
+  service_map_digest: "57dae31e71b99912c0fbc3e7f147b47311f14772145f586056a30559f15c4b7f"
+  handoff_digest: "71b63ce55ee4677bc0244cd89a186403c73480763daba99078cf933ac7f511f3"
+release:
+  version: 0.2.0
+  source_sha: "011bb7afef3194f6594d9daee3f01f96a6401556"
+  artifact_digest: "d5edc8d11fccdfe9ce441a57c82926e42dcdbed400021932e1b3047acd43c68f"
+  clean_consumer_evidence:
+    - docs/architecture/migrations/evidence/KUMWE-MIG-2026-034/RELEASE-ATTESTATION.yaml
+phase_2:
+  app_pr: "https://github.com/kumwe/app/pull/151"
+  tested_sha: null
+  merged_sha: null
+  exact_dependency: "kumwe/content-model 0.2.0"
+  composer_lock_digest: "b4f8e87c03510029b1a56ebd8e4ef6579fc378860ca104af2280b5a70936b453"
+  removed_app_symbols:
+    - Kumwe\App\Content\Domain\ContentEntry
+    - Kumwe\App\Content\Domain\ContentRevision
+    - Kumwe\App\Content\Domain\ContentStatus
+    - Kumwe\App\Content\Domain\ContentTypeDefinition
+    - Kumwe\App\Content\Domain\ExpectedVersion
+    - Kumwe\App\Content\Domain\FieldDefinition
+    - Kumwe\App\Content\Domain\InvalidContentData
+    - Kumwe\App\Content\Domain\InvalidTranslationGroup
+    - Kumwe\App\Content\Domain\JsonSchemaValidator
+    - Kumwe\App\Content\Domain\PublicationWindow
+    - Kumwe\App\Content\Domain\SchemaCompatibilityChecker
+    - Kumwe\App\Content\Domain\TranslationGroup
+    - Kumwe\App\Content\Domain\TranslationGroupMember
+    - Kumwe\App\Content\Domain\VersionConflict
+    - Kumwe\App\Workflow\Domain\InvalidWorkflowTransition
+    - Kumwe\App\Workflow\Domain\Workflow
+    - Kumwe\App\Workflow\Domain\WorkflowDefinition
+    - Kumwe\App\Workflow\Domain\WorkflowStateDefinition
+    - Kumwe\App\Workflow\Domain\WorkflowTransitionDefinition
+    - Kumwe\App\Content\Application\ContentBrowseQuery
+    - Kumwe\App\Content\Application\ContentModelNotFound
+    - Kumwe\App\Content\Application\ContentModelRepository
+    - Kumwe\App\Content\Application\ContentNotFound
+    - Kumwe\App\Content\Application\ContentPage
+    - Kumwe\App\Content\Application\ContentRecord
+    - Kumwe\App\Content\Application\ContentRepository
+    - Kumwe\App\Content\Application\ContentSearchRepository
+    - Kumwe\App\Content\Application\IncompatibleDefinition
+    - Kumwe\App\Content\Application\SiteScopedContentRepository
+    - Kumwe\App\Content\Application\TranslationGroupRepository
+  moved_unit_tests:
+    - tests/Unit/Content/Domain/ContentEntryTest.php
+    - tests/Unit/Content/Domain/ContentRevisionTest.php
+    - tests/Unit/Content/Domain/ContentStatusTest.php
+    - tests/Unit/Content/Domain/ExpectedVersionTest.php
+    - tests/Unit/Content/Domain/JsonSchemaValidatorTest.php
+    - tests/Unit/Content/Domain/PublicationWindowTest.php
+    - tests/Unit/Content/Domain/SchemaCompatibilityCheckerTest.php
+    - tests/Unit/Content/Domain/TranslationGroupTest.php
+    - tests/Unit/Workflow/Domain/WorkflowTest.php
+  retained_app_tests:
+    - tests/Integration/Content/MultilingualContentIntegrationTest.php
+    - tests/Integration/Extension/ContributedContentTranslationIntegrationTest.php
+    - tests/Integration/Studio/StudioArtifactRecoveryVectorReplayIntegrationTest.php
+    - tests/Unit/Administrator/Content/ContentFormTest.php
+    - tests/Unit/Administrator/Http/Handler/AdministratorContentEditorHandlerTest.php
+    - tests/Unit/Administrator/Http/Handler/AdministratorContentEditorRetentionTest.php
+    - tests/Unit/Administrator/Http/Handler/AdministratorDashboardHandlerTest.php
+    - tests/Unit/Application/Authorization/AdapterAuthorizationParityTest.php
+    - tests/Unit/Application/Authorization/ApplicationAuthorizationTest.php
+    - tests/Unit/Content/Application/ContentTranslationServiceTest.php
+    - tests/Unit/Content/Application/ContributedContentTranslationTest.php
+    - tests/Unit/Content/Application/ExtensionContentTranslationTest.php
+    - tests/Unit/Content/Application/ContentServiceAdoptContentTypeTest.php
+    - tests/Unit/Content/Infrastructure/Persistence/DoctrineContentRepositoryTest.php
+    - tests/Unit/Content/Infrastructure/Persistence/DoctrineTranslationGroupRepositoryTest.php
+    - tests/Unit/Content/Presentation/TranslationGroupPresenterTest.php
+    - tests/Unit/Extension/Runtime/RestrictedExtensionContainerTest.php
+    - tests/Unit/Http/Handler/HomePageHandlerTest.php
+    - tests/Unit/Http/Handler/PublishedContentHandlerTest.php
+    - tests/Unit/Infrastructure/Persistence/Migration/DocumentContentTypesMigrationTest.php
+    - tests/Unit/Presentation/ContentLayoutCatalogTest.php
+    - tests/Unit/Site/Application/PublicPageLocatorTest.php
+    - tests/Unit/Site/Infrastructure/Persistence/DoctrineSiteSettingsTest.php
+    - tests/Unit/Studio/Application/Authoring/ContentStudioAuthoringContextAuthorityTest.php
+    - tests/Unit/Studio/Application/Authoring/ContentStudioAuthoringTargetResolverTest.php
+    - tests/Unit/Studio/Application/Authoring/HostedContentStudioAuthoringConfigurationProviderTest.php
+    - tests/Unit/Studio/Application/Composition/StudioPublishedContentRendererTest.php
+    - tests/Unit/Studio/Application/Composition/StudioPublishedStylesheetTest.php
+    - tests/Unit/Studio/Application/Preview/ContentStudioPreviewBindingSourceTest.php
+    - tests/Unit/Studio/Application/Projection/ContentStudioProjectorTest.php
+    - tests/Unit/Studio/Application/Projection/ContentStudioResourceSearchProviderTest.php
+    - tests/Unit/Studio/Application/Projection/RecordAuthorizedStudioContentFieldDisclosureTest.php
+    - tests/Unit/Studio/Application/Projection/StudioContentProjectionServiceTest.php
+    - tests/Unit/Workflow/Application/ContentTransitionAuthorizerTest.php
+    - tests/Unit/Governance/ComposerLockTest.php
+    - tests/Architecture/CapabilityIndexGateTest.php
+    - tests/Unit/Infrastructure/Mcp/McpMachineContractTest.php
+evidence:
+  package:
+    - docs/architecture/migrations/evidence/KUMWE-MIG-2026-034/RELEASE-ATTESTATION.yaml
+    - "https://github.com/kumwe/content-model/actions/runs/34475024020; release on record on tag commit 011bb7afef3194f6594d9daee3f01f96a6401556"
+    - "https://github.com/kumwe/content-model/actions/runs/34475023712; package CI on the same commit"
+  app_composition:
+    - tests/Unit/Content/Application/ContentServiceAdoptContentTypeTest.php
+    - tests/Unit/Content/Application/ContentTranslationServiceTest.php
+    - tests/Unit/Content/Application/ContributedContentTranslationTest.php
+    - tests/Unit/Workflow/Application/ContentTransitionAuthorizerTest.php
+    - tests/Unit/Studio/Application/Projection/StudioContentProjectionServiceTest.php
+    - tests/Unit/Governance/ComposerLockTest.php
+    - tests/Unit/Governance/CoreGrowthGateTest.php
+    - tests/Architecture/CapabilityIndexGateTest.php
+    - tests/Unit/Infrastructure/Mcp/McpMachineContractTest.php
+    - "composer require kumwe/content-model:0.2.0; one lock install, no other lock change"
+    - "composer kumwe:capability-index, kumwe:core-growth-record, baseline:record, then the composer qa gates and the unit and architecture suites, run locally on PHP 8.4 without ext-kumwe_engine"
+  database_matrix:
+    - tests/Integration/Content/MultilingualContentIntegrationTest.php
+    - tests/Integration/Extension/ContributedContentTranslationIntegrationTest.php
+    - tests/Integration/Studio/ContentStudioAuthoringJourneyIntegrationTest.php
+    - tests/Integration/Studio/StudioArtifactRecoveryVectorReplayIntegrationTest.php
+    - tests/Integration/Demo/Infrastructure/DemoProfileExporterTest.php
+    - "To be exercised by the pull request's hosted workflows on MariaDB, MySQL and PostgreSQL."
+  concurrency:
+    - tests/Unit/Content/Infrastructure/Persistence/DoctrineContentRepositoryTest.php
+    - tests/Unit/Content/Application/ContentServiceAdoptContentTypeTest.php
+    - tests/Integration/Content/MultilingualContentIntegrationTest.php
+    - "Optimistic concurrency through ExpectedVersion and VersionConflict on update, adopt, trash and translation-group membership; to be exercised by the pull request's hosted workflows."
+  authorization_security:
+    - tests/Unit/Application/Authorization/AdapterAuthorizationParityTest.php
+    - tests/Unit/Application/Authorization/ApplicationAuthorizationTest.php
+    - tests/Unit/Workflow/Application/ContentTransitionAuthorizerTest.php
+    - tests/Unit/Administrator/Http/Handler/AdministratorContentEditorRetentionTest.php
+    - tests/Unit/Delivery/Http/Api/Idempotency/PersistentIdempotencyAuthorizationTest.php
+    - "Capability checks, workflow transition pricing and site ownership stay in ContentService, ContentModelService and the transition authorizer; the hosted source-and-image security scans run on the pull request."
+  lifecycle_recovery:
+    - tests/Unit/Infrastructure/Persistence/Migration/DocumentContentTypesMigrationTest.php
+    - tests/Integration/Studio/StudioArtifactRecoveryVectorReplayIntegrationTest.php
+    - tests/Integration/Content/MultilingualContentIntegrationTest.php
+    - "The content-type, dynamic-site and database-driven presentation migrations construct the package values; the two self-checksumming migrations whose imports moved keep their pre-move checksums accepted; to be exercised by the pull request's hosted workflows."
+  delivery_browser:
+    - tests/Unit/Administrator/Http/Handler/AdministratorContentEditorHandlerTest.php
+    - tests/Unit/Administrator/Http/Handler/AdministratorDashboardHandlerTest.php
+    - tests/Unit/Http/Handler/HomePageHandlerTest.php
+    - tests/Unit/Http/Handler/PublishedContentHandlerTest.php
+    - tests/Unit/Delivery/Http/Api/Idempotency/PersistentIdempotencyMiddlewareTest.php
+    - tests/Unit/Infrastructure/Mcp/McpMachineContractTest.php
+    - "Administrator, site, REST, console and MCP delivery of the same content services; the browser suites run in the pull request's hosted workflows."
+  deployment_backup_restore:
+    - tests/Support/BusinessRuntimeBackupAcceptance.php
+    - tests/Integration/Studio/StudioArtifactRecoveryVectorReplayIntegrationTest.php
+    - "Signed backup, clean restore and production acceptance on three engines; to be exercised by the pull request's hosted workflows."
+  native_parity_abi:
+    - tests/Unit/Kernel/NativeComputationFactoryTest.php
+    - "No native code is involved; the package is pure PHP and the engine binding is untouched. The suite that needs ext-kumwe_engine runs in the pull request's hosted workflows."
+  performance_capacity:
+    - tests/Unit/Content/Application/ContentTranslationServiceTest.php
+    - "The package snapshots content data and schemas within fixed node, depth and byte budgets that the existing stored documents sit far inside; no performance claim is made."
+compatibility: "Drop-in for consumers: the thirty types keep their names and shapes under Kumwe\\Content, ContentRepository carries the adopt() port the App adapter already implemented, and WorkflowTransitionDefinition prices its edge with Kumwe\\Access\\Capability, which every App consumer already reads. The package values now refuse content data and schemas that are not bounded JSON and workflow state and transition sets that are not typed bounded lists, which the App classes accepted; the Doctrine adapters, migrations and demo installers only ever passed decoded JSON arrays and typed members. The retained MCP machine contract mcp-v1 keeps every tool, error code, message and retry flag; its content.not_found, content_model.not_found and version.conflict classifications now name the package exceptions, so the generation's registry and contract digests move with those three strings."
+migration_recovery: null
+security_impact: "None on authority: capability checks, workflow transition pricing, transaction coupling, site ownership, audit recording and every Doctrine adapter stay in App; the package tightens the content and schema value bounds and refuses object-bearing data before it is stored."
+performance_claim: null
+rollback: "Revert the App pull request and restore the thirty removed classes and nine unit tests from the baseline commit; no persisted data changes, and the two self-checksumming migrations whose imports moved keep their pre-move checksums accepted."
+known_gaps:
+  - "Core Growth Record KUMWE-CGR-2026-005 is retired in this change set: its remaining approved symbols (ContentEntry, TranslationGroup, TranslationGroupMember) moved to kumwe/content-model here and its business-definition symbols moved with KUMWE-MIG-2026-010, so no App symbol it approved exists in src/ and the schema admits no empty record; the ledgers now carry those ownership decisions."
+  - "The local sandbox runs PHP 8.4 without ext-kumwe_engine and without a database server, so the integration and functional lanes, PHP 8.5 and the native runtime path are proven by the App CI on this pull request."
+  - "The installed record retires Kumwe\\App\\Content\\Application\\ as a whole, but ContentService and ContentModelService stay there by the record's own exclusion, so the ledger retires only the Content and Workflow domain roots and enumerates the eleven application symbols."
+  - "The installed record's consumer inventory predates the Studio authoring services, ContentServiceAdoptContentTypeTest and HostedContentStudioAuthoringConfigurationProviderTest; the ledger records the observed consumer set."
+  - "kumwe/extension-sdk 0.2.4 still declares Kumwe\\Extension\\Spi\\Identity\\Domain\\Capability for its own route and navigation definitions; the workflow transition capability is the package Kumwe\\Access\\Capability the App already reads everywhere."
+  - "The package refuses a non-finite number inside a content-type schema when the definition is constructed, so the Studio projector's own non-finite default refusal can no longer be reached through a ContentTypeDefinition; ContentStudioProjectorTest now feeds a mistyped number default through the same coordinate and the projector branch stays as defence in depth."
+  - "The release attestation was produced in the adoption worktree rather than by an isolated verifier; it records the tag, archive, registry and workflow facts observed there."
+completion_claim: false
+accepted_by: null

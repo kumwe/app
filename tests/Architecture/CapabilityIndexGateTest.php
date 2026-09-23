@@ -69,7 +69,7 @@ final class CapabilityIndexGateTest extends TestCase
         $check = GovernanceFixture::run(['--check']);
 
         self::assertSame(0, $check['status'], $check['output']);
-        self::assertStringContainsString('Capability index verified (17 packages; digest sha256:', $check['output']);
+        self::assertStringContainsString('Capability index verified (18 packages; digest sha256:', $check['output']);
 
         $digest = GovernanceFixture::run(['--digest']);
         self::assertSame(0, $digest['status'], $digest['output']);
@@ -185,7 +185,7 @@ final class CapabilityIndexGateTest extends TestCase
 
     /**
      * One pre-Version-2 package remains a legacy-unmanifested transitional entry that cannot satisfy a release
-     * gate. The sixteen manifested packages retain their release metadata; the conversion re-pin binds the JSON
+     * gate. The seventeen manifested packages retain their release metadata; the conversion re-pin binds the JSON
      * handoff its release ships, the transaction, localization and secret-envelope adoptions preserve the
      * access-context and sequence handoffs and removed-symbol mappings, and the navigation adoption retires its
      * App domain root.
@@ -209,6 +209,7 @@ final class CapabilityIndexGateTest extends TestCase
                 'kumwe/business-policy',
                 'kumwe/canonical-json',
                 'kumwe/computation',
+                'kumwe/content-model',
                 'kumwe/conversion',
                 'kumwe/extension-sdk',
                 'kumwe/idempotency',
@@ -222,7 +223,7 @@ final class CapabilityIndexGateTest extends TestCase
             ],
             array_column($packages, 'package'),
         );
-        foreach ([$packages[8]] as $package) {
+        foreach ([$packages[9]] as $package) {
             self::assertSame('legacy-unmanifested', $package['manifest_status'], (string) $package['package']);
             self::assertFalse($package['release_gate_eligible'], (string) $package['package']);
             self::assertIsArray($package['legacy']);
@@ -249,7 +250,7 @@ final class CapabilityIndexGateTest extends TestCase
         self::assertSame('KUMWE-CS-2026-007', $canonical['handoff']['change_set']);
         self::assertSame('vendor/kumwe/canonical-json/MIGRATION-HANDOFF.md', $canonical['handoff']['path']);
         self::assertContains('Kumwe\\CanonicalJson\\Profile', $canonical['public_symbols']);
-        $conversion = $packages[7];
+        $conversion = $packages[8];
         self::assertSame('v2-manifested', $conversion['manifest_status']);
         self::assertTrue($conversion['release_gate_eligible']);
         self::assertNull($conversion['legacy']);
@@ -258,7 +259,7 @@ final class CapabilityIndexGateTest extends TestCase
         self::assertSame('KUMWE-CS-2026-031', $conversion['handoff']['change_set']);
         self::assertSame('vendor/kumwe/conversion/MIGRATION-HANDOFF.md', $conversion['handoff']['path']);
         self::assertContains('Kumwe\\Conversion\\Decimal\\ExactDecimal', $conversion['public_symbols']);
-        $producer = $packages[12];
+        $producer = $packages[13];
         self::assertSame('v2-manifested', $producer['manifest_status']);
         self::assertTrue($producer['release_gate_eligible']);
         self::assertNull($producer['legacy']);
@@ -282,6 +283,7 @@ final class CapabilityIndexGateTest extends TestCase
                 'v0.1.1',
                 'v0.1.1',
                 'v0.3.3',
+                'v0.2.0',
                 'v0.1.5',
                 'v0.2.4',
                 'v0.1.3',
@@ -313,6 +315,11 @@ final class CapabilityIndexGateTest extends TestCase
                     'migration_id' => 'KUMWE-MIG-2026-022',
                 ],
                 [
+                    'old_namespace' => 'Kumwe\\App\\Content\\Domain\\',
+                    'package' => 'kumwe/content-model',
+                    'migration_id' => 'KUMWE-MIG-2026-034',
+                ],
+                [
                     'old_namespace' => 'Kumwe\\App\\Localization\\Domain\\',
                     'package' => 'kumwe/localization',
                     'migration_id' => 'KUMWE-MIG-2026-005',
@@ -321,6 +328,11 @@ final class CapabilityIndexGateTest extends TestCase
                     'old_namespace' => 'Kumwe\\App\\Navigation\\Domain\\',
                     'package' => 'kumwe/navigation',
                     'migration_id' => 'KUMWE-MIG-2026-035',
+                ],
+                [
+                    'old_namespace' => 'Kumwe\\App\\Workflow\\Domain\\',
+                    'package' => 'kumwe/content-model',
+                    'migration_id' => 'KUMWE-MIG-2026-034',
                 ],
                 [
                     'old_namespace' => 'Kumwe\\Extension\\Spi\\BusinessSecurity\\',
@@ -345,6 +357,7 @@ final class CapabilityIndexGateTest extends TestCase
                 'kumwe/secret-envelope' => 9,
                 'kumwe/record-values' => 3,
                 'kumwe/business-policy' => 14,
+                'kumwe/content-model' => 30,
                 'kumwe/localization' => 23,
                 'kumwe/navigation' => 8,
             ],
@@ -383,7 +396,7 @@ final class CapabilityIndexGateTest extends TestCase
             ['kumwe/access-context', 'kumwe/sequence'],
             array_values(array_unique(array_column($removed, 'package'))),
         );
-        self::assertContains('Kumwe\\App\\BusinessRecord\\Query\\', $packages[8]['legacy']['retired_app_namespaces']);
+        self::assertContains('Kumwe\\App\\BusinessRecord\\Query\\', $packages[9]['legacy']['retired_app_namespaces']);
     }
 
     /**

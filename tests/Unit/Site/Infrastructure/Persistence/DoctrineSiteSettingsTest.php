@@ -12,16 +12,16 @@ use Kumwe\App\Application\Authorization\SystemIdentity;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Audit\Application\AuditRecorder;
 use Kumwe\Audit\Domain\AuditEvent;
-use Kumwe\App\Content\Application\ContentRecord;
+use Kumwe\Content\Application\ContentRecord;
 use Kumwe\App\Content\Application\ContentService;
-use Kumwe\App\Content\Application\SiteScopedContentRepository;
-use Kumwe\App\Content\Domain\ContentEntry;
-use Kumwe\App\Content\Domain\ContentStatus;
+use Kumwe\Content\Application\SiteScopedContentRepository;
+use Kumwe\Content\Domain\ContentEntry;
+use Kumwe\Content\Domain\ContentStatus;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Site\Infrastructure\Persistence\DoctrineSiteSettings;
 use Kumwe\App\Tests\Support\AuthorizationContext;
 use Kumwe\Transaction\Testing\ImmediateTransactionManager;
-use Kumwe\App\Workflow\Domain\Workflow;
+use Kumwe\Content\Workflow\Domain\Workflow;
 use Kumwe\Context\Value\SiteContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
@@ -35,7 +35,6 @@ use Psr\Clock\ClockInterface;
  * @since  2.0.0
  */
 #[CoversClass(DoctrineSiteSettings::class)]
-#[UsesClass(ContentRecord::class)]
 #[UsesClass(ContentService::class)]
 final class DoctrineSiteSettingsTest extends TestCase
 {

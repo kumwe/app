@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "204e8de9b2a91543c1168fd90e2372d8",
+    "content-hash": "2780c806b2319f0a399cceff7e9cac98",
     "packages": [
         {
             "name": "brick/math",
@@ -628,6 +628,53 @@
                 "source": "https://github.com/kumwe/computation"
             },
             "time": "2026-09-10T20:31:58+00:00"
+        },
+        {
+            "name": "kumwe/content-model",
+            "version": "v0.2.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/kumwe/content-model.git",
+                "reference": "011bb7afef3194f6594d9daee3f01f96a6401556"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/kumwe/content-model/zipball/011bb7afef3194f6594d9daee3f01f96a6401556",
+                "reference": "011bb7afef3194f6594d9daee3f01f96a6401556",
+                "shasum": ""
+            },
+            "require": {
+                "ext-mbstring": "*",
+                "kumwe/access-context": "0.1.2",
+                "kumwe/access-control": "0.1.2",
+                "kumwe/localization": "0.1.1",
+                "php": "^8.5",
+                "ramsey/uuid": "^4.9"
+            },
+            "require-dev": {
+                "ext-zip": "*",
+                "phpstan/phpstan": "^2.1",
+                "phpstan/phpstan-strict-rules": "^2.0",
+                "phpunit/phpunit": "^12.0",
+                "squizlabs/php_codesniffer": "^4.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Kumwe\\Content\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "Apache-2.0"
+            ],
+            "description": "Portable content, revision, translation and editorial workflow models with persistence ports.",
+            "homepage": "https://github.com/kumwe/content-model",
+            "support": {
+                "issues": "https://github.com/kumwe/content-model/issues",
+                "source": "https://github.com/kumwe/content-model/tree/v0.2.0"
+            },
+            "time": "2026-09-10T12:07:49+00:00"
         },
         {
             "name": "kumwe/conversion",

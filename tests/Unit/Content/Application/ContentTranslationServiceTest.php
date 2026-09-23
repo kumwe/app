@@ -8,18 +8,18 @@ use DateTimeImmutable;
 use Kumwe\Access\AuthorizationDenied;
 use Kumwe\Audit\Application\AuditRecorder;
 use Kumwe\Audit\Domain\AuditEvent;
-use Kumwe\App\Content\Application\ContentRecord;
-use Kumwe\App\Content\Application\ContentRepository;
+use Kumwe\Content\Application\ContentRecord;
+use Kumwe\Content\Application\ContentRepository;
 use Kumwe\App\Content\Application\ContentService;
-use Kumwe\App\Content\Application\TranslationGroupRepository;
-use Kumwe\App\Content\Domain\ContentEntry;
-use Kumwe\App\Content\Domain\ContentRevision;
-use Kumwe\App\Content\Domain\ContentStatus;
-use Kumwe\App\Content\Domain\VersionConflict;
+use Kumwe\Content\Application\TranslationGroupRepository;
+use Kumwe\Content\Domain\ContentEntry;
+use Kumwe\Content\Domain\ContentRevision;
+use Kumwe\Content\Domain\ContentStatus;
+use Kumwe\Content\Domain\VersionConflict;
 use Kumwe\Localization\Domain\LocaleTag;
 use Kumwe\App\Tests\Support\AuthorizationContext;
 use Kumwe\Transaction\Testing\ImmediateTransactionManager;
-use Kumwe\App\Workflow\Domain\Workflow;
+use Kumwe\Content\Workflow\Domain\Workflow;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Context\Value\SiteContext;
 use LogicException;
@@ -30,10 +30,6 @@ use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
 
 #[CoversClass(ContentService::class)]
-#[UsesClass(ContentEntry::class)]
-#[UsesClass(ContentRecord::class)]
-#[UsesClass(ContentRevision::class)]
-#[UsesClass(Workflow::class)]
 /**
  * Pins the use case that brings a translation into being: declaring what language an entry is in.
  *

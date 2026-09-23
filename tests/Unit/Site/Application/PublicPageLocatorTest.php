@@ -8,14 +8,14 @@ use DateTimeImmutable;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Audit\Application\AuditRecorder;
-use Kumwe\App\Content\Application\ContentModelRepository;
-use Kumwe\App\Content\Application\ContentRecord;
+use Kumwe\Content\Application\ContentModelRepository;
+use Kumwe\Content\Application\ContentRecord;
 use Kumwe\App\Content\Application\ContentService;
-use Kumwe\App\Content\Application\SiteScopedContentRepository;
-use Kumwe\App\Content\Application\TranslationGroupRepository;
-use Kumwe\App\Content\Domain\ContentEntry;
-use Kumwe\App\Content\Domain\ContentStatus;
-use Kumwe\App\Content\Domain\ExpectedVersion;
+use Kumwe\Content\Application\SiteScopedContentRepository;
+use Kumwe\Content\Application\TranslationGroupRepository;
+use Kumwe\Content\Domain\ContentEntry;
+use Kumwe\Content\Domain\ContentStatus;
+use Kumwe\Content\Domain\ExpectedVersion;
 use Kumwe\App\Content\Presentation\TranslationGroupPresenter;
 use Kumwe\Localization\Application\ActiveLocale;
 use Kumwe\Localization\Application\SupportedLocales;
@@ -36,7 +36,7 @@ use Kumwe\App\Site\Application\SiteSettings;
 use Kumwe\App\Studio\Application\Composition\StudioPublishedContentRenderer;
 use Kumwe\Producer\Render\RenderResult;
 use Kumwe\App\Tests\Support\AuthorizationContext;
-use Kumwe\App\Workflow\Domain\Workflow;
+use Kumwe\Content\Workflow\Domain\Workflow;
 use Laminas\Diactoros\ServerRequestFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
@@ -48,7 +48,6 @@ use Twig\Loader\ArrayLoader;
 #[CoversClass(PublishedContentHandler::class)]
 #[CoversClass(ContentPresenter::class)]
 #[UsesClass(ContentLayoutCatalog::class)]
-#[UsesClass(ContentRecord::class)]
 #[UsesClass(ContentService::class)]
 #[UsesClass(PublicNavigation::class)]
 final class PublicPageLocatorTest extends TestCase

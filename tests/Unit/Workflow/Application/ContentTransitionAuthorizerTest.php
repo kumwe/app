@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Unit\Workflow\Application;
 
-use Kumwe\App\Content\Domain\ContentStatus;
+use Kumwe\Content\Domain\ContentStatus;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\App\Identity\Application\Authorization\InsufficientCapability;
 use Kumwe\App\Workflow\Application\ContentTransitionAuthorizer;

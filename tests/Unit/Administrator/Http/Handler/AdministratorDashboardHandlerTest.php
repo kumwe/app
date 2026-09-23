@@ -13,17 +13,17 @@ use Kumwe\Context\Value\SiteContext;
 use Kumwe\App\Application\Presentation\Dashboard\DashboardPreferenceAccessGroupState;
 use Kumwe\App\Application\Presentation\Dashboard\DashboardPreferenceService;
 use Kumwe\App\Application\Presentation\Dashboard\DashboardPreferenceState;
-use Kumwe\App\Content\Application\ContentModelRepository;
+use Kumwe\Content\Application\ContentModelRepository;
 use Kumwe\App\Content\Application\ContentModelService;
-use Kumwe\App\Content\Application\ContentRecord;
-use Kumwe\App\Content\Application\ContentRepository;
+use Kumwe\Content\Application\ContentRecord;
+use Kumwe\Content\Application\ContentRepository;
 use Kumwe\App\Content\Application\ContentService;
 use Kumwe\App\Delivery\Http\Dashboard\DashboardPreferenceQueryDecoder;
-use Kumwe\App\Content\Domain\ContentEntry;
-use Kumwe\App\Content\Domain\ContentStatus;
-use Kumwe\App\Content\Domain\JsonSchemaValidator;
-use Kumwe\App\Content\Domain\SchemaCompatibilityChecker;
-use Kumwe\App\Workflow\Domain\Workflow;
+use Kumwe\Content\Domain\ContentEntry;
+use Kumwe\Content\Domain\ContentStatus;
+use Kumwe\Content\Domain\JsonSchemaValidator;
+use Kumwe\Content\Domain\SchemaCompatibilityChecker;
+use Kumwe\Content\Workflow\Domain\Workflow;
 use Kumwe\Audit\Application\AuditRecorder;
 use Kumwe\App\Identity\Application\Administration\AdministratorSession;
 use Kumwe\App\Presentation\Application\Dashboard\DashboardComposer;
@@ -53,8 +53,6 @@ use Kumwe\App\Application\Authorization\ExecutionContextAttribute;
 #[CoversClass(AdministratorRenderer::class)]
 #[UsesClass(ContentService::class)]
 #[UsesClass(ContentModelService::class)]
-#[UsesClass(ContentEntry::class)]
-#[UsesClass(ContentRecord::class)]
 #[UsesClass(RecoveryAdministratorRenderer::class)]
 #[UsesClass(DashboardComposer::class)]
 #[UsesClass(DashboardPreferenceAccessGroupState::class)]

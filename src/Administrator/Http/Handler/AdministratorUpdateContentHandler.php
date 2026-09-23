@@ -9,8 +9,8 @@ use Kumwe\App\Administrator\Content\ContentFormDataMapper;
 use Kumwe\App\Administrator\Http\AdministratorRequest;
 use Kumwe\App\Content\Application\ContentModelService;
 use Kumwe\App\Content\Application\ContentService;
-use Kumwe\App\Content\Domain\InvalidContentData;
-use Kumwe\App\Content\Domain\VersionConflict;
+use Kumwe\Content\Domain\InvalidContentData;
+use Kumwe\Content\Domain\VersionConflict;
 use Laminas\Diactoros\Response\RedirectResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -75,12 +75,12 @@ final readonly class AdministratorUpdateContentHandler implements RequestHandler
      *          JSON body is not an object, or a generated field does not parse.
      * @throws  \DateMalformedStringException  When a publication window field is not a readable date and time.
      * @throws  \Kumwe\Access\AuthorizationDenied  When `content.update` is refused.
-     * @throws  \Kumwe\App\Content\Application\ContentNotFound  When no entry matches within reach of the context.
-     * @throws  \Kumwe\App\Content\Application\ContentModelNotFound  When the entry's pinned content type version is
+     * @throws  \Kumwe\Content\Application\ContentNotFound  When no entry matches within reach of the context.
+     * @throws  \Kumwe\Content\Application\ContentModelNotFound  When the entry's pinned content type version is
      *          no longer published.
-     * @throws  \Kumwe\App\Content\Domain\InvalidContentData  When the body does not satisfy the pinned schema and no
+     * @throws  \Kumwe\Content\Domain\InvalidContentData  When the body does not satisfy the pinned schema and no
      *          editor is wired to redraw the form.
-     * @throws  \Kumwe\App\Content\Domain\VersionConflict  When another writer moved the entry on first and no editor
+     * @throws  \Kumwe\Content\Domain\VersionConflict  When another writer moved the entry on first and no editor
      *          is wired to redraw the form.
      *
      * @since   2.0.0

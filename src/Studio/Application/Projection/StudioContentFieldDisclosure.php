@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Studio\Application\Projection;
 
-use Kumwe\App\Content\Application\ContentRecord;
-use Kumwe\App\Content\Domain\ContentTypeDefinition;
+use Kumwe\Content\Application\ContentRecord;
+use Kumwe\Content\Domain\ContentTypeDefinition;
 use Kumwe\Context\Value\ExecutionContext;
 
 /**

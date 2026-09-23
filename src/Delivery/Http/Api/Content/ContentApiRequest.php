@@ -7,7 +7,7 @@ namespace Kumwe\App\Delivery\Http\Api\Content;
 use DateTimeImmutable;
 use InvalidArgumentException;
 use JsonException;
-use Kumwe\App\Content\Domain\PublicationWindow;
+use Kumwe\Content\Domain\PublicationWindow;
 use Kumwe\App\Delivery\Http\Api\Concurrency\EntityTag;
 use Kumwe\App\Delivery\Http\Api\Concurrency\IfMatch;
 use Kumwe\App\Delivery\Http\Api\Concurrency\RequireIfMatchMiddleware;

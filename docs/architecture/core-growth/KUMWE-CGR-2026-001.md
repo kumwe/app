@@ -23,7 +23,6 @@ symbols:
   - Kumwe\App\Studio\Application\Rendering\StudioBlockRendererRuntime
   - Kumwe\App\Studio\Application\Rendering\StudioRenderResultAdmission
   - Kumwe\App\Content\Application\ContentService
-  - Kumwe\App\Content\Application\ContentRepository
 layer: application
 capability_index_sha256: "17ed90eb256da0068179d9b1028b86b13b85558eb9762d0bfc511bb4f8f07693"
 packages_reviewed:
@@ -159,3 +158,5 @@ revisited when Studio publishes the first-party coordinate record (retiring `Stu
 Producer gains a host-neutral authoring application service. `ContentRepository` joins the record on the
 same day for one widened port, `adopt()`: re-pinning a stored entry to an adopted type version is App's
 own persistence contract, distinct from `update()`, which never rewrites the pinned definition versions.
+`ContentRepository` left the record on 2026-09-23 when `kumwe/content-model` 0.2.0, which carries `adopt()`,
+was adopted under `KUMWE-MIG-2026-034`; the port is now `Kumwe\Content\Application\ContentRepository`.

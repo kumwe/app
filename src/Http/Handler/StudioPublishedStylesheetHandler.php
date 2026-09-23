@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Http\Handler;
 
-use Kumwe\App\Content\Application\ContentRecord;
+use Kumwe\Content\Application\ContentRecord;
 use Kumwe\App\Content\Presentation\TranslationGroupPresenter;
 use Kumwe\App\Site\Application\PublicPageLocator;
 use Kumwe\App\Studio\Application\Composition\StudioPublishedContentRenderer;

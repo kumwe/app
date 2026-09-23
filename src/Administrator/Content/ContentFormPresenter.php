@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Administrator\Content;
 
-use Kumwe\App\Content\Domain\ContentTypeDefinition;
+use Kumwe\Content\Domain\ContentTypeDefinition;
 
 /**
  * Turns a content type's JSON schema into the field descriptors the administrator editor renders.

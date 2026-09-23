@@ -34,7 +34,6 @@ symbols:
   - Kumwe\App\BusinessSurface\Application\GeneratedBusinessActionStepUp
   - Kumwe\App\BusinessSurface\Application\MutationPlanCipher
   - Kumwe\App\Content\Application\ContentModelService
-  - Kumwe\App\Content\Application\TranslationGroupRepository
   - Kumwe\App\Extension\Application\Trust\TrustStore
   - Kumwe\App\Extension\Contribution\TranslationGroupDeclaration
   - Kumwe\App\Identity\Application\Administration\AccessControlService

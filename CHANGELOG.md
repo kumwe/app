@@ -79,6 +79,33 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Added
 
+- **2026-09-23 — `kumwe/content-model` 0.2.0 owns the content entry, revision, translation, workflow and content-type
+  models and the persistence ports.**
+  The content-model package enters App through the migration ledger (`NRM-2026-043`): `KUMWE-MIG-2026-034`, its
+  change set, the integration train `KUMWE-TRAIN-2026-034` and the release attestation record the verified `v0.2.0`
+  release, and `composer.json` pins it exactly (one lock install; `kumwe/access-context` 0.1.2, `kumwe/access-control`
+  0.1.2, `kumwe/localization` 0.1.1 and `ramsey/uuid` were already locked). As the released record prescribes, the
+  App's fourteen `Kumwe\App\Content\Domain` values, validators and refusals, its five `Kumwe\App\Workflow\Domain`
+  workflow types and its eleven `Kumwe\App\Content\Application` query, page, record, refusal and port types are
+  removed together with the nine duplicated unit tests the package now owns, every consumer reads the package types,
+  `ContentService` and `ContentModelService` stay in `Kumwe\App\Content\Application` and import the package ports
+  and values explicitly, and `ContainerFactory` re-keys the Doctrine content, translation-group and content-model
+  repositories, the shared `JsonSchemaValidator` and `SchemaCompatibilityChecker` and the built-in `Workflow` under
+  the package names. The two services, the transition authorizer, the Doctrine adapters, authorization, the
+  transaction, the audit records, the Studio authoring and projection services, the demo installers, the migrations
+  and every delivery surface stay in App, so the ledger retires the vacated `Kumwe\App\Content\Domain\` and
+  `Kumwe\App\Workflow\Domain\` roots and enumerates the eleven application symbols, because the record's third
+  root keeps its two services. The package is a hardened superset of the removed code: content data, content-type
+  schemas and field schemas are stored as bounded JSON snapshots that refuse objects, resources, invalid UTF-8 and
+  non-finite numbers, and `WorkflowDefinition` refuses non-list or oversized state and transition sets and members of
+  a foreign type, which the Doctrine adapters, the migrations and the demo installers never passed. `ContentRepository`
+  carries the `adopt()` port the App adapter already implemented, so `KUMWE-CGR-2026-001`, `-004` and `-005` no
+  longer name the five extracted symbols they approved; the two self-checksumming migrations whose imports moved keep
+  their pre-move checksums accepted; and the retained `mcp-v1` machine contract keeps every tool and error code while
+  its `resource.not_found` and `conflict.version` classifications name the package exceptions. The layer graph
+  admits `Kumwe\Content` as an application and domain package, and the retained tests no longer attribute the
+  package classes as App coverage. The installed release ships its record as `MIGRATION-HANDOFF.md`, which the
+  ledger binds by path and digest. (#151)
 - **2026-09-23 — `kumwe/record-values` 0.1.4 owns the record-value guard, the client-asserted capture instant, the
   zoned date-time value and the protected storage a host supplies for a sealed secret.** The record-values package
   enters App through the migration ledger (`NRM-2026-042`): `KUMWE-MIG-2026-029`, its change set, the integration

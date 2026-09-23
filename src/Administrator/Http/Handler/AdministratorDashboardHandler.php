@@ -9,7 +9,7 @@ use Kumwe\App\Administrator\Presentation\AdministratorRenderer;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\App\Application\Presentation\Dashboard\DashboardPreferenceService;
 use Kumwe\App\Content\Application\ContentModelService;
-use Kumwe\App\Content\Application\ContentRecord;
+use Kumwe\Content\Application\ContentRecord;
 use Kumwe\App\Content\Application\ContentService;
 use Kumwe\App\Delivery\Http\Dashboard\DashboardPreferenceQueryDecoder;
 use Kumwe\Extension\Spi\Contribution\ContributionOwner;

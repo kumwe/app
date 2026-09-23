@@ -8,13 +8,13 @@ use DateTimeImmutable;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\App\Application\Authorization\SystemIdentity;
-use Kumwe\App\Content\Application\ContentRecord;
+use Kumwe\Content\Application\ContentRecord;
 use Kumwe\App\Content\Application\ContentService;
-use Kumwe\App\Content\Domain\ContentEntry;
-use Kumwe\App\Content\Domain\ContentStatus;
-use Kumwe\App\Content\Domain\ContentTypeDefinition;
-use Kumwe\App\Content\Domain\JsonSchemaValidator;
-use Kumwe\App\Content\Domain\PublicationWindow;
+use Kumwe\Content\Domain\ContentEntry;
+use Kumwe\Content\Domain\ContentStatus;
+use Kumwe\Content\Domain\ContentTypeDefinition;
+use Kumwe\Content\Domain\JsonSchemaValidator;
+use Kumwe\Content\Domain\PublicationWindow;
 use Kumwe\App\Studio\Application\Projection\ContentStudioProjector;
 use Kumwe\App\Studio\Application\Projection\StudioContentFieldDisclosure;
 use Kumwe\App\Studio\Application\Projection\StudioProjectionRejected;
@@ -22,8 +22,8 @@ use Kumwe\Producer\Schema\StudioDocumentSchemaRegistry;
 use Kumwe\App\Studio\Domain\Projection\ContentBlueprintBinding;
 use Kumwe\App\Studio\Domain\Projection\EntryCompositionOverrides;
 use Kumwe\App\Studio\Domain\Projection\StudioProjectionRejection;
-use Kumwe\App\Workflow\Domain\WorkflowDefinition;
-use Kumwe\App\Workflow\Domain\WorkflowStateDefinition;
+use Kumwe\Content\Workflow\Domain\WorkflowDefinition;
+use Kumwe\Content\Workflow\Domain\WorkflowStateDefinition;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
@@ -38,7 +38,6 @@ use stdClass;
 #[CoversClass(StudioProjectionRejected::class)]
 #[UsesClass(ContentBlueprintBinding::class)]
 #[UsesClass(EntryCompositionOverrides::class)]
-#[UsesClass(JsonSchemaValidator::class)]
 final class ContentStudioProjectorTest extends TestCase
 {
     /**
@@ -558,7 +557,7 @@ final class ContentStudioProjectorTest extends TestCase
         $cases = [
             'string' => [['type' => 'string', 'default' => 7], '/schema/properties/problem/default'],
             'integer' => [['type' => 'integer', 'default' => '7'], '/schema/properties/problem/default'],
-            'number' => [['type' => 'number', 'default' => INF], '/schema/properties/problem/default'],
+            'number' => [['type' => 'number', 'default' => '7.5'], '/schema/properties/problem/default'],
             'boolean' => [['type' => 'boolean', 'default' => 1], '/schema/properties/problem/default'],
             'array map' => [
                 ['type' => 'array', 'items' => ['type' => 'string'], 'default' => ['key' => 'value']],

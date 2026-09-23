@@ -1,0 +1,36 @@
+schema: kumwe-integration-train/v1
+train: KUMWE-TRAIN-2026-034
+packages:
+  - package: kumwe/content-model
+    version: 0.2.0
+merge_order:
+  - "https://github.com/kumwe/app/pull/151"
+custodian: "eWɘyn"
+hotspots:
+  - composer.json
+  - composer.lock
+  - src/Kernel/ContainerFactory.php
+  - src/Content/Application/ContentService.php
+  - src/Content/Application/ContentModelService.php
+  - src/Content/Infrastructure/Persistence/DoctrineContentRepository.php
+  - src/Content/Infrastructure/Persistence/DoctrineContentModelRepository.php
+  - src/Infrastructure/Persistence/Migration/DatabaseDrivenPresentationMigration.php
+  - src/Infrastructure/Persistence/Migration/DynamicSiteContentMigration.php
+  - docs/architecture/layers.json
+  - docs/machine-contract/mcp-v1.json
+  - docs/architecture/capability-index.md
+  - docs/architecture/governance/core-growth-baseline.json
+  - docs/architecture/core-growth/KUMWE-CGR-2026-001.md
+  - docs/architecture/core-growth/KUMWE-CGR-2026-004.md
+  - docs/architecture/core-growth/KUMWE-CGR-2026-005.md
+  - docs/quality/baseline.json
+  - docs/quality/test-docblock-baseline.json
+  - CHANGELOG.md
+commands:
+  - "composer install"
+  - "composer kumwe:capability-index"
+  - "composer kumwe:core-growth-record"
+  - "composer baseline:record"
+  - "composer qa"
+conflict_ledger: docs/architecture/migrations/conflicts
+serialized_by: "eWɘyn, rebase-merging the green pull request under the standing maintainer mandate"
