@@ -52,6 +52,18 @@ regexes = [
   '''^(?:ApiDiscovery|ExtensionCredentialRequest|ExtensionTrustKey|ExtensionTrustKeyCollection|ExtensionTrustKeyCreate|ExtensionTrustKeyRevoke|ExtensionTrustKeyRotate|IssuedToken|OpenApiDocument|TokenCollection|TokenCreate|TokenRecord|TokenRevocationRequest|TokenRevocationResult|TokenRotate)"\s*:\s*"[a-f0-9]{64}"$''',
 ]
 
+# Release attestations and non-roadmap records list a package's requirements as prose, such as
+# `kumwe/access-control 0.1.2, kumwe/contribution 0.1.1`. Upstream's generic-api-key heuristic reads the word
+# `access`, the comma and the package name after it as an assignment of key material. This shape admits only an
+# exact `kumwe/access-*` version pin followed by another `kumwe/` package name: a Composer package name is public
+# and cannot be a credential. Anything else after such a pin stays scanned by every default rule.
+[[rules.allowlists]]
+description = "Package requirement prose naming a kumwe/access-* pin before another kumwe package"
+regexTarget = "match"
+regexes = [
+  '''^access-(?:context|control) [0-9]+\.[0-9]+\.[0-9]+, kumwe/[a-z0-9-]+ ?$''',
+]
+
 [[rules]]
 id = "kumwe-extension-runtime-signing-key"
 description = "Kumwe extension runtime signing key assigned inline"
