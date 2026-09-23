@@ -1,0 +1,30 @@
+schema: kumwe-non-roadmap-record/v1
+id: NRM-2026-036
+nrm_ref: NRM-2026-036
+roadmap_impact: None
+rationale: "Adopt verified kumwe/audit 0.1.2, the owner of the bounded immutable audit event, secret redaction, the versioned event and anchor digests, the evidence values and the host storage ports."
+repositories:
+  - kumwe/app
+  - kumwe/audit
+behavior_before: "App declared the audit event, the metadata redactor, the recorder, archive-storage, exporter and verifier ports, the event and anchor digests, the enforcement state, the verification finding and report, the export manifest and the stored-archive value itself, and its digests were encoded through Kumwe\\App\\Shared\\Domain\\CanonicalJson."
+behavior_after: "The thirteen types come from kumwe/audit 0.1.2 and every digest is computed through the host-bound Kumwe\\CanonicalJson\\CanonicalEncoder handed explicitly to the Doctrine recorder, verifier, anchor writer, retention service and the tamper-evidence migration; App keeps the Doctrine and filesystem adapters, the anchor writer and retention ports, authorization, transaction coupling, the append-only guards, the migration and the audit:verify and audit:export commands."
+public_api_impact: "None for callers; the values, ports and refusals keep their names and shapes under the package namespace, while the package constructors now refuse unbounded or object-bearing metadata, empty or inverted export ranges, malformed archive checksums and inconsistent report counters."
+dependency_impact: "Adds kumwe/audit 0.1.2 exactly; its dependencies kumwe/canonical-json 0.1.1 and kumwe/access-context 0.1.2 were already locked, and no other lock entry changes."
+compatibility: "Drop-in for every consumer that already recorded bounded, scalar metadata; the tamper-evidence migration keeps its statements and its pre-move checksum is accepted for databases migrated before the move."
+data_migration: None
+security_impact: "No authority change; capability checks, transaction coupling, guards, export key custody and retention stay in App, and the package never sees a connection or a request."
+performance:
+  claim: None
+  evidence: []
+operations_deployment: "None; no configuration, provider or schema change. The host canonical encoder the digests now flow through is the native generic-v1 encoder already admitted by the deployment tuple."
+recovery_rollback: "Revert the adoption pull request and restore the thirteen removed classes and the four moved unit tests; no persisted data changes."
+artifacts_evidence:
+  - docs/architecture/migrations/KUMWE-MIG-2026-021.yaml
+  - docs/architecture/migrations/change-sets/KUMWE-CS-2026-021.yaml
+  - docs/architecture/migrations/trains/KUMWE-TRAIN-2026-021.yaml
+  - docs/architecture/migrations/evidence/KUMWE-MIG-2026-021/RELEASE-ATTESTATION.yaml
+  - docs/architecture/capability-index.md
+known_gaps:
+  - "kumwe/approval 0.1.2 (KUMWE-MIG-2026-023) depends on this adoption and follows as a separate adoption."
+owner: "eWɘyn"
+status: in-progress

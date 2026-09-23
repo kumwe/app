@@ -13,8 +13,8 @@ use Kumwe\App\Application\Authorization\SystemPrincipal;
 use Kumwe\App\Application\Automation\Job\EnforceAuditRetentionHandler;
 use Kumwe\App\Application\Automation\Job\RecordAuditAnchorHandler;
 use Kumwe\App\Application\Automation\Job\VerifyAuditTrailHandler;
-use Kumwe\App\Audit\Application\AuditMetadataRedactor;
-use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\Audit\Application\AuditMetadataRedactor;
+use Kumwe\Audit\Domain\AuditEvent;
 use Kumwe\App\Audit\Infrastructure\Persistence\AuditAppendOnlyGuard;
 use Kumwe\App\Audit\Infrastructure\Persistence\DoctrineAuditAnchorWriter;
 use Kumwe\App\Audit\Infrastructure\Persistence\DoctrineAuditRecorder;
@@ -27,9 +27,12 @@ use Kumwe\App\Infrastructure\Persistence\Migration\AuditTamperEvidenceMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\CoreSchemaMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\InstallationGlobalAutomationMigration;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Kernel\NativeComputationFactory;
+use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\App\Tests\Support\AllowingAuditAuthorization;
 use Kumwe\App\Tests\Support\AuditTamperHarness;
 use Kumwe\App\Tests\Support\MovableAuditClock;
+use Kumwe\CanonicalJson\CanonicalEncoder;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Context\Value\SiteContext;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -57,6 +60,14 @@ final class AuditTamperEvidenceTest extends TestCase
 
     private DoctrineAuditRecorder $recorder;
 
+    /**
+     * Production canonical encoder every digest in this test is computed and re-derived with.
+     *
+     * @var    CanonicalEncoder
+     * @since  2.0.0
+     */
+    private CanonicalEncoder $encoder;
+
     private MovableAuditClock $clock;
 
     private string $archiveRoot;
@@ -66,12 +77,13 @@ final class AuditTamperEvidenceTest extends TestCase
         $this->database = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
         $this->tables = new TableNames($this->database, 'kumwe_');
         $this->transactions = new DoctrineTransactionManager($this->database);
-        $this->recorder = new DoctrineAuditRecorder($this->database, $this->tables);
+        $this->encoder = (new NativeComputationFactory())->create(Environment::fromGlobals());
+        $this->recorder = new DoctrineAuditRecorder($this->database, $this->tables, $this->encoder);
         $this->clock = new MovableAuditClock(new DateTimeImmutable('2026-08-13 09:00:00', new DateTimeZone('UTC')));
         $this->archiveRoot = sys_get_temp_dir() . '/kumwe-audit-' . bin2hex(random_bytes(8));
         (new CoreSchemaMigration($this->tables))->up($this->database);
         (new InstallationGlobalAutomationMigration($this->tables))->up($this->database);
-        $migration = new AuditTamperEvidenceMigration($this->tables);
+        $migration = new AuditTamperEvidenceMigration($this->tables, $this->encoder);
         $migration->up($this->database);
         // The migration declares itself repeatable, so a replayed attempt must be a no-op.
         $migration->up($this->database);
@@ -437,7 +449,12 @@ final class AuditTamperEvidenceTest extends TestCase
 
     private function verifier(): DoctrineAuditTrailVerifier
     {
-        return new DoctrineAuditTrailVerifier($this->database, $this->tables, new AllowingAuditAuthorization());
+        return new DoctrineAuditTrailVerifier(
+            $this->database,
+            $this->tables,
+            new AllowingAuditAuthorization(),
+            $this->encoder,
+        );
     }
 
     private function anchorWriter(): DoctrineAuditAnchorWriter
@@ -449,6 +466,7 @@ final class AuditTamperEvidenceTest extends TestCase
             $this->recorder,
             $this->clock,
             new AllowingAuditAuthorization(),
+            $this->encoder,
         );
     }
 
@@ -475,6 +493,7 @@ final class AuditTamperEvidenceTest extends TestCase
             $this->recorder,
             $this->clock,
             new AllowingAuditAuthorization(),
+            $this->encoder,
         );
     }
 

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\Studio\Application\Projection;
 
 use DateTimeImmutable;
-use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\Audit\Application\AuditRecorder;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\App\Content\Application\ContentBrowseQuery;
 use Kumwe\App\Content\Application\ContentPage;

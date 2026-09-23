@@ -12,11 +12,12 @@ use Kumwe\App\Application\Authorization\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\App\Audit\Application\AuditAnchorWriter;
-use Kumwe\App\Audit\Application\AuditRecorder;
-use Kumwe\App\Audit\Domain\AuditAnchorDigest;
-use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\Audit\Application\AuditRecorder;
+use Kumwe\Audit\Domain\AuditAnchorDigest;
+use Kumwe\Audit\Domain\AuditEvent;
 use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\CanonicalJson\CanonicalEncoder;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
@@ -55,6 +56,7 @@ final readonly class DoctrineAuditAnchorWriter implements AuditAnchorWriter
      * @param   AuditRecorder         $audit          Trail the anchor write itself is recorded in.
      * @param   ClockInterface        $clock          Supplies the settle cutoff and creation instants.
      * @param   AuthorizationGateway  $authorization  Decides whether the caller may manage the trail.
+     * @param   CanonicalEncoder      $encoder        Host-bound encoder every anchor digest is computed with.
      * @param   int                   $settleSeconds  Age a row must reach before it may be sealed, from
      *          60 to 86400 seconds; the bound on transaction
      *          duration the anchor layer tolerates.
@@ -70,6 +72,7 @@ final readonly class DoctrineAuditAnchorWriter implements AuditAnchorWriter
         private AuditRecorder $audit,
         private ClockInterface $clock,
         private AuthorizationGateway $authorization,
+        private CanonicalEncoder $encoder,
         private int $settleSeconds = 900,
     ) {
         if ($settleSeconds < 60 || $settleSeconds > 86400) {
@@ -128,6 +131,7 @@ final readonly class DoctrineAuditAnchorWriter implements AuditAnchorWriter
                 $tail?->digest,
                 null,
                 $createdAt,
+                $this->encoder,
             );
             $this->database->insert($this->tables->raw('audit_anchors'), [
                 'id' => $anchorId,

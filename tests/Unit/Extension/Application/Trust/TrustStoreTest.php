@@ -7,7 +7,7 @@ namespace Kumwe\App\Tests\Unit\Extension\Application\Trust;
 use DateTimeImmutable;
 use Kumwe\App\Application\Authorization\AuthorizationDenied;
 use Kumwe\Transaction\Contract\TransactionManager;
-use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\Audit\Application\AuditRecorder;
 use Kumwe\App\Extension\Application\Trust\ExtensionArtifactVerifier;
 use Kumwe\Extension\Package\PublicKeyPackageSignatureVerifier;
 use Kumwe\App\Extension\Application\Trust\TrustRuntimeInvalidator;

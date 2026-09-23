@@ -12,14 +12,15 @@ use Kumwe\App\Application\Authorization\AuthorizationGateway;
 use Kumwe\App\Application\Authorization\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Transaction\Contract\TransactionManager;
-use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\Audit\Application\AuditRecorder;
 use Kumwe\App\Audit\Application\AuditRetentionResult;
 use Kumwe\App\Audit\Application\AuditRetentionService;
-use Kumwe\App\Audit\Application\AuditTrailExporter;
-use Kumwe\App\Audit\Domain\AuditAnchorDigest;
-use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\Audit\Application\AuditTrailExporter;
+use Kumwe\Audit\Domain\AuditAnchorDigest;
+use Kumwe\Audit\Domain\AuditEvent;
 use Kumwe\Extension\Spi\Identity\Domain\Capability;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\CanonicalJson\CanonicalEncoder;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
@@ -58,6 +59,7 @@ final readonly class DoctrineAuditRetentionService implements AuditRetentionServ
      * @param  AuditRecorder         $audit          Trail the prune itself is recorded in.
      * @param  ClockInterface        $clock          Supplies the cutoff and the prune instant.
      * @param  AuthorizationGateway  $authorization  Decides whether the caller may manage the trail.
+     * @param  CanonicalEncoder      $encoder        Host-bound encoder every prune-mark digest is computed with.
      *
      * @since  2.0.0
      */
@@ -69,6 +71,7 @@ final readonly class DoctrineAuditRetentionService implements AuditRetentionServ
         private AuditRecorder $audit,
         private ClockInterface $clock,
         private AuthorizationGateway $authorization,
+        private CanonicalEncoder $encoder,
     ) {
     }
 
@@ -131,6 +134,7 @@ final readonly class DoctrineAuditRetentionService implements AuditRetentionServ
                     $tail?->digest,
                     $export->archive->checksum,
                     $createdAt,
+                    $this->encoder,
                 ),
                 'archive_sha256' => $export->archive->checksum,
                 'created_at' => new DateTimeImmutable($createdAt),

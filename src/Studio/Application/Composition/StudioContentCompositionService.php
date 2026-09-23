@@ -6,8 +6,8 @@ namespace Kumwe\App\Studio\Application\Composition;
 
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Context\Value\ExecutionContext;
-use Kumwe\App\Audit\Application\AuditRecorder;
-use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\Audit\Application\AuditRecorder;
+use Kumwe\Audit\Domain\AuditEvent;
 use Kumwe\App\Studio\Application\Host\StudioArtifactAdmission;
 use Kumwe\App\Studio\Application\Host\StudioArtifactRepository;
 use Kumwe\App\Studio\Application\Host\StudioPersistenceRace;

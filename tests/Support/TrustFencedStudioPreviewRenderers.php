@@ -6,7 +6,7 @@ namespace Kumwe\App\Tests\Support;
 
 use Kumwe\Transaction\Testing\ImmediateTransactionManager;
 use DateTimeImmutable;
-use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\Audit\Application\AuditRecorder;
 use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use Kumwe\App\Extension\Application\Trust\ExtensionArtifactVerifier;
 use Kumwe\App\Extension\Application\Trust\TrustRuntimeInvalidator;

@@ -1,0 +1,31 @@
+schema: kumwe-integration-train/v1
+train: KUMWE-TRAIN-2026-021
+packages:
+  - package: kumwe/audit
+    version: 0.1.2
+merge_order:
+  - "https://github.com/kumwe/app/pull/151"
+custodian: "eWɘyn"
+hotspots:
+  - composer.json
+  - composer.lock
+  - src/Kernel/ContainerFactory.php
+  - src/Audit/Infrastructure/Persistence/DoctrineAuditRecorder.php
+  - src/Audit/Infrastructure/Persistence/DoctrineAuditTrailVerifier.php
+  - src/Audit/Infrastructure/Persistence/DoctrineAuditAnchorWriter.php
+  - src/Audit/Infrastructure/Persistence/DoctrineAuditRetentionService.php
+  - src/Infrastructure/Persistence/Migration/AuditTamperEvidenceMigration.php
+  - docs/architecture/layers.json
+  - docs/architecture/capability-index.md
+  - docs/architecture/governance/core-growth-baseline.json
+  - docs/quality/baseline.json
+  - docs/quality/test-docblock-baseline.json
+  - CHANGELOG.md
+commands:
+  - "composer install"
+  - "composer kumwe:capability-index"
+  - "composer kumwe:core-growth-record"
+  - "composer baseline:record"
+  - "composer qa"
+conflict_ledger: docs/architecture/migrations/conflicts
+serialized_by: "eWɘyn, rebase-merging the green pull request under the standing maintainer mandate"

@@ -13,8 +13,8 @@ use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\App\Application\Security\HighImpactAuthenticationRequired;
 use Kumwe\App\Application\Security\HighImpactCredentialGuard;
-use Kumwe\App\Audit\Application\AuditRecorder;
-use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\Audit\Application\AuditRecorder;
+use Kumwe\Audit\Domain\AuditEvent;
 use Kumwe\App\Identity\Application\Administration\AccessControlRepository;
 use Kumwe\App\Identity\Application\Administration\AccessControlService;
 use Kumwe\App\Identity\Application\Administration\AdministratorSessionStore;
@@ -31,7 +31,6 @@ use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
 
 #[CoversClass(AccessControlService::class)]
-#[UsesClass(AuditEvent::class)]
 #[UsesClass(EmailAddress::class)]
 final class AccessControlServiceTest extends TestCase
 {

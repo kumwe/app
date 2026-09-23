@@ -1,0 +1,103 @@
+schema: kumwe-release-attestation/v2
+artifact_kind: framework_php
+migration_id: KUMWE-MIG-2026-021
+change_set: KUMWE-CS-2026-021
+repository: "https://github.com/kumwe/audit"
+merge_commit: "e97da93a29e69183b9592e71c1b68065dc2a87f6"
+version: "0.1.2"
+tag: v0.1.2
+source_archive:
+  url: "https://github.com/kumwe/audit/archive/refs/tags/v0.1.2.tar.gz"
+  sha256: "51771898e5937d7e8b4947baf1006c2a8b1377bd3e3a5c841e48cbffe0ddbf1c"
+artifacts:
+  - identity: "kumwe/audit:0.1.2"
+    url: "https://github.com/kumwe/audit/archive/refs/tags/v0.1.2.tar.gz"
+    sha256: "51771898e5937d7e8b4947baf1006c2a8b1377bd3e3a5c841e48cbffe0ddbf1c"
+manifests_and_corpora:
+  - path: resources/public-api/v1.json
+    sha256: "2c6dc77bf3f6ae1d1d23a5a6cc137639a12cdab895dfeeb26804cdbeead985b0"
+  - path: resources/capabilities/v1.json
+    sha256: "40d0b9d532edc419c22513022a9ce97eb22ed5544f1e7ba927136049bd651a1e"
+  - path: resources/service-map/v1.json
+    sha256: "01464f2aa14a01add0e74b24a2b516257c8d614af9ed4a6498a5875a731d7225"
+  - path: resources/audit-corpus/rolling-v1.json
+    sha256: "9120c884ea88d42f134452dcaa9c3369fb88afd3e1fc85dfc281e4f1321d77c8"
+  - path: MIGRATION-HANDOFF.md
+    sha256: "9ac7e06f9ea7c903b1f3661e31d719f2298fa85343a1f06e15dd63c9f91b6a34"
+abi_and_capabilities: null
+sbom:
+  url: null
+  sha256: null
+provenance: "Release on record run 34248226376 (push, attempt 1) published release 384876557 as github-actions[bot]"
+release_workflow: "https://github.com/kumwe/audit/actions/runs/34248226376 success on the tag commit"
+registry_or_pie_verification:
+  - "git ls-remote https://github.com/kumwe/audit refs/tags/v0.1.2 returned one line for refs/tags/v0.1.2"
+  - "Tag commit from git ls-remote: e97da93a29e69183b9592e71c1b68065dc2a87f6; no peeled ^{} line (lightweight tag)"
+  - "git clone --quiet --depth 1 --branch v0.1.2 of the repository: HEAD e97da93a29e69183b9592e71c1b68065dc2a87f6"
+  - "In the clone git cat-file -t v0.1.2 is commit; GitHub git/ref/tags/v0.1.2 object type commit, same sha"
+  - "Packagist p2 observed 2026-09-23T09:15:04Z at https://repo.packagist.org/p2/kumwe/audit.json (HTTP 200)"
+  - "Packagist lists v0.1.2 (0.1.2.0) newest of v0.1.2, v0.1.1, v0.1.0; time 2026-09-08T15:58:58+00:00"
+  - "Packagist source: git https://github.com/kumwe/audit.git at e97da93a29e69183b9592e71c1b68065dc2a87f6"
+  - "Packagist dist: zip at reference e97da93a29e69183b9592e71c1b68065dc2a87f6 (api.github.com zipball URL)"
+  - "Packagist source and dist references both equal the tag commit and the clone HEAD"
+  - "Packagist dist shasum is an empty string; license Apache-2.0; autoload psr-4 Kumwe\\Audit\\ => src/"
+  - "Packagist require: php ^8.5, ext-json *, kumwe/canonical-json 0.1.1, kumwe/access-context 0.1.2"
+  - "curl -sS -L of https://github.com/kumwe/audit/archive/refs/tags/v0.1.2.tar.gz: HTTP 200, 35088 bytes"
+  - "The download resolved to codeload.github.com/kumwe/audit/tar.gz/refs/tags/v0.1.2; file reports gzip data"
+  - "sha256 51771898e5937d7e8b4947baf1006c2a8b1377bd3e3a5c841e48cbffe0ddbf1c covers the hosted tar.gz bytes"
+  - "The same URL was fetched twice in this session and both downloads produced that digest"
+  - "git archive --format=tar --prefix=audit-0.1.2/ v0.1.2 | sha256sum gave 5441aef07a6db1983d2c1bd28ce78a46"
+  - "Full local git archive digest: 5441aef07a6db1983d2c1bd28ce78a4672398981c2eda65e1221af048887dd9c"
+  - "Extracted audit-0.1.2/ holds 32 files, byte-identical (cmp) to the clone's tracked files minus export-ignore"
+  - "diff -r --exclude=.git differs only by .gitattributes, .github, .gitignore, phpcs.xml, phpstan.neon, phpunit.xml"
+  - "diff -r also reports tests and tools only in the clone; every reported path is export-ignore in .gitattributes"
+  - "The clone tracks 67 files; the archive omits the 35 export-ignore files and nothing else"
+  - "Archive top level: CHANGELOG.md, CHARTER.md, LICENSE, MIGRATION-HANDOFF.md, README.md, composer.json"
+  - "Archive top-level directories: docs, examples, resources, src; LICENSE is Apache License Version 2.0"
+  - "CHARTER.md, README.md, docs/, resources/ and src/ are all present in the archive"
+  - "GitHub release v0.1.2 id 384876557: author github-actions[bot], published_at 2026-09-08T15:59:47Z"
+  - "GitHub release v0.1.2: draft false, prerelease false, immutable false, target_commitish main, no assets"
+  - "Release on record run 34248226376: push, attempt 1, head_sha e97da93a29e69183b9592e71c1b68065dc2a87f6"
+  - "Release on record run 34248226376: status completed, conclusion success, created 2026-09-08T15:59:02Z"
+  - "Run 34248226376 jobs: check / PHP 8.5, check / Release automation tests, check / Package gate all success"
+  - "Run 34248226376 job Release the recorded version: success, completed 2026-09-08T15:59:50Z"
+  - "Audit CI run 34248226150: completed, success, on the same commit"
+  - "PR https://github.com/kumwe/audit/pull/6 merged 2026-09-08T15:58:58Z by Llewellynvdm into main"
+  - "PR 6 head was 77f3a3affb9b050cfb235548eac64f811dd4cb3b; the tag commit is the main commit that merge produced"
+  - "GitHub MCP tools answered every query; no access-denied response was observed"
+clean_consumer_or_build_verification:
+  - "Inspection only per the brief: no package PHP, script or example was executed and composer was not run"
+  - "resources/public-api/v1.json: valid against package-public-api.v1.schema.json (App SchemaValidator)"
+  - "resources/capabilities/v1.json: valid against package-capabilities.v1.schema.json (App SchemaValidator)"
+  - "resources/service-map/v1.json: valid against package-service-map.v1.schema.json (App SchemaValidator)"
+  - "All three manifests carry package kumwe/audit and release 0.1.2"
+  - "docs/release-record.md does not exist at v0.1.2; the shipped record is MIGRATION-HANDOFF.md"
+  - "Governance README section 3.11 admits MIGRATION-HANDOFF.md for published releases"
+  - "MIGRATION-HANDOFF.md front matter parsed by StrictYaml::parseFrontMatter"
+  - "MIGRATION-HANDOFF.md front matter: valid against migration-handoff.v2.schema.json (App SchemaValidator)"
+  - "Record front matter: kumwe-migration-handoff/v2, KUMWE-MIG-2026-021, KUMWE-CS-2026-021, framework_php"
+  - "Record state draft_pr_open; target https://github.com/kumwe/audit, artifact_identity kumwe/audit"
+  - "Record canonical namespace Kumwe\\Audit; composer_package kumwe/audit"
+  - "Record ownership.public_manifests digests equal the three locally computed manifest digests"
+  - "Record tests.corpora digest for resources/audit-corpus/rolling-v1.json equals the local digest"
+  - "Record blockers: independent verification of this successor and exact dependencies before App adoption"
+  - "CHANGELOG.md newest release heading is ## 0.1.2 above ## 0.1.1 and ## 0.1.0; no Unreleased section"
+  - "Package composer.json require: php ^8.5, ext-json *, kumwe/canonical-json 0.1.1, kumwe/access-context 0.1.2"
+  - "App composer.lock: kumwe/canonical-json v0.1.1 at e7006a2580a49a1c8ab507b0d7b9c3403b4f9f58 (exact)"
+  - "App composer.lock: kumwe/access-context v0.1.2 at 132c3cd7c229ceda4398e19140d1477512c27ebf (exact)"
+  - "App composer.lock platform: php ^8.5 and ext-json * (both satisfy the package requirements)"
+  - "App composer.lock does not yet contain kumwe/audit; adoption belongs to the maintainer's pull request"
+  - "Validator: tools/Governance bootstrap, SchemaValidator and StrictYaml loaded by a scratch script on PHP 8.4.19"
+verified_at: "2026-09-23T09:15:04Z"
+verified_by: "Independent release verification agent (isolated session, no Phase 1 or Phase 2 context)"
+status: verified
+known_gaps:
+  - "GitHub release v0.1.2 reports immutable false; tag protection and rulesets were not queried"
+  - "No clean consumer install, smoke test or example run was performed; this session was restricted to inspection"
+  - "The Packagist dist zipball was not downloaded; Packagist publishes an empty dist shasum for it"
+  - "The attested archive is the GitHub tag tar.gz, whose bytes differ from the Packagist zipball of the same commit"
+  - "CHANGELOG.md ends with the sentence: This is a review candidate. No release has been published or attested."
+  - "resources/release-readiness.json reports status blocked with null dependency attestations, by package design"
+  - "No SBOM and no release assets exist for v0.1.2; abi_and_capabilities does not apply to a framework_php artifact"
+  - "The schema checks used the App's fixed JSON Schema 2020-12 subset validator, not a full implementation"
+  - "A concurrent session displaced the first extraction in the shared scratch directory; all checks were redone"

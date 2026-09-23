@@ -6,8 +6,8 @@ namespace Kumwe\App\Studio\Application\Host;
 
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Transaction\Contract\TransactionState;
-use Kumwe\App\Audit\Application\AuditRecorder;
-use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\Audit\Application\AuditRecorder;
+use Kumwe\Audit\Domain\AuditEvent;
 use Kumwe\App\Studio\Application\Media\StudioMediaOperations;
 use Kumwe\App\Studio\Domain\Host\StudioMutationReplayRecord;
 use Kumwe\Producer\Canonical\CanonicalJson;

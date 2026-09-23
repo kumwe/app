@@ -24,7 +24,7 @@ use Kumwe\App\Content\Domain\ContentStatus;
 use Kumwe\App\Content\Domain\JsonSchemaValidator;
 use Kumwe\App\Content\Domain\SchemaCompatibilityChecker;
 use Kumwe\App\Workflow\Domain\Workflow;
-use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\Audit\Application\AuditRecorder;
 use Kumwe\App\Identity\Application\Administration\AdministratorSession;
 use Kumwe\App\Presentation\Application\Dashboard\DashboardComposer;
 use Kumwe\App\Presentation\Application\Dashboard\DashboardPreferenceFormPresenter;

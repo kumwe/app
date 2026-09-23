@@ -6,7 +6,7 @@ namespace Kumwe\App\Tests\Unit\Http\Handler;
 
 use DateTimeImmutable;
 use Kumwe\Context\Value\SiteContext;
-use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\Audit\Application\AuditRecorder;
 use Kumwe\App\Content\Application\ContentModelRepository;
 use Kumwe\App\Content\Application\ContentRecord;
 use Kumwe\App\Content\Application\ContentService;

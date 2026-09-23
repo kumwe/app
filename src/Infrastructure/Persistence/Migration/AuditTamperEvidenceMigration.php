@@ -14,10 +14,11 @@ use Doctrine\DBAL\Schema\PrimaryKeyConstraint;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\DBAL\Types\Types;
 use Kumwe\App\Application\Automation\JobExecutionClass;
-use Kumwe\App\Audit\Domain\AuditEnforcementState;
-use Kumwe\App\Audit\Domain\AuditEventDigest;
+use Kumwe\Audit\Domain\AuditEnforcementState;
+use Kumwe\Audit\Domain\AuditEventDigest;
 use Kumwe\App\Audit\Infrastructure\Persistence\AuditAppendOnlyGuard;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\CanonicalJson\CanonicalEncoder;
 use RuntimeException;
 use Throwable;
 
@@ -106,13 +107,18 @@ final readonly class AuditTamperEvidenceMigration implements RepeatableMigration
     private const int BATCH_SIZE = 500;
 
     /**
-     * Bind the migration to the prefixed table map.
+     * Bind the migration to the prefixed table map and the encoder the backfill digests with.
      *
-     * @param  TableNames  $tables  Resolver applying the configured prefix to table names.
+     * The backfill re-derives the digest of every pre-existing row, so the encoder handed here must
+     * reproduce the bytes the recorder produced for those rows; the host binds one canonical encoder
+     * for both.
+     *
+     * @param  TableNames        $tables   Resolver applying the configured prefix to table names.
+     * @param  CanonicalEncoder  $encoder  Host-bound canonical encoder every backfilled digest is computed with.
      *
      * @since  2.0.0
      */
-    public function __construct(private TableNames $tables)
+    public function __construct(private TableNames $tables, private CanonicalEncoder $encoder)
     {
     }
 
@@ -337,6 +343,7 @@ final readonly class AuditTamperEvidenceMigration implements RepeatableMigration
             $this->optionalText($row['subject_id'] ?? null),
             $this->text($row['outcome'] ?? null),
             $decoded,
+            $this->encoder,
         );
     }
 

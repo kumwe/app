@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Delivery\Console\Command;
 
-use Kumwe\App\Audit\Application\AuditTrailExporter;
+use Kumwe\Audit\Application\AuditTrailExporter;
 use Kumwe\App\Delivery\Console\Command;
 use Kumwe\App\Delivery\Console\Output;
 use Throwable;

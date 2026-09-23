@@ -451,7 +451,7 @@
         "Kumwe\\App\\Application\\Authorization\\ResourceOwnershipScopeService": {
             "kind": "class",
             "layer": "application",
-            "surface": "5825edf7ccc625e45aae6590",
+            "surface": "e7186f914c4ac4db559cf70a",
             "growth": {
                 "record": "KUMWE-CGR-2026-004"
             }
@@ -501,7 +501,7 @@
         "Kumwe\\App\\Application\\Authorization\\SiteGroupAdministration": {
             "kind": "class",
             "layer": "application",
-            "surface": "642c5d13b7cff1f959df5f07",
+            "surface": "1c72ffc4571a27c4de741b42",
             "growth": {
                 "record": "KUMWE-CGR-2026-004"
             }
@@ -547,7 +547,7 @@
         "Kumwe\\App\\Application\\Automation\\AutomationManagementService": {
             "kind": "class",
             "layer": "application",
-            "surface": "0b7adf96d7156bb48a36afc0",
+            "surface": "27af7b84598d2e1031f26173",
             "growth": {
                 "record": "KUMWE-CGR-2026-004"
             }
@@ -747,7 +747,7 @@
         "Kumwe\\App\\Application\\Automation\\Job\\VerifyAuditTrailHandler": {
             "kind": "class",
             "layer": "application",
-            "surface": "ec4d0efd0646c62416979161",
+            "surface": "ef9bc5d1e89b9c93cfc75fec",
             "growth": null
         },
         "Kumwe\\App\\Application\\Automation\\LeaseAwareJobHandler": {
@@ -903,7 +903,7 @@
         "Kumwe\\App\\Application\\Presentation\\Preference\\PresentationPreferenceManager": {
             "kind": "class",
             "layer": "application",
-            "surface": "cec46cc5289d267b88a319a4",
+            "surface": "2a87a30ae4a74f92457f87aa",
             "growth": {
                 "record": "KUMWE-CGR-2026-004"
             }
@@ -968,24 +968,6 @@
             "surface": "cb064a64f13a3941d8108044",
             "growth": null
         },
-        "Kumwe\\App\\Audit\\Application\\AuditArchiveStorage": {
-            "kind": "interface",
-            "layer": "application",
-            "surface": "827dff9703a5f4251972f841",
-            "growth": null
-        },
-        "Kumwe\\App\\Audit\\Application\\AuditMetadataRedactor": {
-            "kind": "class",
-            "layer": "application",
-            "surface": "3b383cda61fc65d0e4c40884",
-            "growth": null
-        },
-        "Kumwe\\App\\Audit\\Application\\AuditRecorder": {
-            "kind": "interface",
-            "layer": "application",
-            "surface": "b846153e9e091be4d3f145ff",
-            "growth": null
-        },
         "Kumwe\\App\\Audit\\Application\\AuditRetentionResult": {
             "kind": "class",
             "layer": "application",
@@ -998,70 +980,10 @@
             "surface": "c829cb356c18959419d57aa9",
             "growth": null
         },
-        "Kumwe\\App\\Audit\\Application\\AuditTrailExport": {
-            "kind": "class",
-            "layer": "application",
-            "surface": "5cca5d1fd3fe9b4fd78a2eb1",
-            "growth": null
-        },
-        "Kumwe\\App\\Audit\\Application\\AuditTrailExporter": {
-            "kind": "interface",
-            "layer": "application",
-            "surface": "62ecd2eb0928027f48b0af5b",
-            "growth": null
-        },
-        "Kumwe\\App\\Audit\\Application\\AuditTrailVerifier": {
-            "kind": "interface",
-            "layer": "application",
-            "surface": "2d94c432e56face866203309",
-            "growth": null
-        },
-        "Kumwe\\App\\Audit\\Domain\\AuditAnchorDigest": {
-            "kind": "class",
-            "layer": "domain",
-            "surface": "2e21224d5aface0b04911d30",
-            "growth": null
-        },
-        "Kumwe\\App\\Audit\\Domain\\AuditEnforcementState": {
-            "kind": "enum",
-            "layer": "domain",
-            "surface": "94c7d40b6fbd57bda325ad4c",
-            "growth": null
-        },
-        "Kumwe\\App\\Audit\\Domain\\AuditEvent": {
-            "kind": "class",
-            "layer": "domain",
-            "surface": "745a5e396d10f7d396b7c70d",
-            "growth": null
-        },
-        "Kumwe\\App\\Audit\\Domain\\AuditEventDigest": {
-            "kind": "class",
-            "layer": "domain",
-            "surface": "24870d44f09709de7ecc0dec",
-            "growth": null
-        },
-        "Kumwe\\App\\Audit\\Domain\\AuditVerificationFinding": {
-            "kind": "class",
-            "layer": "domain",
-            "surface": "e0582d3bcfeba2df2a9d0ab9",
-            "growth": null
-        },
-        "Kumwe\\App\\Audit\\Domain\\AuditVerificationReport": {
-            "kind": "class",
-            "layer": "domain",
-            "surface": "f55372a4e96c4e74d659cd85",
-            "growth": null
-        },
-        "Kumwe\\App\\Audit\\Domain\\StoredAuditArchive": {
-            "kind": "class",
-            "layer": "domain",
-            "surface": "52a314865f14a5730ab56b9c",
-            "growth": null
-        },
         "Kumwe\\App\\Audit\\Infrastructure\\Persistence\\AuditAppendOnlyGuard": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "43c789238384e391e9f3c716",
+            "surface": "2840792c03d23de8e8988e85",
             "growth": null
         },
         "Kumwe\\App\\Audit\\Infrastructure\\Persistence\\AuditEnforcementRefusal": {
@@ -1085,7 +1007,7 @@
         "Kumwe\\App\\Audit\\Infrastructure\\Persistence\\DoctrineAuditAnchorWriter": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "d2846f54e30f0e8dca8bc128",
+            "surface": "8a47e1cf25befb6d2dad051b",
             "growth": {
                 "classification": "host-infrastructure",
                 "implements": [
@@ -1097,13 +1019,19 @@
         "Kumwe\\App\\Audit\\Infrastructure\\Persistence\\DoctrineAuditRecorder": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "a3e1df92f50f6602012b1272",
-            "growth": null
+            "surface": "9c791587a57c2a89af26e725",
+            "growth": {
+                "classification": "host-infrastructure",
+                "implements": [
+                    "Kumwe\\Audit\\Application\\AuditRecorder"
+                ],
+                "extends": null
+            }
         },
         "Kumwe\\App\\Audit\\Infrastructure\\Persistence\\DoctrineAuditRetentionService": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "9d81475f34b41d861ed635cf",
+            "surface": "464ac0fe74bd8b30af1fa513",
             "growth": {
                 "classification": "host-infrastructure",
                 "implements": [
@@ -1115,7 +1043,7 @@
         "Kumwe\\App\\Audit\\Infrastructure\\Persistence\\DoctrineAuditTrailExporter": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "eb8c74b953469ac3841ede7a",
+            "surface": "5086994f3daea23331c5f790",
             "growth": {
                 "classification": "host-infrastructure",
                 "implements": [
@@ -1127,13 +1055,19 @@
         "Kumwe\\App\\Audit\\Infrastructure\\Persistence\\DoctrineAuditTrailVerifier": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "2a900a02f6321983851e068d",
-            "growth": null
+            "surface": "03db49c4ce6b9650f3dbd8b8",
+            "growth": {
+                "classification": "host-infrastructure",
+                "implements": [
+                    "Kumwe\\Audit\\Application\\AuditTrailVerifier"
+                ],
+                "extends": null
+            }
         },
         "Kumwe\\App\\Audit\\Infrastructure\\Storage\\FilesystemAuditArchiveStorage": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "8a5dbc849c1bd270ff280a2c",
+            "surface": "bf6fa046d24613bb81089511",
             "growth": null
         },
         "Kumwe\\App\\Automation\\Domain\\CronExpression": {
@@ -1187,7 +1121,7 @@
         "Kumwe\\App\\BusinessDefinition\\Application\\BusinessDefinitionService": {
             "kind": "class",
             "layer": "application",
-            "surface": "7b94d63be1215773202cf30e",
+            "surface": "7edf9e3c9b050d2e07fb7b8f",
             "growth": {
                 "record": "KUMWE-CGR-2026-004"
             }
@@ -1441,7 +1375,7 @@
         "Kumwe\\App\\BusinessDefinition\\Infrastructure\\Persistence\\DoctrinePackageDefinitionSynchronizer": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "81b5fb6c59d2b84203cae359",
+            "surface": "363d3819cdf55b6f9635196f",
             "growth": null
         },
         "Kumwe\\App\\BusinessDefinition\\Infrastructure\\Persistence\\DoctrinePersistedFieldTypeDefinitionResolver": {
@@ -1521,7 +1455,7 @@
         "Kumwe\\App\\BusinessIntegration\\Application\\IntegrationOperationsService": {
             "kind": "class",
             "layer": "application",
-            "surface": "07eab0ca7428700f4e55555e",
+            "surface": "ad8b6669af6e885342d66210",
             "growth": {
                 "record": "KUMWE-CGR-2026-004"
             }
@@ -1763,7 +1697,7 @@
         "Kumwe\\App\\BusinessRecord\\Application\\BusinessRecordMutationPublication": {
             "kind": "class",
             "layer": "application",
-            "surface": "370b58d36d343cfc696997cc",
+            "surface": "7335cfdd4cf349828d0aeccf",
             "growth": null
         },
         "Kumwe\\App\\BusinessRecord\\Application\\BusinessRecordReadRepository": {
@@ -2089,7 +2023,7 @@
         "Kumwe\\App\\BusinessRecord\\Application\\PostingPeriodService": {
             "kind": "class",
             "layer": "application",
-            "surface": "91d7c1a0e9167758e0bca923",
+            "surface": "d783fff4ecdba23d777bbe24",
             "growth": {
                 "record": "KUMWE-CGR-2026-004"
             }
@@ -2397,7 +2331,7 @@
         "Kumwe\\App\\BusinessRecord\\Infrastructure\\Persistence\\DoctrineRecordSecretRotation": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "35af030917cd3f418ba5d1e3",
+            "surface": "d64c86e8e79506da8f8e7477",
             "growth": {
                 "classification": "host-infrastructure",
                 "implements": [
@@ -2487,7 +2421,7 @@
         "Kumwe\\App\\BusinessReporting\\Application\\ExportGenerationService": {
             "kind": "class",
             "layer": "application",
-            "surface": "53b7bf3afe16a8fc3411f569",
+            "surface": "0d7e1c1de35f0cedbcb2b5e3",
             "growth": {
                 "record": "KUMWE-CGR-2026-004"
             }
@@ -2513,7 +2447,7 @@
         "Kumwe\\App\\BusinessReporting\\Application\\ExportService": {
             "kind": "class",
             "layer": "application",
-            "surface": "5a8c3d800a03c757ddc8304d",
+            "surface": "c65a6293dd7dce3dec67dfe6",
             "growth": {
                 "record": "KUMWE-CGR-2026-004"
             }
@@ -2845,7 +2779,7 @@
         "Kumwe\\App\\BusinessSchema\\Application\\BusinessSchemaExecutor": {
             "kind": "class",
             "layer": "application",
-            "surface": "3bec0b0e7241a626d034f04a",
+            "surface": "ff3f8f751fc5420ecf1fda94",
             "growth": {
                 "record": "KUMWE-CGR-2026-004"
             }
@@ -2883,7 +2817,7 @@
         "Kumwe\\App\\BusinessSchema\\Application\\BusinessSchemaPlanner": {
             "kind": "class",
             "layer": "application",
-            "surface": "3c15cb41acd0c36dd2b5a867",
+            "surface": "78f80d6b0d8574fefb81c4e4",
             "growth": {
                 "record": "KUMWE-CGR-2026-004"
             }
@@ -2903,7 +2837,7 @@
         "Kumwe\\App\\BusinessSchema\\Application\\BusinessSchemaService": {
             "kind": "class",
             "layer": "application",
-            "surface": "d0559d0a101402488a114736",
+            "surface": "58f4c54a65d0a4f5754b8a88",
             "growth": {
                 "record": "KUMWE-CGR-2026-004"
             }
@@ -3181,7 +3115,7 @@
         "Kumwe\\App\\BusinessSecurity\\Application\\Administration\\BusinessSecurityAdministrationService": {
             "kind": "class",
             "layer": "application",
-            "surface": "aff12386ffdcb549008b9ef5",
+            "surface": "1bc0bd991eb41b4ea0916e78",
             "growth": {
                 "record": "KUMWE-CGR-2026-004"
             }
@@ -3249,7 +3183,7 @@
         "Kumwe\\App\\BusinessSecurity\\Application\\Approval\\ApprovalService": {
             "kind": "class",
             "layer": "application",
-            "surface": "93c1c93d6f0652ef148ebfdb",
+            "surface": "80a77d1b9aeee0add27efe25",
             "growth": {
                 "record": "KUMWE-CGR-2026-004"
             }
@@ -3715,7 +3649,7 @@
         "Kumwe\\App\\Content\\Application\\ContentModelService": {
             "kind": "class",
             "layer": "application",
-            "surface": "9e12edeeccd37b92fe73f762",
+            "surface": "693997da2be3cf15858933c1",
             "growth": {
                 "record": "KUMWE-CGR-2026-004"
             }
@@ -3755,7 +3689,7 @@
         "Kumwe\\App\\Content\\Application\\ContentService": {
             "kind": "class",
             "layer": "application",
-            "surface": "a553979db2c5ffbb872cf119",
+            "surface": "dbf1a6b97689355a02ebdd7b",
             "growth": {
                 "record": "KUMWE-CGR-2026-001"
             }
@@ -3998,7 +3932,7 @@
         "Kumwe\\App\\Delivery\\Console\\Command\\ExportAuditTrailCommand": {
             "kind": "class",
             "layer": "delivery",
-            "surface": "2864f26dce2eaddff33468ca",
+            "surface": "8e3501dd9be45d3d8704904c",
             "growth": null
         },
         "Kumwe\\App\\Delivery\\Console\\Command\\HealthCheckCommand": {
@@ -4190,7 +4124,7 @@
         "Kumwe\\App\\Delivery\\Console\\Command\\VerifyAuditTrailCommand": {
             "kind": "class",
             "layer": "delivery",
-            "surface": "c056d5d8554ac7dd7ab70f8c",
+            "surface": "c33ff6db3353e68baf5515e2",
             "growth": null
         },
         "Kumwe\\App\\Delivery\\Console\\Command\\WatchExtensionRuntimeCommand": {
@@ -4580,7 +4514,7 @@
         "Kumwe\\App\\Demo\\Infrastructure\\DemoAccessProvisioner": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "9a1c889b30ec5c137d1d9640",
+            "surface": "d8a76e1ba89435aea6901729",
             "growth": {
                 "classification": "host-infrastructure",
                 "implements": [],
@@ -4636,7 +4570,7 @@
         "Kumwe\\App\\Demo\\Infrastructure\\VdmBusinessDemoInstaller": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "57d6ed3883db58083fa1baf7",
+            "surface": "3fa24e99022cc21c8ab4e49a",
             "growth": {
                 "classification": "host-infrastructure",
                 "implements": [],
@@ -4778,7 +4712,7 @@
         "Kumwe\\App\\Extension\\Application\\Trust\\RevocationFeedSynchronizer": {
             "kind": "class",
             "layer": "application",
-            "surface": "ee0457f93c02ac47744170ba",
+            "surface": "f7b5749470262d9d71ba71d9",
             "growth": null
         },
         "Kumwe\\App\\Extension\\Application\\Trust\\RevocationList": {
@@ -4814,7 +4748,7 @@
         "Kumwe\\App\\Extension\\Application\\Trust\\TrustStore": {
             "kind": "class",
             "layer": "application",
-            "surface": "6ad1c056d46327fab81f8e73",
+            "surface": "8d9ddda145988734611b944f",
             "growth": {
                 "record": "KUMWE-CGR-2026-004"
             }
@@ -4990,7 +4924,7 @@
         "Kumwe\\App\\Extension\\Infrastructure\\DoctrineExtensionManager": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "4fa92bad0fdfe0702a5bbb8b",
+            "surface": "ee75ffb1a1e8a12cdda74ee4",
             "growth": {
                 "classification": "host-infrastructure",
                 "implements": [],
@@ -5348,7 +5282,7 @@
         "Kumwe\\App\\Identity\\Application\\Administration\\AccessControlService": {
             "kind": "class",
             "layer": "application",
-            "surface": "a48322c2ee85eab1d3cdc98b",
+            "surface": "d4b36e7e7505310895a7ea75",
             "growth": {
                 "record": "KUMWE-CGR-2026-004"
             }
@@ -5568,7 +5502,7 @@
         "Kumwe\\App\\Identity\\Application\\StepUp\\TotpStepUpProvider": {
             "kind": "class",
             "layer": "application",
-            "surface": "99240af5b155333af6671793",
+            "surface": "bb00862a17dc35adb86bee9f",
             "growth": null
         },
         "Kumwe\\App\\Identity\\Domain\\AuthorizationDecision": {
@@ -5658,7 +5592,7 @@
         "Kumwe\\App\\Identity\\Infrastructure\\Administration\\DoctrineAdministratorIdentityGateway": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "6592e5d1ec1139ebf7c4ef57",
+            "surface": "6ab01e393a90021577b188b9",
             "growth": {
                 "classification": "host-infrastructure",
                 "implements": [
@@ -6066,8 +6000,14 @@
         "Kumwe\\App\\Infrastructure\\Persistence\\Migration\\AuditTamperEvidenceMigration": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "89e80465d8b0df5f6128ef20",
-            "growth": null
+            "surface": "6e3947b1c6f46111f0e737f2",
+            "growth": {
+                "classification": "host-infrastructure",
+                "implements": [
+                    "Kumwe\\App\\Infrastructure\\Persistence\\Migration\\RepeatableMigration"
+                ],
+                "extends": null
+            }
         },
         "Kumwe\\App\\Infrastructure\\Persistence\\Migration\\AuthorizationRecoveryIntegrationMigration": {
             "kind": "class",
@@ -6732,7 +6672,7 @@
         "Kumwe\\App\\Localization\\Application\\MessageOverrideService": {
             "kind": "class",
             "layer": "application",
-            "surface": "025f26b7176f1d520a3ceeac",
+            "surface": "a915473d8010b1e9cc6d1cb6",
             "growth": {
                 "record": "KUMWE-CGR-2026-004"
             }
@@ -6820,7 +6760,7 @@
         "Kumwe\\App\\Media\\Application\\MediaService": {
             "kind": "class",
             "layer": "application",
-            "surface": "46fce610443b7c4372af2ae8",
+            "surface": "dddffea58e9a5e8b5cbeb814",
             "growth": {
                 "record": "KUMWE-CGR-2026-004"
             }
@@ -6840,7 +6780,7 @@
         "Kumwe\\App\\Navigation\\Application\\NavigationService": {
             "kind": "class",
             "layer": "application",
-            "surface": "d5d03b8f6eb69d1583c46306",
+            "surface": "4b0fdc6735278e01a71adff1",
             "growth": {
                 "record": "KUMWE-CGR-2026-004"
             }
@@ -7308,7 +7248,7 @@
         "Kumwe\\App\\Presentation\\Infrastructure\\DoctrineAdministratorThemeRecovery": {
             "kind": "class",
             "layer": "presentation",
-            "surface": "cc877ea2ebf3135a899a2a6b",
+            "surface": "af1d379345594f8f24229f01",
             "growth": null
         },
         "Kumwe\\App\\Presentation\\Infrastructure\\DoctrineThemeActivationGuard": {
@@ -7410,7 +7350,7 @@
         "Kumwe\\App\\Site\\Infrastructure\\Persistence\\DoctrineSiteSettings": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "878f828052b2d00a561d1ecf",
+            "surface": "aa37f048d51a274a68f9c79e",
             "growth": {
                 "classification": "host-infrastructure",
                 "implements": [
@@ -7638,7 +7578,7 @@
         "Kumwe\\App\\Studio\\Application\\Composition\\StudioContentCompositionService": {
             "kind": "class",
             "layer": "application",
-            "surface": "b6d6c50f455f91a86a6843e4",
+            "surface": "9d657850348e53801b9590b1",
             "growth": {
                 "record": "KUMWE-CGR-2026-001"
             }
@@ -7824,7 +7764,7 @@
         "Kumwe\\App\\Studio\\Application\\Host\\StudioProducerHostFactory": {
             "kind": "class",
             "layer": "application",
-            "surface": "ada9dcce86fc8a94ebe4b830",
+            "surface": "6a2a07be68c606f2812392e9",
             "growth": {
                 "record": "KUMWE-CGR-2026-001"
             }
@@ -7832,7 +7772,7 @@
         "Kumwe\\App\\Studio\\Application\\Host\\StudioProducerMutationBoundary": {
             "kind": "class",
             "layer": "application",
-            "surface": "1b56bee4a5199a3ef50c240e",
+            "surface": "d2b5e4d0d98932c11a80abee",
             "growth": null
         },
         "Kumwe\\App\\Studio\\Application\\Host\\StudioProducerRequestAuthority": {
@@ -7946,7 +7886,7 @@
         "Kumwe\\App\\Studio\\Application\\Media\\StudioMediaService": {
             "kind": "class",
             "layer": "application",
-            "surface": "651d08eae27c679ac0506d7e",
+            "surface": "a4714eb0472a0f6ec4b544e1",
             "growth": {
                 "record": "KUMWE-CGR-2026-004"
             }

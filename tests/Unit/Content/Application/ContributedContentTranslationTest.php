@@ -9,8 +9,8 @@ use InvalidArgumentException;
 use Kumwe\App\Application\Authorization\AuthorizationDenied;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Context\Value\SiteContext;
-use Kumwe\App\Audit\Application\AuditRecorder;
-use Kumwe\App\Audit\Domain\AuditEvent;
+use Kumwe\Audit\Application\AuditRecorder;
+use Kumwe\Audit\Domain\AuditEvent;
 use Kumwe\App\Content\Application\ContentRecord;
 use Kumwe\App\Content\Application\ContentRepository;
 use Kumwe\App\Content\Application\ContentService;
@@ -37,7 +37,6 @@ use Psr\Clock\ClockInterface;
 #[UsesClass(ContentEntry::class)]
 #[UsesClass(ContentRecord::class)]
 #[UsesClass(ContentRevision::class)]
-#[UsesClass(AuditEvent::class)]
 #[UsesClass(Workflow::class)]
 #[UsesClass(OwnedRuntimeContributionRegistry::class)]
 #[UsesClass(TranslationGroupDeclaration::class)]

@@ -10,7 +10,7 @@ use Doctrine\DBAL\Connection;
 use Kumwe\App\Application\Authorization\AuthorizationGateway;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\App\Application\Security\HighImpactCredentialGuard;
-use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\Audit\Application\AuditRecorder;
 use Kumwe\App\BusinessSecurity\Application\Administration\BusinessSecurityAdministrationRepository;
 use Kumwe\App\Delivery\Console\Command\DemoInstallCommand;
 use Kumwe\App\Delivery\Console\Output;

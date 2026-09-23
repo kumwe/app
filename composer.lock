@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "c6ce9df37f0ad07f4580cd9380ea7a06",
+    "content-hash": "4241f13d187f5041764285dff150dc1c",
     "packages": [
         {
             "name": "brick/math",
@@ -364,6 +364,49 @@
                 "source": "https://github.com/kumwe/access-context"
             },
             "time": "2026-09-08T14:30:31+00:00"
+        },
+        {
+            "name": "kumwe/audit",
+            "version": "v0.1.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/kumwe/audit.git",
+                "reference": "e97da93a29e69183b9592e71c1b68065dc2a87f6"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/kumwe/audit/zipball/e97da93a29e69183b9592e71c1b68065dc2a87f6",
+                "reference": "e97da93a29e69183b9592e71c1b68065dc2a87f6",
+                "shasum": ""
+            },
+            "require": {
+                "ext-json": "*",
+                "kumwe/access-context": "0.1.2",
+                "kumwe/canonical-json": "0.1.1",
+                "php": "^8.5"
+            },
+            "require-dev": {
+                "phpstan/phpstan": "^2.1",
+                "phpunit/phpunit": "^12.5",
+                "squizlabs/php_codesniffer": "^4.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Kumwe\\Audit\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "Apache-2.0"
+            ],
+            "description": "Portable audit records, digest material, redaction and evidence ports.",
+            "homepage": "https://github.com/kumwe/audit",
+            "support": {
+                "issues": "https://github.com/kumwe/audit/issues",
+                "source": "https://github.com/kumwe/audit/tree/v0.1.2"
+            },
+            "time": "2026-09-08T15:58:58+00:00"
         },
         {
             "name": "kumwe/canonical-json",
@@ -6221,5 +6264,5 @@
         "ext-zip": "*"
     },
     "platform-dev": {},
-    "plugin-api-version": "2.9.0"
+    "plugin-api-version": "2.6.0"
 }

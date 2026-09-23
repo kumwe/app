@@ -13,12 +13,12 @@ use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\App\Application\Automation\GlobalJobPrincipals;
 use Kumwe\App\Application\Automation\JobExecutionScope;
 use Kumwe\App\Audit\Application\AuditAnchorWriter;
-use Kumwe\App\Audit\Application\AuditRecorder;
-use Kumwe\App\Audit\Application\AuditTrailExporter;
-use Kumwe\App\Audit\Application\AuditTrailVerifier;
-use Kumwe\App\Audit\Domain\AuditEnforcementState;
-use Kumwe\App\Audit\Domain\AuditEvent;
-use Kumwe\App\Audit\Domain\AuditEventDigest;
+use Kumwe\Audit\Application\AuditRecorder;
+use Kumwe\Audit\Application\AuditTrailExporter;
+use Kumwe\Audit\Application\AuditTrailVerifier;
+use Kumwe\Audit\Domain\AuditEnforcementState;
+use Kumwe\Audit\Domain\AuditEvent;
+use Kumwe\Audit\Domain\AuditEventDigest;
 use Kumwe\App\Audit\Infrastructure\Persistence\AuditAppendOnlyGuard;
 use Kumwe\App\Audit\Infrastructure\Persistence\DoctrineAuditAnchorWriter;
 use Kumwe\App\Audit\Infrastructure\Persistence\DoctrineAuditRecorder;
@@ -30,6 +30,7 @@ use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\App\Tests\Support\AuditTamperHarness;
 use Kumwe\App\Tests\Support\TestKernelFactory;
+use Kumwe\CanonicalJson\CanonicalEncoder;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
@@ -156,6 +157,8 @@ final class AuditTrailRuntimeIntegrationTest extends TestCase
             ));
         }
 
+        $encoder = $this->container->get(CanonicalEncoder::class);
+        self::assertInstanceOf(CanonicalEncoder::class, $encoder);
         foreach (array_keys($recorded) as $id) {
             $row = $this->row((string) $id);
             $stored = is_string($row['metadata']) ? $row['metadata'] : '';
@@ -172,6 +175,7 @@ final class AuditTrailRuntimeIntegrationTest extends TestCase
                     'roundtrip-subject',
                     'success',
                     $decoded,
+                    $encoder,
                 ),
                 $row['digest'],
                 'The digest must survive this engine\'s storage round-trip unchanged.',

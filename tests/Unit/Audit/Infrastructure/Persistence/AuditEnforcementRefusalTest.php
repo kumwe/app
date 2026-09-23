@@ -10,7 +10,7 @@ use Doctrine\DBAL\Exception\DriverException;
 use Doctrine\DBAL\Exception\SyntaxErrorException;
 use Doctrine\DBAL\Exception\TableNotFoundException;
 use Doctrine\DBAL\Query;
-use Kumwe\App\Audit\Domain\AuditEnforcementState;
+use Kumwe\Audit\Domain\AuditEnforcementState;
 use Kumwe\App\Audit\Infrastructure\Persistence\AuditEnforcementRefusal;
 use PDOException;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -19,7 +19,6 @@ use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
 #[CoversClass(AuditEnforcementRefusal::class)]
-#[CoversClass(AuditEnforcementState::class)]
 final class AuditEnforcementRefusalTest extends TestCase
 {
     /**

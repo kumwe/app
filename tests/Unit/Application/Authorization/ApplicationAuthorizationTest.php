@@ -22,7 +22,7 @@ use Kumwe\App\Application\Authorization\ResourcePolicyTarget;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\App\Application\Authorization\SystemIdentity;
 use Kumwe\Transaction\Contract\TransactionManager;
-use Kumwe\App\Audit\Application\AuditRecorder;
+use Kumwe\Audit\Application\AuditRecorder;
 use Kumwe\App\Content\Application\ContentRecord;
 use Kumwe\App\Content\Application\ContentRepository;
 use Kumwe\App\Content\Application\ContentService;
