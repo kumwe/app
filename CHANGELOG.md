@@ -17,6 +17,16 @@ Entries cite the commits that carried them. Version 2.0.0 is not released, so ev
 
 ## [Unreleased]
 
+- Close the five adoptions that had merged without their closure record. `KUMWE-CS-2026-002` (sequence, PR #139,
+  merged `32d6a6f3`), `KUMWE-CS-2026-004` (access-context, PR #141, merged `795583ee`), `KUMWE-CS-2026-007`
+  (canonical-json, PR #138, merged `1e768cbb`), `KUMWE-CS-2026-008` (computation, PR #140, merged `4774e0d5`) and
+  `KUMWE-CS-2026-032` (producer, PR #137, merged `7f851278`) move from `app-pr-ready` to `core-integrated` with the
+  tested and merged commits their pull requests recorded; `NRM-2026-003`, `-005`, `-009`, `-015` and `-016` are
+  `delivered`. `docs/roadmap/STATUS.md` names the extension-sdk `0.3.2` release train as the next App change, as the
+  maintainer ordered on 2026-09-09, and stops describing the approved Core Growth Records and the Producer adoption
+  as pending; `docs/architecture/migrations/README.md` gains the ledger state table and the remaining-catalogue
+  inventory with the identifier collisions the released package records carry. Documentation only.
+
 - Allow 90 minutes for the complete database CI lane after PR #142's merged workload passed all tests
   and coverage gates but exhausted the former 75-minute limit during signed recovery verification.
   Keep the complete suite, repeated and reversed integration passes, coverage ratchets and recovery

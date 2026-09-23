@@ -6,6 +6,71 @@ states and the identifiers are explained in the [governance guide](../governance
 the maintainer rulings are in [decisions.md](../governance/decisions.md). Every file here is validated
 against its schema by both `composer qa` gates.
 
+## Ledger state — 2026-09-22
+
+Every package the App has adopted, its change-set state and the App pull request that carried it. A
+change set is `core-integrated` only once the merged master commit is recorded (`phase_2.merged_sha`);
+`app-pr-ready` with a null merge commit means the closure record is still owed.
+
+| Package | Release | Ledger | Change set | State | App PR | Merged |
+|---|---|---|---|---|---|---|
+| `kumwe/transaction` | `0.1.2` | `KUMWE-MIG-2026-001` | `KUMWE-CS-2026-001` | `core-integrated` | #142 | `c43eb482` |
+| `kumwe/sequence` | `0.2.1` | `KUMWE-MIG-2026-002` | `KUMWE-CS-2026-002` | `core-integrated` | #139 | `32d6a6f3` |
+| `kumwe/secret-envelope` | `0.1.1` | `KUMWE-MIG-2026-003` | `KUMWE-CS-2026-003` | `core-integrated` | #142 | `c43eb482` |
+| `kumwe/access-context` | `0.1.2` | `KUMWE-MIG-2026-004` | `KUMWE-CS-2026-004` | `core-integrated` | #141 | `795583ee` |
+| `kumwe/localization` | `0.1.1` | `KUMWE-MIG-2026-005` | `KUMWE-CS-2026-005` | `core-integrated` | #142 | `c43eb482` |
+| `kumwe/canonical-json` | `0.1.1` | `KUMWE-MIG-2026-007` | `KUMWE-CS-2026-007` | `core-integrated` | #138 | `1e768cbb` |
+| `kumwe/computation` | `0.3.3` | `KUMWE-MIG-2026-008` | `KUMWE-CS-2026-008` | `core-integrated` (provisioning only; the business cutover is Computation Phase 2) | #140 | `4774e0d5` |
+| `kumwe/producer` | `0.3.0` | `KUMWE-MIG-2026-032` | `KUMWE-CS-2026-032` | `core-integrated` | #137 | `7f851278` |
+| `kumwe/navigation` | `0.1.3` | `KUMWE-MIG-2026-035` | `KUMWE-CS-2026-035` | `core-integrated` | #146 | `008237a0` |
+
+`kumwe/conversion 0.1.2` and `kumwe/extension-sdk 0.2.4` remain the two legacy-unmanifested entries of
+[`legacy-packages.json`](../governance/legacy-packages.json); both have Version 2 successors published
+(`conversion 0.1.5`, `extension-sdk 0.3.2`) and leave the registry when those are adopted.
+
+### The remaining catalogue
+
+The Version 2 catalogue has thirty targets ([audit of 2026-09-07](audits/2026-09-07/requirements.md)); ten
+are adopted above (the Engine and its binding are provisioned as `ext-kumwe_engine 1.0.3`). Every remaining
+PHP package is published on Packagist with Version 2 manifests and a release record, and each record
+pre-allocates the ledger and change-set identifiers the App must use (the capability index refuses a ledger
+record whose id differs from the installed record's `migration_id`, or whose `change_set` differs from the
+record's). Those identifiers are listed here because several collide; a collision is escalated, never
+renumbered in the App (D-GOV-3), and is resolved by a successor release of the package that carries a free
+identifier.
+
+| Package | Release | Record ids | Kumwe requirements | Identifier status |
+|---|---|---|---|---|
+| `kumwe/contribution` | `0.1.1` | `MIG-006` / `CS-006` | — | free |
+| `kumwe/access-control` | `0.1.2` | `MIG-009` / `CS-009` | access-context | free |
+| `kumwe/business-definition` | `0.1.2` | `MIG-010` / `CS-010` | localization, sequence | free |
+| `kumwe/idempotency` | `0.1.2` | `MIG-020` / `CS-020` | canonical-json | free |
+| `kumwe/audit` | `0.1.2` | `MIG-021` / `CS-021` | canonical-json, access-context | free |
+| `kumwe/business-policy` | `0.1.1` | `MIG-022` / `CS-022` | — | free |
+| `kumwe/approval` | `0.1.2` | `MIG-023` / `CS-023` | access-context, access-control, audit, transaction | free |
+| `kumwe/interface-standard` | `0.1.2` | `MIG-025` / `CS-025` | contribution, access-control | free |
+| `kumwe/automation` | `0.2.2` | `MIG-026` / `CS-026` | canonical-json, contribution, access-context | free |
+| `kumwe/integration` | `0.2.3` | `MIG-027` / `CS-035` | canonical-json, contribution, access-context, automation | **conflict** — `CS-035` is `kumwe/navigation`'s, and a change set must share its ledger record's sequence (D-GOV-2) |
+| `kumwe/conversion-extension` | `0.1.4` | `MIG-028` / `CS-028` | contribution, conversion | free |
+| `kumwe/record-values` | `0.1.4` | `MIG-029` / `CS-029` | conversion | free |
+| `kumwe/business-schema` | `0.1.3` | `MIG-030` / `CS-030` | business-definition, sequence | free |
+| `kumwe/conversion` | `0.1.5` | `MIG-031` / `CS-031` | — | **conflict** — `kumwe/record-query 0.1.3` claims the same pair |
+| `kumwe/record-query` | `0.1.3` | `MIG-031` / `CS-031` | record-values, business-definition, conversion | **conflict** — see `kumwe/conversion` |
+| `kumwe/record-model` | `0.1.3` | `MIG-032` / `CS-032` | access-context, business-definition, record-values | **conflict** — `MIG-032` is `kumwe/producer`'s, already in this ledger |
+| `kumwe/extension-sdk` | `0.3.2` | `MIG-033` / `CS-033` | the sixteen-package train | **conflict** — `kumwe/reporting 0.1.4` claims the same pair |
+| `kumwe/reporting` | `0.1.4` | `MIG-033` / `CS-033` | business-definition, contribution, integration, access-context, conversion, access-control | **conflict** — see `kumwe/extension-sdk` |
+| `kumwe/content-model` | `0.2.0` | `MIG-034` / `CS-034` | access-context, access-control, localization | free, but three other records name `CS-034` |
+| `kumwe/administrator-contract` | `0.2.1` | `MIG-036` / `CS-034` | access-control, contribution | **conflict** — `CS-034` is not its sequence (D-GOV-2) |
+| `kumwe/portal-contract` | `0.2.1` | `MIG-037` / `CS-034` | access-control, contribution | **conflict** — as above |
+| `kumwe/business-surface-contract` | `0.1.3` | `MIG-038` / `CS-034` | access-context, contribution, conversion, canonical-json, idempotency, record-model, record-query, record-values | **conflict** — as above |
+
+The extension-sdk `0.3.2` train selects, at exact versions, access-control `0.1.2`, administrator-contract
+`0.2.1`, automation `0.2.2`, business-policy `0.1.1`, business-surface-contract `0.1.3`, canonical-json `0.1.1`,
+contribution `0.1.1`, conversion `0.1.5`, idempotency `0.1.2`, integration `0.2.3`, portal-contract `0.2.1`,
+producer `0.3.0`, record-model `0.1.3`, record-query `0.1.3`, record-values `0.1.4` and reporting `0.1.4`.
+Composer resolves that whole set together with audit, approval, business-definition, business-schema,
+content-model, conversion-extension and interface-standard against the current lock with no removal.
+
 ## Layout
 
 ```

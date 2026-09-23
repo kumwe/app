@@ -25,8 +25,11 @@ artifacts_evidence:
   - docs/architecture/migrations/evidence/KUMWE-MIG-2026-007/RELEASE-ATTESTATION.yaml
   - docs/architecture/capability-index.md
   - tests/Architecture/CanonicalJsonSemanticIdentityGateTest.php
+  - https://github.com/kumwe/app/pull/138
+  - https://github.com/kumwe/app/commit/98aa64eace547345b97b31546e03ace11ab4eb45
+  - https://github.com/kumwe/app/commit/1e768cbb16b28f7393ed46cfe6e33261ae86ac75
 known_gaps:
   - "The App executor does not implement the CanonicalEncoder port; Computation's runtime cutover is separate work."
   - "The remaining extension-sdk train packages follow as separate adoptions in dependency order."
 owner: "eWɘyn"
-status: in-progress
+status: delivered
