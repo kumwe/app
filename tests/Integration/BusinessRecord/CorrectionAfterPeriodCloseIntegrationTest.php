@@ -9,7 +9,6 @@ use Kumwe\App\Kernel\Container;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Extension\Spi\Application\Automation\IdempotencyKey;
 use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\BusinessDefinition\Domain\WorkflowBinding;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordService;
 use Kumwe\App\BusinessRecord\Application\Command\DocumentLineInput;
 use Kumwe\App\BusinessRecord\Application\Command\ExecuteRecordActionCommand;
@@ -47,7 +46,6 @@ use Ramsey\Uuid\Uuid;
 #[CoversClass(BusinessRecordService::class)]
 #[CoversClass(PostingPeriodLock::class)]
 #[CoversClass(PostingPeriodService::class)]
-#[CoversClass(WorkflowBinding::class)]
 #[CoversClass(BusinessRecordImmutable::class)]
 #[CoversClass(BusinessRecordPostingPeriodClosed::class)]
 final class CorrectionAfterPeriodCloseIntegrationTest extends TestCase

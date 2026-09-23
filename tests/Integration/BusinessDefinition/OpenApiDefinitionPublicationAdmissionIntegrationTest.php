@@ -20,7 +20,6 @@ use Ramsey\Uuid\Uuid;
  * @since  2.0.0
  */
 #[CoversClass(BusinessDefinitionService::class)]
-#[CoversClass(EntityTypeDefinition::class)]
 final class OpenApiDefinitionPublicationAdmissionIntegrationTest extends TestCase
 {
     /**

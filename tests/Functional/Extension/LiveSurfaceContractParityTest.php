@@ -49,7 +49,6 @@ use ReflectionProperty;
 #[CoversClass(ContainerFactory::class)]
 #[CoversClass(EventContractRegistry::class)]
 #[CoversClass(ExtensionContributionRegistrySet::class)]
-#[CoversClass(FieldTypeRegistry::class)]
 #[CoversClass(JobExecutionScope::class)]
 #[CoversClass(JobHandlerRegistry::class)]
 #[CoversClass(PayloadSchemaValidator::class)]

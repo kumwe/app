@@ -17,8 +17,6 @@ use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
 
 #[CoversClass(BusinessDefinitionService::class)]
-#[CoversClass(EntityTypeDefinition::class)]
-#[CoversClass(CanonicalDefinitionJson::class)]
 final class BusinessDefinitionRuntimeIntegrationTest extends TestCase
 {
     public function testGraphicalRuntimePublicationIsImmutablePortableAndRejectsInvalidImports(): void

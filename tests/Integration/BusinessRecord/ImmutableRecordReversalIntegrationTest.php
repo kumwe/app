@@ -6,9 +6,7 @@ namespace Kumwe\App\Tests\Integration\BusinessRecord;
 
 use Kumwe\App\Kernel\Container;
 use Kumwe\Context\Value\ExecutionContext;
-use Kumwe\BusinessDefinition\Application\BusinessDefinitionValidator;
 use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\BusinessDefinition\Domain\WorkflowBinding;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordRelationView;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordService;
 use Kumwe\App\BusinessRecord\Application\Command\ArchiveRecordCommand;
@@ -41,9 +39,7 @@ use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
 
 #[CoversClass(BusinessRecordService::class)]
-#[CoversClass(WorkflowBinding::class)]
 #[CoversClass(BusinessRecordImmutable::class)]
-#[CoversClass(BusinessDefinitionValidator::class)]
 /**
  * Proves the immutable-correction rule of ADR 0003 end to end against a real engine.
  *

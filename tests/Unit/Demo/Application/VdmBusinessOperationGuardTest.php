@@ -18,7 +18,6 @@ use RuntimeException;
  * @since  2.0.0
  */
 #[CoversClass(VdmBusinessOperationGuard::class)]
-#[UsesClass(CanonicalDefinitionJson::class)]
 final class VdmBusinessOperationGuardTest extends TestCase
 {
     /**

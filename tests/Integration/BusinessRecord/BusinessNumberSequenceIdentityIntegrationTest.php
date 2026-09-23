@@ -53,7 +53,6 @@ use RuntimeException;
  */
 #[CoversClass(DoctrineBusinessNumberSequenceAllocator::class)]
 #[CoversClass(DoctrineBusinessDefinitionRepository::class)]
-#[CoversClass(BusinessDefinitionCompatibilityAnalyzer::class)]
 final class BusinessNumberSequenceIdentityIntegrationTest extends TestCase
 {
     /**

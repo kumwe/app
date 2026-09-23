@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Unit\Demo\Infrastructure;
 
-use Kumwe\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\App\Demo\Infrastructure\FilesystemDemoManifestCatalog;
 use PHPUnit\Framework\Attributes\CoversClass;
 use FilesystemIterator;
@@ -21,7 +20,6 @@ use SplFileInfo;
  * @since  2.0.0
  */
 #[CoversClass(FilesystemDemoManifestCatalog::class)]
-#[UsesClass(CanonicalDefinitionJson::class)]
 final class FilesystemDemoManifestCatalogTest extends TestCase
 {
     /**
