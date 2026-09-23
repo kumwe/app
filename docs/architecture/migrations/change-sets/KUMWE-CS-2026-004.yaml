@@ -170,7 +170,6 @@ phase_2:
     - tests/Unit/BusinessReporting/ReportDeliveryPresenterTest.php
     - tests/Unit/BusinessReporting/ReportPolicyInferenceTest.php
     - tests/Unit/BusinessSchema/Infrastructure/CanonicalDefinitionPhysicalSchemaCompilerTest.php
-    - tests/Unit/BusinessSecurity/Application/ApprovalServiceTest.php
     - tests/Unit/BusinessSecurity/Application/BusinessSecurityAdministrationServiceTest.php
     - tests/Unit/BusinessSecurity/Infrastructure/Persistence/DoctrineApprovalRepositoryTest.php
     - tests/Unit/BusinessSecurity/Infrastructure/Persistence/DoctrineBusinessRecordAccessControllerTest.php

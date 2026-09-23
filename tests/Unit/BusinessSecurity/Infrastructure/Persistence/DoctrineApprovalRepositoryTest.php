@@ -7,10 +7,10 @@ namespace Kumwe\App\Tests\Unit\BusinessSecurity\Infrastructure\Persistence;
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
-use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalBinding;
-use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalRequest;
-use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalRule;
-use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalStatus;
+use Kumwe\Approval\ApprovalBinding;
+use Kumwe\Approval\ApprovalRequest;
+use Kumwe\Approval\ApprovalRule;
+use Kumwe\Approval\ApprovalStatus;
 use Kumwe\App\BusinessSecurity\Infrastructure\Persistence\DoctrineApprovalRepository;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
@@ -54,6 +54,37 @@ final class DoctrineApprovalRepositoryTest extends TestCase
         self::assertSame('vendor.invoice.check', $rule->approvalAction);
         self::assertSame(4, $rule->version);
         self::assertTrue($rule->distinctActors);
+    }
+
+    /**
+     * Proves a locked rule lookup holds only the rule rows and an unlocked lookup holds nothing.
+     *
+     * The package service locks the rule while it creates a request and re-asserts the frozen policy, so the
+     * PostgreSQL lock must name the rule alias rather than the nullable organization side of the join.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testLockedRuleLookupHoldsTheRuleRowsUntilTheTransactionEnds(): void
+    {
+        $database = $this->database();
+        $database->method('getDatabasePlatform')->willReturn(new PostgreSQLPlatform());
+        $statements = [];
+        $database->expects(self::exactly(2))->method('fetchAllAssociative')->willReturnCallback(
+            static function (string $sql) use (&$statements): array {
+                $statements[] = $sql;
+
+                return [];
+            },
+        );
+        $repository = $this->repository($database);
+
+        self::assertNull($repository->rule($this->binding(), true));
+        self::assertNull($repository->rule($this->binding()));
+        self::assertStringEndsWith('r.rule_code FOR UPDATE OF r', $statements[0]);
+        self::assertStringEndsWith('r.rule_code', $statements[1]);
+        self::assertStringNotContainsString('FOR UPDATE', $statements[1]);
     }
 
     public function testDistinctRequesterCannotApproveEvenWithAStillLiveRule(): void
@@ -178,6 +209,36 @@ final class DoctrineApprovalRepositoryTest extends TestCase
             $this->binding(resourceVersion: 8),
             $createdAt->modify('+1 day'),
             $createdAt,
+        );
+    }
+
+    /**
+     * Proves the materialized expiry the package service applies resolves the request like a decision.
+     *
+     * The schema keeps `consumed_at` and `revoked_at` for their own transitions; an expired request records
+     * its resolution instant in `resolved_at` under the same optimistic version guard as every transition.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testExpiryTransitionRecordsTheResolutionInstantUnderTheVersionGuard(): void
+    {
+        $at = new DateTimeImmutable('2026-08-10T10:00:00+00:00');
+        $database = $this->database();
+        $database->expects(self::once())->method('executeStatement')->with(
+            self::callback(static fn (string $sql): bool => str_contains($sql, 'SET status = ?, resolved_at = ?')
+                && str_contains($sql, 'WHERE id = ? AND status = ? AND version = ?')),
+            ['expired', $at, self::REQUEST, 'pending', 3],
+            self::isArray(),
+        )->willReturn(1);
+
+        $this->repository($database)->transition(
+            self::REQUEST,
+            ApprovalStatus::Pending,
+            ApprovalStatus::Expired,
+            3,
+            $at,
         );
     }
 

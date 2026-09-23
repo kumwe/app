@@ -136,7 +136,6 @@ phase_2:
     - tests/Unit/BusinessRecord/Application/PostingPeriodServiceTest.php
     - tests/Unit/BusinessReporting/LiveExportExecutionContextResolverTest.php
     - tests/Unit/BusinessReporting/ReportApiDiscoveryTest.php
-    - tests/Unit/BusinessSecurity/Application/ApprovalServiceTest.php
     - tests/Unit/BusinessSecurity/Application/BusinessSecurityAdministrationServiceTest.php
     - tests/Unit/BusinessSurface/Application/BusinessApprovalSurfaceServiceTest.php
     - tests/Unit/BusinessSurface/Application/BusinessSurfaceCatalogTest.php

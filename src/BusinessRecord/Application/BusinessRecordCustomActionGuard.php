@@ -34,7 +34,7 @@ interface BusinessRecordCustomActionGuard
      *          expected version.
      * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordActionRejected  When the action
      *          is not a custom declaration or its record condition fails.
-     * @throws  \Kumwe\App\BusinessSecurity\Application\Approval\ApprovalDenied  When a required exact
+     * @throws  \Kumwe\Approval\ApprovalDenied  When a required exact
      *          maker-checker approval is absent, stale, or already consumed.
      *
      * @since   2.0.0

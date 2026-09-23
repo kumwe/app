@@ -59,7 +59,7 @@
         "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorAccessControlHandler": {
             "kind": "class",
             "layer": "delivery",
-            "surface": "9f14a62304bf937a1e2a0cad",
+            "surface": "fc1858031dd89b8ab0c7a14f",
             "growth": null
         },
         "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorAutomationHandler": {
@@ -71,7 +71,7 @@
         "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorBusinessSecurityHandler": {
             "kind": "class",
             "layer": "delivery",
-            "surface": "564acdf9c11fafa194ef6181",
+            "surface": "8349eeac6df6be1723bb5c3e",
             "growth": null
         },
         "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorContentEditorHandler": {
@@ -1303,7 +1303,7 @@
         "Kumwe\\App\\BusinessRecord\\Application\\BusinessRecordService": {
             "kind": "class",
             "layer": "application",
-            "surface": "44fb12a5e1320e63d08535b7",
+            "surface": "18c9ea1c9e79ea37fd4a2eae",
             "growth": {
                 "record": "KUMWE-CGR-2026-003"
             }
@@ -2675,7 +2675,7 @@
         "Kumwe\\App\\BusinessSecurity\\Application\\Administration\\BusinessSecurityAdministrationService": {
             "kind": "class",
             "layer": "application",
-            "surface": "3f0fb98fccb63119b3ff33d2",
+            "surface": "102348e97fff35924f9fed3b",
             "growth": {
                 "record": "KUMWE-CGR-2026-004"
             }
@@ -2690,80 +2690,6 @@
             "kind": "class",
             "layer": "application",
             "surface": "53831a9236d31dde37c3509f",
-            "growth": null
-        },
-        "Kumwe\\App\\BusinessSecurity\\Application\\Approval\\ApprovalBinding": {
-            "kind": "class",
-            "layer": "application",
-            "surface": "a869c37990da50dff062c715",
-            "growth": null
-        },
-        "Kumwe\\App\\BusinessSecurity\\Application\\Approval\\ApprovalDenied": {
-            "kind": "class",
-            "layer": "application",
-            "surface": "53831a9236d31dde37c3509f",
-            "growth": null
-        },
-        "Kumwe\\App\\BusinessSecurity\\Application\\Approval\\ApprovalQueryRepository": {
-            "kind": "interface",
-            "layer": "application",
-            "surface": "b5cd02c15a5006d59d3f82c4",
-            "growth": null
-        },
-        "Kumwe\\App\\BusinessSecurity\\Application\\Approval\\ApprovalQueryService": {
-            "kind": "class",
-            "layer": "application",
-            "surface": "06c60b490000163c2d491bfa",
-            "growth": null
-        },
-        "Kumwe\\App\\BusinessSecurity\\Application\\Approval\\ApprovalRepository": {
-            "kind": "interface",
-            "layer": "application",
-            "surface": "5f6a73296775fdb9a4736256",
-            "growth": null
-        },
-        "Kumwe\\App\\BusinessSecurity\\Application\\Approval\\ApprovalRequest": {
-            "kind": "class",
-            "layer": "application",
-            "surface": "2bdb960751919cb804b971ad",
-            "growth": null
-        },
-        "Kumwe\\App\\BusinessSecurity\\Application\\Approval\\ApprovalRequestView": {
-            "kind": "class",
-            "layer": "application",
-            "surface": "5a24d9e30fca32fc0d3abe9b",
-            "growth": null
-        },
-        "Kumwe\\App\\BusinessSecurity\\Application\\Approval\\ApprovalRule": {
-            "kind": "class",
-            "layer": "application",
-            "surface": "18c744f928e08cb11aeee507",
-            "growth": null
-        },
-        "Kumwe\\App\\BusinessSecurity\\Application\\Approval\\ApprovalService": {
-            "kind": "class",
-            "layer": "application",
-            "surface": "7ba7428f1d3ae2def63fd272",
-            "growth": {
-                "record": "KUMWE-CGR-2026-004"
-            }
-        },
-        "Kumwe\\App\\BusinessSecurity\\Application\\Approval\\ApprovalStatus": {
-            "kind": "enum",
-            "layer": "application",
-            "surface": "53f81f3a5be851c2bbe5c48c",
-            "growth": null
-        },
-        "Kumwe\\App\\BusinessSecurity\\Application\\Approval\\ApprovalVoteView": {
-            "kind": "class",
-            "layer": "application",
-            "surface": "db582a217a9f7bab2aca4ece",
-            "growth": null
-        },
-        "Kumwe\\App\\BusinessSecurity\\Application\\Approval\\StepUpProofConsumer": {
-            "kind": "interface",
-            "layer": "application",
-            "surface": "668b672178517885ee5fdcb2",
             "growth": null
         },
         "Kumwe\\App\\BusinessSecurity\\Application\\BusinessRecordAccessCatalogPlanner": {
@@ -2787,14 +2713,20 @@
         "Kumwe\\App\\BusinessSecurity\\Infrastructure\\Persistence\\DoctrineApprovalQueryRepository": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "f7e2bfd4cec6b807741220b0",
+            "surface": "87636c90ba894f793215cc78",
             "growth": null
         },
         "Kumwe\\App\\BusinessSecurity\\Infrastructure\\Persistence\\DoctrineApprovalRepository": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "d498a32f4a849d3e6f92ce9d",
-            "growth": null
+            "surface": "60779c0c1588d3e5ff2ce35d",
+            "growth": {
+                "classification": "host-infrastructure",
+                "implements": [
+                    "Kumwe\\Approval\\ApprovalRepository"
+                ],
+                "extends": null
+            }
         },
         "Kumwe\\App\\BusinessSecurity\\Infrastructure\\Persistence\\DoctrineBusinessRecordAccessController": {
             "kind": "class",
@@ -2817,7 +2749,7 @@
         "Kumwe\\App\\BusinessSecurity\\Infrastructure\\Persistence\\DoctrineStepUpProofConsumer": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "6bbef2f67cda48561a3b6a8d",
+            "surface": "85a58b262f5f631c1b184a65",
             "growth": null
         },
         "Kumwe\\App\\BusinessSurface\\Application\\BusinessApprovalExposureCatalog": {
@@ -2829,7 +2761,7 @@
         "Kumwe\\App\\BusinessSurface\\Application\\BusinessApprovalSurfaceService": {
             "kind": "class",
             "layer": "application",
-            "surface": "d90762673906611d65a59a68",
+            "surface": "6ebe5bb78367a86f2110e110",
             "growth": null
         },
         "Kumwe\\App\\BusinessSurface\\Application\\BusinessBulkMutation": {
@@ -3236,7 +3168,7 @@
         "Kumwe\\App\\Delivery\\Console\\Command\\BusinessRecordConsolePresenter": {
             "kind": "class",
             "layer": "delivery",
-            "surface": "a6ab5570fb96e24e19df698e",
+            "surface": "f78491cb4461f6f3e7c6a56d",
             "growth": null
         },
         "Kumwe\\App\\Delivery\\Console\\Command\\CommandInput": {
@@ -3560,7 +3492,7 @@
         "Kumwe\\App\\Delivery\\Http\\Api\\Business\\BusinessApprovalApiPresenter": {
             "kind": "class",
             "layer": "delivery",
-            "surface": "b1cc3b0b203968da53e138a0",
+            "surface": "4043b1404691092d84a751c0",
             "growth": null
         },
         "Kumwe\\App\\Delivery\\Http\\Api\\Business\\BusinessDefinitionDiscoveryApiHandler": {
@@ -6370,7 +6302,7 @@
         "Kumwe\\App\\Portal\\Http\\Handler\\PortalApprovalHandler": {
             "kind": "class",
             "layer": "delivery",
-            "surface": "f9d89871732d16113125ae94",
+            "surface": "4a780fd5c49763e64df9e41e",
             "growth": null
         },
         "Kumwe\\App\\Portal\\Http\\Handler\\PortalDashboardPreferencesHandler": {

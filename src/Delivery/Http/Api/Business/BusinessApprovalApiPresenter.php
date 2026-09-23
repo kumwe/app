@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Delivery\Http\Api\Business;
 
-use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalRequestView;
-use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalVoteView;
+use Kumwe\Approval\ApprovalRequestView;
+use Kumwe\Approval\ApprovalVoteView;
 
 /**
  * Projects scoped approval views without actor or policy-integrity identifiers.

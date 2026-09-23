@@ -9,8 +9,7 @@
       "id": "core.administrator.business-security",
       "handler": "src/Administrator/Http/Handler/AdministratorBusinessSecurityHandler.php",
       "application_sources": [
-        "src/BusinessSecurity/Application/Administration/BusinessSecurityAdministrationService.php",
-        "src/BusinessSecurity/Application/Approval/ApprovalService.php"
+        "src/BusinessSecurity/Application/Administration/BusinessSecurityAdministrationService.php"
       ],
       "templates": ["templates/administrator/business-security.twig"],
       "routes": [
@@ -127,8 +126,7 @@
       "id": "core.portal.approvals",
       "handler": "src/Portal/Http/Handler/PortalApprovalHandler.php",
       "application_sources": [
-        "src/BusinessSurface/Application/BusinessApprovalSurfaceService.php",
-        "src/BusinessSecurity/Application/Approval/ApprovalService.php"
+        "src/BusinessSurface/Application/BusinessApprovalSurfaceService.php"
       ],
       "templates": ["templates/portal/approvals.twig", "templates/portal/approval-detail.twig", "templates/portal/approval-not-found.twig"],
       "routes": [

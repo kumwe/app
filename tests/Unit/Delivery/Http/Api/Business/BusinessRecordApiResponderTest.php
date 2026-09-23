@@ -18,7 +18,7 @@ use Kumwe\App\BusinessRecord\Application\Exception\InvalidBusinessRecordQuery;
 use Kumwe\App\BusinessRecord\Application\RecordMutationResult;
 use Kumwe\App\BusinessRecord\Application\ValidationViolation;
 use Kumwe\App\BusinessSurface\Application\BusinessRecordProjector;
-use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalDenied;
+use Kumwe\Approval\ApprovalDenied;
 use Kumwe\App\Delivery\Http\Api\Business\BusinessRecordApiPresenter;
 use Kumwe\App\Delivery\Http\Api\Business\BusinessRecordApiResponder;
 use Kumwe\App\Delivery\Http\Api\ProblemDetailsResponseFactory;

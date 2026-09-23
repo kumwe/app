@@ -41,7 +41,7 @@
             "retryable"
         ],
         "unexpected_failure": "generic_protocol_error_and_server_log",
-        "registry_sha256": "1d3b15675c0b8e97052d182fe26b039cc6b717615dc6ba19ed33c58a16fc9885",
+        "registry_sha256": "67a13666759528c9c8939d87a9c82ca4ee97f4bfeb48b12d6197a92be7e48ce8",
         "registry": [
             {
                 "code": "authorization.denied",
@@ -55,7 +55,7 @@
                         "exception": "Kumwe\\App\\Identity\\Application\\Authorization\\InsufficientCapability"
                     },
                     {
-                        "exception": "Kumwe\\App\\BusinessSecurity\\Application\\Approval\\ApprovalDenied"
+                        "exception": "Kumwe\\Approval\\ApprovalDenied"
                     }
                 ]
             },
@@ -445,7 +445,7 @@
             ]
         }
     ],
-    "contract_sha256": "3c6f66752e772a5ca418ea00e14c364551347bf97560ed68cd4089bf468ae1af",
+    "contract_sha256": "7b880b4840eefd6f178a669d0616fd53dad5d773825ebaa3566af95428540f20",
     "surface": {
         "tools": [
             {

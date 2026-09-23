@@ -13,7 +13,7 @@ use Kumwe\App\Administrator\Presentation\SecurityWorkspaceState;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Context\Value\AuthenticationStrength;
 use Kumwe\Context\Value\ExecutionContext;
-use Kumwe\App\BusinessSecurity\Application\Approval\StepUpProofConsumer;
+use Kumwe\Approval\StepUpProofConsumer;
 use Kumwe\Access\MembershipDirectory;
 use Kumwe\App\Http\Middleware\TrustedProxyMiddleware;
 use Kumwe\App\Identity\Application\Administration\AccessControlService;

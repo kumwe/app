@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\Delivery\Http\Api\Business;
 
 use DateTimeImmutable;
-use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalRequestView;
-use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalStatus;
-use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalVoteView;
+use Kumwe\Approval\ApprovalRequestView;
+use Kumwe\Approval\ApprovalStatus;
+use Kumwe\Approval\ApprovalVoteView;
 use Kumwe\App\Delivery\Http\Api\Business\BusinessApprovalApiPresenter;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;

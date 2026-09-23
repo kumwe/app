@@ -260,11 +260,14 @@ use Kumwe\App\BusinessSurface\Infrastructure\Persistence\DoctrineBusinessOperati
 use Kumwe\App\BusinessSurface\Infrastructure\Security\KeyRingMutationPlanCipher;
 use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationRegistry;
 use Kumwe\App\BusinessSurface\Presentation\Field\RegistryFieldModelPresenter;
-use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalRepository;
-use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalQueryRepository;
-use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalQueryService;
-use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalService;
-use Kumwe\App\BusinessSecurity\Application\Approval\StepUpProofConsumer;
+use Kumwe\Approval\ApprovalRepository;
+use Kumwe\Approval\ApprovalQueryRepository;
+use Kumwe\Approval\ApprovalQueryService;
+use Kumwe\Approval\ApprovalService;
+use Kumwe\Approval\ConfigProvider as ApprovalConfigProvider;
+use Kumwe\Approval\Container\ApprovalQueryServiceFactory;
+use Kumwe\Approval\Container\ApprovalServiceFactory;
+use Kumwe\Approval\StepUpProofConsumer;
 use Kumwe\App\BusinessSecurity\Application\Administration\BusinessSecurityAdministrationRepository;
 use Kumwe\App\BusinessSecurity\Application\Administration\BusinessSecurityAdministrationService;
 use Kumwe\App\BusinessSecurity\Application\BusinessRecordAccessController;
@@ -842,6 +845,9 @@ use Psr\Clock\ClockInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Log\LoggerInterface;
+use LogicException;
+use Ramsey\Uuid\UuidFactory;
+use Ramsey\Uuid\UuidFactoryInterface;
 use RuntimeException;
 use Redis;
 
@@ -1512,14 +1518,31 @@ final class ContainerFactory
             self::service($container, Connection::class),
             self::service($container, TableNames::class),
         ), true);
-        $container->share(ApprovalQueryService::class, static fn (
-            Container $container,
-        ): ApprovalQueryService => new ApprovalQueryService(
-            self::service($container, ApprovalQueryRepository::class),
-            self::service($container, AuthorizationGateway::class),
-            self::service($container, MembershipDirectory::class),
-            self::service($container, ClockInterface::class),
-        ), true);
+        // kumwe/approval builds the shared maker-checker workflow and the scoped query service through the
+        // factories its ConfigProvider installs (KUMWE-MIG-2026-023) from the host ports bound here: the three
+        // approval ports, the kumwe/access-control authority ports, the transaction manager, the audit
+        // recorder, the clock and the explicit UUID factory its request, vote and audit identities come from.
+        $approvalDependencies = (new ApprovalConfigProvider())()['dependencies'];
+        $approvalFactories = [];
+        foreach ($approvalDependencies['factories'] as $service => $factory) {
+            if (
+                !is_a($factory, ApprovalServiceFactory::class, true)
+                && !is_a($factory, ApprovalQueryServiceFactory::class, true)
+            ) {
+                throw new LogicException(sprintf(
+                    'kumwe/approval installs an unexpected factory %s for %s.',
+                    $factory,
+                    $service,
+                ));
+            }
+            $approvalFactories[$service] = $factory;
+        }
+        $container->configure([
+            'factories' => $approvalFactories,
+            'aliases' => [],
+            'shared' => $approvalDependencies['shared'],
+        ]);
+        $container->share(UuidFactoryInterface::class, new UuidFactory(), true);
         $container->share(StepUpProofConsumer::class, static fn (
             Container $container,
         ): StepUpProofConsumer => new DoctrineStepUpProofConsumer(
@@ -1545,17 +1568,6 @@ final class ContainerFactory
             self::service($container, AuditRecorder::class),
             self::service($container, ClockInterface::class),
         ), true);
-        $container->share(ApprovalService::class, static fn (Container $container): ApprovalService =>
-            new ApprovalService(
-                self::service($container, ApprovalRepository::class),
-                self::service($container, StepUpProofConsumer::class),
-                self::service($container, MembershipDirectory::class),
-                self::service($container, TransactionManager::class),
-                self::service($container, AuthorizationGateway::class),
-                self::service($container, ResourceSiteOwnershipWriter::class),
-                self::service($container, AuditRecorder::class),
-                self::service($container, ClockInterface::class),
-            ), true);
         $container->share(MigrationRepository::class, static fn (Container $container): MigrationRepository =>
             new DoctrineMigrationRepository(
                 self::service($container, Connection::class),

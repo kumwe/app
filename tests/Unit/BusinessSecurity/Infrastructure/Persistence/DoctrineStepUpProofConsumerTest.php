@@ -7,7 +7,7 @@ namespace Kumwe\App\Tests\Unit\BusinessSecurity\Infrastructure\Persistence;
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\SQLitePlatform;
-use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalDenied;
+use Kumwe\Approval\ApprovalDenied;
 use Kumwe\App\BusinessSecurity\Infrastructure\Persistence\DoctrineStepUpProofConsumer;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\App\Infrastructure\Persistence\TableNames;

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Delivery\Console\Command;
 
-use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalRequestView;
-use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalVoteView;
+use Kumwe\Approval\ApprovalRequestView;
+use Kumwe\Approval\ApprovalVoteView;
 
 /**
  * Wraps shared generated-business documents in the stable CLI JSON envelope.

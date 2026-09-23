@@ -79,6 +79,27 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Added
 
+- **2026-09-23 — `kumwe/approval` 0.1.2 owns the maker-checker binding, transitions, projections and ports.**
+  The approval package enters App through the migration ledger (`NRM-2026-044`): `KUMWE-MIG-2026-023`, its change
+  set, the integration train `KUMWE-TRAIN-2026-023` and the release attestation record the verified `v0.1.2` release,
+  and `composer.json` pins it exactly. As the released record prescribes, the App's `ApprovalBinding`,
+  `ApprovalDenied`, `ApprovalQueryRepository`, `ApprovalQueryService`, `ApprovalRepository`, `ApprovalRequest`,
+  `ApprovalRequestView`, `ApprovalRule`, `ApprovalService`, `ApprovalStatus`, `ApprovalVoteView` and
+  `StepUpProofConsumer` are removed together with the duplicated `ApprovalServiceTest` the package now owns, the
+  `Kumwe\App\BusinessSecurity\Application\Approval\` root is retired, and every consumer reads the package types.
+  `ContainerFactory` installs the package `ConfigProvider`, whose factories build the shared `ApprovalService` and
+  `ApprovalQueryService` in place of the App closures, re-keys the repository, query-repository and step-up-consumer
+  bindings to the package ports and shares a Ramsey `UuidFactoryInterface`, so request, vote and audit identities
+  are `uuid4` from an explicit factory. `DoctrineApprovalRepository` honours the package's `rule($binding, lock:
+  true)` with a platform row lock on the rule rows and records the new `ApprovalStatus::Expired` transition in
+  `resolved_at`; `DoctrineApprovalQueryRepository` projects expired rows as terminal rows without controls, as it
+  already did for rejected and cancelled ones, and no schema changes. The package additionally re-asserts the frozen
+  rule on approval and rejection, checks the exact scope on revocation, bounds the request lifetime to seven days
+  and validates every projection fail-closed. The three Doctrine adapters, authorization, step-up verification,
+  protected-action execution and every delivery surface stay in App. The retained `mcp-v1` machine contract keeps
+  every tool and error code while its `authorization.denied` classification names the package approval exception, the
+  phase-three security parity manifest no longer lists the removed service, and the layer graph admits
+  `Kumwe\Approval` as an application package with its container factories in the kernel. The installed release
 - **2026-09-23 — `kumwe/content-model` 0.2.0 owns the content entry, revision, translation, workflow and content-type
   models and the persistence ports.**
   The content-model package enters App through the migration ledger (`NRM-2026-043`): `KUMWE-MIG-2026-034`, its

@@ -1,0 +1,30 @@
+schema: kumwe-non-roadmap-record/v1
+id: NRM-2026-044
+nrm_ref: NRM-2026-044
+roadmap_impact: None
+rationale: "Adopt verified kumwe/approval 0.1.2, the owner of the portable maker-checker binding, the approval request, rule and projection values, the request, approve, reject, cancel, revoke, expire and consume transitions and the scoped query boundary, behind explicit host ports."
+repositories:
+  - kumwe/app
+  - kumwe/approval
+behavior_before: "App declared the approval binding, the denial, the request, rule, request-view and vote-view values, the status enum, the repository, query-repository and step-up-consumer ports and the ApprovalService and ApprovalQueryService themselves under Kumwe\\App\\BusinessSecurity\\Application\\Approval, constructed both services in ContainerFactory closures, minted request, vote and audit identities with static uuid7 calls, had no expiry transition and resolved rules without a row lock."
+behavior_after: "The twelve types come from kumwe/approval 0.1.2; the package ConfigProvider factories build both services from the host-bound approval, access-control, transaction, audit, clock and UUID-factory ports; DoctrineApprovalRepository honours the rule lock flag and records the package's Expired transition in resolved_at; DoctrineApprovalQueryRepository projects expired rows as terminal rows; App keeps the three Doctrine adapters, authorization, step-up verification, protected-action execution and every delivery surface."
+public_api_impact: "None for delivery callers; the ports and values keep their names and shapes under the package namespace. ApprovalService takes an explicit UuidFactoryInterface and gains expire(), ApprovalStatus gains Expired, ApprovalRepository::rule() gains a lock flag, and the package refuses malformed projections, changed rules, foreign scopes and lifetimes above seven days that the App classes accepted."
+dependency_impact: "Adds kumwe/approval 0.1.2 exactly; its dependencies kumwe/access-context 0.1.2, kumwe/access-control 0.1.2, kumwe/audit 0.1.2 and kumwe/transaction 0.1.2 were already locked, ramsey/uuid and psr/clock were already required, and no other lock entry changes."
+compatibility: "Drop-in for every consumer that drove approvals through the service and query ports; stored rows keep their schema, identities and statuses, new identities are uuid4, and the retained mcp-v1 contract keeps every tool and error code while its authorization.denied classification names the package approval exception."
+data_migration: None
+security_impact: "No authority change; the gateway, step-up verification and consumption, eligibility checks, row locks and adapters stay in App, and the package additionally re-asserts the frozen rule on approval and rejection, checks the exact scope on revocation and validates every projection fail-closed."
+performance:
+  claim: None
+  evidence: []
+operations_deployment: "None; no configuration, schema or environment change. The UUID factory the package requires is a shared Ramsey factory bound in the composition root."
+recovery_rollback: "Revert the adoption pull request and restore the twelve removed classes and the removed unit test; no persisted data changes."
+artifacts_evidence:
+  - docs/architecture/migrations/KUMWE-MIG-2026-023.yaml
+  - docs/architecture/migrations/change-sets/KUMWE-CS-2026-023.yaml
+  - docs/architecture/migrations/trains/KUMWE-TRAIN-2026-023.yaml
+  - docs/architecture/migrations/evidence/KUMWE-MIG-2026-023/RELEASE-ATTESTATION.yaml
+  - docs/architecture/capability-index.md
+known_gaps:
+  - "The hosted release archive, the GitHub release and the release workflow run of kumwe/approval were not observable from the adoption session; the attestation records the tag commit through git and Packagist and the git archive digest of that commit."
+owner: "eWɘyn"
+status: in-progress

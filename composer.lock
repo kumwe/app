@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "2780c806b2319f0a399cceff7e9cac98",
+    "content-hash": "4c63e3ae4f96346249fecab534c8afe8",
     "packages": [
         {
             "name": "brick/math",
@@ -408,6 +408,56 @@
                 "source": "https://github.com/kumwe/access-control"
             },
             "time": "2026-09-08T15:58:54+00:00"
+        },
+        {
+            "name": "kumwe/approval",
+            "version": "v0.1.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/kumwe/approval.git",
+                "reference": "6e72f04aca6675f3cc1f219059256d7df13b511c"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/kumwe/approval/zipball/6e72f04aca6675f3cc1f219059256d7df13b511c",
+                "reference": "6e72f04aca6675f3cc1f219059256d7df13b511c",
+                "shasum": ""
+            },
+            "require": {
+                "ext-mbstring": "*",
+                "kumwe/access-context": "0.1.2",
+                "kumwe/access-control": "0.1.2",
+                "kumwe/audit": "0.1.2",
+                "kumwe/transaction": "0.1.2",
+                "php": "^8.5",
+                "psr/clock": "^1.0",
+                "psr/container": "^2.0",
+                "ramsey/uuid": "^4.9"
+            },
+            "require-dev": {
+                "laminas/laminas-servicemanager": "^4.0",
+                "phpstan/phpstan": "^2.1",
+                "phpstan/phpstan-strict-rules": "^2.0",
+                "phpunit/phpunit": "^12.0",
+                "squizlabs/php_codesniffer": "^4.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Kumwe\\Approval\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "Apache-2.0"
+            ],
+            "description": "Portable maker-checker approval bindings, state transitions, query ports and transaction-bound services.",
+            "homepage": "https://github.com/kumwe/approval",
+            "support": {
+                "issues": "https://github.com/kumwe/approval/issues",
+                "source": "https://github.com/kumwe/approval/tree/v0.1.2"
+            },
+            "time": "2026-09-08T16:05:19+00:00"
         },
         {
             "name": "kumwe/audit",

@@ -20,7 +20,7 @@ use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordValidationFaile
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordVersionConflict;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRelationshipRejected;
 use Kumwe\App\BusinessRecord\Application\Exception\InvalidBusinessRecordQuery;
-use Kumwe\App\BusinessSecurity\Application\Approval\ApprovalDenied;
+use Kumwe\Approval\ApprovalDenied;
 use Kumwe\App\BusinessSurface\Application\BusinessOperationNotFound;
 use Kumwe\App\Identity\Application\Authorization\InsufficientCapability;
 use Throwable;

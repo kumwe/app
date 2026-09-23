@@ -1,0 +1,104 @@
+schema: kumwe-release-attestation/v2
+artifact_kind: framework_php
+migration_id: KUMWE-MIG-2026-023
+change_set: KUMWE-CS-2026-023
+repository: "https://github.com/kumwe/approval"
+merge_commit: "6e72f04aca6675f3cc1f219059256d7df13b511c"
+version: "0.1.2"
+tag: v0.1.2
+source_archive:
+  url: "https://github.com/kumwe/approval.git"
+  sha256: "fa1940d7a23dd6e767db01ec0be32f66c624028c8613fe715da9cfc5fa9ad35a"
+artifacts:
+  - identity: "kumwe/approval:0.1.2"
+    url: "https://github.com/kumwe/approval.git"
+    sha256: "fa1940d7a23dd6e767db01ec0be32f66c624028c8613fe715da9cfc5fa9ad35a"
+manifests_and_corpora:
+  - path: resources/public-api/v1.json
+    sha256: "5985b2105f0ecafd9804084a894309175236e8f182c4ad47c892c97dbe72c48d"
+  - path: resources/capabilities/v1.json
+    sha256: "355b1a9fc67458ba5fbc2758d06415a72dbaf19bc50b7bdee09fca5812de4109"
+  - path: resources/service-map/v1.json
+    sha256: "da068d341df795d85028636ad16414a7086de63f9ece5e3551ed39a6907fdc25"
+  - path: MIGRATION-HANDOFF.md
+    sha256: "d82232c8cedefa79e43339d05086804558f6a69d3fad40766520edc5fa336a07"
+abi_and_capabilities: null
+sbom:
+  url: null
+  sha256: null
+provenance: "Not observed: the GitHub release and the release-on-record run of the tag commit could not be queried"
+release_workflow: "https://github.com/kumwe/approval/actions; the run on tag commit 6e72f04a was not observable from this session"
+registry_or_pie_verification:
+  - "git ls-remote https://github.com/kumwe/approval refs/tags/v0.1.2 returned one line for refs/tags/v0.1.2"
+  - "Tag commit from git ls-remote: 6e72f04aca6675f3cc1f219059256d7df13b511c; no peeled ^{} line (lightweight tag)"
+  - "git clone --quiet --depth 1 --branch v0.1.2 of the repository: HEAD 6e72f04aca6675f3cc1f219059256d7df13b511c"
+  - "In the clone git cat-file -t v0.1.2 is commit; the read-only clone at the same tag reports the same HEAD"
+  - "Packagist p2 observed 2026-09-23T16:38:28Z at https://repo.packagist.org/p2/kumwe/approval.json (HTTP 200)"
+  - "Packagist lists v0.1.2 (0.1.2.0) newest of v0.1.2, v0.1.1, v0.1.0; time 2026-09-08T16:05:19+00:00"
+  - "Packagist source: git https://github.com/kumwe/approval.git at 6e72f04aca6675f3cc1f219059256d7df13b511c"
+  - "Packagist dist: zip at reference 6e72f04aca6675f3cc1f219059256d7df13b511c (api.github.com zipball URL)"
+  - "Packagist source and dist references both equal the tag commit and the clone HEAD"
+  - "Packagist dist shasum is an empty string; license Apache-2.0; autoload psr-4 Kumwe\\Approval\\ => src/"
+  - "Packagist require: php ^8.5, ext-mbstring *, kumwe/access-context 0.1.2, kumwe/access-control 0.1.2"
+  - "Packagist require continued: kumwe/audit 0.1.2, kumwe/transaction 0.1.2, psr/clock ^1.0, psr/container ^2.0"
+  - "Packagist require continued: ramsey/uuid ^4.9; v0.1.1 and v0.1.0 pinned the 0.1.0 Context, Access and Audit tuple"
+  - "curl -sS -L of https://github.com/kumwe/approval/archive/refs/tags/v0.1.2.tar.gz: HTTP 403 from the session proxy"
+  - "The proxy answered that GitHub HTTP access to kumwe/approval is not enabled for this session; git reads are served"
+  - "codeload.github.com and api.github.com routes for kumwe/approval answered the same 403; the fetch was repeated"
+  - "The same tar.gz route served kumwe/audit and kumwe/access-control v0.1.2 with their previously attested digests"
+  - "The hosted tar.gz and zipball bytes were therefore not observed; the attested archive is the tag's git archive"
+  - "git archive --format=tar --prefix=approval-0.1.2/ v0.1.2 | sha256sum in the depth-1 clone gave fa1940d7a23dd6e7"
+  - "Full local git archive digest: fa1940d7a23dd6e767db01ec0be32f66c624028c8613fe715da9cfc5fa9ad35a (uncompressed tar)"
+  - "The read-only clone at the same tag commit produced the same git archive digest"
+  - "Extracted approval-0.1.2/ holds 36 files; diff -r reports no content difference against the clone"
+  - "diff -r --exclude=.git differs only by .gitattributes, .github, .gitignore, AGENTS.md, phpcs.xml, phpstan.neon, phpunit.xml"
+  - "diff -r also reports tests and tools only in the clone; every reported path is export-ignore in .gitattributes"
+  - "The clone tracks 70 files; the archive omits the 34 export-ignore files and nothing else"
+  - "Archive top level: CHANGELOG.md, CHARTER.md, LICENSE, MIGRATION-HANDOFF.md, README.md, composer.json"
+  - "Archive top-level directories: docs, examples, resources, src; LICENSE is Apache License Version 2.0"
+  - "CHARTER.md, README.md, docs/, resources/ and src/ are all present in the archive"
+  - "The GitHub MCP tools refuse kumwe/approval as a repository not configured for this session; no access was granted"
+  - "GitHub release v0.1.2, the release-on-record workflow run and package pull request 5 were therefore not queried"
+clean_consumer_or_build_verification:
+  - "No package PHP, script or example was executed; the package was installed into App through Composer only"
+  - "resources/public-api/v1.json: valid against package-public-api.v1.schema.json (App SchemaValidator)"
+  - "resources/capabilities/v1.json: valid against package-capabilities.v1.schema.json (App SchemaValidator)"
+  - "resources/service-map/v1.json: valid against package-service-map.v1.schema.json (App SchemaValidator)"
+  - "All three manifests carry package kumwe/approval and release 0.1.2; public-api exports 15 symbols"
+  - "docs/release-record.md does not exist at v0.1.2; the shipped record is MIGRATION-HANDOFF.md"
+  - "Governance README section 3.11 admits MIGRATION-HANDOFF.md for published releases"
+  - "MIGRATION-HANDOFF.md front matter parsed by PackageManifests::parseReleaseRecord"
+  - "MIGRATION-HANDOFF.md front matter: valid against migration-handoff.v2.schema.json (App SchemaValidator)"
+  - "Record front matter: kumwe-migration-handoff/v2, KUMWE-MIG-2026-023, KUMWE-CS-2026-023, framework_php"
+  - "Record state draft_pr_open; target https://github.com/kumwe/approval, artifact_identity kumwe/approval"
+  - "Record canonical namespace Kumwe\\Approval; composer_package kumwe/approval"
+  - "Record ownership.public_manifests digests equal the three locally computed manifest digests"
+  - "Record tests.corpora is empty; the package declares no language-neutral corpus"
+  - "Record blockers: independent successor and dependency release verification before App adoption"
+  - "CHANGELOG.md newest release heading is ## 0.1.2 above ## 0.1.1 and ## 0.1.0; no Unreleased section"
+  - "Package composer.json require: php ^8.5, ext-mbstring *, access-context, access-control, audit and transaction 0.1.2"
+  - "Package composer.json require continued: psr/clock ^1.0, psr/container ^2.0, ramsey/uuid ^4.9"
+  - "Package composer.json carries vcs repositories for access-control, audit and canonical-json; App declares none"
+  - "App composer.lock: kumwe/access-context v0.1.2 at 132c3cd7c229ceda4398e19140d1477512c27ebf (exact)"
+  - "App composer.lock: kumwe/access-control v0.1.2 at c2420d1ed03bc39eaf5d8b9f5540580c297e3b57 (exact)"
+  - "App composer.lock: kumwe/audit v0.1.2 at e97da93a29e69183b9592e71c1b68065dc2a87f6 (exact)"
+  - "App composer.lock: kumwe/transaction v0.1.2 at 56c8eb14a70bd3f1ed7eaeae7196a07d6627bf03 (exact)"
+  - "App composer.lock platform: php ^8.5 and ext-mbstring (both satisfy the package requirements)"
+  - "App composer.lock after the pin: kumwe/approval v0.1.2 at 6e72f04aca6675f3cc1f219059256d7df13b511c, one lock install"
+  - "Composer installed the package from its git source at the tag commit; the shipped files equal the archive"
+  - "PackageManifests::read of the installed package succeeds and selects resources/public-api/v1.json"
+  - "Validator: tools/Governance bootstrap, SchemaValidator, PackageManifests and StrictYaml loaded by a scratch script on PHP 8.4.19"
+verified_at: "2026-09-23T16:46:38Z"
+verified_by: "Independent release verification agent (adoption worktree, no Phase 1 context)"
+status: verified
+known_gaps:
+  - "The hosted GitHub tag tar.gz and the Packagist zipball were not downloaded: the session proxy refused kumwe/approval"
+  - "The attested digest is of the uncompressed git archive of the tag commit, not of any hosted archive bytes"
+  - "GitHub release v0.1.2, the release-on-record workflow run and package pull request 5 were not queried (access refused)"
+  - "Tag protection and rulesets were not queried"
+  - "No smoke test or example run was performed; the only consumer install is the App lock install of this adoption"
+  - "CHANGELOG.md ends with: Publish after the human rebase merge passes the complete package and dependency gates."
+  - "resources/release-readiness.json reports status blocked with null dependency attestations, by package design"
+  - "No SBOM and no release assets were observed for v0.1.2; abi_and_capabilities does not apply to a framework_php artifact"
+  - "The schema checks used the App's fixed JSON Schema 2020-12 subset validator, not a full implementation"
+  - "The verification ran in the adoption worktree rather than in isolation; Phase 2 context was present, Phase 1 context was not"

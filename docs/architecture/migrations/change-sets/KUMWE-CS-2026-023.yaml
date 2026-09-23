@@ -1,0 +1,120 @@
+schema: kumwe-change-set/v2
+change_set: KUMWE-CS-2026-023
+migration_id: KUMWE-MIG-2026-023
+roadmap_source:
+  title: Kumwe ERP-Extensibility Foundation Roadmap
+  sha256: a202155ef1a65f5ab293d4f8397ebf4ac430db7f1e877c776bbe7851e6fe18d8
+roadmap_refs: []
+state: app-pr-ready
+phase_1:
+  source_repository: kumwe/app
+  source_sha: "24ecf956423c18933e824b43cea1bfb9127a79a9"
+  target_repository: kumwe/approval
+  package_pr: "https://github.com/kumwe/approval/pull/5"
+  tested_sha: null
+  public_api_digest: "5985b2105f0ecafd9804084a894309175236e8f182c4ad47c892c97dbe72c48d"
+  capability_digest: "355b1a9fc67458ba5fbc2758d06415a72dbaf19bc50b7bdee09fca5812de4109"
+  service_map_digest: "da068d341df795d85028636ad16414a7086de63f9ece5e3551ed39a6907fdc25"
+  handoff_digest: "d82232c8cedefa79e43339d05086804558f6a69d3fad40766520edc5fa336a07"
+release:
+  version: 0.1.2
+  source_sha: "6e72f04aca6675f3cc1f219059256d7df13b511c"
+  artifact_digest: "fa1940d7a23dd6e767db01ec0be32f66c624028c8613fe715da9cfc5fa9ad35a"
+  clean_consumer_evidence:
+    - docs/architecture/migrations/evidence/KUMWE-MIG-2026-023/RELEASE-ATTESTATION.yaml
+phase_2:
+  app_pr: "https://github.com/kumwe/app/pull/151"
+  tested_sha: null
+  merged_sha: null
+  exact_dependency: "kumwe/approval 0.1.2"
+  composer_lock_digest: "567694e9542171d414553c8b4e8be2eeffd6f0f72081fb981dc9eb3d46b1efd8"
+  removed_app_symbols:
+    - Kumwe\App\BusinessSecurity\Application\Approval\ApprovalBinding
+    - Kumwe\App\BusinessSecurity\Application\Approval\ApprovalDenied
+    - Kumwe\App\BusinessSecurity\Application\Approval\ApprovalQueryRepository
+    - Kumwe\App\BusinessSecurity\Application\Approval\ApprovalQueryService
+    - Kumwe\App\BusinessSecurity\Application\Approval\ApprovalRepository
+    - Kumwe\App\BusinessSecurity\Application\Approval\ApprovalRequest
+    - Kumwe\App\BusinessSecurity\Application\Approval\ApprovalRequestView
+    - Kumwe\App\BusinessSecurity\Application\Approval\ApprovalRule
+    - Kumwe\App\BusinessSecurity\Application\Approval\ApprovalService
+    - Kumwe\App\BusinessSecurity\Application\Approval\ApprovalStatus
+    - Kumwe\App\BusinessSecurity\Application\Approval\ApprovalVoteView
+    - Kumwe\App\BusinessSecurity\Application\Approval\StepUpProofConsumer
+  moved_unit_tests:
+    - tests/Unit/BusinessSecurity/Application/ApprovalServiceTest.php
+  retained_app_tests:
+    - tests/Integration/BusinessSecurity/CompetingApproverContentionIntegrationTest.php
+    - tests/Integration/BusinessSecurity/DoctrineApprovalQueryRepositoryIntegrationTest.php
+    - tests/Unit/Administrator/Http/Handler/AdministratorAccessControlHandlerTest.php
+    - tests/Unit/BusinessSecurity/Application/BusinessSecurityAdministrationServiceTest.php
+    - tests/Unit/BusinessSecurity/Infrastructure/Persistence/DoctrineApprovalRepositoryTest.php
+    - tests/Unit/BusinessSecurity/Infrastructure/Persistence/DoctrineStepUpProofConsumerTest.php
+    - tests/Unit/BusinessSurface/Application/BusinessApprovalSurfaceServiceTest.php
+    - tests/Unit/Delivery/Console/Command/BusinessRecordConsolePresenterTest.php
+    - tests/Unit/Delivery/Http/Api/Business/BusinessApprovalApiPresenterTest.php
+    - tests/Unit/Delivery/Http/Api/Business/BusinessRecordApiResponderTest.php
+    - tests/Architecture/PhaseThreeSecurityIdentityParityTest.php
+    - tests/Unit/Infrastructure/Mcp/McpMachineContractTest.php
+    - tests/Unit/Governance/ComposerLockTest.php
+    - tests/Architecture/CapabilityIndexGateTest.php
+evidence:
+  package:
+    - docs/architecture/migrations/evidence/KUMWE-MIG-2026-023/RELEASE-ATTESTATION.yaml
+    - "https://github.com/kumwe/approval.git at tag commit 6e72f04aca6675f3cc1f219059256d7df13b511c, the Packagist source and dist reference of v0.1.2"
+    - "The GitHub release and the release-on-record workflow run of that commit were not observable from the adoption session; see the attestation's known_gaps"
+  app_composition:
+    - tests/Unit/BusinessSecurity/Infrastructure/Persistence/DoctrineApprovalRepositoryTest.php
+    - tests/Unit/BusinessSurface/Application/BusinessApprovalSurfaceServiceTest.php
+    - tests/Unit/Governance/ComposerLockTest.php
+    - tests/Unit/Governance/CoreGrowthGateTest.php
+    - tests/Architecture/CapabilityIndexGateTest.php
+    - tests/Architecture/PhaseThreeSecurityIdentityParityTest.php
+    - tests/Unit/Infrastructure/Mcp/McpMachineContractTest.php
+    - "composer require kumwe/approval:0.1.2; one lock install, no other lock change"
+    - "composer kumwe:capability-index, kumwe:core-growth-record, baseline:record, then the composer qa gates and the unit and architecture suites, run locally on PHP 8.4 without ext-kumwe_engine"
+  database_matrix:
+    - tests/Integration/BusinessSecurity/CompetingApproverContentionIntegrationTest.php
+    - tests/Integration/BusinessSecurity/DoctrineApprovalQueryRepositoryIntegrationTest.php
+    - "To be exercised by the pull request's hosted workflows on MariaDB, MySQL and PostgreSQL."
+  concurrency:
+    - tests/Integration/BusinessSecurity/CompetingApproverContentionIntegrationTest.php
+    - "Duplicate votes, crossed quorum transitions and consume-versus-revoke on one version under two real connections; to be exercised by the pull request's hosted workflows."
+  authorization_security:
+    - tests/Unit/BusinessSecurity/Application/BusinessSecurityAdministrationServiceTest.php
+    - tests/Unit/BusinessSecurity/Infrastructure/Persistence/DoctrineStepUpProofConsumerTest.php
+    - tests/Unit/BusinessSecurity/Infrastructure/Persistence/DoctrineApprovalRepositoryTest.php
+    - tests/Unit/Administrator/Http/Handler/AdministratorAccessControlHandlerTest.php
+    - "Step-up proof consumption, role eligibility, rule freshness and the deny-by-default gateway stay in the App adapters and gateway; the hosted source-and-image security scans run on the pull request."
+  lifecycle_recovery:
+    - tests/Integration/BusinessSecurity/CompetingApproverContentionIntegrationTest.php
+    - tests/Integration/BusinessSecurity/DoctrineApprovalQueryRepositoryIntegrationTest.php
+    - "Optimistic transitions and terminal-row visibility on the unchanged approval schema; to be exercised by the pull request's hosted workflows."
+  delivery_browser:
+    - tests/Unit/Delivery/Http/Api/Business/BusinessApprovalApiPresenterTest.php
+    - tests/Unit/Delivery/Http/Api/Business/BusinessRecordApiResponderTest.php
+    - tests/Unit/Delivery/Console/Command/BusinessRecordConsolePresenterTest.php
+    - tests/Architecture/PhaseThreeSecurityIdentityParityTest.php
+    - "Administrator, portal, REST, console and MCP delivery of the same approval decisions and denials; the browser suites run in the pull request's hosted workflows."
+  deployment_backup_restore:
+    - tests/Support/RestoreSecurityAcceptance.php
+    - "No schema change; restore-security acceptance on three engines is exercised by the pull request's hosted workflows."
+  native_parity_abi:
+    - tests/Unit/Kernel/NativeComputationFactoryTest.php
+    - "No native code is involved; the package is pure PHP and the engine binding is untouched. The suite that needs ext-kumwe_engine runs in the pull request's hosted workflows."
+  performance_capacity:
+    - tests/Integration/BusinessSecurity/DoctrineApprovalQueryRepositoryIntegrationTest.php
+    - "The rule lookup adds one row lock inside the existing request transaction and the projections are the same bounded queries; no performance claim is made."
+compatibility: "The twelve moved types keep their names and shapes under Kumwe\\Approval. ApprovalService takes an explicit Ramsey UuidFactoryInterface as its ninth constructor argument and mints request, vote and audit identities as uuid4 instead of static uuid7; it gains expire(), and ApprovalStatus gains Expired, which DoctrineApprovalRepository records in resolved_at. ApprovalRepository::rule() takes a lock flag the Doctrine adapter honours with a platform row lock on the rule rows. The package refuses projections with non-UUID identities, rule codes, identities, actions, scopes and votes outside its patterns, expiry not after creation, quorum, approval or vote counts above thirty-two and notes with control characters; approval and rejection re-assert the frozen rule, revocation checks the exact scope, cancellation refuses an expired request, and the request lifetime is bounded to seven days inside the transaction. The retained MCP machine contract mcp-v1 keeps every tool, error code, message and retry flag; its authorization.denied classification now names the package approval exception, so the generation's registry and contract digests move with that one string."
+migration_recovery: null
+security_impact: "None on authority: the deny-by-default gateway, step-up verification and proof consumption, role and membership eligibility, the row locks and every Doctrine adapter stay in App. The package tightens the workflow it already governed: request creation and rule-freshness assertions hold the rule rows, approve and reject refuse a changed or deactivated rule and a mismatched scope, revoke refuses a foreign site, organization or workspace, and every projection is validated fail-closed before presentation."
+performance_claim: null
+rollback: "Revert the App pull request and restore the twelve removed classes and the unit test from the baseline commit; no persisted data changes, and rows the package wrote with uuid4 identities and expired status remain valid UUIDs and a status the schema already stored as a free string."
+known_gaps:
+  - "The local sandbox runs PHP 8.4 without ext-kumwe_engine and without a database server, so the integration and functional lanes, PHP 8.5 and the native runtime path are proven by the App CI on this pull request."
+  - "The hosted GitHub tag tar.gz, the Packagist zipball, the GitHub release and the release workflow run of kumwe/approval were not observable from the adoption session; the attestation binds the tag commit through git ls-remote, a depth-one clone and the Packagist source and dist references, and its artifact digest is the git archive of that commit."
+  - "The released record lists tests/Unit/BusinessSecurity/Application/ApprovalServiceTest.php both under remain_in_app_or_consumer and, by its prohibited_duplicates and tests_to_remove prose, as an implementation-owned duplicate; every one of its three tests drove the moved service through mocked ports, the package's own ApprovalServiceTest proves the same behaviour, so the file is removed and the retained host tests are the adapter, delivery, composition and database tests listed above."
+  - "Stored approval rows written before the move satisfy the package projection validation by construction: identities were validated by the same binding patterns at write time, request identities are uuid7 strings the package accepts as UUIDs, rule codes are validated by the administration service's policy-code pattern, notes were bounded at five hundred characters, and expiry was always later than creation; a pre-adoption database must still render its approval inbox and detail after upgrade, which the hosted database lanes observe."
+  - "The release attestation was produced in the adoption worktree rather than by an isolated verifier; it records the tag, clone, registry and installed-record facts observed there."
+completion_claim: false
+accepted_by: null
