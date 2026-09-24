@@ -1,0 +1,465 @@
+{
+  "uid": "kumwe-transport",
+  "title": "Kumwe — transport and retries",
+  "tags": [
+    "kumwe",
+    "transport"
+  ],
+  "description": "What the business work cost: retries, dead letters, rollbacks, lock failures and time spent waiting in a queue. Nothing here counts completed work, so a healthy business dashboard beside a busy transport dashboard is the signal that a dependency is failing transiently.",
+  "editable": true,
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "1m",
+  "timezone": "utc",
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "datasource",
+        "label": "Prometheus",
+        "type": "datasource",
+        "query": "prometheus",
+        "current": {},
+        "hide": 0
+      }
+    ]
+  },
+  "annotations": {
+    "list": []
+  },
+  "links": [],
+  "panels": [
+    {
+      "id": 1,
+      "type": "row",
+      "title": "Retries and dead letters",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "panels": []
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Job attempts retried or buried per second",
+      "description": "Job settlements that did not complete.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 1
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (outcome) (rate(kumwe_queue_settlements_total{outcome=~\"retried|dead\"}[5m]))",
+          "legendFormat": "{{outcome}}"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Job retry ratio",
+      "description": "Share of job attempts that ended in a retry.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 1
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(kumwe_queue_settlements_total{outcome=\"retried\"}[15m])) / clamp_min(sum(rate(kumwe_queue_settlements_total[15m])), 0.001)",
+          "legendFormat": "retry ratio"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Outbox dispatches retried or dead per second",
+      "description": "Dispatch settlements that did not complete.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 9
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (outcome) (rate(kumwe_dispatch_settlements_total{outcome=~\"retried|dead\"}[5m]))",
+          "legendFormat": "{{outcome}}"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Inbox consumptions retried or poisoned per second",
+      "description": "Consumer settlements that did not complete.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 9
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (outcome) (rate(kumwe_consumer_settlements_total{outcome=~\"retried|dead\"}[5m]))",
+          "legendFormat": "{{outcome}}"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Dead letters waiting for an operator",
+      "description": "Failed-job ledger rows, dead outbox events and poisoned inbox receipts.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 17
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max(kumwe_jobs_dead_lettered)",
+          "legendFormat": "failed jobs"
+        },
+        {
+          "refId": "B",
+          "expr": "max(kumwe_outbox_dead)",
+          "legendFormat": "outbox dead"
+        },
+        {
+          "refId": "C",
+          "expr": "max(kumwe_inbox_poison)",
+          "legendFormat": "inbox poison"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Expired job leases",
+      "description": "Claimed jobs whose worker died or outran its lease.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 17
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max(kumwe_jobs_lease_expired)",
+          "legendFormat": "expired leases"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "row",
+      "title": "Database contention",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 25
+      },
+      "panels": []
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Rolled-back transactions per second",
+      "description": "Outermost transactions that rolled back.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 26
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(kumwe_transactions_total{outcome=\"rolled_back\"}[5m]))",
+          "legendFormat": "rolled back"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Deadlocks and lock timeouts per second",
+      "description": "Rolled-back transactions by failure class.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 26
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (class) (rate(kumwe_transaction_failures_total[5m]))",
+          "legendFormat": "{{class}}"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "type": "row",
+      "title": "Waiting",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 34
+      },
+      "panels": []
+    },
+    {
+      "id": 12,
+      "type": "timeseries",
+      "title": "Oldest waiting work",
+      "description": "Age of the oldest due job, undispatched event, unconsumed receipt, overdue process step and unsequenced source.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 35
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max(kumwe_jobs_oldest_due_age_seconds)",
+          "legendFormat": "job"
+        },
+        {
+          "refId": "B",
+          "expr": "max(kumwe_outbox_oldest_pending_age_seconds)",
+          "legendFormat": "outbox"
+        },
+        {
+          "refId": "C",
+          "expr": "max(kumwe_inbox_oldest_pending_age_seconds)",
+          "legendFormat": "inbox"
+        },
+        {
+          "refId": "D",
+          "expr": "max(kumwe_process_work_oldest_overdue_age_seconds)",
+          "legendFormat": "process work"
+        },
+        {
+          "refId": "E",
+          "expr": "max(kumwe_projection_staging_oldest_age_seconds)",
+          "legendFormat": "sequencing"
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "type": "timeseries",
+      "title": "Backlog depth",
+      "description": "Bounded depth probes; a value at the probe cap is a lower bound.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 35
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max(kumwe_jobs_due)",
+          "legendFormat": "jobs due"
+        },
+        {
+          "refId": "B",
+          "expr": "max(kumwe_outbox_pending)",
+          "legendFormat": "outbox pending"
+        },
+        {
+          "refId": "C",
+          "expr": "max(kumwe_inbox_pending)",
+          "legendFormat": "inbox pending"
+        }
+      ]
+    }
+  ]
+}
