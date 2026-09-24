@@ -3035,8 +3035,12 @@
         "Kumwe\\App\\Delivery\\Console\\Command\\CommandInput": {
             "kind": "class",
             "layer": "delivery",
-            "surface": "5f7ac936140ed3d88914c954",
-            "growth": null
+            "surface": "ce5276dff2b27d31e70dce13",
+            "growth": {
+                "classification": "host-delivery",
+                "implements": [],
+                "extends": null
+            }
         },
         "Kumwe\\App\\Delivery\\Console\\Command\\ConsoleAuthorizer": {
             "kind": "class",
@@ -3278,6 +3282,18 @@
             "surface": "db6ab7e59eddf59b0643380c",
             "growth": null
         },
+        "Kumwe\\App\\Delivery\\Console\\Command\\StudioAuthoringCommand": {
+            "kind": "class",
+            "layer": "delivery",
+            "surface": "4c441f644a0d3f523721b5d1",
+            "growth": {
+                "classification": "host-delivery",
+                "implements": [
+                    "Kumwe\\App\\Delivery\\Console\\Command"
+                ],
+                "extends": null
+            }
+        },
         "Kumwe\\App\\Delivery\\Console\\Command\\UninstallExtensionCommand": {
             "kind": "class",
             "layer": "delivery",
@@ -3313,6 +3329,16 @@
             "layer": "delivery",
             "surface": "8b48e5d2afc53b3e648d6e45",
             "growth": null
+        },
+        "Kumwe\\App\\Delivery\\Console\\Contract\\CliV2MachineContract": {
+            "kind": "class",
+            "layer": "delivery",
+            "surface": "8b48e5d2afc53b3e648d6e45",
+            "growth": {
+                "classification": "host-delivery",
+                "implements": [],
+                "extends": null
+            }
         },
         "Kumwe\\App\\Delivery\\Console\\Output": {
             "kind": "interface",
@@ -3623,6 +3649,28 @@
             "layer": "delivery",
             "surface": "80626cbad306dbe497b39b39",
             "growth": null
+        },
+        "Kumwe\\App\\Delivery\\Http\\Api\\Studio\\StudioAuthoringApiHandler": {
+            "kind": "class",
+            "layer": "delivery",
+            "surface": "ddbfafc39492ec34af2535ef",
+            "growth": {
+                "classification": "host-delivery",
+                "implements": [
+                    "Psr\\Http\\Server\\RequestHandlerInterface"
+                ],
+                "extends": null
+            }
+        },
+        "Kumwe\\App\\Delivery\\Http\\Api\\Studio\\StudioAuthoringProblemMapper": {
+            "kind": "class",
+            "layer": "delivery",
+            "surface": "d8b8e175f3c6f5124f497bb2",
+            "growth": {
+                "classification": "host-delivery",
+                "implements": [],
+                "extends": null
+            }
         },
         "Kumwe\\App\\Delivery\\Http\\Dashboard\\DashboardPreferenceFormDecoder": {
             "kind": "class",
@@ -4555,7 +4603,7 @@
         "Kumwe\\App\\Identity\\Application\\Authentication\\AuthenticatedPrincipal": {
             "kind": "class",
             "layer": "application",
-            "surface": "b2a66ac694d354a75c91f107",
+            "surface": "2dc18a78e8268c8c37f7fcc6",
             "growth": {
                 "record": "KUMWE-CGR-2026-004"
             }
@@ -4957,8 +5005,12 @@
         "Kumwe\\App\\Infrastructure\\Mcp\\KumweMcpHandlers": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "64bf14f4410e6c8ae0d613bc",
-            "growth": null
+            "surface": "8e159c525f497846a75411c4",
+            "growth": {
+                "classification": "host-infrastructure",
+                "implements": [],
+                "extends": null
+            }
         },
         "Kumwe\\App\\Infrastructure\\Mcp\\KumweMcpServerFactory": {
             "kind": "class",
@@ -5015,8 +5067,12 @@
         "Kumwe\\App\\Infrastructure\\Mcp\\McpMutationGuardMode": {
             "kind": "enum",
             "layer": "infrastructure",
-            "surface": "e9546ad8a5df3b0ed6060a46",
-            "growth": null
+            "surface": "36cd3814b0344a947bf27c40",
+            "growth": {
+                "classification": "host-infrastructure",
+                "implements": [],
+                "extends": null
+            }
         },
         "Kumwe\\App\\Infrastructure\\Mcp\\McpRiskClass": {
             "kind": "enum",
@@ -6759,6 +6815,46 @@
                 "record": "KUMWE-CGR-2026-001"
             }
         },
+        "Kumwe\\App\\Studio\\Application\\Authoring\\StudioMachineAuthoringGateway": {
+            "kind": "class",
+            "layer": "application",
+            "surface": "ead88744765d7bf8cfb931f2",
+            "growth": {
+                "record": "KUMWE-CGR-2026-031"
+            }
+        },
+        "Kumwe\\App\\Studio\\Application\\Authoring\\StudioMachineAuthoringOperation": {
+            "kind": "enum",
+            "layer": "application",
+            "surface": "64b8d3fb16ddb56d04fd3e5d",
+            "growth": {
+                "record": "KUMWE-CGR-2026-031"
+            }
+        },
+        "Kumwe\\App\\Studio\\Application\\Authoring\\StudioMachineAuthoringRefused": {
+            "kind": "class",
+            "layer": "application",
+            "surface": "0f4ca91a24b991142b7d83a2",
+            "growth": {
+                "record": "KUMWE-CGR-2026-031"
+            }
+        },
+        "Kumwe\\App\\Studio\\Application\\Authoring\\StudioMachineAuthoringResult": {
+            "kind": "class",
+            "layer": "application",
+            "surface": "06134d4cea894fb70302d157",
+            "growth": {
+                "record": "KUMWE-CGR-2026-031"
+            }
+        },
+        "Kumwe\\App\\Studio\\Application\\Authoring\\StudioMachineAuthoringSession": {
+            "kind": "class",
+            "layer": "application",
+            "surface": "6e7d894db0870f5b63aebcf2",
+            "growth": {
+                "record": "KUMWE-CGR-2026-031"
+            }
+        },
         "Kumwe\\App\\Studio\\Application\\Authoring\\UnavailableStudioContextualAuthoringConfigurationProvider": {
             "kind": "class",
             "layer": "application",
@@ -7022,8 +7118,10 @@
         "Kumwe\\App\\Studio\\Application\\Host\\StudioProducerRequestAuthority": {
             "kind": "class",
             "layer": "application",
-            "surface": "4afdbfce06479f3dd5a1767f",
-            "growth": null
+            "surface": "881bdabd1ea18e6cfdedabf7",
+            "growth": {
+                "record": "KUMWE-CGR-2026-031"
+            }
         },
         "Kumwe\\App\\Studio\\Application\\Host\\StudioRecoveryHostPort": {
             "kind": "class",
@@ -7066,6 +7164,14 @@
             "layer": "application",
             "surface": "5cb754a4e4e23c01817ec7b8",
             "growth": null
+        },
+        "Kumwe\\App\\Studio\\Application\\Host\\StudioSessionSurfaceBinding": {
+            "kind": "class",
+            "layer": "application",
+            "surface": "84a401fc4e68193d3f191dcc",
+            "growth": {
+                "record": "KUMWE-CGR-2026-031"
+            }
         },
         "Kumwe\\App\\Studio\\Application\\Host\\StudioTelemetryHostPort": {
             "kind": "class",
