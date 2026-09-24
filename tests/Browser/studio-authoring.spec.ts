@@ -1,7 +1,14 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Locator, type Page, type Request } from '@playwright/test';
 import { expectNoDocumentOverflow } from './support/interface-diagnostics';
-import { awaitStudioLaunchSettled, STUDIO_SURFACE_PREFERENCE_KEY } from './support/studio-authoring';
+import {
+  awaitStudioLaunchSettled,
+  focusStop,
+  STUDIO_SURFACE_PREFERENCE_KEY,
+  tabStops,
+  tabUntil,
+  type FocusStop,
+} from './support/studio-authoring';
 import { journeyLocale, localized, studio, text } from './support/studio-journey-text';
 
 const administratorEmail = process.env.KUMWE_BROWSER_ADMIN_EMAIL ?? 'browser-administrator@kumwe.test';
@@ -492,4 +499,137 @@ test('the accepted item previews through the authenticated channel and renders p
   await expect(page.locator('.studio-preview-extension-grid', { hasText: 'Contributed grid: 2 columns' })).toBeVisible();
   expect(await page.locator('script[src*="studio-browser"], link[href*="studio-browser"]').count()).toBe(0);
   expect(await page.locator('[data-studio-preview-marker]').count()).toBe(0);
+});
+
+/**
+ * Keyboard-only operation, accessible names and focus order of the contextual shell.
+ *
+ * STUDIO-PROD-013: an editor who never uses a pointer enters the Content editor through its skip link, tabs
+ * to the surface toggle and on into Studio's create-source chooser, picks a start with the arrow keys and
+ * opens the contextual shell with Enter. Every stop of every walk must be visible, inside the viewport and
+ * announced with an accessible name; the chooser and the shell header are reached in reading order; the
+ * declared presentations and the mode tabs answer the keyboard; a typed field is defined and a block is
+ * inserted through explicit controls with no drag, and on a touch device the same controls answer a tap. At
+ * 320 CSS pixels, the reflow width WCAG 1.4.10 names, the editor still fits without horizontal scrolling, and
+ * the WCAG 2.2 AA scan stays clean throughout.
+ */
+test('the contextual shell is operable by keyboard alone with named controls in reading order', async ({ page }) => {
+  test.slow();
+  await signInToAdministrator(page);
+  await openEditor(page, '/administrator/content/new');
+  const chooser = page.locator('kumwe-studio-hosted-start');
+  await expect(chooser.getByRole('searchbox')).toBeEnabled();
+  const toggle = text('core.administrator.content_form.use_the_structured_form');
+  const isToggle = (stop: FocusStop): boolean => stop.role === 'button' && stop.name === toggle;
+  const inReadingOrder = (stops: readonly FocusStop[]): void => {
+    for (let index = 1; index < stops.length; index += 1) {
+      const [previous, current] = [stops[index - 1], stops[index]];
+      expect(current?.top ?? 0, `${current?.name ?? ''} must not precede ${previous?.name ?? ''} vertically`)
+        .toBeGreaterThanOrEqual((previous?.top ?? 0) - 2);
+    }
+  };
+
+  // The skip link is the first stop and leads into the editor; the surface toggle follows its tabs.
+  await page.keyboard.press('Tab');
+  expect((await focusStop(page)).role).toBe('link');
+  await page.keyboard.press('Enter');
+  await tabUntil(page, isToggle);
+
+  // The chooser follows the toggle: the type search, its submit, the start radio group, then its actions.
+  const choices = await tabStops(page, 5);
+  expect(choices.map(({ role }) => role)).toEqual(['searchbox', 'button', 'radio', 'button', 'button']);
+  inReadingOrder(choices);
+  await expect(choices[2]?.locator ?? chooser).toHaveAttribute('value', 'blank');
+  await expect(choices[2]?.locator ?? chooser).toBeChecked();
+  await tabUntil(page, (stop) => stop.role === 'radio', 4, 'Shift+Tab');
+  await page.keyboard.press('ArrowDown');
+  const typed = await focusStop(page);
+  expect(typed.role).toBe('radio');
+  await expect(typed.locator).toBeChecked();
+  await expect(typed.locator).not.toHaveAttribute('value', 'blank');
+  await page.keyboard.press('ArrowUp');
+  await expect((await focusStop(page)).locator).toHaveAttribute('value', 'blank');
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('Enter');
+  const shell = shellOf(page);
+  await expect(shell).toBeVisible();
+  await expect(shell.locator('.contextual-workspace')).toHaveAttribute('data-start', 'blank');
+
+  // Studio replaces the chooser with the shell, and the control that held focus leaves with it: focus returns
+  // to the region's heading rather than to the top of the page. The shell header then follows the toggle in
+  // reading order: return, the four presentations, the three saves and the selected mode tab, each announced
+  // by its catalogue name.
+  await expect.poll(() => page.evaluate(() => document.activeElement?.id ?? '')).toBe('studio-authoring-title');
+  const heading = await focusStop(page);
+  expect(heading.role).toBe('heading');
+  expect(heading.name).toBe(text('core.administrator.content_form.compose_this_item_visually'));
+  await tabUntil(page, isToggle, 3);
+  const header = await tabStops(page, 9);
+  expect(header.slice(0, 8).map(({ name }) => name)).toEqual([
+    studio('return', { destination: text('core.administrator.content_form.studio_return_destination') }),
+    studio('presentation-inline'),
+    studio('presentation-minimized'),
+    studio('presentation-maximized'),
+    studio('presentation-fullscreen'),
+    studio('save-item'),
+    studio('save-new-type-version'),
+    studio('save-as-new-type'),
+  ]);
+  expect(header[8]?.role).toBe('tab');
+  await expect(header[8]?.locator ?? shell).toHaveAttribute('aria-selected', 'true');
+  inReadingOrder(header);
+
+  // Presentation by keyboard: the maximized state and back, keeping the start and the session.
+  await tabUntil(page, (stop) => stop.name === studio('presentation-maximized'), 8, 'Shift+Tab');
+  await page.keyboard.press('Enter');
+  await expect(shell.locator('.contextual-workspace')).toHaveAttribute('data-presentation', 'maximized');
+  await tabUntil(page, (stop) => stop.name === studio('presentation-inline'), 12, 'Shift+Tab');
+  await page.keyboard.press('Enter');
+  await expect(shell.locator('.contextual-workspace')).toHaveAttribute('data-presentation', 'inline');
+  await expect(shell.locator('.contextual-workspace')).toHaveAttribute('data-start', 'blank');
+
+  // Modes by arrow keys, then a typed field defined without a pointer.
+  await tabUntil(page, (stop) => stop.role === 'tab', 12);
+  for (const key of ['ArrowLeft', 'ArrowLeft']) await page.keyboard.press(key);
+  const model = await focusStop(page);
+  expect(model.name).toBe(studio('mode-model'));
+  await expect(model.locator).toHaveAttribute('aria-selected', 'true');
+  await tabUntil(page, (stop) => stop.name === studio('field-identifier'), 20);
+  await page.keyboard.type('caption');
+  await tabUntil(page, (stop) => stop.name === studio('field-label'), 4);
+  await page.keyboard.type('Caption');
+  await tabUntil(page, (stop) => stop.name === studio('add-field'), 12);
+  await page.keyboard.press('Enter');
+  await expect(shell.locator('li[data-field-path="caption"]')).toBeVisible();
+  await expect(shell.locator('.dirty-summary')).toHaveAttribute('data-dirty', 'true');
+
+  // A block inserted from the palette with Enter: the explicit, non-drag insertion path.
+  await tabUntil(page, (stop) => stop.role === 'tab', 40, 'Shift+Tab');
+  await page.keyboard.press('ArrowRight');
+  const blueprint = await focusStop(page);
+  expect(blueprint.name).toBe(studio('mode-blueprint'));
+  await expect(blueprint.locator).toHaveAttribute('aria-selected', 'true');
+  const inPalette = (stop: FocusStop): Promise<boolean> =>
+    stop.locator.evaluate((element) => element.closest('ul.palette') !== null);
+  await tabUntil(page, inPalette, 40);
+  await page.keyboard.press('Enter');
+  await expect.poll(() => rootTypes(shell)).toHaveLength(1);
+  await expectAccessible(page);
+
+  // Touch: on a touch-capable device the same explicit controls answer a tap.
+  if (test.info().project.use.hasTouch === true) {
+    await shell.getByRole('tab', { name: studio('mode-content') }).tap();
+    await expect(shell.getByRole('tab', { name: studio('mode-content') })).toHaveAttribute('aria-selected', 'true');
+    await shell.getByRole('button', { name: studio('presentation-maximized'), exact: true }).tap();
+    await expect(shell.locator('.contextual-workspace')).toHaveAttribute('data-presentation', 'maximized');
+    await shell.getByRole('button', { name: studio('presentation-inline'), exact: true }).tap();
+    await expect(shell.locator('.contextual-workspace')).toHaveAttribute('data-presentation', 'inline');
+  }
+
+  // Reflow: at 320 CSS pixels the editor and the shell still fit the width without horizontal scrolling.
+  await page.setViewportSize({ width: 320, height: 720 });
+  await expect(shell).toBeVisible();
+  await expectNoDocumentOverflow(page, { root: '#administrator-content', detectControlOverlaps: false });
+  await expect(shell.locator('.contextual-workspace')).toHaveAttribute('data-start', 'blank');
+  await expect(shell.locator('.dirty-summary')).toHaveAttribute('data-dirty', 'true');
 });

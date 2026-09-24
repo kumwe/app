@@ -290,18 +290,26 @@ class HostPortClient {
   }
 }
 
-/** Apply the interface-locale Studio catalogue the localization port serves to the mounted shell. */
-async function localizeShell(client: HostPortClient, shell: ContextualShell): Promise<void> {
+/** Studio message overrides keyed by Studio message key, as the contextual shell accepts them. */
+type ShellMessages = Record<string, { defaultMessage: string }>;
+
+/**
+ * Fetch the interface-locale Studio catalogue the localization port serves.
+ *
+ * The request starts with the launch, alongside the module import, so the catalogue is at hand the moment
+ * Studio hands over the shell and its labels never show in the source language first.
+ */
+async function shellMessages(client: HostPortClient): Promise<ShellMessages | undefined> {
   const result = await client.call('localization/messages', {
     locale: client.deployment.session.locale.resolved,
     namespaces: MESSAGE_NAMESPACES,
   });
-  if (typeof result.value !== 'object' || result.value === null) return;
-  const messages: Record<string, { defaultMessage: string }> = {};
+  if (typeof result.value !== 'object' || result.value === null) return undefined;
+  const messages: ShellMessages = {};
   for (const [key, pattern] of Object.entries(result.value as Record<string, unknown>)) {
     if (typeof pattern === 'string') messages[key] = { defaultMessage: pattern };
   }
-  shell.messages = messages;
+  return messages;
 }
 
 /**
@@ -504,6 +512,28 @@ function findNode(
   return undefined;
 }
 
+/** The element holding keyboard focus, followed into open shadow roots, or null when focus is on the document. */
+function focusedElement(): Element | null {
+  let element: Element | null = document.activeElement;
+  while (element?.shadowRoot?.activeElement) element = element.shadowRoot.activeElement;
+  return element === null || element === document.body || element === document.documentElement ? null : element;
+}
+
+/**
+ * Return keyboard focus to the Studio region's heading.
+ *
+ * Studio replaces its create-source chooser with the contextual shell once a start is chosen, and the
+ * control that held focus leaves the document with the chooser. Focus would otherwise fall back to the
+ * top of the page; the region's heading names what just changed and makes the shell the next stops.
+ */
+function focusRegionHeading(region: HTMLElement): void {
+  const id = region.getAttribute('aria-labelledby');
+  const heading = id === null ? null : document.getElementById(id);
+  if (heading === null) return;
+  heading.tabIndex = -1;
+  heading.focus();
+}
+
 export async function setupStudioLaunch(): Promise<void> {
   const mount = document.querySelector<HTMLElement>(MOUNT_SELECTOR);
   const region = mount?.closest<HTMLElement>('[data-studio-authoring-region]') ?? null;
@@ -571,12 +601,26 @@ export async function setupStudioLaunch(): Promise<void> {
     console.error('Studio page builder failed to mount.', error);
   };
 
+  // Whether keyboard focus was last inside the mount, which is where Studio's create-source chooser lives.
+  let focusInMount = false;
+  document.addEventListener('focusin', (event) => {
+    focusInMount = event.target instanceof Node && mount.contains(event.target);
+  });
+
   let launched = false;
   const launch = async (): Promise<void> => {
     if (launched) return;
     launched = true;
     status.textContent = labels.loading;
     status.dataset.studioLaunchState = 'loading';
+    // The shell's labels follow the interface locale PHP resolved; the catalogue is served by the same
+    // authenticated host session, so a refused request leaves the shell's own defaults in place.
+    const localized = client === undefined
+      ? Promise.resolve(undefined)
+      : shellMessages(client).catch((error: unknown) => {
+        console.error('Studio message catalogue unavailable; built-in labels remain.', error);
+        return undefined;
+      });
     try {
       const imported: unknown = await import(/* @vite-ignore */ moduleUrl);
       if (!isStudioBrowserModule(imported)) {
@@ -594,12 +638,10 @@ export async function setupStudioLaunch(): Promise<void> {
         return;
       }
       shell = handle.element as ContextualShell;
+      const messages = await localized;
+      if (messages !== undefined) shell.messages = messages;
+      if (focusInMount && focusedElement() === null) focusRegionHeading(region);
       if (client !== undefined && deployment !== undefined) {
-        // The shell's labels follow the interface locale PHP resolved; the catalogue is served by the same
-        // authenticated host session, so a refused request leaves the shell's own defaults in place.
-        await localizeShell(client, shell).catch((error: unknown) => {
-          console.error('Studio message catalogue unavailable; built-in labels remain.', error);
-        });
         preview = setupPreview(region, shell, client, previewChannelOf(deployment));
       }
       reveal();
