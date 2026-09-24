@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for en-US, carrying 2516 messages.
+ * Compiled interface message catalogue for en-US, carrying 2518 messages.
  *
  * Generated from en-US.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1975,6 +1975,8 @@ return [
     'core.console.schedule_run.description' => 'Dispatch due schedules once or continuously with --loop.',
     'core.console.schedule_run.dispatched_due_schedule_s' => 'Dispatched {dispatched} due schedule(s).',
     'core.console.settings.description' => 'Read or update site configuration.',
+    'core.console.studio_authoring.description' => 'Open a Studio authoring session and run its authoring operations.',
+    'core.console.studio_authoring.refused' => 'The Studio authoring request was refused.',
     'core.console.theme_administrator_recover.description' => 'Atomically restore the protected built-in administrator theme.',
     'core.console.theme_administrator_recover.restored_the_protected_built_in_administrator' => 'Restored the protected built-in administrator theme.',
     'core.console.token_create.description' => 'Create a scoped API/MCP access token and print it once.',

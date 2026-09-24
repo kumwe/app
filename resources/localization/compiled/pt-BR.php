@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for pt-BR, carrying 2516 messages.
+ * Compiled interface message catalogue for pt-BR, carrying 2518 messages.
  *
  * Generated from pt-BR.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1975,6 +1975,8 @@ return [
     'core.console.schedule_run.description' => 'Despache os agendamentos vencidos uma vez ou continuamente com --loop.',
     'core.console.schedule_run.dispatched_due_schedule_s' => '{dispatched} agendamento(s) vencido(s) despachado(s).',
     'core.console.settings.description' => 'Leia ou atualize a configuração do site.',
+    'core.console.studio_authoring.description' => 'Abra uma sessão de criação do Studio e execute suas operações de criação.',
+    'core.console.studio_authoring.refused' => 'A solicitação de criação do Studio foi recusada.',
     'core.console.theme_administrator_recover.description' => 'Restaure atomicamente o tema integrado protegido do administrador.',
     'core.console.theme_administrator_recover.restored_the_protected_built_in_administrator' => 'Tema integrado protegido do administrador restaurado.',
     'core.console.token_create.description' => 'Crie um token de acesso de API/MCP com escopo e exiba-o uma vez.',

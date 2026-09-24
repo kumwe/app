@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for zh-Hans, carrying 2516 messages.
+ * Compiled interface message catalogue for zh-Hans, carrying 2518 messages.
  *
  * Generated from zh-Hans.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1975,6 +1975,8 @@ return [
     'core.console.schedule_run.description' => '分发到期的计划，可单次执行，也可使用 --loop 持续执行。',
     'core.console.schedule_run.dispatched_due_schedule_s' => '已分发 {dispatched} 个到期计划。',
     'core.console.settings.description' => '读取或更新站点配置。',
+    'core.console.studio_authoring.description' => '打开 Studio 创作会话并运行其创作操作。',
+    'core.console.studio_authoring.refused' => 'Studio 创作请求被拒绝。',
     'core.console.theme_administrator_recover.description' => '原子化恢复受保护的内置管理后台主题。',
     'core.console.theme_administrator_recover.restored_the_protected_built_in_administrator' => '已恢复受保护的内置管理后台主题。',
     'core.console.token_create.description' => '创建一个限定范围的 API/MCP 访问令牌，并一次性打印输出。',

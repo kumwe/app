@@ -18423,6 +18423,24 @@
         <target>Lys, sluit en heropen besigheids-boekingstydperke.</target>
       </segment>
     </unit>
+    <unit id="core.console.studio_authoring.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/StudioAuthoringCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Open a Studio authoring session and run its authoring operations.</source>
+        <target>Open ’n Studio-outeursessie en voer die outeursbewerkings daarvan uit.</target>
+      </segment>
+    </unit>
+    <unit id="core.console.studio_authoring.refused">
+      <notes>
+        <note category="context">Message member of the studio-authoring command's JSON failure envelope; the category and diagnostic codes beside it carry the machine meaning.</note>
+      </notes>
+      <segment>
+        <source>The Studio authoring request was refused.</source>
+        <target>Die Studio-outeursversoek is geweier.</target>
+      </segment>
+    </unit>
     <unit id="core.console.settings.description">
       <notes>
         <note category="context">Console command summary on src/Delivery/Console/Command/ManageSettingsCommand.php.</note>

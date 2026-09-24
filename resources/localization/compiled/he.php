@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for he, carrying 2516 messages.
+ * Compiled interface message catalogue for he, carrying 2518 messages.
  *
  * Generated from he.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1975,6 +1975,8 @@ return [
     'core.console.schedule_run.description' => 'שגרו תזמונים שהגיע מועדם פעם אחת או ברציפות עם --loop.',
     'core.console.schedule_run.dispatched_due_schedule_s' => 'נשלחו {dispatched} תזמונים שהגיע מועדם.',
     'core.console.settings.description' => 'קראו או עדכנו את תצורת האתר.',
+    'core.console.studio_authoring.description' => 'פתחו הפעלת כתיבה ב-Studio והריצו את פעולות הכתיבה שלה.',
+    'core.console.studio_authoring.refused' => 'בקשת הכתיבה ב-Studio נדחתה.',
     'core.console.theme_administrator_recover.description' => 'שחזרו באופן אטומי את ערכת הנושא המובנית והמוגנת של ממשק הניהול.',
     'core.console.theme_administrator_recover.restored_the_protected_built_in_administrator' => 'ערכת הנושא המובנית והמוגנת של ממשק הניהול שוחזרה.',
     'core.console.token_create.description' => 'צרו אסימון גישה מוגבל היקף ל-API/MCP והדפיסו אותו פעם אחת.',
