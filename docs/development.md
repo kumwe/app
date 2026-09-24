@@ -63,6 +63,7 @@ composer docs:api
 composer openapi:check
 composer translation:check
 composer translation:strings
+composer translation:quality
 composer assets:direction
 composer cs
 composer analyse
@@ -107,7 +108,7 @@ introduced it. It requires a Docker daemon and fails loudly without one, which i
 daemon is available.
 
 For a change that touches a template, a stylesheet or a user-facing string, recompile the message
-catalogues and re-run the two translation gates. `composer translation:compile` rewrites
+catalogues and re-run the translation gates. `composer translation:compile` rewrites
 `resources/localization/compiled/` from the XLIFF under `resources/localization/messages/`, and the
 compiled artifact is committed like every other generated output:
 
@@ -115,6 +116,7 @@ compiled artifact is committed like every other generated output:
 composer translation:compile
 composer translation:check
 composer translation:strings
+composer translation:quality
 composer assets:direction
 git diff --exit-code resources/localization
 ```

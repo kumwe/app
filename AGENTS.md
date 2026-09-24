@@ -173,7 +173,7 @@ nobody told the record. This is the hole.
 | Add a CLI command and edit `cli-v1.json` in place | `composer cli:contract` | Additive successor generation; the pinned count lives in the contract, tests, tools and roadmap prose — a successor generation moves them together |
 | Add an MCP tool and edit `mcp-v1.json` in place | `composer mcp:contract` | Same freeze. 75 tools. |
 | Change a public extension type | `composer extension:contract` | Release a new `kumwe/extension-sdk` generation and update the App dependency pin. Never copy its fixtures into App. |
-| Edit XLIFF or a user-facing string | `translation:check` / `translation:strings` | `composer translation:compile` and commit compiled catalogues |
+| Edit XLIFF or a user-facing string | `translation:check` / `translation:strings` / `translation:quality` | `composer translation:compile` and commit compiled catalogues; a new identifier needs a real `<target>` in all nine catalogues |
 | Rebuild front-end and leave `public/assets/build` dirty | CI frontend job | Commit the hashed build, or don't rebuild |
 | Add a graphical route or template without cataloguing it | `composer interface:programme` | Register it in `docs/interface-standard/programme/surface-inventory.json` |
 | Add runtime lines without a `#[CoversClass]` test executing them | CI coverage ratchet (canonical MariaDB leg only) | 90% changed-line and 80% changed-refusal floors; write the test, name the class |
@@ -332,7 +332,8 @@ composition root, not the default home for reusable behaviour. The machinery is 
 ```
 [ ] Identifiers, not prose, in PHP. Copy lives in resources/localization/messages/.
 [ ] composer translation:compile
-[ ] composer translation:check && composer translation:strings && composer assets:direction
+[ ] composer translation:check && composer translation:strings && composer translation:quality
+    && composer assets:direction
 [ ] Logical CSS properties, not left/right. composer assets:direction scans Vite inputs.
 [ ] git diff --exit-code resources/localization
 ```
@@ -400,7 +401,7 @@ docs:format:check → docs:tests → extension:contract → extension:independen
 conversion:api → cli:contract → mcp:contract → studio:corpus → studio:dependencies →
 kumwe:capability-index-check → kumwe:core-growth-check → interface:programme →
 roadmap:check → acceptance:check → openapi:check → translation:check → translation:strings →
-assets:direction → coverage:attribution → cs → analyse → test
+translation:quality → assets:direction → coverage:attribution → cs → analyse → test
 ```
 
 ```bash
