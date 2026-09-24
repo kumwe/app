@@ -4049,7 +4049,7 @@
         "Kumwe\\App\\Extension\\Application\\Trust\\TrustStore": {
             "kind": "class",
             "layer": "application",
-            "surface": "a10f295da9f770c4e1a590e3",
+            "surface": "18df0a3275704b58944daabe",
             "growth": {
                 "record": "KUMWE-CGR-2026-004"
             }
@@ -6877,7 +6877,7 @@
         "Kumwe\\App\\Studio\\Application\\Authoring\\ContentStudioAuthoringCatalog": {
             "kind": "class",
             "layer": "application",
-            "surface": "6a18da6346d0718fc82de7c5",
+            "surface": "8062c357c55e39670cc12e24",
             "growth": {
                 "record": "KUMWE-CGR-2026-001"
             }
@@ -7667,7 +7667,7 @@
         "Kumwe\\App\\Studio\\Application\\Rendering\\StudioBlockRendererRuntime": {
             "kind": "class",
             "layer": "application",
-            "surface": "b01a0ed9cdbf93ae0fda2971",
+            "surface": "811cbdfc34b097b56fde5a14",
             "growth": {
                 "record": "KUMWE-CGR-2026-001"
             }

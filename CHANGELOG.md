@@ -217,6 +217,18 @@ portfolio, soaks, the independent review and the out-of-process extension runtim
     organization membership. Break-glass console recovery of such an account now stops at the same ceiling,
     pending a maintainer decision (#152).
 
+- Stop extension trust reads contending for the lifecycle lock. The Studio preview renderer, contributed job
+  handlers and contributed route handlers took the non-waiting `GET_LOCK`/`pg_try_advisory_lock` lifecycle lock,
+  so under load they refused each other and revocations, and a refused availability check dropped every extension
+  renderer from a Studio registry and changed the contribution generation for that request ("Studio page builder
+  could not start"). Readers now read committed trust fenced by the loaded runtime generation before and after the
+  read (one re-check, then fail closed), a preview fragment rendered across a generation change is discarded, an
+  unreadable trust authority is logged as `extension.trust.indeterminate` and refused instead of read as
+  distrust, and each Studio operation, deployment document and published render decides its renderer registry
+  once. Only lifecycle mutators take the lock. Revoked and lapsed-key releases still never render; MariaDB and
+  PostgreSQL tests hold the lock from a second session to prove both, and that the watcher's no-change pass never
+  contends (#152).
+
 <!-- #152 in-flight streams. Each lands its entries above this comment, citing the acceptance-record
      identifiers it flips, when its branch merges into platform/v2-runtime-completion:
        agent/machine    Studio authoring over REST 1.1.0, CLI generation two and mcp-v2: MACHINE-STUDIO-PARITY
