@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for de, carrying 2468 messages.
+ * Compiled interface message catalogue for de, carrying 2472 messages.
  *
  * Generated from de.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -494,6 +494,7 @@ return [
     'core.administrator.business_definitions.draft_r' => 'Entwurf r{revision}',
     'core.administrator.business_definitions.enable_soft_deletion_and_restore' => 'Vorläufiges Löschen und Wiederherstellen aktivieren',
     'core.administrator.business_definitions.enable_workflow' => 'Workflow aktivieren',
+    'core.administrator.business_definitions.entities' => 'Entitäten',
     'core.administrator.business_definitions.entity_graph' => 'Entitätsgraph',
     'core.administrator.business_definitions.expected_draft_revision' => 'Erwartete Entwurfsrevision',
     'core.administrator.business_definitions.export_json' => 'JSON exportieren',
@@ -1229,6 +1230,9 @@ return [
     'core.administrator.business_status.version' => 'Version',
     'core.administrator.business_unavailable.explanation' => 'Der angeforderte Geschäftsarbeitsbereich existiert nicht oder steht Ihrem Konto nicht zur Verfügung.',
     'core.administrator.business_unavailable.request_access' => 'Falls Sie diesen Arbeitsbereich für Ihre Arbeit benötigen, bitten Sie einen Administrator mit Benutzerverwaltungszugriff, Ihre Berechtigungen für Geschäftsdatensätze zu überprüfen.',
+    'core.administrator.common.date' => '{value, date, ::yMMMd}',
+    'core.administrator.common.date_time' => '{value, date, ::yMMMdjmm}',
+    'core.administrator.common.date_time_seconds' => '{value, date, ::yMMMdjmmss}',
     'core.administrator.content_form.another_save_changed_this_item_after' => 'Ein anderer Speichervorgang hat dieses Element geändert, nachdem Sie es geöffnet hatten; daher wurde nichts von Ihrer Eingabe gespeichert, und die neuere Version bleibt unverändert. Sie haben dieses Formular anhand von Version {expected_version} erstellt; das gespeicherte Element befindet sich jetzt in Version {current_version}.',
     'core.administrator.content_form.authoring' => 'Bearbeitung',
     'core.administrator.content_form.back_to_content' => 'Zurück zu den Inhalten',

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for af, carrying 2468 messages.
+ * Compiled interface message catalogue for af, carrying 2472 messages.
  *
  * Generated from af.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -494,6 +494,7 @@ return [
     'core.administrator.business_definitions.draft_r' => 'Konsep r{revision}',
     'core.administrator.business_definitions.enable_soft_deletion_and_restore' => 'Aktiveer sagte skrapping en herstel',
     'core.administrator.business_definitions.enable_workflow' => 'Aktiveer werkvloei',
+    'core.administrator.business_definitions.entities' => 'Entiteite',
     'core.administrator.business_definitions.entity_graph' => 'Entiteitgrafiek',
     'core.administrator.business_definitions.expected_draft_revision' => 'Verwagte konsephersiening',
     'core.administrator.business_definitions.export_json' => 'Voer JSON uit',
@@ -1229,6 +1230,9 @@ return [
     'core.administrator.business_status.version' => 'Weergawe',
     'core.administrator.business_unavailable.explanation' => 'Die versoekte besigheidswerkspasie bestaan nie of is nie vir jou rekening beskikbaar nie.',
     'core.administrator.business_unavailable.request_access' => 'As jou werk hierdie werkspasie benodig, vra ’n administrateur met gebruikerbestuurtoegang om jou besigheidsrekord-toestemmings te hersien.',
+    'core.administrator.common.date' => '{value, date, ::yMMMd}',
+    'core.administrator.common.date_time' => '{value, date, ::yMMMdjmm}',
+    'core.administrator.common.date_time_seconds' => '{value, date, ::yMMMdjmmss}',
     'core.administrator.content_form.another_save_changed_this_item_after' => '’n Ander stoorbewerking het hierdie item verander nadat jy dit geopen het, dus is niks wat jy ingedien het geskryf nie en die nuwer weergawe bly ongeraak. Jy het hierdie vorm teen weergawe {expected_version} saamgestel; die gestoorde item is nou by weergawe {current_version}.',
     'core.administrator.content_form.authoring' => 'Opstelling',
     'core.administrator.content_form.back_to_content' => 'Terug na inhoud',

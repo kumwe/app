@@ -290,8 +290,8 @@
         <section class="panel panel-body stack">
           <div><p class="eyebrow">{{ t('core.administrator.business_detail.record_state') }}</p><h2>{{ record.workflow_state|default('Active')|replace({'_': ' '})|title }}</h2></div>
           <dl class="business-record-metadata kis-business-metadata">
-            <div><dt>{{ t('core.administrator.business_detail.created') }}</dt><dd><time datetime="{{ record.created_at }}">{{ record.created_at|date('M j, Y H:i') }}</time></dd></div>
-            <div><dt>{{ t('core.administrator.business_detail.updated') }}</dt><dd><time datetime="{{ record.updated_at }}">{{ record.updated_at|date('M j, Y H:i') }}</time></dd></div>
+            <div><dt>{{ t('core.administrator.business_detail.created') }}</dt><dd><time datetime="{{ record.created_at }}">{{ t('core.administrator.common.date_time', {value: date(record.created_at)}) }}</time></dd></div>
+            <div><dt>{{ t('core.administrator.business_detail.updated') }}</dt><dd><time datetime="{{ record.updated_at }}">{{ t('core.administrator.common.date_time', {value: date(record.updated_at)}) }}</time></dd></div>
             <div><dt>{{ t('core.administrator.business_detail.definition') }}</dt><dd>v{{ record.definition_version }}</dd></div>
           </dl>
         </section>

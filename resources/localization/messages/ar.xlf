@@ -3743,6 +3743,33 @@
         <target>لا يُنشئ دور الهوية المباشر عضوية مؤسسة أو وصولًا إلى مساحة عمل.</target>
       </segment>
     </unit>
+    <unit id="core.administrator.common.date">
+      <notes>
+        <note category="context">A calendar date on an administrator screen. {value} is the moment. The ICU skeleton lets each locale choose its own order, month name and digits; change it only if the locale needs different fields.</note>
+      </notes>
+      <segment>
+        <source>{value, date, ::yMMMd}</source>
+        <target>{value, date, ::yMMMd}</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.common.date_time">
+      <notes>
+        <note category="context">A date and time to the minute on an administrator screen. {value} is the moment, shown in the server time zone. The ICU skeleton lets each locale choose its own order, month name, digits and 12- or 24-hour clock.</note>
+      </notes>
+      <segment>
+        <source>{value, date, ::yMMMdjmm}</source>
+        <target>{value, date, ::yMMMdjmm}</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.common.date_time_seconds">
+      <notes>
+        <note category="context">A date and time to the second on an administrator screen, for audit and operation evidence. {value} is the moment. The ICU skeleton lets each locale choose its own order, month name, digits and clock.</note>
+      </notes>
+      <segment>
+        <source>{value, date, ::yMMMdjmmss}</source>
+        <target>{value, date, ::yMMMdjmmss}</target>
+      </segment>
+    </unit>
     <unit id="core.administrator.access_control.continue_portal_provisioning">
       <notes>
         <note category="context">Record surface text on templates/administrator/access-control.twig.</note>
@@ -5757,6 +5784,15 @@
       <segment>
         <source>{count, plural, one {# definition} other {# definitions}}</source>
         <target>{count, plural, zero {# تعريفات} one {# تعريف} two {# تعريفين} few {# تعريفات} many {# تعريف} other {# تعريف}}</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.business_definitions.entities">
+      <notes>
+        <note category="context">Title of the definition catalogue toolbar on templates/administrator/business-definitions.twig.</note>
+      </notes>
+      <segment>
+        <source>Entities</source>
+        <target>الكيانات</target>
       </segment>
     </unit>
     <unit id="core.administrator.business_definitions.stable_entity_identity">

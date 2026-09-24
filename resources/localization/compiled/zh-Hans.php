@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for zh-Hans, carrying 2468 messages.
+ * Compiled interface message catalogue for zh-Hans, carrying 2472 messages.
  *
  * Generated from zh-Hans.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -494,6 +494,7 @@ return [
     'core.administrator.business_definitions.draft_r' => '草稿 r{revision}',
     'core.administrator.business_definitions.enable_soft_deletion_and_restore' => '启用软删除与恢复',
     'core.administrator.business_definitions.enable_workflow' => '启用工作流',
+    'core.administrator.business_definitions.entities' => '实体',
     'core.administrator.business_definitions.entity_graph' => '实体关系图',
     'core.administrator.business_definitions.expected_draft_revision' => '预期草稿修订版本',
     'core.administrator.business_definitions.export_json' => '导出 JSON',
@@ -1229,6 +1230,9 @@ return [
     'core.administrator.business_status.version' => '版本',
     'core.administrator.business_unavailable.explanation' => '请求的业务工作区不存在，或您的账户无法访问该工作区。',
     'core.administrator.business_unavailable.request_access' => '如果您的工作需要此工作区，请联系拥有用户管理权限的管理员，审查您的业务记录权限。',
+    'core.administrator.common.date' => '{value, date, ::yMMMd}',
+    'core.administrator.common.date_time' => '{value, date, ::yMMMdjmm}',
+    'core.administrator.common.date_time_seconds' => '{value, date, ::yMMMdjmmss}',
     'core.administrator.content_form.another_save_changed_this_item_after' => '您打开此项内容后，另一次保存已对其进行了更改，因此您提交的内容未被写入，较新的版本也未受影响。您是基于版本 {expected_version} 编写此表单的；当前存储的条目已是版本 {current_version}。',
     'core.administrator.content_form.authoring' => '创作',
     'core.administrator.content_form.back_to_content' => '返回内容列表',

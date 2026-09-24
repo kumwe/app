@@ -49,7 +49,7 @@
           <td><span class="content-title"><strong>{{ entry.title }}</strong><span>{{ t('core.administrator.business_definitions.version', {version: entry.version}) }}{% if entry.deleted_at %} {{ t('core.administrator.content_list.trashed_2') }}{% endif %}</span></span></td>
           <td><span class="status status-{{ entry.deleted_at ? 'trashed' : entry.status }}">{{ entry.deleted_at ? 'Trashed' : entry.status|replace({'_': ' '})|title }}</span></td>
           <td>{% if entry.public_url %}<a href="{{ entry.public_url }}" target="_blank" rel="noopener">{{ entry.public_url }}</a>{% else %}<span class="text-muted">{{ t('core.administrator.content_list.not_public', {slug: entry.slug}) }}</span>{% endif %}</td>
-          <td class="nowrap"><time datetime="{{ entry.updated_at }}">{{ entry.updated_at|date('M j, Y H:i') }}</time></td>
+          <td class="nowrap"><time datetime="{{ entry.updated_at }}">{{ t('core.administrator.common.date_time', {value: date(entry.updated_at)}) }}</time></td>
           <td class="actions">
             {% if not entry.deleted_at %}
               {% if capabilities['content.update'] is defined %}<a href="/administrator/content/{{ entry.id }}/edit" aria-label="{{ t('core.administrator.content_list.edit', {title: entry.title}) }}">{{ t('core.administrator.business_detail.edit') }}</a>{% endif %}

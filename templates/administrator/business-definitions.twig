@@ -18,7 +18,7 @@
     {% include '@kis/tabs.twig' with {
       id: 'business-definition-workspace',
       label: t('core.administrator.business_definitions.business_definition_tasks'),
-      tabs: workspace_tabs,
+      tabs: workspace_tabs|map(tab => tab|merge({label: t(tab.label)})),
       active: active_tab
     } only %}
 
@@ -31,7 +31,7 @@
     <section class="panel stack definition-catalog">
       {% embed '@kis/resource-toolbar.twig' with {
         label: t('core.administrator.business_definitions.definition_catalog'),
-        title: 'Entities',
+        title: t('core.administrator.business_definitions.entities'),
         summary: t('core.administrator.business_definitions.definitions', {count: catalog|length})
       } %}{% endembed %}
       {% for item in catalog %}

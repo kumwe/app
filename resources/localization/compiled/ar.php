@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for ar, carrying 2468 messages.
+ * Compiled interface message catalogue for ar, carrying 2472 messages.
  *
  * Generated from ar.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -494,6 +494,7 @@ return [
     'core.administrator.business_definitions.draft_r' => 'مسودة r{revision}',
     'core.administrator.business_definitions.enable_soft_deletion_and_restore' => 'تمكين الحذف غير النهائي والاستعادة',
     'core.administrator.business_definitions.enable_workflow' => 'تمكين سير العمل',
+    'core.administrator.business_definitions.entities' => 'الكيانات',
     'core.administrator.business_definitions.entity_graph' => 'مخطط الكيانات',
     'core.administrator.business_definitions.expected_draft_revision' => 'مراجعة المسودة المتوقعة',
     'core.administrator.business_definitions.export_json' => 'تصدير JSON',
@@ -1229,6 +1230,9 @@ return [
     'core.administrator.business_status.version' => 'الإصدار',
     'core.administrator.business_unavailable.explanation' => 'مساحة عمل الأعمال المطلوبة غير موجودة أو غير متاحة لحسابك.',
     'core.administrator.business_unavailable.request_access' => 'إذا كان عملك يتطلب مساحة العمل هذه، فاطلب من مسؤول لديه صلاحية إدارة المستخدمين مراجعة صلاحيات سجلات الأعمال الخاصة بك.',
+    'core.administrator.common.date' => '{value, date, ::yMMMd}',
+    'core.administrator.common.date_time' => '{value, date, ::yMMMdjmm}',
+    'core.administrator.common.date_time_seconds' => '{value, date, ::yMMMdjmmss}',
     'core.administrator.content_form.another_save_changed_this_item_after' => 'غيّر حفظ آخر هذا العنصر بعد أن فتحته، لذا لم يُكتب أي شيء أرسلته وبقي الإصدار الأحدث دون مساس. لقد أنشأت هذا النموذج استنادًا إلى الإصدار {expected_version}؛ والعنصر المحفوظ الآن في الإصدار {current_version}.',
     'core.administrator.content_form.authoring' => 'التأليف',
     'core.administrator.content_form.back_to_content' => 'العودة إلى المحتوى',

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for es, carrying 2468 messages.
+ * Compiled interface message catalogue for es, carrying 2472 messages.
  *
  * Generated from es.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -494,6 +494,7 @@ return [
     'core.administrator.business_definitions.draft_r' => 'Borrador r{revision}',
     'core.administrator.business_definitions.enable_soft_deletion_and_restore' => 'Habilitar eliminación reversible y restauración',
     'core.administrator.business_definitions.enable_workflow' => 'Habilitar flujo de trabajo',
+    'core.administrator.business_definitions.entities' => 'Entidades',
     'core.administrator.business_definitions.entity_graph' => 'Grafo de entidades',
     'core.administrator.business_definitions.expected_draft_revision' => 'Revisión de borrador esperada',
     'core.administrator.business_definitions.export_json' => 'Exportar JSON',
@@ -1229,6 +1230,9 @@ return [
     'core.administrator.business_status.version' => 'Versión',
     'core.administrator.business_unavailable.explanation' => 'El espacio de trabajo de negocio solicitado no existe o no está disponible para tu cuenta.',
     'core.administrator.business_unavailable.request_access' => 'Si tu trabajo necesita este espacio de trabajo, pide a un administrador con acceso a la gestión de usuarios que revise tus permisos de registros de negocio.',
+    'core.administrator.common.date' => '{value, date, ::yMMMd}',
+    'core.administrator.common.date_time' => '{value, date, ::yMMMdjmm}',
+    'core.administrator.common.date_time_seconds' => '{value, date, ::yMMMdjmmss}',
     'core.administrator.content_form.another_save_changed_this_item_after' => 'Otro guardado cambió este elemento después de que lo abrieras, así que no se escribió nada de lo que enviaste y la versión más reciente permanece intacta. Completaste este formulario con la versión {expected_version}; el elemento guardado está ahora en la versión {current_version}.',
     'core.administrator.content_form.authoring' => 'Creación',
     'core.administrator.content_form.back_to_content' => 'Volver al contenido',

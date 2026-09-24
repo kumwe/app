@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for en-GB, carrying 2468 messages.
+ * Compiled interface message catalogue for en-GB, carrying 2472 messages.
  *
  * Generated from en-GB.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -494,6 +494,7 @@ return [
     'core.administrator.business_definitions.draft_r' => 'Draft r{revision}',
     'core.administrator.business_definitions.enable_soft_deletion_and_restore' => 'Enable soft deletion and restore',
     'core.administrator.business_definitions.enable_workflow' => 'Enable workflow',
+    'core.administrator.business_definitions.entities' => 'Entities',
     'core.administrator.business_definitions.entity_graph' => 'Entity graph',
     'core.administrator.business_definitions.expected_draft_revision' => 'Expected draft revision',
     'core.administrator.business_definitions.export_json' => 'Export JSON',
@@ -1229,6 +1230,9 @@ return [
     'core.administrator.business_status.version' => 'Version',
     'core.administrator.business_unavailable.explanation' => 'The requested business workspace does not exist or is not available to your account.',
     'core.administrator.business_unavailable.request_access' => 'If your work needs this workspace, ask an administrator with user management access to review your business-record permissions.',
+    'core.administrator.common.date' => '{value, date, ::yMMMd}',
+    'core.administrator.common.date_time' => '{value, date, ::yMMMdjmm}',
+    'core.administrator.common.date_time_seconds' => '{value, date, ::yMMMdjmmss}',
     'core.administrator.content_form.another_save_changed_this_item_after' => 'Another save changed this item after you opened it, so nothing you submitted was written and the newer version is untouched. You composed this form against version {expected_version}; the stored item is now at version {current_version}.',
     'core.administrator.content_form.authoring' => 'Authoring',
     'core.administrator.content_form.back_to_content' => 'Back to content',

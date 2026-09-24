@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for he, carrying 2468 messages.
+ * Compiled interface message catalogue for he, carrying 2472 messages.
  *
  * Generated from he.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -494,6 +494,7 @@ return [
     'core.administrator.business_definitions.draft_r' => 'טיוטה r{revision}',
     'core.administrator.business_definitions.enable_soft_deletion_and_restore' => 'הפעלת מחיקה רכה ושחזור',
     'core.administrator.business_definitions.enable_workflow' => 'הפעלת תהליך עבודה',
+    'core.administrator.business_definitions.entities' => 'ישויות',
     'core.administrator.business_definitions.entity_graph' => 'גרף ישויות',
     'core.administrator.business_definitions.expected_draft_revision' => 'גרסת טיוטה צפויה',
     'core.administrator.business_definitions.export_json' => 'ייצוא JSON',
@@ -1229,6 +1230,9 @@ return [
     'core.administrator.business_status.version' => 'גרסה',
     'core.administrator.business_unavailable.explanation' => 'סביבת העבודה העסקית המבוקשת אינה קיימת או שאינה זמינה לחשבון שלכם.',
     'core.administrator.business_unavailable.request_access' => 'אם העבודה שלכם דורשת סביבת עבודה זו, בקשו ממנהל בעל גישה לניהול משתמשים לבדוק את הרשאות הרשומות העסקיות שלכם.',
+    'core.administrator.common.date' => '{value, date, ::yMMMd}',
+    'core.administrator.common.date_time' => '{value, date, ::yMMMdjmm}',
+    'core.administrator.common.date_time_seconds' => '{value, date, ::yMMMdjmmss}',
     'core.administrator.content_form.another_save_changed_this_item_after' => 'שמירה אחרת שינתה פריט זה לאחר שפתחתם אותו, ולכן דבר ממה ששלחתם לא נכתב והגרסה החדשה יותר לא נגעה בה. מילאתם טופס זה מול גרסה {expected_version}; הפריט השמור נמצא כעת בגרסה {current_version}.',
     'core.administrator.content_form.authoring' => 'כתיבה',
     'core.administrator.content_form.back_to_content' => 'חזרה לתוכן',

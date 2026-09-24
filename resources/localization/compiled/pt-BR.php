@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for pt-BR, carrying 2468 messages.
+ * Compiled interface message catalogue for pt-BR, carrying 2472 messages.
  *
  * Generated from pt-BR.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -494,6 +494,7 @@ return [
     'core.administrator.business_definitions.draft_r' => 'Rascunho r{revision}',
     'core.administrator.business_definitions.enable_soft_deletion_and_restore' => 'Habilitar exclusão reversível e restauração',
     'core.administrator.business_definitions.enable_workflow' => 'Habilitar fluxo de trabalho',
+    'core.administrator.business_definitions.entities' => 'Entidades',
     'core.administrator.business_definitions.entity_graph' => 'Grafo de entidades',
     'core.administrator.business_definitions.expected_draft_revision' => 'Revisão de rascunho esperada',
     'core.administrator.business_definitions.export_json' => 'Exportar JSON',
@@ -1229,6 +1230,9 @@ return [
     'core.administrator.business_status.version' => 'Versão',
     'core.administrator.business_unavailable.explanation' => 'O espaço de trabalho de negócio solicitado não existe ou não está disponível para sua conta.',
     'core.administrator.business_unavailable.request_access' => 'Se seu trabalho exige este espaço de trabalho, peça a um administrador com acesso de gestão de usuários para revisar suas permissões de registro de negócio.',
+    'core.administrator.common.date' => '{value, date, ::yMMMd}',
+    'core.administrator.common.date_time' => '{value, date, ::yMMMdjmm}',
+    'core.administrator.common.date_time_seconds' => '{value, date, ::yMMMdjmmss}',
     'core.administrator.content_form.another_save_changed_this_item_after' => 'Outro salvamento alterou este item depois que você o abriu; portanto, nada do que você enviou foi gravado e a versão mais recente permanece intocada. Você preencheu este formulário com base na versão {expected_version}; o item armazenado está agora na versão {current_version}.',
     'core.administrator.content_form.authoring' => 'Autoria',
     'core.administrator.content_form.back_to_content' => 'Voltar ao conteúdo',
