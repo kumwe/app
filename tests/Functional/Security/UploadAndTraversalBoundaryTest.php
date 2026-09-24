@@ -94,6 +94,11 @@ final class UploadAndTraversalBoundaryTest extends TestCase
             );
         }
         self::assertFileDoesNotExist($root . '/storage/media/default/' . $id . '.gif');
+        foreach ([$root . '/storage/media/default', $root . '/storage/media'] as $directory) {
+            if (is_dir($directory) && (scandir($directory) ?: []) === ['.', '..']) {
+                rmdir($directory);
+            }
+        }
     }
 
     /**
