@@ -1,0 +1,865 @@
+{
+  "record": "kumwe-version-2-acceptance-record",
+  "version": "1.0.0",
+  "authority": "ADR 0021 — automated acceptance and sampled capacity; maintainer merge is the sole human acceptance",
+  "pull_request": 152,
+  "note": "One entry per requirement this increment accepts by merge: a finding, a work package or a Gate B criterion. runtime_owner names the code that carries the behaviour, tests the proofs, artifacts the workflow jobs that run them, decision the governing record. delivered means the entry has left docs/roadmap/findings.json and is written into CHANGELOG.md; open means it is still in the ledger with an outstanding note; separate-track means a later increment owns it. composer acceptance:check verifies every claim and composer acceptance:summary derives docs/roadmap/acceptance-summary.md.",
+  "states": {
+    "delivered": "accepted when this pull request merges",
+    "open": "still in the findings ledger",
+    "separate-track": "owned by a later increment"
+  },
+  "entries": [
+    {
+      "id": "V2-SCL-001",
+      "requirement": "Unrelated record writes under one definition do not serialize on the definition row (P5-A).",
+      "gate_b_criteria": [
+        3
+      ],
+      "runtime_owner": [
+        "src/BusinessRecord/Infrastructure/Persistence/DoctrineBusinessRecordMutationFence.php"
+      ],
+      "tests": [
+        "tests/Integration/BusinessRecord/BusinessRecordSharedFenceIntegrationTest.php"
+      ],
+      "artifacts": [
+        ".github/workflows/ci.yml#PHP 8.5 / MariaDB",
+        ".github/workflows/ci.yml#PHP 8.5 / MySQL",
+        ".github/workflows/ci.yml#PHP 8.5 / PostgreSQL"
+      ],
+      "decision": "ADR 0021",
+      "state": "open",
+      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
+    },
+    {
+      "id": "V2-SCL-002",
+      "requirement": "Event-producing commits do not lock one installation-wide sequencing head (P5-B).",
+      "gate_b_criteria": [
+        3
+      ],
+      "runtime_owner": [
+        "src/BusinessIntegration/Infrastructure/DoctrineOutboxStore.php"
+      ],
+      "tests": [
+        "tests/Integration/BusinessIntegration/ProjectionSequencingConcurrencyIntegrationTest.php"
+      ],
+      "artifacts": [
+        ".github/workflows/ci.yml#PHP 8.5 / MariaDB",
+        ".github/workflows/ci.yml#PHP 8.5 / MySQL",
+        ".github/workflows/ci.yml#PHP 8.5 / PostgreSQL"
+      ],
+      "decision": "ADR 0021",
+      "state": "open",
+      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
+    },
+    {
+      "id": "V2-SCL-004",
+      "requirement": "Idempotency retention sustains at least twice the peak expiry rate with adaptive batches and retention metrics (P5-E).",
+      "gate_b_criteria": [
+        3
+      ],
+      "runtime_owner": [
+        "src/BusinessRecord/Application/BusinessRecordIdempotencyPurger.php"
+      ],
+      "tests": [
+        "tests/Integration/Automation/IdempotencyRecoveryIntegrationTest.php"
+      ],
+      "artifacts": [
+        ".github/workflows/ci.yml#PHP 8.5 / MariaDB",
+        ".github/workflows/ci.yml#PHP 8.5 / MySQL",
+        ".github/workflows/ci.yml#PHP 8.5 / PostgreSQL"
+      ],
+      "decision": "ADR 0021",
+      "state": "open",
+      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
+    },
+    {
+      "id": "V2-SCL-005",
+      "requirement": "Monitoring runs no unbudgeted table-scale exact count on the primary (P5-F).",
+      "gate_b_criteria": [
+        3
+      ],
+      "runtime_owner": [
+        "src/Infrastructure/Observability/RuntimeMetricCollector.php"
+      ],
+      "tests": [
+        "tests/Unit/Infrastructure/Observability"
+      ],
+      "artifacts": [
+        ".github/workflows/ci.yml#PHP 8.5 / MariaDB",
+        ".github/workflows/ci.yml#PHP 8.5 / MySQL",
+        ".github/workflows/ci.yml#PHP 8.5 / PostgreSQL"
+      ],
+      "decision": "ADR 0021",
+      "state": "open",
+      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
+    },
+    {
+      "id": "V2-SCL-006",
+      "requirement": "Integration fan-out dispatches independent consumer and webhook receipts through batched workers (P5-C).",
+      "gate_b_criteria": [
+        3
+      ],
+      "runtime_owner": [
+        "src/BusinessIntegration/Infrastructure/RuntimeIntegrationReceiptWorker.php"
+      ],
+      "tests": [
+        "tests/Integration/BusinessIntegration/IndependentReceiptFanoutIntegrationTest.php"
+      ],
+      "artifacts": [
+        ".github/workflows/ci.yml#PHP 8.5 / MariaDB",
+        ".github/workflows/ci.yml#PHP 8.5 / MySQL",
+        ".github/workflows/ci.yml#PHP 8.5 / PostgreSQL"
+      ],
+      "decision": "ADR 0021",
+      "state": "open",
+      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
+    },
+    {
+      "id": "V2-SCL-007",
+      "requirement": "Declared-queue claims use durable fenced permits instead of a policy-row mutex and live-lease counts (P5-D).",
+      "gate_b_criteria": [
+        3
+      ],
+      "runtime_owner": [
+        "src/Infrastructure/Automation/DoctrineQueuePermits.php",
+        "src/Infrastructure/Automation/DoctrineJobQueue.php"
+      ],
+      "tests": [
+        "tests/Integration/Automation/QueueWorkerPermitsIntegrationTest.php",
+        "tests/Integration/Automation/QueuePermitReplicaContentionIntegrationTest.php",
+        "tests/Integration/Automation/KilledWorkerRecoveryIntegrationTest.php"
+      ],
+      "artifacts": [
+        ".github/workflows/ci.yml#PHP 8.5 / MariaDB",
+        ".github/workflows/ci.yml#PHP 8.5 / MySQL",
+        ".github/workflows/ci.yml#PHP 8.5 / PostgreSQL"
+      ],
+      "decision": "ADR 0021",
+      "state": "open",
+      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
+    },
+    {
+      "id": "V2-SCL-008",
+      "requirement": "Every hot correctness ledger declares a retention budget with observable drain (P5-E).",
+      "gate_b_criteria": [
+        3
+      ],
+      "runtime_owner": [
+        "src/Infrastructure/Persistence/Migration/BusinessRecordIdempotencyRetentionMigration.php"
+      ],
+      "tests": [
+        "tests/Integration/Automation/IdempotencyRecoveryIntegrationTest.php"
+      ],
+      "artifacts": [
+        ".github/workflows/ci.yml#PHP 8.5 / MariaDB",
+        ".github/workflows/ci.yml#PHP 8.5 / MySQL",
+        ".github/workflows/ci.yml#PHP 8.5 / PostgreSQL"
+      ],
+      "decision": "ADR 0021",
+      "state": "open",
+      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
+    },
+    {
+      "id": "P5-G",
+      "requirement": "Generated queries, reports and exports meet declared plan, memory, result and execution bounds at aged volume.",
+      "gate_b_criteria": [
+        3
+      ],
+      "runtime_owner": [
+        "src/BusinessSurface",
+        "src/BusinessReporting"
+      ],
+      "tests": [
+        "tests/Unit/BusinessSurface",
+        "tests/Functional"
+      ],
+      "artifacts": [
+        ".github/workflows/ci.yml#PHP 8.5 / MariaDB",
+        ".github/workflows/ci.yml#PHP 8.5 / MySQL",
+        ".github/workflows/ci.yml#PHP 8.5 / PostgreSQL"
+      ],
+      "decision": "ADR 0021",
+      "state": "open",
+      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
+    },
+    {
+      "id": "P5-H",
+      "requirement": "A stateless application tier with worker pool classes preserves policy, generation and transaction semantics with fairness.",
+      "gate_b_criteria": [
+        3
+      ],
+      "runtime_owner": [
+        "src/Application/Automation",
+        "src/Infrastructure/Automation"
+      ],
+      "tests": [
+        "tests/Integration/Automation"
+      ],
+      "artifacts": [
+        ".github/workflows/ci.yml#PHP 8.5 / MariaDB",
+        ".github/workflows/ci.yml#PHP 8.5 / MySQL",
+        ".github/workflows/ci.yml#PHP 8.5 / PostgreSQL"
+      ],
+      "decision": "ADR 0021",
+      "state": "open",
+      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
+    },
+    {
+      "id": "P5-I",
+      "requirement": "Per-engine storage amplification is measured and the free-space guardrail is enforced.",
+      "gate_b_criteria": [
+        3,
+        10
+      ],
+      "runtime_owner": [
+        "tools/perf-harness.php"
+      ],
+      "tests": [
+        "tests/Unit/Tools"
+      ],
+      "artifacts": [
+        ".github/workflows/ci.yml#PHP 8.5 / MariaDB",
+        ".github/workflows/ci.yml#PHP 8.5 / MySQL",
+        ".github/workflows/ci.yml#PHP 8.5 / PostgreSQL"
+      ],
+      "decision": "ADR 0021",
+      "state": "open",
+      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
+    },
+    {
+      "id": "P7-A",
+      "requirement": "Sampled concurrent capacity on workflow hardware with explicitly labelled statistical estimates against the five-million daily envelope.",
+      "gate_b_criteria": [
+        2,
+        10
+      ],
+      "runtime_owner": [
+        "tools/perf-concurrent.php",
+        "tools/PerfConcurrentSamples.php"
+      ],
+      "tests": [
+        "tests/Unit/Tools"
+      ],
+      "artifacts": [
+        ".github/workflows/capacity.yml#Concurrent samples"
+      ],
+      "decision": "ADR 0021",
+      "state": "open",
+      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
+    },
+    {
+      "id": "V2-DR-001",
+      "requirement": "Point-in-time recovery: coordinate capture on every engine and restore with replay to a chosen point (P6-A).",
+      "gate_b_criteria": [
+        4
+      ],
+      "runtime_owner": [
+        "tools/backup.sh",
+        "tools/restore.sh",
+        "tools/recovery-binlog.sh",
+        "tools/recovery-postgres.sh"
+      ],
+      "tests": [
+        "tests/Support/recovery-native-drill.sh",
+        "tests/Architecture/ProductionArtifactsTest.php"
+      ],
+      "artifacts": [
+        ".github/workflows/recovery.yml#Native replay",
+        ".github/workflows/recovery.yml#Real App HTTP restore and replay"
+      ],
+      "decision": "D3, ADR 0021",
+      "state": "open",
+      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
+    },
+    {
+      "id": "V2-DR-002",
+      "requirement": "Restored authentication, replay protection and approval state prove recoverability by execution (P6-C).",
+      "gate_b_criteria": [
+        4
+      ],
+      "runtime_owner": [
+        "tests/Support/RestoreSecurityAcceptance.php"
+      ],
+      "tests": [
+        "tests/Support/RestoreSecurityAcceptance.php",
+        "tests/Support/recovery-http-roundtrip.sh"
+      ],
+      "artifacts": [
+        ".github/workflows/recovery.yml#Native replay",
+        ".github/workflows/recovery.yml#Real App HTTP restore and replay"
+      ],
+      "decision": "ADR 0021",
+      "state": "open",
+      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
+    },
+    {
+      "id": "V2-DR-003",
+      "requirement": "The backup artifact is a plain, deduplicable tree with an uncompressed PostgreSQL dump (P6-B).",
+      "gate_b_criteria": [
+        4
+      ],
+      "runtime_owner": [
+        "tools/backup.sh",
+        "tools/backup-dedup-drill.sh"
+      ],
+      "tests": [
+        "tests/Support/backup-tamper-drill.sh",
+        "tests/Architecture/ProductionArtifactsTest.php"
+      ],
+      "artifacts": [
+        ".github/workflows/recovery.yml#Native replay",
+        ".github/workflows/recovery.yml#Real App HTTP restore and replay"
+      ],
+      "decision": "D4, ADR 0021",
+      "state": "open",
+      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
+    },
+    {
+      "id": "V2-DR-004",
+      "requirement": "The media-versus-database ordering rule is enforced by the tooling and stated once in the documentation (P6-A).",
+      "gate_b_criteria": [
+        4
+      ],
+      "runtime_owner": [
+        "tools/restore.sh",
+        "docs/operations/backup-restore.md"
+      ],
+      "tests": [
+        "tools/restore-pitr-drill.sh"
+      ],
+      "artifacts": [
+        ".github/workflows/recovery.yml#Native replay",
+        ".github/workflows/recovery.yml#Real App HTTP restore and replay"
+      ],
+      "decision": "ADR 0021",
+      "state": "open",
+      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
+    },
+    {
+      "id": "V2-OPS-001",
+      "requirement": "Operator diagnostics answer contention, queue age, slow definitions, backlog slope and retention pace within cardinality and cost bounds (P6-D).",
+      "gate_b_criteria": [
+        5
+      ],
+      "runtime_owner": [
+        "src/Infrastructure/Observability"
+      ],
+      "tests": [
+        "tests/Unit/Infrastructure/Observability"
+      ],
+      "artifacts": [
+        ".github/workflows/ci.yml#PHP 8.5 / MariaDB",
+        ".github/workflows/ci.yml#PHP 8.5 / MySQL",
+        ".github/workflows/ci.yml#PHP 8.5 / PostgreSQL"
+      ],
+      "decision": "D6, ADR 0021",
+      "state": "open",
+      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
+    },
+    {
+      "id": "GM-BAK-04",
+      "requirement": "Post-restore identity and security acceptance is executed by the drill, not by hand.",
+      "gate_b_criteria": [
+        4
+      ],
+      "runtime_owner": [
+        "tests/Support/RestoreSecurityAcceptance.php"
+      ],
+      "tests": [
+        "tests/Support/RestoreSecurityAcceptance.php"
+      ],
+      "artifacts": [
+        ".github/workflows/recovery.yml#Native replay",
+        ".github/workflows/recovery.yml#Real App HTTP restore and replay"
+      ],
+      "decision": "ADR 0021",
+      "state": "open",
+      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
+    },
+    {
+      "id": "GM-BAK-08",
+      "requirement": "Backup scheduling, retention, off-host copy and table parity are documented or asserted.",
+      "gate_b_criteria": [
+        4
+      ],
+      "runtime_owner": [
+        "tools/backup-retain.sh",
+        "tools/backup-cycle.sh",
+        "docs/operations/backup-restore.md"
+      ],
+      "tests": [
+        "tools/restore-verify.sh"
+      ],
+      "artifacts": [
+        ".github/workflows/recovery.yml#Native replay",
+        ".github/workflows/recovery.yml#Real App HTTP restore and replay"
+      ],
+      "decision": "ADR 0021",
+      "state": "open",
+      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
+    },
+    {
+      "id": "V2-STU-005",
+      "requirement": "The media port, resource discovery and hardened external-source fetcher agree with the published policy vectors (S-E).",
+      "gate_b_criteria": [
+        12
+      ],
+      "runtime_owner": [
+        "src/Studio/Application/Media"
+      ],
+      "tests": [
+        "tests/Unit/Studio/Domain/Media/StudioMediaPolicyVectorTest.php",
+        "tests/Unit/Studio/Application/Media/StudioExternalMediaFetcherTest.php",
+        "tests/Integration/Studio/StudioMediaPersistenceTest.php"
+      ],
+      "artifacts": [
+        ".github/workflows/ci.yml#Browser / MariaDB",
+        ".github/workflows/nightly.yml#Nightly browser breadth / MariaDB LTS"
+      ],
+      "decision": "ADR 0020, ADR 0021",
+      "state": "open",
+      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
+    },
+    {
+      "id": "V2-STU-006",
+      "requirement": "Authenticated, origin-pinned, replay-resistant preview renders unpublished composition through the published path (S-F).",
+      "gate_b_criteria": [
+        12
+      ],
+      "runtime_owner": [
+        "src/Studio/Application/Preview"
+      ],
+      "tests": [
+        "tests/Unit/Administrator/Http/StudioPreviewHttpTransportTest.php",
+        "tests/Integration/Studio/StudioPreviewPersistenceTest.php"
+      ],
+      "artifacts": [
+        ".github/workflows/ci.yml#Browser / MariaDB",
+        ".github/workflows/nightly.yml#Nightly browser breadth / MariaDB LTS"
+      ],
+      "decision": "ADR 0020, ADR 0021",
+      "state": "open",
+      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
+    },
+    {
+      "id": "V2-STU-007",
+      "requirement": "Studio is contextual Content authoring and the packaged App proves STUDIO-PROD-015 end to end (S-G).",
+      "gate_b_criteria": [
+        12
+      ],
+      "runtime_owner": [
+        "src/Studio/Application/Authoring/ContentStudioAuthoringService.php"
+      ],
+      "tests": [
+        "tests/Integration/Studio/ContentStudioAuthoringJourneyIntegrationTest.php",
+        "tests/Browser/studio-authoring.spec.ts"
+      ],
+      "artifacts": [
+        ".github/workflows/ci.yml#Browser / MariaDB",
+        ".github/workflows/nightly.yml#Nightly browser breadth / MariaDB LTS"
+      ],
+      "decision": "ADR 0020, ADR 0021",
+      "state": "open",
+      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
+    },
+    {
+      "id": "MACHINE-STUDIO-PARITY",
+      "requirement": "Studio's durable authoring operations have REST, CLI and MCP equivalents with the same permissions, revisions, audit and refusals.",
+      "gate_b_criteria": [
+        7,
+        12
+      ],
+      "runtime_owner": [
+        "src/Delivery/Http/Api",
+        "src/Delivery/Console",
+        "src/Infrastructure/Mcp"
+      ],
+      "tests": [
+        "tests/Architecture"
+      ],
+      "artifacts": [
+        ".github/workflows/ci.yml#PHP 8.5 / MariaDB",
+        ".github/workflows/ci.yml#PHP 8.5 / MySQL",
+        ".github/workflows/ci.yml#PHP 8.5 / PostgreSQL"
+      ],
+      "decision": "ADR 0021",
+      "state": "open",
+      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
+    },
+    {
+      "id": "V2-LNG-010",
+      "requirement": "All nine catalogues are complete and each locale is qualified with right-to-left baselines (PL-G).",
+      "gate_b_criteria": [
+        7,
+        11
+      ],
+      "runtime_owner": [
+        "resources/localization/messages",
+        "tools/compile-catalogues.php"
+      ],
+      "tests": [
+        "tests/Architecture/InterfaceTranslationGateTest.php",
+        "tests/Browser/right-to-left.spec.ts"
+      ],
+      "artifacts": [
+        ".github/workflows/ci.yml#Browser / MariaDB",
+        ".github/workflows/nightly.yml#Nightly browser breadth / MariaDB LTS"
+      ],
+      "decision": "ADR 0002, ADR 0021",
+      "state": "open",
+      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
+    },
+    {
+      "id": "V2-UX-001",
+      "requirement": "Automated interface acceptance covers the five archetype journeys with task-based evidence (P7-E).",
+      "gate_b_criteria": [
+        7
+      ],
+      "runtime_owner": [
+        "tests/Browser"
+      ],
+      "tests": [
+        "tests/Browser/administrator.spec.ts",
+        "tests/Browser/portal.spec.ts",
+        "tests/Browser/interface-standard.spec.ts"
+      ],
+      "artifacts": [
+        ".github/workflows/ci.yml#Browser / MariaDB",
+        ".github/workflows/nightly.yml#Nightly browser breadth / MariaDB LTS"
+      ],
+      "decision": "ADR 0021",
+      "state": "open",
+      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
+    },
+    {
+      "id": "V2-UX-002",
+      "requirement": "Role dashboard preferences preserve widgets outside the editor's visibility.",
+      "gate_b_criteria": [
+        7
+      ],
+      "runtime_owner": [
+        "src/Presentation/Application/Dashboard/DashboardPreferenceFormPresenter.php"
+      ],
+      "tests": [
+        "tests/Unit/Presentation"
+      ],
+      "artifacts": [
+        ".github/workflows/ci.yml#Browser / MariaDB",
+        ".github/workflows/nightly.yml#Nightly browser breadth / MariaDB LTS"
+      ],
+      "decision": "ADR 0006, ADR 0021",
+      "state": "open",
+      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
+    },
+    {
+      "id": "V2-UX-003",
+      "requirement": "Immutable and closed-period records render read-only affordances and the definition editor declares immutable states.",
+      "gate_b_criteria": [
+        7
+      ],
+      "runtime_owner": [
+        "src/BusinessSurface/Delivery/Browser/GeneratedBusinessBrowserController.php",
+        "src/BusinessDefinition/Administrator/BusinessDefinitionFormMapper.php"
+      ],
+      "tests": [
+        "tests/Unit/BusinessSurface"
+      ],
+      "artifacts": [
+        ".github/workflows/ci.yml#Browser / MariaDB",
+        ".github/workflows/nightly.yml#Nightly browser breadth / MariaDB LTS"
+      ],
+      "decision": "ADR 0021",
+      "state": "open",
+      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
+    },
+    {
+      "id": "V2-QA-014",
+      "requirement": "Live appearance switches repaint existing controls on every supported engine.",
+      "gate_b_criteria": [
+        7
+      ],
+      "runtime_owner": [
+        "assets/interface-standard/appearance.ts",
+        "assets/administrator/styles.css"
+      ],
+      "tests": [
+        "tests/Browser/nightly-browser-breadth.spec.ts",
+        "tests/Browser/interface-standard.spec.ts"
+      ],
+      "artifacts": [
+        ".github/workflows/nightly.yml#Nightly browser breadth / MariaDB LTS"
+      ],
+      "decision": "ADR 0021",
+      "state": "open",
+      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
+    },
+    {
+      "id": "GM-IDN-04",
+      "requirement": "Administrator sign-in is protected against login request forgery.",
+      "gate_b_criteria": [
+        1
+      ],
+      "runtime_owner": [
+        "src/Administrator/Http/Handler"
+      ],
+      "tests": [
+        "tests/Integration/Identity/AccessControlIntegrationTest.php"
+      ],
+      "artifacts": [
+        ".github/workflows/ci.yml#PHP 8.5 / MariaDB",
+        ".github/workflows/ci.yml#PHP 8.5 / MySQL",
+        ".github/workflows/ci.yml#PHP 8.5 / PostgreSQL"
+      ],
+      "decision": "ADR 0021",
+      "state": "delivered",
+      "outstanding": null
+    },
+    {
+      "id": "GM-IDN-05",
+      "requirement": "Browser session stores enforce configurable idle expiry beside absolute expiry and production HTTPS posture.",
+      "gate_b_criteria": [
+        1
+      ],
+      "runtime_owner": [
+        "src/Identity"
+      ],
+      "tests": [
+        "tests/Integration/Identity/CredentialLifecycleIntegrationTest.php"
+      ],
+      "artifacts": [
+        ".github/workflows/ci.yml#PHP 8.5 / MariaDB",
+        ".github/workflows/ci.yml#PHP 8.5 / MySQL",
+        ".github/workflows/ci.yml#PHP 8.5 / PostgreSQL"
+      ],
+      "decision": "ADR 0021",
+      "state": "delivered",
+      "outstanding": null
+    },
+    {
+      "id": "GM-IDN-07",
+      "requirement": "Ordinary administrator and portal users replace their own password through CSRF-protected account pages.",
+      "gate_b_criteria": [
+        1
+      ],
+      "runtime_owner": [
+        "src/Identity"
+      ],
+      "tests": [
+        "tests/Integration/Identity/AccountSelfServiceIntegrationTest.php"
+      ],
+      "artifacts": [
+        ".github/workflows/ci.yml#PHP 8.5 / MariaDB",
+        ".github/workflows/ci.yml#PHP 8.5 / MySQL",
+        ".github/workflows/ci.yml#PHP 8.5 / PostgreSQL"
+      ],
+      "decision": "ADR 0021",
+      "state": "delivered",
+      "outstanding": null
+    },
+    {
+      "id": "GM-IDN-06",
+      "requirement": "Session and CSRF qualification blind spots are covered by dedicated tests.",
+      "gate_b_criteria": [
+        1
+      ],
+      "runtime_owner": [
+        "src/Administrator/Http/Middleware",
+        "src/Portal/Http"
+      ],
+      "tests": [
+        "tests/Unit/Administrator/Http/Middleware/AdministratorCsrfMiddlewareTest.php"
+      ],
+      "artifacts": [
+        ".github/workflows/ci.yml#PHP 8.5 / MariaDB",
+        ".github/workflows/ci.yml#PHP 8.5 / MySQL",
+        ".github/workflows/ci.yml#PHP 8.5 / PostgreSQL"
+      ],
+      "decision": "ADR 0021",
+      "state": "open",
+      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
+    },
+    {
+      "id": "GM-AUD-08",
+      "requirement": "Audit metadata is redacted at write time by a runtime guard.",
+      "gate_b_criteria": [
+        1
+      ],
+      "runtime_owner": [
+        "src/Audit"
+      ],
+      "tests": [
+        "tests/Unit/Audit"
+      ],
+      "artifacts": [
+        ".github/workflows/ci.yml#PHP 8.5 / MariaDB",
+        ".github/workflows/ci.yml#PHP 8.5 / MySQL",
+        ".github/workflows/ci.yml#PHP 8.5 / PostgreSQL"
+      ],
+      "decision": "ADR 0021",
+      "state": "open",
+      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
+    },
+    {
+      "id": "GM-SUP-08",
+      "requirement": "The content-security policy carries no inline style allowance beyond a named, owned residual.",
+      "gate_b_criteria": [
+        1
+      ],
+      "runtime_owner": [
+        "src/Http/Security/SecurityHeaders.php"
+      ],
+      "tests": [
+        "tests/Unit/Http"
+      ],
+      "artifacts": [
+        ".github/workflows/ci.yml#PHP 8.5 / MariaDB",
+        ".github/workflows/ci.yml#PHP 8.5 / MySQL",
+        ".github/workflows/ci.yml#PHP 8.5 / PostgreSQL"
+      ],
+      "decision": "ADR 0021",
+      "state": "open",
+      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
+    },
+    {
+      "id": "GM-OBS-05",
+      "requirement": "Trace-context propagation is stated truthfully and tracing is decided, not implied.",
+      "gate_b_criteria": [
+        1
+      ],
+      "runtime_owner": [
+        "config/observability.php",
+        "docs/operations/monitoring.md"
+      ],
+      "tests": [
+        "tests/Unit/Infrastructure/Observability"
+      ],
+      "artifacts": [
+        ".github/workflows/ci.yml#PHP 8.5 / MariaDB",
+        ".github/workflows/ci.yml#PHP 8.5 / MySQL",
+        ".github/workflows/ci.yml#PHP 8.5 / PostgreSQL"
+      ],
+      "decision": "ADR 0021",
+      "state": "open",
+      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
+    },
+    {
+      "id": "GB-1",
+      "requirement": "No repository-owned critical or high finding remains open; conditional and external risks carry an owner and a review date.",
+      "gate_b_criteria": [
+        1
+      ],
+      "runtime_owner": [
+        "docs/roadmap/findings.json"
+      ],
+      "tests": [
+        "tools/verify-roadmap.php"
+      ],
+      "artifacts": [
+        ".github/workflows/ci.yml#Pre-flight record gates"
+      ],
+      "decision": "ADR 0021",
+      "state": "open",
+      "outstanding": "Closes when the Phase 5, 6, S and 7 entries above are delivered; GM-AUD-02 and GM-SUP-05 stay conditional with a named owner."
+    },
+    {
+      "id": "V2-REL-001",
+      "requirement": "Release artifacts are proven by one exact-SHA build-once chain (P7-G).",
+      "gate_b_criteria": [
+        6
+      ],
+      "runtime_owner": [
+        ".github/workflows/release.yml"
+      ],
+      "tests": [
+        "tests/Architecture/ProductionArtifactsTest.php"
+      ],
+      "artifacts": [
+        ".github/workflows/release.yml#release"
+      ],
+      "decision": "ADR 0021",
+      "state": "separate-track",
+      "outstanding": "Separate track by product-owner direction: exact release-artifact qualification and the extension proof portfolio follow this increment."
+    },
+    {
+      "id": "V2-REL-002",
+      "requirement": "The verification pipeline pins its toolchain instead of fetching it at run time (P7-G).",
+      "gate_b_criteria": [
+        6
+      ],
+      "runtime_owner": [
+        ".github/workflows"
+      ],
+      "tests": [
+        "tests/Architecture/ProductionArtifactsTest.php"
+      ],
+      "artifacts": [
+        ".github/workflows/ci.yml#Pre-flight record gates"
+      ],
+      "decision": "ADR 0021",
+      "state": "separate-track",
+      "outstanding": "Separate track by product-owner direction: exact release-artifact qualification and the extension proof portfolio follow this increment."
+    },
+    {
+      "id": "P7-F",
+      "requirement": "The vertical-neutral signed proof portfolio installs, runs and uninstalls on all three engines with no core edit.",
+      "gate_b_criteria": [
+        8
+      ],
+      "runtime_owner": [
+        "examples/extensions"
+      ],
+      "tests": [
+        "tests/Integration/Extension"
+      ],
+      "artifacts": [
+        ".github/workflows/ci.yml#PHP 8.5 / MariaDB",
+        ".github/workflows/ci.yml#PHP 8.5 / MySQL",
+        ".github/workflows/ci.yml#PHP 8.5 / PostgreSQL"
+      ],
+      "decision": "ADR 0021",
+      "state": "separate-track",
+      "outstanding": "Separate track by product-owner direction: exact release-artifact qualification and the extension proof portfolio follow this increment."
+    },
+    {
+      "id": "P7-I",
+      "requirement": "An independent review at the release candidate finds no repository-owned critical or high contradiction.",
+      "gate_b_criteria": [
+        9
+      ],
+      "runtime_owner": [
+        "docs/roadmap/README.md"
+      ],
+      "tests": [
+        "tools/verify-roadmap.php"
+      ],
+      "artifacts": [
+        ".github/workflows/ci.yml#Pre-flight record gates"
+      ],
+      "decision": "ADR 0021",
+      "state": "separate-track",
+      "outstanding": "Separate track by product-owner direction: exact release-artifact qualification and the extension proof portfolio follow this increment."
+    },
+    {
+      "id": "GM-SUP-05",
+      "requirement": "Untrusted extension code executes out of process with explicitly granted authority.",
+      "gate_b_criteria": [
+        1
+      ],
+      "runtime_owner": [
+        "src/Extension/Runtime/RestrictedExtensionContainer.php"
+      ],
+      "tests": [
+        "tests/Integration/Extension"
+      ],
+      "artifacts": [
+        ".github/workflows/ci.yml#PHP 8.5 / MariaDB",
+        ".github/workflows/ci.yml#PHP 8.5 / MySQL",
+        ".github/workflows/ci.yml#PHP 8.5 / PostgreSQL"
+      ],
+      "decision": "ADR 0021",
+      "state": "separate-track",
+      "outstanding": "Needs a shipped sandbox runtime; every surface states that installing an extension trusts its publisher with the process until then."
+    }
+  ]
+}

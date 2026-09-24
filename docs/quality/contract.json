@@ -494,6 +494,32 @@
             }
         },
         {
+            "id": "acceptance-record",
+            "title": "The Version 2 acceptance record is truthful and its summary is derived",
+            "purpose": "Fail when a requirement claimed delivered still sits in the findings ledger or is absent from the changelog, when an open entry lacks its outstanding note, when a referenced runtime, test or artifact path no longer exists, when a Gate B criterion has no entry, or when the generated summary page differs from the record.",
+            "owner": "quality-engineering",
+            "runner": "composer",
+            "composer_script": "acceptance:check",
+            "command": "composer acceptance:check",
+            "artifact": "console",
+            "in_qa": true,
+            "cadence": [
+                "local",
+                "ci",
+                "nightly",
+                "release"
+            ],
+            "maximum_interval": "per-change",
+            "engines": [],
+            "workflows": {
+                "ci": {
+                    "file": ".github/workflows/ci.yml",
+                    "job": "quality",
+                    "contains": "composer acceptance:check"
+                }
+            }
+        },
+        {
             "id": "extension-contract-freeze",
             "title": "The public extension contract is frozen and every promised generation still installs",
             "purpose": "Fail when the classified public surface changes without a deliberate generation bump, or when a promised manifest or SPI generation stops satisfying its signed compatibility fixture.",
