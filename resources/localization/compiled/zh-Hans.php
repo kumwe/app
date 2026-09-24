@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for zh-Hans, carrying 2553 messages.
+ * Compiled interface message catalogue for zh-Hans, carrying 2554 messages.
  *
  * Generated from zh-Hans.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -2000,6 +2000,7 @@ return [
     'core.console.mcp_serve.the_mcp_access_token_is_invalid' => 'MCP 访问令牌无效、已过期或已被吊销。',
     'core.console.mcp_serve.token_file_requirements' => 'MCP 令牌文件必须为绝对路径、可读、非符号链接、非空，且权限模式为 0600 或更严格。',
     'core.console.mcp_serve.usage_mcp_serve_site_site_token' => '{reason} 用法：mcp:serve --site=SITE --token-file=/run/secrets/kumwe-mcp-token',
+    'core.console.media.description' => '浏览、读取、上传或删除站点媒体库中的文件。',
     'core.console.navigation.description' => '列出并管理菜单和菜单项。',
     'core.console.queue_work.description' => '运行持久化、可崩溃恢复的作业工作进程。',
     'core.console.queue_work.kumwe_worker_drained_after_job_s' => 'Kumwe 工作进程 {workerId} 在处理 {handledJobs} 个作业后已排空退出。',

@@ -18558,6 +18558,15 @@
         <target>撤回您自己待处理的业务审批请求。</target>
       </segment>
     </unit>
+    <unit id="core.console.media.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/MediaCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Browse, read, upload or delete files in the site media library.</source>
+        <target>浏览、读取、上传或删除站点媒体库中的文件。</target>
+      </segment>
+    </unit>
     <unit id="core.console.settings.description">
       <notes>
         <note category="context">Console command summary on src/Delivery/Console/Command/ManageSettingsCommand.php.</note>

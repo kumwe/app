@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for ar, carrying 2553 messages.
+ * Compiled interface message catalogue for ar, carrying 2554 messages.
  *
  * Generated from ar.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -2000,6 +2000,7 @@ return [
     'core.console.mcp_serve.the_mcp_access_token_is_invalid' => 'رمز وصول MCP غير صالح أو منتهي الصلاحية أو مُلغى.',
     'core.console.mcp_serve.token_file_requirements' => 'يجب أن يكون ملف رمز MCP مطلقًا وقابلًا للقراءة وغير مرتبط رمزيًا وغير فارغ وبوضع 0600 أو أكثر صرامة.',
     'core.console.mcp_serve.usage_mcp_serve_site_site_token' => '{reason} الاستخدام: mcp:serve --site=SITE --token-file=/run/secrets/kumwe-mcp-token',
+    'core.console.media.description' => 'تصفّح ملفات مكتبة وسائط الموقع أو قراءتها أو رفعها أو حذفها.',
     'core.console.navigation.description' => 'اسرد القوائم وعناصرها وأدرها.',
     'core.console.queue_work.description' => 'شغّل عامل المهام الدائم القادر على الاسترداد من الأعطال.',
     'core.console.queue_work.kumwe_worker_drained_after_job_s' => 'استُنزف عامل Kumwe {workerId} بعد {handledJobs} مهمة (مهام).',

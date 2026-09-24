@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for en-US, carrying 2553 messages.
+ * Compiled interface message catalogue for en-US, carrying 2554 messages.
  *
  * Generated from en-US.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -2000,6 +2000,7 @@ return [
     'core.console.mcp_serve.the_mcp_access_token_is_invalid' => 'The MCP access token is invalid, expired, or revoked.',
     'core.console.mcp_serve.token_file_requirements' => 'The MCP token file must be absolute, readable, non-symlinked, non-empty, and mode 0600 or stricter.',
     'core.console.mcp_serve.usage_mcp_serve_site_site_token' => '{reason} Usage: mcp:serve --site=SITE --token-file=/run/secrets/kumwe-mcp-token',
+    'core.console.media.description' => 'Browse, read, upload or delete files in the site media library.',
     'core.console.navigation.description' => 'List and manage menus and menu items.',
     'core.console.queue_work.description' => 'Run the durable, crash-recovering job worker.',
     'core.console.queue_work.kumwe_worker_drained_after_job_s' => 'Kumwe worker {workerId} drained after {handledJobs} job(s).',

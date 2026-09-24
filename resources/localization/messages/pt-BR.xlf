@@ -18558,6 +18558,15 @@
         <target>Retira sua própria solicitação de aprovação de negócio pendente.</target>
       </segment>
     </unit>
+    <unit id="core.console.media.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/MediaCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Browse, read, upload or delete files in the site media library.</source>
+        <target>Navegue, leia, envie ou exclua arquivos na biblioteca de mídia do site.</target>
+      </segment>
+    </unit>
     <unit id="core.console.settings.description">
       <notes>
         <note category="context">Console command summary on src/Delivery/Console/Command/ManageSettingsCommand.php.</note>

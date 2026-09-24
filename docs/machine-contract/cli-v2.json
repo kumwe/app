@@ -2,7 +2,7 @@
   "format": "kumwe-cli-machine-contract-v1",
   "generation": 2,
   "status": "retained",
-  "surface_digest": "sha256:3c7644ca44d9b24f7cc854191bed728cbb529e49709724f1965486bd136ae54d",
+  "surface_digest": "sha256:51859b0de68e33676d637d6ca153632448535ca817e7053e5b65dba1a1a7244a",
   "dispatcher": {
     "list_exit": 0,
     "unknown_command_exit": 64,
@@ -753,6 +753,30 @@
       "exit_codes": {"0":"clean-disconnect","1":"protocol-failure","64":"usage-error","65":"token-file-error","77":"permission-denied"},
       "actions": [
         {"name":"invoke","risk":"high-impact","positionals":[],"allowed_options":["site","token-file"],"required_options":["site","token-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "media",
+      "action_argument": true,
+      "default_action": "list",
+      "options": [
+        {"name":"site","type":"identifier","enum":[]},
+        {"name":"token-file","type":"secret-file","enum":[]},
+        {"name":"query","type":"string","enum":[]},
+        {"name":"kind","type":"enum","enum":["all","image","document"]},
+        {"name":"page","type":"positive-integer","enum":[]},
+        {"name":"per-page","type":"positive-integer","enum":[]},
+        {"name":"media","type":"identifier","enum":[]},
+        {"name":"file","type":"absolute-path","enum":[]},
+        {"name":"filename","type":"string","enum":[]}
+      ],
+      "output": {"stdout":"json-document","stderr":"text-lines"},
+      "exit_codes": {"0":"success","1":"operation-failed"},
+      "actions": [
+        {"name":"list","risk":"read","positionals":[],"allowed_options":["site","token-file","query","kind","page","per-page"],"required_options":["site","token-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"get","risk":"read","positionals":[],"allowed_options":["site","token-file","media"],"required_options":["site","token-file","media"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"upload","risk":"mutate","positionals":[],"allowed_options":["site","token-file","file","filename"],"required_options":["site","token-file","file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"delete","risk":"mutate","positionals":[],"allowed_options":["site","token-file","media"],"required_options":["site","token-file","media"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
       ]
     },
     {

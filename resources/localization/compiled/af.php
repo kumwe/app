@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for af, carrying 2553 messages.
+ * Compiled interface message catalogue for af, carrying 2554 messages.
  *
  * Generated from af.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -2000,6 +2000,7 @@ return [
     'core.console.mcp_serve.the_mcp_access_token_is_invalid' => 'Die MCP-toegangskenteken is ongeldig, het verval, of is herroep.',
     'core.console.mcp_serve.token_file_requirements' => 'Die MCP-kentekenlêer moet absoluut, leesbaar, nie-simboolgekoppel, nie-leeg wees, en modus 0600 of strenger hê.',
     'core.console.mcp_serve.usage_mcp_serve_site_site_token' => '{reason} Gebruik: mcp:serve --site=SITE --token-file=/run/secrets/kumwe-mcp-token',
+    'core.console.media.description' => 'Blaai deur, lees, laai op of skrap lêers in die werf se mediabiblioteek.',
     'core.console.navigation.description' => 'Lys en bestuur kieslyste en kieslysitems.',
     'core.console.queue_work.description' => 'Laat die duursame taakwerker loop wat na ’n ineenstorting herstel.',
     'core.console.queue_work.kumwe_worker_drained_after_job_s' => 'Kumwe-werker {workerId} is uitgeput na {handledJobs} taak/take.',

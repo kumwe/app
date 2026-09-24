@@ -25,7 +25,7 @@
         ]
     },
     "inventory": {
-        "tools": 91,
+        "tools": 95,
         "resources": 1,
         "prompts": 1
     },
@@ -588,7 +588,7 @@
             ]
         }
     ],
-    "contract_sha256": "1a0139f01b63ebf95b5fa8a6843bcc44befc3baf8ddd8266a41f373100dd8b11",
+    "contract_sha256": "67b097c1c3408dd4592adeccd66d7314a100e00aa12de3fec0757f146c5de93f",
     "surface": {
         "tools": [
             {
@@ -7573,6 +7573,218 @@
                     "required": [
                         "approval_request_id",
                         "status"
+                    ],
+                    "additionalProperties": false
+                }
+            },
+            {
+                "name": "kumwe_media_list",
+                "title": "List media",
+                "description": "Browse one page of the site media library, optionally filtered by name and kind.",
+                "handler": "listMedia",
+                "capability": "content.read",
+                "risk": "read",
+                "alternative": "Administrator console: Media, /api/v1/media, or bin/kumwe media.",
+                "annotations": {
+                    "title": "List media",
+                    "readOnlyHint": true,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "type": "string",
+                            "maxLength": 200
+                        },
+                        "kind": {
+                            "type": "string",
+                            "enum": [
+                                "all",
+                                "image",
+                                "document"
+                            ]
+                        },
+                        "page": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100000
+                        },
+                        "perPage": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 96
+                        }
+                    },
+                    "required": [],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "items": {
+                            "type": "array",
+                            "maxItems": 96
+                        },
+                        "total": {
+                            "type": "integer",
+                            "minimum": 0
+                        },
+                        "page": {
+                            "type": "integer",
+                            "minimum": 1
+                        },
+                        "pages": {
+                            "type": "integer",
+                            "minimum": 0
+                        },
+                        "per_page": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    },
+                    "required": [
+                        "items",
+                        "total",
+                        "page",
+                        "pages",
+                        "per_page"
+                    ],
+                    "additionalProperties": false
+                }
+            },
+            {
+                "name": "kumwe_media_get",
+                "title": "Read a media asset",
+                "description": "Read one media library asset's metadata.",
+                "handler": "getMedia",
+                "capability": "content.read",
+                "risk": "read",
+                "alternative": "Administrator console: Media, /api/v1/media, or bin/kumwe media.",
+                "annotations": {
+                    "title": "Read a media asset",
+                    "readOnlyHint": true,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "media": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 191
+                        }
+                    },
+                    "required": [
+                        "media"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "additionalProperties": true
+                }
+            },
+            {
+                "name": "kumwe_media_upload",
+                "title": "Upload a media file",
+                "description": "Store one base64-encoded file in the media library under the given file name.",
+                "handler": "uploadMedia",
+                "capability": "content.update",
+                "risk": "scoped_write",
+                "alternative": "Administrator console: Media, /api/v1/media, or bin/kumwe media.",
+                "annotations": {
+                    "title": "Upload a media file",
+                    "readOnlyHint": false,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "operationId": {
+                            "type": "string",
+                            "minLength": 16,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{15,127}$"
+                        },
+                        "filename": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 255
+                        },
+                        "content": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 16777216
+                        }
+                    },
+                    "required": [
+                        "operationId",
+                        "filename",
+                        "content"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "additionalProperties": true
+                }
+            },
+            {
+                "name": "kumwe_media_delete",
+                "title": "Delete a media asset",
+                "description": "Remove one asset from the media library; an asset already gone is not an error.",
+                "handler": "deleteMedia",
+                "capability": "content.delete",
+                "risk": "destructive",
+                "alternative": "Administrator console: Media, /api/v1/media, or bin/kumwe media.",
+                "annotations": {
+                    "title": "Delete a media asset",
+                    "readOnlyHint": false,
+                    "destructiveHint": true,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "operationId": {
+                            "type": "string",
+                            "minLength": 16,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{15,127}$"
+                        },
+                        "media": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 191
+                        }
+                    },
+                    "required": [
+                        "operationId",
+                        "media"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "id": {
+                            "type": "string"
+                        },
+                        "deleted": {
+                            "type": "boolean"
+                        }
+                    },
+                    "required": [
+                        "id",
+                        "deleted"
                     ],
                     "additionalProperties": false
                 }

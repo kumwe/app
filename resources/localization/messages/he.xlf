@@ -18558,6 +18558,15 @@
         <target>מושך את בקשת אישור העסק הממתינה שלכם.</target>
       </segment>
     </unit>
+    <unit id="core.console.media.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/MediaCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Browse, read, upload or delete files in the site media library.</source>
+        <target>עיון, קריאה, העלאה או מחיקה של קבצים בספריית המדיה של האתר.</target>
+      </segment>
+    </unit>
     <unit id="core.console.settings.description">
       <notes>
         <note category="context">Console command summary on src/Delivery/Console/Command/ManageSettingsCommand.php.</note>

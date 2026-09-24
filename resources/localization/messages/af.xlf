@@ -18558,6 +18558,15 @@
         <target>Trek jou eie hangende besigheidsgoedkeuringsversoek terug.</target>
       </segment>
     </unit>
+    <unit id="core.console.media.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/MediaCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Browse, read, upload or delete files in the site media library.</source>
+        <target>Blaai deur, lees, laai op of skrap lêers in die werf se mediabiblioteek.</target>
+      </segment>
+    </unit>
     <unit id="core.console.settings.description">
       <notes>
         <note category="context">Console command summary on src/Delivery/Console/Command/ManageSettingsCommand.php.</note>

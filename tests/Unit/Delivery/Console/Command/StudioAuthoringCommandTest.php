@@ -47,7 +47,7 @@ final class StudioAuthoringCommandTest extends TestCase
      * @var    list<string>
      * @since  2.0.0
      */
-    private const array SUCCESSOR_COMMANDS = ['business-approval', 'security-events', 'studio-authoring'];
+    private const array SUCCESSOR_COMMANDS = ['business-approval', 'media', 'security-events', 'studio-authoring'];
 
     /**
      * Protected files written by a test.

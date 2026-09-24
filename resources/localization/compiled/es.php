@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for es, carrying 2553 messages.
+ * Compiled interface message catalogue for es, carrying 2554 messages.
  *
  * Generated from es.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -2000,6 +2000,7 @@ return [
     'core.console.mcp_serve.the_mcp_access_token_is_invalid' => 'El token de acceso de MCP no es válido, ha caducado o se ha revocado.',
     'core.console.mcp_serve.token_file_requirements' => 'El archivo de token de MCP debe ser absoluto, legible, no ser un enlace simbólico, no estar vacío y tener el modo 0600 o más estricto.',
     'core.console.mcp_serve.usage_mcp_serve_site_site_token' => '{reason} Uso: mcp:serve --site=SITE --token-file=/run/secrets/kumwe-mcp-token',
+    'core.console.media.description' => 'Explora, lee, sube o elimina archivos de la biblioteca multimedia del sitio.',
     'core.console.navigation.description' => 'Lista y gestiona menús y elementos de menú.',
     'core.console.queue_work.description' => 'Ejecuta el trabajador de tareas duradero y recuperable ante fallos.',
     'core.console.queue_work.kumwe_worker_drained_after_job_s' => 'El trabajador de Kumwe {workerId} se vació tras {handledJobs} tarea(s).',

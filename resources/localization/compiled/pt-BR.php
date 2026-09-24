@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for pt-BR, carrying 2553 messages.
+ * Compiled interface message catalogue for pt-BR, carrying 2554 messages.
  *
  * Generated from pt-BR.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -2000,6 +2000,7 @@ return [
     'core.console.mcp_serve.the_mcp_access_token_is_invalid' => 'O token de acesso MCP é inválido, expirou ou foi revogado.',
     'core.console.mcp_serve.token_file_requirements' => 'O arquivo de token MCP deve ser absoluto, legível, não ser um link simbólico, não estar vazio e ter o modo 0600 ou mais restrito.',
     'core.console.mcp_serve.usage_mcp_serve_site_site_token' => '{reason} Uso: mcp:serve --site=SITE --token-file=/run/secrets/kumwe-mcp-token',
+    'core.console.media.description' => 'Navegue, leia, envie ou exclua arquivos na biblioteca de mídia do site.',
     'core.console.navigation.description' => 'Liste e gerencie menus e itens de menu.',
     'core.console.queue_work.description' => 'Execute o worker de tarefas durável e recuperável de falhas.',
     'core.console.queue_work.kumwe_worker_drained_after_job_s' => 'O worker do Kumwe {workerId} foi esvaziado após {handledJobs} tarefa(s).',

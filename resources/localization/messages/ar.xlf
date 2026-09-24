@@ -18558,6 +18558,15 @@
         <target>يسحب طلب الموافقة التجارية المعلّق الخاص بك.</target>
       </segment>
     </unit>
+    <unit id="core.console.media.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/MediaCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Browse, read, upload or delete files in the site media library.</source>
+        <target>تصفّح ملفات مكتبة وسائط الموقع أو قراءتها أو رفعها أو حذفها.</target>
+      </segment>
+    </unit>
     <unit id="core.console.settings.description">
       <notes>
         <note category="context">Console command summary on src/Delivery/Console/Command/ManageSettingsCommand.php.</note>

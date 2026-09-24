@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for he, carrying 2553 messages.
+ * Compiled interface message catalogue for he, carrying 2554 messages.
  *
  * Generated from he.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -2000,6 +2000,7 @@ return [
     'core.console.mcp_serve.the_mcp_access_token_is_invalid' => 'אסימון הגישה של MCP אינו תקין, פג תוקפו או בוטל.',
     'core.console.mcp_serve.token_file_requirements' => 'קובץ אסימון ה-MCP חייב להיות בנתיב מוחלט, קריא, שאינו קישור סמלי, לא ריק, ובמצב הרשאות 0600 או מחמיר יותר.',
     'core.console.mcp_serve.usage_mcp_serve_site_site_token' => '{reason} שימוש: mcp:serve --site=SITE --token-file=/run/secrets/kumwe-mcp-token',
+    'core.console.media.description' => 'עיון, קריאה, העלאה או מחיקה של קבצים בספריית המדיה של האתר.',
     'core.console.navigation.description' => 'הציגו רשימה ונהלו תפריטים ופריטי תפריט.',
     'core.console.queue_work.description' => 'הריצו את עובד המשימות העמיד, המשוחזר מקריסה.',
     'core.console.queue_work.kumwe_worker_drained_after_job_s' => 'עובד Kumwe {workerId} סיים לאחר {handledJobs} משימות.',

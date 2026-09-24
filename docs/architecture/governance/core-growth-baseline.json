@@ -3232,6 +3232,18 @@
             "surface": "b72c8e26114c9daa7c152003",
             "growth": null
         },
+        "Kumwe\\App\\Delivery\\Console\\Command\\MediaCommand": {
+            "kind": "class",
+            "layer": "delivery",
+            "surface": "4c9544325857e0b1692ad993",
+            "growth": {
+                "classification": "host-delivery",
+                "implements": [
+                    "Kumwe\\App\\Delivery\\Console\\Command"
+                ],
+                "extends": null
+            }
+        },
         "Kumwe\\App\\Delivery\\Console\\Command\\MigrateCommand": {
             "kind": "class",
             "layer": "delivery",
@@ -5079,7 +5091,7 @@
         "Kumwe\\App\\Infrastructure\\Mcp\\KumweMcpHandlers": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "c2318db241af344f6baaf4f6",
+            "surface": "2369b2cf83e87300f99696cf",
             "growth": {
                 "classification": "host-infrastructure",
                 "implements": [],

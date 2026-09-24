@@ -18,6 +18,7 @@ use Kumwe\App\Infrastructure\Mcp\McpCapabilityCatalog;
 use Kumwe\App\Infrastructure\Mcp\McpMutationGuard;
 use Kumwe\App\Infrastructure\Mcp\ReportMcpHandlers;
 use Kumwe\App\Infrastructure\Time\SystemClock;
+use Kumwe\App\Media\Application\MediaService;
 use Kumwe\App\Navigation\Application\NavigationService;
 use Kumwe\App\Site\Infrastructure\Persistence\DoctrineSiteSettings;
 use ReflectionClass;
@@ -27,6 +28,7 @@ final class McpHandlersFixture
     public static function create(
         McpCapabilityCatalog $catalog,
         ?ExtensionExecutionGate $extensionRuntime = null,
+        ?MediaService $media = null,
     ): KumweMcpHandlers {
         return new KumweMcpHandlers(
             $catalog,
@@ -45,6 +47,7 @@ final class McpHandlersFixture
             new SystemClock(),
             AuthorizationContext::gateway(),
             extensionRuntime: $extensionRuntime,
+            media: $media,
         );
     }
 
