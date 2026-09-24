@@ -12698,6 +12698,87 @@
         <target>Studio שמר פריט זה.</target>
       </segment>
     </unit>
+    <unit id="core.administrator.content_form.studio_preview">
+      <notes>
+        <note category="context">Eyebrow of the host-owned authenticated preview beside the contextual Studio mount on templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Authenticated preview</source>
+        <target>תצוגה מקדימה מאומתת</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_preview_shows_the_last_saved">
+      <notes>
+        <note category="context">Explanation of what the contextual Studio preview renders on templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>The preview renders this item&apos;s last saved composition through the same template and theme path the published page uses.</source>
+        <target>התצוגה המקדימה מציגה את ההרכבה השמורה האחרונה של פריט זה דרך אותו נתיב תבנית וערכת נושא שבו משתמש הדף המפורסם.</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.preview_this_item">
+      <notes>
+        <note category="context">Action that renders the authenticated preview of the contextual Studio session on templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Preview this item</source>
+        <target>תצוגה מקדימה של פריט זה</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_preview_is_rendering">
+      <notes>
+        <note category="context">Preview status while the authenticated preview channel renders on templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Rendering the preview.</source>
+        <target>התצוגה המקדימה בהכנה.</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_preview_is_ready">
+      <notes>
+        <note category="context">Preview status once the single-use preview document loaded on templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>The preview shows the last saved composition of this item.</source>
+        <target>התצוגה המקדימה מציגה את ההרכבה השמורה האחרונה של פריט זה.</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_preview_is_stale">
+      <notes>
+        <note category="context">Preview status after a save superseded the rendered preview on templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>The item changed since this preview; preview it again.</source>
+        <target>הפריט השתנה מאז תצוגה מקדימה זו; הציגו אותו שוב בתצוגה מקדימה.</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_preview_needs_a_saved_item">
+      <notes>
+        <note category="context">Preview status when the Studio session holds unsaved or not yet created work on templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Save the item before previewing it; the preview shows accepted revisions only.</source>
+        <target>שמרו את הפריט לפני הצגתו בתצוגה מקדימה; התצוגה המקדימה מציגה רק גרסאות שהתקבלו.</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_preview_could_not_be_rendered">
+      <notes>
+        <note category="context">Preview status when the authenticated preview channel refused or failed on templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>The preview could not be rendered.</source>
+        <target>לא ניתן היה להציג את התצוגה המקדימה.</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_preview_frame">
+      <notes>
+        <note category="context">Accessible title of the same-origin preview frame beside the contextual Studio mount on templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Authenticated preview of this item</source>
+        <target>תצוגה מקדימה מאומתת של פריט זה</target>
+      </segment>
+    </unit>
     <unit id="core.administrator.content_form.discard_unsaved_studio_changes">
       <notes>
         <note category="context">Confirmation shown when the author leaves Studio with unsaved changes.</note>

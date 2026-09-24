@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for he, carrying 2507 messages.
+ * Compiled interface message catalogue for he, carrying 2516 messages.
  *
  * Generated from he.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1271,6 +1271,7 @@ return [
     'core.administrator.content_form.move_to' => 'מעבר אל {to}',
     'core.administrator.content_form.name_the_item_and_choose_the' => 'תנו שם לפריט ובחרו את הכתובת הציבורית היציבה שעורכים יזהו.',
     'core.administrator.content_form.no_workflow_action_is_available_for' => 'אין פעולת תהליך עבודה זמינה עבור ההרשאות שלכם והמצב הנוכחי.',
+    'core.administrator.content_form.preview_this_item' => 'תצוגה מקדימה של פריט זה',
     'core.administrator.content_form.publication_timing' => 'תזמון פרסום',
     'core.administrator.content_form.publish_at' => 'פרסום בתאריך',
     'core.administrator.content_form.reload_version' => 'טעינה מחדש של גרסה {current_version}',
@@ -1284,6 +1285,14 @@ return [
     'core.administrator.content_form.studio_page_builder_is_ready' => 'בונה העמודים של Studio מוכן.',
     'core.administrator.content_form.studio_page_builder_loads_when_you_switch' => 'בונה העמודים ייטען כשתעברו אליו.',
     'core.administrator.content_form.studio_page_builder_unavailable_use_the' => 'בונה העמודים של Studio אינו זמין להקשר תוכן זה. השתמשו בעורך המובנה שלהלן; Kumwe ישמר את סוג התוכן והגרסה המדויקים בעת השמירה.',
+    'core.administrator.content_form.studio_preview' => 'תצוגה מקדימה מאומתת',
+    'core.administrator.content_form.studio_preview_could_not_be_rendered' => 'לא ניתן היה להציג את התצוגה המקדימה.',
+    'core.administrator.content_form.studio_preview_frame' => 'תצוגה מקדימה מאומתת של פריט זה',
+    'core.administrator.content_form.studio_preview_is_ready' => 'התצוגה המקדימה מציגה את ההרכבה השמורה האחרונה של פריט זה.',
+    'core.administrator.content_form.studio_preview_is_rendering' => 'התצוגה המקדימה בהכנה.',
+    'core.administrator.content_form.studio_preview_is_stale' => 'הפריט השתנה מאז תצוגה מקדימה זו; הציגו אותו שוב בתצוגה מקדימה.',
+    'core.administrator.content_form.studio_preview_needs_a_saved_item' => 'שמרו את הפריט לפני הצגתו בתצוגה מקדימה; התצוגה המקדימה מציגה רק גרסאות שהתקבלו.',
+    'core.administrator.content_form.studio_preview_shows_the_last_saved' => 'התצוגה המקדימה מציגה את ההרכבה השמורה האחרונה של פריט זה דרך אותו נתיב תבנית וערכת נושא שבו משתמש הדף המפורסם.',
     'core.administrator.content_form.the_content_model_refused_these_values' => 'מודל התוכן דחה ערכים אלה. כל מה שהקלדתם עדיין נמצא למטה; תקנו את השדות המצוינים כאן ושמרו שוב.',
     'core.administrator.content_form.the_item_could_not_be_saved' => 'לא ניתן היה לשמור את הפריט',
     'core.administrator.content_form.title' => 'כותרת',

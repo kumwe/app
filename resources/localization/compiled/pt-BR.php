@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for pt-BR, carrying 2507 messages.
+ * Compiled interface message catalogue for pt-BR, carrying 2516 messages.
  *
  * Generated from pt-BR.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1271,6 +1271,7 @@ return [
     'core.administrator.content_form.move_to' => 'Mover para {to}',
     'core.administrator.content_form.name_the_item_and_choose_the' => 'Nomeie o item e escolha o endereço público estável que os editores reconhecerão.',
     'core.administrator.content_form.no_workflow_action_is_available_for' => 'Nenhuma ação de fluxo de trabalho está disponível para suas permissões e o estado atual.',
+    'core.administrator.content_form.preview_this_item' => 'Visualizar a prévia deste item',
     'core.administrator.content_form.publication_timing' => 'Temporização de publicação',
     'core.administrator.content_form.publish_at' => 'Publicar em',
     'core.administrator.content_form.reload_version' => 'Recarregar a versão {current_version}',
@@ -1284,6 +1285,14 @@ return [
     'core.administrator.content_form.studio_page_builder_is_ready' => 'O construtor de páginas do Studio está pronto.',
     'core.administrator.content_form.studio_page_builder_loads_when_you_switch' => 'O construtor de páginas carrega quando você alterna para ele.',
     'core.administrator.content_form.studio_page_builder_unavailable_use_the' => 'O construtor de páginas do Studio não está disponível para este contexto de conteúdo. Use o editor estruturado abaixo; o Kumwe preservará o tipo e a versão exatos do conteúdo ao salvar.',
+    'core.administrator.content_form.studio_preview' => 'Prévia autenticada',
+    'core.administrator.content_form.studio_preview_could_not_be_rendered' => 'Não foi possível renderizar a prévia.',
+    'core.administrator.content_form.studio_preview_frame' => 'Prévia autenticada deste item',
+    'core.administrator.content_form.studio_preview_is_ready' => 'A prévia mostra a última composição salva deste item.',
+    'core.administrator.content_form.studio_preview_is_rendering' => 'Renderizando a prévia.',
+    'core.administrator.content_form.studio_preview_is_stale' => 'O item mudou desde esta prévia; visualize a prévia novamente.',
+    'core.administrator.content_form.studio_preview_needs_a_saved_item' => 'Salve o item antes de visualizar a prévia; a prévia mostra apenas revisões aceitas.',
+    'core.administrator.content_form.studio_preview_shows_the_last_saved' => 'A prévia renderiza a última composição salva deste item pelo mesmo caminho de modelo e tema usado pela página publicada.',
     'core.administrator.content_form.the_content_model_refused_these_values' => 'O modelo de conteúdo recusou estes valores. Tudo o que você digitou ainda está abaixo; corrija os campos indicados aqui e salve novamente.',
     'core.administrator.content_form.the_item_could_not_be_saved' => 'Não foi possível salvar o item',
     'core.administrator.content_form.title' => 'Título',

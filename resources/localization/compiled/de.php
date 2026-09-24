@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for de, carrying 2507 messages.
+ * Compiled interface message catalogue for de, carrying 2516 messages.
  *
  * Generated from de.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1271,6 +1271,7 @@ return [
     'core.administrator.content_form.move_to' => 'Verschieben nach {to}',
     'core.administrator.content_form.name_the_item_and_choose_the' => 'Benennen Sie das Element und wählen Sie die stabile öffentliche Adresse, die Bearbeiter wiedererkennen.',
     'core.administrator.content_form.no_workflow_action_is_available_for' => 'Für Ihre Berechtigungen und den aktuellen Status ist keine Workflow-Aktion verfügbar.',
+    'core.administrator.content_form.preview_this_item' => 'Vorschau dieses Elements anzeigen',
     'core.administrator.content_form.publication_timing' => 'Veröffentlichungszeitpunkt',
     'core.administrator.content_form.publish_at' => 'Veröffentlichen am',
     'core.administrator.content_form.reload_version' => 'Version {current_version} neu laden',
@@ -1284,6 +1285,14 @@ return [
     'core.administrator.content_form.studio_page_builder_is_ready' => 'Der Studio-Seiteneditor ist bereit.',
     'core.administrator.content_form.studio_page_builder_loads_when_you_switch' => 'Der Seiteneditor wird geladen, sobald Sie zu ihm wechseln.',
     'core.administrator.content_form.studio_page_builder_unavailable_use_the' => 'Der Studio-Seiteneditor ist für diesen Inhaltskontext nicht verfügbar. Verwenden Sie den strukturierten Editor unten; Kumwe behält beim Speichern den genauen Inhaltstyp und die Version bei.',
+    'core.administrator.content_form.studio_preview' => 'Authentifizierte Vorschau',
+    'core.administrator.content_form.studio_preview_could_not_be_rendered' => 'Die Vorschau konnte nicht dargestellt werden.',
+    'core.administrator.content_form.studio_preview_frame' => 'Authentifizierte Vorschau dieses Elements',
+    'core.administrator.content_form.studio_preview_is_ready' => 'Die Vorschau zeigt die zuletzt gespeicherte Komposition dieses Elements.',
+    'core.administrator.content_form.studio_preview_is_rendering' => 'Die Vorschau wird dargestellt.',
+    'core.administrator.content_form.studio_preview_is_stale' => 'Das Element wurde seit dieser Vorschau geändert; zeigen Sie die Vorschau erneut an.',
+    'core.administrator.content_form.studio_preview_needs_a_saved_item' => 'Speichern Sie das Element, bevor Sie eine Vorschau anzeigen; die Vorschau zeigt nur angenommene Revisionen.',
+    'core.administrator.content_form.studio_preview_shows_the_last_saved' => 'Die Vorschau stellt die zuletzt gespeicherte Komposition dieses Elements über denselben Vorlagen- und Theme-Pfad dar, den die veröffentlichte Seite verwendet.',
     'core.administrator.content_form.the_content_model_refused_these_values' => 'Das Inhaltsmodell hat diese Werte abgelehnt. Alles, was Sie eingegeben haben, steht weiterhin unten; korrigieren Sie die hier genannten Felder und speichern Sie erneut.',
     'core.administrator.content_form.the_item_could_not_be_saved' => 'Das Element konnte nicht gespeichert werden',
     'core.administrator.content_form.title' => 'Titel',
