@@ -229,6 +229,83 @@ final class QueueWorkerPermitsIntegrationTest extends TestCase
     }
 
     /**
+     * Refuse durable permit state the policy cannot account for, and a claim outside its work transaction.
+     *
+     * A ceiling that changes under an unchanged generation would let two replicas enforce different limits
+     * for the same generation, so it is refused instead of being silently republished. A permit row whose
+     * generation is not a nonnegative integer is malformed metadata, not a stale generation to overwrite. More
+     * live reservations than one queue may ever hold cannot be adopted into permits, and a claim that does not
+     * share the work claim's transaction could outlive the rolled-back work it was taken for.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testUnaccountablePermitStateAndAnUntransactedClaimAreRefused(): void
+    {
+        [$database, $permits] = $this->store();
+        $now = new DateTimeImmutable('2026-09-24T10:00:00+00:00');
+        $policy = new QueueRuntimePolicy('acme.work', 60, 5, 2, 7, 9);
+        $permits->synchronize($policy, $now);
+        $refusal = static function (callable $attempt): string {
+            try {
+                $attempt();
+            } catch (RuntimeException $refused) {
+                return $refused->getMessage();
+            }
+            self::fail('The permit operation must be refused.');
+        };
+
+        self::assertSame(
+            'A queue policy changed without a runtime generation change.',
+            $refusal(static fn () => $permits->synchronize(new QueueRuntimePolicy('acme.work', 60, 5, 3, 7, 9), $now)),
+        );
+        self::assertSame(
+            'Queue permits must share the work claim transaction.',
+            $refusal(static fn () => $permits->acquire(
+                $policy,
+                $now,
+                'job',
+                Uuid::uuid7()->toString(),
+                '',
+                Uuid::uuid7()->toString(),
+                $now->modify('+60 seconds'),
+            )),
+        );
+        $database->executeStatement(
+            "UPDATE permit_job_queue_permits SET runtime_generation = -1 WHERE queue_id = 'acme.work'",
+        );
+        self::assertSame(
+            'Queue permit policy metadata is malformed.',
+            $refusal(static fn () => $permits->synchronize($policy, $now)),
+        );
+
+        $crowded = new QueueRuntimePolicy('acme.crowded', 60, 5, 1, 7, 1);
+        $database->transactional(static function () use ($database, $now): void {
+            for ($index = 0; $index < 1_025; $index++) {
+                $database->insert('permit_jobs', [
+                    'id' => Uuid::uuid7()->toString(), 'queue' => 'acme.crowded', 'job_type' => 'acme.crowded',
+                    'payload' => '{}', 'status' => 'reserved', 'available_at' => $now->format('Y-m-d H:i:s'),
+                    'lease_token' => Uuid::uuid7()->toString(),
+                    'lease_expires_at' => $now->modify('+1 hour')->format('Y-m-d H:i:s'),
+                    'created_at' => $now->format('Y-m-d H:i:s'), 'updated_at' => $now->format('Y-m-d H:i:s'),
+                ]);
+            }
+        });
+        self::assertSame(
+            'Existing reservations exceed the supported queue permit bound.',
+            $refusal(static fn () => $permits->synchronize($crowded, $now)),
+        );
+        self::assertSame(
+            '0',
+            (string) $database->fetchOne(
+                "SELECT COUNT(*) FROM permit_job_queue_permits WHERE queue_id = 'acme.crowded'",
+            ),
+            'A refused publication leaves no partial permit set behind.',
+        );
+    }
+
+    /**
      * Build an isolated durable schema without relying on parent-owned container wiring.
      *
      * @return  array{Connection, DoctrineQueuePermits}  Connection and shared permit adapter.
