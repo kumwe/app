@@ -283,6 +283,7 @@ expect_refusal driver-mismatch \
 # 15. A restore target that already exists is somebody's live data.
 install -d -m 0700 "${work_root}/occupied" "${work_root}/occupied/media"
 expect_refusal existing-filesystem-target 'media target must not exist' env \
+    KUMWE_RESTORE_MANIFEST="${work_root}/occupied/restore.json" \
     KUMWE_RESTORE_DB_NAME="${KUMWE_RESTORE_DB_NAME:-kumwe_tamper_drill}" \
     KUMWE_RESTORE_DB_USER="${KUMWE_RESTORE_DB_USER:-kumwe}" \
     KUMWE_RESTORE_DB_PASSWORD_FILE="${KUMWE_RESTORE_DB_PASSWORD_FILE:-/dev/null}" \
@@ -298,6 +299,7 @@ expect_refusal existing-filesystem-target 'media target must not exist' env \
 if [[ -n "${KUMWE_TAMPER_DRILL_OCCUPIED_DB:-}" ]]; then
     install -d -m 0700 "${work_root}/occupied-database"
     expect_refusal non-empty-target-database 'restore database is not empty' env \
+        KUMWE_RESTORE_MANIFEST="${work_root}/occupied-database/restore.json" \
         KUMWE_RESTORE_DB_DRIVER="$manifest_driver" \
         KUMWE_RESTORE_DB_HOST="${KUMWE_RESTORE_DB_HOST:-database}" \
         KUMWE_RESTORE_DB_PORT="${KUMWE_RESTORE_DB_PORT:-}" \
