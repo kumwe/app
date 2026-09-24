@@ -23,7 +23,7 @@ if (documentNav && documentSections.length > 0 && "IntersectionObserver" in wind
 		if (visible[0]) setCurrent(visible[0].target.id);
 	}, { rootMargin: "-40% 0px -50% 0px" });
 	for (const section of documentSections) observer.observe(section);
-	if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) document.documentElement.style.scrollBehavior = "smooth";
+	if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) document.documentElement.classList.add("site-smooth-scroll");
 }
 setupCopyValues();
 setupValidationReveal();

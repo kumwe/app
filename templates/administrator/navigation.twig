@@ -49,7 +49,7 @@
         <kumwe-menu-tree class="stack">
           <div class="stack-compact">
             {% for item in items[menu.id] %}
-              <article class="panel-body menu-item" data-menu-item="{{ item.id }}" style="--menu-depth: {{ item.path|split('/')|length - 2 }}">
+              <article class="panel-body menu-item" data-menu-item="{{ item.id }}" data-menu-depth="{{ item.path|split('/')|length - 2 }}">
                 <form id="menu-item-{{ item.id }}" action="/administrator/navigation" method="post" class="menu-item-grid" data-navigation-target-form>
                   <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="id" value="{{ item.id }}"><input type="hidden" name="version" value="{{ item.version }}">
                   <label>{{ t('core.administrator.business_definitions.label') }}<input name="title" value="{{ item.title }}" required data-navigation-title></label>

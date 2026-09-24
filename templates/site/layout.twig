@@ -12,6 +12,7 @@
   {% for alternate in language_alternates %}<link rel="alternate" hreflang="{{ alternate.locale }}" href="{{ alternate.href }}">{% endfor %}
   {% if language_default %}<link rel="alternate" hreflang="x-default" href="{{ language_default }}">{% endif %}
   {% for stylesheet in site_assets.stylesheets %}<link rel="stylesheet" href="{{ stylesheet }}">{% endfor %}
+  {% if presentation.theme_stylesheet is defined and presentation.theme_stylesheet %}<link rel="stylesheet" href="{{ presentation.theme_stylesheet }}" data-site-theme>{% endif %}
   {% for module in site_assets.modules %}<script type="module" src="{{ module }}"></script>{% endfor %}
 </head>
 <body
@@ -19,9 +20,6 @@
   data-button-style="{{ presentation.button_style|default('solid') }}"
   data-button-shape="{{ presentation.button_shape|default('rounded') }}"
   data-header-style="{{ presentation.header_style|default('glass') }}"
-  {% if presentation.css_variables|default({}) is not empty %}
-    style="{% for property, value in presentation.css_variables %}{{ property }}:{{ value }};{% endfor %}"
-  {% endif %}
 >
   {% import '_navigation.twig' as navigation_tree %}
   <a class="sr-only" href="#site-content">{{ t('core.site.layout.skip_to_content') }}</a>
