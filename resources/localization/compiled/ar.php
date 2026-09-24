@@ -1939,7 +1939,7 @@ return [
     'core.console.audit_export.description' => 'صدِّر مسار التدقيق كأرشيف محمي بمجموع اختباري.',
     'core.console.audit_verify.description' => 'تحقّق من سلسلة بصمات مسار التدقيق ومراسيها.',
     'core.console.automation.description' => 'اسرد الجداول والمهام في قائمة الانتظار وأدرها.',
-    'core.console.business_approval.description' => 'يسحب طلب الموافقة التجارية المعلّق الخاص بك.',
+    'core.console.business_approval.description' => 'اسحب طلب موافقة الأعمال المعلّق الخاص بك.',
     'core.console.business_definition.description' => 'اسرد تعريفات كيانات الأعمال وافحصها وأنشئ مسوداتها وتحقّق منها وانشرها وأوقفها.',
     'core.console.business_periods.description' => 'اسرد فترات الترحيل المحاسبي وأغلقها وأعد فتحها.',
     'core.console.business_record.description' => 'اكتشف عمليات الأعمال واستعلم عنها وغيّرها واربطها واطلب الموافقات عليها وأنشئ التقارير وصدّرها وافحصها.',
