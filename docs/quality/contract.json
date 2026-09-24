@@ -495,8 +495,8 @@
         },
         {
             "id": "acceptance-record",
-            "title": "The Version 2 acceptance record is truthful and its summary is derived",
-            "purpose": "Fail when a requirement claimed delivered still sits in the findings ledger or is absent from the changelog, when an open entry lacks its outstanding note, when a referenced runtime, test or artifact path no longer exists, when a Gate B criterion has no entry, or when the generated summary page differs from the record.",
+            "title": "The Version 2 acceptance record is truthful and every view of it is derived",
+            "purpose": "Fail when an open finding or README package has no entry, when a delivered entry still sits in the findings ledger, is absent from the changelog or names no test and CI job, when an open or pending entry lacks its outstanding note or branch, when a referenced runtime, test or artifact path, workflow job, uploaded artifact or reference anchor does not exist, when a Gate B criterion has no entry or is delivered ahead of an entry citing it, or when the summary page or a generated STATUS.md block (phase board, open work, Gate B criteria, ledger snapshot) differs from the record.",
             "owner": "quality-engineering",
             "runner": "composer",
             "composer_script": "acceptance:check",

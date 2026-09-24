@@ -28,6 +28,7 @@ require_once __DIR__ . '/PackageManifests.php';
 require_once __DIR__ . '/GovernanceRecords.php';
 require_once __DIR__ . '/CapabilityIndexBuilder.php';
 require_once __DIR__ . '/CapabilityIndexWriter.php';
+require_once __DIR__ . '/AcceptanceRecord.php';
 // The core-growth gate classes (CoreGrowthInventory, CoreGrowthGate) load after the index classes they build on.
 foreach (['CoreGrowthInventory', 'CoreGrowthGate'] as $growthClass) {
     if (is_file(__DIR__ . '/' . $growthClass . '.php')) {

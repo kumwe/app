@@ -1,194 +1,954 @@
 {
   "record": "kumwe-version-2-acceptance-record",
-  "version": "1.0.0",
-  "authority": "ADR 0021 — automated acceptance and sampled capacity; maintainer merge is the sole human acceptance",
+  "version": "2.0.0",
+  "authority": "ADR 0021 — automated workflow evidence plus the maintainer's merge after every required check is green is the sole acceptance record",
   "pull_request": 152,
-  "note": "One entry per requirement this increment accepts by merge: a finding, a work package or a Gate B criterion. runtime_owner names the code that carries the behaviour, tests the proofs, artifacts the workflow jobs that run them, decision the governing record. delivered means the entry has left docs/roadmap/findings.json and is written into CHANGELOG.md; open means it is still in the ledger with an outstanding note; separate-track means a later increment owns it. composer acceptance:check verifies every claim and composer acceptance:summary derives docs/roadmap/acceptance-summary.md.",
+  "branch": "platform/v2-runtime-completion",
+  "note": "One entry per requirement this increment accepts by merge or leaves open: every open finding in docs/roadmap/findings.json, every roadmap package that is not delivered, every Gate B criterion, and the named requirements with no finding of their own. reference points at the requirement text; runtime_owner at the code that carries the behaviour; tests at the proofs on the pull request head; workflows at the CI jobs (file#job) that run them; artifacts at committed evidence files or uploaded workflow artifacts (file#name); decision at the governing record; outstanding at what remains. branches and branch_evidence name the agent branch and the files it carries while an entry is pending integration; they move into the head fields when it lands. composer acceptance:check verifies every claim, and composer acceptance:summary regenerates docs/roadmap/acceptance-summary.md and the marked STATUS.md blocks. No human checkbox, manual browser, Safari or right-to-left review, or follow-up acceptance commit is part of acceptance.",
   "states": {
-    "delivered": "accepted when this pull request merges",
-    "open": "still in the findings ledger",
-    "separate-track": "owned by a later increment"
+    "delivered": "On the pull request head: out of the live indexes, cited by CHANGELOG.md, proven by a test in a required CI job. Accepted when the maintainer merges the pull request after every required check is green.",
+    "pending-integration": "Complete on the named agent branch but not yet on the pull request head; it stays in the live indexes and flips to delivered, with its branch evidence, when the branch lands.",
+    "open": "Outstanding on every branch; the outstanding note says what remains and who decides it."
   },
+  "tracks": {
+    "pr-152": "This pull request (#152), Points 1 to 4: the Studio journey and machine parity; Phase 5 scale; Phase 6 recovery and diagnostics; Phase 7 and PL-G security, interface, language and automation gaps.",
+    "point-5": "The separate Point 5 track after #152: exact release-artifact qualification and publication, the extension proof portfolio, optional 24-hour and 72-hour soaks, the independent release-candidate review and the GM-SUP-05 out-of-process extension runtime.",
+    "maintainability": "The non-gating lane: Lane M and the residual engineering of the Gate A phases 0 and 2, which blocks neither #152 nor Gate B.",
+    "version-3": "Lane N and the coordination it owns: Version 3 native-client seeds, never Version 2 deliverables or Gate B evidence."
+  },
+  "board": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "E",
+    "L",
+    "Gate A",
+    "5",
+    "6",
+    "7",
+    "S",
+    "Gate B",
+    "M",
+    "N"
+  ],
+  "gates": {
+    "Gate A": {
+      "state": "Passed — 13/13 executable criteria met",
+      "blocked_on": "—"
+    },
+    "Gate B": {
+      "blocked_on": "Phases 5, 6, 7 and S; the Point 5 track"
+    }
+  },
+  "phases": [
+    {
+      "id": "0",
+      "name": "Truth, contracts and decisions",
+      "gate": "A",
+      "blocked_on": "—",
+      "delivered_packages": [
+        "P0-C"
+      ]
+    },
+    {
+      "id": "1",
+      "name": "Correctness, security, data entry",
+      "gate": "A",
+      "blocked_on": "—",
+      "delivered_packages": [],
+      "history": "every package complete, including resident extension withdrawal and stale-generation fencing"
+    },
+    {
+      "id": "2",
+      "name": "Truthful gates",
+      "gate": "A",
+      "blocked_on": "Phase 0 decisions 1, 7 and 8 (`P0-E`)",
+      "delivered_packages": [
+        "P2-F",
+        "P2-G",
+        "P2-I"
+      ]
+    },
+    {
+      "id": "3",
+      "name": "Seams and the ownership model",
+      "gate": "A",
+      "blocked_on": "—",
+      "delivered_packages": [
+        "P3-A",
+        "P3-C",
+        "P3-D",
+        "P3-E",
+        "P3-F"
+      ],
+      "history": "transaction proof, delivery boundaries, the two aggregate seams, business-group ownership, and the `P3-D` domain-and-application reconciliation recorded in ADR 0012"
+    },
+    {
+      "id": "4",
+      "name": "Atomic aggregate documents",
+      "gate": "A",
+      "blocked_on": "—",
+      "delivered_packages": [
+        "P4-B",
+        "P4-C"
+      ],
+      "history": "`P4-A` … `P4-D` complete: the command, the bulk persistence mechanics, the numbering proof set with ADR 0011 and the bounded invariant"
+    },
+    {
+      "id": "E",
+      "name": "Enterprise document primitives",
+      "gate": "A",
+      "blocked_on": "—",
+      "delivered_packages": [],
+      "history": "every package and follow-up finding complete"
+    },
+    {
+      "id": "L",
+      "name": "Language, locale and multilingual content",
+      "gate": "A, with a B tail",
+      "blocked_on": "—",
+      "delivered_packages": [
+        "PL-A",
+        "PL-B",
+        "PL-C",
+        "PL-D",
+        "PL-E",
+        "PL-F"
+      ]
+    },
+    {
+      "id": "5",
+      "name": "Enterprise scale",
+      "gate": "B",
+      "blocked_on": "—",
+      "delivered_packages": []
+    },
+    {
+      "id": "6",
+      "name": "Continuity and introspection",
+      "gate": "B",
+      "blocked_on": "—",
+      "delivered_packages": []
+    },
+    {
+      "id": "7",
+      "name": "Qualification",
+      "gate": "B",
+      "blocked_on": "Phases 5 and 6 and `PL-G`; the Point 5 track for `P7-B` and `P7-F` … `P7-I`",
+      "delivered_packages": []
+    },
+    {
+      "id": "S",
+      "name": "Studio contextual Content authoring",
+      "gate": "A, with a B integration",
+      "blocked_on": "A Producer release re-pinning Studio past `0.1.0-beta.3`; none exists (pin kept 2026-09-24)",
+      "delivered_packages": [
+        "S-A",
+        "S-B",
+        "S-C",
+        "S-D"
+      ]
+    },
+    {
+      "id": "M",
+      "name": "Maintainability",
+      "gate": "—",
+      "blocked_on": "Phase 3 seams settled. Blocks nothing.",
+      "delivered_packages": []
+    },
+    {
+      "id": "N",
+      "name": "Native client platform contracts",
+      "gate": "—",
+      "blocked_on": "Nothing in Version 2; blocks nothing. Decision D17, ADR 0009.",
+      "delivered_packages": [],
+      "note": "Version 3 seed"
+    },
+    {
+      "id": "evidence",
+      "name": "Evidence residuals",
+      "gate": "—",
+      "blocked_on": "—",
+      "delivered_packages": [],
+      "board": false
+    }
+  ],
   "entries": [
     {
-      "id": "V2-SCL-001",
-      "requirement": "Unrelated record writes under one definition do not serialize on the definition row (P5-A).",
-      "gate_b_criteria": [
-        3
-      ],
+      "id": "P0-A",
+      "kind": "package",
+      "phase": "0",
+      "requirement": "A deterministic reproducible baseline records the exact commit, toolchain, test and surface inventories, coverage and every skip or quarantine.",
+      "reference": "docs/roadmap/README.md#phase-0--truth-contracts-and-decisions",
       "runtime_owner": [
-        "src/BusinessRecord/Infrastructure/Persistence/DoctrineBusinessRecordMutationFence.php"
+        "tools/record-baseline.php"
       ],
       "tests": [
-        "tests/Integration/BusinessRecord/BusinessRecordSharedFenceIntegrationTest.php"
+        "tests/Unit/Quality/ReproducibleBaselineToolTest.php"
+      ],
+      "workflows": [
+        ".github/workflows/ci.yml#preflight"
       ],
       "artifacts": [
-        ".github/workflows/ci.yml#PHP 8.5 / MariaDB",
-        ".github/workflows/ci.yml#PHP 8.5 / MySQL",
-        ".github/workflows/ci.yml#PHP 8.5 / PostgreSQL"
+        "docs/quality/baseline.json"
+      ],
+      "decision": "D2",
+      "state": "open",
+      "track": "maintainability",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "docs/quality/baseline.json records the PHP toolchain, lock digests, test and HTTP, console, OpenAPI and migration inventories, coverage and quarantine. The package also asks for Node, npm, database, browser, container, operating-system and action versions, build-artifact checksums, workflow run identifiers and the MCP, scheduled-job, event-consumer and page inventories, which the baseline does not carry yet.",
+      "gate_b_criteria": [],
+      "findings": []
+    },
+    {
+      "id": "P0-B",
+      "kind": "package",
+      "phase": "0",
+      "requirement": "A claim ledger gives every normative documentation claim its runtime owner, verifying test, workflow, artifact, expiry and residual limitation.",
+      "reference": "docs/roadmap/README.md#phase-0--truth-contracts-and-decisions",
+      "runtime_owner": [
+        "docs/roadmap/README.md"
+      ],
+      "tests": [],
+      "workflows": [],
+      "artifacts": [],
+      "decision": "D2",
+      "state": "open",
+      "track": "maintainability",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "No claim ledger exists. The acceptance record covers the requirements this increment accepts by merge, not every normative statement in the documentation; inaccurate claims are corrected where they are found.",
+      "gate_b_criteria": [],
+      "findings": []
+    },
+    {
+      "id": "P0-D",
+      "kind": "package",
+      "phase": "0",
+      "requirement": "The capacity contract declares the dataset generator seed and age distribution, and every measurement records the hardware it ran on.",
+      "reference": "docs/roadmap/README.md#phase-0--truth-contracts-and-decisions",
+      "runtime_owner": [
+        "docs/roadmap/capacity-contract.json",
+        "tools/perf-harness.php"
+      ],
+      "tests": [
+        "tests/Unit/Tools/PerfHarnessPlanTest.php",
+        "tests/Unit/Performance/PerfHarnessContractTest.php"
+      ],
+      "workflows": [
+        ".github/workflows/ci.yml#database",
+        ".github/workflows/capacity.yml#samples"
+      ],
+      "artifacts": [
+        "docs/roadmap/capacity-contract.json"
+      ],
+      "decision": "D1, ADR 0021",
+      "state": "open",
+      "track": "pr-152",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "ADR 0021 replaced procured reference hardware with the hardware each workflow run records (contract 1.3.0). The contract still does not declare the dataset seed and age distribution it names as required evidence, and no sample runs an aged dataset, so the published estimate states a fresh single-site dataset as its limitation.",
+      "gate_b_criteria": [
+        10
+      ],
+      "findings": []
+    },
+    {
+      "id": "P0-E",
+      "kind": "package",
+      "phase": "0",
+      "requirement": "The remaining architecture and security decisions are each recorded in their own decision file.",
+      "reference": "docs/roadmap/README.md#phase-0--truth-contracts-and-decisions",
+      "runtime_owner": [
+        "docs/roadmap/decisions"
+      ],
+      "tests": [],
+      "workflows": [],
+      "artifacts": [],
+      "decision": "D2",
+      "state": "open",
+      "track": "maintainability",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "Decisions 1, 3, 4, 5, 6, 7 and 8 have no decision file of their own; their substance lives in docs/architecture and the frozen contracts. Decision 8, release qualification authority, is taken up by the Point 5 track.",
+      "gate_b_criteria": [],
+      "findings": [
+        "V2-ERP-007"
+      ]
+    },
+    {
+      "id": "V2-DOC-002",
+      "kind": "finding",
+      "phase": "0",
+      "requirement": "The outward identity 'Kumwe App' is coordinated with the native SDK that parses it before clients depend on it.",
+      "reference": "docs/roadmap/findings.json#V2-DOC-002",
+      "runtime_owner": [
+        "src/Http/Handler/ApiIndexHandler.php",
+        "src/Http/Handler/LivenessHandler.php"
+      ],
+      "tests": [
+        "tests/Unit/Http/Handler/HealthEndpointTest.php"
+      ],
+      "workflows": [
+        ".github/workflows/ci.yml#database"
+      ],
+      "artifacts": [],
+      "decision": "Product-owner naming decision",
+      "state": "open",
+      "track": "version-3",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "Core already emits the new product string. kumwe/dart-sdk must accept it in a released version with its compatibility note; that release belongs to the Version 3 native-client lane.",
+      "gate_b_criteria": [],
+      "packages": []
+    },
+    {
+      "id": "V2-ERP-007",
+      "kind": "finding",
+      "phase": "0",
+      "requirement": "Version 2 never forecloses an offline point-of-sale terminal: replay window, client instant, late arrival and deferrable validation stay non-foreclosing.",
+      "reference": "docs/roadmap/findings.json#V2-ERP-007",
+      "runtime_owner": [
+        "src/BusinessRecord"
+      ],
+      "tests": [
+        "tests/Architecture/ClientAssertedInstantBoundaryTest.php",
+        "tests/Architecture/DeferredValidationBoundaryTest.php",
+        "tests/Integration/BusinessRecord/BusinessRecordClientReferenceIntegrationTest.php"
+      ],
+      "workflows": [
+        ".github/workflows/ci.yml#database"
+      ],
+      "artifacts": [],
+      "decision": "D14, ADR 0008",
+      "state": "open",
+      "track": "maintainability",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "Conditional by design: all four non-foreclosure contracts are delivered and nothing is built for point of sale in Version 2, so the entry stays as the standing guard. Gate B criterion 1 asks every conditional risk for an owner and review date, which the ledger does not carry yet.",
+      "gate_b_criteria": [
+        1
+      ],
+      "packages": [
+        "P0-E"
+      ]
+    },
+    {
+      "id": "P2-B",
+      "kind": "package",
+      "phase": "2",
+      "requirement": "Coverage ratchets reach positive, denial, conflict, replay and rollback paths on public behaviour and the enumerated transitions of high-risk state machines.",
+      "reference": "docs/roadmap/README.md#phase-2--truthful-engineering-database-and-release-gates",
+      "runtime_owner": [
+        "tools/coverage-contract.php",
+        "docs/quality/coverage-contract.json"
+      ],
+      "tests": [
+        "tests/Architecture/TruthfulQualityGateTest.php"
+      ],
+      "workflows": [
+        ".github/workflows/ci.yml#database",
+        ".github/workflows/ci.yml#quality"
+      ],
+      "artifacts": [
+        ".github/workflows/ci.yml#coverage-report"
+      ],
+      "decision": "D2",
+      "state": "open",
+      "track": "maintainability",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "Attribution and the branch-floor decision are delivered (V2-QA-001, #92): the pending list is empty and the enforced changed-refusal floor replaced the branch floor pcov cannot measure. What remains is the path-class ratchet and the enumerated high-risk transitions, which no gate checks yet.",
+      "gate_b_criteria": [],
+      "findings": []
+    },
+    {
+      "id": "P2-C",
+      "kind": "package",
+      "phase": "2",
+      "requirement": "Routing, wiring and class-shape source-string assertions are replaced by live container, router, metadata and behaviour checks.",
+      "reference": "docs/roadmap/README.md#phase-2--truthful-engineering-database-and-release-gates",
+      "runtime_owner": [
+        "tests/Architecture"
+      ],
+      "tests": [
+        "tests/Architecture"
+      ],
+      "workflows": [
+        ".github/workflows/ci.yml#database"
+      ],
+      "artifacts": [],
+      "decision": "D2",
+      "state": "open",
+      "track": "maintainability",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "The semantic dependency checker is delivered. Some architecture tests still read source text for routing, wiring and class shape where a live container, router or metadata check would hold the behaviour.",
+      "gate_b_criteria": [],
+      "findings": []
+    },
+    {
+      "id": "P2-D",
+      "kind": "package",
+      "phase": "2",
+      "requirement": "Driver-specific engine characterisation catalogues locking, DDL, collation, timeout, purge and log behaviour on the MySQL family and PostgreSQL.",
+      "reference": "docs/roadmap/README.md#phase-2--truthful-engineering-database-and-release-gates",
+      "runtime_owner": [
+        "src/Infrastructure/Persistence"
+      ],
+      "tests": [
+        "tests/Integration/Persistence"
+      ],
+      "workflows": [
+        ".github/workflows/ci.yml#database"
+      ],
+      "artifacts": [
+        ".github/workflows/ci.yml#idempotency-evidence-${{ matrix.database.driver }}"
+      ],
+      "decision": "D2",
+      "state": "open",
+      "track": "maintainability",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "The Gate A portability slice is delivered. The driver-specific characterisation catalogue the package lists remains to be written as tests.",
+      "gate_b_criteria": [],
+      "findings": []
+    },
+    {
+      "id": "P2-E",
+      "kind": "package",
+      "phase": "2",
+      "requirement": "The browser, accessibility and visual matrix grows beyond the closed critical set with general sharding.",
+      "reference": "docs/roadmap/README.md#phase-2--truthful-engineering-database-and-release-gates",
+      "runtime_owner": [
+        "tests/Browser"
+      ],
+      "tests": [
+        "tests/Browser/nightly-browser-breadth.spec.ts"
+      ],
+      "workflows": [
+        ".github/workflows/ci.yml#browser",
+        ".github/workflows/nightly.yml#browser"
+      ],
+      "artifacts": [
+        ".github/workflows/ci.yml#browser-evidence-${{ matrix.database.driver }}",
+        ".github/workflows/nightly.yml#nightly-browser-evidence-${{ matrix.database.driver }}"
+      ],
+      "decision": "D2, ADR 0021",
+      "state": "open",
+      "track": "maintainability",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "The Gate A breadth slice, the locale axis and the right-to-left baselines are delivered. General sharding and expansion beyond the closed critical set remain; Gate B's interface evidence is carried by P7-E and PL-G.",
+      "gate_b_criteria": [],
+      "findings": []
+    },
+    {
+      "id": "P2-H",
+      "kind": "package",
+      "phase": "2",
+      "requirement": "One build-once chain produces the exact images, Composer package and archive that qualification tests, with a signed manifest of every published digest.",
+      "reference": "docs/roadmap/README.md#phase-2--truthful-engineering-database-and-release-gates",
+      "runtime_owner": [
+        ".github/workflows/release.yml",
+        "tools/create-release-manifest.mjs"
+      ],
+      "tests": [
+        "tests/Architecture/ProductionArtifactsTest.php"
+      ],
+      "workflows": [
+        ".github/workflows/release.yml#acceptance",
+        ".github/workflows/release.yml#release"
+      ],
+      "artifacts": [],
+      "decision": "D2",
+      "state": "open",
+      "track": "point-5",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "Separate Point 5 track by maintainer decision: exact release-artifact qualification and publication, the extension proof portfolio, optional 24-hour and 72-hour soaks, the independent release-candidate review and the GM-SUP-05 runtime follow this pull request.",
+      "gate_b_criteria": [
+        6
+      ],
+      "findings": [
+        "V2-REL-001",
+        "V2-REL-002",
+        "GM-SUP-09"
+      ]
+    },
+    {
+      "id": "V2-DEMO-001",
+      "kind": "finding",
+      "phase": "2",
+      "requirement": "The demo business projection refuses to build a manifest the demo-profile envelope forbids.",
+      "reference": "docs/roadmap/findings.json#V2-DEMO-001",
+      "runtime_owner": [
+        "src/Demo/Infrastructure/DemoBusinessProfileExporter.php"
+      ],
+      "tests": [
+        "tests/Integration/Demo/Infrastructure/DemoBusinessProfileExporterTest.php"
+      ],
+      "workflows": [
+        ".github/workflows/ci.yml#database"
+      ],
+      "artifacts": [],
+      "decision": "ADR 0021",
+      "state": "open",
+      "track": "maintainability",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "documents() can still build a manifest the envelope forbids; the fix needs test-owned site definitions. Demo redesign is outside this increment (ADR 0021).",
+      "gate_b_criteria": [],
+      "packages": []
+    },
+    {
+      "id": "V2-REL-001",
+      "kind": "finding",
+      "phase": "2",
+      "requirement": "Release and distribution artifacts are proven by one exact-SHA build-once chain.",
+      "reference": "docs/roadmap/findings.json#V2-REL-001",
+      "runtime_owner": [
+        ".github/workflows/release.yml"
+      ],
+      "tests": [
+        "tests/Architecture/ProductionArtifactsTest.php"
+      ],
+      "workflows": [
+        ".github/workflows/release.yml#release"
+      ],
+      "artifacts": [],
+      "decision": "D2, ADR 0021",
+      "state": "open",
+      "track": "point-5",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "Separate Point 5 track by maintainer decision: exact release-artifact qualification and publication, the extension proof portfolio, optional 24-hour and 72-hour soaks, the independent release-candidate review and the GM-SUP-05 runtime follow this pull request.",
+      "gate_b_criteria": [
+        1,
+        6
+      ],
+      "packages": [
+        "P2-H",
+        "P7-G"
+      ]
+    },
+    {
+      "id": "V2-REL-002",
+      "kind": "finding",
+      "phase": "2",
+      "requirement": "A verification run fetches no unpinned toolchain: every tool arrives from a digest-pinned image, a lockfile-keyed cache or the runner image.",
+      "reference": "docs/roadmap/findings.json#V2-REL-002",
+      "runtime_owner": [
+        ".github/workflows"
+      ],
+      "tests": [
+        "tests/Architecture/TruthfulQualityGateTest.php"
+      ],
+      "workflows": [
+        ".github/workflows/ci.yml#preflight"
+      ],
+      "artifacts": [],
+      "decision": "ADR 0021",
+      "state": "open",
+      "track": "point-5",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "Separate Point 5 track by maintainer decision: exact release-artifact qualification and publication, the extension proof portfolio, optional 24-hour and 72-hour soaks, the independent release-candidate review and the GM-SUP-05 runtime follow this pull request.",
+      "gate_b_criteria": [
+        1,
+        6
+      ],
+      "packages": [
+        "P2-H"
+      ]
+    },
+    {
+      "id": "GM-SUP-09",
+      "kind": "finding",
+      "phase": "2",
+      "requirement": "The per-commit source SBOM is evaluated against a licence policy and published as a build attestation.",
+      "reference": "docs/roadmap/findings.json#GM-SUP-09",
+      "runtime_owner": [
+        ".github/workflows/security.yml"
+      ],
+      "tests": [],
+      "workflows": [
+        ".github/workflows/security.yml#source-and-image"
+      ],
+      "artifacts": [
+        ".github/workflows/security.yml#security-evidence-${{ github.sha }}"
       ],
       "decision": "ADR 0021",
       "state": "open",
-      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
+      "track": "point-5",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "Needs an agreed licence policy before an SBOM gate means anything, then publication as a build attestation; its home is the Point 5 build-once chain.",
+      "gate_b_criteria": [],
+      "packages": [
+        "P2-H"
+      ]
     },
     {
-      "id": "V2-SCL-002",
-      "requirement": "Event-producing commits do not lock one installation-wide sequencing head (P5-B).",
+      "id": "PL-G",
+      "kind": "package",
+      "phase": "L",
+      "requirement": "All nine catalogues are complete and each locale is qualified on the browser, accessibility and visual matrix, right-to-left with its own baselines.",
+      "reference": "docs/roadmap/README.md#phase-l--language-locale-and-multilingual-content",
+      "runtime_owner": [
+        "resources/localization/messages",
+        "tools/compile-catalogues.php",
+        "tools/verify-catalogue-quality.php"
+      ],
+      "tests": [
+        "tests/Architecture/InterfaceTranslationGateTest.php",
+        "tests/Architecture/CatalogueQualityGateTest.php",
+        "tests/Browser/locale-qualification.spec.ts",
+        "tests/Browser/right-to-left.spec.ts"
+      ],
+      "workflows": [
+        ".github/workflows/ci.yml#preflight",
+        ".github/workflows/ci.yml#quality",
+        ".github/workflows/ci.yml#browser",
+        ".github/workflows/nightly.yml#browser"
+      ],
+      "artifacts": [
+        ".github/workflows/ci.yml#browser-evidence-${{ matrix.database.driver }}",
+        ".github/workflows/nightly.yml#nightly-browser-evidence-${{ matrix.database.driver }}"
+      ],
+      "decision": "D11, ADR 0002, ADR 0021",
+      "state": "pending-integration",
+      "track": "pr-152",
+      "branches": [
+        "agent/languages",
+        "agent/browser"
+      ],
+      "branch_evidence": [
+        "assets/administrator/styles.css",
+        "tests/Browser/right-to-left.spec.ts",
+        "tests/Browser/support/interface-catalogue.ts"
+      ],
+      "outstanding": "The head carries all nine catalogues, the ICU and plural quality gate and the per-locale qualification journey. agent/languages fixes the right-to-left mobile drawer and the table overflow that journey found on phones; agent/browser refiles the translated right-to-left login baselines and names right-to-left controls from each catalogue. Flips when both land.",
+      "gate_b_criteria": [
+        7,
+        11
+      ],
+      "findings": [
+        "V2-LNG-010"
+      ]
+    },
+    {
+      "id": "V2-LNG-010",
+      "kind": "finding",
+      "phase": "L",
+      "requirement": "The eight non-source catalogues ship complete and every one of the nine languages is qualified in its own right.",
+      "reference": "docs/roadmap/findings.json#V2-LNG-010",
+      "runtime_owner": [
+        "resources/localization/messages",
+        "tools/compile-catalogues.php",
+        "tools/verify-catalogue-quality.php"
+      ],
+      "tests": [
+        "tests/Architecture/InterfaceTranslationGateTest.php",
+        "tests/Architecture/CatalogueQualityGateTest.php",
+        "tests/Browser/locale-qualification.spec.ts",
+        "tests/Browser/right-to-left.spec.ts"
+      ],
+      "workflows": [
+        ".github/workflows/ci.yml#preflight",
+        ".github/workflows/ci.yml#quality",
+        ".github/workflows/ci.yml#browser",
+        ".github/workflows/nightly.yml#browser"
+      ],
+      "artifacts": [
+        ".github/workflows/ci.yml#browser-evidence-${{ matrix.database.driver }}",
+        ".github/workflows/nightly.yml#nightly-browser-evidence-${{ matrix.database.driver }}"
+      ],
+      "decision": "D11, ADR 0002, ADR 0021",
+      "state": "pending-integration",
+      "track": "pr-152",
+      "branches": [
+        "agent/languages",
+        "agent/browser"
+      ],
+      "branch_evidence": [
+        "assets/administrator/styles.css",
+        "tests/Browser/right-to-left.spec.ts"
+      ],
+      "outstanding": "Flips with PL-G. Every other branch that adds en-GB identifiers (agent/security, agent/studio, agent/machine) must carry the eight translations when it lands, because composer translation:check refuses an incomplete catalogue.",
+      "gate_b_criteria": [
+        7,
+        11
+      ],
+      "packages": [
+        "PL-G"
+      ]
+    },
+    {
+      "id": "P5-A",
+      "kind": "package",
+      "phase": "5",
+      "requirement": "Unrelated record writes under one definition hold a shared generation lease instead of the exclusive definition-wide mutex.",
+      "reference": "docs/roadmap/README.md#phase-5--enterprise-scale-engineering",
+      "runtime_owner": [
+        "src/BusinessRecord/Infrastructure/Persistence/DoctrineBusinessRecordMutationFence.php",
+        "src/Infrastructure/Persistence/Migration/BusinessRecordScaleMigration.php"
+      ],
+      "tests": [
+        "tests/Integration/BusinessRecord/BusinessRecordSharedFenceIntegrationTest.php",
+        "tests/Integration/BusinessRecord/BusinessRecordMutationGenerationIntegrationTest.php"
+      ],
+      "workflows": [
+        ".github/workflows/ci.yml#database"
+      ],
+      "artifacts": [
+        ".github/workflows/ci.yml#idempotency-evidence-${{ matrix.database.driver }}"
+      ],
+      "decision": "D1, ADR 0021",
+      "state": "pending-integration",
+      "track": "pr-152",
+      "branches": [
+        "agent/scale"
+      ],
+      "branch_evidence": [
+        "tests/Integration/BusinessRecord/SchemaTransitionWriterFenceIntegrationTest.php",
+        "tests/Support/fence-transition-partner.php"
+      ],
+      "outstanding": "The head carries the runtime; agent/scale adds the cross-process proofs of the acceptance clauses a single process cannot observe. Flips when agent/scale lands. Reduced lock wait at load is measured by the sampled capacity harness (P7-A).",
       "gate_b_criteria": [
         3
       ],
+      "findings": [
+        "V2-SCL-001"
+      ]
+    },
+    {
+      "id": "P5-B",
+      "kind": "package",
+      "phase": "5",
+      "requirement": "Business commits stage unsequenced events and a bounded sequencer assigns journal order after commit.",
+      "reference": "docs/roadmap/README.md#phase-5--enterprise-scale-engineering",
       "runtime_owner": [
+        "src/BusinessReporting/Infrastructure/DoctrineProjectionEventSequencer.php",
         "src/BusinessIntegration/Infrastructure/DoctrineOutboxStore.php"
       ],
       "tests": [
-        "tests/Integration/BusinessIntegration/ProjectionSequencingConcurrencyIntegrationTest.php"
+        "tests/Integration/BusinessIntegration/ProjectionSequencingConcurrencyIntegrationTest.php",
+        "tests/Integration/BusinessIntegration/ProjectionRuntimePersistenceTest.php"
       ],
-      "artifacts": [
-        ".github/workflows/ci.yml#PHP 8.5 / MariaDB",
-        ".github/workflows/ci.yml#PHP 8.5 / MySQL",
-        ".github/workflows/ci.yml#PHP 8.5 / PostgreSQL"
+      "workflows": [
+        ".github/workflows/ci.yml#database"
       ],
-      "decision": "ADR 0021",
-      "state": "open",
-      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
-    },
-    {
-      "id": "V2-SCL-004",
-      "requirement": "Idempotency retention sustains at least twice the peak expiry rate with adaptive batches and retention metrics (P5-E).",
+      "artifacts": [],
+      "decision": "D1, ADR 0021",
+      "state": "pending-integration",
+      "track": "pr-152",
+      "branches": [
+        "agent/scale"
+      ],
+      "branch_evidence": [
+        "tests/Integration/BusinessIntegration/SequencerCrashAndRaceIntegrationTest.php",
+        "tests/Support/sequencer-partner.php"
+      ],
+      "outstanding": "The head carries the runtime; agent/scale adds the cross-process proofs of the acceptance clauses a single process cannot observe. Flips when agent/scale lands.",
       "gate_b_criteria": [
         3
       ],
+      "findings": [
+        "V2-SCL-002"
+      ]
+    },
+    {
+      "id": "P5-C",
+      "kind": "package",
+      "phase": "5",
+      "requirement": "Fan-out materialises independent consumer receipts claimed by batched workers, so a slow or failing consumer delays no other.",
+      "reference": "docs/roadmap/README.md#phase-5--enterprise-scale-engineering",
       "runtime_owner": [
-        "src/BusinessRecord/Application/BusinessRecordIdempotencyPurger.php"
+        "src/BusinessIntegration/Infrastructure/RuntimeIntegrationReceiptWorker.php",
+        "src/BusinessIntegration/Infrastructure/DoctrineInboxStore.php"
       ],
       "tests": [
-        "tests/Integration/Automation/IdempotencyRecoveryIntegrationTest.php"
+        "tests/Integration/BusinessIntegration/IndependentReceiptFanoutIntegrationTest.php",
+        "tests/Integration/BusinessIntegration/PoisonAndDeadLetterIntegrationTest.php",
+        "tests/Integration/BusinessIntegration/HungEndpointDeadlineIntegrationTest.php"
       ],
-      "artifacts": [
-        ".github/workflows/ci.yml#PHP 8.5 / MariaDB",
-        ".github/workflows/ci.yml#PHP 8.5 / MySQL",
-        ".github/workflows/ci.yml#PHP 8.5 / PostgreSQL"
+      "workflows": [
+        ".github/workflows/ci.yml#database"
       ],
-      "decision": "ADR 0021",
-      "state": "open",
-      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
-    },
-    {
-      "id": "V2-SCL-005",
-      "requirement": "Monitoring runs no unbudgeted table-scale exact count on the primary (P5-F).",
+      "artifacts": [],
+      "decision": "D1, ADR 0021",
+      "state": "pending-integration",
+      "track": "pr-152",
+      "branches": [
+        "agent/scale"
+      ],
+      "branch_evidence": [
+        "tests/Integration/BusinessIntegration/HungAndPoisonFanoutIntegrationTest.php"
+      ],
+      "outstanding": "The head carries the runtime; agent/scale adds the cross-process proofs of the acceptance clauses a single process cannot observe. Flips when agent/scale lands.",
       "gate_b_criteria": [
         3
       ],
-      "runtime_owner": [
-        "src/Infrastructure/Observability/RuntimeMetricCollector.php"
-      ],
-      "tests": [
-        "tests/Unit/Infrastructure/Observability"
-      ],
-      "artifacts": [
-        ".github/workflows/ci.yml#PHP 8.5 / MariaDB",
-        ".github/workflows/ci.yml#PHP 8.5 / MySQL",
-        ".github/workflows/ci.yml#PHP 8.5 / PostgreSQL"
-      ],
-      "decision": "ADR 0021",
-      "state": "open",
-      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
+      "findings": [
+        "V2-SCL-006"
+      ]
     },
     {
-      "id": "V2-SCL-006",
-      "requirement": "Integration fan-out dispatches independent consumer and webhook receipts through batched workers (P5-C).",
-      "gate_b_criteria": [
-        3
-      ],
-      "runtime_owner": [
-        "src/BusinessIntegration/Infrastructure/RuntimeIntegrationReceiptWorker.php"
-      ],
-      "tests": [
-        "tests/Integration/BusinessIntegration/IndependentReceiptFanoutIntegrationTest.php"
-      ],
-      "artifacts": [
-        ".github/workflows/ci.yml#PHP 8.5 / MariaDB",
-        ".github/workflows/ci.yml#PHP 8.5 / MySQL",
-        ".github/workflows/ci.yml#PHP 8.5 / PostgreSQL"
-      ],
-      "decision": "ADR 0021",
-      "state": "open",
-      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
-    },
-    {
-      "id": "V2-SCL-007",
-      "requirement": "Declared-queue claims use durable fenced permits instead of a policy-row mutex and live-lease counts (P5-D).",
-      "gate_b_criteria": [
-        3
-      ],
+      "id": "P5-D",
+      "kind": "package",
+      "phase": "5",
+      "requirement": "Declared queues own durable fenced permits claimed with portable leasing, with fair turns and bounded recovery after SIGKILL.",
+      "reference": "docs/roadmap/README.md#phase-5--enterprise-scale-engineering",
       "runtime_owner": [
         "src/Infrastructure/Automation/DoctrineQueuePermits.php",
-        "src/Infrastructure/Automation/DoctrineJobQueue.php"
+        "src/Infrastructure/Automation/DoctrineJobQueue.php",
+        "src/Infrastructure/Automation/DoctrineJobQueueFairness.php",
+        "src/Infrastructure/Persistence/Migration/QueueWorkerPermitsMigration.php"
       ],
       "tests": [
         "tests/Integration/Automation/QueueWorkerPermitsIntegrationTest.php",
         "tests/Integration/Automation/QueuePermitReplicaContentionIntegrationTest.php",
         "tests/Integration/Automation/KilledWorkerRecoveryIntegrationTest.php"
       ],
-      "artifacts": [
-        ".github/workflows/ci.yml#PHP 8.5 / MariaDB",
-        ".github/workflows/ci.yml#PHP 8.5 / MySQL",
-        ".github/workflows/ci.yml#PHP 8.5 / PostgreSQL"
+      "workflows": [
+        ".github/workflows/ci.yml#database"
       ],
-      "decision": "ADR 0021",
-      "state": "open",
-      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
-    },
-    {
-      "id": "V2-SCL-008",
-      "requirement": "Every hot correctness ledger declares a retention budget with observable drain (P5-E).",
+      "artifacts": [],
+      "decision": "D1, ADR 0021",
+      "state": "pending-integration",
+      "track": "pr-152",
+      "branches": [
+        "agent/scale"
+      ],
+      "branch_evidence": [
+        "tests/Integration/Automation/QueuePermitOverclaimAndFairnessIntegrationTest.php",
+        "tests/Support/permit-claimant.php"
+      ],
+      "outstanding": "The head carries the runtime; agent/scale adds the cross-process proofs of the acceptance clauses a single process cannot observe. Flips when agent/scale lands.",
       "gate_b_criteria": [
         3
       ],
+      "findings": [
+        "V2-SCL-007"
+      ]
+    },
+    {
+      "id": "P5-E",
+      "kind": "package",
+      "phase": "5",
+      "requirement": "Every hot ledger declares its retention budget and drains in time-budgeted adaptive batches at twice the peak expiry rate.",
+      "reference": "docs/roadmap/README.md#phase-5--enterprise-scale-engineering",
       "runtime_owner": [
+        "src/BusinessRecord/Application/BusinessRecordIdempotencyPurger.php",
         "src/Infrastructure/Persistence/Migration/BusinessRecordIdempotencyRetentionMigration.php"
       ],
       "tests": [
         "tests/Integration/Automation/IdempotencyRecoveryIntegrationTest.php"
       ],
-      "artifacts": [
-        ".github/workflows/ci.yml#PHP 8.5 / MariaDB",
-        ".github/workflows/ci.yml#PHP 8.5 / MySQL",
-        ".github/workflows/ci.yml#PHP 8.5 / PostgreSQL"
+      "workflows": [
+        ".github/workflows/ci.yml#database"
       ],
-      "decision": "ADR 0021",
-      "state": "open",
-      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
+      "artifacts": [],
+      "decision": "D1, ADR 0021",
+      "state": "pending-integration",
+      "track": "pr-152",
+      "branches": [
+        "agent/scale"
+      ],
+      "branch_evidence": [
+        "src/Application/Retention/RetentionCatalogue.php",
+        "tests/Integration/Retention/RetentionDrainIntegrationTest.php",
+        "tests/Unit/Application/Retention/RetentionContractTest.php",
+        "tests/Unit/Audit/FilesystemAuditArchiveVerifierTest.php",
+        "docs/operations/retention.md"
+      ],
+      "outstanding": "The head carries only the seeded idempotency purge. agent/scale declares every hot ledger in a retention catalogue sized from the capacity contract, drains it in budgeted batches, exposes the six retention metrics and a readiness verdict, and prunes audit only after the archive reads back whole. Flips when agent/scale lands.",
+      "gate_b_criteria": [
+        3
+      ],
+      "findings": [
+        "V2-SCL-004",
+        "V2-SCL-008"
+      ]
+    },
+    {
+      "id": "P5-F",
+      "kind": "package",
+      "phase": "5",
+      "requirement": "Durable gauges use bounded probes, exact counts move to an operator-only census with a stated cost, and operation-class metrics carry closed labels.",
+      "reference": "docs/roadmap/README.md#phase-5--enterprise-scale-engineering",
+      "runtime_owner": [
+        "src/Infrastructure/Observability/RuntimeMetricCollector.php"
+      ],
+      "tests": [
+        "tests/Unit/Infrastructure/Observability"
+      ],
+      "workflows": [
+        ".github/workflows/ci.yml#database"
+      ],
+      "artifacts": [],
+      "decision": "D1, D6, ADR 0021",
+      "state": "pending-integration",
+      "track": "pr-152",
+      "branches": [
+        "agent/scale"
+      ],
+      "branch_evidence": [
+        "tests/Integration/Infrastructure/BoundedGaugeAndCensusIntegrationTest.php",
+        "tests/Unit/Infrastructure/Observability/OperationalInstrumentationTest.php",
+        "tools/perf-gauges.php",
+        "docs/operations/scale-metrics.md"
+      ],
+      "outstanding": "agent/scale replaces scrape-time exact aggregates with capped index probes, adds the operator-only LedgerCensus and the transaction, lock, sequencing, claim and saturation metrics, and benchmarks every gauge at 200,000 rows per engine. Flips when agent/scale lands.",
+      "gate_b_criteria": [
+        3
+      ],
+      "findings": [
+        "V2-SCL-005"
+      ]
     },
     {
       "id": "P5-G",
-      "requirement": "Generated queries, reports and exports meet declared plan, memory, result and execution bounds at aged volume.",
-      "gate_b_criteria": [
-        3
-      ],
+      "kind": "package",
+      "phase": "5",
+      "requirement": "Generated queries, reports and exports stay within declared plan, row, byte and time bounds at aged volume.",
+      "reference": "docs/roadmap/README.md#phase-5--enterprise-scale-engineering",
       "runtime_owner": [
-        "src/BusinessSurface",
+        "src/BusinessRecord",
         "src/BusinessReporting"
       ],
       "tests": [
-        "tests/Unit/BusinessSurface",
-        "tests/Functional"
+        "tests/Integration/Performance/HotPlanRegressionIntegrationTest.php",
+        "tests/Integration/BusinessRecord/BusinessRecordPolicyCompilerIntegrationTest.php"
       ],
-      "artifacts": [
-        ".github/workflows/ci.yml#PHP 8.5 / MariaDB",
-        ".github/workflows/ci.yml#PHP 8.5 / MySQL",
-        ".github/workflows/ci.yml#PHP 8.5 / PostgreSQL"
+      "workflows": [
+        ".github/workflows/ci.yml#database"
       ],
+      "artifacts": [],
       "decision": "ADR 0021",
       "state": "open",
-      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
+      "track": "pr-152",
+      "branches": [
+        "agent/scale"
+      ],
+      "branch_evidence": [
+        "tests/Unit/Scale/QueryAndResultBoundsTest.php",
+        "docs/operations/scale-topology.md"
+      ],
+      "outstanding": "agent/scale bounds deep administrator paging and documents every enforced bound. It records two it does not enforce: a per-statement execution-time cap on generated record browses and a result-byte cap on synchronous REST pages. Plans are not yet proven at aged volume.",
+      "gate_b_criteria": [],
+      "findings": []
     },
     {
       "id": "P5-H",
-      "requirement": "A stateless application tier with worker pool classes preserves policy, generation and transaction semantics with fairness.",
-      "gate_b_criteria": [
-        3
-      ],
+      "kind": "package",
+      "phase": "5",
+      "requirement": "A stateless application tier with six worker pool classes preserves policy, generation and transaction semantics with fairness and backpressure.",
+      "reference": "docs/roadmap/README.md#phase-5--enterprise-scale-engineering",
       "runtime_owner": [
         "src/Application/Automation",
         "src/Infrastructure/Automation"
@@ -196,537 +956,1169 @@
       "tests": [
         "tests/Integration/Automation"
       ],
-      "artifacts": [
-        ".github/workflows/ci.yml#PHP 8.5 / MariaDB",
-        ".github/workflows/ci.yml#PHP 8.5 / MySQL",
-        ".github/workflows/ci.yml#PHP 8.5 / PostgreSQL"
+      "workflows": [
+        ".github/workflows/ci.yml#database"
       ],
+      "artifacts": [],
       "decision": "ADR 0021",
       "state": "open",
-      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
+      "track": "pr-152",
+      "branches": [
+        "agent/scale"
+      ],
+      "branch_evidence": [
+        "docs/operations/scale-topology.md",
+        "tests/Integration/Automation/QueuePermitOverclaimAndFairnessIntegrationTest.php"
+      ],
+      "outstanding": "agent/scale documents the supported topology, drain, generation leases and fairness and proves the queue fairness under racing claimants. It records that a per-site cumulative export byte budget is not implemented, and no multi-replica topology is qualified.",
+      "gate_b_criteria": [],
+      "findings": []
     },
     {
       "id": "P5-I",
-      "requirement": "Per-engine storage amplification is measured and the free-space guardrail is enforced.",
-      "gate_b_criteria": [
-        3,
-        10
-      ],
+      "kind": "package",
+      "phase": "5",
+      "requirement": "Per-engine storage amplification is measured and published, and a 30% free-space reserve is enforced.",
+      "reference": "docs/roadmap/README.md#phase-5--enterprise-scale-engineering",
       "runtime_owner": [
         "tools/perf-harness.php"
       ],
       "tests": [
-        "tests/Unit/Tools"
+        "tests/Unit/Performance"
       ],
-      "artifacts": [
-        ".github/workflows/ci.yml#PHP 8.5 / MariaDB",
-        ".github/workflows/ci.yml#PHP 8.5 / MySQL",
-        ".github/workflows/ci.yml#PHP 8.5 / PostgreSQL"
+      "workflows": [
+        ".github/workflows/ci.yml#database"
       ],
+      "artifacts": [],
       "decision": "ADR 0021",
       "state": "open",
-      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
-    },
-    {
-      "id": "P7-A",
-      "requirement": "Sampled concurrent capacity on workflow hardware with explicitly labelled statistical estimates against the five-million daily envelope.",
+      "track": "pr-152",
+      "branches": [
+        "agent/scale"
+      ],
+      "branch_evidence": [
+        "tools/perf-storage.php",
+        "src/Infrastructure/Persistence/FilesystemStorageReserve.php",
+        "tests/Unit/Infrastructure/Persistence/FilesystemStorageReserveTest.php"
+      ],
+      "outstanding": "agent/scale adds the readiness reserve guardrail and a storage forecast measured on MariaDB and PostgreSQL. MySQL, document-line, update-heavy, aged-data, backup and replica amplification are not measured by it.",
       "gate_b_criteria": [
-        2,
         10
       ],
-      "runtime_owner": [
-        "tools/perf-concurrent.php",
-        "tools/PerfConcurrentSamples.php"
-      ],
-      "tests": [
-        "tests/Unit/Tools"
-      ],
-      "artifacts": [
-        ".github/workflows/capacity.yml#Concurrent samples"
-      ],
-      "decision": "ADR 0021",
-      "state": "open",
-      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
+      "findings": []
     },
     {
-      "id": "V2-DR-001",
-      "requirement": "Point-in-time recovery: coordinate capture on every engine and restore with replay to a chosen point (P6-A).",
+      "id": "V2-SCL-001",
+      "kind": "finding",
+      "phase": "5",
+      "requirement": "Two writers on unrelated records under one definition overlap, while a schema transition waits for in-flight writers and fences new ones.",
+      "reference": "docs/roadmap/findings.json#V2-SCL-001",
+      "runtime_owner": [
+        "src/BusinessRecord/Infrastructure/Persistence/DoctrineBusinessRecordMutationFence.php"
+      ],
+      "tests": [
+        "tests/Integration/BusinessRecord/BusinessRecordSharedFenceIntegrationTest.php"
+      ],
+      "workflows": [
+        ".github/workflows/ci.yml#database"
+      ],
+      "artifacts": [],
+      "decision": "D1, ADR 0021",
+      "state": "pending-integration",
+      "track": "pr-152",
+      "branches": [
+        "agent/scale"
+      ],
+      "branch_evidence": [
+        "tests/Integration/BusinessRecord/SchemaTransitionWriterFenceIntegrationTest.php"
+      ],
+      "outstanding": "The head carries the runtime; agent/scale adds the cross-process proofs of the acceptance clauses a single process cannot observe. Flips when agent/scale lands.",
+      "gate_b_criteria": [
+        1,
+        3
+      ],
+      "packages": [
+        "P5-A"
+      ]
+    },
+    {
+      "id": "V2-SCL-002",
+      "kind": "finding",
+      "phase": "5",
+      "requirement": "Concurrent commits do not contend on a singleton event head, and sequencing is replay-safe across sequencer crashes and races.",
+      "reference": "docs/roadmap/findings.json#V2-SCL-002",
+      "runtime_owner": [
+        "src/BusinessReporting/Infrastructure/DoctrineProjectionEventSequencer.php"
+      ],
+      "tests": [
+        "tests/Integration/BusinessIntegration/ProjectionSequencingConcurrencyIntegrationTest.php"
+      ],
+      "workflows": [
+        ".github/workflows/ci.yml#database"
+      ],
+      "artifacts": [],
+      "decision": "D1, ADR 0021",
+      "state": "pending-integration",
+      "track": "pr-152",
+      "branches": [
+        "agent/scale"
+      ],
+      "branch_evidence": [
+        "tests/Integration/BusinessIntegration/SequencerCrashAndRaceIntegrationTest.php"
+      ],
+      "outstanding": "The head carries the runtime; agent/scale adds the cross-process proofs of the acceptance clauses a single process cannot observe. Flips when agent/scale lands.",
+      "gate_b_criteria": [
+        1,
+        3
+      ],
+      "packages": [
+        "P5-B"
+      ]
+    },
+    {
+      "id": "V2-SCL-006",
+      "kind": "finding",
+      "phase": "5",
+      "requirement": "Independent consumer receipts are claimed in batches and a hung or poison consumer delays no unrelated consumer.",
+      "reference": "docs/roadmap/findings.json#V2-SCL-006",
+      "runtime_owner": [
+        "src/BusinessIntegration/Infrastructure/RuntimeIntegrationReceiptWorker.php"
+      ],
+      "tests": [
+        "tests/Integration/BusinessIntegration/IndependentReceiptFanoutIntegrationTest.php"
+      ],
+      "workflows": [
+        ".github/workflows/ci.yml#database"
+      ],
+      "artifacts": [],
+      "decision": "D1, ADR 0021",
+      "state": "pending-integration",
+      "track": "pr-152",
+      "branches": [
+        "agent/scale"
+      ],
+      "branch_evidence": [
+        "tests/Integration/BusinessIntegration/HungAndPoisonFanoutIntegrationTest.php"
+      ],
+      "outstanding": "The head carries the runtime; agent/scale adds the cross-process proofs of the acceptance clauses a single process cannot observe. Flips when agent/scale lands.",
+      "gate_b_criteria": [
+        1,
+        3
+      ],
+      "packages": [
+        "P5-C"
+      ]
+    },
+    {
+      "id": "V2-SCL-007",
+      "kind": "finding",
+      "phase": "5",
+      "requirement": "Declared-queue claims use fenced permits with no over-claim, no starvation and bounded recovery after SIGKILL.",
+      "reference": "docs/roadmap/findings.json#V2-SCL-007",
+      "runtime_owner": [
+        "src/Infrastructure/Automation/DoctrineQueuePermits.php"
+      ],
+      "tests": [
+        "tests/Integration/Automation/QueueWorkerPermitsIntegrationTest.php",
+        "tests/Integration/Automation/KilledWorkerRecoveryIntegrationTest.php"
+      ],
+      "workflows": [
+        ".github/workflows/ci.yml#database"
+      ],
+      "artifacts": [],
+      "decision": "D1, ADR 0021",
+      "state": "pending-integration",
+      "track": "pr-152",
+      "branches": [
+        "agent/scale"
+      ],
+      "branch_evidence": [
+        "tests/Integration/Automation/QueuePermitOverclaimAndFairnessIntegrationTest.php"
+      ],
+      "outstanding": "The head carries the runtime; agent/scale adds the cross-process proofs of the acceptance clauses a single process cannot observe. Flips when agent/scale lands.",
+      "gate_b_criteria": [
+        1,
+        3
+      ],
+      "packages": [
+        "P5-D"
+      ]
+    },
+    {
+      "id": "V2-SCL-004",
+      "kind": "finding",
+      "phase": "5",
+      "requirement": "Idempotency retention sustains at least twice the peak expiry rate with exposed retention metrics and a readiness verdict.",
+      "reference": "docs/roadmap/findings.json#V2-SCL-004",
+      "runtime_owner": [
+        "src/BusinessRecord/Application/BusinessRecordIdempotencyPurger.php"
+      ],
+      "tests": [
+        "tests/Integration/Automation/IdempotencyRecoveryIntegrationTest.php"
+      ],
+      "workflows": [
+        ".github/workflows/ci.yml#database"
+      ],
+      "artifacts": [],
+      "decision": "D1, ADR 0021",
+      "state": "pending-integration",
+      "track": "pr-152",
+      "branches": [
+        "agent/scale"
+      ],
+      "branch_evidence": [
+        "tests/Integration/Retention/RetentionDrainIntegrationTest.php"
+      ],
+      "outstanding": "The head still seeds the fixed purge ceiling; agent/scale replaces it with the budgeted retention drain. Flips when agent/scale lands.",
+      "gate_b_criteria": [
+        1,
+        3
+      ],
+      "packages": [
+        "P5-E"
+      ]
+    },
+    {
+      "id": "V2-SCL-008",
+      "kind": "finding",
+      "phase": "5",
+      "requirement": "Every hot correctness ledger declares a retention budget, and audit is pruned only after a verifiable anchor and a restorable archive.",
+      "reference": "docs/roadmap/findings.json#V2-SCL-008",
+      "runtime_owner": [
+        "src/Infrastructure/Persistence/Migration/BusinessRecordIdempotencyRetentionMigration.php"
+      ],
+      "tests": [
+        "tests/Integration/Automation/IdempotencyRecoveryIntegrationTest.php"
+      ],
+      "workflows": [
+        ".github/workflows/ci.yml#database"
+      ],
+      "artifacts": [],
+      "decision": "D1, ADR 0021",
+      "state": "pending-integration",
+      "track": "pr-152",
+      "branches": [
+        "agent/scale"
+      ],
+      "branch_evidence": [
+        "src/Application/Retention/RetentionCatalogue.php",
+        "tests/Unit/Application/Retention/RetentionContractTest.php",
+        "tests/Unit/Audit/FilesystemAuditArchiveVerifierTest.php"
+      ],
+      "outstanding": "agent/scale declares the retention catalogue and the verified audit archive. Flips when agent/scale lands.",
+      "gate_b_criteria": [
+        1,
+        3
+      ],
+      "packages": [
+        "P5-E"
+      ]
+    },
+    {
+      "id": "V2-SCL-005",
+      "kind": "finding",
+      "phase": "5",
+      "requirement": "Monitoring runs no unbudgeted table-scale exact count on the primary; exact figures are an operator diagnostic with a stated cost.",
+      "reference": "docs/roadmap/findings.json#V2-SCL-005",
+      "runtime_owner": [
+        "src/Infrastructure/Observability/RuntimeMetricCollector.php"
+      ],
+      "tests": [
+        "tests/Unit/Infrastructure/Observability"
+      ],
+      "workflows": [
+        ".github/workflows/ci.yml#database"
+      ],
+      "artifacts": [],
+      "decision": "D1, D6, ADR 0021",
+      "state": "pending-integration",
+      "track": "pr-152",
+      "branches": [
+        "agent/scale"
+      ],
+      "branch_evidence": [
+        "tests/Integration/Infrastructure/BoundedGaugeAndCensusIntegrationTest.php",
+        "tools/perf-gauges.php"
+      ],
+      "outstanding": "agent/scale replaces the scrape-time exact aggregates and benchmarks every gauge on each engine. Flips when agent/scale lands.",
+      "gate_b_criteria": [
+        3
+      ],
+      "packages": [
+        "P5-F"
+      ]
+    },
+    {
+      "id": "P6-A",
+      "kind": "package",
+      "phase": "6",
+      "requirement": "Point-in-time recovery captures coordinates on every engine, replays to a chosen point, refuses an unreachable target and enforces the ordering rule.",
+      "reference": "docs/roadmap/README.md#phase-6--continuity-recovery-and-operational-introspection",
+      "runtime_owner": [
+        "tools/backup.sh",
+        "tools/restore.sh",
+        "tools/recovery-binlog.sh",
+        "tools/recovery-postgres.sh",
+        "tools/recovery-common.sh"
+      ],
+      "tests": [
+        "tests/Support/recovery-native-drill.sh",
+        "tests/Unit/Tools/RecoveryToolsTest.php",
+        "tests/Architecture/ProductionArtifactsTest.php"
+      ],
+      "workflows": [
+        ".github/workflows/recovery.yml#native-recovery",
+        ".github/workflows/recovery.yml#app-http-recovery",
+        ".github/workflows/recovery.yml#recovery-images",
+        ".github/workflows/recovery.yml#recovery-required"
+      ],
+      "artifacts": [
+        ".github/workflows/recovery.yml#recovery-${{ matrix.driver }}",
+        ".github/workflows/recovery.yml#recovery-app-http"
+      ],
+      "decision": "D3, ADR 0021",
+      "state": "pending-integration",
+      "track": "pr-152",
+      "branches": [
+        "agent/recovery"
+      ],
+      "branch_evidence": [
+        "tests/Architecture/RecoveryAcceptanceEvidenceTest.php",
+        "tools/backup-dedup-measure.sh",
+        "docs/operations/backup-restore.md"
+      ],
+      "outstanding": "The head carries the v3 plain-tree backups, native binlog and WAL replay, the HTTP restore drill and the three-engine recovery workflow; agent/recovery pins every acceptance clause to its proof, adds the transport-neutral deduplication measurement and records the row-count parity decision. Flips when agent/recovery lands.",
       "gate_b_criteria": [
         4
       ],
+      "findings": [
+        "V2-DR-001",
+        "V2-DR-004"
+      ]
+    },
+    {
+      "id": "P6-B",
+      "kind": "package",
+      "phase": "6",
+      "requirement": "The backup artifact is plain directory trees with an uncompressed dump, every tamper refusal still fires, and the second-snapshot delta is proportional to the change.",
+      "reference": "docs/roadmap/README.md#phase-6--continuity-recovery-and-operational-introspection",
       "runtime_owner": [
         "tools/backup.sh",
+        "tools/restore.sh",
+        "tools/backup-dedup-drill.sh"
+      ],
+      "tests": [
+        "tests/Support/backup-tamper-drill.sh",
+        "tests/Unit/Tools/RecoveryToolsTest.php"
+      ],
+      "workflows": [
+        ".github/workflows/recovery.yml#native-recovery",
+        ".github/workflows/recovery.yml#app-http-recovery",
+        ".github/workflows/recovery.yml#recovery-images",
+        ".github/workflows/recovery.yml#recovery-required"
+      ],
+      "artifacts": [
+        ".github/workflows/recovery.yml#recovery-${{ matrix.driver }}",
+        ".github/workflows/recovery.yml#recovery-app-http"
+      ],
+      "decision": "D4, ADR 0021",
+      "state": "pending-integration",
+      "track": "pr-152",
+      "branches": [
+        "agent/recovery"
+      ],
+      "branch_evidence": [
+        "tests/Architecture/RecoveryAcceptanceEvidenceTest.php",
+        "tools/backup-dedup-measure.sh",
+        "docs/operations/backup-restore.md"
+      ],
+      "outstanding": "The head carries the v3 plain-tree backups, native binlog and WAL replay, the HTTP restore drill and the three-engine recovery workflow; agent/recovery pins every acceptance clause to its proof, adds the transport-neutral deduplication measurement and records the row-count parity decision. Flips when agent/recovery lands.",
+      "gate_b_criteria": [
+        4
+      ],
+      "findings": [
+        "V2-DR-003",
+        "GM-BAK-08"
+      ]
+    },
+    {
+      "id": "P6-C",
+      "kind": "package",
+      "phase": "6",
+      "requirement": "Restored authentication, idempotent replay and approval spent state are proven by execution, and the row-count parity question is decided.",
+      "reference": "docs/roadmap/README.md#phase-6--continuity-recovery-and-operational-introspection",
+      "runtime_owner": [
+        "tools/restore-http-drill.sh",
+        "tests/Support/RestoreApprovalAcceptance.php"
+      ],
+      "tests": [
+        "tests/Support/recovery-http-roundtrip.sh",
+        "tests/Support/RestoreApprovalAcceptance.php"
+      ],
+      "workflows": [
+        ".github/workflows/recovery.yml#native-recovery",
+        ".github/workflows/recovery.yml#app-http-recovery",
+        ".github/workflows/recovery.yml#recovery-images",
+        ".github/workflows/recovery.yml#recovery-required"
+      ],
+      "artifacts": [
+        ".github/workflows/recovery.yml#recovery-${{ matrix.driver }}",
+        ".github/workflows/recovery.yml#recovery-app-http"
+      ],
+      "decision": "ADR 0021",
+      "state": "pending-integration",
+      "track": "pr-152",
+      "branches": [
+        "agent/recovery"
+      ],
+      "branch_evidence": [
+        "tests/Architecture/RecoveryAcceptanceEvidenceTest.php",
+        "tools/backup-dedup-measure.sh",
+        "docs/operations/backup-restore.md"
+      ],
+      "outstanding": "The head carries the v3 plain-tree backups, native binlog and WAL replay, the HTTP restore drill and the three-engine recovery workflow; agent/recovery pins every acceptance clause to its proof, adds the transport-neutral deduplication measurement and records the row-count parity decision. Flips when agent/recovery lands.",
+      "gate_b_criteria": [
+        4
+      ],
+      "findings": [
+        "V2-DR-002",
+        "GM-BAK-04",
+        "GM-BAK-08"
+      ]
+    },
+    {
+      "id": "P6-D",
+      "kind": "package",
+      "phase": "6",
+      "requirement": "An operator diagnostic surface behind its own capability answers contention, queue age, slow definitions, backlog slope and retention pace within cost and cardinality bounds.",
+      "reference": "docs/roadmap/README.md#phase-6--continuity-recovery-and-operational-introspection",
+      "runtime_owner": [
+        "src/Infrastructure/Observability"
+      ],
+      "tests": [],
+      "workflows": [
+        ".github/workflows/ci.yml#database"
+      ],
+      "artifacts": [],
+      "decision": "D6, ADR 0021",
+      "state": "pending-integration",
+      "track": "pr-152",
+      "branches": [
+        "agent/recovery"
+      ],
+      "branch_evidence": [
+        "src/Application/Diagnostics/DiagnosticsService.php",
+        "tests/Unit/Application/Diagnostics/DiagnosticsServiceTest.php",
+        "tests/Integration/Diagnostics/RuntimeDiagnosticsIntegrationTest.php",
+        "docs/operations/diagnostics.md"
+      ],
+      "outstanding": "agent/recovery adds DiagnosticsService, five bounded engine probes, the diagnostics.read capability, the administrator screen and its JSON document. Its console command awaits the successor CLI generation that agent/machine cuts before the console can dispatch it. Flips when agent/recovery lands.",
+      "gate_b_criteria": [
+        5
+      ],
+      "findings": [
+        "V2-OPS-001"
+      ]
+    },
+    {
+      "id": "V2-DR-001",
+      "kind": "finding",
+      "phase": "6",
+      "requirement": "Point-in-time recovery is a platform-supported, operator-configured capability proven by a drill before and after a chosen transaction on every engine.",
+      "reference": "docs/roadmap/findings.json#V2-DR-001",
+      "runtime_owner": [
         "tools/restore.sh",
         "tools/recovery-binlog.sh",
         "tools/recovery-postgres.sh"
       ],
       "tests": [
-        "tests/Support/recovery-native-drill.sh",
-        "tests/Architecture/ProductionArtifactsTest.php"
+        "tests/Support/recovery-native-drill.sh"
+      ],
+      "workflows": [
+        ".github/workflows/recovery.yml#native-recovery",
+        ".github/workflows/recovery.yml#app-http-recovery",
+        ".github/workflows/recovery.yml#recovery-images",
+        ".github/workflows/recovery.yml#recovery-required"
       ],
       "artifacts": [
-        ".github/workflows/recovery.yml#Native replay",
-        ".github/workflows/recovery.yml#Real App HTTP restore and replay"
+        ".github/workflows/recovery.yml#recovery-${{ matrix.driver }}",
+        ".github/workflows/recovery.yml#recovery-app-http"
       ],
-      "decision": "D3, ADR 0021",
-      "state": "open",
-      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
-    },
-    {
-      "id": "V2-DR-002",
-      "requirement": "Restored authentication, replay protection and approval state prove recoverability by execution (P6-C).",
+      "decision": "D3, D4, ADR 0021",
+      "state": "pending-integration",
+      "track": "pr-152",
+      "branches": [
+        "agent/recovery"
+      ],
+      "branch_evidence": [
+        "tests/Architecture/RecoveryAcceptanceEvidenceTest.php",
+        "tools/backup-dedup-measure.sh",
+        "docs/operations/backup-restore.md"
+      ],
+      "outstanding": "The head carries the v3 plain-tree backups, native binlog and WAL replay, the HTTP restore drill and the three-engine recovery workflow; agent/recovery pins every acceptance clause to its proof, adds the transport-neutral deduplication measurement and records the row-count parity decision. Flips when agent/recovery lands.",
       "gate_b_criteria": [
+        1,
         4
       ],
-      "runtime_owner": [
-        "tests/Support/RestoreSecurityAcceptance.php"
-      ],
-      "tests": [
-        "tests/Support/RestoreSecurityAcceptance.php",
-        "tests/Support/recovery-http-roundtrip.sh"
-      ],
-      "artifacts": [
-        ".github/workflows/recovery.yml#Native replay",
-        ".github/workflows/recovery.yml#Real App HTTP restore and replay"
-      ],
-      "decision": "ADR 0021",
-      "state": "open",
-      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
-    },
-    {
-      "id": "V2-DR-003",
-      "requirement": "The backup artifact is a plain, deduplicable tree with an uncompressed PostgreSQL dump (P6-B).",
-      "gate_b_criteria": [
-        4
-      ],
-      "runtime_owner": [
-        "tools/backup.sh",
-        "tools/backup-dedup-drill.sh"
-      ],
-      "tests": [
-        "tests/Support/backup-tamper-drill.sh",
-        "tests/Architecture/ProductionArtifactsTest.php"
-      ],
-      "artifacts": [
-        ".github/workflows/recovery.yml#Native replay",
-        ".github/workflows/recovery.yml#Real App HTTP restore and replay"
-      ],
-      "decision": "D4, ADR 0021",
-      "state": "open",
-      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
+      "packages": [
+        "P6-A"
+      ]
     },
     {
       "id": "V2-DR-004",
-      "requirement": "The media-versus-database ordering rule is enforced by the tooling and stated once in the documentation (P6-A).",
+      "kind": "finding",
+      "phase": "6",
+      "requirement": "The media-versus-database ordering rule is enforced by the restore tooling, drilled both ways and stated once with the same wording.",
+      "reference": "docs/roadmap/findings.json#V2-DR-004",
+      "runtime_owner": [
+        "tools/restore.sh",
+        "tools/recovery-common.sh"
+      ],
+      "tests": [
+        "tests/Support/recovery-tools-test.sh",
+        "tests/Unit/Tools/RecoveryToolsTest.php"
+      ],
+      "workflows": [
+        ".github/workflows/recovery.yml#native-recovery",
+        ".github/workflows/recovery.yml#app-http-recovery",
+        ".github/workflows/recovery.yml#recovery-images",
+        ".github/workflows/recovery.yml#recovery-required"
+      ],
+      "artifacts": [
+        ".github/workflows/recovery.yml#recovery-${{ matrix.driver }}",
+        ".github/workflows/recovery.yml#recovery-app-http"
+      ],
+      "decision": "ADR 0021",
+      "state": "pending-integration",
+      "track": "pr-152",
+      "branches": [
+        "agent/recovery"
+      ],
+      "branch_evidence": [
+        "tests/Architecture/RecoveryAcceptanceEvidenceTest.php",
+        "tools/backup-dedup-measure.sh",
+        "docs/operations/backup-restore.md"
+      ],
+      "outstanding": "The head carries the v3 plain-tree backups, native binlog and WAL replay, the HTTP restore drill and the three-engine recovery workflow; agent/recovery pins every acceptance clause to its proof, adds the transport-neutral deduplication measurement and records the row-count parity decision. Flips when agent/recovery lands.",
       "gate_b_criteria": [
         4
       ],
-      "runtime_owner": [
-        "tools/restore.sh",
-        "docs/operations/backup-restore.md"
-      ],
-      "tests": [
-        "tools/restore-pitr-drill.sh"
-      ],
-      "artifacts": [
-        ".github/workflows/recovery.yml#Native replay",
-        ".github/workflows/recovery.yml#Real App HTTP restore and replay"
-      ],
-      "decision": "ADR 0021",
-      "state": "open",
-      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
+      "packages": [
+        "P6-A"
+      ]
     },
     {
-      "id": "V2-OPS-001",
-      "requirement": "Operator diagnostics answer contention, queue age, slow definitions, backlog slope and retention pace within cardinality and cost bounds (P6-D).",
-      "gate_b_criteria": [
-        5
-      ],
+      "id": "V2-DR-003",
+      "kind": "finding",
+      "phase": "6",
+      "requirement": "The backup artifact is shaped for off-site deduplication and the stored delta is measured.",
+      "reference": "docs/roadmap/findings.json#V2-DR-003",
       "runtime_owner": [
-        "src/Infrastructure/Observability"
+        "tools/backup.sh"
       ],
       "tests": [
-        "tests/Unit/Infrastructure/Observability"
+        "tests/Support/backup-tamper-drill.sh"
+      ],
+      "workflows": [
+        ".github/workflows/recovery.yml#native-recovery",
+        ".github/workflows/recovery.yml#app-http-recovery",
+        ".github/workflows/recovery.yml#recovery-images",
+        ".github/workflows/recovery.yml#recovery-required"
       ],
       "artifacts": [
-        ".github/workflows/ci.yml#PHP 8.5 / MariaDB",
-        ".github/workflows/ci.yml#PHP 8.5 / MySQL",
-        ".github/workflows/ci.yml#PHP 8.5 / PostgreSQL"
+        ".github/workflows/recovery.yml#recovery-${{ matrix.driver }}",
+        ".github/workflows/recovery.yml#recovery-app-http"
       ],
-      "decision": "D6, ADR 0021",
-      "state": "open",
-      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
+      "decision": "D3, D4, ADR 0021",
+      "state": "pending-integration",
+      "track": "pr-152",
+      "branches": [
+        "agent/recovery"
+      ],
+      "branch_evidence": [
+        "tests/Architecture/RecoveryAcceptanceEvidenceTest.php",
+        "tools/backup-dedup-measure.sh",
+        "docs/operations/backup-restore.md"
+      ],
+      "outstanding": "The head carries the v3 plain-tree backups, native binlog and WAL replay, the HTTP restore drill and the three-engine recovery workflow; agent/recovery pins every acceptance clause to its proof, adds the transport-neutral deduplication measurement and records the row-count parity decision. Flips when agent/recovery lands.",
+      "gate_b_criteria": [
+        1,
+        4
+      ],
+      "packages": [
+        "P6-B"
+      ]
+    },
+    {
+      "id": "V2-DR-002",
+      "kind": "finding",
+      "phase": "6",
+      "requirement": "Approval spent state and an HTTP login plus Idempotency-Key replay are proven against the restored application.",
+      "reference": "docs/roadmap/findings.json#V2-DR-002",
+      "runtime_owner": [
+        "tools/restore-http-drill.sh",
+        "tests/Support/RestoreApprovalAcceptance.php"
+      ],
+      "tests": [
+        "tests/Support/recovery-http-roundtrip.sh"
+      ],
+      "workflows": [
+        ".github/workflows/recovery.yml#native-recovery",
+        ".github/workflows/recovery.yml#app-http-recovery",
+        ".github/workflows/recovery.yml#recovery-images",
+        ".github/workflows/recovery.yml#recovery-required"
+      ],
+      "artifacts": [
+        ".github/workflows/recovery.yml#recovery-${{ matrix.driver }}",
+        ".github/workflows/recovery.yml#recovery-app-http"
+      ],
+      "decision": "ADR 0021",
+      "state": "pending-integration",
+      "track": "pr-152",
+      "branches": [
+        "agent/recovery"
+      ],
+      "branch_evidence": [
+        "tests/Architecture/RecoveryAcceptanceEvidenceTest.php",
+        "tools/backup-dedup-measure.sh",
+        "docs/operations/backup-restore.md"
+      ],
+      "outstanding": "The head carries the v3 plain-tree backups, native binlog and WAL replay, the HTTP restore drill and the three-engine recovery workflow; agent/recovery pins every acceptance clause to its proof, adds the transport-neutral deduplication measurement and records the row-count parity decision. Flips when agent/recovery lands.",
+      "gate_b_criteria": [
+        1,
+        4
+      ],
+      "packages": [
+        "P6-C"
+      ]
     },
     {
       "id": "GM-BAK-04",
+      "kind": "finding",
+      "phase": "6",
       "requirement": "Post-restore identity and security acceptance is executed by the drill, not by hand.",
-      "gate_b_criteria": [
-        4
-      ],
+      "reference": "docs/roadmap/findings.json#GM-BAK-04",
       "runtime_owner": [
-        "tests/Support/RestoreSecurityAcceptance.php"
+        "tests/Support/RestoreApprovalAcceptance.php"
       ],
       "tests": [
-        "tests/Support/RestoreSecurityAcceptance.php"
+        "tests/Support/recovery-http-roundtrip.sh",
+        "tests/Support/RestoreApprovalAcceptance.php"
+      ],
+      "workflows": [
+        ".github/workflows/recovery.yml#native-recovery",
+        ".github/workflows/recovery.yml#app-http-recovery",
+        ".github/workflows/recovery.yml#recovery-images",
+        ".github/workflows/recovery.yml#recovery-required"
       ],
       "artifacts": [
-        ".github/workflows/recovery.yml#Native replay",
-        ".github/workflows/recovery.yml#Real App HTTP restore and replay"
+        ".github/workflows/recovery.yml#recovery-${{ matrix.driver }}",
+        ".github/workflows/recovery.yml#recovery-app-http"
       ],
       "decision": "ADR 0021",
-      "state": "open",
-      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
+      "state": "pending-integration",
+      "track": "pr-152",
+      "branches": [
+        "agent/recovery"
+      ],
+      "branch_evidence": [
+        "tests/Architecture/RecoveryAcceptanceEvidenceTest.php",
+        "tools/backup-dedup-measure.sh",
+        "docs/operations/backup-restore.md"
+      ],
+      "outstanding": "The head carries the v3 plain-tree backups, native binlog and WAL replay, the HTTP restore drill and the three-engine recovery workflow; agent/recovery pins every acceptance clause to its proof, adds the transport-neutral deduplication measurement and records the row-count parity decision. Flips when agent/recovery lands.",
+      "gate_b_criteria": [
+        1,
+        4
+      ],
+      "packages": [
+        "P6-C"
+      ]
     },
     {
       "id": "GM-BAK-08",
-      "requirement": "Backup scheduling, retention, off-host copy and table parity are documented or asserted.",
-      "gate_b_criteria": [
-        4
-      ],
+      "kind": "finding",
+      "phase": "6",
+      "requirement": "Backup scheduling, retention and off-host copy are documented for the reshaped artifact and whole-table parity is decided.",
+      "reference": "docs/roadmap/findings.json#GM-BAK-08",
       "runtime_owner": [
         "tools/backup-retain.sh",
         "tools/backup-cycle.sh",
         "docs/operations/backup-restore.md"
       ],
       "tests": [
-        "tools/restore-verify.sh"
+        "tests/Unit/Tools/RecoveryToolsTest.php"
+      ],
+      "workflows": [
+        ".github/workflows/recovery.yml#native-recovery",
+        ".github/workflows/recovery.yml#app-http-recovery",
+        ".github/workflows/recovery.yml#recovery-images",
+        ".github/workflows/recovery.yml#recovery-required"
       ],
       "artifacts": [
-        ".github/workflows/recovery.yml#Native replay",
-        ".github/workflows/recovery.yml#Real App HTTP restore and replay"
+        ".github/workflows/recovery.yml#recovery-${{ matrix.driver }}",
+        ".github/workflows/recovery.yml#recovery-app-http"
       ],
       "decision": "ADR 0021",
-      "state": "open",
-      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
+      "state": "pending-integration",
+      "track": "pr-152",
+      "branches": [
+        "agent/recovery"
+      ],
+      "branch_evidence": [
+        "tests/Architecture/RecoveryAcceptanceEvidenceTest.php",
+        "tools/backup-dedup-measure.sh",
+        "docs/operations/backup-restore.md"
+      ],
+      "outstanding": "The head carries the v3 plain-tree backups, native binlog and WAL replay, the HTTP restore drill and the three-engine recovery workflow; agent/recovery pins every acceptance clause to its proof, adds the transport-neutral deduplication measurement and records the row-count parity decision. Flips when agent/recovery lands.",
+      "gate_b_criteria": [
+        1,
+        4
+      ],
+      "packages": [
+        "P6-B",
+        "P6-C"
+      ]
     },
     {
-      "id": "V2-STU-005",
-      "requirement": "The media port, resource discovery and hardened external-source fetcher agree with the published policy vectors (S-E).",
-      "gate_b_criteria": [
-        12
-      ],
+      "id": "V2-OPS-001",
+      "kind": "finding",
+      "phase": "6",
+      "requirement": "Operators can see where the running system is struggling through a costed, cardinality-bounded diagnostic surface distinct from monitoring.",
+      "reference": "docs/roadmap/findings.json#V2-OPS-001",
       "runtime_owner": [
-        "src/Studio/Application/Media"
+        "src/Infrastructure/Observability"
       ],
-      "tests": [
-        "tests/Unit/Studio/Domain/Media/StudioMediaPolicyVectorTest.php",
-        "tests/Unit/Studio/Application/Media/StudioExternalMediaFetcherTest.php",
-        "tests/Integration/Studio/StudioMediaPersistenceTest.php"
+      "tests": [],
+      "workflows": [
+        ".github/workflows/ci.yml#database"
       ],
-      "artifacts": [
-        ".github/workflows/ci.yml#Browser / MariaDB",
-        ".github/workflows/nightly.yml#Nightly browser breadth / MariaDB LTS"
+      "artifacts": [],
+      "decision": "D6, ADR 0021",
+      "state": "pending-integration",
+      "track": "pr-152",
+      "branches": [
+        "agent/recovery"
       ],
-      "decision": "ADR 0020, ADR 0021",
-      "state": "open",
-      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
+      "branch_evidence": [
+        "src/Application/Diagnostics/DiagnosticsService.php",
+        "tests/Integration/Diagnostics/RuntimeDiagnosticsIntegrationTest.php"
+      ],
+      "outstanding": "Flips with P6-D when agent/recovery lands.",
+      "gate_b_criteria": [
+        1,
+        5
+      ],
+      "packages": [
+        "P6-D"
+      ]
     },
     {
-      "id": "V2-STU-006",
-      "requirement": "Authenticated, origin-pinned, replay-resistant preview renders unpublished composition through the published path (S-F).",
-      "gate_b_criteria": [
-        12
-      ],
+      "id": "P7-A",
+      "kind": "package",
+      "phase": "7",
+      "requirement": "Sampled concurrent capacity on workflow hardware, with measured results kept apart from labelled estimates against the five-million daily planning target.",
+      "reference": "docs/roadmap/README.md#phase-7--production-qualification-and-vertical-neutral-proof",
       "runtime_owner": [
-        "src/Studio/Application/Preview"
+        "tools/perf-concurrent.php",
+        "tools/PerfConcurrentSamples.php"
       ],
       "tests": [
-        "tests/Unit/Administrator/Http/StudioPreviewHttpTransportTest.php",
-        "tests/Integration/Studio/StudioPreviewPersistenceTest.php"
+        "tests/Unit/Performance/PerfHarnessContractTest.php"
+      ],
+      "workflows": [
+        ".github/workflows/capacity.yml#samples"
       ],
       "artifacts": [
-        ".github/workflows/ci.yml#Browser / MariaDB",
-        ".github/workflows/nightly.yml#Nightly browser breadth / MariaDB LTS"
-      ],
-      "decision": "ADR 0020, ADR 0021",
-      "state": "open",
-      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
-    },
-    {
-      "id": "V2-STU-007",
-      "requirement": "Studio is contextual Content authoring and the packaged App proves STUDIO-PROD-015 end to end (S-G).",
-      "gate_b_criteria": [
-        12
-      ],
-      "runtime_owner": [
-        "src/Studio/Application/Authoring/ContentStudioAuthoringService.php"
-      ],
-      "tests": [
-        "tests/Integration/Studio/ContentStudioAuthoringJourneyIntegrationTest.php",
-        "tests/Browser/studio-authoring.spec.ts"
-      ],
-      "artifacts": [
-        ".github/workflows/ci.yml#Browser / MariaDB",
-        ".github/workflows/nightly.yml#Nightly browser breadth / MariaDB LTS"
-      ],
-      "decision": "ADR 0020, ADR 0021",
-      "state": "open",
-      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
-    },
-    {
-      "id": "MACHINE-STUDIO-PARITY",
-      "requirement": "Studio's durable authoring operations have REST, CLI and MCP equivalents with the same permissions, revisions, audit and refusals.",
-      "gate_b_criteria": [
-        7,
-        12
-      ],
-      "runtime_owner": [
-        "src/Delivery/Http/Api",
-        "src/Delivery/Console",
-        "src/Infrastructure/Mcp"
-      ],
-      "tests": [
-        "tests/Architecture"
-      ],
-      "artifacts": [
-        ".github/workflows/ci.yml#PHP 8.5 / MariaDB",
-        ".github/workflows/ci.yml#PHP 8.5 / MySQL",
-        ".github/workflows/ci.yml#PHP 8.5 / PostgreSQL"
+        ".github/workflows/capacity.yml#capacity-samples-${{ matrix.database.driver }}"
       ],
       "decision": "ADR 0021",
-      "state": "open",
-      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
+      "state": "pending-integration",
+      "track": "pr-152",
+      "branches": [
+        "agent/scale"
+      ],
+      "branch_evidence": [
+        "tests/Unit/Performance/ScalabilityModelTest.php",
+        "docs/operations/capacity-estimate.md",
+        "docs/operations/capacity-report.schema.json"
+      ],
+      "outstanding": "The head records concurrent samples, hardware and labelled daily extrapolations. agent/scale fits labelled scalability models with interpolation and extrapolation marked, separates measured and estimated sections, publishes the report schema and method, and summarises every capacity run. Flips when agent/scale lands.",
+      "gate_b_criteria": [
+        2,
+        10
+      ],
+      "findings": []
     },
     {
-      "id": "V2-LNG-010",
-      "requirement": "All nine catalogues are complete and each locale is qualified with right-to-left baselines (PL-G).",
-      "gate_b_criteria": [
-        7,
-        11
-      ],
+      "id": "P7-B",
+      "kind": "package",
+      "phase": "7",
+      "requirement": "Chaos and backlog-recovery drills run against the exact release artifacts on all three engines, each with its expected error, evidence, alert, runbook, invariant and recovery time.",
+      "reference": "docs/roadmap/README.md#phase-7--production-qualification-and-vertical-neutral-proof",
       "runtime_owner": [
-        "resources/localization/messages",
-        "tools/compile-catalogues.php"
+        "tests/Integration/Automation"
       ],
       "tests": [
-        "tests/Architecture/InterfaceTranslationGateTest.php",
-        "tests/Browser/right-to-left.spec.ts"
+        "tests/Integration/Automation/WorkerConnectionLossKillPointIntegrationTest.php"
       ],
-      "artifacts": [
-        ".github/workflows/ci.yml#Browser / MariaDB",
-        ".github/workflows/nightly.yml#Nightly browser breadth / MariaDB LTS"
+      "workflows": [
+        ".github/workflows/ci.yml#database"
       ],
-      "decision": "ADR 0002, ADR 0021",
-      "state": "open",
-      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
-    },
-    {
-      "id": "V2-UX-001",
-      "requirement": "Automated interface acceptance covers the five archetype journeys with task-based evidence (P7-E).",
-      "gate_b_criteria": [
-        7
-      ],
-      "runtime_owner": [
-        "tests/Browser"
-      ],
-      "tests": [
-        "tests/Browser/administrator.spec.ts",
-        "tests/Browser/portal.spec.ts",
-        "tests/Browser/interface-standard.spec.ts"
-      ],
-      "artifacts": [
-        ".github/workflows/ci.yml#Browser / MariaDB",
-        ".github/workflows/nightly.yml#Nightly browser breadth / MariaDB LTS"
-      ],
+      "artifacts": [],
       "decision": "ADR 0021",
       "state": "open",
-      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
+      "track": "point-5",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "Separate Point 5 track by maintainer decision: exact release-artifact qualification and publication, the extension proof portfolio, optional 24-hour and 72-hour soaks, the independent release-candidate review and the GM-SUP-05 runtime follow this pull request. The multi-process drills agent/scale adds are source-level evidence, not the release-artifact drill catalogue this package defines.",
+      "gate_b_criteria": [
+        6
+      ],
+      "findings": []
     },
     {
-      "id": "V2-UX-002",
-      "requirement": "Role dashboard preferences preserve widgets outside the editor's visibility.",
-      "gate_b_criteria": [
-        7
-      ],
+      "id": "P7-C",
+      "kind": "package",
+      "phase": "7",
+      "requirement": "Security and privacy qualification: a threat-led independent agent review plus automated evidence across identity, request forgery, content policy, disclosure, trust and secrets.",
+      "reference": "docs/roadmap/README.md#phase-7--production-qualification-and-vertical-neutral-proof",
       "runtime_owner": [
-        "src/Presentation/Application/Dashboard/DashboardPreferenceFormPresenter.php"
+        "src/Identity",
+        "src/Http/Security/SecurityHeaders.php",
+        "src/Audit"
       ],
       "tests": [
-        "tests/Unit/Presentation"
-      ],
-      "artifacts": [
-        ".github/workflows/ci.yml#Browser / MariaDB",
-        ".github/workflows/nightly.yml#Nightly browser breadth / MariaDB LTS"
-      ],
-      "decision": "ADR 0006, ADR 0021",
-      "state": "open",
-      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
-    },
-    {
-      "id": "V2-UX-003",
-      "requirement": "Immutable and closed-period records render read-only affordances and the definition editor declares immutable states.",
-      "gate_b_criteria": [
-        7
-      ],
-      "runtime_owner": [
-        "src/BusinessSurface/Delivery/Browser/GeneratedBusinessBrowserController.php",
-        "src/BusinessDefinition/Administrator/BusinessDefinitionFormMapper.php"
-      ],
-      "tests": [
-        "tests/Unit/BusinessSurface"
-      ],
-      "artifacts": [
-        ".github/workflows/ci.yml#Browser / MariaDB",
-        ".github/workflows/nightly.yml#Nightly browser breadth / MariaDB LTS"
-      ],
-      "decision": "ADR 0021",
-      "state": "open",
-      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
-    },
-    {
-      "id": "V2-QA-014",
-      "requirement": "Live appearance switches repaint existing controls on every supported engine.",
-      "gate_b_criteria": [
-        7
-      ],
-      "runtime_owner": [
-        "assets/interface-standard/appearance.ts",
-        "assets/administrator/styles.css"
-      ],
-      "tests": [
-        "tests/Browser/nightly-browser-breadth.spec.ts",
-        "tests/Browser/interface-standard.spec.ts"
-      ],
-      "artifacts": [
-        ".github/workflows/nightly.yml#Nightly browser breadth / MariaDB LTS"
-      ],
-      "decision": "ADR 0021",
-      "state": "open",
-      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
-    },
-    {
-      "id": "GM-IDN-04",
-      "requirement": "Administrator sign-in is protected against login request forgery.",
-      "gate_b_criteria": [
-        1
-      ],
-      "runtime_owner": [
-        "src/Administrator/Http/Handler"
-      ],
-      "tests": [
-        "tests/Integration/Identity/AccessControlIntegrationTest.php"
-      ],
-      "artifacts": [
-        ".github/workflows/ci.yml#PHP 8.5 / MariaDB",
-        ".github/workflows/ci.yml#PHP 8.5 / MySQL",
-        ".github/workflows/ci.yml#PHP 8.5 / PostgreSQL"
-      ],
-      "decision": "ADR 0021",
-      "state": "delivered",
-      "outstanding": null
-    },
-    {
-      "id": "GM-IDN-05",
-      "requirement": "Browser session stores enforce configurable idle expiry beside absolute expiry and production HTTPS posture.",
-      "gate_b_criteria": [
-        1
-      ],
-      "runtime_owner": [
-        "src/Identity"
-      ],
-      "tests": [
-        "tests/Integration/Identity/CredentialLifecycleIntegrationTest.php"
-      ],
-      "artifacts": [
-        ".github/workflows/ci.yml#PHP 8.5 / MariaDB",
-        ".github/workflows/ci.yml#PHP 8.5 / MySQL",
-        ".github/workflows/ci.yml#PHP 8.5 / PostgreSQL"
-      ],
-      "decision": "ADR 0021",
-      "state": "delivered",
-      "outstanding": null
-    },
-    {
-      "id": "GM-IDN-07",
-      "requirement": "Ordinary administrator and portal users replace their own password through CSRF-protected account pages.",
-      "gate_b_criteria": [
-        1
-      ],
-      "runtime_owner": [
-        "src/Identity"
-      ],
-      "tests": [
+        "tests/Integration/Identity/AccessControlIntegrationTest.php",
+        "tests/Integration/Identity/SessionIdleExpiryIntegrationTest.php",
         "tests/Integration/Identity/AccountSelfServiceIntegrationTest.php"
       ],
+      "workflows": [
+        ".github/workflows/ci.yml#database",
+        ".github/workflows/security.yml#source-and-image"
+      ],
       "artifacts": [
-        ".github/workflows/ci.yml#PHP 8.5 / MariaDB",
-        ".github/workflows/ci.yml#PHP 8.5 / MySQL",
-        ".github/workflows/ci.yml#PHP 8.5 / PostgreSQL"
+        ".github/workflows/security.yml#security-evidence-${{ github.sha }}"
       ],
       "decision": "ADR 0021",
-      "state": "delivered",
-      "outstanding": null
+      "state": "open",
+      "track": "pr-152",
+      "branches": [
+        "agent/security"
+      ],
+      "branch_evidence": [],
+      "outstanding": "GM-IDN-04, GM-IDN-05 and GM-IDN-07 are delivered; GM-IDN-06, GM-AUD-08 and GM-SUP-08 flip with agent/security. The threat-led independent agent review and its evidence matrix across the package's areas are not recorded yet, and GM-SUP-05's out-of-process runtime stays on the Point 5 track.",
+      "gate_b_criteria": [
+        1
+      ],
+      "findings": [
+        "GM-IDN-04",
+        "GM-IDN-05",
+        "GM-IDN-06",
+        "GM-IDN-07",
+        "GM-AUD-08",
+        "GM-SUP-08",
+        "GM-SUP-05"
+      ]
+    },
+    {
+      "id": "P7-D",
+      "kind": "package",
+      "phase": "7",
+      "requirement": "Observability readiness in the real deployment: redacted logs, trace context, bounded metrics, actionable alerts with runbooks, synthetic probes and operator drills.",
+      "reference": "docs/roadmap/README.md#phase-7--production-qualification-and-vertical-neutral-proof",
+      "runtime_owner": [
+        "config/observability.php",
+        "deploy/observability/alerts.yaml",
+        "docs/operations/monitoring.md"
+      ],
+      "tests": [
+        "tests/Unit/Infrastructure/Observability"
+      ],
+      "workflows": [
+        ".github/workflows/ci.yml#database"
+      ],
+      "artifacts": [],
+      "decision": "D6, ADR 0021",
+      "state": "open",
+      "track": "pr-152",
+      "branches": [
+        "agent/security"
+      ],
+      "branch_evidence": [],
+      "outstanding": "The wave 7 contract and its Prometheus rules ship, and GM-OBS-05's propagation-only decision flips with agent/security. Synthetic probes, business-versus-transport dashboards and operator drills proving each critical alert actionable are not built, and no branch carries them.",
+      "gate_b_criteria": [],
+      "findings": [
+        "GM-OBS-05"
+      ]
+    },
+    {
+      "id": "P7-E",
+      "kind": "package",
+      "phase": "7",
+      "requirement": "Automated interface acceptance: five archetype task journeys with task-based evidence, the live appearance-switch repair and two journeys in a non-source language, one right-to-left.",
+      "reference": "docs/roadmap/README.md#phase-7--production-qualification-and-vertical-neutral-proof",
+      "runtime_owner": [
+        "tests/Browser",
+        "assets/interface-standard/appearance.ts"
+      ],
+      "tests": [
+        "tests/Browser/interface-standard.spec.ts",
+        "tests/Browser/nightly-browser-breadth.spec.ts",
+        "tests/Browser/locale-qualification.spec.ts"
+      ],
+      "workflows": [
+        ".github/workflows/ci.yml#browser",
+        ".github/workflows/nightly.yml#browser"
+      ],
+      "artifacts": [
+        ".github/workflows/ci.yml#browser-evidence-${{ matrix.database.driver }}",
+        ".github/workflows/nightly.yml#nightly-browser-evidence-${{ matrix.database.driver }}"
+      ],
+      "decision": "ADR 0021",
+      "state": "open",
+      "track": "pr-152",
+      "branches": [
+        "agent/browser"
+      ],
+      "branch_evidence": [],
+      "outstanding": "The appearance repair flips with V2-QA-014 and the locale journeys with PL-G. No workflow runs the five archetype task journeys yet (V2-UX-001), and no branch carries them.",
+      "gate_b_criteria": [
+        7
+      ],
+      "findings": [
+        "V2-UX-001",
+        "V2-QA-014"
+      ]
+    },
+    {
+      "id": "P7-F",
+      "kind": "package",
+      "phase": "7",
+      "requirement": "The vertical-neutral signed proof portfolio installs, runs and uninstalls on all three engines with no core edit.",
+      "reference": "docs/roadmap/README.md#phase-7--production-qualification-and-vertical-neutral-proof",
+      "runtime_owner": [
+        "examples/extensions"
+      ],
+      "tests": [
+        "tests/Integration/Extension"
+      ],
+      "workflows": [
+        ".github/workflows/ci.yml#database"
+      ],
+      "artifacts": [],
+      "decision": "ADR 0021",
+      "state": "open",
+      "track": "point-5",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "Separate Point 5 track by maintainer decision: exact release-artifact qualification and publication, the extension proof portfolio, optional 24-hour and 72-hour soaks, the independent release-candidate review and the GM-SUP-05 runtime follow this pull request.",
+      "gate_b_criteria": [
+        8
+      ],
+      "findings": []
+    },
+    {
+      "id": "P7-G",
+      "kind": "package",
+      "phase": "7",
+      "requirement": "Exact release and deployment qualification: the tested digests are the published digests, with rollback proof and a signed manifest.",
+      "reference": "docs/roadmap/README.md#phase-7--production-qualification-and-vertical-neutral-proof",
+      "runtime_owner": [
+        ".github/workflows/release.yml",
+        "tools/create-release-manifest.mjs"
+      ],
+      "tests": [
+        "tests/Architecture/ProductionArtifactsTest.php"
+      ],
+      "workflows": [
+        ".github/workflows/release.yml#acceptance",
+        ".github/workflows/release.yml#release",
+        ".github/workflows/ci.yml#deployment",
+        ".github/workflows/ci.yml#artifact"
+      ],
+      "artifacts": [
+        ".github/workflows/ci.yml#deployed-artifact-report"
+      ],
+      "decision": "ADR 0021",
+      "state": "open",
+      "track": "point-5",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "Separate Point 5 track by maintainer decision: exact release-artifact qualification and publication, the extension proof portfolio, optional 24-hour and 72-hour soaks, the independent release-candidate review and the GM-SUP-05 runtime follow this pull request.",
+      "gate_b_criteria": [
+        6
+      ],
+      "findings": [
+        "V2-REL-001"
+      ]
+    },
+    {
+      "id": "P7-H",
+      "kind": "package",
+      "phase": "7",
+      "requirement": "Documentation closure: reference documentation is generated or verified from runtime sources and CI fails on drift.",
+      "reference": "docs/roadmap/README.md#phase-7--production-qualification-and-vertical-neutral-proof",
+      "runtime_owner": [
+        "tools/verify-acceptance-record.php",
+        "tools/generate-capability-index.php"
+      ],
+      "tests": [
+        "tests/Unit/Governance"
+      ],
+      "workflows": [
+        ".github/workflows/ci.yml#quality"
+      ],
+      "artifacts": [],
+      "decision": "ADR 0021",
+      "state": "open",
+      "track": "point-5",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "Separate Point 5 track by maintainer decision: exact release-artifact qualification and publication, the extension proof portfolio, optional 24-hour and 72-hour soaks, the independent release-candidate review and the GM-SUP-05 runtime follow this pull request. This record and its generated STATUS.md blocks are one such derived view; the rest of the package's reference set is not generated yet.",
+      "gate_b_criteria": [],
+      "findings": []
+    },
+    {
+      "id": "P7-I",
+      "kind": "package",
+      "phase": "7",
+      "requirement": "An independent review at the release candidate finds no repository-owned critical or high contradiction.",
+      "reference": "docs/roadmap/README.md#phase-7--production-qualification-and-vertical-neutral-proof",
+      "runtime_owner": [
+        "docs/roadmap/README.md"
+      ],
+      "tests": [],
+      "workflows": [],
+      "artifacts": [],
+      "decision": "ADR 0021",
+      "state": "open",
+      "track": "point-5",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "Separate Point 5 track by maintainer decision: exact release-artifact qualification and publication, the extension proof portfolio, optional 24-hour and 72-hour soaks, the independent release-candidate review and the GM-SUP-05 runtime follow this pull request.",
+      "gate_b_criteria": [
+        9
+      ],
+      "findings": []
     },
     {
       "id": "GM-IDN-06",
-      "requirement": "Session and CSRF qualification blind spots are covered by dedicated tests.",
-      "gate_b_criteria": [
-        1
-      ],
+      "kind": "finding",
+      "phase": "7",
+      "requirement": "Dedicated tests cover both CSRF middlewares, the rate-limiter window, the portal session store matrix, the logout handlers and the session cookie attributes.",
+      "reference": "docs/roadmap/findings.json#GM-IDN-06",
       "runtime_owner": [
-        "src/Administrator/Http/Middleware",
-        "src/Portal/Http"
+        "src/Administrator/Http/Middleware/AdministratorCsrfMiddleware.php",
+        "src/Portal/Http/Middleware/PortalCsrfMiddleware.php",
+        "src/Identity/Infrastructure/Administration/RedisAuthenticationRateLimiter.php",
+        "src/Portal/Infrastructure/Session/DoctrinePortalSessionStore.php"
       ],
       "tests": [
         "tests/Unit/Administrator/Http/Middleware/AdministratorCsrfMiddlewareTest.php"
       ],
-      "artifacts": [
-        ".github/workflows/ci.yml#PHP 8.5 / MariaDB",
-        ".github/workflows/ci.yml#PHP 8.5 / MySQL",
-        ".github/workflows/ci.yml#PHP 8.5 / PostgreSQL"
+      "workflows": [
+        ".github/workflows/ci.yml#database"
       ],
+      "artifacts": [],
       "decision": "ADR 0021",
-      "state": "open",
-      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
+      "state": "pending-integration",
+      "track": "pr-152",
+      "branches": [
+        "agent/security"
+      ],
+      "branch_evidence": [
+        "tests/Unit/Portal/Http/Middleware/PortalCsrfMiddlewareTest.php",
+        "tests/Unit/Identity/Infrastructure/Administration/RedisAuthenticationRateLimiterTest.php",
+        "tests/Unit/Portal/Infrastructure/Session/DoctrinePortalSessionStoreTest.php",
+        "tests/Unit/Administrator/Http/Handler/AdministratorLogoutHandlerTest.php",
+        "tests/Unit/Portal/Http/PortalLogoutHandlerTest.php",
+        "tests/Functional/Http/SessionCookiePostureTest.php",
+        "tests/Integration/Identity/AuthenticationRateLimitWindowIntegrationTest.php"
+      ],
+      "outstanding": "Flips when agent/security lands.",
+      "gate_b_criteria": [
+        1
+      ],
+      "packages": [
+        "P7-C"
+      ]
     },
     {
       "id": "GM-AUD-08",
-      "requirement": "Audit metadata is redacted at write time by a runtime guard.",
+      "kind": "finding",
+      "phase": "7",
+      "requirement": "Audit metadata is redacted by a runtime guard before storage and every writer's metadata keys are held against the credential denylist.",
+      "reference": "docs/roadmap/findings.json#GM-AUD-08",
+      "runtime_owner": [
+        "src/Audit/Infrastructure/Persistence/DoctrineAuditRecorder.php"
+      ],
+      "tests": [
+        "tests/Integration/Audit/AuditTamperEvidenceTest.php"
+      ],
+      "workflows": [
+        ".github/workflows/ci.yml#database"
+      ],
+      "artifacts": [],
+      "decision": "ADR 0021",
+      "state": "pending-integration",
+      "track": "pr-152",
+      "branches": [
+        "agent/security"
+      ],
+      "branch_evidence": [
+        "tests/Architecture/AuditMetadataWriterPolicyTest.php"
+      ],
+      "outstanding": "The head applies the audit package's redaction policy before persistence and digest; agent/security pins every writer's metadata keys against the denylist. Flips when agent/security lands.",
       "gate_b_criteria": [
         1
       ],
-      "runtime_owner": [
-        "src/Audit"
-      ],
-      "tests": [
-        "tests/Unit/Audit"
-      ],
-      "artifacts": [
-        ".github/workflows/ci.yml#PHP 8.5 / MariaDB",
-        ".github/workflows/ci.yml#PHP 8.5 / MySQL",
-        ".github/workflows/ci.yml#PHP 8.5 / PostgreSQL"
-      ],
-      "decision": "ADR 0021",
-      "state": "open",
-      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
+      "packages": [
+        "P7-C"
+      ]
     },
     {
       "id": "GM-SUP-08",
-      "requirement": "The content-security policy carries no inline style allowance beyond a named, owned residual.",
-      "gate_b_criteria": [
-        1
-      ],
+      "kind": "finding",
+      "phase": "7",
+      "requirement": "The content-security policy carries no inline style allowance on any response.",
+      "reference": "docs/roadmap/findings.json#GM-SUP-08",
       "runtime_owner": [
         "src/Http/Security/SecurityHeaders.php"
       ],
       "tests": [
-        "tests/Unit/Http"
+        "tests/Unit/Http/Security/SecurityHeadersTest.php"
       ],
-      "artifacts": [
-        ".github/workflows/ci.yml#PHP 8.5 / MariaDB",
-        ".github/workflows/ci.yml#PHP 8.5 / MySQL",
-        ".github/workflows/ci.yml#PHP 8.5 / PostgreSQL"
+      "workflows": [
+        ".github/workflows/ci.yml#database",
+        ".github/workflows/ci.yml#browser"
       ],
+      "artifacts": [],
       "decision": "ADR 0021",
-      "state": "open",
-      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
-    },
-    {
-      "id": "GM-OBS-05",
-      "requirement": "Trace-context propagation is stated truthfully and tracing is decided, not implied.",
+      "state": "pending-integration",
+      "track": "pr-152",
+      "branches": [
+        "agent/security"
+      ],
+      "branch_evidence": [
+        "src/Http/Handler/SitePresentationStylesheetHandler.php",
+        "tests/Unit/Http/Handler/SitePresentationStylesheetHandlerTest.php",
+        "tests/Functional/Http/PublicThemeStylesheetTest.php"
+      ],
+      "outstanding": "Flips when agent/security lands.",
       "gate_b_criteria": [
         1
       ],
+      "packages": [
+        "P7-C"
+      ]
+    },
+    {
+      "id": "GM-OBS-05",
+      "kind": "finding",
+      "phase": "7",
+      "requirement": "Trace-context propagation is stated truthfully and the exporter question is decided, not implied.",
+      "reference": "docs/roadmap/findings.json#GM-OBS-05",
       "runtime_owner": [
         "config/observability.php",
         "docs/operations/monitoring.md"
@@ -734,132 +2126,1074 @@
       "tests": [
         "tests/Unit/Infrastructure/Observability"
       ],
-      "artifacts": [
-        ".github/workflows/ci.yml#PHP 8.5 / MariaDB",
-        ".github/workflows/ci.yml#PHP 8.5 / MySQL",
-        ".github/workflows/ci.yml#PHP 8.5 / PostgreSQL"
+      "workflows": [
+        ".github/workflows/ci.yml#database"
       ],
-      "decision": "ADR 0021",
-      "state": "open",
-      "outstanding": "In flight in this pull request; the entry moves to delivered with its tests when the increment lands."
+      "artifacts": [],
+      "decision": "ADR 0022, ADR 0021",
+      "state": "pending-integration",
+      "track": "pr-152",
+      "branches": [
+        "agent/security"
+      ],
+      "branch_evidence": [
+        "docs/roadmap/decisions/0022-trace-propagation-without-an-exporter.md"
+      ],
+      "outstanding": "agent/security records ADR 0022: propagation without an exporter, stated as such. Flips when agent/security lands.",
+      "gate_b_criteria": [],
+      "packages": [
+        "P7-D"
+      ]
     },
     {
-      "id": "GB-1",
-      "requirement": "No repository-owned critical or high finding remains open; conditional and external risks carry an owner and a review date.",
+      "id": "V2-UX-002",
+      "kind": "finding",
+      "phase": "7",
+      "requirement": "Saving a role's dashboard preferences keeps widgets outside the editor's own visibility and discloses them without their details.",
+      "reference": "docs/roadmap/findings.json#V2-UX-002",
+      "runtime_owner": [
+        "src/Presentation/Application/Dashboard/DashboardPreferenceFormPresenter.php",
+        "src/Application/Presentation/Dashboard/DashboardPreferenceService.php"
+      ],
+      "tests": [
+        "tests/Unit/Presentation/Application/Dashboard/DashboardPreferenceFormPresenterTest.php"
+      ],
+      "workflows": [
+        ".github/workflows/ci.yml#database"
+      ],
+      "artifacts": [],
+      "decision": "ADR 0021",
+      "state": "pending-integration",
+      "track": "pr-152",
+      "branches": [
+        "agent/security"
+      ],
+      "branch_evidence": [
+        "tests/Unit/Application/Presentation/Dashboard/DashboardPreferenceServiceTest.php",
+        "tests/Unit/Administrator/Http/Handler/AdministratorDashboardPreferencesHandlerTest.php"
+      ],
+      "outstanding": "The head renders the out-of-visibility disclosure; agent/security keeps those widgets when the form is saved. Flips when agent/security lands.",
+      "gate_b_criteria": [
+        7
+      ],
+      "packages": []
+    },
+    {
+      "id": "V2-UX-003",
+      "kind": "finding",
+      "phase": "7",
+      "requirement": "Immutable and closed-period records render read-only affordances with the refusal's wording, and the definition editor declares immutable states.",
+      "reference": "docs/roadmap/findings.json#V2-UX-003",
+      "runtime_owner": [
+        "src/BusinessSurface/Delivery/Browser/GeneratedBusinessBrowserController.php",
+        "src/BusinessDefinition/Administrator/BusinessDefinitionFormMapper.php"
+      ],
+      "tests": [
+        "tests/Unit/BusinessSurface"
+      ],
+      "workflows": [
+        ".github/workflows/ci.yml#database",
+        ".github/workflows/ci.yml#browser"
+      ],
+      "artifacts": [],
+      "decision": "ADR 0021",
+      "state": "pending-integration",
+      "track": "pr-152",
+      "branches": [
+        "agent/security"
+      ],
+      "branch_evidence": [
+        "tests/Integration/BusinessSurface/GeneratedRecordLockIntegrationTest.php",
+        "tests/Browser/record-lock.spec.ts",
+        "tests/Unit/BusinessDefinition/Administrator/BusinessDefinitionFormMapperTest.php"
+      ],
+      "outstanding": "Flips when agent/security lands.",
+      "gate_b_criteria": [
+        7
+      ],
+      "packages": []
+    },
+    {
+      "id": "GM-IDN-04",
+      "kind": "finding",
+      "phase": "7",
+      "requirement": "Administrator sign-in is protected against login request forgery.",
+      "reference": "docs/roadmap/README.md#phase-7--production-qualification-and-vertical-neutral-proof",
+      "runtime_owner": [
+        "src/Administrator/Http/Handler/AdministratorLoginHandler.php"
+      ],
+      "tests": [
+        "tests/Unit/Administrator/Http/Handler/AdministratorLoginHandlerTest.php",
+        "tests/Integration/Identity/AccessControlIntegrationTest.php"
+      ],
+      "workflows": [
+        ".github/workflows/ci.yml#database"
+      ],
+      "artifacts": [],
+      "decision": "ADR 0021",
+      "state": "delivered",
+      "track": "pr-152",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": null,
       "gate_b_criteria": [
         1
       ],
+      "packages": [
+        "P7-C"
+      ]
+    },
+    {
+      "id": "GM-IDN-05",
+      "kind": "finding",
+      "phase": "7",
+      "requirement": "Browser session stores enforce a configurable idle expiry beside absolute expiry and the production HTTPS posture.",
+      "reference": "docs/roadmap/README.md#phase-7--production-qualification-and-vertical-neutral-proof",
+      "runtime_owner": [
+        "src/Identity/Infrastructure/Administration/DoctrineAdministratorSessionStore.php",
+        "src/Portal/Infrastructure/Session/DoctrinePortalSessionStore.php"
+      ],
+      "tests": [
+        "tests/Integration/Identity/SessionIdleExpiryIntegrationTest.php"
+      ],
+      "workflows": [
+        ".github/workflows/ci.yml#database"
+      ],
+      "artifacts": [],
+      "decision": "ADR 0021",
+      "state": "delivered",
+      "track": "pr-152",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": null,
+      "gate_b_criteria": [
+        1
+      ],
+      "packages": [
+        "P7-C"
+      ]
+    },
+    {
+      "id": "GM-IDN-07",
+      "kind": "finding",
+      "phase": "7",
+      "requirement": "Ordinary administrator and portal users replace their own password through CSRF-protected account pages.",
+      "reference": "docs/roadmap/README.md#phase-7--production-qualification-and-vertical-neutral-proof",
+      "runtime_owner": [
+        "src/Administrator/Http/Handler/AdministratorAccountHandler.php",
+        "src/Portal/Http/Handler/PortalAccountHandler.php"
+      ],
+      "tests": [
+        "tests/Integration/Identity/AccountSelfServiceIntegrationTest.php"
+      ],
+      "workflows": [
+        ".github/workflows/ci.yml#database"
+      ],
+      "artifacts": [],
+      "decision": "ADR 0021",
+      "state": "delivered",
+      "track": "pr-152",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": null,
+      "gate_b_criteria": [
+        1
+      ],
+      "packages": [
+        "P7-C"
+      ]
+    },
+    {
+      "id": "V2-UX-001",
+      "kind": "finding",
+      "phase": "7",
+      "requirement": "Workflows complete the five archetype task journeys with task-based browser, accessibility, keyboard, visual and locale evidence.",
+      "reference": "docs/roadmap/findings.json#V2-UX-001",
+      "runtime_owner": [
+        "tests/Browser"
+      ],
+      "tests": [
+        "tests/Browser/interface-standard.spec.ts",
+        "tests/Browser/administrator.spec.ts",
+        "tests/Browser/portal.spec.ts"
+      ],
+      "workflows": [
+        ".github/workflows/ci.yml#browser",
+        ".github/workflows/nightly.yml#browser"
+      ],
+      "artifacts": [
+        ".github/workflows/ci.yml#browser-evidence-${{ matrix.database.driver }}",
+        ".github/workflows/nightly.yml#nightly-browser-evidence-${{ matrix.database.driver }}"
+      ],
+      "decision": "ADR 0021",
+      "state": "open",
+      "track": "pr-152",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "No workflow runs the five archetype task journeys yet, and three of them rely on vertical fixtures the Point 5 proof portfolio builds. The KIS programme's P6-007 and Gate F wait on the same evidence; ADR 0021 replaces their named human reviewers with independent review and workflow evidence, and the merge accepts.",
+      "gate_b_criteria": [
+        7
+      ],
+      "packages": [
+        "P7-E"
+      ]
+    },
+    {
+      "id": "V2-QA-014",
+      "kind": "finding",
+      "phase": "7",
+      "requirement": "A live appearance switch repaints every themed surface on each supported engine, proven by the WebKit workflow journey.",
+      "reference": "docs/roadmap/findings.json#V2-QA-014",
+      "runtime_owner": [
+        "assets/interface-standard/appearance.ts",
+        "assets/administrator/styles.css",
+        "assets/portal/styles.css"
+      ],
+      "tests": [
+        "tests/Browser/nightly-browser-breadth.spec.ts",
+        "tests/Browser/interface-standard.spec.ts"
+      ],
+      "workflows": [
+        ".github/workflows/nightly.yml#browser",
+        ".github/workflows/ci.yml#browser"
+      ],
+      "artifacts": [
+        ".github/workflows/nightly.yml#nightly-browser-evidence-${{ matrix.database.driver }}"
+      ],
+      "decision": "ADR 0021",
+      "state": "pending-integration",
+      "track": "pr-152",
+      "branches": [
+        "agent/browser"
+      ],
+      "branch_evidence": [
+        "assets/administrator/styles.css",
+        "assets/portal/styles.css",
+        "tests/Browser/nightly-browser-breadth.spec.ts"
+      ],
+      "outstanding": "The head mirrors the preferred appearance onto a root attribute so WebKit repaints backgrounds on a live switch. agent/browser names the scheme on every element so inherited text colour re-resolves too. Flips when that branch lands and the nightly WebKit breadth job passes on it; WebKit results are reported as WebKit evidence, never as native Safari.",
+      "gate_b_criteria": [
+        7
+      ],
+      "packages": [
+        "P7-E"
+      ]
+    },
+    {
+      "id": "GM-SUP-05",
+      "kind": "finding",
+      "phase": "7",
+      "requirement": "Untrusted extension code executes out of process with explicitly granted filesystem, network and database authority.",
+      "reference": "docs/roadmap/findings.json#GM-SUP-05",
+      "runtime_owner": [
+        "src/Extension/Runtime/RestrictedExtensionContainer.php",
+        "docs/architecture/extensions.md"
+      ],
+      "tests": [
+        "tests/Architecture/ExtensionTrustPostureTest.php"
+      ],
+      "workflows": [
+        ".github/workflows/ci.yml#database"
+      ],
+      "artifacts": [],
+      "decision": "ADR 0021",
+      "state": "open",
+      "track": "point-5",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "Point 5 track: needs a shipped runtime. Until then every surface states that installing an extension trusts its publisher with the application process.",
+      "gate_b_criteria": [],
+      "packages": [
+        "P7-C"
+      ]
+    },
+    {
+      "id": "S-E",
+      "kind": "package",
+      "phase": "S",
+      "requirement": "The media port, resource discovery and hardened external-source fetcher agree with the published policy vectors.",
+      "reference": "docs/roadmap/README.md#phase-s--studio-contextual-content-authoring-integration",
+      "runtime_owner": [
+        "src/Studio/Application/Media",
+        "src/Studio/Application/Host/StudioResourceHostPort.php"
+      ],
+      "tests": [
+        "tests/Unit/Studio/Domain/Media/StudioMediaPolicyVectorTest.php",
+        "tests/Unit/Studio/Application/Media/StudioExternalMediaFetcherTest.php",
+        "tests/Integration/Studio/StudioMediaPersistenceTest.php"
+      ],
+      "workflows": [
+        ".github/workflows/ci.yml#database"
+      ],
+      "artifacts": [],
+      "decision": "D16, ADR 0014, ADR 0020",
+      "state": "pending-integration",
+      "track": "pr-152",
+      "branches": [
+        "agent/studio"
+      ],
+      "branch_evidence": [
+        "tests/Unit/Studio/Application/Media/StudioExternalMediaFetcherTest.php"
+      ],
+      "outstanding": "The head carries the media port, policy-vector replay and hardened fetcher; agent/studio proves the fetcher refuses rebinding and never discloses a candidate address. Flips when agent/studio lands.",
+      "gate_b_criteria": [
+        12
+      ],
+      "findings": [
+        "V2-STU-005"
+      ]
+    },
+    {
+      "id": "S-F",
+      "kind": "package",
+      "phase": "S",
+      "requirement": "Authenticated, origin-pinned, replay-resistant preview renders unpublished composition through the published path.",
+      "reference": "docs/roadmap/README.md#phase-s--studio-contextual-content-authoring-integration",
+      "runtime_owner": [
+        "src/Studio/Application/Preview"
+      ],
+      "tests": [
+        "tests/Unit/Administrator/Http/StudioPreviewHttpTransportTest.php",
+        "tests/Integration/Studio/StudioPreviewPersistenceTest.php"
+      ],
+      "workflows": [
+        ".github/workflows/ci.yml#database",
+        ".github/workflows/ci.yml#browser"
+      ],
+      "artifacts": [
+        ".github/workflows/ci.yml#browser-evidence-${{ matrix.database.driver }}"
+      ],
+      "decision": "D16, ADR 0017, ADR 0020",
+      "state": "pending-integration",
+      "track": "pr-152",
+      "branches": [
+        "agent/studio"
+      ],
+      "branch_evidence": [
+        "tests/Unit/Studio/Application/Preview/ContentStudioPreviewBindingSourceTest.php",
+        "tests/Browser/studio-authoring.spec.ts"
+      ],
+      "outstanding": "agent/studio mounts the authenticated preview beside the contextual shell and resolves the saved item's own values behind the opaque context. The pinned Studio release cannot stage a live draft, so preview shows accepted revisions. Flips when agent/studio lands.",
+      "gate_b_criteria": [
+        12
+      ],
+      "findings": [
+        "V2-STU-006"
+      ]
+    },
+    {
+      "id": "S-G",
+      "kind": "package",
+      "phase": "S",
+      "requirement": "Studio is contextual Content authoring and the packaged App proves every step of STUDIO-PROD-015 with no production Node.js or npm.",
+      "reference": "docs/roadmap/README.md#phase-s--studio-contextual-content-authoring-integration",
+      "runtime_owner": [
+        "src/Studio/Application/Authoring/ContentStudioAuthoringService.php"
+      ],
+      "tests": [
+        "tests/Integration/Studio/ContentStudioAuthoringJourneyIntegrationTest.php",
+        "tests/Browser/studio-authoring.spec.ts",
+        "tests/Architecture/StudioContextualAuthoringLaunchBoundaryTest.php"
+      ],
+      "workflows": [
+        ".github/workflows/ci.yml#database",
+        ".github/workflows/ci.yml#browser",
+        ".github/workflows/nightly.yml#browser"
+      ],
+      "artifacts": [
+        ".github/workflows/ci.yml#browser-evidence-${{ matrix.database.driver }}",
+        ".github/workflows/nightly.yml#nightly-browser-evidence-${{ matrix.database.driver }}"
+      ],
+      "decision": "D16, ADR 0020, ADR 0021",
+      "state": "open",
+      "track": "pr-152",
+      "branches": [
+        "agent/studio"
+      ],
+      "branch_evidence": [
+        "tests/Architecture/StudioProductionRuntimeTest.php",
+        "tests/Browser/studio-authoring.spec.ts",
+        "tests/Integration/Studio/ContentStudioAuthoringJourneyIntegrationTest.php"
+      ],
+      "outstanding": "agent/studio automates the contextual journey and refuses a production Node.js requirement. It records as open: extension-owned targets (STUDIO-PROD-008), standalone dual mounting (STUDIO-PROD-015 steps 1 to 3), extension lifecycle in the contextual shell (STUDIO-PROD-009) and the Studio 0.1.0-beta.3 limits that need a Studio release re-pinned by Producer; no such Producer release exists, so the pin stays.",
+      "gate_b_criteria": [
+        12
+      ],
+      "findings": [
+        "V2-STU-007"
+      ]
+    },
+    {
+      "id": "V2-STU-005",
+      "kind": "finding",
+      "phase": "S",
+      "requirement": "The media port and the external-source host obligations the composition contract names are implemented and tested.",
+      "reference": "docs/roadmap/findings.json#V2-STU-005",
+      "runtime_owner": [
+        "src/Studio/Application/Media"
+      ],
+      "tests": [
+        "tests/Unit/Studio/Domain/Media/StudioMediaPolicyVectorTest.php",
+        "tests/Unit/Studio/Application/Media/StudioExternalMediaFetcherTest.php"
+      ],
+      "workflows": [
+        ".github/workflows/ci.yml#database"
+      ],
+      "artifacts": [],
+      "decision": "D16, ADR 0014",
+      "state": "pending-integration",
+      "track": "pr-152",
+      "branches": [
+        "agent/studio"
+      ],
+      "branch_evidence": [
+        "tests/Unit/Studio/Application/Media/StudioExternalMediaFetcherTest.php"
+      ],
+      "outstanding": "Flips with S-E when agent/studio lands.",
+      "gate_b_criteria": [
+        1,
+        12
+      ],
+      "packages": [
+        "S-E"
+      ]
+    },
+    {
+      "id": "V2-STU-006",
+      "kind": "finding",
+      "phase": "S",
+      "requirement": "An authenticated preview endpoint renders unpublished composition without exposing it.",
+      "reference": "docs/roadmap/findings.json#V2-STU-006",
+      "runtime_owner": [
+        "src/Studio/Application/Preview"
+      ],
+      "tests": [
+        "tests/Integration/Studio/StudioPreviewPersistenceTest.php"
+      ],
+      "workflows": [
+        ".github/workflows/ci.yml#database",
+        ".github/workflows/ci.yml#browser"
+      ],
+      "artifacts": [
+        ".github/workflows/ci.yml#browser-evidence-${{ matrix.database.driver }}"
+      ],
+      "decision": "D16, ADR 0017",
+      "state": "pending-integration",
+      "track": "pr-152",
+      "branches": [
+        "agent/studio"
+      ],
+      "branch_evidence": [
+        "tests/Unit/Studio/Application/Preview/ContentStudioPreviewBindingSourceTest.php"
+      ],
+      "outstanding": "Flips with S-F when agent/studio lands.",
+      "gate_b_criteria": [
+        1,
+        12
+      ],
+      "packages": [
+        "S-F"
+      ]
+    },
+    {
+      "id": "V2-STU-007",
+      "kind": "finding",
+      "phase": "S",
+      "requirement": "Studio is contextual Content authoring, not a separate Blueprint-only model-version surface.",
+      "reference": "docs/roadmap/findings.json#V2-STU-007",
+      "runtime_owner": [
+        "src/Studio/Application/Authoring/ContentStudioAuthoringService.php"
+      ],
+      "tests": [
+        "tests/Integration/Studio/ContentStudioAuthoringJourneyIntegrationTest.php",
+        "tests/Browser/studio-authoring.spec.ts"
+      ],
+      "workflows": [
+        ".github/workflows/ci.yml#database",
+        ".github/workflows/ci.yml#browser"
+      ],
+      "artifacts": [
+        ".github/workflows/ci.yml#browser-evidence-${{ matrix.database.driver }}"
+      ],
+      "decision": "D16, ADR 0020",
+      "state": "open",
+      "track": "pr-152",
+      "branches": [
+        "agent/studio"
+      ],
+      "branch_evidence": [
+        "tests/Architecture/StudioProductionRuntimeTest.php"
+      ],
+      "outstanding": "Stays open with S-G after agent/studio lands: extension-owned targets, standalone dual mounting, extension lifecycle in the contextual shell and the pinned-release limits remain.",
+      "gate_b_criteria": [
+        1,
+        12
+      ],
+      "packages": [
+        "S-G"
+      ]
+    },
+    {
+      "id": "MACHINE-STUDIO-PARITY",
+      "kind": "requirement",
+      "phase": "S",
+      "requirement": "Every Studio authoring operation has a REST, CLI and MCP equivalent with the same permissions, revisions, audit and refusals.",
+      "reference": "docs/architecture/delivery.md#shared-use-cases",
+      "runtime_owner": [
+        "src/Studio/Application/Authoring/ContentStudioAuthoringService.php",
+        "src/Delivery/Http/Api",
+        "src/Delivery/Console",
+        "src/Infrastructure/Mcp"
+      ],
+      "tests": [
+        "tests/Functional/Http/RestMachineContractParityTest.php",
+        "tests/Integration/Mcp/McpProtocolContractIntegrationTest.php"
+      ],
+      "workflows": [
+        ".github/workflows/ci.yml#database"
+      ],
+      "artifacts": [],
+      "decision": "ADR 0020, ADR 0021",
+      "state": "pending-integration",
+      "track": "pr-152",
+      "branches": [
+        "agent/machine"
+      ],
+      "branch_evidence": [
+        "tests/Integration/Studio/StudioMachineAuthoringEquivalenceIntegrationTest.php",
+        "tests/Functional/Http/StudioAuthoringMachineParityTest.php",
+        "docs/machine-contract/cli-v2.json",
+        "docs/machine-contract/mcp-v2.json"
+      ],
+      "outstanding": "agent/machine serves the authoring operations through REST generation 1.1.0, CLI generation two and mcp-v2, each over credential-bound authoring sessions, with an equivalence test through all three surfaces and a parity test requiring a route, action and tool per browser operation. agent/parity carries the same commits. Flips when agent/machine lands.",
+      "gate_b_criteria": [
+        12
+      ]
+    },
+    {
+      "id": "V2-ARC-002",
+      "kind": "finding",
+      "phase": "M",
+      "requirement": "BusinessRecordService's remaining use cases move to coherent collaborators without changing its public behaviour.",
+      "reference": "docs/roadmap/findings.json#V2-ARC-002",
+      "runtime_owner": [
+        "src/BusinessRecord/Application/BusinessRecordService.php"
+      ],
+      "tests": [
+        "tests/Functional/BusinessSurface/GeneratedBusinessAdapterParityTest.php"
+      ],
+      "workflows": [
+        ".github/workflows/ci.yml#database"
+      ],
+      "artifacts": [],
+      "decision": "D5",
+      "state": "open",
+      "track": "maintainability",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "Lane M: taken only when a measured maintenance problem justifies a seam; blocks no gate.",
+      "gate_b_criteria": [],
+      "packages": []
+    },
+    {
+      "id": "V2-QA-010",
+      "kind": "finding",
+      "phase": "M",
+      "requirement": "The legacy test-documentation baseline reaches zero entries while the gate keeps refusing new debt.",
+      "reference": "docs/roadmap/findings.json#V2-QA-010",
+      "runtime_owner": [
+        "tools/verify-docblocks.php",
+        "docs/quality/test-docblock-baseline.json"
+      ],
+      "tests": [
+        "tests/Unit/DocumentationBaseline/DocumentationBaselineGateTest.php"
+      ],
+      "workflows": [
+        ".github/workflows/ci.yml#quality"
+      ],
+      "artifacts": [],
+      "decision": "D5",
+      "state": "open",
+      "track": "maintainability",
+      "branches": [
+        "agent/scale",
+        "agent/security"
+      ],
+      "branch_evidence": [],
+      "outstanding": "The gate is enforced. agent/scale and agent/security each retire baseline entries for the tests they document; the rest of the burn-down remains Lane M work.",
+      "gate_b_criteria": [],
+      "packages": []
+    },
+    {
+      "id": "V3-NC-001",
+      "kind": "finding",
+      "phase": "N",
+      "requirement": "Native application sign-in through the authentication link, under a versioned public contract.",
+      "reference": "docs/roadmap/findings.json#V3-NC-001",
+      "runtime_owner": [
+        "src/Identity"
+      ],
+      "tests": [],
+      "workflows": [],
+      "artifacts": [],
+      "decision": "D17, ADR 0009",
+      "state": "open",
+      "track": "version-3",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "Version 3 seed: implementation enters only when the Version 3 programme opens; Version 2 changes to identity, sessions and tokens must not foreclose it.",
+      "gate_b_criteria": [],
+      "packages": []
+    },
+    {
+      "id": "V3-NC-002",
+      "kind": "finding",
+      "phase": "N",
+      "requirement": "A pre-authentication native discovery document for self-hosted deployment bootstrap.",
+      "reference": "docs/roadmap/findings.json#V3-NC-002",
+      "runtime_owner": [
+        "src/Http/Handler/ApiIndexHandler.php"
+      ],
+      "tests": [],
+      "workflows": [],
+      "artifacts": [],
+      "decision": "D17, ADR 0009",
+      "state": "open",
+      "track": "version-3",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "Version 3 seed: implementation enters only when the Version 3 programme opens; Version 2 changes to identity, sessions and tokens must not foreclose it.",
+      "gate_b_criteria": [],
+      "packages": []
+    },
+    {
+      "id": "V3-NC-003",
+      "kind": "finding",
+      "phase": "N",
+      "requirement": "A guest arrival lifecycle with its steward notification and mailer prerequisite.",
+      "reference": "docs/roadmap/findings.json#V3-NC-003",
+      "runtime_owner": [
+        "src/Identity"
+      ],
+      "tests": [],
+      "workflows": [],
+      "artifacts": [],
+      "decision": "D17, ADR 0009",
+      "state": "open",
+      "track": "version-3",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "Version 3 seed: implementation enters only when the Version 3 programme opens; Version 2 changes to identity, sessions and tokens must not foreclose it.",
+      "gate_b_criteria": [],
+      "packages": []
+    },
+    {
+      "id": "V3-NC-004",
+      "kind": "finding",
+      "phase": "N",
+      "requirement": "A single-use exchange from a native credential to an authenticated web session.",
+      "reference": "docs/roadmap/findings.json#V3-NC-004",
+      "runtime_owner": [
+        "src/Http/Middleware/BearerAuthenticationMiddleware.php"
+      ],
+      "tests": [],
+      "workflows": [],
+      "artifacts": [],
+      "decision": "D17, ADR 0009",
+      "state": "open",
+      "track": "version-3",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "Version 3 seed: implementation enters only when the Version 3 programme opens; Version 2 changes to identity, sessions and tokens must not foreclose it.",
+      "gate_b_criteria": [],
+      "packages": []
+    },
+    {
+      "id": "GM-AUD-02",
+      "kind": "finding",
+      "phase": "evidence",
+      "requirement": "Append-only audit storage is enforced by the database where the server grants the privilege, and reported where it refuses.",
+      "reference": "docs/roadmap/findings.json#GM-AUD-02",
+      "runtime_owner": [
+        "src/Audit/Infrastructure/Persistence/AuditAppendOnlyGuard.php"
+      ],
+      "tests": [
+        "tests/Integration/Audit/AuditTamperEvidenceTest.php"
+      ],
+      "workflows": [
+        ".github/workflows/ci.yml#database"
+      ],
+      "artifacts": [],
+      "decision": "ADR 0021",
+      "state": "open",
+      "track": "point-5",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "Conditional residual: a managed service that withholds CREATE TRIGGER leaves no database-level prevention, while tamper evidence holds unconditionally. Gate B criterion 1 needs its owner, detection method, compensating control, remediation path and review date recorded for the release-candidate assessment.",
+      "gate_b_criteria": [
+        1
+      ],
+      "packages": []
+    },
+    {
+      "id": "GB-1",
+      "kind": "gate-b-criterion",
+      "phase": null,
+      "requirement": "No repository-owned critical or high finding is open; every conditional and external risk has an owner, detection method, compensating control, remediation path and review date.",
+      "reference": "docs/roadmap/README.md#gate-b--version-2-enterprise-release",
       "runtime_owner": [
         "docs/roadmap/findings.json"
       ],
       "tests": [
-        "tools/verify-roadmap.php"
+        "tests/Architecture/RoadmapLifecycleTest.php"
       ],
-      "artifacts": [
-        ".github/workflows/ci.yml#Pre-flight record gates"
+      "workflows": [
+        ".github/workflows/ci.yml#preflight",
+        ".github/workflows/ci.yml#quality"
       ],
-      "decision": "ADR 0021",
+      "artifacts": [],
+      "decision": "D2, ADR 0021",
       "state": "open",
-      "outstanding": "Closes when the Phase 5, 6, S and 7 entries above are delivered; GM-AUD-02 and GM-SUP-05 stay conditional with a named owner."
+      "track": "point-5",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "Assessed at the release candidate. Every entry citing criterion 1 must be delivered first, including V2-REL-001 and V2-REL-002 on the Point 5 track and V2-STU-007 behind the pinned Studio release, and every conditional finding needs a named owner and review date; the ledger still records UNASSIGNED. Lane N's V3-NC-001 is a Version 3 seed that Lane N excludes from Gate B evidence.",
+      "gate_b_criteria": [
+        1
+      ]
     },
     {
-      "id": "V2-REL-001",
-      "requirement": "Release artifacts are proven by one exact-SHA build-once chain (P7-G).",
-      "gate_b_criteria": [
-        6
+      "id": "GB-2",
+      "kind": "gate-b-criterion",
+      "phase": null,
+      "requirement": "Concurrent capacity samples and explicitly labelled estimates are published from workflow hardware; an estimate is never a production guarantee.",
+      "reference": "docs/roadmap/README.md#gate-b--version-2-enterprise-release",
+      "runtime_owner": [
+        "tools/perf-concurrent.php",
+        "tools/PerfConcurrentSamples.php"
       ],
+      "tests": [
+        "tests/Unit/Performance/PerfHarnessContractTest.php"
+      ],
+      "workflows": [
+        ".github/workflows/capacity.yml#samples"
+      ],
+      "artifacts": [
+        ".github/workflows/capacity.yml#capacity-samples-${{ matrix.database.driver }}"
+      ],
+      "decision": "D2, ADR 0021",
+      "state": "pending-integration",
+      "track": "pr-152",
+      "branches": [
+        "agent/scale"
+      ],
+      "branch_evidence": [],
+      "outstanding": "Flips with P7-A when agent/scale lands.",
+      "gate_b_criteria": [
+        2
+      ]
+    },
+    {
+      "id": "GB-3",
+      "kind": "gate-b-criterion",
+      "phase": null,
+      "requirement": "Unrelated writes do not serialize on a definition row, commits lock no installation-wide head, fan-out and queue claims scale through batched workers, hot ledgers drain at twice expiry, and monitoring runs no unbudgeted exact count.",
+      "reference": "docs/roadmap/README.md#gate-b--version-2-enterprise-release",
+      "runtime_owner": [
+        "src/BusinessRecord/Infrastructure/Persistence/DoctrineBusinessRecordMutationFence.php",
+        "src/BusinessReporting/Infrastructure/DoctrineProjectionEventSequencer.php",
+        "src/Infrastructure/Automation/DoctrineQueuePermits.php"
+      ],
+      "tests": [
+        "tests/Integration/BusinessRecord/BusinessRecordSharedFenceIntegrationTest.php",
+        "tests/Integration/BusinessIntegration/ProjectionSequencingConcurrencyIntegrationTest.php",
+        "tests/Integration/Automation/QueueWorkerPermitsIntegrationTest.php"
+      ],
+      "workflows": [
+        ".github/workflows/ci.yml#database"
+      ],
+      "artifacts": [
+        ".github/workflows/ci.yml#idempotency-evidence-${{ matrix.database.driver }}"
+      ],
+      "decision": "D2, ADR 0021",
+      "state": "pending-integration",
+      "track": "pr-152",
+      "branches": [
+        "agent/scale"
+      ],
+      "branch_evidence": [],
+      "outstanding": "Flips when P5-A to P5-F and their findings flip with agent/scale.",
+      "gate_b_criteria": [
+        3
+      ]
+    },
+    {
+      "id": "GB-4",
+      "kind": "gate-b-criterion",
+      "phase": null,
+      "requirement": "Point-in-time recovery is proven: coordinates on every engine, replay before and after a chosen transaction, the ordering rule enforced, and the drill run inside the deployed image.",
+      "reference": "docs/roadmap/README.md#gate-b--version-2-enterprise-release",
+      "runtime_owner": [
+        "tools/restore.sh",
+        "tools/recovery-binlog.sh",
+        "tools/recovery-postgres.sh"
+      ],
+      "tests": [
+        "tests/Support/recovery-native-drill.sh",
+        "tests/Unit/Tools/RecoveryToolsTest.php"
+      ],
+      "workflows": [
+        ".github/workflows/recovery.yml#native-recovery",
+        ".github/workflows/recovery.yml#app-http-recovery",
+        ".github/workflows/recovery.yml#recovery-images",
+        ".github/workflows/recovery.yml#recovery-required"
+      ],
+      "artifacts": [
+        ".github/workflows/recovery.yml#recovery-${{ matrix.driver }}",
+        ".github/workflows/recovery.yml#recovery-app-http"
+      ],
+      "decision": "D2, ADR 0021",
+      "state": "pending-integration",
+      "track": "pr-152",
+      "branches": [
+        "agent/recovery"
+      ],
+      "branch_evidence": [],
+      "outstanding": "Flips when P6-A to P6-C and their findings flip with agent/recovery.",
+      "gate_b_criteria": [
+        4
+      ]
+    },
+    {
+      "id": "GB-5",
+      "kind": "gate-b-criterion",
+      "phase": null,
+      "requirement": "Operational diagnostics answer where the system is struggling, within the established cardinality discipline.",
+      "reference": "docs/roadmap/README.md#gate-b--version-2-enterprise-release",
+      "runtime_owner": [
+        "src/Infrastructure/Observability"
+      ],
+      "tests": [],
+      "workflows": [
+        ".github/workflows/ci.yml#database"
+      ],
+      "artifacts": [],
+      "decision": "D2, ADR 0021",
+      "state": "pending-integration",
+      "track": "pr-152",
+      "branches": [
+        "agent/recovery"
+      ],
+      "branch_evidence": [],
+      "outstanding": "Flips with P6-D when agent/recovery lands.",
+      "gate_b_criteria": [
+        5
+      ]
+    },
+    {
+      "id": "GB-6",
+      "kind": "gate-b-criterion",
+      "phase": null,
+      "requirement": "The exact built images, Composer package and archive pass the complete qualification contract and a signed manifest contains every published digest.",
+      "reference": "docs/roadmap/README.md#gate-b--version-2-enterprise-release",
       "runtime_owner": [
         ".github/workflows/release.yml"
       ],
       "tests": [
         "tests/Architecture/ProductionArtifactsTest.php"
       ],
-      "artifacts": [
+      "workflows": [
+        ".github/workflows/release.yml#acceptance",
         ".github/workflows/release.yml#release"
       ],
-      "decision": "ADR 0021",
-      "state": "separate-track",
-      "outstanding": "Separate track by product-owner direction: exact release-artifact qualification and the extension proof portfolio follow this increment."
-    },
-    {
-      "id": "V2-REL-002",
-      "requirement": "The verification pipeline pins its toolchain instead of fetching it at run time (P7-G).",
+      "artifacts": [],
+      "decision": "D2, ADR 0021",
+      "state": "open",
+      "track": "point-5",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "Separate Point 5 track by maintainer decision: exact release-artifact qualification and publication, the extension proof portfolio, optional 24-hour and 72-hour soaks, the independent release-candidate review and the GM-SUP-05 runtime follow this pull request.",
       "gate_b_criteria": [
         6
-      ],
-      "runtime_owner": [
-        ".github/workflows"
-      ],
-      "tests": [
-        "tests/Architecture/ProductionArtifactsTest.php"
-      ],
-      "artifacts": [
-        ".github/workflows/ci.yml#Pre-flight record gates"
-      ],
-      "decision": "ADR 0021",
-      "state": "separate-track",
-      "outstanding": "Separate track by product-owner direction: exact release-artifact qualification and the extension proof portfolio follow this increment."
+      ]
     },
     {
-      "id": "P7-F",
-      "requirement": "The vertical-neutral signed proof portfolio installs, runs and uninstalls on all three engines with no core edit.",
-      "gate_b_criteria": [
-        8
+      "id": "GB-7",
+      "kind": "gate-b-criterion",
+      "phase": null,
+      "requirement": "Automated interface and language evidence is complete; the maintainer's merge is the sole human acceptance, with no manual checklist.",
+      "reference": "docs/roadmap/README.md#gate-b--version-2-enterprise-release",
+      "runtime_owner": [
+        "tests/Browser"
       ],
+      "tests": [
+        "tests/Browser/interface-standard.spec.ts",
+        "tests/Browser/locale-qualification.spec.ts"
+      ],
+      "workflows": [
+        ".github/workflows/ci.yml#browser",
+        ".github/workflows/nightly.yml#browser"
+      ],
+      "artifacts": [
+        ".github/workflows/ci.yml#browser-evidence-${{ matrix.database.driver }}",
+        ".github/workflows/nightly.yml#nightly-browser-evidence-${{ matrix.database.driver }}"
+      ],
+      "decision": "D2, ADR 0021",
+      "state": "open",
+      "track": "pr-152",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "Open until V2-UX-001's archetype task journeys run in a workflow. V2-QA-014, V2-UX-002, V2-UX-003 and V2-LNG-010 flip with agent/browser, agent/security and agent/languages.",
+      "gate_b_criteria": [
+        7
+      ]
+    },
+    {
+      "id": "GB-8",
+      "kind": "gate-b-criterion",
+      "phase": null,
+      "requirement": "The vertical-neutral proof portfolio installs, runs and uninstalls on all three engines with no core edit.",
+      "reference": "docs/roadmap/README.md#gate-b--version-2-enterprise-release",
       "runtime_owner": [
         "examples/extensions"
       ],
       "tests": [
         "tests/Integration/Extension"
       ],
-      "artifacts": [
-        ".github/workflows/ci.yml#PHP 8.5 / MariaDB",
-        ".github/workflows/ci.yml#PHP 8.5 / MySQL",
-        ".github/workflows/ci.yml#PHP 8.5 / PostgreSQL"
+      "workflows": [
+        ".github/workflows/ci.yml#database"
       ],
-      "decision": "ADR 0021",
-      "state": "separate-track",
-      "outstanding": "Separate track by product-owner direction: exact release-artifact qualification and the extension proof portfolio follow this increment."
+      "artifacts": [],
+      "decision": "D2, ADR 0021",
+      "state": "open",
+      "track": "point-5",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "Separate Point 5 track by maintainer decision: exact release-artifact qualification and publication, the extension proof portfolio, optional 24-hour and 72-hour soaks, the independent release-candidate review and the GM-SUP-05 runtime follow this pull request.",
+      "gate_b_criteria": [
+        8
+      ]
     },
     {
-      "id": "P7-I",
+      "id": "GB-9",
+      "kind": "gate-b-criterion",
+      "phase": null,
       "requirement": "An independent review at the release candidate finds no repository-owned critical or high contradiction.",
-      "gate_b_criteria": [
-        9
-      ],
+      "reference": "docs/roadmap/README.md#gate-b--version-2-enterprise-release",
       "runtime_owner": [
         "docs/roadmap/README.md"
       ],
-      "tests": [
-        "tools/verify-roadmap.php"
-      ],
-      "artifacts": [
-        ".github/workflows/ci.yml#Pre-flight record gates"
-      ],
-      "decision": "ADR 0021",
-      "state": "separate-track",
-      "outstanding": "Separate track by product-owner direction: exact release-artifact qualification and the extension proof portfolio follow this increment."
+      "tests": [],
+      "workflows": [],
+      "artifacts": [],
+      "decision": "D2, ADR 0021",
+      "state": "open",
+      "track": "point-5",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "Separate Point 5 track by maintainer decision: exact release-artifact qualification and publication, the extension proof portfolio, optional 24-hour and 72-hour soaks, the independent release-candidate review and the GM-SUP-05 runtime follow this pull request.",
+      "gate_b_criteria": [
+        9
+      ]
     },
     {
-      "id": "GM-SUP-05",
-      "requirement": "Untrusted extension code executes out of process with explicitly granted authority.",
-      "gate_b_criteria": [
-        1
-      ],
+      "id": "GB-10",
+      "kind": "gate-b-criterion",
+      "phase": null,
+      "requirement": "The published envelope states exact units, topology, hardware, versions, dataset, variance and limitations, never 'millions per day'.",
+      "reference": "docs/roadmap/README.md#gate-b--version-2-enterprise-release",
       "runtime_owner": [
-        "src/Extension/Runtime/RestrictedExtensionContainer.php"
+        "tools/perf-concurrent.php",
+        "docs/roadmap/capacity-contract.json"
       ],
       "tests": [
-        "tests/Integration/Extension"
+        "tests/Unit/Performance/PerfHarnessContractTest.php"
+      ],
+      "workflows": [
+        ".github/workflows/capacity.yml#samples"
       ],
       "artifacts": [
-        ".github/workflows/ci.yml#PHP 8.5 / MariaDB",
-        ".github/workflows/ci.yml#PHP 8.5 / MySQL",
-        ".github/workflows/ci.yml#PHP 8.5 / PostgreSQL"
+        ".github/workflows/capacity.yml#capacity-samples-${{ matrix.database.driver }}"
       ],
-      "decision": "ADR 0021",
-      "state": "separate-track",
-      "outstanding": "Needs a shipped sandbox runtime; every surface states that installing an extension trusts its publisher with the process until then."
+      "decision": "D2, ADR 0021",
+      "state": "open",
+      "track": "pr-152",
+      "branches": [
+        "agent/scale"
+      ],
+      "branch_evidence": [],
+      "outstanding": "agent/scale publishes the capacity estimate, topology and storage forecast with their limitations; P0-D's dataset seed and age distribution and P5-I's unmeasured amplification keep the criterion open.",
+      "gate_b_criteria": [
+        10
+      ]
+    },
+    {
+      "id": "GB-11",
+      "kind": "gate-b-criterion",
+      "phase": null,
+      "requirement": "All nine languages ship and each is qualified in its own right, with zero horizontal overflow and zero inaccessible critical control.",
+      "reference": "docs/roadmap/README.md#gate-b--version-2-enterprise-release",
+      "runtime_owner": [
+        "resources/localization/messages"
+      ],
+      "tests": [
+        "tests/Browser/locale-qualification.spec.ts",
+        "tests/Architecture/InterfaceTranslationGateTest.php"
+      ],
+      "workflows": [
+        ".github/workflows/ci.yml#preflight",
+        ".github/workflows/ci.yml#browser",
+        ".github/workflows/nightly.yml#browser"
+      ],
+      "artifacts": [
+        ".github/workflows/ci.yml#browser-evidence-${{ matrix.database.driver }}",
+        ".github/workflows/nightly.yml#nightly-browser-evidence-${{ matrix.database.driver }}"
+      ],
+      "decision": "D2, ADR 0021",
+      "state": "pending-integration",
+      "track": "pr-152",
+      "branches": [
+        "agent/languages",
+        "agent/browser"
+      ],
+      "branch_evidence": [],
+      "outstanding": "Flips with PL-G and V2-LNG-010 when agent/languages and agent/browser land, provided every other landing branch carries the translations of the identifiers it adds.",
+      "gate_b_criteria": [
+        11
+      ]
+    },
+    {
+      "id": "GB-12",
+      "kind": "gate-b-criterion",
+      "phase": null,
+      "requirement": "Studio contextual Content authoring ships and passes STUDIO-PROD-015 through PHP, with zero production Node.js or npm.",
+      "reference": "docs/roadmap/README.md#gate-b--version-2-enterprise-release",
+      "runtime_owner": [
+        "src/Studio/Application/Authoring/ContentStudioAuthoringService.php"
+      ],
+      "tests": [
+        "tests/Integration/Studio/ContentStudioAuthoringJourneyIntegrationTest.php",
+        "tests/Browser/studio-authoring.spec.ts"
+      ],
+      "workflows": [
+        ".github/workflows/ci.yml#database",
+        ".github/workflows/ci.yml#browser"
+      ],
+      "artifacts": [
+        ".github/workflows/ci.yml#browser-evidence-${{ matrix.database.driver }}"
+      ],
+      "decision": "D2, ADR 0021",
+      "state": "open",
+      "track": "pr-152",
+      "branches": [
+        "agent/studio",
+        "agent/machine"
+      ],
+      "branch_evidence": [],
+      "outstanding": "S-E, S-F and the machine parity requirement flip with agent/studio and agent/machine; S-G and V2-STU-007 stay open on the pinned-release limits and the extension-owned targets.",
+      "gate_b_criteria": [
+        12
+      ]
     }
   ]
 }
