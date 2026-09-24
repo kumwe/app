@@ -160,8 +160,12 @@ final readonly class DashboardPreferenceFormPresenter
         $availableShortcuts = [];
         if ($workflowCatalog instanceof DashboardWorkflowCatalog && $workflowPage instanceof DashboardWorkflowPage) {
             $liveWidgets = [...$coreCatalog, ...$workflowCatalog->modelMap()];
-            $widgets = self::liveIdentifiers($widgets, $liveWidgets);
-            $shortcuts = self::identifiers($workflowCatalog->modelsFor($shortcuts));
+            // The editor's visibility is not the role's catalogue. Keep exact stored selections for
+            // role forms; delivery revalidates their authority when saving the optimistic row version.
+            if ($scope !== CustomizationScope::RoleWorkspace) {
+                $widgets = self::liveIdentifiers($widgets, $liveWidgets);
+                $shortcuts = self::identifiers($workflowCatalog->modelsFor($shortcuts));
+            }
             $pageCatalog = [];
             foreach ($workflowPage->candidates as $candidate) {
                 $pageCatalog[$candidate->id] = $candidate;
@@ -174,6 +178,10 @@ final readonly class DashboardPreferenceFormPresenter
                 $workflowCatalog->modelsFor($shortcuts),
                 $pageCatalog,
             ));
+            if ($scope === CustomizationScope::RoleWorkspace) {
+                $availableWidgets = self::retainInvisibleChoices($widgets, $availableWidgets);
+                $availableShortcuts = self::retainInvisibleChoices($shortcuts, $availableShortcuts);
+            }
         }
 
         return [
@@ -193,6 +201,33 @@ final readonly class DashboardPreferenceFormPresenter
             'shortcut_order' => self::orderMap($shortcuts),
             'shortcut_version' => $shortcutVersion,
         ];
+    }
+
+    /**
+     * Keep saved role choices without inventing a title, destination or capability for invisible entries.
+     *
+     * @param   list<string>                $selected   Exact stored identifiers in preference order.
+     * @param   list<array<string, mixed>>  $available  Editor-visible choices for this bounded form.
+     *
+     * @return  list<array<string, mixed>>  Stored choices first, with opaque retained entries clearly marked.
+     *
+     * @since   2.0.0
+     */
+    private static function retainInvisibleChoices(array $selected, array $available): array
+    {
+        $choices = array_column($available, null, 'id');
+        $ordered = [];
+        foreach ($selected as $identifier) {
+            $ordered[$identifier] = $choices[$identifier] ?? [
+                'id' => $identifier,
+                'title' => $identifier,
+                'group' => '',
+                'message_ids' => false,
+                'outside_visibility' => true,
+            ];
+        }
+
+        return array_values($ordered + $choices);
     }
 
     /**

@@ -10,11 +10,12 @@
  * integration suite boots, measures the contract's interactive operation classes, and writes a
  * report that speaks the contract's own vocabulary.
  *
- * Three modes:
+ * Serial modes and a separate concurrent sampling mode:
  *
  *   php tools/perf-harness.php --plan       [--seed=N] [--profile=baseline|enterprise|stretch]
  *   php tools/perf-harness.php --run        [--seed=N] [--profile=...] [--samples=N] [--warmup=N]
  *   php tools/perf-harness.php --breakpoint [--seed=N] [--samples=N]
+ *   php tools/perf-harness.php --concurrent [--workers=1,2,4] [--samples=30] [--warmup=5] [--repeats=3]
  *
  * `--plan` is pure: the same seed always prints byte-identical JSON, which is what makes the dataset
  * reproducible and lets a unit test hold the generator to it. `--run` needs the test database
@@ -33,16 +34,21 @@
  * pair diverges by both the relative tolerance and a material share of its objective, because the
  * phase-2 exit gate asks for a report that is *stable*, not merely produced.
  *
- * Honesty over reach, per the contract's own rules: this harness measures single-worker latency on
- * whatever host runs it, so every report binds the engine, commit, seed and sample counts but claims
- * no absolute-throughput authority ("shared CI runners are never the authority") and no concurrency
- * or contention profile. Hot-plan capture lives in the integration gate
+ * The serial modes measure single-worker latency without a concurrency claim. ADR 0021's concurrent
+ * mode launches independent callers against the shared database and reports overlap, failures, repeated
+ * throughput samples and explicit time extrapolations on the available host. Neither mode qualifies the
+ * entire enterprise envelope. See docs/performance.md. Hot-plan capture lives in the integration gate
  * (tests/Integration/Performance/HotPlanRegressionIntegrationTest.php) where every engine runs it.
  *
  * @since  2.0.0
  */
 
 declare(strict_types=1);
+
+if (in_array('--concurrent', $argv, true)) {
+    require __DIR__ . '/perf-concurrent.php';
+    exit;
+}
 
 $root = dirname(__DIR__);
 $mode = null;
@@ -401,7 +407,7 @@ $binding = static function () use ($root, $connection): array {
         'engine_version' => $engineVersion,
         'php_version' => PHP_VERSION,
         'measured_at' => gmdate('c'),
-        'runner' => 'unqualified host: latency characterisation only, never an absolute-throughput authority',
+        'runner' => 'serial latency characterisation; use --concurrent for sampled throughput under ADR 0021',
     ];
 };
 

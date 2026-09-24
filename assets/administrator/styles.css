@@ -6,7 +6,7 @@
 
 @layer tokens {
   :root {
-    color-scheme: light;
+    color-scheme: light dark;
     --kumwe-font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     --kumwe-font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
     --kumwe-navy-950: #08152a;
@@ -21,28 +21,28 @@
     --kumwe-silver-500: #a3a4a4;
     --kumwe-silver-200: #d7e1e6;
     --kumwe-silver-100: #eaedee;
-    --kumwe-canvas: #f4f7fb;
-    --kumwe-surface: #fff;
-    --kumwe-surface-elevated: #fff;
-    --kumwe-surface-subtle: #eef3f8;
-    --kumwe-surface-hover: #e7edf5;
-    --kumwe-text: #152238;
-    --kumwe-text-muted: #5e6e82;
-    --kumwe-text-subtle: #5a6a7e;
-    --kumwe-border: var(--kumwe-silver-200);
-    --kumwe-border-strong: #bdc9d7;
-    --kumwe-accent: var(--kumwe-blue-600);
-    --kumwe-accent-strong: var(--kumwe-blue-700);
-    --kumwe-accent-soft: #e5f4fb;
-    --kumwe-info: #2563a8;
-    --kumwe-info-soft: #e8f2ff;
-    --kumwe-warning: #8f5d00;
-    --kumwe-warning-soft: #fff3d1;
-    --kumwe-danger: #b3283d;
-    --kumwe-danger-strong: #8e1f31;
-    --kumwe-danger-soft: #ffeaed;
-    --kumwe-success: #147249;
-    --kumwe-success-soft: #e4f6ed;
+    --kumwe-canvas: light-dark(#f4f7fb, #091321);
+    --kumwe-surface: light-dark(#fff, #101d2c);
+    --kumwe-surface-elevated: light-dark(#fff, #142337);
+    --kumwe-surface-subtle: light-dark(#eef3f8, #1b2b3e);
+    --kumwe-surface-hover: light-dark(#e7edf5, #22354b);
+    --kumwe-text: light-dark(#152238, #eef5fb);
+    --kumwe-text-muted: light-dark(#5e6e82, #aebdca);
+    --kumwe-text-subtle: light-dark(#5a6a7e, #8496a7);
+    --kumwe-border: light-dark(var(--kumwe-silver-200), #2a3d52);
+    --kumwe-border-strong: light-dark(#bdc9d7, #43596f);
+    --kumwe-accent: light-dark(var(--kumwe-blue-600), var(--kumwe-blue-300));
+    --kumwe-accent-strong: light-dark(var(--kumwe-blue-700), var(--kumwe-blue-200));
+    --kumwe-accent-soft: light-dark(#e5f4fb, #17374e);
+    --kumwe-info: light-dark(#2563a8, #8fc4ff);
+    --kumwe-info-soft: light-dark(#e8f2ff, #17304b);
+    --kumwe-warning: light-dark(#8f5d00, #f0be5a);
+    --kumwe-warning-soft: light-dark(#fff3d1, #3b301e);
+    --kumwe-danger: light-dark(#b3283d, #ff8999);
+    --kumwe-danger-strong: light-dark(#8e1f31, #ffadba);
+    --kumwe-danger-soft: light-dark(#ffeaed, #49242d);
+    --kumwe-success: light-dark(#147249, #6dd6a5);
+    --kumwe-success-soft: light-dark(#e4f6ed, #183c30);
     --kumwe-radius-sm: .45rem;
     --kumwe-radius-md: .7rem;
     --kumwe-radius-lg: 1rem;
@@ -56,31 +56,9 @@
     --kumwe-focus: 0 0 0 3px rgb(7 143 215 / .28);
   }
 
+  /* Theme colours resolve at each consuming property when the appearance changes. */
   @media (prefers-color-scheme: dark) {
     :root {
-      color-scheme: dark;
-      --kumwe-canvas: #091321;
-      --kumwe-surface: #101d2c;
-      --kumwe-surface-elevated: #142337;
-      --kumwe-surface-subtle: #1b2b3e;
-      --kumwe-surface-hover: #22354b;
-      --kumwe-text: #eef5fb;
-      --kumwe-text-muted: #aebdca;
-      --kumwe-text-subtle: #8496a7;
-      --kumwe-border: #2a3d52;
-      --kumwe-border-strong: #43596f;
-      --kumwe-accent: var(--kumwe-blue-300);
-      --kumwe-accent-strong: var(--kumwe-blue-200);
-      --kumwe-accent-soft: #17374e;
-      --kumwe-info: #8fc4ff;
-      --kumwe-info-soft: #17304b;
-      --kumwe-warning: #f0be5a;
-      --kumwe-warning-soft: #3b301e;
-      --kumwe-danger: #ff8999;
-      --kumwe-danger-strong: #ffadba;
-      --kumwe-danger-soft: #49242d;
-      --kumwe-success: #6dd6a5;
-      --kumwe-success-soft: #183c30;
       --kumwe-shadow-sm: 0 1px 2px rgb(0 0 0 / .2), 0 3px 12px rgb(0 0 0 / .12);
       --kumwe-shadow-md: 0 14px 38px rgb(0 0 0 / .25);
     }

@@ -137,6 +137,14 @@
         <source>What you have now</source>
       </segment>
     </unit>
+    <unit id="core.interface_standard.dashboard.outside_visibility">
+      <notes>
+        <note category="context">Stored role choice outside the preference editor's current visibility.</note>
+      </notes>
+      <segment>
+        <source>Outside your visibility. This saved choice is kept when you save.</source>
+      </segment>
+    </unit>
   </file>
   <file id="core-interface-standard">
     <unit id="core.interface_standard.drawer.close">

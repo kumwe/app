@@ -8,6 +8,11 @@ use Kumwe\App\Tools\PerfBreakpointStability;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 
+use function Kumwe\App\Tools\Performance\dailyScenario;
+use function Kumwe\App\Tools\Performance\observedOverlap;
+use function Kumwe\App\Tools\Performance\runWorkers;
+use function Kumwe\App\Tools\Performance\sampleStatistics;
+
 /**
  * Holds the performance harness to the three promises its documents rest on.
  *
@@ -22,6 +27,19 @@ use PHPUnit\Framework\TestCase;
 #[CoversNothing]
 final class PerfHarnessContractTest extends TestCase
 {
+    /**
+     * Load the development-only sampling helpers without expanding production autoload ownership.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+        require_once dirname(__DIR__, 3) . '/tools/PerfConcurrentSamples.php';
+    }
+
     /**
      * One seed always derives one plan, byte for byte, and another seed derives another.
      *
@@ -57,7 +75,7 @@ final class PerfHarnessContractTest extends TestCase
             true,
         );
         self::assertIsArray($schema);
-        foreach (['report', 'breakpoint'] as $section) {
+        foreach (['report', 'breakpoint', 'concurrent'] as $section) {
             self::assertIsArray($schema[$section] ?? null, sprintf('Section "%s" is missing.', $section));
             $required = $schema[$section]['required'] ?? null;
             self::assertIsArray($required);
@@ -81,6 +99,140 @@ final class PerfHarnessContractTest extends TestCase
             $schema['breakpoint']['required'],
             'The exit gate asks for a stable breakpoint report, so the document must say whether it is.',
         );
+    }
+
+    /**
+     * Empty and singleton observations cannot manufacture zero latency or a variance estimate.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testSamplingStatisticsPreserveUnknownsAndUseSampleVariance(): void
+    {
+        self::assertNull(sampleStatistics([])['mean']);
+        self::assertNull(sampleStatistics([10.0])['sample_standard_deviation']);
+        $stats = sampleStatistics([10.0, 20.0, 30.0]);
+        self::assertSame(20.0, $stats['mean']);
+        self::assertSame(10.0, $stats['sample_standard_deviation']);
+        self::assertSame(30.0, $stats['p95']);
+    }
+
+    /**
+     * Sequential calls cannot satisfy the concurrency gate merely because many workers were requested.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testOnlyOverlappingCallIntervalsCountAsConcurrent(): void
+    {
+        self::assertSame(1, observedOverlap([
+            ['start_ns' => 10, 'end_ns' => 20],
+            ['start_ns' => 20, 'end_ns' => 30],
+        ]));
+        self::assertSame(2, observedOverlap([
+            ['start_ns' => 10, 'end_ns' => 21],
+            ['start_ns' => 20, 'end_ns' => 30],
+        ]));
+        self::assertSame(0, observedOverlap([]));
+    }
+
+    /**
+     * A daily scenario scales observed time only and carries no production or confidence claim.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testDailyEstimateKeepsMeasuredRepeatVariationSeparateFromCapacity(): void
+    {
+        $scenario = dailyScenario([10.0, 20.0, 30.0], 5000000);
+        self::assertSame(1728000.0, $scenario['estimated_lbt_per_day']);
+        self::assertSame([864000.0, 2592000.0], $scenario['observed_rate_range_scaled_to_day']);
+        self::assertNull($scenario['supported_production_capacity']);
+        self::assertNull($scenario['confidence_interval']);
+        self::assertSame(3, $scenario['repeat_lbt_per_second']['samples']);
+    }
+
+    /**
+     * The executable plan states its counting unit and refuses worker counts outside the bounded workload.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testConcurrentPlanDeclaresSamplesPerWorkerAndRejectsUnboundedWorkers(): void
+    {
+        $tool = dirname(__DIR__, 3) . '/tools/perf-harness.php';
+        foreach (['1,2' => 0, '1,17' => 2, '0' => 2, '2,2' => 2] as $workers => $expectedExit) {
+            $process = proc_open(
+                [PHP_BINARY, $tool, '--concurrent', '--plan', '--workers=' . $workers],
+                [1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
+                $pipes,
+            );
+            self::assertIsResource($process);
+            $output = stream_get_contents($pipes[1]);
+            stream_get_contents($pipes[2]);
+            fclose($pipes[1]);
+            fclose($pipes[2]);
+            self::assertSame($expectedExit, proc_close($process));
+            if ($expectedExit === 0) {
+                $plan = json_decode($output, true, 64, JSON_THROW_ON_ERROR);
+                self::assertSame([1, 2], $plan['workers']);
+                self::assertSame(30, $plan['samples']);
+                self::assertSame('measured attempts per worker per repeat per operation', $plan['samples_unit']);
+            }
+        }
+    }
+
+    /**
+     * A worker dying before readiness produces a failed result without waiting for the full deadline.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testWorkerFailureIsRetainedInsteadOfBecomingAZeroLatencySample(): void
+    {
+        $directory = sys_get_temp_dir() . '/kumwe-perf-worker-' . bin2hex(random_bytes(6));
+        mkdir($directory, 0700);
+        try {
+            $result = runWorkers([[PHP_BINARY, '-r', 'exit(17);']], $directory, 5);
+            self::assertContains('worker_exited_before_barrier', $result['failures']);
+            self::assertSame([], $result['workers']);
+            self::assertSame(0, $result['release_ns']);
+        } finally {
+            foreach (glob($directory . '/*') ?: [] as $path) {
+                unlink($path);
+            }
+            rmdir($directory);
+        }
+    }
+
+    /**
+     * A ready worker that stalls after barrier release is terminated and reported as incomplete.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testStalledWorkerCannotLeaveTheCoordinatorWaitingIndefinitely(): void
+    {
+        $directory = sys_get_temp_dir() . '/kumwe-perf-timeout-' . bin2hex(random_bytes(6));
+        mkdir($directory, 0700);
+        try {
+            $script = 'file_put_contents($argv[1] . "/worker-0.ready", "ready"); sleep(30);';
+            $result = runWorkers([[PHP_BINARY, '-r', $script, $directory]], $directory, 1);
+            self::assertContains('worker_measurement_timeout', $result['failures']);
+            self::assertContains('worker_0_missing_result', $result['failures']);
+            self::assertGreaterThan(0, $result['release_ns']);
+        } finally {
+            foreach (glob($directory . '/*') ?: [] as $path) {
+                unlink($path);
+            }
+            rmdir($directory);
+        }
     }
 
     /**

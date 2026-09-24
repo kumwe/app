@@ -203,18 +203,29 @@
   }
 
   .kis-dashboard-progress .progress-track {
-    height: .42rem;
+    appearance: none;
+    display: block;
+    inline-size: 100%;
+    block-size: .42rem;
+    border: 0;
     margin: 0;
     overflow: hidden;
     border-radius: 999px;
     background: var(--kumwe-border);
+    color: var(--kumwe-accent);
   }
 
-  .kis-dashboard-progress .progress-track span {
-    display: block;
-    width: var(--progress, 0%);
-    height: 100%;
-    margin: 0;
+  .kis-dashboard-progress .progress-track::-webkit-progress-bar {
+    border-radius: inherit;
+    background: var(--kumwe-border);
+  }
+
+  .kis-dashboard-progress .progress-track::-webkit-progress-value {
+    border-radius: inherit;
+    background: var(--kumwe-accent);
+  }
+
+  .kis-dashboard-progress .progress-track::-moz-progress-bar {
     border-radius: inherit;
     background: var(--kumwe-accent);
   }

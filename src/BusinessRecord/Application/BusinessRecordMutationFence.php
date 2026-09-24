@@ -23,17 +23,17 @@ use Kumwe\Context\Value\SiteContext;
 interface BusinessRecordMutationFence
 {
     /**
-     * Hold a definition's installation exclusively for the rest of the caller's transaction.
+     * Pin a definition's active installation for the rest of the caller's transaction.
      *
-     * This is the fence a mutation takes. It serializes writes to one definition against each other
-     * and against the schema installer, so only an installation that is live and owned by an active
-     * owner can be mutated through it.
+     * Concurrent mutations share this generation fence; exclusive schema and lifecycle transitions wait
+     * for all holders. Record locks, expected versions and constraints protect narrower invariants.
+     * Only an installation that is live and owned by an active owner can be mutated through it.
      *
      * @param   ExecutionContext  $context               Actor and site the mutation runs as.
      * @param   string            $definitionIdentifier  Definition UUID or handle to fence.
      *
      * @return  BusinessRecordMutationGeneration  Installation identity, version, checksums, and status
-     *          as observed under the exclusive lock.
+     *          as observed under the shared generation lock.
      *
      * @throws  \Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When
      *          no definition matches the identifier on this site, or its owner is disabled.

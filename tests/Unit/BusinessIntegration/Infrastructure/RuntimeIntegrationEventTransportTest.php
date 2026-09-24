@@ -5,6 +5,13 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\BusinessIntegration\Infrastructure;
 
 use DateTimeImmutable;
+use Doctrine\DBAL\DriverManager;
+use Kumwe\App\BusinessIntegration\Infrastructure\DoctrineInboxStore;
+use Kumwe\App\Infrastructure\Persistence\DoctrineTransactionManager;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Infrastructure\Persistence\Migration\CoreSchemaMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\BusinessIntegrationSdkMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\QueueWorkerPermitsMigration;
 use Kumwe\App\Application\Authorization\SystemIdentity;
 use Kumwe\App\Application\Authorization\SystemPrincipal;
 use Kumwe\Automation\JitterSource;
@@ -71,11 +78,10 @@ final class RuntimeIntegrationEventTransportTest extends TestCase
         );
         $transport = new RuntimeIntegrationEventTransport(
             $registries,
-            self::uncalled(IntegrationEventConsumerDispatcher::class),
-            self::uncalled(DurableOutboundAdapterDispatcher::class),
+            self::uncalled(DoctrineInboxStore::class),
             self::projections(),
-            SystemPrincipal::issue(new \stdClass(), SystemIdentity::Worker),
             new RuntimeMaterializationState('replica-1', 7, '', '', true),
+            self::createStub(TrustedRuntimeGenerationGuard::class),
         );
 
         $this->expectException(PermanentFailure::class);
@@ -122,27 +128,32 @@ final class RuntimeIntegrationEventTransportTest extends TestCase
                 'additionalProperties' => false,
             ],
         )], [$definition]);
-        $inbox = $this->createMock(InboxStore::class);
-        $inbox->expects(self::once())->method('receive')
-            ->with($definition, $event, 'replica-1:integration', '7', self::anything())
-            ->willReturn(new InboxClaimResult(InboxDisposition::DUPLICATE));
+        $database = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
+        $tables = new TableNames($database, 'fanout_');
+        (new CoreSchemaMigration($tables))->up($database);
+        (new BusinessIntegrationSdkMigration($tables))->up($database);
+        (new QueueWorkerPermitsMigration($tables))->up($database);
+        $inbox = new DoctrineInboxStore(
+            $database,
+            $tables,
+            new DoctrineTransactionManager($database),
+            self::clock(),
+            $contracts,
+        );
         $transport = new RuntimeIntegrationEventTransport(
             $registries,
-            new IntegrationEventConsumerDispatcher(
-                $inbox,
-                $contracts,
-                new RetryPolicy(self::clock(), self::jitter()),
-                self::createStub(TrustedRuntimeGenerationGuard::class),
-                self::createStub(TransactionManager::class),
-                new NullLogger(),
-            ),
-            self::uncalled(DurableOutboundAdapterDispatcher::class),
+            $inbox,
             self::projections(),
-            SystemPrincipal::issue(new \stdClass(), SystemIdentity::Worker),
             new RuntimeMaterializationState('replica-1', 7, '', '', true),
+            self::createStub(TrustedRuntimeGenerationGuard::class),
         );
 
         $transport->publish($event);
+        $transport->publish($event);
+        $rows = $inbox->recent($definition->identifier());
+        self::assertCount(1, $rows);
+        self::assertSame('pending', $rows[0]['status']);
+        self::assertSame(0, (int) $rows[0]['attempts']);
 
         self::assertSame('core.runtime-fanout', $transport->identifier());
         self::assertSame(EventSensitivity::SECRET, $transport->sensitivityCeiling());
@@ -295,7 +306,7 @@ final class RuntimeIntegrationEventTransportTest extends TestCase
                 IntegrationEvent $event,
                 ExecutionContext $context,
             ): void {
-                unset($definition, $event, $context);
+                throw new RuntimeException('Publication must not execute a consumer.');
             }
         };
     }

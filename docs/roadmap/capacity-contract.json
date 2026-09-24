@@ -1,10 +1,16 @@
 {
   "contract": "kumwe-capacity-contract",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "status": "approved",
-  "authority": "docs/roadmap/README.md, section 7",
+  "authority": "docs/roadmap/README.md, section 7; ADR 0021 for sampled acceptance",
   "baseline_sha": "26a7b3963c255064754f541dc8286e75dd566b1f",
   "amendments": [
+    {
+      "version": "1.3.0",
+      "decisions": ["ADR 0021"],
+      "change": "Accept repeated concurrent samples on available workflow hardware for this increment. Dedicated hardware and 24-hour rated or 72-hour soak runs are optional operator qualification, not prerequisites. Publish hardware, database settings, errors, observed overlap, variation and explicitly labelled time extrapolations. A sample is not a production capacity guarantee.",
+      "not_changed": "The five-million daily planning target, logical transaction counting, objectives, reference workload and integrity obligations remain. Unmeasured dimensions remain explicitly unqualified."
+    },
     {
       "version": "1.1.0",
       "decisions": ["D10", "D11", "D12"],
@@ -68,7 +74,7 @@
       "peak_logical_writes_per_second": 58
     },
     "enterprise": {
-      "role": "Version 2 release qualification target",
+      "role": "Version 2 planning target; sampled evidence does not establish a supported production capacity",
       "daily_lbt": 5000000,
       "peak_factor": 8,
       "peak_logical_writes_per_second": 463
@@ -305,10 +311,31 @@
     "image_pinning": "CI and qualification pin exact image digests. Floating tags may run as scheduled upgrade canaries but are never the sole reproducibility evidence for a release."
   },
   "benchmark_method": {
-    "hardware": "versioned dedicated reference hardware; shared CI runners are never the authority for absolute throughput",
+    "hardware": "Available workflow hardware with recorded CPU, memory, container limits when visible, runtime versions and database configuration. Shared-runner throughput is a measured sample on that host, not a production guarantee. Dedicated hardware is optional operator qualification (ADR 0021).",
     "warm_up_iterations_minimum": 5,
     "measured_samples_minimum": 30,
     "coefficient_of_variation_max": 0.10,
+    "sampled_acceptance": {
+      "authority": "docs/roadmap/decisions/0021-automated-acceptance-and-sampled-capacity.md",
+      "command": "php tools/perf-harness.php --concurrent --workers=1,2,4 --samples=30 --warmup=5 --repeats=3",
+      "report": "build/perf/concurrent.json",
+      "workflow": ".github/workflows/capacity.yml",
+      "workloads": ["ordinary_small_mutation", "hot_sequence_commit"],
+      "repeated_batches_minimum": 2,
+      "required_evidence": [
+        "independent PHP processes and distinct database sessions sharing one authoritative database",
+        "warm-up completed before a shared start barrier",
+        "overlap observed from monotonic application-call intervals rather than inferred from worker count",
+        "successful and failed call counts and separate latency distributions",
+        "successful LBTs divided by wall time from barrier release to the final measured call",
+        "persisted record identity/count and contiguous hot-sequence checks outside the timed interval",
+        "per-repeat throughput, sample standard deviation, coefficient of variation and observed range",
+        "source and dependency digests, hardware, runtime versions and allowlisted database settings"
+      ],
+      "estimate_rule": "Daily scenarios multiply measured repeat throughput by 86400 at the same measured worker count. They are time extrapolations, not sustained capacity. No linear CPU, RAM or worker-count multiplier is allowed. Observed ranges are not confidence intervals. Any failed repeat withholds its group's estimate.",
+      "variation_rule": "Publish all repeats, including high variation; do not retry away failures or use the legacy CV target to manufacture stability on shared runners.",
+      "scope_limit": "The default workload is fresh single-site small creates and one shared legal-number counter. It does not qualify the aged four-business mixed envelope, document lines, reads, background work, recovery, availability or storage. Unmeasured write amplification and resource saturation remain null, not zero."
+    },
     "regression_rule": "alert first, then fail on a p95 or memory regression greater than 10% or beyond two standard deviations, unless an approved budget change explains it",
     "result_binding": [
       "exact hardware",
@@ -332,8 +359,9 @@
       "artifact and image size regression budget"
     ],
     "scheduled_qualification": {
-      "nightly": "all three engines with a realistic aged dataset, 30 to 60 minutes at baseline and target subsets, repeated isolation, deadlock and lock-timeout cases, plan regression assertions",
-      "weekly_or_release": "24-hour enterprise-rated run, 72-hour soak at 70% enterprise load, peak and spike and stress and breakpoint profiles, worker outage and backlog recovery, primary failover and replica lag, Redis loss, worker SIGKILL, network delay, downstream timeout, disk pressure, storage outage, schema and runtime generation transition during traffic, retention during load, fan-out 3 and 10 with slow and poison consumers, idempotency duplicates and conflicts, one hot legal-number sequence, noisy-neighbour tenant, and report, export and projection load alongside interactive traffic"
+      "pull_request": "Short concurrent correctness and contention samples on MariaDB, MySQL and PostgreSQL; report variation without asserting dedicated-runner timing floors.",
+      "workflow_dispatch": "Larger bounded sample and worker counts on the same three-engine workflow; the report states the exact measured range and extrapolation assumptions.",
+      "optional_operator_qualification": "Aged datasets, 30-to-60-minute characterization, 24-hour rated runs, 72-hour soak, peak, spike, stress and breakpoint profiles, outages, failover, replica lag, Redis loss, worker SIGKILL, network delay, downstream timeout, disk pressure, storage outage, generation transitions, retention, fan-out and poison consumers, noisy neighbours, and concurrent reports/exports remain optional larger-topology qualification. None is implied by a short sampled result."
     },
     "structural_pass_conditions": [
       "query count does not grow per line or per result",

@@ -19,6 +19,7 @@ use Throwable;
 use Kumwe\Integration\EventContractRegistry;
 use Kumwe\Integration\InboxDisposition;
 use Kumwe\Integration\InboxStore;
+use Kumwe\Integration\InboxLease;
 
 /**
  * Applies one outbound adapter behind the same durable inbox used by internal consumers.
@@ -110,26 +111,60 @@ final readonly class DurableOutboundAdapterDispatcher
             throw new RuntimeException('The outbound adapter delivery is not currently claimable.');
         }
 
+        return $this->dispatchClaimed($definition, $adapter, $result->lease);
+    }
+
+    /**
+     * Deliver an independently claimed webhook receipt outside an authoritative business transaction.
+     *
+     * @param   WebhookContributionDefinition  $definition  Current signed webhook declaration.
+     * @param   IntegrationEventTransport      $adapter     Trusted outbound implementation.
+     * @param   InboxLease                     $lease       Durable worker claim for this adapter and event.
+     *
+     * @return  InboxDisposition  Claimed once the adapter and receipt have settled.
+     *
+     * @throws  InvalidArgumentException  When the lease names another adapter or signed handler revision.
+     *
+     * @since   2.0.0
+     */
+    public function dispatchClaimed(
+        WebhookContributionDefinition $definition,
+        IntegrationEventTransport $adapter,
+        InboxLease $lease,
+    ): InboxDisposition {
+        $event = $lease->event;
+        $this->runtime->assertCurrent($lease->runtimeGeneration);
+        $this->contracts->assertEvent($event);
+        if (
+            $lease->consumer->identifier() !== $definition->identifier()
+            || $lease->consumer->handlerVersion() !== $definition->handlerVersion()
+            || !in_array($event->eventType(), $definition->eventTypes(), true)
+            || !in_array($event->schemaVersion(), $definition->schemaVersions(), true)
+            || !$event->sensitivity()->allowedBy($definition->sensitivityCeiling())
+        ) {
+            throw new InvalidArgumentException('A webhook lease does not match its trusted declaration.');
+        }
+
         try {
-            $this->runtime->assertCurrent($runtimeGeneration);
+            $this->runtime->assertCurrent($lease->runtimeGeneration);
             $adapter->publish($definition, $event);
-            $this->inbox->complete($result->lease);
+            $this->inbox->complete($lease);
             $this->logger->info('Durable outbound adapter completed.', [
                 'adapter_id' => $definition->identifier(),
                 'event_id' => $event->eventId(),
                 'correlation_id' => $event->correlationId(),
                 'causation_id' => $event->causationId(),
-                'attempt' => $result->lease->attempts,
-                'runtime_generation' => $runtimeGeneration,
+                'attempt' => $lease->attempts,
+                'runtime_generation' => $lease->runtimeGeneration,
             ]);
         } catch (Throwable $failure) {
             $decision = $this->retries->decide(
                 $failure,
-                $result->lease->attempts,
-                $result->lease->consumer->maximumAttempts(),
+                $lease->attempts,
+                $lease->consumer->maximumAttempts(),
             );
             $this->inbox->fail(
-                $result->lease,
+                $lease,
                 $decision->classification,
                 $failure,
                 $decision->retryAt,

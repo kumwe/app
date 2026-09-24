@@ -9,6 +9,10 @@ use DateTimeInterface;
 use DateTimeZone;
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Exception as DbalException;
+use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
+use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
+use Doctrine\DBAL\Result;
 use InvalidArgumentException;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionRepository;
@@ -22,6 +26,7 @@ use Kumwe\App\BusinessRecord\Application\BusinessRecordRelationView;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordMutationFence;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordView;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable;
 use Kumwe\App\BusinessRecord\Application\Exception\InvalidBusinessRecordQuery;
 use Kumwe\App\BusinessRecord\Application\RecordBrowseResult;
 use Kumwe\App\BusinessRecord\Application\RecordCursorCodec;
@@ -174,7 +179,7 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
         $where[] = $policy->sql;
         array_push($parameters, ...$policy->parameters);
         array_push($types, ...$policy->types);
-        $row = $this->database->fetchAssociative(sprintf(
+        $row = $this->currentRead(sprintf(
             'SELECT r0.%s, r0.%s, r0.%s, r0.%s FROM %s r0 WHERE %s',
             $this->quote($this->physical($table, 'record_id')),
             $this->quote($identityPhysical),
@@ -182,7 +187,7 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
             $this->quote($this->physical($table, 'version')),
             $this->quote($table->physicalName),
             implode(' AND ', $where),
-        ), $parameters, $types);
+        ), $parameters, $types, $access->operation)->fetchAssociative();
         if ($row === false) {
             return null;
         }
@@ -227,6 +232,7 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
         if ($wanted === []) {
             return [];
         }
+        sort($wanted, SORT_STRING);
         $table = $this->recordTable($resolved);
         $identityPhysical = $this->identityPhysical($resolved, $table);
         $resolvedIdentities = [];
@@ -244,15 +250,16 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
             $where[] = $policy->sql;
             array_push($parameters, ...$policy->parameters);
             array_push($types, ...$policy->types);
-            $rows = $this->database->executeQuery(sprintf(
-                'SELECT r0.%s, r0.%s, r0.%s, r0.%s FROM %s r0 WHERE %s',
+            $rows = $this->currentRead(sprintf(
+                'SELECT r0.%s, r0.%s, r0.%s, r0.%s FROM %s r0 WHERE %s ORDER BY r0.%s',
                 $this->quote($this->physical($table, 'record_id')),
                 $this->quote($identityPhysical),
                 $this->quote($this->physical($table, 'definition_version')),
                 $this->quote($this->physical($table, 'version')),
                 $this->quote($table->physicalName),
                 implode(' AND ', $where),
-            ), $parameters, $types)->fetchAllAssociative();
+                $this->quote($this->physical($table, 'record_id')),
+            ), $parameters, $types, $access->operation)->fetchAllAssociative();
             foreach ($rows as $row) {
                 $identity = $this->string($row, $identityPhysical);
                 $resolvedIdentities[$identity] = new StoredRecordIdentity(
@@ -397,13 +404,13 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
         }
         $records = [];
         foreach (
-            $this->database->executeQuery(sprintf(
+            $this->currentRead(sprintf(
                 'SELECT r0.* FROM %s r0 WHERE %s ORDER BY r0.%s ASC LIMIT %d',
                 $this->quote($table->physicalName),
                 implode(' AND ', $where),
                 $this->quote($this->physical($table, 'record_id')),
                 $limit,
-            ), $parameters, $types)->fetchAllAssociative() as $row
+            ), $parameters, $types, $access->operation ?? 'business.record.delete')->fetchAllAssociative() as $row
         ) {
             $rowResolved = $this->pinnedForRow($resolved, $table, $row);
             $records[] = $this->map($rowResolved, $table, $row);
@@ -471,11 +478,11 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
         $where[] = $policy->sql;
         array_push($parameters, ...$policy->parameters);
         array_push($types, ...$policy->types);
-        $row = $this->database->fetchAssociative(sprintf(
+        $row = $this->currentRead(sprintf(
             'SELECT r0.* FROM %s r0 WHERE %s',
             $this->quote($table->physicalName),
             implode(' AND ', $where),
-        ), $parameters, $types);
+        ), $parameters, $types, $access->operation)->fetchAssociative();
 
         return $row === false ? null : $this->map($resolved, $table, $row);
     }
@@ -1657,7 +1664,7 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
             $this->physicalType($table, $identityPhysical),
             ...$policy->types,
         ];
-        $row = $this->database->fetchAssociative(sprintf(
+        $row = $this->currentRead(sprintf(
             'SELECT r0.%s, r0.%s, r0.%s FROM %s r0 WHERE r0.%s = ? AND r0.%s = ? AND %s',
             $this->quote($this->physical($table, 'line_id')),
             $this->quote($identityPhysical),
@@ -1666,7 +1673,7 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
             $this->quote($this->physical($table, 'owner_id')),
             $this->quote($identityPhysical),
             $policy->sql,
-        ), $parameters, $types);
+        ), $parameters, $types, $access->operation)->fetchAssociative();
         if ($row === false) {
             return null;
         }
@@ -1721,14 +1728,16 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
         }
         $table = $owner->installation->blueprint->table('line:' . $relationship->handle)
             ?? throw new BusinessRecordSchemaUnavailable('The installed owned-line table is unavailable.');
-        $rows = $this->database->fetchAllAssociative(sprintf(
+        $rows = $this->currentRead(sprintf(
             'SELECT r0.* FROM %s r0 WHERE r0.%s = ? ORDER BY r0.%s, r0.%s LIMIT %d',
             $this->quote($table->physicalName),
             $this->quote($this->physical($table, 'owner_id')),
             $this->quote($this->physical($table, 'position')),
             $this->quote($this->physical($table, 'line_id')),
             max(1, $limit),
-        ), [$ownerRecord->recordKey], [$this->type($table, 'owner_id')]);
+        ), [$ownerRecord->recordKey], [
+            $this->type($table, 'owner_id'),
+        ], 'business.record.update')->fetchAllAssociative();
         $lines = [];
         foreach ($rows as $row) {
             $recordKey = $this->string($row, $this->physical($table, 'line_id'));
@@ -2256,5 +2265,48 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
     private function quote(string $identifier): string
     {
         return $this->database->getDatabasePlatform()->quoteSingleIdentifier($identifier);
+    }
+
+    /**
+     * Read mutation inputs at the current committed version while holding their record locks.
+     *
+     * Related access plans retain the source operation, so reference resolution also pins its target
+     * until commit. A delete locks the target before inspecting inbound rows; a new referrer must wait
+     * and re-evaluate visibility. Ordinary reads keep their existing snapshot and disclosure predicates.
+     * Current reads also avoid mixing a freshly locked header with an older collection on MySQL.
+     *
+     * @param   string                           $sql         Complete policy-filtered select.
+     * @param   list<mixed>                      $parameters  Bound identity, scope and policy values.
+     * @param   list<string|ArrayParameterType>  $types       DBAL parameter types.
+     * @param   string                           $operation   Authorized operation, inherited by related plans.
+     *
+     * @return  Result  Result whose mutation rows stay locked until transaction settlement.
+     *
+     * @throws  BusinessRecordTemporarilyUnavailable  When a current read cannot retain its row locks.
+     *
+     * @since   2.0.0
+     */
+    private function currentRead(string $sql, array $parameters, array $types, string $operation): Result
+    {
+        $mutating = in_array($operation, [
+            'business.record.create', 'business.record.update', 'business.record.delete',
+            'business.record.archive', 'business.record.restore', 'business.record.relate',
+            'business.record.unrelate', 'business.record.reorder', 'business.record.action',
+        ], true);
+        if ($mutating) {
+            if (!$this->database->isTransactionActive()) {
+                throw new BusinessRecordTemporarilyUnavailable();
+            }
+            $platform = $this->database->getDatabasePlatform();
+            if (!$platform instanceof AbstractMySQLPlatform && !$platform instanceof PostgreSQLPlatform) {
+                throw new BusinessRecordTemporarilyUnavailable();
+            }
+            $sql .= ' FOR UPDATE';
+        }
+        try {
+            return $this->database->executeQuery($sql, $parameters, $types);
+        } catch (DbalException $failure) {
+            throw new BusinessRecordTemporarilyUnavailable($failure);
+        }
     }
 }

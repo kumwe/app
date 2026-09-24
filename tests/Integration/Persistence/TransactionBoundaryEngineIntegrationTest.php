@@ -27,6 +27,7 @@ use Kumwe\Integration\EventSensitivity;
 use Kumwe\Integration\IntegrationEvent;
 use Kumwe\Integration\RecordedIntegrationEvent;
 use Kumwe\App\BusinessIntegration\Infrastructure\DoctrineOutboxStore;
+use Kumwe\App\BusinessReporting\Infrastructure\DoctrineProjectionEventSequencer;
 use Kumwe\Sequence\Contract\NumberSequenceAllocator;
 use Kumwe\App\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessNumberSequenceAllocator;
 use Kumwe\App\Infrastructure\Persistence\DoctrineTransactionManager;
@@ -390,6 +391,7 @@ final class TransactionBoundaryEngineIntegrationTest extends TestCase
             $clock,
             $this->contracts(),
             new DeterministicCanonicalEncoder(),
+            new DoctrineProjectionEventSequencer($database, $tables, $transactions),
         );
         $observerTables = new TableNames($observer, $tables->prefix());
         $count = static fn (string $table, string $column, string $value): int => (int) $observer->fetchOne(
@@ -413,6 +415,7 @@ final class TransactionBoundaryEngineIntegrationTest extends TestCase
             self::assertSame(0, $count('audit_events', 'id', $discardedAudit));
             self::assertSame(0, $count('integration_outbox', 'event_id', $discarded->eventId()));
             self::assertSame(0, $count('business_projection_source_events', 'event_id', $discarded->eventId()));
+            self::assertSame(0, $count('business_projection_event_staging', 'event_id', $discarded->eventId()));
 
             $durable = $this->event();
             $durableAudit = Uuid::uuid7()->toString();
@@ -422,6 +425,8 @@ final class TransactionBoundaryEngineIntegrationTest extends TestCase
             });
             self::assertSame(1, $count('audit_events', 'id', $durableAudit));
             self::assertSame(1, $count('integration_outbox', 'event_id', $durable->eventId()));
+            self::assertSame(1, $count('business_projection_event_staging', 'event_id', $durable->eventId()));
+            (new DoctrineProjectionEventSequencer($database, $tables, $transactions))->sequence(1_000);
             self::assertSame(1, $count('business_projection_source_events', 'event_id', $durable->eventId()));
             $database->delete($tables->raw('integration_outbox'), ['event_id' => $durable->eventId()]);
         } finally {

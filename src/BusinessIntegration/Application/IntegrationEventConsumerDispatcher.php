@@ -18,6 +18,7 @@ use Throwable;
 use Kumwe\Integration\EventContractRegistry;
 use Kumwe\Integration\InboxDisposition;
 use Kumwe\Integration\InboxStore;
+use Kumwe\Integration\InboxLease;
 
 /**
  * Applies one integration event through a durable consumer inbox under a pinned runtime generation.
@@ -93,7 +94,40 @@ final readonly class IntegrationEventConsumerDispatcher
         if ($result->lease === null) {
             return $result->disposition;
         }
-        $lease = $result->lease;
+        return $this->consumeClaimed($result->lease, $handler, $context);
+    }
+
+    /**
+     * Execute an independently claimed receipt using the current signed consumer and atomic settlement.
+     *
+     * @param   InboxLease               $lease    Lease acquired by the host receipt worker.
+     * @param   IntegrationEventHandler  $handler  Trusted executable selected for this exact consumer.
+     * @param   ExecutionContext         $context  Host-issued site execution authority.
+     *
+     * @return  InboxDisposition  Claimed after effect and receipt commit together.
+     *
+     * @throws  InvalidArgumentException  When the lease no longer matches the signed consumer declaration.
+     *
+     * @since   2.0.0
+     */
+    public function consumeClaimed(
+        InboxLease $lease,
+        IntegrationEventHandler $handler,
+        ExecutionContext $context,
+    ): InboxDisposition {
+        $this->runtime->assertCurrent($lease->runtimeGeneration);
+        $event = $lease->event;
+        $this->contracts->assertEvent($event);
+        $registered = $this->contracts->consumer($lease->consumer->identifier());
+        $declared = $registered->toArray();
+        $effective = $lease->consumer->toArray();
+        $declared['maximum_attempts'] = $effective['maximum_attempts'];
+        if (
+            $declared !== $effective || $lease->consumer->maximumAttempts() > $registered->maximumAttempts()
+            || $context->site()->identifier() !== $event->siteIdentifier()
+        ) {
+            throw new InvalidArgumentException('A claimed receipt does not match its trusted consumer or site.');
+        }
         try {
             $this->transactions->transactional(function () use (
                 $lease,

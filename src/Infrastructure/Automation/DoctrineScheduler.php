@@ -550,6 +550,12 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
                 }
                 $this->ownershipWriter->record(AuthorizationResource::item('job', $jobId), $site);
             }
+            (new DoctrineJobQueueFairness($this->database, $this->tables))->record(
+                $queue,
+                $jobId,
+                $site?->identifier(),
+                null,
+            );
             $this->database->releaseSavepoint(self::OCCURRENCE_SAVEPOINT);
         } catch (UniqueConstraintViolationException) {
             // A concurrent scheduler already emitted this occurrence; undo only the refused insert so

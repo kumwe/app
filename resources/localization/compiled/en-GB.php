@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for en-GB, carrying 2416 messages.
+ * Compiled interface message catalogue for en-GB, carrying 2417 messages.
  *
  * Generated from en-GB.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1962,6 +1962,7 @@ return [
     'core.interface_standard.dashboard.invalid_notice' => 'The dashboard choices could not be saved. Review the selection and try again.',
     'core.interface_standard.dashboard.open_action' => 'Open {area}',
     'core.interface_standard.dashboard.order_label' => 'Order',
+    'core.interface_standard.dashboard.outside_visibility' => 'Outside your visibility. This saved choice is kept when you save.',
     'core.interface_standard.dashboard.personal_eyebrow' => 'Personal',
     'core.interface_standard.dashboard.personal_help' => 'Choose the widgets and shortcuts that work best for you. Your choices replace group defaults.',
     'core.interface_standard.dashboard.personal_label' => 'Your dashboard',

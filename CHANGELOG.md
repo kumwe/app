@@ -17,6 +17,29 @@ Entries cite the commits that carried them. Version 2.0.0 is not released, so ev
 
 ## [Unreleased]
 
+- Allow unrelated business records to commit concurrently behind a shared definition-generation fence,
+  while retaining row locks, expected-version refusal and exclusive schema transitions. Authoritative
+  commits now stage event envelopes; a bounded, replay-safe sequencer assigns journal order after commit,
+  and projection checkpoints cannot pass committed unsequenced sources. The scale migration preserves
+  existing journal history and operator retention overrides. Integrated MariaDB tests pass 26 tests and
+  204 assertions, including overlapping writers, schema fencing, late commits, rollback and sequencer
+  contention. Full capacity and cross-engine qualification remain separate from these local results (#152).
+
+- Materialize consumer and webhook receipts before executing independent worker effects. Declared queues
+  share bounded durable worker permits across jobs and inbox work, replacing the policy-row mutex and
+  live-lease count on ordinary claims. Fair tenant turns, current-generation checks, lease fencing and
+  independent retry settlement remain enforced. Drain old worker binaries before applying the new
+  migration; mixed old/new claim protocols are unsupported (#152).
+
+- Add short concurrent capacity samples with independent workers and database connections, warm-up
+  barriers, repeated batches, integrity checks and raw evidence. Results describe the measured host and
+  concurrency, and label daily extrapolations as estimates; they do not promise linear worker scaling.
+  The dedicated three-engine workflow retains partial results on failure (#152).
+
+- Preserve role dashboard choices outside the editor's own visibility, showing a localized explanation
+  without exposing hidden widget details. Remove inline summary styles and directly restate theme
+  surfaces on live appearance changes, with WebKit regression coverage (#152).
+
 - Protect administrator sign-in with a short-lived, path-scoped login-CSRF cookie and constant-time
   token comparison before credential verification (`GM-IDN-04`). Both browser session stores enforce
   a configurable inactivity window, defaulting to 30 minutes, alongside absolute expiry; rejected

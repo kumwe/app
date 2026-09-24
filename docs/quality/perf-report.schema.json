@@ -12,6 +12,20 @@
             "limitations": "array"
         }
     },
+    "concurrent": {
+        "required": {
+            "harness": "string",
+            "role": "string",
+            "plan": "object",
+            "result_binding": "object",
+            "measurements": "array",
+            "estimates": "array",
+            "complete": "boolean",
+            "passed": "boolean",
+            "write_amplification": "object",
+            "limitations": "array"
+        }
+    },
     "breakpoint": {
         "required": {
             "harness": "string",
