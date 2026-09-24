@@ -1,16 +1,7 @@
-name: Native database recovery
+name: Recovery acceptance
 
 on:
   pull_request:
-    paths:
-      - 'tools/*backup*.sh'
-      - 'tools/*restore*.sh'
-      - 'tools/recovery-*.sh'
-      - 'tests/Support/*recovery*'
-      - 'tests/Support/backup-tamper-drill.sh'
-      - 'tests/Unit/Tools/RecoveryToolsTest.php'
-      - '.github/workflows/recovery.yml'
-      - 'docker/php/Dockerfile'
   push:
     branches: [master]
   merge_group:
@@ -24,6 +15,159 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  app-http-recovery:
+    name: Real App HTTP restore and replay
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    services:
+      database:
+        image: mariadb:12.3.2
+        env:
+          MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: 'yes'
+        ports:
+          - '3306:3306'
+        options: >-
+          --health-cmd "healthcheck.sh --connect --innodb_initialized"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+      redis:
+        image: redis:8-alpine
+        ports:
+          - '6379:6379'
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      DB_DRIVER: mariadb
+      DB_HOST: 127.0.0.1
+      DB_PORT: '3306'
+      DB_NAME: kumwe_http_source
+      DB_USER: kumwe_http
+      DB_TABLE_PREFIX: kumwe_
+      DB_SERVER_VERSION: mariadb-12.3.2
+      DB_SSLMODE: disable
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: '6379'
+      REDIS_DATABASE: '0'
+      KUMWE_RECOVERY_FIXTURE_DISPOSABLE: 'yes'
+      KUMWE_RECOVERY_HTTP_RESTORE_DB: kumwe_http_restored
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: '8.5'
+          extensions: apcu, ctype, fileinfo, filter, intl, json, mbstring, openssl, pcntl, pdo, pdo_mysql, pdo_pgsql, redis, sodium, zip
+          coverage: none
+          tools: composer:v2
+      - name: Provision admitted native runtime
+        uses: ./.github/actions/native-runtime
+      - name: Install locked dependencies and signing tool
+        run: |
+          composer install --no-interaction --prefer-dist
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends jq minisign
+      - name: Provision private credentials and fresh databases
+        shell: bash
+        env:
+          KUMWE_RECOVERY_DATABASE_CONTAINER: ${{ job.services.database.id }}
+        run: |
+          set -euo pipefail
+          umask 077
+          install -d -m 0700 "$RUNNER_TEMP/recovery-http-secrets" "$RUNNER_TEMP/recovery-http-bin"
+          export KUMWE_RECOVERY_DB_PASSWORD_FILE="$RUNNER_TEMP/recovery-http-secrets/database-password"
+          echo "KUMWE_RECOVERY_DB_PASSWORD_FILE=$KUMWE_RECOVERY_DB_PASSWORD_FILE" >> "$GITHUB_ENV"
+          echo "KUMWE_RECOVERY_DATABASE_CONTAINER=$KUMWE_RECOVERY_DATABASE_CONTAINER" >> "$GITHUB_ENV"
+          openssl rand -hex 32 > "$KUMWE_RECOVERY_DB_PASSWORD_FILE"
+          password="$(<"$KUMWE_RECOVERY_DB_PASSWORD_FILE")"
+          if ! docker exec --interactive "$KUMWE_RECOVERY_DATABASE_CONTAINER" mariadb --user=root \
+            > "$RUNNER_TEMP/recovery-http-secrets/provision.log" 2>&1 <<SQL
+          CREATE DATABASE kumwe_http_source CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+          CREATE DATABASE kumwe_http_restored CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+          CREATE USER 'kumwe_http'@'%' IDENTIFIED BY '$password';
+          GRANT ALL ON kumwe_http_source.* TO 'kumwe_http'@'%';
+          GRANT ALL ON kumwe_http_restored.* TO 'kumwe_http'@'%';
+          SQL
+          then
+            echo 'Disposable HTTP recovery database provisioning failed.' >&2
+            exit 1
+          fi
+          unset password
+          # Invoke clients inside the exact server image; no mismatched host dump client.
+          for name in mariadb mariadb-dump; do
+            cat > "$RUNNER_TEMP/recovery-http-bin/$name" <<'CLIENT'
+          #!/usr/bin/env bash
+          exec docker exec --interactive --env MYSQL_PWD "$KUMWE_RECOVERY_DATABASE_CONTAINER" \
+            "$(basename -- "$0")" "$@"
+          CLIENT
+            chmod 0700 "$RUNNER_TEMP/recovery-http-bin/$name"
+          done
+          echo "$RUNNER_TEMP/recovery-http-bin" >> "$GITHUB_PATH"
+      - name: Require real source backup restore and same-key HTTP replay
+        shell: bash
+        run: timeout --signal=TERM --kill-after=15s 900 bash tests/Support/recovery-http-roundtrip.sh "$RUNNER_TEMP/recovery-http-report"
+      - name: Check bounded secret-free report inventory
+        id: http-report
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          directory="$RUNNER_TEMP/recovery-http-report"
+          test -d "$directory"
+          for path in "$directory"/*; do
+            test -f "$path" && test ! -L "$path"
+            case "$(basename -- "$path")" in source.json|restored.json|proof.json|run.json) ;; *) exit 1 ;; esac
+            test "$(stat -c %s "$path")" -le 8192
+            jq -e 'type == "object"' "$path" >/dev/null
+          done
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always() && steps.http-report.outcome == 'success'
+        with:
+          name: recovery-app-http
+          path: ${{ runner.temp }}/recovery-http-report/*.json
+          retention-days: 7
+          if-no-files-found: error
+      - name: Remove caller-owned credentials
+        if: always()
+        run: |
+          for directory in "$RUNNER_TEMP/recovery-http-secrets" "$RUNNER_TEMP/recovery-http-bin"; do
+            if [[ -d "$directory" ]]; then rm -r -- "$directory"; fi
+          done
+
+  recovery-images:
+    name: Recovery image tooling
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build both optional recovery targets and verify deployed helpers
+        shell: bash
+        run: |
+          set -euo pipefail
+          for driver in mariadb postgres; do
+            # Sequential builds share the PHP/native-engine/vendor layers in this runner's cache.
+            docker build --file docker/php/Dockerfile --target "recovery-$driver" \
+              --build-arg KUMWE_RELEASE=2.0.0 --tag "kumwe-recovery:$driver" .
+            docker run --rm "kumwe-recovery:$driver" -c '
+              set -euo pipefail
+              test "$(id -u)" != 0
+              for command in bash jq minisign restic sha256sum flock; do command -v "$command"; done
+              for path in tools/backup.sh tools/restore.sh tools/restore-verify.sh tools/recovery-common.sh \
+                  tools/recovery-binlog.sh tools/recovery-postgres.sh tools/backup-cycle.sh tools/backup-retain.sh; do
+                test -r "$path"
+                bash -n "$path"
+              done
+              if [[ "$1" == mariadb ]]; then
+                mariadb --version
+                mariadb-dump --version
+                mariadb-binlog --version
+              else
+                for command in postgres initdb pg_ctl pg_basebackup pg_verifybackup pg_restore psql; do
+                  "$command" --version | grep -E " 17[.]"
+                done
+              fi
+            ' recovery-image-check "$driver"
+          done
+
   native-recovery:
     name: Native replay (${{ matrix.driver }})
     runs-on: ubuntu-24.04
@@ -46,9 +190,9 @@ jobs:
       - name: Install isolated MariaDB server
         if: matrix.driver == 'mariadb'
         run: sudo apt-get install --yes --no-install-recommends mariadb-server
-      - name: Pull matching MySQL 8.4 server and clients
+      - name: Build complete matching MySQL 8.4 recovery tools
         if: matrix.driver == 'mysql'
-        run: docker pull mysql:8.4
+        run: docker build --file tests/Support/mysql-recovery.Dockerfile --tag kumwe-mysql-recovery:8.4 tests/Support
       - name: Install isolated PostgreSQL 17 server
         if: matrix.driver == 'pgsql'
         run: sudo apt-get install --yes --no-install-recommends postgresql-17
@@ -57,7 +201,7 @@ jobs:
         env:
           KUMWE_RECOVERY_EVIDENCE_DIR: ${{ runner.temp }}/native-recovery
           KUMWE_RECOVERY_MEASURE_RESTIC: 'yes'
-          KUMWE_RECOVERY_MYSQL_IMAGE: ${{ matrix.driver == 'mysql' && 'mysql:8.4' || '' }}
+          KUMWE_RECOVERY_MYSQL_IMAGE: ${{ matrix.driver == 'mysql' && 'kumwe-mysql-recovery:8.4' || '' }}
         run: |
           mkdir "$KUMWE_RECOVERY_EVIDENCE_DIR"
           # Each lane owns fresh clusters on separate ports. PostgreSQL runs as the unprivileged
@@ -89,3 +233,17 @@ jobs:
           path: ${{ runner.temp }}/recovery-report
           retention-days: 14
           if-no-files-found: error
+
+  recovery-required:
+    name: Required recovery acceptance
+    if: always()
+    needs: [app-http-recovery, native-recovery, recovery-images]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: Require every recovery lane to pass
+        env:
+          HTTP_RESULT: ${{ needs.app-http-recovery.result }}
+          NATIVE_RESULT: ${{ needs.native-recovery.result }}
+          IMAGE_RESULT: ${{ needs.recovery-images.result }}
+        run: test "$HTTP_RESULT" = success && test "$NATIVE_RESULT" = success && test "$IMAGE_RESULT" = success
