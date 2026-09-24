@@ -77,6 +77,32 @@ final class ConfigurationFactoryTest extends TestCase
         }
     }
 
+    /**
+     * The capacity profile accepts only the two declared profiles, case-insensitively, and defaults to baseline.
+     *
+     * The profile decides whether retention and storage shortfalls drain the process or only warn, so an
+     * unrecognised value must stop the boot rather than silently fall back to the more lenient profile.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheCapacityProfileIsBaselineOrEnterpriseAndNothingElse(): void
+    {
+        $factory = new ConfigurationFactory();
+        self::assertSame('baseline', $factory->create(new Environment($this->values()))->capacityProfile);
+        $values = $this->values();
+        $values['KUMWE_CAPACITY_PROFILE'] = 'Enterprise';
+        self::assertSame('enterprise', $factory->create(new Environment($values))->capacityProfile);
+        $values['KUMWE_CAPACITY_PROFILE'] = 'premium';
+        try {
+            $factory->create(new Environment($values));
+            self::fail('An undeclared capacity profile was accepted.');
+        } catch (InvalidArgumentException $exception) {
+            self::assertSame('KUMWE_CAPACITY_PROFILE must be baseline or enterprise.', $exception->getMessage());
+        }
+    }
+
     public function testProductionRefusesUnsignedLocalExtensions(): void
     {
         $values = $this->values();
