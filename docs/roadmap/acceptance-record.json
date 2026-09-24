@@ -1743,9 +1743,15 @@
       "tests": [
         "tests/Integration/Identity/AccessControlIntegrationTest.php",
         "tests/Integration/Identity/SessionIdleExpiryIntegrationTest.php",
-        "tests/Integration/Identity/AccountSelfServiceIntegrationTest.php"
+        "tests/Integration/Identity/AccountSelfServiceIntegrationTest.php",
+        "tests/Architecture/SecurityQualificationMatrixTest.php",
+        "tests/Functional/Security/CredentialTakeoverCeilingTest.php",
+        "tests/Functional/Security/MachineAdapterAuthorityTest.php",
+        "tests/Integration/Security/TenantIsolationIntegrationTest.php",
+        "tests/Integration/Security/SecretFieldChannelNonDisclosureIntegrationTest.php"
       ],
       "workflows": [
+        ".github/workflows/ci.yml#quality",
         ".github/workflows/ci.yml#database",
         ".github/workflows/security.yml#source-and-image"
       ],
@@ -1757,7 +1763,7 @@
       "track": "pr-152",
       "branches": [],
       "branch_evidence": [],
-      "outstanding": "GM-IDN-04, GM-IDN-05, GM-IDN-06, GM-IDN-07, GM-AUD-08 and GM-SUP-08 are delivered. The threat-led independent agent review and its evidence matrix across the package's areas are not recorded yet, and GM-SUP-05's out-of-process runtime stays on the Point 5 track.",
+      "outstanding": "GM-IDN-04, GM-IDN-05, GM-IDN-06, GM-IDN-07, GM-AUD-08 and GM-SUP-08 are delivered. docs/security/qualification-matrix.json maps every area and sub-area of the package to tests and CI jobs, and SecurityQualificationMatrixTest refuses a missing test or an unreasoned gap. The threat-led independent agent review is not recorded yet, whether break-glass console recovery is exempt from the credential-takeover delegation ceiling awaits a maintainer decision, and GM-SUP-05's out-of-process runtime stays on the Point 5 track.",
       "gate_b_criteria": [
         1
       ],
