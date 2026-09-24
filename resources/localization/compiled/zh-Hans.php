@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for zh-Hans, carrying 2533 messages.
+ * Compiled interface message catalogue for zh-Hans, carrying 2552 messages.
  *
  * Generated from zh-Hans.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1886,6 +1886,19 @@ return [
     'core.business.form.no' => '否',
     'core.business.form.not_set' => '未设置',
     'core.business.form.yes' => '是',
+    'core.business.history.action' => '工作流操作',
+    'core.business.history.archive' => '已归档',
+    'core.business.history.change' => '已更改',
+    'core.business.history.create' => '已创建',
+    'core.business.history.delete' => '已删除',
+    'core.business.history.document_amend' => '已修订单据',
+    'core.business.history.document_create' => '已创建单据',
+    'core.business.history.relate' => '已添加到{label}',
+    'core.business.history.relation' => '相关记录',
+    'core.business.history.reorder' => '已重新排序{label}',
+    'core.business.history.restore' => '已恢复',
+    'core.business.history.unrelate' => '已从{label}移除',
+    'core.business.history.update' => '已编辑',
     'core.business.record_view.actions' => '操作',
     'core.business.record_view.history' => '历史记录',
     'core.business.record_view.relations' => '关系',
@@ -1895,7 +1908,13 @@ return [
     'core.business.refusal.read_only_badge' => '只读',
     'core.business.refusal.read_only_help' => '您仍可打开此记录、查看其历史记录并执行其提供的工作流操作。',
     'core.business.refusal.read_only_title' => '此记录为只读',
+    'core.business.relationship_kind.lines' => '记录明细行',
+    'core.business.relationship_kind.many' => '关联记录',
+    'core.business.relationship_kind.single' => '一条关联记录',
     'core.business.report.reports' => '报表',
+    'core.business.state.active' => '有效',
+    'core.business.state.archived' => '已归档',
+    'core.business.state.deleted' => '已删除',
     'core.business.table.scroll_choice_details' => '水平滚动以查看选项详情',
     'core.business.table.scroll_result_columns' => '水平滚动以查看所有结果列',
     'core.business.table.scroll_selected_columns' => '水平滚动以查看所有选定的列',

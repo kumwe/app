@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for es, carrying 2533 messages.
+ * Compiled interface message catalogue for es, carrying 2552 messages.
  *
  * Generated from es.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1886,6 +1886,19 @@ return [
     'core.business.form.no' => 'No',
     'core.business.form.not_set' => 'Sin definir',
     'core.business.form.yes' => 'Sí',
+    'core.business.history.action' => 'Acción del flujo de trabajo',
+    'core.business.history.archive' => 'Archivado',
+    'core.business.history.change' => 'Modificado',
+    'core.business.history.create' => 'Creado',
+    'core.business.history.delete' => 'Eliminado',
+    'core.business.history.document_amend' => 'Documento modificado',
+    'core.business.history.document_create' => 'Documento creado',
+    'core.business.history.relate' => 'Añadido a {label}',
+    'core.business.history.relation' => 'registros relacionados',
+    'core.business.history.reorder' => '{label} reordenado',
+    'core.business.history.restore' => 'Restaurado',
+    'core.business.history.unrelate' => 'Quitado de {label}',
+    'core.business.history.update' => 'Editado',
     'core.business.record_view.actions' => 'Acciones',
     'core.business.record_view.history' => 'Historial',
     'core.business.record_view.relations' => 'Relaciones',
@@ -1895,7 +1908,13 @@ return [
     'core.business.refusal.read_only_badge' => 'Solo lectura',
     'core.business.refusal.read_only_help' => 'Aún puedes abrirlo, revisar su historial y ejecutar las acciones de flujo de trabajo que ofrece.',
     'core.business.refusal.read_only_title' => 'Este registro es de solo lectura',
+    'core.business.relationship_kind.lines' => 'Líneas del registro',
+    'core.business.relationship_kind.many' => 'Registros vinculados',
+    'core.business.relationship_kind.single' => 'Un registro vinculado',
     'core.business.report.reports' => 'Informes',
+    'core.business.state.active' => 'Activo',
+    'core.business.state.archived' => 'Archivado',
+    'core.business.state.deleted' => 'Eliminado',
     'core.business.table.scroll_choice_details' => 'Desplázate horizontalmente para revisar los detalles de la selección',
     'core.business.table.scroll_result_columns' => 'Desplázate horizontalmente para revisar cada columna de resultados',
     'core.business.table.scroll_selected_columns' => 'Desplázate horizontalmente para revisar cada columna seleccionada',

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for pt-BR, carrying 2533 messages.
+ * Compiled interface message catalogue for pt-BR, carrying 2552 messages.
  *
  * Generated from pt-BR.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1886,6 +1886,19 @@ return [
     'core.business.form.no' => 'Não',
     'core.business.form.not_set' => 'Não definido',
     'core.business.form.yes' => 'Sim',
+    'core.business.history.action' => 'Ação do fluxo de trabalho',
+    'core.business.history.archive' => 'Arquivado',
+    'core.business.history.change' => 'Alterado',
+    'core.business.history.create' => 'Criado',
+    'core.business.history.delete' => 'Excluído',
+    'core.business.history.document_amend' => 'Documento alterado',
+    'core.business.history.document_create' => 'Documento criado',
+    'core.business.history.relate' => 'Adicionado a {label}',
+    'core.business.history.relation' => 'registros relacionados',
+    'core.business.history.reorder' => '{label} reordenado',
+    'core.business.history.restore' => 'Restaurado',
+    'core.business.history.unrelate' => 'Removido de {label}',
+    'core.business.history.update' => 'Editado',
     'core.business.record_view.actions' => 'Ações',
     'core.business.record_view.history' => 'Histórico',
     'core.business.record_view.relations' => 'Relações',
@@ -1895,7 +1908,13 @@ return [
     'core.business.refusal.read_only_badge' => 'Somente leitura',
     'core.business.refusal.read_only_help' => 'Você ainda pode abri-lo, revisar o histórico e executar as ações de fluxo de trabalho que ele oferece.',
     'core.business.refusal.read_only_title' => 'Este registro é somente leitura',
+    'core.business.relationship_kind.lines' => 'Linhas do registro',
+    'core.business.relationship_kind.many' => 'Registros vinculados',
+    'core.business.relationship_kind.single' => 'Um registro vinculado',
     'core.business.report.reports' => 'Relatórios',
+    'core.business.state.active' => 'Ativo',
+    'core.business.state.archived' => 'Arquivado',
+    'core.business.state.deleted' => 'Excluído',
     'core.business.table.scroll_choice_details' => 'Role horizontalmente para revisar os detalhes da escolha',
     'core.business.table.scroll_result_columns' => 'Role horizontalmente para revisar cada coluna de resultados',
     'core.business.table.scroll_selected_columns' => 'Role horizontalmente para revisar cada coluna selecionada',

@@ -18920,6 +18920,177 @@
     </unit>
   </file>
   <file id="core-business-browser">
+    <unit id="core.business.relationship_kind.single">
+      <notes>
+        <note category="context">Kind of a relationship that links a generated record to at most one other record.</note>
+      </notes>
+      <segment>
+        <source>One linked record</source>
+        <target>One linked record</target>
+      </segment>
+    </unit>
+    <unit id="core.business.relationship_kind.many">
+      <notes>
+        <note category="context">Kind of a relationship that links a generated record to any number of other records.</note>
+      </notes>
+      <segment>
+        <source>Linked records</source>
+        <target>Linked records</target>
+      </segment>
+    </unit>
+    <unit id="core.business.relationship_kind.lines">
+      <notes>
+        <note category="context">Kind of a relationship holding the lines a generated record owns, such as document or job card lines.</note>
+      </notes>
+      <segment>
+        <source>Record lines</source>
+        <target>Record lines</target>
+      </segment>
+    </unit>
+    <unit id="core.business.state.active">
+      <notes>
+        <note category="context">State of a generated record that has no workflow state and is neither archived nor deleted.</note>
+      </notes>
+      <segment>
+        <source>Active</source>
+        <target>Active</target>
+      </segment>
+    </unit>
+    <unit id="core.business.state.archived">
+      <notes>
+        <note category="context">State of a generated record that has been archived.</note>
+      </notes>
+      <segment>
+        <source>Archived</source>
+        <target>Archived</target>
+      </segment>
+    </unit>
+    <unit id="core.business.state.deleted">
+      <notes>
+        <note category="context">State of a generated record that has been deleted.</note>
+      </notes>
+      <segment>
+        <source>Deleted</source>
+        <target>Deleted</target>
+      </segment>
+    </unit>
+    <unit id="core.business.history.create">
+      <notes>
+        <note category="context">Business label for one revision operation on a generated record history page.</note>
+      </notes>
+      <segment>
+        <source>Created</source>
+        <target>Created</target>
+      </segment>
+    </unit>
+    <unit id="core.business.history.update">
+      <notes>
+        <note category="context">Business label for one revision operation on a generated record history page.</note>
+      </notes>
+      <segment>
+        <source>Edited</source>
+        <target>Edited</target>
+      </segment>
+    </unit>
+    <unit id="core.business.history.archive">
+      <notes>
+        <note category="context">Business label for one revision operation on a generated record history page.</note>
+      </notes>
+      <segment>
+        <source>Archived</source>
+        <target>Archived</target>
+      </segment>
+    </unit>
+    <unit id="core.business.history.restore">
+      <notes>
+        <note category="context">Business label for one revision operation on a generated record history page.</note>
+      </notes>
+      <segment>
+        <source>Restored</source>
+        <target>Restored</target>
+      </segment>
+    </unit>
+    <unit id="core.business.history.delete">
+      <notes>
+        <note category="context">Business label for one revision operation on a generated record history page.</note>
+      </notes>
+      <segment>
+        <source>Deleted</source>
+        <target>Deleted</target>
+      </segment>
+    </unit>
+    <unit id="core.business.history.document_create">
+      <notes>
+        <note category="context">Business label for one revision operation on a generated record history page.</note>
+      </notes>
+      <segment>
+        <source>Document created</source>
+        <target>Document created</target>
+      </segment>
+    </unit>
+    <unit id="core.business.history.document_amend">
+      <notes>
+        <note category="context">Business label for one revision operation on a generated record history page.</note>
+      </notes>
+      <segment>
+        <source>Document amended</source>
+        <target>Document amended</target>
+      </segment>
+    </unit>
+    <unit id="core.business.history.action">
+      <notes>
+        <note category="context">Business label for one revision operation on a generated record history page.</note>
+      </notes>
+      <segment>
+        <source>Workflow action</source>
+        <target>Workflow action</target>
+      </segment>
+    </unit>
+    <unit id="core.business.history.relate">
+      <notes>
+        <note category="context">Business label for one revision operation on a generated record history page. {label} is the relationship label.</note>
+      </notes>
+      <segment>
+        <source>Added to {label}</source>
+        <target>Added to {label}</target>
+      </segment>
+    </unit>
+    <unit id="core.business.history.unrelate">
+      <notes>
+        <note category="context">Business label for one revision operation on a generated record history page. {label} is the relationship label.</note>
+      </notes>
+      <segment>
+        <source>Removed from {label}</source>
+        <target>Removed from {label}</target>
+      </segment>
+    </unit>
+    <unit id="core.business.history.reorder">
+      <notes>
+        <note category="context">Business label for one revision operation on a generated record history page. {label} is the relationship label.</note>
+      </notes>
+      <segment>
+        <source>Reordered {label}</source>
+        <target>Reordered {label}</target>
+      </segment>
+    </unit>
+    <unit id="core.business.history.relation">
+      <notes>
+        <note category="context">Business label for one revision operation on a generated record history page.</note>
+      </notes>
+      <segment>
+        <source>related records</source>
+        <target>related records</target>
+      </segment>
+    </unit>
+    <unit id="core.business.history.change">
+      <notes>
+        <note category="context">Business label for one revision operation on a generated record history page.</note>
+      </notes>
+      <segment>
+        <source>Changed</source>
+        <target>Changed</target>
+      </segment>
+    </unit>
     <unit id="core.business.browser.record_failed_validation">
       <notes>
         <note category="context">Error summary above a generated record form whose values were refused.</note>

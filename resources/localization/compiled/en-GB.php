@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for en-GB, carrying 2533 messages.
+ * Compiled interface message catalogue for en-GB, carrying 2552 messages.
  *
  * Generated from en-GB.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1886,6 +1886,19 @@ return [
     'core.business.form.no' => 'No',
     'core.business.form.not_set' => 'Not set',
     'core.business.form.yes' => 'Yes',
+    'core.business.history.action' => 'Workflow action',
+    'core.business.history.archive' => 'Archived',
+    'core.business.history.change' => 'Changed',
+    'core.business.history.create' => 'Created',
+    'core.business.history.delete' => 'Deleted',
+    'core.business.history.document_amend' => 'Document amended',
+    'core.business.history.document_create' => 'Document created',
+    'core.business.history.relate' => 'Added to {label}',
+    'core.business.history.relation' => 'related records',
+    'core.business.history.reorder' => 'Reordered {label}',
+    'core.business.history.restore' => 'Restored',
+    'core.business.history.unrelate' => 'Removed from {label}',
+    'core.business.history.update' => 'Edited',
     'core.business.record_view.actions' => 'Actions',
     'core.business.record_view.history' => 'History',
     'core.business.record_view.relations' => 'Relations',
@@ -1895,7 +1908,13 @@ return [
     'core.business.refusal.read_only_badge' => 'Read-only',
     'core.business.refusal.read_only_help' => 'You can still open it, review its history and run the workflow actions it offers.',
     'core.business.refusal.read_only_title' => 'This record is read-only',
+    'core.business.relationship_kind.lines' => 'Record lines',
+    'core.business.relationship_kind.many' => 'Linked records',
+    'core.business.relationship_kind.single' => 'One linked record',
     'core.business.report.reports' => 'Reports',
+    'core.business.state.active' => 'Active',
+    'core.business.state.archived' => 'Archived',
+    'core.business.state.deleted' => 'Deleted',
     'core.business.table.scroll_choice_details' => 'Scroll horizontally to review choice details',
     'core.business.table.scroll_result_columns' => 'Scroll horizontally to review every result column',
     'core.business.table.scroll_selected_columns' => 'Scroll horizontally to review every selected column',

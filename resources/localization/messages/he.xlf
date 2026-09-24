@@ -18920,6 +18920,177 @@
     </unit>
   </file>
   <file id="core-business-browser">
+    <unit id="core.business.relationship_kind.single">
+      <notes>
+        <note category="context">Kind of a relationship that links a generated record to at most one other record.</note>
+      </notes>
+      <segment>
+        <source>One linked record</source>
+        <target>רשומה מקושרת אחת</target>
+      </segment>
+    </unit>
+    <unit id="core.business.relationship_kind.many">
+      <notes>
+        <note category="context">Kind of a relationship that links a generated record to any number of other records.</note>
+      </notes>
+      <segment>
+        <source>Linked records</source>
+        <target>רשומות מקושרות</target>
+      </segment>
+    </unit>
+    <unit id="core.business.relationship_kind.lines">
+      <notes>
+        <note category="context">Kind of a relationship holding the lines a generated record owns, such as document or job card lines.</note>
+      </notes>
+      <segment>
+        <source>Record lines</source>
+        <target>שורות הרשומה</target>
+      </segment>
+    </unit>
+    <unit id="core.business.state.active">
+      <notes>
+        <note category="context">State of a generated record that has no workflow state and is neither archived nor deleted.</note>
+      </notes>
+      <segment>
+        <source>Active</source>
+        <target>פעיל</target>
+      </segment>
+    </unit>
+    <unit id="core.business.state.archived">
+      <notes>
+        <note category="context">State of a generated record that has been archived.</note>
+      </notes>
+      <segment>
+        <source>Archived</source>
+        <target>בארכיון</target>
+      </segment>
+    </unit>
+    <unit id="core.business.state.deleted">
+      <notes>
+        <note category="context">State of a generated record that has been deleted.</note>
+      </notes>
+      <segment>
+        <source>Deleted</source>
+        <target>נמחק</target>
+      </segment>
+    </unit>
+    <unit id="core.business.history.create">
+      <notes>
+        <note category="context">Business label for one revision operation on a generated record history page.</note>
+      </notes>
+      <segment>
+        <source>Created</source>
+        <target>נוצר</target>
+      </segment>
+    </unit>
+    <unit id="core.business.history.update">
+      <notes>
+        <note category="context">Business label for one revision operation on a generated record history page.</note>
+      </notes>
+      <segment>
+        <source>Edited</source>
+        <target>נערך</target>
+      </segment>
+    </unit>
+    <unit id="core.business.history.archive">
+      <notes>
+        <note category="context">Business label for one revision operation on a generated record history page.</note>
+      </notes>
+      <segment>
+        <source>Archived</source>
+        <target>הועבר לארכיון</target>
+      </segment>
+    </unit>
+    <unit id="core.business.history.restore">
+      <notes>
+        <note category="context">Business label for one revision operation on a generated record history page.</note>
+      </notes>
+      <segment>
+        <source>Restored</source>
+        <target>שוחזר</target>
+      </segment>
+    </unit>
+    <unit id="core.business.history.delete">
+      <notes>
+        <note category="context">Business label for one revision operation on a generated record history page.</note>
+      </notes>
+      <segment>
+        <source>Deleted</source>
+        <target>נמחק</target>
+      </segment>
+    </unit>
+    <unit id="core.business.history.document_create">
+      <notes>
+        <note category="context">Business label for one revision operation on a generated record history page.</note>
+      </notes>
+      <segment>
+        <source>Document created</source>
+        <target>המסמך נוצר</target>
+      </segment>
+    </unit>
+    <unit id="core.business.history.document_amend">
+      <notes>
+        <note category="context">Business label for one revision operation on a generated record history page.</note>
+      </notes>
+      <segment>
+        <source>Document amended</source>
+        <target>המסמך תוקן</target>
+      </segment>
+    </unit>
+    <unit id="core.business.history.action">
+      <notes>
+        <note category="context">Business label for one revision operation on a generated record history page.</note>
+      </notes>
+      <segment>
+        <source>Workflow action</source>
+        <target>פעולת תהליך עבודה</target>
+      </segment>
+    </unit>
+    <unit id="core.business.history.relate">
+      <notes>
+        <note category="context">Business label for one revision operation on a generated record history page. {label} is the relationship label.</note>
+      </notes>
+      <segment>
+        <source>Added to {label}</source>
+        <target>נוסף אל {label}</target>
+      </segment>
+    </unit>
+    <unit id="core.business.history.unrelate">
+      <notes>
+        <note category="context">Business label for one revision operation on a generated record history page. {label} is the relationship label.</note>
+      </notes>
+      <segment>
+        <source>Removed from {label}</source>
+        <target>הוסר מ־{label}</target>
+      </segment>
+    </unit>
+    <unit id="core.business.history.reorder">
+      <notes>
+        <note category="context">Business label for one revision operation on a generated record history page. {label} is the relationship label.</note>
+      </notes>
+      <segment>
+        <source>Reordered {label}</source>
+        <target>הסדר של {label} שונה</target>
+      </segment>
+    </unit>
+    <unit id="core.business.history.relation">
+      <notes>
+        <note category="context">Business label for one revision operation on a generated record history page.</note>
+      </notes>
+      <segment>
+        <source>related records</source>
+        <target>רשומות קשורות</target>
+      </segment>
+    </unit>
+    <unit id="core.business.history.change">
+      <notes>
+        <note category="context">Business label for one revision operation on a generated record history page.</note>
+      </notes>
+      <segment>
+        <source>Changed</source>
+        <target>שונה</target>
+      </segment>
+    </unit>
     <unit id="core.business.browser.record_failed_validation">
       <notes>
         <note category="context">Error summary above a generated record form whose values were refused.</note>

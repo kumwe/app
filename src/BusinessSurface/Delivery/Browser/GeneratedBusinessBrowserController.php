@@ -44,6 +44,37 @@ use Ramsey\Uuid\Uuid;
 final readonly class GeneratedBusinessBrowserController
 {
     /**
+     * Catalogue labels for revision operations that carry no definition-specific subject.
+     *
+     * A document revision is keyed by its intent (`document.create`, `document.amend`); every other key is
+     * a plain lifecycle operation. An operation missing here is labelled with the neutral change message.
+     *
+     * @var    array<string, string>
+     * @since  2.0.0
+     */
+    private const array REVISION_LABELS = [
+        'create' => 'core.business.history.create',
+        'update' => 'core.business.history.update',
+        'archive' => 'core.business.history.archive',
+        'restore' => 'core.business.history.restore',
+        'delete' => 'core.business.history.delete',
+        'document.create' => 'core.business.history.document_create',
+        'document.amend' => 'core.business.history.document_amend',
+    ];
+
+    /**
+     * Catalogue labels for relationship revisions, each naming the relationship through `{label}`.
+     *
+     * @var    array<string, string>
+     * @since  2.0.0
+     */
+    private const array RELATIONSHIP_REVISION_LABELS = [
+        'relate' => 'core.business.history.relate',
+        'unrelate' => 'core.business.history.unrelate',
+        'reorder' => 'core.business.history.reorder',
+    ];
+
+    /**
      * Configure the shared controller.
      *
      * @param  BusinessSurfaceService          $business        Generated-business application facade.
@@ -664,18 +695,26 @@ final readonly class GeneratedBusinessBrowserController
         }
         $recordTask = $this->recordTask($query);
         if (($query['history'] ?? null) === '1' || $recordTask === 'history') {
+            $history = $this->business->history(
+                $context,
+                $surface,
+                $definition,
+                $record,
+                $this->positive($query['limit'] ?? 100, 200),
+                $this->optionalPositive($query['before_version'] ?? null),
+            );
+            $metadata = $this->metadataMap(
+                $this->business->read($context, $surface, $definition, $record, true, true)['definition'] ?? null,
+                'Generated history definition metadata is unavailable.',
+            );
+
             return new BusinessBrowserResult('business-history', [
                 'definition_handle' => $definition,
                 'record_id' => $record,
                 'record_task' => 'history',
-                ...$this->business->history(
-                    $context,
-                    $surface,
-                    $definition,
-                    $record,
-                    $this->positive($query['limit'] ?? 100, 200),
-                    $this->optionalPositive($query['before_version'] ?? null),
-                ),
+                ...$history,
+                'definition' => $metadata,
+                'revision_labels' => $this->revisionLabels($history['items'] ?? null, $metadata),
             ]);
         }
         $confirmation = $query['confirm'] ?? null;
@@ -1231,6 +1270,7 @@ final readonly class GeneratedBusinessBrowserController
             return new BusinessBrowserResult('business-form', [
                 ...$model,
                 'error_summary' => $this->translator->translate('core.business.browser.record_failed_validation'),
+                'record_errors' => $this->recordErrors($model, $errors),
             ], status: 422);
         } catch (BusinessRecordImmutable | BusinessRecordPostingPeriodClosed $refusal) {
             return $this->refused($context, $surface, $definition, $record, $operation, $form, $refusal);
@@ -1249,6 +1289,97 @@ final readonly class GeneratedBusinessBrowserController
                 $exception->expectedVersion,
             );
         }
+    }
+
+    /**
+     * Collect the refusal messages that belong to the record as a whole rather than to one rendered field.
+     *
+     * A record rule such as "the total must equal the sum of the lines" is reported under the rule's own
+     * handle, which names no field on the form. Keyed by field it would vanish, leaving the summary asking
+     * the operator to review marked fields when none is marked; returned here, the summary states it.
+     *
+     * @param   array<string, mixed>         $model   Re-rendered form model.
+     * @param   array<string, list<string>>  $errors  Violation messages keyed by the reported field or rule.
+     *
+     * @return  list<string>  Messages for violations no rendered field carries, in reported order.
+     *
+     * @since   2.0.0
+     */
+    private function recordErrors(array $model, array $errors): array
+    {
+        $fields = is_array($model['fields'] ?? null) ? $model['fields'] : [];
+        $rendered = array_column(array_filter($fields, 'is_array'), 'handle');
+        $messages = [];
+        foreach ($errors as $field => $fieldMessages) {
+            if (!in_array($field, $rendered, true)) {
+                array_push($messages, ...$fieldMessages);
+            }
+        }
+
+        return $messages;
+    }
+
+    /**
+     * Give each disclosed revision a business label for its operation and for the fields it changed.
+     *
+     * Revisions store stable identifiers such as `action.post`, `relate.lines` or `document.create`, and
+     * changed fields by handle. Those are platform terms; the history page presents the definition's own
+     * action, relationship and field labels instead, and a catalogue label for the plain lifecycle steps.
+     * An identifier the definition no longer declares falls back to a neutral catalogue label. The labels
+     * travel beside the revisions, aligned by position, so the disclosed revision items stay exactly the
+     * projection every other adapter returns.
+     *
+     * @param   mixed                 $items     Projected revision list.
+     * @param   array<string, mixed>  $metadata  Policy-filtered definition metadata.
+     *
+     * @return  list<array{operation_label: string, changed_labels: list<string>}>  One entry per revision.
+     *
+     * @since   2.0.0
+     */
+    private function revisionLabels(mixed $items, array $metadata): array
+    {
+        if (!is_array($items) || !array_is_list($items)) {
+            return [];
+        }
+        $labels = static function (mixed $collection): array {
+            $map = [];
+            foreach (is_array($collection) ? $collection : [] as $entry) {
+                if (is_array($entry) && is_string($entry['handle'] ?? null) && is_string($entry['label'] ?? null)) {
+                    $map[$entry['handle']] = $entry['label'];
+                }
+            }
+
+            return $map;
+        };
+        $actions = $labels($metadata['actions'] ?? null);
+        $relationships = $labels($metadata['relationships'] ?? null);
+        $fields = $labels($metadata['fields'] ?? null);
+        $labelled = [];
+        foreach ($items as $item) {
+            $item = is_array($item) ? $item : [];
+            $operation = is_string($item['operation'] ?? null) ? $item['operation'] : '';
+            [$kind, $subject] = array_pad(explode('.', $operation, 2), 2, '');
+            $relationship = self::RELATIONSHIP_REVISION_LABELS[$kind] ?? null;
+            $action = $actions[$subject] ?? $this->translator->translate('core.business.history.action');
+            $relation = $relationships[$subject] ?? $this->translator->translate('core.business.history.relation');
+            $label = match (true) {
+                $kind === 'action' => $action,
+                $relationship !== null => $this->translator->translate($relationship, ['label' => $relation]),
+                default => $this->translator->translate(
+                    self::REVISION_LABELS[$operation] ?? 'core.business.history.change',
+                ),
+            };
+            $changed = is_array($item['changed_fields'] ?? null) ? $item['changed_fields'] : [];
+            $labelled[] = [
+                'operation_label' => $label,
+                'changed_labels' => array_values(array_map(
+                    static fn (mixed $handle): string => is_string($handle) ? ($fields[$handle] ?? $handle) : '',
+                    $changed,
+                )),
+            ];
+        }
+
+        return $labelled;
     }
 
     /**

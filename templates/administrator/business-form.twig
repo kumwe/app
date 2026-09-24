@@ -52,6 +52,7 @@
             {% for field in fields %}
               {% if field.errors is not empty %}<li><a href="#business-field-{{ field.handle }}">{{ field.label }}</a></li>{% endif %}
             {% endfor %}
+            {% for message in record_errors|default([]) %}<li data-record-error>{{ message }}</li>{% endfor %}
           </ul>
         </div>
       </section>

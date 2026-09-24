@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for he, carrying 2533 messages.
+ * Compiled interface message catalogue for he, carrying 2552 messages.
  *
  * Generated from he.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1886,6 +1886,19 @@ return [
     'core.business.form.no' => 'לא',
     'core.business.form.not_set' => 'לא הוגדר',
     'core.business.form.yes' => 'כן',
+    'core.business.history.action' => 'פעולת תהליך עבודה',
+    'core.business.history.archive' => 'הועבר לארכיון',
+    'core.business.history.change' => 'שונה',
+    'core.business.history.create' => 'נוצר',
+    'core.business.history.delete' => 'נמחק',
+    'core.business.history.document_amend' => 'המסמך תוקן',
+    'core.business.history.document_create' => 'המסמך נוצר',
+    'core.business.history.relate' => 'נוסף אל {label}',
+    'core.business.history.relation' => 'רשומות קשורות',
+    'core.business.history.reorder' => 'הסדר של {label} שונה',
+    'core.business.history.restore' => 'שוחזר',
+    'core.business.history.unrelate' => 'הוסר מ־{label}',
+    'core.business.history.update' => 'נערך',
     'core.business.record_view.actions' => 'פעולות',
     'core.business.record_view.history' => 'היסטוריה',
     'core.business.record_view.relations' => 'קשרים',
@@ -1895,7 +1908,13 @@ return [
     'core.business.refusal.read_only_badge' => 'לקריאה בלבד',
     'core.business.refusal.read_only_help' => 'עדיין אפשר לפתוח אותה, לעיין בהיסטוריה שלה ולהפעיל את פעולות תהליך העבודה שהיא מציעה.',
     'core.business.refusal.read_only_title' => 'רשומה זו היא לקריאה בלבד',
+    'core.business.relationship_kind.lines' => 'שורות הרשומה',
+    'core.business.relationship_kind.many' => 'רשומות מקושרות',
+    'core.business.relationship_kind.single' => 'רשומה מקושרת אחת',
     'core.business.report.reports' => 'דוחות',
+    'core.business.state.active' => 'פעיל',
+    'core.business.state.archived' => 'בארכיון',
+    'core.business.state.deleted' => 'נמחק',
     'core.business.table.scroll_choice_details' => 'גללו אופקית כדי לעיין בפרטי הבחירה',
     'core.business.table.scroll_result_columns' => 'גללו אופקית כדי לעיין בכל עמודות התוצאות',
     'core.business.table.scroll_selected_columns' => 'גללו אופקית כדי לעיין בכל עמודה שנבחרה',

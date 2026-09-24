@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for ar, carrying 2533 messages.
+ * Compiled interface message catalogue for ar, carrying 2552 messages.
  *
  * Generated from ar.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1886,6 +1886,19 @@ return [
     'core.business.form.no' => 'لا',
     'core.business.form.not_set' => 'غير محدد',
     'core.business.form.yes' => 'نعم',
+    'core.business.history.action' => 'إجراء سير العمل',
+    'core.business.history.archive' => 'تمت الأرشفة',
+    'core.business.history.change' => 'تم التغيير',
+    'core.business.history.create' => 'تم الإنشاء',
+    'core.business.history.delete' => 'تم الحذف',
+    'core.business.history.document_amend' => 'تم تعديل المستند',
+    'core.business.history.document_create' => 'تم إنشاء المستند',
+    'core.business.history.relate' => 'أُضيف إلى {label}',
+    'core.business.history.relation' => 'السجلات المرتبطة',
+    'core.business.history.reorder' => 'أُعيد ترتيب {label}',
+    'core.business.history.restore' => 'تمت الاستعادة',
+    'core.business.history.unrelate' => 'أُزيل من {label}',
+    'core.business.history.update' => 'تم التعديل',
     'core.business.record_view.actions' => 'الإجراءات',
     'core.business.record_view.history' => 'السجل',
     'core.business.record_view.relations' => 'العلاقات',
@@ -1895,7 +1908,13 @@ return [
     'core.business.refusal.read_only_badge' => 'للقراءة فقط',
     'core.business.refusal.read_only_help' => 'لا يزال بإمكانك فتحه ومراجعة سجله وتشغيل إجراءات سير العمل التي يتيحها.',
     'core.business.refusal.read_only_title' => 'هذا السجل للقراءة فقط',
+    'core.business.relationship_kind.lines' => 'بنود السجل',
+    'core.business.relationship_kind.many' => 'سجلات مرتبطة',
+    'core.business.relationship_kind.single' => 'سجل مرتبط واحد',
     'core.business.report.reports' => 'التقارير',
+    'core.business.state.active' => 'نشط',
+    'core.business.state.archived' => 'مؤرشف',
+    'core.business.state.deleted' => 'محذوف',
     'core.business.table.scroll_choice_details' => 'مرّر أفقيًا لمراجعة تفاصيل الاختيار',
     'core.business.table.scroll_result_columns' => 'مرّر أفقيًا لمراجعة كل أعمدة النتائج',
     'core.business.table.scroll_selected_columns' => 'مرّر أفقيًا لمراجعة كل عمود محدد',

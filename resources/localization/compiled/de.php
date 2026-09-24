@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for de, carrying 2533 messages.
+ * Compiled interface message catalogue for de, carrying 2552 messages.
  *
  * Generated from de.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1886,6 +1886,19 @@ return [
     'core.business.form.no' => 'Nein',
     'core.business.form.not_set' => 'Nicht festgelegt',
     'core.business.form.yes' => 'Ja',
+    'core.business.history.action' => 'Workflow-Aktion',
+    'core.business.history.archive' => 'Archiviert',
+    'core.business.history.change' => 'Geändert',
+    'core.business.history.create' => 'Erstellt',
+    'core.business.history.delete' => 'Gelöscht',
+    'core.business.history.document_amend' => 'Dokument geändert',
+    'core.business.history.document_create' => 'Dokument erstellt',
+    'core.business.history.relate' => 'Zu {label} hinzugefügt',
+    'core.business.history.relation' => 'verknüpfte Datensätze',
+    'core.business.history.reorder' => '{label} neu angeordnet',
+    'core.business.history.restore' => 'Wiederhergestellt',
+    'core.business.history.unrelate' => 'Aus {label} entfernt',
+    'core.business.history.update' => 'Bearbeitet',
     'core.business.record_view.actions' => 'Aktionen',
     'core.business.record_view.history' => 'Verlauf',
     'core.business.record_view.relations' => 'Beziehungen',
@@ -1895,7 +1908,13 @@ return [
     'core.business.refusal.read_only_badge' => 'Schreibgeschützt',
     'core.business.refusal.read_only_help' => 'Sie können ihn weiterhin öffnen, seinen Verlauf prüfen und die angebotenen Workflow-Aktionen ausführen.',
     'core.business.refusal.read_only_title' => 'Dieser Datensatz ist schreibgeschützt',
+    'core.business.relationship_kind.lines' => 'Datensatzzeilen',
+    'core.business.relationship_kind.many' => 'Verknüpfte Datensätze',
+    'core.business.relationship_kind.single' => 'Ein verknüpfter Datensatz',
     'core.business.report.reports' => 'Berichte',
+    'core.business.state.active' => 'Aktiv',
+    'core.business.state.archived' => 'Archiviert',
+    'core.business.state.deleted' => 'Gelöscht',
     'core.business.table.scroll_choice_details' => 'Horizontal scrollen, um die Auswahldetails zu prüfen',
     'core.business.table.scroll_result_columns' => 'Horizontal scrollen, um jede Ergebnisspalte zu prüfen',
     'core.business.table.scroll_selected_columns' => 'Horizontal scrollen, um jede ausgewählte Spalte zu prüfen',

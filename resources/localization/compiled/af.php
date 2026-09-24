@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for af, carrying 2533 messages.
+ * Compiled interface message catalogue for af, carrying 2552 messages.
  *
  * Generated from af.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1886,6 +1886,19 @@ return [
     'core.business.form.no' => 'Nee',
     'core.business.form.not_set' => 'Nie gestel nie',
     'core.business.form.yes' => 'Ja',
+    'core.business.history.action' => 'Werkvloei-aksie',
+    'core.business.history.archive' => 'Geargiveer',
+    'core.business.history.change' => 'Verander',
+    'core.business.history.create' => 'Geskep',
+    'core.business.history.delete' => 'Geskrap',
+    'core.business.history.document_amend' => 'Dokument gewysig',
+    'core.business.history.document_create' => 'Dokument geskep',
+    'core.business.history.relate' => 'By {label} gevoeg',
+    'core.business.history.relation' => 'verwante rekords',
+    'core.business.history.reorder' => '{label} herrangskik',
+    'core.business.history.restore' => 'Herstel',
+    'core.business.history.unrelate' => 'Uit {label} verwyder',
+    'core.business.history.update' => 'Gewysig',
     'core.business.record_view.actions' => 'Aksies',
     'core.business.record_view.history' => 'Geskiedenis',
     'core.business.record_view.relations' => 'Relasies',
@@ -1895,7 +1908,13 @@ return [
     'core.business.refusal.read_only_badge' => 'Leesalleen',
     'core.business.refusal.read_only_help' => 'Jy kan dit steeds oopmaak, sy geskiedenis nagaan en die werkvloei-aksies uitvoer wat dit bied.',
     'core.business.refusal.read_only_title' => 'Hierdie rekord is leesalleen',
+    'core.business.relationship_kind.lines' => 'Rekordreëls',
+    'core.business.relationship_kind.many' => 'Gekoppelde rekords',
+    'core.business.relationship_kind.single' => 'Een gekoppelde rekord',
     'core.business.report.reports' => 'Verslae',
+    'core.business.state.active' => 'Aktief',
+    'core.business.state.archived' => 'Geargiveer',
+    'core.business.state.deleted' => 'Geskrap',
     'core.business.table.scroll_choice_details' => 'Blaai horisontaal om keusebesonderhede te hersien',
     'core.business.table.scroll_result_columns' => 'Blaai horisontaal om elke resultaatkolom te hersien',
     'core.business.table.scroll_selected_columns' => 'Blaai horisontaal om elke gekose kolom te hersien',
