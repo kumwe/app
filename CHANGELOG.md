@@ -17,6 +17,11 @@ Entries cite the commits that carried them. Version 2.0.0 is not released, so ev
 
 ## [Unreleased]
 
+- Pin MariaDB sessions to traditional current locking reads so a peer commit after an ordinary
+  repeatable read cannot make number allocation fail with snapshot error 1020. Row exclusion,
+  rollback and unrelated-counter progress remain enforced by the production allocator. A two-session
+  regression covers this interleaving; exact MariaDB 12.3 capacity evidence comes from CI (#152).
+
 - Apply the audit package's credential redaction policy before persistence and digest calculation;
   nested credentials and long opaque values never enter new audit rows, while the exact stored
   representation remains anchor-verifiable. Existing historical rows are not rewritten. Step-up

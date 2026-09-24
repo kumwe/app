@@ -6,6 +6,7 @@ namespace Kumwe\App\Infrastructure\Persistence;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
+use Doctrine\DBAL\Platforms\MariaDBPlatform;
 use Kumwe\App\Infrastructure\Persistence\Type\DoctrineTemporalTypes;
 use Kumwe\App\Kernel\Configuration\DatabaseConfiguration;
 use Pdo\Mysql;
@@ -20,6 +21,12 @@ use Pdo\Pgsql;
  * Kumwe stores. Engine differences are confined to this class — `mysql` and `mariadb` both bind to
  * `pdo_mysql`; PostgreSQL binds to `pdo_pgsql` and sends each DBAL one-shot statement with its parameters
  * in one call, avoiding both a second round trip and a PHP 8.5 stale-result fault on repeated locking reads.
+ *
+ * MariaDB sessions explicitly retain traditional InnoDB current reads. Its newer snapshot-isolation
+ * default rejects a locking read when a peer committed after an earlier ordinary read. Kumwe instead
+ * arbitrates mutations with current row locks and compare-and-set versions, while ordinary reads keep
+ * their repeatable snapshot. Pinning this per connection preserves that protocol without changing the
+ * server global, weakening row locks, adding retries or serializing unrelated record commands.
  *
  * @since  2.0.0
  */
@@ -90,6 +97,10 @@ final readonly class DoctrineConnectionFactory
                 ? "SET TIME ZONE 'UTC'"
                 : "SET time_zone = '+00:00'",
         );
+
+        if ($connection->getDatabasePlatform() instanceof MariaDBPlatform) {
+            $connection->executeStatement('SET SESSION innodb_snapshot_isolation = OFF');
+        }
 
         return $connection;
     }
