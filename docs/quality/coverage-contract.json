@@ -54,6 +54,10 @@
                 "reason": "The subject is the shell recovery tooling under tools/, including snapshot format, authentication, interruption and replay rules; it is not a PHP class under src/."
             },
             {
+                "path": "tests/Unit/Tools/RecoveryStructuredLogTest.php",
+                "reason": "The subject is the structured, redacted operator logging and outcome recording in tools/recovery-common.sh, executed for real by bash; it is not a PHP class under src/."
+            },
+            {
                 "path": "tests/Architecture/",
                 "reason": "Architecture and source-shape tests assert facts about files, workflows, manifests and boundaries. Their subject is the arrangement of the tree, not a class in it."
             },

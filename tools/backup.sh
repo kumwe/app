@@ -7,9 +7,10 @@ script_directory="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 source "${script_directory}/recovery-common.sh"
 
 fail() {
-    echo "Kumwe backup failed: $*" >&2
-    exit 1
+    recovery_fail "Kumwe backup failed: $*"
 }
+
+recovery_begin backup backup
 
 require_command() {
     command -v "$1" >/dev/null 2>&1 || fail "required command '$1' is unavailable"
@@ -134,7 +135,8 @@ cleanup() {
         rmdir "$staging_directory" 2>/dev/null || true
     fi
 }
-trap cleanup EXIT INT TERM
+trap 'recovery_finish $?; cleanup' EXIT
+trap cleanup INT TERM
 
 lock_path="${backup_root}/.kumwe-backup.lock"
 [[ ! -L "$lock_path" ]] || fail 'backup lock path must not be a symbolic link'
@@ -309,6 +311,8 @@ fi
 
 chmod -R go-rwx "$staging_directory"
 mv -- "$staging_directory" "$final_directory"
-trap - EXIT INT TERM
+trap 'recovery_finish $?' EXIT
+trap - INT TERM
+recovery_log info 'Kumwe backup snapshot written.' backup "$backup_name" database_driver "$database_driver"
 
 echo "$final_directory"
