@@ -2625,8 +2625,8 @@ final class ContainerFactory
                     new StudioContentAuthoringContextRetentionMigration(self::service($container, TableNames::class)),
                     new BusinessRecordScaleMigration(self::service($container, TableNames::class)),
                     new QueueWorkerPermitsMigration(self::service($container, TableNames::class)),
-                    new StudioContentAuthoringStartMigration(self::service($container, TableNames::class)),
                     new RetentionCatalogueMigration(self::service($container, TableNames::class)),
+                    new StudioContentAuthoringStartMigration(self::service($container, TableNames::class)),
                 ],
                 self::acceptedHistoricalChecksums(),
             ), true);
