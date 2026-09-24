@@ -1171,10 +1171,11 @@ building against contracts that will not move; they are not building against a q
 
 1. No repository-owned critical or high finding is open. Conditional and external risks each have an
    owner, a detection method, a compensating control, a remediation path and a review date.
-2. The five-million envelope is proven on the declared topology: a 24-hour rated run and a 72-hour soak at
-   70% load with zero integrity violations, stable resources, bounded growth and at least 30% headroom.
-   MariaDB and MySQL both meet every objective; PostgreSQL meets the declared portable profile and every
-   correctness gate.
+2. Concurrent capacity samples and explicitly labelled estimates are published under
+   [ADR 0021](decisions/0021-automated-acceptance-and-sampled-capacity.md), using available workflow hardware.
+   The five-million daily envelope is a planning target; an estimate is not a measured production guarantee.
+   Integrity, bounded growth and the three-engine correctness gates remain mandatory. Dedicated hardware
+   and 24-hour rated or 72-hour soak runs are not prerequisites for this increment.
 3. Unrelated record writes no longer serialize on one definition row. Event-producing commits no longer
    lock one installation-wide head. Fan-out and queue claims scale through independent batched workers with
    no duplicate effect. Every hot ledger has a retention policy with at least twice its expiry drain
@@ -1186,7 +1187,8 @@ building against contracts that will not move; they are not building against a q
    discipline.
 6. The exact built application image, web image, Composer package and archive — not rebuilt lookalikes —
    pass the complete qualification contract, and a signed manifest contains every published digest.
-7. Human interface acceptance is complete with named accountable reviewers.
+7. Automated interface and language evidence is complete. Maintainer merge is the sole human acceptance
+   record, with no separate manual checklist, under ADR 0021.
 8. The vertical-neutral proof portfolio installs, runs and uninstalls on all three engines with no core
    edit.
 9. An independent review at the release candidate finds no repository-owned critical or high
@@ -1967,8 +1969,11 @@ repository-owned critical and high finding.
 
 **Entry conditions.** Phases 5 and 6 exit gates passed.
 
-**P7-A — Enterprise benchmark, stress and soak.** Run the weekly and release programme from the capacity
-contract on versioned dedicated hardware: a 24-hour rated run, a 72-hour soak at 70% load, peak and spike
+**P7-A — Sampled concurrency and capacity estimates.** ADR 0021 replaces the dedicated-hardware and
+24-hour/72-hour duration prerequisites with repeated concurrent samples on available workflow hardware.
+Record the actual machine, worker counts, database configuration, sample variation, latency, errors and
+throughput. Separate measured results from estimates and disclose extrapolation and shared-database limits.
+Larger operator qualification can additionally exercise peak and spike
 and stress and breakpoint profiles, worker outage and backlog recovery, primary failover and replica lag,
 Redis loss, worker `SIGKILL`, network delay, downstream timeout, disk pressure, storage outage, generation
 transition during traffic, retention during load, fan-out at three and ten with slow and poison consumers,
@@ -1981,7 +1986,7 @@ all three engines, a representative dataset and target concurrency. Every drill 
 error, retryability, audit evidence, metric and alert, operator runbook, data invariant, recovery action
 and maximum recovery time.
 
-**P7-C — Security and privacy qualification.** An independent threat-led review plus automated and manual
+**P7-C — Security and privacy qualification.** An independent threat-led agent review plus automated
 evidence across authentication and session handling, request-forgery and content-policy and upload and
 traversal and server-side-request boundaries, query and identifier and pagination and exhaustion inputs,
 row and field and action and report and export and event and log non-disclosure, maker-checker and
@@ -2004,7 +2009,7 @@ lag, disk forecast, extension trust and security events; synthetic probes; dashb
 operations from transport retries; and operator drills confirming each critical alert is actionable and
 clears after recovery. Closes `GM-OBS-05` by decision or by implementation, never by silence.
 
-**P7-E — Accountable human interface acceptance.** Findings: `V2-UX-001`, `V2-QA-014`. Named accountable reviewers
+**P7-E — Automated interface acceptance.** Findings: `V2-UX-001`, `V2-QA-014`. Workflows
 complete five archetype task journeys with task-based evidence: content authoring and media and navigation
 and workflow and publication; an exact-value thousand-line document drafted, reviewed, approved, posted,
 inspected in history and exported; a relationship and self-service portal flow; a mobile assignment flow
@@ -2015,16 +2020,16 @@ ergonomics and assistive technology. Fix the known generic debt: detached requir
 labels and defaults, extremely long ungrouped mobile forms, insufficient progressive disclosure, and raw
 platform terminology presented as a business-user workflow.
 
-On real Safari, a reviewer also changes the operating-system appearance while an administrator page remains
-open and records whether the rendered background follows it. That experiment closes `V2-QA-014` either with
-a cascade-level product repair or with an upstream Playwright report and a settled-render assertion; emulated
-WebKit alone cannot stand in for accountable human acceptance on the native browser.
+The browser workflow changes appearance while an administrator page remains open and asserts that the
+rendered background follows it. A reproducible defect receives a cascade-level repair and regression test.
+Report each tested engine accurately: Playwright WebKit is not evidence of a person using native Safari.
 
 Two journeys are additionally run in a non-source language, one of them right-to-left: terminology,
 truncation, line wrapping, form-label alignment, date and number rendering and assistive-technology
-announcement are all locale-dependent, and a review conducted only in `en-GB` cannot see any of it. The
-reviewer for the right-to-left journey reads the language; a left-to-right reader inspecting a mirrored
-layout is not acceptance evidence.
+announcement are all locale-dependent, and tests conducted only in `en-GB` cannot see any of it. Catalogue,
+placeholder, bidirectional layout and accessibility checks run automatically. Record their actual coverage
+without claiming fluent human review. Maintainer merge accepts the completed work; no additional human
+browser, assistive-technology or language checklist is required (ADR 0021).
 
 **P7-F — Vertical-neutral signed proof portfolio.** Conformance fixtures built as separately signed
 extensions from the released SDK. They are not products; they prove that products need no core edit.
@@ -2073,7 +2078,7 @@ and may not contradict a release claim.
 
 **Exit gate.** Section 8, Gate B.
 
-**Non-goals.** Do not build products in the proof portfolio. Do not self-attest the human gate. Do not
+**Non-goals.** Do not build products in the proof portfolio. Do not claim maintainer acceptance before merge. Do not
 accept a green source test as proof of an untested artifact. Do not hide an infrastructure prerequisite or
 a conditional risk. Do not call trusted in-process code sandboxed. Do not resume vertical work before
 section 12.
@@ -2436,7 +2441,7 @@ following.
 7. **Lifecycle and trust hold.** Disable, revoke, quarantine, reactivate and uninstall with no executable
    leakage and no data loss; purge stays separate and recoverable; trusted in-process and untrusted
    out-of-process boundaries are described honestly.
-8. **Human interface acceptance passes**, with automated desktop, mobile, cross-browser, accessibility,
+8. **Automated interface acceptance passes**, with desktop, mobile, cross-browser, accessibility,
    visual and no-JavaScript evidence for the five archetype journeys, in all nine supported languages, with
    right-to-left qualified against its own baselines and an operator able to relabel a core term at site
    scope without a deployment.
