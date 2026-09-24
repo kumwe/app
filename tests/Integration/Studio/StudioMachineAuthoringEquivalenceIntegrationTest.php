@@ -309,6 +309,70 @@ final class StudioMachineAuthoringEquivalenceIntegrationTest extends TestCase
     }
 
     /**
+     * An edit session binds the entry's pinned type, a blank create binds none, and reads carry the locale.
+     *
+     * The machine gateway resolves an edit exactly as the Content editor does — the stored entry and the
+     * type version it is pinned to — and offers only the existing start. A create without a type offers the
+     * blank and from-type starts and names no reusable type. A read sent with a caller locale is answered
+     * through the same Producer route as one without.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testEditAndBlankSessionsBindTheirTargetsAndReadsCarryTheLocale(): void
+    {
+        $container = $this->boot();
+        $gateway = $container->get(StudioMachineAuthoringGateway::class);
+        $verifier = $container->get(AccessTokenVerifier::class);
+        $content = $container->get(ContentService::class);
+        self::assertInstanceOf(StudioMachineAuthoringGateway::class, $gateway);
+        self::assertInstanceOf(ScopedAccessTokenVerifier::class, $verifier);
+        self::assertInstanceOf(ContentService::class, $content);
+        $verified = $verifier->verifyScoped(
+            $this->token($container, self::FULL, 'kumwe-http', 'api'),
+            'kumwe-http',
+            'api',
+            'default',
+        );
+        self::assertNotNull($verified);
+        $machine = $verified->context('service-' . bin2hex(random_bytes(8)), AuthenticatedSurface::Api);
+        $entry = $content->create(
+            TestKernelFactory::administratorContext($container),
+            'Machine edit target',
+            'studio-machine-edit-' . bin2hex(random_bytes(4)),
+            ['body' => 'Opened for editing by a machine.'],
+        );
+
+        $edit = $gateway->open($machine, StudioAuthoringIntent::Edit, $entry->entry->id())->toDocument();
+        self::assertSame('edit', $edit->intent);
+        self::assertSame(['existing'], $edit->availableStarts);
+        self::assertStringContainsString($entry->entry->id(), $edit->returnPath);
+
+        $blank = $gateway->open($machine, StudioAuthoringIntent::Create)->toDocument();
+        self::assertSame('create', $blank->intent);
+        self::assertSame(['blank', 'from-type'], $blank->availableStarts);
+        self::assertObjectNotHasProperty('type', $blank, 'A blank create names no reusable type.');
+
+        $resolution = $gateway->perform(
+            $machine,
+            StudioMachineAuthoringOperation::ResolveTarget,
+            $blank->session,
+            $blank->sessionGeneration,
+            (object) [
+                'targetId' => $blank->targetId,
+                'intent' => 'create',
+                'resourceContext' => $blank->resourceContext,
+                'requestedPresentation' => 'inline',
+            ],
+            null,
+            'fr',
+        );
+        self::assertFalse($resolution->replayed);
+        self::assertEquals(['blank', 'from-type'], $resolution->value()->availableStarts);
+    }
+
+    /**
      * Boot the kernel and revoke any equivalence token an interrupted earlier run left active.
      *
      * @return  Container  Migrated kernel.
