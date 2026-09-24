@@ -23,10 +23,13 @@ App-owned after the Capability Reuse Review. Do not ask for renewed human permis
 decisions. Record the evidence and the actual decision maker and reviewer; an independent agent may perform
 the review. An agent review must never be represented as a human GitHub approval.
 
-The maintainer also authorizes agents to rebase-merge work in the assigned scope once the required checks
-pass, then verify the resulting master CI and release workflows. Use the supported GitHub integration and
-respect branch protection, access controls, immutable releases and package release gates. This mandate does
-not waive a failed check or authorize bypassing an external permission requirement.
+The maintainer reserves merging to maintainers. Agents create a draft pull request, push coherent progress,
+complete implementation and required automated checks, and then mark it ready for review. The maintainer's
+merge is the sole human acceptance record; no separate manual test, approval checkbox or follow-up
+documentation commit is required. Record completed implementation and automated evidence in the pull
+request itself. Never represent a draft or an unmerged pull request as already accepted. Use the supported
+GitHub integration and respect branch protection, access controls, immutable releases and package release
+gates. This mandate does not waive a failed check or authorize bypassing an external permission requirement.
 
 Finish the current PR before starting the next unless the maintainer explicitly requests parallel delivery.
 Use parallel agents for independent work that helps that PR land. Push reviewable progress promptly and
@@ -491,8 +494,8 @@ npm run test:browser                            # public HTML behaviour
     the phase and do not cross its release gate. Investigate existing package APIs before adding App implementation.
     Preserve all concurrent objectives when synchronizing; never resolve a conflicted file wholesale with ours/theirs
     and never hand-edit generated dependency state. Record nontrivial conflicts and tests proving both objectives
-    survived. Agents may prepare and update branches and PRs, rebase-merge verified work in the assigned scope,
-    and verify the resulting release workflows under the standing maintainer mandate. Required checks, branch
+    survived. Agents may prepare and update branches and PRs and prepare verified work for maintainer merge
+    under the standing maintainer mandate. Required checks, branch
     protection, external access controls and immutable-release boundaries remain in force.
     ```
 
