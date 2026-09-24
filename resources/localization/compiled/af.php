@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for af, carrying 2552 messages.
+ * Compiled interface message catalogue for af, carrying 2553 messages.
  *
  * Generated from af.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1928,6 +1928,7 @@ return [
     'core.console.audit_export.description' => 'Voer die ouditspoor uit as ’n beskermde, kontrolesom-beveiligde argief.',
     'core.console.audit_verify.description' => 'Verifieer die ouditspoor-opsommingsketting en die ankers daarvan.',
     'core.console.automation.description' => 'Lys en bestuur skedules en take in die tou.',
+    'core.console.business_approval.description' => 'Trek jou eie hangende besigheidsgoedkeuringsversoek terug.',
     'core.console.business_definition.description' => 'Lys, ondersoek, ontwerp as konsep, bekragtig, publiseer en trek besigheidsentiteit-definisies terug.',
     'core.console.business_periods.description' => 'Lys, sluit en heropen besigheids-boekingstydperke.',
     'core.console.business_record.description' => 'Ontdek, bevraagteken, muteer, verbind, versoek goedkeurings, rapporteer, voer uit, en ondersoek besigheidsbewerkings.',

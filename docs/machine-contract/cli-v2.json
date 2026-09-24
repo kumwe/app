@@ -2,7 +2,7 @@
   "format": "kumwe-cli-machine-contract-v1",
   "generation": 2,
   "status": "retained",
-  "surface_digest": "sha256:09e74ce07da71676099f5c2e7985f1328d3c439331cf0977e016af59b86a79a0",
+  "surface_digest": "sha256:3c7644ca44d9b24f7cc854191bed728cbb529e49709724f1965486bd136ae54d",
   "dispatcher": {
     "list_exit": 0,
     "unknown_command_exit": 64,
@@ -166,6 +166,21 @@
         {"name":"delete","risk":"high-impact","positionals":[],"allowed_options":["site","token-file","id","version"],"required_options":["site","token-file","id","version"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
         {"name":"retry","risk":"mutate","positionals":[],"allowed_options":["site","token-file","id"],"required_options":["site","token-file","id"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
         {"name":"cancel","risk":"mutate","positionals":[],"allowed_options":["site","token-file","id"],"required_options":["site","token-file","id"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "business-approval",
+      "action_argument": true,
+      "default_action": null,
+      "options": [
+        {"name":"site","type":"identifier","enum":[]},
+        {"name":"token-file","type":"secret-file","enum":[]},
+        {"name":"approval-request","type":"identifier","enum":[]}
+      ],
+      "output": {"stdout":"json-document","stderr":"json-document"},
+      "exit_codes": {"0":"success","1":"internal-error","64":"usage-error","65":"data-error","66":"not-found","69":"unavailable","73":"conflict","75":"temporary-failure","77":"permission-denied"},
+      "actions": [
+        {"name":"cancel","risk":"mutate","positionals":[],"allowed_options":["site","token-file","approval-request"],"required_options":["site","token-file","approval-request"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
       ]
     },
     {

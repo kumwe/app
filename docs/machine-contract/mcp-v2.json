@@ -25,7 +25,7 @@
         ]
     },
     "inventory": {
-        "tools": 88,
+        "tools": 91,
         "resources": 1,
         "prompts": 1
     },
@@ -588,7 +588,7 @@
             ]
         }
     ],
-    "contract_sha256": "b41743c1f510aec8301190697dd7b39eda4110b2d1f70ef274f432530a2f9402",
+    "contract_sha256": "1a0139f01b63ebf95b5fa8a6843bcc44befc3baf8ddd8266a41f373100dd8b11",
     "surface": {
         "tools": [
             {
@@ -7447,6 +7447,132 @@
                     },
                     "required": [
                         "revoked"
+                    ],
+                    "additionalProperties": false
+                }
+            },
+            {
+                "name": "kumwe_business_approval_list",
+                "title": "List business approvals",
+                "description": "List the generated-business approval requests exposed to MCP that this credential may see.",
+                "handler": "listBusinessApprovals",
+                "capability": null,
+                "risk": "read",
+                "alternative": "The portal or administrator approval screens, the protected REST approval resources, or bin/kumwe business-record approvals; decisions need browser step-up.",
+                "annotations": {
+                    "title": "List business approvals",
+                    "readOnlyHint": true,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "limit": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100
+                        }
+                    },
+                    "required": [],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "items": {
+                            "type": "array",
+                            "maxItems": 100
+                        }
+                    },
+                    "required": [
+                        "items"
+                    ],
+                    "additionalProperties": false
+                }
+            },
+            {
+                "name": "kumwe_business_approval_get",
+                "title": "Read a business approval",
+                "description": "Read one generated-business approval request exposed to MCP with its redacted decisions.",
+                "handler": "getBusinessApproval",
+                "capability": null,
+                "risk": "read",
+                "alternative": "The portal or administrator approval screens, the protected REST approval resources, or bin/kumwe business-record approvals; decisions need browser step-up.",
+                "annotations": {
+                    "title": "Read a business approval",
+                    "readOnlyHint": true,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "approval": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    "required": [
+                        "approval"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "additionalProperties": true
+                }
+            },
+            {
+                "name": "kumwe_business_approval_cancel",
+                "title": "Cancel my business approval request",
+                "description": "Withdraw your own pending approval request made on MCP; this never approves or rejects.",
+                "handler": "cancelBusinessApproval",
+                "capability": "business.approval.request",
+                "risk": "scoped_write",
+                "alternative": "The portal or administrator approval screens, the protected REST approval resources, or bin/kumwe business-record approvals; decisions need browser step-up.",
+                "annotations": {
+                    "title": "Cancel my business approval request",
+                    "readOnlyHint": false,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "operationId": {
+                            "type": "string",
+                            "minLength": 16,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{15,127}$"
+                        },
+                        "approval": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    "required": [
+                        "operationId",
+                        "approval"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "approval_request_id": {
+                            "type": "string"
+                        },
+                        "status": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "approval_request_id",
+                        "status"
                     ],
                     "additionalProperties": false
                 }

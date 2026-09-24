@@ -18549,6 +18549,15 @@
         <target>Lys die nuutste identiteits- en toegangsekuriteitsgebeurtenisse.</target>
       </segment>
     </unit>
+    <unit id="core.console.business_approval.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/BusinessApprovalCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Withdraw your own pending business approval request.</source>
+        <target>Trek jou eie hangende besigheidsgoedkeuringsversoek terug.</target>
+      </segment>
+    </unit>
     <unit id="core.console.settings.description">
       <notes>
         <note category="context">Console command summary on src/Delivery/Console/Command/ManageSettingsCommand.php.</note>

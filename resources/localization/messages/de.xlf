@@ -18549,6 +18549,15 @@
         <target>Listet die neuesten Identitäts- und Zugriffssicherheitsereignisse auf.</target>
       </segment>
     </unit>
+    <unit id="core.console.business_approval.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/BusinessApprovalCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Withdraw your own pending business approval request.</source>
+        <target>Zieht Ihre eigene ausstehende geschäftliche Genehmigungsanfrage zurück.</target>
+      </segment>
+    </unit>
     <unit id="core.console.settings.description">
       <notes>
         <note category="context">Console command summary on src/Delivery/Console/Command/ManageSettingsCommand.php.</note>

@@ -227,6 +227,10 @@ final readonly class McpToolExecutionEvidence
                 $source,
                 '$this->require(BusinessMcpHandlers::capabilityFor($operation))',
             ) && $this->provesLiteralCapability($class, $handler, 'business.record.read'),
+            McpDynamicCapabilityResolver::ApprovalInbox => str_contains(
+                $source,
+                '$this->requireAny(BusinessMcpHandlers::APPROVAL_CAPABILITIES)',
+            ),
         };
     }
 

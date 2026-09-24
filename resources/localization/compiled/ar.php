@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for ar, carrying 2552 messages.
+ * Compiled interface message catalogue for ar, carrying 2553 messages.
  *
  * Generated from ar.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1928,6 +1928,7 @@ return [
     'core.console.audit_export.description' => 'صدِّر مسار التدقيق كأرشيف محمي بمجموع اختباري.',
     'core.console.audit_verify.description' => 'تحقّق من سلسلة بصمات مسار التدقيق ومراسيها.',
     'core.console.automation.description' => 'اسرد الجداول والمهام في قائمة الانتظار وأدرها.',
+    'core.console.business_approval.description' => 'يسحب طلب الموافقة التجارية المعلّق الخاص بك.',
     'core.console.business_definition.description' => 'اسرد تعريفات كيانات الأعمال وافحصها وأنشئ مسوداتها وتحقّق منها وانشرها وأوقفها.',
     'core.console.business_periods.description' => 'اسرد فترات الترحيل المحاسبي وأغلقها وأعد فتحها.',
     'core.console.business_record.description' => 'اكتشف عمليات الأعمال واستعلم عنها وغيّرها واربطها واطلب الموافقات عليها وأنشئ التقارير وصدّرها وافحصها.',

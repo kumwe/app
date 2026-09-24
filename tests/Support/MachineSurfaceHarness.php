@@ -4,14 +4,25 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Support;
 
+use DateTimeImmutable;
+use DateTimeZone;
+use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Types\Types;
+use Kumwe\Access\MembershipDirectory;
 use Kumwe\App\Delivery\Console\Command;
 use Kumwe\App\Delivery\Console\ConsoleApplication;
 use Kumwe\App\Identity\Application\Administration\AccessControlService;
 use Kumwe\App\Identity\Application\Administration\AdministratorIdentityGateway;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Kernel\Container;
+use Kumwe\Context\Value\AuthenticationStrength;
+use Kumwe\Context\Value\ExecutionContext;
+use Kumwe\Context\Value\MembershipContext;
+use Kumwe\Context\Value\SiteContext;
 use Laminas\Diactoros\ServerRequestFactory;
 use Laminas\Diactoros\StreamFactory;
 use Mezzio\Application;
+use Ramsey\Uuid\Uuid;
 use RuntimeException;
 use stdClass;
 
@@ -74,6 +85,14 @@ final class MachineSurfaceHarness
     private int $sequence = 1;
 
     /**
+     * Organization membership tokens are issued under, or null for installation-level tokens.
+     *
+     * @var    ?MembershipContext
+     * @since  2.0.0
+     */
+    private ?MembershipContext $membership = null;
+
+    /**
      * Bind the harness to one booted kernel and revoke stale tokens a previous run of the same test left.
      *
      * @param  Container  $container  Booted, migrated kernel.
@@ -118,7 +137,7 @@ final class MachineSurfaceHarness
             throw new RuntimeException('The identity gateway is not composed.');
         }
         $issued = $identities->issueAccessToken(
-            TestKernelFactory::administratorContext($this->container),
+            $this->issuer(),
             TestKernelFactory::ADMINISTRATOR_EMAIL,
             $this->prefix . '-' . $surface . '-' . bin2hex(random_bytes(6)),
             $capabilities,
@@ -129,6 +148,79 @@ final class MachineSurfaceHarness
         $this->tokens[] = $issued['token_id'];
 
         return $issued['token'];
+    }
+
+    /**
+     * Issue every later token inside one organization the integration administrator is an active member of.
+     *
+     * Organization-sensitive capabilities, such as the maker-checker approval set, are only delegable to a
+     * token bound to an exact live membership. The organization and membership rows are created once and
+     * reused by later runs.
+     *
+     * @param   string  $organization  Organization identifier.
+     *
+     * @return  void
+     *
+     * @throws  RuntimeException  When the membership cannot be resolved after seeding.
+     *
+     * @since   2.0.0
+     */
+    public function enterOrganization(string $organization): void
+    {
+        $administrator = TestKernelFactory::administratorContext($this->container);
+        $directory = $this->container->get(MembershipDirectory::class);
+        $database = $this->container->get(Connection::class);
+        $tables = $this->container->get(TableNames::class);
+        if (
+            !$directory instanceof MembershipDirectory
+            || !$database instanceof Connection
+            || !$tables instanceof TableNames
+        ) {
+            throw new RuntimeException('The membership directory is not composed.');
+        }
+        $site = SiteContext::default();
+        $membership = $directory->resolve($administrator->actorId(), $site, $organization);
+        if ($membership === null) {
+            $now = new DateTimeImmutable('now', new DateTimeZone('UTC'));
+            $organizationId = $database->fetchOne(sprintf(
+                'SELECT id FROM %s WHERE site_identifier = ? AND identifier = ?',
+                $tables->quoted('organizations'),
+            ), [$site->identifier(), $organization]);
+            if (!is_string($organizationId)) {
+                $organizationId = Uuid::uuid7()->toString();
+                $database->insert($tables->raw('organizations'), [
+                    'id' => $organizationId,
+                    'site_identifier' => $site->identifier(),
+                    'identifier' => $organization,
+                    'name' => 'Machine parity organization',
+                    'status' => 'active',
+                    'policy_generation' => 1,
+                    'version' => 1,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ], ['created_at' => Types::DATETIME_IMMUTABLE, 'updated_at' => Types::DATETIME_IMMUTABLE]);
+            }
+            $database->insert($tables->raw('organization_memberships'), [
+                'id' => Uuid::uuid7()->toString(),
+                'organization_id' => $organizationId,
+                'user_id' => $administrator->actorId(),
+                'status' => 'active',
+                'version' => 1,
+                'valid_from' => $now->modify('-1 day'),
+                'valid_until' => null,
+                'created_by' => $administrator->actorId(),
+                'created_at' => $now,
+                'updated_at' => $now,
+            ], [
+                'valid_from' => Types::DATETIME_IMMUTABLE,
+                'valid_until' => Types::DATETIME_IMMUTABLE,
+                'created_at' => Types::DATETIME_IMMUTABLE,
+                'updated_at' => Types::DATETIME_IMMUTABLE,
+            ]);
+            $membership = $directory->resolve($administrator->actorId(), $site, $organization)
+                ?? throw new RuntimeException('The seeded organization membership did not resolve.');
+        }
+        $this->membership = $membership;
     }
 
     /**
@@ -356,6 +448,42 @@ final class MachineSurfaceHarness
         $body = (string) $response->getBody();
 
         return $body === '' ? null : json_decode($body, true, 512, JSON_THROW_ON_ERROR);
+    }
+
+    /**
+     * Build the integration administrator context tokens are issued under.
+     *
+     * @return  ExecutionContext  Installation-level context, or one bound to the entered organization.
+     *
+     * @throws  RuntimeException  When the administrator cannot authenticate.
+     *
+     * @since   2.0.0
+     */
+    private function issuer(): ExecutionContext
+    {
+        if ($this->membership === null) {
+            return TestKernelFactory::administratorContext($this->container);
+        }
+        $identities = $this->container->get(AdministratorIdentityGateway::class);
+        $principal = $identities instanceof AdministratorIdentityGateway
+            ? $identities->authenticate(
+                TestKernelFactory::ADMINISTRATOR_EMAIL,
+                TestKernelFactory::ADMINISTRATOR_PASSWORD,
+                'integration-tests',
+            )
+            : null;
+        if ($principal === null) {
+            throw new RuntimeException('The integration administrator could not be authenticated.');
+        }
+
+        return $principal->context(
+            SiteContext::default(),
+            AuthenticationStrength::Password,
+            'integration-' . bin2hex(random_bytes(16)),
+            null,
+            null,
+            $this->membership,
+        );
     }
 
     /**

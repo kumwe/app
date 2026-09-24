@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for en-US, carrying 2552 messages.
+ * Compiled interface message catalogue for en-US, carrying 2553 messages.
  *
  * Generated from en-US.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1928,6 +1928,7 @@ return [
     'core.console.audit_export.description' => 'Export the audit trail as a protected, checksummed archive.',
     'core.console.audit_verify.description' => 'Verify the audit trail digest chain and its anchors.',
     'core.console.automation.description' => 'List and manage schedules and queued jobs.',
+    'core.console.business_approval.description' => 'Withdraw your own pending business approval request.',
     'core.console.business_definition.description' => 'List, inspect, draft, validate, publish, and retire business entity definitions.',
     'core.console.business_periods.description' => 'List, close, and re-open business posting periods.',
     'core.console.business_record.description' => 'Discover, query, mutate, relate, request approvals, report, export, and inspect business operations.',

@@ -18549,6 +18549,15 @@
         <target>הציגו את אירועי האבטחה האחרונים של זהות וגישה.</target>
       </segment>
     </unit>
+    <unit id="core.console.business_approval.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/BusinessApprovalCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Withdraw your own pending business approval request.</source>
+        <target>מושך את בקשת אישור העסק הממתינה שלכם.</target>
+      </segment>
+    </unit>
     <unit id="core.console.settings.description">
       <notes>
         <note category="context">Console command summary on src/Delivery/Console/Command/ManageSettingsCommand.php.</note>

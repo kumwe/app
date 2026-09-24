@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Infrastructure\Mcp;
 
 use InvalidArgumentException;
+use Kumwe\App\BusinessSurface\Application\BusinessApprovalSurfaceService;
 use Kumwe\App\BusinessSurface\Application\BusinessHistoryUseCase;
 use Kumwe\App\BusinessSurface\Application\BusinessMutationPlanService;
 use Kumwe\App\BusinessSurface\Application\BusinessOperationStatusService;
@@ -12,6 +13,9 @@ use Kumwe\App\BusinessSurface\Application\BusinessSurface;
 use Kumwe\App\BusinessSurface\Application\BusinessSurfaceCatalog;
 use Kumwe\App\BusinessSurface\Application\BusinessSurfaceOperation;
 use Kumwe\App\BusinessSurface\Application\BusinessSurfaceService;
+use Kumwe\Approval\ApprovalDenied;
+use Kumwe\Approval\ApprovalRequestView;
+use Kumwe\Approval\ApprovalVoteView;
 use Kumwe\Context\Value\ExecutionContext;
 
 /**
@@ -22,7 +26,8 @@ use Kumwe\Context\Value\ExecutionContext;
  * the shared policy-filtered catalog, record behavior comes from `BusinessSurfaceService` and its
  * `BusinessRecordService` mutation boundary, and every mutation additionally crosses `McpMutationGuard` so
  * transport retries replay instead of writing twice.
- * No approval vote or step-up proof operation is exposed.
+ * No approval vote or step-up proof operation is exposed: an agent may read the approvals exposed to MCP and
+ * withdraw a request it made, but never decide one.
  *
  * @since  2.0.0
  */
@@ -35,6 +40,21 @@ final readonly class BusinessMcpHandlers
      * @since  2.0.0
      */
     private BusinessHistoryUseCase $history;
+
+    /**
+     * Capabilities any one of which admits the scoped approval inbox and detail, as on REST and the console.
+     *
+     * The approval query service then narrows every row to what that exact authority may see, so holding one of
+     * these is admission to the inbox, never visibility of a particular request.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
+    public const array APPROVAL_CAPABILITIES = [
+        'business.approval.request',
+        'business.approval.approve',
+        'business.approval.manage',
+    ];
 
     /**
      * Exact authorization capability associated with every generated-business mutation.
@@ -58,12 +78,14 @@ final readonly class BusinessMcpHandlers
     /**
      * Bind generated metadata, shared surface behavior, and the MCP replay fence.
      *
-     * @param  BusinessSurfaceCatalog          $catalog     Shared policy-filtered generated metadata.
-     * @param  BusinessSurfaceService          $business    Shared generated-business use-case facade.
-     * @param  BusinessMutationPlanService     $plans       Signed runtime, policy and version plan binder.
-     * @param  McpMutationGuard                $mutations   Credential-bound MCP mutation and replay fence.
-     * @param  BusinessOperationStatusService  $operations  Caller-bound canonical record-ledger status lookup.
-     * @param  ?BusinessHistoryUseCase         $history     Shared bounded history port; defaults to the facade.
+     * @param  BusinessSurfaceCatalog           $catalog     Shared policy-filtered generated metadata.
+     * @param  BusinessSurfaceService           $business    Shared generated-business use-case facade.
+     * @param  BusinessMutationPlanService      $plans       Signed runtime, policy and version plan binder.
+     * @param  McpMutationGuard                 $mutations   Credential-bound MCP mutation and replay fence.
+     * @param  BusinessOperationStatusService   $operations  Caller-bound canonical record-ledger status lookup.
+     * @param  ?BusinessHistoryUseCase          $history     Shared bounded history port; defaults to the facade.
+     * @param  ?BusinessApprovalSurfaceService  $approvals   Surface-exposed approval inbox and requester
+     *         cancellation; null only in isolated tests that exercise no approval tool.
      *
      * @since  2.0.0
      */
@@ -74,8 +96,82 @@ final readonly class BusinessMcpHandlers
         private McpMutationGuard $mutations,
         private BusinessOperationStatusService $operations,
         ?BusinessHistoryUseCase $history = null,
+        private ?BusinessApprovalSurfaceService $approvals = null,
     ) {
         $this->history = $history ?? $business;
+    }
+
+    /**
+     * List the approval requests exposed to MCP that this actor may see, newest first.
+     *
+     * @param   ExecutionContext  $context  Authenticated MCP execution context.
+     * @param   int               $limit    Maximum requests, from 1 through 100.
+     *
+     * @return  array{items: list<array<string, mixed>>}  Safe request summaries.
+     *
+     * @throws  \InvalidArgumentException  When the limit is outside its bounds.
+     *
+     * @since   2.0.0
+     */
+    public function approvals(ExecutionContext $context, int $limit = 50): array
+    {
+        if ($limit < 1 || $limit > 100) {
+            throw new InvalidArgumentException('The approval inbox limit must be between 1 and 100.');
+        }
+
+        return ['items' => array_map(
+            self::approvalSummary(...),
+            $this->approvalService()->businessInbox($context, BusinessSurface::Mcp, $limit),
+        )];
+    }
+
+    /**
+     * Read one approval request exposed to MCP with its redacted decision history.
+     *
+     * @param   ExecutionContext  $context   Authenticated MCP execution context.
+     * @param   string            $approval  Approval request UUID.
+     *
+     * @return  array<string, mixed>  Safe request summary and votes.
+     *
+     * @throws  ApprovalDenied  When the request is absent, foreign or not exposed to MCP.
+     *
+     * @since   2.0.0
+     */
+    public function approval(ExecutionContext $context, string $approval): array
+    {
+        $request = $this->approvalService()->businessDetail($context, BusinessSurface::Mcp, $approval)
+            ?? throw new ApprovalDenied();
+
+        return [
+            ...self::approvalSummary($request),
+            'votes' => array_map(static fn (ApprovalVoteView $vote): array => [
+                'decision' => $vote->decision,
+                'reason' => $vote->reason,
+                'decided_at' => $vote->decidedAt->format(DATE_ATOM),
+            ], $request->votes),
+        ];
+    }
+
+    /**
+     * Withdraw this actor's own pending approval request made on MCP.
+     *
+     * Visibility is resolved on the MCP surface first, then `ApprovalService::cancel()` requires the original
+     * requester, surface binding and pending state and records `approval.cancel`. It is never a decision.
+     *
+     * @param   ExecutionContext  $context   Authenticated MCP execution context.
+     * @param   string            $approval  Approval request UUID.
+     *
+     * @return  array{approval_request_id: string, status: string}  The withdrawn request.
+     *
+     * @throws  ApprovalDenied  When the request is not this actor's own current pending request on MCP.
+     *
+     * @since   2.0.0
+     */
+    public function cancelApproval(ExecutionContext $context, string $approval): array
+    {
+        $this->approvalService()->businessCancel($context, BusinessSurface::Mcp, $approval);
+
+        return ['approval_request_id' => $approval, 'status' => 'cancelled'];
     }
 
     /**
@@ -1035,5 +1131,48 @@ final readonly class BusinessMcpHandlers
         self::capabilityFor($operation);
 
         return 'business_record.' . $operation;
+    }
+
+    /**
+     * Resolve the approval surface service, which only isolated tests leave unwired.
+     *
+     * @return  BusinessApprovalSurfaceService  Composed approval surface.
+     *
+     * @throws  InvalidArgumentException  When the delegate was composed without it.
+     *
+     * @since   2.0.0
+     */
+    private function approvalService(): BusinessApprovalSurfaceService
+    {
+        return $this->approvals
+            ?? throw new InvalidArgumentException('Business approvals are unavailable on this MCP server.');
+    }
+
+    /**
+     * Project one approval without requester, checker-role or binding-digest evidence, as REST does.
+     *
+     * @param   ApprovalRequestView  $request  Scoped approval projection.
+     *
+     * @return  array<string, mixed>  Safe request summary.
+     *
+     * @since   2.0.0
+     */
+    private static function approvalSummary(ApprovalRequestView $request): array
+    {
+        return [
+            'approval_request_id' => $request->id,
+            'action' => $request->action,
+            'resource_type' => $request->resourceType,
+            'resource_version' => $request->resourceVersion,
+            'required_quorum' => $request->requiredQuorum,
+            'approval_count' => $request->approvalCount,
+            'status' => $request->status->value,
+            'version' => $request->version,
+            'created_at' => $request->createdAt->format(DATE_ATOM),
+            'expires_at' => $request->expiresAt->format(DATE_ATOM),
+            'can_approve' => $request->canApprove,
+            'can_cancel' => $request->canCancel,
+            'can_revoke' => $request->canRevoke,
+        ];
     }
 }

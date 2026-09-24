@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for zh-Hans, carrying 2552 messages.
+ * Compiled interface message catalogue for zh-Hans, carrying 2553 messages.
  *
  * Generated from zh-Hans.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1928,6 +1928,7 @@ return [
     'core.console.audit_export.description' => '将审计追踪导出为受保护的、带校验和的归档文件。',
     'core.console.audit_verify.description' => '验证审计追踪摘要链及其锚点。',
     'core.console.automation.description' => '列出并管理计划和排队中的作业。',
+    'core.console.business_approval.description' => '撤回您自己待处理的业务审批请求。',
     'core.console.business_definition.description' => '列出、查看、起草、验证、发布和停用业务实体定义。',
     'core.console.business_periods.description' => '列出、关闭和重新开放业务过账期间。',
     'core.console.business_record.description' => '发现、查询、变更、关联、请求审批、生成报表、导出和查看业务操作。',

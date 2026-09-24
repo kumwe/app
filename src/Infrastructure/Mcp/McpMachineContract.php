@@ -58,7 +58,7 @@ final readonly class McpMachineContract
      * @var    int
      * @since  2.0.0
      */
-    public const int TOOL_COUNT = 88;
+    public const int TOOL_COUNT = 91;
 
     /**
      * Number of resources retained by this generation.

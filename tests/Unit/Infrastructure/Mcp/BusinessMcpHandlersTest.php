@@ -12,8 +12,18 @@ use Kumwe\App\BusinessSurface\Application\BusinessSurface;
 use Kumwe\App\BusinessSurface\Application\BusinessSurfaceCatalog;
 use Kumwe\App\BusinessSurface\Application\BusinessSurfaceService;
 use Kumwe\App\Infrastructure\Mcp\BusinessMcpHandlers;
+use Kumwe\App\BusinessSurface\Application\BusinessApprovalSurfaceService;
 use Kumwe\App\Infrastructure\Mcp\McpMutationGuard;
+use Kumwe\App\Tests\Support\AuthorizationContext;
+use Kumwe\App\Tests\Support\BuildsBusinessApprovalSurface;
+use Kumwe\App\Tests\Support\RecordingAuditRecorder;
+use Kumwe\Approval\ApprovalDenied;
+use Kumwe\Approval\ApprovalRepository;
+use Kumwe\Approval\ApprovalStatus;
+use Kumwe\Context\Value\AuthenticatedSurface;
+use Kumwe\Context\Value\AuthenticationStrength;
 use Kumwe\Context\Value\ExecutionContext;
+use Kumwe\Context\Value\SiteContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -27,6 +37,8 @@ use ReflectionClass;
  */
 final class BusinessMcpHandlersTest extends TestCase
 {
+    use BuildsBusinessApprovalSurface;
+
     /**
      * Prove the mutation vocabulary resolves only its exact shared capabilities.
      *
@@ -188,6 +200,110 @@ final class BusinessMcpHandlersTest extends TestCase
         );
 
         self::assertSame($expected, $handler->history($context, 'acme.invoice', 'INV-0001', 25, 8));
+    }
+
+    /**
+     * Prove the MCP inbox, detail and cancel reach the shared surface gate on the MCP surface only.
+     *
+     * The inbox and detail project exactly the REST keys, never the requester or binding evidence; a request
+     * whose action is not exposed is refused like an absent one; cancelling the actor's own pending request is
+     * the audited workflow transition; and an out-of-range inbox bound is refused before any read.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testApprovalsReadAndWithdrawThroughTheSharedSurfaceGate(): void
+    {
+        $visible = '0191574f-f0b8-7bf3-a9aa-91c6b8244e61';
+        $hidden = '0191574f-f0b8-7bf3-a9aa-91c6b8244e62';
+        $context = AuthorizationContext::principal(['business.approval.request', 'business.approval.approve'])
+            ->context(
+                SiteContext::default(),
+                AuthenticationStrength::BearerToken,
+                'business-mcp-approval-test',
+                surface: AuthenticatedSurface::Mcp,
+            );
+        $workflow = $this->createMock(ApprovalRepository::class);
+        $workflow->expects(self::once())->method('lock')->with($visible)
+            ->willReturn($this->pendingApprovalRow($visible, $context));
+        $workflow->expects(self::once())->method('transition')
+            ->with($visible, ApprovalStatus::Pending, ApprovalStatus::Cancelled, 1);
+        $audit = new RecordingAuditRecorder();
+        $handler = $this->approvalHandler($this->approvalSurface(
+            [$this->approvalView($visible), $this->approvalView($hidden, 'withdraw')],
+            $workflow,
+            $audit,
+        ));
+
+        $inbox = $handler->approvals($context, 10);
+        $detail = $handler->approval($context, $visible);
+        $cancelled = $handler->cancelApproval($context, $visible);
+
+        self::assertSame([$visible], array_column($inbox['items'], 'approval_request_id'));
+        self::assertSame([
+            'approval_request_id', 'action', 'resource_type', 'resource_version', 'required_quorum',
+            'approval_count', 'status', 'version', 'created_at', 'expires_at', 'can_approve', 'can_cancel',
+            'can_revoke', 'votes',
+        ], array_keys($detail));
+        self::assertSame('pending', $detail['status']);
+        self::assertTrue($detail['can_cancel']);
+        self::assertSame(['approval_request_id' => $visible, 'status' => 'cancelled'], $cancelled);
+        self::assertSame(['approval.cancel'], $audit->actions());
+
+        $refusals = 0;
+        foreach (
+            [
+                static fn () => $handler->approval($context, $hidden),
+                static fn () => $handler->cancelApproval($context, $hidden),
+            ] as $call
+        ) {
+            try {
+                $call();
+            } catch (ApprovalDenied) {
+                ++$refusals;
+            }
+        }
+        self::assertSame(2, $refusals);
+        $this->expectException(InvalidArgumentException::class);
+        $handler->approvals($context, 101);
+    }
+
+    /**
+     * Prove a server composed without the approval surface refuses the approval tools as invalid requests.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testApprovalToolsAreRefusedWhenTheSurfaceIsNotComposed(): void
+    {
+        $context = (new ReflectionClass(ExecutionContext::class))->newInstanceWithoutConstructor();
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->approvalHandler(null)->approvals($context);
+    }
+
+    /**
+     * Build a delegate whose only live collaborator is the approval surface.
+     *
+     * @param   ?BusinessApprovalSurfaceService  $approvals  Surface gate, or null when not composed.
+     *
+     * @return  BusinessMcpHandlers  Delegate under test.
+     *
+     * @since   2.0.0
+     */
+    private function approvalHandler(?BusinessApprovalSurfaceService $approvals): BusinessMcpHandlers
+    {
+        return new BusinessMcpHandlers(
+            (new ReflectionClass(BusinessSurfaceCatalog::class))->newInstanceWithoutConstructor(),
+            (new ReflectionClass(BusinessSurfaceService::class))->newInstanceWithoutConstructor(),
+            (new ReflectionClass(BusinessMutationPlanService::class))->newInstanceWithoutConstructor(),
+            (new ReflectionClass(McpMutationGuard::class))->newInstanceWithoutConstructor(),
+            (new ReflectionClass(BusinessOperationStatusService::class))->newInstanceWithoutConstructor(),
+            null,
+            $approvals,
+        );
     }
 
     /**

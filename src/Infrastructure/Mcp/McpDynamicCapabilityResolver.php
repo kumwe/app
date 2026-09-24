@@ -9,8 +9,9 @@ namespace Kumwe\App\Infrastructure\Mcp;
  *
  * A literal capability remains a string in `McpCapabilityCatalog`. These cases cover the deliberately
  * dynamic exceptions: authenticated discovery, content transitions selected from live workflow state,
- * custom business views whose signed kind decides the operation, and mutation planning whose requested
- * operation decides the additional capability. `McpCatalogValidator` proves the named live handler takes
+ * custom business views whose signed kind decides the operation, mutation planning whose requested
+ * operation decides the additional capability, and the approval inbox any one of three approval capabilities
+ * admits. `McpCatalogValidator` proves the named live handler takes
  * the corresponding enforcement route before the server registers it.
  *
  * @since  2.0.0
@@ -44,4 +45,11 @@ enum McpDynamicCapabilityResolver: string
      * @since  2.0.0
      */
     case BusinessMutationPlan = 'business_mutation_plan';
+
+    /**
+     * Any one of the approval request, approve or manage capabilities admits the scoped approval inbox.
+     *
+     * @since  2.0.0
+     */
+    case ApprovalInbox = 'approval_inbox';
 }

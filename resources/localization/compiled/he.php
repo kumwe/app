@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for he, carrying 2552 messages.
+ * Compiled interface message catalogue for he, carrying 2553 messages.
  *
  * Generated from he.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1928,6 +1928,7 @@ return [
     'core.console.audit_export.description' => 'ייצאו את יומן הביקורת כארכיון מוגן ומאומת בסכום ביקורת.',
     'core.console.audit_verify.description' => 'אמתו את שרשרת התקצירים של יומן הביקורת ואת העוגנים שלה.',
     'core.console.automation.description' => 'הציגו רשימה ונהלו תזמונים ומשימות בתור.',
+    'core.console.business_approval.description' => 'מושך את בקשת אישור העסק הממתינה שלכם.',
     'core.console.business_definition.description' => 'הציגו רשימה, בדקו, נסחו טיוטה, אמתו, פרסמו והוציאו משימוש הגדרות ישויות עסקיות.',
     'core.console.business_periods.description' => 'הציגו רשימה, סגרו ופתחו מחדש תקופות רישום עסקיות.',
     'core.console.business_record.description' => 'גלו, שאלו, שנו, קשרו, בקשו אישורים, דווחו, ייצאו ובדקו פעולות עסקיות.',

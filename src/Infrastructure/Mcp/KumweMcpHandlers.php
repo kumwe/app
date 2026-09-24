@@ -2955,6 +2955,81 @@ final readonly class KumweMcpHandlers
     }
 
     /**
+     * List the generated-business approval requests exposed to MCP that the caller may see.
+     *
+     * The inbox the portal and REST render, narrowed to the MCP surface: any one of the approval capabilities
+     * admits it and the approval query then filters each row. Decisions are not offered here.
+     *
+     * @param   int  $limit  Maximum requests, from 1 through 100.
+     *
+     * @return  array{items: list<array<string, mixed>>}  Safe request summaries.
+     *
+     * @throws  InsufficientCapability  When the caller holds none of the approval capabilities.
+     * @throws  InvalidArgumentException  When the limit is outside its bounds.
+     *
+     * @since   2.0.0
+     */
+    public function listBusinessApprovals(int $limit = 50): array
+    {
+        $this->requireAny(BusinessMcpHandlers::APPROVAL_CAPABILITIES);
+
+        return $this->businessRecords->approvals($this->context('business-approvals-list'), $limit);
+    }
+
+    /**
+     * Read one generated-business approval request exposed to MCP with its redacted decisions.
+     *
+     * @param   string  $approval  Approval request UUID.
+     *
+     * @return  array<string, mixed>  Safe request summary and votes.
+     *
+     * @throws  InsufficientCapability  When the caller holds none of the approval capabilities.
+     * @throws  \Kumwe\Approval\ApprovalDenied  When the request is not visible on MCP.
+     *
+     * @since   2.0.0
+     */
+    public function getBusinessApproval(string $approval): array
+    {
+        $this->requireAny(BusinessMcpHandlers::APPROVAL_CAPABILITIES);
+
+        return $this->businessRecords->approval($this->context('business-approval-read'), $approval);
+    }
+
+    /**
+     * Withdraw the caller's own pending generated-business approval request made on MCP.
+     *
+     * This is the requester's cancel control, never a vote: approve, reject and revoke need a fresh browser
+     * step-up proof and are not published on this surface.
+     *
+     * @param   string  $operationId  Idempotency key this write is fenced on.
+     * @param   string  $approval     Approval request UUID.
+     *
+     * @return  array{approval_request_id: string, status: string}  The withdrawn request.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `business.approval.request`.
+     * @throws  \Kumwe\Approval\ApprovalDenied  When the request is not the caller's own pending request on MCP.
+     *
+     * @since   2.0.0
+     */
+    public function cancelBusinessApproval(string $operationId, string $approval): array
+    {
+        $this->require('business.approval.request');
+        $this->preauthorize(
+            $operationId,
+            'business.approval.request',
+            AuthorizationResource::item('approval_request', $approval),
+        );
+
+        return $this->mutations->run(
+            $this->context($operationId),
+            'business.approval.cancel',
+            $operationId,
+            compact('approval'),
+            fn (): array => $this->businessRecords->cancelApproval($this->context($operationId), $approval),
+        );
+    }
+
+    /**
      * Execute one ordinary declared action; a high-impact attempt fails closed without browser step-up.
      *
      * @param   string                $operationId        Caller-chosen stable operation identity.
@@ -3614,6 +3689,32 @@ final readonly class KumweMcpHandlers
         );
 
         return $this->context($operationId);
+    }
+
+    /**
+     * Fail unless the bound credential resolves to a principal holding at least one of several capabilities.
+     *
+     * Reserved for query tools whose canonical service deliberately admits several independent authorities and
+     * then filters every row itself, such as the approval inbox.
+     *
+     * @param   list<string>  $capabilities  Capability codes any one of which admits the call.
+     *
+     * @return  AuthenticatedPrincipal  The resolved actor.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it holds none of the capabilities.
+     *
+     * @since   2.0.0
+     */
+    private function requireAny(array $capabilities): AuthenticatedPrincipal
+    {
+        $principal = $this->principal();
+        foreach ($capabilities as $capability) {
+            if ($principal->hasCapability(Capability::fromString($capability))) {
+                return $principal;
+            }
+        }
+
+        throw new InsufficientCapability(implode('|', $capabilities));
     }
 
     /**

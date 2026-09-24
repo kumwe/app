@@ -18549,6 +18549,15 @@
         <target>Muestra los eventos de seguridad de identidad y acceso más recientes.</target>
       </segment>
     </unit>
+    <unit id="core.console.business_approval.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/BusinessApprovalCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Withdraw your own pending business approval request.</source>
+        <target>Retira tu propia solicitud de aprobación empresarial pendiente.</target>
+      </segment>
+    </unit>
     <unit id="core.console.settings.description">
       <notes>
         <note category="context">Console command summary on src/Delivery/Console/Command/ManageSettingsCommand.php.</note>

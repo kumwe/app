@@ -136,7 +136,19 @@ final class McpCapabilityCatalog
         'kumwe_user_sessions_terminate' => [McpRiskClass::InstallationGlobal, self::VIA_IDENTITY],
         'kumwe_user_role_revoke' => [McpRiskClass::InstallationGlobal, self::VIA_IDENTITY],
         'kumwe_role_grant_revoke' => [McpRiskClass::InstallationGlobal, self::VIA_IDENTITY],
+        'kumwe_business_approval_list' => [McpRiskClass::Read, self::VIA_APPROVALS],
+        'kumwe_business_approval_get' => [McpRiskClass::Read, self::VIA_APPROVALS],
+        'kumwe_business_approval_cancel' => [McpRiskClass::ScopedWrite, self::VIA_APPROVALS],
     ];
+
+    /**
+     * Non-MCP route for the approval inbox tools, and the only route to a decision.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const string VIA_APPROVALS = 'The portal or administrator approval screens, the protected REST approval '
+        . 'resources, or bin/kumwe business-record approvals; decisions need browser step-up.';
 
     /**
      * Non-MCP route for the Studio authoring tools.
@@ -1495,6 +1507,72 @@ final class McpCapabilityCatalog
             ),
             ...$this->studioAuthoringTools(),
             ...$this->accessRecoveryTools(),
+            ...$this->businessApprovalTools(),
+        ];
+    }
+
+    /**
+     * Declare the approval inbox, detail and requester-cancellation tools.
+     *
+     * Reading and withdrawing are published; approving, rejecting and revoking are not, because each needs a fresh
+     * single-use human step-up proof that a bearer credential cannot mint.
+     *
+     * @return  list<array{
+     *            name: string, title: string, description: string, handler: string,
+     *            capability: string|null, capabilityResolver: string|McpDynamicCapabilityResolver,
+     *            mutationGuard: McpMutationGuardMode, readOnly: bool, destructive: bool, idempotent: bool,
+     *            inputSchema: array<string, mixed>, outputSchema: array<string, mixed>
+     *          }>  Tool declarations in registration order.
+     *
+     * @since   2.0.0
+     */
+    private function businessApprovalTools(): array
+    {
+        $approval = ['type' => 'string', 'format' => 'uuid'];
+        $object = ['type' => 'object', 'additionalProperties' => true];
+
+        return [
+            $this->tool(
+                'kumwe_business_approval_list',
+                'List business approvals',
+                'List the generated-business approval requests exposed to MCP that this credential may see.',
+                'listBusinessApprovals',
+                McpDynamicCapabilityResolver::ApprovalInbox,
+                true,
+                false,
+                true,
+                ['limit' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 100]],
+                $this->closedObject(['items' => ['type' => 'array', 'maxItems' => 100]], ['items']),
+            ),
+            $this->tool(
+                'kumwe_business_approval_get',
+                'Read a business approval',
+                'Read one generated-business approval request exposed to MCP with its redacted decisions.',
+                'getBusinessApproval',
+                McpDynamicCapabilityResolver::ApprovalInbox,
+                true,
+                false,
+                true,
+                ['approval' => $approval],
+                $object,
+                ['approval'],
+            ),
+            $this->tool(
+                'kumwe_business_approval_cancel',
+                'Cancel my business approval request',
+                'Withdraw your own pending approval request made on MCP; this never approves or rejects.',
+                'cancelBusinessApproval',
+                'business.approval.request',
+                false,
+                false,
+                true,
+                ['operationId' => $this->operationId(), 'approval' => $approval],
+                $this->closedObject(
+                    ['approval_request_id' => ['type' => 'string'], 'status' => ['type' => 'string']],
+                    ['approval_request_id', 'status'],
+                ),
+                ['operationId', 'approval'],
+            ),
         ];
     }
 
