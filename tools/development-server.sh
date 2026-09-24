@@ -67,7 +67,7 @@ exports_worker_pid=$!
 
 # The dedicated router returns false for real files so PHP's built-in server
 # serves the committed CSS/JavaScript instead of routing assets to Kumwe.
-php -S 0.0.0.0:8080 -t public tools/browser-router.php &
+php -S "0.0.0.0:${KUMWE_DEV_SERVER_PORT:-8080}" -t public tools/browser-router.php &
 server_pid=$!
 
 while [ "$stopping" -eq 0 ] \
