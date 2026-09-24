@@ -95,4 +95,55 @@ final class FilesystemAuditArchiveVerifierTest extends TestCase
         $this->expectException(RuntimeException::class);
         new FilesystemAuditArchiveVerifier('relative/path');
     }
+
+    /**
+     * Archives that hash correctly but prove nothing are refused with the reason that disqualifies them.
+     *
+     * An empty file whose recorded size and checksum match is still not an export of zero events, because
+     * every archive carries its manifest line. A readable manifest that is not JSON cannot declare the
+     * pruned range, and a symbolic link into the private store is not an archive the store wrote.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testMatchingChecksumsDoNotMakeAnEmptyUnmanifestedOrLinkedArchiveRestorable(): void
+    {
+        $verifier = new FilesystemAuditArchiveVerifier($this->directory);
+        $refusal = function (StoredAuditArchive $archive, int $count) use ($verifier): string {
+            try {
+                $verifier->assertRestorable($archive, 3, 4, $count);
+            } catch (RuntimeException $exception) {
+                return $exception->getMessage();
+            }
+            self::fail('The archive must be refused.');
+        };
+
+        file_put_contents($this->directory . '/empty.ndjson', '');
+        self::assertSame(
+            'The audit archive does not hold exactly the exported events.',
+            $refusal(new StoredAuditArchive('empty.ndjson', 0, hash('sha256', '')), 0),
+        );
+
+        $unmanifested = "not a manifest\n{\"position\":3}\n{\"position\":4}\n";
+        file_put_contents($this->directory . '/unmanifested.ndjson', $unmanifested);
+        self::assertSame(
+            'The audit archive manifest does not declare the pruned range.',
+            $refusal(new StoredAuditArchive(
+                'unmanifested.ndjson',
+                strlen($unmanifested),
+                hash('sha256', $unmanifested),
+            ), 2),
+        );
+
+        symlink($this->directory . '/unmanifested.ndjson', $this->directory . '/linked.ndjson');
+        self::assertSame(
+            'The audit archive is not present in the private store.',
+            $refusal(new StoredAuditArchive(
+                'linked.ndjson',
+                strlen($unmanifested),
+                hash('sha256', $unmanifested),
+            ), 2),
+        );
+    }
 }
