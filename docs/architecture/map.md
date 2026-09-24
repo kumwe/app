@@ -172,7 +172,7 @@ grew later keep their own `Application/Domain/Infrastructure/Delivery` trees.
 | Context | What it is | Key type |
 |---|---|---|
 | `Kernel` | Composition root | `ContainerFactory` |
-| `Shared` | Framework-free kernel types | `CanonicalJson`, `DatabaseTablePrefix` |
+| `Shared` | Framework-free kernel types | `DatabaseTablePrefix` |
 | `Application` | Cross-cutting use cases | `AuthorizationGateway`, `TransactionManager`, `Worker` |
 | `Infrastructure` | Cross-cutting adapters | Doctrine, Redis, MCP protocol, observability |
 | `Delivery` | CLI, REST, MCP HTTP, dashboard decoders | `ConsoleApplication` |

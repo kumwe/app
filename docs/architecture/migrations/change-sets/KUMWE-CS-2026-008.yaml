@@ -5,7 +5,7 @@ roadmap_source:
   title: "Kumwe ERP-Extensibility Foundation Roadmap"
   sha256: "a202155ef1a65f5ab293d4f8397ebf4ac430db7f1e877c776bbe7851e6fe18d8"
 roadmap_refs: []
-state: "core-integrated"
+state: "app-pr-ready"
 phase_1:
   source_repository: "kumwe/app"
   source_sha: "960ce8ec00cf724a7cae03e5ba09c4852c9ab54e"
@@ -23,43 +23,128 @@ release:
   clean_consumer_evidence:
     - "docs/architecture/migrations/evidence/KUMWE-MIG-2026-008/RELEASE-ATTESTATION.yaml"
 phase_2:
-  app_pr: "https://github.com/kumwe/app/pull/140"
-  tested_sha: "7ffdf803f9ebb364db009fedd521c39f813f212e"
-  merged_sha: "4774e0d5bd2bc8596fd58a7019edc2353254cd67"
+  app_pr: "https://github.com/kumwe/app/pull/151"
+  tested_sha: null
+  merged_sha: null
   exact_dependency: "kumwe/computation 0.3.3"
-  composer_lock_digest: "72bf64e62f36990fc24d24a6efce601eb4740225cb720d3bf5d2ec3ba66904af"
-  removed_app_symbols: []
-  moved_unit_tests: []
+  composer_lock_digest: "27becef4e8f6728795b30c5aab8e4c4b547e202135044e42600b89808c86240b"
+  removed_app_symbols:
+    - "Kumwe\\App\\BusinessDefinition\\Domain\\ExpressionEvaluator"
+    - "Kumwe\\App\\BusinessDefinition\\Domain\\DecimalValue"
+    - "Kumwe\\App\\Shared\\Domain\\CanonicalJson"
+  moved_unit_tests:
+    - "tests/Unit/BusinessDefinition/Domain/ExpressionTest.php"
+    - "tests/Unit/BusinessDefinition/Domain/ExpressionPropertyTest.php"
+    - "tests/Unit/BusinessDefinition/Domain/ExpressionLineAggregateTest.php"
+    - "tests/Unit/Application/Automation/CanonicalJsonTest.php"
   retained_app_tests:
     - "tests/Unit/Kernel/NativeComputationFactoryTest.php"
     - "tests/Unit/Kernel/ContainerTest.php"
     - "tests/Architecture/ProductionArtifactsTest.php"
+    - "tests/Unit/Kernel/CanonicalEncoderConformanceTest.php"
+    - "tests/Unit/BusinessDefinition/Infrastructure/Computation/NativeFormulaEvaluationConformanceTest.php"
+    - "tests/Unit/BusinessReporting/Infrastructure/Computation/NativeReportMaterializationConformanceTest.php"
+    - "tests/Architecture/CanonicalJsonSemanticIdentityGateTest.php"
+    - "tests/Architecture/CapabilityIndexGateTest.php"
+    - "tests/Support/NativeComputationContainer.php"
+    - "tests/Support/DeterministicCanonicalEncoder.php"
+    - "tests/Unit/BusinessRecord/Application/RecordRuleValidatorTest.php"
+    - "tests/Unit/BusinessRecord/Application/AggregateInvariantValidationTest.php"
+    - "tests/Unit/BusinessRecord/Application/BusinessRecordRelationshipCoordinatorTest.php"
+    - "tests/Unit/BusinessRecord/Application/BusinessRecordViewTest.php"
+    - "tests/Unit/BusinessDefinition/Domain/EntityTypeDefinitionTest.php"
+    - "tests/Unit/BusinessDefinition/Administrator/BusinessDefinitionFormMapperTest.php"
+    - "tests/Unit/BusinessSurface/Application/BusinessSurfaceServiceTest.php"
+    - "tests/Unit/BusinessReporting/ReportPolicyInferenceTest.php"
+    - "tests/Unit/BusinessReporting/RecordExportPipelineTest.php"
+    - "tests/Unit/BusinessSchema/Infrastructure/DoctrinePhysicalSchemaGatewayDefaultTest.php"
+    - "tests/Unit/Identity/Application/Administration/AccessControlServiceTest.php"
+    - "tests/Unit/Administrator/Http/Handler/AdministratorAccessControlHandlerTest.php"
+    - "tests/Unit/Application/Automation/ChangePlanTest.php"
+    - "tests/Unit/Application/Automation/ScheduleOccurrenceKeyTest.php"
+    - "tests/Integration/Automation/SchedulerOccurrenceContentionIntegrationTest.php"
+    - "tests/Integration/BusinessRecord/AggregateDocumentIntegrationTest.php"
+    - "tests/Integration/BusinessRecord/BusinessRecordRuntimeIntegrationTest.php"
+    - "tests/Integration/BusinessSchema/BusinessSchemaRecoveryIntegrationTest.php"
+    - "tests/Integration/BusinessSchema/BusinessSchemaRuntimeIntegrationTest.php"
+    - "tests/Integration/BusinessSurface/GeneratedBusinessQueryBudgetIntegrationTest.php"
+    - "tests/Integration/BusinessReporting/ExportArtifactPersistenceTest.php"
+    - "tests/Integration/BusinessIntegration/ProjectionRuntimePersistenceTest.php"
+    - "tests/Integration/BusinessIntegration/OutboxInboxClaimContentionIntegrationTest.php"
+    - "tests/Integration/Identity/AccessControlIntegrationTest.php"
+    - "tests/Integration/Demo/Infrastructure/DemoBusinessProfileExporterTest.php"
 evidence:
   package:
     - "docs/architecture/migrations/evidence/KUMWE-MIG-2026-008/RELEASE-ATTESTATION.yaml"
+    - "https://github.com/kumwe/app/pull/140; the provisioning adoption merged as 4774e0d5bd2bc8596fd58a7019edc2353254cd67"
   app_composition:
     - "tests/Unit/Kernel/NativeComputationFactoryTest.php"
     - "tests/Unit/Kernel/ContainerTest.php"
     - "tests/Architecture/ProductionArtifactsTest.php"
-  database_matrix: []
-  concurrency: []
-  authorization_security: []
-  lifecycle_recovery: []
-  delivery_browser: []
+    - "tests/Unit/Kernel/CanonicalEncoderConformanceTest.php"
+    - "tests/Unit/BusinessDefinition/Infrastructure/Computation/NativeFormulaEvaluationConformanceTest.php"
+    - "tests/Unit/BusinessReporting/Infrastructure/Computation/NativeReportMaterializationConformanceTest.php"
+    - "tests/Architecture/CanonicalJsonSemanticIdentityGateTest.php"
+    - "tests/Architecture/CapabilityIndexGateTest.php"
+    - "tests/Unit/BusinessRecord/Application/RecordRuleValidatorTest.php"
+    - "tests/Unit/BusinessRecord/Application/AggregateInvariantValidationTest.php"
+    - "tests/Unit/BusinessRecord/Application/BusinessRecordViewTest.php"
+    - "tests/Unit/BusinessSurface/Application/BusinessSurfaceServiceTest.php"
+    - "tests/Unit/BusinessReporting/ReportPolicyInferenceTest.php"
+    - "tests/Unit/Identity/Application/Administration/AccessControlServiceTest.php"
+    - "composer kumwe:capability-index, kumwe:core-growth-record, baseline:record, then the composer qa gates and the unit and architecture suites, run locally on the sandbox-provisioned PHP 8.5.9 with ext-kumwe_engine 1.0.3 admitted against its independently recorded tuple"
+  database_matrix:
+    - "tests/Integration/BusinessRecord/BusinessRecordRuntimeIntegrationTest.php"
+    - "tests/Integration/BusinessRecord/AggregateDocumentIntegrationTest.php"
+    - "tests/Integration/BusinessSchema/BusinessSchemaRuntimeIntegrationTest.php"
+    - "tests/Integration/BusinessSchema/BusinessSchemaRecoveryIntegrationTest.php"
+    - "tests/Integration/BusinessSurface/GeneratedBusinessQueryBudgetIntegrationTest.php"
+    - "tests/Integration/BusinessReporting/ExportArtifactPersistenceTest.php"
+    - "tests/Integration/BusinessIntegration/ProjectionRuntimePersistenceTest.php"
+    - "tests/Integration/Automation/SchedulerOccurrenceContentionIntegrationTest.php"
+    - "tests/Integration/Identity/AccessControlIntegrationTest.php"
+    - "Run locally on MariaDB 10.11; MySQL 8.4 and PostgreSQL 17 are exercised by the pull request's hosted workflows."
+  concurrency:
+    - "tests/Integration/BusinessIntegration/OutboxInboxClaimContentionIntegrationTest.php"
+    - "tests/Integration/Automation/SchedulerOccurrenceContentionIntegrationTest.php"
+    - "Outbox claim contention and duplicate schedule occurrences keep their digests under the native encoder; the hosted workflows repeat them."
+  authorization_security:
+    - "tests/Unit/Identity/Application/Administration/AccessControlServiceTest.php"
+    - "tests/Integration/Identity/AccessControlIntegrationTest.php"
+    - "tests/Unit/BusinessRecord/Application/BusinessRecordViewTest.php"
+    - "Authorization, field disclosure and the role-grant snapshot digest stay in App; only the handles an expression reads cross to the native runtime."
+  lifecycle_recovery:
+    - "tests/Integration/BusinessSchema/BusinessSchemaRecoveryIntegrationTest.php"
+    - "tests/Integration/BusinessSchema/BusinessSchemaRuntimeIntegrationTest.php"
+    - "Schema backfills and transforms evaluate their expressions natively per chunk; the recovery drills run in the pull request's hosted workflows."
+  delivery_browser:
+    - "tests/Unit/BusinessReporting/ReportPolicyInferenceTest.php"
+    - "tests/Integration/BusinessSurface/GeneratedBusinessBrowserIntegrationTest.php"
+    - "Report rows keep their declared output order through the API and CSV deliveries; the browser suites run in the pull request's hosted workflows."
   deployment_backup_restore:
     - "docker/php/Dockerfile"
     - "docker/dev/Dockerfile"
+    - "The deployment tuple and images are unchanged; every business surface now requires the runtime that boot already requires."
   native_parity_abi:
     - "tools/install-native-engine.sh"
     - "tests/Unit/Kernel/NativeComputationFactoryTest.php"
-  performance_capacity: []
-compatibility: "Native provisioning prerequisite: canonical, compiler and executor services are shared; existing calculation consumers remain until their package adoption."
+    - "tests/Unit/Kernel/CanonicalEncoderConformanceTest.php"
+    - "tests/Unit/BusinessDefinition/Infrastructure/Computation/NativeFormulaEvaluationConformanceTest.php"
+    - "tests/Unit/BusinessReporting/Infrastructure/Computation/NativeReportMaterializationConformanceTest.php"
+    - "The 79 canonical cases, the 101 formula vectors and the 116 report fixtures replay through the App ports against the corpora the admitted tuple pins."
+  performance_capacity:
+    - "No performance claim is made; the report profile admits 100000 rows and 16 MiB of result per execution and the hosted performance lanes measure the per-evaluation native round trip."
+compatibility: "Conditions, formulas and invariants follow the frozen formula-draft/1 corpus; reports follow the frozen report-materialization-draft/1 corpus with rows in their declared output order; persisted digests are byte-identical under the native encoder. The dependency, collection and float refusals keep the corpus wording; Engine-transported refusals carry one stable operator text under InvalidBusinessDefinition and ReportUnavailable. RecordRuleValidator, RecordExpressionValues, ValidationViolation, DocumentWriteBudget and RuntimeCanonicalJson stay App-owned."
 migration_recovery: null
-security_impact: "Pinned digest-verified native source and independently recorded deployment tuple; missing or mismatched runtime identity refuses boot."
+security_impact: "Pinned digest-verified native source and independently recorded deployment tuple; missing or mismatched runtime identity refuses boot and every evaluation. Only the field handles and owned-line collections an expression reads are marshalled to the runtime."
 performance_claim: null
-rollback: "Revert the App PR and rebuild the previous images; no persisted data format changes."
+rollback: "Revert the App pull request and rebuild the previous images; no persisted data format changes, because the native encoder reproduces the retired encoder's bytes."
 known_gaps:
-  - "Legacy calculation evaluator removal follows the business package consumer adoption."
   - "The final App head must pass all required hosted checks before merge."
+  - "The local sandbox ran PHP 8.5.9 with ext-kumwe_engine 1.0.3 and MariaDB 10.11 only, so MySQL, PostgreSQL, the browser lanes and the coverage ratchet on the canonical leg are proven by the App CI on this pull request."
+  - "The native ABI transports an evaluation refusal as its category only; Engine-decided refusals are reported with one stable text, and the corpus wording is kept for the dependency, collection and float refusals the App decides before the call."
+  - "A report whose authorized rows exceed 100000, whose materialized result exceeds 16 MiB or whose input document exceeds 64 MiB is refused as unavailable; no PHP materialization remains."
+  - "The formula adapter caches at most 32 compiled plans of the runtime's 64-plan pool and releases the least recently used; report plans are released after each execution."
+  - "RecordRuleValidator, RecordExpressionValues, ValidationViolation, DocumentWriteBudget and RuntimeCanonicalJson stay App-owned; the record-model normalized-document cutover is separate work."
 completion_claim: false
 accepted_by: null

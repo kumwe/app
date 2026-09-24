@@ -9,6 +9,7 @@ use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordValidationFaile
 use Kumwe\App\BusinessRecord\Application\RecordRuleValidator;
 use Kumwe\App\BusinessRecord\Application\RecordValueCodec;
 use Kumwe\App\BusinessRecord\Application\ValidationViolation;
+use Kumwe\App\Tests\Support\NativeComputationContainer;
 use Kumwe\App\Tests\Support\NeutralBusinessFixture;
 use Kumwe\Conversion\Decimal\ExactDecimal;
 use Kumwe\Secret\Cipher\SodiumEnvelopeCipher;
@@ -464,6 +465,6 @@ final class RecordRuleValidatorTest extends TestCase
             str_repeat("\x42", SODIUM_CRYPTO_AEAD_XCHACHA20POLY1305_IETF_KEYBYTES),
         ));
 
-        return new RecordRuleValidator(new RecordValueCodec($cipher));
+        return new RecordRuleValidator(new RecordValueCodec($cipher), NativeComputationContainer::formulas());
     }
 }

@@ -6,6 +6,10 @@ namespace Kumwe\App\Tests\Unit\Kernel;
 
 use InvalidArgumentException;
 use JsonException;
+use Kumwe\App\BusinessDefinition\Application\FormulaEvaluation;
+use Kumwe\App\BusinessDefinition\Infrastructure\Computation\NativeFormulaEvaluation;
+use Kumwe\App\BusinessReporting\Application\ReportMaterialization;
+use Kumwe\App\BusinessReporting\Infrastructure\Computation\NativeReportMaterialization;
 use Kumwe\App\Kernel\NativeComputationFactory;
 use Kumwe\App\Kernel\Container;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
@@ -43,7 +47,8 @@ final class NativeComputationFactoryTest extends TestCase
     }
 
     /**
-     * Production composition shares one compiled-plan owner and exposes the package canonical contract.
+     * Production composition shares one compiled-plan owner, exposes the package canonical contract and binds the
+     * App's formula and report ports to their native adapters over that same owner.
      *
      * @return  void
      *
@@ -59,6 +64,10 @@ final class NativeComputationFactoryTest extends TestCase
         self::assertSame($container->get(Compiler::class), $container->get(NativeAdapter::class));
         self::assertSame($container->get(CanonicalEncoder::class), $container->get(NativeCanonicalEncoder::class));
         self::assertSame($container->get(CanonicalEncoder::class), $container->get(CanonicalEncoder::class));
+        self::assertInstanceOf(NativeFormulaEvaluation::class, $container->get(FormulaEvaluation::class));
+        self::assertSame($container->get(FormulaEvaluation::class), $container->get(FormulaEvaluation::class));
+        self::assertInstanceOf(NativeReportMaterialization::class, $container->get(ReportMaterialization::class));
+        self::assertSame($container->get(ReportMaterialization::class), $container->get(ReportMaterialization::class));
     }
 
     /**

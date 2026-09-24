@@ -15,6 +15,7 @@ use Kumwe\Record\Query\RecordQuerySpecification;
 use Kumwe\App\BusinessReporting\Application\BusinessRecordReportReader;
 use Kumwe\App\BusinessReporting\Application\ReportDefinitionRegistry;
 use Kumwe\App\BusinessReporting\Application\ReportExecutionRequest;
+use Kumwe\App\BusinessReporting\Application\ReportMaterialization;
 use Kumwe\App\BusinessReporting\Application\ReportService;
 use Kumwe\App\BusinessReporting\Application\ReportScopeResolver;
 use Kumwe\App\BusinessReporting\Application\ReportUnavailable;
@@ -31,6 +32,7 @@ use Kumwe\Reporting\Domain\ReportSortDirection;
 use Kumwe\Reporting\Domain\ReportValueType;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\App\Tests\Support\AuthorizationContext;
+use Kumwe\App\Tests\Support\NativeComputationContainer;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
@@ -119,6 +121,7 @@ final class ReportPolicyInferenceTest extends TestCase
             $reader,
             $this->authorization(),
             $this->scopes(),
+            NativeComputationContainer::reports(),
         );
 
         $result = $service->execute(new ReportExecutionRequest(
@@ -219,6 +222,7 @@ final class ReportPolicyInferenceTest extends TestCase
             $reader,
             $this->authorization(),
             $this->scopes(),
+            $this->createStub(ReportMaterialization::class),
         );
         $context = AuthorizationContext::human(['acme.reports.read', 'business.record.report']);
 
@@ -277,6 +281,7 @@ final class ReportPolicyInferenceTest extends TestCase
             $reader,
             $this->authorization(),
             $this->scopes(),
+            $this->createStub(ReportMaterialization::class),
         );
 
         $this->expectException(ReportUnavailable::class);

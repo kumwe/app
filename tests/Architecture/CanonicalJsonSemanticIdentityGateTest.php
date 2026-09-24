@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Architecture;
 
-use Kumwe\App\Shared\Domain\CanonicalJson as AppCanonicalJson;
 use Kumwe\App\Tools\Governance\CapabilityIndexBuilder;
 use Kumwe\App\Tools\Governance\StrictYaml;
 use Kumwe\CanonicalJson\CanonicalEncoder;
@@ -20,7 +19,9 @@ use PHPUnit\Framework\TestCase;
  * `KUMWE-MIG-2026-007` is a semantic-only adoption: the installed package's profile, corpus, manifests and handoff
  * are the exact bytes the external release attestation verified, the ledger pins that release and its handoff, the
  * capability index lists the `canonical-json.semantics` capability from the installed manifests with no provider,
- * and the App's generic executor keeps running until Computation's separately gated runtime cutover.
+ * and the App's generic executor is retired: the Computation cutover (`KUMWE-MIG-2026-008`) removed
+ * `Kumwe\App\Shared\Domain\CanonicalJson`, so every digest the App persists is taken through the container's
+ * native binding of the package port.
  *
  * @since  2.0.0
  */
@@ -78,7 +79,7 @@ final class CanonicalJsonSemanticIdentityGateTest extends TestCase
 
     /**
      * The installed profile, corpus, manifests and handoff are the bytes the attestation verified and the ledger pins,
-     * and the App's own generic executor is still in place.
+     * and the App's own generic executor no longer exists.
      *
      * @return  void
      *
@@ -126,7 +127,8 @@ final class CanonicalJsonSemanticIdentityGateTest extends TestCase
         self::assertTrue(interface_exists(CanonicalEncoder::class));
         self::assertTrue(enum_exists(FindingCode::class));
         self::assertTrue(class_exists(Limits::class));
-        self::assertTrue(method_exists(AppCanonicalJson::class, 'encode'));
+        self::assertFileDoesNotExist($root . '/src/Shared/Domain/CanonicalJson.php');
+        self::assertFalse(class_exists('Kumwe\\App\\Shared\\Domain\\CanonicalJson', false));
     }
 
     /**

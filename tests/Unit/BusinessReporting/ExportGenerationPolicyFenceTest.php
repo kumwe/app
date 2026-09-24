@@ -26,6 +26,7 @@ use Kumwe\App\BusinessReporting\Application\ExportPolicySnapshotProvider;
 use Kumwe\App\BusinessReporting\Application\ExportService;
 use Kumwe\App\BusinessReporting\Application\ReportCsvEncoder;
 use Kumwe\App\BusinessReporting\Application\ReportDefinitionRegistry;
+use Kumwe\App\BusinessReporting\Application\ReportMaterialization;
 use Kumwe\App\BusinessReporting\Application\ReportScopeResolver;
 use Kumwe\App\BusinessReporting\Application\ReportService;
 use Kumwe\App\BusinessReporting\Application\StoredExportArtifact;
@@ -78,7 +79,13 @@ final class ExportGenerationPolicyFenceTest extends TestCase
             $artifacts,
             new GenerationFenceContext($transactions, $context),
             $exports,
-            new ReportService($reports, $reader, $authorization, $scope),
+            new ReportService(
+                $reports,
+                $reader,
+                $authorization,
+                $scope,
+                $this->createStub(ReportMaterialization::class),
+            ),
             new ReportCsvEncoder(),
             $storage,
             $transactions,
@@ -278,6 +285,7 @@ final class ExportGenerationPolicyFenceTest extends TestCase
                 $this->createStub(BusinessRecordReportReader::class),
                 $authorization,
                 $scope,
+                $this->createStub(ReportMaterialization::class),
             ),
             new ReportCsvEncoder(),
             $storage,

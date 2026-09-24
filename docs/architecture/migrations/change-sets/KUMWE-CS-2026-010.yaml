@@ -79,9 +79,7 @@ phase_2:
     - tests/Unit/BusinessDefinition/Domain/WorkflowBindingTest.php
   retained_app_tests:
     - tests/Unit/BusinessDefinition/Domain/EntityTypeDefinitionTest.php
-    - tests/Unit/BusinessDefinition/Domain/ExpressionTest.php
-    - tests/Unit/BusinessDefinition/Domain/ExpressionPropertyTest.php
-    - tests/Unit/BusinessDefinition/Domain/ExpressionLineAggregateTest.php
+    - tests/Unit/BusinessDefinition/Infrastructure/Computation/NativeFormulaEvaluationConformanceTest.php
     - tests/Unit/BusinessDefinition/Administrator/BusinessDefinitionFormMapperTest.php
     - tests/Unit/BusinessDefinition/Infrastructure/DoctrineBusinessDefinitionRepositoryTest.php
     - tests/Unit/BusinessDefinition/Infrastructure/DoctrinePersistedFieldTypeDefinitionResolverTest.php
@@ -152,9 +150,7 @@ evidence:
     - tests/Integration/Demo/Infrastructure/DemoBusinessProfileExportInstallIntegrationTest.php
     - "Signed backup, clean restore and demo profile installation on three engines; to be exercised by the pull request's hosted workflows."
   native_parity_abi:
-    - tests/Unit/BusinessDefinition/Domain/ExpressionTest.php
-    - tests/Unit/BusinessDefinition/Domain/ExpressionPropertyTest.php
-    - tests/Unit/BusinessDefinition/Domain/ExpressionLineAggregateTest.php
+    - tests/Unit/BusinessDefinition/Infrastructure/Computation/NativeFormulaEvaluationConformanceTest.php
     - tests/Unit/Kernel/NativeComputationFactoryTest.php
     - "Every runtime caller evaluates through the retained App ExpressionEvaluator; no native cutover is claimed and the PHP executor stays until Computation Phase 2."
   performance_capacity:

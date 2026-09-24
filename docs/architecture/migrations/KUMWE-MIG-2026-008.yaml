@@ -8,13 +8,61 @@ handoff_path: "vendor/kumwe/computation/MIGRATION-HANDOFF.md"
 handoff_sha256: "5e6a70f3054ee4f30d4ec87bef37927a9f08b0555d494c6ee9a817cee77e12b1"
 release_attestation: "docs/architecture/migrations/evidence/KUMWE-MIG-2026-008/RELEASE-ATTESTATION.yaml"
 old_namespace_roots: []
-symbols: []
-removed_paths: []
-removed_tests: []
+symbols:
+  -
+    old_fqcn: "Kumwe\\App\\BusinessDefinition\\Domain\\ExpressionEvaluator"
+    new_fqcn: "Kumwe\\Computation\\Executor"
+  -
+    old_fqcn: "Kumwe\\App\\BusinessDefinition\\Domain\\DecimalValue"
+    new_fqcn: "Kumwe\\Computation\\Executor"
+  -
+    old_fqcn: "Kumwe\\App\\Shared\\Domain\\CanonicalJson"
+    new_fqcn: "Kumwe\\Computation\\NativeCanonicalEncoder"
+removed_paths:
+  - "src/BusinessDefinition/Domain/ExpressionEvaluator.php"
+  - "src/BusinessDefinition/Domain/DecimalValue.php"
+  - "src/Shared/Domain/CanonicalJson.php"
+removed_tests:
+  - "tests/Unit/BusinessDefinition/Domain/ExpressionTest.php"
+  - "tests/Unit/BusinessDefinition/Domain/ExpressionPropertyTest.php"
+  - "tests/Unit/BusinessDefinition/Domain/ExpressionLineAggregateTest.php"
+  - "tests/Unit/Application/Automation/CanonicalJsonTest.php"
 retained_tests:
   - "tests/Unit/Kernel/NativeComputationFactoryTest.php"
   - "tests/Unit/Kernel/ContainerTest.php"
   - "tests/Architecture/ProductionArtifactsTest.php"
+  - "tests/Unit/Kernel/CanonicalEncoderConformanceTest.php"
+  - "tests/Unit/BusinessDefinition/Infrastructure/Computation/NativeFormulaEvaluationConformanceTest.php"
+  - "tests/Unit/BusinessReporting/Infrastructure/Computation/NativeReportMaterializationConformanceTest.php"
+  - "tests/Architecture/CanonicalJsonSemanticIdentityGateTest.php"
+  - "tests/Architecture/CapabilityIndexGateTest.php"
+  - "tests/Support/NativeComputationContainer.php"
+  - "tests/Support/DeterministicCanonicalEncoder.php"
+  - "tests/Unit/BusinessRecord/Application/RecordRuleValidatorTest.php"
+  - "tests/Unit/BusinessRecord/Application/AggregateInvariantValidationTest.php"
+  - "tests/Unit/BusinessRecord/Application/BusinessRecordRelationshipCoordinatorTest.php"
+  - "tests/Unit/BusinessRecord/Application/BusinessRecordViewTest.php"
+  - "tests/Unit/BusinessDefinition/Domain/EntityTypeDefinitionTest.php"
+  - "tests/Unit/BusinessDefinition/Administrator/BusinessDefinitionFormMapperTest.php"
+  - "tests/Unit/BusinessSurface/Application/BusinessSurfaceServiceTest.php"
+  - "tests/Unit/BusinessReporting/ReportPolicyInferenceTest.php"
+  - "tests/Unit/BusinessReporting/RecordExportPipelineTest.php"
+  - "tests/Unit/BusinessSchema/Infrastructure/DoctrinePhysicalSchemaGatewayDefaultTest.php"
+  - "tests/Unit/Identity/Application/Administration/AccessControlServiceTest.php"
+  - "tests/Unit/Administrator/Http/Handler/AdministratorAccessControlHandlerTest.php"
+  - "tests/Unit/Application/Automation/ChangePlanTest.php"
+  - "tests/Unit/Application/Automation/ScheduleOccurrenceKeyTest.php"
+  - "tests/Integration/Automation/SchedulerOccurrenceContentionIntegrationTest.php"
+  - "tests/Integration/BusinessRecord/AggregateDocumentIntegrationTest.php"
+  - "tests/Integration/BusinessRecord/BusinessRecordRuntimeIntegrationTest.php"
+  - "tests/Integration/BusinessSchema/BusinessSchemaRecoveryIntegrationTest.php"
+  - "tests/Integration/BusinessSchema/BusinessSchemaRuntimeIntegrationTest.php"
+  - "tests/Integration/BusinessSurface/GeneratedBusinessQueryBudgetIntegrationTest.php"
+  - "tests/Integration/BusinessReporting/ExportArtifactPersistenceTest.php"
+  - "tests/Integration/BusinessIntegration/ProjectionRuntimePersistenceTest.php"
+  - "tests/Integration/BusinessIntegration/OutboxInboxClaimContentionIntegrationTest.php"
+  - "tests/Integration/Identity/AccessControlIntegrationTest.php"
+  - "tests/Integration/Demo/Infrastructure/DemoBusinessProfileExporterTest.php"
 di_changes:
   -
     service: "Kumwe\\Computation\\NativeCompatibility"
@@ -44,13 +92,27 @@ di_changes:
     service: "Kumwe\\CanonicalJson\\CanonicalEncoder"
     factory: "Kumwe\\App\\Kernel\\NativeComputationFactory"
     note: "Alias to the shared package NativeCanonicalEncoder; exposed through the extension provider contract."
+  -
+    service: "Kumwe\\App\\BusinessDefinition\\Application\\FormulaEvaluation"
+    factory: "Kumwe\\App\\Kernel\\NativeComputationFactory"
+    note: "App formula port bound to NativeFormulaEvaluation over the shared NativeAdapter; formulas run natively."
+  -
+    service: "Kumwe\\App\\BusinessReporting\\Application\\ReportMaterialization"
+    factory: "Kumwe\\App\\Kernel\\NativeComputationFactory"
+    note: "App report port bound to NativeReportMaterialization over the shared NativeAdapter; reports run natively."
+  -
+    service: "Kumwe\\App\\BusinessRecord\\Application\\RecordFieldVisibility"
+    factory: "Kumwe\\App\\Kernel\\ContainerFactory"
+    note: "Instance service over the formula port; the read repository and record views judge visibility through it."
 capability_index_entries:
   - "kumwe/computation"
 release_evidence:
   - "docs/architecture/migrations/evidence/KUMWE-MIG-2026-008/RELEASE-ATTESTATION.yaml"
-app_pull_request: "https://github.com/kumwe/app/pull/140"
+  - "https://github.com/kumwe/app/pull/140"
+app_pull_request: "https://github.com/kumwe/app/pull/151"
 roadmap_refs: []
 non_roadmap_refs:
   - "NRM-2026-016"
+  - "NRM-2026-058"
 conflicts:
   - "KUMWE-CONFLICT-2026-001"

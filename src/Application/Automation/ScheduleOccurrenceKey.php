@@ -7,7 +7,7 @@ namespace Kumwe\App\Application\Automation;
 use DateTimeImmutable;
 use DateTimeZone;
 use InvalidArgumentException;
-use Kumwe\App\Shared\Domain\CanonicalJson;
+use Kumwe\CanonicalJson\CanonicalEncoder;
 use Kumwe\Idempotency\IdempotencyKey;
 
 /**
@@ -27,6 +27,7 @@ final class ScheduleOccurrenceKey
     /**
      * Build the key naming one occurrence of one schedule.
      *
+     * @param   CanonicalEncoder   $encoder     Encoder the schedule and instant are digested with.
      * @param   string             $scheduleId  Identifier of the schedule the occurrence belongs to.
      * @param   DateTimeImmutable  $occurrence  Moment the occurrence is due; only the instant it names
      *          affects the key, not the offset it is written in.
@@ -38,14 +39,17 @@ final class ScheduleOccurrenceKey
      *
      * @since   2.0.0
      */
-    public static function for(string $scheduleId, DateTimeImmutable $occurrence): IdempotencyKey
-    {
+    public static function for(
+        CanonicalEncoder $encoder,
+        string $scheduleId,
+        DateTimeImmutable $occurrence,
+    ): IdempotencyKey {
         if (trim($scheduleId) === '') {
             throw new InvalidArgumentException('A schedule ID is required.');
         }
 
         $instant = $occurrence->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d\TH:i:s.u\Z');
-        $digest = CanonicalJson::digest([
+        $digest = $encoder->digest([
             'occurrence' => $instant,
             'schedule_id' => $scheduleId,
         ]);

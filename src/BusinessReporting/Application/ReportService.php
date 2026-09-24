@@ -11,8 +11,6 @@ use Kumwe\Access\AuthorizationGateway;
 use Kumwe\Access\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\BusinessDefinition\Domain\CanonicalDefinitionJson;
-use Kumwe\App\BusinessDefinition\Domain\DecimalValue;
-use Kumwe\App\BusinessDefinition\Domain\ExpressionEvaluator;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordView;
 use Kumwe\App\BusinessRecord\Application\Exception\InvalidBusinessRecordQuery;
 use Kumwe\Extension\Spi\BusinessRecord\Application\BusinessRecordQueryPurpose;
@@ -33,15 +31,12 @@ use Kumwe\Record\Query\RelationQuantifier;
 use Kumwe\Record\Query\SetFilter;
 use Kumwe\Record\Query\TextFilter;
 use Kumwe\Record\Query\TextOperator;
-use Kumwe\Reporting\Domain\ReportAggregateDefinition;
 use Kumwe\Reporting\Domain\ReportAggregateFunction;
 use Kumwe\Reporting\Domain\ReportColumnDefinition;
 use Kumwe\Reporting\Domain\ReportDefinition;
 use Kumwe\Reporting\Domain\ReportFilterDefinition;
 use Kumwe\Reporting\Domain\ReportFilterOperator;
 use Kumwe\Reporting\Domain\ReportRelationQuantifier;
-use Kumwe\Reporting\Domain\ReportSortDefinition;
-use Kumwe\Reporting\Domain\ReportSortDirection;
 use Kumwe\Reporting\Domain\ReportValueType;
 use Kumwe\Access\Capability;
 use Throwable;
@@ -49,9 +44,10 @@ use Throwable;
 /**
  * Executes immutable reports exclusively over policy-filtered business-record browse pages.
  *
- * Grouping, formulas and ordering happen only after `BusinessRecordService` has applied row policy and
- * omitted disallowed fields. Missing fields remain missing through formulas and aggregates, preventing a
- * conditional field denial from being converted into a value or grouping key downstream.
+ * Grouping, aggregates, formulas and ordering happen only after `BusinessRecordService` has applied row policy
+ * and omitted disallowed fields, and they run through the report materialization port over the complete
+ * authorized row set. Missing fields remain missing through formulas and aggregates, preventing a conditional
+ * field denial from being converted into a value or grouping key downstream.
  *
  * @since  2.0.0
  */
@@ -64,6 +60,8 @@ final readonly class ReportService
      * @param   BusinessRecordReportReader   $records            Canonical record browse adapter.
      * @param   AuthorizationGateway         $authorization      Deny-by-default permission gateway.
      * @param   ReportScopeResolver          $scopes             Installed source-scope resolver.
+     * @param   ReportMaterialization        $materialization    Port that groups, aggregates, computes and
+     *          orders the authorized rows.
      * @param   int                          $maximumExportRows  Absolute expanded-row bound for one export.
      * @param   ?RecordExportReportProvider  $recordExports      Derived record-set export reports; null
      *          keeps resolution limited to contributed reports.
@@ -77,6 +75,7 @@ final readonly class ReportService
         private BusinessRecordReportReader $records,
         private AuthorizationGateway $authorization,
         private ReportScopeResolver $scopes,
+        private ReportMaterialization $materialization,
         private int $maximumExportRows = 100_000,
         private ?RecordExportReportProvider $recordExports = null,
     ) {
@@ -146,7 +145,9 @@ final readonly class ReportService
         } while ($after instanceof RecordCursor);
 
         $this->assertCompleteProjection($report, $rows);
-        $rows = $this->materialize($report, $rows);
+        if ($this->materializes($report)) {
+            $rows = $this->materialization->materialize($report, $rows);
+        }
         if (count($rows) > $limit) {
             throw new ReportRowLimitExceeded('The report result exceeds its row limit.');
         }
@@ -531,235 +532,21 @@ final readonly class ReportService
     }
 
     /**
-     * Materialize report groups, aggregates, and formula rows.
+     * Decide whether the definition declares anything the materialization port has to compute.
      *
-     * @param   ReportDefinition                           $report  Signed report definition governing query behavior.
-     * @param   list<array<string, bool|int|string|null>>  $rows    Policy-filtered report rows being transformed.
+     * A report with no groups, aggregates, formulas or sorts publishes its authorized rows exactly as they were
+     * projected, so nothing crosses to the native executor for it.
      *
-     * @return  list<array<string, bool|int|string|null>>
+     * @param   ReportDefinition  $report  Signed report definition governing query behavior.
      *
-     * @since   2.0.0
-     */
-    private function materialize(ReportDefinition $report, array $rows): array
-    {
-        if ($report->groups !== [] || $report->aggregates !== []) {
-            $rows = $this->group($report, $rows);
-        }
-        foreach ($rows as &$row) {
-            foreach ($report->formulas as $formula) {
-                $dependencies = $formula->expression->dependencies();
-                if (array_diff_key(array_fill_keys($dependencies, true), $row) !== []) {
-                    throw new ReportUnavailable('The report is unavailable.');
-                }
-                /** @var array<string, bool|int|string|null> $values */
-                $values = array_intersect_key($row, array_fill_keys($dependencies, true));
-                $value = ExpressionEvaluator::evaluate($formula->expression, $values);
-                if ($value !== null && !$formula->type->accepts($value)) {
-                    throw new ReportUnavailable('A report formula result contradicts its declared type.');
-                }
-                if (!is_bool($value) && !is_int($value) && !is_string($value) && $value !== null) {
-                    throw new ReportUnavailable('A report formula produced a structured value.');
-                }
-                $row[$formula->alias] = $value;
-            }
-        }
-        unset($row);
-        $this->sort($report, $rows);
-
-        return $rows;
-    }
-
-    /**
-     * Group report rows by the declared grouping fields.
-     *
-     * @param   ReportDefinition                           $report  Signed report definition governing query behavior.
-     * @param   list<array<string, bool|int|string|null>>  $rows    Policy-filtered report rows being transformed.
-     *
-     * @return  list<array<string, bool|int|string|null>>
+     * @return  bool  True when at least one group, aggregate, formula or sort is declared.
      *
      * @since   2.0.0
      */
-    private function group(ReportDefinition $report, array $rows): array
+    private function materializes(ReportDefinition $report): bool
     {
-        $buckets = [];
-        foreach ($rows as $row) {
-            $key = [];
-            $groupRow = [];
-            foreach ($report->groups as $group) {
-                if (!array_key_exists($group->columnAlias, $row)) {
-                    throw new ReportUnavailable('The report is unavailable.');
-                }
-                $key[] = $row[$group->columnAlias];
-                $groupRow[$group->columnAlias] = $row[$group->columnAlias];
-            }
-            $digest = CanonicalDefinitionJson::checksum($key);
-            $buckets[$digest] ??= ['row' => $groupRow, 'members' => []];
-            $buckets[$digest]['members'][] = $row;
-        }
-        if ($report->groups === [] && $buckets === []) {
-            $buckets['all'] = ['row' => [], 'members' => $rows];
-        }
-        $result = [];
-        foreach ($buckets as $bucket) {
-            $output = $bucket['row'];
-            foreach ($report->aggregates as $aggregate) {
-                $value = $this->aggregate($aggregate, $bucket['members']);
-                $output[$aggregate->alias] = $value;
-            }
-            $result[] = $output;
-        }
-
-        return $result;
-    }
-
-    /**
-     * Calculate one declared aggregate across the supplied rows.
-     *
-     * @param   ReportAggregateDefinition                  $aggregate  Aggregate definition to calculate.
-     * @param   list<array<string, bool|int|string|null>>  $rows       Policy-filtered report rows being transformed.
-     *
-     * @return  int|string|null
-     *
-     * @since   2.0.0
-     */
-    private function aggregate(ReportAggregateDefinition $aggregate, array $rows): int|string|null
-    {
-        if ($aggregate->function === ReportAggregateFunction::Count) {
-            return count($rows);
-        }
-        $values = [];
-        foreach ($rows as $row) {
-            if ($aggregate->columnAlias !== null && !array_key_exists($aggregate->columnAlias, $row)) {
-                throw new ReportUnavailable('The report is unavailable.');
-            }
-            if ($aggregate->columnAlias !== null && $row[$aggregate->columnAlias] !== null) {
-                $values[] = $row[$aggregate->columnAlias];
-            }
-        }
-        if ($values === []) {
-            return null;
-        }
-        if (
-            $aggregate->function === ReportAggregateFunction::Minimum
-            || $aggregate->function === ReportAggregateFunction::Maximum
-        ) {
-            $selected = array_shift($values);
-            foreach ($values as $value) {
-                if (
-                    $selected === null || $this->compare($value, $selected) * (
-                    $aggregate->function === ReportAggregateFunction::Minimum ? 1 : -1
-                    ) < 0
-                ) {
-                    $selected = $value;
-                }
-            }
-
-            return is_bool($selected) ? (int) $selected : $selected;
-        }
-        $sum = DecimalValue::fromString('0');
-        foreach ($values as $value) {
-            if (!is_int($value) && !is_string($value)) {
-                throw new ReportUnavailable('A numeric report aggregate received a non-numeric value.');
-            }
-            $sum = $sum->add(DecimalValue::fromString((string) $value));
-        }
-        if ($aggregate->function === ReportAggregateFunction::Average) {
-            return $sum->divide(DecimalValue::fromString((string) count($values)), 6)->value();
-        }
-
-        return $sum->value();
-    }
-
-    /**
-     * Sort report rows by the declared stable ordering.
-     *
-     * @param   ReportDefinition                           $report  Signed report definition governing query behavior.
-     * @param   list<array<string, bool|int|string|null>>  $rows    Policy-filtered report rows being transformed.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    private function sort(ReportDefinition $report, array &$rows): void
-    {
-        if ($report->sorts === []) {
-            return;
-        }
-        $decorated = [];
-        foreach ($rows as $index => $row) {
-            $decorated[] = ['index' => $index, 'row' => $row];
-        }
-        usort($decorated, function (array $left, array $right) use ($report): int {
-            foreach ($report->sorts as $sort) {
-                $comparison = $this->compareSort($left['row'], $right['row'], $sort);
-                if ($comparison !== 0) {
-                    return $comparison;
-                }
-            }
-
-            return $left['index'] <=> $right['index'];
-        });
-        $rows = array_map(static fn (array $item): array => $item['row'], $decorated);
-    }
-
-    /**
-     * Compare two rows using the declared report sort rules.
-     *
-     * @param   array<string, bool|int|string|null>  $left   Left row in the deterministic comparison.
-     * @param   array<string, bool|int|string|null>  $right  Right row in the deterministic comparison.
-     * @param   ReportSortDefinition                 $sort   Sort definition supplying field and direction.
-     *
-     * @return  int  Negative, zero, or positive ordering result for the declared sort.
-     *
-     * @since   2.0.0
-     */
-    private function compareSort(array $left, array $right, ReportSortDefinition $sort): int
-    {
-        $leftValue = $left[$sort->outputAlias] ?? null;
-        $rightValue = $right[$sort->outputAlias] ?? null;
-        if ($leftValue === null || $rightValue === null) {
-            $comparison = $leftValue === $rightValue ? 0 : ($leftValue === null ? 1 : -1);
-            if (!$sort->nullsLast) {
-                $comparison *= -1;
-            }
-        } else {
-            $comparison = $this->compare($leftValue, $rightValue);
-        }
-
-        return $sort->direction === ReportSortDirection::Ascending ? $comparison : -$comparison;
-    }
-
-    /**
-     * Compare two normalized report values deterministically.
-     *
-     * @param   bool|int|string  $left   Left normalized value or row in the deterministic comparison.
-     * @param   bool|int|string  $right  Right normalized value or row in the deterministic comparison.
-     *
-     * @return  int  Negative, zero, or positive ordering result.
-     *
-     * @since   2.0.0
-     */
-    private function compare(bool|int|string $left, bool|int|string $right): int
-    {
-        if ((is_int($left) || $this->decimal($left)) && (is_int($right) || $this->decimal($right))) {
-            return DecimalValue::fromString((string) $left)->compare(DecimalValue::fromString((string) $right));
-        }
-
-        return (string) $left <=> (string) $right;
-    }
-
-    /**
-     * Normalize a value into its decimal comparison representation.
-     *
-     * @param   bool|int|string  $value  Candidate value being validated or normalized.
-     *
-     * @return  bool  Whether the value is a canonical decimal string.
-     *
-     * @since   2.0.0
-     */
-    private function decimal(bool|int|string $value): bool
-    {
-        return is_string($value) && preg_match('/^-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$/D', $value) === 1;
+        return $report->groups !== [] || $report->aggregates !== [] || $report->formulas !== []
+            || $report->sorts !== [];
     }
 
     /**

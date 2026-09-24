@@ -106,6 +106,8 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
      *         a relationship target, which decides the columns its part of a read may name.
      * @param  BusinessRecordMutationFence           $fence          Holds a relationship target's
      *         installation still for the rest of the transaction before that target is read.
+     * @param  RecordFieldVisibility                 $visibility     Judges each field's read visibility
+     *         over the complete decoded row before any projection narrows it.
      *
      * @since  2.0.0
      */
@@ -118,6 +120,7 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
         private BusinessDefinitionRepository $definitions,
         private BusinessSchemaInstallationRepository $installations,
         private BusinessRecordMutationFence $fence,
+        private RecordFieldVisibility $visibility,
     ) {
     }
 
@@ -541,6 +544,7 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
             $values[$record->recordKey],
             $access->fields,
             FieldAccessUsage::Detail,
+            $this->visibility,
         );
         if ($includes === []) {
             return $view;
@@ -646,6 +650,7 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
                 $publicValues[$record->recordKey],
                 $access->fields,
                 $usage,
+                $this->visibility,
             );
         }
         if ($specification->projection->includes !== [] && $records !== []) {
@@ -1012,6 +1017,7 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
                     null,
                     $targetAccess->fields,
                     FieldAccessUsage::Include,
+                    $this->visibility,
                 );
                 $result[$sourceKey][$handle][] = new BusinessRecordRelationView(
                     $view->definitionId,
@@ -1283,7 +1289,7 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
         FieldAccessUsage $usage,
     ): array {
         $visible = [];
-        $definitionVisible = RecordFieldVisibility::fields($definition, $values);
+        $definitionVisible = $this->visibility->fields($definition, $values);
         foreach ($definition->fields() as $field) {
             if (
                 !isset($definitionVisible[$field->handle])

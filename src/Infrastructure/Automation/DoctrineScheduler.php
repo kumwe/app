@@ -30,6 +30,7 @@ use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\App\BusinessIntegration\Application\ScheduleRuntimeSynchronizer;
 use Kumwe\Access\Capability;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\CanonicalJson\CanonicalEncoder;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
@@ -77,6 +78,8 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
      * @param  SystemPrincipal               $system                Issues the per-site context a dispatch runs under.
      * @param  JobExecutionScope             $jobScope              Classifies a job type as installation-wide or
      *         site-local.
+     * @param  CanonicalEncoder              $encoder               Digests the occurrence key stamped on each
+     *         dispatched job row.
      * @param  ?ScheduleRuntimeSynchronizer  $contributedSchedules  Optional reconciler for signed extension schedules.
      * @param  ?QueueRuntimePolicyCatalog    $queuePolicies         Active contributed queue and job limits; null
      *         preserves the established core scheduler behavior.
@@ -93,6 +96,7 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
         private ResourceSiteOwnershipWriter $ownershipWriter,
         private SystemPrincipal $system,
         private JobExecutionScope $jobScope,
+        private CanonicalEncoder $encoder,
         private ?ScheduleRuntimeSynchronizer $contributedSchedules = null,
         private ?QueueRuntimePolicyCatalog $queuePolicies = null,
     ) {
@@ -530,7 +534,7 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
                 'maximum_attempts' => $maximumAttempts,
                 'schedule_id' => $id,
                 'scheduled_for' => $scheduledFor,
-                'occurrence_key' => (string) ScheduleOccurrenceKey::for($id, $scheduledFor),
+                'occurrence_key' => (string) ScheduleOccurrenceKey::for($this->encoder, $id, $scheduledFor),
                 'created_at' => $now,
                 'updated_at' => $now,
             ], [

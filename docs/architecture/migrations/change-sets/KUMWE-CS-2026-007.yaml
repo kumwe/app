@@ -32,7 +32,6 @@ phase_2:
   removed_app_symbols: []
   moved_unit_tests: []
   retained_app_tests:
-    - tests/Unit/Application/Automation/CanonicalJsonTest.php
     - tests/Unit/Identity/Application/Administration/AccessControlServiceTest.php
 evidence:
   package:
@@ -56,7 +55,6 @@ security_impact: "No new executable path; the package ships enums, an immutable 
 performance_claim: null
 rollback: "Revert the App pull request; no persisted data changes."
 known_gaps:
-  - "The App executor does not implement the CanonicalEncoder port; Computation's runtime cutover is separate work."
   - "The remaining extension-sdk train packages follow as separate adoptions in dependency order."
 completion_claim: false
 accepted_by: null

@@ -20,6 +20,7 @@ use Kumwe\Record\Query\RecordQuerySpecification;
 use Kumwe\App\BusinessReporting\Application\BusinessRecordReportReader;
 use Kumwe\App\BusinessReporting\Application\ExportService;
 use Kumwe\App\BusinessReporting\Application\ReportDefinitionRegistry;
+use Kumwe\App\BusinessReporting\Application\ReportMaterialization;
 use Kumwe\App\BusinessReporting\Application\ReportScopeResolver;
 use Kumwe\App\BusinessReporting\Application\ReportService;
 use Kumwe\App\BusinessReporting\Delivery\Administrator\AdministratorReportHandler;
@@ -158,6 +159,7 @@ final class ReportBrowserErrorResponseTest extends TestCase
                     return $assertedOrganization;
                 }
             },
+            $this->createStub(ReportMaterialization::class),
         );
     }
 

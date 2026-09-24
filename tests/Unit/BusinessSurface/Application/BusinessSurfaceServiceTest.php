@@ -29,6 +29,7 @@ use Kumwe\App\BusinessSurface\Application\FieldModelPresenter;
 use Kumwe\App\BusinessSurface\Application\PresentedField;
 use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
 use Kumwe\App\Tests\Support\AuthorizationContext;
+use Kumwe\App\Tests\Support\NativeComputationContainer;
 use Kumwe\App\Tests\Support\NeutralBusinessFixture;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
@@ -250,6 +251,9 @@ final class BusinessSurfaceServiceTest extends TestCase
     /**
      * Build a facade whose presenter echoes the handle and editability the facade settled.
      *
+     * The conditions the facade judges run through the native formula port, so this fixture is bound to the
+     * admitted engine like every other test that pins a condition verdict.
+     *
      * @return  BusinessSurfaceService  Reflection-backed fixture with only the presentation collaborators.
      *
      * @since   2.0.0
@@ -294,6 +298,7 @@ final class BusinessSurfaceServiceTest extends TestCase
         $service = $reflection->newInstanceWithoutConstructor();
         $reflection->getProperty('presentations')->setValue($service, $presenter);
         $reflection->getProperty('fieldTypes')->setValue($service, $fieldTypes);
+        $reflection->getProperty('formulas')->setValue($service, NativeComputationContainer::formulas());
 
         return $service;
     }

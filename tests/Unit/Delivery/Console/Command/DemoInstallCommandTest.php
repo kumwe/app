@@ -30,6 +30,7 @@ use Kumwe\App\Kernel\Configuration\ApplicationConfiguration;
 use Kumwe\App\Kernel\Configuration\ConfigurationFactory;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\App\Tests\Support\AuthorizationContext;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
@@ -421,6 +422,7 @@ final class DemoInstallCommandTest extends TestCase
             $this->createStub(HighImpactCredentialGuard::class),
             $this->createStub(StepUpCredentialStore::class),
             $this->createStub(AdministratorSessionStore::class),
+            new DeterministicCanonicalEncoder(),
         );
         $connection = $this->createStub(Connection::class);
 

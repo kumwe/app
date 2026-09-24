@@ -240,6 +240,7 @@ final class AdministratorAccessControlHandlerTest extends TestCase
             $this->createStub(HighImpactCredentialGuard::class),
             $this->createStub(StepUpCredentialStore::class),
             $sessions,
+            new DeterministicCanonicalEncoder(),
         );
         $renderer = new AdministratorRenderer(
             new AdministratorTwigEnvironment(new ArrayLoader()),
@@ -260,6 +261,7 @@ final class AdministratorAccessControlHandlerTest extends TestCase
             $this->createStub(StepUpProofConsumer::class),
             $this->createStub(TransactionManager::class),
             $this->createStub(ClockInterface::class),
+            new DeterministicCanonicalEncoder(),
             false,
             3600,
         );

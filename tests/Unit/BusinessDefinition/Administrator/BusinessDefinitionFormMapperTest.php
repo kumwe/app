@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\BusinessDefinition\Administrator;
 
 use Kumwe\App\BusinessDefinition\Administrator\BusinessDefinitionFormMapper;
-use Kumwe\App\BusinessDefinition\Domain\ExpressionEvaluator;
+use Kumwe\App\Tests\Support\NativeComputationContainer;
 use Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition;
 use Kumwe\Context\Value\SiteContext;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -60,7 +60,10 @@ final class BusinessDefinitionFormMapperTest extends TestCase
         self::assertSame(['net', 'tax'], $definition->fields()[3]->formula?->dependencies());
         $formula = $definition->fields()[3]->formula;
         self::assertNotNull($formula);
-        self::assertSame('12.5', ExpressionEvaluator::evaluate($formula, ['net' => '10', 'tax' => '2.5']));
+        self::assertSame(
+            '12.5',
+            NativeComputationContainer::formulas()->evaluate($formula, ['net' => '10', 'tax' => '2.5']),
+        );
         self::assertStringNotContainsString('eval', json_encode($definition->toArray(), JSON_THROW_ON_ERROR));
     }
 

@@ -20,7 +20,7 @@ use Kumwe\Access\Capability;
 use Kumwe\App\Identity\Domain\EmailAddress;
 use Kumwe\Access\GrantScope;
 use Kumwe\App\Identity\Domain\UserStatus;
-use Kumwe\App\Shared\Domain\CanonicalJson;
+use Kumwe\CanonicalJson\CanonicalEncoder;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
@@ -60,6 +60,8 @@ final readonly class AccessControlService
      *         administrator can retire one the holder can no longer present.
      * @param  AdministratorSessionStore    $sessions       Ends the subject's browser sessions beside the
      *         epoch advance that already invalidates their tokens and proofs.
+     * @param  CanonicalEncoder             $encoder        Digests the grant snapshot a role change is held
+     *         to, so a concurrent edit is refused byte for byte.
      *
      * @since  2.0.0
      */
@@ -74,6 +76,7 @@ final readonly class AccessControlService
         private HighImpactCredentialGuard $credentials,
         private StepUpCredentialStore $stepUp,
         private AdministratorSessionStore $sessions,
+        private CanonicalEncoder $encoder,
     ) {
     }
 
@@ -1293,7 +1296,7 @@ final readonly class AccessControlService
         }
         usort($snapshot, static fn (array $left, array $right): int => $left <=> $right);
 
-        return CanonicalJson::digest($snapshot);
+        return $this->encoder->digest($snapshot);
     }
 
     /**

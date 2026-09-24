@@ -1,0 +1,38 @@
+schema: kumwe-non-roadmap-record/v1
+id: NRM-2026-058
+nrm_ref: NRM-2026-058
+roadmap_impact: None
+rationale: "Complete the Computation Phase 2 cutover: App business execution and canonical digests run through the admitted native kumwe/computation 0.3.3 services, and the App PHP executors they superseded are removed."
+repositories:
+  - kumwe/app
+  - kumwe/computation
+behavior_before: "App evaluated conditions, computed fields, action preconditions, field visibility and editability, schema backfills and transforms and report formulas through its own PHP ExpressionEvaluator and DecimalValue, grouped, aggregated and sorted report rows in ReportService, and took idempotency, outbox, projection, access-control snapshot, change-plan and schedule-occurrence digests through the static App CanonicalJson encoder, while the native services provisioned by NRM-2026-016 served only the audit and extension-sdk adapters."
+behavior_after: "Every condition, formula and record invariant evaluates through the App FormulaEvaluation port bound to NativeFormulaEvaluation over the shared native adapter (formula-draft/1), every report is grouped, aggregated, computed and ordered through the ReportMaterialization port bound to NativeReportMaterialization (report-materialization-draft/1), every surviving digest consumer receives the container CanonicalEncoder, and ExpressionEvaluator, DecimalValue and CanonicalJson are deleted with the four unit tests the packages own; no PHP executor or fallback remains."
+public_api_impact: "FormulaEvaluation and ReportMaterialization are new application ports; RecordRuleValidator, BusinessRecordService, BusinessSurfaceService, ReportService, DoctrinePhysicalSchemaGateway, DoctrineBusinessRecordReadRepository, AccessControlService, AdministratorAccessControlHandler and DoctrineScheduler take the port or the encoder through their constructors; RecordFieldVisibility is an injected service; BusinessRecordView::fromRecord takes the visibility rule; ChangePlan::create and ScheduleOccurrenceKey::for take the encoder first."
+dependency_impact: "None; no lock change. kumwe/computation stays at the exact 0.3.3 pin adopted by NRM-2026-016."
+compatibility: "Formula results and refusal categories follow the frozen formula corpus the admitted tuple pins; report rows keep their declared output order; the three refusals the App decides before the native call keep the corpus wording and Engine-transported refusals carry one stable operator text under the same exception type. Record and line normalization stay App-owned until the record-model cutover."
+data_migration: "None; persisted digests are byte-identical, proven by the container encoder replay of the canonical corpus and of every persisted digest family against the bytes the retired App encoder produced."
+security_impact: "No authority change; authorization, persistence, transactions and delivery stay in App. Only the field handles and owned-line collections an expression reads cross to the native runtime, and a missing or incompatible runtime refuses boot and every evaluation without a fallback."
+performance:
+  claim: None
+  evidence: []
+operations_deployment: "The deployment tuple, images and native provisioning are unchanged; every record write, surface render, report and schema backfill now requires the admitted runtime that boot already requires."
+recovery_rollback: "Revert the App pull request; no persisted data format changes because the native encoder reproduces the retired encoder's bytes."
+artifacts_evidence:
+  - docs/architecture/migrations/KUMWE-MIG-2026-008.yaml
+  - docs/architecture/migrations/change-sets/KUMWE-CS-2026-008.yaml
+  - docs/architecture/migrations/trains/KUMWE-TRAIN-2026-042.yaml
+  - docs/architecture/migrations/evidence/KUMWE-MIG-2026-008/RELEASE-ATTESTATION.yaml
+  - docs/architecture/core-growth/KUMWE-CGR-2026-015.md
+  - docs/architecture/capability-index.md
+  - tests/Unit/Kernel/CanonicalEncoderConformanceTest.php
+  - tests/Unit/BusinessDefinition/Infrastructure/Computation/NativeFormulaEvaluationConformanceTest.php
+  - tests/Unit/BusinessReporting/Infrastructure/Computation/NativeReportMaterializationConformanceTest.php
+  - "https://github.com/kumwe/app/pull/151"
+known_gaps:
+  - "The native ABI transports an evaluation refusal as its category only; Engine-decided refusals reach operators as one stable text rather than the corpus wording."
+  - "A report whose authorized rows exceed 100000, whose materialized result exceeds 16 MiB or whose input document exceeds 64 MiB is refused as unavailable; no PHP materialization remains."
+  - "RecordRuleValidator, RecordExpressionValues, ValidationViolation, DocumentWriteBudget and RuntimeCanonicalJson stay App-owned; the record-model normalized-document cutover is separate work."
+  - "No performance claim is made; the per-evaluation native round trip is measured by the hosted performance lanes."
+owner: "eWɘyn"
+status: in-progress

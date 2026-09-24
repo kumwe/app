@@ -9,6 +9,7 @@ use DomainException;
 use InvalidArgumentException;
 use Kumwe\App\Application\Automation\ChangePlan;
 use Kumwe\App\Application\Automation\ConfirmationRequirement;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
@@ -19,6 +20,7 @@ final class ChangePlanTest extends TestCase
     {
         $createdAt = new DateTimeImmutable('2026-08-04T12:00:00+00:00');
         $first = ChangePlan::create(
+            new DeterministicCanonicalEncoder(),
             'plan-1',
             'content.publish',
             ['version' => 3, 'content' => ['title' => 'Kumwe', 'state' => 'draft']],
@@ -26,6 +28,7 @@ final class ChangePlanTest extends TestCase
             300,
         );
         $reordered = ChangePlan::create(
+            new DeterministicCanonicalEncoder(),
             'plan-2',
             'content.publish',
             ['content' => ['state' => 'draft', 'title' => 'Kumwe'], 'version' => 3],
@@ -37,6 +40,7 @@ final class ChangePlanTest extends TestCase
         self::assertNotSame(
             $first->digest(),
             ChangePlan::create(
+                new DeterministicCanonicalEncoder(),
                 'plan-3',
                 'content.publish',
                 ['content' => ['state' => 'draft', 'title' => 'Kumwe'], 'version' => 4],
@@ -49,7 +53,14 @@ final class ChangePlanTest extends TestCase
     public function testPlanExpiresAtTheExactExpiryInstant(): void
     {
         $createdAt = new DateTimeImmutable('2026-08-04T12:00:00+00:00');
-        $plan = ChangePlan::create('plan-1', 'content.publish', [], $createdAt, 60);
+        $plan = ChangePlan::create(
+            new DeterministicCanonicalEncoder(),
+            'plan-1',
+            'content.publish',
+            [],
+            $createdAt,
+            60,
+        );
 
         self::assertFalse($plan->isExpiredAt(new DateTimeImmutable('2026-08-04T12:00:59+00:00')));
         self::assertTrue($plan->isExpiredAt(new DateTimeImmutable('2026-08-04T12:01:00+00:00')));
@@ -62,6 +73,7 @@ final class ChangePlanTest extends TestCase
     {
         $createdAt = new DateTimeImmutable('2026-08-04T12:00:00+00:00');
         $plan = ChangePlan::create(
+            new DeterministicCanonicalEncoder(),
             'plan-1',
             'content.publish',
             ['id' => 'content-1'],
@@ -90,6 +102,13 @@ final class ChangePlanTest extends TestCase
     {
         $this->expectException(InvalidArgumentException::class);
 
-        ChangePlan::create('plan-1', 'content.publish', [], new DateTimeImmutable(), 0);
+        ChangePlan::create(
+            new DeterministicCanonicalEncoder(),
+            'plan-1',
+            'content.publish',
+            [],
+            new DateTimeImmutable(),
+            0,
+        );
     }
 }
