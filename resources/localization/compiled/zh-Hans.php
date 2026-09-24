@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for zh-Hans, carrying 2518 messages.
+ * Compiled interface message catalogue for zh-Hans, carrying 2519 messages.
  *
  * Generated from zh-Hans.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1974,6 +1974,7 @@ return [
     'core.console.queue_work.worker_heartbeat_cleanup_failed' => '工作进程心跳清理失败：{reason}',
     'core.console.schedule_run.description' => '分发到期的计划，可单次执行，也可使用 --loop 持续执行。',
     'core.console.schedule_run.dispatched_due_schedule_s' => '已分发 {dispatched} 个到期计划。',
+    'core.console.security_events.description' => '列出最新的身份与访问安全事件。',
     'core.console.settings.description' => '读取或更新站点配置。',
     'core.console.studio_authoring.description' => '打开 Studio 创作会话并运行其创作操作。',
     'core.console.studio_authoring.refused' => 'Studio 创作请求被拒绝。',

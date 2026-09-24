@@ -42,6 +42,7 @@ use Kumwe\App\Delivery\Console\Command\RecoverAdministratorThemeCommand;
 use Kumwe\App\Delivery\Console\Command\RecoverCredentialsCommand;
 use Kumwe\App\Delivery\Console\Command\RecoverMigrationLockCommand;
 use Kumwe\App\Delivery\Console\Command\RotateRecordSecretsCommand;
+use Kumwe\App\Delivery\Console\Command\SecurityEventsCommand;
 use Kumwe\App\Delivery\Console\Command\StudioAuthoringCommand;
 use Kumwe\App\Delivery\Console\Command\RunExtensionConformanceCommand;
 use Kumwe\App\Delivery\Console\Command\ScaffoldExtensionCommand;
@@ -103,6 +104,7 @@ use ReflectionClass;
 #[CoversClass(RecoverMigrationLockCommand::class)]
 #[CoversClass(RotateRecordSecretsCommand::class)]
 #[CoversClass(StudioAuthoringCommand::class)]
+#[CoversClass(SecurityEventsCommand::class)]
 #[CoversClass(RunExtensionConformanceCommand::class)]
 #[CoversClass(ScaffoldExtensionCommand::class)]
 #[CoversClass(ScheduleRunCommand::class)]
@@ -258,6 +260,7 @@ final class CommandDescriptionTest extends TestCase
             ScheduleRunCommand::class,
             SignExtensionCommand::class,
             StudioAuthoringCommand::class,
+            SecurityEventsCommand::class,
             UninstallExtensionCommand::class,
             VerifyAuditTrailCommand::class,
             WatchExtensionRuntimeCommand::class,

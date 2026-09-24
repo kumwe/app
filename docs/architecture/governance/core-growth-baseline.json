@@ -3280,6 +3280,18 @@
             "surface": "4d884493588351b5ca7bb34c",
             "growth": null
         },
+        "Kumwe\\App\\Delivery\\Console\\Command\\SecurityEventsCommand": {
+            "kind": "class",
+            "layer": "delivery",
+            "surface": "a5fe50e7a6ea499dde36ebbe",
+            "growth": {
+                "classification": "host-delivery",
+                "implements": [
+                    "Kumwe\\App\\Delivery\\Console\\Command"
+                ],
+                "extends": null
+            }
+        },
         "Kumwe\\App\\Delivery\\Console\\Command\\SignExtensionCommand": {
             "kind": "class",
             "layer": "delivery",
@@ -5051,7 +5063,7 @@
         "Kumwe\\App\\Infrastructure\\Mcp\\KumweMcpHandlers": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "8e159c525f497846a75411c4",
+            "surface": "60f445302ac1eb38411311e7",
             "growth": {
                 "classification": "host-infrastructure",
                 "implements": [],

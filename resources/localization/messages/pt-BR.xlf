@@ -18441,6 +18441,15 @@
         <target>A solicitação de criação do Studio foi recusada.</target>
       </segment>
     </unit>
+    <unit id="core.console.security_events.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/SecurityEventsCommand.php.</note>
+      </notes>
+      <segment>
+        <source>List the newest identity and access security events.</source>
+        <target>Lista os eventos de segurança de identidade e acesso mais recentes.</target>
+      </segment>
+    </unit>
     <unit id="core.console.settings.description">
       <notes>
         <note category="context">Console command summary on src/Delivery/Console/Command/ManageSettingsCommand.php.</note>

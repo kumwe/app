@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for af, carrying 2518 messages.
+ * Compiled interface message catalogue for af, carrying 2519 messages.
  *
  * Generated from af.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1974,6 +1974,7 @@ return [
     'core.console.queue_work.worker_heartbeat_cleanup_failed' => 'Werker-hartklop-opruiming het misluk: {reason}',
     'core.console.schedule_run.description' => 'Stuur vervalle skedules eenmalig of deurlopend met --loop.',
     'core.console.schedule_run.dispatched_due_schedule_s' => '{dispatched} vervalle skedule(s) gestuur.',
+    'core.console.security_events.description' => 'Lys die nuutste identiteits- en toegangsekuriteitsgebeurtenisse.',
     'core.console.settings.description' => 'Lees of werk webwerfkonfigurasie by.',
     'core.console.studio_authoring.description' => 'Open ’n Studio-outeursessie en voer die outeursbewerkings daarvan uit.',
     'core.console.studio_authoring.refused' => 'Die Studio-outeursversoek is geweier.',

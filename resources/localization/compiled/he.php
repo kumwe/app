@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for he, carrying 2518 messages.
+ * Compiled interface message catalogue for he, carrying 2519 messages.
  *
  * Generated from he.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1974,6 +1974,7 @@ return [
     'core.console.queue_work.worker_heartbeat_cleanup_failed' => 'ניקוי פעימת הלב של העובד נכשל: {reason}',
     'core.console.schedule_run.description' => 'שגרו תזמונים שהגיע מועדם פעם אחת או ברציפות עם --loop.',
     'core.console.schedule_run.dispatched_due_schedule_s' => 'נשלחו {dispatched} תזמונים שהגיע מועדם.',
+    'core.console.security_events.description' => 'מציג את אירועי האבטחה האחרונים של זהות וגישה.',
     'core.console.settings.description' => 'קראו או עדכנו את תצורת האתר.',
     'core.console.studio_authoring.description' => 'פתחו הפעלת כתיבה ב-Studio והריצו את פעולות הכתיבה שלה.',
     'core.console.studio_authoring.refused' => 'בקשת הכתיבה ב-Studio נדחתה.',

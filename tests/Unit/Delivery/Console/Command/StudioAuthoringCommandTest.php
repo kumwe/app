@@ -42,6 +42,14 @@ use stdClass;
 final class StudioAuthoringCommandTest extends TestCase
 {
     /**
+     * Commands generation two adds to generation one, in no particular order.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
+    private const array SUCCESSOR_COMMANDS = ['security-events', 'studio-authoring'];
+
+    /**
      * Protected files written by a test.
      *
      * @var    list<string>
@@ -67,7 +75,7 @@ final class StudioAuthoringCommandTest extends TestCase
     }
 
     /**
-     * Generation two adds only the studio-authoring command and leaves every generation-one command intact.
+     * Generation two only adds commands — studio-authoring and the browser-parity commands — to generation one.
      *
      * @return  void
      *
@@ -81,14 +89,14 @@ final class StudioAuthoringCommandTest extends TestCase
         self::assertIsArray($v2);
         self::assertSame(2, CliV2MachineContract::contract()->generation());
         self::assertSame(
-            self::sortedWith(CliV1MachineContract::contract()->commandNames(), 'studio-authoring'),
+            self::sortedWith(CliV1MachineContract::contract()->commandNames(), self::SUCCESSOR_COMMANDS),
             CliV2MachineContract::contract()->commandNames(),
         );
-        $withoutStudio = array_values(array_filter(
+        $retained = array_values(array_filter(
             $v2['commands'],
-            static fn (array $command): bool => $command['name'] !== 'studio-authoring',
+            static fn (array $command): bool => !in_array($command['name'], self::SUCCESSOR_COMMANDS, true),
         ));
-        self::assertSame($v1['commands'], $withoutStudio);
+        self::assertSame($v1['commands'], $retained);
         self::assertSame(
             ['read', 'read', 'read', 'mutate', 'read', 'mutate', 'mutate', 'mutate'],
             array_map(
@@ -185,18 +193,18 @@ final class StudioAuthoringCommandTest extends TestCase
     }
 
     /**
-     * Sort one generation-one name list with an added name.
+     * Sort one generation-one name list with the names generation two adds.
      *
      * @param   list<string>  $names  Generation-one names.
-     * @param   string        $added  Added name.
+     * @param   list<string>  $added  Added names.
      *
      * @return  list<string>  Sorted list.
      *
      * @since   2.0.0
      */
-    private static function sortedWith(array $names, string $added): array
+    private static function sortedWith(array $names, array $added): array
     {
-        $names[] = $added;
+        array_push($names, ...$added);
         sort($names);
 
         return $names;

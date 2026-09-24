@@ -40,7 +40,7 @@ final class McpMachineContractTest extends TestCase
             file_get_contents($fixture),
         );
         self::assertSame(
-            ['tools' => 83, 'resources' => 1, 'prompts' => 1],
+            ['tools' => 88, 'resources' => 1, 'prompts' => 1],
             $document['inventory'],
         );
         self::assertSame(

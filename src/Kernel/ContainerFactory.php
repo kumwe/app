@@ -560,6 +560,7 @@ use Kumwe\App\Delivery\Console\Command\RunExtensionConformanceCommand;
 use Kumwe\App\Delivery\Console\Command\UninstallExtensionCommand;
 use Kumwe\App\Delivery\Console\Command\RecoverAdministratorThemeCommand;
 use Kumwe\App\Delivery\Console\ConsoleApplication;
+use Kumwe\App\Delivery\Console\Command\SecurityEventsCommand;
 use Kumwe\App\Delivery\Console\Command\StudioAuthoringCommand;
 use Kumwe\App\Delivery\Console\Output;
 use Kumwe\App\Delivery\Console\StreamOutput;
@@ -6978,6 +6979,12 @@ final class ContainerFactory
             self::service($container, RecordSecretRotation::class),
             self::service($container, ConsoleAuthorizer::class),
         ), true);
+        $container->share(SecurityEventsCommand::class, static fn (
+            Container $container,
+        ): SecurityEventsCommand => new SecurityEventsCommand(
+            self::service($container, AccessControlService::class),
+            self::service($container, ConsoleAuthorizer::class),
+        ), true);
         $container->share(StudioAuthoringCommand::class, static fn (
             Container $container,
         ): StudioAuthoringCommand => new StudioAuthoringCommand(
@@ -7037,6 +7044,7 @@ final class ContainerFactory
                 self::service($container, ExportAuditTrailCommand::class),
                 self::service($container, RotateRecordSecretsCommand::class),
                 self::service($container, StudioAuthoringCommand::class),
+                self::service($container, SecurityEventsCommand::class),
                 self::service($container, McpServeCommand::class),
             ], self::service($container, Output::class)), true);
     }
