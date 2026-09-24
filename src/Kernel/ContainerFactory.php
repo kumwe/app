@@ -357,7 +357,6 @@ use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringContextPurger;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringContextRepository;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringService;
 use Kumwe\App\Studio\Application\Authoring\StudioMachineAuthoringGateway;
-use Kumwe\App\Studio\Application\Authoring\StudioMachineAuthoringOperation;
 use Kumwe\App\Delivery\Http\Api\Studio\StudioAuthoringApiHandler;
 use Kumwe\App\Delivery\Http\Api\Studio\StudioAuthoringProblemMapper;
 use Kumwe\App\Studio\Application\Authoring\HostedContentStudioAuthoringConfigurationProvider;
@@ -5944,19 +5943,45 @@ final class ContainerFactory
         // as the browser host does. Mutating operations carry their Idempotency-Key into the Studio host's
         // own replay boundary, so no second ledger decides replay for this surface.
         self::apiRoute($application->post(
-            StudioAuthoringApiHandler::PREFIX . 'sessions',
+            '/api/v1/studio/authoring/sessions',
             StudioAuthoringApiHandler::class,
             'api.v1.studio.authoring.sessions',
         ), 'content.read');
-        foreach (StudioMachineAuthoringOperation::cases() as $operation) {
-            self::apiRoute($application->post(
-                StudioAuthoringApiHandler::PREFIX . $operation->value,
-                $operation->mutating()
-                    ? [RequireIdempotencyKeyMiddleware::class, StudioAuthoringApiHandler::class]
-                    : StudioAuthoringApiHandler::class,
-                'api.v1.studio.authoring.' . $operation->value,
-            ), 'content.read');
-        }
+        self::apiRoute($application->post(
+            '/api/v1/studio/authoring/resolve-target',
+            StudioAuthoringApiHandler::class,
+            'api.v1.studio.authoring.resolve-target',
+        ), 'content.read');
+        self::apiRoute($application->post(
+            '/api/v1/studio/authoring/list-types',
+            StudioAuthoringApiHandler::class,
+            'api.v1.studio.authoring.list-types',
+        ), 'content.read');
+        self::apiRoute($application->post(
+            '/api/v1/studio/authoring/plan-save',
+            StudioAuthoringApiHandler::class,
+            'api.v1.studio.authoring.plan-save',
+        ), 'content.read');
+        self::apiRoute($application->post(
+            '/api/v1/studio/authoring/start',
+            [RequireIdempotencyKeyMiddleware::class, StudioAuthoringApiHandler::class],
+            'api.v1.studio.authoring.start',
+        ), 'content.read');
+        self::apiRoute($application->post(
+            '/api/v1/studio/authoring/save-item',
+            [RequireIdempotencyKeyMiddleware::class, StudioAuthoringApiHandler::class],
+            'api.v1.studio.authoring.save-item',
+        ), 'content.read');
+        self::apiRoute($application->post(
+            '/api/v1/studio/authoring/save-as-new-type',
+            [RequireIdempotencyKeyMiddleware::class, StudioAuthoringApiHandler::class],
+            'api.v1.studio.authoring.save-as-new-type',
+        ), 'content.read');
+        self::apiRoute($application->post(
+            '/api/v1/studio/authoring/save-new-type-version',
+            [RequireIdempotencyKeyMiddleware::class, StudioAuthoringApiHandler::class],
+            'api.v1.studio.authoring.save-new-type-version',
+        ), 'content.read');
 
         // Business definitions. Reading is content.read and every mutation is content.update,
         // matching the administrator screens these routes are the machine equivalent of.
