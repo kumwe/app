@@ -102,6 +102,72 @@ final class UploadAndTraversalBoundaryTest extends TestCase
     }
 
     /**
+     * The machine upload judges the raw body by its bytes and lets the client file name steer nothing.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheRestUploadJudgesTheRawBodyAndIgnoresTheClientPath(): void
+    {
+        $harness = SecurityHttpHarness::boot();
+        $token = $harness->machineActor(['content.read', 'content.update', 'content.delete'])['token'];
+        $root = dirname(__DIR__, 3);
+        $raw = static fn (string $name, string $bytes) => $harness->handle(
+            $harness->api(
+                'POST',
+                '/api/v1/media?filename=' . rawurlencode($name),
+                $token,
+                null,
+                ['Idempotency-Key' => 'rest-upload-' . bin2hex(random_bytes(6))],
+            )
+                ->withHeader('Content-Type', 'application/octet-stream')
+                ->withBody((new StreamFactory())->createStream($bytes)),
+        );
+        foreach (
+            [
+                '../../../public/script.php' => "<?php echo 'owned';\n",
+                'logo.svg' => '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>',
+                'page.png' => "<!doctype html><script>alert(1)</script>\n",
+            ] as $name => $bytes
+        ) {
+            self::assertSame(422, $raw($name, $bytes)->getStatusCode(), $name . ' is refused by its bytes.');
+        }
+
+        $marker = bin2hex(random_bytes(6));
+        $stored = $raw(
+            '../../../../public/rest-polyglot-' . $marker . '.php',
+            "GIF89a\x01\x00\x01\x00\x80\x00\x00\x00\x00\x00\xff\xff\xff!\xf9\x04\x01\x00\x00\x00\x00,"
+                . "\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;<?php echo 'owned'; ?>",
+        );
+        self::assertSame(201, $stored->getStatusCode());
+        $asset = json_decode((string) $stored->getBody(), true, 8, JSON_THROW_ON_ERROR);
+        self::assertIsArray($asset);
+        self::assertIsString($asset['id'] ?? null);
+        try {
+            self::assertSame('image/gif', $asset['mime_type'] ?? null);
+            self::assertSame('rest-polyglot-' . $marker . '.php', $asset['name'] ?? null, 'The base name alone.');
+            self::assertFileDoesNotExist($root . '/public/rest-polyglot-' . $marker . '.php');
+            self::assertFileExists($root . '/storage/media/default/' . $asset['id'] . '.gif');
+            self::assertStringNotContainsString($root, (string) $stored->getBody(), 'No server path is disclosed.');
+        } finally {
+            $deleted = $harness->handle($harness->api(
+                'DELETE',
+                '/api/v1/media/' . $asset['id'],
+                $token,
+                null,
+                ['Idempotency-Key' => 'rest-delete-' . bin2hex(random_bytes(6))],
+            ));
+            self::assertSame(204, $deleted->getStatusCode());
+            foreach ([$root . '/storage/media/default', $root . '/storage/media'] as $directory) {
+                if (is_dir($directory) && (scandir($directory) ?: []) === ['.', '..']) {
+                    rmdir($directory);
+                }
+            }
+        }
+    }
+
+    /**
      * Every URL-to-file route refuses literal and encoded traversal exactly as it refuses a missing file.
      *
      * @return  void
