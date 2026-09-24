@@ -25,6 +25,7 @@ use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringTargetResolver;
 use Kumwe\App\Studio\Application\Authoring\HostedContentStudioAuthoringConfigurationProvider;
 use Kumwe\App\Studio\Application\Authoring\StudioContextualAuthoringConfigurationProvider;
 use Kumwe\App\Studio\Application\Authoring\StudioHostedDeploymentConfiguration;
+use Kumwe\App\Studio\Application\Composition\StudioContentCompositionService;
 use Kumwe\App\Studio\Application\Host\StudioAuthoringHostPort;
 use Kumwe\App\Studio\Application\Host\StudioHostSessionAuthority;
 use Kumwe\App\Studio\Application\Host\StudioHostSessionRepository;
@@ -462,6 +463,251 @@ final class ContentStudioAuthoringJourneyIntegrationTest extends TestCase
             '/administrator/content/' . $entryId . '/edit',
             $versioned->session->extensions->{'kumwe.app/return'}->path,
         );
+    }
+
+    /**
+     * A reusable type saved with a composed layout publishes its Blueprint and locks only the blocks it composes.
+     *
+     * The blank canvas offers every block the session can author. The stored reusable Blueprint keeps only
+     * the locks of the blocks its layout actually composes, so a block the type never used cannot hold the
+     * type to that block's release, and a layout with at least one root is stored published, not as a draft.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAComposedLayoutIsPublishedLockingOnlyTheBlocksItComposes(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $context = self::administratorContext($container);
+        $provider = self::service($container, StudioContextualAuthoringConfigurationProvider::class);
+        $targets = self::service($container, ContentStudioAuthoringTargetResolver::class);
+        $hosts = self::service($container, StudioProducerHostFactory::class);
+        $compositions = self::service($container, StudioContentCompositionService::class);
+
+        $configuration = $provider->forMount($context, $targets->create($context), 'integration-csrf');
+        self::assertInstanceOf(StudioHostedDeploymentConfiguration::class, $configuration);
+        $deployment = json_decode($configuration->configurationJson, false, 32, JSON_THROW_ON_ERROR);
+        self::assertInstanceOf(stdClass::class, $deployment);
+        $resourceContext = $deployment->session->resourceContext;
+        $dispatch = self::dispatcher($hosts, $context, $resourceContext->key, $deployment->session->sessionGeneration);
+        $dispatch('authoring/resolve-target', 'request', (object) [
+            'targetId' => $deployment->launch->targetId,
+            'intent' => 'create',
+            'resourceContext' => $resourceContext,
+            'requestedPresentation' => 'inline',
+        ], false);
+        $snapshot = $dispatch('authoring/start', 'request', (object) [
+            'targetId' => $deployment->launch->targetId,
+            'resourceContext' => $resourceContext,
+            'source' => (object) ['kind' => 'blank'],
+            'presentation' => 'inline',
+        ], true);
+
+        $offered = $snapshot->state->blueprint->dependencyLock->blocks;
+        self::assertIsArray($offered);
+        $composed = array_values(array_filter(
+            $offered,
+            static fn (stdClass $lock): bool => in_array($lock->type, ['core/field-text', 'studio.core/section'], true),
+        ));
+        $versions = array_column($composed, 'version', 'type');
+        self::assertCount(2, $versions, 'The session offers the section and the text field blocks.');
+        self::assertGreaterThan(2, count($offered), 'The canvas offers more blocks than the layout composes.');
+
+        $model = self::clone($snapshot->state->model);
+        $model->fields[] = self::dataField('summary', 'Summary');
+        $blueprint = self::clone($snapshot->state->blueprint);
+        // The text field sits in the section's slot, so the lock must follow the layout into its slots.
+        $blueprint->roots = [(object) [
+            'id' => 'summary-section',
+            'type' => 'studio.core/section',
+            'version' => $versions['studio.core/section'],
+            'properties' => new stdClass(),
+            'bindings' => new stdClass(),
+            'slots' => (object) ['content' => [(object) [
+                'id' => 'summary-field',
+                'type' => 'core/field-text',
+                'version' => $versions['core/field-text'],
+                'properties' => new stdClass(),
+                'bindings' => (object) ['value' => (object) [
+                    'source' => (object) ['kind' => 'entry-field', 'fieldPath' => ['data_summary']],
+                    'transforms' => [],
+                    'onNull' => 'error',
+                    'onError' => 'error',
+                ]],
+                'slots' => new stdClass(),
+                'authoring' => (object) ['mode' => 'content'],
+            ]]],
+            'authoring' => (object) ['mode' => 'structural'],
+        ]];
+        $typeDraft = (object) [
+            'outcome' => 'save-as-new-type',
+            'label' => (object) [
+                'key' => 'kumwe.app/journey-composed-type',
+                'defaultMessage' => 'Composed type ' . bin2hex(random_bytes(3)),
+            ],
+            'authoringPolicy' => (object) ['modes' => ['model', 'blueprint', 'content'], 'itemComposition' => 'denied'],
+            'model' => $model,
+            'blueprint' => $blueprint,
+        ];
+        $plan = $dispatch('authoring/plan-save', 'intent', (object) [
+            'contractVersion' => '0.1-draft',
+            'kind' => 'authoring-save-intent',
+            'sessionId' => $snapshot->sessionId,
+            'expected' => $snapshot->state->coordinates,
+            'draft' => $typeDraft,
+        ], false);
+        $result = $dispatch('authoring/save-as-new-type', 'request', (object) [
+            'contractVersion' => '0.1-draft',
+            'kind' => 'authoring-save-as-new-type-request',
+            'plan' => (object) [
+                'id' => $plan->id,
+                'revision' => $plan->revision,
+                'successorContext' => $plan->successorContext,
+            ],
+            'acceptedConsequences' => self::codes($plan),
+            'draft' => $typeDraft,
+        ], true);
+        self::assertSame('save-as-new-type', $result->outcome);
+
+        $definitionId = ContentStudioAuthoringDocuments::contentTypeId($result->session->type->id);
+        self::assertIsString($definitionId);
+        $composition = $compositions->find($context, $definitionId, 1);
+        self::assertNotNull($composition);
+        $stored = $composition->blueprint->document();
+        self::assertSame('published', $stored->status);
+        self::assertSame(['summary-section'], array_column($stored->roots, 'id'));
+        self::assertEquals($composed, $stored->dependencyLock->blocks);
+    }
+
+    /**
+     * A session whose start was never recorded reports the start its target and loaded state imply.
+     *
+     * A context opened before starts were recorded carries no start source. Its save result still reports
+     * the start the session's snapshot declared: an edit reports the existing item, and a create that saves
+     * a new reusable type reports the type it loaded, or the blank canvas when it loaded none.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testASessionWithoutARecordedStartReportsTheStartItsTargetImplies(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $context = self::administratorContext($container);
+        $provider = self::service($container, StudioContextualAuthoringConfigurationProvider::class);
+        $targets = self::service($container, ContentStudioAuthoringTargetResolver::class);
+        $hosts = self::service($container, StudioProducerHostFactory::class);
+        $content = self::service($container, ContentService::class);
+        $models = self::service($container, ContentModelService::class);
+        $database = self::service($container, Connection::class);
+        $tables = self::service($container, TableNames::class);
+
+        $record = $content->create(
+            $context,
+            'Unrecorded start page',
+            'unrecorded-start-' . bin2hex(random_bytes(4)),
+            ['body' => 'Before the save.'],
+        );
+        $definition = $models->contentType($context, $record->contentTypeId, $record->contentTypeVersion);
+        $item = static function (stdClass $snapshot): stdClass {
+            $entry = self::clone($snapshot->state->entry);
+            $entry->values->title = 'Unrecorded start item';
+
+            return (object) ['outcome' => 'save-item', 'entry' => $entry];
+        };
+        $newType = static function (stdClass $snapshot, string $field): stdClass {
+            $model = self::clone($snapshot->state->model);
+            $model->fields[] = self::dataField($field, ucfirst($field));
+
+            return (object) [
+                'outcome' => 'save-as-new-type',
+                'label' => (object) [
+                    'key' => 'kumwe.app/journey-unrecorded-type',
+                    'defaultMessage' => 'Unrecorded start type ' . bin2hex(random_bytes(3)),
+                ],
+                'authoringPolicy' => (object) [
+                    'modes' => ['model', 'blueprint', 'content'],
+                    'itemComposition' => 'denied',
+                ],
+                'model' => $model,
+                'blueprint' => self::clone($snapshot->state->blueprint),
+            ];
+        };
+        // The blank session publishes the reusable type the from-type session then starts from.
+        $createdType = null;
+        foreach (['blank', 'from-type', 'existing'] as $kind) {
+            $target = $kind === 'existing'
+                ? $targets->edit($context, $record, $definition)
+                : $targets->create($context);
+            $configuration = $provider->forMount($context, $target, 'integration-csrf');
+            self::assertInstanceOf(StudioHostedDeploymentConfiguration::class, $configuration);
+            $deployment = json_decode($configuration->configurationJson, false, 32, JSON_THROW_ON_ERROR);
+            self::assertInstanceOf(stdClass::class, $deployment);
+            $resourceContext = $deployment->session->resourceContext;
+            $dispatch = self::dispatcher(
+                $hosts,
+                $context,
+                $resourceContext->key,
+                $deployment->session->sessionGeneration,
+            );
+            $dispatch('authoring/resolve-target', 'request', (object) [
+                'targetId' => $deployment->launch->targetId,
+                'intent' => $kind === 'existing' ? 'edit' : 'create',
+                'resourceContext' => $resourceContext,
+                'requestedPresentation' => 'inline',
+            ], false);
+            $source = (object) ['kind' => $kind];
+            if ($kind === 'from-type') {
+                self::assertInstanceOf(stdClass::class, $createdType);
+                $source->type = (object) [
+                    'id' => $createdType->id,
+                    'version' => $createdType->version,
+                    'revision' => $createdType->revision,
+                ];
+            }
+            $snapshot = $dispatch('authoring/start', 'request', (object) [
+                'targetId' => $deployment->launch->targetId,
+                'resourceContext' => $resourceContext,
+                'source' => $source,
+                'presentation' => 'inline',
+            ], true);
+            self::assertEquals($source, $snapshot->start);
+
+            // The context forgets its start, as a context opened before starts were recorded never had one.
+            $forgotten = $database->executeStatement(sprintf(
+                'UPDATE %s SET start_source = NULL WHERE context_key = ?',
+                $tables->quoted('studio_content_authoring_contexts'),
+            ), [self::contextKeyOf($container, $resourceContext->key)]);
+            self::assertSame(1, $forgotten, $kind);
+
+            $draft = match ($kind) {
+                'blank' => $newType($snapshot, 'summary'),
+                'from-type' => $newType($snapshot, 'teaser'),
+                default => $item($snapshot),
+            };
+            $plan = $dispatch('authoring/plan-save', 'intent', (object) [
+                'contractVersion' => '0.1-draft',
+                'kind' => 'authoring-save-intent',
+                'sessionId' => $snapshot->sessionId,
+                'expected' => $snapshot->state->coordinates,
+                'draft' => $draft,
+            ], false);
+            $result = $dispatch('authoring/' . $draft->outcome, 'request', (object) [
+                'contractVersion' => '0.1-draft',
+                'kind' => 'authoring-' . $draft->outcome . '-request',
+                'plan' => (object) [
+                    'id' => $plan->id,
+                    'revision' => $plan->revision,
+                    'successorContext' => $plan->successorContext,
+                ],
+                'acceptedConsequences' => self::codes($plan),
+                'draft' => $draft,
+            ], true);
+            self::assertSame($draft->outcome, $result->outcome, $kind);
+            self::assertEquals($snapshot->start, $result->session->start, $kind);
+            $createdType ??= $result->session->type;
+        }
     }
 
     /**
