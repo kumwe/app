@@ -73,7 +73,8 @@ portfolio, soaks, the independent review and the out-of-process extension runtim
 
 - Preserve role dashboard choices outside the editor's own visibility, showing a localized explanation
   without exposing hidden widget details. Remove inline summary styles and directly restate theme
-  surfaces on live appearance changes, with WebKit regression coverage (#152).
+  surfaces on live appearance changes, naming the scheme on every element so WebKit re-resolves inherited
+  text colour as well as backgrounds, with WebKit regression coverage (#152).
 
 - Protect administrator sign-in with a short-lived, path-scoped login-CSRF cookie and constant-time
   token comparison before credential verification (`GM-IDN-04`). Both browser session stores enforce

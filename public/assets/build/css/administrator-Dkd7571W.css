@@ -1666,6 +1666,18 @@
     --kumwe-success-soft: #183c30;
   }
 
+  /*
+   * Restating the scheme on the root alone was not enough for WebKit: after a live switch it repainted
+   * every background but kept the previous scheme's text colour on descendants that only inherit it
+   * (the topbar title, headings, strong, paragraphs, list values), while a bare span beside them
+   * updated. That is a matched-style cache reused across the switch. Naming the scheme on every
+   * element gives each scheme its own matched declarations and makes the root attribute invalidate
+   * the whole subtree, so a switch re-resolves every descendant against the new tokens. The value is
+   * the one each element already inherits, so no engine renders differently.
+   */
+  :root[data-kumwe-scheme="light"] * { color-scheme: light; }
+  :root[data-kumwe-scheme="dark"] * { color-scheme: dark; }
+
   /* Theme colours resolve at each consuming property when the appearance changes. */
   @media (prefers-color-scheme: dark) {
     :root {

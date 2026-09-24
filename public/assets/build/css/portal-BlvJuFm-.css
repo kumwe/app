@@ -1411,6 +1411,13 @@ main { width: 100%; min-width: 0; max-width: 76rem; padding: clamp(1.25rem, 4vw,
   --kumwe-warning-soft: #3b301e;
 }
 
+/*
+ * Name the scheme on every element, as the administrator does, so a live switch makes WebKit re-resolve
+ * each descendant's inherited text colour instead of reusing a style computed under the other scheme.
+ */
+:root[data-kumwe-scheme="light"] * { color-scheme: light; }
+:root[data-kumwe-scheme="dark"] * { color-scheme: dark; }
+
 code, pre { font-family: var(--kumwe-font-mono); }
 
 .button {

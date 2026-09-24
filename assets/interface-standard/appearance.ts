@@ -3,9 +3,9 @@
  *
  * Every theme token resolves through `light-dark()`, so Chromium and Firefox re-resolve them when the
  * appearance changes. WebKit keeps some computed colours from the previous scheme when only the media
- * state moves, which is the stale-background finding V2-QA-014 recorded. Restating the scheme as an
- * explicit root attribute changes an inherited computed value, so every descendant recomputes and
- * repaints in place; focus, form state and the document identity are untouched.
+ * state moves, which is the stale-background finding V2-QA-014 recorded. The scheme is restated as an
+ * explicit root attribute and the stylesheets name it on every element beneath that attribute, so every
+ * descendant recomputes and repaints in place; focus, form state and the document identity are untouched.
  */
 const darkAppearance = '(prefers-color-scheme: dark)';
 
