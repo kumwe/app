@@ -3,7 +3,7 @@
     "work_package": "P0-A",
     "authority": "docs/roadmap/README.md",
     "note": "Every figure below is derived from the repository at the recorded commit. Nothing is typed by hand, nothing reads the clock or the machine, and running the generator twice at one commit produces the same document. composer baseline:check fails when it drifts.",
-    "commit": "d8f497fe244d414c65036e8e037303eb9b665056",
+    "commit": "bfacd5ac125b7c9c335358ef6e241bc07deca8b0",
     "recorded_at": "2026-09-24",
     "recorded_from": [],
     "toolchain": {
@@ -40,7 +40,7 @@
         },
         "unit": {
             "files": 458,
-            "test_methods": 2377
+            "test_methods": 2378
         }
     },
     "coverage": {
@@ -547,9 +547,9 @@
         ],
         "openapi": {
             "title": "Kumwe App API",
-            "version": "1.0.0",
-            "paths": 84,
-            "operations": 112
+            "version": "1.1.0",
+            "paths": 92,
+            "operations": 120
         },
         "migrations": [
             "20260807170000_database_driven_presentation",
