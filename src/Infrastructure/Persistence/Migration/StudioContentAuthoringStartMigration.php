@@ -28,7 +28,7 @@ final readonly class StudioContentAuthoringStartMigration implements RepeatableM
      * @var    string
      * @since  2.0.0
      */
-    public const string ID = '20260924040000_studio_content_authoring_start';
+    public const string ID = '20260924041000_studio_content_authoring_start';
 
     /**
      * Bind the migration to the installation's prefix-aware table names.
