@@ -497,6 +497,86 @@ final class DashboardPreferenceServiceTest extends TestCase
     }
 
     /**
+     * An editor with narrower visibility keeps a role's stored widget and still cannot introduce an unseen one.
+     *
+     * The editor holds `users.manage` but cannot see `acme.finance-workflow`, which the role row already
+     * stores. Delivery offers only the editor-visible identifiers; the service admits the stored one from the
+     * role row itself, so the save keeps it for the role's members. An identifier neither visible to the
+     * editor nor stored for the role is refused before anything is written.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testRoleSaveRetainsStoredWidgetsOutsideTheEditorsVisibilityAndRefusesUnseenAdditions(): void
+    {
+        $group = PresentationAccessGroup::fromRole(self::ROLE_ID, 'operations', 'Operations');
+        $runtime = new DashboardPreferenceTestRuntime([$group]);
+        $context = AuthorizationContext::human(['administrator.access', 'users.manage']);
+        $surface = SurfaceId::fromString('core.administrator.dashboard');
+        $key = new PresentationPreferenceKey(
+            $surface,
+            CustomizationSlot::DashboardCards,
+            CustomizationScope::RoleWorkspace,
+            $group->id,
+        );
+        $save = fn (array $form, array $visible) => $runtime->service->mutate(
+            $context,
+            SurfaceArea::Administrator,
+            $surface,
+            ContributionOwner::core(),
+            $runtime->decoder->decode([
+                'action' => 'dashboard-cards.save',
+                'scope' => 'role-workspace',
+                'scope_id' => $group->id,
+            ] + $form),
+            $visible,
+            [],
+        );
+        $save([
+            'expected_version' => '0',
+            'item_0' => 'acme.finance-workflow',
+            'selected_0' => '1',
+            'order_0' => '1',
+            'item_1' => 'core.dashboard.administrator-context',
+            'selected_1' => '1',
+            'order_1' => '2',
+        ], ['acme.finance-workflow', 'core.dashboard.administrator-context']);
+        $stored = $runtime->preferences->find($key);
+        self::assertNotNull($stored);
+
+        // A narrower editor sees only the context widget but the form carries the retained finance widget.
+        $save([
+            'expected_version' => (string) $stored->version(),
+            'item_0' => 'acme.finance-workflow',
+            'selected_0' => '1',
+            'order_0' => '2',
+            'item_1' => 'core.dashboard.administrator-context',
+            'selected_1' => '1',
+            'order_1' => '1',
+        ], ['core.dashboard.administrator-context']);
+        $retained = $runtime->preferences->find($key);
+        self::assertSame(
+            ['core.dashboard.administrator-context', 'acme.finance-workflow'],
+            $retained?->value()->value(),
+            'The role keeps the widget its editor cannot see.',
+        );
+
+        try {
+            $save([
+                'expected_version' => (string) $retained?->version(),
+                'item_0' => 'acme.payroll-workflow',
+                'selected_0' => '1',
+                'order_0' => '1',
+            ], ['core.dashboard.administrator-context']);
+            self::fail('An identifier outside both the editor catalogue and the stored row must be refused.');
+        } catch (InvalidArgumentException $refusal) {
+            self::assertSame('A dashboard preference contains an unknown identifier.', $refusal->getMessage());
+        }
+        self::assertSame($retained?->value()->value(), $runtime->preferences->find($key)?->value()->value());
+    }
+
+    /**
      * Proves portal area alone never grants access-group preference authority.
      *
      * @return  void
