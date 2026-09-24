@@ -494,6 +494,32 @@
             }
         },
         {
+            "id": "alert-drills",
+            "title": "Every critical alert fires against a real induced condition, links its runbook and clears after recovery",
+            "purpose": "Run tools/alert-drill.sh against a real application and database on MariaDB and PostgreSQL: promtool check rules and test rules over the committed scenarios, amtool check-config, then for each page-severity alert induce the condition through the real application, scrape the protected /metrics endpoint, evaluate the shipped rule with promtool over the scraped timeline, prove it fires with its runbook link, perform the runbook recovery, and prove it clears. Evidence is retained as a workflow artifact.",
+            "owner": "quality-engineering",
+            "runner": "workflow",
+            "command": ".github/workflows/observability.yml",
+            "artifact": "build/observability/drills.json",
+            "in_qa": false,
+            "excluded_from_qa_reason": "The drills download pinned promtool and amtool binaries, start web servers and workers, and mutate a disposable database; qa runs offline against a shared development database.",
+            "cadence": [
+                "ci"
+            ],
+            "maximum_interval": "per-change",
+            "engines": [
+                "mariadb",
+                "postgresql"
+            ],
+            "workflows": {
+                "ci": {
+                    "file": ".github/workflows/observability.yml",
+                    "job": "drills",
+                    "contains": "bash tools/alert-drill.sh"
+                }
+            }
+        },
+        {
             "id": "roadmap-lifecycle",
             "title": "The roadmap ledger and changelog retain truthful lifecycle evidence",
             "purpose": "Fail when a finished finding is left behind in the ledger instead of moving to the changelog, or when a changelog citation no longer resolves after history is rewritten.",

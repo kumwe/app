@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 use Kumwe\App\Infrastructure\Observability\MetricCatalog;
 use Kumwe\App\Infrastructure\Observability\ObservabilityContract;
+use Kumwe\App\Tools\Observability\AlertDrills;
 use Kumwe\App\Tools\Observability\DashboardGate;
 use Kumwe\App\Tools\Observability\MetricInventory;
 use Kumwe\App\Tools\Observability\PromtoolTests;
@@ -71,6 +72,9 @@ try {
 }
 $dashboards = new DashboardGate($root, $inventory, $contract->forbiddenLabels);
 $problems = array_merge($problems, $dashboards->problems());
+if ($alerts !== []) {
+    $problems = array_merge($problems, AlertDrills::problems($root, $alerts));
+}
 
 if ($problems !== []) {
     foreach ($problems as $problem) {
@@ -81,8 +85,8 @@ if ($problems !== []) {
 
 $pages = count(array_filter($alerts, static fn ($alert): bool => $alert->severity() === 'page'));
 printf(
-    "Kumwe observability rules verified: %d alerts (%d page), inhibition rules, runbooks, %d dashboards and "
-    . "%d promtool scenarios; every label bounded.\n",
+    "Kumwe observability rules verified: %d alerts (%d page, each with a drill), inhibition rules, runbooks, "
+    . "%d dashboards and %d promtool scenarios; every label bounded.\n",
     count($alerts),
     $pages,
     count($dashboards->files()),

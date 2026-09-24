@@ -79,7 +79,7 @@ final class RuleGateTest extends TestCase
         fclose($pipes[1]);
         fclose($pipes[2]);
         self::assertSame(0, proc_close($process), $error);
-        self::assertStringContainsString('45 alerts (10 page)', $output);
+        self::assertStringContainsString('45 alerts (10 page, each with a drill)', $output);
     }
 
     /**
