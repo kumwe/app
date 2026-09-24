@@ -79,6 +79,24 @@ development programme, from the architecture decision that opened it to the curr
 
 ### Added
 
+- **2026-09-23 — Computation Phase 2 cuts App business execution over to `kumwe/computation` 0.3.3 and retires
+  the App PHP executors.**
+  The cutover closes `KUMWE-MIG-2026-008` (`NRM-2026-058`): the ledger records the three retired symbols, the
+  change set moves to `app-pr-ready` for pull request 151, and `KUMWE-TRAIN-2026-042` carries the single
+  package; no lock entry moves. `Kumwe\App\BusinessDefinition\Domain\ExpressionEvaluator` and `DecimalValue`
+  are removed for the native `formula-draft/1` executor and `Kumwe\App\Shared\Domain\CanonicalJson` for the
+  native generic-v1 encoder, together with the four unit tests the packages own. The new application ports
+  `FormulaEvaluation` and `ReportMaterialization` (`KUMWE-CGR-2026-015`) are bound by `NativeComputationFactory`
+  to `NativeFormulaEvaluation` and `NativeReportMaterialization` over the shared native adapter, so
+  `RecordRuleValidator`, `BusinessRecordService`, `BusinessSurfaceService`, `DoctrinePhysicalSchemaGateway`
+  and the new `RecordFieldVisibility` service evaluate every condition, formula and invariant natively, and
+  `ReportService` hands grouping, aggregates, formulas and sorts to one `report-materialization-draft/1`
+  program per execution. `AccessControlService`, `AdministratorAccessControlHandler`, `DoctrineScheduler`,
+  `ChangePlan` and `ScheduleOccurrenceKey` take the container `CanonicalEncoder`, and the outbox and projection
+  stores digest through the encoder they already held. Three replays prove the composed contract: the 79
+  canonical cases and every persisted digest family byte for byte against the retired encoder, the 101 formula
+  vectors and the 116 report fixtures through the App ports. `KUMWE-CS-2026-007` closes its encoder gap. (#151)
+
 - **2026-09-23 — `kumwe/extension-sdk` 0.3.3 composes the extension contracts over the extracted capability
   packages and closes the release train.**
   The SDK enters App through the migration ledger (`NRM-2026-057`): `KUMWE-MIG-2026-033`, its change set, the

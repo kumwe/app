@@ -26,7 +26,7 @@ use Kumwe\App\Identity\Domain\StepUp\StepUpEnrollmentCompletion;
 use Kumwe\App\Identity\Domain\StepUp\StepUpIntent;
 use Kumwe\App\Identity\Domain\StepUp\StepUpVerification;
 use Kumwe\App\Identity\Domain\UserStatus;
-use Kumwe\App\Shared\Domain\CanonicalJson;
+use Kumwe\CanonicalJson\CanonicalEncoder;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Laminas\Diactoros\Response\RedirectResponse;
 use Psr\Clock\ClockInterface;
@@ -83,6 +83,8 @@ final readonly class AdministratorAccessControlHandler implements RequestHandler
      * @param  StepUpProofConsumer              $proofConsumer    Atomically spends every adapted proof once.
      * @param  TransactionManager               $transactions     Joins proof use, session rotation and mutation.
      * @param  ClockInterface                   $clock            Trusted proof-consumption instant.
+     * @param  CanonicalEncoder                 $encoder          Digests a submitted form into the step-up
+     *         purpose the proof is bound to.
      * @param  bool                             $secureCookie     Whether the rotated cookie carries `Secure`.
      * @param  int                              $sessionLifetime  Cookie maximum age in seconds.
      *
@@ -99,6 +101,7 @@ final readonly class AdministratorAccessControlHandler implements RequestHandler
         private StepUpProofConsumer $proofConsumer,
         private TransactionManager $transactions,
         private ClockInterface $clock,
+        private CanonicalEncoder $encoder,
         private bool $secureCookie = true,
         private int $sessionLifetime = 28_800,
     ) {
@@ -640,7 +643,7 @@ final readonly class AdministratorAccessControlHandler implements RequestHandler
             unset($form[$credentialField]);
         }
 
-        return $base . '.payload.' . CanonicalJson::digest($form);
+        return $base . '.payload.' . $this->encoder->digest($form);
     }
 
     /**

@@ -6,7 +6,7 @@ namespace Kumwe\App\BusinessRecord\Application;
 
 use InvalidArgumentException;
 use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\App\BusinessDefinition\Domain\ExpressionEvaluator;
+use Kumwe\App\BusinessDefinition\Application\FormulaEvaluation;
 use Kumwe\BusinessDefinition\Domain\Expression;
 use Kumwe\BusinessDefinition\Domain\FieldDefinition;
 use Kumwe\BusinessDefinition\Domain\InvalidBusinessDefinition;
@@ -39,14 +39,16 @@ use Ramsey\Uuid\Uuid;
 final readonly class RecordRuleValidator
 {
     /**
-     * Wire the validator to the codec that converts individual field values.
+     * Wire the validator to the codec that converts individual field values and the formula executor.
      *
-     * @param  RecordValueCodec  $codec  Codec applied to every value the rules accept, and the source of
+     * @param  RecordValueCodec   $codec     Codec applied to every value the rules accept, and the source of
      *         the type failures reported as `invalid_type` violations.
+     * @param  FormulaEvaluation  $formulas  Port that judges conditions, computes formulas and reduces the
+     *         record invariants over the values this validator assembles.
      *
      * @since  2.0.0
      */
-    public function __construct(private RecordValueCodec $codec)
+    public function __construct(private RecordValueCodec $codec, private FormulaEvaluation $formulas)
     {
     }
 
@@ -486,7 +488,7 @@ final readonly class RecordRuleValidator
             return null;
         }
         try {
-            if (ExpressionEvaluator::evaluate($condition, $values) !== true) {
+            if ($this->formulas->evaluate($condition, $values) !== true) {
                 return new ValidationViolation($field->handle, $rejectedCode, $rejectedMessage);
             }
         } catch (InvalidArgumentException) {
@@ -590,7 +592,7 @@ final readonly class RecordRuleValidator
                 try {
                     $raw = $field->formula === null
                         ? null
-                        : ExpressionEvaluator::evaluate($field->formula, RecordExpressionValues::from($values));
+                        : $this->formulas->evaluate($field->formula, RecordExpressionValues::from($values));
                     $values[$handle] = $this->codec->normalize(
                         $field,
                         $raw,
@@ -782,7 +784,7 @@ final readonly class RecordRuleValidator
         array $lines,
     ): ?ValidationViolation {
         try {
-            $satisfied = ExpressionEvaluator::evaluate(
+            $satisfied = $this->formulas->evaluate(
                 $invariant->condition,
                 RecordExpressionValues::from($values),
                 $lines,

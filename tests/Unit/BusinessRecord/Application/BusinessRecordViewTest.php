@@ -12,6 +12,7 @@ use Kumwe\App\BusinessRecord\Application\RecordExpressionValues;
 use Kumwe\App\BusinessRecord\Application\RecordFieldVisibility;
 use Kumwe\Record\Model\BusinessRecord;
 use Kumwe\Record\Model\RecordScope;
+use Kumwe\App\Tests\Support\NativeComputationContainer;
 use Kumwe\App\Tests\Unit\BusinessDefinition\Domain\EntityTypeDefinitionTest;
 use Kumwe\Extension\Spi\BusinessRecord\Application\BusinessRecordView as BusinessRecordViewContract;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -37,9 +38,10 @@ final class BusinessRecordViewTest extends TestCase
     public function testReadDisclosureEvaluatesVisibilityAgainstTheWholeStoredRecord(): void
     {
         $definition = self::conditionalDefinition();
+        $visibility = self::visibility();
         $hidden = self::record(false, true);
         $visible = self::record(true, true);
-        $visibleView = BusinessRecordView::fromRecord($visible, definition: $definition);
+        $visibleView = BusinessRecordView::fromRecord($visible, definition: $definition, visibility: $visibility);
 
         self::assertArrayNotHasKey('conditional_note', BusinessRecordView::fromRecord(
             $hidden,
@@ -50,6 +52,7 @@ final class BusinessRecordViewTest extends TestCase
                 'enabled' => false,
                 'conditional_note' => 'Must remain hidden',
             ],
+            visibility: $visibility,
         )->values);
         self::assertSame(
             'Visible note',
@@ -81,8 +84,21 @@ final class BusinessRecordViewTest extends TestCase
 
         self::assertArrayNotHasKey(
             'conditional_note',
-            BusinessRecordView::fromRecord($record, definition: $definition)->values,
+            BusinessRecordView::fromRecord($record, definition: $definition, visibility: self::visibility())->values,
         );
+    }
+
+    /**
+     * Proves a definition cannot narrow a view without the rule that judges its visibility conditions.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testADefinitionNarrowedViewRequiresTheVisibilityRule(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        BusinessRecordView::fromRecord(self::record(true, true), definition: self::conditionalDefinition());
     }
 
     /**
@@ -97,10 +113,23 @@ final class BusinessRecordViewTest extends TestCase
         $view = BusinessRecordView::fromRecord(
             self::record(true, true),
             definition: self::conditionalDefinition(),
+            visibility: self::visibility(),
         );
 
         $this->expectException(\InvalidArgumentException::class);
         $view->withIncludes(array_fill_keys(['one', 'two', 'three', 'four', 'five'], []));
+    }
+
+    /**
+     * Build the visibility rule over the native formula port.
+     *
+     * @return  RecordFieldVisibility  Rule judging conditions through the production adapter.
+     *
+     * @since   2.0.0
+     */
+    private static function visibility(): RecordFieldVisibility
+    {
+        return new RecordFieldVisibility(NativeComputationContainer::formulas());
     }
 
     /**

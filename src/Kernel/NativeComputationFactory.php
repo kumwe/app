@@ -6,6 +6,10 @@ namespace Kumwe\App\Kernel;
 
 use InvalidArgumentException;
 use JsonException;
+use Kumwe\App\BusinessDefinition\Application\FormulaEvaluation;
+use Kumwe\App\BusinessDefinition\Infrastructure\Computation\NativeFormulaEvaluation;
+use Kumwe\App\BusinessReporting\Application\ReportMaterialization;
+use Kumwe\App\BusinessReporting\Infrastructure\Computation\NativeReportMaterialization;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CanonicalJson\CanonicalEncoder;
 use Kumwe\Computation\CapabilitySet;
@@ -21,6 +25,8 @@ use Kumwe\Engine\Runtime;
  *
  * This host boundary reads deployment configuration only. The package owns tuple compatibility and
  * canonical semantics; a missing or incompatible native installation refuses boot without a fallback.
+ * The App's formula evaluation and report materialization ports are bound here as well, over the one
+ * shared plan owner, so every condition, formula, invariant and report the App runs executes natively.
  *
  * @since  2.0.0
  */
@@ -41,7 +47,7 @@ final readonly class NativeComputationFactory
     }
 
     /**
-     * Bind the admitted native runtime and shared package services in the host container.
+     * Bind the admitted native runtime, the shared package services and the App computation ports.
      *
      * @param   Container    $container    Host composition container.
      * @param   Environment  $environment  Allow-listed deployment values.
@@ -56,11 +62,18 @@ final readonly class NativeComputationFactory
         $runtime = new Runtime();
         $container->share(NativeCompatibility::class, $compatibility, true);
         $container->share(Runtime::class, $runtime, true);
-        $container->share(NativeAdapter::class, new NativeAdapter($runtime, $compatibility), true);
+        $adapter = new NativeAdapter($runtime, $compatibility);
+        $container->share(NativeAdapter::class, $adapter, true);
         $container->alias(Compiler::class, NativeAdapter::class);
         $container->alias(Executor::class, NativeAdapter::class);
         $container->share(NativeCanonicalEncoder::class, new NativeCanonicalEncoder($runtime, $compatibility), true);
         $container->alias(CanonicalEncoder::class, NativeCanonicalEncoder::class);
+        $container->share(FormulaEvaluation::class, new NativeFormulaEvaluation($adapter, $compatibility), true);
+        $container->share(
+            ReportMaterialization::class,
+            new NativeReportMaterialization($adapter, $compatibility),
+            true,
+        );
     }
 
     /**

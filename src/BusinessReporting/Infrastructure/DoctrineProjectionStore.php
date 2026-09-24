@@ -18,7 +18,6 @@ use Kumwe\App\BusinessReporting\Application\JournalProjectionEvent;
 use Kumwe\App\BusinessReporting\Application\ProjectionEventSource;
 use Kumwe\App\BusinessReporting\Application\ProjectionGenerationWriter;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
-use Kumwe\App\Shared\Domain\CanonicalJson;
 use Kumwe\Reporting\Contract\ProjectionBuilder;
 use Kumwe\Reporting\Contract\ProjectionEvent;
 use Kumwe\Reporting\Domain\ProjectionDefinition;
@@ -506,7 +505,7 @@ final class DoctrineProjectionStore implements ProjectionEventSource, Projection
         $sequence = $this->positiveInteger($row['source_sequence'] ?? null, 'projection source sequence');
         $envelope = $this->jsonObject($row['envelope'] ?? null, 'projection source envelope');
         $expectedChecksum = $this->requiredChecksum($row, 'event_checksum');
-        if (!hash_equals($expectedChecksum, CanonicalJson::digest($envelope))) {
+        if (!hash_equals($expectedChecksum, $this->canonicalEncoder->digest($envelope))) {
             throw new RuntimeException('A projection source envelope checksum does not match.');
         }
         $event = RecordedIntegrationEvent::fromArray($this->canonicalEncoder, $envelope);

@@ -5,20 +5,32 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessRecord\Application;
 
 use InvalidArgumentException;
+use Kumwe\App\BusinessDefinition\Application\FormulaEvaluation;
 use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\App\BusinessDefinition\Domain\ExpressionEvaluator;
 
 /**
  * Resolves definition-level read visibility against one complete normalized record value set.
  *
  * Static `readVisible` and dynamic visibility conditions are one application rule. Keeping their evaluation
  * here lets direct records and owned-line projections make the same fail-closed decision without moving
- * expression policy into an HTTP adapter or persistence-specific template.
+ * expression policy into an HTTP adapter or persistence-specific template. The conditions themselves are
+ * judged by the formula port, so the read side and the write side agree on every verdict.
  *
  * @since  2.0.0
  */
-final class RecordFieldVisibility
+final readonly class RecordFieldVisibility
 {
+    /**
+     * Bind the visibility rule to the port that judges each field's condition.
+     *
+     * @param  FormulaEvaluation  $formulas  Port evaluating visibility conditions over the record's values.
+     *
+     * @since  2.0.0
+     */
+    public function __construct(private FormulaEvaluation $formulas)
+    {
+    }
+
     /**
      * Index the fields whose values may be disclosed for this record.
      *
@@ -32,7 +44,7 @@ final class RecordFieldVisibility
      *
      * @since   2.0.0
      */
-    public static function fields(EntityTypeDefinition $definition, array $values): array
+    public function fields(EntityTypeDefinition $definition, array $values): array
     {
         $visible = [];
         $conditionValues = RecordExpressionValues::from($values);
@@ -42,7 +54,7 @@ final class RecordFieldVisibility
             }
             if ($field->visibilityCondition !== null) {
                 try {
-                    if (ExpressionEvaluator::evaluate($field->visibilityCondition, $conditionValues) !== true) {
+                    if ($this->formulas->evaluate($field->visibilityCondition, $conditionValues) !== true) {
                         continue;
                     }
                 } catch (InvalidArgumentException) {
@@ -53,14 +65,5 @@ final class RecordFieldVisibility
         }
 
         return $visible;
-    }
-
-    /**
-     * Static utility; instances would carry no state.
-     *
-     * @since  2.0.0
-     */
-    private function __construct()
-    {
     }
 }

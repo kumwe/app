@@ -435,6 +435,7 @@ final class CapabilityIndexGateTest extends TestCase
                 'kumwe/transaction' => 3,
                 'kumwe/audit' => 13,
                 'kumwe/business-definition' => 36,
+                'kumwe/computation' => 3,
                 'kumwe/sequence' => 4,
                 'kumwe/integration' => 33,
                 'kumwe/conversion' => 23,

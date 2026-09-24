@@ -19,6 +19,7 @@ use Kumwe\App\Infrastructure\Persistence\Migration\BusinessRecordIdempotencyRete
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\App\Tests\Support\TestKernelFactory;
+use Kumwe\CanonicalJson\CanonicalEncoder;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
@@ -50,7 +51,11 @@ final class SchedulerOccurrenceContentionIntegrationTest extends TestCase
         self::assertInstanceOf(Scheduler::class, $scheduler);
 
         [$scheduleId, $due] = $this->makeDue($container);
-        $occurrenceKey = (string) ScheduleOccurrenceKey::for($scheduleId, $due);
+        $occurrenceKey = (string) ScheduleOccurrenceKey::for(
+            $container->get(CanonicalEncoder::class),
+            $scheduleId,
+            $due,
+        );
         $this->emitRival($container, $scheduleId, $due, $occurrenceKey);
 
         $dispatched = $scheduler->dispatchDue($context, 100);
@@ -102,7 +107,7 @@ final class SchedulerOccurrenceContentionIntegrationTest extends TestCase
         $this->boundLockWait($concurrent);
 
         [$scheduleId, $due] = $this->makeDue($primary);
-        $occurrenceKey = (string) ScheduleOccurrenceKey::for($scheduleId, $due);
+        $occurrenceKey = (string) ScheduleOccurrenceKey::for($primary->get(CanonicalEncoder::class), $scheduleId, $due);
 
         try {
             $database->beginTransaction();

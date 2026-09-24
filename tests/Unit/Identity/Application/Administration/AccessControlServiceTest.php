@@ -22,8 +22,8 @@ use Kumwe\App\Identity\Application\Security\PasswordHasher;
 use Kumwe\App\Identity\Application\StepUp\StepUpCredentialStore;
 use Kumwe\App\Identity\Domain\EmailAddress;
 use Kumwe\App\Identity\Domain\UserStatus;
-use Kumwe\App\Shared\Domain\CanonicalJson;
 use Kumwe\App\Tests\Support\AuthorizationContext;
+use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 use Kumwe\Context\Value\ExecutionContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
@@ -226,7 +226,7 @@ final class AccessControlServiceTest extends TestCase
                 'scope_identifier' => self::USER,
             ],
         ];
-        $snapshot = CanonicalJson::digest([
+        $snapshot = (new DeterministicCanonicalEncoder())->digest([
             [$removedId, 'content.delete', 'global', null],
             [$scopedId, 'content.update', 'content', self::USER],
         ]);
@@ -828,6 +828,7 @@ final class AccessControlServiceTest extends TestCase
             $credentials ?? $this->createStub(HighImpactCredentialGuard::class),
             $stepUp ?? $this->createStub(StepUpCredentialStore::class),
             $sessions ?? $this->createStub(AdministratorSessionStore::class),
+            new DeterministicCanonicalEncoder(),
         );
     }
 

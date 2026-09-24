@@ -52,6 +52,7 @@ use Kumwe\BusinessPolicy\Policy\RecordPolicyConstant;
 use Kumwe\BusinessPolicy\Policy\RecordPolicySchema;
 use Kumwe\BusinessPolicy\Policy\RecordPolicySet;
 use Kumwe\App\Tests\Support\AuthorizationContext;
+use Kumwe\App\Tests\Support\NativeComputationContainer;
 use Kumwe\App\Tests\Support\NeutralBusinessFixture;
 use Kumwe\Conversion\Decimal\ExactDecimal;
 use Kumwe\Idempotency\IdempotencyKey;
@@ -1422,7 +1423,7 @@ final class BusinessRecordRelationshipCoordinatorTest extends TestCase
             $fence,
             $definitions,
             $codec,
-            new RecordRuleValidator($codec),
+            new RecordRuleValidator($codec, NativeComputationContainer::formulas()),
         );
     }
 

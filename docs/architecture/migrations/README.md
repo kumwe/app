@@ -20,7 +20,7 @@ change set is `core-integrated` only once the merged master commit is recorded (
 | `kumwe/access-context` | `0.1.2` | `KUMWE-MIG-2026-004` | `KUMWE-CS-2026-004` | `core-integrated` | #141 | `795583ee` |
 | `kumwe/localization` | `0.1.1` | `KUMWE-MIG-2026-005` | `KUMWE-CS-2026-005` | `core-integrated` | #142 | `c43eb482` |
 | `kumwe/canonical-json` | `0.1.1` | `KUMWE-MIG-2026-007` | `KUMWE-CS-2026-007` | `core-integrated` | #138 | `1e768cbb` |
-| `kumwe/computation` | `0.3.3` | `KUMWE-MIG-2026-008` | `KUMWE-CS-2026-008` | `core-integrated` (provisioning only; the business cutover is Computation Phase 2) | #140 | `4774e0d5` |
+| `kumwe/computation` | `0.3.3` | `KUMWE-MIG-2026-008` | `KUMWE-CS-2026-008` | `app-pr-ready` (the provisioning adoption merged through #140 as `4774e0d5`; the business cutover is #151) | #151 | — |
 | `kumwe/producer` | `0.3.0` | `KUMWE-MIG-2026-032` | `KUMWE-CS-2026-032` | `core-integrated` | #137 | `7f851278` |
 | `kumwe/navigation` | `0.1.3` | `KUMWE-MIG-2026-035` | `KUMWE-CS-2026-035` | `core-integrated` | #146 | `008237a0` |
 | `kumwe/audit` | `0.1.2` | `KUMWE-MIG-2026-021` | `KUMWE-CS-2026-021` | `app-pr-ready` | #151 | — |

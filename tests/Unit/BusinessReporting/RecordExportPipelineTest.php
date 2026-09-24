@@ -30,6 +30,7 @@ use Kumwe\App\BusinessReporting\Application\ExportService;
 use Kumwe\App\BusinessReporting\Application\RecordExportReportProvider;
 use Kumwe\App\BusinessReporting\Application\ReportDefinitionRegistry;
 use Kumwe\App\BusinessReporting\Application\ReportExecutionRequest;
+use Kumwe\App\BusinessReporting\Application\ReportMaterialization;
 use Kumwe\App\BusinessReporting\Application\ReportScopeResolver;
 use Kumwe\App\BusinessReporting\Application\ReportService;
 use Kumwe\App\BusinessReporting\Application\ReportUnavailable;
@@ -172,6 +173,7 @@ final class RecordExportPipelineTest extends TestCase
             $reader,
             $authorization,
             $this->scopes(),
+            $this->createStub(ReportMaterialization::class),
             recordExports: $provider,
         );
         $context = AuthorizationContext::human(['business.record.export']);

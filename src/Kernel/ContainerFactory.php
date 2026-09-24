@@ -121,6 +121,7 @@ use Kumwe\BusinessDefinition\Application\BusinessDefinitionCompatibilityAnalyzer
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionContractAdmission;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionRepository;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionService;
+use Kumwe\App\BusinessDefinition\Application\FormulaEvaluation;
 use Kumwe\BusinessDefinition\Application\BusinessDefinitionValidator;
 use Kumwe\BusinessDefinition\Application\FieldConfigurationAdmission;
 use Kumwe\BusinessDefinition\Application\FieldTypeRegistry;
@@ -160,6 +161,7 @@ use Kumwe\Conversion\Contract\QuantityConverter;
 use Kumwe\App\BusinessRecord\Infrastructure\RuntimeMoneyRateProviderCatalog;
 use Kumwe\App\BusinessRecord\Infrastructure\RuntimeUnitConversionProviderCatalog;
 use Kumwe\App\BusinessRecord\Application\RecordCursorCodec;
+use Kumwe\App\BusinessRecord\Application\RecordFieldVisibility;
 use Kumwe\App\BusinessRecord\Application\RecordFingerprint;
 use Kumwe\App\BusinessRecord\Application\RecordRuleValidator;
 use Kumwe\App\BusinessRecord\Application\RecordValueCodec;
@@ -213,6 +215,7 @@ use Kumwe\App\BusinessReporting\Application\ExportExecutionContextResolver;
 use Kumwe\App\BusinessReporting\Application\ExportGenerationService;
 use Kumwe\App\BusinessReporting\Application\ExportJobDispatcher;
 use Kumwe\App\BusinessReporting\Application\ExportPolicySnapshotProvider;
+use Kumwe\App\BusinessReporting\Application\ReportMaterialization;
 use Kumwe\App\BusinessReporting\Application\ExportQueueProducerContextProvider;
 use Kumwe\App\BusinessReporting\Application\ExportService;
 use Kumwe\App\BusinessReporting\Application\GenerateReportExportHandler;
@@ -1835,6 +1838,7 @@ final class ContainerFactory
             Container $container,
         ): PhysicalSchemaGateway => new DoctrinePhysicalSchemaGateway(
             self::service($container, Connection::class),
+            self::service($container, FormulaEvaluation::class),
         ), true);
         $container->share(BusinessSchemaExecutionLock::class, static fn (
             Container $container,
@@ -2402,6 +2406,7 @@ final class ContainerFactory
                 self::service($container, HighImpactCredentialGuard::class),
                 self::service($container, StepUpCredentialStore::class),
                 self::service($container, AdministratorSessionStore::class),
+                self::service($container, CanonicalEncoder::class),
             ), true);
         $container->share(DoctrineSiteSettings::class, static fn (
             Container $container,
@@ -2462,6 +2467,7 @@ final class ContainerFactory
             self::service($container, ResourceSiteOwnershipWriter::class),
             SystemPrincipal::issue($provenance, SystemIdentity::Scheduler),
             self::service($container, JobExecutionScope::class),
+            self::service($container, CanonicalEncoder::class),
             self::service($container, ScheduleRuntimeSynchronizer::class),
             self::service($container, QueueRuntimePolicyCatalog::class),
         ), true);
@@ -3300,6 +3306,12 @@ final class ContainerFactory
             Container $container,
         ): RecordRuleValidator => new RecordRuleValidator(
             self::service($container, RecordValueCodec::class),
+            self::service($container, FormulaEvaluation::class),
+        ), true);
+        $container->share(RecordFieldVisibility::class, static fn (
+            Container $container,
+        ): RecordFieldVisibility => new RecordFieldVisibility(
+            self::service($container, FormulaEvaluation::class),
         ), true);
         $container->share(BusinessRecordDefinitionResolver::class, static fn (
             Container $container,
@@ -3334,6 +3346,7 @@ final class ContainerFactory
             self::service($container, BusinessDefinitionRepository::class),
             self::service($container, BusinessSchemaInstallationRepository::class),
             self::service($container, BusinessRecordMutationFence::class),
+            self::service($container, RecordFieldVisibility::class),
         ), true);
         $container->share(BusinessRecordRevisionRepository::class, static fn (
             Container $container,
@@ -3457,6 +3470,7 @@ final class ContainerFactory
             self::service($container, ClockInterface::class),
             self::service($container, PostingPeriodLock::class),
             self::service($container, PostingPeriodCalendar::class),
+            self::service($container, FormulaEvaluation::class),
             $configuration->idempotencyReplay,
             commitTimings: self::service($container, DocumentCommitTimingRecorder::class),
         ), true);
@@ -3771,6 +3785,7 @@ final class ContainerFactory
                 new BusinessRecordServiceReportReader(self::service($container, BusinessRecordService::class)),
                 self::service($container, AuthorizationGateway::class),
                 self::service($container, ReportScopeResolver::class),
+                self::service($container, ReportMaterialization::class),
                 recordExports: self::service($container, RecordExportReportProvider::class),
             ), true);
         $container->share(ExportArtifactRepository::class, static fn (
@@ -3941,6 +3956,7 @@ final class ContainerFactory
             self::service($container, MediaService::class),
             self::service($container, TransactionManager::class),
             self::service($container, ActiveLocale::class),
+            self::service($container, FormulaEvaluation::class),
         ), true);
         $container->share(BusinessMutationPlanService::class, static fn (
             Container $container,
@@ -4755,6 +4771,7 @@ final class ContainerFactory
             self::service($container, StepUpProofConsumer::class),
             self::service($container, TransactionManager::class),
             self::service($container, ClockInterface::class),
+            self::service($container, CanonicalEncoder::class),
             $secureCookie,
             $configuration->administratorSessionSeconds,
         ), true);

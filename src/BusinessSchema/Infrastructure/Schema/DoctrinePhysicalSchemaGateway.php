@@ -17,7 +17,7 @@ use Doctrine\DBAL\Schema\Schema;
 use Doctrine\DBAL\Schema\Table;
 use Doctrine\DBAL\Types\Type;
 use Kumwe\BusinessDefinition\Domain\Expression;
-use Kumwe\App\BusinessDefinition\Domain\ExpressionEvaluator;
+use Kumwe\App\BusinessDefinition\Application\FormulaEvaluation;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaConflict;
 use Kumwe\App\BusinessSchema\Application\PhysicalSchemaGateway;
 use Kumwe\App\BusinessSchema\Application\SchemaChunkResult;
@@ -51,12 +51,14 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
     /**
      * Bind the gateway to the connection every step is executed and verified through.
      *
-     * @param  Connection  $database  Site database whose platform decides which introspection and
+     * @param  Connection         $database  Site database whose platform decides which introspection and
      *         type-matching rules apply.
+     * @param  FormulaEvaluation  $formulas  Port that computes a backfill or transform expression over each
+     *         chunk of rows, one native batch per chunk.
      *
      * @since  2.0.0
      */
-    public function __construct(private Connection $database)
+    public function __construct(private Connection $database, private FormulaEvaluation $formulas)
     {
     }
 
@@ -416,13 +418,14 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
             $this->database->quoteSingleIdentifier($identityName),
             $limit,
         ), $parameters, $types);
-        $processed = 0;
+        $identities = [];
+        $documents = [];
         foreach ($rows as $row) {
             $identityValue = $row['backfill_identity'] ?? null;
             if (!is_int($identityValue) && !is_string($identityValue)) {
                 throw new BusinessSchemaConflict('A physical backfill identity has an invalid value.');
             }
-            $value = $state['value'] ?? null;
+            $identities[] = $identityValue;
             if ($expression !== null) {
                 $fields = [];
                 foreach ($dependencies as $logical => $_dependency) {
@@ -432,8 +435,13 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
                         $row[$aliases[$logical]] ?? null,
                     );
                 }
-                $value = ExpressionEvaluator::evaluate($expression, $fields);
+                $documents[] = ['fields' => $fields, 'lines' => []];
             }
+        }
+        $computed = $expression === null ? [] : $this->formulas->evaluateAll($expression, $documents);
+        $processed = 0;
+        foreach ($identities as $index => $identityValue) {
+            $value = $expression === null ? ($state['value'] ?? null) : ($computed[$index] ?? null);
             if ($value === null || is_float($value) || is_array($value) || is_object($value)) {
                 throw new InvalidBusinessSchema('A schema backfill produced a non-exact or null result.');
             }
@@ -567,12 +575,14 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
             $this->database->quoteSingleIdentifier($identityName),
             $limit,
         ), $parameters, $types);
-        $processed = 0;
+        $identities = [];
+        $documents = [];
         foreach ($rows as $row) {
             $identityValue = $row['transform_identity'] ?? null;
             if (!is_int($identityValue) && !is_string($identityValue)) {
                 throw new BusinessSchemaConflict('A physical transform identity has an invalid value.');
             }
+            $identities[] = $identityValue;
             $values = [];
             foreach ($dependencies as $logical => $_dependency) {
                 $values[$logical] = $this->expressionValue(
@@ -581,7 +591,12 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
                     $row[$aliases[$logical]] ?? null,
                 );
             }
-            $result = ExpressionEvaluator::evaluate($expression, $values);
+            $documents[] = ['fields' => $values, 'lines' => []];
+        }
+        $computed = $this->formulas->evaluateAll($expression, $documents);
+        $processed = 0;
+        foreach ($identities as $index => $identityValue) {
+            $result = $computed[$index] ?? null;
             if (is_float($result) || is_array($result) || is_object($result)) {
                 throw new InvalidBusinessSchema('A schema transform produced a non-exact scalar result.');
             }

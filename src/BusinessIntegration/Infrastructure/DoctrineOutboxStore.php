@@ -23,7 +23,6 @@ use Kumwe\Integration\RecordedEventEnvelope;
 use Kumwe\Integration\RecordedIntegrationEvent;
 use Kumwe\Integration\IntegrationEvent;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
-use Kumwe\App\Shared\Domain\CanonicalJson;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
@@ -160,7 +159,7 @@ final readonly class DoctrineOutboxStore implements OutboxStore
             'schema_version' => $event->schemaVersion(),
             'sensitivity' => $event->sensitivity()->value,
             'envelope' => $envelope,
-            'event_checksum' => CanonicalJson::digest($envelope),
+            'event_checksum' => $this->canonicalEncoder->digest($envelope),
             'recorded_at' => $now,
         ], [
             'event_id' => Types::GUID,

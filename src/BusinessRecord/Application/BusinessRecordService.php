@@ -14,7 +14,7 @@ use Kumwe\Record\Value\RecordValueGuard;
 use Kumwe\Record\Value\ZonedDateTimeValue;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\BusinessDefinition\Domain\ActionDefinition;
-use Kumwe\App\BusinessDefinition\Domain\ExpressionEvaluator;
+use Kumwe\App\BusinessDefinition\Application\FormulaEvaluation;
 use Kumwe\BusinessDefinition\Domain\DeleteBehavior;
 use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\BusinessDefinition\Domain\FieldDefinition;
@@ -158,6 +158,8 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      * @param  PostingPeriodCalendar                  $periodCalendar  Containment seam a `fiscal-period`
      *         number sequence resolves its counter's period key through, from the record's declared
      *         posting date.
+     * @param  FormulaEvaluation                      $formulas        Port that judges an action's declared
+     *         precondition over the record it is about to move.
      * @param  BusinessRecordReplayWindow             $replayWindow    Declared horizons over which a
      *         caller-minted operation identifier replays, and over which it is remembered so a late
      *         repeat is refused by name instead of applied twice.
@@ -189,6 +191,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
         private ClockInterface $clock,
         private PostingPeriodLock $postingPeriods,
         private PostingPeriodCalendar $periodCalendar,
+        private FormulaEvaluation $formulas,
         private BusinessRecordReplayWindow $replayWindow = new BusinessRecordReplayWindow(),
         private DocumentWriteBudget $documentBudget = new DocumentWriteBudget(),
         private DocumentCommitTimingRecorder $commitTimings = new DocumentCommitTimingRecorder(),
@@ -1062,7 +1065,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                 );
                 if (
                     $action->condition !== null
-                    && ExpressionEvaluator::evaluate($action->condition, $this->expressionValues($record)) !== true
+                    && $this->formulas->evaluate($action->condition, $this->expressionValues($record)) !== true
                 ) {
                     throw new BusinessRecordActionRejected('The action precondition rejected this record.');
                 }
@@ -1163,7 +1166,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
         );
         if (
             $action->condition !== null
-            && ExpressionEvaluator::evaluate($action->condition, $this->expressionValues($record)) !== true
+            && $this->formulas->evaluate($action->condition, $this->expressionValues($record)) !== true
         ) {
             throw new BusinessRecordActionRejected('The action precondition rejected this record.');
         }
@@ -1270,7 +1273,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                 );
                 if (
                     $action->condition !== null
-                    && ExpressionEvaluator::evaluate($action->condition, $this->expressionValues($record)) !== true
+                    && $this->formulas->evaluate($action->condition, $this->expressionValues($record)) !== true
                 ) {
                     throw new BusinessRecordActionRejected('The action precondition rejected this record.');
                 }

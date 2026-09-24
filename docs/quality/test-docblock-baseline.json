@@ -8,7 +8,7 @@
   "recorded_from": [
     "https://github.com/kumwe/app/actions/runs/32251426675"
   ],
-  "entry_count": 3179,
+  "entry_count": 3164,
   "entries": [
     {
       "file": "tests/Architecture/BusinessDefinitionBoundaryTest.php",
@@ -14551,36 +14551,6 @@
       "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
     },
     {
-      "file": "tests/Unit/Application/Automation/CanonicalJsonTest.php",
-      "line": 13,
-      "member": "CanonicalJsonTest",
-      "code": "MISSING_DOC",
-      "owner": "quality-engineering",
-      "finding": "V2-QA-010",
-      "expires": "2027-06-30",
-      "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-    },
-    {
-      "file": "tests/Unit/Application/Automation/CanonicalJsonTest.php",
-      "line": 15,
-      "member": "CanonicalJsonTest::testObjectKeysAreSortedRecursivelyWhileListOrderIsPreserved()",
-      "code": "MISSING_DOC",
-      "owner": "quality-engineering",
-      "finding": "V2-QA-010",
-      "expires": "2027-06-30",
-      "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-    },
-    {
-      "file": "tests/Unit/Application/Automation/CanonicalJsonTest.php",
-      "line": 31,
-      "member": "CanonicalJsonTest::testUnsupportedValuesAreRejected()",
-      "code": "MISSING_DOC",
-      "owner": "quality-engineering",
-      "finding": "V2-QA-010",
-      "expires": "2027-06-30",
-      "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-    },
-    {
       "file": "tests/Unit/Application/Automation/ChangePlanTest.php",
       "line": 16,
       "member": "ChangePlanTest",
@@ -15864,126 +15834,6 @@
       "file": "tests/Unit/BusinessDefinition/Administrator/BusinessDefinitionFormMapperTest.php",
       "line": 77,
       "member": "BusinessDefinitionFormMapperTest::testGraphicalRoundTripPreservesBoundedExtensionConfigurationAndValidators()",
-      "code": "MISSING_DOC",
-      "owner": "quality-engineering",
-      "finding": "V2-QA-010",
-      "expires": "2027-06-30",
-      "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-    },
-    {
-      "file": "tests/Unit/BusinessDefinition/Domain/ExpressionPropertyTest.php",
-      "line": 15,
-      "member": "ExpressionPropertyTest",
-      "code": "MISSING_DOC",
-      "owner": "quality-engineering",
-      "finding": "V2-QA-010",
-      "expires": "2027-06-30",
-      "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-    },
-    {
-      "file": "tests/Unit/BusinessDefinition/Domain/ExpressionPropertyTest.php",
-      "line": 41,
-      "member": "ExpressionPropertyTest::testCanonicalObjectsHaveTheSameChecksumForEveryKeyPermutation()",
-      "code": "MISSING_DOC",
-      "owner": "quality-engineering",
-      "finding": "V2-QA-010",
-      "expires": "2027-06-30",
-      "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-    },
-    {
-      "file": "tests/Unit/BusinessDefinition/Domain/ExpressionPropertyTest.php",
-      "line": 101,
-      "member": "ExpressionPropertyTest::testEvaluationRejectsWrongRuntimeTypesAndIntegerOverflow()",
-      "code": "MISSING_DOC",
-      "owner": "quality-engineering",
-      "finding": "V2-QA-010",
-      "expires": "2027-06-30",
-      "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-    },
-    {
-      "file": "tests/Unit/BusinessDefinition/Domain/ExpressionPropertyTest.php",
-      "line": 50,
-      "member": "ExpressionPropertyTest::testFuzzedExecutableOperatorsAreAlwaysRejected()",
-      "code": "MISSING_DOC",
-      "owner": "quality-engineering",
-      "finding": "V2-QA-010",
-      "expires": "2027-06-30",
-      "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-    },
-    {
-      "file": "tests/Unit/BusinessDefinition/Domain/ExpressionPropertyTest.php",
-      "line": 62,
-      "member": "ExpressionPropertyTest::testGeneratedExpressionTreesCannotExceedComplexityLimits()",
-      "code": "MISSING_DOC",
-      "owner": "quality-engineering",
-      "finding": "V2-QA-010",
-      "expires": "2027-06-30",
-      "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-    },
-    {
-      "file": "tests/Unit/BusinessDefinition/Domain/ExpressionPropertyTest.php",
-      "line": 17,
-      "member": "ExpressionPropertyTest::testIntegerAndExactDecimalOperatorsRemainDeterministicAcrossGeneratedInputs()",
-      "code": "MISSING_DOC",
-      "owner": "quality-engineering",
-      "finding": "V2-QA-010",
-      "expires": "2027-06-30",
-      "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-    },
-    {
-      "file": "tests/Unit/BusinessDefinition/Domain/ExpressionPropertyTest.php",
-      "line": 73,
-      "member": "ExpressionPropertyTest::testStrictAstShapesAndTypesRejectAmbiguousExecution()",
-      "code": "MISSING_DOC",
-      "owner": "quality-engineering",
-      "finding": "V2-QA-010",
-      "expires": "2027-06-30",
-      "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-    },
-    {
-      "file": "tests/Unit/BusinessDefinition/Domain/ExpressionTest.php",
-      "line": 17,
-      "member": "ExpressionTest",
-      "code": "MISSING_DOC",
-      "owner": "quality-engineering",
-      "finding": "V2-QA-010",
-      "expires": "2027-06-30",
-      "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-    },
-    {
-      "file": "tests/Unit/BusinessDefinition/Domain/ExpressionTest.php",
-      "line": 37,
-      "member": "ExpressionTest::testDecimalDivisionUsesExplicitScaleAndDeterministicRounding()",
-      "code": "MISSING_DOC",
-      "owner": "quality-engineering",
-      "finding": "V2-QA-010",
-      "expires": "2027-06-30",
-      "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-    },
-    {
-      "file": "tests/Unit/BusinessDefinition/Domain/ExpressionTest.php",
-      "line": 19,
-      "member": "ExpressionTest::testExactDecimalFormulaHasCanonicalDependenciesAndNoFloatConversion()",
-      "code": "MISSING_DOC",
-      "owner": "quality-engineering",
-      "finding": "V2-QA-010",
-      "expires": "2027-06-30",
-      "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-    },
-    {
-      "file": "tests/Unit/BusinessDefinition/Domain/ExpressionTest.php",
-      "line": 63,
-      "member": "ExpressionTest::testFormulaRejectsMissingDependenciesAtEvaluation()",
-      "code": "MISSING_DOC",
-      "owner": "quality-engineering",
-      "finding": "V2-QA-010",
-      "expires": "2027-06-30",
-      "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-    },
-    {
-      "file": "tests/Unit/BusinessDefinition/Domain/ExpressionTest.php",
-      "line": 52,
-      "member": "ExpressionTest::testFormulaRejectsStoredExecutableCodeAndFloatLiterals()",
       "code": "MISSING_DOC",
       "owner": "quality-engineering",
       "finding": "V2-QA-010",

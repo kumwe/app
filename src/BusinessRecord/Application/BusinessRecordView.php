@@ -265,8 +265,12 @@ final readonly class BusinessRecordView implements BusinessRecordViewContract
      * @param   ?FieldDisclosurePlan       $disclosure      Explicit field allow-list; null preserves the
      *          legacy definition-only projection.
      * @param   FieldAccessUsage           $usage           Exact read surface whose disclosure set applies.
+     * @param   ?RecordFieldVisibility     $visibility      Rule that judges the definition's visibility
+     *          conditions; required whenever a definition narrows the view.
      *
      * @return  self  View over the narrowed values, with no includes attached yet.
+     *
+     * @throws  InvalidArgumentException  When a definition is supplied without the visibility rule.
      *
      * @since   2.0.0
      */
@@ -277,13 +281,14 @@ final readonly class BusinessRecordView implements BusinessRecordViewContract
         ?array $resolvedValues = null,
         ?FieldDisclosurePlan $disclosure = null,
         FieldAccessUsage $usage = FieldAccessUsage::Detail,
+        ?RecordFieldVisibility $visibility = null,
     ): self {
         $values = $resolvedValues ?? $record->values();
         if ($definition !== null) {
-            $values = array_intersect_key($values, RecordFieldVisibility::fields(
-                $definition,
-                $record->values(),
-            ));
+            if ($visibility === null) {
+                throw new InvalidArgumentException('A definition-narrowed record view requires the visibility rule.');
+            }
+            $values = array_intersect_key($values, $visibility->fields($definition, $record->values()));
         }
         if ($projection !== []) {
             $values = array_intersect_key($values, array_fill_keys($projection, true));

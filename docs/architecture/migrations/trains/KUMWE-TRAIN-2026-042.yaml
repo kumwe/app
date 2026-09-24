@@ -1,0 +1,44 @@
+schema: kumwe-integration-train/v1
+train: KUMWE-TRAIN-2026-042
+packages:
+  - package: kumwe/computation
+    version: 0.3.3
+merge_order:
+  - "https://github.com/kumwe/app/pull/151"
+custodian: "eWɘyn"
+hotspots:
+  - src/Kernel/ContainerFactory.php
+  - src/Kernel/NativeComputationFactory.php
+  - src/BusinessRecord/Application/RecordRuleValidator.php
+  - src/BusinessRecord/Application/BusinessRecordService.php
+  - src/BusinessRecord/Application/RecordFieldVisibility.php
+  - src/BusinessRecord/Application/BusinessRecordView.php
+  - src/BusinessRecord/Infrastructure/Persistence/DoctrineBusinessRecordReadRepository.php
+  - src/BusinessSurface/Application/BusinessSurfaceService.php
+  - src/BusinessSchema/Infrastructure/Schema/DoctrinePhysicalSchemaGateway.php
+  - src/BusinessReporting/Application/ReportService.php
+  - src/BusinessReporting/Infrastructure/DoctrineProjectionStore.php
+  - src/BusinessIntegration/Infrastructure/DoctrineOutboxStore.php
+  - src/Identity/Application/Administration/AccessControlService.php
+  - src/Administrator/Http/Handler/AdministratorAccessControlHandler.php
+  - src/Application/Automation/ChangePlan.php
+  - src/Application/Automation/ScheduleOccurrenceKey.php
+  - src/Infrastructure/Automation/DoctrineScheduler.php
+  - tests/Architecture/CapabilityIndexGateTest.php
+  - docs/architecture/capability-index.md
+  - docs/architecture/governance/core-growth-baseline.json
+  - docs/quality/baseline.json
+  - docs/quality/test-docblock-baseline.json
+  - docs/architecture/migrations/README.md
+  - docs/roadmap/STATUS.md
+  - CHANGELOG.md
+commands:
+  - "composer install"
+  - "php tools/generate-mcp-machine-contract.php"
+  - "composer kumwe:capability-index"
+  - "composer kumwe:core-growth-record"
+  - "composer baseline:record"
+  - "composer docs:format"
+  - "composer qa"
+conflict_ledger: docs/architecture/migrations/conflicts
+serialized_by: "eWɘyn, rebase-merging the green pull request under the standing maintainer mandate"

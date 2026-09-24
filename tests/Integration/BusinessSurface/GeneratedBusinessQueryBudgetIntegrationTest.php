@@ -32,6 +32,7 @@ use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnava
 use Kumwe\App\BusinessRecord\Application\InstalledBusinessRecordDefinitionResolver;
 use Kumwe\App\BusinessRecord\Application\RecordBrowseResult;
 use Kumwe\App\BusinessRecord\Application\RecordCursorCodec;
+use Kumwe\App\BusinessRecord\Application\RecordFieldVisibility;
 use Kumwe\App\BusinessRecord\Application\RecordRuleValidator;
 use Kumwe\App\BusinessRecord\Application\RecordValueCodec;
 use Kumwe\App\BusinessRecord\Application\ResolvedBusinessDefinition;
@@ -705,6 +706,7 @@ final class GeneratedBusinessQueryBudgetIntegrationTest extends TestCase
             $definitions,
             $installations,
             $fence,
+            $this->service($container, RecordFieldVisibility::class),
         );
     }
 

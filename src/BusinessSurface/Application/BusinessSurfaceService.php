@@ -10,7 +10,7 @@ use Kumwe\Idempotency\IdempotencyKey;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\BusinessDefinition\Application\FieldTypeDefinitionResolver;
 use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
-use Kumwe\App\BusinessDefinition\Domain\ExpressionEvaluator;
+use Kumwe\App\BusinessDefinition\Application\FormulaEvaluation;
 use Kumwe\BusinessDefinition\Domain\FieldDefinition;
 use Kumwe\BusinessDefinition\Domain\IdentityStrategy;
 use Kumwe\BusinessDefinition\Domain\ScopeMode;
@@ -78,6 +78,8 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
      * @param  MediaService                      $media           Authorized bounded media-choice service.
      * @param  TransactionManager                $transactions    Atomic boundary for bounded bulk mutations.
      * @param  ActiveLocale                      $active          Locale for user-facing definition labels.
+     * @param  FormulaEvaluation                 $formulas        Port that judges field visibility and
+     *         editability conditions over the values a form currently holds.
      *
      * @since  2.0.0
      */
@@ -94,6 +96,7 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
         private MediaService $media,
         private TransactionManager $transactions,
         private ActiveLocale $active,
+        private FormulaEvaluation $formulas,
     ) {
     }
 
@@ -2505,7 +2508,7 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
             return true;
         }
         try {
-            return ExpressionEvaluator::evaluate(
+            return $this->formulas->evaluate(
                 $field->visibilityCondition,
                 RecordExpressionValues::from($values),
             ) === true;
@@ -2530,7 +2533,7 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
             return true;
         }
         try {
-            return ExpressionEvaluator::evaluate(
+            return $this->formulas->evaluate(
                 $field->editabilityCondition,
                 RecordExpressionValues::from($values),
             ) === true;

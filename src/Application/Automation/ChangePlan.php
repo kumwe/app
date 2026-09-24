@@ -8,15 +8,15 @@ use DateInterval;
 use DateTimeImmutable;
 use DomainException;
 use InvalidArgumentException;
-use Kumwe\App\Shared\Domain\CanonicalJson;
+use Kumwe\CanonicalJson\CanonicalEncoder;
 
 /**
  * Short-lived preview of a command, fingerprinted so it can only be applied exactly as previewed.
  *
- * A plan captures a command name and its arguments and hashes the pair through canonical JSON. To
- * apply it, a caller presents that digest back: a payload that merely reordered its keys still
- * matches, while a payload whose values changed does not, which closes the window between showing an
- * operator what will happen and doing it. The plan also carries a deliberate expiry so a stale
+ * A plan captures a command name and its arguments and hashes the pair through the canonical encoder its
+ * creator supplies. To apply it, a caller presents that digest back: a payload that merely reordered its
+ * keys still matches, while a payload whose values changed does not, which closes the window between
+ * showing an operator what will happen and doing it. The plan also carries a deliberate expiry so a stale
  * preview cannot be acted on, and a plan created with `ConfirmationRequirement::EXPLICIT` demands a
  * confirmation token derived from the same digest before it will apply.
  *
@@ -51,6 +51,7 @@ final readonly class ChangePlan
     /**
      * Validate the plan's identity and window, then fingerprint the command it covers.
      *
+     * @param   CanonicalEncoder         $encoder                  Encoder the fingerprint is taken with.
      * @param   string                   $id                       Identifier callers refer to the plan by.
      * @param   string                   $command                  Name of the command being previewed.
      * @param   array<string, mixed>     $payload                  Arguments the command will be applied with.
@@ -65,6 +66,7 @@ final readonly class ChangePlan
      * @since   2.0.0
      */
     private function __construct(
+        CanonicalEncoder $encoder,
         private string $id,
         private string $command,
         array $payload,
@@ -85,7 +87,7 @@ final readonly class ChangePlan
         }
 
         $this->payload = $payload;
-        $this->digest = CanonicalJson::digest([
+        $this->digest = $encoder->digest([
             'command' => $command,
             'payload' => $payload,
         ]);
@@ -94,6 +96,7 @@ final readonly class ChangePlan
     /**
      * Take a preview of a command that stays applicable for a bounded window.
      *
+     * @param   CanonicalEncoder         $encoder                  Encoder the plan's fingerprint is taken with.
      * @param   string                   $id                       Identifier callers refer to the plan by.
      * @param   string                   $command                  Name of the command being previewed.
      * @param   array<string, mixed>     $payload                  Arguments the command will be applied with.
@@ -109,6 +112,7 @@ final readonly class ChangePlan
      * @since   2.0.0
      */
     public static function create(
+        CanonicalEncoder $encoder,
         string $id,
         string $command,
         array $payload,
@@ -121,6 +125,7 @@ final readonly class ChangePlan
         }
 
         return new self(
+            $encoder,
             $id,
             $command,
             $payload,

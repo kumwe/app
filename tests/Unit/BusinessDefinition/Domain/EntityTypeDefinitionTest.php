@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Unit\BusinessDefinition\Domain;
 
-use Kumwe\App\BusinessDefinition\Domain\ExpressionEvaluator;
+use Kumwe\App\BusinessDefinition\Infrastructure\Computation\NativeFormulaEvaluation;
 use Kumwe\App\BusinessSurface\Presentation\Field\FieldPresentationInputFactory;
 use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
+use Kumwe\App\Tests\Support\NativeComputationContainer;
 use Kumwe\BusinessDefinition\Application\BusinessDefinitionValidator;
 use Kumwe\BusinessDefinition\Application\FieldTypeRegistry;
 use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
@@ -22,13 +23,13 @@ use PHPUnit\Framework\TestCase;
  *
  * The definition model, its validator and its canonical profile belong to `kumwe/business-definition`, which
  * owns their tests; what stays here is the SDK presentation-profile admission the App binds into the
- * validator and the PHP executor that still judges record invariants until the native cutover.
+ * validator and the native formula port through which the App judges record invariants.
  *
  * @since  2.0.0
  */
 #[CoversClass(SdkFieldConfigurationAdmission::class)]
 #[CoversClass(FieldPresentationInputFactory::class)]
-#[CoversClass(ExpressionEvaluator::class)]
+#[CoversClass(NativeFormulaEvaluation::class)]
 final class EntityTypeDefinitionTest extends TestCase
 {
     /**
@@ -125,10 +126,10 @@ final class EntityTypeDefinitionTest extends TestCase
     }
 
     /**
-     * A record invariant's condition is judged by the App's PHP executor until the native cutover.
+     * A record invariant's condition is judged by the App's native formula port.
      *
      * The package owns the invariant's shape and refuses a non-boolean condition at construction; the host
-     * still runs the condition against record values through `ExpressionEvaluator`, which is what
+     * runs the condition against record values through `FormulaEvaluation`, which is what
      * `RecordRuleValidator` does on every create and update, and an unsupplied dependency is refused rather
      * than read as null.
      *
@@ -153,11 +154,13 @@ final class EntityTypeDefinitionTest extends TestCase
         ]];
         $invariant = EntityTypeDefinition::fromArray($document)->recordInvariants()[0];
 
-        self::assertTrue(ExpressionEvaluator::evaluate($invariant->condition, ['name' => 'Asset']));
-        self::assertFalse(ExpressionEvaluator::evaluate($invariant->condition, ['name' => '']));
+        $formulas = NativeComputationContainer::formulas();
+
+        self::assertTrue($formulas->evaluate($invariant->condition, ['name' => 'Asset']));
+        self::assertFalse($formulas->evaluate($invariant->condition, ['name' => '']));
 
         $this->expectException(InvalidBusinessDefinition::class);
-        ExpressionEvaluator::evaluate($invariant->condition, []);
+        $formulas->evaluate($invariant->condition, []);
     }
 
     /**

@@ -14,10 +14,16 @@ use Doctrine\DBAL\Schema\Column;
 use Doctrine\DBAL\Schema\PrimaryKeyConstraint;
 use Doctrine\DBAL\Schema\Table;
 use Doctrine\DBAL\Types\Type;
+use Kumwe\BusinessDefinition\Domain\Expression;
 use Kumwe\BusinessSchema\Domain\InvalidBusinessSchema;
 use Kumwe\BusinessSchema\Domain\PhysicalColumnBlueprint;
+use Kumwe\BusinessSchema\Domain\PhysicalSchemaBlueprint;
 use Kumwe\BusinessSchema\Domain\PhysicalTableBlueprint;
 use Kumwe\BusinessSchema\Domain\PhysicalTableKind;
+use Kumwe\BusinessSchema\Domain\SchemaOperation;
+use Kumwe\BusinessSchema\Domain\SchemaOperationKind;
+use Kumwe\BusinessSchema\Domain\SchemaRisk;
+use Kumwe\App\BusinessDefinition\Application\FormulaEvaluation;
 use Kumwe\App\BusinessSchema\Infrastructure\Schema\DoctrinePhysicalSchemaGateway;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
@@ -247,12 +253,166 @@ final class DoctrinePhysicalSchemaGatewayDefaultTest extends TestCase
         self::assertTrue($this->invoke($gateway, 'tableMatches', [$actual, $expected]));
     }
 
+    /**
+     * A backfill with an Expression source reads every row of the chunk, evaluates the formula once for
+     * the whole batch through the port, and writes each computed value to its own row.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testBackfillEvaluatesTheColumnFormulaAsOneBatchPerChunk(): void
+    {
+        $identity = self::column('id', 'integer');
+        $name = self::column('name', 'string', ['length' => 64]);
+        $code = self::column('code', 'string', ['length' => 64]);
+        $operation = new SchemaOperation(
+            1,
+            SchemaOperationKind::Backfill,
+            SchemaRisk::BackfillRequired,
+            'record',
+            'code',
+            null,
+            [
+                'column' => $code->toArray(),
+                'expression' => ['op' => 'field', 'type' => 'string', 'field' => 'name'],
+                'dependencies' => ['name' => $name->toArray()],
+            ],
+            true,
+        );
+        $updates = [];
+        $database = $this->createMock(Connection::class);
+        $database->method('fetchAllAssociative')->willReturn([
+            ['backfill_identity' => 1, 'backfill_value_0' => 'Alpha'],
+            ['backfill_identity' => 2, 'backfill_value_0' => 'Beta'],
+        ]);
+        $database->expects(self::exactly(2))
+            ->method('executeStatement')
+            ->willReturnCallback(static function (string $sql, array $parameters) use (&$updates): int {
+                $updates[] = $parameters;
+
+                return 1;
+            });
+        $formulas = $this->createMock(FormulaEvaluation::class);
+        $formulas->expects(self::once())
+            ->method('evaluateAll')
+            ->with(self::isInstanceOf(Expression::class), [
+                ['fields' => ['name' => 'Alpha'], 'lines' => []],
+                ['fields' => ['name' => 'Beta'], 'lines' => []],
+            ])
+            ->willReturn(['Alpha!', 'Beta!']);
+        $gateway = new DoctrinePhysicalSchemaGateway($database, $formulas);
+
+        $result = $gateway->backfillChunk(
+            $operation,
+            self::blueprint([$identity, $name, $code], $identity),
+            null,
+            10,
+        );
+
+        self::assertSame(2, $result->processed);
+        self::assertTrue($result->complete);
+        self::assertSame(['last_identity' => 2], $result->cursor);
+        self::assertSame([['Alpha!', 1], ['Beta!', 2]], $updates);
+    }
+
+    /**
+     * A transform reads the dependency values of every row of the chunk, evaluates the conversion
+     * formula once for the whole batch through the port, and writes each result to the shadow column.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTransformEvaluatesTheConversionFormulaAsOneBatchPerChunk(): void
+    {
+        $identity = self::column('id', 'integer');
+        $name = self::column('name', 'string', ['length' => 64]);
+        $shadow = self::column('name_shadow', 'string', ['length' => 64]);
+        $operation = new SchemaOperation(
+            1,
+            SchemaOperationKind::Transform,
+            SchemaRisk::RebuildOrLocking,
+            'record',
+            'name.transform',
+            $name->toArray(),
+            [
+                'source' => $name->toArray(),
+                'target' => $shadow->toArray(),
+                'expression' => ['op' => 'field', 'type' => 'string', 'field' => 'name'],
+                'dependencies' => ['name' => $name->toArray()],
+                'primary_key' => [$identity->physicalName],
+            ],
+            true,
+        );
+        $updates = [];
+        $database = $this->createMock(Connection::class);
+        $database->method('fetchAllAssociative')->willReturn([
+            ['transform_identity' => 7, 'transform_value_0' => 'Alpha'],
+            ['transform_identity' => 8, 'transform_value_0' => null],
+        ]);
+        $database->expects(self::exactly(2))
+            ->method('executeStatement')
+            ->willReturnCallback(static function (string $sql, array $parameters) use (&$updates): int {
+                $updates[] = $parameters;
+
+                return 1;
+            });
+        $formulas = $this->createMock(FormulaEvaluation::class);
+        $formulas->expects(self::once())
+            ->method('evaluateAll')
+            ->with(self::isInstanceOf(Expression::class), [
+                ['fields' => ['name' => 'Alpha'], 'lines' => []],
+                ['fields' => ['name' => null], 'lines' => []],
+            ])
+            ->willReturn(['ALPHA', null]);
+        $gateway = new DoctrinePhysicalSchemaGateway($database, $formulas);
+
+        $result = $gateway->transformChunk(
+            $operation,
+            self::blueprint([$identity, $name, $shadow], $identity),
+            ['last_identity' => 6],
+            2,
+        );
+
+        self::assertSame(2, $result->processed);
+        self::assertFalse($result->complete);
+        self::assertSame(['last_identity' => 8], $result->cursor);
+        self::assertSame([['ALPHA', 7], [null, 8]], $updates);
+    }
+
+    /**
+     * Build a single-table blueprint keyed on the given identity column.
+     *
+     * @param   list<PhysicalColumnBlueprint>  $columns   Columns of the record table.
+     * @param   PhysicalColumnBlueprint        $identity  Column that forms the primary key.
+     *
+     * @return  PhysicalSchemaBlueprint  Blueprint whose only table is `record`.
+     *
+     * @since   2.0.0
+     */
+    private static function blueprint(array $columns, PhysicalColumnBlueprint $identity): PhysicalSchemaBlueprint
+    {
+        return new PhysicalSchemaBlueprint(
+            '3f2504e0-4f89-41d3-9a0c-0305e82c3301',
+            1,
+            hash('sha256', 'record'),
+            [new PhysicalTableBlueprint(
+                'record',
+                'kb_e_record_1234567890abcdef',
+                PhysicalTableKind::Entity,
+                $columns,
+                [$identity->physicalName],
+            )],
+        );
+    }
+
     private function gateway(?AbstractPlatform $platform = null): DoctrinePhysicalSchemaGateway
     {
         $database = $this->createStub(Connection::class);
         $database->method('getDatabasePlatform')->willReturn($platform ?? new PostgreSQLPlatform());
 
-        return new DoctrinePhysicalSchemaGateway($database);
+        return new DoctrinePhysicalSchemaGateway($database, $this->createStub(FormulaEvaluation::class));
     }
 
     /** @param list<mixed> $arguments */

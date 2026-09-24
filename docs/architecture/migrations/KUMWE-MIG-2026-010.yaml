@@ -132,9 +132,7 @@ removed_tests:
   - tests/Unit/BusinessDefinition/Domain/WorkflowBindingTest.php
 retained_tests:
   - tests/Unit/BusinessDefinition/Domain/EntityTypeDefinitionTest.php
-  - tests/Unit/BusinessDefinition/Domain/ExpressionTest.php
-  - tests/Unit/BusinessDefinition/Domain/ExpressionPropertyTest.php
-  - tests/Unit/BusinessDefinition/Domain/ExpressionLineAggregateTest.php
+  - tests/Unit/BusinessDefinition/Infrastructure/Computation/NativeFormulaEvaluationConformanceTest.php
   - tests/Unit/BusinessDefinition/Administrator/BusinessDefinitionFormMapperTest.php
   - tests/Unit/BusinessDefinition/Infrastructure/DoctrineBusinessDefinitionRepositoryTest.php
   - tests/Unit/BusinessDefinition/Infrastructure/DoctrinePersistedFieldTypeDefinitionResolverTest.php
