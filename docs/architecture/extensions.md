@@ -59,6 +59,50 @@ Public assets are not a static bypass around lifecycle state. Requests resolve a
 
 Runtime publication keys are independent from the application/session secret. A publication names its signing key, and deployments may supply an explicit previous-key set during rotation. Unknown or invalid signatures fail closed and are never papered over by signing a replacement publication. Extension lifecycle operations use a renewable Redis lease with a monotonically increasing database fence so an expired holder cannot commit after a newer operation. Lifecycle event payloads carry that fence as `registry_fence`; durable listeners must persist and compare it before applying side effects from a holder that may have expired.
 
+### Lifecycle lock and trust reads
+
+The installation-wide lifecycle lock (`TrustStore::synchronizedLifecycle()`: `GET_LOCK(name, 0)` on the MySQL
+family, `pg_try_advisory_lock` on PostgreSQL) serializes **mutators only**: install, activate, disable, uninstall,
+install reconciliation, trust-key add, rotate and revoke, emergency revocation, theme recovery, and the REST and MCP
+lifecycle writes. It never waits, so a second mutator fails fast instead of queueing behind a long install.
+
+Readers never take it. The Studio preview renderer (`isAvailable()` and `render()`), contributed job handlers and
+contributed route handlers used to. Because the lock does not wait, each of them refused every concurrent reader and
+mutator, and an availability check that caught the refusal answered "unavailable": under load a Studio registry
+intermittently lost every extension renderer, the contribution projection and generation changed for that one
+request, and Studio refused the session; the same traffic could refuse a revocation. What the lock seemed to protect
+is held elsewhere:
+
+- **A consistent trust read.** `enforceRuntimeTrust()` reads committed state in a transaction that locks the trust
+  generation row `FOR UPDATE`, which every trust mutation also locks, so a reader waits for a whole mutation and
+  never sees half of one.
+- **Exact fencing.** Every change that can withdraw an extension — disable, uninstall, upgrade, revocation,
+  quarantine — publishes a new runtime generation in its own transaction. `TrustStore::residentRuntimeTrusted()`
+  requires the generation the process loaded to be current before the trust read and again after it, re-checks a
+  disagreement once, then fails closed. A preview render re-checks the generation after the implementation returns
+  and discards the fragment if it moved.
+- **Stable code.** A release tree is immutable at `<vendor>/<name>/<version>` and retired only after its retention
+  interval and after no live process lease names an older generation.
+
+A revoked, untrusted or unsigned release therefore still never executes or renders: the first read after the
+change commits refuses it, and a process whose generation moved refuses at its next boundary. A revocation is no
+longer refused because extension traffic is in flight. A trust read that fails for any reason other than a verdict
+— an unreachable database, an expired lock wait — is not distrust: it is logged as `extension.trust.indeterminate`,
+nothing is quarantined, and the decision that asked is refused explicitly (`isAvailable()` propagates it rather
+than answering false), so a registry is never silently narrowed.
+
+One Studio decision — an authoring operation, a deployment document, a published render — builds its renderer
+registry once per viewport through `StudioBlockRendererRuntime::consistently()`, so every payload, lock, target
+declaration and contribution generation it emits comes from one projection. Two requests of one session agree
+unless committed authority changed between them, in which case Studio's generation check refusing the session is
+correct. The runtime watcher takes the lock only while an install operation is unresolved; a pass with nothing
+pending never contends (`RedisLockedExtensionManager::reconcile()`).
+
+Rejected alternatives: a shared reader lock has no MySQL-family primitive (`GET_LOCK` is exclusive) and would still
+let long renders delay a revocation; a bounded wait on the exclusive lock would serialize every reader
+installation-wide and still turn a timeout under load into a refusal. No Kumwe package changes: the lock, the trust
+store and the fences are App security enforcement, and the SDK preview SPI has no availability concept.
+
 ## Extension types
 
 - **Plugin:** subscribes to typed events or decorates application behavior.
