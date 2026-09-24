@@ -690,7 +690,9 @@ final readonly class DoctrineContentRepository implements SiteScopedContentRepos
             throw new RuntimeException('Stored content JSON is invalid.', 0, $exception);
         }
 
-        if (!is_array($data) || array_is_list($data)) {
+        // An item whose type declares no data fields stores an empty body, which the JSON column encodes as
+        // `[]`; only a non-empty list is a body that is not an object.
+        if (!is_array($data) || ($data !== [] && array_is_list($data))) {
             throw new RuntimeException('Stored content data must be a JSON object.');
         }
 
