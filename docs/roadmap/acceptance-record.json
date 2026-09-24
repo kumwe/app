@@ -607,7 +607,8 @@
         "tests/Architecture/InterfaceTranslationGateTest.php",
         "tests/Architecture/CatalogueQualityGateTest.php",
         "tests/Browser/locale-qualification.spec.ts",
-        "tests/Browser/right-to-left.spec.ts"
+        "tests/Browser/right-to-left.spec.ts",
+        "tests/Browser/signed-in-right-to-left.spec.ts"
       ],
       "workflows": [
         ".github/workflows/ci.yml#preflight",
@@ -623,15 +624,13 @@
       "state": "pending-integration",
       "track": "pr-152",
       "branches": [
-        "agent/languages",
         "agent/browser"
       ],
       "branch_evidence": [
-        "assets/administrator/styles.css",
         "tests/Browser/right-to-left.spec.ts",
         "tests/Browser/support/interface-catalogue.ts"
       ],
-      "outstanding": "The head carries all nine catalogues, the ICU and plural quality gate and the per-locale qualification journey. agent/languages fixes the right-to-left mobile drawer and the table overflow that journey found on phones; agent/browser refiles the translated right-to-left login baselines and names right-to-left controls from each catalogue. Flips when both land.",
+      "outstanding": "The head carries all nine catalogues, the ICU and plural quality gate, the per-locale qualification journey, the right-to-left phone layout fixes it found and signed-in right-to-left baselines for the administrator and portal. agent/browser refiles the translated right-to-left login baselines and names right-to-left controls from each catalogue. Flips when it lands.",
       "gate_b_criteria": [
         7,
         11
@@ -655,7 +654,8 @@
         "tests/Architecture/InterfaceTranslationGateTest.php",
         "tests/Architecture/CatalogueQualityGateTest.php",
         "tests/Browser/locale-qualification.spec.ts",
-        "tests/Browser/right-to-left.spec.ts"
+        "tests/Browser/right-to-left.spec.ts",
+        "tests/Browser/signed-in-right-to-left.spec.ts"
       ],
       "workflows": [
         ".github/workflows/ci.yml#preflight",
@@ -671,14 +671,13 @@
       "state": "pending-integration",
       "track": "pr-152",
       "branches": [
-        "agent/languages",
         "agent/browser"
       ],
       "branch_evidence": [
-        "assets/administrator/styles.css",
-        "tests/Browser/right-to-left.spec.ts"
+        "tests/Browser/right-to-left.spec.ts",
+        "tests/Browser/support/interface-catalogue.ts"
       ],
-      "outstanding": "Flips with PL-G. A branch that adds en-GB identifiers, such as agent/machine, must carry the eight translations when it lands, because composer translation:check refuses an incomplete catalogue.",
+      "outstanding": "Flips with PL-G when agent/browser lands. A branch that adds en-GB identifiers, such as agent/machine, must carry the eight translations when it lands, because composer translation:check refuses an incomplete catalogue.",
       "gate_b_criteria": [
         7,
         11
@@ -1814,7 +1813,8 @@
       "tests": [
         "tests/Browser/interface-standard.spec.ts",
         "tests/Browser/nightly-browser-breadth.spec.ts",
-        "tests/Browser/locale-qualification.spec.ts"
+        "tests/Browser/locale-qualification.spec.ts",
+        "tests/Browser/locale-journeys.spec.ts"
       ],
       "workflows": [
         ".github/workflows/ci.yml#browser",
@@ -1828,11 +1828,10 @@
       "state": "open",
       "track": "pr-152",
       "branches": [
-        "agent/browser",
-        "agent/languages"
+        "agent/browser"
       ],
       "branch_evidence": [],
-      "outstanding": "The appearance repair flips with V2-QA-014 and the locale journeys with PL-G. agent/languages adds the two non-source-language task journeys the package asks for, German content authoring and Hebrew generated business work. No workflow runs the five archetype task journeys yet (V2-UX-001), and no branch carries them.",
+      "outstanding": "The head runs the two non-source-language task journeys the package asks for, German content authoring and Hebrew generated business work, and the locale journeys qualify with PL-G. The appearance repair flips with V2-QA-014 on agent/browser. No workflow runs the five archetype task journeys yet (V2-UX-001), and no branch carries them.",
       "gate_b_criteria": [
         7
       ],
@@ -2952,7 +2951,7 @@
       "track": "pr-152",
       "branches": [],
       "branch_evidence": [],
-      "outstanding": "Open until V2-UX-001's archetype task journeys run in a workflow. V2-QA-014 and V2-LNG-010 flip with agent/browser and agent/languages.",
+      "outstanding": "Open until V2-UX-001's archetype task journeys run in a workflow. V2-QA-014 and V2-LNG-010 flip with agent/browser.",
       "gate_b_criteria": [
         7
       ]
@@ -3045,7 +3044,8 @@
       ],
       "tests": [
         "tests/Browser/locale-qualification.spec.ts",
-        "tests/Architecture/InterfaceTranslationGateTest.php"
+        "tests/Architecture/InterfaceTranslationGateTest.php",
+        "tests/Browser/signed-in-right-to-left.spec.ts"
       ],
       "workflows": [
         ".github/workflows/ci.yml#preflight",
@@ -3060,11 +3060,10 @@
       "state": "pending-integration",
       "track": "pr-152",
       "branches": [
-        "agent/languages",
         "agent/browser"
       ],
       "branch_evidence": [],
-      "outstanding": "Flips with PL-G and V2-LNG-010 when agent/languages and agent/browser land, provided every other landing branch carries the translations of the identifiers it adds.",
+      "outstanding": "Flips with PL-G and V2-LNG-010 when agent/browser lands, provided every other landing branch carries the translations of the identifiers it adds.",
       "gate_b_criteria": [
         11
       ]

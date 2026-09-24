@@ -99,6 +99,15 @@ portfolio, soaks, the independent review and the out-of-process extension runtim
   horizontal overflow, visible and focusable critical controls, a clean WCAG 2.2 AA scan and no translated
   wording left in English (#152).
 
+- Hold every language to the layout on phones and past sign-in. The collapsed administrator drawer now leaves
+  towards the right in Hebrew and Arabic instead of parking over the page, and a visually hidden column label no
+  longer widens tables so far that a phone zooms the content list out. `signed-in-right-to-left.spec.ts` gives the
+  administrator dashboard, content list and account form and the portal home and account security page their own
+  Hebrew and Arabic baselines at desktop and mobile, and `locale-journeys.spec.ts` completes a German content
+  authoring journey and a Hebrew generated-business journey with typed values, each with zero overflow and a clean
+  accessibility scan. `docs/interface-translation.md` describes the nine shipped catalogues and their per-locale
+  evidence (#152).
+
 - Complete the Phase 5 scale packages `P5-A`, `P5-B`, `P5-C`, `P5-D`, `P5-E` and `P5-F` (`V2-SCL-001`,
   `V2-SCL-002`, `V2-SCL-004`, `V2-SCL-005`, `V2-SCL-006`, `V2-SCL-007`, `V2-SCL-008`). The shared definition
   fence, post-commit sequencer, independent receipt fan-out and durable queue permits above are proven across
@@ -180,8 +189,8 @@ portfolio, soaks, the independent review and the out-of-process extension runtim
        agent/recovery   recovery evidence map, deduplication measurement and runtime diagnostics:
                         P6-A, P6-B, P6-C, P6-D, V2-DR-001, V2-DR-002, V2-DR-003, V2-DR-004, V2-OPS-001,
                         GM-BAK-04, GM-BAK-08
-       agent/languages  right-to-left phone layout fixes and locale task journeys: PL-G, V2-LNG-010 with agent/browser
-       agent/browser    WebKit scheme repaint and translated right-to-left baselines: V2-QA-014, PL-G, V2-LNG-010 -->
+       agent/browser    WebKit scheme repaint and translated right-to-left login baselines: V2-QA-014, PL-G,
+                        V2-LNG-010 -->
 
 ### Earlier integration work
 
