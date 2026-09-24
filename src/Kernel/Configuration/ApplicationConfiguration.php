@@ -101,6 +101,9 @@ final readonly class ApplicationConfiguration
      *          loaded from in the npm package layout `<base>/<package>@<version>/dist/browser/<path>`: the public
      *          registry CDN by default, or a self-hosted mirror or site-absolute path that keeps the same shape.
      * @param int $sessionIdleSeconds Maximum inactivity on both browser surfaces.
+     * @param   string                         $capacityProfile               Capacity profile this installation
+     *          declares, `baseline` or `enterprise`; under `enterprise` a missing required retention setting
+     *          fails readiness instead of warning.
      *
      * @throws  InvalidArgumentException  When a setting is malformed, a secret is too short or
      *          reused, an identity is not a stable identifier, or a production-only rule is violated.
@@ -139,7 +142,11 @@ final readonly class ApplicationConfiguration
         public BusinessRecordReplayWindow $idempotencyReplay = new BusinessRecordReplayWindow(),
         public string $studioBrowserBaseUrl = self::DEFAULT_STUDIO_BROWSER_BASE_URL,
         public int $sessionIdleSeconds = 1_800,
+        public string $capacityProfile = 'baseline',
     ) {
+        if (!in_array($capacityProfile, ['baseline', 'enterprise'], true)) {
+            throw new InvalidArgumentException('KUMWE_CAPACITY_PROFILE must be baseline or enterprise.');
+        }
         if ($sessionIdleSeconds < 60 || $sessionIdleSeconds > 86_400) {
             throw new InvalidArgumentException('APP_SESSION_IDLE_SECONDS must be between 60 and 86400.');
         }

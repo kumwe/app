@@ -133,6 +133,7 @@ final class ConfigurationFactory
                 'KUMWE_STUDIO_BROWSER_BASE_URL',
                 ApplicationConfiguration::DEFAULT_STUDIO_BROWSER_BASE_URL,
             ),
+            capacityProfile: strtolower($environment->string('KUMWE_CAPACITY_PROFILE', 'baseline')),
         );
     }
 

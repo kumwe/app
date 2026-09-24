@@ -7,6 +7,7 @@ These runbooks cover production installation, deployment, monitoring, recovery, 
 - [Deploy](deploy.md): hardened container topology, database choice, image pinning, and acceptance.
 - [Configuration](../configuration.md): environment, secrets, database, Redis, and browser-managed settings.
 - [Monitor](monitoring.md): health contracts, signals, logs, and audit records.
+- [Retention](retention.md): per-store retention contract, drain budgets, metrics and readiness.
 - [Back up and restore](backup-restore.md): complete backup, verification, clean-target recovery, and drills.
 - [Upgrade](upgrade.md): forward-only migrations and atomic application replacement.
 - [Verify releases](release-verification.md): checksums, signatures, provenance, images, and SBOMs.

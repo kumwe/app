@@ -9,6 +9,8 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Types\Types;
 use Kumwe\App\Application\Readiness\ReadinessStatus;
+use Kumwe\App\Application\Retention\RetentionObserver;
+use Kumwe\App\Application\Retention\RetentionReadiness;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Psr\Clock\ClockInterface;
 use Throwable;
@@ -38,14 +40,27 @@ use Throwable;
 final readonly class RuntimeMetricCollector implements MetricCollector
 {
     /**
+     * Forecast published when the drain slope predicts no exhaustion: ten years, so thresholds never fire.
+     *
+     * @var    float
+     * @since  2.0.0
+     */
+    public const float NO_EXHAUSTION_PREDICTED_SECONDS = 315_360_000.0;
+
+    /**
      * Bind the collector to the stores it aggregates.
      *
-     * @param  Connection       $database   Connection the bounded aggregates run on.
-     * @param  TableNames       $tables     Resolver for the prefixed physical table names.
-     * @param  ClockInterface   $clock      Reading every age is computed against.
-     * @param  ReadinessStatus  $readiness  Cheap readiness verdict published as `kumwe_ready`.
-     * @param  string           $release    Immutable release identifier stamped on `kumwe_build_info`.
-     * @param  string           $runtime    Surface this process serves, stamped on `kumwe_build_info`.
+     * @param  Connection           $database            Connection the bounded aggregates run on.
+     * @param  TableNames           $tables              Resolver for the prefixed physical table names.
+     * @param  ClockInterface       $clock               Reading every age is computed against.
+     * @param  ReadinessStatus      $readiness           Cheap readiness verdict published as `kumwe_ready`.
+     * @param  string               $release             Immutable release identifier stamped on `kumwe_build_info`.
+     * @param  string               $runtime             Surface this process serves, stamped on `kumwe_build_info`.
+     * @param  ?RetentionObserver   $retention           Source of the six retention gauges per store, or
+     *         null to leave retention out of the scrape.
+     * @param  ?RetentionReadiness  $retentionReadiness  Assessment behind `kumwe_retention_readiness`.
+     * @param  bool                 $enterprise          Whether the installation declares the enterprise
+     *         capacity profile, which turns a missing retention setting into a failed verdict.
      *
      * @since  2.0.0
      */
@@ -56,6 +71,9 @@ final readonly class RuntimeMetricCollector implements MetricCollector
         private ReadinessStatus $readiness,
         private string $release,
         private string $runtime,
+        private ?RetentionObserver $retention = null,
+        private ?RetentionReadiness $retentionReadiness = null,
+        private bool $enterprise = false,
     ) {
     }
 
@@ -83,6 +101,11 @@ final readonly class RuntimeMetricCollector implements MetricCollector
         $failed = false;
         try {
             $samples = array_merge($samples, $this->durable($now));
+        } catch (Throwable) {
+            $failed = true;
+        }
+        try {
+            $samples = array_merge($samples, $this->retention());
         } catch (Throwable) {
             $failed = true;
         }
@@ -172,6 +195,47 @@ final readonly class RuntimeMetricCollector implements MetricCollector
             $this->gauge('kumwe_export_queue_depth', $this->count($exports, "status IN ('queued', 'running')")),
             $this->gauge('kumwe_export_artifacts_expired', $this->countBefore($exports, '1 = 1', 'expires_at', $now)),
         ];
+    }
+
+    /**
+     * Publish the six retention gauges per store and the readiness verdict, when an observer is wired.
+     *
+     * A forecast of no predicted exhaustion is published as the maximum representable horizon rather
+     * than omitted, so a dashboard threshold on the gauge fires only on a real prediction. An unknown
+     * rate is published as zero; the observation's own flags say why, and the runbook documents which
+     * stores record no arrival instant.
+     *
+     * @return  list<MetricSample>  Retention samples, or an empty list when no observer is wired.
+     *
+     * @since   2.0.0
+     */
+    private function retention(): array
+    {
+        if ($this->retention === null) {
+            return [];
+        }
+        $samples = [];
+        $observations = $this->retention->observeAll();
+        foreach ($observations as $observation) {
+            $labels = ['store' => $observation->store->value];
+            $values = [
+                $observation->ingestRowsPerSecond ?? 0.0,
+                $observation->expiryRowsPerSecond ?? 0.0,
+                $observation->drainRowsPerSecond ?? 0.0,
+                (float) $observation->backlogRows,
+                $observation->oldestEligibleAgeSeconds ?? 0.0,
+                $observation->forecastSecondsToCapacity ?? self::NO_EXHAUSTION_PREDICTED_SECONDS,
+            ];
+            foreach (MetricCatalog::RETENTION_GAUGES as $index => $name) {
+                $samples[] = new MetricSample($name, $name, $labels, $values[$index]);
+            }
+        }
+        if ($this->retentionReadiness !== null) {
+            $verdict = $this->retentionReadiness->assess($observations, $this->enterprise);
+            $samples[] = $this->gauge(MetricCatalog::RETENTION_READINESS, (float) $verdict->state->value);
+        }
+
+        return $samples;
     }
 
     /**

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Infrastructure\Observability;
 
 use InvalidArgumentException;
+use Kumwe\App\Application\Retention\RetentionStore;
 
 /**
  * The complete, closed set of metrics this application is allowed to emit.
@@ -41,6 +42,37 @@ final readonly class MetricCatalog
      * @since  2.0.0
      */
     public const HTTP_DURATION = 'kumwe_http_request_duration_seconds';
+
+    /**
+     * Rows removed by retention drains, by store.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    public const RETENTION_DRAINED = 'kumwe_retention_drained_rows_total';
+
+    /**
+     * The six retention gauges, each labelled by store; the label values are the `RetentionStore` cases.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
+    public const RETENTION_GAUGES = [
+        'kumwe_retention_ingest_rows_per_second',
+        'kumwe_retention_expiry_rows_per_second',
+        'kumwe_retention_drain_rows_per_second',
+        'kumwe_retention_backlog_rows',
+        'kumwe_retention_oldest_age_seconds',
+        'kumwe_retention_forecast_seconds_to_capacity',
+    ];
+
+    /**
+     * Retention readiness verdict gauge: 0 ready, 1 warning, 2 failed.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    public const RETENTION_READINESS = 'kumwe_retention_readiness';
 
     /**
      * HTTP methods that get their own series; anything else folds into `other`.
@@ -206,8 +238,62 @@ final readonly class MetricCatalog
                 ['method' => self::METHODS],
                 self::BUCKETS,
             ),
+            new MetricDefinition(
+                self::RETENTION_DRAINED,
+                MetricType::Counter,
+                'Rows removed or compacted by retention drains, by store.',
+                ['store' => self::stores()],
+            ),
             ...self::gauges($release, $runtime),
+            ...self::retentionGauges(),
         ];
+    }
+
+    /**
+     * Enumerate the retention store label values.
+     *
+     * @return  list<string>  Every `RetentionStore` case value.
+     *
+     * @since   2.0.0
+     */
+    private static function stores(): array
+    {
+        return array_map(static fn (RetentionStore $store): string => $store->value, RetentionStore::cases());
+    }
+
+    /**
+     * Declare the six retention gauges per store and the readiness verdict gauge.
+     *
+     * The store label is the one dimension the runbook needs to act on a retention signal, and it is a
+     * closed enumeration of eleven code-declared values, so it widens the exposition by a known, fixed
+     * amount rather than by anything traffic controls.
+     *
+     * @return  list<MetricDefinition>  The declared families.
+     *
+     * @since   2.0.0
+     */
+    private static function retentionGauges(): array
+    {
+        $help = [
+            'kumwe_retention_ingest_rows_per_second' => 'Rows arriving in the store over the trailing window.',
+            'kumwe_retention_expiry_rows_per_second' => 'Rows becoming eligible for removal over the leading window.',
+            'kumwe_retention_drain_rows_per_second' => 'Rows removed per second of the last recorded drain run.',
+            'kumwe_retention_backlog_rows' => 'Eligible rows still present, capped by the observer probe.',
+            'kumwe_retention_oldest_age_seconds' => 'Age of the oldest eligible row; zero when nothing is eligible.',
+            'kumwe_retention_forecast_seconds_to_capacity' => 'Seconds until the backlog reaches capacity at the '
+                . 'current net slope; the maximum value means no exhaustion is predicted.',
+        ];
+        $gauges = [];
+        foreach (self::RETENTION_GAUGES as $name) {
+            $gauges[] = new MetricDefinition($name, MetricType::Gauge, $help[$name], ['store' => self::stores()]);
+        }
+        $gauges[] = new MetricDefinition(
+            self::RETENTION_READINESS,
+            MetricType::Gauge,
+            'Retention readiness verdict: 0 ready, 1 warning, 2 failed.',
+        );
+
+        return $gauges;
     }
 
     /**
