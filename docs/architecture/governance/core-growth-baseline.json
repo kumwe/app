@@ -4597,8 +4597,10 @@
         "Kumwe\\App\\Identity\\Application\\Administration\\AccessControlRepository": {
             "kind": "interface",
             "layer": "application",
-            "surface": "cd6fd16f2f9c035f534656fa",
-            "growth": null
+            "surface": "328260b56683b62a948a2154",
+            "growth": {
+                "record": "KUMWE-CGR-2026-071"
+            }
         },
         "Kumwe\\App\\Identity\\Application\\Administration\\AccessControlService": {
             "kind": "class",
@@ -4901,7 +4903,7 @@
         "Kumwe\\App\\Identity\\Infrastructure\\Administration\\DoctrineAccessControlRepository": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "1a6f4180901ca20716c84157",
+            "surface": "facb02b471172a03054ceca7",
             "growth": {
                 "classification": "host-infrastructure",
                 "implements": [

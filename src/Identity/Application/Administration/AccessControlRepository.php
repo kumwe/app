@@ -507,6 +507,24 @@ interface AccessControlRepository
     public function userGrants(string $userId): array;
 
     /**
+     * Read every capability a user could exercise through any grant path, with the scope it is stored at.
+     *
+     * Unlike `userGrants()`, which answers what a site-level token may carry and so reads direct roles
+     * only, this is the ceiling a credential takeover is judged against: the union of the user's direct
+     * roles and of the roles attached to every organization membership the user holds, whatever the
+     * membership's status or validity window, because a membership that is inactive today can be
+     * reactivated tomorrow under a password somebody else chose.
+     *
+     * @param   string  $userId  UUID of the user being inspected.
+     *
+     * @return  list<array{capability: string, scope_type: string, scope_identifier: ?string}>  Empty when the
+     *          user holds nothing through any path.
+     *
+     * @since   2.0.0
+     */
+    public function userAuthorityGrants(string $userId): array;
+
+    /**
      * Resolve a subject's live authority in one exact organization and optional workspace.
      *
      * Token issuance uses the target subject's membership rather than copying the administrator actor's

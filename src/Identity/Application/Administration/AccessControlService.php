@@ -421,7 +421,8 @@ final readonly class AccessControlService
      * credential without proving the current one, which is exactly the check `changeOwnPassword()`
      * exists to apply; the refusal keeps the two paths from collapsing into one.
      *
-     * Nor may an actor reset the password of an account holding authority the actor could not delegate.
+     * Nor may an actor reset the password of an account holding authority, through any role or organization
+     * membership, that the actor could not delegate.
      * Choosing another account's password is taking that account over, so without this ceiling a holder of
      * `users.manage` alone could become any administrator and exercise every capability that administrator
      * holds — the escalation role assignment and token issuance already refuse. The check runs under the
@@ -1348,7 +1349,8 @@ final readonly class AccessControlService
      *
      * Taking over an account through its credentials hands the actor everything that account holds, so
      * the same delegation ceiling that bounds role assignment bounds it: every capability the subject holds
-     * through its roles, at the scope it holds it, must be one the actor may delegate.
+     * through any grant path — its direct roles and the roles of every organization membership, active or
+     * not — at the scope it is stored at, must be one the actor may delegate.
      *
      * @param   ExecutionContext  $context  Actor whose delegation ceiling is applied.
      * @param   string            $userId   UUID of the account whose credentials would change.
@@ -1361,7 +1363,7 @@ final readonly class AccessControlService
      */
     private function assertCanDelegateUser(ExecutionContext $context, string $userId): void
     {
-        foreach ($this->repository->userGrants($userId) as $grant) {
+        foreach ($this->repository->userAuthorityGrants($userId) as $grant) {
             $this->authorization->assertCanDelegate(
                 $context,
                 Capability::fromString($grant['capability']),
