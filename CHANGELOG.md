@@ -17,6 +17,19 @@ Entries cite the commits that carried them. Version 2.0.0 is not released, so ev
 
 ## [Unreleased]
 
+### #152 — Version 2 runtime completion
+
+Pull request #152 (`platform/v2-runtime-completion`) completes Points 1 to 4 of the Version 2 runtime increment
+set by [ADR 0021](docs/roadmap/decisions/0021-automated-acceptance-and-sampled-capacity.md): the Studio journey
+and machine parity, Phase 5 scale, Phase 6 recovery and diagnostics, and the Phase 7 and `PL-G` security,
+interface, language and automation gaps. The maintainer's merge, once every required check is green, accepts
+what this section describes; no human checkbox, manual browser review or follow-up acceptance commit follows it.
+Each requirement delivered here is an entry of
+[`docs/roadmap/acceptance-record.json`](docs/roadmap/acceptance-record.json) naming its runtime owner, tests, CI
+jobs and artifacts; what is still open, and which branch carries it, is generated into
+[`docs/roadmap/STATUS.md`](docs/roadmap/STATUS.md). Exact release-artifact qualification, the extension proof
+portfolio, soaks, the independent review and the out-of-process extension runtime are the separate Point 5 track.
+
 - Add authenticated, dedup-friendly v3 backup trees with retained v2 restore support, native binary-log
   and PostgreSQL WAL recovery adapters, isolated target claims, interruption handling and scheduled
   offsite/retention hooks. Local MariaDB 10.11 replay, tamper, resume, spent-approval and restored HTTP
@@ -71,6 +84,92 @@ Entries cite the commits that carried them. Version 2.0.0 is not released, so ev
   auditing use the existing identity service (`GM-IDN-07`). Local MariaDB/Redis verification passes
   48 focused tests with 340 assertions (one existing PHPUnit mock-expectation notice); static analysis
   and account-surface conformance pass. Maintainer merge supplies acceptance under ADR 0021.
+
+- Ship all nine Version 2 interface catalogues. `en-US`, `es`, `de`, `zh-Hans`, `pt-BR`, `af`, `he` and `ar`
+  each carry a translated target for every one of the 2,418 source identifiers, with the CLDR plural categories
+  their language needs, and `composer translation:compile` and `translation:check` refuse an incomplete language
+  set. The new `composer translation:quality` gate, in `composer qa` and CI, formats every pattern through ICU
+  for its own locale, requires every plural category ICU selects, holds arguments and markup to the source and
+  refuses English left in a non-English target outside a reasoned register. Core administrator and portal
+  navigation, administrator dates and the business-definition workspace tabs render in the request language,
+  63 single-word component labels that stayed English resolve through the catalogue and the strings gate now
+  refuses them, and the content list no longer prints icon markup as its button text.
+  `tests/Browser/locale-qualification.spec.ts` signs in and visits the critical administrator, portal and site
+  surfaces in every language on desktop and mobile Chromium, asserting the resolved `lang` and `dir`, zero
+  horizontal overflow, visible and focusable critical controls, a clean WCAG 2.2 AA scan and no translated
+  wording left in English (#152).
+
+- Complete the Phase 5 scale packages `P5-A`, `P5-B`, `P5-C`, `P5-D`, `P5-E` and `P5-F` (`V2-SCL-001`,
+  `V2-SCL-002`, `V2-SCL-004`, `V2-SCL-005`, `V2-SCL-006`, `V2-SCL-007`, `V2-SCL-008`). The shared definition
+  fence, post-commit sequencer, independent receipt fan-out and durable queue permits above are proven across
+  real processes: a schema transition waits for in-flight writers and holds new writers off the retiring
+  generation, a killed writer or sequencer releases its authority and leaves no event missing or duplicated,
+  racing sequencers publish one contiguous range, fan-out three and ten with a hung and a poison consumer never
+  delays an unrelated consumer, and racing claimants never exceed a declared ceiling or starve a smaller site.
+  Every hot ledger is declared in a retention catalogue sized from the capacity contract (926 rows a second,
+  twice the enterprise peak expiry) and drained by the `system.retention.drain` job in batches sized from the
+  previous batch's lock time, with six retention metrics per store and a readiness verdict that warns or fails
+  on a missing setting or a drain slope that predicts exhaustion; audit is pruned only after its archive reads
+  back whole. Durable gauges read at most 10,000 index entries, exact counts move to an operator-only census
+  with a declared cost and a server-enforced statement timeout, and transaction, lock-conflict, sequencing,
+  claim, settlement, connection-saturation and replica-lag metrics carry closed labels (#152).
+
+- Bound administrator access-control paging at an offset of 10,000, enforce the database volume's 30% free-space
+  reserve through readiness when `KUMWE_DATABASE_DATA_PATH` is visible, and add `tools/perf-storage.php` to
+  measure physical row mutations and table, index, log and undo growth per logical transaction and forecast the
+  planning envelope. `docs/operations/scale-topology.md` documents the supported topology and every enforced
+  query and result bound, and names the two bounds not yet enforced. Concurrent capacity runs fit labelled
+  Universal Scalability Law, sigma-zero and Amdahl models to their passing repeats with Student t 95% intervals,
+  mark each prediction as interpolation or extrapolation, and keep measured and estimated sections apart in the
+  report, its schema and the published summary (`P7-A`). No figure is a production capacity guarantee (#152).
+
+- Close the session and request-forgery qualification blind spots (`GM-IDN-06`): dedicated tests cover both
+  CSRF middlewares, the Redis sign-in rate-limiter window, the portal session store's find and rotate refusals,
+  both logout handlers and the exact `Set-Cookie` attributes the pipeline emits. Every audit writer's metadata
+  keys are pinned against the credential denylist the runtime redactor applies, so the static and runtime guards
+  cannot drift (`GM-AUD-08`). A role's dashboard form now saves for an editor who cannot see every stored widget,
+  keeping the role's choices while still refusing unseen additions (`V2-UX-002`) (#152).
+
+- Records in an immutable workflow state or dated into a closed posting period render read-only affordances
+  with the refusal's own wording on the administrator and portal surfaces, a refused write returns to its page
+  with 409, and the definition editor declares and removes immutable states with validation (`V2-UX-003`).
+  Trace-context propagation is documented as propagation, never as tracing, and ADR 0022 records that adopting a
+  tracer and exporter is a separate dependency decision (`GM-OBS-05`) (#152).
+
+- Refuse every inline style source: the content-security policy sends `style-src 'self'`,
+  `style-src-attr 'none'` and `style-src-elem 'self'` on every response. The per-site palette moves from a
+  `<body>` style attribute to the digest-versioned same-origin `/presentation/theme.css`; the named residuals
+  are the isolated SVG media policy and CSSOM frame sizing in the Studio shell (`GM-SUP-08`) (#152).
+
+- Lock exactly one queue permit by primary key when acquiring capacity, so MySQL 8.4's sorted skip-locked read no
+  longer locks every free permit it examines and a second replica finds its free slot, and release the dead
+  permit an expired job lease still names before a reclaim competes for capacity, so a lost worker cannot starve
+  a one-slot queue (#152).
+
+- Keep one acceptance record for the increment. `docs/roadmap/acceptance-record.json` links every open finding,
+  every roadmap package not yet delivered and every Gate B criterion to its text reference, runtime owner, tests,
+  CI jobs, workflow artifacts, decision, outstanding note, state and track, marking work committed on an agent
+  branch as pending integration. `composer acceptance:check`, in `composer qa` and both CI record jobs, proves
+  that every path, CI job, uploaded artifact and reference exists, that findings match the ledger and packages
+  the README, and that nothing is delivered ahead of what it depends on; `composer acceptance:summary` generates
+  the STATUS.md phase board, open-work table, Gate B criteria and ledger snapshot and the summary page from it.
+  ADR 0021's acceptance rule is written where contributors read it: automated workflow evidence plus the
+  maintainer's merge is the sole acceptance record (#152).
+
+- Let the development server and the browser lane run on a configured port (`KUMWE_DEV_SERVER_PORT`,
+  `KUMWE_BROWSER_BASE_URL`), so parallel local browser runs no longer collide; CI keeps its default (#152).
+
+<!-- #152 in-flight streams. Each lands its entries above this comment, citing the acceptance-record
+     identifiers it flips, when its branch merges into platform/v2-runtime-completion:
+       agent/studio     contextual Studio journey: S-E, S-F, V2-STU-005, V2-STU-006 (S-G, V2-STU-007 stay open)
+       agent/machine    Studio authoring over REST 1.1.0, CLI generation two and mcp-v2: MACHINE-STUDIO-PARITY
+       agent/recovery   recovery evidence map, deduplication measurement and runtime diagnostics:
+                        P6-A, P6-B, P6-C, P6-D, V2-DR-001, V2-DR-002, V2-DR-003, V2-DR-004, V2-OPS-001,
+                        GM-BAK-04, GM-BAK-08
+       agent/languages  right-to-left phone layout fixes and locale task journeys: PL-G, V2-LNG-010 with agent/browser
+       agent/browser    WebKit scheme repaint and translated right-to-left baselines: V2-QA-014, PL-G, V2-LNG-010 -->
+
+### Earlier integration work
 
 - Close the five adoptions that had merged without their closure record. `KUMWE-CS-2026-002` (sequence, PR #139,
   merged `32d6a6f3`), `KUMWE-CS-2026-004` (access-context, PR #141, merged `795583ee`), `KUMWE-CS-2026-007`

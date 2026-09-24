@@ -38,159 +38,6 @@
             "product_owner_decision": "Removed from the critical path. Only the seams the aggregate command and the scale work require are extracted, in phase 3. The remainder runs in lane M, parallel to or after scale work, and never blocks a gate."
         },
         {
-            "id": "V2-SCL-001",
-            "title": "The definition-wide exclusive mutation fence serializes writes to unrelated records",
-            "severity": "high",
-            "state": "in_progress",
-            "phase": "5",
-            "gate": "B",
-            "origin": "review",
-            "source_anchors": [
-                {
-                    "file": "src/BusinessRecord/Infrastructure/Persistence/DoctrineBusinessRecordMutationFence.php",
-                    "symbol": "DoctrineBusinessRecordMutationFence::lock()",
-                    "note": "Line 76. Acquires the schema-installation row with FOR UPDATE and holds it for the caller's whole record transaction."
-                },
-                {
-                    "file": "src/BusinessRecord/Application/BusinessRecordService.php",
-                    "symbol": "mutationFence->lock() call sites",
-                    "note": "Seven direct calls at lines 1404, 1582, 1744, 2588, 2805, 2923 and 3477 cover the mutation paths that acquire this definition-wide fence."
-                },
-                {
-                    "file": "src/BusinessRecord/Infrastructure/Persistence/DoctrineBusinessRecordMutationFence.php",
-                    "symbol": "DoctrineBusinessRecordMutationFence::shared()",
-                    "note": "Line 110. A shared fence already exists (LOCK IN SHARE MODE on MySQL, FOR SHARE on PostgreSQL) and is used by read paths only. It is the natural seam for the generation-aware protocol."
-                }
-            ],
-            "acceptance_test": "Two writers on unrelated records under one definition demonstrably overlap. Two writes to the same expected record version produce one winner and one stable stale-version error. A schema transition waits for in-flight writers and blocks new writers on the old generation. Rollback or crash releases or safely expires authority. Disable and trust revocation win without executing stale extension code. Success is measured as reduced lock-wait and transaction time at target load, not as different SQL text.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null
-        },
-        {
-            "id": "V2-SCL-002",
-            "title": "A singleton projection event head is locked and updated inside the authoritative business transaction",
-            "severity": "high",
-            "state": "in_progress",
-            "phase": "5",
-            "gate": "B",
-            "origin": "review",
-            "source_anchors": [
-                {
-                    "file": "src/BusinessIntegration/Infrastructure/DoctrineOutboxStore.php",
-                    "symbol": "the business_projection_event_head read and update",
-                    "note": "Lines 140-181. A locking read of singleton_id = 1, then a guarded UPDATE of last_sequence, both inside the caller's transaction. Every event-producing commit contends on one installation-wide row."
-                }
-            ],
-            "acceptance_test": "Concurrent commits do not contend on the head row. A transaction that allocates then rolls back creates no visible event. A sequencer crash before or after range allocation is replay-safe and leaves no permanently missing event. Concurrent sequencers cannot duplicate or skip source rows. The sequence is monotonic and no projection checkpoint passes an unsequenced committed event in scope. Backlog sequencing reaches at least twice peak ingest with observable age and rate.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null
-        },
-        {
-            "id": "V2-SCL-004",
-            "title": "The seeded idempotency purge ceiling is two orders of magnitude below enterprise ingress",
-            "severity": "high",
-            "state": "in_progress",
-            "phase": "5",
-            "gate": "B",
-            "origin": "review",
-            "source_anchors": [
-                {
-                    "file": "src/Infrastructure/Persistence/Migration/BusinessRecordIdempotencyRetentionMigration.php",
-                    "symbol": "the seeded schedule row",
-                    "note": "Line 60 seeds cron_expression '43 * * * *' and line 65 seeds payload {\"batch_size\": 500, \"maximum_batches\": 10}. That is 5,000 rows per hour, 120,000 per day."
-                },
-                {
-                    "file": "src/BusinessRecord/Application/BusinessRecordIdempotencyPurger.php",
-                    "symbol": "BusinessRecordIdempotencyPurger::purge()",
-                    "note": "Line 57. The batch is bounded to 1 to 1000 entries per call."
-                }
-            ],
-            "acceptance_test": "Maintenance throughput sustains at least twice the peak expiry rate while the ordinary workload continues, measured at the enterprise profile. Ingest rate, expiry rate, drain rate, backlog, oldest age and forecast-to-capacity are exposed as metrics. Enterprise readiness warns or fails when a required retention setting is absent or the drain slope predicts exhaustion.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null
-        },
-        {
-            "id": "V2-SCL-005",
-            "title": "Durable gauges compute exact aggregates on the primary at scrape time",
-            "severity": "medium",
-            "state": "in_progress",
-            "phase": "5",
-            "gate": "B",
-            "origin": "review",
-            "source_anchors": [
-                {
-                    "file": "src/Infrastructure/Observability/RuntimeMetricCollector.php",
-                    "symbol": "the durable gauge queries",
-                    "note": "COUNT(*) at lines 208 and 227, MIN() at line 270 and MAX() at line 289. The statement count is bounded; the work of an exact count is not bounded by it."
-                }
-            ],
-            "acceptance_test": "Every durable gauge query is benchmarked at representative table size on all three engines. Any gauge exceeding its budget is replaced by a sharded incremental counter or an asynchronously reconciled snapshot, exposed as approximate while durable rows remain authoritative, with an operator-only exact diagnostic carrying an explicit cost and timeout.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null
-        },
-        {
-            "id": "V2-SCL-006",
-            "title": "Integration fan-out executes every consumer and webhook serially in the dispatcher path",
-            "severity": "high",
-            "state": "in_progress",
-            "phase": "5",
-            "gate": "B",
-            "origin": "review",
-            "source_anchors": [
-                {
-                    "file": "src/BusinessIntegration/Infrastructure/RuntimeIntegrationEventTransport.php",
-                    "symbol": "RuntimeIntegrationEventTransport::publish()",
-                    "note": "Line 91. Iterates executable event-consumer entries at line 106 and webhook entries at line 132 in the calling path."
-                },
-                {
-                    "file": "src/BusinessIntegration/Application/IntegrationEventConsumerDispatcher.php",
-                    "symbol": "IntegrationEventConsumerDispatcher",
-                    "note": "The dispatcher the serial loop drives."
-                }
-            ],
-            "acceptance_test": "Independent (consumer, event) receipt rows are materialised in one short transaction and claimed in batches by worker pools. A slow, failing or rate-limited consumer does not delay unrelated consumers. Scenarios: fan-out 3 and 10, one hung consumer, poison payload, crash between claim and effect and settlement, generation change with queued work, retry storm, rate limit, downstream outage, and backlog recovery while new traffic continues.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null
-        },
-        {
-            "id": "V2-SCL-007",
-            "title": "Declared-queue claims take a policy-row mutex and count live leases on the hot path",
-            "severity": "high",
-            "state": "in_progress",
-            "phase": "5",
-            "gate": "B",
-            "origin": "review",
-            "source_anchors": [
-                {
-                    "file": "src/Infrastructure/Automation/DoctrineJobQueue.php",
-                    "symbol": "the runtime-policy lock and live-lease count",
-                    "note": "Line 968 takes the job_queue_runtime row with FOR UPDATE; lines 985 and 990 then run COUNT(*) over reserved rows with unexpired leases. The ordinary claim at line 270 already uses FOR UPDATE SKIP LOCKED, so the mutex is specific to contributed queues with a declared ceiling."
-                }
-            ],
-            "acceptance_test": "A configured queue owns durable concurrency slots claimed with portable leasing. One claim transaction may lease a batch where ordering permits. Completion, expiry, cancellation and recovery release the slot safely. No over-claim beyond declared tolerance, no starvation, bounded recovery after SIGKILL, and no site or organization able to monopolise worker capacity.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null
-        },
-        {
-            "id": "V2-SCL-008",
-            "title": "Hot correctness ledgers have no enterprise hot-and-cold retention budget",
-            "severity": "high",
-            "state": "in_progress",
-            "phase": "5",
-            "gate": "B",
-            "origin": "review",
-            "source_anchors": [
-                {
-                    "file": "src/Infrastructure/Persistence/Migration/BusinessRecordIdempotencyRetentionMigration.php",
-                    "symbol": "the only shipped record-side retention schedule",
-                    "note": "Business command idempotency is the only business ledger with a seeded purge. Audit retention exists but is seeded disabled with a zero window (GM-AUD-07); revisions, outbox source events, sequenced journals, inbox receipts and job attempts have no declared budget."
-                }
-            ],
-            "acceptance_test": "Every hot store declares authoritative purpose, minimum retention, immutability, expiry index or partition strategy, hot and warm and archived state, batch and time and lock and replication budgets, its six retention metrics, backup and restore and legal-hold behaviour, and its failure and reconciliation procedure. Audit pruning happens only after a verifiable anchor is committed and the off-host archive is proven restorable.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null
-        },
-        {
             "id": "V2-REL-001",
             "title": "Release and distribution artifacts are not proven by one exact-SHA build-once chain",
             "severity": "high",
@@ -362,25 +209,6 @@
             "closure_sha": null
         },
         {
-            "id": "V2-UX-002",
-            "title": "Role dashboard preference editing conflates the editor's visibility with the role's catalogue",
-            "severity": "medium",
-            "state": "in_progress",
-            "phase": "7",
-            "gate": "B",
-            "origin": "new",
-            "source_anchors": [
-                {
-                    "file": "src/Presentation/Application/Dashboard/DashboardPreferenceFormPresenter.php",
-                    "symbol": "liveIdentifiers",
-                    "note": "Role (access-group) preference forms prune stored selections against the editing administrator's capability-filtered catalogue, so an administrator with narrower visibility silently drops valid entries from a role's stored selection on save, and cannot restore them because delivery validates submissions against the editor's own catalogue."
-                }
-            ],
-            "acceptance_test": "An administrator holding users.manage but lacking a capability required by one widget stored in a role's dashboard selection opens and saves that role's preference form; the stored selection retains the invisible widget, the form discloses it as outside the editor's visibility, and members of the role keep the widget. A submission naming an identifier outside the role's own catalogue is still refused.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null
-        },
-        {
             "id": "V2-ERP-007",
             "title": "No offline-tolerant capture primitive for point-of-sale-style surfaces",
             "severity": "low",
@@ -442,42 +270,6 @@
             "residual": "On a managed service that withholds CREATE TRIGGER there is no database-level prevention of UPDATE or DELETE on audit_events. Tamper evidence, which is what the domain claims, holds unconditionally."
         },
         {
-            "id": "GM-AUD-08",
-            "title": "Audit-metadata redaction is a write-time convention with no runtime guard",
-            "severity": "low",
-            "state": "in_progress",
-            "phase": "7",
-            "origin": "gap-matrix",
-            "source_anchors": [
-                {
-                    "file": "src/Audit/Domain/AuditEvent.php",
-                    "symbol": "the metadata property",
-                    "note": "Stored verbatim; enforcement is per-service discipline. src/Audit/Application/AuditMetadataRedactor.php redacts on the way out of an export only."
-                }
-            ],
-            "acceptance_test": "A denylist decorator around AuditRecorder, or a constructor check, rejecting credential-shaped metadata keys and values, plus unit assertions on each writing service's recorded metadata.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null
-        },
-        {
-            "id": "GM-IDN-06",
-            "title": "Qualification evidence has session and CSRF test blind spots",
-            "severity": "medium",
-            "state": "in_progress",
-            "phase": "7",
-            "origin": "gap-matrix",
-            "source_anchors": [
-                {
-                    "file": "tests/Unit/Administrator/Http/Middleware/AdministratorCsrfMiddlewareTest.php",
-                    "symbol": "AdministratorCsrfMiddleware",
-                    "note": "Dedicated administrator CSRF tests cover a matching token, a wrong token, an absent token and localized refusal language and direction at lines 40, 58, 80 and 100. No test anywhere asserts the session cookie attribute string, and the other acceptance-matrix items remain open."
-                }
-            ],
-            "acceptance_test": "Dedicated tests for both CSRF middlewares, the Redis rate-limiter window arithmetic, the portal session store find and rotate rejection matrix, the logout handlers, and the session cookie attribute string.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null
-        },
-        {
             "id": "GM-SUP-05",
             "title": "Out-of-process execution for untrusted code is a documented invariant without a shipped runtime",
             "severity": "medium",
@@ -494,24 +286,6 @@
             "acceptance_test": "Narrowed: the wording and inventory half is delivered and recorded in CHANGELOG.md, so what remains cannot be closed by repository-owned code at all. Closing it needs a shipped runtime in which a signed extension's filesystem, network and database authority is granted explicitly rather than inherited, with the host addressable only through an authenticated adapter contract. Until then, installing an extension means trusting its publisher with the application process, and every surface must go on saying exactly that.",
             "owner": "UNASSIGNED",
             "closure_sha": null
-        },
-        {
-            "id": "GM-SUP-08",
-            "title": "Content-Security-Policy admitted unsafe-inline for styles on every response",
-            "severity": "low",
-            "state": "in_progress",
-            "phase": "7",
-            "origin": "gap-matrix",
-            "source_anchors": [
-                {
-                    "file": "src/Http/Security/SecurityHeaders.php",
-                    "symbol": "the style directives",
-                    "note": "Now style-src 'self', style-src-elem 'self' and style-src-attr 'unsafe-inline' in place of one permissive directive."
-                }
-            ],
-            "acceptance_test": "The exfiltration class is removed. The narrowed residual — inline style attributes — is named and owned.",
-            "owner": "UNASSIGNED",
-            "closure_sha": "5bf08c2ce8833e9768245b8e9f6b5e1487cb6994"
         },
         {
             "id": "GM-SUP-09",
@@ -531,24 +305,6 @@
             "owner": "UNASSIGNED",
             "closure_sha": null,
             "forward_reference": "V2-REL-001 is the natural home for this once the build-once chain exists."
-        },
-        {
-            "id": "GM-OBS-05",
-            "title": "No distributed tracing and no trace exporter",
-            "severity": "medium",
-            "state": "in_progress",
-            "phase": "7",
-            "origin": "gap-matrix",
-            "source_anchors": [
-                {
-                    "file": "config/observability.php",
-                    "symbol": "the tracing block",
-                    "note": "Exporter none, sampling declared. W3C trace-context propagation exists and must not be overstated as distributed tracing."
-                }
-            ],
-            "acceptance_test": "Open by decision. Adopting an exporter is a separately reviewed dependency and configuration decision. Until then, documentation states propagation, never tracing.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null
         },
         {
             "id": "GM-BAK-04",
@@ -668,29 +424,6 @@
             "closure_sha": null,
             "work_package": "S-G",
             "product_owner_decision": "Decision D16 and ADR 0020."
-        },
-        {
-            "id": "V2-UX-003",
-            "title": "Closed and immutable records still render edit affordances, and the definition editor cannot declare immutable states",
-            "severity": "medium",
-            "state": "in_progress",
-            "phase": "7",
-            "origin": "new",
-            "source_anchors": [
-                {
-                    "file": "src/BusinessSurface/Delivery/Browser/GeneratedBusinessBrowserController.php",
-                    "symbol": "GeneratedBusinessBrowserController::write()",
-                    "note": "The generated browser's write path catches validation and version-conflict problems at lines 1165 and 1214, but not immutable or closed-period refusals, so those land on the global error boundary. Generated forms still render edit affordances for records the service will refuse because catalog metadata does not expose immutable states or the posting-date declaration."
-                },
-                {
-                    "file": "src/BusinessDefinition/Administrator/BusinessDefinitionFormMapper.php",
-                    "symbol": "BusinessDefinitionFormMapper::workflow()",
-                    "note": "Lines 281–302 map the administrator workflow form without immutable_states. The declaration is reachable only through canonical documents or an extension contribution."
-                }
-            ],
-            "acceptance_test": "A record in an immutable state or a closed period renders read-only affordances with the refusal's own wording, and the definition editor can declare and remove immutable states with validation.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null
         },
         {
             "id": "V2-REL-002",

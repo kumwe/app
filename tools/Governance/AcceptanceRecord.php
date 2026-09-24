@@ -142,7 +142,8 @@ final readonly class AcceptanceRecord
         $record = $this->json(self::RECORD, $errors);
         $ledger = $this->json(self::LEDGER, $errors);
         $readme = $this->text(self::README, $errors);
-        $changelog = $this->text(self::CHANGELOG, $errors);
+        // A comment is a placeholder for work still to land; only rendered text counts as a citation.
+        $changelog = preg_replace('/<!--.*?-->/s', '', $this->text(self::CHANGELOG, $errors)) ?? '';
         if ($errors !== []) {
             return $errors;
         }
@@ -247,6 +248,12 @@ final readonly class AcceptanceRecord
             }
             if (($own['state'] ?? null) !== 'delivered') {
                 continue;
+            }
+            if (count($criteria[$criterion] ?? []) < 2) {
+                $errors[] = sprintf(
+                    'GB-%d is delivered although no requirement entry cites the criterion it would satisfy.',
+                    $criterion,
+                );
             }
             foreach ($criteria[$criterion] ?? [] as $id) {
                 if (($byId[$id]['state'] ?? null) !== 'delivered') {
@@ -590,7 +597,7 @@ final readonly class AcceptanceRecord
             if ($workflows === []) {
                 $errors[] = sprintf('Entry %s is delivered without naming the CI job that runs its proof.', $id);
             }
-            if (!$cited) {
+            if (!$cited && $kind !== 'gate-b-criterion') {
                 $errors[] = sprintf('Entry %s is delivered but %s never cites it.', $id, self::CHANGELOG);
             }
         } else {
@@ -1211,16 +1218,17 @@ final readonly class AcceptanceRecord
         ));
         $packages = ['delivered' => $deliveredBefore, 'pending-integration' => [], 'open' => []];
         $findings = ['delivered' => [], 'pending-integration' => [], 'open' => []];
+        $requirements = ['delivered' => [], 'pending-integration' => [], 'open' => []];
         $branches = [];
         $started = $deliveredBefore !== [];
         foreach ($own as $entry) {
             $id = is_string($entry['id'] ?? null) ? $entry['id'] : '';
             $state = is_string($entry['state'] ?? null) ? $entry['state'] : 'open';
-            if (($entry['kind'] ?? null) === 'package') {
-                $packages[$state][] = $id;
-            } else {
-                $findings[$state][] = $id;
-            }
+            match ($entry['kind'] ?? null) {
+                'package' => $packages[$state][] = $id,
+                'requirement' => $requirements[$state][] = $id,
+                default => $findings[$state][] = $id,
+            };
             foreach (is_array($entry['branches'] ?? null) ? $entry['branches'] : [] as $branch) {
                 if (is_string($branch)) {
                     $branches[$branch] = true;
@@ -1233,7 +1241,8 @@ final readonly class AcceptanceRecord
         }
         $started = $started || $branches !== [];
         $outstanding = count($packages['pending-integration']) + count($packages['open'])
-            + count($findings['pending-integration']) + count($findings['open']);
+            + count($findings['pending-integration']) + count($findings['open'])
+            + count($requirements['pending-integration']) + count($requirements['open']);
         $note = rtrim($phase['note'], '.');
         if ($outstanding === 0) {
             $history = implode('; ', array_filter(
@@ -1260,13 +1269,14 @@ final readonly class AcceptanceRecord
         if ($packages['open'] !== []) {
             $parts[] = self::codes($packages['open']) . ' open';
         }
-        $count = static fn(int $n): string => $n === 1 ? '1 finding' : $n . ' findings';
         $tally = [];
-        if ($findings['pending-integration'] !== []) {
-            $tally[] = $count(count($findings['pending-integration'])) . ' pending integration';
-        }
-        if ($findings['open'] !== []) {
-            $tally[] = $count(count($findings['open'])) . ' open';
+        foreach (['finding' => $findings, 'requirement' => $requirements] as $noun => $groups) {
+            foreach (['pending-integration' => 'pending integration', 'open' => 'open'] as $state => $label) {
+                $n = count($groups[$state]);
+                if ($n > 0) {
+                    $tally[] = sprintf('%d %s%s %s', $n, $noun, $n === 1 ? '' : 's', $label);
+                }
+            }
         }
         if ($tally !== []) {
             $parts[] = implode(', ', $tally);

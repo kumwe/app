@@ -699,7 +699,9 @@
       ],
       "tests": [
         "tests/Integration/BusinessRecord/BusinessRecordSharedFenceIntegrationTest.php",
-        "tests/Integration/BusinessRecord/BusinessRecordMutationGenerationIntegrationTest.php"
+        "tests/Integration/BusinessRecord/BusinessRecordMutationGenerationIntegrationTest.php",
+        "tests/Integration/BusinessRecord/SchemaTransitionWriterFenceIntegrationTest.php",
+        "tests/Support/fence-transition-partner.php"
       ],
       "workflows": [
         ".github/workflows/ci.yml#database"
@@ -708,16 +710,11 @@
         ".github/workflows/ci.yml#idempotency-evidence-${{ matrix.database.driver }}"
       ],
       "decision": "D1, ADR 0021",
-      "state": "pending-integration",
+      "state": "delivered",
       "track": "pr-152",
-      "branches": [
-        "agent/scale"
-      ],
-      "branch_evidence": [
-        "tests/Integration/BusinessRecord/SchemaTransitionWriterFenceIntegrationTest.php",
-        "tests/Support/fence-transition-partner.php"
-      ],
-      "outstanding": "The head carries the runtime; agent/scale adds the cross-process proofs of the acceptance clauses a single process cannot observe. Flips when agent/scale lands. Reduced lock wait at load is measured by the sampled capacity harness (P7-A).",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": null,
       "gate_b_criteria": [
         3
       ],
@@ -737,23 +734,20 @@
       ],
       "tests": [
         "tests/Integration/BusinessIntegration/ProjectionSequencingConcurrencyIntegrationTest.php",
-        "tests/Integration/BusinessIntegration/ProjectionRuntimePersistenceTest.php"
+        "tests/Integration/BusinessIntegration/ProjectionRuntimePersistenceTest.php",
+        "tests/Integration/BusinessIntegration/SequencerCrashAndRaceIntegrationTest.php",
+        "tests/Support/sequencer-partner.php"
       ],
       "workflows": [
         ".github/workflows/ci.yml#database"
       ],
       "artifacts": [],
       "decision": "D1, ADR 0021",
-      "state": "pending-integration",
+      "state": "delivered",
       "track": "pr-152",
-      "branches": [
-        "agent/scale"
-      ],
-      "branch_evidence": [
-        "tests/Integration/BusinessIntegration/SequencerCrashAndRaceIntegrationTest.php",
-        "tests/Support/sequencer-partner.php"
-      ],
-      "outstanding": "The head carries the runtime; agent/scale adds the cross-process proofs of the acceptance clauses a single process cannot observe. Flips when agent/scale lands.",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": null,
       "gate_b_criteria": [
         3
       ],
@@ -774,22 +768,19 @@
       "tests": [
         "tests/Integration/BusinessIntegration/IndependentReceiptFanoutIntegrationTest.php",
         "tests/Integration/BusinessIntegration/PoisonAndDeadLetterIntegrationTest.php",
-        "tests/Integration/BusinessIntegration/HungEndpointDeadlineIntegrationTest.php"
+        "tests/Integration/BusinessIntegration/HungEndpointDeadlineIntegrationTest.php",
+        "tests/Integration/BusinessIntegration/HungAndPoisonFanoutIntegrationTest.php"
       ],
       "workflows": [
         ".github/workflows/ci.yml#database"
       ],
       "artifacts": [],
       "decision": "D1, ADR 0021",
-      "state": "pending-integration",
+      "state": "delivered",
       "track": "pr-152",
-      "branches": [
-        "agent/scale"
-      ],
-      "branch_evidence": [
-        "tests/Integration/BusinessIntegration/HungAndPoisonFanoutIntegrationTest.php"
-      ],
-      "outstanding": "The head carries the runtime; agent/scale adds the cross-process proofs of the acceptance clauses a single process cannot observe. Flips when agent/scale lands.",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": null,
       "gate_b_criteria": [
         3
       ],
@@ -812,23 +803,20 @@
       "tests": [
         "tests/Integration/Automation/QueueWorkerPermitsIntegrationTest.php",
         "tests/Integration/Automation/QueuePermitReplicaContentionIntegrationTest.php",
-        "tests/Integration/Automation/KilledWorkerRecoveryIntegrationTest.php"
+        "tests/Integration/Automation/KilledWorkerRecoveryIntegrationTest.php",
+        "tests/Integration/Automation/QueuePermitOverclaimAndFairnessIntegrationTest.php",
+        "tests/Support/permit-claimant.php"
       ],
       "workflows": [
         ".github/workflows/ci.yml#database"
       ],
       "artifacts": [],
       "decision": "D1, ADR 0021",
-      "state": "pending-integration",
+      "state": "delivered",
       "track": "pr-152",
-      "branches": [
-        "agent/scale"
-      ],
-      "branch_evidence": [
-        "tests/Integration/Automation/QueuePermitOverclaimAndFairnessIntegrationTest.php",
-        "tests/Support/permit-claimant.php"
-      ],
-      "outstanding": "The head carries the runtime; agent/scale adds the cross-process proofs of the acceptance clauses a single process cannot observe. Flips when agent/scale lands.",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": null,
       "gate_b_criteria": [
         3
       ],
@@ -844,29 +832,27 @@
       "reference": "docs/roadmap/README.md#phase-5--enterprise-scale-engineering",
       "runtime_owner": [
         "src/BusinessRecord/Application/BusinessRecordIdempotencyPurger.php",
-        "src/Infrastructure/Persistence/Migration/BusinessRecordIdempotencyRetentionMigration.php"
+        "src/Infrastructure/Persistence/Migration/BusinessRecordIdempotencyRetentionMigration.php",
+        "src/Application/Retention/RetentionCatalogue.php"
       ],
       "tests": [
-        "tests/Integration/Automation/IdempotencyRecoveryIntegrationTest.php"
+        "tests/Integration/Automation/IdempotencyRecoveryIntegrationTest.php",
+        "tests/Integration/Retention/RetentionDrainIntegrationTest.php",
+        "tests/Unit/Application/Retention/RetentionContractTest.php",
+        "tests/Unit/Audit/FilesystemAuditArchiveVerifierTest.php"
       ],
       "workflows": [
         ".github/workflows/ci.yml#database"
       ],
-      "artifacts": [],
-      "decision": "D1, ADR 0021",
-      "state": "pending-integration",
-      "track": "pr-152",
-      "branches": [
-        "agent/scale"
-      ],
-      "branch_evidence": [
-        "src/Application/Retention/RetentionCatalogue.php",
-        "tests/Integration/Retention/RetentionDrainIntegrationTest.php",
-        "tests/Unit/Application/Retention/RetentionContractTest.php",
-        "tests/Unit/Audit/FilesystemAuditArchiveVerifierTest.php",
+      "artifacts": [
         "docs/operations/retention.md"
       ],
-      "outstanding": "The head carries only the seeded idempotency purge. agent/scale declares every hot ledger in a retention catalogue sized from the capacity contract, drains it in budgeted batches, exposes the six retention metrics and a readiness verdict, and prunes audit only after the archive reads back whole. Flips when agent/scale lands.",
+      "decision": "D1, ADR 0021",
+      "state": "delivered",
+      "track": "pr-152",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": null,
       "gate_b_criteria": [
         3
       ],
@@ -882,28 +868,26 @@
       "requirement": "Durable gauges use bounded probes, exact counts move to an operator-only census with a stated cost, and operation-class metrics carry closed labels.",
       "reference": "docs/roadmap/README.md#phase-5--enterprise-scale-engineering",
       "runtime_owner": [
-        "src/Infrastructure/Observability/RuntimeMetricCollector.php"
+        "src/Infrastructure/Observability/RuntimeMetricCollector.php",
+        "tools/perf-gauges.php"
       ],
       "tests": [
-        "tests/Unit/Infrastructure/Observability"
+        "tests/Unit/Infrastructure/Observability",
+        "tests/Integration/Infrastructure/BoundedGaugeAndCensusIntegrationTest.php",
+        "tests/Unit/Infrastructure/Observability/OperationalInstrumentationTest.php"
       ],
       "workflows": [
         ".github/workflows/ci.yml#database"
       ],
-      "artifacts": [],
-      "decision": "D1, D6, ADR 0021",
-      "state": "pending-integration",
-      "track": "pr-152",
-      "branches": [
-        "agent/scale"
-      ],
-      "branch_evidence": [
-        "tests/Integration/Infrastructure/BoundedGaugeAndCensusIntegrationTest.php",
-        "tests/Unit/Infrastructure/Observability/OperationalInstrumentationTest.php",
-        "tools/perf-gauges.php",
+      "artifacts": [
         "docs/operations/scale-metrics.md"
       ],
-      "outstanding": "agent/scale replaces scrape-time exact aggregates with capped index probes, adds the operator-only LedgerCensus and the transaction, lock, sequencing, claim and saturation metrics, and benchmarks every gauge at 200,000 rows per engine. Flips when agent/scale lands.",
+      "decision": "D1, D6, ADR 0021",
+      "state": "delivered",
+      "track": "pr-152",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": null,
       "gate_b_criteria": [
         3
       ],
@@ -923,23 +907,21 @@
       ],
       "tests": [
         "tests/Integration/Performance/HotPlanRegressionIntegrationTest.php",
-        "tests/Integration/BusinessRecord/BusinessRecordPolicyCompilerIntegrationTest.php"
+        "tests/Integration/BusinessRecord/BusinessRecordPolicyCompilerIntegrationTest.php",
+        "tests/Unit/Scale/QueryAndResultBoundsTest.php"
       ],
       "workflows": [
         ".github/workflows/ci.yml#database"
       ],
-      "artifacts": [],
+      "artifacts": [
+        "docs/operations/scale-topology.md"
+      ],
       "decision": "ADR 0021",
       "state": "open",
       "track": "pr-152",
-      "branches": [
-        "agent/scale"
-      ],
-      "branch_evidence": [
-        "tests/Unit/Scale/QueryAndResultBoundsTest.php",
-        "docs/operations/scale-topology.md"
-      ],
-      "outstanding": "agent/scale bounds deep administrator paging and documents every enforced bound. It records two it does not enforce: a per-statement execution-time cap on generated record browses and a result-byte cap on synchronous REST pages. Plans are not yet proven at aged volume.",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "The head bounds deep administrator paging and documents every enforced bound in docs/operations/scale-topology.md. Two bounds are recorded as not enforced: a per-statement execution-time cap on generated record browses and a result-byte cap on synchronous REST pages. Plans are not yet proven at aged volume.",
       "gate_b_criteria": [],
       "findings": []
     },
@@ -954,23 +936,21 @@
         "src/Infrastructure/Automation"
       ],
       "tests": [
-        "tests/Integration/Automation"
+        "tests/Integration/Automation",
+        "tests/Integration/Automation/QueuePermitOverclaimAndFairnessIntegrationTest.php"
       ],
       "workflows": [
         ".github/workflows/ci.yml#database"
       ],
-      "artifacts": [],
+      "artifacts": [
+        "docs/operations/scale-topology.md"
+      ],
       "decision": "ADR 0021",
       "state": "open",
       "track": "pr-152",
-      "branches": [
-        "agent/scale"
-      ],
-      "branch_evidence": [
-        "docs/operations/scale-topology.md",
-        "tests/Integration/Automation/QueuePermitOverclaimAndFairnessIntegrationTest.php"
-      ],
-      "outstanding": "agent/scale documents the supported topology, drain, generation leases and fairness and proves the queue fairness under racing claimants. It records that a per-site cumulative export byte budget is not implemented, and no multi-replica topology is qualified.",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "The head documents the supported topology, drain, generation leases and fairness and proves queue fairness under racing claimants. A per-site cumulative export byte budget is not implemented, and no multi-replica topology is qualified.",
       "gate_b_criteria": [],
       "findings": []
     },
@@ -981,10 +961,13 @@
       "requirement": "Per-engine storage amplification is measured and published, and a 30% free-space reserve is enforced.",
       "reference": "docs/roadmap/README.md#phase-5--enterprise-scale-engineering",
       "runtime_owner": [
-        "tools/perf-harness.php"
+        "tools/perf-harness.php",
+        "tools/perf-storage.php",
+        "src/Infrastructure/Persistence/FilesystemStorageReserve.php"
       ],
       "tests": [
-        "tests/Unit/Performance"
+        "tests/Unit/Performance",
+        "tests/Unit/Infrastructure/Persistence/FilesystemStorageReserveTest.php"
       ],
       "workflows": [
         ".github/workflows/ci.yml#database"
@@ -993,15 +976,9 @@
       "decision": "ADR 0021",
       "state": "open",
       "track": "pr-152",
-      "branches": [
-        "agent/scale"
-      ],
-      "branch_evidence": [
-        "tools/perf-storage.php",
-        "src/Infrastructure/Persistence/FilesystemStorageReserve.php",
-        "tests/Unit/Infrastructure/Persistence/FilesystemStorageReserveTest.php"
-      ],
-      "outstanding": "agent/scale adds the readiness reserve guardrail and a storage forecast measured on MariaDB and PostgreSQL. MySQL, document-line, update-heavy, aged-data, backup and replica amplification are not measured by it.",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "The head enforces the 30% free-space reserve through readiness and publishes a storage forecast measured on MariaDB and PostgreSQL. MySQL, document-line, update-heavy, aged-data, backup and replica amplification are not measured.",
       "gate_b_criteria": [
         10
       ],
@@ -1012,27 +989,24 @@
       "kind": "finding",
       "phase": "5",
       "requirement": "Two writers on unrelated records under one definition overlap, while a schema transition waits for in-flight writers and fences new ones.",
-      "reference": "docs/roadmap/findings.json#V2-SCL-001",
+      "reference": "docs/roadmap/README.md#phase-5--enterprise-scale-engineering",
       "runtime_owner": [
         "src/BusinessRecord/Infrastructure/Persistence/DoctrineBusinessRecordMutationFence.php"
       ],
       "tests": [
-        "tests/Integration/BusinessRecord/BusinessRecordSharedFenceIntegrationTest.php"
+        "tests/Integration/BusinessRecord/BusinessRecordSharedFenceIntegrationTest.php",
+        "tests/Integration/BusinessRecord/SchemaTransitionWriterFenceIntegrationTest.php"
       ],
       "workflows": [
         ".github/workflows/ci.yml#database"
       ],
       "artifacts": [],
       "decision": "D1, ADR 0021",
-      "state": "pending-integration",
+      "state": "delivered",
       "track": "pr-152",
-      "branches": [
-        "agent/scale"
-      ],
-      "branch_evidence": [
-        "tests/Integration/BusinessRecord/SchemaTransitionWriterFenceIntegrationTest.php"
-      ],
-      "outstanding": "The head carries the runtime; agent/scale adds the cross-process proofs of the acceptance clauses a single process cannot observe. Flips when agent/scale lands.",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": null,
       "gate_b_criteria": [
         1,
         3
@@ -1046,27 +1020,24 @@
       "kind": "finding",
       "phase": "5",
       "requirement": "Concurrent commits do not contend on a singleton event head, and sequencing is replay-safe across sequencer crashes and races.",
-      "reference": "docs/roadmap/findings.json#V2-SCL-002",
+      "reference": "docs/roadmap/README.md#phase-5--enterprise-scale-engineering",
       "runtime_owner": [
         "src/BusinessReporting/Infrastructure/DoctrineProjectionEventSequencer.php"
       ],
       "tests": [
-        "tests/Integration/BusinessIntegration/ProjectionSequencingConcurrencyIntegrationTest.php"
+        "tests/Integration/BusinessIntegration/ProjectionSequencingConcurrencyIntegrationTest.php",
+        "tests/Integration/BusinessIntegration/SequencerCrashAndRaceIntegrationTest.php"
       ],
       "workflows": [
         ".github/workflows/ci.yml#database"
       ],
       "artifacts": [],
       "decision": "D1, ADR 0021",
-      "state": "pending-integration",
+      "state": "delivered",
       "track": "pr-152",
-      "branches": [
-        "agent/scale"
-      ],
-      "branch_evidence": [
-        "tests/Integration/BusinessIntegration/SequencerCrashAndRaceIntegrationTest.php"
-      ],
-      "outstanding": "The head carries the runtime; agent/scale adds the cross-process proofs of the acceptance clauses a single process cannot observe. Flips when agent/scale lands.",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": null,
       "gate_b_criteria": [
         1,
         3
@@ -1080,27 +1051,24 @@
       "kind": "finding",
       "phase": "5",
       "requirement": "Independent consumer receipts are claimed in batches and a hung or poison consumer delays no unrelated consumer.",
-      "reference": "docs/roadmap/findings.json#V2-SCL-006",
+      "reference": "docs/roadmap/README.md#phase-5--enterprise-scale-engineering",
       "runtime_owner": [
         "src/BusinessIntegration/Infrastructure/RuntimeIntegrationReceiptWorker.php"
       ],
       "tests": [
-        "tests/Integration/BusinessIntegration/IndependentReceiptFanoutIntegrationTest.php"
+        "tests/Integration/BusinessIntegration/IndependentReceiptFanoutIntegrationTest.php",
+        "tests/Integration/BusinessIntegration/HungAndPoisonFanoutIntegrationTest.php"
       ],
       "workflows": [
         ".github/workflows/ci.yml#database"
       ],
       "artifacts": [],
       "decision": "D1, ADR 0021",
-      "state": "pending-integration",
+      "state": "delivered",
       "track": "pr-152",
-      "branches": [
-        "agent/scale"
-      ],
-      "branch_evidence": [
-        "tests/Integration/BusinessIntegration/HungAndPoisonFanoutIntegrationTest.php"
-      ],
-      "outstanding": "The head carries the runtime; agent/scale adds the cross-process proofs of the acceptance clauses a single process cannot observe. Flips when agent/scale lands.",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": null,
       "gate_b_criteria": [
         1,
         3
@@ -1114,28 +1082,25 @@
       "kind": "finding",
       "phase": "5",
       "requirement": "Declared-queue claims use fenced permits with no over-claim, no starvation and bounded recovery after SIGKILL.",
-      "reference": "docs/roadmap/findings.json#V2-SCL-007",
+      "reference": "docs/roadmap/README.md#phase-5--enterprise-scale-engineering",
       "runtime_owner": [
         "src/Infrastructure/Automation/DoctrineQueuePermits.php"
       ],
       "tests": [
         "tests/Integration/Automation/QueueWorkerPermitsIntegrationTest.php",
-        "tests/Integration/Automation/KilledWorkerRecoveryIntegrationTest.php"
+        "tests/Integration/Automation/KilledWorkerRecoveryIntegrationTest.php",
+        "tests/Integration/Automation/QueuePermitOverclaimAndFairnessIntegrationTest.php"
       ],
       "workflows": [
         ".github/workflows/ci.yml#database"
       ],
       "artifacts": [],
       "decision": "D1, ADR 0021",
-      "state": "pending-integration",
+      "state": "delivered",
       "track": "pr-152",
-      "branches": [
-        "agent/scale"
-      ],
-      "branch_evidence": [
-        "tests/Integration/Automation/QueuePermitOverclaimAndFairnessIntegrationTest.php"
-      ],
-      "outstanding": "The head carries the runtime; agent/scale adds the cross-process proofs of the acceptance clauses a single process cannot observe. Flips when agent/scale lands.",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": null,
       "gate_b_criteria": [
         1,
         3
@@ -1149,27 +1114,24 @@
       "kind": "finding",
       "phase": "5",
       "requirement": "Idempotency retention sustains at least twice the peak expiry rate with exposed retention metrics and a readiness verdict.",
-      "reference": "docs/roadmap/findings.json#V2-SCL-004",
+      "reference": "docs/roadmap/README.md#phase-5--enterprise-scale-engineering",
       "runtime_owner": [
         "src/BusinessRecord/Application/BusinessRecordIdempotencyPurger.php"
       ],
       "tests": [
-        "tests/Integration/Automation/IdempotencyRecoveryIntegrationTest.php"
+        "tests/Integration/Automation/IdempotencyRecoveryIntegrationTest.php",
+        "tests/Integration/Retention/RetentionDrainIntegrationTest.php"
       ],
       "workflows": [
         ".github/workflows/ci.yml#database"
       ],
       "artifacts": [],
       "decision": "D1, ADR 0021",
-      "state": "pending-integration",
+      "state": "delivered",
       "track": "pr-152",
-      "branches": [
-        "agent/scale"
-      ],
-      "branch_evidence": [
-        "tests/Integration/Retention/RetentionDrainIntegrationTest.php"
-      ],
-      "outstanding": "The head still seeds the fixed purge ceiling; agent/scale replaces it with the budgeted retention drain. Flips when agent/scale lands.",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": null,
       "gate_b_criteria": [
         1,
         3
@@ -1183,29 +1145,26 @@
       "kind": "finding",
       "phase": "5",
       "requirement": "Every hot correctness ledger declares a retention budget, and audit is pruned only after a verifiable anchor and a restorable archive.",
-      "reference": "docs/roadmap/findings.json#V2-SCL-008",
+      "reference": "docs/roadmap/README.md#phase-5--enterprise-scale-engineering",
       "runtime_owner": [
-        "src/Infrastructure/Persistence/Migration/BusinessRecordIdempotencyRetentionMigration.php"
+        "src/Infrastructure/Persistence/Migration/BusinessRecordIdempotencyRetentionMigration.php",
+        "src/Application/Retention/RetentionCatalogue.php"
       ],
       "tests": [
-        "tests/Integration/Automation/IdempotencyRecoveryIntegrationTest.php"
+        "tests/Integration/Automation/IdempotencyRecoveryIntegrationTest.php",
+        "tests/Unit/Application/Retention/RetentionContractTest.php",
+        "tests/Unit/Audit/FilesystemAuditArchiveVerifierTest.php"
       ],
       "workflows": [
         ".github/workflows/ci.yml#database"
       ],
       "artifacts": [],
       "decision": "D1, ADR 0021",
-      "state": "pending-integration",
+      "state": "delivered",
       "track": "pr-152",
-      "branches": [
-        "agent/scale"
-      ],
-      "branch_evidence": [
-        "src/Application/Retention/RetentionCatalogue.php",
-        "tests/Unit/Application/Retention/RetentionContractTest.php",
-        "tests/Unit/Audit/FilesystemAuditArchiveVerifierTest.php"
-      ],
-      "outstanding": "agent/scale declares the retention catalogue and the verified audit archive. Flips when agent/scale lands.",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": null,
       "gate_b_criteria": [
         1,
         3
@@ -1219,28 +1178,25 @@
       "kind": "finding",
       "phase": "5",
       "requirement": "Monitoring runs no unbudgeted table-scale exact count on the primary; exact figures are an operator diagnostic with a stated cost.",
-      "reference": "docs/roadmap/findings.json#V2-SCL-005",
+      "reference": "docs/roadmap/README.md#phase-5--enterprise-scale-engineering",
       "runtime_owner": [
-        "src/Infrastructure/Observability/RuntimeMetricCollector.php"
+        "src/Infrastructure/Observability/RuntimeMetricCollector.php",
+        "tools/perf-gauges.php"
       ],
       "tests": [
-        "tests/Unit/Infrastructure/Observability"
+        "tests/Unit/Infrastructure/Observability",
+        "tests/Integration/Infrastructure/BoundedGaugeAndCensusIntegrationTest.php"
       ],
       "workflows": [
         ".github/workflows/ci.yml#database"
       ],
       "artifacts": [],
       "decision": "D1, D6, ADR 0021",
-      "state": "pending-integration",
+      "state": "delivered",
       "track": "pr-152",
-      "branches": [
-        "agent/scale"
-      ],
-      "branch_evidence": [
-        "tests/Integration/Infrastructure/BoundedGaugeAndCensusIntegrationTest.php",
-        "tools/perf-gauges.php"
-      ],
-      "outstanding": "agent/scale replaces the scrape-time exact aggregates and benchmarks every gauge on each engine. Flips when agent/scale lands.",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": null,
       "gate_b_criteria": [
         3
       ],
@@ -1724,26 +1680,23 @@
         "tools/PerfConcurrentSamples.php"
       ],
       "tests": [
-        "tests/Unit/Performance/PerfHarnessContractTest.php"
+        "tests/Unit/Performance/PerfHarnessContractTest.php",
+        "tests/Unit/Performance/ScalabilityModelTest.php"
       ],
       "workflows": [
         ".github/workflows/capacity.yml#samples"
       ],
       "artifacts": [
-        ".github/workflows/capacity.yml#capacity-samples-${{ matrix.database.driver }}"
-      ],
-      "decision": "ADR 0021",
-      "state": "pending-integration",
-      "track": "pr-152",
-      "branches": [
-        "agent/scale"
-      ],
-      "branch_evidence": [
-        "tests/Unit/Performance/ScalabilityModelTest.php",
+        ".github/workflows/capacity.yml#capacity-samples-${{ matrix.database.driver }}",
         "docs/operations/capacity-estimate.md",
         "docs/operations/capacity-report.schema.json"
       ],
-      "outstanding": "The head records concurrent samples, hardware and labelled daily extrapolations. agent/scale fits labelled scalability models with interpolation and extrapolation marked, separates measured and estimated sections, publishes the report schema and method, and summarises every capacity run. Flips when agent/scale lands.",
+      "decision": "ADR 0021",
+      "state": "delivered",
+      "track": "pr-152",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": null,
       "gate_b_criteria": [
         2,
         10
@@ -1803,11 +1756,9 @@
       "decision": "ADR 0021",
       "state": "open",
       "track": "pr-152",
-      "branches": [
-        "agent/security"
-      ],
+      "branches": [],
       "branch_evidence": [],
-      "outstanding": "GM-IDN-04, GM-IDN-05 and GM-IDN-07 are delivered; GM-IDN-06, GM-AUD-08 and GM-SUP-08 flip with agent/security. The threat-led independent agent review and its evidence matrix across the package's areas are not recorded yet, and GM-SUP-05's out-of-process runtime stays on the Point 5 track.",
+      "outstanding": "GM-IDN-04, GM-IDN-05, GM-IDN-06, GM-IDN-07, GM-AUD-08 and GM-SUP-08 are delivered. The threat-led independent agent review and its evidence matrix across the package's areas are not recorded yet, and GM-SUP-05's out-of-process runtime stays on the Point 5 track.",
       "gate_b_criteria": [
         1
       ],
@@ -1842,11 +1793,9 @@
       "decision": "D6, ADR 0021",
       "state": "open",
       "track": "pr-152",
-      "branches": [
-        "agent/security"
-      ],
+      "branches": [],
       "branch_evidence": [],
-      "outstanding": "The wave 7 contract and its Prometheus rules ship, and GM-OBS-05's propagation-only decision flips with agent/security. Synthetic probes, business-versus-transport dashboards and operator drills proving each critical alert actionable are not built, and no branch carries them.",
+      "outstanding": "The wave 7 contract and its Prometheus rules ship, and GM-OBS-05 is decided by ADR 0022: propagation without an exporter, stated as such. Synthetic probes, business-versus-transport dashboards and operator drills proving each critical alert actionable are not built, and no branch carries them.",
       "gate_b_criteria": [],
       "findings": [
         "GM-OBS-05"
@@ -1879,10 +1828,11 @@
       "state": "open",
       "track": "pr-152",
       "branches": [
-        "agent/browser"
+        "agent/browser",
+        "agent/languages"
       ],
       "branch_evidence": [],
-      "outstanding": "The appearance repair flips with V2-QA-014 and the locale journeys with PL-G. No workflow runs the five archetype task journeys yet (V2-UX-001), and no branch carries them.",
+      "outstanding": "The appearance repair flips with V2-QA-014 and the locale journeys with PL-G. agent/languages adds the two non-source-language task journeys the package asks for, German content authoring and Hebrew generated business work. No workflow runs the five archetype task journeys yet (V2-UX-001), and no branch carries them.",
       "gate_b_criteria": [
         7
       ],
@@ -2007,7 +1957,7 @@
       "kind": "finding",
       "phase": "7",
       "requirement": "Dedicated tests cover both CSRF middlewares, the rate-limiter window, the portal session store matrix, the logout handlers and the session cookie attributes.",
-      "reference": "docs/roadmap/findings.json#GM-IDN-06",
+      "reference": "docs/roadmap/README.md#phase-7--production-qualification-and-vertical-neutral-proof",
       "runtime_owner": [
         "src/Administrator/Http/Middleware/AdministratorCsrfMiddleware.php",
         "src/Portal/Http/Middleware/PortalCsrfMiddleware.php",
@@ -2015,19 +1965,7 @@
         "src/Portal/Infrastructure/Session/DoctrinePortalSessionStore.php"
       ],
       "tests": [
-        "tests/Unit/Administrator/Http/Middleware/AdministratorCsrfMiddlewareTest.php"
-      ],
-      "workflows": [
-        ".github/workflows/ci.yml#database"
-      ],
-      "artifacts": [],
-      "decision": "ADR 0021",
-      "state": "pending-integration",
-      "track": "pr-152",
-      "branches": [
-        "agent/security"
-      ],
-      "branch_evidence": [
+        "tests/Unit/Administrator/Http/Middleware/AdministratorCsrfMiddlewareTest.php",
         "tests/Unit/Portal/Http/Middleware/PortalCsrfMiddlewareTest.php",
         "tests/Unit/Identity/Infrastructure/Administration/RedisAuthenticationRateLimiterTest.php",
         "tests/Unit/Portal/Infrastructure/Session/DoctrinePortalSessionStoreTest.php",
@@ -2036,7 +1974,16 @@
         "tests/Functional/Http/SessionCookiePostureTest.php",
         "tests/Integration/Identity/AuthenticationRateLimitWindowIntegrationTest.php"
       ],
-      "outstanding": "Flips when agent/security lands.",
+      "workflows": [
+        ".github/workflows/ci.yml#database"
+      ],
+      "artifacts": [],
+      "decision": "ADR 0021",
+      "state": "delivered",
+      "track": "pr-152",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": null,
       "gate_b_criteria": [
         1
       ],
@@ -2049,27 +1996,24 @@
       "kind": "finding",
       "phase": "7",
       "requirement": "Audit metadata is redacted by a runtime guard before storage and every writer's metadata keys are held against the credential denylist.",
-      "reference": "docs/roadmap/findings.json#GM-AUD-08",
+      "reference": "docs/roadmap/README.md#phase-7--production-qualification-and-vertical-neutral-proof",
       "runtime_owner": [
         "src/Audit/Infrastructure/Persistence/DoctrineAuditRecorder.php"
       ],
       "tests": [
-        "tests/Integration/Audit/AuditTamperEvidenceTest.php"
+        "tests/Integration/Audit/AuditTamperEvidenceTest.php",
+        "tests/Architecture/AuditMetadataWriterPolicyTest.php"
       ],
       "workflows": [
         ".github/workflows/ci.yml#database"
       ],
       "artifacts": [],
       "decision": "ADR 0021",
-      "state": "pending-integration",
+      "state": "delivered",
       "track": "pr-152",
-      "branches": [
-        "agent/security"
-      ],
-      "branch_evidence": [
-        "tests/Architecture/AuditMetadataWriterPolicyTest.php"
-      ],
-      "outstanding": "The head applies the audit package's redaction policy before persistence and digest; agent/security pins every writer's metadata keys against the denylist. Flips when agent/security lands.",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": null,
       "gate_b_criteria": [
         1
       ],
@@ -2082,12 +2026,15 @@
       "kind": "finding",
       "phase": "7",
       "requirement": "The content-security policy carries no inline style allowance on any response.",
-      "reference": "docs/roadmap/findings.json#GM-SUP-08",
+      "reference": "docs/roadmap/README.md#phase-7--production-qualification-and-vertical-neutral-proof",
       "runtime_owner": [
-        "src/Http/Security/SecurityHeaders.php"
+        "src/Http/Security/SecurityHeaders.php",
+        "src/Http/Handler/SitePresentationStylesheetHandler.php"
       ],
       "tests": [
-        "tests/Unit/Http/Security/SecurityHeadersTest.php"
+        "tests/Unit/Http/Security/SecurityHeadersTest.php",
+        "tests/Unit/Http/Handler/SitePresentationStylesheetHandlerTest.php",
+        "tests/Functional/Http/PublicThemeStylesheetTest.php"
       ],
       "workflows": [
         ".github/workflows/ci.yml#database",
@@ -2095,17 +2042,11 @@
       ],
       "artifacts": [],
       "decision": "ADR 0021",
-      "state": "pending-integration",
+      "state": "delivered",
       "track": "pr-152",
-      "branches": [
-        "agent/security"
-      ],
-      "branch_evidence": [
-        "src/Http/Handler/SitePresentationStylesheetHandler.php",
-        "tests/Unit/Http/Handler/SitePresentationStylesheetHandlerTest.php",
-        "tests/Functional/Http/PublicThemeStylesheetTest.php"
-      ],
-      "outstanding": "Flips when agent/security lands.",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": null,
       "gate_b_criteria": [
         1
       ],
@@ -2118,7 +2059,7 @@
       "kind": "finding",
       "phase": "7",
       "requirement": "Trace-context propagation is stated truthfully and the exporter question is decided, not implied.",
-      "reference": "docs/roadmap/findings.json#GM-OBS-05",
+      "reference": "docs/roadmap/README.md#phase-7--production-qualification-and-vertical-neutral-proof",
       "runtime_owner": [
         "config/observability.php",
         "docs/operations/monitoring.md"
@@ -2129,17 +2070,15 @@
       "workflows": [
         ".github/workflows/ci.yml#database"
       ],
-      "artifacts": [],
-      "decision": "ADR 0022, ADR 0021",
-      "state": "pending-integration",
-      "track": "pr-152",
-      "branches": [
-        "agent/security"
-      ],
-      "branch_evidence": [
+      "artifacts": [
         "docs/roadmap/decisions/0022-trace-propagation-without-an-exporter.md"
       ],
-      "outstanding": "agent/security records ADR 0022: propagation without an exporter, stated as such. Flips when agent/security lands.",
+      "decision": "ADR 0022, ADR 0021",
+      "state": "delivered",
+      "track": "pr-152",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": null,
       "gate_b_criteria": [],
       "packages": [
         "P7-D"
@@ -2150,29 +2089,26 @@
       "kind": "finding",
       "phase": "7",
       "requirement": "Saving a role's dashboard preferences keeps widgets outside the editor's own visibility and discloses them without their details.",
-      "reference": "docs/roadmap/findings.json#V2-UX-002",
+      "reference": "docs/roadmap/README.md#phase-7--production-qualification-and-vertical-neutral-proof",
       "runtime_owner": [
         "src/Presentation/Application/Dashboard/DashboardPreferenceFormPresenter.php",
         "src/Application/Presentation/Dashboard/DashboardPreferenceService.php"
       ],
       "tests": [
-        "tests/Unit/Presentation/Application/Dashboard/DashboardPreferenceFormPresenterTest.php"
+        "tests/Unit/Presentation/Application/Dashboard/DashboardPreferenceFormPresenterTest.php",
+        "tests/Unit/Application/Presentation/Dashboard/DashboardPreferenceServiceTest.php",
+        "tests/Unit/Administrator/Http/Handler/AdministratorDashboardPreferencesHandlerTest.php"
       ],
       "workflows": [
         ".github/workflows/ci.yml#database"
       ],
       "artifacts": [],
       "decision": "ADR 0021",
-      "state": "pending-integration",
+      "state": "delivered",
       "track": "pr-152",
-      "branches": [
-        "agent/security"
-      ],
-      "branch_evidence": [
-        "tests/Unit/Application/Presentation/Dashboard/DashboardPreferenceServiceTest.php",
-        "tests/Unit/Administrator/Http/Handler/AdministratorDashboardPreferencesHandlerTest.php"
-      ],
-      "outstanding": "The head renders the out-of-visibility disclosure; agent/security keeps those widgets when the form is saved. Flips when agent/security lands.",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": null,
       "gate_b_criteria": [
         7
       ],
@@ -2183,13 +2119,16 @@
       "kind": "finding",
       "phase": "7",
       "requirement": "Immutable and closed-period records render read-only affordances with the refusal's wording, and the definition editor declares immutable states.",
-      "reference": "docs/roadmap/findings.json#V2-UX-003",
+      "reference": "docs/roadmap/README.md#phase-7--production-qualification-and-vertical-neutral-proof",
       "runtime_owner": [
         "src/BusinessSurface/Delivery/Browser/GeneratedBusinessBrowserController.php",
         "src/BusinessDefinition/Administrator/BusinessDefinitionFormMapper.php"
       ],
       "tests": [
-        "tests/Unit/BusinessSurface"
+        "tests/Unit/BusinessSurface",
+        "tests/Integration/BusinessSurface/GeneratedRecordLockIntegrationTest.php",
+        "tests/Browser/record-lock.spec.ts",
+        "tests/Unit/BusinessDefinition/Administrator/BusinessDefinitionFormMapperTest.php"
       ],
       "workflows": [
         ".github/workflows/ci.yml#database",
@@ -2197,17 +2136,11 @@
       ],
       "artifacts": [],
       "decision": "ADR 0021",
-      "state": "pending-integration",
+      "state": "delivered",
       "track": "pr-152",
-      "branches": [
-        "agent/security"
-      ],
-      "branch_evidence": [
-        "tests/Integration/BusinessSurface/GeneratedRecordLockIntegrationTest.php",
-        "tests/Browser/record-lock.spec.ts",
-        "tests/Unit/BusinessDefinition/Administrator/BusinessDefinitionFormMapperTest.php"
-      ],
-      "outstanding": "Flips when agent/security lands.",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": null,
       "gate_b_criteria": [
         7
       ],
@@ -2715,12 +2648,9 @@
       "decision": "D5",
       "state": "open",
       "track": "maintainability",
-      "branches": [
-        "agent/scale",
-        "agent/security"
-      ],
+      "branches": [],
       "branch_evidence": [],
-      "outstanding": "The gate is enforced. agent/scale and agent/security each retire baseline entries for the tests they document; the rest of the burn-down remains Lane M work.",
+      "outstanding": "The gate is enforced, and the scale and security work retired the baseline entries of the tests it documented. The rest of the burn-down remains Lane M work.",
       "gate_b_criteria": [],
       "packages": []
     },
@@ -2873,22 +2803,22 @@
         "tools/PerfConcurrentSamples.php"
       ],
       "tests": [
-        "tests/Unit/Performance/PerfHarnessContractTest.php"
+        "tests/Unit/Performance/PerfHarnessContractTest.php",
+        "tests/Unit/Performance/ScalabilityModelTest.php"
       ],
       "workflows": [
         ".github/workflows/capacity.yml#samples"
       ],
       "artifacts": [
-        ".github/workflows/capacity.yml#capacity-samples-${{ matrix.database.driver }}"
+        ".github/workflows/capacity.yml#capacity-samples-${{ matrix.database.driver }}",
+        "docs/operations/capacity-estimate.md"
       ],
       "decision": "D2, ADR 0021",
-      "state": "pending-integration",
+      "state": "delivered",
       "track": "pr-152",
-      "branches": [
-        "agent/scale"
-      ],
+      "branches": [],
       "branch_evidence": [],
-      "outstanding": "Flips with P7-A when agent/scale lands.",
+      "outstanding": null,
       "gate_b_criteria": [
         2
       ]
@@ -2907,7 +2837,10 @@
       "tests": [
         "tests/Integration/BusinessRecord/BusinessRecordSharedFenceIntegrationTest.php",
         "tests/Integration/BusinessIntegration/ProjectionSequencingConcurrencyIntegrationTest.php",
-        "tests/Integration/Automation/QueueWorkerPermitsIntegrationTest.php"
+        "tests/Integration/Automation/QueueWorkerPermitsIntegrationTest.php",
+        "tests/Integration/BusinessRecord/SchemaTransitionWriterFenceIntegrationTest.php",
+        "tests/Integration/Retention/RetentionDrainIntegrationTest.php",
+        "tests/Integration/Infrastructure/BoundedGaugeAndCensusIntegrationTest.php"
       ],
       "workflows": [
         ".github/workflows/ci.yml#database"
@@ -2916,13 +2849,11 @@
         ".github/workflows/ci.yml#idempotency-evidence-${{ matrix.database.driver }}"
       ],
       "decision": "D2, ADR 0021",
-      "state": "pending-integration",
+      "state": "delivered",
       "track": "pr-152",
-      "branches": [
-        "agent/scale"
-      ],
+      "branches": [],
       "branch_evidence": [],
-      "outstanding": "Flips when P5-A to P5-F and their findings flip with agent/scale.",
+      "outstanding": null,
       "gate_b_criteria": [
         3
       ]
@@ -3043,7 +2974,7 @@
       "track": "pr-152",
       "branches": [],
       "branch_evidence": [],
-      "outstanding": "Open until V2-UX-001's archetype task journeys run in a workflow. V2-QA-014, V2-UX-002, V2-UX-003 and V2-LNG-010 flip with agent/browser, agent/security and agent/languages.",
+      "outstanding": "Open until V2-UX-001's archetype task journeys run in a workflow. V2-QA-014 and V2-LNG-010 flip with agent/browser and agent/languages.",
       "gate_b_criteria": [
         7
       ]
@@ -3118,11 +3049,9 @@
       "decision": "D2, ADR 0021",
       "state": "open",
       "track": "pr-152",
-      "branches": [
-        "agent/scale"
-      ],
+      "branches": [],
       "branch_evidence": [],
-      "outstanding": "agent/scale publishes the capacity estimate, topology and storage forecast with their limitations; P0-D's dataset seed and age distribution and P5-I's unmeasured amplification keep the criterion open.",
+      "outstanding": "The head publishes the capacity estimate, topology and storage forecast with their limitations (docs/operations/capacity-estimate.md, scale-topology.md). P0-D's dataset seed and age distribution and P5-I's unmeasured amplification keep the criterion open.",
       "gate_b_criteria": [
         10
       ]

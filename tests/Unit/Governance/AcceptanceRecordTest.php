@@ -166,7 +166,7 @@ final class AcceptanceRecordTest extends TestCase
 
                 return $record;
             },
-            changelog: "# Changelog\n\n- Nothing cites the delivered package.\n",
+            changelog: "# Changelog\n\n- Nothing cites the delivered package.\n\n<!-- P5-A lands here later. -->\n",
         );
 
         $this->assertRefused($root, 'Entry P5-A is delivered but CHANGELOG.md never cites it.');
@@ -293,7 +293,7 @@ final class AcceptanceRecordTest extends TestCase
     }
 
     /**
-     * Every Gate B criterion has its own entry, and a criterion is not delivered while an entry citing it is open.
+     * Every Gate B criterion has its own entry and is delivered only through delivered entries that cite it.
      *
      * @return  void
      *
@@ -307,7 +307,7 @@ final class AcceptanceRecordTest extends TestCase
                 static fn(array $entry): bool => $entry['id'] !== 'GB-12',
             ));
             foreach ($record['entries'] as $index => $entry) {
-                if ($entry['id'] === 'GB-3') {
+                if ($entry['id'] === 'GB-3' || $entry['id'] === 'GB-11') {
                     $record['entries'][$index]['state'] = 'delivered';
                     $record['entries'][$index]['outstanding'] = null;
                 }
@@ -317,6 +317,10 @@ final class AcceptanceRecordTest extends TestCase
         });
 
         $this->assertRefused($root, 'Gate B criterion 12 has no GB-12 entry of kind gate-b-criterion.');
+        $this->assertRefused(
+            $root,
+            'GB-11 is delivered although no requirement entry cites the criterion it would satisfy.',
+        );
         $this->assertRefused(
             $root,
             'GB-3 is delivered while P5-B, which cites that criterion, is pending-integration.',
