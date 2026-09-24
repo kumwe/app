@@ -9,6 +9,7 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use Kumwe\App\Application\Readiness\ReadinessStatus;
 use Kumwe\App\Application\Retention\RetentionObserver;
+use Kumwe\App\Infrastructure\Observability\MetricCollector;
 use Kumwe\App\Infrastructure\Observability\MetricSample;
 use Kumwe\App\Infrastructure\Observability\RuntimeMetricCollector;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
@@ -96,11 +97,46 @@ final class RuntimeMetricCollectorTest extends TestCase
     }
 
     /**
+     * Operational samples join the scrape, and an operational source that fails raises only the failed gauge.
+     *
+     * The operational signals are one more source behind the same boundary as the durable gauges: what it
+     * answers is published beside them, and when it throws the durable gauges still publish while the
+     * collection-failed gauge says a source was not read.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAFailingOperationalSourceRaisesTheFailedGaugeWhileDurableGaugesStillPublish(): void
+    {
+        $answering = self::createStub(MetricCollector::class);
+        $answering->method('collect')->willReturn([
+            new MetricSample('kumwe_extension_runtime_trusted', 'kumwe_extension_runtime_trusted', [], 1.0),
+        ]);
+        $failing = self::createStub(MetricCollector::class);
+        $failing->method('collect')->willThrowException(new RuntimeException('status directory unreadable'));
+
+        $answered = self::values(
+            self::collector(self::database(true), self::readiness(true), operational: $answering)->collect(),
+        );
+        $refused = self::values(
+            self::collector(self::database(true), self::readiness(true), operational: $failing)->collect(),
+        );
+
+        self::assertSame(1.0, $answered['kumwe_extension_runtime_trusted']);
+        self::assertSame(0.0, $answered['kumwe_metrics_collection_failed']);
+        self::assertArrayNotHasKey('kumwe_extension_runtime_trusted', $refused, 'No operational gauge is invented.');
+        self::assertSame(1.0, $refused['kumwe_metrics_collection_failed']);
+        self::assertSame(0.0, $refused['kumwe_jobs_pending'], 'The durable gauges still publish.');
+    }
+
+    /**
      * Build the collector under test at a fixed instant.
      *
-     * @param   Connection          $database   Engine the durable probes read.
-     * @param   ReadinessStatus     $readiness  Readiness probe.
-     * @param   ?RetentionObserver  $retention  Retention observer, or none.
+     * @param   Connection          $database     Engine the durable probes read.
+     * @param   ReadinessStatus     $readiness    Readiness probe.
+     * @param   ?RetentionObserver  $retention    Retention observer, or none.
+     * @param   ?MetricCollector    $operational  Operational signal source, or none.
      *
      * @return  RuntimeMetricCollector  Collector under test.
      *
@@ -110,6 +146,7 @@ final class RuntimeMetricCollectorTest extends TestCase
         Connection $database,
         ReadinessStatus $readiness,
         ?RetentionObserver $retention = null,
+        ?MetricCollector $operational = null,
     ): RuntimeMetricCollector {
         $clock = self::createStub(ClockInterface::class);
         $clock->method('now')->willReturn(new DateTimeImmutable(self::NOW));
@@ -122,6 +159,7 @@ final class RuntimeMetricCollectorTest extends TestCase
             '2.0.0-test',
             'test',
             $retention,
+            operational: $operational,
         );
     }
 
