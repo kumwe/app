@@ -678,7 +678,7 @@
         "assets/administrator/styles.css",
         "tests/Browser/right-to-left.spec.ts"
       ],
-      "outstanding": "Flips with PL-G. Every other branch that adds en-GB identifiers (agent/security, agent/studio, agent/machine) must carry the eight translations when it lands, because composer translation:check refuses an incomplete catalogue.",
+      "outstanding": "Flips with PL-G. A branch that adds en-GB identifiers, such as agent/machine, must carry the eight translations when it lands, because composer translation:check refuses an incomplete catalogue.",
       "gate_b_criteria": [
         7,
         11
@@ -1724,7 +1724,7 @@
       "track": "point-5",
       "branches": [],
       "branch_evidence": [],
-      "outstanding": "Separate Point 5 track by maintainer decision: exact release-artifact qualification and publication, the extension proof portfolio, optional 24-hour and 72-hour soaks, the independent release-candidate review and the GM-SUP-05 runtime follow this pull request. The multi-process drills agent/scale adds are source-level evidence, not the release-artifact drill catalogue this package defines.",
+      "outstanding": "Separate Point 5 track by maintainer decision: exact release-artifact qualification and publication, the extension proof portfolio, optional 24-hour and 72-hour soaks, the independent release-candidate review and the GM-SUP-05 runtime follow this pull request. The multi-process drills Phase 5 added are source-level evidence, not the release-artifact drill catalogue this package defines.",
       "gate_b_criteria": [
         6
       ],
