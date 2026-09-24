@@ -61,7 +61,12 @@ closed capability projection and return context, and answers every operation thr
   reusable Blueprint locks exactly the blocks it composes, each of which must have a live renderer;
 - inline, minimized, maximized and fullscreen presentation of the same session, and a deterministic return to
   the accepted item's edit context;
-- the interface-locale Studio message catalogue served by the localization port;
+- the interface-locale Studio message catalogue served by the localization port, fetched alongside the module so
+  the shell never shows source-language labels first, and the host's own return label and save consequences
+  resolved in the same interface locale;
+- keyboard-only operation from the Content editor's skip link through the start chooser, the start, the
+  presentations, the mode tabs, field definition and non-drag block insertion, with focus returned to the Studio
+  region's heading when the shell replaces the chooser;
 - a host-owned authenticated preview beside the shell over the origin-pinned, replay-resistant preview port,
   resolving the saved item's own values behind the opaque context, and trusted public rendering through PHP
   and Twig once the workflow publishes the item;
@@ -70,27 +75,40 @@ closed capability projection and return context, and answers every operation thr
 
 The journey is automated in `tests/Browser/studio-authoring.spec.ts` on Chromium desktop and mobile, with its
 interface locale as a parameter, and in `tests/Integration/Studio/ContentStudioAuthoringJourneyIntegrationTest.php`
-on every engine. `tests/Architecture/StudioProductionRuntimeTest.php` refuses any production Node.js, npm or
-Vite requirement.
+on every engine. The same spec proves keyboard-only operation, an accessible name and reading order for every
+focus stop, touch on the mobile project, reflow at 320 CSS pixels and the WCAG 2.2 AA scan on every state;
+`tests/Browser/studio-authoring-right-to-left.spec.ts` repeats the keyboard walk in Hebrew and Arabic on desktop
+and mobile with localized names, right-to-left order and no overflow. `tests/Architecture/StudioProductionRuntimeTest.php`
+refuses any production Node.js, npm or Vite requirement.
 [`tests/Fixtures/Studio/composition-acceptance-journey.json`](../tests/Fixtures/Studio/composition-acceptance-journey.json)
-records, step by step, what is automated and what is not.
+records, step by step, the test that proves it or why it is open. Acceptance follows
+[ADR 0021](roadmap/decisions/0021-automated-acceptance-and-sampled-capacity.md): the maintainer's merge after every
+automated check is green is the acceptance, and no separate human qualification run exists.
 
 What remains open, and why:
 
-- **Extension-owned targets.** App declares one core target, `kumwe.app/content-authoring`. An extension-owned
-  content area resolving through the same declaration is not implemented.
-- **Standalone dual mounting (`STUDIO-PROD-015` steps 1 to 3).** Standalone mode is Studio-owned; App's hosted
-  surface uses the structured fallback instead and does not exercise it.
+- **Extension-owned targets.** App declares one core target, `kumwe.app/content-authoring`. The extension SDK's
+  manifest schema 6 declares block, pattern, field-adapter, inspector, design-vocabulary and migration documents
+  but no authoring-target kind, so an extension cannot yet declare a Studio target or bind its own resource
+  authority. That needs an SDK successor contract; App must not invent a private declaration.
+- **Standalone dual mounting (`STUDIO-PROD-015` steps 1 to 3).** Standalone mode is Studio-owned and App never
+  mounts it: the Content surface is a hosted session, and ADR 0020 forbids turning a configured refusal into local
+  mode. The portable multi-instance mount is proven by the Studio package, not by an App page.
+- **Authoring from a clean packaged start.** The deployed-artifact lane runs without a database by design, and the
+  production-topology deployment-acceptance job does not yet drive a Studio session.
 - **Pinned-release limitations.** In `0.1.0-beta.3` a reusable-type save result must echo the live Entry that
   the save request does not carry, so values entered before a blank canvas becomes a type cannot survive that
   save; save requests do not carry the presentation, so a save must happen in the presentation the session
   started in; the hosted in-shell preview cannot stage a live draft, so the App preview shows accepted
   revisions only; and the create-source chooser and save confirmation render without catalogue overrides. Each
   needs a Studio release before App can close it.
-- **Extension lifecycle in the contextual shell.** An admitted extension block is used, saved, previewed and
-  rendered; field-adapter and pattern use, and disable, unresolved, upgrade and migration behaviour, are proven
-  only on the Blueprint route.
-- **Human acceptance.** Assistive-technology and accountable human runs are not automated evidence.
+- **Extension field adapters, patterns and block migration in the contextual shell.** An admitted extension block
+  is used, saved, previewed and rendered, and on every engine a disabled extension withdraws its block from the
+  contextual catalogue while an item composing it still opens with the unresolved block preserved, its values
+  still save, a type save that could no longer lock the block is refused, and an upgrade keeping the block's exact
+  coordinates restores it. Extension field adapters cannot bind because Content models carry no extension field
+  kinds; the SDK fixture's pattern depends on block types the fixture does not declare; and no App path applies a
+  composition migration document, nor does the SDK ship a fixture with a versioned block and its migration.
 
 The model-version composition route,
 `/administrator/content-models/{id}/versions/{version}/composition`, remains a transitional Blueprint-only
@@ -112,7 +130,7 @@ surface and is not the authoring entry point.
 | `STUDIO-PROD-010` | Implemented, automated | Route every durable effect through declared host APIs and PHP App authority. |
 | `STUDIO-PROD-011` | Implemented, automated refusal | Ship compiled assets; require no Node.js, npm, Vite, or JavaScript server in production. |
 | `STUDIO-PROD-012` | Implemented, automated | Remove pre-creation, copy/paste, catalogue-first, and manual revision reconciliation. |
-| `STUDIO-PROD-013` | Partial | Prove keyboard, explicit-control, touch, assistive-technology, zoom, directionality, and reflow parity. |
+| `STUDIO-PROD-013` | Implemented with pinned-release limits | Prove keyboard, explicit-control, touch, assistive-technology, zoom, directionality, and reflow parity. |
 | `STUDIO-PROD-014` | Enforced | Keep target, primitive, integration, package, conformance, gate, and fallback claims distinct. |
 | `STUDIO-PROD-015` | Automated in part; not accepted | Prove the complete integrated acceptance journey exactly as specified by Studio. |
 
@@ -183,11 +201,12 @@ Studio repository and then consumed by App, never invented as a private parallel
 Extensions do not embed or fork Studio. A schema-6 extension declares canonical Studio
 `block-definition`, `pattern`, `field-adapter`, `inspector`, `design-vocabulary`, and `migration` documents plus
 bounded App host bindings. The App resolves them into the same Studio generation as first-party tools. An
-extension surface that declares an eligible Studio target can request contextual authoring for its authorized
-resource; it must not create a new editor, expose Editor.js, or bypass the PHP host operations above.
+extension surface must not create a new editor, expose Editor.js, or bypass the PHP host operations above.
 
-Contribution admission and activation primitives already exist. Seamless contextual use from extension-owned
-content areas remains part of the open integrated journey and must be proven by `STUDIO-PROD-015`.
+Contribution admission, activation, disable and upgrade already reach the contextual catalogue. An extension
+surface cannot yet request contextual authoring for its own resource: schema 6 has no Studio target declaration,
+so seamless contextual use from extension-owned content areas stays open until the SDK defines one, and it must
+then be proven by `STUDIO-PROD-015`.
 
 ## Successor App pull request, small working goals
 
