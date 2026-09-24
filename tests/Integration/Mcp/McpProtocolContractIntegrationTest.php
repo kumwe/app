@@ -86,30 +86,32 @@ final class McpProtocolContractIntegrationTest extends TestCase
         );
         self::assertSame(202, $initialized['status']);
 
-        $firstToolsExchange = $this->exchange(
-            $handler,
-            $streams,
-            $context,
-            'tools/list',
-            [],
-            2,
-            $session,
-        );
-        $firstTools = $this->successfulResult($firstToolsExchange);
-        self::assertCount(50, $firstTools['tools']);
-        self::assertIsString($firstTools['nextCursor']);
-        $secondToolsExchange = $this->exchange(
-            $handler,
-            $streams,
-            $context,
-            'tools/list',
-            ['cursor' => $firstTools['nextCursor']],
-            3,
-            $session,
-        );
-        $secondTools = $this->successfulResult($secondToolsExchange);
-        self::assertCount(McpMachineContract::TOOL_COUNT - 50, $secondTools['tools']);
-        self::assertArrayNotHasKey('nextCursor', $secondTools);
+        // tools/list pages at fifty tools; walk every page until the server stops returning a cursor.
+        $listedTools = [];
+        $listedWireTools = [];
+        $cursor = null;
+        $pages = 0;
+        do {
+            $toolsExchange = $this->exchange(
+                $handler,
+                $streams,
+                $context,
+                'tools/list',
+                $cursor === null ? [] : ['cursor' => $cursor],
+                20 + $pages,
+                $session,
+            );
+            $page = $this->successfulResult($toolsExchange);
+            $wirePage = json_decode($toolsExchange['body'], false, 512, JSON_THROW_ON_ERROR);
+            self::assertIsObject($wirePage);
+            self::assertLessThanOrEqual(50, count($page['tools']));
+            array_push($listedTools, ...$page['tools']);
+            array_push($listedWireTools, ...$wirePage->result->tools);
+            $cursor = $page['nextCursor'] ?? null;
+            ++$pages;
+        } while (is_string($cursor));
+        self::assertSame((int) ceil(McpMachineContract::TOOL_COUNT / 50), $pages);
+        self::assertCount(McpMachineContract::TOOL_COUNT, $listedTools);
 
         $fixtureBytes = (string) file_get_contents(
             dirname(__DIR__, 3) . '/docs/machine-contract/' . McpMachineContract::GENERATION . '.json',
@@ -120,18 +122,13 @@ final class McpProtocolContractIntegrationTest extends TestCase
             512,
             JSON_THROW_ON_ERROR,
         );
-        $listedTools = [...$firstTools['tools'], ...$secondTools['tools']];
         self::assertSame(array_column($fixture['surface']['tools'], 'name'), array_column($listedTools, 'name'));
         foreach ($fixture['surface']['tools'] as $offset => $expected) {
             unset($expected['handler'], $expected['capability'], $expected['risk'], $expected['alternative']);
             self::assertEquals($expected, $listedTools[$offset], $expected['name']);
         }
         $fixtureWire = json_decode($fixtureBytes, false, 512, JSON_THROW_ON_ERROR);
-        $firstToolsWire = json_decode($firstToolsExchange['body'], false, 512, JSON_THROW_ON_ERROR);
-        $secondToolsWire = json_decode($secondToolsExchange['body'], false, 512, JSON_THROW_ON_ERROR);
         self::assertIsObject($fixtureWire);
-        self::assertIsObject($firstToolsWire);
-        self::assertIsObject($secondToolsWire);
         $expectedWireTools = $fixtureWire->surface->tools;
         foreach ($expectedWireTools as $expectedWireTool) {
             unset(
@@ -141,10 +138,7 @@ final class McpProtocolContractIntegrationTest extends TestCase
                 $expectedWireTool->alternative,
             );
         }
-        self::assertEquals(
-            $expectedWireTools,
-            [...$firstToolsWire->result->tools, ...$secondToolsWire->result->tools],
-        );
+        self::assertEquals($expectedWireTools, $listedWireTools);
 
         $resources = $this->successfulResult($this->exchange(
             $handler,
