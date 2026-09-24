@@ -24,6 +24,7 @@ use Kumwe\App\Localization\Application\MessageOverrideService;
 use Kumwe\App\Media\Application\MediaService;
 use Kumwe\App\Navigation\Application\NavigationService;
 use Kumwe\App\Site\Infrastructure\Persistence\DoctrineSiteSettings;
+use Kumwe\App\Studio\Application\Authoring\StudioMachineCompositionGateway;
 use Kumwe\App\Studio\Application\Composition\StudioContentCompositionService;
 use ReflectionClass;
 
@@ -37,6 +38,7 @@ final class McpHandlersFixture
         ?BusinessSecurityAdministrationService $businessSecurity = null,
         ?ContentModelService $models = null,
         ?StudioContentCompositionService $compositions = null,
+        ?StudioMachineCompositionGateway $blueprints = null,
     ): KumweMcpHandlers {
         return new KumweMcpHandlers(
             $catalog,
@@ -60,6 +62,7 @@ final class McpHandlersFixture
             businessSecurity: $businessSecurity,
             models: $models,
             compositions: $compositions,
+            blueprints: $blueprints,
         );
     }
 

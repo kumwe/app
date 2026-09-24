@@ -166,7 +166,22 @@ final class McpCapabilityCatalog
         'kumwe_business_relation_read' => [McpRiskClass::Read, self::VIA_RECORDS],
         'kumwe_studio_composition_get' => [McpRiskClass::Read, self::VIA_COMPOSITION],
         'kumwe_studio_composition_provision' => [McpRiskClass::ScopedWrite, self::VIA_COMPOSITION],
+        'kumwe_studio_blueprint_open' => [McpRiskClass::Read, self::VIA_BLUEPRINT],
+        'kumwe_studio_blueprint_load' => [McpRiskClass::Read, self::VIA_BLUEPRINT],
+        'kumwe_studio_blueprint_dependencies' => [McpRiskClass::Read, self::VIA_BLUEPRINT],
+        'kumwe_studio_blueprint_save' => [McpRiskClass::ScopedWrite, self::VIA_BLUEPRINT],
+        'kumwe_studio_blueprint_publish' => [McpRiskClass::ScopedWrite, self::VIA_BLUEPRINT],
+        'kumwe_studio_blueprint_unpublish' => [McpRiskClass::ScopedWrite, self::VIA_BLUEPRINT],
     ];
+
+    /**
+     * Non-MCP route for the Blueprint composition editing tools.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const string VIA_BLUEPRINT = 'Administrator console: Content models, Compose, '
+        . 'or POST /api/v1/studio/composition/*, or bin/kumwe studio-blueprint.';
 
     /**
      * Non-MCP route for the Blueprint composition tools.
@@ -1628,6 +1643,7 @@ final class McpCapabilityCatalog
                 ['type' => 'object', 'additionalProperties' => true],
                 ['operationId', 'contentType', 'version'],
             ),
+            ...$this->studioBlueprintTools(),
         ];
     }
 
@@ -2303,6 +2319,99 @@ final class McpCapabilityCatalog
                 $this->closedObject(['items' => ['type' => 'array', 'maxItems' => 100]], ['items']),
             ),
         ];
+    }
+
+    /**
+     * Declare the Blueprint composition tools: one open tool and the five `artifact` operations of the screen.
+     *
+     * Arguments and results travel as canonical JSON strings for the same reason the authoring tools' do. The
+     * three mutations carry the revision they replace and hand their `operationId` to the Studio host's own
+     * replay boundary.
+     *
+     * @return  list<array{
+     *            name: string, title: string, description: string, handler: string,
+     *            capability: string|null, capabilityResolver: string|McpDynamicCapabilityResolver,
+     *            mutationGuard: McpMutationGuardMode, readOnly: bool, destructive: bool, idempotent: bool,
+     *            inputSchema: array<string, mixed>, outputSchema: array<string, mixed>
+     *          }>  Tool declarations in registration order.
+     *
+     * @since   2.0.0
+     */
+    private function studioBlueprintTools(): array
+    {
+        $session = [
+            'type' => 'string',
+            'minLength' => 1,
+            'maxLength' => 240,
+            'pattern' => '^[A-Za-z0-9][A-Za-z0-9._:/-]*$',
+        ];
+        $generation = ['type' => 'string', 'minLength' => 1, 'maxLength' => 100];
+        $revision = ['type' => 'string', 'minLength' => 1, 'maxLength' => 200];
+        $document = ['type' => 'string', 'minLength' => 2, 'maxLength' => 1048576];
+        $locale = ['type' => 'string', 'minLength' => 2, 'maxLength' => 50];
+        $output = $this->closedObject(
+            [
+                'operation' => ['type' => 'string'],
+                'replayed' => ['type' => 'boolean'],
+                'document' => ['type' => 'string'],
+            ],
+            ['operation', 'replayed', 'document'],
+        );
+        $tools = [
+            $this->tool(
+                'kumwe_studio_blueprint_open',
+                'Open a Blueprint composition session',
+                'Open a credential-bound Blueprint session for the composition of one Content type version.',
+                'openStudioBlueprintSession',
+                'content.read',
+                true,
+                false,
+                true,
+                [
+                    'contentType' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 191],
+                    'contentTypeVersion' => ['type' => 'integer', 'minimum' => 1],
+                    'mode' => ['type' => 'string', 'enum' => ['blueprint', 'read-only']],
+                ],
+                $this->closedObject(['document' => ['type' => 'string']], ['document']),
+                ['contentType', 'contentTypeVersion'],
+            ),
+        ];
+        $operations = [
+            ['load', 'studioBlueprintLoad', 'Load a Studio Blueprint', false],
+            ['dependencies', 'studioBlueprintDependencies', 'List Studio Blueprint dependencies', false],
+            ['save', 'studioBlueprintSave', 'Save a Studio Blueprint draft', true],
+            ['publish', 'studioBlueprintPublish', 'Publish a Studio Blueprint', true],
+            ['unpublish', 'studioBlueprintUnpublish', 'Unpublish a Studio Blueprint', true],
+        ];
+        foreach ($operations as [$suffix, $handler, $title, $mutating]) {
+            $properties = [
+                'session' => $session,
+                'sessionGeneration' => $generation,
+                'document' => $document,
+                'locale' => $locale,
+            ];
+            $required = ['session', 'sessionGeneration', 'document'];
+            if ($mutating) {
+                $properties = ['operationId' => $this->operationId(), ...$properties, 'expectedRevision' => $revision];
+                $required = ['operationId', ...$required, 'expectedRevision'];
+            }
+            $tools[] = $this->tool(
+                'kumwe_studio_blueprint_' . $suffix,
+                $title,
+                $title . ' through the same Studio host, authorization, replay and audit as the composition screen.',
+                $handler,
+                'content.read',
+                !$mutating,
+                false,
+                true,
+                $properties,
+                $output,
+                $required,
+                $mutating ? McpMutationGuardMode::StudioHostBoundary : null,
+            );
+        }
+
+        return $tools;
     }
 
     /**

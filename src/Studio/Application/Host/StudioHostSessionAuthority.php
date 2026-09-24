@@ -147,8 +147,8 @@ final readonly class StudioHostSessionAuthority
      * Open one mode-specific session from trusted App identity and policy state.
      *
      * The administrator browser may open any resource family its mode fits. A machine surface — REST,
-     * CLI or MCP — may open only a contextual Content authoring session, bound to its credential rather
-     * than to a browser session; every other family stays browser-only.
+     * CLI or MCP — may open only a contextual Content authoring session or a Blueprint composition session,
+     * bound to its credential rather than to a browser session; the generic Content family stays browser-only.
      *
      * @param   ExecutionContext    $context       Fresh authenticated execution context.
      * @param   StudioSessionMode   $mode          Exact canonical authoring mode requested.
@@ -492,19 +492,24 @@ final readonly class StudioHostSessionAuthority
     }
 
     /**
-     * Confine machine surfaces to the one resource family the machine contracts publish.
+     * Confine machine surfaces to the two resource families the machine contracts publish.
+     *
+     * Contextual Content authoring and Blueprint composition are what `StudioMachineAuthoringGateway` and
+     * `StudioMachineCompositionGateway` open; the generic Content family stays with the browser shell.
      *
      * @param   AuthenticatedSurface  $surface  Surface the execution context authenticated through.
      * @param   StudioResourceKind    $kind     Requested host resource family.
      *
-     * @return  bool  True for the administrator browser, or for a machine surface opening Content authoring.
+     * @return  bool  True for the administrator browser, or for a machine surface opening Content authoring or a
+     *          Blueprint composition.
      *
      * @since   2.0.0
      */
     private static function surfaceFits(AuthenticatedSurface $surface, StudioResourceKind $kind): bool
     {
         return !StudioSessionSurfaceBinding::isMachine($surface)
-            || $kind === StudioResourceKind::ContentAuthoring;
+            || $kind === StudioResourceKind::ContentAuthoring
+            || $kind === StudioResourceKind::Blueprint;
     }
 
     /**

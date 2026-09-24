@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for de, carrying 2569 messages.
+ * Compiled interface message catalogue for de, carrying 2571 messages.
  *
  * Generated from de.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -2026,6 +2026,8 @@ return [
     'core.console.settings.description' => 'Liest oder aktualisiert die Website-Konfiguration.',
     'core.console.studio_authoring.description' => 'Öffnet eine Studio-Bearbeitungssitzung und führt ihre Bearbeitungsvorgänge aus.',
     'core.console.studio_authoring.refused' => 'Die Studio-Bearbeitungsanfrage wurde abgelehnt.',
+    'core.console.studio_blueprint.description' => 'Eine Blueprint-Kompositionssitzung öffnen und ihren Blueprint laden, speichern, veröffentlichen oder die Veröffentlichung zurücknehmen.',
+    'core.console.studio_blueprint.refused' => 'Die Studio-Kompositionsanfrage wurde abgelehnt.',
     'core.console.studio_composition.description' => 'Die Blueprint-Komposition einer Inhaltstyp-Version lesen oder bereitstellen.',
     'core.console.theme_administrator_recover.description' => 'Stellt das geschützte integrierte Administrator-Theme atomar wieder her.',
     'core.console.theme_administrator_recover.restored_the_protected_built_in_administrator' => 'Das geschützte integrierte Administrator-Theme wurde wiederhergestellt.',

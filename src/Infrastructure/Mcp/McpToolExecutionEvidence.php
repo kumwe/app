@@ -114,12 +114,13 @@ final readonly class McpToolExecutionEvidence
     }
 
     /**
-     * Prove a Studio authoring mutation reaches the Studio gateway with the tool's operation identity as key.
+     * Prove a Studio authoring or Blueprint mutation reaches its Studio gateway keyed by the tool's operation identity.
      *
      * @param   class-string  $class    Handler class whose reachable source is inspected.
      * @param   string        $handler  Public method registered for this tool.
      *
-     * @return  bool  True when reachable source calls `studioAuthoring()->perform()` keyed by `$operationId`.
+     * @return  bool  True when reachable source calls `studioAuthoring()->perform()` or `studioBlueprints()->perform()`
+     *          keyed by `$operationId`.
      *
      * @since   2.0.0
      */
@@ -132,7 +133,7 @@ final readonly class McpToolExecutionEvidence
         foreach ($this->reachableSources($class, $handler) as $source) {
             if (
                 preg_match(
-                    '/\$this->studioAuthoring\(\)\s*->\s*perform\([^;]*\$operationId\s*,/s',
+                    '/\$this->(?:studioAuthoring|studioBlueprints)\(\)\s*->\s*perform\([^;]*\$operationId\s*,/s',
                     $source,
                 ) === 1
             ) {

@@ -5029,6 +5029,205 @@
                 ],
                 "type": "object"
             },
+            "StudioCompositionOpenRequest": {
+                "additionalProperties": false,
+                "properties": {
+                    "content_type_id": {
+                        "maxLength": 191,
+                        "minLength": 1,
+                        "type": "string"
+                    },
+                    "content_type_version": {
+                        "minimum": 1,
+                        "type": "integer"
+                    },
+                    "mode": {
+                        "enum": [
+                            "blueprint",
+                            "read-only"
+                        ],
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "content_type_id",
+                    "content_type_version"
+                ],
+                "type": "object"
+            },
+            "StudioCompositionOperationRequest": {
+                "additionalProperties": false,
+                "properties": {
+                    "argument": {
+                        "additionalProperties": true,
+                        "description": "The artifact reference, or for a save the complete Blueprint document, exactly as the pinned Studio schema defines it.",
+                        "type": "object"
+                    },
+                    "expected_revision": {
+                        "maxLength": 200,
+                        "minLength": 1,
+                        "type": "string"
+                    },
+                    "locale": {
+                        "maxLength": 50,
+                        "minLength": 2,
+                        "type": "string"
+                    },
+                    "session": {
+                        "maxLength": 240,
+                        "minLength": 1,
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]*$",
+                        "type": "string"
+                    },
+                    "session_generation": {
+                        "maxLength": 100,
+                        "minLength": 1,
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "argument",
+                    "session",
+                    "session_generation"
+                ],
+                "type": "object"
+            },
+            "StudioCompositionOperationResult": {
+                "additionalProperties": false,
+                "properties": {
+                    "operation": {
+                        "enum": [
+                            "load",
+                            "dependencies",
+                            "save",
+                            "publish",
+                            "unpublish"
+                        ],
+                        "type": "string"
+                    },
+                    "replayed": {
+                        "type": "boolean"
+                    },
+                    "revision": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "value": {
+                        "description": "The canonical Studio result value the browser receives: the Blueprint document, its dependency list, or null after a mutation.",
+                        "type": [
+                            "object",
+                            "array",
+                            "null"
+                        ]
+                    }
+                },
+                "required": [
+                    "operation",
+                    "replayed",
+                    "revision",
+                    "value"
+                ],
+                "type": "object"
+            },
+            "StudioCompositionSession": {
+                "additionalProperties": false,
+                "properties": {
+                    "artifact": {
+                        "additionalProperties": false,
+                        "properties": {
+                            "id": {
+                                "type": "string"
+                            },
+                            "revision": {
+                                "type": "string"
+                            },
+                            "version": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "id",
+                            "revision",
+                            "version"
+                        ],
+                        "type": "object"
+                    },
+                    "contentTypeId": {
+                        "type": "string"
+                    },
+                    "contentTypeVersion": {
+                        "minimum": 1,
+                        "type": "integer"
+                    },
+                    "kind": {
+                        "const": "studio-machine-composition-session",
+                        "type": "string"
+                    },
+                    "lifecycle": {
+                        "additionalProperties": false,
+                        "properties": {
+                            "canPublish": {
+                                "type": "boolean"
+                            },
+                            "canUnpublish": {
+                                "type": "boolean"
+                            }
+                        },
+                        "required": [
+                            "canPublish",
+                            "canUnpublish"
+                        ],
+                        "type": "object"
+                    },
+                    "mode": {
+                        "enum": [
+                            "blueprint",
+                            "read-only"
+                        ],
+                        "type": "string"
+                    },
+                    "operations": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
+                    },
+                    "permissions": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
+                    },
+                    "protocolVersion": {
+                        "type": "string"
+                    },
+                    "session": {
+                        "maxLength": 240,
+                        "minLength": 1,
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]*$",
+                        "type": "string"
+                    },
+                    "sessionGeneration": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "artifact",
+                    "contentTypeId",
+                    "contentTypeVersion",
+                    "kind",
+                    "lifecycle",
+                    "mode",
+                    "operations",
+                    "permissions",
+                    "protocolVersion",
+                    "session",
+                    "sessionGeneration"
+                ],
+                "type": "object"
+            },
             "TokenCollection": {
                 "additionalProperties": false,
                 "properties": {
@@ -10852,6 +11051,654 @@
                     "content.read"
                 ],
                 "x-kumwe-studio-operation": "start"
+            }
+        },
+        "/api/v1/studio/composition/dependencies": {
+            "post": {
+                "operationId": "listStudioBlueprintDependencies",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StudioCompositionOperationRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StudioCompositionOperationResult"
+                                }
+                            }
+                        },
+                        "description": "List the dependencies the session Blueprint locks"
+                    },
+                    "400": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "Malformed request, unknown operation, stale session generation or missing idempotency key"
+                    },
+                    "403": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "The credential, Blueprint mode or publication authority refuses the operation"
+                    },
+                    "404": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "No composition is provisioned for the Content type version, or the Blueprint is absent"
+                    },
+                    "409": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "A stale expected revision, a Blueprint lock or theme conflict, or an operation still in progress"
+                    },
+                    "422": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "Studio validation refused the document, or the idempotency key was reused for other input"
+                    },
+                    "503": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "The Studio host is temporarily unavailable"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": [],
+                        "siteContext": []
+                    }
+                ],
+                "summary": "List the dependencies the session Blueprint locks",
+                "x-kumwe-api-version": "v1",
+                "x-kumwe-contract-version": "1.1.0",
+                "x-kumwe-idempotency": "none",
+                "x-kumwe-middleware-contracts": [
+                    "bearer-authentication"
+                ],
+                "x-kumwe-precondition": "none",
+                "x-kumwe-request-body": "json",
+                "x-kumwe-required-capabilities": [
+                    "content.read"
+                ]
+            }
+        },
+        "/api/v1/studio/composition/load": {
+            "post": {
+                "operationId": "loadStudioBlueprint",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StudioCompositionOperationRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StudioCompositionOperationResult"
+                                }
+                            }
+                        },
+                        "description": "Load the session Blueprint or one historical revision"
+                    },
+                    "400": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "Malformed request, unknown operation, stale session generation or missing idempotency key"
+                    },
+                    "403": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "The credential, Blueprint mode or publication authority refuses the operation"
+                    },
+                    "404": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "No composition is provisioned for the Content type version, or the Blueprint is absent"
+                    },
+                    "409": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "A stale expected revision, a Blueprint lock or theme conflict, or an operation still in progress"
+                    },
+                    "422": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "Studio validation refused the document, or the idempotency key was reused for other input"
+                    },
+                    "503": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "The Studio host is temporarily unavailable"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": [],
+                        "siteContext": []
+                    }
+                ],
+                "summary": "Load the session Blueprint or one historical revision",
+                "x-kumwe-api-version": "v1",
+                "x-kumwe-contract-version": "1.1.0",
+                "x-kumwe-idempotency": "none",
+                "x-kumwe-middleware-contracts": [
+                    "bearer-authentication"
+                ],
+                "x-kumwe-precondition": "none",
+                "x-kumwe-request-body": "json",
+                "x-kumwe-required-capabilities": [
+                    "content.read"
+                ]
+            }
+        },
+        "/api/v1/studio/composition/publish": {
+            "post": {
+                "operationId": "publishStudioBlueprint",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/IdempotencyKey"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StudioCompositionOperationRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StudioCompositionOperationResult"
+                                }
+                            }
+                        },
+                        "description": "Publish the session Blueprint"
+                    },
+                    "400": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "Malformed request, unknown operation, stale session generation or missing idempotency key"
+                    },
+                    "403": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "The credential, Blueprint mode or publication authority refuses the operation"
+                    },
+                    "404": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "No composition is provisioned for the Content type version, or the Blueprint is absent"
+                    },
+                    "409": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "A stale expected revision, a Blueprint lock or theme conflict, or an operation still in progress"
+                    },
+                    "422": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "Studio validation refused the document, or the idempotency key was reused for other input"
+                    },
+                    "503": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "The Studio host is temporarily unavailable"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": [],
+                        "siteContext": []
+                    }
+                ],
+                "summary": "Publish the session Blueprint",
+                "x-kumwe-api-version": "v1",
+                "x-kumwe-contract-version": "1.1.0",
+                "x-kumwe-idempotency": "required",
+                "x-kumwe-middleware-contracts": [
+                    "bearer-authentication",
+                    "idempotency-key"
+                ],
+                "x-kumwe-precondition": "none",
+                "x-kumwe-request-body": "json",
+                "x-kumwe-required-capabilities": [
+                    "content.read"
+                ]
+            }
+        },
+        "/api/v1/studio/composition/save": {
+            "post": {
+                "operationId": "saveStudioBlueprint",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/IdempotencyKey"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StudioCompositionOperationRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StudioCompositionOperationResult"
+                                }
+                            }
+                        },
+                        "description": "Save one draft revision of the session Blueprint"
+                    },
+                    "400": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "Malformed request, unknown operation, stale session generation or missing idempotency key"
+                    },
+                    "403": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "The credential, Blueprint mode or publication authority refuses the operation"
+                    },
+                    "404": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "No composition is provisioned for the Content type version, or the Blueprint is absent"
+                    },
+                    "409": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "A stale expected revision, a Blueprint lock or theme conflict, or an operation still in progress"
+                    },
+                    "422": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "Studio validation refused the document, or the idempotency key was reused for other input"
+                    },
+                    "503": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "The Studio host is temporarily unavailable"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": [],
+                        "siteContext": []
+                    }
+                ],
+                "summary": "Save one draft revision of the session Blueprint",
+                "x-kumwe-api-version": "v1",
+                "x-kumwe-contract-version": "1.1.0",
+                "x-kumwe-idempotency": "required",
+                "x-kumwe-middleware-contracts": [
+                    "bearer-authentication",
+                    "idempotency-key"
+                ],
+                "x-kumwe-precondition": "none",
+                "x-kumwe-request-body": "json",
+                "x-kumwe-required-capabilities": [
+                    "content.read"
+                ]
+            }
+        },
+        "/api/v1/studio/composition/sessions": {
+            "post": {
+                "operationId": "openStudioCompositionSession",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StudioCompositionOpenRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StudioCompositionSession"
+                                }
+                            }
+                        },
+                        "description": "Open a credential-bound Blueprint composition session"
+                    },
+                    "400": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "Malformed request, unknown operation, stale session generation or missing idempotency key"
+                    },
+                    "403": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "The credential, Blueprint mode or publication authority refuses the operation"
+                    },
+                    "404": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "No composition is provisioned for the Content type version, or the Blueprint is absent"
+                    },
+                    "409": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "A stale expected revision, a Blueprint lock or theme conflict, or an operation still in progress"
+                    },
+                    "422": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "Studio validation refused the document, or the idempotency key was reused for other input"
+                    },
+                    "503": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "The Studio host is temporarily unavailable"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": [],
+                        "siteContext": []
+                    }
+                ],
+                "summary": "Open a credential-bound Blueprint composition session",
+                "x-kumwe-api-version": "v1",
+                "x-kumwe-contract-version": "1.1.0",
+                "x-kumwe-idempotency": "none",
+                "x-kumwe-middleware-contracts": [
+                    "bearer-authentication"
+                ],
+                "x-kumwe-precondition": "none",
+                "x-kumwe-request-body": "json",
+                "x-kumwe-required-capabilities": [
+                    "content.read"
+                ]
+            }
+        },
+        "/api/v1/studio/composition/unpublish": {
+            "post": {
+                "operationId": "unpublishStudioBlueprint",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/IdempotencyKey"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StudioCompositionOperationRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StudioCompositionOperationResult"
+                                }
+                            }
+                        },
+                        "description": "Return the session Blueprint to draft"
+                    },
+                    "400": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "Malformed request, unknown operation, stale session generation or missing idempotency key"
+                    },
+                    "403": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "The credential, Blueprint mode or publication authority refuses the operation"
+                    },
+                    "404": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "No composition is provisioned for the Content type version, or the Blueprint is absent"
+                    },
+                    "409": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "A stale expected revision, a Blueprint lock or theme conflict, or an operation still in progress"
+                    },
+                    "422": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "Studio validation refused the document, or the idempotency key was reused for other input"
+                    },
+                    "503": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "The Studio host is temporarily unavailable"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": [],
+                        "siteContext": []
+                    }
+                ],
+                "summary": "Return the session Blueprint to draft",
+                "x-kumwe-api-version": "v1",
+                "x-kumwe-contract-version": "1.1.0",
+                "x-kumwe-idempotency": "required",
+                "x-kumwe-middleware-contracts": [
+                    "bearer-authentication",
+                    "idempotency-key"
+                ],
+                "x-kumwe-precondition": "none",
+                "x-kumwe-request-body": "json",
+                "x-kumwe-required-capabilities": [
+                    "content.read"
+                ]
             }
         },
         "/api/v1/tokens": {

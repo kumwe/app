@@ -2,7 +2,7 @@
   "format": "kumwe-cli-machine-contract-v1",
   "generation": 2,
   "status": "retained",
-  "surface_digest": "sha256:187fb36a496a36aea13029dbbc54e11e2bca71f3637bb996dbf1664ac1dc60c8",
+  "surface_digest": "sha256:8adcd2a03be8a355dbe90dbb958d570251a1be1e310ef93a493fd59e12869d6c",
   "dispatcher": {
     "list_exit": 0,
     "unknown_command_exit": 64,
@@ -949,6 +949,34 @@
         {"name":"save-item","risk":"mutate","positionals":[],"allowed_options":["site","token-file","session","session-generation","argument-file","operation-id","locale"],"required_options":["site","token-file","session","session-generation","argument-file","operation-id"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
         {"name":"save-as-new-type","risk":"mutate","positionals":[],"allowed_options":["site","token-file","session","session-generation","argument-file","operation-id","locale"],"required_options":["site","token-file","session","session-generation","argument-file","operation-id"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
         {"name":"save-new-type-version","risk":"mutate","positionals":[],"allowed_options":["site","token-file","session","session-generation","argument-file","operation-id","locale"],"required_options":["site","token-file","session","session-generation","argument-file","operation-id"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "studio-blueprint",
+      "action_argument": true,
+      "default_action": null,
+      "options": [
+        {"name":"site","type":"identifier","enum":[]},
+        {"name":"token-file","type":"secret-file","enum":[]},
+        {"name":"content-type","type":"identifier","enum":[]},
+        {"name":"content-type-version","type":"positive-integer","enum":[]},
+        {"name":"mode","type":"enum","enum":["blueprint","read-only"]},
+        {"name":"session","type":"identifier","enum":[]},
+        {"name":"session-generation","type":"identifier","enum":[]},
+        {"name":"argument-file","type":"protected-json-file","enum":[]},
+        {"name":"expected-revision","type":"identifier","enum":[]},
+        {"name":"operation-id","type":"identifier","enum":[]},
+        {"name":"locale","type":"identifier","enum":[]}
+      ],
+      "output": {"stdout":"json-document","stderr":"json-document"},
+      "exit_codes": {"0":"success","1":"internal-error","64":"usage-error","65":"data-error","66":"not-found","69":"unavailable","73":"conflict","75":"temporary-failure","77":"permission-denied"},
+      "actions": [
+        {"name":"open","risk":"read","positionals":[],"allowed_options":["site","token-file","content-type","content-type-version","mode"],"required_options":["site","token-file","content-type","content-type-version"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"load","risk":"read","positionals":[],"allowed_options":["site","token-file","session","session-generation","argument-file","locale"],"required_options":["site","token-file","session","session-generation","argument-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"dependencies","risk":"read","positionals":[],"allowed_options":["site","token-file","session","session-generation","argument-file","locale"],"required_options":["site","token-file","session","session-generation","argument-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"save","risk":"mutate","positionals":[],"allowed_options":["site","token-file","session","session-generation","argument-file","expected-revision","operation-id","locale"],"required_options":["site","token-file","session","session-generation","argument-file","expected-revision","operation-id"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"publish","risk":"mutate","positionals":[],"allowed_options":["site","token-file","session","session-generation","argument-file","expected-revision","operation-id","locale"],"required_options":["site","token-file","session","session-generation","argument-file","expected-revision","operation-id"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"unpublish","risk":"mutate","positionals":[],"allowed_options":["site","token-file","session","session-generation","argument-file","expected-revision","operation-id","locale"],"required_options":["site","token-file","session","session-generation","argument-file","expected-revision","operation-id"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
       ]
     },
     {

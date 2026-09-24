@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for he, carrying 2569 messages.
+ * Compiled interface message catalogue for he, carrying 2571 messages.
  *
  * Generated from he.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -2026,6 +2026,8 @@ return [
     'core.console.settings.description' => 'קראו או עדכנו את תצורת האתר.',
     'core.console.studio_authoring.description' => 'פתחו הפעלת כתיבה ב-Studio והריצו את פעולות הכתיבה שלה.',
     'core.console.studio_authoring.refused' => 'בקשת הכתיבה ב-Studio נדחתה.',
+    'core.console.studio_blueprint.description' => 'פתיחת הפעלת קומפוזיציה של Blueprint וטעינה, שמירה, פרסום או ביטול פרסום של ה-Blueprint שלה.',
+    'core.console.studio_blueprint.refused' => 'בקשת הקומפוזיציה של Studio נדחתה.',
     'core.console.studio_composition.description' => 'קריאה או הקצאה של הרכב השרטוט של גרסת סוג תוכן.',
     'core.console.theme_administrator_recover.description' => 'שחזרו באופן אטומי את ערכת הנושא המובנית והמוגנת של ממשק הניהול.',
     'core.console.theme_administrator_recover.restored_the_protected_built_in_administrator' => 'ערכת הנושא המובנית והמוגנת של ממשק הניהול שוחזרה.',

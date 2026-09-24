@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for pt-BR, carrying 2569 messages.
+ * Compiled interface message catalogue for pt-BR, carrying 2571 messages.
  *
  * Generated from pt-BR.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -2026,6 +2026,8 @@ return [
     'core.console.settings.description' => 'Leia ou atualize a configuração do site.',
     'core.console.studio_authoring.description' => 'Abra uma sessão de criação do Studio e execute suas operações de criação.',
     'core.console.studio_authoring.refused' => 'A solicitação de criação do Studio foi recusada.',
+    'core.console.studio_blueprint.description' => 'Abrir uma sessão de composição de Blueprint e carregar, salvar, publicar ou despublicar o seu Blueprint.',
+    'core.console.studio_blueprint.refused' => 'A solicitação de composição do Studio foi recusada.',
     'core.console.studio_composition.description' => 'Leia ou provisione a composição Blueprint de uma versão de tipo de conteúdo.',
     'core.console.theme_administrator_recover.description' => 'Restaure atomicamente o tema integrado protegido do administrador.',
     'core.console.theme_administrator_recover.restored_the_protected_built_in_administrator' => 'Tema integrado protegido do administrador restaurado.',

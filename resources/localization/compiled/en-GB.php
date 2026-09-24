@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for en-GB, carrying 2569 messages.
+ * Compiled interface message catalogue for en-GB, carrying 2571 messages.
  *
  * Generated from en-GB.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -2026,6 +2026,8 @@ return [
     'core.console.settings.description' => 'Read or update site configuration.',
     'core.console.studio_authoring.description' => 'Open a Studio authoring session and run its authoring operations.',
     'core.console.studio_authoring.refused' => 'The Studio authoring request was refused.',
+    'core.console.studio_blueprint.description' => 'Open a Blueprint composition session and load, save, publish or unpublish its Blueprint.',
+    'core.console.studio_blueprint.refused' => 'The Studio composition request was refused.',
     'core.console.studio_composition.description' => 'Read or provision the Blueprint composition of a Content type version.',
     'core.console.theme_administrator_recover.description' => 'Atomically restore the protected built-in administrator theme.',
     'core.console.theme_administrator_recover.restored_the_protected_built_in_administrator' => 'Restored the protected built-in administrator theme.',

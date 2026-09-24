@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for af, carrying 2569 messages.
+ * Compiled interface message catalogue for af, carrying 2571 messages.
  *
  * Generated from af.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -2026,6 +2026,8 @@ return [
     'core.console.settings.description' => 'Lees of werk webwerfkonfigurasie by.',
     'core.console.studio_authoring.description' => 'Open ’n Studio-outeursessie en voer die outeursbewerkings daarvan uit.',
     'core.console.studio_authoring.refused' => 'Die Studio-outeursversoek is geweier.',
+    'core.console.studio_blueprint.description' => 'Open \'n Blueprint-samestellingsessie en laai, stoor, publiseer of onttrek die publikasie van sy Blueprint.',
+    'core.console.studio_blueprint.refused' => 'Die Studio-samestellingversoek is geweier.',
     'core.console.studio_composition.description' => 'Lees of voorsien die Bloudruk-samestelling van \'n inhoudtipe-weergawe.',
     'core.console.theme_administrator_recover.description' => 'Herstel die beskermde ingeboude administrateurtema atomies.',
     'core.console.theme_administrator_recover.restored_the_protected_built_in_administrator' => 'Die beskermde ingeboude administrateurtema is herstel.',

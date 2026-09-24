@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for zh-Hans, carrying 2569 messages.
+ * Compiled interface message catalogue for zh-Hans, carrying 2571 messages.
  *
  * Generated from zh-Hans.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -2026,6 +2026,8 @@ return [
     'core.console.settings.description' => '读取或更新站点配置。',
     'core.console.studio_authoring.description' => '打开 Studio 创作会话并运行其创作操作。',
     'core.console.studio_authoring.refused' => 'Studio 创作请求被拒绝。',
+    'core.console.studio_blueprint.description' => '打开 Blueprint 组合会话，并加载、保存、发布或取消发布其 Blueprint。',
+    'core.console.studio_blueprint.refused' => 'Studio 组合请求被拒绝。',
     'core.console.studio_composition.description' => '读取或预配内容类型版本的蓝图组合。',
     'core.console.theme_administrator_recover.description' => '原子化恢复受保护的内置管理后台主题。',
     'core.console.theme_administrator_recover.restored_the_protected_built_in_administrator' => '已恢复受保护的内置管理后台主题。',

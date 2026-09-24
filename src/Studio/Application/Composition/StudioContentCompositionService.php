@@ -77,6 +77,8 @@ final readonly class StudioContentCompositionService
      *
      * @return  ?StudioContentComposition  Current exact composition, or null when not provisioned.
      *
+     * @throws  \Kumwe\App\Studio\Application\Projection\StudioProjectionRejected  When the Content type version
+     *          is invalid, absent or not readable by the caller.
      * @throws  StudioCompositionModelMismatch  When the Blueprint model lock differs from the authorized model.
      * @throws  StudioCompositionThemeMismatch  When the Blueprint theme lock differs from the published theme.
      *

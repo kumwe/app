@@ -44,6 +44,8 @@ use Kumwe\App\Site\Application\SiteSettings;
 use Kumwe\App\Studio\Application\Authoring\StudioMachineAuthoringGateway;
 use Kumwe\App\Studio\Application\Composition\StudioCompositionThemeMismatch;
 use Kumwe\App\Studio\Application\Projection\StudioProjectionRejected;
+use Kumwe\App\Studio\Application\Authoring\StudioMachineCompositionGateway;
+use Kumwe\App\Studio\Application\Authoring\StudioMachineCompositionOperation;
 use Kumwe\App\Studio\Application\Composition\StudioContentComposition;
 use Kumwe\App\Studio\Application\Composition\StudioContentCompositionService;
 use Kumwe\App\Studio\Application\Authoring\StudioMachineAuthoringOperation;
@@ -122,6 +124,8 @@ final readonly class KumweMcpHandlers
      *         read, create and update; null only in isolated tests that exercise no model tool.
      * @param ?StudioContentCompositionService $compositions Blueprint compositions the composition tools read
      *         and provision; null only in isolated tests that exercise no composition tool.
+     * @param ?StudioMachineCompositionGateway $blueprints Machine entry to the composition screen's Studio host
+     *         the Blueprint tools edit through; null only in isolated tests that exercise no Blueprint tool.
      *
      * @since  2.0.0
      */
@@ -150,6 +154,7 @@ final readonly class KumweMcpHandlers
         private ?BusinessSecurityAdministrationService $businessSecurity = null,
         private ?ContentModelService $models = null,
         private ?StudioContentCompositionService $compositions = null,
+        private ?StudioMachineCompositionGateway $blueprints = null,
     ) {
     }
 
@@ -192,6 +197,7 @@ final readonly class KumweMcpHandlers
             businessSecurity: $this->businessSecurity,
             models: $this->models,
             compositions: $this->compositions,
+            blueprints: $this->blueprints,
         );
     }
 
@@ -270,6 +276,7 @@ final readonly class KumweMcpHandlers
             businessSecurity: $this->businessSecurity,
             models: $this->models,
             compositions: $this->compositions,
+            blueprints: $this->blueprints,
         );
     }
 
@@ -625,6 +632,266 @@ final readonly class KumweMcpHandlers
             'replayed' => $result->replayed,
             'document' => self::studioJson($result->value()),
         ];
+    }
+
+    /**
+     * Open a Blueprint composition session bound to this credential for one provisioned Content type version.
+     *
+     * @param   string   $contentType         Content type UUID.
+     * @param   int      $contentTypeVersion  Exact Content type version.
+     * @param   ?string  $mode                `blueprint` (the default) or `read-only`.
+     *
+     * @return  array{document: string}  The session document as canonical JSON.
+     *
+     * @throws  StudioMachineAuthoringRefused  When the composition, theme lock or session policy refuses.
+     *
+     * @since   2.0.0
+     */
+    public function openStudioBlueprintSession(
+        string $contentType,
+        int $contentTypeVersion,
+        ?string $mode = null,
+    ): array {
+        $this->require('content.read');
+        if (!in_array($mode ?? 'blueprint', ['blueprint', 'read-only'], true)) {
+            throw StudioMachineAuthoringRefused::of('invalid-request', 'studio.machine/target-invalid');
+        }
+        $session = $this->studioBlueprints()->open(
+            $this->context(),
+            $contentType,
+            $contentTypeVersion,
+            $mode === 'read-only',
+        );
+
+        return ['document' => self::studioJson($session->toDocument())];
+    }
+
+    /**
+     * Load the session's Blueprint, or one immutable historical revision of it.
+     *
+     * @param   string   $session            Opaque session key the open tool returned.
+     * @param   string   $sessionGeneration  Session generation the open tool returned.
+     * @param   string   $document           The artifact reference as one canonical JSON object.
+     * @param   ?string  $locale             Caller locale tag, or null.
+     *
+     * @return  array{operation: string, replayed: bool, document: string}  Canonical result document.
+     *
+     * @throws  StudioMachineAuthoringRefused  When the document is malformed or the Studio host refuses.
+     *
+     * @since   2.0.0
+     */
+    public function studioBlueprintLoad(
+        string $session,
+        string $sessionGeneration,
+        string $document,
+        ?string $locale = null,
+    ): array {
+        return $this->studioBlueprint(
+            StudioMachineCompositionOperation::Load,
+            null,
+            $session,
+            $sessionGeneration,
+            $document,
+            null,
+            $locale,
+        );
+    }
+
+    /**
+     * List the exact dependencies the session's Blueprint revision locks.
+     *
+     * @param   string   $session            Opaque session key the open tool returned.
+     * @param   string   $sessionGeneration  Session generation the open tool returned.
+     * @param   string   $document           The artifact reference as one canonical JSON object.
+     * @param   ?string  $locale             Caller locale tag, or null.
+     *
+     * @return  array{operation: string, replayed: bool, document: string}  Canonical result document.
+     *
+     * @throws  StudioMachineAuthoringRefused  When the document is malformed or the Studio host refuses.
+     *
+     * @since   2.0.0
+     */
+    public function studioBlueprintDependencies(
+        string $session,
+        string $sessionGeneration,
+        string $document,
+        ?string $locale = null,
+    ): array {
+        return $this->studioBlueprint(
+            StudioMachineCompositionOperation::Dependencies,
+            null,
+            $session,
+            $sessionGeneration,
+            $document,
+            null,
+            $locale,
+        );
+    }
+
+    /**
+     * Save one schema-valid draft revision of the session's Blueprint.
+     *
+     * @param   string   $operationId        Studio host replay key.
+     * @param   string   $session            Opaque session key the open tool returned.
+     * @param   string   $sessionGeneration  Session generation the open tool returned.
+     * @param   string   $document           The complete Blueprint document as one canonical JSON object.
+     * @param   string   $expectedRevision   Revision the save replaces.
+     * @param   ?string  $locale             Caller locale tag, or null.
+     *
+     * @return  array{operation: string, replayed: bool, document: string}  Committed or replayed result.
+     *
+     * @throws  StudioMachineAuthoringRefused  When the document is malformed or the Studio host refuses.
+     *
+     * @since   2.0.0
+     */
+    public function studioBlueprintSave(
+        string $operationId,
+        string $session,
+        string $sessionGeneration,
+        string $document,
+        string $expectedRevision,
+        ?string $locale = null,
+    ): array {
+        return $this->studioBlueprint(
+            StudioMachineCompositionOperation::Save,
+            $operationId,
+            $session,
+            $sessionGeneration,
+            $document,
+            $expectedRevision,
+            $locale,
+        );
+    }
+
+    /**
+     * Publish the session's Blueprint draft.
+     *
+     * @param   string   $operationId        Studio host replay key.
+     * @param   string   $session            Opaque session key the open tool returned.
+     * @param   string   $sessionGeneration  Session generation the open tool returned.
+     * @param   string   $document           The artifact reference as one canonical JSON object.
+     * @param   string   $expectedRevision   Revision the publication replaces.
+     * @param   ?string  $locale             Caller locale tag, or null.
+     *
+     * @return  array{operation: string, replayed: bool, document: string}  Committed or replayed result.
+     *
+     * @throws  StudioMachineAuthoringRefused  When the document is malformed or the Studio host refuses.
+     *
+     * @since   2.0.0
+     */
+    public function studioBlueprintPublish(
+        string $operationId,
+        string $session,
+        string $sessionGeneration,
+        string $document,
+        string $expectedRevision,
+        ?string $locale = null,
+    ): array {
+        return $this->studioBlueprint(
+            StudioMachineCompositionOperation::Publish,
+            $operationId,
+            $session,
+            $sessionGeneration,
+            $document,
+            $expectedRevision,
+            $locale,
+        );
+    }
+
+    /**
+     * Return the session's published Blueprint to draft.
+     *
+     * @param   string   $operationId        Studio host replay key.
+     * @param   string   $session            Opaque session key the open tool returned.
+     * @param   string   $sessionGeneration  Session generation the open tool returned.
+     * @param   string   $document           The artifact reference as one canonical JSON object.
+     * @param   string   $expectedRevision   Revision the withdrawal replaces.
+     * @param   ?string  $locale             Caller locale tag, or null.
+     *
+     * @return  array{operation: string, replayed: bool, document: string}  Committed or replayed result.
+     *
+     * @throws  StudioMachineAuthoringRefused  When the document is malformed or the Studio host refuses.
+     *
+     * @since   2.0.0
+     */
+    public function studioBlueprintUnpublish(
+        string $operationId,
+        string $session,
+        string $sessionGeneration,
+        string $document,
+        string $expectedRevision,
+        ?string $locale = null,
+    ): array {
+        return $this->studioBlueprint(
+            StudioMachineCompositionOperation::Unpublish,
+            $operationId,
+            $session,
+            $sessionGeneration,
+            $document,
+            $expectedRevision,
+            $locale,
+        );
+    }
+
+    /**
+     * Dispatch one Blueprint artifact operation, keyed by the caller's operation identity when it mutates.
+     *
+     * @param   StudioMachineCompositionOperation  $operation          Operation to dispatch.
+     * @param   ?string                            $operationId        Studio host replay key of a mutation.
+     * @param   string                             $session            Opaque session key.
+     * @param   string                             $sessionGeneration  Echoed session generation.
+     * @param   string                             $document           Canonical JSON argument.
+     * @param   ?string                            $expectedRevision   Revision a mutation replaces.
+     * @param   ?string                            $locale             Caller locale tag, or null.
+     *
+     * @return  array{operation: string, replayed: bool, document: string}  Result with `{value, revision}`.
+     *
+     * @throws  StudioMachineAuthoringRefused  When the document is malformed or the Studio host refuses.
+     *
+     * @since   2.0.0
+     */
+    private function studioBlueprint(
+        StudioMachineCompositionOperation $operation,
+        ?string $operationId,
+        string $session,
+        string $sessionGeneration,
+        string $document,
+        ?string $expectedRevision,
+        ?string $locale,
+    ): array {
+        $this->require('content.read');
+        $result = $this->studioBlueprints()->perform(
+            $this->context($operationId),
+            $operation,
+            $session,
+            $sessionGeneration,
+            self::studioArgument($document),
+            $expectedRevision,
+            $operationId,
+            $locale,
+        );
+        $answer = $result->toDocument();
+
+        return [
+            'operation' => $operation->value,
+            'replayed' => $result->replayed,
+            'document' => self::studioJson((object) ['value' => $answer->value, 'revision' => $answer->revision]),
+        ];
+    }
+
+    /**
+     * Return the Blueprint composition gateway, refusing when this instance was composed without one.
+     *
+     * @return  StudioMachineCompositionGateway  Machine entry to the composition screen's Studio host.
+     *
+     * @throws  \LogicException  When the handlers were composed without Blueprint composition.
+     *
+     * @since   2.0.0
+     */
+    private function studioBlueprints(): StudioMachineCompositionGateway
+    {
+        return $this->blueprints
+            ?? throw new \LogicException('The MCP handlers were composed without Blueprint composition.');
     }
 
     /**

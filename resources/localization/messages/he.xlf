@@ -18702,6 +18702,24 @@
         <target>קריאה או הקצאה של הרכב השרטוט של גרסת סוג תוכן.</target>
       </segment>
     </unit>
+    <unit id="core.console.studio_blueprint.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/StudioBlueprintCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Open a Blueprint composition session and load, save, publish or unpublish its Blueprint.</source>
+        <target>פתיחת הפעלת קומפוזיציה של Blueprint וטעינה, שמירה, פרסום או ביטול פרסום של ה-Blueprint שלה.</target>
+      </segment>
+    </unit>
+    <unit id="core.console.studio_blueprint.refused">
+      <notes>
+        <note category="context">Message member of the studio-blueprint command's JSON failure envelope; the category and diagnostic codes beside it carry the machine meaning.</note>
+      </notes>
+      <segment>
+        <source>The Studio composition request was refused.</source>
+        <target>בקשת הקומפוזיציה של Studio נדחתה.</target>
+      </segment>
+    </unit>
     <unit id="core.console.settings.description">
       <notes>
         <note category="context">Console command summary on src/Delivery/Console/Command/ManageSettingsCommand.php.</note>

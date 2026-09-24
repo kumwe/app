@@ -25,7 +25,7 @@
         ]
     },
     "inventory": {
-        "tools": 118,
+        "tools": 124,
         "resources": 1,
         "prompts": 1
     },
@@ -588,7 +588,7 @@
             ]
         }
     ],
-    "contract_sha256": "d63286a185ad594ed9cf5450eed2aed6586e3e8a604ec7912161b233aefd1c98",
+    "contract_sha256": "e679065fcf31359ee6966609b9a1409dd1e5cd50829fa675b47900cf0289f44a",
     "surface": {
         "tools": [
             {
@@ -9100,6 +9100,439 @@
                 "outputSchema": {
                     "type": "object",
                     "additionalProperties": true
+                }
+            },
+            {
+                "name": "kumwe_studio_blueprint_open",
+                "title": "Open a Blueprint composition session",
+                "description": "Open a credential-bound Blueprint session for the composition of one Content type version.",
+                "handler": "openStudioBlueprintSession",
+                "capability": "content.read",
+                "risk": "read",
+                "alternative": "Administrator console: Content models, Compose, or POST /api/v1/studio/composition/*, or bin/kumwe studio-blueprint.",
+                "annotations": {
+                    "title": "Open a Blueprint composition session",
+                    "readOnlyHint": true,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "contentType": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 191
+                        },
+                        "contentTypeVersion": {
+                            "type": "integer",
+                            "minimum": 1
+                        },
+                        "mode": {
+                            "type": "string",
+                            "enum": [
+                                "blueprint",
+                                "read-only"
+                            ]
+                        }
+                    },
+                    "required": [
+                        "contentType",
+                        "contentTypeVersion"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "document": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "document"
+                    ],
+                    "additionalProperties": false
+                }
+            },
+            {
+                "name": "kumwe_studio_blueprint_load",
+                "title": "Load a Studio Blueprint",
+                "description": "Load a Studio Blueprint through the same Studio host, authorization, replay and audit as the composition screen.",
+                "handler": "studioBlueprintLoad",
+                "capability": "content.read",
+                "risk": "read",
+                "alternative": "Administrator console: Content models, Compose, or POST /api/v1/studio/composition/*, or bin/kumwe studio-blueprint.",
+                "annotations": {
+                    "title": "Load a Studio Blueprint",
+                    "readOnlyHint": true,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "session": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 240,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]*$"
+                        },
+                        "sessionGeneration": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 100
+                        },
+                        "document": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 1048576
+                        },
+                        "locale": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 50
+                        }
+                    },
+                    "required": [
+                        "session",
+                        "sessionGeneration",
+                        "document"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "operation": {
+                            "type": "string"
+                        },
+                        "replayed": {
+                            "type": "boolean"
+                        },
+                        "document": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "operation",
+                        "replayed",
+                        "document"
+                    ],
+                    "additionalProperties": false
+                }
+            },
+            {
+                "name": "kumwe_studio_blueprint_dependencies",
+                "title": "List Studio Blueprint dependencies",
+                "description": "List Studio Blueprint dependencies through the same Studio host, authorization, replay and audit as the composition screen.",
+                "handler": "studioBlueprintDependencies",
+                "capability": "content.read",
+                "risk": "read",
+                "alternative": "Administrator console: Content models, Compose, or POST /api/v1/studio/composition/*, or bin/kumwe studio-blueprint.",
+                "annotations": {
+                    "title": "List Studio Blueprint dependencies",
+                    "readOnlyHint": true,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "session": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 240,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]*$"
+                        },
+                        "sessionGeneration": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 100
+                        },
+                        "document": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 1048576
+                        },
+                        "locale": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 50
+                        }
+                    },
+                    "required": [
+                        "session",
+                        "sessionGeneration",
+                        "document"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "operation": {
+                            "type": "string"
+                        },
+                        "replayed": {
+                            "type": "boolean"
+                        },
+                        "document": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "operation",
+                        "replayed",
+                        "document"
+                    ],
+                    "additionalProperties": false
+                }
+            },
+            {
+                "name": "kumwe_studio_blueprint_save",
+                "title": "Save a Studio Blueprint draft",
+                "description": "Save a Studio Blueprint draft through the same Studio host, authorization, replay and audit as the composition screen.",
+                "handler": "studioBlueprintSave",
+                "capability": "content.read",
+                "risk": "scoped_write",
+                "alternative": "Administrator console: Content models, Compose, or POST /api/v1/studio/composition/*, or bin/kumwe studio-blueprint.",
+                "annotations": {
+                    "title": "Save a Studio Blueprint draft",
+                    "readOnlyHint": false,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "operationId": {
+                            "type": "string",
+                            "minLength": 16,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{15,127}$"
+                        },
+                        "session": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 240,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]*$"
+                        },
+                        "sessionGeneration": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 100
+                        },
+                        "document": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 1048576
+                        },
+                        "locale": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 50
+                        },
+                        "expectedRevision": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 200
+                        }
+                    },
+                    "required": [
+                        "operationId",
+                        "session",
+                        "sessionGeneration",
+                        "document",
+                        "expectedRevision"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "operation": {
+                            "type": "string"
+                        },
+                        "replayed": {
+                            "type": "boolean"
+                        },
+                        "document": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "operation",
+                        "replayed",
+                        "document"
+                    ],
+                    "additionalProperties": false
+                }
+            },
+            {
+                "name": "kumwe_studio_blueprint_publish",
+                "title": "Publish a Studio Blueprint",
+                "description": "Publish a Studio Blueprint through the same Studio host, authorization, replay and audit as the composition screen.",
+                "handler": "studioBlueprintPublish",
+                "capability": "content.read",
+                "risk": "scoped_write",
+                "alternative": "Administrator console: Content models, Compose, or POST /api/v1/studio/composition/*, or bin/kumwe studio-blueprint.",
+                "annotations": {
+                    "title": "Publish a Studio Blueprint",
+                    "readOnlyHint": false,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "operationId": {
+                            "type": "string",
+                            "minLength": 16,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{15,127}$"
+                        },
+                        "session": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 240,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]*$"
+                        },
+                        "sessionGeneration": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 100
+                        },
+                        "document": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 1048576
+                        },
+                        "locale": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 50
+                        },
+                        "expectedRevision": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 200
+                        }
+                    },
+                    "required": [
+                        "operationId",
+                        "session",
+                        "sessionGeneration",
+                        "document",
+                        "expectedRevision"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "operation": {
+                            "type": "string"
+                        },
+                        "replayed": {
+                            "type": "boolean"
+                        },
+                        "document": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "operation",
+                        "replayed",
+                        "document"
+                    ],
+                    "additionalProperties": false
+                }
+            },
+            {
+                "name": "kumwe_studio_blueprint_unpublish",
+                "title": "Unpublish a Studio Blueprint",
+                "description": "Unpublish a Studio Blueprint through the same Studio host, authorization, replay and audit as the composition screen.",
+                "handler": "studioBlueprintUnpublish",
+                "capability": "content.read",
+                "risk": "scoped_write",
+                "alternative": "Administrator console: Content models, Compose, or POST /api/v1/studio/composition/*, or bin/kumwe studio-blueprint.",
+                "annotations": {
+                    "title": "Unpublish a Studio Blueprint",
+                    "readOnlyHint": false,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "operationId": {
+                            "type": "string",
+                            "minLength": 16,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{15,127}$"
+                        },
+                        "session": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 240,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]*$"
+                        },
+                        "sessionGeneration": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 100
+                        },
+                        "document": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 1048576
+                        },
+                        "locale": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 50
+                        },
+                        "expectedRevision": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 200
+                        }
+                    },
+                    "required": [
+                        "operationId",
+                        "session",
+                        "sessionGeneration",
+                        "document",
+                        "expectedRevision"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "operation": {
+                            "type": "string"
+                        },
+                        "replayed": {
+                            "type": "boolean"
+                        },
+                        "document": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "operation",
+                        "replayed",
+                        "document"
+                    ],
+                    "additionalProperties": false
                 }
             }
         ],

@@ -1,7 +1,7 @@
 {
     "format": "kumwe-rest-machine-contract-snapshot-v1",
     "generation": "1.1.0",
-    "openapi_semantic_sha256": "f1a536fa2e944647cc3bd6fbb4954abace97dfb8c57b55d0a39ae3b35b391fa8",
+    "openapi_semantic_sha256": "047529fde10a6a8d6b4529b4343f72d7035cefed72c750fec49458994f97803f",
     "operations": {
         "activateExtension": {
             "contract_sha256": "b45490458cd5ee55cbe702d67b307ae5a854986407f411ca3b1cdbc33a8acc72",
@@ -423,6 +423,11 @@
             "method": "POST",
             "path": "/api/v1/studio/authoring/list-types"
         },
+        "listStudioBlueprintDependencies": {
+            "contract_sha256": "6fd946290ff559636f07b6732b442f1e6f00238626dfd0ff5eb275d747391b84",
+            "method": "POST",
+            "path": "/api/v1/studio/composition/dependencies"
+        },
         "listTokens": {
             "contract_sha256": "58b69c9debe297dff3671fc54b79b802ff4f4dd3a0222d853b94b05d43ebc29c",
             "method": "GET",
@@ -443,10 +448,20 @@
             "method": "GET",
             "path": "/api/v1/workflows"
         },
+        "loadStudioBlueprint": {
+            "contract_sha256": "e6f997a87074a93969847ea8c6324ff3b44177e6d544b9f6d037ef2da1ec2263",
+            "method": "POST",
+            "path": "/api/v1/studio/composition/load"
+        },
         "openStudioAuthoringSession": {
             "contract_sha256": "36b2bf140bc0369ed69c794f006d5c8ffc0123f0ada27d7c06a38f8a4c111753",
             "method": "POST",
             "path": "/api/v1/studio/authoring/sessions"
+        },
+        "openStudioCompositionSession": {
+            "contract_sha256": "f4d6d7d579b173632eb38fb91ff179b236bc97a258c5ba934a67c17c73d995c3",
+            "method": "POST",
+            "path": "/api/v1/studio/composition/sessions"
         },
         "planStudioAuthoringSave": {
             "contract_sha256": "5de41f266d487aefbeac2b643390117df5330640960f1605c7963475c875b1cc",
@@ -477,6 +492,11 @@
             "contract_sha256": "5c0e20b6135e746d774930e9cf61e5a45d42864c0e71ca18bcaa7fdca72244f9",
             "method": "PATCH",
             "path": "/api/v1/content-types/{id}"
+        },
+        "publishStudioBlueprint": {
+            "contract_sha256": "ef126743d1fae000690aa77a477b3be276d3e6cb07f24a917cf6ba1131cc13e3",
+            "method": "POST",
+            "path": "/api/v1/studio/composition/publish"
         },
         "publishWorkflow": {
             "contract_sha256": "634a80ed0570dcc989f1b57d3707a29fcc52d6599184028e2c469c0d7d56557f",
@@ -598,6 +618,11 @@
             "method": "POST",
             "path": "/api/v1/studio/authoring/save-new-type-version"
         },
+        "saveStudioBlueprint": {
+            "contract_sha256": "dffff2a19811004ad2387b13d4956d245e2c71b8340d76172c3f941b02a2a458",
+            "method": "POST",
+            "path": "/api/v1/studio/composition/save"
+        },
         "saveWordingOverride": {
             "contract_sha256": "f7c5c2aac645de4be03a84d84f885ecdb60e9b6ace65d01ec84e01a16560f899",
             "method": "PUT",
@@ -637,6 +662,11 @@
             "contract_sha256": "5b6c4e0d9665234a5b45d8203b13adab7864233405266245921747cde760d004",
             "method": "DELETE",
             "path": "/api/v1/extensions/{vendor}/{name}"
+        },
+        "unpublishStudioBlueprint": {
+            "contract_sha256": "8a8940a588247c4a57c88b80673b78f860a859738bcda9831b1e7b6c7f2c0b6e",
+            "method": "POST",
+            "path": "/api/v1/studio/composition/unpublish"
         },
         "updateContent": {
             "contract_sha256": "e40625a7b52e833e2c248b500e704bff758fae7db78b3414d17668303f9d217f",
@@ -813,6 +843,10 @@
         "StudioAuthoringOperationResult": "d5b9d7680c14e74f230bc9aa8e564dd8d16791632e5cba1f9d7f90cd57eb2b98",
         "StudioAuthoringSession": "603ec58606ee1136e431a6fa3faddbad3cd254942d9bacff1967515b0645c101",
         "StudioComposition": "a429e840f32a5c3760236065240a7d9ac8f156c4fadd800b0a7ae0657a1c5a33",
+        "StudioCompositionOpenRequest": "979caec3dc2be4df65c083b73fd09cfd234b68f8e1e428669ffaff489b7ec48a",
+        "StudioCompositionOperationRequest": "b2ca7af33ace1f0b62924c7ce3fe58190f2fae494b82ba1e3397ab4c3fa56a87",
+        "StudioCompositionOperationResult": "1e11f2a74b0ac5c1ae2570a823349be40bf2deddf17e51b5c4cf275f723f52d4",
+        "StudioCompositionSession": "a97a83505e6ccffef660efa310e38356676733e093b198cde9e825ce57ca1931",
         "TokenCollection": "d0eb7a5ab57116f9e03c8eb4ce19cf879d106adf432f989e18749c2ebc9468de",
         "TokenCreate": "bf88a50599290e9255ba87a800bfb8d01efda88c4ffb371b0b1232c3e4704e7a",
         "TokenRecord": "7520a5016e1cf96492c5e13a0a803e3601af19616737433e5d4efa301c1e6015",

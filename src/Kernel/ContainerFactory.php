@@ -361,8 +361,10 @@ use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringContextPurger;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringContextRepository;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringService;
 use Kumwe\App\Studio\Application\Authoring\StudioMachineAuthoringGateway;
+use Kumwe\App\Studio\Application\Authoring\StudioMachineCompositionGateway;
 use Kumwe\App\Delivery\Http\Api\Studio\StudioAuthoringApiHandler;
 use Kumwe\App\Delivery\Http\Api\Studio\StudioCompositionApiHandler;
+use Kumwe\App\Delivery\Http\Api\Studio\StudioCompositionSessionApiHandler;
 use Kumwe\App\Delivery\Http\Api\Studio\StudioAuthoringProblemMapper;
 use Kumwe\App\Studio\Application\Authoring\HostedContentStudioAuthoringConfigurationProvider;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringTargetResolver;
@@ -568,6 +570,7 @@ use Kumwe\App\Delivery\Console\Command\MediaCommand;
 use Kumwe\App\Delivery\Console\Command\WordingCommand;
 use Kumwe\App\Delivery\Console\Command\BusinessSecurityCommand;
 use Kumwe\App\Delivery\Console\Command\BusinessBulkCommand;
+use Kumwe\App\Delivery\Console\Command\StudioBlueprintCommand;
 use Kumwe\App\Delivery\Console\Command\StudioCompositionCommand;
 use Kumwe\App\Delivery\Console\Command\StudioAuthoringCommand;
 use Kumwe\App\Delivery\Console\Output;
@@ -2188,6 +2191,13 @@ final class ContainerFactory
             self::service($container, ContentStudioAuthoringTargetResolver::class),
             self::service($container, ContentService::class),
             self::service($container, ContentModelService::class),
+            self::service($container, StudioProducerHostFactory::class),
+        ), true);
+        $container->share(StudioMachineCompositionGateway::class, static fn (
+            Container $container,
+        ): StudioMachineCompositionGateway => new StudioMachineCompositionGateway(
+            self::service($container, StudioContentCompositionService::class),
+            self::service($container, StudioHostSessionAuthority::class),
             self::service($container, StudioProducerHostFactory::class),
         ), true);
         $container->share(ContentStudioAuthoringLaunchResolver::class, static fn (
@@ -4795,6 +4805,12 @@ final class ContainerFactory
             self::service($container, StudioContentCompositionService::class),
             self::service($container, ProblemDetailsResponseFactory::class),
         ), true);
+        $container->share(StudioCompositionSessionApiHandler::class, static fn (
+            Container $container,
+        ): StudioCompositionSessionApiHandler => new StudioCompositionSessionApiHandler(
+            self::service($container, StudioMachineCompositionGateway::class),
+            self::service($container, StudioAuthoringProblemMapper::class),
+        ), true);
         $container->share(BusinessSecurityApiHandler::class, static fn (
             Container $container,
         ): BusinessSecurityApiHandler => new BusinessSecurityApiHandler(
@@ -6087,6 +6103,24 @@ final class ContainerFactory
             'api.v1.studio.authoring.save-new-type-version',
         ), 'content.read');
 
+        // Studio Blueprint composition editing, the composition screen's `artifact` port. The gateway enforces the
+        // Blueprint mode, the separate publish and unpublish authority and every Studio refusal as the browser
+        // host does; mutations carry their Idempotency-Key into the same Studio replay boundary.
+        foreach (['sessions', 'load', 'dependencies'] as $operation) {
+            self::apiRoute($application->post(
+                StudioCompositionSessionApiHandler::PREFIX . $operation,
+                StudioCompositionSessionApiHandler::class,
+                'api.v1.studio.composition.' . $operation,
+            ), 'content.read');
+        }
+        foreach (['save', 'publish', 'unpublish'] as $operation) {
+            self::apiRoute($application->post(
+                StudioCompositionSessionApiHandler::PREFIX . $operation,
+                [RequireIdempotencyKeyMiddleware::class, StudioCompositionSessionApiHandler::class],
+                'api.v1.studio.composition.' . $operation,
+            ), 'content.read');
+        }
+
         // Business definitions. Reading is content.read and every mutation is content.update,
         // matching the administrator screens these routes are the machine equivalent of.
         self::apiRoute($application->get(
@@ -7085,6 +7119,12 @@ final class ContainerFactory
             self::service($container, StudioContentCompositionService::class),
             self::service($container, ConsoleAuthorizer::class),
         ), true);
+        $container->share(StudioBlueprintCommand::class, static fn (
+            Container $container,
+        ): StudioBlueprintCommand => new StudioBlueprintCommand(
+            self::service($container, StudioMachineCompositionGateway::class),
+            self::service($container, ConsoleAuthorizer::class),
+        ), true);
         $container->share(BusinessBulkCommand::class, static fn (
             Container $container,
         ): BusinessBulkCommand => new BusinessBulkCommand(
@@ -7171,6 +7211,7 @@ final class ContainerFactory
                 self::service($container, BusinessSecurityCommand::class),
                 self::service($container, BusinessBulkCommand::class),
                 self::service($container, StudioCompositionCommand::class),
+                self::service($container, StudioBlueprintCommand::class),
                 self::service($container, McpServeCommand::class),
             ], self::service($container, Output::class)), true);
     }
@@ -7246,6 +7287,7 @@ final class ContainerFactory
                 businessSecurity: self::service($container, BusinessSecurityAdministrationService::class),
                 models: self::service($container, ContentModelService::class),
                 compositions: self::service($container, StudioContentCompositionService::class),
+                blueprints: self::service($container, StudioMachineCompositionGateway::class),
             ), true);
         $container->share(KumweMcpServerFactory::class, static fn (Container $container): KumweMcpServerFactory =>
             new KumweMcpServerFactory(
