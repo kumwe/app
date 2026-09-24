@@ -58,6 +58,10 @@
                 "reason": "The subject is the structured, redacted operator logging and outcome recording in tools/recovery-common.sh, executed for real by bash; it is not a PHP class under src/."
             },
             {
+                "path": "tests/Unit/Observability/",
+                "reason": "The subject is the offline alert-rule, inhibition, dashboard, drill and synthetic-probe tooling under tools/Observability/ and its commands; it is not a PHP class under src/."
+            },
+            {
                 "path": "tests/Architecture/",
                 "reason": "Architecture and source-shape tests assert facts about files, workflows, manifests and boundaries. Their subject is the arrangement of the tree, not a class in it."
             },
