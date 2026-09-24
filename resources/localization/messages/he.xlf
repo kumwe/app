@@ -12977,15 +12977,6 @@
         <target>תוכן</target>
       </segment>
     </unit>
-    <unit id="core.administrator.content_list.svg_aria_hidden_true_use_href">
-      <notes>
-        <note category="context">Record surface text on templates/administrator/content-list.twig.</note>
-      </notes>
-      <segment>
-        <source>&lt;svg aria-hidden="true"&gt;&lt;use href="#kumwe-icon-plus"&gt;&lt;/use&gt;&lt;/svg&gt;Create content</source>
-        <target>&lt;svg aria-hidden="true"&gt;&lt;use href="#kumwe-icon-plus"&gt;&lt;/use&gt;&lt;/svg&gt;יצירת תוכן</target>
-      </segment>
-    </unit>
     <unit id="core.administrator.content_list.title_or_url_slug">
       <notes>
         <note category="context">Record surface attribute placeholder on templates/administrator/content-list.twig.</note>

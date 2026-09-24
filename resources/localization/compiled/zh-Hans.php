@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for zh-Hans, carrying 2472 messages.
+ * Compiled interface message catalogue for zh-Hans, carrying 2471 messages.
  *
  * Generated from zh-Hans.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1313,7 +1313,6 @@ return [
     'core.administrator.content_list.recently_updated' => '最近更新',
     'core.administrator.content_list.restore' => '恢复',
     'core.administrator.content_list.sort' => '排序',
-    'core.administrator.content_list.svg_aria_hidden_true_use_href' => '<svg aria-hidden="true"><use href="#kumwe-icon-plus"></use></svg>创建内容',
     'core.administrator.content_list.title_a_z' => '标题 A–Z',
     'core.administrator.content_list.title_or_url_slug' => '标题或 URL 别名',
     'core.administrator.content_list.title_z_a' => '标题 Z–A',

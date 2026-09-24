@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for he, carrying 2472 messages.
+ * Compiled interface message catalogue for he, carrying 2471 messages.
  *
  * Generated from he.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1313,7 +1313,6 @@ return [
     'core.administrator.content_list.recently_updated' => 'עודכן לאחרונה',
     'core.administrator.content_list.restore' => 'שחזור',
     'core.administrator.content_list.sort' => 'מיון',
-    'core.administrator.content_list.svg_aria_hidden_true_use_href' => '<svg aria-hidden="true"><use href="#kumwe-icon-plus"></use></svg>יצירת תוכן',
     'core.administrator.content_list.title_a_z' => 'כותרת א–ת',
     'core.administrator.content_list.title_or_url_slug' => 'כותרת או כתובת URL',
     'core.administrator.content_list.title_z_a' => 'כותרת ת–א',

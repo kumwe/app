@@ -12,9 +12,10 @@ use PHPUnit\Framework\TestCase;
  *
  * `tools/verify-catalogue-quality.php` claims to catch what a completeness check lets through — an ICU
  * pattern a locale cannot format, an argument a translation dropped, a plural form a language needs but
- * the pattern omits, a target left in English, and a register entry that excuses nothing. Each claim is
- * exercised against a copy of the real catalogues with exactly that defect put in, and the failure is
- * asserted to name the locale and the identifier, so a translator can act on it.
+ * the pattern omits, a target left in English, markup a message must not carry, and a register entry
+ * that excuses nothing. Each claim is exercised against a copy of the real catalogues with exactly that
+ * defect put in, and the failure is asserted to name the locale and the identifier, so a translator can
+ * act on it.
  *
  * @since  2.0.0
  */
@@ -215,6 +216,32 @@ final class CatalogueQualityGateTest extends TestCase
 
         self::assertSame(1, $status, $output);
         self::assertStringContainsString('excuses "Quorum" in de, but no de target is identical to it', $output);
+    }
+
+    /**
+     * Markup outside the `t_html` subset inside a message fails, because `t()` would print it as text.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testMarkupOutsideTheSafeSubsetFailsTheGate(): void
+    {
+        $catalogues = $this->catalogueCopy();
+        $this->setTarget(
+            $catalogues,
+            'de',
+            'core.site.layout.skip_to_content',
+            '<svg aria-hidden="true"></svg>Zum Inhalt springen',
+        );
+
+        [$status, $output] = $this->gate($catalogues);
+
+        self::assertSame(1, $status, $output);
+        self::assertStringContainsString(
+            'de core.site.layout.skip_to_content carries <svg> markup; only code, em, span, strong may sit',
+            $output,
+        );
     }
 
     /**

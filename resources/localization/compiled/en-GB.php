@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for en-GB, carrying 2472 messages.
+ * Compiled interface message catalogue for en-GB, carrying 2471 messages.
  *
  * Generated from en-GB.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1313,7 +1313,6 @@ return [
     'core.administrator.content_list.recently_updated' => 'Recently updated',
     'core.administrator.content_list.restore' => 'Restore',
     'core.administrator.content_list.sort' => 'Sort',
-    'core.administrator.content_list.svg_aria_hidden_true_use_href' => '<svg aria-hidden="true"><use href="#kumwe-icon-plus"></use></svg>Create content',
     'core.administrator.content_list.title_a_z' => 'Title A–Z',
     'core.administrator.content_list.title_or_url_slug' => 'Title or URL slug',
     'core.administrator.content_list.title_z_a' => 'Title Z–A',

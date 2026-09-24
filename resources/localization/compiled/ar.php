@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for ar, carrying 2472 messages.
+ * Compiled interface message catalogue for ar, carrying 2471 messages.
  *
  * Generated from ar.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1313,7 +1313,6 @@ return [
     'core.administrator.content_list.recently_updated' => 'الأحدث تحديثًا',
     'core.administrator.content_list.restore' => 'استعادة',
     'core.administrator.content_list.sort' => 'الفرز',
-    'core.administrator.content_list.svg_aria_hidden_true_use_href' => '<svg aria-hidden="true"><use href="#kumwe-icon-plus"></use></svg>إنشاء محتوى',
     'core.administrator.content_list.title_a_z' => 'العنوان من A إلى Z',
     'core.administrator.content_list.title_or_url_slug' => 'العنوان أو معرّف الرابط',
     'core.administrator.content_list.title_z_a' => 'العنوان من Z إلى A',

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for af, carrying 2472 messages.
+ * Compiled interface message catalogue for af, carrying 2471 messages.
  *
  * Generated from af.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1313,7 +1313,6 @@ return [
     'core.administrator.content_list.recently_updated' => 'Onlangs bygewerk',
     'core.administrator.content_list.restore' => 'Herstel',
     'core.administrator.content_list.sort' => 'Sorteer',
-    'core.administrator.content_list.svg_aria_hidden_true_use_href' => '<svg aria-hidden="true"><use href="#kumwe-icon-plus"></use></svg>Skep inhoud',
     'core.administrator.content_list.title_a_z' => 'Titel A–Z',
     'core.administrator.content_list.title_or_url_slug' => 'Titel of URL-slug',
     'core.administrator.content_list.title_z_a' => 'Titel Z–A',

@@ -28,6 +28,9 @@
  *      made only of product names — unless the reasoned register below records why the identical word
  *      is correct in that language. A register entry nothing matches fails too, so the register cannot
  *      outlive the words it excuses.
+ *   4. Markup. A message may carry only the inline elements `t_html` treats as safe — `code`, `em`,
+ *      `span` and `strong` — around its own words. Anything else, such as an icon's `<svg>`, is structure
+ *      that belongs in the template: `t()` escapes it, so it renders as literal markup text.
  *
  * Usage:
  *   php tools/verify-catalogue-quality.php [--catalogues=<directory>]
@@ -288,6 +291,13 @@ const KUMWE_IDENTICAL_REGISTER = [
 ];
 
 /**
+ * Inline elements a message may carry around its own words; the same subset `t_html` renders.
+ *
+ * @var  list<string>
+ */
+const KUMWE_MESSAGE_MARKUP = ['code', 'em', 'span', 'strong'];
+
+/**
  * Parse one ICU MessageFormat pattern into its arguments and selecting constructs.
  *
  * Apostrophe quoting follows ICU's default `DOUBLE_OPTIONAL` mode: `''` is a literal apostrophe, and a
@@ -533,6 +543,22 @@ foreach (SupportedLocales::VERSION_TWO as $locale) {
     foreach ($units as $identifier => $unit) {
         $pattern = $locale === $source ? $unit['source'] : ($unit['target'] ?? '');
         $origin = $sourceUnits[$identifier]['source'] ?? $unit['source'];
+        if (preg_match_all('/<\/?([A-Za-z][A-Za-z0-9-]*)/', $pattern, $tags) > 0) {
+            $unsafe = array_values(array_diff(
+                array_unique(array_map('strtolower', $tags[1])),
+                KUMWE_MESSAGE_MARKUP,
+            ));
+            if ($unsafe !== []) {
+                $failures[] = sprintf(
+                    '%s %s carries <%s> markup; only %s may sit inside a message. Keep icons and structure '
+                        . 'in the template.',
+                    $locale,
+                    $identifier,
+                    implode('>, <', $unsafe),
+                    implode(', ', KUMWE_MESSAGE_MARKUP),
+                );
+            }
+        }
         if (str_starts_with($identifier, 'core.studio.shell.')) {
             preg_match_all('/\{([^{}\s]+)\}/u', $pattern, $mine);
             preg_match_all('/\{([^{}\s]+)\}/u', $origin, $theirs);

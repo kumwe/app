@@ -9,7 +9,7 @@
       purpose: t('core.administrator.content_list.find_review_and_publish_every_item'),
       capabilities: capabilities
     } only %}
-      {% block actions %}<div class="page-actions">{% if capabilities['content.create'] is defined %}<a class="button primary" href="/administrator/content/new">{{ t('core.administrator.content_list.svg_aria_hidden_true_use_href') }}</a>{% endif %}</div>{% endblock %}
+      {% block actions %}<div class="page-actions">{% if capabilities['content.create'] is defined %}<a class="button primary" href="/administrator/content/new"><svg aria-hidden="true"><use href="#kumwe-icon-plus"></use></svg>{{ t('core.administrator.content_form.create_content') }}</a>{% endif %}</div>{% endblock %}
     {% endembed %}
 
     <section class="panel">
