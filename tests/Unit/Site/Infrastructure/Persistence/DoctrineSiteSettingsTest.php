@@ -55,6 +55,39 @@ final class DoctrineSiteSettingsTest extends TestCase
     private const string MENU_ID = '018f22e2-7c8b-7ab0-8f3a-88e8026bb401';
 
     /**
+     * Management is authorized against the public site the document belongs to, never the caller's site.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testManagementIsAuthorizedAgainstThePublicSiteRatherThanTheCallersSite(): void
+    {
+        $database = $this->createStub(Connection::class);
+        $database->method('quoteSingleIdentifier')->willReturnArgument(0);
+        $database->method('fetchAllAssociative')->willReturn([]);
+        $context = AuthorizationContext::human(['settings.manage'], site: 'another-business');
+        $authorization = $this->createMock(AuthorizationGateway::class);
+        $authorization->expects(self::once())->method('assertAllowed')->with(
+            $context,
+            self::callback(static fn ($capability): bool => (string) $capability === 'settings.manage'),
+            self::callback(static fn ($resource): bool => $resource->type() === 'site'
+                && $resource->identifier() === 'public-site'),
+        );
+        $settings = new DoctrineSiteSettings(
+            $database,
+            new TableNames($database, 'kumwe_'),
+            new ImmediateTransactionManager(),
+            $this->createStub(AuditRecorder::class),
+            $this->createStub(ClockInterface::class),
+            $authorization,
+            SiteContext::fromString('public-site'),
+        );
+
+        self::assertSame('Kumwe', $settings->managed($context)['site_name']);
+    }
+
+    /**
      * System writes must bind SQL NULL as a GUID while retaining the system token in the audit event.
      *
      * @return  void
@@ -258,6 +291,7 @@ final class DoctrineSiteSettingsTest extends TestCase
             $audit,
             $clock,
             $authorization,
+            SiteContext::default(),
             $content,
         );
     }

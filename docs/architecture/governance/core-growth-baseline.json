@@ -6724,7 +6724,7 @@
         "Kumwe\\App\\Site\\Infrastructure\\Persistence\\DoctrineSiteSettings": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "d6d5f82cbfb0633627eeeb82",
+            "surface": "4352ac7b32a93cf5502283b2",
             "growth": {
                 "classification": "host-infrastructure",
                 "implements": [

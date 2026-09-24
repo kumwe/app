@@ -2514,6 +2514,7 @@ final class ContainerFactory
             self::service($container, AuditRecorder::class),
             self::service($container, ClockInterface::class),
             self::service($container, AuthorizationGateway::class),
+            SiteContext::fromString($configuration->publicSite),
             self::service($container, ContentService::class),
         ), true);
         $container->share(SiteSettings::class, static fn (Container $container): SiteSettings =>
