@@ -17,6 +17,12 @@ Entries cite the commits that carried them. Version 2.0.0 is not released, so ev
 
 ## [Unreleased]
 
+- Add authenticated, dedup-friendly v3 backup trees with retained v2 restore support, native binary-log
+  and PostgreSQL WAL recovery adapters, isolated target claims, interruption handling and scheduled
+  offsite/retention hooks. Local MariaDB 10.11 replay, tamper, resume, spent-approval and restored HTTP
+  replay drills passed; the new three-engine workflow qualifies native MySQL/PostgreSQL execution.
+  These small correctness fixtures do not claim production-volume recovery times (#152).
+
 - Pin MariaDB sessions to traditional current locking reads so a peer commit after an ordinary
   repeatable read cannot make number allocation fail with snapshot error 1020. Row exclusion,
   rollback and unrelated-counter progress remain enforced by the production allocator. A two-session

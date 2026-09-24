@@ -2,9 +2,9 @@
 
 A complete Kumwe backup contains:
 
-- a database dump in the native supported format;
-- media, private application data (including immutable report-export objects), installed
-  extension/template code, and published extension assets;
+- an uncompressed database dump in the native supported format;
+- plain directory trees for media, private application data (including immutable report-export objects),
+  installed extension/template code, and published extension assets;
 - a versioned manifest identifying release, database driver, database name, and table prefix;
 - exact SHA-256 checksums;
 - an optional Minisign signature over the checksum file.
@@ -15,7 +15,8 @@ idempotency outcomes, append-only report-export metadata, and audit rows. JSON c
 metadata or historical snapshots;
 authoritative business fields remain in their typed physical columns.
 
-Secrets, Redis data, application images, and signing private keys are never included. Private application data is
+Application secrets, Redis data, application images, and signing private keys are never deliberately included.
+Keep secrets outside the payload trees; a physical PostgreSQL base can contain database credentials and configuration. Private application data is
 not a secrets directory: it contains durable, non-public runtime artifacts such as report-export objects. Their
 versioned ownership, policy snapshot, expiry, and checksum metadata live in the relational database. Redis is
 disposable coordination state; the relational database is authoritative.
@@ -28,17 +29,22 @@ disposable coordination state; the relational database is authoritative.
 | `mysql` | Transactional SQL | `mysql`, `mysqldump` compatible with MySQL 8.4 |
 | `pgsql` | PostgreSQL custom archive | `psql`, `pg_dump`, `pg_restore` matching the server major line |
 
+New snapshots use `kumwe-backup-v3`: `database.dump`, `media/`, `private/`, `extensions/`,
+`extension-assets/`, `manifest.json`, `checksums.sha256`, and an optional Minisign signature.
+The signed manifest includes every directory, including empty directories; the checksum inventory covers
+exactly every regular file. Added files, missing files, altered bytes, directory drift, traversal paths,
+symlinks and special files are refused. Version 2 compressed snapshots remain readable.
+
 A backup restores only to the same driver recorded in its manifest. Engine conversion is a separate logical migration and validation exercise.
 
 ## Recovery objectives
 
-The shipped tooling takes one kind of backup: a full, write-quiesced snapshot. That single fact decides
-both objectives, and it is stated here plainly rather than left for an operator to work out after an
-incident.
+The default mode is a full, write-quiesced snapshot. The optional native replay mode adds a physical
+PostgreSQL base or binlog coordinate; application payload checkpoints remain write-quiesced.
 
 **Recovery point.** The recovery point is the instant the snapshot was taken, so the recovery point
-objective *is the backup interval*. There is no continuous archiving in this repository and no
-application-side write log that could be replayed forward. With the reference schedule below — hourly
+objective *is the backup interval*. Continuous archiving is configured on the database server, consumed by the native replay adapters below.
+There is no application-side write log. With the reference schedule below — hourly
 backups — the shipped posture is:
 
 | Objective | Declared value | What meets it |
@@ -53,53 +59,119 @@ Those are the numbers the shipped tooling can be held to. Measure your own: the 
 hardware instead of an estimate. An installation whose measured restore exceeds the declared RTO has
 found a real gap and should say so in its own runbook rather than restate this table.
 
-The write outage is the price of the recovery point. Shortening the backup interval improves RPO and
-costs proportionally more availability, because every snapshot quiesces writes. That trade only stops
-being a trade with point-in-time recovery, which is the next section, and which this repository does not
-own.
+The write outage lasts until the database and all payload trees have been captured. The shipped hourly
+snapshot schedule does not by itself provide continuous filesystem recovery. Native log archives improve
+database recovery granularity; a coherent filesystem checkpoint is still required.
 
-## Point-in-time recovery is a database-layer responsibility
+## Platform-supported, operator-configured PITR
 
-Kumwe does not implement continuous archiving, and the honest reason is that it should not: binlog and
-WAL archiving are engine features, configured on the database server, retained on the database server's
-schedule, and replayed with the engine's own tools. An application-level imitation would be a second,
-weaker copy of a mechanism the DBA already has. What follows is therefore guidance for configuring the
-engine, not documentation of a Kumwe feature — nothing in `tools/` reads or writes these logs, and no
-drill in this repository exercises them.
+Set `KUMWE_BACKUP_PITR=on` while all application writes, workers, schedulers, filesystem writers and schema
+changes are quiesced. The default `off` produces a logical snapshot with no claim to support log replay.
+Archive destinations, credentials, immutable offsite copies and archive retention remain operator-configured.
+No application log or imitation WAL replay is used.
 
-Two facts make engine-level PITR compose correctly with a Kumwe snapshot:
+**A target later than the payload snapshot is refused; select a verified coherent payload snapshot.**
+The supported target is the exact native coordinate recorded in an authenticated v3 payload snapshot.
+Choose a base snapshot and set `KUMWE_RESTORE_PAYLOAD_BACKUP` to a later (or the same) signed snapshot.
+`KUMWE_RESTORE_TARGET_TIME`, when supplied, must equal that snapshot's `payload_snapshot_at`. Arbitrary
+wall-clock targets and a blanket unsafe override are not supported. This also prevents an older database
+from being paired with files already deleted at a newer payload checkpoint. All four payload trees come
+from the selected target, while the database starts at the base and replays native logs.
 
-- The relational database is authoritative. Redis is disposable coordination state, so replaying the
-  database forward does not strand it.
-- The filesystem payloads are **not** covered by any log. Media, private report-export objects,
-  extension code and published assets are captured only at snapshot time. Rolling the database forward
-  past the snapshot therefore produces rows referencing report-export objects and media that the
-  filesystem does not have. Treat file storage separately — object storage with versioning, or
-  filesystem snapshots taken on the same cadence as the log archive — or accept that a point-in-time
-  restore recovers the database only.
+### MariaDB and MySQL
 
-**MariaDB and MySQL.** Enable binary logging in ROW format with GTIDs, archive the binlogs off-host,
-and set a retention that comfortably exceeds the interval between full backups. Recovery is
-`tools/restore.sh` for the snapshot, then `mariadb-binlog` / `mysqlbinlog` replayed from the snapshot's
-position to the target instant. `tools/backup.sh` passes `--set-gtid-purged=OFF` on MySQL, which keeps
-the dump free of GTID state so it can be loaded into a fresh server without claiming another server's
-executed-GTID set; the position you replay from must therefore come from the binlog coordinates you
-record beside the backup, not from the dump. Note that the dump is taken with `--single-transaction`
-and no `--master-data`, so **the tooling does not record a binlog coordinate for you** — capture
-`SHOW MASTER STATUS` (or the GTID executed set) during the same quiesce window and store it beside the
-backup directory if you intend to replay forward.
+Configure ROW binary logging and an offsite archive of complete, unmodified, unencrypted binlog files.
+Encrypted native binlog files are unsupported by this local-file decoder; protect the archive with
+encrypted storage and transport instead. Keep every file
+from the oldest retained recovery base through the newest target. While quiesced, backup records the native
+file, position, GTID set and source identity. MySQL 8.4 uses `SHOW BINARY LOG STATUS`; MariaDB uses
+`SHOW MASTER STATUS`. MySQL's `--set-gtid-purged=OFF` is compensated by recording the coordinate and GTID
+set in the signed manifest; replay is position-based, not GTID auto-positioning.
 
-**PostgreSQL.** Enable WAL archiving (`archive_mode = on`, an `archive_command` that copies to
-off-host storage) or a streaming archive such as `pg_receivewal`, and take base backups with
-`pg_basebackup` rather than relying on this repository's `pg_dump` custom archive. A `pg_dump` archive
-is a logical export and is **not** a valid base backup for WAL replay: recovery to a point in time
-needs a physical base backup plus the WAL segments that follow it. The Kumwe backup remains useful
-beside that as a portable, verifiable, engine-version-tolerant copy, and it is what the restore drill
-and the destructive-schema gate consume — but it is not the artifact you replay onto.
+Restore to an isolated instance started with **`--skip-log-bin`**, using the **same database name**.
+The tool refuses a destination with binary logging enabled before import: local dump/import GTIDs can
+otherwise collide with the archived source sequence under MariaDB strict GTID mode. Recovery does not
+reset GTID state, modify global settings or bootstrap a replication topology. Renaming during row-based replay,
+cross-schema statements and cross-source log chains are not supported. The source must keep a stable,
+unique server identity (MariaDB `server_id`, MySQL `server_uuid`). The native decoder validates binlog
+checksums, all numbered files in the range must exist, and the stop position must terminate a decoded
+event. Missing files, truncated targets and decoder failures refuse before database import. Replay uses
+`mariadb-binlog` or `mysqlbinlog` and retains transaction boundaries. Its session-level logging guard
+does not replace the isolated-server prerequisite.
+MySQL additionally checks that the base GTID set precedes the target set and that the intervening GTIDs
+do not intersect the destination's executed history. Recreating a database after a partly applied replay
+does not clear that history; use a fresh isolated instance if this refusal occurs. Recovery preserves
+source GTIDs, does not skip them, and never resets global history to make a retry pass.
+Run with recovery privileges on an isolated server, never on the source.
 
-**If you configure PITR, the recovery-point objective becomes the engine's, not this table's.** Say so
-in your own runbook, record how far back the archive actually reaches, and drill the forward replay;
-none of the drills here will do it for you.
+### PostgreSQL
+
+Enable `wal_level=replica`, `archive_mode=on` and a tested `archive_command` or archive library that never
+silently overwrites different bytes. Retain the complete WAL sequence, not only files newer than a chosen
+snapshot. Use a matching server-major toolchain with `pg_basebackup`, `pg_verifybackup`, `pg_ctl` and `psql`.
+The backup role needs replication rights, physical-control inspection and `pg_create_restore_point` rights.
+
+PITR-enabled snapshots contain an additional **physical cluster base** in `pg-base/`, with streamed WAL and
+a native backup manifest. Kumwe records its system identifier, timeline and start/end LSN, then creates a
+named restore point while payload writes remain stopped. External tablespaces and cross-timeline recovery
+are refused. Physical bases include the entire cluster, including PostgreSQL roles and potentially other
+databases; use a dedicated cluster and restrict access accordingly. A logical `pg_dump` is never used as a
+WAL replay base.
+
+Set `KUMWE_RESTORE_PGDATA` to an absent directory owned by the database OS user and run recovery as that
+user. The adapter verifies the physical base, uses a fresh recovery configuration with a private Unix
+socket and no TCP listener, and waits for the exact named target to reach the actual `paused` state
+reported by `pg_get_wal_replay_pause_state()`, not just a pending pause request. A missing/unreachable target
+or timeout fails. Only after verifying the migration at that point does it promote and stop the cluster.
+The default replay timeout is 300 seconds (`KUMWE_RESTORE_REPLAY_TIMEOUT`). The log remains in
+`PGDATA/kumwe-recovery.log`. Review the restored server configuration and provision production secrets
+before starting the stopped cluster for acceptance. A failed physical replay leaves its target for
+inspection; use a fresh target and claim for the next attempt.
+
+### Authenticate an immutable archive and replay
+
+Materialize an archive into a restricted directory, finish all copying, then write `archive.json` with
+`format: "kumwe-log-archive-v1"` and `source_id` exactly matching the signed base's `.pitr.source_id`.
+Include only complete native log files for that source. With `tools/recovery-common.sh` sourced and a
+`fail()` function that exits nonzero, `recovery_checksums /archive` produces the exact sorted inventory:
+
+```bash
+recovery_checksums /archive > /archive/checksums.sha256
+minisign -S -s /run/secrets/backup-signing.key -m /archive/checksums.sha256 \
+  -x /archive/checksums.sha256.minisig
+export KUMWE_RESTORE_LOG_ARCHIVE=/archive
+export KUMWE_RESTORE_PAYLOAD_BACKUP=/backups/SELECTED-TARGET
+# Set all clean-target connection/filesystem variables documented below.
+tools/restore.sh /backups/BASE
+```
+
+Archives must remain immutable throughout verification and replay, just like backup directories. Use
+read-only mounts or an immutable offsite restore. Signature verification and exact inventory/checksums
+precede replay. The completion manifest binds both snapshot identities, the selected native target and
+the destination connection. Recovery never truncates or deletes the operator's native archive.
+
+Upstream procedures: [MySQL event-position recovery](https://dev.mysql.com/doc/refman/8.4/en/point-in-time-recovery-positions.html),
+[MariaDB binlog options](https://mariadb.com/docs/server/clients-and-utilities/logging-tools/mariadb-binlog/mariadb-binlog-options),
+[MySQL GTID set functions](https://dev.mysql.com/doc/refman/8.4/en/gtid-functions.html),
+[PostgreSQL recovery control](https://www.postgresql.org/docs/17/functions-admin.html#FUNCTIONS-RECOVERY-CONTROL),
+and [PostgreSQL continuous archiving](https://www.postgresql.org/docs/17/continuous-archiving.html).
+
+### Deployment tooling
+
+The application Docker build copies the complete `tools/` directory, including the recovery helper
+siblings. Optional `docker/php/Dockerfile` build targets `recovery-mariadb` and `recovery-postgres`
+include jq, Minisign, Restic and native recovery tools; the ordinary FPM target keeps its existing
+dependencies. PostgreSQL's target supplies server-major 17 tools, including `pg_ctl` and `pg_verifybackup`.
+Build with `docker build --target recovery-postgres -f docker/php/Dockerfile .`, then mount read-only
+authenticated backups/archives, restricted password/key files, and fresh writable destinations. These
+targets enter Bash and run as `www-data`; override the UID to the recovery-volume owner when required,
+never root for PostgreSQL. Invoke them with `tools/restore.sh /backups/BASE` and the documented environment.
+
+MariaDB's image uses Debian's native MariaDB client. Confirm compatibility with the source release;
+do not use that client as a MySQL 8.4 substitute. MySQL deployments need matching Oracle MySQL tools
+on the recovery host or in an operator image. The native MySQL workflow uses the same official 8.4 image
+for server, dump client and binlog decoder. The optional Docker targets still require the operator's
+offsite, credentials, quiesce/resume hooks and native archive configuration.
 
 ## Create a consistent backup
 
@@ -304,8 +376,9 @@ recovers it.
 `tools/restore-interruption-drill.sh` is the evidence for all of this and the way to re-qualify it after changing
 either script. It takes a real backup, restores it into a scratch database and scratch targets, `SIGKILL`s the
 restore at the moment it begins publishing targets, re-runs it unchanged, and compares every restored tree
-against the source. It is an operator drill rather than a continuous-integration step because it needs the dump
-and restore clients on the host and a disposable database it may be pointed at; run it when qualifying a release.
+against the source. It needs the dump and restore clients and an explicitly disposable database. It deterministically kills
+the process group immediately after the first real filesystem publication through a drill-only command wrapper.
+Run it in the recovery CI lane or an isolated operational drill; it is runtime evidence, not release qualification.
 
 ## Recovery acceptance
 
@@ -369,100 +442,164 @@ resource-policy declarations, conditional record/field policies, SoD rules, appr
 encrypted step-up credentials, recovery-code digests, proof replay fences, scoped token bindings, portal sessions,
 resource ownership, and security audit history. Secrets remain encrypted or digested in the archive.
 
-On a clean-target drill, verify catalog owner/checksum/lifecycle parity, effective access for one allowed and one
-denied membership, row and field non-enumeration, stale-session rejection, approval spent state, and TOTP/recovery
-replay fences. The automated drill now covers limited login, allow/deny authorization, stale-session rejection, and
-the TOTP and recovery-code replay fences. **Approval spent state remains a manual check**, and the reason is worth
-knowing: this release ships no administration surface that creates an approval *rule*, so a drill could only reach a
-consumed approval by inserting one with raw SQL. That would be a fixture pretending to be a workflow, and it would
-pass whether or not the real path works. Check it by hand against an approval your installation actually created, and
-treat rule administration as the prerequisite for automating it. Invalidate restored browser sessions and token
-families before connecting a drill copy to any network that can reach production resources.
+On a clean-target drill, verify catalog owner/checksum/lifecycle parity, effective access for one allowed
+and one denied membership, row and field non-enumeration, stale-session rejection, approval spent state,
+and TOTP/recovery replay fences. The existing PHP drill covers limited login, allow/deny authorization,
+stale-session rejection and the second-factor replay fences. It now also calls
+`RestoreApprovalAcceptance`: a separate real policy actor creates a SoD rule through
+`BusinessSecurityAdministrationService`; a maker and checker create, approve and consume a request
+through `ApprovalService` with persisted step-up proofs. After restore, the same consumed request must
+be refused without changing its version or binding. The same fresh proof then consumes an approved
+sibling, proving the refusal was spent-state protection rather than unusable credentials. Fixtures expire
+after seven days; run this automated drill promptly against its freshly taken backup. No SQL fabricates
+rules, votes, requests or proof state, and no missing approval-administration route blocks this evidence.
+
+### HTTP and approval-spent acceptance
+
+`tools/restore-http-drill.sh` exercises the real login form, CSRF token/cookie exchange, authenticated
+administrator page, API token, mutation response and `Idempotency-Replayed` header. It records a fresh
+source mutation before backup, then requires the restored database to replay that outcome using the
+original key and `If-Match`, with identical result digest, status and ETag. A second HTTP replay must
+also be identical. It refuses a successful-looking response that lacks replay evidence.
+
+When the selected API fixture has a business-record approval, configure a request created, approved and consumed through
+its real administration/workflow services before backup. The drill requires its source and restored HTTP
+projection to say `consumed`, with approve/cancel/revoke controls disabled, and compares that projection's
+digest. It does not insert synthetic rule or approval rows. Without an applicable approval fixture the
+result explicitly says `not_applicable`; this does not close the approval recovery finding or prove its
+consumption service. Generic role approvals used by the PHP spent-state drill are deliberately outside
+this business-record API projection; their consumption is tested by the service-level drill above.
+
+Configure `KUMWE_DRILL_HTTP_ORIGIN` to the isolated source, then the restored origin. HTTPS is required
+except on localhost/127.0.0.1. Supply `KUMWE_DRILL_LOGIN_EMAIL_FILE`, `KUMWE_DRILL_LOGIN_PASSWORD_FILE` and
+`KUMWE_DRILL_API_TOKEN_FILE` as restricted credential files. The API token must be issued before backup
+and carry the selected fixture mutation and approval-read authority. No token or password enters evidence.
+Parent login/CSRF integration is required; the probe refuses forms with no CSRF token.
+
+For a disposable source database, `KUMWE_RECOVERY_FIXTURE_DISPOSABLE=yes php
+tests/Support/recovery-http-fixture.php /absolute/new-fixture-directory` provisions a real scoped token
+and neutral create request. A separate policy actor uses real step-up to create the required organization
+membership. It writes `email`, `password`, `token` and `request.json` as private files; point the three
+credential variables at those files. This helper adds fixture data and is only for disposable installations.
+
+Request fixture (replace paths, key, body, original entity version and optional approval UUID with the
+real fixture; do not send this example to a production record):
+
+```json
+{
+  "format": "kumwe-recovery-http-request-v1",
+  "site": "default",
+  "method": "PATCH",
+  "path": "/api/v1/business/records/definition/record",
+  "key": "recovery-fixture-one",
+  "if_match": "\"v1\"",
+  "body": {"values": {"label": "Recovery fixture"}},
+  "approval_request_id": null
+}
+```
+
+```bash
+# Before the backup, after provisioning real fixtures through application services:
+tools/restore-http-drill.sh seed /secure/request.json /private/recovery-http-receipt.json
+# After restoring, point the origin and credentials at the isolated restored installation:
+tools/restore-http-drill.sh verify /secure/request.json /restored/private/recovery-http-receipt.json
+```
+
+The receipt is secret-free and should be included in the private payload tree so the backup authenticates
+it. The `site` field defaults to `default` and supplies the required `Kumwe-Site` header. Keep request bodies
+and credentials private. Run HTTP replay before any other drill changes that
+record, token, approval or its policy. This probe compares terminal approval state; it does not claim a
+new approval can be issued or consumed without the corresponding service-level workflow evidence.
+
+### Native before/after transaction drill
+
+`tools/restore-pitr-drill.sh` creates a small probe table in an explicitly disposable, migrated source
+installation, snapshots it, commits one selected transaction, snapshots again, and performs two native
+restores. It asserts the exact marker rows before and after that transaction and rejects a newer
+wall-clock target. It writes evidence, manifests and logs into an initially empty
+`KUMWE_PITR_DRILL_OUTPUT`. Run separately for MariaDB, MySQL and PostgreSQL with matching native clients.
+This is operational runtime evidence, with no manual browser or release-artifact acceptance checklist.
+Binlog engines rotate between the base and target, so the replay crosses a real file boundary. A third
+transaction commits after the target and is archived too; assertions require it to remain excluded.
+
+Set `KUMWE_PITR_DRILL_DISPOSABLE=yes`, the normal quiesced backup/source variables and destination variables.
+The source and recovery instances must be distinct; their database name remains the same. Two executable
+operator adapters supply environment-specific infrastructure:
+
+- `KUMWE_PITR_DRILL_ARCHIVE_HOOK BASE AFTER ARCHIVE_DIR`: rotate/flush and collect complete native logs
+  through the target into `ARCHIVE_DIR`, failing if the archive is incomplete. MariaDB/MySQL can use
+  `FLUSH BINARY LOGS` followed by copies of closed binlogs; PostgreSQL copies from its configured WAL
+  archive after the backup's `pg_switch_wal` has been archived. The drill signs the resulting inventory.
+- `KUMWE_PITR_DRILL_TARGET_HOOK prepare|start|stop before|after`: prepare an empty disposable target,
+  start a recovered physical cluster for inspection if needed, and stop it afterward. Binlog targets
+  are empty databases on a separate running instance; `start` may be a no-op. PostgreSQL `prepare`
+  leaves `KUMWE_RESTORE_PGDATA` absent. The hook receives all exported restore variables. It must keep
+  every target isolated and report setup errors; the drill itself performs and asserts recovery.
+
+A source already containing the drill table is refused. Archive gap/corruption and missing-target tests
+must accompany the successful native runs; the focused shell suite proves those refusal dispatches with
+command doubles and cannot replace real-engine evidence.
 
 ## Scheduling, retention, and off-host copies
 
-This repository ships no backup scheduler, no retention job, and no copy-off-host step, and that is a
-deliberate boundary rather than an omission: where backups live, how long they are kept, and what may
-reach that storage are decisions about your infrastructure and your regulator, not about this
-application. What follows is a reference to adapt, and the list of things that stay yours.
+The executable cycle is `tools/backup-cycle.sh`. Install the reference service and timer from
+`docs/operations/systemd/` and configure `/etc/kumwe/backup.env` for the backup OS account:
 
-A reference systemd timer, hourly, matching the declared 60-minute RPO:
+- `KUMWE_BACKUP_QUIESCE_HOOK`: absolute executable path; stop all writers and exit nonzero on failure.
+- `KUMWE_BACKUP_RESUME_HOOK`: absolute executable path; safely resume writers, including after failed quiesce.
+- `KUMWE_BACKUP_OFFSITE_HOOK`: absolute executable path; takes one backup directory argument, copies it
+  offsite and verifies the stored copy, returning nonzero on any failure.
+- `KUMWE_BACKUP_KEEP`: positive local snapshot count, for example `48`.
+- Signing/verification keys and all backup variables above.
 
-```ini
-# /etc/systemd/system/kumwe-backup.service
-[Unit]
-Description=Kumwe quiesced backup, verification and off-host copy
+The cycle takes a lock, quiesces, creates and verifies the signed snapshot, runs the offsite hook, resumes
+writers, then prunes. Failure resumes writers and never reaches retention. Hooks are executable paths,
+not evaluated shell strings. The timer is hourly with no random delay; missed timers run once at startup.
+Monitor cycle failures, duration and archive lag: an hourly timer cannot guarantee a 60-minute RPO when
+jobs fail, overrun or the host is down.
 
-[Service]
-Type=oneshot
-User=kumwe-backup
-EnvironmentFile=/etc/kumwe/backup.env
-ExecStart=/srv/kumwe/tools/backup-cycle.sh
-```
+`tools/backup-retain.sh` independently verifies every candidate before any deletion and orders by signed
+creation time. It refuses zero retention and preserves at least the newest verified snapshot. Unknown,
+partial and invalid snapshots are not silently deleted. Native binlog/WAL archive retention is separate:
+keep the log chain needed by every retained recovery base, including offsite bases. Snapshot pruning
+alone never prunes logs or proves archive usability.
 
-```ini
-# /etc/systemd/system/kumwe-backup.timer
-[Unit]
-Description=Hourly Kumwe backup
+### Reference transport: Restic
 
-[Timer]
-OnCalendar=hourly
-RandomizedDelaySec=300
-Persistent=true
+Restic is an optional single-binary reference transport with client-side authenticated encryption and
+content-addressed deduplication. Send the plain trees directly; do not recompress them into tarballs.
+Use a stable parent path and explicit backup tags/retention groups. Use an append-only server/repository
+access arrangement for the production writer; keep privileged `forget --prune` credentials off that host.
+Append-only protection depends on the backend/access policy, not merely installing the client. Verify
+stored data by restoring the selected snapshot to a fresh directory and running `restore-verify.sh` there.
+A successful upload or `restic check` alone is not application restore acceptance. Kumwe takes no Restic
+dependency and allows other transports with equivalent encryption, integrity, deduplication and custody.
 
-[Install]
-WantedBy=timers.target
-```
+For a measured deduplication drill, take two snapshots with one changed file and run
+`tools/backup-dedup-drill.sh BEFORE AFTER /absolute/new-evidence-directory` against an isolated configured
+Restic repository. It uploads both with a stable path/group, records the actual JSON stored-byte summaries,
+and restores/verifies the second copy. Retain `measurement.json` and compare the second `data_added`/stored
+bytes to changed and total payload bytes. Do not call identical-file checksum counts a measurement of repository storage. Native physical
+bases and database dumps can change beyond the one application file, so report those separately.
 
-`backup-cycle.sh` is yours to write, and is short. It has to do four things in order, and stop on the
-first failure:
+Whole-table parity remains optional: signed exact dump bytes plus the existing typed runtime and security
+acceptance prove the supported drill. They do not assert identical row counts for every installation table.
+Offsite drills on actual deployment volumes measure recovery point, recovery time, key availability and
+archive reachability; the focused filesystem test does not provide those measurements.
 
-```bash
-#!/usr/bin/env bash
-set -Eeuo pipefail
+### Automated native lanes (#152)
 
-# 1. Quiesce. Stop writes, the worker and the scheduler; the backup refuses to run otherwise.
-systemctl stop kumwe-web kumwe-worker kumwe-scheduler
-trap 'systemctl start kumwe-web kumwe-worker kumwe-scheduler' EXIT
+`tests/Unit/Tools/RecoveryToolsTest.php` runs eleven filesystem/refusal checks through the real shell
+tools, retaining v2 tar compatibility. There is no Python dependency or command-double recovery evidence.
+Run the full isolated engine drill with `tests/Support/recovery-native-drill.sh mariadb|mysql|pgsql`.
+It creates fresh source/destination clusters, real signing keys, native archived logs, and before/after
+transaction assertions; it also exercises missing-log refusal, sixteen tamper refusals, SIGKILL/resume,
+retention, and failed-cycle writer resumption. `KUMWE_RECOVERY_MEASURE_RESTIC=yes` adds a real two-snapshot
+repository measurement with restored-copy verification. The small fixture does not establish the 20 GB RTO.
 
-# 2. Take it, signed.
-backup_path="$(/srv/kumwe/tools/backup.sh)"
-
-# 3. Verify before trusting it, and again after it has been copied.
-/srv/kumwe/tools/restore-verify.sh "$backup_path"
-
-# 4. Copy off-host, then verify the copy where it landed. An unverified remote copy is a guess.
-rsync --archive --checksum "$backup_path" backup-host:/srv/kumwe-backups/
-ssh backup-host "/srv/kumwe/tools/restore-verify.sh /srv/kumwe-backups/$(basename "$backup_path")"
-```
-
-Retention is a `find` and a policy decision, not a feature:
-
-```bash
-# Keep 48 hourly backups locally; the off-host copy keeps its own, longer, series.
-find /srv/kumwe/backups -mindepth 1 -maxdepth 1 -type d -name 'kumwe-2.*' \
-  | sort | head -n -48 | xargs --no-run-if-empty rm -rf --
-```
-
-Prune only backups that have verified, and never prune the newest surviving backup regardless of age: a
-retention rule that can empty the directory is a data-loss mechanism.
-
-### What stays operator-owned, and why
-
-- **Cadence, retention, and where copies live.** These are the RPO decision and the compliance
-  decision. The tooling cannot make them and should not appear to.
-- **Access to backup storage.** A backup is a complete copy of the database. It belongs on encrypted,
-  access-controlled storage that production cannot write to, so that a compromise of the application
-  host cannot delete its own history.
-- **Backup signing key custody.** The private key must not live on the host that takes backups if that
-  host is the one you are protecting against. The public key must be somewhere the *recovery* host can
-  reach, because a restore needs it (see *Restore keys first*).
-- **Binlog or WAL archiving, and its retention.** See *Point-in-time recovery is a database-layer
-  responsibility*.
-- **Off-host drills.** CI drills a restore on every push, on a small fixture, on a runner. It does not
-  drill your data volume, your hardware, or your network. Only you can measure your own RTO.
-- **Whole-table parity between source and restore.** The acceptance manifest digests are scoped to the
-  drill fixture; whole-database equality rests on the dump plus its SHA-256 checksum and signature,
-  which is a strong claim about the bytes and a weaker one about semantics. An installation that wants
-  independent confirmation should compare row counts per table between source and restore during its
-  own drill, before the restore is written to.
+`.github/workflows/recovery.yml` runs those native lanes on pull requests and integration-branch pushes.
+MariaDB uses the runner's packaged native server; MySQL uses matching official 8.4 server/client binaries;
+PostgreSQL uses a matching 17 toolchain as a non-root user. Evidence records actual server/client versions.
+Only explicit secret-free reports are uploaded; signing keys, database clusters, request bodies and token
+files stay out of artifacts. The existing App clean-target lane additionally executes the real approval
+spent-state controls. The parent integrates HTTP probes with its login/CSRF work and owns full CI/baselines.

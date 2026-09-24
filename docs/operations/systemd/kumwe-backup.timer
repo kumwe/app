@@ -1,0 +1,10 @@
+[Unit]
+Description=Hourly Kumwe recovery snapshot
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+Unit=kumwe-backup.service
+
+[Install]
+WantedBy=timers.target
