@@ -101,6 +101,68 @@ final class BusinessRecordScaleMigrationIntegrationTest extends TestCase
     }
 
     /**
+     * An eligible schedule whose stored version is not a positive integer is refused, not re-versioned.
+     *
+     * The upgrade rewrites the shipped schedule under a compare-and-set on its version, and increments it.
+     * A version it cannot read as a positive integer cannot be incremented or matched honestly, so the
+     * migration stops and leaves the schedule exactly as the operator's installation holds it. The migration
+     * also names itself and checksums its own bytes, so an edit after release is detectable.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAnEligibleScheduleWithAnUnreadableVersionIsRefusedAndLeftUntouched(): void
+    {
+        $database = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
+        $tables = new TableNames($database, 'retention_');
+        try {
+            (new BusinessIntegrationSdkMigration($tables))->up($database);
+            $database->executeStatement(sprintf(
+                'CREATE TABLE %s (id VARCHAR(36) PRIMARY KEY, expires_at DATETIME NOT NULL)',
+                $tables->quoted('business_command_idempotency'),
+            ));
+            $database->executeStatement(sprintf(
+                'CREATE TABLE %s (id VARCHAR(36) PRIMARY KEY, job_type VARCHAR(191) NOT NULL, '
+                . 'cron_expression VARCHAR(96) NOT NULL, payload CLOB NOT NULL, enabled BOOLEAN NOT NULL, '
+                . 'next_run_at DATETIME NOT NULL, updated_at DATETIME NOT NULL, version INTEGER NOT NULL)',
+                $tables->quoted('schedules'),
+            ));
+            $database->insert($tables->raw('schedules'), [
+                'id' => '00000000-0000-7000-8000-000000000803',
+                'job_type' => 'business.record.idempotency.purge',
+                'cron_expression' => '43 * * * *',
+                'payload' => '{"batch_size":500,"maximum_batches":10}',
+                'enabled' => 1,
+                'next_run_at' => '2026-01-01 00:43:00',
+                'updated_at' => '2026-01-01 00:00:00',
+                'version' => 'seven',
+            ]);
+            $migration = new BusinessRecordScaleMigration($tables);
+            self::assertSame(
+                hash('sha256', $migration->id() . ':' . hash_file(
+                    'sha256',
+                    (string) (new \ReflectionClass(BusinessRecordScaleMigration::class))->getFileName(),
+                )),
+                $migration->checksum(),
+            );
+
+            try {
+                $migration->up($database);
+                self::fail('A schedule version that is not a positive integer must be refused.');
+            } catch (\RuntimeException $refusal) {
+                self::assertSame('The retention schedule version is invalid.', $refusal->getMessage());
+            }
+            $row = $database->fetchAssociative(sprintf('SELECT * FROM %s', $tables->quoted('schedules')));
+            self::assertIsArray($row);
+            self::assertSame('43 * * * *', $row['cron_expression']);
+            self::assertSame('seven', $row['version']);
+        } finally {
+            $database->close();
+        }
+    }
+
+    /**
      * Cover untouched defaults, a disabled default, reordered JSON, and independent operator overrides.
      *
      * @return  iterable<string, array{string, string, bool, bool}>  Existing configuration and eligibility.
