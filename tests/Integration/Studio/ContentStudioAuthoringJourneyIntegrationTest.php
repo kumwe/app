@@ -1337,6 +1337,23 @@ final class ContentStudioAuthoringJourneyIntegrationTest extends TestCase
         $replayed = $render($transport($preview->origin, $preview->channelId, 0));
         self::assertSame('invalid-request', $replayed->refusalCategory);
         self::assertStringContainsString('studio.preview/sequence-replayed', $replayed->body);
+
+        // Another writer moves the stored item on: the preview binds its current revision instead of refusing.
+        $content = self::service($container, ContentService::class);
+        $returnPath = $saved->session->extensions->{'kumwe.app/return'}->path;
+        $entryId = substr($returnPath, strlen('/administrator/content/'), 36);
+        $stored = $content->get($context, $entryId);
+        $content->update(
+            $context,
+            $entryId,
+            $stored->entry->version(),
+            'Preview journey page, moved on',
+            $stored->entry->slug(),
+            ['body' => 'Saved by another writer after the session opened.'],
+        );
+        $moved = $bindings->resolve($context, $resolved, new StudioPreviewDraft($host->siteId, $blueprint));
+        self::assertSame('Preview journey page, moved on', $moved->entry()->title ?? null);
+        self::assertSame('Saved by another writer after the session opened.', $moved->entry()->data_body ?? null);
     }
 
     /**
