@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use DateTimeZone;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
+use Kumwe\App\Delivery\Console\Command\RecoverCredentialsCommand;
 use Kumwe\App\Delivery\Http\Api\Identity\AccessControlApiHandler;
 use Kumwe\App\Identity\Application\Administration\AccessControlService;
 use Kumwe\App\Identity\Application\Administration\AdministratorIdentityGateway;
@@ -29,12 +30,14 @@ use Ramsey\Uuid\Uuid;
  * browser-parity work exposed, with real tokens, and requires both takeover paths to be refused against a
  * stronger account while an account inside the actor's own authority can still be recovered, and authority
  * held only through an organization membership — even one that is inactive today — counts towards it.
+ * Break-glass console recovery is pinned at the behaviour the ceiling gives it today, pending a decision.
  *
  * @since  2.0.0
  */
 #[CoversClass(AccessControlService::class)]
 #[CoversClass(AccessControlApiHandler::class)]
 #[CoversClass(DoctrineAccessControlRepository::class)]
+#[CoversClass(RecoverCredentialsCommand::class)]
 final class CredentialTakeoverCeilingTest extends TestCase
 {
     /**
@@ -171,5 +174,71 @@ final class CredentialTakeoverCeilingTest extends TestCase
             'correct horse battery',
             'security-qualification',
         ), 'The member keeps the credential it had.');
+    }
+
+    /**
+     * Break-glass console recovery currently stops at the same ceiling for an account holding any grant.
+     *
+     * The recovery acts as the `system:credential-recovery` identity, and a system identity carries no grants
+     * to draw a delegation ceiling from, so since the ceiling landed the console can reset the password or
+     * retire the second factor only of an account that holds no grant, while ending a stronger account's
+     * sessions still works. Whether break-glass should be exempt is an open maintainer decision; this pins
+     * today's behaviour so that whichever way it is decided, the change is deliberate and visible here.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testBreakGlassRecoveryCurrentlyStopsAtTheCeilingOfAnAccountHoldingGrants(): void
+    {
+        $harness = SecurityHttpHarness::boot();
+        $stronger = $harness->machineActor(['administrator.access', 'settings.manage']);
+        $access = $harness->container->get(AccessControlService::class);
+        $identities = $harness->container->get(AdministratorIdentityGateway::class);
+        self::assertInstanceOf(AccessControlService::class, $access);
+        self::assertInstanceOf(AdministratorIdentityGateway::class, $identities);
+        $grantless = 'break-glass-' . bin2hex(random_bytes(6)) . '@example.test';
+        $access->createUser(
+            TestKernelFactory::administratorContext($harness->container),
+            $grantless,
+            'Break-glass subject',
+            'correct horse battery',
+        );
+        $chosen = 'break glass replacement passphrase';
+        $file = $harness->tokenFile($chosen);
+
+        try {
+            foreach ([['reset-password', '--password-file=' . $file], ['revoke-step-up']] as $arguments) {
+                $refused = $harness->console(RecoverCredentialsCommand::class, [
+                    $arguments[0],
+                    '--email=' . $stronger['email'],
+                    ...array_slice($arguments, 1),
+                ]);
+                self::assertSame(1, $refused['status'], $arguments[0] . ' stops at the ceiling today.');
+                self::assertStringContainsString('system:credential-recovery is not authorized', $refused['errors']);
+            }
+            self::assertNull($identities->authenticate($stronger['email'], $chosen, 'security-qualification'));
+            self::assertNotNull($identities->authenticate(
+                $stronger['email'],
+                'correct horse battery',
+                'security-qualification',
+            ), 'The stronger account keeps its password.');
+
+            $ended = $harness->console(RecoverCredentialsCommand::class, [
+                'terminate-sessions',
+                '--email=' . $stronger['email'],
+            ]);
+            self::assertSame(0, $ended['status'], 'Ending a stronger account\'s sessions is not a takeover.');
+
+            $recovered = $harness->console(RecoverCredentialsCommand::class, [
+                'reset-password',
+                '--email=' . $grantless,
+                '--password-file=' . $file,
+            ]);
+            self::assertSame(0, $recovered['status'], $recovered['errors']);
+            self::assertNotNull($identities->authenticate($grantless, $chosen, 'security-qualification'));
+        } finally {
+            unlink($file);
+        }
     }
 }
