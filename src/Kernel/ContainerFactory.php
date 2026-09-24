@@ -2984,7 +2984,7 @@ final class ContainerFactory
                 BusinessSchemaLifecycleObserver::class,
             ),
         );
-        $coreOpenApiJson = file_get_contents($root . '/api/openapi/kumwe-v1.json');
+        $coreOpenApiJson = file_get_contents(self::currentOpenApiArtifact($root));
         if ($coreOpenApiJson === false) {
             throw new RuntimeException('The checked-in core OpenAPI contract cannot be read.');
         }
@@ -4125,7 +4125,7 @@ final class ContainerFactory
         $container->share(OpenApiContractService::class, static function (
             Container $container,
         ) use ($root): OpenApiContractService {
-            $json = file_get_contents($root . '/api/openapi/kumwe-v1.json');
+            $json = file_get_contents(self::currentOpenApiArtifact($root));
             if ($json === false) {
                 throw new RuntimeException('The checked-in core OpenAPI contract cannot be read.');
             }
@@ -7094,6 +7094,43 @@ final class ContainerFactory
             BearerAuthenticationMiddleware::OPTION_TOKEN_AUDIENCE => 'kumwe-http',
             BearerAuthenticationMiddleware::OPTION_TOKEN_PURPOSE => 'api',
         ]);
+    }
+
+    /**
+     * Resolve the compiled OpenAPI artifact of the current retained REST generation.
+     *
+     * The generation ledger names the current generation and its artifact path, so the runtime serves the
+     * generation the compiler last accepted without a second hard-coded path to keep in step with it.
+     *
+     * @param   string  $root  Absolute path of the repository root.
+     *
+     * @return  string  Absolute path of the current generation's compiled artifact.
+     *
+     * @throws  RuntimeException  When the ledger is unreadable or names no current artifact.
+     *
+     * @since   2.0.0
+     */
+    private static function currentOpenApiArtifact(string $root): string
+    {
+        $ledger = file_get_contents($root . '/api/openapi/generations.json');
+        $decoded = is_string($ledger) ? json_decode($ledger, true, 16, JSON_THROW_ON_ERROR) : null;
+        $current = is_array($decoded) ? ($decoded['current'] ?? null) : null;
+        $rows = is_array($decoded) ? ($decoded['generations'] ?? null) : null;
+        if (is_string($current) && is_array($rows)) {
+            foreach ($rows as $row) {
+                if (
+                    is_array($row)
+                    && ($row['generation'] ?? null) === $current
+                    && is_string($row['artifact'] ?? null)
+                    && preg_match('#^api/openapi/[A-Za-z0-9./_-]+\.json$#D', $row['artifact']) === 1
+                    && !str_contains($row['artifact'], '..')
+                ) {
+                    return $root . '/' . $row['artifact'];
+                }
+            }
+        }
+
+        throw new RuntimeException('The REST generation ledger names no current OpenAPI artifact.');
     }
 
     /**
