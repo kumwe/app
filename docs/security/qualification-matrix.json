@@ -125,6 +125,16 @@
                             "test": "tests/Unit/Identity/Infrastructure/Administration/DoctrineAdministratorSessionStoreTest.php::testResolutionRefusesASessionIssuedUnderASupersededSecurityEpoch",
                             "job": ".github/workflows/ci.yml#quality",
                             "proves": "A session minted under a superseded security epoch no longer resolves."
+                        },
+                        {
+                            "test": "tests/Functional/Security/CredentialTakeoverCeilingTest.php::testAUserManagerCannotTakeOverAStrongerAccount",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Over REST, a user manager cannot reset the password or second factor of an account stronger than itself."
+                        },
+                        {
+                            "test": "tests/Integration/Identity/IdentityRecoveryMachineEquivalenceIntegrationTest.php::testRecoveryActsLandOnTheServiceWithTheScreensAuditAction",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Recovery acts from REST, the console and MCP land on the one audited service."
                         }
                     ]
                 },
@@ -255,6 +265,16 @@
                             "test": "tests/Unit/Http/Security/SecurityHeadersTest.php::testInadmissibleScriptOriginsAreRefused",
                             "job": ".github/workflows/ci.yml#quality",
                             "proves": "Only exact admissible script origins can widen the script directive."
+                        },
+                        {
+                            "test": "tests/Unit/Localization/Application/MessageOverrideServiceTest.php::testAdministeredWordingRefusesActiveMarkupAndAttributes",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Administered wording, now also writable over REST, cannot carry active markup into trusted rendering."
+                        },
+                        {
+                            "test": "tests/Unit/Localization/Presentation/TranslationTwigExtensionTest.php::testAMessageCarryingInlineMarkupKeepsItsElementAndStillEscapesTheValues",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Substituted values are escaped even inside trusted catalogue markup."
                         }
                     ]
                 },
@@ -287,6 +307,11 @@
                             "test": "tests/Functional/Security/UploadAndTraversalBoundaryTest.php::testUploadsAreJudgedByTheirBytesAndNeverByTheClientNameOrType",
                             "job": ".github/workflows/ci.yml#database",
                             "proves": "Over HTTP, script, markup, SVG and mislabelled uploads are refused by their bytes and a polyglot is stored and served inertly under its detected type."
+                        },
+                        {
+                            "test": "tests/Functional/Security/UploadAndTraversalBoundaryTest.php::testTheRestUploadJudgesTheRawBodyAndIgnoresTheClientPath",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "The REST raw-body upload judges bytes and keeps only the base name of a traversal-shaped filename."
                         }
                     ]
                 },
@@ -908,6 +933,16 @@
                             "test": "tests/Functional/Security/MachineAdapterAuthorityTest.php::testANarrowCredentialCannotBorrowAuthorityThroughAnyAdapter",
                             "job": ".github/workflows/ci.yml#database",
                             "proves": "A narrow credential cannot create through any of the three machine adapters."
+                        },
+                        {
+                            "test": "tests/Integration/Identity/IdentityRecoveryMachineEquivalenceIntegrationTest.php::testEverySurfaceRefusesMissingAuthorityAndABlankReason",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "REST, the console and MCP refuse missing authority identically for identity recovery acts."
+                        },
+                        {
+                            "test": "tests/Functional/Security/CredentialTakeoverCeilingTest.php::testAUserManagerCannotTakeOverAStrongerAccount",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "A machine credential cannot reach beyond its delegation ceiling by taking over a stronger account."
                         }
                     ]
                 }
@@ -988,6 +1023,11 @@
                             "test": "tests/Functional/Security/IdempotencyKeyOwnershipTest.php::testARevokedOwnerIsRefusedBeforeAnyReplay",
                             "job": ".github/workflows/ci.yml#database",
                             "proves": "A revoked owner is refused before any replay."
+                        },
+                        {
+                            "test": "tests/Unit/Delivery/Http/Api/Idempotency/HttpMutationPreauthorizerTest.php::testParityMutationsArePreauthorizedAgainstTheirExactResource",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "The browser-parity REST mutations are authorized against their exact resource before the ledger is read."
                         }
                     ]
                 }
@@ -1160,6 +1200,11 @@
                             "test": "tests/Unit/Extension/Runtime/ExtensionExecutionContextTest.php::testASystemContextIsDisclosedWithItsActorTokenAndNoScopes",
                             "job": ".github/workflows/ci.yml#quality",
                             "proves": "A system context carries no scopes into extension code."
+                        },
+                        {
+                            "test": "tests/Integration/Persistence/AdvisoryLockScopeIntegrationTest.php::testEveryNamedAdvisoryLockDiffersAcrossDatabasesAndMatchesWithinOne",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "No server-wide advisory lock lets one installation hold ambient authority over another."
                         }
                     ]
                 },
@@ -1468,6 +1513,16 @@
                             "test": "tests/Unit/Identity/Infrastructure/Administration/RedisAuthenticationRateLimiterTest.php::testBudgetsAreKeyedPerSubjectAndOriginPairUnderAHashedName",
                             "job": ".github/workflows/ci.yml#quality",
                             "proves": "Throttle budgets are keyed per subject and origin."
+                        },
+                        {
+                            "test": "tests/Integration/Persistence/AdvisoryLockScopeIntegrationTest.php::testLifecycleLocksOfTwoDatabasesOnOneServerDoNotContend",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Two installations on one database server never contend for each other's lifecycle lock."
+                        },
+                        {
+                            "test": "tests/Integration/Persistence/AdvisoryLockScopeIntegrationTest.php::testEveryNamedAdvisoryLockDiffersAcrossDatabasesAndMatchesWithinOne",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Every named advisory lock is scoped to its own database."
                         }
                     ]
                 }
