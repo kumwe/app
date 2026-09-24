@@ -146,6 +146,21 @@ portfolio, soaks, the independent review and the out-of-process extension runtim
   Trace-context propagation is documented as propagation, never as tracing, and ADR 0022 records that adopting a
   tracer and exporter is a separate dependency decision (`GM-OBS-05`) (#152).
 
+- Qualify observability in the real deployment (`P7-D`). Jobs, schedule occurrences, outbox messages and
+  inbox receipts now record the correlation, causation and W3C trace identifiers of the operation that produced
+  them, and the worker, scheduler, dispatcher and consumer log each claim under them, with the process role on
+  every line and credentials scrubbed from messages as well as fields; the backup and restore tools log the same
+  structured, redacted lines and record each outcome for the metrics endpoint. `/metrics` adds recovery age,
+  storage, extension trust, revocation feed and security-event signals within a 256-series bound.
+  `deploy/observability` ships 45 alert rules (ten paging) with runbook sections in
+  `docs/operations/runbooks.md`, nine inhibition rules, promtool scenarios and three dashboards separating
+  business work from transport retries, all refused offline by `composer observability:rules` when a label is
+  unbounded or a link, template or inhibition is unsound. `tools/synthetic-probe.php` checks the deployment from
+  outside, and the Observability drills workflow induces every page condition against the real application on
+  MariaDB and PostgreSQL, proves with promtool that the alert fires with its runbook link, performs the runbook's
+  recovery and proves it clears: 10 of 10 drills pass locally on both engines. Trace context crossing the
+  asynchronous boundaries is recorded as an addendum to ADR 0022; no span exporter is added (#152).
+
 - Refuse every inline style source: the content-security policy sends `style-src 'self'`,
   `style-src-attr 'none'` and `style-src-elem 'self'` on every response. The per-site palette moves from a
   `<body>` style attribute to the digest-versioned same-origin `/presentation/theme.css`; the named residuals
