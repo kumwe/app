@@ -91,12 +91,21 @@ has — accepting every consequence a save plan discloses before a `save-as-new-
 committed — is enforced by the application service for every caller: the save request must carry the plan's exact
 identity and accept each disclosed consequence code. Machine surfaces gain no path to any step-up-gated operation.
 
-**Machine inventory.** The live console dispatches against the generation-two CLI contract
-(`src/Delivery/Console/Contract/cli-v2.json`, generation one plus `studio-authoring`), the MCP catalogue carries
-eight `kumwe_studio_authoring_*` tools, and the REST successor input
-`api/openapi/generations/1.1.0/core.json` adds the eight operations. Retained generation one (CLI, MCP, REST) is
-unchanged; cutting the successor retained generations is a separate release step. `StudioAuthoringMachineParityTest`
-enumerates the browser's authoring operations and fails when one lacks a REST route, CLI action or MCP tool.
+**Machine inventory.** Three successor generations carry the new surface, and each retained generation one is
+still served unchanged beside it:
+
+| Contract | Current generation | Retained predecessor | Regenerate with |
+|---|---|---|---|
+| CLI | `cli-v2` — 45 commands (`src/Delivery/Console/Contract/cli-v2.json`, mirrored in `docs/machine-contract/cli-v2.json`) | `cli-v1`, 44 commands | `php tools/verify-cli-machine-contract.php --rehash-successor` after adding a reviewed command, then `--write` |
+| MCP | `mcp-v2` — 83 tools (`docs/machine-contract/mcp-v2.json`) | `mcp-v1`, 75 tools | `php tools/generate-mcp-machine-contract.php --write` |
+| REST | `1.1.0` (`api/openapi/generations/1.1.0/`) | `1.0.0` (`api/openapi/kumwe-v1.json`) | `composer openapi:accept-generation` from `api/openapi/generations/1.1.0/core.json` |
+
+`composer cli:contract` and `composer mcp:contract` prove every generation-one command, tool, resource, prompt and
+error row is still present unchanged. Until these successors are released, an extension of the same unreleased
+generation regenerates its artifact rather than cutting another: re-digest `cli-v2`; delete `mcp-v2.json` and
+re-establish it; or drop the `1.1.0` ledger row and its three generation-owned files and accept again.
+`StudioAuthoringMachineParityTest` enumerates the browser's authoring operations and fails when one lacks a REST
+route, CLI action or MCP tool.
 
 ## Production `app` and `web`
 

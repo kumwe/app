@@ -505,7 +505,8 @@ Success is `{"ok":true,"data":...,"meta":{"action":...,"surface":"cli","replayed
 `{"ok":false,"error":{"code":"studio_authoring.*","message":...,"details":{"category","diagnostics","revision"}}}`
 and exit 65 (invalid or validation), 66 (not found), 69 (unavailable), 73 (conflict or reused key), 75 (in
 progress or rate limited), 77 (forbidden) or 1. The live console dispatches this command under the generation-two
-contract `src/Delivery/Console/Contract/cli-v2.json`; generation one is retained unchanged.
+contract `src/Delivery/Console/Contract/cli-v2.json` (mirrored in `docs/machine-contract/cli-v2.json`);
+generation one is retained unchanged.
 
 ## MCP stdio
 

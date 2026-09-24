@@ -1,6 +1,6 @@
 # REST API
 
-The versioned API is rooted at `/api/v1`. Its authoritative machine-readable contract is [api/openapi/kumwe-v1.json](../api/openapi/kumwe-v1.json). Generate clients and validation fixtures from that document rather than scraping this guide.
+The versioned API is rooted at `/api/v1`. Its authoritative machine-readable contract is the current generation named by [api/openapi/generations.json](../api/openapi/generations.json), now [1.1.0](../api/openapi/generations/1.1.0/openapi.json); the retained [1.0.0 artifact](../api/openapi/kumwe-v1.json) is unchanged. Generate clients and validation fixtures from that document rather than scraping this guide.
 
 ## Authentication
 
@@ -224,8 +224,8 @@ replay key: an identical retry returns the stored result with `Idempotency-Repla
 other input is `studio-authoring-idempotency-key-reused` (422). Refusals use the `studio-authoring-*` problem types
 and carry `studio_category`, `studio_diagnostics` and, for conflicts, `studio_revision`.
 
-These operations are part of the REST successor input `api/openapi/generations/1.1.0/core.json`; the retained
-1.0.0 generation does not describe them until that successor is accepted.
+These operations are described by REST generation 1.1.0 (`api/openapi/generations/1.1.0/openapi.json`), which the
+runtime serves as the current contract; the retained 1.0.0 artifact is unchanged.
 
 ## Errors and observability
 
