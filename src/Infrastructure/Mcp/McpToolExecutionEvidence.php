@@ -231,6 +231,13 @@ final readonly class McpToolExecutionEvidence
                 $source,
                 '$this->requireAny(BusinessMcpHandlers::APPROVAL_CAPABILITIES)',
             ),
+            McpDynamicCapabilityResolver::BusinessBulk => str_contains(
+                $source,
+                '$this->businessMutationContext($operationId, BusinessMcpHandlers::bulkOperation($operation))',
+            ) || (str_contains(
+                $source,
+                '$this->require(BusinessMcpHandlers::capabilityFor(BusinessMcpHandlers::bulkOperation($operation)))',
+            ) && $this->provesLiteralCapability($class, $handler, 'business.record.read')),
         };
     }
 

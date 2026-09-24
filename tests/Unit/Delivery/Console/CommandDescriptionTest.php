@@ -46,6 +46,7 @@ use Kumwe\App\Delivery\Console\Command\BusinessApprovalCommand;
 use Kumwe\App\Delivery\Console\Command\MediaCommand;
 use Kumwe\App\Delivery\Console\Command\WordingCommand;
 use Kumwe\App\Delivery\Console\Command\BusinessSecurityCommand;
+use Kumwe\App\Delivery\Console\Command\BusinessBulkCommand;
 use Kumwe\App\Delivery\Console\Command\SecurityEventsCommand;
 use Kumwe\App\Delivery\Console\Command\StudioAuthoringCommand;
 use Kumwe\App\Delivery\Console\Command\RunExtensionConformanceCommand;
@@ -113,6 +114,7 @@ use ReflectionClass;
 #[CoversClass(MediaCommand::class)]
 #[CoversClass(WordingCommand::class)]
 #[CoversClass(BusinessSecurityCommand::class)]
+#[CoversClass(BusinessBulkCommand::class)]
 #[CoversClass(RunExtensionConformanceCommand::class)]
 #[CoversClass(ScaffoldExtensionCommand::class)]
 #[CoversClass(ScheduleRunCommand::class)]
@@ -273,6 +275,7 @@ final class CommandDescriptionTest extends TestCase
             MediaCommand::class,
             WordingCommand::class,
             BusinessSecurityCommand::class,
+            BusinessBulkCommand::class,
             UninstallExtensionCommand::class,
             VerifyAuditTrailCommand::class,
             WatchExtensionRuntimeCommand::class,

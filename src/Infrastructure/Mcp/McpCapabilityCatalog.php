@@ -148,6 +148,8 @@ final class McpCapabilityCatalog
         'kumwe_wording_override_save' => [McpRiskClass::ScopedWrite, self::VIA_WORDING],
         'kumwe_wording_override_withdraw' => [McpRiskClass::ScopedWrite, self::VIA_WORDING],
         'kumwe_business_security_overview' => [McpRiskClass::Read, self::VIA_BUSINESS_SECURITY],
+        'kumwe_business_plan_bulk' => [McpRiskClass::Read, self::VIA_RECORDS],
+        'kumwe_business_bulk' => [McpRiskClass::ScopedWrite, self::VIA_RECORDS],
     ];
 
     /**
@@ -1555,6 +1557,78 @@ final class McpCapabilityCatalog
                 true,
                 [],
                 ['type' => 'object', 'additionalProperties' => true],
+            ),
+            ...$this->businessBulkTools(),
+        ];
+    }
+
+    /**
+     * Declare the atomic bulk archive, restore and declared-action tools and their plan.
+     *
+     * A bulk write is planned like every generated-business write: the plan seals the definition, runtime,
+     * policy, actor and exact selection with its reviewed versions, and execution re-proves them while the
+     * shared bulk use case rolls the whole selection back on any stale version or refusal.
+     *
+     * @return  list<array{
+     *            name: string, title: string, description: string, handler: string,
+     *            capability: string|null, capabilityResolver: string|McpDynamicCapabilityResolver,
+     *            mutationGuard: McpMutationGuardMode, readOnly: bool, destructive: bool, idempotent: bool,
+     *            inputSchema: array<string, mixed>, outputSchema: array<string, mixed>
+     *          }>  Tool declarations in registration order.
+     *
+     * @since   2.0.0
+     */
+    private function businessBulkTools(): array
+    {
+        $properties = [
+            'operationId' => $this->operationId(),
+            'operation' => ['type' => 'string', 'enum' => ['archive', 'restore', 'action']],
+            'definition' => $this->businessDefinitionIdentifier(),
+            'items' => [
+                'type' => 'array',
+                'minItems' => 1,
+                'maxItems' => 50,
+                'items' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'record' => $this->businessRecordIdentifier(),
+                        'expectedVersion' => ['type' => 'integer', 'minimum' => 1],
+                    ],
+                    'required' => ['record', 'expectedVersion'],
+                    'additionalProperties' => false,
+                ],
+            ],
+            'action' => $this->nullable($this->businessHandle()),
+            'input' => $this->businessValues(true),
+        ];
+
+        return [
+            $this->tool(
+                'kumwe_business_plan_bulk',
+                'Plan a generated business bulk mutation',
+                'Bind one atomic bulk archive, restore or action to current definition, policy and selection.',
+                'planBusinessBulk',
+                McpDynamicCapabilityResolver::BusinessBulk,
+                true,
+                false,
+                true,
+                $properties,
+                $this->businessMutationPlanOutput(),
+                ['operationId', 'operation', 'definition', 'items'],
+            ),
+            $this->tool(
+                'kumwe_business_bulk',
+                'Apply a generated business bulk mutation',
+                'Archive, restore or run one bulk-enabled action on up to 50 reviewed records atomically.',
+                'executeBusinessBulk',
+                McpDynamicCapabilityResolver::BusinessBulk,
+                false,
+                false,
+                true,
+                ['plan' => $this->businessPlan(), ...$properties],
+                ['type' => 'object', 'additionalProperties' => true],
+                ['operationId', 'plan', 'operation', 'definition', 'items'],
+                McpMutationGuardMode::BusinessDelegate,
             ),
         ];
     }

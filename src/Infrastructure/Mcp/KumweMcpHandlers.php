@@ -2598,6 +2598,83 @@ final readonly class KumweMcpHandlers
     }
 
     /**
+     * Plan one atomic bulk archive, restore or declared action over at most fifty reviewed records.
+     *
+     * @param   string                                             $operationId  Bulk identity the plan and the
+     *          eventual mutation share.
+     * @param   string                                             $operation    `archive`, `restore` or `action`.
+     * @param   string                                             $definition   Definition UUID or handle.
+     * @param   list<array{record: string, expectedVersion: int}>  $items        Reviewed selection.
+     * @param   ?string                                            $action       Bulk-enabled action handle.
+     * @param   array<string, mixed>                               $input        Shared action input.
+     *
+     * @return  array<string, mixed>  Signed plan, binding summary and five-minute expiry.
+     *
+     * @throws  InsufficientCapability  When the caller lacks read or the operation's record capability.
+     *
+     * @since   2.0.0
+     */
+    public function planBusinessBulk(
+        string $operationId,
+        string $operation,
+        string $definition,
+        array $items,
+        ?string $action = null,
+        array $input = [],
+    ): array {
+        $this->require('business.record.read');
+        $this->require(BusinessMcpHandlers::capabilityFor(BusinessMcpHandlers::bulkOperation($operation)));
+
+        return $this->businessRecords->planBulk(
+            $this->context(),
+            $operationId,
+            $operation,
+            $definition,
+            $items,
+            $action,
+            $input,
+        );
+    }
+
+    /**
+     * Apply one planned atomic bulk archive, restore or declared action, as the administrator bulk form does.
+     *
+     * @param   string                                             $operationId  Planned bulk identity.
+     * @param   string                                             $plan         Signed plan for these arguments.
+     * @param   string                                             $operation    `archive`, `restore` or `action`.
+     * @param   string                                             $definition   Definition UUID or handle.
+     * @param   list<array{record: string, expectedVersion: int}>  $items        Reviewed selection.
+     * @param   ?string                                            $action       Bulk-enabled action handle.
+     * @param   array<string, mixed>                               $input        Shared action input.
+     *
+     * @return  array<string, mixed>  Operation, count and per-member outcomes, or the identical replay.
+     *
+     * @throws  InsufficientCapability  When the caller lacks the operation's record capability.
+     *
+     * @since   2.0.0
+     */
+    public function executeBusinessBulk(
+        string $operationId,
+        string $plan,
+        string $operation,
+        string $definition,
+        array $items,
+        ?string $action = null,
+        array $input = [],
+    ): array {
+        return $this->businessRecords->bulk(
+            $this->businessMutationContext($operationId, BusinessMcpHandlers::bulkOperation($operation)),
+            $operationId,
+            $plan,
+            $operation,
+            $definition,
+            $items,
+            $action,
+            $input,
+        );
+    }
+
+    /**
      * Plan one exact generated-business mutation against current trusted state.
      *
      * Planning is read-only but requires both record read and the exact mutation capability. The shared

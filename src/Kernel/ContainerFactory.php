@@ -566,6 +566,7 @@ use Kumwe\App\Delivery\Console\Command\SecurityEventsCommand;
 use Kumwe\App\Delivery\Console\Command\MediaCommand;
 use Kumwe\App\Delivery\Console\Command\WordingCommand;
 use Kumwe\App\Delivery\Console\Command\BusinessSecurityCommand;
+use Kumwe\App\Delivery\Console\Command\BusinessBulkCommand;
 use Kumwe\App\Delivery\Console\Command\StudioAuthoringCommand;
 use Kumwe\App\Delivery\Console\Output;
 use Kumwe\App\Delivery\Console\StreamOutput;
@@ -7057,6 +7058,14 @@ final class ContainerFactory
             self::service($container, MessageOverrideService::class),
             self::service($container, ConsoleAuthorizer::class),
         ), true);
+        $container->share(BusinessBulkCommand::class, static fn (
+            Container $container,
+        ): BusinessBulkCommand => new BusinessBulkCommand(
+            self::service($container, BusinessSurfaceService::class),
+            self::service($container, ConsoleAuthorizer::class),
+            self::service($container, BusinessRecordConsolePresenter::class),
+            self::service($container, BusinessConsoleFailureMapper::class),
+        ), true);
         $container->share(BusinessSecurityCommand::class, static fn (
             Container $container,
         ): BusinessSecurityCommand => new BusinessSecurityCommand(
@@ -7133,6 +7142,7 @@ final class ContainerFactory
                 self::service($container, MediaCommand::class),
                 self::service($container, WordingCommand::class),
                 self::service($container, BusinessSecurityCommand::class),
+                self::service($container, BusinessBulkCommand::class),
                 self::service($container, McpServeCommand::class),
             ], self::service($container, Output::class)), true);
     }

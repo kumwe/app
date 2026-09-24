@@ -289,7 +289,7 @@ final class ManagementDeliveryTest extends TestCase
 
         $names = $console->commandNames();
         self::assertSame(CliV2MachineContract::contract()->commandNames(), $names);
-        self::assertCount(50, $names);
+        self::assertCount(51, $names);
         self::assertSame(
             [],
             array_values(array_diff(CliV1MachineContract::contract()->commandNames(), $names)),

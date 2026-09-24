@@ -3040,6 +3040,18 @@
                 "extends": null
             }
         },
+        "Kumwe\\App\\Delivery\\Console\\Command\\BusinessBulkCommand": {
+            "kind": "class",
+            "layer": "delivery",
+            "surface": "7be4e6df5f71f14bc88261ec",
+            "growth": {
+                "classification": "host-delivery",
+                "implements": [
+                    "Kumwe\\App\\Delivery\\Console\\Command"
+                ],
+                "extends": null
+            }
+        },
         "Kumwe\\App\\Delivery\\Console\\Command\\BusinessConsoleFailure": {
             "kind": "class",
             "layer": "delivery",
@@ -5118,7 +5130,7 @@
         "Kumwe\\App\\Infrastructure\\Mcp\\BusinessMcpHandlers": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "16c0e615800434141cadeff7",
+            "surface": "e7061ee2d7427b3113db98dd",
             "growth": {
                 "classification": "host-infrastructure",
                 "implements": [],
@@ -5128,7 +5140,7 @@
         "Kumwe\\App\\Infrastructure\\Mcp\\KumweMcpHandlers": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "aa8b3d6b0c693b462ea4e8c4",
+            "surface": "daa43af05eca0a8616b52ccc",
             "growth": {
                 "classification": "host-infrastructure",
                 "implements": [],
@@ -5162,7 +5174,7 @@
         "Kumwe\\App\\Infrastructure\\Mcp\\McpDynamicCapabilityResolver": {
             "kind": "enum",
             "layer": "infrastructure",
-            "surface": "aba795b38fcf78c2b85c2525",
+            "surface": "69fe3b9acbd1eccb1be785a3",
             "growth": {
                 "classification": "host-infrastructure",
                 "implements": [],

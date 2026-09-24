@@ -73,6 +73,9 @@ final readonly class BusinessMcpHandlers
         'reorder' => 'business.record.relate',
         'request_action' => 'business.record.action',
         'execute_action' => 'business.record.action',
+        'bulk_archive' => 'business.record.archive',
+        'bulk_restore' => 'business.record.restore',
+        'bulk_action' => 'business.record.action',
     ];
 
     /**
@@ -378,6 +381,101 @@ final readonly class BusinessMcpHandlers
                 $action,
                 $input,
                 $approvalRequestId,
+            ),
+        );
+    }
+
+    /**
+     * Plan one atomic bulk archive, restore or declared action over at most fifty reviewed records.
+     *
+     * The plan seals the definition, runtime, policy, actor and the exact selection with its reviewed versions,
+     * as the administrator bulk confirmation does before its submission.
+     *
+     * @param   ExecutionContext                                   $context      Authenticated MCP context.
+     * @param   string                                             $operationId  16 to 128 character bulk identity.
+     * @param   string                                             $operation    `archive`, `restore` or `action`.
+     * @param   string                                             $definition   Definition UUID or handle.
+     * @param   list<array{record: string, expectedVersion: int}>  $items        Reviewed selection.
+     * @param   ?string                                            $action       Bulk-enabled action handle.
+     * @param   array<string, mixed>                               $input        Shared action input.
+     *
+     * @return  array<string, mixed>  Signed plan, binding summary and five-minute expiry.
+     *
+     * @throws  InvalidArgumentException  When the operation, selection, action or input is malformed.
+     *
+     * @since   2.0.0
+     */
+    public function planBulk(
+        ExecutionContext $context,
+        string $operationId,
+        string $operation,
+        string $definition,
+        array $items,
+        ?string $action = null,
+        array $input = [],
+    ): array {
+        return $this->plans->create(
+            $context,
+            BusinessSurface::Mcp,
+            self::bulkOperation($operation),
+            self::bulkInput(self::operationId($operationId), $operation, $definition, $items, $action, $input),
+        );
+    }
+
+    /**
+     * Apply one planned atomic bulk archive, restore or declared action through the shared bulk use case.
+     *
+     * Every member uses the deterministic child operation identity the browser and REST bulk forms derive, and a
+     * stale reviewed version, policy denial or failed member rolls the whole selection back.
+     *
+     * @param   ExecutionContext                                   $context      Authorized MCP context.
+     * @param   string                                             $operationId  Planned bulk identity.
+     * @param   string                                             $plan         Signed plan for these arguments.
+     * @param   string                                             $operation    `archive`, `restore` or `action`.
+     * @param   string                                             $definition   Definition UUID or handle.
+     * @param   list<array{record: string, expectedVersion: int}>  $items        Reviewed selection.
+     * @param   ?string                                            $action       Bulk-enabled action handle.
+     * @param   array<string, mixed>                               $input        Shared action input.
+     *
+     * @return  array<string, mixed>  Operation, count and per-member outcomes, or the identical replay.
+     *
+     * @throws  InvalidArgumentException  When the plan or arguments are refused.
+     *
+     * @since   2.0.0
+     */
+    public function bulk(
+        ExecutionContext $context,
+        string $operationId,
+        string $plan,
+        string $operation,
+        string $definition,
+        array $items,
+        ?string $action = null,
+        array $input = [],
+    ): array {
+        $planned = self::bulkInput($operationId, $operation, $definition, $items, $action, $input);
+        unset($planned['operation_id']);
+        $selection = self::bulkSelection($items);
+
+        return $this->mutate(
+            $context,
+            self::bulkOperation($operation),
+            $operationId,
+            $plan,
+            $planned,
+            fn (): array => $this->business->bulk(
+                $context,
+                BusinessSurface::Mcp,
+                $definition,
+                match ($operation) {
+                    'archive' => BusinessSurfaceOperation::Archive,
+                    'restore' => BusinessSurfaceOperation::Restore,
+                    default => BusinessSurfaceOperation::Action,
+                },
+                $selection,
+                $operationId,
+                $action,
+                $input,
             ),
         );
     }
@@ -1113,6 +1211,93 @@ final readonly class BusinessMcpHandlers
         }
 
         return $operationId;
+    }
+
+    /**
+     * Map a public bulk operation onto its closed plan operation.
+     *
+     * @param   string  $operation  `archive`, `restore` or `action`.
+     *
+     * @return  string  `bulk_archive`, `bulk_restore` or `bulk_action`.
+     *
+     * @throws  InvalidArgumentException  When the operation is not a bulk operation.
+     *
+     * @since   2.0.0
+     */
+    public static function bulkOperation(string $operation): string
+    {
+        return match ($operation) {
+            'archive', 'restore', 'action' => 'bulk_' . $operation,
+            default => throw new InvalidArgumentException('The bulk operation must be archive, restore or action.'),
+        };
+    }
+
+    /**
+     * Build the canonical bulk plan input from MCP arguments.
+     *
+     * @param   string                $operationId  Bulk identity.
+     * @param   string                $operation    `archive`, `restore` or `action`.
+     * @param   string                $definition   Definition UUID or handle.
+     * @param   array<mixed>          $items        MCP selection of `record` and `expectedVersion` pairs.
+     * @param   ?string               $action       Bulk-enabled action handle.
+     * @param   array<string, mixed>  $input        Shared action input.
+     *
+     * @return  array<string, mixed>  Canonical plan input.
+     *
+     * @throws  InvalidArgumentException  When a selection member is malformed.
+     *
+     * @since   2.0.0
+     */
+    private static function bulkInput(
+        string $operationId,
+        string $operation,
+        string $definition,
+        array $items,
+        ?string $action,
+        array $input,
+    ): array {
+        $planned = [
+            'operation_id' => $operationId,
+            'definition' => $definition,
+            'items' => self::bulkSelection($items),
+        ];
+        if (self::bulkOperation($operation) === 'bulk_action') {
+            $planned['action'] = $action;
+            $planned['input'] = $input;
+        } elseif ($action !== null || $input !== []) {
+            throw new InvalidArgumentException('Only a bulk action accepts an action and input.');
+        }
+
+        return $planned;
+    }
+
+    /**
+     * Translate the MCP bulk selection into the bulk use case's `record_id` and `expected_version` members.
+     *
+     * @param   array<mixed>  $items  MCP selection of `record` and `expectedVersion` pairs.
+     *
+     * @return  list<array{record_id: string, expected_version: int}>  Use-case selection.
+     *
+     * @throws  InvalidArgumentException  When a member is not exactly a record and a version.
+     *
+     * @since   2.0.0
+     */
+    private static function bulkSelection(array $items): array
+    {
+        $selection = [];
+        foreach ($items as $item) {
+            if (
+                !is_array($item)
+                || array_diff(array_keys($item), ['record', 'expectedVersion']) !== []
+                || !is_string($item['record'] ?? null)
+                || !is_int($item['expectedVersion'] ?? null)
+            ) {
+                throw new InvalidArgumentException('A bulk item needs exactly record and expectedVersion.');
+            }
+            $selection[] = ['record_id' => $item['record'], 'expected_version' => $item['expectedVersion']];
+        }
+
+        return $selection;
     }
 
     /**

@@ -18684,6 +18684,15 @@
         <target>显示组织、成员资格和策略的业务安全概览。</target>
       </segment>
     </unit>
+    <unit id="core.console.business_bulk.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/BusinessBulkCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Archive, restore or run one action on up to fifty business records at once.</source>
+        <target>一次性归档、恢复最多五十条业务记录，或对其运行一个操作。</target>
+      </segment>
+    </unit>
     <unit id="core.console.settings.description">
       <notes>
         <note category="context">Console command summary on src/Delivery/Console/Command/ManageSettingsCommand.php.</note>

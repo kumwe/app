@@ -18684,6 +18684,15 @@
         <target>Die Business-Security-Übersicht über Organisationen, Mitgliedschaften und Richtlinien anzeigen.</target>
       </segment>
     </unit>
+    <unit id="core.console.business_bulk.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/BusinessBulkCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Archive, restore or run one action on up to fifty business records at once.</source>
+        <target>Bis zu fünfzig Geschäftsdatensätze auf einmal archivieren, wiederherstellen oder eine Aktion darauf ausführen.</target>
+      </segment>
+    </unit>
     <unit id="core.console.settings.description">
       <notes>
         <note category="context">Console command summary on src/Delivery/Console/Command/ManageSettingsCommand.php.</note>

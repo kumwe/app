@@ -16554,6 +16554,14 @@
         <source>Show the Business Security overview of organizations, memberships and policies.</source>
       </segment>
     </unit>
+    <unit id="core.console.business_bulk.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/BusinessBulkCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Archive, restore or run one action on up to fifty business records at once.</source>
+      </segment>
+    </unit>
     <unit id="core.console.settings.description">
       <notes>
         <note category="context">Console command summary on src/Delivery/Console/Command/ManageSettingsCommand.php.</note>

@@ -18684,6 +18684,15 @@
         <target>הצגת סקירת אבטחת העסק של ארגונים, חברויות ומדיניות.</target>
       </segment>
     </unit>
+    <unit id="core.console.business_bulk.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/BusinessBulkCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Archive, restore or run one action on up to fifty business records at once.</source>
+        <target>העברה לארכיון, שחזור או הפעלת פעולה אחת על עד חמישים רשומות עסקיות בבת אחת.</target>
+      </segment>
+    </unit>
     <unit id="core.console.settings.description">
       <notes>
         <note category="context">Console command summary on src/Delivery/Console/Command/ManageSettingsCommand.php.</note>

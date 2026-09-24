@@ -52,4 +52,11 @@ enum McpDynamicCapabilityResolver: string
      * @since  2.0.0
      */
     case ApprovalInbox = 'approval_inbox';
+
+    /**
+     * The requested bulk operation, archive, restore or action, resolves the record capability it needs.
+     *
+     * @since  2.0.0
+     */
+    case BusinessBulk = 'business_bulk';
 }

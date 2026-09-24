@@ -2,7 +2,7 @@
   "format": "kumwe-cli-machine-contract-v1",
   "generation": 2,
   "status": "retained",
-  "surface_digest": "sha256:f97c829ca05c5cafc394db35410c4d00ef8c1c49df4c324c5aaa0ba51f4a2b8d",
+  "surface_digest": "sha256:669fac442a1ff2f3f5ff63dbd1af9c6ddcc75071da6f61b28ee62efbc9a4ad05",
   "dispatcher": {
     "list_exit": 0,
     "unknown_command_exit": 64,
@@ -181,6 +181,27 @@
       "exit_codes": {"0":"success","1":"internal-error","64":"usage-error","65":"data-error","66":"not-found","69":"unavailable","73":"conflict","75":"temporary-failure","77":"permission-denied"},
       "actions": [
         {"name":"cancel","risk":"mutate","positionals":[],"allowed_options":["site","token-file","approval-request"],"required_options":["site","token-file","approval-request"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "business-bulk",
+      "action_argument": true,
+      "default_action": null,
+      "options": [
+        {"name":"site","type":"identifier","enum":[]},
+        {"name":"token-file","type":"secret-file","enum":[]},
+        {"name":"definition","type":"identifier","enum":[]},
+        {"name":"items","type":"json-object-list","enum":[]},
+        {"name":"operation-id","type":"identifier","enum":[]},
+        {"name":"action","type":"identifier","enum":[]},
+        {"name":"input-file","type":"protected-json-file","enum":[]}
+      ],
+      "output": {"stdout":"json-document","stderr":"json-document"},
+      "exit_codes": {"0":"success","1":"internal-error","64":"usage-error","65":"data-error","66":"not-found","69":"unavailable","73":"conflict","75":"temporary-failure","77":"permission-denied"},
+      "actions": [
+        {"name":"action","risk":"mutate","positionals":[],"allowed_options":["site","token-file","definition","items","operation-id","action","input-file"],"required_options":["site","token-file","definition","items","operation-id","action"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"archive","risk":"mutate","positionals":[],"allowed_options":["site","token-file","definition","items","operation-id"],"required_options":["site","token-file","definition","items","operation-id"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"restore","risk":"mutate","positionals":[],"allowed_options":["site","token-file","definition","items","operation-id"],"required_options":["site","token-file","definition","items","operation-id"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
       ]
     },
     {

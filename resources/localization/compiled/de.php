@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for de, carrying 2567 messages.
+ * Compiled interface message catalogue for de, carrying 2568 messages.
  *
  * Generated from de.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1940,6 +1940,7 @@ return [
     'core.console.audit_verify.description' => 'Prüft die Hashkette des Prüfprotokolls und ihre Anker.',
     'core.console.automation.description' => 'Listet Zeitpläne und eingereihte Aufträge auf und verwaltet sie.',
     'core.console.business_approval.description' => 'Zieht Ihre eigene ausstehende geschäftliche Genehmigungsanfrage zurück.',
+    'core.console.business_bulk.description' => 'Bis zu fünfzig Geschäftsdatensätze auf einmal archivieren, wiederherstellen oder eine Aktion darauf ausführen.',
     'core.console.business_definition.description' => 'Listet Geschäftsentitätsdefinitionen auf, prüft, entwirft, validiert, veröffentlicht und stuft sie aus.',
     'core.console.business_periods.description' => 'Listet Geschäftsbuchungsperioden auf, schließt und öffnet sie erneut.',
     'core.console.business_record.description' => 'Ermittelt, befragt, ändert, verknüpft, fordert Freigaben an, erstellt Berichte, exportiert und prüft Geschäftsvorgänge.',

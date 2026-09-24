@@ -285,6 +285,53 @@ final class BusinessMcpHandlersTest extends TestCase
     }
 
     /**
+     * Prove bulk arguments are refused before any plan or guard is reached when they are not a closed selection.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testBulkArgumentsAreClosedBeforeAnyPlanOrGuard(): void
+    {
+        $context = (new ReflectionClass(ExecutionContext::class))->newInstanceWithoutConstructor();
+        $handler = $this->approvalHandler(null);
+        $item = ['record' => 'INV-0001', 'expectedVersion' => 3];
+        $cases = [
+            static fn () => $handler->planBulk($context, 'bulk-operation-000001', 'purge', 'acme.invoice', [$item]),
+            static fn () => $handler->planBulk($context, 'short', 'archive', 'acme.invoice', [$item]),
+            static fn () => $handler->planBulk($context, 'bulk-operation-000002', 'archive', 'acme.invoice', [
+                ['record' => 'INV-0001'],
+            ]),
+            static fn () => $handler->planBulk($context, 'bulk-operation-000003', 'archive', 'acme.invoice', [
+                [...$item, 'extra' => true],
+            ]),
+            static fn () => $handler->planBulk(
+                $context,
+                'bulk-operation-000004',
+                'restore',
+                'acme.invoice',
+                [$item],
+                'send',
+            ),
+            static fn () => $handler->bulk($context, 'bulk-operation-000005', 'plan', 'archive', 'acme.invoice', [
+                'not-an-item',
+            ]),
+        ];
+        $refused = 0;
+        foreach ($cases as $case) {
+            try {
+                $case();
+            } catch (InvalidArgumentException) {
+                ++$refused;
+            }
+        }
+
+        self::assertSame(6, $refused);
+        self::assertSame('bulk_action', BusinessMcpHandlers::bulkOperation('action'));
+        self::assertSame('business.record.restore', BusinessMcpHandlers::capabilityFor('bulk_restore'));
+    }
+
+    /**
      * Build a delegate whose only live collaborator is the approval surface.
      *
      * @param   ?BusinessApprovalSurfaceService  $approvals  Surface gate, or null when not composed.

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for es, carrying 2567 messages.
+ * Compiled interface message catalogue for es, carrying 2568 messages.
  *
  * Generated from es.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1940,6 +1940,7 @@ return [
     'core.console.audit_verify.description' => 'Verifica la cadena de resúmenes del rastro de auditoría y sus anclas.',
     'core.console.automation.description' => 'Lista y gestiona programaciones y tareas en cola.',
     'core.console.business_approval.description' => 'Retira tu propia solicitud de aprobación de negocio pendiente.',
+    'core.console.business_bulk.description' => 'Archiva, restaura o ejecuta una acción en hasta cincuenta registros de negocio a la vez.',
     'core.console.business_definition.description' => 'Lista, inspecciona, redacta, valida, publica y retira definiciones de entidades de negocio.',
     'core.console.business_periods.description' => 'Lista, cierra y reabre periodos contables de negocio.',
     'core.console.business_record.description' => 'Descubre, consulta, modifica, relaciona, solicita aprobaciones, informa, exporta e inspecciona operaciones de negocio.',

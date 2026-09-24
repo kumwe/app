@@ -18684,6 +18684,15 @@
         <target>Wys die Besigheidsekuriteit-oorsig van organisasies, lidmaatskappe en beleide.</target>
       </segment>
     </unit>
+    <unit id="core.console.business_bulk.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/BusinessBulkCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Archive, restore or run one action on up to fifty business records at once.</source>
+        <target>Argiveer, herstel of voer een aksie uit op tot vyftig besigheidsrekords gelyktydig.</target>
+      </segment>
+    </unit>
     <unit id="core.console.settings.description">
       <notes>
         <note category="context">Console command summary on src/Delivery/Console/Command/ManageSettingsCommand.php.</note>

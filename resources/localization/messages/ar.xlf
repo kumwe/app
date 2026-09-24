@@ -18684,6 +18684,15 @@
         <target>عرض نظرة عامة على أمان الأعمال للمؤسسات والعضويات والسياسات.</target>
       </segment>
     </unit>
+    <unit id="core.console.business_bulk.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/BusinessBulkCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Archive, restore or run one action on up to fifty business records at once.</source>
+        <target>أرشفة ما يصل إلى خمسين سجلًا تجاريًا أو استعادتها أو تشغيل إجراء واحد عليها دفعة واحدة.</target>
+      </segment>
+    </unit>
     <unit id="core.console.settings.description">
       <notes>
         <note category="context">Console command summary on src/Delivery/Console/Command/ManageSettingsCommand.php.</note>
