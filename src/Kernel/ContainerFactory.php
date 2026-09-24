@@ -2136,6 +2136,7 @@ final class ContainerFactory
         ): ContentStudioAuthoringCatalog => new ContentStudioAuthoringCatalog(
             self::service($container, StudioCompositionContributionCatalog::class),
             self::service($container, StudioCoreCatalog::class),
+            self::service($container, StudioBlockRendererRuntime::class),
         ), true);
         $container->share(
             StudioContextualAuthoringConfigurationProvider::class,

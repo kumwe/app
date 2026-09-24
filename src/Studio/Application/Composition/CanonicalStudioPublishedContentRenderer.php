@@ -72,6 +72,30 @@ final readonly class CanonicalStudioPublishedContentRenderer implements StudioPu
      */
     public function render(ContentRecord $record): ?RenderResult
     {
+        return $this->blocks->consistently(fn (): ?RenderResult => $this->renderDecided($record));
+    }
+
+    /**
+     * Render the record inside one renderer registry decision.
+     *
+     * The publication guard and the render both ask for the registry; inside one decision they read the
+     * same one, so a renderer the guard admitted cannot be missing when the render reaches it.
+     *
+     * @param   ContentRecord  $record  Published record selected by the public Content boundary.
+     *
+     * @return  ?RenderResult  Canonical Producer output, or null for no binding, draft, or retired state.
+     *
+     * @throws  StudioPublishedBlueprintUnavailable  When a configured artifact cannot be loaded.
+     * @throws  StudioPublishedBlueprintMismatch  When artifact identity, kind, schema, or ownership drifts.
+     * @throws  StudioPublishedModelMismatch  When the pinned Content model cannot be reproduced exactly.
+     * @throws  StudioCompositionThemeMismatch  When the live published theme differs from the lock.
+     * @throws  \Kumwe\App\Studio\Application\Preview\StudioPublishedBlockRendererUnavailable
+     *          When an exact locked renderer is not live.
+     *
+     * @since   2.0.0
+     */
+    private function renderDecided(ContentRecord $record): ?RenderResult
+    {
         $site = SiteContext::fromString($record->siteIdentifier);
         $binding = $this->bindings->blueprint($site, $record->contentTypeId, $record->contentTypeVersion);
         if ($binding === null) {

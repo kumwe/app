@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Unit\Studio\Application\Authoring;
 
+use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\App\Extension\Contribution\StudioPreviewRendererContribution;
@@ -75,6 +76,49 @@ final class ContentStudioAuthoringCatalogTest extends TestCase
     }
 
     /**
+     * One authoring operation derives every catalogue member from a single projection, even when the
+     * owner's generation is withdrawn while it runs; outside an operation each member re-projects.
+     *
+     * This is the property the deployment document and `authoring/start` rely on: payloads, locks,
+     * dependencies and generation must never mix a projection that saw the renderer with one that did not.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testOneOperationDerivesEveryMemberFromASingleProjection(): void
+    {
+        $current = true;
+        $execution = $this->createStub(ExtensionExecutionGate::class);
+        $execution->method('isCurrent')->willReturnCallback(static function () use (&$current): bool {
+            return $current;
+        });
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+        );
+        self::contributeBlock($registries, 'acme.shop/grid', '1.0.0', $execution);
+        $catalog = self::catalog($registries);
+        $trusted = $catalog->contributionGeneration();
+        $trustedLocks = self::types($catalog->renderableBlockLocks());
+        self::assertContains('acme.shop/grid', $trustedLocks);
+
+        [$generation, $locks] = $catalog->consistently(
+            static function () use ($catalog, &$current): array {
+                $catalog->contributionPayloads();
+                $current = false;
+
+                return [$catalog->contributionGeneration(), self::types($catalog->renderableBlockLocks())];
+            },
+        );
+
+        self::assertSame($trusted, $generation, 'A withdrawal inside the operation must not split its projection.');
+        self::assertSame($trustedLocks, $locks);
+        self::assertNotSame($trusted, $catalog->contributionGeneration(), 'The next operation must see it.');
+        self::assertNotContains('acme.shop/grid', self::types($catalog->renderableBlockLocks()));
+    }
+
+    /**
      * The App's own core contribution declaring a core block at a coordinate the pinned release does not
      * compile in contradicts the immutable lock and is refused before any lock is handed out: the two
      * App-owned records must agree, and drift between them is a build failure, not a silent shadow.
@@ -130,15 +174,15 @@ final class ContentStudioAuthoringCatalogTest extends TestCase
         ExtensionContributionRegistrySet $registries,
         ?string $record = null,
     ): ContentStudioAuthoringCatalog {
+        $runtime = new StudioBlockRendererRuntime($registries, new StudioContentFieldBlockRenderer());
+
         return new ContentStudioAuthoringCatalog(
-            new StudioCompositionContributionCatalog(
-                $registries,
-                new StudioBlockRendererRuntime($registries, new StudioContentFieldBlockRenderer()),
-            ),
+            new StudioCompositionContributionCatalog($registries, $runtime),
             StudioCoreCatalog::fromFile(
                 $record ?? dirname(__DIR__, 5) . '/resources/studio-contract/core-catalog.json',
                 '0.1.0-beta.3',
             ),
+            $runtime,
         );
     }
 
@@ -148,6 +192,8 @@ final class ContentStudioAuthoringCatalogTest extends TestCase
      * @param   ExtensionContributionRegistrySet  $registries  Registries to contribute into.
      * @param   string                            $type        Block type the contribution declares.
      * @param   string                            $version     Block version the contribution declares.
+     * @param   ?ExtensionExecutionGate           $execution   Generation gate the owner's renderer is
+     *          fenced by; null for one that stays current.
      *
      * @return  void
      *
@@ -157,6 +203,7 @@ final class ContentStudioAuthoringCatalogTest extends TestCase
         ExtensionContributionRegistrySet $registries,
         string $type,
         string $version,
+        ?ExtensionExecutionGate $execution = null,
     ): void {
         $owner = ContributionOwner::extension('acme/shop');
         $document = json_decode(
@@ -210,7 +257,21 @@ final class ContentStudioAuthoringCatalogTest extends TestCase
         $registries->studioPreviewRenderers()->register(
             $owner,
             new StudioPreviewRendererContribution($owner, '1.0.0', $canonical, $binding),
-            self::trustFencedPreviewRenderer($preview, 'acme/shop'),
+            self::trustFencedPreviewRenderer($preview, 'acme/shop', $execution),
         );
+    }
+
+    /**
+     * Project block locks to their type names, in catalogue order.
+     *
+     * @param   list<stdClass>  $locks  `{type, version, revision}` locks.
+     *
+     * @return  list<mixed>  The type of each lock.
+     *
+     * @since   2.0.0
+     */
+    private static function types(array $locks): array
+    {
+        return array_map(static fn (stdClass $lock): mixed => $lock->type ?? null, $locks);
     }
 }

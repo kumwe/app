@@ -446,12 +446,11 @@ final class HostedContentStudioAuthoringConfigurationProviderTest extends TestCa
             new StudioBuiltInThemeRelease(str_repeat('a', 64)),
         );
         $root = dirname(__DIR__, 5);
+        $runtime = new StudioBlockRendererRuntime($registries, new StudioContentFieldBlockRenderer());
         $catalog = new ContentStudioAuthoringCatalog(
-            new StudioCompositionContributionCatalog(
-                $registries,
-                new StudioBlockRendererRuntime($registries, new StudioContentFieldBlockRenderer()),
-            ),
+            new StudioCompositionContributionCatalog($registries, $runtime),
             StudioCoreCatalog::fromFile($root . '/resources/studio-contract/core-catalog.json', '0.1.0-beta.3'),
+            $runtime,
         );
         $provider = new HostedContentStudioAuthoringConfigurationProvider(
             $contextAuthority,
