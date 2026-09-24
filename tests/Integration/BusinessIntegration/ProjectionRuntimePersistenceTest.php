@@ -289,6 +289,60 @@ final class ProjectionRuntimePersistenceTest extends TestCase
     }
 
     /**
+     * An event that never reached the journal has no sequence, whether or not a sequencing pass may run first.
+     *
+     * Outside a transaction the store first sequences whatever is staged, so an event committed a moment ago
+     * is still found; one that was never staged is refused rather than given a position. Inside a transaction
+     * no pass may run, and the unknown event is refused directly. A non-canonical identifier is refused before
+     * the journal is read at all.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAnEventThatNeverReachedTheJournalHasNoSequence(): void
+    {
+        $store = new DoctrineProjectionStore(
+            $this->database,
+            $this->tables,
+            $this->transactions,
+            $this->clock,
+            new DeterministicCanonicalEncoder(),
+            new DoctrineProjectionEventSequencer($this->database, $this->tables, $this->transactions),
+        );
+        $staged = $this->event(1, 'staged');
+        $this->append($staged);
+        self::assertGreaterThan(0, $store->eventSequence($staged->eventId()), 'A staged event is sequenced first.');
+        $unknown = Uuid::uuid7()->toString();
+        $refusal = static function (callable $lookup): string {
+            try {
+                $lookup();
+            } catch (RuntimeException | InvalidArgumentException $refused) {
+                return $refused->getMessage();
+            }
+            self::fail('The lookup must be refused.');
+        };
+
+        self::assertSame(
+            'A durable outbox event has not reached the projection source journal.',
+            $refusal(static fn () => $store->eventSequence($unknown)),
+        );
+        $this->database->beginTransaction();
+        try {
+            self::assertSame(
+                'A durable outbox event has not reached the projection source journal.',
+                $refusal(static fn () => $store->eventSequence($unknown)),
+            );
+        } finally {
+            $this->database->rollBack();
+        }
+        self::assertSame(
+            'A projection source event ID must be a canonical lowercase UUID.',
+            $refusal(static fn () => $store->eventSequence(strtoupper($unknown))),
+        );
+    }
+
+    /**
      * Rebuild activation refuses a committed relevant fact that still awaits sequence assignment.
      *
      * @return  void
