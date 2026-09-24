@@ -37,8 +37,10 @@ In App, the required product presentation is contextual rather than catalogue-fi
 Studio available from authorized core and extension content create/edit targets, inline or expanded, with exact
 type/Model/Blueprint/Entry hydration and explicit item/type-version/new-type save outcomes. App does not add Studio
 as a top-level navigation workspace; a full-screen route remains an expanded state of the originating content
-context. The current Blueprint-only route does not yet satisfy that journey; detailed component evidence below
-must not be read as an end-to-end completion claim.
+context. Content New/Edit now mounts that contextual journey for the core Content target, automated end to end in
+`tests/Browser/studio-authoring.spec.ts`; extension-owned targets, standalone dual mounting, the pinned-release
+limitations and human acceptance recorded in [`docs/studio-composition-authoring.md`](../studio-composition-authoring.md)
+remain open, so the component evidence below must not be read as an accepted `STUDIO-PROD-015` claim.
 
 Studio's programme runs its own two-gate discipline in its repository —
 [`docs/roadmap/`](https://github.com/kumwe/studio/tree/main/docs/roadmap) there — with machine-checked
@@ -514,9 +516,9 @@ The runtime and signed manifest-6 proof now implement that boundary, including d
 and owner-local service identifiers; P7-F remains open only until the authoritative browser and
 database-backed lifecycle runs retain their CI evidence.
 
-Activation is not yet contextual authoring. The open product integration uses one generic target declaration for
-core and extension-owned content areas and filters this same immutable generation for that resolved target, surface,
-mode, capability, and permission. An extension does not open a private Studio, configure Editor.js, or copy data
+The contextual Content target now carries this same immutable generation: an admitted manifest-six block is
+inserted, configured, saved into a successor type version, previewed and publicly rendered from Content Edit.
+Extension-owned content areas resolving through the same generic target declaration remain open. An extension does not open a private Studio, configure Editor.js, or copy data
 between its own editor and Studio.
 
 The behaviour those declarations get at Gate B is the same lifecycle the platform already guarantees:
