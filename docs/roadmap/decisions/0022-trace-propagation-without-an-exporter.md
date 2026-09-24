@@ -42,3 +42,19 @@ code that reads it, the `tracing` block stays disabled and is documented as a de
 - `GM-OBS-05` closes by this decision; no exporter, SDK or new configuration key is added.
 - `docs/operations/monitoring.md`, `config/observability.php` and `RequestIdMiddleware` state propagation
   only. A later exporter adoption supersedes this record in its own reviewed change.
+
+## Addendum — propagation across the durable asynchronous boundaries (`P7-D`, 2026-09-24)
+
+`P7-D` carries the propagation this record decided on across the asynchronous boundaries it listed as the
+gap, and changes nothing else it decided. `AsyncTraceContextMigration` adds nullable origin columns: jobs record
+the `correlation_id`, `causation_id` and `trace_id` of the operation that queued them, and outbox messages and
+inbox receipts record the `trace_id` beside the correlation and causation their envelopes already carried. The
+worker, the scheduler, the outbox dispatcher and the receipt worker open a log frame for each claim with those
+identifiers, so their lines join the upstream trace and the originating request's `correlation_id`, and the
+worker issues each job's execution context under the recorded correlation (`JobOriginLookup`,
+`KUMWE-CGR-2026-061`). `tests/Integration/Infrastructure/AsyncTraceContextPropagationIntegrationTest.php` proves
+it on MariaDB, MySQL and PostgreSQL.
+
+Still no span is started, sampled or exported for the asynchronous hop, and the `tracing` block stays a
+declaration. `GM-OBS-05` remains closed by this decision; the exporter review above is unchanged, and its
+"propagation across the asynchronous boundaries" item is now a property of the runtime it would build on.

@@ -52,6 +52,7 @@ Use this index to install, operate, administer, integrate, extend, or evolve Kum
 - [Runnable production demonstration](demonstration.md)
 - [Operations index](operations/README.md)
 - [Monitoring and health](operations/monitoring.md)
+- [Alert runbooks](operations/runbooks.md)
 - [Backup and restore](operations/backup-restore.md)
 - [Upgrade](operations/upgrade.md)
 - [Release verification](operations/release-verification.md)

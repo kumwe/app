@@ -215,6 +215,7 @@ RUN set -eux; \
         storage/cache \
         storage/logs \
         storage/media \
+        storage/operations \
         storage/sessions \
         storage/tmp \
         public/assets/extensions \

@@ -6,7 +6,8 @@ These runbooks cover production installation, deployment, monitoring, recovery, 
 - [Install](install.md): Docker images, Composer project, or release ZIP.
 - [Deploy](deploy.md): hardened container topology, database choice, image pinning, and acceptance.
 - [Configuration](../configuration.md): environment, secrets, database, Redis, and browser-managed settings.
-- [Monitor](monitoring.md): health contracts, signals, logs, and audit records.
+- [Monitor](monitoring.md): health contracts, signals, alert rules, dashboards, synthetic probes, alert drills, logs, and audit records.
+- [Alert runbooks](runbooks.md): one section per alert — what it means, what to check, what to do, what clears it, and the drill that proves it.
 - [Retention](retention.md): per-store retention contract, drain budgets, metrics and readiness.
 - [Back up and restore](backup-restore.md): complete backup, verification, clean-target recovery, and drills.
 - [Upgrade](upgrade.md): forward-only migrations and atomic application replacement.
