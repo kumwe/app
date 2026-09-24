@@ -65,6 +65,7 @@ jobs:
           composer conversion:api
           composer cli:contract
           composer mcp:contract
+          composer machine:parity
           composer studio:corpus
           composer studio:dependencies
           composer kumwe:capability-index-check
@@ -403,10 +404,11 @@ jobs:
           composer extension:independence
           composer conversion:api
 
-      - name: Verify the retained CLI and MCP machine contracts
+      - name: Verify the retained CLI and MCP machine contracts and browser-machine parity
         run: |
           composer cli:contract
           composer mcp:contract
+          composer machine:parity
 
       - name: Verify the pinned Studio contract corpus and the capability index
         run: |

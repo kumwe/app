@@ -334,6 +334,25 @@ php bin/kumwe business-schema execute --site=corporate --token-file=/run/secrets
 
 `get` returns the plan with its durable step journal and the canonical `checksum`. Approval binds to that exact checksum: if the plan changed after you inspected it, approval fails rather than applying something you did not read. High-impact and destructive plans additionally require `--confirmation` and recorded recovery evidence via `--evidence`; see [the transactional business runtime](business-runtime.md) for what that evidence must prove. After an interrupted execution, inspect the journal first, then use `recover`.
 
+`business-schema-evidence record` files the restore drill a destructive plan's approval cites through the same use
+case as the schema screen and REST. It requires `business.schema.recover`, all four clean-target proofs and the
+operator's current password, read from an owner-only `--password-file`. The evidence is bound to the plan's source
+schema and stamped with the live database driver, server version and release. It prints the stored evidence; pass
+its `id` to `approve --evidence`.
+
+```bash
+php bin/kumwe business-schema-evidence record --site=corporate --token-file=/run/secrets/kumwe-recovery-token \
+  --plan=PLAN_ID \
+  --proofs=clean_target_restore,blueprint_checksum_verified,typed_command_verified,record_revision_audit_checksums_verified \
+  --backup-manifest-checksum=CHECKSUM --backup-created-at=2026-09-24T08:00:00Z --verified-at=2026-09-24T09:00:00Z \
+  --drill-reference=DRILL-42 --client-version=mariadb-client-11.4 --restore-target-reference=clean-target-7 \
+  --password-file=/run/secrets/kumwe-operator-password
+```
+
+Unlike the browser and REST, the retained v1 `purge-plan` and high-impact `approve` actions do not re-prove the
+password. The [parity inventory](machine-contract/README.md#browser-to-machine-parity-inventory) records this as an
+assurance gap awaiting a maintainer decision.
+
 ## Navigation
 
 ```bash
@@ -495,6 +514,30 @@ and exit 65 (invalid or validation), 66 (not found), 69 (unavailable), 73 (confl
 progress or rate limited), 77 (forbidden) or 1. The live console dispatches this command under the generation-two
 contract `src/Delivery/Console/Contract/cli-v2.json` (mirrored in `docs/machine-contract/cli-v2.json`);
 generation one is retained unchanged.
+
+## Studio compositions
+
+`studio-composition get|provision --content-type=ID --version=N` reads or provisions a Content type version's
+Blueprint composition, as the administrator composition screen does. It needs `content.read` and
+`studio.mode.blueprint`, prints the composition document, and prints any refusal as one line with exit 1.
+
+`studio-blueprint` edits the composition's Blueprint through the same Studio host the screen uses. It uses the
+envelope and exits of `studio-authoring`, with `studio_authoring.*` refusal codes.
+
+| Action | Effect | Options |
+|---|---|---|
+| `open` | read | `--content-type`, `--content-type-version`, optional `--mode=blueprint\|read-only` |
+| `load`, `dependencies` | read | `--session`, `--session-generation`, `--argument-file` (the artifact reference), optional `--locale` |
+| `save`, `publish`, `unpublish` | mutate | the same plus `--expected-revision` and `--operation-id`; a save's argument is the complete Blueprint document |
+
+Publishing needs `content.publish` and unpublishing `content.unpublish`, decided separately as in the browser.
+
+## Browser-to-machine parity
+
+Every administrator and portal browser operation has a console equivalent, or is recorded with a reason in
+`docs/machine-contract/browser-machine-parity.json`. `composer machine:parity` fails the quality lane when a browser
+route has no entry or an entry names a command action `cli-v2` does not declare. See
+[the parity inventory](machine-contract/README.md#browser-to-machine-parity-inventory).
 
 ## MCP stdio
 
