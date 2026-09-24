@@ -48,6 +48,7 @@ export interface SurfaceEvidence {
   dir: string | null;
   viewport: { width: number; height: number };
   horizontalOverflow: number;
+  layoutOverflow: number;
   controlOverlaps: number;
   criticalControls: number;
   accessibilityViolations: number;
@@ -139,7 +140,7 @@ export async function perceivedWording(page: Page, ignore: readonly string[] = [
  * Qualify the surface currently open in `page` for `locale` and return its evidence.
  *
  * The resolved `lang` and `dir` must be the locale's own; the document must lay out with zero horizontal
- * overflow and no overlapping controls; every critical control must be operable; the WCAG 2.2 AA scan
+ * overflow — against the visual and the layout viewport — and no overlapping controls; every critical control must be operable; the WCAG 2.2 AA scan
  * must be clean; and, in a translated locale, no source-language wording the catalogue translates may
  * remain visible. A full-page screenshot is attached as evidence, not compared.
  */
@@ -157,6 +158,15 @@ export async function qualifySurface(
     .toHaveAttribute('dir', isRightToLeft(locale) ? 'rtl' : 'ltr');
 
   const report = await expectNoDocumentOverflow(page);
+  // A phone that finds the document wider than its layout viewport zooms the whole page out, after which
+  // `innerWidth` grows to match and the check above sees no overflow. The layout viewport does not grow,
+  // so the document is also held to it.
+  const layout = await page.evaluate(() => ({
+    document: document.documentElement.scrollWidth,
+    viewport: document.documentElement.clientWidth,
+  }));
+  const layoutOverflow = Math.max(0, layout.document - layout.viewport);
+  expect(layoutOverflow, `${surface} fits its layout viewport without the page zooming out`).toBeLessThanOrEqual(1);
   const overlaps = report.findings.filter((finding) => finding.kind === 'control-overlap');
   expect(overlaps, `${surface} has overlapping controls: ${JSON.stringify(overlaps, null, 2)}`).toEqual([]);
 
@@ -184,6 +194,7 @@ export async function qualifySurface(
     dir: await root.getAttribute('dir'),
     viewport: { width: report.viewport.width, height: report.viewport.height },
     horizontalOverflow: report.viewport.horizontalOverflow,
+    layoutOverflow,
     controlOverlaps: overlaps.length,
     criticalControls: controls.length,
     accessibilityViolations: violations,
