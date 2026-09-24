@@ -155,7 +155,7 @@ try {
                 $result['status'] = 'skipped';
                 $result['reason'] = $skip;
             } else {
-                $timeline = new DrillTimeline(AlertDrills::metrics($rule, $drill));
+                $timeline = new DrillTimeline(AlertDrills::metrics($rule, $drill), 60, $drill->scope);
                 ($drill->steps)($host, $timeline);
                 $firing = ($drill->firing)($host);
                 $evaluation = $evaluator->evaluate($drill, $timeline, $firing);

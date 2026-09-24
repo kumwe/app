@@ -12,7 +12,9 @@ use Closure;
  * `steps` drives the real application through a `DrillHost`, recording scrapes on a `DrillTimeline` and
  * declaring checkpoints (healthy, firing, cleared); `restore` puts the host back however `steps` ended, so one
  * failed drill cannot poison the next. `action` is the phrase the alert's runbook section must contain for the
- * recovery the drill performs, which is how the drill proves the page is actionable as written.
+ * recovery the drill performs, which is how the drill proves the page is actionable as written. `scope` names
+ * the label values the drill owns, so a real condition elsewhere on the host (another volume that happens to
+ * be full) cannot pass or fail a drill about the one it induced.
  *
  * @since  2.0.0
  */
@@ -31,6 +33,9 @@ final readonly class AlertDrill
      * @param  ?Closure(DrillHost): void                        $restore Return the host to its baseline.
      * @param  ?Closure(DrillHost): ?string                     $skip    Reason the drill cannot run here, or null.
      * @param  list<string>                                  $witnesses Further metrics the drill's own checks read.
+     * @param  array<string, string>                         $scope     Label values the drill owns: a scraped series
+     *                                                                  carrying one of these labels with another value
+     *                                                                  is outside the drill and is not replayed.
      *
      * @since  2.0.0
      */
@@ -45,6 +50,7 @@ final readonly class AlertDrill
         public ?Closure $restore = null,
         public ?Closure $skip = null,
         public array $witnesses = [],
+        public array $scope = [],
     ) {
     }
 }

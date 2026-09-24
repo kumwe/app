@@ -59,13 +59,18 @@ final class DrillTimeline
     /**
      * Start an empty timeline.
      *
-     * @param  list<string>  $metrics   Metric names the drill's alert reads; other scraped series are dropped.
-     * @param  int           $interval  Synthetic seconds between ticks; also the promtool series interval.
+     * @param  list<string>           $metrics   Metric names the drill's alert reads; other scraped series are dropped.
+     * @param  int                    $interval  Synthetic seconds between ticks; also the promtool series interval.
+     * @param  array<string, string>  $scope     Label values the drill owns; a series carrying one of these labels
+     *                                           with another value is dropped.
      *
      * @since  2.0.0
      */
-    public function __construct(private readonly array $metrics, private readonly int $interval = 60)
-    {
+    public function __construct(
+        private readonly array $metrics,
+        private readonly int $interval = 60,
+        private readonly array $scope = [],
+    ) {
         if ($interval < 1) {
             throw RuleViolation::at('timeline', 'the tick interval must be positive');
         }
@@ -90,7 +95,8 @@ final class DrillTimeline
         }
         $kept = [];
         foreach ($samples as $sample) {
-            if (in_array($sample['name'], $this->metrics, true)) {
+            $foreign = array_diff_assoc(array_intersect_key($sample['labels'], $this->scope), $this->scope);
+            if (in_array($sample['name'], $this->metrics, true) && $foreign === []) {
                 $kept[Exposition::series($sample['name'], $sample['labels'])] = [
                     'name' => $sample['name'],
                     'value' => $sample['value'],

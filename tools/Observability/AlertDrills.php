@@ -709,6 +709,7 @@ final class AlertDrills
 
                 return null;
             },
+            scope: ['volume' => 'media'],
         );
     }
 

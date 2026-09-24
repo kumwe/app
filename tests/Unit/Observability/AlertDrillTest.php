@@ -159,6 +159,29 @@ final class AlertDrillTest extends TestCase
     }
 
     /**
+     * A drill replays only the series it owns, so a real condition elsewhere on the host cannot decide it.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testATimelineReplaysOnlyTheSeriesItsDrillOwns(): void
+    {
+        $timeline = new DrillTimeline(['kumwe_storage_free_bytes', 'up'], 60, ['volume' => 'media']);
+        $timeline->observe('healthy', 1.0, [
+            ['name' => 'kumwe_storage_free_bytes', 'labels' => ['volume' => 'media'], 'value' => 50.0],
+            ['name' => 'kumwe_storage_free_bytes', 'labels' => ['volume' => 'private'], 'value' => 1.0],
+            ['name' => 'up', 'labels' => ['job' => 'kumwe'], 'value' => 1.0],
+        ]);
+
+        self::assertSame(
+            ['kumwe_storage_free_bytes{volume="media"}', 'up{job="kumwe"}'],
+            array_column($timeline->series(), 'series'),
+        );
+        self::assertSame(['volume' => 'media'], AlertDrills::catalogue()['storage-nearly-full']->scope);
+    }
+
+    /**
      * Recorded instants keep their age and order on the synthetic clock, and work after a hold lands after it.
      *
      * @return  void
