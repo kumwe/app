@@ -20,8 +20,7 @@ use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 use Kumwe\App\Infrastructure\Persistence\DoctrineConnectionFactory;
 use Kumwe\App\Kernel\Configuration\ConfigurationFactory;
-use Kumwe\App\Infrastructure\Persistence\Migration\BusinessIntegrationSdkMigration;
-use Kumwe\App\Infrastructure\Persistence\Migration\BusinessRecordScaleMigration;
+use Kumwe\App\Tests\Support\TestKernelFactory;
 use Kumwe\Integration\EventContractRegistry;
 use Kumwe\Integration\EventSchemaDefinition;
 use Kumwe\Integration\EventSensitivity;
@@ -278,11 +277,10 @@ final class ProjectionSequencingConcurrencyIntegrationTest extends TestCase
     {
         $configuration = (new ConfigurationFactory())->create(Environment::fromGlobals());
         $connections = new DoctrineConnectionFactory($configuration->database);
-        $database = $connections->create();
+        $database = TestKernelFactory::create(Environment::fromGlobals())->get(Connection::class);
+        self::assertInstanceOf(Connection::class, $database);
         $peer = $connections->create();
         $names = new TableNames($peer, $configuration->database->tablePrefix);
-        (new BusinessIntegrationSdkMigration($names))->up($database);
-        (new BusinessRecordScaleMigration($names))->up($database);
         foreach ([$database, $peer] as $connection) {
             $connection->executeStatement($connection->getDatabasePlatform() instanceof AbstractMySQLPlatform
                 ? 'SET SESSION innodb_lock_wait_timeout = 1'
