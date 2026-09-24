@@ -169,6 +169,15 @@ final readonly class ProblemDetailsRegistry
                 $retryAfterSeconds,
             );
         }
+        foreach (self::studioAuthoringRows() as [$code, $status, $retryable, $retryAfterSeconds]) {
+            $definitions[] = new ProblemDetailsDefinition(
+                'urn:kumwe:problem:' . $code,
+                $status,
+                $retryable,
+                $retryAfterSeconds,
+                self::studioAuthoringExtensions(),
+            );
+        }
         $definitions[] = new ProblemDetailsDefinition(
             'urn:kumwe:problem:business-record-validation-failed',
             422,
@@ -184,6 +193,70 @@ final readonly class ProblemDetailsRegistry
         );
 
         return $definitions;
+    }
+
+    /**
+     * Problem types a refused Studio authoring operation is published under, one per Producer status.
+     *
+     * Each carries Producer's category and diagnostic codes as closed extension members, so the REST
+     * refusal names exactly what the browser's `host-error` names.
+     *
+     * @return  list<array{string, int, bool, ?int}>  Code, status, retryability and fixed retry delay.
+     *
+     * @since   2.0.0
+     */
+    private static function studioAuthoringRows(): array
+    {
+        return [
+            ['studio-authoring-conflict', 409, false, null],
+            ['studio-authoring-forbidden', 403, false, null],
+            ['studio-authoring-idempotency-in-progress', 409, true, 1],
+            ['studio-authoring-idempotency-key-reused', 422, false, null],
+            ['studio-authoring-internal', 500, false, null],
+            ['studio-authoring-invalid-request', 400, false, null],
+            ['studio-authoring-limit-exceeded', 413, false, null],
+            ['studio-authoring-not-found', 404, false, null],
+            ['studio-authoring-rate-limited', 429, true, null],
+            ['studio-authoring-unauthenticated', 401, false, null],
+            ['studio-authoring-unavailable', 503, true, 1],
+            ['studio-authoring-validation-failed', 422, false, null],
+        ];
+    }
+
+    /**
+     * Closed extension members every Studio authoring problem publishes.
+     *
+     * @return  array<string, array{required: bool, schema: array<string, mixed>}>  Extension declarations.
+     *
+     * @since   2.0.0
+     */
+    private static function studioAuthoringExtensions(): array
+    {
+        return [
+            'studio_category' => [
+                'required' => true,
+                'schema' => [
+                    'enum' => [
+                        'cancelled', 'conflict', 'forbidden', 'incompatible', 'internal', 'invalid-request',
+                        'limit-exceeded', 'not-found', 'rate-limited', 'unauthenticated', 'unavailable',
+                        'validation-failed',
+                    ],
+                    'type' => 'string',
+                ],
+            ],
+            'studio_diagnostics' => [
+                'required' => true,
+                'schema' => [
+                    'items' => ['maxLength' => 160, 'minLength' => 1, 'type' => 'string'],
+                    'maxItems' => 64,
+                    'type' => 'array',
+                ],
+            ],
+            'studio_revision' => [
+                'required' => false,
+                'schema' => ['maxLength' => 200, 'minLength' => 1, 'type' => 'string'],
+            ],
+        ];
     }
 
     /**

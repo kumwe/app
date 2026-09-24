@@ -121,6 +121,23 @@ enum StudioMachineAuthoringOperation: string
     }
 
     /**
+     * Resolve a caller-supplied operation name, refusing anything outside the closed set.
+     *
+     * @param   string  $name  Operation name as the caller spelled it.
+     *
+     * @return  self  The named operation.
+     *
+     * @throws  StudioMachineAuthoringRefused  When the name is not one of the seven operations.
+     *
+     * @since   2.0.0
+     */
+    public static function named(string $name): self
+    {
+        return self::tryFrom($name)
+            ?? throw StudioMachineAuthoringRefused::of('invalid-request', 'studio.machine/operation-unknown');
+    }
+
+    /**
      * Every machine operation name in contract order.
      *
      * @return  list<string>  Backing values of all seven cases.

@@ -34,8 +34,9 @@ use stdClass;
  * dispatches canonical envelopes at the seven authoring operations. This gateway does exactly that for a
  * REST, CLI or MCP caller: `open()` resolves the target through the authorized Content services and binds
  * the context and session to the caller's credential; the operations then build the Producer envelope
- * server-side — operation, protocol version, opaque key and the live session generation are never accepted
- * from the caller — and hand it to the same request-scoped Producer host the browser route uses, so
+ * server-side — operation identity, protocol version and request identity are never accepted from the
+ * caller, which only echoes the opaque key and generation `open()` returned — and hand it to the same
+ * request-scoped Producer host the browser route uses, so
  * authorization, the pinned schemas, keyed replay, the transaction boundary and the audit event are one
  * implementation. Every refusal leaves as the canonical `host-error` the browser would have received.
  *
@@ -137,10 +138,46 @@ final readonly class StudioMachineAuthoringGateway
     }
 
     /**
+     * Perform one authoring operation, choosing the read or keyed-mutation path from the caller's key.
+     *
+     * Every adapter calls this one entry so a missing key on a mutation, or a key on a read, is refused
+     * with the same diagnostic on every surface.
+     *
+     * @param   ExecutionContext                 $context         Authenticated machine execution context.
+     * @param   StudioMachineAuthoringOperation  $operation       Operation to dispatch.
+     * @param   string                           $sessionKey      Opaque session key `open()` returned.
+     * @param   string                           $generation      Session generation `open()` returned.
+     * @param   stdClass                         $argument        The operation's single argument document.
+     * @param   ?string                          $idempotencyKey  Replay key, required exactly for mutations.
+     * @param   ?string                          $locale          Caller locale tag, or null.
+     *
+     * @return  StudioMachineAuthoringResult  Canonical Producer result.
+     *
+     * @throws  StudioMachineAuthoringRefused  When the key does not fit the operation, or the host refuses.
+     *
+     * @since   2.0.0
+     */
+    public function perform(
+        ExecutionContext $context,
+        StudioMachineAuthoringOperation $operation,
+        string $sessionKey,
+        string $generation,
+        stdClass $argument,
+        ?string $idempotencyKey,
+        ?string $locale = null,
+    ): StudioMachineAuthoringResult {
+        return $idempotencyKey === null
+            ? $this->read($context, $sessionKey, $generation, $operation, $argument, $locale)
+            : $this->mutate($context, $sessionKey, $generation, $operation, $argument, $idempotencyKey, $locale);
+    }
+
+    /**
      * Perform one non-mutating authoring operation against an opened session.
      *
      * @param   ExecutionContext                 $context     Authenticated machine execution context.
      * @param   string                           $sessionKey  Opaque session key `open()` returned.
+     * @param   string                           $generation  Session generation `open()` returned; a stale one
+     *          is refused by the same fence the browser meets.
      * @param   StudioMachineAuthoringOperation  $operation   Read operation to dispatch.
      * @param   stdClass                         $argument    The operation's single argument document.
      * @param   ?string                          $locale      Caller locale tag, or null.
@@ -154,6 +191,7 @@ final readonly class StudioMachineAuthoringGateway
     public function read(
         ExecutionContext $context,
         string $sessionKey,
+        string $generation,
         StudioMachineAuthoringOperation $operation,
         stdClass $argument,
         ?string $locale = null,
@@ -162,7 +200,7 @@ final readonly class StudioMachineAuthoringGateway
             throw StudioMachineAuthoringRefused::of('invalid-request', 'studio.machine/idempotency-key-required');
         }
 
-        return $this->dispatch($context, $sessionKey, $operation, $argument, null, $locale);
+        return $this->dispatch($context, $sessionKey, $generation, $operation, $argument, null, $locale);
     }
 
     /**
@@ -173,6 +211,7 @@ final readonly class StudioMachineAuthoringGateway
      *
      * @param   ExecutionContext                 $context         Authenticated machine execution context.
      * @param   string                           $sessionKey      Opaque session key `open()` returned.
+     * @param   string                           $generation      Session generation `open()` returned.
      * @param   StudioMachineAuthoringOperation  $operation       Mutating operation to dispatch.
      * @param   stdClass                         $argument        The operation's single argument document.
      * @param   string                           $idempotencyKey  Stable caller-chosen replay key.
@@ -188,6 +227,7 @@ final readonly class StudioMachineAuthoringGateway
     public function mutate(
         ExecutionContext $context,
         string $sessionKey,
+        string $generation,
         StudioMachineAuthoringOperation $operation,
         stdClass $argument,
         string $idempotencyKey,
@@ -200,7 +240,7 @@ final readonly class StudioMachineAuthoringGateway
             throw StudioMachineAuthoringRefused::of('invalid-request', 'studio.machine/idempotency-key-invalid');
         }
 
-        return $this->dispatch($context, $sessionKey, $operation, $argument, $idempotencyKey, $locale);
+        return $this->dispatch($context, $sessionKey, $generation, $operation, $argument, $idempotencyKey, $locale);
     }
 
     /**
@@ -208,6 +248,7 @@ final readonly class StudioMachineAuthoringGateway
      *
      * @param   ExecutionContext                 $context         Authenticated machine execution context.
      * @param   string                           $sessionKey      Opaque session key to resolve.
+     * @param   string                           $generation      Session generation the caller echoes.
      * @param   StudioMachineAuthoringOperation  $operation       Operation to dispatch.
      * @param   stdClass                         $argument        The operation's single argument document.
      * @param   ?string                          $idempotencyKey  Replay key for a mutation, or null for a read.
@@ -222,6 +263,7 @@ final readonly class StudioMachineAuthoringGateway
     private function dispatch(
         ExecutionContext $context,
         string $sessionKey,
+        string $generation,
         StudioMachineAuthoringOperation $operation,
         stdClass $argument,
         ?string $idempotencyKey,
@@ -231,16 +273,11 @@ final readonly class StudioMachineAuthoringGateway
         if (!ContractGrammar::isStableId($sessionKey)) {
             throw StudioMachineAuthoringRefused::of('invalid-request', 'studio.machine/session-invalid');
         }
+        if (!ContractGrammar::isRevision($generation)) {
+            throw StudioMachineAuthoringRefused::of('invalid-request', 'studio.machine/generation-invalid');
+        }
         if ($locale !== null && !ContractGrammar::isLocale($locale)) {
             throw StudioMachineAuthoringRefused::of('invalid-request', 'studio.machine/locale-invalid');
-        }
-        try {
-            $snapshot = $this->sessions->resolve($context, $sessionKey);
-        } catch (StudioHostAccessRefused $refused) {
-            throw StudioMachineAuthoringRefused::of($refused->category, $refused->diagnosticCode);
-        }
-        if ($snapshot->session->resourceKind !== StudioResourceKind::ContentAuthoring) {
-            throw StudioMachineAuthoringRefused::of('forbidden', 'studio.authoring/session-kind');
         }
 
         $envelopeContext = (object) [
@@ -248,7 +285,7 @@ final readonly class StudioMachineAuthoringGateway
             'protocolVersion' => RequestEnvelope::WIRE_PROTOCOL_VERSION,
             'requestId' => 'requests/' . substr(hash('sha256', $context->requestId()), 0, 40),
             'resourceContextKey' => $sessionKey,
-            'sessionGeneration' => $snapshot->generation,
+            'sessionGeneration' => $generation,
         ];
         if ($idempotencyKey !== null) {
             $envelopeContext->idempotencyKey = $idempotencyKey;
