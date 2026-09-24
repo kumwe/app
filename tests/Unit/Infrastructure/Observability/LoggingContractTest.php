@@ -162,6 +162,30 @@ final class LoggingContractTest extends TestCase
         self::assertStringNotContainsString('patterned-example-inner-value', $summary['previous']['message']);
     }
 
+    /**
+     * An over-long exception message is scrubbed before it is cut, so a secret straddling the bound leaks no prefix.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAnOverLongExceptionMessageIsScrubbedBeforeItIsCutToTheBound(): void
+    {
+        // The passphrase starts at character 509, so cutting before scrubbing would keep its first letters.
+        $message = str_repeat('a', 500) . ' db://u:patterned-example-passphrase@host/reporting';
+        $record = (new LogRedactionProcessor(self::contract()))(
+            self::record(context: ['exception' => new RuntimeException($message)]),
+        );
+        $summary = $record->context['exception'];
+
+        self::assertIsArray($summary);
+        self::assertIsString($summary['message']);
+        self::assertSame(513, mb_strlen($summary['message']));
+        self::assertStringEndsWith('…', $summary['message']);
+        self::assertStringStartsWith(str_repeat('a', 500) . ' db://[red', $summary['message']);
+        self::assertStringNotContainsString('patt', $summary['message']);
+    }
+
     public function testTheWiredLoggerWritesOneJsonLineCarryingTheContractAndNoSecret(): void
     {
         $contract = self::contract();
