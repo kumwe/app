@@ -123,6 +123,9 @@ final readonly class RuntimeIntegrationReceiptWorker implements IntegrationRecei
         $seconds = min($leaseSeconds, $policy->leaseSeconds ?? $leaseSeconds);
         try {
             $this->guard->assertCurrent($generation);
+            // Revalidate durable ownership after the claim commit and before any external effect.
+            $this->inbox->renew($lease, $seconds, requireConsumerPermit: true);
+            $this->guard->assertCurrent($generation);
             (new RuntimeDeadline(max(1, intdiv($seconds * 4, 5)), 'The receipt effect exceeded its deadline.'))
                 ->run(function () use ($lease, $id, $handlers, $webhooks): void {
                     if (isset($handlers[$id])) {

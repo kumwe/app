@@ -138,6 +138,7 @@ final readonly class IntegrationEventConsumerDispatcher
             ): void {
                 $this->runtime->assertCurrent($lease->runtimeGeneration);
                 $handler->handle($registered, $event, ExtensionExecutionContext::of($context));
+                $this->runtime->assertCurrent($lease->runtimeGeneration);
                 $this->inbox->complete($lease);
             });
             $this->logger->info('Integration event consumer completed.', [
