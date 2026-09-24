@@ -20,16 +20,20 @@ use Kumwe\Automation\ExpiredJobLease;
 use Kumwe\Automation\JobExecutionClass;
 use Kumwe\Automation\JobQueue;
 use Kumwe\App\Application\Automation\JobExecutionScope;
+use Kumwe\App\Application\Automation\JobOriginLookup;
 use Kumwe\Automation\QueueRuntimePolicy;
 use Kumwe\Automation\QueueRuntimePolicyCatalog;
 use Kumwe\Automation\StoredJob;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Access\Capability;
+use Kumwe\App\Infrastructure\Observability\CorrelationContext;
 use Kumwe\App\Infrastructure\Observability\MetricCatalog;
 use Kumwe\App\Infrastructure\Observability\MetricRecorder;
 use Kumwe\App\Infrastructure\Observability\NullMetricRecorder;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Psr\Clock\ClockInterface;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
 use Throwable;
@@ -56,9 +60,15 @@ use Throwable;
  * operators, `system.worker.operate` for the worker loop, and `all()` filters row by row rather than
  * refusing the caller outright.
  *
+ * Each row also records where it came from: the correlation and request identifiers of the context that
+ * queued it and the upstream W3C trace identifier that unit of work had accepted. A claim opens a `job`
+ * log frame carrying them, and the settlement closes it after writing one structured line naming the
+ * outcome, so every line a job writes — and the lifecycle of the job itself — joins the operation that
+ * caused it. `correlationOf()` hands the same correlation to the worker for the job's execution context.
+ *
  * @since  2.0.0
  */
-final readonly class DoctrineJobQueue implements JobQueue
+final readonly class DoctrineJobQueue implements JobQueue, JobOriginLookup
 {
     /**
      * Most attempt-exhausted rows a single `claim()` call will dead-letter before giving up on that pass.
@@ -85,6 +95,9 @@ final readonly class DoctrineJobQueue implements JobQueue
      * @param  ?QueueRuntimePolicyCatalog   $policies       Active contributed queue and job limits; null preserves
      *         the established behavior for isolated core queue instances.
      * @param  MetricRecorder               $metrics        Counts claims and settlements and times queue start.
+     * @param  ?CorrelationContext          $correlation    Log-context holder a claim opens its `job` frame on
+     *         and whose upstream trace identifier an enqueue records; null records and opens nothing.
+     * @param  LoggerInterface              $logger         Receives one structured line per job settlement.
      *
      * @since  2.0.0
      */
@@ -99,6 +112,8 @@ final readonly class DoctrineJobQueue implements JobQueue
         private JobExecutionScope $jobScope,
         private ?QueueRuntimePolicyCatalog $policies = null,
         private MetricRecorder $metrics = new NullMetricRecorder(),
+        private ?CorrelationContext $correlation = null,
+        private LoggerInterface $logger = new NullLogger(),
     ) {
     }
 
@@ -183,6 +198,9 @@ final readonly class DoctrineJobQueue implements JobQueue
                 'completed_at' => null,
                 'created_at' => $now,
                 'updated_at' => $now,
+                'correlation_id' => $context->correlationId(),
+                'causation_id' => $context->requestId(),
+                'trace_id' => $this->correlation?->traceId(),
             ], [
                 'payload' => Types::JSON,
                 'available_at' => Types::DATETIME_IMMUTABLE,
@@ -254,11 +272,13 @@ final readonly class DoctrineJobQueue implements JobQueue
             $this->permits()->synchronize($policy, $this->clock->now());
         }
 
-        return $this->transactions->transactional(function () use (
+        $origin = [];
+        $job = $this->transactions->transactional(function () use (
             $queue,
             $workerId,
             $leaseSeconds,
             $policy,
+            &$origin,
         ): ?StoredJob {
             $now = $this->clock->now();
             $scope = null;
@@ -401,11 +421,16 @@ final readonly class DoctrineJobQueue implements JobQueue
                 }
 
 
+                $origin = $row;
+
                 return $this->map($row);
             }
 
             return null;
         });
+        $this->openFrame($context, $job, $origin);
+
+        return $job;
     }
 
     /**
@@ -513,6 +538,8 @@ final readonly class DoctrineJobQueue implements JobQueue
             }
         });
         $this->metrics->increment(MetricCatalog::QUEUE_SETTLEMENTS, ['outcome' => 'completed']);
+        $this->logger->info('Job completed.', self::describe($job) + ['outcome' => 'success']);
+        $this->correlation?->leave('job');
     }
 
     /**
@@ -607,6 +634,95 @@ final readonly class DoctrineJobQueue implements JobQueue
             }
         });
         $this->metrics->increment(MetricCatalog::QUEUE_SETTLEMENTS, ['outcome' => $dead ? 'dead' : 'retried']);
+        $line = self::describe($job) + [
+            'classification' => $permanent ? 'permanent' : 'transient',
+            'will_retry' => !$dead,
+            'exception' => $failure,
+        ];
+        if ($dead) {
+            $this->logger->error('Job dead-lettered.', $line + ['outcome' => 'dead']);
+        } else {
+            $this->logger->warning('Job attempt failed; retry scheduled.', $line + ['outcome' => 'retried']);
+        }
+        $this->correlation?->leave('job');
+    }
+
+    /**
+     * Read the correlation identifier recorded when the job was queued.
+     *
+     * @param   StoredJob  $job  Job the worker has just claimed.
+     *
+     * @return  ?string  The producing operation's correlation identifier, or null for a row written
+     *          before origins were recorded.
+     *
+     * @since   2.0.0
+     */
+    public function correlationOf(StoredJob $job): ?string
+    {
+        $correlation = $this->database->fetchOne(sprintf(
+            'SELECT correlation_id FROM %s WHERE id = ?',
+            $this->tables->quoted('jobs'),
+        ), [$job->id], [Types::GUID]);
+
+        return is_string($correlation) && $correlation !== '' ? $correlation : null;
+    }
+
+    /**
+     * Open the `job` log frame for a claimed row, or close a stale one when nothing was claimed.
+     *
+     * A row written before origins were recorded falls back to the claimer's own correlation, so a
+     * legacy job's lines are still joined to the worker that ran it rather than left uncorrelated.
+     *
+     * @param   ExecutionContext      $context  Worker context, the fallback correlation source.
+     * @param   ?StoredJob            $job      Claimed job, or null when the queue had nothing runnable.
+     * @param   array<string, mixed>  $row      Stored row of the claimed job, holding its recorded origin.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    private function openFrame(ExecutionContext $context, ?StoredJob $job, array $row): void
+    {
+        if ($this->correlation === null) {
+            return;
+        }
+        if ($job === null) {
+            $this->correlation->leave('job');
+
+            return;
+        }
+        $text = static fn (string $key): ?string => is_string($row[$key] ?? null) && $row[$key] !== ''
+            ? $row[$key]
+            : null;
+        $this->correlation->enter(
+            'job',
+            ($job->executionClass === JobExecutionClass::Installation->value ? 'global-job-' : 'worker-job-')
+                . $job->id,
+            $text('correlation_id') ?? $context->correlationId(),
+            $text('causation_id'),
+            $text('trace_id'),
+            ['operation' => 'job'] + self::describe($job),
+        );
+        $this->logger->debug('Job claimed.', ['outcome' => 'claimed']);
+    }
+
+    /**
+     * Name a job the way every lifecycle line and frame does.
+     *
+     * @param   StoredJob  $job  Job being described.
+     *
+     * @return  array{job_id: string, job_type: string, queue: string, attempt: string}  Bounded identifiers.
+     *
+     * @since   2.0.0
+     */
+    private static function describe(StoredJob $job): array
+    {
+        return [
+            'job_id' => $job->id,
+            'job_type' => $job->type,
+            'queue' => $job->queue,
+            'attempt' => (string) $job->attempts,
+        ];
     }
 
     /**
@@ -921,6 +1037,16 @@ final readonly class DoctrineJobQueue implements JobQueue
             'failed_at' => Types::DATETIME_IMMUTABLE,
             'created_at' => Types::DATETIME_IMMUTABLE,
         ]);
+        $this->logger->error('Job dead-lettered after its final lease expired.', array_filter([
+            'job_id' => $this->requiredString($row, 'id'),
+            'job_type' => $this->requiredString($row, 'job_type'),
+            'queue' => $this->requiredString($row, 'queue'),
+            'attempt' => (string) $this->integer($row, 'attempts'),
+            'correlation_id' => is_string($row['correlation_id'] ?? null) ? $row['correlation_id'] : null,
+            'causation_id' => is_string($row['causation_id'] ?? null) ? $row['causation_id'] : null,
+            'classification' => 'transient',
+            'outcome' => 'dead',
+        ], static fn (?string $value): bool => $value !== null));
     }
 
     /**

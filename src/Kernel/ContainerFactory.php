@@ -34,6 +34,7 @@ use Kumwe\Automation\JobHandlerRegistry;
 use Kumwe\Automation\JobHandler;
 use Kumwe\App\Application\Automation\GlobalJobPrincipals;
 use Kumwe\App\Application\Automation\JobExecutionScope;
+use Kumwe\App\Application\Automation\JobOriginLookup;
 use Kumwe\Automation\JobQueue;
 use Kumwe\App\Application\Automation\QueueRuntimeOperations;
 use Kumwe\Automation\QueueRuntimePolicyCatalog;
@@ -653,6 +654,7 @@ use Kumwe\App\Identity\Infrastructure\StepUp\SodiumStepUpSecretCipher;
 use Kumwe\App\Infrastructure\Observability\CorrelationContext;
 use Kumwe\App\Infrastructure\Observability\LogContextProcessor;
 use Kumwe\App\Infrastructure\Observability\LogRedactionProcessor;
+use Kumwe\App\Infrastructure\Observability\ProcessRuntime;
 use Kumwe\App\Infrastructure\Observability\MetricCatalog;
 use Kumwe\App\Infrastructure\Observability\MetricRecorder;
 use Kumwe\App\Infrastructure\Observability\MetricsAccessPolicy;
@@ -668,6 +670,7 @@ use Kumwe\App\Application\Retention\RetentionObserver;
 use Kumwe\App\Application\Retention\RetentionReadiness;
 use Kumwe\App\Audit\Infrastructure\Storage\FilesystemAuditArchiveVerifier;
 use Kumwe\App\Infrastructure\Persistence\Migration\RetentionCatalogueMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\AsyncTraceContextMigration;
 use Kumwe\App\Infrastructure\Retention\DoctrineRetentionDrain;
 use Kumwe\App\Infrastructure\Retention\DoctrineRetentionObserver;
 use Kumwe\App\Infrastructure\Retention\RetentionRunLedger;
@@ -1065,7 +1068,7 @@ final class ContainerFactory
                 ],
             ],
         ], true);
-        $this->registerObservability($container, $configuration, $root, $console);
+        $this->registerObservability($container, $configuration, $root);
         $this->registerLogging($container, $configuration);
         $this->registerPersistence($container, $configuration, $root, $kernelProof, $loadRuntime);
         $this->registerLocalization($container, $configuration, $root);
@@ -1163,10 +1166,13 @@ final class ContainerFactory
      * instance. A declaration the runtime cannot honour raises during composition, so the failure is a
      * boot error an operator sees rather than a silent divergence they do not.
      *
+     * The process role stamped as `runtime` on every log line and on `kumwe_build_info` is read from the
+     * entry point rather than from the container, because one container serves the front controller, the
+     * CLI and every long-running worker alike.
+     *
      * @param   Container                 $container      Container being composed.
      * @param   ApplicationConfiguration  $configuration  Boot configuration for release and metric exposure.
      * @param   string                    $root           Absolute repository root the contract is loaded from.
-     * @param   bool                      $console        Whether this process is a console rather than a request.
      *
      * @return  void
      *
@@ -1178,10 +1184,13 @@ final class ContainerFactory
         Container $container,
         ApplicationConfiguration $configuration,
         string $root,
-        bool $console,
     ): void {
         $contract = ObservabilityContract::load($root);
-        $surface = $console ? 'console' : 'http';
+        $arguments = $_SERVER['argv'] ?? [];
+        $surface = ProcessRuntime::detect(
+            PHP_SAPI,
+            array_values(array_filter(is_array($arguments) ? $arguments : [], 'is_string')),
+        );
         $correlation = new CorrelationContext();
         $container->share(ObservabilityContract::class, $contract, true);
         $container->share(CorrelationContext::class, $correlation, true);
@@ -1252,6 +1261,7 @@ final class ContainerFactory
                 self::service($container, QueueRuntimePolicyCatalog::class),
                 self::service($container, RetentionRunLedger::class),
                 self::service($container, MetricRecorder::class),
+                self::service($container, LoggerInterface::class),
             ), true);
         $container->share(DrainRetentionStoreHandler::class, static fn (
             Container $container,
@@ -2555,6 +2565,8 @@ final class ContainerFactory
                 self::service($container, JobExecutionScope::class),
                 self::service($container, QueueRuntimePolicyCatalog::class),
                 self::service($container, MetricRecorder::class),
+                self::service($container, CorrelationContext::class),
+                self::service($container, LoggerInterface::class),
             ), true);
         $container->share(DoctrineScheduler::class, static fn (
             Container $container,
@@ -2571,6 +2583,8 @@ final class ContainerFactory
             self::service($container, CanonicalEncoder::class),
             self::service($container, ScheduleRuntimeSynchronizer::class),
             self::service($container, QueueRuntimePolicyCatalog::class),
+            self::service($container, CorrelationContext::class),
+            self::service($container, LoggerInterface::class),
         ), true);
         $container->alias(Scheduler::class, DoctrineScheduler::class);
         $container->alias(ScheduleRepository::class, DoctrineScheduler::class);
@@ -2648,6 +2662,7 @@ final class ContainerFactory
                     new QueueWorkerPermitsMigration(self::service($container, TableNames::class)),
                     new RetentionCatalogueMigration(self::service($container, TableNames::class)),
                     new StudioContentAuthoringStartMigration(self::service($container, TableNames::class)),
+                    new AsyncTraceContextMigration(self::service($container, TableNames::class)),
                 ],
                 self::acceptedHistoricalChecksums(),
             ), true);
@@ -3214,6 +3229,7 @@ final class ContainerFactory
             self::service($container, TableNames::class),
             self::service($container, TransactionManager::class),
             self::service($container, MetricRecorder::class),
+            self::service($container, LoggerInterface::class),
         ), true);
         $container->share(OutboxStore::class, static fn (Container $container): OutboxStore =>
             new DoctrineOutboxStore(
@@ -3225,6 +3241,7 @@ final class ContainerFactory
                 self::service($container, CanonicalEncoder::class),
                 self::service($container, DoctrineProjectionEventSequencer::class),
                 metrics: self::service($container, MetricRecorder::class),
+                correlation: self::service($container, CorrelationContext::class),
             ), true);
         $container->share(DoctrineInboxStore::class, static fn (Container $container): DoctrineInboxStore =>
             new DoctrineInboxStore(
@@ -3234,6 +3251,8 @@ final class ContainerFactory
                 self::service($container, ClockInterface::class),
                 self::service($container, EventContractRegistry::class),
                 self::service($container, QueueRuntimePolicyCatalog::class),
+                self::service($container, CorrelationContext::class),
+                self::service($container, MetricRecorder::class),
             ), true);
         $container->share(InboxStore::class, static fn (Container $container): InboxStore =>
             self::service($container, DoctrineInboxStore::class), true);
@@ -3825,6 +3844,7 @@ final class ContainerFactory
             SystemPrincipal::issue($kernelProof, SystemIdentity::Worker),
             self::service($container, QueueRuntimePolicyCatalog::class),
             self::service($container, LoggerInterface::class),
+            self::service($container, CorrelationContext::class),
         ), true);
         $container->share(OutboxDispatcher::class, static fn (Container $container): OutboxDispatcher =>
             new OutboxDispatcher(
@@ -6599,15 +6619,20 @@ final class ContainerFactory
             SystemPrincipal::issue($provenance, SystemIdentity::InstallationMaintenance),
             SystemPrincipal::issue($provenance, SystemIdentity::ExtensionMaterializer),
         ), true);
-        $container->share(Worker::class, static fn (Container $container): Worker => new Worker(
-            self::service($container, JobQueue::class),
-            self::service($container, JobHandlerRegistry::class),
-            self::service($container, AuthorizationGateway::class),
-            self::service($container, ResourceSiteOwnership::class),
-            SystemPrincipal::issue($provenance, SystemIdentity::Worker),
-            self::service($container, JobExecutionScope::class),
-            self::service($container, GlobalJobPrincipals::class),
-        ), true);
+        $container->share(Worker::class, static function (Container $container) use ($provenance): Worker {
+            $queue = self::service($container, JobQueue::class);
+
+            return new Worker(
+                $queue,
+                self::service($container, JobHandlerRegistry::class),
+                self::service($container, AuthorizationGateway::class),
+                self::service($container, ResourceSiteOwnership::class),
+                SystemPrincipal::issue($provenance, SystemIdentity::Worker),
+                self::service($container, JobExecutionScope::class),
+                self::service($container, GlobalJobPrincipals::class),
+                $queue instanceof JobOriginLookup ? $queue : null,
+            );
+        }, true);
         $container->share(FilesystemDemoManifestCatalog::class, static fn (): FilesystemDemoManifestCatalog =>
             new FilesystemDemoManifestCatalog(dirname(__DIR__, 2)), true);
         $container->share(DoctrineDemoProfileLedger::class, static fn (

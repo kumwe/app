@@ -18,14 +18,16 @@ use Throwable;
  * failed to connect with. This processor closes both holes at the last point before formatting — the
  * only place that sees every record from every subsystem.
  *
- * Two rules, both driven by `config/observability.php`:
+ * Three rules, all driven by `config/observability.php`:
  *
  * - any context or extra key whose name contains a declared redacted field loses its value entirely;
  * - any `Throwable` is replaced by a bounded summary whose message has been scrubbed of URI credentials
- *   and of `key=value` pairs naming a redacted field, and which carries no stack trace at all.
+ *   and of `key=value` pairs naming a redacted field, and which carries no stack trace at all;
+ * - the record's own message is scrubbed the same way, because a caller that interpolates a failure
+ *   into the message text would otherwise publish exactly what the exception rule removes.
  *
- * The same credential scrub also runs over the record message and over every plain string value, and an
- * object that serializes itself as JSON is walked through its serialized form. A configured origin quoted
+ * The same credential scrub also runs over every plain string value, and an object that serializes itself
+ * as JSON is walked through its serialized form. A configured origin quoted
  * as a string, a failure reason copied out of an exception, or a payload object the formatter would expand
  * after every processor had run could otherwise carry a URI password or a `token=` pair past the key rule.
  *

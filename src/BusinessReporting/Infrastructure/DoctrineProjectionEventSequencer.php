@@ -16,7 +16,10 @@ use Kumwe\App\Infrastructure\Observability\NullMetricRecorder;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\Transaction\Contract\TransactionManager;
 use LogicException;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use RuntimeException;
+use Throwable;
 
 /**
  * Assigns checkpoint order only after authoritative source transactions have committed (V2-SCL-002).
@@ -49,6 +52,7 @@ final readonly class DoctrineProjectionEventSequencer
      * @param  TableNames          $tables        Installation-local physical table names.
      * @param  TransactionManager  $transactions  Atomic range publication and staging removal.
      * @param  MetricRecorder      $metrics       Counts sequenced events after each committed range.
+     * @param  LoggerInterface     $logger        Receives one line per committed range and per failed attempt.
      *
      * @since  2.0.0
      */
@@ -57,6 +61,7 @@ final readonly class DoctrineProjectionEventSequencer
         private TableNames $tables,
         private TransactionManager $transactions,
         private MetricRecorder $metrics = new NullMetricRecorder(),
+        private LoggerInterface $logger = new NullLogger(),
     ) {
     }
 
@@ -86,7 +91,43 @@ final readonly class DoctrineProjectionEventSequencer
             throw new LogicException('Projection sequencing requires its own committed-source transaction.');
         }
 
-        $sequenced = $this->transactions->transactional(function () use ($limit): int {
+        $started = hrtime(true);
+        try {
+            $sequenced = $this->sequenceBatch($limit);
+        } catch (Throwable $failure) {
+            // Logged for the operator and rethrown unchanged: the caller owns the failure.
+            $this->logger->warning('Projection source sequencing failed.', [
+                'operation' => 'projection.sequence',
+                'exception' => $failure,
+            ]);
+            throw $failure;
+        }
+        if ($sequenced > 0) {
+            $this->metrics->increment(MetricCatalog::SEQUENCED_EVENTS, [], (float) $sequenced);
+            $this->logger->info('Projection sources sequenced.', [
+                'operation' => 'projection.sequence',
+                'sequenced' => $sequenced,
+                'duration_ms' => round((hrtime(true) - $started) / 1_000_000, 3),
+            ]);
+        }
+
+        return $sequenced;
+    }
+
+    /**
+     * Publish one bounded range in its own transaction and report how many rows it covered.
+     *
+     * @param   int  $limit  Maximum source rows in this transaction.
+     *
+     * @return  int  Rows sequenced; zero when nothing was staged or a concurrent sequencer owns the head.
+     *
+     * @throws  RuntimeException  When durable head or row-count invariants fail.
+     *
+     * @since   2.0.0
+     */
+    private function sequenceBatch(int $limit): int
+    {
+        return $this->transactions->transactional(function () use ($limit): int {
             $platform = $this->database->getDatabasePlatform();
             $lock = $platform instanceof AbstractMySQLPlatform || $platform instanceof PostgreSQLPlatform
                 ? ' FOR UPDATE SKIP LOCKED'
@@ -180,11 +221,6 @@ final readonly class DoctrineProjectionEventSequencer
 
             return $count;
         });
-        if ($sequenced > 0) {
-            $this->metrics->increment(MetricCatalog::SEQUENCED_EVENTS, [], (float) $sequenced);
-        }
-
-        return $sequenced;
     }
 
     /**

@@ -103,15 +103,16 @@ final readonly class ScheduleRunCommand implements Command
                 }
             }
 
-            $context = $this->system->context(
-                SiteContext::default(),
-                'scheduler-' . bin2hex(random_bytes(16)),
-            );
-
             do {
                 if ($this->runtime !== null && $this->loadedRuntime !== null) {
                     $this->runtime->assertLoadedGenerationCurrent($this->loadedRuntime);
                 }
+                // Each pass is its own unit of work, so the jobs one pass queues share a correlation
+                // identifier that no later pass reuses.
+                $context = $this->system->context(
+                    SiteContext::default(),
+                    'scheduler-' . bin2hex(random_bytes(16)),
+                );
                 $dispatched = $this->scheduler->dispatchDue($context);
 
                 if (!$loop) {

@@ -4,8 +4,9 @@
 /**
  * Command-line entry point for Kumwe.
  *
- * Resolves the console container — recovery or full, depending on the requested command — and hands
- * the argument vector to `ConsoleApplication`, whose exit status becomes the process exit status.
+ * Resolves the console container — recovery or full, depending on the requested command — opens the
+ * process's log unit of work, and hands the argument vector to `ConsoleApplication`, whose exit status
+ * becomes the process exit status.
  *
  * @since  2.0.0
  */
@@ -13,12 +14,18 @@
 declare(strict_types=1);
 
 use Kumwe\App\Delivery\Console\ConsoleApplication;
+use Kumwe\App\Infrastructure\Observability\CorrelationContext;
 
 $root = dirname(__DIR__);
 require $root . '/vendor/autoload.php';
 
 /** @var \Kumwe\App\Kernel\Container $container */
 $container = require $root . '/bootstrap/console.php';
+// One unit of work per console process: its lines share a request and correlation identifier, and the
+// asynchronous work a long-running worker claims nests its own frames on top of this one.
+/** @var CorrelationContext $correlation */
+$correlation = $container->get(CorrelationContext::class);
+$correlation->begin('console-' . bin2hex(random_bytes(16)));
 /** @var ConsoleApplication $application */
 $application = $container->get(ConsoleApplication::class);
 

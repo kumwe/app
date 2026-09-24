@@ -11,6 +11,7 @@ use Kumwe\App\BusinessIntegration\Application\IntegrationEventConsumerDispatcher
 use Kumwe\App\BusinessIntegration\Application\IntegrationReceiptWorker;
 use Kumwe\App\BusinessIntegration\Application\TrustedRuntimeGenerationGuard;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\App\Infrastructure\Observability\CorrelationContext;
 use Kumwe\Automation\QueueRuntimePolicyCatalog;
 use Kumwe\CanonicalJson\CanonicalEncoder;
 use Kumwe\Context\Value\SiteContext;
@@ -45,6 +46,8 @@ final readonly class RuntimeIntegrationReceiptWorker implements IntegrationRecei
      * @param  SystemPrincipal                     $worker         Host-issued worker identity.
      * @param  QueueRuntimePolicyCatalog           $policies       Signed queue deadlines.
      * @param  LoggerInterface                     $logger         Per-receipt diagnostics.
+     * @param  ?CorrelationContext                 $correlation    Log-context holder each attempt opens its
+     *         `inbox` frame on, carrying the event's identifiers and recorded trace; null opens nothing.
      *
      * @since  2.0.0
      */
@@ -58,6 +61,7 @@ final readonly class RuntimeIntegrationReceiptWorker implements IntegrationRecei
         private SystemPrincipal $worker,
         private QueueRuntimePolicyCatalog $policies,
         private LoggerInterface $logger,
+        private ?CorrelationContext $correlation = null,
     ) {
     }
 
@@ -121,6 +125,20 @@ final readonly class RuntimeIntegrationReceiptWorker implements IntegrationRecei
         $id = $lease->consumer->identifier();
         $policy = $this->policies->policy($lease->consumer->queue());
         $seconds = min($leaseSeconds, $policy->leaseSeconds ?? $leaseSeconds);
+        $this->correlation?->enter(
+            'inbox',
+            'integration-' . $lease->event->eventId(),
+            $lease->event->correlationId(),
+            $lease->event->causationId(),
+            $this->inbox->traceOf($lease),
+            [
+                'operation' => 'inbox.consume',
+                'consumer_id' => $id,
+                'event_id' => $lease->event->eventId(),
+                'event_type' => $lease->event->eventType(),
+                'attempt' => (string) $lease->attempts,
+            ],
+        );
         try {
             $this->guard->assertCurrent($generation);
             // Revalidate durable ownership after the claim commit and before any external effect.
@@ -146,6 +164,8 @@ final readonly class RuntimeIntegrationReceiptWorker implements IntegrationRecei
             $this->logger->warning('Independent integration receipt attempt failed.', [
                 'consumer_id' => $id, 'event_id' => $lease->event->eventId(), 'exception' => $failure,
             ]);
+        } finally {
+            $this->correlation?->leave('inbox');
         }
         return true;
     }
