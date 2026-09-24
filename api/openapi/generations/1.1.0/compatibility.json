@@ -1,7 +1,7 @@
 {
     "format": "kumwe-rest-machine-contract-snapshot-v1",
     "generation": "1.1.0",
-    "openapi_semantic_sha256": "37881d8f00f902beb6fa441cf786d5f3e47de4916bff9403b667b56d0a83951b",
+    "openapi_semantic_sha256": "f1a536fa2e944647cc3bd6fbb4954abace97dfb8c57b55d0a39ae3b35b391fa8",
     "operations": {
         "activateExtension": {
             "contract_sha256": "b45490458cd5ee55cbe702d67b307ae5a854986407f411ca3b1cdbc33a8acc72",
@@ -332,6 +332,11 @@
             "contract_sha256": "a4604c9ee83aca9f6fef33d8987e954b9eb663c8a526a109e4164d0b8f8c2934",
             "method": "GET",
             "path": "/api/v1/workflows/{id}"
+        },
+        "installExtension": {
+            "contract_sha256": "bfa2c2524ec1670d3177d4d416995281048776d78327780745896a2dc941da5c",
+            "method": "POST",
+            "path": "/api/v1/extensions"
         },
         "listBusinessDefinitionHistory": {
             "contract_sha256": "450f7579ddaf0c6d8e50bc267047c04d21259fdce0c84e1a4f49e0e972628a49",

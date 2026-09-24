@@ -201,6 +201,10 @@ final readonly class HttpMutationPreauthorizer
             );
             return;
         }
+        if ($method === 'POST' && $path === '/api/v1/extensions') {
+            $this->assert($context, 'extensions.manage', AuthorizationResource::collection('extension'));
+            return;
+        }
         if (preg_match('#^/api/v1/extensions/([^/]+)/([^/]+)(?:/(?:activate|disable))?$#D', $path, $match) === 1) {
             $this->assert(
                 $context,

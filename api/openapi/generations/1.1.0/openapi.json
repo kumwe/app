@@ -14567,6 +14567,100 @@
                 "x-kumwe-required-capabilities": [
                     "extensions.manage"
                 ]
+            },
+            "post": {
+                "operationId": "installExtension",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/IdempotencyKey"
+                    },
+                    {
+                        "description": "Trust-store key that vouches for the package; sent together with signature.",
+                        "in": "query",
+                        "name": "key_id",
+                        "required": false,
+                        "schema": {
+                            "maxLength": 191,
+                            "minLength": 1,
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Base64 detached signature over the package checksum; sent together with key_id.",
+                        "in": "query",
+                        "name": "signature",
+                        "required": false,
+                        "schema": {
+                            "maxLength": 4096,
+                            "minLength": 1,
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/octet-stream": {
+                            "schema": {
+                                "format": "binary",
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ExtensionRecord"
+                                }
+                            }
+                        },
+                        "description": "The installed, disabled extension"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "413": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "The package exceeds the configured body limit"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Unprocessable"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": [],
+                        "siteContext": []
+                    }
+                ],
+                "summary": "Install one extension package, disabled, from its ZIP archive",
+                "x-kumwe-api-version": "v1",
+                "x-kumwe-contract-version": "1.0.0",
+                "x-kumwe-idempotency": "required",
+                "x-kumwe-middleware-contracts": [
+                    "bearer-authentication",
+                    "idempotency-key"
+                ],
+                "x-kumwe-precondition": "none",
+                "x-kumwe-request-body": "binary",
+                "x-kumwe-required-capabilities": [
+                    "extensions.manage"
+                ]
             }
         },
         "/api/v1/extensions/{vendor}/{name}": {
@@ -18210,7 +18304,7 @@
             "url": "/"
         }
     ],
-    "x-kumwe-business-generation": "ba47eac5e69a424e6a9b154df1475ce777c594f21f0c798107779f867fd03a97",
+    "x-kumwe-business-generation": "12b878dd541d3f7678ba75a678579c1221ef08270cac92cccecfe6b29da38f64",
     "x-kumwe-generated-components": [
         "GeneratedBusinessAction",
         "GeneratedBusinessActionApproval",

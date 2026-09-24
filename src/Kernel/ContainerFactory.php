@@ -5093,6 +5093,7 @@ final class ContainerFactory
         ): ExtensionApiHandler => new ExtensionApiHandler(
             self::service($container, ExtensionManager::class),
             self::service($container, ProblemDetailsResponseFactory::class),
+            dirname(__DIR__, 2) . '/storage/tmp',
         ), true);
         $container->share(TrustStoreApiHandler::class, static fn (
             Container $container,
@@ -6391,6 +6392,7 @@ final class ContainerFactory
         }
         foreach (
             [
+            ['POST', '/api/v1/extensions', 'api.v1.extensions.install'],
             ['POST', '/api/v1/extensions/{vendor}/{name}/activate', 'api.v1.extensions.activate'],
             ['POST', '/api/v1/extensions/{vendor}/{name}/disable', 'api.v1.extensions.disable'],
             ['DELETE', '/api/v1/extensions/{vendor}/{name}', 'api.v1.extensions.uninstall'],

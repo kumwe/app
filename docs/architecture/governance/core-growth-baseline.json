@@ -3613,8 +3613,14 @@
         "Kumwe\\App\\Delivery\\Http\\Api\\Extension\\ExtensionApiHandler": {
             "kind": "class",
             "layer": "delivery",
-            "surface": "746e8de162b634d6f6c594c0",
-            "growth": null
+            "surface": "0351da19974fe05baf2a45b9",
+            "growth": {
+                "classification": "host-delivery",
+                "implements": [
+                    "Psr\\Http\\Server\\RequestHandlerInterface"
+                ],
+                "extends": null
+            }
         },
         "Kumwe\\App\\Delivery\\Http\\Api\\Extension\\TrustLifecycleMiddleware": {
             "kind": "class",

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Delivery\Http\Api\Extension;
 
+use DomainException;
 use InvalidArgumentException;
 use JsonException;
 use Kumwe\Access\AuthorizationDenied;
@@ -23,10 +24,12 @@ use stdClass;
 /**
  * Serves the extension REST resource: what is installed, and the lifecycle moves an operator can make.
  *
- * The route path and method choose the operation — activate, disable, uninstall — rather than a body
- * field, so an unrecognised combination is refused instead of guessed at. What this class really owns
- * is the translation of lifecycle refusals into RFC 9457 documents an operator can act on, each under
- * its own `urn:kumwe:problem:` type: a throttled step-up answers 429 with a fixed `Retry-After`, a
+ * The route path and method choose the operation — install, activate, disable, uninstall — rather than a body
+ * field, so an unrecognised combination is refused instead of guessed at. An install carries the package ZIP as
+ * the raw request body, staged privately and removed whichever way the install goes, exactly as the extensions
+ * screen stages its upload, with the optional `key_id` and `signature` query pair the screen's form carries.
+ * What this class really owns is the translation of lifecycle refusals into RFC 9457 documents an operator can
+ * act on, each under its own `urn:kumwe:problem:` type: a throttled step-up answers 429 with a fixed `Retry-After`, a
  * demanded step-up and a denied capability answer 403 under separate types, and a malformed body
  * answers 422. Serialising the mutation against concurrent lifecycle work is not this handler's job;
  * `TrustLifecycleMiddleware` holds that lock around the whole pipeline.
@@ -36,27 +39,33 @@ use stdClass;
 final readonly class ExtensionApiHandler implements RequestHandlerInterface
 {
     /**
-     * Wire the route to the lifecycle service and the factory that renders its refusals.
+     * Wire the route to the lifecycle service, the factory that renders its refusals and the upload staging area.
      *
-     * @param  ExtensionManager               $extensions  Lifecycle service performing the registry work.
-     * @param  ProblemDetailsResponseFactory  $problems    Builds the `application/problem+json` bodies sent back.
+     * @param  ExtensionManager               $extensions          Lifecycle service performing the registry work.
+     * @param  ProblemDetailsResponseFactory  $problems            Builds the `application/problem+json` bodies sent
+     *         back.
+     * @param  string                         $temporaryDirectory  Private directory an installed package is staged
+     *         in; created owner-only when missing.
      *
      * @since  2.0.0
      */
     public function __construct(
         private ExtensionManager $extensions,
         private ProblemDetailsResponseFactory $problems,
+        private string $temporaryDirectory,
     ) {
     }
 
     /**
-     * List the installed extensions, or apply the activation, disable or uninstall the route names.
+     * List the installed extensions, or apply the install, activation, disable or uninstall the route names.
      *
-     * A `GET` answers the installed set and reads no body. Every other verb resolves `vendor/name` from
-     * the route attributes, validates the mutation body, and delegates. An uninstall answers an empty
-     * 204 because there is no longer a resource to represent; activate and disable answer whatever
-     * record the manager reports. Failures outside the four translated here — a release that fails its
-     * trust check, an unreachable registry — propagate to the pipeline's problem-details boundary.
+     * A `GET` answers the installed set and reads no body. A `POST` to the collection installs the package the
+     * body carries and answers 201 with the registry row, as the screen's install does before it redirects.
+     * Every other verb resolves `vendor/name` from the route attributes, validates the mutation body, and
+     * delegates. An uninstall answers an empty 204 because there is no longer a resource to represent; activate
+     * and disable answer whatever record the manager reports. Failures outside the four translated here — a
+     * release that fails its trust check on activation, an unreachable registry — propagate to the pipeline's
+     * problem-details boundary; an invalid or untrusted package is answered 422, as the screen answers it.
      *
      * @param   ServerRequestInterface  $request  Request whose `vendor` and `name` route attributes address
      *          the extension and whose path suffix and method select the operation.
@@ -76,9 +85,12 @@ final readonly class ExtensionApiHandler implements RequestHandlerInterface
                     ['Cache-Control' => 'no-store'],
                 );
             }
+            $path = $request->getUri()->getPath();
+            if (strtoupper($request->getMethod()) === 'POST' && $path === '/api/v1/extensions') {
+                return new JsonResponse($this->install($request), 201, ['Cache-Control' => 'no-store']);
+            }
             $identifier = $this->identifier($request);
             $context = ApiExecutionContext::fromRequest($request);
-            $path = $request->getUri()->getPath();
             if (str_ends_with($path, '/activate')) {
                 [$surface, $stepUpCredential] = $this->mutationInput($request, true);
                 return new JsonResponse($this->extensions->activate(
@@ -185,6 +197,81 @@ final readonly class ExtensionApiHandler implements RequestHandlerInterface
         }
 
         return [ThemeSurface::optional($surface), $credential];
+    }
+
+    /**
+     * Stage the raw package body privately and install it through the manager the screen and console use.
+     *
+     * Only the `key_id` and `signature` query members are accepted, and only together, so a half-supplied
+     * signature is refused here rather than offered to the trust rules as an unsigned package. A package that is
+     * not a readable, valid archive, or that the trust store refuses, is answered as the screen answers it: a 422
+     * carrying the refusal.
+     *
+     * @param   ServerRequestInterface  $request  Install request whose body is the package ZIP.
+     *
+     * @return  array<string, mixed>  Registry row for the extension as it now stands, as the collection lists it.
+     *
+     * @throws  InvalidArgumentException  When the query is malformed, the package is invalid or untrusted.
+     * @throws  AuthorizationDenied  When the actor may not install extensions.
+     *
+     * @since   2.0.0
+     */
+    private function install(ServerRequestInterface $request): array
+    {
+        $query = $request->getQueryParams();
+        if (array_diff(array_keys($query), ['key_id', 'signature']) !== []) {
+            throw new InvalidArgumentException('An extension install accepts only the key_id and signature query.');
+        }
+        $keyId = $query['key_id'] ?? null;
+        $signature = $query['signature'] ?? null;
+        if (
+            ($keyId === null) !== ($signature === null)
+            || ($keyId !== null && (!is_string($keyId) || $keyId === '' || strlen($keyId) > 191))
+            || ($signature !== null && (!is_string($signature) || $signature === '' || strlen($signature) > 4_096))
+        ) {
+            throw new InvalidArgumentException('An extension signature needs both a key_id and a signature.');
+        }
+        $context = ApiExecutionContext::fromRequest($request);
+        if (!is_dir($this->temporaryDirectory)) {
+            mkdir($this->temporaryDirectory, 0700, true);
+        }
+        $temporary = $this->temporaryDirectory . '/extension-' . bin2hex(random_bytes(16)) . '.zip';
+        try {
+            $body = $request->getBody();
+            if ($body->isSeekable()) {
+                $body->rewind();
+            }
+            $handle = fopen($temporary, 'xb');
+            if ($handle === false) {
+                throw new \RuntimeException('The extension package could not be staged.');
+            }
+            try {
+                while (!$body->eof()) {
+                    fwrite($handle, $body->read(65536));
+                }
+            } finally {
+                fclose($handle);
+            }
+
+            $installed = $this->extensions->install($temporary, $context, $keyId, $signature);
+        } catch (AuthorizationDenied $denied) {
+            throw $denied;
+        } catch (DomainException $refused) {
+            // An unreadable, invalid or untrusted package is the caller's to fix, as the screen reports it.
+            throw new InvalidArgumentException($refused->getMessage(), 0, $refused);
+        } finally {
+            if (is_file($temporary)) {
+                unlink($temporary);
+            }
+        }
+        // Answer the row exactly as the collection lists it, which is the documented `ExtensionRecord` shape.
+        foreach ($this->extensions->installed($context) as $row) {
+            if (($row['identifier'] ?? null) === ($installed['identifier'] ?? null)) {
+                return $row;
+            }
+        }
+
+        return array_diff_key($installed, ['id' => true]);
     }
 
     /**
