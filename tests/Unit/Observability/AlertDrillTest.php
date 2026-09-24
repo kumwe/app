@@ -201,6 +201,10 @@ final class AlertDrillTest extends TestCase
         self::assertSame(-2.0, $timeline->synthetic(998.0), 'Two seconds before the first observation.');
         self::assertSame(60.5, $timeline->synthetic(1_001.5), 'Between two observations, after the earlier one.');
         self::assertSame(243.0, $timeline->synthetic(1_005.0), 'Work done after a hold is placed after the hold.');
+        $sameSecond = new DrillTimeline([$name]);
+        $sameSecond->observe('healthy', 2_000.2, []);
+        $sameSecond->hold('induced', 5, 2_000.9);
+        self::assertSame(300.0, $sameSecond->synthetic(2_000.0), 'A whole second recorded after a hold follows it.');
         $gap = new DrillTimeline([$name]);
         $gap->observe('a', 1_000.0, []);
         $gap->observe('b', 1_200.0, []);

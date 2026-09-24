@@ -598,6 +598,7 @@ final class AlertDrills
                 );
                 $timeline->hold('induced', 200, microtime(true));
                 $timeline->expect('firing', true);
+                self::nextSecond();
                 self::backup($host);
                 self::ticks($host, $timeline, 'recovered', 2);
                 $timeline->expect('cleared', false);

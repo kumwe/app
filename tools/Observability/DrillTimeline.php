@@ -18,8 +18,8 @@ namespace Kumwe\App\Tools\Observability;
  *   hours" is expressed; the held values are the last real scrape repeated, never invented values.
  * - **Timestamps.** A `*_timestamp_seconds` value is a wall-clock instant. It is moved onto the synthetic clock
  *   by the same piecewise mapping for every series and every tick: each observation, and the end of each hold,
- *   anchors a real instant to a tick, and an instant that happened *d* real seconds after the latest anchor
- *   lands *d* synthetic seconds after that tick (never at or past the next anchored tick). Ordering between
+ *   anchors a real instant to a tick, and an instant recorded *d* seconds after the start of the latest
+ *   anchor's second lands *d* synthetic seconds after that tick (never at or past the next anchored tick). Ordering between
  *   recorded instants and their age at each observation are preserved, and something done after a hold is
  *   placed after it. Zero, the "never recorded" value, is mapped like any instant and so lands about
  *   fifty-six years before the first tick: as old as it really is, which is what the rules assume.
@@ -283,8 +283,10 @@ final class DrillTimeline
             if ($tick['anchor'] === null) {
                 continue;
             }
-            if ($tick['anchor'] <= $instant) {
-                $anchor = [$index * $this->interval, $tick['anchor']];
+            // Recorded instants are whole seconds, so an anchor counts from the start of its second: work done
+            // in the same second as a hold or an observation, but after it, is placed after it.
+            if (floor($tick['anchor']) <= $instant) {
+                $anchor = [$index * $this->interval, floor($tick['anchor'])];
                 $next = null;
                 continue;
             }
@@ -293,7 +295,7 @@ final class DrillTimeline
         if ($anchor === null) {
             foreach ($this->ticks as $index => $tick) {
                 if ($tick['anchor'] !== null) {
-                    return $index * $this->interval + ($instant - $tick['anchor']);
+                    return $index * $this->interval + ($instant - floor($tick['anchor']));
                 }
             }
 
