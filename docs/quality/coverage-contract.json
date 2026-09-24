@@ -50,6 +50,10 @@
         "note": "A behavioural test that executes real code and attributes none of it makes the coverage report describe a smaller product than the one being tested. #[CoversNothing] is therefore allowed in exactly two places: on tests whose subject is not a class under src/ at all, which is the reasoned list, and on the behavioural tests that carried it when this gate was switched on, which was the pending list. That list only ever shrinks and was emptied on 2026-08-18 \u2014 every test it excused now names the classes it exercises \u2014 and it stays empty, because a new behavioural test cannot join it.",
         "reasoned": [
             {
+                "path": "tests/Unit/Tools/RecoveryToolsTest.php",
+                "reason": "The subject is the shell recovery tooling under tools/, including snapshot format, authentication, interruption and replay rules; it is not a PHP class under src/."
+            },
+            {
                 "path": "tests/Architecture/",
                 "reason": "Architecture and source-shape tests assert facts about files, workflows, manifests and boundaries. Their subject is the arrangement of the tree, not a class in it."
             },

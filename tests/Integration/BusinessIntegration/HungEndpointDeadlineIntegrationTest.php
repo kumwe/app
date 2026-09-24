@@ -26,6 +26,7 @@ use Kumwe\App\Extension\Runtime\ExtensionRuntimeMapCompiler;
 use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
 use Kumwe\App\Infrastructure\Persistence\DoctrineTransactionManager;
 use Kumwe\App\Infrastructure\Persistence\Migration\BusinessIntegrationSdkMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\BusinessRecordScaleMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\CoreSchemaMigration;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
@@ -187,6 +188,7 @@ final class HungEndpointDeadlineIntegrationTest extends TestCase
         $tables = new TableNames($connection, 'kumwe_');
         (new CoreSchemaMigration($tables))->up($connection);
         (new BusinessIntegrationSdkMigration($tables))->up($connection);
+        (new BusinessRecordScaleMigration($tables))->up($connection);
 
         return $connection;
     }
