@@ -26,6 +26,22 @@ use stdClass;
 final readonly class StudioLocalizationHostPort implements LocalizationPortInterface
 {
     /**
+     * Studio message namespaces this host carries, each mapped to its compiled App identifier prefix.
+     *
+     * The three namespaces are exactly the ones `tools/sync-studio-localization.mjs` materializes from the
+     * pinned Studio authoring message corpus, so the contextual shell, the Blueprint shell and the
+     * standalone start surface all read their labels from the same translated catalogue.
+     *
+     * @var    array<string, string>
+     * @since  2.0.0
+     */
+    private const array NAMESPACES = [
+        'studio.contextual' => 'core.studio.contextual.',
+        'studio.shell' => 'core.studio.shell.',
+        'studio.standalone' => 'core.studio.standalone.',
+    ];
+
+    /**
      * Bind compiled catalogues, effective overrides, locale scope, and carried locale inventory.
      *
      * @param  MessageCatalogueRepository           $catalogues  Compiled core and extension layers.
@@ -108,11 +124,14 @@ final readonly class StudioLocalizationHostPort implements LocalizationPortInter
         }
 
         $messages = new stdClass();
-        if (in_array('studio.shell', $namespaces, true)) {
-            foreach ($this->studioMessageIdentifiers() as $identifier) {
+        foreach (self::NAMESPACES as $namespace => $prefix) {
+            if (!in_array($namespace, $namespaces, true)) {
+                continue;
+            }
+            foreach ($this->studioMessageIdentifiers($prefix) as $identifier) {
                 $pattern = $this->pattern($identifier, $locale);
                 if ($pattern !== null) {
-                    $messages->{self::wireIdentifier($identifier)} = $pattern;
+                    $messages->{self::wireIdentifier($namespace, $prefix, $identifier)} = $pattern;
                 }
             }
         }
@@ -133,19 +152,21 @@ final readonly class StudioLocalizationHostPort implements LocalizationPortInter
     }
 
     /**
-     * Discover the exact Studio message keys carried by compiled core and extension layers.
+     * Discover the exact Studio message keys one namespace carries in the compiled core and extension layers.
+     *
+     * @param   string  $prefix  Compiled App identifier prefix of the requested Studio namespace.
      *
      * @return  list<string>
      *
      * @since   2.0.0
      */
-    private function studioMessageIdentifiers(): array
+    private function studioMessageIdentifiers(string $prefix): array
     {
         $identifiers = [];
         foreach ($this->supported->all() as $locale) {
             foreach ([MessageCatalogueLayer::Core, MessageCatalogueLayer::Extension] as $layer) {
                 foreach ($this->catalogues->catalogue($layer, $locale)->identifiers() as $identifier) {
-                    if (str_starts_with($identifier, 'core.studio.shell.')) {
+                    if (str_starts_with($identifier, $prefix)) {
                         $identifiers[$identifier] = true;
                     }
                 }
@@ -218,17 +239,19 @@ final readonly class StudioLocalizationHostPort implements LocalizationPortInter
     }
 
     /**
-     * Convert an internal App Studio key to the alpha.11 shell wire identifier.
+     * Convert an internal App Studio key back to the wire identifier Studio's message catalogue uses.
      *
+     * @param   string  $namespace   Studio message namespace such as `studio.contextual`.
+     * @param   string  $prefix      Compiled App identifier prefix of that namespace.
      * @param   string  $identifier  Internal compiled message identifier.
      *
-     * @return  string  Studio shell wire identifier.
+     * @return  string  Studio wire identifier.
      *
      * @since   2.0.0
      */
-    private static function wireIdentifier(string $identifier): string
+    private static function wireIdentifier(string $namespace, string $prefix, string $identifier): string
     {
-        return 'studio.shell/' . substr($identifier, strlen('core.studio.shell.'));
+        return $namespace . '/' . substr($identifier, strlen($prefix));
     }
 
     /**

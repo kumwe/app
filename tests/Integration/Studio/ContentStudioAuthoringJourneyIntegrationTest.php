@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Integration\Studio;
 
+use Doctrine\DBAL\Connection;
 use InvalidArgumentException;
+use Kumwe\Access\AuthorizationDenied;
 use Kumwe\App\Content\Application\ContentModelService;
 use Kumwe\App\Content\Application\ContentService;
 use Kumwe\App\Content\Infrastructure\Persistence\DoctrineContentRepository;
 use Kumwe\App\Identity\Application\Administration\AdministratorIdentityGateway;
 use Kumwe\App\Kernel\Container;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Kernel\ContainerFactory;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringCatalog;
@@ -28,8 +31,14 @@ use Kumwe\App\Studio\Application\Host\StudioHostSessionRepository;
 use Kumwe\App\Studio\Application\Host\StudioProducerError;
 use Kumwe\App\Studio\Application\Host\StudioProducerHostFactory;
 use Kumwe\App\Studio\Application\Host\StudioProducerRequestAuthority;
+use Kumwe\App\Studio\Application\Preview\ContentStudioPreviewBindingSource;
+use Kumwe\App\Studio\Application\Preview\StudioPreviewBindingSource;
+use Kumwe\App\Studio\Application\Preview\StudioPreviewHostPort;
+use Kumwe\App\Studio\Application\Preview\StudioPreviewTransportGuard;
 use Kumwe\App\Studio\Application\Projection\ContentStudioProjector;
 use Kumwe\App\Studio\Domain\Authoring\StudioAuthoringIntent;
+use Kumwe\App\Studio\Domain\Preview\StudioPreviewDraft;
+use Kumwe\App\Studio\Domain\Preview\StudioPreviewTransport;
 use Kumwe\App\Studio\Infrastructure\Persistence\DoctrineContentStudioAuthoringContextRepository;
 use Kumwe\App\Studio\Infrastructure\Release\PinnedStudioContextualAuthoringAvailability;
 use Kumwe\App\Tests\Support\TestKernelFactory;
@@ -37,6 +46,7 @@ use Kumwe\Context\Value\AuthenticatedSurface;
 use Kumwe\Context\Value\AuthenticationStrength;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Context\Value\SiteContext;
+use Kumwe\Producer\Canonical\CanonicalJson;
 use Kumwe\Producer\Schema\StudioDocumentSchemaRegistry;
 use Kumwe\Producer\Wire\Dispatcher;
 use Kumwe\Producer\Wire\RequestEnvelope;
@@ -70,6 +80,9 @@ use stdClass;
 #[CoversClass(StudioHostSessionAuthority::class)]
 #[CoversClass(StudioProducerError::class)]
 #[CoversClass(StudioProducerRequestAuthority::class)]
+#[CoversClass(ContentStudioPreviewBindingSource::class)]
+#[CoversClass(StudioPreviewHostPort::class)]
+#[CoversClass(StudioPreviewTransportGuard::class)]
 #[CoversClass(ContentService::class)]
 #[CoversClass(DoctrineContentRepository::class)]
 #[CoversClass(ContainerFactory::class)]
@@ -191,6 +204,8 @@ final class ContentStudioAuthoringJourneyIntegrationTest extends TestCase
         self::assertEquals($plan->successorContext, $result->plan->successorContext);
         self::assertEquals($plan->successorContext, $result->session->presentation->returnContext);
         self::assertSame($snapshot->sessionId, $result->session->sessionId);
+        self::assertEquals($snapshot->start, $result->session->start);
+        self::assertEquals($snapshot->capabilities, $result->session->capabilities);
         self::assertEquals($snapshot->target, $result->session->target);
         self::assertEquals($snapshot->resourceContext, $result->session->resourceContext);
         self::assertSame('Studio journey page', $result->session->state->entry->values->title);
@@ -251,8 +266,59 @@ final class ContentStudioAuthoringJourneyIntegrationTest extends TestCase
         ], true);
         self::assertTrue($registry->validateDefinition('authoring-session', 'snapshot', $snapshot)->valid());
         self::assertObjectNotHasProperty('type', $snapshot);
-        self::assertSame(['save-as-new-type'], $snapshot->capabilities->saveOutcomes);
+        // The declared outcomes are constant for the session; a blank canvas admits only a new type.
+        self::assertSame(
+            ['save-item', 'save-new-type-version', 'save-as-new-type'],
+            $snapshot->capabilities->saveOutcomes,
+        );
         self::assertSame('draft', $snapshot->state->model->status);
+        $blankItem = self::respond(
+            $hosts,
+            $context,
+            $resourceContext->key,
+            $deployment->session->sessionGeneration,
+            'authoring/plan-save',
+            'intent',
+            (object) [
+                'contractVersion' => '0.1-draft',
+                'kind' => 'authoring-save-intent',
+                'sessionId' => $snapshot->sessionId,
+                'expected' => $snapshot->state->coordinates,
+                'draft' => (object) ['outcome' => 'save-item', 'entry' => self::clone($snapshot->state->entry)],
+            ],
+            false,
+        );
+        self::assertSame('validation-failed', $blankItem->refusalCategory);
+        self::assertStringContainsString('studio.authoring/outcome-unavailable', $blankItem->body);
+        // The session started blank and cannot be restarted from another source.
+        $restart = self::respond(
+            $hosts,
+            $context,
+            $resourceContext->key,
+            $deployment->session->sessionGeneration,
+            'authoring/start',
+            'request',
+            (object) [
+                'targetId' => $deployment->launch->targetId,
+                'resourceContext' => $resourceContext,
+                'source' => (object) [
+                    'kind' => 'from-type',
+                    'type' => (object) [
+                        'id' => 'content-type:' . ContentService::CORE_PAGE_TYPE_ID,
+                        'version' => ContentStudioProjector::modelVersion(
+                            $models->contentType($context, ContentService::CORE_PAGE_TYPE_ID)->version,
+                        ),
+                        'revision' => ContentStudioProjector::modelRevision(
+                            $models->contentType($context, ContentService::CORE_PAGE_TYPE_ID)->version,
+                        ),
+                    ],
+                ],
+                'presentation' => 'inline',
+            ],
+            true,
+        );
+        self::assertSame('conflict', $restart->refusalCategory, $restart->body);
+        self::assertStringContainsString('studio.authoring/start-already-chosen', $restart->body);
 
         $name = 'Journey type ' . bin2hex(random_bytes(3));
         $model = self::clone($snapshot->state->model);
@@ -287,6 +353,8 @@ final class ContentStudioAuthoringJourneyIntegrationTest extends TestCase
         ], true);
         self::assertTrue($registry->validateDefinition('authoring-save', 'saveResult', $result)->valid());
         self::assertSame('save-as-new-type', $result->outcome);
+        self::assertEquals($snapshot->start, $result->session->start);
+        self::assertEquals($snapshot->capabilities, $result->session->capabilities);
         self::assertEquals($plan->successorContext, $result->session->presentation->returnContext);
         self::assertEquals($snapshot->resourceContext, $result->session->resourceContext);
         self::assertObjectHasProperty('type', $result->session);
@@ -331,6 +399,7 @@ final class ContentStudioAuthoringJourneyIntegrationTest extends TestCase
             'draft' => $itemDraft,
         ], true);
         self::assertSame('save-item', $saved->outcome);
+        self::assertEquals($snapshot->start, $saved->session->start);
         self::assertSame($createdType->id, $saved->session->type->id);
         $returnPath = $saved->session->extensions->{'kumwe.app/return'}->path;
         self::assertMatchesRegularExpression('#^/administrator/content/[0-9a-f-]{36}/edit$#', $returnPath);
@@ -374,6 +443,10 @@ final class ContentStudioAuthoringJourneyIntegrationTest extends TestCase
         self::assertSame($createdType->id, $versioned->session->type->id);
         self::assertNotSame($createdType->version, $versioned->session->type->version);
         self::assertSame($result->session->state->model->id, $versioned->session->state->model->id);
+        // The successor keeps the reusable type's Blueprint identity with an immutable successor revision.
+        self::assertSame($saved->session->type->blueprint->id, $versioned->session->type->blueprint->id);
+        self::assertNotSame($saved->session->type->blueprint->revision, $versioned->session->type->blueprint->revision);
+        self::assertNotSame($saved->session->type->model->revision, $versioned->session->type->model->revision);
         self::assertNotSame($result->session->state->model->revision, $versioned->session->state->model->revision);
         self::assertEquals($versionPlan->successorContext, $versioned->session->presentation->returnContext);
         $successor = $models->contentType($context, $definitionId, 2);
@@ -868,6 +941,371 @@ final class ContentStudioAuthoringJourneyIntegrationTest extends TestCase
     }
 
     /**
+     * A contextual session previews the item it saved through the authenticated, origin-pinned channel, its
+     * values resolve from the stored entry behind the opaque context, and a foreign origin, a wrong channel
+     * and a replayed sequence are each refused with their own diagnostic.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAContextualSessionPreviewsItsSavedItemThroughTheAuthenticatedChannel(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $context = self::administratorContext($container);
+        $registry = self::service($container, StudioDocumentSchemaRegistry::class);
+        $provider = self::service($container, StudioContextualAuthoringConfigurationProvider::class);
+        $targets = self::service($container, ContentStudioAuthoringTargetResolver::class);
+        $hosts = self::service($container, StudioProducerHostFactory::class);
+        $models = self::service($container, ContentModelService::class);
+        $guard = self::service($container, StudioPreviewTransportGuard::class);
+        $sessions = self::service($container, StudioHostSessionRepository::class);
+        $authority = self::service($container, StudioHostSessionAuthority::class);
+        $bindings = self::service($container, StudioPreviewBindingSource::class);
+        $claimer = self::service($container, StudioPreviewHostPort::class);
+
+        $page = $models->contentType($context, ContentService::CORE_PAGE_TYPE_ID);
+        $configuration = $provider->forMount($context, $targets->create($context, $page), 'integration-csrf');
+        self::assertInstanceOf(StudioHostedDeploymentConfiguration::class, $configuration);
+        $deployment = json_decode($configuration->configurationJson, false, 32, JSON_THROW_ON_ERROR);
+        self::assertInstanceOf(stdClass::class, $deployment);
+        self::assertTrue($registry->validate('studio-deployment', $deployment)->valid());
+        $key = $deployment->session->resourceContext->key;
+        $generation = $deployment->session->sessionGeneration;
+        $host = $sessions->find($key);
+        self::assertNotNull($host);
+        $preview = $deployment->session->extensions->{'kumwe.app/preview'};
+        self::assertSame($guard->origin(), $preview->origin);
+        self::assertSame($guard->channelId($host), $preview->channelId);
+        self::assertSame($guard->sourceId($host), $preview->sourceId);
+        self::assertSame('/administrator/studio/preview', $preview->documentPath);
+        self::assertSame(
+            '/administrator/studio/ports/preview/render',
+            $deployment->transport->routing->endpoints->{'preview/render'},
+        );
+        self::assertFalse($deployment->session->preview->enabled);
+
+        $dispatch = self::dispatcher($hosts, $context, $key, $generation);
+        $resourceContext = $deployment->session->resourceContext;
+        $dispatch('authoring/resolve-target', 'request', (object) [
+            'targetId' => $deployment->launch->targetId,
+            'intent' => 'create',
+            'resourceContext' => $resourceContext,
+            'requestedPresentation' => 'inline',
+        ], false);
+        $snapshot = $dispatch('authoring/start', 'request', (object) [
+            'targetId' => $deployment->launch->targetId,
+            'resourceContext' => $resourceContext,
+            'source' => $deployment->launch->start,
+            'presentation' => 'inline',
+        ], true);
+        $entry = self::clone($snapshot->state->entry);
+        $entry->values->title = 'Preview journey page';
+        $entry->values->slug = 'studio-preview-journey-' . bin2hex(random_bytes(4));
+        $entry->values->data_body = 'Rendered through the authenticated preview channel.';
+        $draft = (object) ['outcome' => 'save-item', 'entry' => $entry];
+        $plan = $dispatch('authoring/plan-save', 'intent', (object) [
+            'contractVersion' => '0.1-draft',
+            'kind' => 'authoring-save-intent',
+            'sessionId' => $snapshot->sessionId,
+            'expected' => $snapshot->state->coordinates,
+            'draft' => $draft,
+        ], false);
+        $saved = $dispatch('authoring/save-item', 'request', (object) [
+            'contractVersion' => '0.1-draft',
+            'kind' => 'authoring-save-item-request',
+            'plan' => (object) [
+                'id' => $plan->id,
+                'revision' => $plan->revision,
+                'successorContext' => $plan->successorContext,
+            ],
+            'acceptedConsequences' => self::codes($plan),
+            'draft' => $draft,
+        ], true);
+        $blueprint = $saved->session->state->blueprint;
+
+        // The values behind the opaque context are the stored item's own, never a substituted entry.
+        $resolved = $authority->resolve($context, $key);
+        $values = $bindings->resolve($context, $resolved, new StudioPreviewDraft($host->siteId, $blueprint));
+        self::assertSame('Preview journey page', $values->entry()->title ?? null);
+        self::assertSame(
+            'Rendered through the authenticated preview channel.',
+            $values->entry()->data_body ?? null,
+        );
+
+        $payload = (object) [
+            'artifactId' => $blueprint->id,
+            'draftDigest' => hash('sha256', CanonicalJson::stringify($blueprint)),
+            'draftRevision' => $blueprint->revision,
+            'requestId' => 'requests/preview-' . bin2hex(random_bytes(8)),
+            'viewport' => 'expanded',
+        ];
+        $transport = static fn (string $origin, string $channel, int $sequence): StudioPreviewTransport
+            => new StudioPreviewTransport($origin, $channel, $preview->sourceId, $sequence);
+        $render = fn (StudioPreviewTransport $evidence): Response => self::respond(
+            $hosts,
+            $context,
+            $key,
+            $generation,
+            'preview/render',
+            'payload',
+            $payload,
+            false,
+            $evidence,
+        );
+
+        $rendered = $render($transport($preview->origin, $preview->channelId, 0));
+        self::assertNull($rendered->refusalCategory, $rendered->body);
+        $value = json_decode($rendered->body, false, 64, JSON_THROW_ON_ERROR);
+        self::assertInstanceOf(stdClass::class, $value);
+        self::assertSame($payload->draftDigest, $value->value->draftDigest);
+        self::assertSame($payload->requestId, $value->value->requestId);
+
+        // The single-use document claims exactly once through the document lane.
+        $grant = $claimer->claimDocument(
+            $context,
+            $resolved,
+            $payload->requestId,
+            $transport($preview->origin, $preview->channelId, 0),
+        );
+        self::assertNotNull($grant);
+        self::assertStringContainsString(
+            'data-kis-surface="core.administrator.content-editor"',
+            $grant->document->html,
+        );
+        self::assertStringContainsString('<!doctype html>', strtolower($grant->document->html));
+        self::assertNull($claimer->claimDocument(
+            $context,
+            $resolved,
+            $payload->requestId,
+            $transport($preview->origin, $preview->channelId, 1),
+        ));
+
+        // Foreign origin, wrong channel and a replayed sequence each fail closed with a distinct code.
+        $foreign = $render($transport('https://elsewhere.example', $preview->channelId, 1));
+        self::assertSame('forbidden', $foreign->refusalCategory);
+        self::assertStringContainsString('studio.preview/foreign-origin', $foreign->body);
+        $wrongChannel = $render($transport($preview->origin, 'channels/preview-' . str_repeat('0', 32), 1));
+        self::assertSame('forbidden', $wrongChannel->refusalCategory);
+        self::assertStringContainsString('studio.preview/wrong-channel', $wrongChannel->body);
+        $replayed = $render($transport($preview->origin, $preview->channelId, 0));
+        self::assertSame('invalid-request', $replayed->refusalCategory);
+        self::assertStringContainsString('studio.preview/sequence-replayed', $replayed->body);
+    }
+
+    /**
+     * A save replayed under its idempotency key is answered from the recorded outcome, creates no second
+     * item and leaves exactly one audit row, while the same key with a different intent is refused.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testASaveReplayedUnderItsIdempotencyKeyIsAnsweredOnceAndAudited(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $context = self::administratorContext($container);
+        $provider = self::service($container, StudioContextualAuthoringConfigurationProvider::class);
+        $targets = self::service($container, ContentStudioAuthoringTargetResolver::class);
+        $hosts = self::service($container, StudioProducerHostFactory::class);
+        $models = self::service($container, ContentModelService::class);
+        $sessions = self::service($container, StudioHostSessionRepository::class);
+        $database = self::service($container, Connection::class);
+        $tables = self::service($container, TableNames::class);
+
+        $page = $models->contentType($context, ContentService::CORE_PAGE_TYPE_ID);
+        $configuration = $provider->forMount($context, $targets->create($context, $page), 'integration-csrf');
+        self::assertInstanceOf(StudioHostedDeploymentConfiguration::class, $configuration);
+        $deployment = json_decode($configuration->configurationJson, false, 32, JSON_THROW_ON_ERROR);
+        self::assertInstanceOf(stdClass::class, $deployment);
+        $resourceContext = $deployment->session->resourceContext;
+        $key = $resourceContext->key;
+        $generation = $deployment->session->sessionGeneration;
+        $host = $sessions->find($key);
+        self::assertNotNull($host);
+        $dispatch = self::dispatcher($hosts, $context, $key, $generation);
+        $dispatch('authoring/resolve-target', 'request', (object) [
+            'targetId' => $deployment->launch->targetId,
+            'intent' => 'create',
+            'resourceContext' => $resourceContext,
+            'requestedPresentation' => 'inline',
+        ], false);
+        $snapshot = $dispatch('authoring/start', 'request', (object) [
+            'targetId' => $deployment->launch->targetId,
+            'resourceContext' => $resourceContext,
+            'source' => $deployment->launch->start,
+            'presentation' => 'inline',
+        ], true);
+        $entry = self::clone($snapshot->state->entry);
+        $slug = 'studio-replay-journey-' . bin2hex(random_bytes(4));
+        $entry->values->title = 'Replayed journey page';
+        $entry->values->slug = $slug;
+        $entry->values->data_body = 'Saved exactly once.';
+        $draft = (object) ['outcome' => 'save-item', 'entry' => $entry];
+        $plan = $dispatch('authoring/plan-save', 'intent', (object) [
+            'contractVersion' => '0.1-draft',
+            'kind' => 'authoring-save-intent',
+            'sessionId' => $snapshot->sessionId,
+            'expected' => $snapshot->state->coordinates,
+            'draft' => $draft,
+        ], false);
+        $request = (object) [
+            'contractVersion' => '0.1-draft',
+            'kind' => 'authoring-save-item-request',
+            'plan' => (object) [
+                'id' => $plan->id,
+                'revision' => $plan->revision,
+                'successorContext' => $plan->successorContext,
+            ],
+            'acceptedConsequences' => self::codes($plan),
+            'draft' => $draft,
+        ];
+        $resourceDigest = hash('sha256', CanonicalJson::stringify((object) [
+            'resourceId' => $host->resourceId,
+            'siteId' => $host->siteId,
+        ]));
+        $auditRows = fn (): int => (int) $database->fetchOne(sprintf(
+            'SELECT COUNT(*) FROM %s WHERE subject_id = ?',
+            $tables->quoted('audit_events'),
+        ), [$resourceDigest]);
+        $auditBefore = $auditRows();
+        $idempotencyKey = 'studio-idempotency/' . bin2hex(random_bytes(8));
+
+        $first = self::respond(
+            $hosts,
+            $context,
+            $key,
+            $generation,
+            'authoring/save-item',
+            'request',
+            $request,
+            true,
+            idempotencyKey: $idempotencyKey,
+        );
+        self::assertNull($first->refusalCategory, $first->body);
+        $second = self::respond(
+            $hosts,
+            $context,
+            $key,
+            $generation,
+            'authoring/save-item',
+            'request',
+            $request,
+            true,
+            idempotencyKey: $idempotencyKey,
+        );
+        self::assertNull($second->refusalCategory, $second->body);
+        self::assertSame($first->body, $second->body);
+        self::assertSame(1, (int) $database->fetchOne(sprintf(
+            'SELECT COUNT(*) FROM %s WHERE slug = ?',
+            $tables->quoted('content_entries'),
+        ), [$slug]));
+
+        self::assertSame($auditBefore + 1, $auditRows());
+        $audit = $database->fetchAssociative(sprintf(
+            'SELECT action, subject_type, outcome, metadata FROM %s WHERE subject_id = ? ORDER BY position DESC',
+            $tables->quoted('audit_events'),
+        ), [$resourceDigest]);
+        self::assertIsArray($audit);
+        self::assertSame('studio.authoring.save-item', $audit['action']);
+        self::assertSame('studio_authoring', $audit['subject_type']);
+        self::assertSame('success', $audit['outcome']);
+        self::assertIsString($audit['metadata']);
+        $metadata = json_decode($audit['metadata'], true, 8, JSON_THROW_ON_ERROR);
+        self::assertIsArray($metadata);
+        self::assertTrue($metadata['idempotent'] ?? null);
+        self::assertSame(hash('sha256', $idempotencyKey), $metadata['idempotency_key_digest'] ?? null);
+        self::assertSame('studio.operation/authoring.save-item', $metadata['operation_id'] ?? null);
+
+        $changed = self::clone($request);
+        $changed->draft->entry->values->title = 'Replayed journey page, altered';
+        $altered = self::respond(
+            $hosts,
+            $context,
+            $key,
+            $generation,
+            'authoring/save-item',
+            'request',
+            $changed,
+            true,
+            idempotencyKey: $idempotencyKey,
+        );
+        self::assertSame('invalid-request', $altered->refusalCategory);
+        self::assertStringContainsString('studio.host/idempotency-intent-changed', $altered->body);
+        self::assertSame($auditBefore + 1, $auditRows());
+    }
+
+    /**
+     * An actor without the Content capability cannot resolve a contextual target, and an opened mount cannot
+     * be driven by any authority other than the administrator session that opened it.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAContextualMountIsBoundToTheAuthorityThatOpenedIt(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $context = self::administratorContext($container);
+        $provider = self::service($container, StudioContextualAuthoringConfigurationProvider::class);
+        $targets = self::service($container, ContentStudioAuthoringTargetResolver::class);
+        $hosts = self::service($container, StudioProducerHostFactory::class);
+        $reader = TestKernelFactory::contextFromGrantRows($container, [[
+            'capability' => 'content.read',
+            'scope_type' => 'site',
+            'scope_identifier' => 'default',
+        ]]);
+
+        try {
+            $targets->create($reader);
+            self::fail('A reader without content.create must not resolve a create target.');
+        } catch (AuthorizationDenied) {
+            self::addToAssertionCount(1);
+        }
+        self::assertNull($provider->forMount($reader, $targets->create($context), 'integration-csrf'));
+
+        $configuration = $provider->forMount($context, $targets->create($context), 'integration-csrf');
+        self::assertInstanceOf(StudioHostedDeploymentConfiguration::class, $configuration);
+        $deployment = json_decode($configuration->configurationJson, false, 32, JSON_THROW_ON_ERROR);
+        self::assertInstanceOf(stdClass::class, $deployment);
+        $resourceContext = $deployment->session->resourceContext;
+        $resolve = (object) [
+            'targetId' => $deployment->launch->targetId,
+            'intent' => 'create',
+            'resourceContext' => $resourceContext,
+            'requestedPresentation' => 'inline',
+        ];
+        $foreigners = [
+            'a reader' => $reader,
+            'another administrator session' => self::administratorContext($container),
+        ];
+        foreach ($foreigners as $label => $foreign) {
+            $response = self::respond(
+                $hosts,
+                $foreign,
+                $resourceContext->key,
+                $deployment->session->sessionGeneration,
+                'authoring/resolve-target',
+                'request',
+                $resolve,
+                false,
+            );
+            self::assertSame('forbidden', $response->refusalCategory, $label . ' answered: ' . $response->body);
+        }
+        $owner = self::respond(
+            $hosts,
+            $context,
+            $resourceContext->key,
+            $deployment->session->sessionGeneration,
+            'authoring/resolve-target',
+            'request',
+            $resolve,
+            false,
+        );
+        self::assertNull($owner->refusalCategory, $owner->body);
+    }
+
+    /**
      * One optional single-value data field of the given kind for a model draft.
      *
      * @param   string                $kind    Content-model field kind.
@@ -941,9 +1379,11 @@ final class ContentStudioAuthoringJourneyIntegrationTest extends TestCase
      * @param   string                     $key         Host session resource-context key.
      * @param   string                     $generation  Host session generation.
      * @param   string                     $route       Authoring route such as `authoring/plan-save`.
-     * @param   string                     $member      Argument member the route reads.
-     * @param   stdClass                   $argument    Argument document.
-     * @param   bool                       $mutating    Whether the route needs an idempotency key.
+     * @param   string                     $member          Argument member the route reads.
+     * @param   stdClass                   $argument        Argument document.
+     * @param   bool                       $mutating        Whether the route needs an idempotency key.
+     * @param   ?StudioPreviewTransport    $preview         Browser preview transport evidence, for the preview port.
+     * @param   ?string                    $idempotencyKey  Exact idempotency key to send, or a fresh one.
      *
      * @return  Response  Wire response, refused or not.
      *
@@ -958,6 +1398,8 @@ final class ContentStudioAuthoringJourneyIntegrationTest extends TestCase
         string $member,
         stdClass $argument,
         bool $mutating,
+        ?StudioPreviewTransport $preview = null,
+        ?string $idempotencyKey = null,
     ): Response {
         $envelope = (object) [
             'arguments' => (object) [$member => $argument],
@@ -970,10 +1412,10 @@ final class ContentStudioAuthoringJourneyIntegrationTest extends TestCase
             ],
         ];
         if ($mutating) {
-            $envelope->context->idempotencyKey = 'studio-idempotency/' . bin2hex(random_bytes(8));
+            $envelope->context->idempotencyKey = $idempotencyKey ?? 'studio-idempotency/' . bin2hex(random_bytes(8));
         }
 
-        return (new Dispatcher($hosts->create($context)))->dispatch(
+        return (new Dispatcher($hosts->create($context, $preview)))->dispatch(
             $route,
             json_encode($envelope, JSON_THROW_ON_ERROR),
         );

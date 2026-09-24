@@ -138,6 +138,75 @@ final readonly class ContentStudioAuthoringContextAuthority
     }
 
     /**
+     * Record the start source one session chose, once, and answer the start it now holds.
+     *
+     * A contextual session starts exactly once from the source the author picked; Studio reconciles every
+     * later snapshot and save result against that start. The first recorded choice wins, so a second,
+     * different start request for the same session is reported back rather than silently rebinding it.
+     *
+     * @param   ExecutionContext  $context      Current authenticated administrator request.
+     * @param   string            $contextKey   Opaque server-issued context key.
+     * @param   string            $startSource  Canonical JSON of the requested Studio `startSource`.
+     *
+     * @return  string  Canonical JSON of the start source the session holds.
+     *
+     * @throws  ContentStudioAuthoringContextRefused  When the binding is absent, foreign or expired.
+     *
+     * @since   2.0.0
+     */
+    public function rememberStart(ExecutionContext $context, string $contextKey, string $startSource): string
+    {
+        $this->assertHeld($context, $contextKey);
+
+        return $this->contexts->recordStart($contextKey, $startSource) ?? self::refuse();
+    }
+
+    /**
+     * Read the start source one session recorded.
+     *
+     * @param   ExecutionContext  $context     Current authenticated administrator request.
+     * @param   string            $contextKey  Opaque server-issued context key.
+     *
+     * @return  string|null  Canonical JSON start source, or null when the session has not started.
+     *
+     * @throws  ContentStudioAuthoringContextRefused  When the binding is absent, foreign or expired.
+     *
+     * @since   2.0.0
+     */
+    public function startOf(ExecutionContext $context, string $contextKey): ?string
+    {
+        $this->assertHeld($context, $contextKey);
+
+        return $this->contexts->start($contextKey);
+    }
+
+    /**
+     * Require a live binding held by the current administrator session.
+     *
+     * @param   ExecutionContext  $context     Current authenticated administrator request.
+     * @param   string            $contextKey  Opaque server-issued context key.
+     *
+     * @return  void
+     *
+     * @throws  ContentStudioAuthoringContextRefused  When the binding is absent, foreign or expired.
+     *
+     * @since   2.0.0
+     */
+    private function assertHeld(ExecutionContext $context, string $contextKey): void
+    {
+        if (!self::validContextKey($contextKey)) {
+            self::refuse();
+        }
+        $binding = $this->contexts->find($contextKey);
+        if ($binding === null || !self::sameTrustedScope($context, $binding)) {
+            self::refuse();
+        }
+        if ($this->clock->now() >= $binding->expiresAt) {
+            self::refuse();
+        }
+    }
+
+    /**
      * Advance one opened context to the successor target an accepted durable effect produced.
      *
      * The successor is reproduced from live App state before it is stored, exactly as `resolve()`

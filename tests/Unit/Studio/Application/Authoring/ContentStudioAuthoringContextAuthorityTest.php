@@ -627,6 +627,48 @@ final class ContentStudioAuthoringContextAuthorityTest extends TestCase
             {
                 $this->bindings[$binding->contextKey] = $binding;
             }
+
+            /**
+             * Recorded start sources by key.
+             *
+             * @var    array<string, string>
+             * @since  2.0.0
+             */
+            private array $starts = [];
+
+            /**
+             * Record one start source once.
+             *
+             * @param   string  $contextKey   Opaque key.
+             * @param   string  $startSource  Canonical start source.
+             *
+             * @return  string|null  Recorded start source, or null when the binding is absent.
+             *
+             * @since   2.0.0
+             */
+            public function recordStart(string $contextKey, string $startSource): ?string
+            {
+                if (!isset($this->bindings[$contextKey])) {
+                    return null;
+                }
+                $this->starts[$contextKey] ??= $startSource;
+
+                return $this->starts[$contextKey];
+            }
+
+            /**
+             * Read one recorded start source.
+             *
+             * @param   string  $contextKey  Opaque key.
+             *
+             * @return  string|null  Recorded start source, or null.
+             *
+             * @since   2.0.0
+             */
+            public function start(string $contextKey): ?string
+            {
+                return $this->starts[$contextKey] ?? null;
+            }
         };
         $keys = new class implements StudioResourceContextKeyFactory {
             /**

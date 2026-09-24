@@ -10,6 +10,7 @@ use Kumwe\App\Site\Application\SiteSettings;
 use Kumwe\App\Studio\Application\Composition\StudioPublishedTheme;
 use Kumwe\App\Studio\Application\Host\StudioHostAccessRefused;
 use Kumwe\App\Studio\Application\Host\StudioHostSessionAuthority;
+use Kumwe\App\Studio\Application\Preview\StudioPreviewTransportGuard;
 use Kumwe\App\Studio\Domain\Authoring\StudioAuthoringIntent;
 use Kumwe\App\Studio\Domain\Host\StudioResourceKind;
 use Kumwe\App\Studio\Domain\Host\StudioSessionMode;
@@ -83,10 +84,14 @@ final readonly class HostedContentStudioAuthoringConfigurationProvider implement
     /**
      * Host ports and operations a contextual Content session advertises, in wire order.
      *
-     * The contextual shell needs the seven authoring operations; resource search and media browsing are
-     * read-only services the same session already authorizes. Media upload, external import, preview,
-     * recovery and the artifact lifecycle stay unadvertised: Studio requires precompiled grant
-     * transfers, staged previews or feature flags for them that a hosted mount does not supply.
+     * The contextual shell needs the seven authoring operations; resource search, media browsing and
+     * the localized message catalogue are read-only services the same session already authorizes. The
+     * authenticated preview channel is advertised for the host-owned preview surface beside the shell:
+     * the pinned Studio hosted runtime refuses an enabled in-shell preview until its preview port can
+     * stage the complete draft, so `session.preview.enabled` stays false while the two preview
+     * operations remain routed. Media upload, external import, recovery and the artifact lifecycle stay
+     * unadvertised: Studio requires precompiled grant transfers or feature flags for them that a hosted
+     * mount does not supply.
      *
      * @var    array<string, list<string>>
      * @since  2.0.0
@@ -101,14 +106,41 @@ final readonly class HostedContentStudioAuthoringConfigurationProvider implement
             'studio.operation/authoring.save-new-type-version',
             'studio.operation/authoring.start',
         ],
+        'studio.port/localization' => [
+            'studio.operation/localization.messages',
+        ],
         'studio.port/media' => [
             'studio.operation/media.get',
             'studio.operation/media.list',
+        ],
+        'studio.port/preview' => [
+            'studio.operation/preview.cancel',
+            'studio.operation/preview.render',
         ],
         'studio.port/resource' => [
             'studio.operation/resource.search',
         ],
     ];
+
+    /**
+     * Qualified `session.extensions` member carrying the host-owned preview transport coordinates.
+     *
+     * The channel and source identifiers are the same non-secret values the Blueprint route's session
+     * opening returns; they let the host-owned preview surface beside the shell address the
+     * origin-pinned, replay-resistant preview channel without deriving anything from a base route.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    public const string PREVIEW_EXTENSION = 'kumwe.app/preview';
+
+    /**
+     * Site-absolute path of the authenticated single-use preview document.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    public const string PREVIEW_DOCUMENT_PATH = '/administrator/studio/preview';
 
     /**
      * Session limits every contextual Content session negotiates.
@@ -162,6 +194,8 @@ final readonly class HostedContentStudioAuthoringConfigurationProvider implement
      * @param  SiteSettings                            $settings  Site settings holding the time zone.
      * @param  StudioDeploymentEmitter                 $emitter   Producer's pinned deployment emitter.
      * @param  StudioBrowserAssetLocator               $assets    Configured pinned browser-asset origin.
+     * @param  StudioPreviewTransportGuard             $preview   Origin, channel and source authority of the
+     *         authenticated preview channel.
      * @param  ?LoggerInterface                        $logger    Sink for a refused or invalid mount.
      *
      * @since  2.0.0
@@ -175,6 +209,7 @@ final readonly class HostedContentStudioAuthoringConfigurationProvider implement
         private SiteSettings $settings,
         private StudioDeploymentEmitter $emitter,
         private StudioBrowserAssetLocator $assets,
+        private StudioPreviewTransportGuard $preview,
         private ?LoggerInterface $logger = null,
     ) {
     }
@@ -375,6 +410,14 @@ final readonly class HostedContentStudioAuthoringConfigurationProvider implement
                 'enabled' => false,
                 'sameOriginRequired' => true,
                 'allowApproximateRenderer' => false,
+            ],
+            'extensions' => (object) [
+                self::PREVIEW_EXTENSION => (object) [
+                    'channelId' => $this->preview->channelId($session->host),
+                    'documentPath' => self::PREVIEW_DOCUMENT_PATH,
+                    'origin' => $this->preview->origin(),
+                    'sourceId' => $this->preview->sourceId($session->host),
+                ],
             ],
         ];
     }

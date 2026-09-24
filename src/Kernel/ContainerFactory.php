@@ -723,6 +723,7 @@ use Kumwe\App\Infrastructure\Persistence\Migration\SiteAutomationContextMigratio
 use Kumwe\App\Infrastructure\Persistence\Migration\StudioContentProjectionMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\StudioContentAuthoringContextMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\StudioContentAuthoringContextRetentionMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\StudioContentAuthoringStartMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\StudioArtifactRecoveryMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\StudioHostSessionMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\StudioPreviewGrantMigration;
@@ -2106,6 +2107,7 @@ final class ContainerFactory
                     self::service($container, SiteSettings::class),
                     self::service($container, StudioDeploymentEmitter::class),
                     self::service($container, StudioBrowserAssetLocator::class),
+                    self::service($container, StudioPreviewTransportGuard::class),
                     self::service($container, LoggerInterface::class),
                 ),
             true,
@@ -2220,6 +2222,7 @@ final class ContainerFactory
             Container $container,
         ): StudioPreviewBindingSource => new ContentStudioPreviewBindingSource(
             self::service($container, StudioContentProjectionService::class),
+            self::service($container, ContentStudioAuthoringContextAuthority::class),
         ), true);
         $container->share(StudioPreviewBindingResolver::class, new StudioPreviewBindingResolver(), true);
         $container->share(StudioContentFieldBlockRenderer::class, new StudioContentFieldBlockRenderer(), true);
@@ -2622,6 +2625,7 @@ final class ContainerFactory
                     new StudioContentAuthoringContextRetentionMigration(self::service($container, TableNames::class)),
                     new BusinessRecordScaleMigration(self::service($container, TableNames::class)),
                     new QueueWorkerPermitsMigration(self::service($container, TableNames::class)),
+                    new StudioContentAuthoringStartMigration(self::service($container, TableNames::class)),
                     new RetentionCatalogueMigration(self::service($container, TableNames::class)),
                 ],
                 self::acceptedHistoricalChecksums(),
