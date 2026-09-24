@@ -64,6 +64,8 @@ final readonly class ReadinessProbe implements ReadinessStatus
      *         a ready, warning or failed verdict; required whenever an observer is supplied.
      * @param  bool                               $enterprise          Whether the installation declares the
      *         enterprise capacity profile, under which a missing required retention setting fails.
+     * @param  FilesystemStorageReserve|null      $storage             Free-space guardrail on the database volume;
+     *         below its reserve the verdict fails under the enterprise profile and warns otherwise.
      *
      * @since  2.0.0
      */
@@ -81,6 +83,7 @@ final readonly class ReadinessProbe implements ReadinessStatus
         private ?RetentionObserver $retention = null,
         private ?RetentionReadiness $retentionReadiness = null,
         private bool $enterprise = false,
+        private ?FilesystemStorageReserve $storage = null,
     ) {
     }
 
@@ -105,6 +108,24 @@ final readonly class ReadinessProbe implements ReadinessStatus
         }
 
         return $verdict->ready();
+    }
+
+    /**
+     * Apply the 30% free-space reserve: below it an enterprise installation drains, a baseline one warns.
+     *
+     * @return  bool  False only when the reserve is violated under the enterprise profile.
+     *
+     * @since   2.0.0
+     */
+    private function storageReady(): bool
+    {
+        $report = $this->storage?->report();
+        if ($report === null || $report['satisfied']) {
+            return true;
+        }
+        $this->logger->warning('Database volume is below its free-space reserve.', ['storage' => $report]);
+
+        return !$this->enterprise;
     }
 
     /**
@@ -150,7 +171,7 @@ final readonly class ReadinessProbe implements ReadinessStatus
             if ($this->recovery->hasUnresolvedAttempts()) {
                 return false;
             }
-            if (!$this->retentionReady()) {
+            if (!$this->retentionReady() || !$this->storageReady()) {
                 return false;
             }
 

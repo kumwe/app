@@ -42,6 +42,14 @@ use RuntimeException;
 final readonly class AccessControlService
 {
     /**
+     * Most rows one authorization-filtered listing examines, matching the repository's deepest page (P5-G).
+     *
+     * @var    int
+     * @since  2.0.0
+     */
+    private const int MAXIMUM_SCANNED_ROWS = 10_100;
+
+    /**
      * Wire the store and the collaborators every mutation here depends on.
      *
      * @param  AccessControlRepository      $repository     Store the users, roles, grants and tokens live in.
@@ -1243,7 +1251,7 @@ final readonly class AccessControlService
                 }
             }
             $offset += count($rows);
-        } while (count($rows) === $pageSize);
+        } while (count($rows) === $pageSize && $offset + $pageSize <= self::MAXIMUM_SCANNED_ROWS);
 
         return $result;
     }

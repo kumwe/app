@@ -104,6 +104,8 @@ final readonly class ApplicationConfiguration
      * @param   string                         $capacityProfile               Capacity profile this installation
      *          declares, `baseline` or `enterprise`; under `enterprise` a missing required retention setting
      *          fails readiness instead of warning.
+     * @param   ?string                        $databaseDataPath              Directory on the database data volume
+     *          the 30% free-space reserve guardrail measures, or null when it is not visible to the application.
      *
      * @throws  InvalidArgumentException  When a setting is malformed, a secret is too short or
      *          reused, an identity is not a stable identifier, or a production-only rule is violated.
@@ -143,6 +145,7 @@ final readonly class ApplicationConfiguration
         public string $studioBrowserBaseUrl = self::DEFAULT_STUDIO_BROWSER_BASE_URL,
         public int $sessionIdleSeconds = 1_800,
         public string $capacityProfile = 'baseline',
+        public ?string $databaseDataPath = null,
     ) {
         if (!in_array($capacityProfile, ['baseline', 'enterprise'], true)) {
             throw new InvalidArgumentException('KUMWE_CAPACITY_PROFILE must be baseline or enterprise.');

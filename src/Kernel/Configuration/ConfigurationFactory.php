@@ -134,6 +134,7 @@ final class ConfigurationFactory
                 ApplicationConfiguration::DEFAULT_STUDIO_BROWSER_BASE_URL,
             ),
             capacityProfile: strtolower($environment->string('KUMWE_CAPACITY_PROFILE', 'baseline')),
+            databaseDataPath: $environment->optionalString('KUMWE_DATABASE_DATA_PATH'),
         );
     }
 
