@@ -437,7 +437,7 @@ The evidence is automated and runs with the browser lane:
 | Evidence | Where | What it proves |
 |---|---|---|
 | Catalogue quality | `composer translation:quality` | ICU formatting, CLDR plural coverage, argument parity and real translation for all nine |
-| Locale matrix | `tests/Browser/locale-qualification.spec.ts` | For each of the nine, on the administrator dashboard, content list, content editor, settings, business definitions, business records and access control, the portal home and account security, and the public home: resolved `lang`/`dir`, zero horizontal overflow against both the visual and the layout viewport (a phone that zooms a too-wide page out hides the overflow from the visual one), no overlapping controls, every critical control visible, focusable and uncovered, a clean WCAG 2.2 AA scan, and no catalogue-translated wording left in English. Per-locale screenshots and JSON evidence are attached |
+| Locale matrix | `tests/Browser/locale-qualification.spec.ts` | For each of the nine, on the administrator dashboard, content list, content editor (as Studio launches it, and as the structured form with its rich-text toolbar), settings, business definitions, business records and access control, the portal home and account security, and the public home: resolved `lang`/`dir`, zero horizontal overflow against both the visual and the layout viewport (a phone that zooms a too-wide page out hides the overflow from the visual one), no overlapping controls, every critical control visible, focusable and uncovered, a clean WCAG 2.2 AA scan, and no catalogue-translated wording left in English. Per-locale screenshots and JSON evidence are attached |
 | Right-to-left baselines | `right-to-left.spec.ts`, `signed-in-right-to-left.spec.ts` | Committed `he` and `ar` baselines for public, administrator and portal surfaces at desktop and mobile |
 | Task journeys | `tests/Browser/locale-journeys.spec.ts` | A content-authoring journey completed in German (long compounds: no truncation, labels aligned, German dates) and a generated-business journey completed in Hebrew (right-to-left layout, typed numbers and instants, Hebrew dates, a Hebrew status announcement) |
 
@@ -451,8 +451,17 @@ The wording check reads the catalogue, not a guess: a visible string is untransl
 source message whose translation in that locale differs. Operator-authored content (a page body, a menu
 label, the site footer), definition data (content-model names and field labels, workflow-state names,
 business definition labels) and wording declared by an installed extension's manifest are content in
-their own language, not core interface wording, and are left out by named region. Two surfaces are
-known to still carry English that the catalogue does not yet own: the rich-text editor's toolbar, whose
-Lit component renders its own labels, and the content-model, workflow and theme-preset names seeded as
-data. The first needs its component to read catalogue wording and a rebuilt frontend; the second is
-content translation under ADR 0002's content model.
+their own language, not core interface wording, and are left out by named region.
+
+**Decision: seeded content-model, workflow-state and theme-preset names are content, not interface.**
+The names a content model, its fields and its workflow states carry — `Article`, `Page`, `Draft`,
+`Published` — and the names of the seeded presentation presets are data an operator can rename, not
+wording core renders from a template. Under
+[ADR 0002](roadmap/decisions/0002-interface-translation-architecture.md) §6 they are translated the way
+content is, with the model or site data they belong to — the rule that gives business definition labels
+their own locale dimension — and never by filing them in the interface catalogue. The locale matrix
+therefore treats them as content, and their English in a seeded site is not an untranslated interface
+surface. Wording a component renders itself is interface, however it reaches the page: the rich-text
+editor's toolbar, editor name, help line and link prompt resolve from `core.administrator.rich_text.*`
+and are handed to the Lit component as `data-message-*` attributes, the pattern the Studio composition
+component uses, and the matrix checks them on the structured content form in every locale.
