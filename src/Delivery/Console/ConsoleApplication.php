@@ -6,7 +6,7 @@ namespace Kumwe\App\Delivery\Console;
 
 use InvalidArgumentException;
 use Kumwe\App\Delivery\Console\Contract\CliMachineContract;
-use Kumwe\App\Delivery\Console\Contract\CliV1MachineContract;
+use Kumwe\App\Delivery\Console\Contract\CliV2MachineContract;
 use LogicException;
 
 /**
@@ -49,7 +49,7 @@ final class ConsoleApplication
      *
      * @param  iterable<Command>    $commands  Every command this console can dispatch, in registration order.
      * @param  Output               $output    Sink the listing, the unknown-command message and each command write to.
-     * @param  ?CliMachineContract  $contract  Retained surface; generation one when not explicitly supplied.
+     * @param  ?CliMachineContract  $contract  Live surface; generation two when not explicitly supplied.
      *
      * @since  2.0.0
      */
@@ -58,7 +58,7 @@ final class ConsoleApplication
         private readonly Output $output,
         ?CliMachineContract $contract = null,
     ) {
-        $this->contract = $contract ?? CliV1MachineContract::contract();
+        $this->contract = $contract ?? CliV2MachineContract::contract();
         $declared = array_fill_keys($this->contract->commandNames(), true);
         foreach ($commands as $command) {
             $name = $command->name();
