@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kumwe.dev/schemas/capacity-report.v1.json",
+  "title": "Kumwe sampled concurrent capacity report",
+  "description": "build/perf/concurrent.json written by php tools/perf-harness.php --concurrent. Keys listed in sections.measured are observations; keys in sections.estimated are arithmetic on them. See docs/operations/capacity-estimate.md.",
+  "type": "object",
+  "required": ["harness", "role", "plan", "result_binding", "measurements", "summary", "estimates", "scalability",
+    "sections", "complete", "passed", "write_amplification", "limitations"],
+  "properties": {
+    "harness": {"const": "kumwe-concurrent-samples"},
+    "role": {"const": "sampled_concurrency_evidence_not_production_capacity"},
+    "plan": {
+      "type": "object",
+      "required": ["workers", "samples", "warmup", "repeats", "timeout", "operations", "samples_unit"],
+      "properties": {
+        "workers": {"type": "array", "items": {"type": "integer", "minimum": 1, "maximum": 16}, "minItems": 1},
+        "samples": {"type": "integer", "minimum": 1, "maximum": 1000},
+        "warmup": {"type": "integer", "minimum": 0, "maximum": 100},
+        "repeats": {"type": "integer", "minimum": 2, "maximum": 10},
+        "operations": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "result_binding": {
+      "type": "object",
+      "required": ["source_commit", "cpu_model", "logical_cpus_exposed", "host_memory_bytes", "php_version",
+        "database_driver", "database_version", "database_settings", "runner", "measured_at"],
+      "properties": {
+        "cpu_model": {"type": ["string", "null"]},
+        "logical_cpus_exposed": {"type": ["integer", "null"]},
+        "host_memory_bytes": {"type": ["integer", "null"]},
+        "database_settings": {"type": "object", "additionalProperties": {"type": ["string", "null"]}}
+      }
+    },
+    "measurements": {
+      "description": "Measured: one entry per operation, worker count and repeat.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["operation", "workers", "repeat", "attempted", "successful_lbt", "failed_calls",
+          "successful_latency_ms", "wall_seconds_after_barrier", "successful_lbt_per_second",
+          "observed_maximum_inflight_calls", "independent_database_sessions", "integrity", "passed"]
+      }
+    },
+    "summary": {
+      "description": "Measured: per operation and worker count across repeats, with a Student t 95% interval.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["operation", "workers", "all_repeats_passed", "throughput_lbt_per_second", "throughput_ci95",
+          "throughput_cv", "latency_ms", "failed_calls", "maximum_observed_overlap"],
+        "properties": {
+          "throughput_ci95": {
+            "type": "object",
+            "required": ["samples", "mean", "lower", "upper", "half_width", "method"],
+            "properties": {"method": {"const": "student_t_95_two_sided"}}
+          },
+          "latency_ms": {"type": "object", "required": ["samples", "p50", "p95", "p99", "sample_standard_deviation"]}
+        }
+      }
+    },
+    "estimates": {
+      "description": "Estimated: 86,400-second time extrapolations at each measured worker count.",
+      "type": "array"
+    },
+    "scalability": {
+      "description": "Estimated: USL and Amdahl fits per operation with labelled predictions.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["measured_worker_counts", "models", "prediction_model", "fit_quality", "predictions",
+          "topology_mapping", "assumptions"],
+        "properties": {
+          "fit_quality": {"enum": ["good", "fair", "poor", "no_valid_model"]},
+          "models": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "required": ["identifiable"],
+              "properties": {
+                "identifiable": {"type": "boolean"},
+                "lambda_lbt_per_second_per_worker": {"type": "number"},
+                "sigma_contention": {"type": "number"},
+                "kappa_coherence": {"type": "number"},
+                "r_squared": {"type": ["number", "null"]},
+                "relative_rmse": {"type": ["number", "null"]},
+                "physically_valid": {"type": "boolean"}
+              }
+            }
+          },
+          "predictions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["total_concurrent_callers", "kind", "predicted_lbt_per_second", "predicted_lbt_per_day",
+                "fraction_of_planning_target"],
+              "properties": {"kind": {"enum": ["interpolation", "extrapolation"]}}
+            }
+          }
+        }
+      }
+    },
+    "sections": {
+      "type": "object",
+      "required": ["measured", "estimated", "rule"]
+    },
+    "complete": {"type": "boolean"},
+    "passed": {"type": "boolean"},
+    "write_amplification": {"type": "object"},
+    "limitations": {"type": "array", "items": {"type": "string"}}
+  }
+}
