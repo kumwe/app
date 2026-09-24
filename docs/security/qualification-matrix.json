@@ -152,6 +152,11 @@
                             "test": "tests/Unit/Identity/Infrastructure/Authentication/DoctrineAccessTokenVerifierTest.php::testBindsEveryLookupToAdapterAndSiteContext",
                             "job": ".github/workflows/ci.yml#quality",
                             "proves": "Every token lookup is bound to the adapter and the site."
+                        },
+                        {
+                            "test": "tests/Functional/Security/MachineAdapterAuthorityTest.php::testNoAmbientOrMisdirectedCredentialReachesAMachineSurface",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Cookies, query-string tokens and foreign or repeated site headers confer no machine authority over HTTP."
                         }
                     ]
                 },
@@ -277,6 +282,11 @@
                             "test": "tests/Unit/Studio/Application/Media/StudioExternalMediaFetcherTest.php::testResponseTypeMismatchDeletesThePrivateBody",
                             "job": ".github/workflows/ci.yml#quality",
                             "proves": "An imported body whose declared type disagrees with its bytes is refused and deleted."
+                        },
+                        {
+                            "test": "tests/Functional/Security/UploadAndTraversalBoundaryTest.php::testUploadsAreJudgedByTheirBytesAndNeverByTheClientNameOrType",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Over HTTP, script, markup, SVG and mislabelled uploads are refused by their bytes and a polyglot is stored and served inertly under its detected type."
                         }
                     ]
                 },
@@ -304,6 +314,16 @@
                             "test": "tests/Unit/Extension/Application/Trust/TrustStoreTest.php::testNonEmptyTrustedRuntimeLoadsFromAResolvedNonSymlinkRoot",
                             "job": ".github/workflows/ci.yml#quality",
                             "proves": "The trusted runtime loads only from a resolved non-link root."
+                        },
+                        {
+                            "test": "tests/Functional/Security/UploadAndTraversalBoundaryTest.php::testTraversalAttemptsAreRefusedLikeMissingFilesAndDeleteNothing",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Every URL-to-file route refuses encoded and literal traversal like a missing file, and a traversal-shaped delete removes nothing."
+                        },
+                        {
+                            "test": "tests/Integration/Extension/ExtensionArchiveTraversalIntegrationTest.php::testAHostileArchiveEntryRefusesTheWholePackageAndEscapesNowhere",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Parent, absolute, backslash, nested and symbolic-link archive entries refuse the whole extension package."
                         }
                     ]
                 },
@@ -343,6 +363,16 @@
                             "test": "tests/Unit/Extension/Application/Trust/RevocationFeedSynchronizerTest.php::testPlaintextFeedOriginIsRefused",
                             "job": ".github/workflows/ci.yml#quality",
                             "proves": "The revocation feed refuses plaintext origins."
+                        },
+                        {
+                            "test": "tests/Integration/Security/OutboundRequestForgeryIntegrationTest.php::testNoInternalAddressSpellingReachesTheLoopbackListener",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "No internal-address spelling or loopback-resolving name reaches a real loopback listener through the production importer."
+                        },
+                        {
+                            "test": "tests/Integration/Security/OutboundRequestForgeryIntegrationTest.php::testTheRevocationFeedTransportRefusesEveryNonTlsOriginBeforeConnecting",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "The revocation feed transport refuses every non-TLS scheme before connecting."
                         }
                     ]
                 }
@@ -403,6 +433,11 @@
                             "test": "tests/Unit/Infrastructure/Mcp/McpCapabilityCatalogTest.php::testGeneratedBusinessStatusIsNonEnumeratingAndDoesNotSelectAnOperation",
                             "job": ".github/workflows/ci.yml#quality",
                             "proves": "The MCP operation status tool cannot enumerate operations."
+                        },
+                        {
+                            "test": "tests/Functional/Security/RequestInputBoundaryTest.php::testMissingMalformedAndForbiddenIdentifiersAreIndistinguishable",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Over HTTP, missing, malformed and forbidden identifiers get the same answer."
                         }
                     ]
                 },
@@ -440,6 +475,16 @@
                             "test": "tests/Integration/BusinessRecord/BusinessRecordHistoryPagingIntegrationTest.php::testAmbiguousIdentityIsRefusedAtEveryPageSizeAndCursorPosition",
                             "job": ".github/workflows/ci.yml#database",
                             "proves": "History paging refuses ambiguous identities at every cursor position."
+                        },
+                        {
+                            "test": "tests/Functional/Security/RequestInputBoundaryTest.php::testPageAndLimitBoundsAreEnforcedRatherThanClampedOrOverflowed",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Machine limits are enforced by name, and overflowing browser pages fall back instead of failing."
+                        },
+                        {
+                            "test": "tests/Unit/Media/Application/MediaServiceBrowseBoundsTest.php::testAPageNumberAtTheIntegerLimitIsAnEmptyPageRatherThanAnOverflow",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "A media page at the integer limit is an empty page, not an overflow."
                         }
                     ]
                 },
@@ -477,6 +522,11 @@
                             "test": "tests/Unit/Studio/Application/Host/StudioRecoveryHostPortTest.php::testAnExhaustedWriteWindowIsRefusedAsRateLimited",
                             "job": ".github/workflows/ci.yml#quality",
                             "proves": "Studio recovery writes are rate limited."
+                        },
+                        {
+                            "test": "tests/Functional/Security/RequestInputBoundaryTest.php::testOversizedAndPathologicalInputsAreRefusedBeforeWork",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Over HTTP, oversized bodies, nesting bombs and unusable keys are refused with client errors."
                         }
                     ]
                 }
@@ -542,6 +592,11 @@
                             "test": "tests/Unit/BusinessRecord/Domain/RecordIntegrityTest.php::testRevisionChecksumCoversMetadataAndDisclosureViewRedactsSecrets",
                             "job": ".github/workflows/ci.yml#quality",
                             "proves": "The disclosure view of a revision redacts secrets."
+                        },
+                        {
+                            "test": "tests/Integration/Security/SecretFieldChannelNonDisclosureIntegrationTest.php::testASecretValueAppearsInPlaintextInNoTableLogOrReadView",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "A secret field value appears in plaintext in no table, log record or read view."
                         }
                     ]
                 },
@@ -645,6 +700,11 @@
                             "test": "tests/Unit/BusinessIntegration/Application/JobQueueIntegrationEventHandlerTest.php::testAContextTheAppDidNotIssueIsRefusedBeforeEnqueue",
                             "job": ".github/workflows/ci.yml#quality",
                             "proves": "A forged context never enqueues an event."
+                        },
+                        {
+                            "test": "tests/Integration/Security/SecretFieldChannelNonDisclosureIntegrationTest.php::testASecretValueAppearsInPlaintextInNoTableLogOrReadView",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "The outbox, journal and audit rows a secret-bearing mutation writes carry no plaintext secret."
                         }
                     ]
                 },
@@ -833,6 +893,16 @@
                             "test": "tests/Unit/Delivery/Console/Command/ManageBusinessRecordsCommandTest.php::testInlineValuesAndSubmittedOrganizationAreRejectedBeforeAuthorization",
                             "job": ".github/workflows/ci.yml#quality",
                             "proves": "The CLI refuses a submitted organization before authorization."
+                        },
+                        {
+                            "test": "tests/Functional/Security/MachineAdapterAuthorityTest.php::testEachAdapterAcceptsOnlyTheCredentialMintedForIt",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "REST, MCP and CLI each accept only the credential minted for them."
+                        },
+                        {
+                            "test": "tests/Functional/Security/MachineAdapterAuthorityTest.php::testANarrowCredentialCannotBorrowAuthorityThroughAnyAdapter",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "A narrow credential cannot create through any of the three machine adapters."
                         }
                     ]
                 }
@@ -866,6 +936,11 @@
                             "test": "tests/Unit/BusinessSurface/Application/BusinessMutationPlanServiceTest.php::testCompletedReplayRejectsPolicyDriftOutsideTheContextFingerprint",
                             "job": ".github/workflows/ci.yml#quality",
                             "proves": "A replay refuses policy drift."
+                        },
+                        {
+                            "test": "tests/Functional/Security/IdempotencyKeyOwnershipTest.php::testAKeyReplaysOnlyForTheActorAndOperationThatOwnIt",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Over HTTP, the owner alone replays and reuse for other content is refused."
                         }
                     ]
                 },
@@ -898,6 +973,16 @@
                             "test": "tests/Integration/Mcp/McpMutationGuardIntegrationTest.php::testNestedMapOrderDoesNotChangeTheIdempotencyBinding",
                             "job": ".github/workflows/ci.yml#database",
                             "proves": "The MCP idempotency binding is canonical."
+                        },
+                        {
+                            "test": "tests/Functional/Security/IdempotencyKeyOwnershipTest.php::testAKeyReplaysOnlyForTheActorAndOperationThatOwnIt",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Two actors sharing one key each run their own mutation; the key is scoped to its operation."
+                        },
+                        {
+                            "test": "tests/Functional/Security/IdempotencyKeyOwnershipTest.php::testARevokedOwnerIsRefusedBeforeAnyReplay",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "A revoked owner is refused before any replay."
                         }
                     ]
                 }
@@ -1198,6 +1283,11 @@
                             "test": "tests/Functional/Security/McpLogNonDisclosureTest.php::testToolArgumentsNeverReachTheLogChannel",
                             "job": ".github/workflows/ci.yml#database",
                             "proves": "MCP payloads never reach the log."
+                        },
+                        {
+                            "test": "tests/Integration/Security/SecretFieldChannelNonDisclosureIntegrationTest.php::testASecretValueAppearsInPlaintextInNoTableLogOrReadView",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "A record secret is sealed in every table and absent from every log record."
                         }
                     ]
                 }
@@ -1306,6 +1396,21 @@
                             "test": "tests/Unit/Application/Authorization/ApplicationAuthorizationTest.php::testMembershipScopeCannotAuthorizeForgedOrganizationTarget",
                             "job": ".github/workflows/ci.yml#quality",
                             "proves": "Membership scope cannot authorize a forged organization target."
+                        },
+                        {
+                            "test": "tests/Integration/Security/TenantIsolationIntegrationTest.php::testASiteScopedManagerCannotRewriteThePublicSitesSettings",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "A manager scoped to another site cannot read or rewrite the public site settings."
+                        },
+                        {
+                            "test": "tests/Unit/Site/Infrastructure/Persistence/DoctrineSiteSettingsTest.php::testManagementIsAuthorizedAgainstThePublicSiteRatherThanTheCallersSite",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Settings management is authorized against the public site, never the caller site."
+                        },
+                        {
+                            "test": "tests/Integration/Security/TenantIsolationIntegrationTest.php::testConcurrentWritersInThreeSitesNeverSeeEachOthersResources",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Concurrent writers in three sites never see each other menus and never lose their own."
                         }
                     ]
                 },
