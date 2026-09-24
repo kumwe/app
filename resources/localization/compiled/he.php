@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for he, carrying 2519 messages.
+ * Compiled interface message catalogue for he, carrying 2533 messages.
  *
  * Generated from he.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -313,6 +313,7 @@ return [
     'core.administrator.automation.create_schedule' => 'יצירת תזמון',
     'core.administrator.automation.cron_expression' => 'ביטוי Cron',
     'core.administrator.automation.delete' => 'מחיקה',
+    'core.administrator.automation.delete_schedule_confirm' => 'למחוק את התזמון {name}?',
     'core.administrator.automation.delivery_attempts_and_recoverable_failures_acros' => 'ניסיונות אספקה וכשלים ניתנים לשחזור בכל התורים הרשומים.',
     'core.administrator.automation.field_batch_size' => 'גודל אצווה',
     'core.administrator.automation.field_content_id' => 'מזהה תוכן',
@@ -544,6 +545,7 @@ return [
     'core.administrator.business_definitions.list' => 'רשימה',
     'core.administrator.business_definitions.many_to_many' => 'רבים לרבים',
     'core.administrator.business_definitions.many_to_one' => 'רבים לאחד',
+    'core.administrator.business_definitions.mark_version_confirm' => 'לסמן את גרסה {version} כ-{action}?',
     'core.administrator.business_definitions.maximum' => 'מקסימום',
     'core.administrator.business_definitions.minimum' => 'מינימום',
     'core.administrator.business_definitions.model_operational_entities_relationships_views_a' => 'מדגמנים ישויות תפעוליות, קשרים, תצוגות, פעולות ותהליכי עבודה לפני שמוצג אחסון רשומות.',
@@ -579,6 +581,7 @@ return [
     'core.administrator.business_definitions.publication_gate' => 'שער פרסום',
     'core.administrator.business_definitions.publication_is_immutable' => 'הפרסום הוא בלתי ניתן לשינוי.',
     'core.administrator.business_definitions.publish_version' => 'פרסום גרסה {to_version}',
+    'core.administrator.business_definitions.publish_version_confirm' => 'לפרסם את גרסת ההגדרה הבלתי ניתנת לשינוי הזו?',
     'core.administrator.business_definitions.published_by' => 'פורסם על ידי',
     'core.administrator.business_definitions.read_only' => 'לקריאה בלבד',
     'core.administrator.business_definitions.read_only_access' => 'גישה לקריאה בלבד.',
@@ -882,6 +885,7 @@ return [
     'core.administrator.business_schema_plans.exact_installed_definition_id' => 'מזהה ההגדרה המותקנת המדויק',
     'core.administrator.business_schema_plans.exact_plan_checksum' => 'סכום הביקורת המדויק של התוכנית',
     'core.administrator.business_schema_plans.execute_approved_plan' => 'ביצוע התוכנית המאושרת',
+    'core.administrator.business_schema_plans.execute_confirm' => 'להריץ את תוכנית הסכימה הפיזית המאושרת הזו בדיוק?',
     'core.administrator.business_schema_plans.execution' => 'ביצוע',
     'core.administrator.business_schema_plans.execution_becomes_available_only_after_an' => 'הביצוע הופך לזמין רק לאחר אישור מדויק, ורק למפעיל בעל יכולת הביצוע.',
     'core.administrator.business_schema_plans.execution_gate' => 'שער ביצוע',
@@ -928,9 +932,11 @@ return [
     'core.administrator.business_schema_plans.published_definition' => 'הגדרה מפורסמת',
     'core.administrator.business_schema_plans.published_definitions_create_inspectable_plans_w' => 'הגדרות מפורסמות יוצרות תוכניות ניתנות לבדיקה בלי לשנות את האחסון הפיזי.',
     'core.administrator.business_schema_plans.publishing_a_definition_persists_a_plan' => 'פרסום הגדרה שומר רק תוכנית. הביצוע תמיד נשאר פעולה מורשית נפרדת.',
+    'core.administrator.business_schema_plans.purge_confirm' => 'ליצור תוכנית מחיקה הרסנית עבור סכימה עסקית שמורה זו?',
     'core.administrator.business_schema_plans.record_recovery_evidence' => 'רישום ראיות שחזור',
     'core.administrator.business_schema_plans.record_revision_and_audit_checksums_matched' => 'סכומי הביקורת של הרשומה, התיקון והביקורת תאמו',
     'core.administrator.business_schema_plans.record_tested_backup_and_restore_evidence' => 'רישום ראיות גיבוי ושחזור שנבדקו',
+    'core.administrator.business_schema_plans.recover_confirm' => 'לשחזר את הרצת הסכימה שנקטעה מתוך היומן העמיד שלה?',
     'core.administrator.business_schema_plans.recovery' => 'שחזור',
     'core.administrator.business_schema_plans.recovery_drill_reference' => 'מזהה תרגיל שחזור',
     'core.administrator.business_schema_plans.relations' => 'קשרים',
@@ -1323,6 +1329,7 @@ return [
     'core.administrator.content_list.edit' => 'עריכת {title}',
     'core.administrator.content_list.find_review_and_publish_every_item' => 'אתרו, סקרו ופרסמו כל פריט באתר זה.',
     'core.administrator.content_list.items_on_this_page' => '{count, plural, one {# פריט בעמוד זה} two {# פריטים בעמוד זה} other {# פריטים בעמוד זה}}',
+    'core.administrator.content_list.move_to_trash_confirm' => 'להעביר את ‘{title}’ לסל המחזור?',
     'core.administrator.content_list.next' => 'הבא',
     'core.administrator.content_list.no_matching_content' => 'אין תוכן תואם',
     'core.administrator.content_list.not_public' => '/{slug} · לא ציבורי',
@@ -1516,6 +1523,7 @@ return [
     'core.administrator.extensions.this_release_predates_install_time_admission' => 'מהדורה זו קודמת לתיעוד קבלה בזמן ההתקנה, ולכן דבר לא נרשם במלאי או נסרק. התקינו מחדש את החבילה כדי לרשום תוצאה.',
     'core.administrator.extensions.trust' => 'אמון',
     'core.administrator.extensions.uninstall' => 'הסרת התקנה של {identifier}',
+    'core.administrator.extensions.uninstall_confirm' => 'להסיר את ההתקנה של {identifier}?',
     'core.administrator.extensions.uninstall_extension' => 'הסרת התקנת ההרחבה',
     'core.administrator.extensions.uninstalling_removes_this_package_from_the' => 'הסרת ההתקנה מסירה חבילה זו מזמן הריצה. בדקו את הנתונים בבעלותה ואת דרישות השחזור לפני ההמשך.',
     'core.administrator.extensions.upload_a_verified_package' => 'העלאת חבילה מאומתת',
@@ -1650,6 +1658,7 @@ return [
     'core.administrator.media.all_files' => 'כל הקבצים',
     'core.administrator.media.choose_file_first' => 'בחרו קובץ מדיה להעלאה.',
     'core.administrator.media.copy_url' => 'העתקת כתובת URL',
+    'core.administrator.media.delete_asset_confirm' => 'למחוק את {name}? תוכן שמשתמש בכתובת ה-URL שלו יציג קישור שבור.',
     'core.administrator.media.discover_media' => 'גילוי מדיה',
     'core.administrator.media.documents' => 'מסמכים',
     'core.administrator.media.file_count' => '{count, plural, one {# קובץ} two {# קבצים} other {# קבצים}}',
@@ -1688,7 +1697,9 @@ return [
     'core.administrator.navigation.create_the_container_first_then_add' => 'צרו את המכל תחילה, ולאחר מכן הוסיפו קישורים לעמוד, לקטע או חיצוניים.',
     'core.administrator.navigation.create_the_main_menu' => 'יצירת התפריט הראשי',
     'core.administrator.navigation.custom_url' => 'כתובת URL מותאמת אישית',
+    'core.administrator.navigation.delete_item_confirm' => 'למחוק את פריט התפריט ‘{title}’?',
     'core.administrator.navigation.delete_menu' => 'מחיקת התפריט {title}',
+    'core.administrator.navigation.delete_menu_confirm' => 'למחוק את ‘{title}’ ואת כל הקישורים שלו?',
     'core.administrator.navigation.deleting' => 'מחיקה',
     'core.administrator.navigation.destination' => '· יעד {target_url}',
     'core.administrator.navigation.drag_rows_or_edit_each_numeric' => 'גררו שורות או ערכו כל מיקום מספרי, ולאחר מכן שמרו.',
@@ -1885,6 +1896,9 @@ return [
     'core.business.refusal.read_only_help' => 'עדיין אפשר לפתוח אותה, לעיין בהיסטוריה שלה ולהפעיל את פעולות תהליך העבודה שהיא מציעה.',
     'core.business.refusal.read_only_title' => 'רשומה זו היא לקריאה בלבד',
     'core.business.report.reports' => 'דוחות',
+    'core.business.table.scroll_choice_details' => 'גללו אופקית כדי לעיין בפרטי הבחירה',
+    'core.business.table.scroll_result_columns' => 'גללו אופקית כדי לעיין בכל עמודות התוצאות',
+    'core.business.table.scroll_selected_columns' => 'גללו אופקית כדי לעיין בכל עמודה שנבחרה',
     'core.console.access.description' => 'הציגו רשימה ונהלו משתמשים, תפקידים והרשאות יכולת.',
     'core.console.app_health.description' => 'בדקו אם Kumwe מוכן להגיש תעבורה.',
     'core.console.app_health.kumwe_is_not_ready' => 'Kumwe אינו מוכן.',

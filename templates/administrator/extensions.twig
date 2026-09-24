@@ -156,7 +156,7 @@
                   <input type="hidden" name="identifier" value="{{ extension.identifier }}">
                   {% if 'administrator' in extension.theme_surfaces %}<label>{{ t('core.administrator.access_control.current_password') }}<input type="password" name="current_password" autocomplete="current-password" required></label>{% endif %}
                   <p>{{ t('core.administrator.extensions.uninstalling_removes_this_package_from_the') }}</p>
-                  <button class="danger" type="submit" name="action" value="uninstall" data-confirm="Uninstall {{ extension.identifier }}?">{{ t('core.administrator.extensions.uninstall', {identifier: extension.identifier}) }}</button>
+                  <button class="danger" type="submit" name="action" value="uninstall" data-confirm="{{ t('core.administrator.extensions.uninstall_confirm', {identifier: extension.identifier}) }}">{{ t('core.administrator.extensions.uninstall', {identifier: extension.identifier}) }}</button>
                 </form>
               </details>
             </article>

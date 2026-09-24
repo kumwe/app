@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for de, carrying 2519 messages.
+ * Compiled interface message catalogue for de, carrying 2533 messages.
  *
  * Generated from de.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -313,6 +313,7 @@ return [
     'core.administrator.automation.create_schedule' => 'Zeitplan erstellen',
     'core.administrator.automation.cron_expression' => 'Cron-Ausdruck',
     'core.administrator.automation.delete' => 'Löschen',
+    'core.administrator.automation.delete_schedule_confirm' => 'Den Zeitplan {name} löschen?',
     'core.administrator.automation.delivery_attempts_and_recoverable_failures_acros' => 'Zustellversuche und behebbare Fehler über alle registrierten Warteschlangen hinweg.',
     'core.administrator.automation.field_batch_size' => 'Stapelgröße',
     'core.administrator.automation.field_content_id' => 'Inhalts-ID',
@@ -544,6 +545,7 @@ return [
     'core.administrator.business_definitions.list' => 'Liste',
     'core.administrator.business_definitions.many_to_many' => 'Viele zu viele',
     'core.administrator.business_definitions.many_to_one' => 'Viele zu eins',
+    'core.administrator.business_definitions.mark_version_confirm' => 'Version {version} als {action} markieren?',
     'core.administrator.business_definitions.maximum' => 'Maximum',
     'core.administrator.business_definitions.minimum' => 'Minimum',
     'core.administrator.business_definitions.model_operational_entities_relationships_views_a' => 'Modellieren Sie operative Entitäten, Beziehungen, Ansichten, Aktionen und Workflows, bevor die Datensatzspeicherung eingeführt wird.',
@@ -579,6 +581,7 @@ return [
     'core.administrator.business_definitions.publication_gate' => 'Veröffentlichungsprüfung',
     'core.administrator.business_definitions.publication_is_immutable' => 'Die Veröffentlichung ist unveränderlich.',
     'core.administrator.business_definitions.publish_version' => 'Version {to_version} veröffentlichen',
+    'core.administrator.business_definitions.publish_version_confirm' => 'Diese unveränderliche Definitionsversion veröffentlichen?',
     'core.administrator.business_definitions.published_by' => 'Veröffentlicht von',
     'core.administrator.business_definitions.read_only' => 'Nur lesen',
     'core.administrator.business_definitions.read_only_access' => 'Schreibgeschützter Zugriff.',
@@ -882,6 +885,7 @@ return [
     'core.administrator.business_schema_plans.exact_installed_definition_id' => 'Exakte installierte Definitions-ID',
     'core.administrator.business_schema_plans.exact_plan_checksum' => 'Exakte Plan-Prüfsumme',
     'core.administrator.business_schema_plans.execute_approved_plan' => 'Freigegebenen Plan ausführen',
+    'core.administrator.business_schema_plans.execute_confirm' => 'Diesen genau freigegebenen physischen Schemaplan ausführen?',
     'core.administrator.business_schema_plans.execution' => 'Ausführung',
     'core.administrator.business_schema_plans.execution_becomes_available_only_after_an' => 'Die Ausführung ist erst nach einer exakten Freigabe und nur einem Bediener mit der Ausführungsberechtigung verfügbar.',
     'core.administrator.business_schema_plans.execution_gate' => 'Ausführungsprüfung',
@@ -928,9 +932,11 @@ return [
     'core.administrator.business_schema_plans.published_definition' => 'Veröffentlichte Definition',
     'core.administrator.business_schema_plans.published_definitions_create_inspectable_plans_w' => 'Veröffentlichte Definitionen erzeugen prüfbare Pläne, ohne die physische Speicherung zu ändern.',
     'core.administrator.business_schema_plans.publishing_a_definition_persists_a_plan' => 'Das Veröffentlichen einer Definition speichert nur einen Plan. Die Ausführung bleibt stets ein separater, autorisierter Vorgang.',
+    'core.administrator.business_schema_plans.purge_confirm' => 'Einen destruktiven Löschplan für dieses aufbewahrte Geschäftsschema erstellen?',
     'core.administrator.business_schema_plans.record_recovery_evidence' => 'Wiederherstellungsnachweis erfassen',
     'core.administrator.business_schema_plans.record_revision_and_audit_checksums_matched' => 'Prüfsummen von Datensatz, Revision und Audit stimmten überein',
     'core.administrator.business_schema_plans.record_tested_backup_and_restore_evidence' => 'Geprüften Sicherungs- und Wiederherstellungsnachweis erfassen',
+    'core.administrator.business_schema_plans.recover_confirm' => 'Diese unterbrochene Schemaausführung aus ihrem dauerhaften Journal wiederherstellen?',
     'core.administrator.business_schema_plans.recovery' => 'Wiederherstellung',
     'core.administrator.business_schema_plans.recovery_drill_reference' => 'Referenz der Wiederherstellungsübung',
     'core.administrator.business_schema_plans.relations' => 'Beziehungen',
@@ -1323,6 +1329,7 @@ return [
     'core.administrator.content_list.edit' => '{title} bearbeiten',
     'core.administrator.content_list.find_review_and_publish_every_item' => 'Finden, prüfen und veröffentlichen Sie jedes Element auf dieser Website.',
     'core.administrator.content_list.items_on_this_page' => '{count, plural, one {# Eintrag auf dieser Seite} other {# Einträge auf dieser Seite}}',
+    'core.administrator.content_list.move_to_trash_confirm' => '„{title}“ in den Papierkorb verschieben?',
     'core.administrator.content_list.next' => 'Weiter',
     'core.administrator.content_list.no_matching_content' => 'Keine passenden Inhalte',
     'core.administrator.content_list.not_public' => '/{slug} · nicht öffentlich',
@@ -1516,6 +1523,7 @@ return [
     'core.administrator.extensions.this_release_predates_install_time_admission' => 'Dieses Release stammt aus der Zeit vor der Erfassung der Installationsprüfung; daher wurde nichts erfasst oder gescannt. Installieren Sie das Paket erneut, um ein Ergebnis aufzuzeichnen.',
     'core.administrator.extensions.trust' => 'Vertrauen',
     'core.administrator.extensions.uninstall' => '{identifier} deinstallieren',
+    'core.administrator.extensions.uninstall_confirm' => '{identifier} deinstallieren?',
     'core.administrator.extensions.uninstall_extension' => 'Erweiterung deinstallieren',
     'core.administrator.extensions.uninstalling_removes_this_package_from_the' => 'Die Deinstallation entfernt dieses Paket aus der Laufzeitumgebung. Prüfen Sie zugehörige Daten und Wiederherstellungsanforderungen, bevor Sie fortfahren.',
     'core.administrator.extensions.upload_a_verified_package' => 'Ein geprüftes Paket hochladen',
@@ -1650,6 +1658,7 @@ return [
     'core.administrator.media.all_files' => 'Alle Dateien',
     'core.administrator.media.choose_file_first' => 'Wählen Sie eine Mediendatei zum Hochladen aus.',
     'core.administrator.media.copy_url' => 'URL kopieren',
+    'core.administrator.media.delete_asset_confirm' => '{name} löschen? Inhalte, die seine URL verwenden, zeigen dann einen defekten Link.',
     'core.administrator.media.discover_media' => 'Medien entdecken',
     'core.administrator.media.documents' => 'Dokumente',
     'core.administrator.media.file_count' => '{count, plural, one {# Datei} other {# Dateien}}',
@@ -1688,7 +1697,9 @@ return [
     'core.administrator.navigation.create_the_container_first_then_add' => 'Erstellen Sie zuerst den Container und fügen Sie dann Seiten-, Abschnitts- oder externe Links hinzu.',
     'core.administrator.navigation.create_the_main_menu' => 'Hauptmenü erstellen',
     'core.administrator.navigation.custom_url' => 'Benutzerdefinierte URL',
+    'core.administrator.navigation.delete_item_confirm' => 'Den Menüeintrag „{title}“ löschen?',
     'core.administrator.navigation.delete_menu' => 'Menü „{title}“ löschen',
+    'core.administrator.navigation.delete_menu_confirm' => '„{title}“ und alle zugehörigen Links löschen?',
     'core.administrator.navigation.deleting' => 'Löschen',
     'core.administrator.navigation.destination' => '· Ziel {target_url}',
     'core.administrator.navigation.drag_rows_or_edit_each_numeric' => 'Ziehen Sie Zeilen oder bearbeiten Sie jede numerische Position und speichern Sie anschließend.',
@@ -1885,6 +1896,9 @@ return [
     'core.business.refusal.read_only_help' => 'Sie können ihn weiterhin öffnen, seinen Verlauf prüfen und die angebotenen Workflow-Aktionen ausführen.',
     'core.business.refusal.read_only_title' => 'Dieser Datensatz ist schreibgeschützt',
     'core.business.report.reports' => 'Berichte',
+    'core.business.table.scroll_choice_details' => 'Horizontal scrollen, um die Auswahldetails zu prüfen',
+    'core.business.table.scroll_result_columns' => 'Horizontal scrollen, um jede Ergebnisspalte zu prüfen',
+    'core.business.table.scroll_selected_columns' => 'Horizontal scrollen, um jede ausgewählte Spalte zu prüfen',
     'core.console.access.description' => 'Listet Benutzer, Rollen und Berechtigungen auf und verwaltet sie.',
     'core.console.app_health.description' => 'Prüft, ob Kumwe bereit ist, Datenverkehr zu bedienen.',
     'core.console.app_health.kumwe_is_not_ready' => 'Kumwe ist nicht bereit.',

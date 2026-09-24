@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for zh-Hans, carrying 2519 messages.
+ * Compiled interface message catalogue for zh-Hans, carrying 2533 messages.
  *
  * Generated from zh-Hans.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -313,6 +313,7 @@ return [
     'core.administrator.automation.create_schedule' => '创建计划',
     'core.administrator.automation.cron_expression' => 'Cron 表达式',
     'core.administrator.automation.delete' => '删除',
+    'core.administrator.automation.delete_schedule_confirm' => '删除计划 {name}？',
     'core.administrator.automation.delivery_attempts_and_recoverable_failures_acros' => '已注册队列中的投递尝试次数与可恢复的失败次数。',
     'core.administrator.automation.field_batch_size' => '批次大小',
     'core.administrator.automation.field_content_id' => '内容 ID',
@@ -544,6 +545,7 @@ return [
     'core.administrator.business_definitions.list' => '列表',
     'core.administrator.business_definitions.many_to_many' => '多对多',
     'core.administrator.business_definitions.many_to_one' => '多对一',
+    'core.administrator.business_definitions.mark_version_confirm' => '将版本 {version} 标记为 {action}？',
     'core.administrator.business_definitions.maximum' => '最大值',
     'core.administrator.business_definitions.minimum' => '最小值',
     'core.administrator.business_definitions.model_operational_entities_relationships_views_a' => '在引入记录存储之前，先建模运营实体、关系、视图、操作和工作流。',
@@ -579,6 +581,7 @@ return [
     'core.administrator.business_definitions.publication_gate' => '发布关口',
     'core.administrator.business_definitions.publication_is_immutable' => '发布不可更改。',
     'core.administrator.business_definitions.publish_version' => '发布版本 {to_version}',
+    'core.administrator.business_definitions.publish_version_confirm' => '发布此不可变的定义版本？',
     'core.administrator.business_definitions.published_by' => '发布者',
     'core.administrator.business_definitions.read_only' => '只读',
     'core.administrator.business_definitions.read_only_access' => '只读访问。',
@@ -882,6 +885,7 @@ return [
     'core.administrator.business_schema_plans.exact_installed_definition_id' => '确切的已安装定义 ID',
     'core.administrator.business_schema_plans.exact_plan_checksum' => '确切的计划校验和',
     'core.administrator.business_schema_plans.execute_approved_plan' => '执行已审批的计划',
+    'core.administrator.business_schema_plans.execute_confirm' => '执行这份已批准的物理架构计划吗？',
     'core.administrator.business_schema_plans.execution' => '执行',
     'core.administrator.business_schema_plans.execution_becomes_available_only_after_an' => '只有在获得确切审批后，且仅对具备执行权限的操作员，执行操作才可用。',
     'core.administrator.business_schema_plans.execution_gate' => '执行关口',
@@ -928,9 +932,11 @@ return [
     'core.administrator.business_schema_plans.published_definition' => '已发布的定义',
     'core.administrator.business_schema_plans.published_definitions_create_inspectable_plans_w' => '已发布的定义会生成可供检查的计划，而不会更改物理存储。',
     'core.administrator.business_schema_plans.publishing_a_definition_persists_a_plan' => '发布定义仅会保存一个计划。执行操作始终是一项独立的、需另行授权的操作。',
+    'core.administrator.business_schema_plans.purge_confirm' => '要为此保留的业务架构创建破坏性清除计划吗？',
     'core.administrator.business_schema_plans.record_recovery_evidence' => '记录恢复证据',
     'core.administrator.business_schema_plans.record_revision_and_audit_checksums_matched' => '记录、修订版本和审计的校验和均一致',
     'core.administrator.business_schema_plans.record_tested_backup_and_restore_evidence' => '记录经测试的备份与恢复证据',
+    'core.administrator.business_schema_plans.recover_confirm' => '从持久日志中恢复这次中断的架构执行吗？',
     'core.administrator.business_schema_plans.recovery' => '恢复',
     'core.administrator.business_schema_plans.recovery_drill_reference' => '恢复演练参考编号',
     'core.administrator.business_schema_plans.relations' => '关系',
@@ -1323,6 +1329,7 @@ return [
     'core.administrator.content_list.edit' => '编辑 {title}',
     'core.administrator.content_list.find_review_and_publish_every_item' => '查找、审查并发布此站点上的所有内容。',
     'core.administrator.content_list.items_on_this_page' => '{count, plural, other {本页共 # 项}}',
+    'core.administrator.content_list.move_to_trash_confirm' => '将“{title}”移至回收站？',
     'core.administrator.content_list.next' => '下一页',
     'core.administrator.content_list.no_matching_content' => '没有匹配的内容',
     'core.administrator.content_list.not_public' => '/{slug} · 非公开',
@@ -1516,6 +1523,7 @@ return [
     'core.administrator.extensions.this_release_predates_install_time_admission' => '此版本早于安装时准入记录功能，因此未进行任何清点或扫描。请重新安装该扩展包以记录结果。',
     'core.administrator.extensions.trust' => '信任',
     'core.administrator.extensions.uninstall' => '卸载 {identifier}',
+    'core.administrator.extensions.uninstall_confirm' => '卸载 {identifier}？',
     'core.administrator.extensions.uninstall_extension' => '卸载扩展',
     'core.administrator.extensions.uninstalling_removes_this_package_from_the' => '卸载会将此扩展包从运行时中移除。请在继续之前审查其所属数据和恢复要求。',
     'core.administrator.extensions.upload_a_verified_package' => '上传经验证的扩展包',
@@ -1650,6 +1658,7 @@ return [
     'core.administrator.media.all_files' => '所有文件',
     'core.administrator.media.choose_file_first' => '请选择要上传的媒体文件。',
     'core.administrator.media.copy_url' => '复制 URL',
+    'core.administrator.media.delete_asset_confirm' => '删除 {name}？使用其 URL 的内容将显示失效链接。',
     'core.administrator.media.discover_media' => '发现媒体',
     'core.administrator.media.documents' => '文档',
     'core.administrator.media.file_count' => '{count, plural, other {# 个文件}}',
@@ -1688,7 +1697,9 @@ return [
     'core.administrator.navigation.create_the_container_first_then_add' => '先创建容器，然后添加页面、区块或外部链接。',
     'core.administrator.navigation.create_the_main_menu' => '创建主菜单',
     'core.administrator.navigation.custom_url' => '自定义 URL',
+    'core.administrator.navigation.delete_item_confirm' => '删除菜单项“{title}”？',
     'core.administrator.navigation.delete_menu' => '删除菜单“{title}”',
+    'core.administrator.navigation.delete_menu_confirm' => '删除“{title}”及其所有链接？',
     'core.administrator.navigation.deleting' => '删除',
     'core.administrator.navigation.destination' => '· 目的地 {target_url}',
     'core.administrator.navigation.drag_rows_or_edit_each_numeric' => '拖动行或编辑每个数字位置，然后保存。',
@@ -1885,6 +1896,9 @@ return [
     'core.business.refusal.read_only_help' => '您仍可打开此记录、查看其历史记录并执行其提供的工作流操作。',
     'core.business.refusal.read_only_title' => '此记录为只读',
     'core.business.report.reports' => '报表',
+    'core.business.table.scroll_choice_details' => '水平滚动以查看选项详情',
+    'core.business.table.scroll_result_columns' => '水平滚动以查看所有结果列',
+    'core.business.table.scroll_selected_columns' => '水平滚动以查看所有选定的列',
     'core.console.access.description' => '列出并管理用户、角色和权限授予。',
     'core.console.app_health.description' => '检查 Kumwe 是否已准备好处理流量。',
     'core.console.app_health.kumwe_is_not_ready' => 'Kumwe 尚未就绪。',
