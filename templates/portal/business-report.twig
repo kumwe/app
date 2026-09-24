@@ -7,7 +7,7 @@
 {% set selected_report = report_result ? report_result.report : (export ? export.report : null) %}
 <div data-kis-business data-kis-component="generated-report-workspace" data-kis-surface="core.portal.reports" class="kis-business-stack">
   {% embed '@kis/page-header.twig' with {
-    eyebrow: 'Reports',
+    eyebrow: t('core.business.report.reports'),
     title: t('core.administrator.business_report.business_reports'),
     purpose: t('core.administrator.business_report.choose_an_available_report_provide_its')
   } only %}{% endembed %}

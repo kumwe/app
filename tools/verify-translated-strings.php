@@ -27,6 +27,29 @@
 declare(strict_types=1);
 
 /**
+ * Keys under which a Twig expression hands a component text a person reads.
+ *
+ * A capitalised single word filed under one of these is a heading or a label, not a token, and is
+ * refused like any other inline wording.
+ *
+ * @var    list<string>
+ * @since  2.0.0
+ */
+const WORDING_KEYS = [
+    'caption',
+    'description',
+    'eyebrow',
+    'heading',
+    'help',
+    'label',
+    'legend',
+    'placeholder',
+    'subtitle',
+    'summary',
+    'title',
+];
+
+/**
  * One piece of text the gate refuses, located precisely enough to fix without searching.
  *
  * @since  2.0.0
@@ -333,6 +356,12 @@ function scan_attributes(string $tag, array $attributes, array $allowed): array
  * is a heuristic, and it is the right one here: an identifier with a space in it is already refused
  * by the message-identifier grammar, so the only thing this can catch is wording.
  *
+ * One word can be wording too. A capitalised word handed to a component under a key a person reads —
+ * `eyebrow: 'Publishing'`, `label: 'Summary'` — is a heading or a tab label, and the space rule let
+ * sixty-three of them through untranslated. A literal filed under one of `WORDING_KEYS` that starts
+ * with an upper-case letter followed by a lower-case one is therefore prose as well; `JSON`, `ltr` and
+ * `core.public.page` still read as tokens.
+ *
  * @param  string               $source   Template source, Twig constructs intact.
  * @param  array<string, true>  $allowed  Literals exempt by exact value.
  *
@@ -355,7 +384,15 @@ function scan_expressions(string $source, array $allowed): array
         }
         foreach ($literals[0] as $literal) {
             $value = substr($literal[0], 1, -1);
-            if (!str_contains($value, ' ') || isset($allowed[$value]) || !reads_as_prose($value)) {
+            if (isset($allowed[$value])) {
+                continue;
+            }
+            $wordingKey = preg_match(
+                '/\\b(?:' . implode('|', WORDING_KEYS) . ')\\s*:\\s*$/',
+                substr($expression, 0, $literal[1]),
+            ) === 1;
+            $singleWord = $wordingKey && preg_match('/^\\p{Lu}\\p{Ll}/u', $value) === 1;
+            if (!$singleWord && (!str_contains($value, ' ') || !reads_as_prose($value))) {
                 continue;
             }
             $offending[$start + $literal[1]] = $value;

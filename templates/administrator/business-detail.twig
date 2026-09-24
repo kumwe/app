@@ -60,12 +60,12 @@
     {% endif %}
 
     {% set record_tasks = [
-      {id: 'summary', label: 'Summary', href: record_path ~ '?task=summary'},
-      {id: 'relations', label: 'Relations', href: record_path ~ '?task=relations', count: definition.relationships|length},
-      {id: 'actions', label: 'Actions', href: record_path ~ '?task=actions', count: definition.actions|length}
+      {id: 'summary', label: t('core.business.record_view.summary'), href: record_path ~ '?task=summary'},
+      {id: 'relations', label: t('core.business.record_view.relations'), href: record_path ~ '?task=relations', count: definition.relationships|length},
+      {id: 'actions', label: t('core.business.record_view.actions'), href: record_path ~ '?task=actions', count: definition.actions|length}
     ] %}
     {% if available_operations.history is defined %}
-      {% set record_tasks = record_tasks|merge([{id: 'history', label: 'History', href: record_path ~ '?task=history'}]) %}
+      {% set record_tasks = record_tasks|merge([{id: 'history', label: t('core.business.record_view.history'), href: record_path ~ '?task=history'}]) %}
     {% endif %}
     <div class="kis-business-record-tabs">
       {% include '@kis/task-navigation.twig' with {label: t('core.administrator.business_detail.record_tasks'), tasks: record_tasks, active: record_task} only %}

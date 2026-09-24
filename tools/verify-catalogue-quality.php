@@ -168,6 +168,18 @@ const KUMWE_IDENTICAL_REGISTER = [
         'locales' => ['de', 'es', 'pt-BR'],
         'reason' => 'Token is the established technical term for an API credential in these languages.',
     ],
+    'Tokens' => [
+        'locales' => ['de', 'es', 'pt-BR'],
+        'reason' => 'Plural of the established technical loanword Token in German, Spanish and Portuguese.',
+    ],
+    'Website' => [
+        'locales' => ['de'],
+        'reason' => 'Website is the established German word for a web site.',
+    ],
+    'Platform' => [
+        'locales' => ['af'],
+        'reason' => 'Platform is the Afrikaans word for platform.',
+    ],
     'Details' => [
         'locales' => ['de'],
         'reason' => 'Details is the German plural of Detail.',

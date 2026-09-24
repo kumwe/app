@@ -59,6 +59,34 @@ final class InterfaceTranslationGateTest extends TestCase
         self::assertStringContainsString('composer translation:compile', $output);
     }
 
+    /**
+     * A single capitalised word handed to a component under a wording key is refused as inline text.
+     *
+     * Sixty-three headings and tab labels such as `eyebrow: 'Publishing'` passed the space-based prose
+     * rule and rendered in English in every locale. The key they are filed under is what marks them as
+     * wording, and a token such as `JSON` or a lower-case value under the same key is still accepted.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheHardcodedStringGateRefusesASingleWordComponentLabel(): void
+    {
+        $tree = $this->treeCopy();
+        file_put_contents(
+            $tree . '/templates/administrator/content-list.twig',
+            "{% include '@kis/page-header.twig' with {eyebrow: 'Publishing', format: 'JSON', tone: 'quiet'} %}\n",
+        );
+
+        [$status, $output] = $this->execute('tools/verify-translated-strings.php', [], $tree);
+
+        self::assertSame(1, $status, $output);
+        self::assertStringContainsString('templates/administrator/content-list.twig', $output);
+        self::assertStringContainsString('Publishing', $output);
+        self::assertStringNotContainsString('JSON', $output);
+        self::assertStringNotContainsString('quiet', $output);
+    }
+
     public function testTheHardcodedStringGateEnforcesATemplateNobodyRegistered(): void
     {
         $tree = $this->treeCopy();

@@ -3095,6 +3095,42 @@
         <target>Benutzer</target>
       </segment>
     </unit>
+    <unit id="core.administrator.access_control.identity">
+      <notes>
+        <note category="context">Eyebrow above the access-control heading on templates/administrator/access-control.twig.</note>
+      </notes>
+      <segment>
+        <source>Identity</source>
+        <target>Identität</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.access_control.grants_tab">
+      <notes>
+        <note category="context">Access-control section tab listing capability grants.</note>
+      </notes>
+      <segment>
+        <source>Grants</source>
+        <target>Berechtigungen</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.access_control.assignments">
+      <notes>
+        <note category="context">Access-control section tab listing role assignments.</note>
+      </notes>
+      <segment>
+        <source>Assignments</source>
+        <target>Zuweisungen</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.access_control.tokens">
+      <notes>
+        <note category="context">Access-control section tab listing API tokens.</note>
+      </notes>
+      <segment>
+        <source>Tokens</source>
+        <target>Tokens</target>
+      </segment>
+    </unit>
     <unit id="core.administrator.access_control.browse_identity_state_first_edit_emergency">
       <notes>
         <note category="context">Record surface text on templates/administrator/access-control.twig.</note>
@@ -4605,6 +4641,15 @@
       <segment>
         <source>Automation</source>
         <target>Automatisierung</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.automation.operations">
+      <notes>
+        <note category="context">Eyebrow above the automation heading.</note>
+      </notes>
+      <segment>
+        <source>Operations</source>
+        <target>Betrieb</target>
       </segment>
     </unit>
     <unit id="core.administrator.automation.automation_concerns">
@@ -9107,6 +9152,24 @@
         <target>Schemapläne</target>
       </segment>
     </unit>
+    <unit id="core.administrator.business_schema_plans.before">
+      <notes>
+        <note category="context">Column heading for the storage state before a schema plan applies.</note>
+      </notes>
+      <segment>
+        <source>Before</source>
+        <target>Vorher</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.business_schema_plans.after">
+      <notes>
+        <note category="context">Column heading for the storage state after a schema plan applies.</note>
+      </notes>
+      <segment>
+        <source>After</source>
+        <target>Nachher</target>
+      </segment>
+    </unit>
     <unit id="core.administrator.business_schema_plans.inspect_and_control_generated_relational_storage">
       <notes>
         <note category="context">Record surface text on templates/administrator/business-schema-plans.twig.</note>
@@ -10014,6 +10077,15 @@
       <segment>
         <source>Business Security</source>
         <target>Geschäftssicherheit</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.business_security.overview">
+      <notes>
+        <note category="context">Business Security tab showing the overview.</note>
+      </notes>
+      <segment>
+        <source>Overview</source>
+        <target>Übersicht</target>
       </segment>
     </unit>
     <unit id="core.administrator.business_security.govern_organization_boundaries_membership_row_an">
@@ -12977,6 +13049,15 @@
         <target>Inhalt</target>
       </segment>
     </unit>
+    <unit id="core.administrator.content_list.publishing">
+      <notes>
+        <note category="context">Eyebrow above the content list heading.</note>
+      </notes>
+      <segment>
+        <source>Publishing</source>
+        <target>Veröffentlichung</target>
+      </segment>
+    </unit>
     <unit id="core.administrator.content_list.title_or_url_slug">
       <notes>
         <note category="context">Record surface attribute placeholder on templates/administrator/content-list.twig.</note>
@@ -13776,6 +13857,15 @@
       <segment>
         <source>Extensions</source>
         <target>Erweiterungen</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.extensions.platform">
+      <notes>
+        <note category="context">Eyebrow above the extensions heading.</note>
+      </notes>
+      <segment>
+        <source>Platform</source>
+        <target>Plattform</target>
       </segment>
     </unit>
     <unit id="core.administrator.extensions.extension_management_concerns">
@@ -14948,6 +15038,114 @@
         <target>Vorgänge</target>
       </segment>
     </unit>
+    <unit id="core.administrator.interface_standard.density_empty">
+      <notes>
+        <note category="context">Fixture density in the interface standard gallery: no records.</note>
+      </notes>
+      <segment>
+        <source>Empty</source>
+        <target>Leer</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.interface_standard.density_sparse">
+      <notes>
+        <note category="context">Fixture density in the interface standard gallery: a few records.</note>
+      </notes>
+      <segment>
+        <source>Sparse</source>
+        <target>Spärlich</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.interface_standard.density_representative">
+      <notes>
+        <note category="context">Fixture density in the interface standard gallery: a typical amount of data.</note>
+      </notes>
+      <segment>
+        <source>Representative</source>
+        <target>Repräsentativ</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.interface_standard.density_dense">
+      <notes>
+        <note category="context">Fixture density in the interface standard gallery: a lot of data.</note>
+      </notes>
+      <segment>
+        <source>Dense</source>
+        <target>Dicht</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.interface_standard.density_extreme">
+      <notes>
+        <note category="context">Fixture density in the interface standard gallery: the largest data the surface must hold.</note>
+      </notes>
+      <segment>
+        <source>Extreme</source>
+        <target>Extrem</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.interface_standard.density_error">
+      <notes>
+        <note category="context">Fixture state in the interface standard gallery: the data failed to load.</note>
+      </notes>
+      <segment>
+        <source>Error</source>
+        <target>Fehler</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.interface_standard.save_unchanged">
+      <notes>
+        <note category="context">Save state in the interface standard gallery: nothing has changed.</note>
+      </notes>
+      <segment>
+        <source>Unchanged</source>
+        <target>Unverändert</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.interface_standard.save_unsaved">
+      <notes>
+        <note category="context">Save state in the interface standard gallery: changes not yet saved.</note>
+      </notes>
+      <segment>
+        <source>Unsaved</source>
+        <target>Nicht gespeichert</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.interface_standard.save_saving">
+      <notes>
+        <note category="context">Save state in the interface standard gallery: a save is in progress.</note>
+      </notes>
+      <segment>
+        <source>Saving</source>
+        <target>Wird gespeichert</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.interface_standard.save_saved">
+      <notes>
+        <note category="context">Save state in the interface standard gallery: the change is stored.</note>
+      </notes>
+      <segment>
+        <source>Saved</source>
+        <target>Gespeichert</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.interface_standard.save_conflict">
+      <notes>
+        <note category="context">Save state in the interface standard gallery: someone else changed the item first.</note>
+      </notes>
+      <segment>
+        <source>Conflict</source>
+        <target>Konflikt</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.interface_standard.save_failed">
+      <notes>
+        <note category="context">Save state in the interface standard gallery: the save was refused.</note>
+      </notes>
+      <segment>
+        <source>Failed</source>
+        <target>Fehlgeschlagen</target>
+      </segment>
+    </unit>
     <unit id="core.administrator.interface_standard.reference">
       <notes>
         <note category="context">Record surface text on templates/administrator/interface-standard.twig.</note>
@@ -15846,6 +16044,15 @@
       <segment>
         <source>Site settings</source>
         <target>Website-Einstellungen</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.settings.website">
+      <notes>
+        <note category="context">Eyebrow above the site settings heading.</note>
+      </notes>
+      <segment>
+        <source>Website</source>
+        <target>Website</target>
       </segment>
     </unit>
     <unit id="core.administrator.settings.control_the_public_identity_homepage_menu">
@@ -16757,6 +16964,15 @@
       <segment>
         <source>Sign in</source>
         <target>Anmelden</target>
+      </segment>
+    </unit>
+    <unit id="core.portal.approval_detail.review">
+      <notes>
+        <note category="context">Approval detail tab where the reviewer decides.</note>
+      </notes>
+      <segment>
+        <source>Review</source>
+        <target>Prüfung</target>
       </segment>
     </unit>
     <unit id="core.portal.login.help_summary">
@@ -18576,6 +18792,51 @@
       <segment>
         <source>Null</source>
         <target>Null</target>
+      </segment>
+    </unit>
+    <unit id="core.business.record_view.summary">
+      <notes>
+        <note category="context">Business record tab showing the record summary, in the administrator and the portal.</note>
+      </notes>
+      <segment>
+        <source>Summary</source>
+        <target>Übersicht</target>
+      </segment>
+    </unit>
+    <unit id="core.business.record_view.relations">
+      <notes>
+        <note category="context">Business record tab showing related records.</note>
+      </notes>
+      <segment>
+        <source>Relations</source>
+        <target>Beziehungen</target>
+      </segment>
+    </unit>
+    <unit id="core.business.record_view.actions">
+      <notes>
+        <note category="context">Business record tab showing the actions available on the record.</note>
+      </notes>
+      <segment>
+        <source>Actions</source>
+        <target>Aktionen</target>
+      </segment>
+    </unit>
+    <unit id="core.business.record_view.history">
+      <notes>
+        <note category="context">Business record tab showing the record revision history.</note>
+      </notes>
+      <segment>
+        <source>History</source>
+        <target>Verlauf</target>
+      </segment>
+    </unit>
+    <unit id="core.business.report.reports">
+      <notes>
+        <note category="context">Eyebrow above a business report heading, in the administrator and the portal.</note>
+      </notes>
+      <segment>
+        <source>Reports</source>
+        <target>Berichte</target>
       </segment>
     </unit>
     <unit id="core.business.form.kind_object">
