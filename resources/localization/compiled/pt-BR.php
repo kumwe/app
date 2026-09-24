@@ -1974,7 +1974,7 @@ return [
     'core.console.queue_work.worker_heartbeat_cleanup_failed' => 'Falha na limpeza do heartbeat do worker: {reason}',
     'core.console.schedule_run.description' => 'Despache os agendamentos vencidos uma vez ou continuamente com --loop.',
     'core.console.schedule_run.dispatched_due_schedule_s' => '{dispatched} agendamento(s) vencido(s) despachado(s).',
-    'core.console.security_events.description' => 'Lista os eventos de segurança de identidade e acesso mais recentes.',
+    'core.console.security_events.description' => 'Liste os eventos de segurança de identidade e acesso mais recentes.',
     'core.console.settings.description' => 'Leia ou atualize a configuração do site.',
     'core.console.studio_authoring.description' => 'Abra uma sessão de criação do Studio e execute suas operações de criação.',
     'core.console.studio_authoring.refused' => 'A solicitação de criação do Studio foi recusada.',

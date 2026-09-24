@@ -1974,7 +1974,7 @@ return [
     'core.console.queue_work.worker_heartbeat_cleanup_failed' => 'ניקוי פעימת הלב של העובד נכשל: {reason}',
     'core.console.schedule_run.description' => 'שגרו תזמונים שהגיע מועדם פעם אחת או ברציפות עם --loop.',
     'core.console.schedule_run.dispatched_due_schedule_s' => 'נשלחו {dispatched} תזמונים שהגיע מועדם.',
-    'core.console.security_events.description' => 'מציג את אירועי האבטחה האחרונים של זהות וגישה.',
+    'core.console.security_events.description' => 'הציגו את אירועי האבטחה האחרונים של זהות וגישה.',
     'core.console.settings.description' => 'קראו או עדכנו את תצורת האתר.',
     'core.console.studio_authoring.description' => 'פתחו הפעלת כתיבה ב-Studio והריצו את פעולות הכתיבה שלה.',
     'core.console.studio_authoring.refused' => 'בקשת הכתיבה ב-Studio נדחתה.',

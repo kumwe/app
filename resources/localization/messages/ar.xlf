@@ -18447,7 +18447,7 @@
       </notes>
       <segment>
         <source>List the newest identity and access security events.</source>
-        <target>يسرد أحدث الأحداث الأمنية الخاصة بالهوية والوصول.</target>
+        <target>اسرد أحدث الأحداث الأمنية الخاصة بالهوية والوصول.</target>
       </segment>
     </unit>
     <unit id="core.console.settings.description">

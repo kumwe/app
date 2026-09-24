@@ -18447,7 +18447,7 @@
       </notes>
       <segment>
         <source>List the newest identity and access security events.</source>
-        <target>Lista os eventos de segurança de identidade e acesso mais recentes.</target>
+        <target>Liste os eventos de segurança de identidade e acesso mais recentes.</target>
       </segment>
     </unit>
     <unit id="core.console.settings.description">

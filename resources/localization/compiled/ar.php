@@ -1974,7 +1974,7 @@ return [
     'core.console.queue_work.worker_heartbeat_cleanup_failed' => 'فشل تنظيف نبضة العامل: {reason}',
     'core.console.schedule_run.description' => 'أرسِل الجداول المستحقة مرة واحدة أو باستمرار باستخدام --loop.',
     'core.console.schedule_run.dispatched_due_schedule_s' => 'تم إرسال {dispatched} جدول (جداول) مستحق.',
-    'core.console.security_events.description' => 'يسرد أحدث الأحداث الأمنية الخاصة بالهوية والوصول.',
+    'core.console.security_events.description' => 'اسرد أحدث الأحداث الأمنية الخاصة بالهوية والوصول.',
     'core.console.settings.description' => 'اقرأ تكوين الموقع أو حدّثه.',
     'core.console.studio_authoring.description' => 'افتح جلسة تأليف في Studio وشغّل عمليات التأليف الخاصة بها.',
     'core.console.studio_authoring.refused' => 'رُفض طلب التأليف في Studio.',
