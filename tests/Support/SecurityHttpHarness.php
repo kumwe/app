@@ -168,6 +168,27 @@ final class SecurityHttpHarness
     }
 
     /**
+     * Read the request-forgery token an administrator page renders for the signed-in session.
+     *
+     * @param   array<string, string>  $cookie  Administrator session cookie from `administratorCookie()`.
+     *
+     * @return  string  The session's form token.
+     *
+     * @throws  RuntimeException  When the page renders no token.
+     *
+     * @since   2.0.0
+     */
+    public function administratorCsrf(array $cookie): string
+    {
+        $page = $this->handle($this->request('GET', '/administrator/media')->withCookieParams($cookie));
+        if (preg_match('/name="_csrf" value="([^"]+)"/', (string) $page->getBody(), $field) !== 1) {
+            throw new RuntimeException('The administrator page carries no request-forgery token.');
+        }
+
+        return $field[1];
+    }
+
+    /**
      * Create a real user holding exactly the given capabilities and issue it a bearer token.
      *
      * @param   list<string>  $capabilities  Capabilities the user's role grants and the token carries.
