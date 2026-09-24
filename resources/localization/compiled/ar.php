@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for ar, carrying 2500 messages.
+ * Compiled interface message catalogue for ar, carrying 2507 messages.
  *
  * Generated from ar.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -525,6 +525,8 @@ return [
     'core.administrator.business_definitions.identity_strategy' => 'استراتيجية الهوية',
     'core.administrator.business_definitions.immutable_after_creation' => 'غير قابل للتغيير بعد الإنشاء',
     'core.administrator.business_definitions.immutable_ledger' => 'سجل غير قابل للتغيير',
+    'core.administrator.business_definitions.immutable_states' => 'الحالات غير القابلة للتغيير',
+    'core.administrator.business_definitions.immutable_states_help' => 'لا يمكن تعديل السجلات التي تدخل هذه الحالات بعد ذلك، وتُصحَّح بقيد عكسي مرتبط. سمِّ حالات مُعلَنة غير الحالة الأولية؛ اتركه فارغًا لإزالة الإعلان.',
     'core.administrator.business_definitions.import_draft' => 'استيراد المسودة',
     'core.administrator.business_definitions.import_strict_definition' => 'استيراد تعريف صارم',
     'core.administrator.business_definitions.imports_use_the_same_strict_validation' => 'تستخدم عمليات الاستيراد نفس بوابات التحقق الصارم والملكية والمراجعة المتفائلة التي يستخدمها المحرر الرسومي.',
@@ -1868,6 +1870,11 @@ return [
     'core.business.record_view.history' => 'السجل',
     'core.business.record_view.relations' => 'العلاقات',
     'core.business.record_view.summary' => 'الملخص',
+    'core.business.refusal.immutable' => 'سجل الأعمال غير قابل للتغيير في حالة سير العمل الحالية، ويُصحَّح بقيد عكسي مرتبط.',
+    'core.business.refusal.posting_period_closed' => 'فترة الترحيل {period} مغلقة لتاريخ الترحيل المُعلَن.',
+    'core.business.refusal.read_only_badge' => 'للقراءة فقط',
+    'core.business.refusal.read_only_help' => 'لا يزال بإمكانك فتحه ومراجعة سجله وتشغيل إجراءات سير العمل التي يتيحها.',
+    'core.business.refusal.read_only_title' => 'هذا السجل للقراءة فقط',
     'core.business.report.reports' => 'التقارير',
     'core.console.access.description' => 'اسرد المستخدمين والأدوار ومنح الصلاحيات وأدرها.',
     'core.console.app_health.description' => 'تحقّق مما إذا كان Kumwe جاهزًا لخدمة الحركة.',

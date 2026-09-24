@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for de, carrying 2500 messages.
+ * Compiled interface message catalogue for de, carrying 2507 messages.
  *
  * Generated from de.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -525,6 +525,8 @@ return [
     'core.administrator.business_definitions.identity_strategy' => 'Identitätsstrategie',
     'core.administrator.business_definitions.immutable_after_creation' => 'Nach der Erstellung unveränderlich',
     'core.administrator.business_definitions.immutable_ledger' => 'Unveränderliches Journal',
+    'core.administrator.business_definitions.immutable_states' => 'Unveränderliche Zustände',
+    'core.administrator.business_definitions.immutable_states_help' => 'Datensätze, die diese Zustände erreichen, können nicht mehr bearbeitet werden und werden durch eine verknüpfte Stornierung korrigiert. Geben Sie deklarierte Zustände außer dem Anfangszustand an; lassen Sie das Feld leer, um die Deklaration zu entfernen.',
     'core.administrator.business_definitions.import_draft' => 'Entwurf importieren',
     'core.administrator.business_definitions.import_strict_definition' => 'Strikte Definition importieren',
     'core.administrator.business_definitions.imports_use_the_same_strict_validation' => 'Importe durchlaufen dieselbe strikte Validierung sowie dieselben Eigentums- und Optimistic-Revision-Prüfungen wie der grafische Editor.',
@@ -1868,6 +1870,11 @@ return [
     'core.business.record_view.history' => 'Verlauf',
     'core.business.record_view.relations' => 'Beziehungen',
     'core.business.record_view.summary' => 'Übersicht',
+    'core.business.refusal.immutable' => 'Der Geschäftsdatensatz ist in seinem aktuellen Workflow-Status unveränderlich und wird durch eine verknüpfte Stornierung korrigiert.',
+    'core.business.refusal.posting_period_closed' => 'Die Buchungsperiode {period} ist für das deklarierte Buchungsdatum geschlossen.',
+    'core.business.refusal.read_only_badge' => 'Schreibgeschützt',
+    'core.business.refusal.read_only_help' => 'Sie können ihn weiterhin öffnen, seinen Verlauf prüfen und die angebotenen Workflow-Aktionen ausführen.',
+    'core.business.refusal.read_only_title' => 'Dieser Datensatz ist schreibgeschützt',
     'core.business.report.reports' => 'Berichte',
     'core.console.access.description' => 'Listet Benutzer, Rollen und Berechtigungen auf und verwaltet sie.',
     'core.console.app_health.description' => 'Prüft, ob Kumwe bereit ist, Datenverkehr zu bedienen.',

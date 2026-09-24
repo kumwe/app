@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for en-US, carrying 2500 messages.
+ * Compiled interface message catalogue for en-US, carrying 2507 messages.
  *
  * Generated from en-US.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -525,6 +525,8 @@ return [
     'core.administrator.business_definitions.identity_strategy' => 'Identity strategy',
     'core.administrator.business_definitions.immutable_after_creation' => 'Immutable after creation',
     'core.administrator.business_definitions.immutable_ledger' => 'Immutable ledger',
+    'core.administrator.business_definitions.immutable_states' => 'Immutable states',
+    'core.administrator.business_definitions.immutable_states_help' => 'Records entering these states can no longer be edited and are corrected by a linked reversal. Name declared states other than the initial state; leave empty to remove the declaration.',
     'core.administrator.business_definitions.import_draft' => 'Import draft',
     'core.administrator.business_definitions.import_strict_definition' => 'Import strict definition',
     'core.administrator.business_definitions.imports_use_the_same_strict_validation' => 'Imports use the same strict validation, ownership and optimistic-revision gates as the graphical editor.',
@@ -1868,6 +1870,11 @@ return [
     'core.business.record_view.history' => 'History',
     'core.business.record_view.relations' => 'Relations',
     'core.business.record_view.summary' => 'Summary',
+    'core.business.refusal.immutable' => 'The business record is immutable in its current workflow state and is corrected by a linked reversal.',
+    'core.business.refusal.posting_period_closed' => 'Posting period {period} is closed for the declared posting date.',
+    'core.business.refusal.read_only_badge' => 'Read-only',
+    'core.business.refusal.read_only_help' => 'You can still open it, review its history and run the workflow actions it offers.',
+    'core.business.refusal.read_only_title' => 'This record is read-only',
     'core.business.report.reports' => 'Reports',
     'core.console.access.description' => 'List and manage users, roles, and capability grants.',
     'core.console.app_health.description' => 'Check whether Kumwe is ready to serve traffic.',

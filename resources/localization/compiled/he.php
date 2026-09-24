@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for he, carrying 2500 messages.
+ * Compiled interface message catalogue for he, carrying 2507 messages.
  *
  * Generated from he.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -525,6 +525,8 @@ return [
     'core.administrator.business_definitions.identity_strategy' => 'אסטרטגיית זהות',
     'core.administrator.business_definitions.immutable_after_creation' => 'בלתי ניתן לשינוי לאחר היצירה',
     'core.administrator.business_definitions.immutable_ledger' => 'יומן בלתי ניתן לשינוי',
+    'core.administrator.business_definitions.immutable_states' => 'מצבים בלתי ניתנים לשינוי',
+    'core.administrator.business_definitions.immutable_states_help' => 'לא ניתן עוד לערוך רשומות שנכנסות למצבים אלה, והן מתוקנות באמצעות רשומת היפוך מקושרת. ציינו מצבים מוכרזים שאינם המצב ההתחלתי; השאירו ריק כדי להסיר את ההכרזה.',
     'core.administrator.business_definitions.import_draft' => 'ייבוא טיוטה',
     'core.administrator.business_definitions.import_strict_definition' => 'ייבוא הגדרה מחמירה',
     'core.administrator.business_definitions.imports_use_the_same_strict_validation' => 'ייבוא משתמש באותם שערי אימות מחמיר, בעלות וגרסה אופטימית כמו העורך הגרפי.',
@@ -1868,6 +1870,11 @@ return [
     'core.business.record_view.history' => 'היסטוריה',
     'core.business.record_view.relations' => 'קשרים',
     'core.business.record_view.summary' => 'סיכום',
+    'core.business.refusal.immutable' => 'הרשומה העסקית אינה ניתנת לשינוי במצב תהליך העבודה הנוכחי שלה, והיא מתוקנת באמצעות רשומת היפוך מקושרת.',
+    'core.business.refusal.posting_period_closed' => 'תקופת הרישום {period} סגורה עבור תאריך הרישום שהוכרז.',
+    'core.business.refusal.read_only_badge' => 'לקריאה בלבד',
+    'core.business.refusal.read_only_help' => 'עדיין אפשר לפתוח אותה, לעיין בהיסטוריה שלה ולהפעיל את פעולות תהליך העבודה שהיא מציעה.',
+    'core.business.refusal.read_only_title' => 'רשומה זו היא לקריאה בלבד',
     'core.business.report.reports' => 'דוחות',
     'core.console.access.description' => 'הציגו רשימה ונהלו משתמשים, תפקידים והרשאות יכולת.',
     'core.console.app_health.description' => 'בדקו אם Kumwe מוכן להגיש תעבורה.',

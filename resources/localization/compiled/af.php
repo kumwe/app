@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for af, carrying 2500 messages.
+ * Compiled interface message catalogue for af, carrying 2507 messages.
  *
  * Generated from af.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -525,6 +525,8 @@ return [
     'core.administrator.business_definitions.identity_strategy' => 'Identiteitstrategie',
     'core.administrator.business_definitions.immutable_after_creation' => 'Onveranderlik na skepping',
     'core.administrator.business_definitions.immutable_ledger' => 'Onveranderlike grootboek',
+    'core.administrator.business_definitions.immutable_states' => 'Onveranderlike statusse',
+    'core.administrator.business_definitions.immutable_states_help' => 'Rekords wat hierdie statusse bereik, kan nie meer gewysig word nie en word deur ’n gekoppelde omkering reggestel. Noem verklaarde statusse behalwe die aanvangstatus; laat leeg om die verklaring te verwyder.',
     'core.administrator.business_definitions.import_draft' => 'Voer konsep in',
     'core.administrator.business_definitions.import_strict_definition' => 'Voer streng definisie in',
     'core.administrator.business_definitions.imports_use_the_same_strict_validation' => 'Invoere gebruik dieselfde streng bekragtiging, eienaarskap en optimistiese-hersiening-hekke as die grafiese redigeerder.',
@@ -1868,6 +1870,11 @@ return [
     'core.business.record_view.history' => 'Geskiedenis',
     'core.business.record_view.relations' => 'Relasies',
     'core.business.record_view.summary' => 'Opsomming',
+    'core.business.refusal.immutable' => 'Die besigheidsrekord is onveranderlik in sy huidige werkvloeistatus en word deur ’n gekoppelde omkering reggestel.',
+    'core.business.refusal.posting_period_closed' => 'Boekingstydperk {period} is gesluit vir die verklaarde boekingsdatum.',
+    'core.business.refusal.read_only_badge' => 'Leesalleen',
+    'core.business.refusal.read_only_help' => 'Jy kan dit steeds oopmaak, sy geskiedenis nagaan en die werkvloei-aksies uitvoer wat dit bied.',
+    'core.business.refusal.read_only_title' => 'Hierdie rekord is leesalleen',
     'core.business.report.reports' => 'Verslae',
     'core.console.access.description' => 'Lys en bestuur gebruikers, rolle en vermoë-toekennings.',
     'core.console.app_health.description' => 'Kontroleer of Kumwe gereed is om verkeer te bedien.',
