@@ -8,7 +8,13 @@ use InvalidArgumentException;
 use JsonException;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Idempotency\IdempotencyKey;
+use DateTimeImmutable;
+use DateTimeZone;
+use Exception;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordImmutable;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordPostingPeriodClosed;
+use Kumwe\App\BusinessRecord\Application\PostingPeriodRepository;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordNotFound;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordValidationFailed;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordVersionConflict;
@@ -40,14 +46,16 @@ final readonly class GeneratedBusinessBrowserController
     /**
      * Configure the shared controller.
      *
-     * @param  BusinessSurfaceService          $business       Generated-business application facade.
-     * @param  BusinessFormInputMapper         $forms          Schema-authorized nested input mapper.
-     * @param  BusinessOperationStatusService  $operations     Caller-bound operation-status lookup.
-     * @param  BusinessCustomViewPresenter     $customViews    Safe generic custom-result projector.
-     * @param  BusinessDocumentPresenter       $documents      Document-view arrangement of safe read models.
-     * @param  ReportService                   $reports        Shared report discovery and execution seam.
-     * @param  RecordExportReportProvider      $recordExports  Derived record-set export reports.
-     * @param  Translator                      $translator     Resolves browser wording for the locale in flight.
+     * @param  BusinessSurfaceService          $business        Generated-business application facade.
+     * @param  BusinessFormInputMapper         $forms           Schema-authorized nested input mapper.
+     * @param  BusinessOperationStatusService  $operations      Caller-bound operation-status lookup.
+     * @param  BusinessCustomViewPresenter     $customViews     Safe generic custom-result projector.
+     * @param  BusinessDocumentPresenter       $documents       Document-view arrangement of safe read models.
+     * @param  ReportService                   $reports         Shared report discovery and execution seam.
+     * @param  RecordExportReportProvider      $recordExports   Derived record-set export reports.
+     * @param  Translator                      $translator      Resolves browser wording for the locale in flight.
+     * @param  ?PostingPeriodRepository        $postingPeriods  Closed-period declarations consulted so a record whose
+     *         posting date falls in a closed period renders read-only affordances; null disables the prediction.
      *
      * @since  2.0.0
      */
@@ -60,6 +68,7 @@ final readonly class GeneratedBusinessBrowserController
         private ReportService $reports,
         private RecordExportReportProvider $recordExports,
         private Translator $translator,
+        private ?PostingPeriodRepository $postingPeriods = null,
     ) {
     }
 
@@ -100,12 +109,24 @@ final readonly class GeneratedBusinessBrowserController
             return $result;
         }
 
-        return new BusinessBrowserResult($result->template, [
+        $data = [
             ...$result->data,
             'operation_id' => 'browser:' . $context->requestId(),
             'completed_operation_id' => $this->completedOperation($query),
             'completed_bulk_count' => $this->completedBulkCount($query),
-        ], status: $result->status);
+        ];
+        if (
+            in_array(
+                $result->template,
+                ['business-detail', 'business-form', 'business-document', 'business-confirm'],
+                true,
+            )
+            && !array_key_exists('record_lock', $data)
+        ) {
+            $data['record_lock'] = $this->recordLock($context, $data);
+        }
+
+        return new BusinessBrowserResult($result->template, $data, status: $result->status);
     }
 
     /**
@@ -1211,6 +1232,8 @@ final readonly class GeneratedBusinessBrowserController
                 ...$model,
                 'error_summary' => $this->translator->translate('core.business.browser.record_failed_validation'),
             ], status: 422);
+        } catch (BusinessRecordImmutable | BusinessRecordPostingPeriodClosed $refusal) {
+            return $this->refused($context, $surface, $definition, $record, $operation, $form, $refusal);
         } catch (BusinessRecordVersionConflict $exception) {
             if ($record === null || !in_array($operation, ['update', 'relate'], true)) {
                 throw $exception;
@@ -1225,6 +1248,170 @@ final readonly class GeneratedBusinessBrowserController
                 $form,
                 $exception->expectedVersion,
             );
+        }
+    }
+
+    /**
+     * Answer an immutable-state or closed-period refusal on the page the operator came from.
+     *
+     * Both refusals used to escape to the global error boundary. A record the refusal locks is shown
+     * again as its detail page carrying read-only affordances and the refusal's own wording, answered
+     * 409 because nothing was written. A new record, or an update whose submitted posting date is the
+     * only thing inside a closed period, keeps the operator's values on the form with the posting-date
+     * field marked, so moving the date into an open period is one correction away.
+     *
+     * @param   ExecutionContext                                           $context     Authenticated actor and scope.
+     * @param BusinessSurface $surface Administrator or portal boundary.
+     * @param   string                                                     $definition  Definition UUID or handle.
+     * @param   ?string                                                    $record      Public record identity, or null.
+     * @param   string                                                     $operation   Refused generated operation.
+     * @param   array<string, mixed>                                       $form        Decoded form body.
+     * @param   BusinessRecordImmutable|BusinessRecordPostingPeriodClosed  $refusal     The service refusal.
+     *
+     * @return  BusinessBrowserResult  409 detail page with a record lock, or 409 form with the field marked.
+     *
+     * @since   2.0.0
+     */
+    private function refused(
+        ExecutionContext $context,
+        BusinessSurface $surface,
+        string $definition,
+        ?string $record,
+        string $operation,
+        array $form,
+        BusinessRecordImmutable|BusinessRecordPostingPeriodClosed $refusal,
+    ): BusinessBrowserResult {
+        $lock = $this->refusalLock($refusal);
+        if ($record !== null) {
+            $model = $this->business->read($context, $surface, $definition, $record, true, true);
+            $current = $this->recordLock($context, $model);
+            if ($current !== null || $operation !== 'update' || $refusal instanceof BusinessRecordImmutable) {
+                return new BusinessBrowserResult('business-detail', [
+                    ...$this->relationshipChoices($context, $surface, $definition, $record, $model, []),
+                    'record_task' => 'summary',
+                    'record_lock' => $current ?? $lock,
+                ], status: 409);
+            }
+        }
+        $metadata = $this->business->form($context, $surface, $definition, $record)['definition'] ?? null;
+        $postingField = is_array($metadata) ? ($metadata['posting_date_field'] ?? null) : null;
+        $errors = is_string($postingField) ? [$postingField => [$lock['message']]] : [];
+        $model = $this->business->form($context, $surface, $definition, $record, $this->values($form), $errors);
+
+        return new BusinessBrowserResult('business-form', [
+            ...$this->formChoices(
+                $context,
+                $surface,
+                $definition,
+                $record,
+                $model,
+                [],
+                $this->nestedObject($form, 'structured'),
+            ),
+            'error_summary' => $lock['message'],
+            'record_lock' => null,
+        ], status: 409);
+    }
+
+    /**
+     * Describe a service refusal in the catalogue wording both browser surfaces render.
+     *
+     * @param   BusinessRecordImmutable|BusinessRecordPostingPeriodClosed  $refusal  The service refusal.
+     *
+     * @return  array{code: string, message: string}  Stable refusal code and its localized wording.
+     *
+     * @since   2.0.0
+     */
+    private function refusalLock(BusinessRecordImmutable|BusinessRecordPostingPeriodClosed $refusal): array
+    {
+        return $refusal instanceof BusinessRecordImmutable
+            ? [
+                'code' => $refusal->stableCode(),
+                'message' => $this->translator->translate('core.business.refusal.immutable'),
+            ]
+            : [
+                'code' => $refusal->stableCode(),
+                'message' => $this->translator->translate(
+                    'core.business.refusal.posting_period_closed',
+                    ['period' => $refusal->periodKey],
+                ),
+            ];
+    }
+
+    /**
+     * Predict whether the service would refuse a content mutation of the rendered record.
+     *
+     * The catalogue metadata names the definition's immutable workflow states and its posting-date
+     * field. A record in an immutable state is locked outright; a record whose stored posting date falls
+     * inside a closed period of its site, or of the operator's organization for an organization-scoped
+     * definition, is locked with that period's refusal. The prediction only chooses affordances: the
+     * service still judges every submission and its refusal is caught in the write path.
+     *
+     * @param   ExecutionContext      $context  Authenticated actor whose site and organization scope periods.
+     * @param   array<string, mixed>  $model    Page model carrying `definition` and `record` metadata.
+     *
+     * @return  ?array{code: string, message: string}  The lock and its wording, or null for an open record.
+     *
+     * @since   2.0.0
+     */
+    private function recordLock(ExecutionContext $context, array $model): ?array
+    {
+        $record = $model['record'] ?? null;
+        $definition = $model['definition'] ?? null;
+        if (!is_array($record) || !is_array($definition)) {
+            return null;
+        }
+        $workflow = $definition['workflow'] ?? null;
+        $immutable = is_array($workflow) ? ($workflow['immutable_states'] ?? []) : [];
+        $state = $record['workflow_state'] ?? null;
+        if (is_string($state) && is_array($immutable) && in_array($state, $immutable, true)) {
+            return $this->refusalLock(new BusinessRecordImmutable($state));
+        }
+        $field = $definition['posting_date_field'] ?? null;
+        $values = $record['values'] ?? null;
+        if ($this->postingPeriods === null || !is_string($field) || !is_array($values)) {
+            return null;
+        }
+        $instant = self::postingInstant($values[$field] ?? null);
+        if ($instant === null) {
+            return null;
+        }
+        $scope = $definition['scope'] ?? null;
+        $organization = in_array($scope, ['organization', 'site_organization'], true)
+            ? $context->organization()?->identifier()
+            : null;
+        $closed = $this->postingPeriods->closedPeriodContaining(
+            $context->site()->identifier(),
+            $organization,
+            $instant,
+        );
+
+        return $closed === null
+            ? null
+            : $this->refusalLock(new BusinessRecordPostingPeriodClosed($closed->key, $instant));
+    }
+
+    /**
+     * Read the instant out of a projected posting-date value.
+     *
+     * @param   mixed  $value  Projected date-time string, or a zoned `{instant, timezone}` document.
+     *
+     * @return  ?DateTimeImmutable  The UTC instant, or null when the value is absent or not temporal.
+     *
+     * @since   2.0.0
+     */
+    private static function postingInstant(mixed $value): ?DateTimeImmutable
+    {
+        if (is_array($value)) {
+            $value = $value['instant'] ?? null;
+        }
+        if (!is_string($value) || $value === '') {
+            return null;
+        }
+        try {
+            return new DateTimeImmutable($value, new DateTimeZone('UTC'));
+        } catch (Exception) {
+            return null;
         }
     }
 

@@ -14,6 +14,14 @@
     <a class="portal-button secondary" href="{{ business_base_path }}/{{ definition.handle|url_encode }}{{ record ? '/' ~ record.record_id|url_encode : '' }}">{{ t('core.administrator.access_control.cancel') }}</a>
 </header>
 
+{% if record_lock|default(null) %}
+    <section class="portal-alert business-record-lock" data-kis-state="read-only" data-record-lock="{{ record_lock.code }}" role="status" aria-labelledby="portal-record-lock-title">
+        <h2 id="portal-record-lock-title">{{ t('core.business.refusal.read_only_title') }}</h2>
+        <p data-record-lock-reason>{{ record_lock.message }}</p>
+        <p>{{ t('core.business.refusal.read_only_help') }}</p>
+    </section>
+{% endif %}
+
 {% if version_conflict is defined and record %}
     <section class="portal-alert portal-business-version-conflict" data-kis-state="conflict" role="alert" aria-labelledby="portal-business-conflict-title" tabindex="-1">
         <h2 id="portal-business-conflict-title">{{ t('core.administrator.business_detail.another_actor_saved_a_newer_version') }}</h2>
@@ -53,10 +61,10 @@
     {% if fields is empty %}
         <p>{{ t('core.administrator.business_form.no_editable_fields_are_available_for') }}</p>
     {% else %}
-        {{ business_fields.render(fields, definition, record, business_base_path) }}
+        {% if record_lock|default(null) %}<fieldset class="business-record-lock-fields" disabled>{% endif %}{{ business_fields.render(fields, definition, record, business_base_path) }}{% if record_lock|default(null) %}</fieldset>{% endif %}
     {% endif %}
     <div class="portal-actions">
-        <button type="submit">{{ record ? t('core.administrator.business_form.save_changes') : t('core.administrator.business_form.create_record') }}</button>
+        {% if not record_lock|default(null) %}<button type="submit">{{ record ? t('core.administrator.business_form.save_changes') : t('core.administrator.business_form.create_record') }}</button>{% endif %}
         <a class="portal-button secondary" href="{{ business_base_path }}/{{ definition.handle|url_encode }}{{ record ? '/' ~ record.record_id|url_encode : '' }}">{{ t('core.administrator.access_control.cancel') }}</a>
     </div>
 </form>

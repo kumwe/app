@@ -4096,6 +4096,7 @@ final class ContainerFactory
             self::service($container, ReportService::class),
             self::service($container, RecordExportReportProvider::class),
             self::service($container, Translator::class),
+            self::service($container, PostingPeriodRepository::class),
         ), true);
         $container->share(OpenApiContractCompiler::class, new OpenApiContractCompiler(), true);
         $container->share(

@@ -252,7 +252,7 @@
                         {% endif %}
                       </td>
                     {% endfor %}
-                    <td data-label="State"><span class="status">{{ item_state|replace({'_': ' '})|title }}</span></td>
+                    <td data-label="State"><span class="status">{{ item_state|replace({'_': ' '})|title }}</span>{% if definition.workflow|default(null) and item.workflow_state|default(null) in definition.workflow.immutable_states|default([]) %} <span class="status business-record-lock-badge" data-record-lock="business_record.immutable">{{ t('core.business.refusal.read_only_badge') }}</span>{% endif %}</td>
                     <td class="actions">
                       {% if available_operations.read is defined %}
                         <a href="{{ business_base_path }}/{{ definition.handle|url_encode }}/{{ item.record_id|url_encode }}">{{ t('core.administrator.business_list.view') }}</a>
@@ -269,7 +269,7 @@
               <li class="kis-business-result-card">
                 <header>
                   <span><strong>{{ definition.singular_label }}</strong><br><code>{{ item.record_id }}</code></span>
-                  <span class="status">{{ item_state|replace({'_': ' '})|title }}</span>
+                  <span class="status">{{ item_state|replace({'_': ' '})|title }}</span>{% if definition.workflow|default(null) and item.workflow_state|default(null) in definition.workflow.immutable_states|default([]) %} <span class="status business-record-lock-badge" data-record-lock="business_record.immutable">{{ t('core.business.refusal.read_only_badge') }}</span>{% endif %}
                 </header>
                 {% if bulk_available %}<label class="check"><input type="checkbox" name="bulk_records[]" value="{{ {'record_id': item.record_id, 'expected_version': item.version}|json_encode }}"><span>{{ t('core.administrator.business_list.select_this_record') }}</span></label>{% endif %}
                 <dl>

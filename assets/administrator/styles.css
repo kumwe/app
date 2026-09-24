@@ -864,3 +864,4 @@ button[disabled], button[aria-disabled="true"] { cursor: not-allowed; opacity: .
 .studio-authoring-status[data-studio-launch-state='error'] {
   color: var(--color-danger, #a3261a);
 }
+.business-record-lock-fields { min-inline-size: 0; margin: 0; padding: 0; border: 0; }

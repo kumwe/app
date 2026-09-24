@@ -105,3 +105,4 @@ code, pre { font-family: var(--kumwe-font-mono); }
 .notice.danger { border-color: var(--portal-danger); background: var(--kumwe-danger-soft); color: var(--portal-danger); }
 .empty-state { display: grid; min-height: 12rem; place-items: center; padding: 2rem 1rem; border: 1px dashed var(--portal-line); border-radius: .6rem; text-align: center; }
 .empty-state-content { max-width: 31rem; }
+.business-record-lock-fields { min-inline-size: 0; margin: 0; padding: 0; border: 0; }
