@@ -19,7 +19,8 @@ use RuntimeException;
  * A permit carries the same token and expiry as its work row. Claim, renewal and settlement update both
  * in one transaction. Expired permits are reclaimable without scanning the work backlog.
  * Availability probes at most 1024 permits, never an aggregate over a backlog.
- * Policy publication locks the permit set; ordinary claims lock just one available permit with SKIP LOCKED.
+ * Policy publication locks the permit set; an ordinary claim reads its candidates unlocked and then locks
+ * exactly one permit by primary key with SKIP LOCKED, so no engine's sort or limit strategy widens the lock.
  *
  * @since  2.0.0
  */
@@ -168,30 +169,52 @@ final readonly class DoctrineQueuePermits
         if (!$this->database->isTransactionActive()) {
             throw new RuntimeException('Queue permits must share the work claim transaction.');
         }
-        $row = $this->database->fetchAssociative(sprintf(
+        // Read the candidates without locking, then lock one by primary key. A sorted locking read with
+        // LIMIT 1 locks every free permit it examines on MySQL before the limit applies, so a second
+        // replica sees nothing left to skip to even though only one slot was ever handed out.
+        $candidates = $this->database->fetchFirstColumn(sprintf(
             'SELECT p.slot_number FROM %s p WHERE p.queue_id = ? AND p.runtime_generation = ? '
             . 'AND p.slot_number < ? AND (p.lease_expires_at IS NULL OR p.lease_expires_at <= ?) '
-            . 'AND NOT EXISTS (SELECT 1 FROM %s retired WHERE retired.queue_id = p.queue_id '
-            . 'AND retired.slot_number >= ? AND retired.lease_expires_at > ?) '
-            . 'ORDER BY p.slot_number LIMIT 1%s',
+            . 'ORDER BY p.slot_number LIMIT 1024',
             $this->tables->quoted('job_queue_permits'),
-            $this->tables->quoted('job_queue_permits'),
-            $this->lock(true),
-        ), [$policy->queue, $policy->runtimeGeneration, $policy->maximumInFlight, $now,
-            $policy->maximumInFlight, $now], [
+        ), [$policy->queue, $policy->runtimeGeneration, $policy->maximumInFlight, $now], [
             Types::STRING, Types::INTEGER, Types::INTEGER, Types::DATETIME_IMMUTABLE,
-            Types::INTEGER, Types::DATETIME_IMMUTABLE,
         ]);
-        if ($row === false) {
+        if ($candidates === []) {
             return false;
         }
-        $this->database->update($this->tables->raw('job_queue_permits'), [
-            'work_kind' => $kind, 'work_id' => $id, 'consumer_id' => $consumerId, 'lease_token' => $token,
-            'lease_expires_at' => $expiresAt, 'last_claimed_at' => $now,
-        ], ['queue_id' => $policy->queue, 'slot_number' => $row['slot_number']], [
-            'lease_expires_at' => Types::DATETIME_IMMUTABLE, 'last_claimed_at' => Types::DATETIME_IMMUTABLE,
+        $retired = $this->database->fetchOne(sprintf(
+            'SELECT retired.slot_number FROM %s retired WHERE retired.queue_id = ? '
+            . 'AND retired.slot_number >= ? AND retired.lease_expires_at > ? LIMIT 1',
+            $this->tables->quoted('job_queue_permits'),
+        ), [$policy->queue, $policy->maximumInFlight, $now], [
+            Types::STRING, Types::INTEGER, Types::DATETIME_IMMUTABLE,
         ]);
-        return true;
+        if ($retired !== false) {
+            return false;
+        }
+        foreach ($candidates as $candidate) {
+            $slot = $this->integer($candidate);
+            $row = $this->database->fetchAssociative(sprintf(
+                'SELECT p.slot_number FROM %s p WHERE p.queue_id = ? AND p.slot_number = ? '
+                . 'AND p.runtime_generation = ? AND (p.lease_expires_at IS NULL OR p.lease_expires_at <= ?)%s',
+                $this->tables->quoted('job_queue_permits'),
+                $this->lock(true),
+            ), [$policy->queue, $slot, $policy->runtimeGeneration, $now], [
+                Types::STRING, Types::INTEGER, Types::INTEGER, Types::DATETIME_IMMUTABLE,
+            ]);
+            if ($row === false) {
+                continue;
+            }
+            $this->database->update($this->tables->raw('job_queue_permits'), [
+                'work_kind' => $kind, 'work_id' => $id, 'consumer_id' => $consumerId, 'lease_token' => $token,
+                'lease_expires_at' => $expiresAt, 'last_claimed_at' => $now,
+            ], ['queue_id' => $policy->queue, 'slot_number' => $slot], [
+                'lease_expires_at' => Types::DATETIME_IMMUTABLE, 'last_claimed_at' => Types::DATETIME_IMMUTABLE,
+            ]);
+            return true;
+        }
+        return false;
     }
 
     /**
