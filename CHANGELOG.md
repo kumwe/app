@@ -146,6 +146,21 @@ portfolio, soaks, the independent review and the out-of-process extension runtim
   permit an expired job lease still names before a reclaim competes for capacity, so a lost worker cannot starve
   a one-slot queue (#152).
 
+- Make Studio the contextual Content authoring journey. Content New and Content Edit mount the pinned
+  `0.1.0-beta.3` Studio module in place for the exact PHP-resolved target: blank and reusable-type starts,
+  exact existing-item hydration, typed fields, entry values and layout, with the host allocating node
+  identities for palette and keyboard insertion and the interface-locale Studio catalogue served by PHP.
+  `save-item`, `save-as-new-type` and `save-new-type-version` are reconciled as separately planned PHP
+  transactions with idempotent replay and one audit row, and a successor type version keeps its reusable
+  Blueprint identity. An authenticated preview beside the shell renders the accepted item through the
+  origin-pinned channel, refusing a foreign origin, a wrong channel and a replayed sequence (`S-F`,
+  `V2-STU-006`); the hardened external-media fetcher refuses a host that rebinds to a refused address and no
+  refusal names the host, path or address (`S-E`, `V2-STU-005`). `tests/Browser/studio-authoring.spec.ts`
+  drives the journey end to end with the locale as a parameter, and an architecture test refuses Node.js, npm
+  or Vite in any production image, service, entry point or process. Extension-owned targets, standalone dual
+  mounting, the extension lifecycle in the contextual shell and the limits of the pinned Studio release remain
+  open (#152).
+
 - Keep one acceptance record for the increment. `docs/roadmap/acceptance-record.json` links every open finding,
   every roadmap package not yet delivered and every Gate B criterion to its text reference, runtime owner, tests,
   CI jobs, workflow artifacts, decision, outstanding note, state and track, marking work committed on an agent
@@ -161,7 +176,6 @@ portfolio, soaks, the independent review and the out-of-process extension runtim
 
 <!-- #152 in-flight streams. Each lands its entries above this comment, citing the acceptance-record
      identifiers it flips, when its branch merges into platform/v2-runtime-completion:
-       agent/studio     contextual Studio journey: S-E, S-F, V2-STU-005, V2-STU-006 (S-G, V2-STU-007 stay open)
        agent/machine    Studio authoring over REST 1.1.0, CLI generation two and mcp-v2: MACHINE-STUDIO-PARITY
        agent/recovery   recovery evidence map, deduplication measurement and runtime diagnostics:
                         P6-A, P6-B, P6-C, P6-D, V2-DR-001, V2-DR-002, V2-DR-003, V2-DR-004, V2-OPS-001,
