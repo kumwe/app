@@ -41,7 +41,7 @@
             "id": "V2-SCL-001",
             "title": "The definition-wide exclusive mutation fence serializes writes to unrelated records",
             "severity": "high",
-            "state": "reproduced",
+            "state": "in_progress",
             "phase": "5",
             "gate": "B",
             "origin": "review",
@@ -70,7 +70,7 @@
             "id": "V2-SCL-002",
             "title": "A singleton projection event head is locked and updated inside the authoritative business transaction",
             "severity": "high",
-            "state": "reproduced",
+            "state": "in_progress",
             "phase": "5",
             "gate": "B",
             "origin": "review",
@@ -89,7 +89,7 @@
             "id": "V2-SCL-004",
             "title": "The seeded idempotency purge ceiling is two orders of magnitude below enterprise ingress",
             "severity": "high",
-            "state": "reproduced",
+            "state": "in_progress",
             "phase": "5",
             "gate": "B",
             "origin": "review",
@@ -113,7 +113,7 @@
             "id": "V2-SCL-005",
             "title": "Durable gauges compute exact aggregates on the primary at scrape time",
             "severity": "medium",
-            "state": "open",
+            "state": "in_progress",
             "phase": "5",
             "gate": "B",
             "origin": "review",
@@ -132,7 +132,7 @@
             "id": "V2-SCL-006",
             "title": "Integration fan-out executes every consumer and webhook serially in the dispatcher path",
             "severity": "high",
-            "state": "reproduced",
+            "state": "in_progress",
             "phase": "5",
             "gate": "B",
             "origin": "review",
@@ -156,7 +156,7 @@
             "id": "V2-SCL-007",
             "title": "Declared-queue claims take a policy-row mutex and count live leases on the hot path",
             "severity": "high",
-            "state": "reproduced",
+            "state": "in_progress",
             "phase": "5",
             "gate": "B",
             "origin": "review",
@@ -175,7 +175,7 @@
             "id": "V2-SCL-008",
             "title": "Hot correctness ledgers have no enterprise hot-and-cold retention budget",
             "severity": "high",
-            "state": "open",
+            "state": "in_progress",
             "phase": "5",
             "gate": "B",
             "origin": "review",
@@ -213,7 +213,7 @@
             "id": "V2-DR-001",
             "title": "Point-in-time recovery is adopted as a platform-supported, operator-configured capability",
             "severity": "high",
-            "state": "accepted_for_implementation",
+            "state": "in_progress",
             "phase": "6",
             "gate": "B",
             "origin": "review",
@@ -238,7 +238,7 @@
             "id": "V2-DR-002",
             "title": "Key-restoration order and encrypted-envelope restore proof",
             "severity": "high",
-            "state": "conditional",
+            "state": "in_progress",
             "phase": "6",
             "gate": "B",
             "origin": "review",
@@ -267,7 +267,7 @@
             "id": "V2-DR-003",
             "title": "The backup artifact is shaped so that off-site deduplication cannot work",
             "severity": "high",
-            "state": "reproduced",
+            "state": "in_progress",
             "phase": "6",
             "gate": "B",
             "origin": "new",
@@ -297,7 +297,7 @@
             "id": "V2-DR-004",
             "title": "The media-versus-database restore ordering rule is stated as a trap, not enforced as a rule",
             "severity": "medium",
-            "state": "open",
+            "state": "in_progress",
             "phase": "6",
             "gate": "B",
             "origin": "new",
@@ -321,7 +321,7 @@
             "id": "V2-OPS-001",
             "title": "No runtime operational introspection: operators can see that the system is unhealthy but not where it is struggling",
             "severity": "high",
-            "state": "accepted_for_implementation",
+            "state": "in_progress",
             "phase": "6",
             "gate": "B",
             "origin": "new",
@@ -344,7 +344,7 @@
         },
         {
             "id": "V2-UX-001",
-            "title": "Accountable human acceptance of the interface standard remains unexecuted",
+            "title": "Workflow acceptance of the interface standard's five archetype task journeys remains unexecuted",
             "severity": "medium",
             "state": "open",
             "phase": "7",
@@ -354,10 +354,10 @@
                 {
                     "file": "docs/interface-standard",
                     "symbol": "the programme ledger",
-                    "note": "composer interface:programme reports 43 surfaces, 90 templates, 24 navigation entries, 19 generated instances, 16 actors, 28 tasks, 13 journeys, 60 work items, 8 findings and 3 verification reports. The human gate is not among the executed evidence."
+                    "note": "composer interface:programme reports 43 surfaces, 90 templates, 24 navigation entries, 19 generated instances, 16 actors, 28 tasks, 13 journeys, 60 work items, 8 findings and 3 verification reports. The five archetype task journeys are not among the executed workflow evidence."
                 }
             ],
-            "acceptance_test": "Named accountable reviewers complete the five archetype task journeys with task-based evidence. Automated Playwright, axe and visual results are necessary and not sufficient. Accessibility evidence covers WCAG 2.2 AA, keyboard and focus and screen-reader semantics, touch targets, zoom and reflow, high contrast, loading and empty and error and denied and confirmation states, essential no-JavaScript flows, and reviewed visual regression on desktop and mobile.",
+            "acceptance_test": "Workflows complete the five archetype task journeys with task-based evidence: content authoring with media, navigation, workflow and publication; an exact-value thousand-line document drafted, reviewed, approved, posted, inspected in history and exported; a relationship and self-service portal flow; a mobile assignment flow with parts, labour, measurements and media; and a public catalogue to authenticated order and fulfilment flow with out-of-process payment status. The evidence covers the supported browser engines on desktop and mobile, keyboard and focus, WCAG 2.2 AA assertions, touch targets, zoom and reflow, forced colours, loading, empty, error, denied and confirmation states, essential no-JavaScript flows and visual comparison, with two journeys in a non-source language, one of them right-to-left. Under ADR 0021 that workflow evidence and the maintainer's merge are the acceptance record: no named human reviewer, manual browser, screen-reader or language checklist is required, and a WebKit result is reported as WebKit evidence, never as native Safari.",
             "owner": "UNASSIGNED",
             "closure_sha": null
         },
@@ -365,7 +365,7 @@
             "id": "V2-UX-002",
             "title": "Role dashboard preference editing conflates the editor's visibility with the role's catalogue",
             "severity": "medium",
-            "state": "open",
+            "state": "in_progress",
             "phase": "7",
             "gate": "B",
             "origin": "new",
@@ -405,7 +405,7 @@
             "id": "V2-LNG-010",
             "title": "The eight non-source catalogues and per-locale qualification are unbuilt",
             "severity": "medium",
-            "state": "accepted_for_implementation",
+            "state": "in_progress",
             "phase": "L",
             "gate": "B",
             "origin": "new",
@@ -445,7 +445,7 @@
             "id": "GM-AUD-08",
             "title": "Audit-metadata redaction is a write-time convention with no runtime guard",
             "severity": "low",
-            "state": "open",
+            "state": "in_progress",
             "phase": "7",
             "origin": "gap-matrix",
             "source_anchors": [
@@ -463,7 +463,7 @@
             "id": "GM-IDN-06",
             "title": "Qualification evidence has session and CSRF test blind spots",
             "severity": "medium",
-            "state": "open",
+            "state": "in_progress",
             "phase": "7",
             "origin": "gap-matrix",
             "source_anchors": [
@@ -499,7 +499,7 @@
             "id": "GM-SUP-08",
             "title": "Content-Security-Policy admitted unsafe-inline for styles on every response",
             "severity": "low",
-            "state": "conditional",
+            "state": "in_progress",
             "phase": "7",
             "origin": "gap-matrix",
             "source_anchors": [
@@ -536,7 +536,7 @@
             "id": "GM-OBS-05",
             "title": "No distributed tracing and no trace exporter",
             "severity": "medium",
-            "state": "open",
+            "state": "in_progress",
             "phase": "7",
             "origin": "gap-matrix",
             "source_anchors": [
@@ -554,7 +554,7 @@
             "id": "GM-BAK-04",
             "title": "Post-restore identity and security acceptance was manual",
             "severity": "medium",
-            "state": "conditional",
+            "state": "in_progress",
             "phase": "6",
             "origin": "gap-matrix",
             "source_anchors": [
@@ -572,7 +572,7 @@
             "id": "GM-BAK-08",
             "title": "Backup scheduling, retention and off-host copy are operator-owned, and whole-table parity is not asserted",
             "severity": "low",
-            "state": "conditional",
+            "state": "in_progress",
             "phase": "6",
             "origin": "gap-matrix",
             "source_anchors": [
@@ -616,7 +616,7 @@
             "id": "V2-STU-006",
             "title": "There is no authenticated preview endpoint, so unpublished composition cannot be rendered without exposing it",
             "severity": "high",
-            "state": "accepted_for_implementation",
+            "state": "in_progress",
             "phase": "S",
             "gate": "B",
             "origin": "new",
@@ -642,7 +642,7 @@
             "id": "V2-STU-007",
             "title": "Studio is a separate Blueprint-only model-version surface instead of contextual Content authoring",
             "severity": "critical",
-            "state": "accepted_for_implementation",
+            "state": "in_progress",
             "phase": "S",
             "gate": "B",
             "origin": "new",
@@ -673,7 +673,7 @@
             "id": "V2-UX-003",
             "title": "Closed and immutable records still render edit affordances, and the definition editor cannot declare immutable states",
             "severity": "medium",
-            "state": "open",
+            "state": "in_progress",
             "phase": "7",
             "origin": "new",
             "source_anchors": [
@@ -876,9 +876,9 @@
         },
         {
             "id": "V2-QA-014",
-            "title": "WebKit keeps a stale background-color after a live colour-scheme change, and nobody knows whether real Safari does",
+            "title": "WebKit kept stale theme colours after a live colour-scheme change",
             "severity": "medium",
-            "state": "decision_required",
+            "state": "in_progress",
             "phase": "7",
             "gate": "B",
             "origin": "new",
@@ -886,7 +886,7 @@
                 {
                     "file": "tests/Browser/interface-standard.spec.ts",
                     "symbol": "KIS production component gallery",
-                    "note": "Run 32443342932 flipped prefers-color-scheme to dark on an already-rendered page. Desktop-webkit then reported color-contrast 1.1:1 on .button[href$=\"administrator\"], foreground #eef5fb over background #ffffff. The breadth journey now sets the emulation before reloading and scans one settled dark document, while this finding continues to track the unanswered real-Safari live-switch behaviour."
+                    "note": "Run 32443342932 flipped prefers-color-scheme to dark on an already-rendered page. Desktop-webkit then reported color-contrast 1.1:1 on .button[href$=\"administrator\"], foreground #eef5fb over background #ffffff. The breadth journey now also switches both directions live without navigation and asserts the repaint on Chromium, Firefox and WebKit."
                 },
                 {
                     "file": "assets/administrator/styles.css",
@@ -894,10 +894,10 @@
                     "note": "An in-flight transition is ruled out: the same emulateMedia call sets reducedMotion reduce, and this rule forces transition-duration to .01ms !important for every element. The reported #ffffff is also exactly the pre-flip value rather than an interpolated midpoint, and axe samples hundreds of milliseconds later. The value is stuck, not settling, so no change to the transition list can reach it."
                 }
             ],
-            "acceptance_test": "Someone determines on real Safari, not an emulated media override, whether changing the operating system appearance while an administrator page is open leaves background-color at its previous value. If it does, this is a user-facing theming defect and the fix is to stop expressing the theme only as root custom properties consumed through var() -- light-dark(), or real declarations inside the media block, so a media change re-runs the cascade for the non-inherited property. If it does not, the finding belongs to Playwright's setEmulatedMedia path, the assertion is rewritten to emulate before load rather than after, and the browser behaviour is reported upstream with the reproducer.",
+            "acceptance_test": "The browser workflow changes the colour scheme while an administrator page stays open and asserts on Chromium, Firefox and WebKit that every themed surface, backgrounds and inherited text colour alike, follows the switch with no contrast violation. A reproducible defect receives a cascade-level repair and a regression journey. Under ADR 0021 the result is reported as WebKit evidence, never as a claim that a person used native Safari, and no manual Safari check is part of acceptance.",
             "owner": "UNASSIGNED",
             "closure_sha": null,
-            "progress": "Run 32443342932 reproduced the Playwright WebKit path. The breadth journey now reloads after setting the media override, so it validates a settled dark render without pretending to answer live Safari behaviour. The proposed transition-list change remains refuted and no product CSS is guessed. What stays open is the real-Safari experiment and, depending on that result, either a cascade-level product fix or an upstream Playwright report. This is Gate B human-interface acceptance work under P7-E; Gate A explicitly does not assert human acceptance."
+            "progress": "Run 32443342932 reproduced the stale background on Playwright WebKit. The head mirrors the preferred appearance onto a root attribute so WebKit recomputes every light-dark() consumer on a live switch, and the breadth journey asserts both live directions. A later nightly WebKit breadth run then showed descendants that only inherit colour keeping the light foreground; agent/browser names the scheme on every element so the whole subtree re-resolves. ADR 0021 retires the real-Safari experiment: the WebKit workflow journey is the evidence. This entry closes when agent/browser lands and the nightly WebKit breadth job passes on it."
         }
     ]
 }
