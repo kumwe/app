@@ -21,3 +21,7 @@ RUN set -eu; \
     test "$(rpm -q --qf '%{VERSION}-%{RELEASE}' mysql-community-client)" = "$version"; \
     mysqld --version; mysql --version; mysqldump --version; mysqlbinlog --version; \
     microdnf clean all
+
+# The server RPM creates the unprivileged mysql account; the drill overrides it explicitly with
+# --user 0 only where it must own the bind-mounted data directory it initialises.
+USER mysql

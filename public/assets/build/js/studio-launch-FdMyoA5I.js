@@ -1,4 +1,4 @@
-import { t as __vitePreload } from "./administrator-CRgkDRPh.js";
+import { t as __vitePreload } from "./administrator-cZraCzje.js";
 //#region assets/administrator/components/studio-launch.ts
 /**
 * Start module for the contextual Studio mount on the Content editor.

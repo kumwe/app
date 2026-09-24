@@ -52,6 +52,33 @@
  * DejaVu Sans Mono but 25.28px against Liberation Mono — so full-page screenshots
  * were reproducible only on the machine that produced them.
  */
+/* The appearance script restates the scheme on the root so WebKit recomputes every consumer live. */
+:root[data-kumwe-scheme="light"] {
+  color-scheme: light;
+  --portal-ink: #12231f;
+  --portal-muted: #52645f;
+  --portal-paper: #f5f7f2;
+  --portal-panel: #ffffff;
+  --portal-line: #d6ded8;
+  --portal-accent: #176b58;
+  --portal-danger: #8b2525;
+  --kumwe-warning: #8b5a00;
+  --kumwe-warning-soft: #fff2cf;
+}
+
+:root[data-kumwe-scheme="dark"] {
+  color-scheme: dark;
+  --portal-ink: #ecf6f1;
+  --portal-muted: #aebfb8;
+  --portal-paper: #101814;
+  --portal-panel: #17231e;
+  --portal-line: #34473f;
+  --portal-accent: #6dd6b8;
+  --portal-danger: #ff9aa7;
+  --kumwe-warning: #f0be5a;
+  --kumwe-warning-soft: #3b301e;
+}
+
 code, pre { font-family: var(--kumwe-font-mono); }
 
 .button {

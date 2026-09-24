@@ -882,6 +882,14 @@
         <source>Administrator navigation</source>
       </segment>
     </unit>
+    <unit id="core.administrator.layout.account_group">
+      <notes>
+        <note category="context">Sidebar navigation group holding the signed-in administrator's own account tasks.</note>
+      </notes>
+      <segment>
+        <source>My account</source>
+      </segment>
+    </unit>
     <unit id="core.administrator.layout.open_navigation">
       <segment>
         <source>Open administrator navigation</source>

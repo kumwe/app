@@ -341,6 +341,12 @@ final readonly class DoctrineJobQueue implements JobQueue
                 }
 
                 $token = Uuid::uuid7()->toString();
+                $staleToken = $row['lease_token'] ?? null;
+                if ($policy !== null && $row['status'] === 'reserved' && is_string($staleToken) && $staleToken !== '') {
+                    // The expired lease fences its previous holder out of settlement, so the permit that
+                    // holder still names is dead capacity; free it before this claim competes for one.
+                    $this->permits()->release($queue, $staleToken);
+                }
                 if (
                     $policy !== null && !$this->permits()->acquire(
                         $policy,

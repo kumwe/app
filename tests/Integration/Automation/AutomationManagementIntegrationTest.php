@@ -163,6 +163,18 @@ final class AutomationManagementIntegrationTest extends TestCase
             'first_received_at' => Types::DATETIME_IMMUTABLE,
             'updated_at' => Types::DATETIME_IMMUTABLE,
         ]);
+        // An inbox claim occupies the shared durable permit in the same transaction as its reservation.
+        $database->update($tables->raw('job_queue_permits'), [
+            'work_kind' => 'inbox',
+            'work_id' => $deliveryEventId,
+            'consumer_id' => 'acme.queue-capacity',
+            'lease_token' => $deliveryToken,
+            'lease_expires_at' => $now->modify('+10 minutes'),
+            'last_claimed_at' => $now,
+        ], ['queue_id' => $queueName, 'slot_number' => 0], [
+            'lease_expires_at' => Types::DATETIME_IMMUTABLE,
+            'last_claimed_at' => Types::DATETIME_IMMUTABLE,
+        ]);
         self::assertNull($queue->claim($worker, $queueName, 'policy-worker-three', 30));
 
         $old = new DateTimeImmutable('-2 days');
@@ -184,6 +196,14 @@ final class AutomationManagementIntegrationTest extends TestCase
             'completed_at' => Types::DATETIME_IMMUTABLE,
             'updated_at' => Types::DATETIME_IMMUTABLE,
         ]);
+        // Settlement releases the permit under the same fenced token.
+        $database->update($tables->raw('job_queue_permits'), [
+            'work_kind' => null,
+            'work_id' => null,
+            'consumer_id' => null,
+            'lease_token' => null,
+            'lease_expires_at' => null,
+        ], ['queue_id' => $queueName, 'lease_token' => $deliveryToken]);
         $second = $queue->claim($worker, $queueName, 'policy-worker-three', 30);
         self::assertNotNull($second);
         self::assertSame($secondId, $second->id);
