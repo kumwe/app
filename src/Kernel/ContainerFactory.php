@@ -356,6 +356,7 @@ use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringContextAuthorit
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringContextPurger;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringContextRepository;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringService;
+use Kumwe\App\Studio\Application\Authoring\StudioMachineAuthoringGateway;
 use Kumwe\App\Studio\Application\Authoring\HostedContentStudioAuthoringConfigurationProvider;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringTargetResolver;
 use Kumwe\App\Studio\Application\Authoring\StudioContextualAuthoringAvailability;
@@ -2130,6 +2131,16 @@ final class ContainerFactory
         ): StudioAuthoringHostPort => new StudioAuthoringHostPort(
             self::service($container, ContentStudioAuthoringService::class),
             self::service($container, StudioDocumentSchemaRegistry::class),
+        ), true);
+        $container->share(StudioMachineAuthoringGateway::class, static fn (
+            Container $container,
+        ): StudioMachineAuthoringGateway => new StudioMachineAuthoringGateway(
+            self::service($container, ContentStudioAuthoringContextAuthority::class),
+            self::service($container, StudioHostSessionAuthority::class),
+            self::service($container, ContentStudioAuthoringTargetResolver::class),
+            self::service($container, ContentService::class),
+            self::service($container, ContentModelService::class),
+            self::service($container, StudioProducerHostFactory::class),
         ), true);
         $container->share(ContentStudioAuthoringLaunchResolver::class, static fn (
             Container $container,
