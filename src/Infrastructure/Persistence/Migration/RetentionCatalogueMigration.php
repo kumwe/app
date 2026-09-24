@@ -61,13 +61,21 @@ final readonly class RetentionCatalogueMigration implements RepeatableMigration
         'business_command_idempotency' => [[['created_at'], 'idx_bcommand_idempotency_ingest']],
         'idempotency' => [[['created_at'], 'idx_idempotency_ingest']],
         'business_record_revisions' => [[['created_at'], 'idx_brecord_revision_ingest']],
-        'integration_outbox' => [[['created_at'], 'idx_integration_outbox_ingest']],
+        'integration_outbox' => [
+            [['created_at'], 'idx_integration_outbox_ingest'],
+            [['status', 'created_at'], 'idx_integration_outbox_pending_age'],
+        ],
         'business_projection_source_events' => [[['recorded_at'], 'idx_projection_source_age']],
         'integration_inbox' => [
             [['status', 'updated_at'], 'idx_integration_inbox_settled'],
             [['first_received_at'], 'idx_integration_inbox_ingest'],
+            [['status', 'first_received_at'], 'idx_integration_inbox_pending_age'],
         ],
-        'jobs' => [[['status', 'completed_at'], 'idx_job_settled'], [['created_at'], 'idx_job_ingest']],
+        'jobs' => [
+            [['status', 'completed_at'], 'idx_job_settled'],
+            [['status', 'available_at'], 'idx_job_due'],
+            [['created_at'], 'idx_job_ingest'],
+        ],
         'business_process_work' => [
             [['status', 'updated_at'], 'idx_business_process_work_settled'],
             [['created_at'], 'idx_business_process_work_ingest'],

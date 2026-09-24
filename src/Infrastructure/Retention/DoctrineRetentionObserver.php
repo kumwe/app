@@ -318,7 +318,21 @@ final readonly class DoctrineRetentionObserver implements RetentionObserver
      */
     private function table(RetentionStore $store): string
     {
-        return $this->tables->quoted(match ($store) {
+        return $this->tables->quoted(self::physicalTable($store));
+    }
+
+    /**
+     * Unprefixed logical table name of a store, shared with the exact census.
+     *
+     * @param   RetentionStore  $store  Store to resolve.
+     *
+     * @return  string  Logical table name the installation prefix is applied to.
+     *
+     * @since   2.0.0
+     */
+    public static function physicalTable(RetentionStore $store): string
+    {
+        return match ($store) {
             RetentionStore::BusinessIdempotency => 'business_command_idempotency',
             RetentionStore::DeliveryIdempotency => 'idempotency',
             RetentionStore::Revisions => 'business_record_revisions',
@@ -330,7 +344,7 @@ final readonly class DoctrineRetentionObserver implements RetentionObserver
             RetentionStore::ExportArtifacts => 'business_report_export_artifacts',
             RetentionStore::Audit => 'audit_events',
             RetentionStore::Sessions => 'administrator_sessions',
-        });
+        };
     }
 
     /**

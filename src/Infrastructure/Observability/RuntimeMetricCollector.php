@@ -25,11 +25,12 @@ use Throwable;
  * numbers are already in the database, and copying them into a second store on a schedule would only
  * add a way for the copy to be wrong.
  *
- * Every query is a bounded aggregate over an index the claim path already maintains — a `COUNT` or a
- * `MIN` over `(status, available_at)` or `(status, due_at)` — so the whole collection is a fixed number
- * of cheap statements regardless of table size. Ages are computed in PHP from a `MIN(timestamp)` rather
- * than in SQL, which keeps one query text working identically on MariaDB, MySQL and PostgreSQL instead
- * of three engine-specific date expressions.
+ * Every query is a bounded probe over an index the claim path already maintains (V2-SCL-005): a
+ * depth is counted over at most `PROBE_CAP` index entries and an age is the first entry of an ordered
+ * index range, so the whole collection is a fixed number of statements whose cost does not grow with
+ * table size. A capped depth is a lower bound and `kumwe_metrics_capped_gauges` counts them; the exact
+ * figures are an operator diagnostic (`LedgerCensus`) with an explicit cost class and timeout. Ages are
+ * computed in PHP rather than in SQL, which keeps one query text working identically on every engine.
  *
  * Collection never raises. A monitoring endpoint that returns 500 because a table is momentarily locked
  * has converted a missing graph into a paging incident, so a failure is reported as the
@@ -46,6 +47,14 @@ final readonly class RuntimeMetricCollector implements MetricCollector
      * @since  2.0.0
      */
     public const float NO_EXHAUSTION_PREDICTED_SECONDS = 315_360_000.0;
+
+    /**
+     * Most index entries a depth probe examines before it reports a lower bound instead of an exact depth.
+     *
+     * @var    int
+     * @since  2.0.0
+     */
+    public const int PROBE_CAP = 10_000;
 
     /**
      * Bind the collector to the stores it aggregates.
@@ -116,7 +125,13 @@ final readonly class RuntimeMetricCollector implements MetricCollector
     }
 
     /**
-     * Read every gauge that comes from a durable row.
+     * Read every gauge that comes from a durable row, each through a bounded indexed probe.
+     *
+     * No statement here is an exact aggregate over a hot table. A depth is a count over a derived table
+     * capped at `PROBE_CAP` rows, so the work is bounded by the cap rather than by the table, and
+     * `kumwe_metrics_capped_gauges` says how many depths reached the cap and are therefore lower bounds.
+     * An age is the first entry of an ascending index range. The exact figures remain available to an
+     * operator through `LedgerCensus`, which carries an explicit cost class and statement timeout.
      *
      * @param   DateTimeImmutable  $now  Reading ages are measured against.
      *
@@ -134,67 +149,225 @@ final readonly class RuntimeMetricCollector implements MetricCollector
         $schedules = $this->tables->quoted('schedules');
         $work = $this->tables->quoted('business_process_work');
         $exports = $this->tables->quoted('business_report_export_artifacts');
-
-        return [
-            $this->gauge('kumwe_outbox_pending', $this->count($outbox, "status IN ('pending', 'reserved')")),
-            $this->gauge('kumwe_outbox_oldest_pending_age_seconds', $this->age(
-                $outbox,
-                'created_at',
-                "status IN ('pending', 'reserved')",
-                $now,
-            )),
-            $this->gauge('kumwe_outbox_dead', $this->count($outbox, "status = 'dead'")),
-            $this->gauge('kumwe_inbox_pending', $this->count($inbox, "status IN ('pending', 'reserved')")),
-            $this->gauge('kumwe_inbox_oldest_pending_age_seconds', $this->age(
+        $staging = $this->tables->quoted('business_projection_event_staging');
+        $depths = [
+            'kumwe_outbox_pending' => [$outbox, "status IN ('pending', 'reserved')", null],
+            'kumwe_outbox_dead' => [$outbox, "status = 'dead'", null],
+            'kumwe_inbox_pending' => [$inbox, "status IN ('pending', 'reserved')", null],
+            'kumwe_inbox_poison' => [$inbox, "status = 'poison'", null],
+            'kumwe_jobs_pending' => [$jobs, "status IN ('pending', 'reserved')", null],
+            'kumwe_jobs_due' => [$jobs, "status = 'pending'", 'available_at'],
+            'kumwe_jobs_lease_expired' => [$jobs, "status = 'reserved'", 'lease_expires_at'],
+            'kumwe_jobs_dead' => [$jobs, "status = 'dead'", null],
+            'kumwe_jobs_dead_lettered' => [$failed, '1 = 1', null],
+            'kumwe_workers_registered' => [$heartbeats, '1 = 1', null],
+            'kumwe_schedules_due' => [$schedules, $this->enabled(), 'next_run_at'],
+            'kumwe_process_work_overdue' => [$work, "status IN ('pending', 'reserved')", 'due_at'],
+            'kumwe_export_queue_depth' => [$exports, "status IN ('queued', 'running')", null],
+            'kumwe_export_artifacts_expired' => [$exports, '1 = 1', 'expires_at'],
+            'kumwe_projection_staging_backlog' => [$staging, '1 = 1', null],
+        ];
+        $samples = [];
+        $capped = 0;
+        foreach ($depths as $name => [$table, $predicate, $column]) {
+            [$value, $hit] = $this->bounded($table, $predicate, $column, $now);
+            $capped += $hit ? 1 : 0;
+            $samples[] = $this->gauge($name, $value);
+        }
+        $ages = [
+            'kumwe_outbox_oldest_pending_age_seconds' => [$outbox, 'created_at', "status IN ('pending', 'reserved')"],
+            'kumwe_inbox_oldest_pending_age_seconds' => [
                 $inbox,
                 'first_received_at',
                 "status IN ('pending', 'reserved')",
-                $now,
-            )),
-            $this->gauge('kumwe_inbox_poison', $this->count($inbox, "status = 'poison'")),
-            $this->gauge('kumwe_jobs_pending', $this->count($jobs, "status IN ('pending', 'reserved')")),
-            $this->gauge('kumwe_jobs_due', $this->countBefore($jobs, "status = 'pending'", 'available_at', $now)),
-            $this->gauge('kumwe_jobs_oldest_due_age_seconds', $this->age(
-                $jobs,
-                'available_at',
-                "status = 'pending'",
-                $now,
-            )),
-            $this->gauge('kumwe_jobs_lease_expired', $this->countBefore(
-                $jobs,
-                "status = 'reserved'",
-                'lease_expires_at',
-                $now,
-            )),
-            $this->gauge('kumwe_jobs_dead', $this->count($jobs, "status = 'dead'")),
-            $this->gauge('kumwe_jobs_dead_lettered', $this->count($failed, '1 = 1')),
-            $this->gauge('kumwe_workers_registered', $this->count($heartbeats, '1 = 1')),
-            $this->gauge(
-                'kumwe_worker_heartbeat_age_seconds',
-                $this->youngest($heartbeats, 'heartbeat_at', $now),
-            ),
-            $this->gauge('kumwe_schedules_due', $this->countBefore(
-                $schedules,
-                $this->enabled(),
-                'next_run_at',
-                $now,
-            )),
-            $this->gauge('kumwe_scheduler_lag_seconds', $this->age($schedules, 'next_run_at', $this->enabled(), $now)),
-            $this->gauge('kumwe_process_work_overdue', $this->countBefore(
-                $work,
-                "status IN ('pending', 'reserved')",
-                'due_at',
-                $now,
-            )),
-            $this->gauge('kumwe_process_work_oldest_overdue_age_seconds', $this->age(
-                $work,
-                'due_at',
-                "status IN ('pending', 'reserved')",
-                $now,
-            )),
-            $this->gauge('kumwe_export_queue_depth', $this->count($exports, "status IN ('queued', 'running')")),
-            $this->gauge('kumwe_export_artifacts_expired', $this->countBefore($exports, '1 = 1', 'expires_at', $now)),
+            ],
+            'kumwe_jobs_oldest_due_age_seconds' => [$jobs, 'available_at', "status = 'pending'"],
+            'kumwe_scheduler_lag_seconds' => [$schedules, 'next_run_at', $this->enabled()],
+            'kumwe_process_work_oldest_overdue_age_seconds' => [$work, 'due_at', "status IN ('pending', 'reserved')"],
+            'kumwe_projection_staging_oldest_age_seconds' => [$staging, 'recorded_at', '1 = 1'],
         ];
+        foreach ($ages as $name => [$table, $column, $predicate]) {
+            $samples[] = $this->gauge($name, $this->age($table, $column, $predicate, $now));
+        }
+        $samples[] = $this->gauge(
+            'kumwe_worker_heartbeat_age_seconds',
+            $this->youngest($heartbeats, 'heartbeat_at', $now),
+        );
+        foreach ($this->server() as $name => $value) {
+            $samples[] = $this->gauge($name, $value);
+        }
+        $samples[] = $this->gauge('kumwe_metrics_capped_gauges', (float) $capped);
+
+        return $samples;
+    }
+
+    /**
+     * Read connection saturation and replica lag from the server's own catalogue, never from app tables.
+     *
+     * Each figure is a single constant-cost statement. A figure the account may not read is published as
+     * zero rather than failing the scrape, and the runbook says so.
+     *
+     * @return  array<string, float>  Connection and replica gauges.
+     *
+     * @since   2.0.0
+     */
+    private function server(): array
+    {
+        $postgres = $this->database->getDatabasePlatform() instanceof PostgreSQLPlatform;
+        $read = function (string $sql): float {
+            try {
+                return $this->tally($this->database->fetchOne($sql));
+            } catch (Throwable) {
+                return 0.0;
+            }
+        };
+        if ($postgres) {
+            return [
+                'kumwe_database_connections_in_use' => $read('SELECT COUNT(*) FROM pg_stat_activity'),
+                'kumwe_database_connections_max' => $read(
+                    "SELECT setting::int FROM pg_settings WHERE name = 'max_connections'",
+                ),
+                'kumwe_database_replica_lag_seconds' => $read(
+                    'SELECT COALESCE(MAX(EXTRACT(EPOCH FROM replay_lag)), 0) FROM pg_stat_replication',
+                ),
+            ];
+        }
+        $status = function (string $name): float {
+            try {
+                $row = $this->database->fetchAssociative(sprintf("SHOW GLOBAL STATUS LIKE '%s'", $name));
+            } catch (Throwable) {
+                return 0.0;
+            }
+
+            return $row === false ? 0.0 : $this->tally(array_values($row)[1] ?? null);
+        };
+
+        return [
+            'kumwe_database_connections_in_use' => $status('Threads_connected'),
+            'kumwe_database_connections_max' => $read('SELECT @@max_connections'),
+            'kumwe_database_replica_lag_seconds' => $this->replicaLag(),
+        ];
+    }
+
+    /**
+     * Read the MySQL-family replica lag this server reports about itself, when it is a replica.
+     *
+     * @return  float  Seconds behind the source, or zero on a primary or when the account may not look.
+     *
+     * @since   2.0.0
+     */
+    private function replicaLag(): float
+    {
+        try {
+            $row = $this->database->fetchAssociative('SHOW REPLICA STATUS');
+        } catch (Throwable) {
+            try {
+                $row = $this->database->fetchAssociative('SHOW SLAVE STATUS');
+            } catch (Throwable) {
+                return 0.0;
+            }
+        }
+        if ($row === false) {
+            return 0.0;
+        }
+
+        return $this->tally($row['Seconds_Behind_Master'] ?? $row['Seconds_Behind_Source'] ?? null);
+    }
+
+    /**
+     * Count rows matching a predicate, optionally whose timestamp has passed, up to the probe cap.
+     *
+     * @param   string             $table      Quoted physical table name.
+     * @param   string             $predicate  SQL predicate built only from literals in this class.
+     * @param   ?string            $column     Timestamp column that must be at or before now, or null.
+     * @param   DateTimeImmutable  $now        Reading the column is compared against.
+     *
+     * @return  array{float, bool}  Count and whether it reached the cap.
+     *
+     * @since   2.0.0
+     */
+    private function bounded(string $table, string $predicate, ?string $column, DateTimeImmutable $now): array
+    {
+        $sql = sprintf(
+            'SELECT COUNT(*) FROM (SELECT 1 AS probe FROM %s WHERE %s%s LIMIT %d) bounded',
+            $table,
+            $predicate,
+            $column === null ? '' : sprintf(' AND %s <= ?', $column),
+            self::PROBE_CAP,
+        );
+        $value = $this->tally($column === null
+            ? $this->database->fetchOne($sql)
+            : $this->database->fetchOne($sql, [$now], [Types::DATETIME_IMMUTABLE]));
+
+        return [$value, $value >= self::PROBE_CAP];
+    }
+
+    /**
+     * Normalise a driver-returned count into a gauge value.
+     *
+     * Drivers disagree about whether an aggregate comes back as an integer or as a decimal string, and
+     * on 32-bit builds a large `COUNT` arrives as a string on every engine. Reading both shapes here
+     * keeps that difference out of every call site.
+     *
+     * @param   mixed  $value  Value the driver returned for the aggregate.
+     *
+     * @return  float  Non-negative count; zero for anything the driver did not return as a number.
+     *
+     * @since   2.0.0
+     */
+    private function tally(mixed $value): float
+    {
+        if (is_int($value) || is_float($value)) {
+            return max(0.0, (float) $value);
+        }
+
+        return is_string($value) && is_numeric($value) ? max(0.0, (float) $value) : 0.0;
+    }
+
+    /**
+     * Measure how far in the past the oldest matching row's timestamp lies, from an ascending index range.
+     *
+     * @param   string             $table      Quoted physical table name.
+     * @param   string             $column     Timestamp column the range is ordered by.
+     * @param   string             $predicate  SQL predicate built only from literals in this class.
+     * @param   DateTimeImmutable  $now        Reading the age is measured against.
+     *
+     * @return  float  Age in seconds, or zero when nothing matches or the oldest row is still in the future.
+     *
+     * @since   2.0.0
+     */
+    private function age(string $table, string $column, string $predicate, DateTimeImmutable $now): float
+    {
+        $oldest = $this->database->fetchOne(sprintf(
+            'SELECT %1$s FROM %2$s WHERE %3$s AND %1$s IS NOT NULL ORDER BY %1$s LIMIT 1',
+            $column,
+            $table,
+            $predicate,
+        ));
+
+        return $this->elapsed($oldest, $now);
+    }
+
+    /**
+     * Measure how far in the past the newest row's timestamp lies, from a descending index range.
+     *
+     * @param   string             $table   Quoted physical table name.
+     * @param   string             $column  Timestamp column the range is ordered by.
+     * @param   DateTimeImmutable  $now     Reading the age is measured against.
+     *
+     * @return  float  Age in seconds, or zero when the table is empty.
+     *
+     * @since   2.0.0
+     */
+    private function youngest(string $table, string $column, DateTimeImmutable $now): float
+    {
+        $newest = $this->database->fetchOne(sprintf(
+            'SELECT %1$s FROM %2$s WHERE %1$s IS NOT NULL ORDER BY %1$s DESC LIMIT 1',
+            $column,
+            $table,
+        ));
+
+        return $this->elapsed($newest, $now);
     }
 
     /**
@@ -254,105 +427,6 @@ final readonly class RuntimeMetricCollector implements MetricCollector
         return $this->database->getDatabasePlatform() instanceof PostgreSQLPlatform
             ? 'enabled = true'
             : 'enabled = 1';
-    }
-
-    /**
-     * Count rows matching a predicate.
-     *
-     * @param   string  $table      Quoted physical table name.
-     * @param   string  $predicate  SQL predicate built only from literals in this class.
-     *
-     * @return  float  Row count.
-     *
-     * @since   2.0.0
-     */
-    private function count(string $table, string $predicate): float
-    {
-        return $this->tally($this->database->fetchOne(
-            sprintf('SELECT COUNT(*) FROM %s WHERE %s', $table, $predicate),
-        ));
-    }
-
-    /**
-     * Count rows matching a predicate whose timestamp column has already passed.
-     *
-     * @param   string             $table      Quoted physical table name.
-     * @param   string             $predicate  SQL predicate built only from literals in this class.
-     * @param   string             $column     Timestamp column compared against the reading.
-     * @param   DateTimeImmutable  $now        Reading the column is compared against.
-     *
-     * @return  float  Row count.
-     *
-     * @since   2.0.0
-     */
-    private function countBefore(string $table, string $predicate, string $column, DateTimeImmutable $now): float
-    {
-        return $this->tally($this->database->fetchOne(
-            sprintf('SELECT COUNT(*) FROM %s WHERE %s AND %s <= ?', $table, $predicate, $column),
-            [$now],
-            [Types::DATETIME_IMMUTABLE],
-        ));
-    }
-
-    /**
-     * Normalise a driver-returned count into a gauge value.
-     *
-     * Drivers disagree about whether an aggregate comes back as an integer or as a decimal string, and
-     * on 32-bit builds a large `COUNT` arrives as a string on every engine. Reading both shapes here
-     * keeps that difference out of every call site.
-     *
-     * @param   mixed  $value  Value the driver returned for the aggregate.
-     *
-     * @return  float  Non-negative count; zero for anything the driver did not return as a number.
-     *
-     * @since   2.0.0
-     */
-    private function tally(mixed $value): float
-    {
-        if (is_int($value) || is_float($value)) {
-            return max(0.0, (float) $value);
-        }
-
-        return is_string($value) && is_numeric($value) ? max(0.0, (float) $value) : 0.0;
-    }
-
-    /**
-     * Measure how far in the past the oldest matching row's timestamp lies.
-     *
-     * @param   string             $table      Quoted physical table name.
-     * @param   string             $column     Timestamp column the minimum is taken over.
-     * @param   string             $predicate  SQL predicate built only from literals in this class.
-     * @param   DateTimeImmutable  $now        Reading the age is measured against.
-     *
-     * @return  float  Age in seconds, or zero when nothing matches or the oldest row is still in the future.
-     *
-     * @since   2.0.0
-     */
-    private function age(string $table, string $column, string $predicate, DateTimeImmutable $now): float
-    {
-        $oldest = $this->database->fetchOne(
-            sprintf('SELECT MIN(%s) FROM %s WHERE %s', $column, $table, $predicate),
-        );
-
-        return $this->elapsed($oldest, $now);
-    }
-
-    /**
-     * Measure how far in the past the newest row's timestamp lies.
-     *
-     * @param   string             $table   Quoted physical table name.
-     * @param   string             $column  Timestamp column the maximum is taken over.
-     * @param   DateTimeImmutable  $now     Reading the age is measured against.
-     *
-     * @return  float  Age in seconds, or zero when the table is empty.
-     *
-     * @since   2.0.0
-     */
-    private function youngest(string $table, string $column, DateTimeImmutable $now): float
-    {
-        $newest = $this->database->fetchOne(sprintf('SELECT MAX(%s) FROM %s', $column, $table));
-
-        return $this->elapsed($newest, $now);
     }
 
     /**

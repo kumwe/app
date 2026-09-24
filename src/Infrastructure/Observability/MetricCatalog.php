@@ -75,6 +75,99 @@ final readonly class MetricCatalog
     public const RETENTION_READINESS = 'kumwe_retention_readiness';
 
     /**
+     * Outermost database transactions by outcome.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    public const TRANSACTIONS = 'kumwe_transactions_total';
+
+    /**
+     * Outermost transaction duration histogram, the lock-hold proxy the scale runbook watches.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    public const TRANSACTION_DURATION = 'kumwe_transaction_duration_seconds';
+
+    /**
+     * Failed outermost transactions by failure class: deadlock, lock timeout or anything else.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    public const TRANSACTION_FAILURES = 'kumwe_transaction_failures_total';
+
+    /**
+     * Capacity-contract operation classes that have a latency objective and an instrumented source.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
+    public const OPERATION_CLASSES = [
+        'document_100_line_commit',
+        'document_1000_line_commit',
+        'queue_time_to_start',
+        'delivery_age',
+    ];
+
+    /**
+     * Operation latency histogram labelled by capacity-contract operation class.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    public const OPERATION_DURATION = 'kumwe_operation_duration_seconds';
+
+    /**
+     * Document lines committed atomically, reported apart from logical transactions.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    public const DOCUMENT_LINES = 'kumwe_document_lines_total';
+
+    /**
+     * Committed source events given a journal sequence.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    public const SEQUENCED_EVENTS = 'kumwe_sequenced_events_total';
+
+    /**
+     * Successful job claims.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    public const QUEUE_CLAIMS = 'kumwe_queue_claims_total';
+
+    /**
+     * Job settlements by outcome.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    public const QUEUE_SETTLEMENTS = 'kumwe_queue_settlements_total';
+
+    /**
+     * Outbox dispatch settlements by outcome.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    public const DISPATCH_SETTLEMENTS = 'kumwe_dispatch_settlements_total';
+
+    /**
+     * Settlement outcomes shared by queue and dispatch settlements.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
+    public const SETTLEMENT_OUTCOMES = ['completed', 'retried', 'dead'];
+
+    /**
      * HTTP methods that get their own series; anything else folds into `other`.
      *
      * @var    list<string>
@@ -239,6 +332,51 @@ final readonly class MetricCatalog
                 self::BUCKETS,
             ),
             new MetricDefinition(
+                self::TRANSACTIONS,
+                MetricType::Counter,
+                'Outermost database transactions, by outcome.',
+                ['outcome' => ['committed', 'rolled_back']],
+            ),
+            new MetricDefinition(
+                self::TRANSACTION_DURATION,
+                MetricType::Histogram,
+                'Outermost database transaction duration in seconds.',
+                [],
+                self::BUCKETS,
+            ),
+            new MetricDefinition(
+                self::TRANSACTION_FAILURES,
+                MetricType::Counter,
+                'Rolled-back outermost transactions, by failure class.',
+                ['class' => ['deadlock', 'lock_timeout']],
+            ),
+            new MetricDefinition(
+                self::OPERATION_DURATION,
+                MetricType::Histogram,
+                'Latency of capacity-contract operation classes in seconds.',
+                ['operation_class' => self::OPERATION_CLASSES],
+                self::BUCKETS,
+            ),
+            new MetricDefinition(
+                self::DOCUMENT_LINES,
+                MetricType::Counter,
+                'Owned document lines committed atomically with their header.',
+            ),
+            new MetricDefinition(self::SEQUENCED_EVENTS, MetricType::Counter, 'Committed source events sequenced.'),
+            new MetricDefinition(self::QUEUE_CLAIMS, MetricType::Counter, 'Jobs claimed by workers.'),
+            new MetricDefinition(
+                self::QUEUE_SETTLEMENTS,
+                MetricType::Counter,
+                'Job settlements, by outcome.',
+                ['outcome' => self::SETTLEMENT_OUTCOMES],
+            ),
+            new MetricDefinition(
+                self::DISPATCH_SETTLEMENTS,
+                MetricType::Counter,
+                'Outbox dispatch settlements, by outcome.',
+                ['outcome' => self::SETTLEMENT_OUTCOMES],
+            ),
+            new MetricDefinition(
                 self::RETENTION_DRAINED,
                 MetricType::Counter,
                 'Rows removed or compacted by retention drains, by store.',
@@ -335,6 +473,12 @@ final readonly class MetricCatalog
             'kumwe_process_work_oldest_overdue_age_seconds' => 'Age of the oldest overdue process work item.',
             'kumwe_export_queue_depth' => 'Report export artifacts queued or running.',
             'kumwe_export_artifacts_expired' => 'Report export artifacts past their expiry that are still stored.',
+            'kumwe_projection_staging_backlog' => 'Committed sources awaiting a journal sequence (bounded).',
+            'kumwe_projection_staging_oldest_age_seconds' => 'Age of the oldest committed source awaiting a sequence.',
+            'kumwe_database_connections_in_use' => 'Database sessions currently open on the server.',
+            'kumwe_database_connections_max' => 'Database server session ceiling.',
+            'kumwe_database_replica_lag_seconds' => 'Largest replica replay lag reported; 0 without replicas.',
+            'kumwe_metrics_capped_gauges' => 'Gauges whose bounded probe hit its cap and so report a lower bound.',
             'kumwe_metrics_scrape_duration_seconds' => 'Wall time the last scrape spent collecting these metrics.',
             'kumwe_metrics_collection_failed' => 'Whether the last collection raised: 1 failed, 0 succeeded.',
         ];

@@ -22,6 +22,9 @@ use Kumwe\Integration\OutboxStore;
 use Kumwe\Integration\RecordedEventEnvelope;
 use Kumwe\Integration\RecordedIntegrationEvent;
 use Kumwe\Integration\IntegrationEvent;
+use Kumwe\App\Infrastructure\Observability\MetricCatalog;
+use Kumwe\App\Infrastructure\Observability\MetricRecorder;
+use Kumwe\App\Infrastructure\Observability\NullMetricRecorder;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\BusinessReporting\Infrastructure\DoctrineProjectionEventSequencer;
 use Psr\Clock\ClockInterface;
@@ -64,6 +67,7 @@ final readonly class DoctrineOutboxStore implements OutboxStore
      * @param   CanonicalEncoder                  $canonicalEncoder  Host encoder stored envelopes are rebuilt with.
      * @param   DoctrineProjectionEventSequencer  $sequencer         Publishes committed sources before dispatch.
      * @param   int                               $retentionDays     Terminal-row retention window.
+     * @param   MetricRecorder                    $metrics           Counts settlements and times delivery age.
      *
      * @throws  InvalidArgumentException  When retention falls outside 1 to 3650 days.
      *
@@ -78,6 +82,7 @@ final readonly class DoctrineOutboxStore implements OutboxStore
         private CanonicalEncoder $canonicalEncoder,
         private DoctrineProjectionEventSequencer $sequencer,
         private int $retentionDays = 90,
+        private MetricRecorder $metrics = new NullMetricRecorder(),
     ) {
         if ($retentionDays < 1 || $retentionDays > 3_650) {
             throw new InvalidArgumentException('Outbox retention must be between 1 and 3650 days.');
@@ -291,6 +296,12 @@ final readonly class DoctrineOutboxStore implements OutboxStore
             Types::DATETIME_IMMUTABLE, Types::DATETIME_IMMUTABLE, Types::GUID, Types::STRING,
             Types::GUID, Types::STRING, Types::DATETIME_IMMUTABLE,
         ]));
+        $this->metrics->increment(MetricCatalog::DISPATCH_SETTLEMENTS, ['outcome' => 'completed']);
+        $this->metrics->observe(
+            MetricCatalog::OPERATION_DURATION,
+            ['operation_class' => 'delivery_age'],
+            max(0.0, (float) ($now->format('U.u') - $lease->event->occurredAt()->format('U.u'))),
+        );
     }
 
     /**
@@ -377,6 +388,7 @@ final readonly class DoctrineOutboxStore implements OutboxStore
             Types::DATETIME_IMMUTABLE, Types::GUID, Types::STRING, Types::GUID, Types::STRING,
             Types::DATETIME_IMMUTABLE,
         ]));
+        $this->metrics->increment(MetricCatalog::DISPATCH_SETTLEMENTS, ['outcome' => $retry ? 'retried' : 'dead']);
     }
 
     /**
