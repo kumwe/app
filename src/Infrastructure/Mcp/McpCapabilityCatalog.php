@@ -147,7 +147,17 @@ final class McpCapabilityCatalog
         'kumwe_wording_catalogue_search' => [McpRiskClass::Read, self::VIA_WORDING],
         'kumwe_wording_override_save' => [McpRiskClass::ScopedWrite, self::VIA_WORDING],
         'kumwe_wording_override_withdraw' => [McpRiskClass::ScopedWrite, self::VIA_WORDING],
+        'kumwe_business_security_overview' => [McpRiskClass::Read, self::VIA_BUSINESS_SECURITY],
     ];
+
+    /**
+     * Non-MCP route for the Business Security overview, and the only route to its stepped-up writes.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const string VIA_BUSINESS_SECURITY = 'Administrator console: Business Security, '
+        . '/api/v1/business-security, or bin/kumwe business-security; changes need browser step-up.';
 
     /**
      * Non-MCP route for the wording override tools.
@@ -1534,6 +1544,18 @@ final class McpCapabilityCatalog
             ...$this->businessApprovalTools(),
             ...$this->mediaTools(),
             ...$this->wordingTools(),
+            $this->tool(
+                'kumwe_business_security_overview',
+                'Read the Business Security overview',
+                'Read organizations, workspaces, memberships with explained access, policies and approvals.',
+                'businessSecurityOverview',
+                'business.security.manage',
+                true,
+                false,
+                true,
+                [],
+                ['type' => 'object', 'additionalProperties' => true],
+            ),
         ];
     }
 

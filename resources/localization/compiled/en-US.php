@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for en-US, carrying 2566 messages.
+ * Compiled interface message catalogue for en-US, carrying 2567 messages.
  *
  * Generated from en-US.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1946,6 +1946,7 @@ return [
     'core.console.business_record_rekey.description' => 'Re-encrypt stored business-record secrets under the active encryption key.',
     'core.console.business_report.description' => 'Run permission-aware reports and request, inspect, or download verified CSV exports.',
     'core.console.business_schema.description' => 'Inspect, approve, execute, and recover business schema plans.',
+    'core.console.business_security.description' => 'Show the Business Security overview of organizations, memberships and policies.',
     'core.console.content.description' => 'List, read, create, update, transition, trash, or restore content.',
     'core.console.content_model.description' => 'List, read, create, or publish versioned content types and workflows.',
     'core.console.database_migrate.applied' => 'Applied {migration}',

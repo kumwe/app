@@ -18675,6 +18675,15 @@
         <target>عرض تجاوزات الصياغة أو البحث فيها أو حفظها أو سحبها.</target>
       </segment>
     </unit>
+    <unit id="core.console.business_security.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/BusinessSecurityCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Show the Business Security overview of organizations, memberships and policies.</source>
+        <target>عرض نظرة عامة على أمان الأعمال للمؤسسات والعضويات والسياسات.</target>
+      </segment>
+    </unit>
     <unit id="core.console.settings.description">
       <notes>
         <note category="context">Console command summary on src/Delivery/Console/Command/ManageSettingsCommand.php.</note>

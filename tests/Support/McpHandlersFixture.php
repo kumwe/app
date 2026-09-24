@@ -7,6 +7,7 @@ namespace Kumwe\App\Tests\Support;
 use Kumwe\App\Application\Automation\AutomationManagementService;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionService;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaService;
+use Kumwe\App\BusinessSecurity\Application\Administration\BusinessSecurityAdministrationService;
 use Kumwe\App\Content\Application\ContentService;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Extension\Infrastructure\RedisLockedExtensionManager;
@@ -31,6 +32,7 @@ final class McpHandlersFixture
         ?ExtensionExecutionGate $extensionRuntime = null,
         ?MediaService $media = null,
         ?MessageOverrideService $wording = null,
+        ?BusinessSecurityAdministrationService $businessSecurity = null,
     ): KumweMcpHandlers {
         return new KumweMcpHandlers(
             $catalog,
@@ -51,6 +53,7 @@ final class McpHandlersFixture
             extensionRuntime: $extensionRuntime,
             media: $media,
             wording: $wording,
+            businessSecurity: $businessSecurity,
         );
     }
 

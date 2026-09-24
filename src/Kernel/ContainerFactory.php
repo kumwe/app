@@ -565,6 +565,7 @@ use Kumwe\App\Delivery\Console\Command\BusinessApprovalCommand;
 use Kumwe\App\Delivery\Console\Command\SecurityEventsCommand;
 use Kumwe\App\Delivery\Console\Command\MediaCommand;
 use Kumwe\App\Delivery\Console\Command\WordingCommand;
+use Kumwe\App\Delivery\Console\Command\BusinessSecurityCommand;
 use Kumwe\App\Delivery\Console\Command\StudioAuthoringCommand;
 use Kumwe\App\Delivery\Console\Output;
 use Kumwe\App\Delivery\Console\StreamOutput;
@@ -7056,6 +7057,12 @@ final class ContainerFactory
             self::service($container, MessageOverrideService::class),
             self::service($container, ConsoleAuthorizer::class),
         ), true);
+        $container->share(BusinessSecurityCommand::class, static fn (
+            Container $container,
+        ): BusinessSecurityCommand => new BusinessSecurityCommand(
+            self::service($container, BusinessSecurityAdministrationService::class),
+            self::service($container, ConsoleAuthorizer::class),
+        ), true);
         $container->share(SecurityEventsCommand::class, static fn (
             Container $container,
         ): SecurityEventsCommand => new SecurityEventsCommand(
@@ -7125,6 +7132,7 @@ final class ContainerFactory
                 self::service($container, BusinessApprovalCommand::class),
                 self::service($container, MediaCommand::class),
                 self::service($container, WordingCommand::class),
+                self::service($container, BusinessSecurityCommand::class),
                 self::service($container, McpServeCommand::class),
             ], self::service($container, Output::class)), true);
     }
@@ -7197,6 +7205,7 @@ final class ContainerFactory
                 studioAuthoring: self::service($container, StudioMachineAuthoringGateway::class),
                 media: self::service($container, MediaService::class),
                 wording: self::service($container, MessageOverrideService::class),
+                businessSecurity: self::service($container, BusinessSecurityAdministrationService::class),
             ), true);
         $container->share(KumweMcpServerFactory::class, static fn (Container $container): KumweMcpServerFactory =>
             new KumweMcpServerFactory(

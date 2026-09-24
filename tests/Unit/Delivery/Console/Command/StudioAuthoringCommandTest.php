@@ -49,6 +49,7 @@ final class StudioAuthoringCommandTest extends TestCase
      */
     private const array SUCCESSOR_COMMANDS = [
         'business-approval',
+        'business-security',
         'media',
         'security-events',
         'studio-authoring',

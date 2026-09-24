@@ -2,7 +2,7 @@
   "format": "kumwe-cli-machine-contract-v1",
   "generation": 2,
   "status": "retained",
-  "surface_digest": "sha256:01a202fb8f36a7cf5ba1c70d4e60b971338e10dc35d11055e977f939f41eed29",
+  "surface_digest": "sha256:f97c829ca05c5cafc394db35410c4d00ef8c1c49df4c324c5aaa0ba51f4a2b8d",
   "dispatcher": {
     "list_exit": 0,
     "unknown_command_exit": 64,
@@ -345,6 +345,20 @@
         {"name":"approve","risk":"high-impact","positionals":[],"allowed_options":["site","token-file","plan","expected-checksum","confirmation","evidence"],"required_options":["site","token-file","plan","expected-checksum"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
         {"name":"execute","risk":"high-impact","positionals":[],"allowed_options":["site","token-file","plan"],"required_options":["site","token-file","plan"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
         {"name":"recover","risk":"high-impact","positionals":[],"allowed_options":["site","token-file","plan"],"required_options":["site","token-file","plan"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "business-security",
+      "action_argument": true,
+      "default_action": "overview",
+      "options": [
+        {"name":"site","type":"identifier","enum":[]},
+        {"name":"token-file","type":"secret-file","enum":[]}
+      ],
+      "output": {"stdout":"json-document","stderr":"text-lines"},
+      "exit_codes": {"0":"success","1":"operation-failed"},
+      "actions": [
+        {"name":"overview","risk":"read","positionals":[],"allowed_options":["site","token-file"],"required_options":["site","token-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
       ]
     },
     {

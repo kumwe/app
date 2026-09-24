@@ -43,6 +43,7 @@ use Kumwe\App\Studio\Domain\Authoring\StudioAuthoringIntent;
 use Kumwe\App\Identity\Domain\UserStatus;
 use Kumwe\App\Media\Application\MediaAsset;
 use Kumwe\App\Media\Application\MediaService;
+use Kumwe\App\BusinessSecurity\Application\Administration\BusinessSecurityAdministrationService;
 use Kumwe\App\Localization\Application\MessageOverrideService;
 use Kumwe\Localization\Application\MessageFormattingFailed;
 use Kumwe\Localization\Application\MessageOverrideRecord;
@@ -75,37 +76,39 @@ final readonly class KumweMcpHandlers
      * The container builds one unbound instance: neither identity argument is supplied, so every tool refuses
      * until `forContext()` or `forCredential()` hands back a bound copy.
      *
-     * @param  McpCapabilityCatalog            $catalog           Tools, resources and prompts this release exposes,
+     * @param McpCapabilityCatalog $catalog Tools, resources and prompts this release exposes,
      *         as published by `discover()` and the capability resource.
-     * @param  ContentService                  $content           Content entries behind the `kumwe_content_*` tools.
-     * @param  NavigationService               $navigation        Menus and menu items behind the `kumwe_menu_*` tools.
-     * @param  AccessControlService            $access            Users, roles, capabilities and token metadata.
-     * @param  SiteSettings                    $settings          The site settings document, read and replaced whole.
-     * @param  ExtensionManager                $extensions        Extension activation, disabling and removal.
-     * @param  TrustStore                      $trust             Extension signing keys, and the installation-wide
+     * @param ContentService $content Content entries behind the `kumwe_content_*` tools.
+     * @param NavigationService $navigation Menus and menu items behind the `kumwe_menu_*` tools.
+     * @param  AccessControlService                    $access            Users, roles, capabilities and token metadata.
+     * @param SiteSettings $settings The site settings document, read and replaced whole.
+     * @param  ExtensionManager                        $extensions        Extension activation, disabling and removal.
+     * @param TrustStore $trust Extension signing keys, and the installation-wide
      *         lifecycle lock the trust and extension writes are taken under.
-     * @param  AutomationManagementService     $automation        Schedules and jobs behind the automation tools.
-     * @param  BusinessDefinitionService       $definitions       Business entity definition drafts and versions.
-     * @param  BusinessSchemaService           $schema            Schema plans and their approval and execution.
-     * @param  BusinessMcpHandlers             $businessRecords   Bounded generated-business MCP delegate.
-     * @param  ReportMcpHandlers               $businessReports   Bounded report and export MCP delegate.
-     * @param  McpMutationGuard                $mutations         Idempotency fence every write is run through.
-     * @param  ClockInterface                  $clock             Supplies the first-run instant a new schedule is
+     * @param AutomationManagementService $automation Schedules and jobs behind the automation tools.
+     * @param BusinessDefinitionService $definitions Business entity definition drafts and versions.
+     * @param  BusinessSchemaService                   $schema            Schema plans and their approval and execution.
+     * @param  BusinessMcpHandlers                     $businessRecords   Bounded generated-business MCP delegate.
+     * @param  ReportMcpHandlers                       $businessReports   Bounded report and export MCP delegate.
+     * @param  McpMutationGuard                        $mutations         Idempotency fence every write is run through.
+     * @param ClockInterface $clock Supplies the first-run instant a new schedule is
      *         anchored to.
-     * @param  AuthorizationGateway            $authorization     Judges each write against the resource it names,
+     * @param AuthorizationGateway $authorization Judges each write against the resource it names,
      *         before the fence is entered.
-     * @param  ?ExecutionContext               $executionContext  Actor bound by `forContext()`; null while the
+     * @param  ?ExecutionContext                       $executionContext  Actor bound by `forContext()`; null while the
      *         instance is unbound.
-     * @param  ?Closure                        $contextRefresh    Callback bound by `forCredential()` that
+     * @param  ?Closure                                $contextRefresh    Callback bound by `forCredential()` that
      *         re-verifies the retained token and mints a fresh context; null when no credential is retained.
-     * @param  ?ExtensionExecutionGate         $extensionRuntime  Live authority for the resident extension
+     * @param  ?ExtensionExecutionGate                 $extensionRuntime  Live authority for the resident extension
      *         generation; null only in isolated tests that have no extension runtime.
-     * @param  ?StudioMachineAuthoringGateway  $studioAuthoring   Machine entry to the browser's Studio authoring
+     * @param ?StudioMachineAuthoringGateway $studioAuthoring Machine entry to the browser's Studio authoring
      *         host; null only in isolated tests that exercise no Studio tool.
-     * @param  ?MediaService                   $media             Media library the media tools browse, read, upload
+     * @param ?MediaService $media Media library the media tools browse, read, upload
      *         and delete through; null only in isolated tests that exercise no media tool.
-     * @param  ?MessageOverrideService         $wording           Wording overrides the wording tools list, search,
+     * @param ?MessageOverrideService $wording Wording overrides the wording tools list, search,
      *         save and withdraw through; null only in isolated tests that exercise no wording tool.
+     * @param  ?BusinessSecurityAdministrationService  $businessSecurity  Business Security read model the overview
+     *         tool answers from; null only in isolated tests that exercise no Business Security tool.
      *
      * @since  2.0.0
      */
@@ -131,6 +134,7 @@ final readonly class KumweMcpHandlers
         private ?StudioMachineAuthoringGateway $studioAuthoring = null,
         private ?MediaService $media = null,
         private ?MessageOverrideService $wording = null,
+        private ?BusinessSecurityAdministrationService $businessSecurity = null,
     ) {
     }
 
@@ -170,6 +174,7 @@ final readonly class KumweMcpHandlers
             studioAuthoring: $this->studioAuthoring,
             media: $this->media,
             wording: $this->wording,
+            businessSecurity: $this->businessSecurity,
         );
     }
 
@@ -245,6 +250,7 @@ final readonly class KumweMcpHandlers
             studioAuthoring: $this->studioAuthoring,
             media: $this->media,
             wording: $this->wording,
+            businessSecurity: $this->businessSecurity,
         );
     }
 
@@ -3327,6 +3333,29 @@ final readonly class KumweMcpHandlers
                 $identifier,
             )],
         );
+    }
+
+    /**
+     * Read the Business Security overview the Business Security screen renders.
+     *
+     * The screen's writes are not published: `BusinessSecurityAdministrationService` consumes a fresh human
+     * step-up proof for each of them, which an MCP credential cannot hold.
+     *
+     * @return  array<string, list<array<string, mixed>>>  Organizations, workspaces, memberships, policies,
+     *          separation-of-duty rules and approvals scoped to the credential's site and membership.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `business.security.manage`.
+     * @throws  InvalidArgumentException  When the server was composed without the read model.
+     *
+     * @since   2.0.0
+     */
+    public function businessSecurityOverview(): array
+    {
+        $this->require('business.security.manage');
+        $security = $this->businessSecurity
+            ?? throw new InvalidArgumentException('Business Security is unavailable on this server.');
+
+        return $security->overview($this->context());
     }
 
     /**

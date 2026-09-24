@@ -3058,6 +3058,18 @@
             "surface": "f78491cb4461f6f3e7c6a56d",
             "growth": null
         },
+        "Kumwe\\App\\Delivery\\Console\\Command\\BusinessSecurityCommand": {
+            "kind": "class",
+            "layer": "delivery",
+            "surface": "079a1c29b7190cfb9d4f46d4",
+            "growth": {
+                "classification": "host-delivery",
+                "implements": [
+                    "Kumwe\\App\\Delivery\\Console\\Command"
+                ],
+                "extends": null
+            }
+        },
         "Kumwe\\App\\Delivery\\Console\\Command\\CommandInput": {
             "kind": "class",
             "layer": "delivery",
@@ -5116,7 +5128,7 @@
         "Kumwe\\App\\Infrastructure\\Mcp\\KumweMcpHandlers": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "56629c6bb4797e1c1cc5741e",
+            "surface": "aa8b3d6b0c693b462ea4e8c4",
             "growth": {
                 "classification": "host-infrastructure",
                 "implements": [],

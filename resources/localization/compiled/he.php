@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for he, carrying 2566 messages.
+ * Compiled interface message catalogue for he, carrying 2567 messages.
  *
  * Generated from he.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1946,6 +1946,7 @@ return [
     'core.console.business_record_rekey.description' => 'הצפינו מחדש סודות של רשומות עסקיות שמורות תחת מפתח ההצפנה הפעיל.',
     'core.console.business_report.description' => 'הריצו דוחות מודעי הרשאות, ובקשו, בדקו או הורידו ייצוא CSV מאומת.',
     'core.console.business_schema.description' => 'בדקו, אשרו, בצעו ושחזרו תוכניות סכימה עסקיות.',
+    'core.console.business_security.description' => 'הצגת סקירת אבטחת העסק של ארגונים, חברויות ומדיניות.',
     'core.console.content.description' => 'הציגו רשימה, קראו, צרו, עדכנו, העבירו מצב, העבירו לאשפה או שחזרו תוכן.',
     'core.console.content_model.description' => 'הציגו רשימה, קראו, צרו או פרסמו סוגי תוכן ותהליכי עבודה מנוהלי גרסאות.',
     'core.console.database_migrate.applied' => 'הוחלה {migration}',

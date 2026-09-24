@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for es, carrying 2566 messages.
+ * Compiled interface message catalogue for es, carrying 2567 messages.
  *
  * Generated from es.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1946,6 +1946,7 @@ return [
     'core.console.business_record_rekey.description' => 'Vuelve a cifrar los secretos guardados de registros de negocio con la clave de cifrado activa.',
     'core.console.business_report.description' => 'Ejecuta informes que respetan los permisos y solicita, inspecciona o descarga exportaciones CSV verificadas.',
     'core.console.business_schema.description' => 'Inspecciona, aprueba, ejecuta y recupera planes de esquema de negocio.',
+    'core.console.business_security.description' => 'Muestra la vista general de Seguridad empresarial con organizaciones, membresías y políticas.',
     'core.console.content.description' => 'Lista, lee, crea, actualiza, hace transitar, envía a la papelera o restaura contenido.',
     'core.console.content_model.description' => 'Lista, lee, crea o publica tipos de contenido y flujos de trabajo versionados.',
     'core.console.database_migrate.applied' => 'Se aplicó {migration}',

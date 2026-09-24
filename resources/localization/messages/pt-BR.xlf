@@ -18675,6 +18675,15 @@
         <target>Liste, pesquise, salve ou retire substituições de redação.</target>
       </segment>
     </unit>
+    <unit id="core.console.business_security.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/BusinessSecurityCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Show the Business Security overview of organizations, memberships and policies.</source>
+        <target>Mostre a visão geral da Segurança empresarial com organizações, associações e políticas.</target>
+      </segment>
+    </unit>
     <unit id="core.console.settings.description">
       <notes>
         <note category="context">Console command summary on src/Delivery/Console/Command/ManageSettingsCommand.php.</note>

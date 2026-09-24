@@ -25,7 +25,7 @@
         ]
     },
     "inventory": {
-        "tools": 99,
+        "tools": 100,
         "resources": 1,
         "prompts": 1
     },
@@ -588,7 +588,7 @@
             ]
         }
     ],
-    "contract_sha256": "c8765cc4032d38917a51e03cf140d5257365bd8b88936936eecde4cf50dfbe48",
+    "contract_sha256": "eca7940ef61513a0e1cc4a9785ace77d5b977fdd0f1a778514d82460e8d5576b",
     "surface": {
         "tools": [
             {
@@ -8033,6 +8033,32 @@
                         "withdrawn"
                     ],
                     "additionalProperties": false
+                }
+            },
+            {
+                "name": "kumwe_business_security_overview",
+                "title": "Read the Business Security overview",
+                "description": "Read organizations, workspaces, memberships with explained access, policies and approvals.",
+                "handler": "businessSecurityOverview",
+                "capability": "business.security.manage",
+                "risk": "read",
+                "alternative": "Administrator console: Business Security, /api/v1/business-security, or bin/kumwe business-security; changes need browser step-up.",
+                "annotations": {
+                    "title": "Read the Business Security overview",
+                    "readOnlyHint": true,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {},
+                    "required": [],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "additionalProperties": true
                 }
             }
         ],
