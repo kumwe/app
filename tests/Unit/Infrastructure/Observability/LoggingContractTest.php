@@ -83,6 +83,64 @@ final class LoggingContractTest extends TestCase
         self::assertSame('application/json', $record->context['headers']['accept']);
     }
 
+    /**
+     * Credentials quoted in the message, a plain string value or a self-serializing object never survive.
+     *
+     * A configured origin, a failure reason copied out of an exception and a payload object the formatter
+     * would expand after every processor had run all reach the log without passing the key rule, so each is
+     * scrubbed in its own right while ordinary values stay untouched.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testCredentialsInTheMessagePlainValuesAndSerializableObjectsAreScrubbed(): void
+    {
+        $payload = new class implements \JsonSerializable {
+            /**
+             * Serialize as a payload whose nested key and free text both carry a credential.
+             *
+             * @return  array<string, mixed>  Serialized payload.
+             *
+             * @since   2.0.0
+             */
+            public function jsonSerialize(): array
+            {
+                $object = 'patterned-example-' . 'object';
+
+                return ['params' => ['password' => $object, 'note' => 'token=patterned-note']];
+            }
+        };
+        $record = new LogRecord(
+            new \DateTimeImmutable('2026-08-14T09:00:00+00:00'),
+            'kumwe',
+            Level::Warning,
+            'Fetching https://mirror:patterned-example-message@feed.example.test failed.',
+            [
+                'origin' => 'https://mirror:patterned-example-origin@feed.example.test/list.json',
+                'reason' => 'upstream said secret = patterned-example-reason',
+                'payload' => $payload,
+                'queue' => 'default',
+                'attempt' => 3,
+            ],
+        );
+
+        $redacted = (new LogRedactionProcessor(self::contract()))($record);
+        $encoded = json_encode([$redacted->message, $redacted->context], JSON_THROW_ON_ERROR);
+
+        foreach (['message', 'origin', 'reason', 'object', 'note'] as $stem) {
+            self::assertStringNotContainsString('patterned-example-' . $stem, $encoded);
+        }
+        self::assertStringNotContainsString('patterned-note', $encoded);
+        self::assertSame('https://[redacted]@feed.example.test/list.json', $redacted->context['origin']);
+        self::assertSame(
+            ['params' => ['password' => LogRedactionProcessor::PLACEHOLDER, 'note' => 'token=[redacted]']],
+            $redacted->context['payload'],
+        );
+        self::assertSame('default', $redacted->context['queue']);
+        self::assertSame(3, $redacted->context['attempt']);
+    }
+
     public function testAnAttachedExceptionBecomesABoundedSummaryWithNoTraceAndNoDriverCredential(): void
     {
         $failure = new RuntimeException(
