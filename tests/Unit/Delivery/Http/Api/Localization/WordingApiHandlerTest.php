@@ -152,6 +152,41 @@ final class WordingApiHandlerTest extends TestCase
     }
 
     /**
+     * A write that names no wording operation is refused, and a catalogue search without a limit is bounded.
+     *
+     * A well-formed body posted to the overrides collection is neither a save nor a withdrawal, so it is a
+     * validation problem rather than an implied write. A catalogue search that states no page size still
+     * answers a bounded page instead of the whole catalogue.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAnUnnamedWriteIsRefusedAndAnUnlimitedSearchIsBounded(): void
+    {
+        $posted = $this->handle($this->request('POST', '/api/v1/wording/overrides', [], [
+            'layer' => 'site',
+            'locale' => 'en-GB',
+            'identifier' => InMemoryWording::IDENTIFIER,
+            'pattern' => 'Customer',
+        ]));
+        self::assertSame(422, $posted->getStatusCode());
+        self::assertSame('urn:kumwe:problem:validation-failed', self::json($posted)['type']);
+        self::assertSame([], $this->audit->actions(), 'Nothing is written.');
+
+        $found = $this->handle($this->request(
+            'GET',
+            '/api/v1/wording/catalogue',
+            ['locale' => 'en-GB', 'q' => 'client'],
+        ));
+        self::assertSame(200, $found->getStatusCode());
+        $items = self::json($found)['items'];
+        self::assertIsArray($items);
+        self::assertLessThanOrEqual(50, count($items));
+        self::assertSame([InMemoryWording::IDENTIFIER], array_column($items, 'identifier'));
+    }
+
+    /**
      * A credential without `localization.overrides.manage` is refused by the service itself.
      *
      * @return  void
