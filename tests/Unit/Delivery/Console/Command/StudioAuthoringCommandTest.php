@@ -133,7 +133,10 @@ final class StudioAuthoringCommandTest extends TestCase
         $authenticated = self::command(AuthorizationContext::principal(['content.read']));
         self::assertSame(
             65,
-            $authenticated->execute(['open', '--site=default', '--token-file=' . $this->file('token')], new NullOutput()),
+            $authenticated->execute(
+                ['open', '--site=default', '--token-file=' . $this->file('token')],
+                new NullOutput(),
+            ),
             'An open without an intent is refused as invalid data.',
         );
 

@@ -126,7 +126,12 @@ final class McpStudioAuthoringToolsTest extends TestCase
                     'studio_authoring.idempotency_key_reused',
                     false,
                 ],
-                ['unavailable', 'studio.host/idempotency-in-progress', 'studio_authoring.idempotency_in_progress', true],
+                [
+                    'unavailable',
+                    'studio.host/idempotency-in-progress',
+                    'studio_authoring.idempotency_in_progress',
+                    true,
+                ],
             ] as [$category, $diagnostic, $code, $retryable]
         ) {
             $envelope = McpToolErrorVocabulary::envelope(StudioMachineAuthoringRefused::of($category, $diagnostic));
@@ -186,7 +191,12 @@ final class McpStudioAuthoringToolsTest extends TestCase
                 'list' => static fn () => $bound->studioAuthoringListTypes('bad key', 'g', '{}'),
                 'resolve' => static fn () => $bound->studioAuthoringResolveTarget('bad key', 'g', '{}'),
                 'start' => static fn () => $bound->studioAuthoringStart('replay-key-000001', 'bad key', 'g', '{}'),
-                'type' => static fn () => $bound->studioAuthoringSaveAsNewType('replay-key-000001', 'bad key', 'g', '{}'),
+                'type' => static fn () => $bound->studioAuthoringSaveAsNewType(
+                    'replay-key-000001',
+                    'bad key',
+                    'g',
+                    '{}',
+                ),
                 'version' => static fn () => $bound->studioAuthoringSaveNewTypeVersion(
                     'replay-key-000001',
                     'bad key',

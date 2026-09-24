@@ -66,7 +66,12 @@ final class StudioAuthoringApiHandlerTest extends TestCase
             ['rate-limited', 'studio.host/rate', 429, 'studio-authoring-rate-limited'],
             ['internal', 'studio.authoring/document-invalid', 500, 'studio-authoring-internal'],
             ['unavailable', 'studio.host/unavailable', 503, 'studio-authoring-unavailable'],
-            ['invalid-request', 'studio.host/idempotency-intent-changed', 422, 'studio-authoring-idempotency-key-reused'],
+            [
+                'invalid-request',
+                'studio.host/idempotency-intent-changed',
+                422,
+                'studio-authoring-idempotency-key-reused',
+            ],
             ['unavailable', 'studio.host/idempotency-in-progress', 409, 'studio-authoring-idempotency-in-progress'],
         ];
         foreach ($cases as [$category, $diagnostic, $status, $type]) {
@@ -113,10 +118,18 @@ final class StudioAuthoringApiHandlerTest extends TestCase
             'not an object' => ['sessions', '[]', 'studio.machine/request-invalid'],
             'unknown intent' => ['sessions', '{"intent":"publish"}', 'studio.machine/target-invalid'],
             'extra open member' => ['sessions', '{"intent":"create","actor":"x"}', 'studio.machine/request-invalid'],
-            'typed member' => ['sessions', '{"intent":"create","content_type_version":"2"}', 'studio.machine/request-invalid'],
+            'typed member' => [
+                'sessions',
+                '{"intent":"create","content_type_version":"2"}',
+                'studio.machine/request-invalid',
+            ],
             'string member' => ['sessions', '{"intent":"create","content_id":7}', 'studio.machine/request-invalid'],
             'unknown operation' => ['publish', '{}', 'studio.machine/operation-unknown'],
-            'no argument' => ['plan-save', '{"session":"contexts/k","session_generation":"g"}', 'studio.machine/request-invalid'],
+            'no argument' => [
+                'plan-save',
+                '{"session":"contexts/k","session_generation":"g"}',
+                'studio.machine/request-invalid',
+            ],
             'extra member' => [
                 'plan-save',
                 '{"session":"contexts/k","session_generation":"g","argument":{},"actor":"x"}',
@@ -131,7 +144,10 @@ final class StudioAuthoringApiHandlerTest extends TestCase
         }
 
         $unauthenticated = $handler->handle(
-            (new ServerRequestFactory())->createServerRequest('POST', 'https://kumwe.test/api/v1/studio/authoring/sessions'),
+            (new ServerRequestFactory())->createServerRequest(
+                'POST',
+                'https://kumwe.test/api/v1/studio/authoring/sessions',
+            ),
         );
         self::assertSame(400, $unauthenticated->getStatusCode());
     }

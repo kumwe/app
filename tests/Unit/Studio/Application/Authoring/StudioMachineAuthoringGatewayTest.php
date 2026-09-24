@@ -56,7 +56,15 @@ final class StudioMachineAuthoringGatewayTest extends TestCase
     public function testOperationsMirrorThePinnedRegistry(): void
     {
         self::assertSame(
-            ['resolve-target', 'list-types', 'start', 'plan-save', 'save-item', 'save-as-new-type', 'save-new-type-version'],
+            [
+                'resolve-target',
+                'list-types',
+                'start',
+                'plan-save',
+                'save-item',
+                'save-as-new-type',
+                'save-new-type-version',
+            ],
             StudioMachineAuthoringOperation::names(),
         );
         $mutating = [];
@@ -99,7 +107,10 @@ final class StudioMachineAuthoringGatewayTest extends TestCase
         $reused = StudioMachineAuthoringRefused::of('invalid-request', 'studio.host/idempotency-intent-changed');
         self::assertTrue($reused->keyReused());
         self::assertSame('studio_authoring.idempotency_key_reused', $reused->stableCode());
-        $producerReused = StudioMachineAuthoringRefused::of('invalid-request', 'kumwe.producer/idempotent-intent-changed');
+        $producerReused = StudioMachineAuthoringRefused::of(
+            'invalid-request',
+            'kumwe.producer/idempotent-intent-changed',
+        );
         self::assertTrue($producerReused->keyReused());
 
         $running = StudioMachineAuthoringRefused::of('unavailable', 'studio.host/idempotency-in-progress', null, true);
