@@ -12932,6 +12932,78 @@
         <target>此项内容的已验证预览</target>
       </segment>
     </unit>
+    <unit id="core.administrator.content_form.studio_return_destination">
+      <notes>
+        <note category="context">Destination the contextual Studio return control names, inserted into Studio's "Return to {destination}" message on templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>the content editor</source>
+        <target>内容编辑器</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_item_created">
+      <notes>
+        <note category="context">Save consequence the contextual Studio shows before saving a new item from the Content editor.</note>
+      </notes>
+      <segment>
+        <source>A new content item is created in its initial workflow state.</source>
+        <target>将以初始工作流状态创建一个新的内容项。</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_item_revision_advances">
+      <notes>
+        <note category="context">Save consequence the contextual Studio shows before saving an existing item from the Content editor.</note>
+      </notes>
+      <segment>
+        <source>The item receives a new revision; its workflow state does not change.</source>
+        <target>该项将获得新的修订版本；其工作流状态不变。</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_dependent_entries_remain">
+      <notes>
+        <note category="context">Save consequence the contextual Studio shows before saving a new version of a reusable content type.</note>
+      </notes>
+      <segment>
+        <source>Other items of this type keep the current version until they are migrated.</source>
+        <target>此类型的其他项在迁移之前保留当前版本。</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_item_adopts_successor">
+      <notes>
+        <note category="context">Save consequence the contextual Studio shows before the edited item moves to a new version of its content type.</note>
+      </notes>
+      <segment>
+        <source>This item adopts the new type version; its values are kept.</source>
+        <target>此项将采用新的类型版本；其值将保留。</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_breaking_schema_change">
+      <notes>
+        <note category="context">Save consequence the contextual Studio shows when a new content-type version removes or narrows fields.</note>
+      </notes>
+      <segment>
+        <source>The new version removes or narrows fields; stored items may need migration.</source>
+        <target>新版本会移除或收窄字段；已存储的项可能需要迁移。</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_new_type_for_new_item">
+      <notes>
+        <note category="context">Save consequence the contextual Studio shows before a not-yet-saved item's design becomes a new reusable content type.</note>
+      </notes>
+      <segment>
+        <source>A new reusable content type is created from this design and this item uses it.</source>
+        <target>将根据此设计创建一个新的可复用内容类型，此项将使用它。</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_new_type_for_item">
+      <notes>
+        <note category="context">Save consequence the contextual Studio shows before a saved item's design becomes a new reusable content type.</note>
+      </notes>
+      <segment>
+        <source>A new reusable content type is created from this design and this item adopts it.</source>
+        <target>将根据此设计创建一个新的可复用内容类型，此项将采用它。</target>
+      </segment>
+    </unit>
     <unit id="core.administrator.content_form.discard_unsaved_studio_changes">
       <notes>
         <note category="context">Confirmation shown when the author leaves Studio with unsaved changes.</note>

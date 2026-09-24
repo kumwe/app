@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for af, carrying 2572 messages.
+ * Compiled interface message catalogue for af, carrying 2580 messages.
  *
  * Generated from af.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1284,7 +1284,14 @@ return [
     'core.administrator.content_form.save_changes_again_to_apply_your' => 'Stoor veranderinge weer om jou inskrywings bo-op weergawe {current_version} toe te pas.',
     'core.administrator.content_form.search_file_names' => 'Soek lêername',
     'core.administrator.content_form.structured_editor_fallback' => 'Gestruktureerde redigeerder-terugvalopsie',
+    'core.administrator.content_form.studio_breaking_schema_change' => 'Die nuwe weergawe verwyder of vernou velde; gestoorde items het dalk migrasie nodig.',
     'core.administrator.content_form.studio_changes_saved' => 'Studio het hierdie item gestoor.',
+    'core.administrator.content_form.studio_dependent_entries_remain' => 'Ander items van hierdie tipe behou die huidige weergawe totdat hulle gemigreer word.',
+    'core.administrator.content_form.studio_item_adopts_successor' => 'Hierdie item neem die nuwe tipeweergawe aan; sy waardes word behou.',
+    'core.administrator.content_form.studio_item_created' => '’n Nuwe inhoudsitem word in sy aanvanklike werkvloeistatus geskep.',
+    'core.administrator.content_form.studio_item_revision_advances' => 'Die item kry ’n nuwe hersiening; sy werkvloeistatus verander nie.',
+    'core.administrator.content_form.studio_new_type_for_item' => '’n Nuwe herbruikbare inhoudtipe word uit hierdie ontwerp geskep en hierdie item neem dit aan.',
+    'core.administrator.content_form.studio_new_type_for_new_item' => '’n Nuwe herbruikbare inhoudtipe word uit hierdie ontwerp geskep en hierdie item gebruik dit.',
     'core.administrator.content_form.studio_page_builder' => 'Studio-bladsybouer',
     'core.administrator.content_form.studio_page_builder_could_not_start' => 'Die Studio-bladsybouer kon nie begin nie; die gestruktureerde vorm bly beskikbaar.',
     'core.administrator.content_form.studio_page_builder_is_loading' => 'Die Studio-bladsybouer laai tans.',
@@ -1299,6 +1306,7 @@ return [
     'core.administrator.content_form.studio_preview_is_stale' => 'Die item het sedert hierdie voorskou verander; voorskou dit weer.',
     'core.administrator.content_form.studio_preview_needs_a_saved_item' => 'Stoor die item voordat jy dit voorskou; die voorskou wys slegs aanvaarde hersienings.',
     'core.administrator.content_form.studio_preview_shows_the_last_saved' => 'Die voorskou vertoon hierdie item se laaste gestoorde samestelling deur dieselfde sjabloon- en temapad wat die gepubliseerde bladsy gebruik.',
+    'core.administrator.content_form.studio_return_destination' => 'die inhoudredigeerder',
     'core.administrator.content_form.the_content_model_refused_these_values' => 'Die inhoudmodel het hierdie waardes geweier. Alles wat jy getik het, is steeds hieronder; regstel die velde wat hier genoem word en stoor weer.',
     'core.administrator.content_form.the_item_could_not_be_saved' => 'Die item kon nie gestoor word nie',
     'core.administrator.content_form.title' => 'Titel',

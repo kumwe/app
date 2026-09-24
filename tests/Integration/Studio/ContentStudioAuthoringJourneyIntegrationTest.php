@@ -5,6 +5,12 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Integration\Studio;
 
 use Doctrine\DBAL\Connection;
+use Throwable;
+use DateTimeImmutable;
+use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringTarget;
+use Kumwe\App\Tests\Support\ManifestSixExtensionFixture;
+use Kumwe\App\Extension\Application\Trust\TrustStore;
+use Kumwe\App\Extension\Application\ExtensionManager;
 use InvalidArgumentException;
 use Kumwe\Access\AuthorizationDenied;
 use Kumwe\App\Content\Application\ContentModelService;
@@ -47,6 +53,8 @@ use Kumwe\Context\Value\AuthenticatedSurface;
 use Kumwe\Context\Value\AuthenticationStrength;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Context\Value\SiteContext;
+use Kumwe\Localization\Application\ActiveLocale;
+use Kumwe\Localization\Domain\LocaleTag;
 use Kumwe\Producer\Canonical\CanonicalJson;
 use Kumwe\Producer\Schema\StudioDocumentSchemaRegistry;
 use Kumwe\Producer\Wire\Dispatcher;
@@ -184,6 +192,36 @@ final class ContentStudioAuthoringJourneyIntegrationTest extends TestCase
         self::assertSame('save-item', $plan->outcome);
         self::assertSame(['entry'], $plan->affectedArtifacts);
         self::assertNotEquals($snapshot->presentation->returnContext, $plan->successorContext);
+        self::assertSame('the content editor', $resolution->returnContext->label->defaultMessage);
+        self::assertSame('the content editor', $plan->successorContext->label->defaultMessage);
+        self::assertSame('kumwe.app/item-created', $plan->consequences[0]->code);
+        self::assertSame(
+            'A new content item is created in its initial workflow state.',
+            $plan->consequences[0]->message->defaultMessage,
+        );
+
+        // The host's own labels and consequences follow the interface locale of the request, so a Hebrew
+        // editor reads them in Hebrew while the plan, its identity and its successor pointer stay the same.
+        $locale = self::service($container, ActiveLocale::class);
+        $locale->begin(LocaleTag::fromString('he'));
+        try {
+            $hebrew = $dispatch('authoring/plan-save', 'intent', (object) [
+                'contractVersion' => '0.1-draft',
+                'kind' => 'authoring-save-intent',
+                'sessionId' => $snapshot->sessionId,
+                'expected' => $snapshot->state->coordinates,
+                'draft' => $draft,
+            ], false);
+        } finally {
+            $locale->end();
+        }
+        self::assertSame($plan->id, $hebrew->id);
+        self::assertSame($plan->successorContext->key, $hebrew->successorContext->key);
+        self::assertSame('עורך התוכן', $hebrew->successorContext->label->defaultMessage);
+        self::assertSame(
+            'פריט תוכן חדש נוצר במצב תהליך העבודה ההתחלתי שלו.',
+            $hebrew->consequences[0]->message->defaultMessage,
+        );
 
         $accepted = [];
         foreach ($plan->consequences as $consequence) {
@@ -291,6 +329,29 @@ final class ContentStudioAuthoringJourneyIntegrationTest extends TestCase
         );
         self::assertSame('validation-failed', $blankItem->refusalCategory);
         self::assertStringContainsString('studio.authoring/outcome-unavailable', $blankItem->body);
+        // A second mount that never started has no recorded start, so nothing can be planned or saved in it.
+        $unstarted = $provider->forMount($context, $targets->create($context), 'integration-csrf');
+        self::assertInstanceOf(StudioHostedDeploymentConfiguration::class, $unstarted);
+        $other = json_decode($unstarted->configurationJson, false, 32, JSON_THROW_ON_ERROR);
+        self::assertInstanceOf(stdClass::class, $other);
+        $unplanned = self::respond(
+            $hosts,
+            $context,
+            $other->session->resourceContext->key,
+            $other->session->sessionGeneration,
+            'authoring/plan-save',
+            'intent',
+            (object) [
+                'contractVersion' => '0.1-draft',
+                'kind' => 'authoring-save-intent',
+                'sessionId' => $other->session->sessionId,
+                'expected' => $snapshot->state->coordinates,
+                'draft' => (object) ['outcome' => 'save-item', 'entry' => self::clone($snapshot->state->entry)],
+            ],
+            false,
+        );
+        self::assertSame('conflict', $unplanned->refusalCategory, $unplanned->body);
+        self::assertStringContainsString('studio.authoring/start-required', $unplanned->body);
         // The session started blank and cannot be restarted from another source.
         $restart = self::respond(
             $hosts,
@@ -414,10 +475,29 @@ final class ContentStudioAuthoringJourneyIntegrationTest extends TestCase
 
         $model = self::clone($saved->session->state->model);
         $model->fields[] = self::dataField('teaser', 'Teaser');
+        // The successor composes a section holding one field block; its stored lock names exactly those two.
+        $layout = self::clone($saved->session->state->blueprint);
+        $layout->roots = [(object) [
+            'id' => 'nodes/journey-section',
+            'type' => 'studio.core/section',
+            'version' => '1.0.0',
+            'properties' => new stdClass(),
+            'bindings' => new stdClass(),
+            'slots' => (object) ['content' => [(object) [
+                'id' => 'nodes/journey-teaser',
+                'type' => 'core/field-text',
+                'version' => '1.0.0',
+                'properties' => new stdClass(),
+                'bindings' => new stdClass(),
+                'slots' => new stdClass(),
+                'authoring' => (object) ['mode' => 'content'],
+            ]]],
+            'authoring' => (object) ['mode' => 'structural'],
+        ]];
         $versionDraft = (object) [
             'outcome' => 'save-new-type-version',
             'model' => $model,
-            'blueprint' => self::clone($saved->session->state->blueprint),
+            'blueprint' => $layout,
         ];
         $versionPlan = $dispatch('authoring/plan-save', 'intent', (object) [
             'contractVersion' => '0.1-draft',
@@ -452,6 +532,13 @@ final class ContentStudioAuthoringJourneyIntegrationTest extends TestCase
         self::assertEquals($versionPlan->successorContext, $versioned->session->presentation->returnContext);
         $successor = $models->contentType($context, $definitionId, 2);
         self::assertArrayHasKey('teaser', $successor->schema()['properties'] ?? []);
+        self::assertSame(
+            ['core/field-text', 'studio.core/section'],
+            array_map(
+                static fn (stdClass $lock): string => $lock->type,
+                $versioned->session->state->blueprint->dependencyLock->blocks,
+            ),
+        );
 
         // The stored item follows the type to its successor version; nothing the author wrote changed.
         $adopted = $content->get($context, $entryId);
@@ -1245,6 +1332,13 @@ final class ContentStudioAuthoringJourneyIntegrationTest extends TestCase
             'source' => $deployment->launch->start,
             'presentation' => 'inline',
         ], true);
+        // Before its first save, a session started from a reusable type previews that type with no values.
+        $unsaved = $bindings->resolve(
+            $context,
+            $authority->resolve($context, $key),
+            new StudioPreviewDraft($host->siteId, $snapshot->state->blueprint),
+        );
+        self::assertSame([], get_object_vars($unsaved->entry()));
         $entry = self::clone($snapshot->state->entry);
         $entry->values->title = 'Preview journey page';
         $entry->values->slug = 'studio-preview-journey-' . bin2hex(random_bytes(4));
@@ -1354,6 +1448,170 @@ final class ContentStudioAuthoringJourneyIntegrationTest extends TestCase
         $moved = $bindings->resolve($context, $resolved, new StudioPreviewDraft($host->siteId, $blueprint));
         self::assertSame('Preview journey page, moved on', $moved->entry()->title ?? null);
         self::assertSame('Saved by another writer after the session opened.', $moved->entry()->data_body ?? null);
+        // A read on the session follows the item to that revision as well, rather than refusing it.
+        $reopened = $dispatch('authoring/resolve-target', 'request', (object) [
+            'targetId' => $deployment->launch->targetId,
+            'intent' => 'edit',
+            'resourceContext' => $saved->session->resourceContext,
+            'requestedPresentation' => 'inline',
+        ], false);
+        self::assertSame(['existing'], $reopened->availableStarts);
+    }
+
+    /**
+     * An admitted extension block is authored in the contextual session, withdrawn when its extension is
+     * disabled, and restored when the extension returns at an upgraded runtime version.
+     *
+     * The contextual catalogue offers only blocks a live, trusted renderer can render: while the signed
+     * manifest-six package is active its grid is a declared contribution dependency and a reusable type may
+     * compose it; once the package is disabled the grid leaves the catalogue, the item whose type composes it
+     * still opens with the unresolved grid preserved and its values still save, and a type save that could no
+     * longer lock the grid is refused; after an upgrade that keeps the block's exact coordinates the item starts
+     * again with the grid in place.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAnExtensionBlockIsAuthoredWithdrawnAndRestoredInTheContextualSession(): void
+    {
+        $environment = Environment::fromGlobals();
+        $container = TestKernelFactory::create($environment);
+        $manager = self::service($container, ExtensionManager::class);
+        $trust = self::service($container, TrustStore::class);
+        $owner = TestKernelFactory::administratorContext($container);
+        $marker = bin2hex(random_bytes(5));
+        $identifier = 'integration/studio-contextual-' . $marker;
+        $grid = str_replace('/', '.', $identifier) . '/grid';
+        $keyId = 'integration.studio-contextual.' . $marker;
+        $keyPair = sodium_crypto_sign_keypair();
+        $secretKey = sodium_crypto_sign_secretkey($keyPair);
+        $archives = [];
+        $installed = false;
+
+        try {
+            $trust->add(
+                $owner,
+                $keyId,
+                base64_encode(sodium_crypto_sign_publickey($keyPair)),
+                'integration',
+                '*',
+                new DateTimeImmutable('+1 year'),
+            );
+            $archives[] = $base = ManifestSixExtensionFixture::package($identifier, '1.0.0');
+            $manager->install($base, $owner, $keyId, ManifestSixExtensionFixture::signature($base, $secretKey));
+            $installed = true;
+            $manager->activate($identifier, $owner);
+            $trust->synchronizeRuntimeMaterialization();
+
+            // Active: the grid is a declared dependency, and a new reusable type composes it.
+            $active = TestKernelFactory::create($environment);
+            self::assertContains($grid, self::catalogBlocks($active));
+            $context = self::administratorContext($active);
+            $targets = self::service($active, ContentStudioAuthoringTargetResolver::class);
+            [$snapshot, $dispatch] = self::started($active, $context, $targets->create($context), 'blank');
+            $blueprint = self::clone($snapshot->state->blueprint);
+            $blueprint->roots = [(object) [
+                'id' => 'nodes/contributed-grid',
+                'type' => $grid,
+                'version' => '1.0.0',
+                'properties' => (object) ['columns' => 2, 'collapse' => 'stack'],
+                'bindings' => new stdClass(),
+                'slots' => (object) ['items' => []],
+                'authoring' => (object) ['mode' => 'structural'],
+            ]];
+            $typeDraft = (object) [
+                'outcome' => 'save-as-new-type',
+                'label' => (object) ['key' => 'kumwe.app/journey-type', 'defaultMessage' => 'Grid type ' . $marker],
+                'authoringPolicy' => (object) [
+                    'modes' => ['model', 'blueprint', 'content'],
+                    'itemComposition' => 'denied',
+                ],
+                'model' => self::clone($snapshot->state->model),
+                'blueprint' => $blueprint,
+            ];
+            $typed = self::saved($dispatch, $snapshot->sessionId, $snapshot->state->coordinates, $typeDraft);
+            self::assertSame([$grid], self::lockTypes($typed->session->state->blueprint));
+            $item = self::clone($typed->session->state->entry);
+            $item->values->title = 'Contributed grid item';
+            $item->values->slug = 'contributed-grid-' . $marker;
+            $itemDraft = (object) ['outcome' => 'save-item', 'entry' => $item];
+            $saved = self::saved($dispatch, $snapshot->sessionId, $typed->session->state->coordinates, $itemDraft);
+            $returnPath = $saved->session->extensions->{'kumwe.app/return'}->path;
+            $entryId = substr($returnPath, strlen('/administrator/content/'), 36);
+
+            // Disabled: the grid leaves the catalogue. The item still opens with the unresolved grid preserved in
+            // its layout and lock, its values still save, and no type save may store a layout its lock no
+            // longer covers.
+            $manager->disable($identifier, $owner);
+            $trust->synchronizeRuntimeMaterialization();
+            $withdrawn = TestKernelFactory::create($environment);
+            self::assertNotContains($grid, self::catalogBlocks($withdrawn));
+            $context = self::administratorContext($withdrawn);
+            $target = self::editTarget($withdrawn, $context, $entryId);
+            [$held, $heldDispatch] = self::started($withdrawn, $context, $target, 'existing');
+            self::assertSame([$grid], self::rootTypes($held->state->blueprint));
+            self::assertSame([$grid], self::lockTypes($held->state->blueprint));
+            $values = self::clone($held->state->entry);
+            $values->values->title = 'Edited while the grid was withdrawn';
+            $kept = self::saved(
+                $heldDispatch,
+                $held->sessionId,
+                $held->state->coordinates,
+                (object) ['outcome' => 'save-item', 'entry' => $values],
+            );
+            self::assertSame([$grid], self::rootTypes($kept->session->state->blueprint));
+            $refused = self::refusedSave(
+                $withdrawn,
+                $context,
+                $held,
+                $kept,
+                (object) [
+                    'outcome' => 'save-new-type-version',
+                    'model' => self::clone($kept->session->state->model),
+                    'blueprint' => self::clone($kept->session->state->blueprint),
+                ],
+            );
+            self::assertSame('validation-failed', $refused->refusalCategory, $refused->body);
+            self::assertStringContainsString('studio.authoring/unlocked-block', $refused->body);
+
+            // Upgraded and active again: the same exact grid coordinates return and the item starts with it.
+            $archives[] = $upgrade = ManifestSixExtensionFixture::package($identifier, '1.1.0');
+            $upgraded = $manager->install(
+                $upgrade,
+                $owner,
+                $keyId,
+                ManifestSixExtensionFixture::signature($upgrade, $secretKey),
+            );
+            self::assertSame('1.1.0', $upgraded['installed_version'] ?? null);
+            if (($upgraded['status'] ?? null) !== 'active') {
+                $manager->activate($identifier, $owner);
+            }
+            $trust->synchronizeRuntimeMaterialization();
+            $restored = TestKernelFactory::create($environment);
+            self::assertContains($grid, self::catalogBlocks($restored));
+            $context = self::administratorContext($restored);
+            $target = self::editTarget($restored, $context, $entryId);
+            [$reopened] = self::started($restored, $context, $target, 'existing');
+            self::assertSame([$grid], self::rootTypes($reopened->state->blueprint));
+            self::assertSame('Edited while the grid was withdrawn', $reopened->state->entry->values->title);
+        } finally {
+            if ($installed) {
+                try {
+                    $manager->disable($identifier, $owner);
+                } catch (Throwable) {
+                }
+                try {
+                    $manager->uninstall($identifier, $owner);
+                } catch (Throwable) {
+                }
+            }
+            foreach ($archives as $archive) {
+                if (is_file($archive)) {
+                    unlink($archive);
+                }
+            }
+        }
     }
 
     /**
@@ -1682,6 +1940,209 @@ final class ContentStudioAuthoringJourneyIntegrationTest extends TestCase
             $route,
             json_encode($envelope, JSON_THROW_ON_ERROR),
         );
+    }
+
+    /**
+     * The block types the contextual catalogue of one booted runtime offers.
+     *
+     * @param   Container  $container  Booted runtime container.
+     *
+     * @return  list<string>  Locked block types.
+     *
+     * @since   2.0.0
+     */
+    private static function catalogBlocks(Container $container): array
+    {
+        return array_map(
+            static fn (stdClass $lock): string => (string) $lock->type,
+            self::service($container, ContentStudioAuthoringCatalog::class)->blockLocks(),
+        );
+    }
+
+    /**
+     * Mount one contextual target, resolve it and start it from one source kind.
+     *
+     * @param   Container                     $container  Booted runtime container.
+     * @param   ExecutionContext              $context    Administrator context.
+     * @param   ContentStudioAuthoringTarget  $target     Exact create or edit target.
+     * @param   string                        $kind       `blank` or `existing`.
+     *
+     * @return  array{0: stdClass, 1: callable(string, string, stdClass, bool): stdClass}  Started snapshot and
+     *          the session's dispatcher.
+     *
+     * @since   2.0.0
+     */
+    private static function started(
+        Container $container,
+        ExecutionContext $context,
+        ContentStudioAuthoringTarget $target,
+        string $kind,
+    ): array {
+        $configuration = self::service($container, StudioContextualAuthoringConfigurationProvider::class)
+            ->forMount($context, $target, 'integration-csrf');
+        self::assertInstanceOf(StudioHostedDeploymentConfiguration::class, $configuration);
+        $deployment = json_decode($configuration->configurationJson, false, 32, JSON_THROW_ON_ERROR);
+        self::assertInstanceOf(stdClass::class, $deployment);
+        $resourceContext = $deployment->session->resourceContext;
+        $dispatch = self::dispatcher(
+            self::service($container, StudioProducerHostFactory::class),
+            $context,
+            $resourceContext->key,
+            $deployment->session->sessionGeneration,
+        );
+        $dispatch('authoring/resolve-target', 'request', (object) [
+            'targetId' => $deployment->launch->targetId,
+            'intent' => $deployment->launch->intent,
+            'resourceContext' => $resourceContext,
+            'requestedPresentation' => 'inline',
+        ], false);
+        $snapshot = $dispatch('authoring/start', 'request', (object) [
+            'targetId' => $deployment->launch->targetId,
+            'resourceContext' => $resourceContext,
+            'source' => (object) ['kind' => $kind],
+            'presentation' => 'inline',
+        ], true);
+
+        return [$snapshot, $dispatch];
+    }
+
+    /**
+     * Plan one save and commit it, accepting every consequence the plan lists.
+     *
+     * @param   callable(string, string, stdClass, bool): stdClass  $dispatch   Session dispatcher.
+     * @param   string                                               $sessionId  Started session.
+     * @param   stdClass                                             $expected   Expected coordinates.
+     * @param   stdClass                                             $draft      Save draft.
+     *
+     * @return  stdClass  Accepted save result.
+     *
+     * @since   2.0.0
+     */
+    private static function saved(callable $dispatch, string $sessionId, stdClass $expected, stdClass $draft): stdClass
+    {
+        $plan = $dispatch('authoring/plan-save', 'intent', (object) [
+            'contractVersion' => '0.1-draft',
+            'kind' => 'authoring-save-intent',
+            'sessionId' => $sessionId,
+            'expected' => $expected,
+            'draft' => $draft,
+        ], false);
+        $outcome = $draft->outcome;
+        self::assertIsString($outcome);
+
+        return $dispatch('authoring/' . $outcome, 'request', (object) [
+            'contractVersion' => '0.1-draft',
+            'kind' => 'authoring-' . $outcome . '-request',
+            'plan' => (object) [
+                'id' => $plan->id,
+                'revision' => $plan->revision,
+                'successorContext' => $plan->successorContext,
+            ],
+            'acceptedConsequences' => self::codes($plan),
+            'draft' => $draft,
+        ], true);
+    }
+
+    /**
+     * The exact edit target of one stored Content item.
+     *
+     * @param   Container         $container  Booted runtime container.
+     * @param   ExecutionContext  $context    Administrator context.
+     * @param   string            $entryId    Stored Content item.
+     *
+     * @return  ContentStudioAuthoringTarget  Edit target for the item's exact type version.
+     *
+     * @since   2.0.0
+     */
+    private static function editTarget(
+        Container $container,
+        ExecutionContext $context,
+        string $entryId,
+    ): ContentStudioAuthoringTarget {
+        $record = self::service($container, ContentService::class)->get($context, $entryId);
+        $definition = self::service($container, ContentModelService::class)
+            ->contentType($context, $record->contentTypeId, $record->contentTypeVersion);
+
+        return self::service($container, ContentStudioAuthoringTargetResolver::class)
+            ->edit($context, $record, $definition);
+    }
+
+    /**
+     * The block types of a Blueprint's root nodes, in order.
+     *
+     * @param   stdClass  $blueprint  Blueprint document.
+     *
+     * @return  list<string>  Root node types.
+     *
+     * @since   2.0.0
+     */
+    private static function rootTypes(stdClass $blueprint): array
+    {
+        return array_map(static fn (stdClass $node): string => (string) $node->type, $blueprint->roots);
+    }
+
+    /**
+     * The block types a Blueprint's dependency lock names, in order.
+     *
+     * @param   stdClass  $blueprint  Blueprint document.
+     *
+     * @return  list<string>  Locked block types.
+     *
+     * @since   2.0.0
+     */
+    private static function lockTypes(stdClass $blueprint): array
+    {
+        return array_map(
+            static fn (stdClass $lock): string => (string) $lock->type,
+            $blueprint->dependencyLock->blocks,
+        );
+    }
+
+    /**
+     * Plan one type save in a started session and answer the refused commit as a wire response.
+     *
+     * @param   Container         $container  Booted runtime container.
+     * @param   ExecutionContext  $context    Administrator context.
+     * @param   stdClass          $started    Started session snapshot.
+     * @param   stdClass          $current    Latest accepted save result of that session.
+     * @param   stdClass          $draft      Type save draft.
+     *
+     * @return  Response  The commit response, refused or not.
+     *
+     * @since   2.0.0
+     */
+    private static function refusedSave(
+        Container $container,
+        ExecutionContext $context,
+        stdClass $started,
+        stdClass $current,
+        stdClass $draft,
+    ): Response {
+        $hosts = self::service($container, StudioProducerHostFactory::class);
+        $key = $started->resourceContext->key;
+        $generation = $started->sessionGeneration;
+        $dispatch = self::dispatcher($hosts, $context, $key, $generation);
+        $plan = $dispatch('authoring/plan-save', 'intent', (object) [
+            'contractVersion' => '0.1-draft',
+            'kind' => 'authoring-save-intent',
+            'sessionId' => $started->sessionId,
+            'expected' => $current->session->state->coordinates,
+            'draft' => $draft,
+        ], false);
+        $outcome = $draft->outcome;
+        self::assertIsString($outcome);
+
+        return self::respond($hosts, $context, $key, $generation, 'authoring/' . $outcome, 'request', (object) [
+            'contractVersion' => '0.1-draft',
+            'kind' => 'authoring-' . $outcome . '-request',
+            'plan' => (object) [
+                'id' => $plan->id,
+                'revision' => $plan->revision,
+                'successorContext' => $plan->successorContext,
+            ],
+            'acceptedConsequences' => self::codes($plan),
+            'draft' => $draft,
+        ], true);
     }
 
     /**

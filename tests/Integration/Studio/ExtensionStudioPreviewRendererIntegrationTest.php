@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Integration\Studio;
 
 use DateTimeImmutable;
-use FilesystemIterator;
 use Kumwe\App\Administrator\Http\Handler\AdministratorExtensionsHandler;
 use Kumwe\App\Identity\Application\Administration\AdministratorSession;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
@@ -17,8 +16,6 @@ use Kumwe\App\Extension\Contribution\CanonicalManifestActivator;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\Extension\Contribution\OwnedExtensionBindingRegistrar;
 use Kumwe\App\Extension\Contribution\StudioPreviewRendererContribution;
-use Kumwe\Extension\Package\PackageChecksum;
-use Kumwe\Extension\Package\PackageSignatureMessage;
 use Kumwe\App\Extension\Infrastructure\DoctrineExtensionManager;
 use Kumwe\App\Extension\Infrastructure\Trust\DoctrineTrustStoreRepository;
 use Kumwe\App\Infrastructure\Persistence\DoctrineConnectionFactory;
@@ -33,6 +30,7 @@ use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringCatalog;
 use Kumwe\App\Studio\Application\Rendering\FragmentStudioPreviewBlockRenderer;
 use Kumwe\App\Studio\Application\Rendering\StudioBlockRendererRuntime;
+use Kumwe\App\Tests\Support\ManifestSixExtensionFixture;
 use Kumwe\App\Tests\Support\TestKernelFactory;
 use Laminas\Diactoros\ServerRequestFactory;
 use Doctrine\DBAL\Connection;
@@ -48,13 +46,9 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
 use RuntimeException;
-use SplFileInfo;
 use stdClass;
 use Throwable;
-use ZipArchive;
 use Kumwe\App\Application\Authorization\ExecutionContextAttribute;
 use Kumwe\Context\Value\ExecutionContext;
 
@@ -115,8 +109,8 @@ final class ExtensionStudioPreviewRendererIntegrationTest extends TestCase
                 '*',
                 new DateTimeImmutable('+1 year'),
             );
-            $archives[] = $baseArchive = $this->fixturePackage($identifier, '1.0.0', false);
-            $manager->install($baseArchive, $context, $keyId, self::signature($baseArchive, $secretKey));
+            $archives[] = $baseArchive = ManifestSixExtensionFixture::package($identifier, '1.0.0', false);
+            $manager->install($baseArchive, $context, $keyId, ManifestSixExtensionFixture::signature($baseArchive, $secretKey));
             $installed[] = $identifier;
             $manager->activate($identifier, $context);
             $trust->synchronizeRuntimeMaterialization();
@@ -197,12 +191,12 @@ final class ExtensionStudioPreviewRendererIntegrationTest extends TestCase
             $wrongVersion = self::document($namespace, '2.0.0', 'grid-block-r1');
             self::assertRenderRefused($blocks, $wrongVersion);
 
-            $archives[] = $upgradeArchive = $this->fixturePackage($identifier, '1.1.0', false);
+            $archives[] = $upgradeArchive = ManifestSixExtensionFixture::package($identifier, '1.1.0', false);
             $upgraded = $manager->install(
                 $upgradeArchive,
                 $context,
                 $keyId,
-                self::signature($upgradeArchive, $secretKey),
+                ManifestSixExtensionFixture::signature($upgradeArchive, $secretKey),
             );
             self::assertSame('1.1.0', $upgraded['installed_version'] ?? null);
             self::assertFalse($blocks->registry()->supports($exactCoordinate));
@@ -228,8 +222,13 @@ final class ExtensionStudioPreviewRendererIntegrationTest extends TestCase
             self::assertFalse($upgradedBlocks->registry()->supports($exactCoordinate));
             self::assertRenderRefused($upgradedBlocks, $exact);
 
-            $archives[] = $missingArchive = $this->fixturePackage($missingIdentifier, '1.0.0', true);
-            $manager->install($missingArchive, $context, $keyId, self::signature($missingArchive, $secretKey));
+            $archives[] = $missingArchive = ManifestSixExtensionFixture::package($missingIdentifier, '1.0.0', true);
+            $manager->install(
+                $missingArchive,
+                $context,
+                $keyId,
+                ManifestSixExtensionFixture::signature($missingArchive, $secretKey),
+            );
             $installed[] = $missingIdentifier;
             $manager->activate($missingIdentifier, $context);
             $trust->synchronizeRuntimeMaterialization();
@@ -297,12 +296,12 @@ final class ExtensionStudioPreviewRendererIntegrationTest extends TestCase
                 '*',
                 new DateTimeImmutable('+1 year'),
             );
-            $archives[] = $archive = $this->fixturePackage($identifier, '1.0.0', false);
+            $archives[] = $archive = ManifestSixExtensionFixture::package($identifier, '1.0.0', false);
             $manager->install(
                 $archive,
                 $context,
                 $keyId,
-                self::signature($archive, sodium_crypto_sign_secretkey($keyPair)),
+                ManifestSixExtensionFixture::signature($archive, sodium_crypto_sign_secretkey($keyPair)),
             );
             $installed[] = $identifier;
             $manager->activate($identifier, $context);
@@ -409,12 +408,12 @@ final class ExtensionStudioPreviewRendererIntegrationTest extends TestCase
                     new DateTimeImmutable('+1 year'),
                 );
             }
-            $archives[] = $archive = $this->fixturePackage($revokedIdentifier, '1.0.0', false);
+            $archives[] = $archive = ManifestSixExtensionFixture::package($revokedIdentifier, '1.0.0', false);
             $manager->install(
                 $archive,
                 $context,
                 $revokedKey,
-                self::signature($archive, sodium_crypto_sign_secretkey($revokedPair)),
+                ManifestSixExtensionFixture::signature($archive, sodium_crypto_sign_secretkey($revokedPair)),
             );
             $installed[] = $revokedIdentifier;
             $manager->activate($revokedIdentifier, $context);
@@ -452,12 +451,12 @@ final class ExtensionStudioPreviewRendererIntegrationTest extends TestCase
                 );
             });
 
-            $archives[] = $archive = $this->fixturePackage($expiredIdentifier, '1.0.0', false);
+            $archives[] = $archive = ManifestSixExtensionFixture::package($expiredIdentifier, '1.0.0', false);
             $manager->install(
                 $archive,
                 $context,
                 $expiredKey,
-                self::signature($archive, sodium_crypto_sign_secretkey($expiredPair)),
+                ManifestSixExtensionFixture::signature($archive, sodium_crypto_sign_secretkey($expiredPair)),
             );
             $installed[] = $expiredIdentifier;
             $manager->activate($expiredIdentifier, $context);
@@ -502,135 +501,6 @@ final class ExtensionStudioPreviewRendererIntegrationTest extends TestCase
         } finally {
             self::remove($manager, $context, $installed, $archives);
         }
-    }
-
-    /**
-     * Build a unique package from the committed manifest-six compatibility fixture.
-     *
-     * @param   string  $identifier      Per-test extension identifier.
-     * @param   string  $version         Exact package runtime version.
-     * @param   bool    $missingService  Whether the bound service deliberately resolves outside the
-     *          SDK renderer contract.
-     *
-     * @return  string  Absolute archive path.
-     *
-     * @throws  RuntimeException  When the fixture cannot be packaged.
-     *
-     * @since   2.0.0
-     */
-    private function fixturePackage(string $identifier, string $version, bool $missingService): string
-    {
-        $archive = tempnam(sys_get_temp_dir(), 'kumwe-studio-preview-extension-');
-        if (!is_string($archive)) {
-            throw new RuntimeException('The Studio preview fixture archive cannot be allocated.');
-        }
-        $zip = new ZipArchive();
-        if ($zip->open($archive, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-            throw new RuntimeException('The Studio preview fixture archive cannot be opened.');
-        }
-        $root = dirname(__DIR__, 3)
-            . '/vendor/kumwe/extension-sdk/resources/fixtures/generations/manifest-6';
-        $dotted = str_replace('/', '.', $identifier);
-        $phpNamespace = 'IntegrationStudioPreview\\R' . substr(hash('sha256', $identifier), 0, 12);
-        $jsonNamespace = str_replace('\\', '\\\\', $phpNamespace);
-        $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS),
-        );
-        try {
-            foreach ($iterator as $file) {
-                if (!$file instanceof SplFileInfo || !$file->isFile()) {
-                    continue;
-                }
-                $contents = file_get_contents($file->getPathname());
-                if (!is_string($contents)) {
-                    throw new RuntimeException('A Studio preview fixture file cannot be read.');
-                }
-                $relative = substr($file->getPathname(), strlen($root) + 1);
-                if ($relative === 'src/Definitions.php') {
-                    // Canonical constants are source-wrapped across adjacent literals. Join them before
-                    // re-owning so a namespace split at a line boundary cannot survive inside signed bytes.
-                    $joined = preg_replace("/'\\s*\\.\\s*'/", '', $contents);
-                    if (!is_string($joined)) {
-                        throw new RuntimeException('The Studio preview fixture definitions cannot be joined.');
-                    }
-                    $contents = $joined;
-                }
-                $contents = str_replace(
-                    [
-                        'KumweContract\\\\ManifestSix',
-                        'KumweContract\\ManifestSix',
-                        'kumwe/contract-manifest-six',
-                        'kumwe.contract-manifest-six',
-                    ],
-                    [$jsonNamespace, $phpNamespace, $identifier, $dotted],
-                    $contents,
-                );
-                if ($relative === 'src/Definitions.php') {
-                    self::assertStringNotContainsString('kumwe.contract-manifest-six', $contents);
-                    self::assertStringNotContainsString('kumwe/contract-manifest-six', $contents);
-                }
-                if ($relative === 'kumwe.json') {
-                    $manifest = json_decode($contents, true, 64, JSON_THROW_ON_ERROR);
-                    if (!is_array($manifest)) {
-                        throw new RuntimeException('The Studio preview fixture manifest is invalid.');
-                    }
-                    $manifest['version'] = $version;
-                    $requirements = $manifest['requires'] ?? null;
-                    if (!is_array($requirements)) {
-                        throw new RuntimeException('The Studio preview fixture requirements are invalid.');
-                    }
-                    $requirements['php'] = '^8.3.0';
-                    $manifest['requires'] = $requirements;
-                    $encoded = json_encode(
-                        $manifest,
-                        JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR,
-                    );
-                    $contents = $encoded . "\n";
-                }
-                if ($missingService && $relative === 'src/Provider.php') {
-                    $contents = str_replace(
-                        ': GridPreviewRenderer => new GridPreviewRenderer(),',
-                        ': object => new \stdClass(),',
-                        $contents,
-                    );
-                }
-                if (!$zip->addFromString($relative, $contents)) {
-                    throw new RuntimeException('A Studio preview fixture file cannot be packaged.');
-                }
-            }
-        } finally {
-            $zip->close();
-        }
-
-        return $archive;
-    }
-
-    /**
-     * Sign one archive checksum with the fixture's private key.
-     *
-     * @param   string  $archive    Absolute package archive path.
-     * @param   string  $secretKey  Sodium Ed25519 secret key bytes.
-     *
-     * @return  string  Base64 detached signature.
-     *
-     * @throws  RuntimeException  When the archive cannot be read.
-     *
-     * @since   2.0.0
-     */
-    private static function signature(string $archive, string $secretKey): string
-    {
-        if ($secretKey === '') {
-            throw new RuntimeException('The Studio preview fixture signing key is unavailable.');
-        }
-        $bytes = file_get_contents($archive);
-        if (!is_string($bytes)) {
-            throw new RuntimeException('The Studio preview fixture archive cannot be signed.');
-        }
-
-        return base64_encode(sodium_crypto_sign_detached(
-            PackageSignatureMessage::forChecksum(PackageChecksum::calculate($bytes)),
-            $secretKey,
-        ));
     }
 
     /**

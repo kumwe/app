@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for ar, carrying 2572 messages.
+ * Compiled interface message catalogue for ar, carrying 2580 messages.
  *
  * Generated from ar.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1284,7 +1284,14 @@ return [
     'core.administrator.content_form.save_changes_again_to_apply_your' => 'احفظ التغييرات مرة أخرى لتطبيق إدخالاتك فوق الإصدار {current_version}.',
     'core.administrator.content_form.search_file_names' => 'البحث في أسماء الملفات',
     'core.administrator.content_form.structured_editor_fallback' => 'المحرر المهيكل الاحتياطي',
+    'core.administrator.content_form.studio_breaking_schema_change' => 'يزيل الإصدار الجديد حقولًا أو يضيّقها؛ وقد تحتاج العناصر المخزنة إلى ترحيل.',
     'core.administrator.content_form.studio_changes_saved' => 'حفظ Studio هذا العنصر.',
+    'core.administrator.content_form.studio_dependent_entries_remain' => 'تحتفظ العناصر الأخرى من هذا النوع بالإصدار الحالي حتى يتم ترحيلها.',
+    'core.administrator.content_form.studio_item_adopts_successor' => 'يعتمد هذا العنصر إصدار النوع الجديد؛ وتُحفظ قيمه.',
+    'core.administrator.content_form.studio_item_created' => 'يُنشأ عنصر محتوى جديد في حالة سير العمل الأولية الخاصة به.',
+    'core.administrator.content_form.studio_item_revision_advances' => 'يحصل العنصر على مراجعة جديدة؛ ولا تتغير حالة سير العمل الخاصة به.',
+    'core.administrator.content_form.studio_new_type_for_item' => 'يُنشأ نوع محتوى جديد قابل لإعادة الاستخدام من هذا التصميم ويعتمده هذا العنصر.',
+    'core.administrator.content_form.studio_new_type_for_new_item' => 'يُنشأ نوع محتوى جديد قابل لإعادة الاستخدام من هذا التصميم ويستخدمه هذا العنصر.',
     'core.administrator.content_form.studio_page_builder' => 'منشئ صفحات Studio',
     'core.administrator.content_form.studio_page_builder_could_not_start' => 'تعذّر بدء تشغيل منشئ صفحات Studio؛ يبقى النموذج المهيكل متاحًا.',
     'core.administrator.content_form.studio_page_builder_is_loading' => 'يتم تحميل منشئ صفحات Studio.',
@@ -1299,6 +1306,7 @@ return [
     'core.administrator.content_form.studio_preview_is_stale' => 'تغيّر العنصر منذ هذه المعاينة؛ عاينه مرة أخرى.',
     'core.administrator.content_form.studio_preview_needs_a_saved_item' => 'احفظ العنصر قبل معاينته؛ لا تعرض المعاينة إلا المراجعات المقبولة.',
     'core.administrator.content_form.studio_preview_shows_the_last_saved' => 'تعرض المعاينة آخر تأليف محفوظ لهذا العنصر عبر مسار القالب والسمة نفسه الذي تستخدمه الصفحة المنشورة.',
+    'core.administrator.content_form.studio_return_destination' => 'محرر المحتوى',
     'core.administrator.content_form.the_content_model_refused_these_values' => 'رفض نموذج المحتوى هذه القيم. كل ما كتبته لا يزال أدناه؛ صحّح الحقول المذكورة هنا واحفظ مرة أخرى.',
     'core.administrator.content_form.the_item_could_not_be_saved' => 'تعذّر حفظ العنصر',
     'core.administrator.content_form.title' => 'العنوان',

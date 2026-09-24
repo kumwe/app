@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for zh-Hans, carrying 2572 messages.
+ * Compiled interface message catalogue for zh-Hans, carrying 2580 messages.
  *
  * Generated from zh-Hans.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1284,7 +1284,14 @@ return [
     'core.administrator.content_form.save_changes_again_to_apply_your' => '再次保存更改，将您的输入应用到版本 {current_version} 之上。',
     'core.administrator.content_form.search_file_names' => '搜索文件名',
     'core.administrator.content_form.structured_editor_fallback' => '结构化编辑器（备用）',
+    'core.administrator.content_form.studio_breaking_schema_change' => '新版本会移除或收窄字段；已存储的项可能需要迁移。',
     'core.administrator.content_form.studio_changes_saved' => 'Studio 已保存此项内容。',
+    'core.administrator.content_form.studio_dependent_entries_remain' => '此类型的其他项在迁移之前保留当前版本。',
+    'core.administrator.content_form.studio_item_adopts_successor' => '此项将采用新的类型版本；其值将保留。',
+    'core.administrator.content_form.studio_item_created' => '将以初始工作流状态创建一个新的内容项。',
+    'core.administrator.content_form.studio_item_revision_advances' => '该项将获得新的修订版本；其工作流状态不变。',
+    'core.administrator.content_form.studio_new_type_for_item' => '将根据此设计创建一个新的可复用内容类型，此项将采用它。',
+    'core.administrator.content_form.studio_new_type_for_new_item' => '将根据此设计创建一个新的可复用内容类型，此项将使用它。',
     'core.administrator.content_form.studio_page_builder' => 'Studio 页面构建器',
     'core.administrator.content_form.studio_page_builder_could_not_start' => 'Studio 页面构建器未能启动；结构化表单仍然可用。',
     'core.administrator.content_form.studio_page_builder_is_loading' => 'Studio 页面构建器正在加载。',
@@ -1299,6 +1306,7 @@ return [
     'core.administrator.content_form.studio_preview_is_stale' => '自此次预览以来此项内容已更改；请重新预览。',
     'core.administrator.content_form.studio_preview_needs_a_saved_item' => '预览前请先保存此项内容；预览仅显示已接受的修订版本。',
     'core.administrator.content_form.studio_preview_shows_the_last_saved' => '预览通过与已发布页面相同的模板和主题路径渲染此项内容最近保存的编排。',
+    'core.administrator.content_form.studio_return_destination' => '内容编辑器',
     'core.administrator.content_form.the_content_model_refused_these_values' => '内容模型拒绝了这些值。您输入的所有内容仍保留在下方；请更正此处列出的字段后重新保存。',
     'core.administrator.content_form.the_item_could_not_be_saved' => '该条目无法保存',
     'core.administrator.content_form.title' => '标题',

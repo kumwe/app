@@ -2178,6 +2178,7 @@ final class ContainerFactory
             self::service($container, StudioPublishedTheme::class),
             self::service($container, StudioDocumentSchemaRegistry::class),
             self::service($container, ContentStudioAuthoringCatalog::class),
+            self::service($container, Translator::class),
         ), true);
         $container->share(StudioAuthoringHostPort::class, static fn (
             Container $container,

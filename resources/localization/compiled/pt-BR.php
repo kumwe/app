@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for pt-BR, carrying 2572 messages.
+ * Compiled interface message catalogue for pt-BR, carrying 2580 messages.
  *
  * Generated from pt-BR.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1284,7 +1284,14 @@ return [
     'core.administrator.content_form.save_changes_again_to_apply_your' => 'Salve as alterações novamente para aplicar suas entradas sobre a versão {current_version}.',
     'core.administrator.content_form.search_file_names' => 'Pesquisar nomes de arquivo',
     'core.administrator.content_form.structured_editor_fallback' => 'Editor estruturado alternativo',
+    'core.administrator.content_form.studio_breaking_schema_change' => 'A nova versão remove ou restringe campos; os itens armazenados podem precisar de migração.',
     'core.administrator.content_form.studio_changes_saved' => 'O Studio salvou este item.',
+    'core.administrator.content_form.studio_dependent_entries_remain' => 'Os outros itens deste tipo mantêm a versão atual até serem migrados.',
+    'core.administrator.content_form.studio_item_adopts_successor' => 'Este item adota a nova versão do tipo; seus valores são mantidos.',
+    'core.administrator.content_form.studio_item_created' => 'Um novo item de conteúdo é criado no estado inicial do fluxo de trabalho.',
+    'core.administrator.content_form.studio_item_revision_advances' => 'O item recebe uma nova revisão; o estado do fluxo de trabalho não muda.',
+    'core.administrator.content_form.studio_new_type_for_item' => 'Um novo tipo de conteúdo reutilizável é criado a partir deste design e este item o adota.',
+    'core.administrator.content_form.studio_new_type_for_new_item' => 'Um novo tipo de conteúdo reutilizável é criado a partir deste design e este item o utiliza.',
     'core.administrator.content_form.studio_page_builder' => 'Construtor de páginas do Studio',
     'core.administrator.content_form.studio_page_builder_could_not_start' => 'O construtor de páginas do Studio não pôde iniciar; o formulário estruturado permanece disponível.',
     'core.administrator.content_form.studio_page_builder_is_loading' => 'O construtor de páginas do Studio está carregando.',
@@ -1299,6 +1306,7 @@ return [
     'core.administrator.content_form.studio_preview_is_stale' => 'O item mudou desde esta prévia; visualize a prévia novamente.',
     'core.administrator.content_form.studio_preview_needs_a_saved_item' => 'Salve o item antes de visualizar a prévia; a prévia mostra apenas revisões aceitas.',
     'core.administrator.content_form.studio_preview_shows_the_last_saved' => 'A prévia renderiza a última composição salva deste item pelo mesmo caminho de modelo e tema usado pela página publicada.',
+    'core.administrator.content_form.studio_return_destination' => 'o editor de conteúdo',
     'core.administrator.content_form.the_content_model_refused_these_values' => 'O modelo de conteúdo recusou estes valores. Tudo o que você digitou ainda está abaixo; corrija os campos indicados aqui e salve novamente.',
     'core.administrator.content_form.the_item_could_not_be_saved' => 'Não foi possível salvar o item',
     'core.administrator.content_form.title' => 'Título',

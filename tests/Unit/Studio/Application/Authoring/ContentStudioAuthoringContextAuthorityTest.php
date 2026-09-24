@@ -105,6 +105,60 @@ final class ContentStudioAuthoringContextAuthorityTest extends TestCase
     }
 
     /**
+     * A session records how it started exactly once, and only its own live binding may record or read it.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheStartIsRecordedOnceAndOnlyThroughALiveTrustedBinding(): void
+    {
+        $clock = $this->createStub(ClockInterface::class);
+        $clock->method('now')->willReturnOnConsecutiveCalls(
+            new DateTimeImmutable('2026-08-27T00:00:00+00:00'),
+            new DateTimeImmutable('2026-08-27T00:00:00+00:00'),
+            new DateTimeImmutable('2026-08-27T01:00:00+00:00'),
+            new DateTimeImmutable('2026-08-27T01:00:00+00:00'),
+            new DateTimeImmutable('2026-08-27T01:00:00+00:00'),
+            new DateTimeImmutable('2026-08-27T08:00:00+00:00'),
+        );
+        [$authority] = $this->authority(
+            $this->createStub(ContentModelRepository::class),
+            $this->createStub(ContentRepository::class),
+            clock: $clock,
+        );
+        $context = self::context(['content.create']);
+        $key = $authority->open(
+            $context,
+            (new ContentStudioAuthoringTargetResolver(AuthorizationContext::gateway()))->create($context),
+        );
+
+        self::assertNull($authority->startOf($context, $key));
+        self::assertSame('{"kind":"blank"}', $authority->rememberStart($context, $key, '{"kind":"blank"}'));
+        self::assertSame('{"kind":"blank"}', $authority->rememberStart($context, $key, '{"kind":"from-type"}'));
+        self::assertSame('{"kind":"blank"}', $authority->startOf($context, $key));
+
+        $refusals = [
+            'a malformed key' => static fn () => $authority->startOf($context, 'contexts/not-a-key'),
+            'a foreign actor' => static fn () => $authority->rememberStart(
+                self::context(['content.create'], subject: '018f22e2-7c8b-7ab0-8f3a-88e8026bb399'),
+                $key,
+                '{"kind":"blank"}',
+            ),
+            'an unknown key' => static fn () => $authority->startOf($context, 'contexts/' . str_repeat('0', 64)),
+            'an expired binding' => static fn () => $authority->startOf($context, $key),
+        ];
+        foreach ($refusals as $case => $refused) {
+            try {
+                $refused();
+                self::fail(sprintf('The recorded start must be refused for %s.', $case));
+            } catch (ContentStudioAuthoringContextRefused) {
+                self::addToAssertionCount(1);
+            }
+        }
+    }
+
+    /**
      * Exact reusable-type bindings reload the immutable version and reject malformed or vanished revisions.
      *
      * @return  void
