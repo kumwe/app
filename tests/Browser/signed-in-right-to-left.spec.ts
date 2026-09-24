@@ -92,7 +92,8 @@ const signedInSurfaces: readonly SignedInSurface[] = [
     id: 'administrator-content-list',
     area: 'administrator',
     path: '/administrator/content',
-    mask: ['table tbody', '[data-visual-dynamic]'],
+    // The rows and the item count depend on what earlier journeys created.
+    mask: ['table tbody', '.kis-resource-toolbar-summary p', '[data-visual-dynamic]'],
     controls: (page, isMobile, locale) => [
       ...administratorShellControls(page, isMobile, locale),
       [
