@@ -95,10 +95,27 @@ jobs:
           tools: composer:v2
       - name: Provision admitted native runtime
         uses: ./.github/actions/native-runtime
-      - name: Install the matching database client for the backup and restore drills
+      - name: Install the matching PostgreSQL client for the backup and restore drills
+        if: matrix.database.driver == 'pgsql'
         uses: ./.github/actions/database-client
         with:
-          driver: ${{ matrix.database.driver }}
+          driver: pgsql
+      # As in the recovery workflow: the MariaDB clients run inside the exact server image, so the backup drills
+      # never dump with a host client older than the server.
+      - name: Run the MariaDB clients inside the server image for the backup and restore drills
+        if: matrix.database.driver == 'mariadb'
+        shell: bash
+        env:
+          KUMWE_DATABASE_CONTAINER: ${{ job.services.database.id }}
+        run: |
+          set -euo pipefail
+          install -d -m 0700 "$RUNNER_TEMP/drill-bin"
+          for name in mariadb mariadb-dump; do
+            printf '#!/usr/bin/env bash\nexec docker exec --interactive --env MYSQL_PWD %q "$(basename -- "$0")" "$@"\n' \
+              "$KUMWE_DATABASE_CONTAINER" > "$RUNNER_TEMP/drill-bin/$name"
+            chmod 0700 "$RUNNER_TEMP/drill-bin/$name"
+          done
+          echo "$RUNNER_TEMP/drill-bin" >> "$GITHUB_PATH"
       - name: Install locked dependencies
         run: composer install --no-interaction --prefer-dist
       - name: Generate ephemeral application secret
