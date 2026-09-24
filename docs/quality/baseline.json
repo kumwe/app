@@ -3,7 +3,7 @@
     "work_package": "P0-A",
     "authority": "docs/roadmap/README.md",
     "note": "Every figure below is derived from the repository at the recorded commit. Nothing is typed by hand, nothing reads the clock or the machine, and running the generator twice at one commit produces the same document. composer baseline:check fails when it drifts.",
-    "commit": "6b88ca558f2541a99b857197362411c52700738b",
+    "commit": "d3c660258358844f68ad8ac2f37cf982c66eab40",
     "recorded_at": "2026-09-24",
     "recorded_from": [],
     "toolchain": {
@@ -35,12 +35,12 @@
             "test_methods": 32
         },
         "integration": {
-            "files": 115,
-            "test_methods": 429
+            "files": 117,
+            "test_methods": 432
         },
         "unit": {
             "files": 436,
-            "test_methods": 2238
+            "test_methods": 2247
         }
     },
     "coverage": {
@@ -56,6 +56,11 @@
                 "method": "GET",
                 "path": "/administrator/access",
                 "name": "administrator.access-control"
+            },
+            {
+                "method": "GET",
+                "path": "/administrator/account",
+                "name": "administrator.account"
             },
             {
                 "method": "GET",
@@ -376,6 +381,11 @@
                 "method": "GET",
                 "path": "/metrics",
                 "name": "observability.metrics"
+            },
+            {
+                "method": "GET",
+                "path": "/portal/account",
+                "name": "portal.account"
             },
             {
                 "method": "GET",

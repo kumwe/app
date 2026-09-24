@@ -49,6 +49,34 @@ final class ConfigurationFactoryTest extends TestCase
         (new ConfigurationFactory())->create(new Environment($values));
     }
 
+    /**
+     * Idle expiry is configurable, bounded, and active by default for both browser surfaces.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testSessionIdleTimeoutIsBoundedAndDefaultsToThirtyMinutes(): void
+    {
+        $factory = new ConfigurationFactory();
+        self::assertSame(1800, $factory->create(new Environment($this->values()))->sessionIdleSeconds);
+        foreach ([60, 900, 86400] as $seconds) {
+            $values = $this->values();
+            $values['APP_SESSION_IDLE_SECONDS'] = (string) $seconds;
+            self::assertSame($seconds, $factory->create(new Environment($values))->sessionIdleSeconds);
+        }
+        foreach (['0', '59', '86401', 'invalid'] as $seconds) {
+            $values = $this->values();
+            $values['APP_SESSION_IDLE_SECONDS'] = $seconds;
+            try {
+                $factory->create(new Environment($values));
+                self::fail('An invalid inactivity timeout was accepted.');
+            } catch (InvalidArgumentException $exception) {
+                self::assertStringContainsString('APP_SESSION_IDLE_SECONDS', $exception->getMessage());
+            }
+        }
+    }
+
     public function testProductionRefusesUnsignedLocalExtensions(): void
     {
         $values = $this->values();

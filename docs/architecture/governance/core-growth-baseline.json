@@ -68,6 +68,18 @@
                 "extends": null
             }
         },
+        "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorAccountHandler": {
+            "kind": "class",
+            "layer": "delivery",
+            "surface": "22b8687653334bd82abf7ca4",
+            "growth": {
+                "classification": "host-delivery",
+                "implements": [
+                    "Psr\\Http\\Server\\RequestHandlerInterface"
+                ],
+                "extends": null
+            }
+        },
         "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorAutomationHandler": {
             "kind": "class",
             "layer": "delivery",
@@ -137,7 +149,7 @@
         "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorLoginHandler": {
             "kind": "class",
             "layer": "delivery",
-            "surface": "c3f02c36dd8a317cdee7b3f0",
+            "surface": "9f59bd06ca74a6d7fbec2ef3",
             "growth": {
                 "classification": "host-delivery",
                 "implements": [
@@ -4569,7 +4581,7 @@
         "Kumwe\\App\\Identity\\Infrastructure\\Administration\\DoctrineAdministratorSessionStore": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "48621384ee2edb98182c7300",
+            "surface": "f66ea27e45e531d7a1e031a0",
             "growth": {
                 "classification": "host-infrastructure",
                 "implements": [
@@ -5437,7 +5449,7 @@
         "Kumwe\\App\\Kernel\\Configuration\\ApplicationConfiguration": {
             "kind": "class",
             "layer": "kernel",
-            "surface": "18091bc628b3884c5b30a68c",
+            "surface": "6e8738c514a3511379337527",
             "growth": {
                 "classification": "host-kernel",
                 "implements": [],
@@ -5860,6 +5872,18 @@
             "surface": "249eeba934a983f38115428f",
             "growth": null
         },
+        "Kumwe\\App\\Portal\\Http\\Handler\\PortalAccountHandler": {
+            "kind": "class",
+            "layer": "delivery",
+            "surface": "9693135e9b3711c8e42517bb",
+            "growth": {
+                "classification": "host-delivery",
+                "implements": [
+                    "Psr\\Http\\Server\\RequestHandlerInterface"
+                ],
+                "extends": null
+            }
+        },
         "Kumwe\\App\\Portal\\Http\\Handler\\PortalApprovalHandler": {
             "kind": "class",
             "layer": "delivery",
@@ -5935,8 +5959,15 @@
         "Kumwe\\App\\Portal\\Infrastructure\\Session\\DoctrinePortalSessionStore": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "cc9d75a3c36f5af8503e886c",
-            "growth": null
+            "surface": "249f4f8ec3d6f8c93c8b4e02",
+            "growth": {
+                "classification": "host-infrastructure",
+                "implements": [
+                    "Kumwe\\App\\Identity\\Application\\StepUp\\StepUpSessionRotator",
+                    "Kumwe\\App\\Portal\\Application\\PortalSessionStore"
+                ],
+                "extends": null
+            }
         },
         "Kumwe\\App\\Portal\\Presentation\\PortalContributionRenderer": {
             "kind": "class",

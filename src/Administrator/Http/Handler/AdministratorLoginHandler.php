@@ -38,6 +38,14 @@ use Psr\Http\Server\RequestHandlerInterface;
 final readonly class AdministratorLoginHandler implements RequestHandlerInterface
 {
     /**
+     * Host-only pre-authentication token, separate from the authenticated session's CSRF token.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    public const string LOGIN_CSRF_COOKIE_NAME = 'kumwe_administrator_login_csrf';
+
+    /**
      * Wire the sign-in screen to the identity gateway, the session store and the cookie policy.
      *
      * @param  AdministratorIdentityGateway  $identities       Verifies the credential and applies throttling.
@@ -92,6 +100,21 @@ final readonly class AdministratorLoginHandler implements RequestHandlerInterfac
         }
 
         $form = AdministratorRequest::form($request);
+        $cookie = $request->getCookieParams()[self::LOGIN_CSRF_COOKIE_NAME] ?? null;
+        $submitted = $form['_csrf'] ?? null;
+        if (
+            !is_string($cookie)
+            || !is_string($submitted)
+            || preg_match('/^[A-Za-z0-9_-]{43}$/D', $cookie) !== 1
+            || preg_match('/^[A-Za-z0-9_-]{43}$/D', $submitted) !== 1
+            || !hash_equals($cookie, $submitted)
+        ) {
+            return $this->form(
+                $this->translator->translate('core.administrator.csrf.token_invalid_or_expired'),
+                $form['email'] ?? '',
+                403,
+            );
+        }
         $remoteAddress = $request->getAttribute(TrustedProxyMiddleware::ATTRIBUTE_CLIENT_ADDRESS, 'unknown');
 
         if (!is_string($remoteAddress) || $remoteAddress === '') {
@@ -110,17 +133,19 @@ final readonly class AdministratorLoginHandler implements RequestHandlerInterfac
             // wrong password is, rather than escaping as a 500.
             $principal = null;
         } catch (AuthenticationThrottled) {
-            return new HtmlResponse($this->renderer->render('login', [
-                'error' => $this->translator->translate('core.security.authentication.throttled'),
-                'email' => $form['email'] ?? '',
-            ]), 429, ['Cache-Control' => 'no-store', 'Retry-After' => '900']);
+            return $this->form(
+                $this->translator->translate('core.security.authentication.throttled'),
+                $form['email'] ?? '',
+                429,
+            )->withHeader('Retry-After', '900');
         }
 
         if ($principal === null) {
-            return new HtmlResponse($this->renderer->render('login', [
-                'error' => $this->translator->translate('core.administrator.login.invalid_credentials'),
-                'email' => $form['email'] ?? '',
-            ]), 401, ['Cache-Control' => 'no-store']);
+            return $this->form(
+                $this->translator->translate('core.administrator.login.invalid_credentials'),
+                $form['email'] ?? '',
+                401,
+            );
         }
 
         $requestId = $request->getAttribute(RequestIdMiddleware::ATTRIBUTE);
@@ -138,31 +163,63 @@ final readonly class AdministratorLoginHandler implements RequestHandlerInterfac
                 is_string($requestId) && $requestId !== '' ? $requestId : 'login-' . bin2hex(random_bytes(16)),
             ), $request->getHeaderLine('User-Agent'));
         } catch (AuthorizationDenied) {
-            return new HtmlResponse($this->renderer->render('login', [
-                'error' => $this->translator->translate('core.administrator.login.access_denied'),
-                'email' => $form['email'] ?? '',
-            ]), 403, ['Cache-Control' => 'no-store']);
+            return $this->form(
+                $this->translator->translate('core.administrator.login.access_denied'),
+                $form['email'] ?? '',
+                403,
+            );
         }
 
         return new RedirectResponse('/administrator', 303, [
             'Cache-Control' => 'no-store',
-            'Set-Cookie' => $this->cookie($created->token),
+            'Set-Cookie' => [$this->cookie($created->token), $this->loginCsrfCookie('', 0)],
         ]);
     }
 
     /**
-     * Render the empty sign-in form for a `GET`.
+     * Issue a fresh pre-authentication token on every sign-in form, including safe refusals.
+     *
+     * @param   string|null  $error   Localized refusal, absent for the initial form.
+     * @param   string       $email   Submitted email, never the password.
+     * @param   int          $status  Initial or refusal HTTP status.
      *
      * @return  ResponseInterface  The form at 200, marked `no-store` so a shared browser cannot go back to it.
      *
      * @since   2.0.0
      */
-    private function form(): ResponseInterface
+    private function form(?string $error = null, string $email = '', int $status = 200): ResponseInterface
     {
+        $csrf = rtrim(strtr(base64_encode(random_bytes(32)), '+/', '-_'), '=');
+        $variables = ['email' => $email, 'login_csrf' => $csrf];
+        if ($error !== null) {
+            $variables['error'] = $error;
+        }
+
         return new HtmlResponse(
-            $this->renderer->render('login'),
-            200,
-            ['Cache-Control' => 'no-store'],
+            $this->renderer->render('login', $variables),
+            $status,
+            ['Cache-Control' => 'no-store', 'Set-Cookie' => $this->loginCsrfCookie($csrf, 600)],
+        );
+    }
+
+    /**
+     * Restrict the short-lived double-submit cookie to the sign-in path on this host.
+     *
+     * @param   string  $token     Random token, or empty when expiring it after authentication.
+     * @param   int     $lifetime  Seconds until expiry; zero clears the original path and attributes.
+     *
+     * @return  string  A host-only, script-inaccessible, same-site cookie header.
+     *
+     * @since   2.0.0
+     */
+    private function loginCsrfCookie(string $token, int $lifetime): string
+    {
+        return sprintf(
+            '%s=%s; Path=/administrator/login; Max-Age=%d; HttpOnly; SameSite=Strict%s',
+            self::LOGIN_CSRF_COOKIE_NAME,
+            $token,
+            $lifetime,
+            $this->secureCookie ? '; Secure' : '',
         );
     }
 

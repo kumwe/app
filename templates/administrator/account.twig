@@ -1,0 +1,16 @@
+{% extends 'layout.twig' %}
+{% block title %}{{ t('core.administrator.access_control.change_my_password') }}{% endblock %}
+{% block content %}
+<section class="panel stack kis-phase-five" data-kis-surface="core.administrator.account" aria-labelledby="own-password-heading">
+  <h1 id="own-password-heading">{{ t('core.administrator.access_control.change_my_password') }}</h1>
+  <p>{{ t('core.administrator.access_control.prove_the_password_you_are_replacing') }}</p>
+  {% if error_key %}<div class="notice danger" role="alert">{{ t(error_key) }}</div>{% endif %}
+  <form method="post" action="/administrator/account" class="stack">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+    <label>{{ t('core.administrator.access_control.current_password') }}<input type="password" name="current_password" autocomplete="current-password" required></label>
+    <label>{{ t('core.administrator.access_control.new_password') }}<input type="password" name="new_password" minlength="12" autocomplete="new-password" required><small>{{ t('core.administrator.access_control.at_least_12_characters_choose_a') }}</small></label>
+    <label>{{ t('core.administrator.access_control.confirm_new_password') }}<input type="password" name="new_password_confirmation" minlength="12" autocomplete="new-password" required></label>
+    <button class="primary" type="submit">{{ t('core.administrator.access_control.change_my_password') }}</button>
+  </form>
+</section>
+{% endblock %}

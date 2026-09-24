@@ -1,0 +1,20 @@
+{% extends 'portal/layout.twig' %}
+{% block title %}{{ t('core.administrator.access_control.change_my_password') }}{% endblock %}
+{% block content %}
+<section class="portal-security-panel kis-phase-five-portal" data-kis-surface="core.portal.account" aria-labelledby="own-password-heading">
+  <h1 id="own-password-heading">{{ t('core.administrator.access_control.change_my_password') }}</h1>
+  <p>{{ t('core.administrator.access_control.prove_the_password_you_are_replacing') }}</p>
+  {% if error_key %}<div class="portal-alert notice danger" role="alert">{{ t(error_key) }}</div>{% endif %}
+  <form method="post" action="/portal/account" class="portal-security-form">
+    <input type="hidden" name="_csrf" value="{{ portal_session.csrfToken }}">
+    <label for="current-password">{{ t('core.administrator.access_control.current_password') }}</label>
+    <input id="current-password" type="password" name="current_password" autocomplete="current-password" required>
+    <label for="new-password">{{ t('core.administrator.access_control.new_password') }}</label>
+    <input id="new-password" type="password" name="new_password" minlength="12" autocomplete="new-password" required aria-describedby="password-help">
+    <small id="password-help">{{ t('core.administrator.access_control.at_least_12_characters_choose_a') }}</small>
+    <label for="password-confirmation">{{ t('core.administrator.access_control.confirm_new_password') }}</label>
+    <input id="password-confirmation" type="password" name="new_password_confirmation" minlength="12" autocomplete="new-password" required>
+    <button type="submit">{{ t('core.administrator.access_control.change_my_password') }}</button>
+  </form>
+</section>
+{% endblock %}

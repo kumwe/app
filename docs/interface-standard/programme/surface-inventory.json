@@ -1413,9 +1413,203 @@
       "dependencies": ["portal route family", "trust", "membership context", "asset inspection policy"],
       "target": {"patterns": ["portal-extension-workspace", "page-header", "status", "card-grid"], "phase": 5, "complexity": "medium", "migration_status": "complete"},
       "test_disposition": ["active", "disabled", "unauthorized", "permission-reduced", "mobile"]
+    },
+    {
+      "id": "core.administrator.account",
+      "kis_runtime_disposition": "declared",
+      "area": "administrator",
+      "surface_type": "account-security",
+      "owner": "core",
+      "bounded_context": "identity",
+      "purpose": "Replace the authenticated account’s password and retire its previous credentials.",
+      "route_contracts": [
+        {
+          "name": "administrator.account",
+          "methods": ["GET"],
+          "path": "/administrator/account",
+          "source_anchor": "/administrator/account"
+        },
+        {
+          "name": "administrator.account.update",
+          "methods": ["POST"],
+          "path": "/administrator/account",
+          "source_anchor": "/administrator/account"
+        }
+      ],
+      "handler_sources": ["src/Administrator/Http/Handler/AdministratorAccountHandler.php"],
+      "templates": ["templates/administrator/account.twig", "templates/administrator/layout.twig"],
+      "navigation_ids": [],
+      "capabilities": ["administrator.access"],
+      "kis_contract": {
+        "standard": "kis-1.0",
+        "area": "administrator",
+        "actor": "administrator",
+        "intent": "form",
+        "resource": "identity",
+        "purpose": "Replace the authenticated account’s password and retire its previous credentials.",
+        "pattern": "focused-form",
+        "capabilities": ["administrator.access"],
+        "states": ["default", "error", "permission-reduced"],
+        "customization": [
+          {
+            "slot": "density",
+            "scope": "user"
+          },
+          {
+            "slot": "theme-mode",
+            "scope": "user"
+          }
+        ],
+        "responsive": [
+          {
+            "element": "decision-context",
+            "priority": "essential",
+            "may_collapse": false
+          },
+          {
+            "element": "safe-actions",
+            "priority": "primary",
+            "may_collapse": false
+          },
+          {
+            "element": "audit-context",
+            "priority": "secondary",
+            "may_collapse": true
+          }
+        ],
+        "icon": "security"
+      },
+      "actor_ids": ["content-operator", "security-administrator"],
+      "primary_task_id": "task.identity.self-service",
+      "secondary_task_ids": [],
+      "journey_ids": [],
+      "current_elements": {
+        "forms": 1,
+        "tables": 0,
+        "disclosures": 0,
+        "dialogs": 0,
+        "field_model": "Current password and confirmed replacement",
+        "actions": ["change own password"],
+        "technical_data": []
+      },
+      "fixture_profile_ids": ["fixture.empty", "fixture.sparse", "fixture.representative", "fixture.dense", "fixture.extreme"],
+      "coverage": {
+        "responsive": "pending",
+        "accessibility": "pending",
+        "visual": "pending",
+        "security": "covered",
+        "browser_tests": []
+      },
+      "finding_ids": [],
+      "dependencies": ["credential lifecycle", "CSRF", "session epoch revocation"],
+      "target": {
+        "patterns": ["detail-workspace", "notice"],
+        "phase": 5,
+        "complexity": "low",
+        "migration_status": "complete"
+      },
+      "test_disposition": ["ordinary-user", "mismatched-confirmation", "wrong-password", "throttled", "revoked-session", "mobile"]
+    },
+    {
+      "id": "core.portal.account",
+      "kis_runtime_disposition": "declared",
+      "area": "portal",
+      "surface_type": "account-security",
+      "owner": "core",
+      "bounded_context": "identity",
+      "purpose": "Replace the authenticated account’s password and retire its previous credentials.",
+      "route_contracts": [
+        {
+          "name": "portal.account",
+          "methods": ["GET"],
+          "path": "/portal/account",
+          "source_anchor": "/portal/account"
+        },
+        {
+          "name": "portal.account.update",
+          "methods": ["POST"],
+          "path": "/portal/account",
+          "source_anchor": "/portal/account"
+        }
+      ],
+      "handler_sources": ["src/Portal/Http/Handler/PortalAccountHandler.php"],
+      "templates": ["templates/portal/account.twig", "templates/portal/layout.twig"],
+      "navigation_ids": [],
+      "capabilities": ["portal.access"],
+      "kis_contract": {
+        "standard": "kis-1.0",
+        "area": "portal",
+        "actor": "portal",
+        "intent": "form",
+        "resource": "identity",
+        "purpose": "Replace the authenticated account’s password and retire its previous credentials.",
+        "pattern": "focused-form",
+        "capabilities": ["portal.access"],
+        "states": ["default", "error", "permission-reduced"],
+        "customization": [
+          {
+            "slot": "density",
+            "scope": "user"
+          },
+          {
+            "slot": "theme-mode",
+            "scope": "user"
+          }
+        ],
+        "responsive": [
+          {
+            "element": "decision-context",
+            "priority": "essential",
+            "may_collapse": false
+          },
+          {
+            "element": "safe-actions",
+            "priority": "primary",
+            "may_collapse": false
+          },
+          {
+            "element": "audit-context",
+            "priority": "secondary",
+            "may_collapse": true
+          }
+        ],
+        "icon": "security"
+      },
+      "actor_ids": ["portal-member"],
+      "primary_task_id": "task.identity.self-service",
+      "secondary_task_ids": [],
+      "journey_ids": [],
+      "current_elements": {
+        "forms": 1,
+        "tables": 0,
+        "disclosures": 0,
+        "dialogs": 0,
+        "field_model": "Current password and confirmed replacement",
+        "actions": ["change own password"],
+        "technical_data": []
+      },
+      "fixture_profile_ids": ["fixture.empty", "fixture.sparse", "fixture.representative", "fixture.dense", "fixture.extreme"],
+      "coverage": {
+        "responsive": "pending",
+        "accessibility": "pending",
+        "visual": "pending",
+        "security": "covered",
+        "browser_tests": []
+      },
+      "finding_ids": [],
+      "dependencies": ["credential lifecycle", "CSRF", "session epoch revocation"],
+      "target": {
+        "patterns": ["detail-workspace", "notice"],
+        "phase": 5,
+        "complexity": "low",
+        "migration_status": "complete"
+      },
+      "test_disposition": ["ordinary-user", "mismatched-confirmation", "wrong-password", "throttled", "revoked-session", "mobile"]
     }
   ],
   "template_catalog": [
+    {"path": "templates/administrator/account.twig", "kind": "surface", "surface_ids": ["core.administrator.account"]},
+    {"path": "templates/portal/account.twig", "kind": "surface", "surface_ids": ["core.portal.account"]},
     {"path": "templates/administrator/_business-fields.twig", "kind": "partial", "surface_ids": ["core.administrator.generated-definition", "core.administrator.generated-record"]},
     {"path": "templates/administrator/_business-schema-fields.twig", "kind": "partial", "surface_ids": ["core.administrator.generated-definition", "core.administrator.generated-record"]},
     {"path": "templates/administrator/_fields.twig", "kind": "partial", "surface_ids": ["core.administrator.content-editor", "core.administrator.content-models"]},

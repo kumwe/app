@@ -9,6 +9,7 @@ x-kumwe-environment: &kumwe-environment
   APP_TRUSTED_PROXIES: ${KUMWE_TRUSTED_PROXIES:-}
   APP_MAX_BODY_BYTES: ${KUMWE_MAX_BODY_BYTES:-8388608}
   APP_ADMIN_SESSION_SECONDS: ${KUMWE_ADMIN_SESSION_SECONDS:-28800}
+  APP_SESSION_IDLE_SECONDS: ${KUMWE_SESSION_IDLE_SECONDS:-1800}
   # Demonstration defaults: a fresh installation deploys the complete showcase.
   # KUMWE_SITE_CONTENT_PROFILE selects the managed site content installed on first
   # migrate, discovered from resources/demo/content — this release ships

@@ -60,12 +60,19 @@ final class AdministratorLoginHandlerTest extends TestCase
         $request = (new ServerRequestFactory())
             ->createServerRequest('POST', 'https://kumwe.test/administrator/login')
             ->withHeader('User-Agent', 'Kumwe test browser')
-            ->withParsedBody(['email' => 'owner@example.test', 'password' => 'secret password']);
+            ->withCookieParams([AdministratorLoginHandler::LOGIN_CSRF_COOKIE_NAME => str_repeat('a', 43)])
+            ->withParsedBody([
+                'email' => 'owner@example.test',
+                'password' => 'secret password',
+                '_csrf' => str_repeat('a', 43),
+            ]);
 
         $response = $handler->handle($request);
 
         self::assertSame(303, $response->getStatusCode());
         self::assertSame('/administrator', $response->getHeaderLine('Location'));
+        self::assertStringContainsString('kumwe_administrator_login_csrf=;', $response->getHeaderLine('Set-Cookie'));
+        self::assertStringContainsString('Max-Age=0', $response->getHeader('Set-Cookie')[1]);
     }
 
 
@@ -114,7 +121,8 @@ final class AdministratorLoginHandlerTest extends TestCase
         );
         $request = (new ServerRequestFactory())
             ->createServerRequest('POST', 'https://kumwe.test/administrator/login')
-            ->withParsedBody(['email' => '', 'password' => '']);
+            ->withCookieParams([AdministratorLoginHandler::LOGIN_CSRF_COOKIE_NAME => str_repeat('a', 43)])
+            ->withParsedBody(['email' => '', 'password' => '', '_csrf' => str_repeat('a', 43)]);
 
         $response = $this->handler($identities)->handle($request);
 
@@ -156,7 +164,7 @@ final class AdministratorLoginHandlerTest extends TestCase
      * The session store's contract says opening a session may be denied; letting that escape produced a
      * bare `application/problem+json` body, which Firefox refuses to render as a page — the visitor was
      * shown the browser's own "there's a problem with this site" screen instead of being told anything.
-     * The status stays 403 and no cookie is set; only the body becomes a page a person can read.
+     * The status stays 403 and no authenticated cookie is set; the form receives a fresh login token.
      *
      * @return  void
      *
@@ -183,11 +191,68 @@ final class AdministratorLoginHandlerTest extends TestCase
 
         self::assertSame(403, $response->getStatusCode());
         self::assertSame('no-store', $response->getHeaderLine('Cache-Control'));
-        self::assertSame('', $response->getHeaderLine('Set-Cookie'));
+        self::assertStringNotContainsString('kumwe_administrator=', $response->getHeaderLine('Set-Cookie'));
         $body = (string) $response->getBody();
         self::assertStringContainsString('This account is not permitted to use the administrator.', $body);
         self::assertStringContainsString('owner@example.test', $body);
         self::assertStringNotContainsString('wrong password', $body);
+    }
+
+    /**
+     * An initial form binds its hidden token to a protected, host-only, short-lived cookie.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testGetIssuesTheSameProtectedTokenToCookieAndForm(): void
+    {
+        $identities = $this->createMock(AdministratorIdentityGateway::class);
+        $identities->expects(self::never())->method('authenticate');
+        $response = $this->handler($identities, secure: true)->handle(
+            (new ServerRequestFactory())->createServerRequest('GET', 'https://kumwe.test/administrator/login'),
+        );
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertSame('no-store', $response->getHeaderLine('Cache-Control'));
+        self::assertMatchesRegularExpression(
+            '/^kumwe_administrator_login_csrf=([A-Za-z0-9_-]{43}); Path=\/administrator\/login; '
+                . 'Max-Age=600; HttpOnly; SameSite=Strict; Secure$/D',
+            $response->getHeaderLine('Set-Cookie'),
+        );
+        $cookie = explode(';', $response->getHeaderLine('Set-Cookie'))[0];
+        self::assertStringEndsWith(explode('=', $cookie, 2)[1], (string) $response->getBody());
+    }
+
+    /**
+     * Missing, malformed and mismatched double-submit tokens refuse before any password lookup.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testInvalidLoginTokensNeverAuthenticateOrCreateASession(): void
+    {
+        $valid = str_repeat('a', 43);
+        foreach (
+            [[null, $valid], [$valid, null], ['short', 'short'], [$valid, 'short'],
+            [$valid, str_repeat('b', 43)], [[], $valid], [$valid, []]] as [$cookie, $submitted]
+        ) {
+            $identities = $this->createMock(AdministratorIdentityGateway::class);
+            $identities->expects(self::never())->method('authenticate');
+            $sessions = $this->createMock(AdministratorSessionStore::class);
+            $sessions->expects(self::never())->method('create');
+            $response = $this->handler($identities, $sessions)->handle(
+                $this->submission()
+                    ->withCookieParams([AdministratorLoginHandler::LOGIN_CSRF_COOKIE_NAME => $cookie])
+                    ->withParsedBody(['email' => 'owner@example.test', '_csrf' => $submitted]),
+            );
+
+            self::assertSame(403, $response->getStatusCode());
+            self::assertSame('no-store', $response->getHeaderLine('Cache-Control'));
+            self::assertStringContainsString('Path=/administrator/login', $response->getHeaderLine('Set-Cookie'));
+            self::assertStringNotContainsString('kumwe_administrator=', $response->getHeaderLine('Set-Cookie'));
+        }
     }
 
     /**
@@ -196,6 +261,7 @@ final class AdministratorLoginHandlerTest extends TestCase
      * @param   AdministratorIdentityGateway    $identities  Gateway deciding the credential's fate.
      * @param   ?AdministratorSessionStore      $sessions    Store deciding whether a session may open,
      *                                                       or null for one that always succeeds.
+     * @param   bool                            $secure      Whether the configured origin uses HTTPS.
      *
      * @return  AdministratorLoginHandler  The handler as the container composes it.
      *
@@ -204,19 +270,20 @@ final class AdministratorLoginHandlerTest extends TestCase
     private function handler(
         AdministratorIdentityGateway $identities,
         ?AdministratorSessionStore $sessions = null,
+        bool $secure = false,
     ): AdministratorLoginHandler {
         return new AdministratorLoginHandler(
             $identities,
             $sessions ?? $this->createStub(AdministratorSessionStore::class),
             new AdministratorRenderer(
                 new AdministratorTwigEnvironment(new ArrayLoader([
-                    'login.twig' => '{{ error }}|{{ email }}',
+                    'login.twig' => '{{ error|default("") }}|{{ email }}|{{ login_csrf }}',
                 ])),
                 new RecoveryAdministratorRenderer(new RecoveryAdministratorTwigEnvironment(new ArrayLoader())),
                 new DeterministicCanonicalEncoder(),
             ),
             InterfaceTranslation::translator(),
-            false,
+            $secure,
             3600,
             SiteContext::fromString('corporate'),
         );
@@ -233,7 +300,12 @@ final class AdministratorLoginHandlerTest extends TestCase
     {
         return (new ServerRequestFactory())
             ->createServerRequest('POST', 'https://kumwe.test/administrator/login')
-            ->withParsedBody(['email' => 'owner@example.test', 'password' => 'wrong password']);
+            ->withCookieParams([AdministratorLoginHandler::LOGIN_CSRF_COOKIE_NAME => str_repeat('a', 43)])
+            ->withParsedBody([
+                'email' => 'owner@example.test',
+                'password' => 'wrong password',
+                '_csrf' => str_repeat('a', 43),
+            ]);
     }
 
     private function renderer(): AdministratorRenderer

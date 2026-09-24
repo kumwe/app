@@ -88,6 +88,7 @@ final class ConfigurationFactory
             trustedProxies: $environment->commaSeparatedList('APP_TRUSTED_PROXIES'),
             maxBodyBytes: $environment->positiveInteger('APP_MAX_BODY_BYTES', 2_097_152),
             administratorSessionSeconds: $environment->positiveInteger('APP_ADMIN_SESSION_SECONDS', 28_800),
+            sessionIdleSeconds: $environment->positiveInteger('APP_SESSION_IDLE_SECONDS', 1_800),
             idempotencyReplay: BusinessRecordReplayWindow::fromConfiguration(
                 $environment->optionalString('BUSINESS_IDEMPOTENCY_REPLAY_SECONDS'),
                 $environment->optionalString('BUSINESS_IDEMPOTENCY_RETENTION_SECONDS'),
