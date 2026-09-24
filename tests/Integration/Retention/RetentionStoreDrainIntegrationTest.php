@@ -23,6 +23,15 @@ use Kumwe\App\Kernel\Container;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\App\Tests\Support\TestKernelFactory;
 use Kumwe\Context\Value\ExecutionContext;
+use Kumwe\App\Audit\Application\AuditRetentionService;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordIdempotencyPurger;
+use Kumwe\App\Application\Retention\RetentionCatalogue;
+use Kumwe\Automation\QueueRuntimePolicy;
+use Kumwe\Automation\QueueRuntimePolicyCatalog;
+use Kumwe\Idempotency\IdempotencyPurger;
+use Kumwe\Integration\OutboxStore;
+use Kumwe\Transaction\Contract\TransactionManager;
+use Psr\Clock\ClockInterface;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
@@ -124,6 +133,9 @@ final class RetentionStoreDrainIntegrationTest extends TestCase
                 $this->surviving($database, $tables, 'resource_site_ownership', 'resource_id', [$dead]),
             );
             $this->assertRecorded($container, $result);
+            $again = $this->drain($container, RetentionStore::JobHistory);
+            self::assertSame(0, $again->rowsDrained, 'A drained history has nothing left to remove.');
+            self::assertTrue($again->backlogCleared);
         } finally {
             $database->executeStatement(sprintf(
                 'DELETE FROM %s WHERE id IN (?)',
@@ -177,6 +189,7 @@ final class RetentionStoreDrainIntegrationTest extends TestCase
                 [$processId],
                 $this->surviving($database, $tables, 'business_process_instances', 'process_id', [$processId]),
             );
+            self::assertSame(0, $this->drain($container, RetentionStore::ProcessHistory)->rowsDrained);
         } finally {
             $database->delete($tables->raw('business_process_work'), ['process_id' => $processId]);
             $database->delete($tables->raw('business_process_instances'), ['process_id' => $processId]);
@@ -271,7 +284,12 @@ final class RetentionStoreDrainIntegrationTest extends TestCase
             'created_at' => Types::DATETIME_IMMUTABLE, 'updated_at' => Types::DATETIME_IMMUTABLE,
         ]);
         try {
-            $result = $this->drain($container, RetentionStore::InboxReceipts);
+            // One-row batches: a batch filled by compaction alone ends before any tombstone is considered.
+            $result = $this->drain(
+                $container,
+                RetentionStore::InboxReceipts,
+                budget: new RetentionBudget(30, 1, 1, 250),
+            );
 
             self::assertGreaterThanOrEqual(3, $result->rowsDrained);
             $rows = $database->fetchAllAssociativeIndexed(sprintf(
@@ -361,6 +379,133 @@ final class RetentionStoreDrainIntegrationTest extends TestCase
     }
 
     /**
+     * The journal drain never passes the lowest live projection checkpoint, and stops when nothing is due.
+     *
+     * A projection still building from the journal needs every row after its checkpoint. The drain bounds
+     * itself by the lowest checkpoint of any active or building generation — whichever is lower, a
+     * generation recorded here or one the installation already had — so the row past that floor survives
+     * even though it is as old as the rows that go.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheJournalDrainStopsAtTheLowestLiveProjectionCheckpoint(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $database = $this->service($container, Connection::class);
+        $tables = $this->service($container, TableNames::class);
+        $first = (int) $database->fetchOne(sprintf(
+            'SELECT COALESCE(MAX(source_sequence), 0) FROM %s',
+            $tables->quoted('business_projection_source_events'),
+        )) + 2_000_000;
+        $events = [];
+        foreach ([0, 1, 2] as $offset) {
+            $eventId = Uuid::uuid7()->toString();
+            $events[$first + $offset] = $eventId;
+            $database->insert($tables->raw('business_projection_source_events'), [
+                'source_sequence' => $first + $offset, 'event_id' => $eventId,
+                'event_type' => 'acme.retention.floor', 'schema_version' => 1, 'sensitivity' => 'internal',
+                'envelope' => '{}', 'event_checksum' => str_repeat('a', 64),
+                'recorded_at' => new DateTimeImmutable(self::ANCIENT),
+            ], ['recorded_at' => Types::DATETIME_IMMUTABLE]);
+        }
+        $existing = $database->fetchOne(sprintf(
+            "SELECT MIN(last_sequence) FROM %s WHERE status IN ('active', 'building')",
+            $tables->quoted('business_projection_generations'),
+        ));
+        $floor = $first + 1;
+        $effective = is_numeric($existing) ? min((int) $existing, $floor) : $floor;
+        $generation = Uuid::uuid7()->toString();
+        $database->insert($tables->raw('business_projection_generations'), [
+            'generation_id' => $generation, 'projection_id' => 'acme.retention.floor-' . substr($generation, -12),
+            'definition_checksum' => str_repeat('b', 64), 'handler_version' => '1', 'status' => 'building',
+            'last_sequence' => $floor, 'source_checksum' => str_repeat('c', 64),
+            'created_at' => new DateTimeImmutable(self::ANCIENT), 'updated_at' => new DateTimeImmutable(self::ANCIENT),
+        ], ['created_at' => Types::DATETIME_IMMUTABLE, 'updated_at' => Types::DATETIME_IMMUTABLE]);
+        try {
+            $this->drain($container, RetentionStore::SequencedJournal);
+            $expected = [];
+            foreach ($events as $sequence => $eventId) {
+                if ($sequence > $effective) {
+                    $expected[] = $eventId;
+                }
+            }
+            self::assertSame($expected, $this->surviving(
+                $database,
+                $tables,
+                'business_projection_source_events',
+                'event_id',
+                array_values($events),
+            ), 'Every row past the lowest live checkpoint survives; the rest are removed.');
+            self::assertContains($events[$first + 2], $expected);
+            self::assertSame(0, $this->drain($container, RetentionStore::SequencedJournal)->rowsDrained);
+        } finally {
+            $database->delete($tables->raw('business_projection_generations'), ['generation_id' => $generation]);
+            $database->executeStatement(sprintf(
+                'DELETE FROM %s WHERE source_sequence >= ?',
+                $tables->quoted('business_projection_source_events'),
+            ), [$first]);
+        }
+    }
+
+    /**
+     * Settled jobs of a contributed queue are left to that queue's own signed retention window.
+     *
+     * Contributed queues declare their retention with their runtime policy and are drained by the queue
+     * runtime operations. The generic drain must not apply the core window to them as well, or a job could
+     * be removed earlier than the package that owns it promised.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testSettledJobsOfAContributedQueueAreLeftToItsOwnWindow(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $database = $this->service($container, Connection::class);
+        $tables = $this->service($container, TableNames::class);
+        $queues = self::createStub(QueueRuntimePolicyCatalog::class);
+        $queues->method('policies')->willReturn([new QueueRuntimePolicy('acme.contributed', 60, 5, 1, 90, 1)]);
+        $drain = new DoctrineRetentionDrain(
+            $database,
+            $tables,
+            $this->service($container, TransactionManager::class),
+            $this->service($container, ClockInterface::class),
+            $this->service($container, RetentionCatalogue::class),
+            $this->service($container, BusinessRecordIdempotencyPurger::class),
+            $this->service($container, IdempotencyPurger::class),
+            $this->service($container, OutboxStore::class),
+            $this->service($container, AuditRetentionService::class),
+            $this->service($container, ExportArtifactStorage::class),
+            $queues,
+            $this->service($container, RetentionRunLedger::class),
+        );
+        $core = $this->insertJob($database, $tables, 'completed', self::ANCIENT, self::ANCIENT);
+        $contributed = $this->insertJob($database, $tables, 'completed', self::ANCIENT, self::ANCIENT);
+        $database->update($tables->raw('jobs'), ['queue' => 'acme.contributed'], ['id' => $contributed]);
+        try {
+            $result = $drain->drain(
+                RetentionStore::JobHistory,
+                new RetentionBudget(30, 100, 1_000, 250),
+                TestKernelFactory::workerContext($container),
+            );
+
+            self::assertGreaterThanOrEqual(1, $result->rowsDrained);
+            self::assertSame(
+                [$contributed],
+                $this->surviving($database, $tables, 'jobs', 'id', [$core, $contributed]),
+                'Only the core queue job is removed by the generic drain.',
+            );
+        } finally {
+            $database->executeStatement(sprintf(
+                'DELETE FROM %s WHERE id IN (?)',
+                $tables->quoted('jobs'),
+            ), [[$core, $contributed]], [ArrayParameterType::STRING]);
+        }
+    }
+
+    /**
      * Rewrite the audit retention schedule's switch and payload.
      *
      * @param   Connection  $database  Session.
@@ -387,6 +532,7 @@ final class RetentionStoreDrainIntegrationTest extends TestCase
      * @param   Container          $container  Booted kernel.
      * @param   RetentionStore     $store      Store to drain.
      * @param   ?ExecutionContext  $context    Actor running the drain, the queue worker when omitted.
+     * @param   ?RetentionBudget   $budget     Budget of the run, a generous one when omitted.
      *
      * @return  RetentionDrainResult  Outcome of the run.
      *
@@ -396,10 +542,11 @@ final class RetentionStoreDrainIntegrationTest extends TestCase
         Container $container,
         RetentionStore $store,
         ?ExecutionContext $context = null,
+        ?RetentionBudget $budget = null,
     ): RetentionDrainResult {
         return $this->service($container, RetentionDrain::class)->drain(
             $store,
-            new RetentionBudget(30, 100, 1_000, 250),
+            $budget ?? new RetentionBudget(30, 100, 1_000, 250),
             $context ?? TestKernelFactory::workerContext($container),
         );
     }
