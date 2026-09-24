@@ -478,6 +478,35 @@ Use `automation enable`, `automation disable`, and `automation delete` with `--i
 Use `automation retry` or `automation cancel` with `--id` for queued jobs. Run long-lived worker and
 scheduler processes under a supervisor; use one-shot forms for deployment diagnostics.
 
+## Studio authoring
+
+`studio-authoring` drives Studio's contextual Content authoring through the same host the administrator editor
+uses. Every action requires `--site` and `--token-file`; the token needs `content.read`, and the application also
+requires `studio.mode.hybrid` and Content create or update authority.
+
+| Action | Effect | Options |
+|---|---|---|
+| `open` | read | `--intent=create\|edit`, `--content` (edit), optional `--content-type` and `--content-type-version` |
+| `resolve-target`, `list-types`, `plan-save` | read | `--session`, `--session-generation`, `--argument-file`, optional `--locale` |
+| `start`, `save-item`, `save-as-new-type`, `save-new-type-version` | mutate | the same plus `--operation-id` |
+
+```bash
+php bin/kumwe studio-authoring open --site=corporate --token-file=/run/secrets/kumwe-cli-token \
+  --intent=create --content-type=CONTENT_TYPE_ID
+php bin/kumwe studio-authoring save-item --site=corporate --token-file=/run/secrets/kumwe-cli-token \
+  --session=SESSION_KEY --session-generation=GENERATION \
+  --argument-file=/run/kumwe/save-item.json --operation-id=studio-save-item-0001
+```
+
+`open` prints the session key and generation later actions echo. Each argument is the pinned Studio document for
+that operation, read only from an owner-only protected file. `--operation-id` is the Studio host's replay key:
+an identical retry returns the stored result with `"replayed": true`, and a reused ID with other input is refused.
+Success is `{"ok":true,"data":...,"meta":{"action":...,"surface":"cli","replayed":...}}`. Failures print
+`{"ok":false,"error":{"code":"studio_authoring.*","message":...,"details":{"category","diagnostics","revision"}}}`
+and exit 65 (invalid or validation), 66 (not found), 69 (unavailable), 73 (conflict or reused key), 75 (in
+progress or rate limited), 77 (forbidden) or 1. The live console dispatches this command under the generation-two
+contract `src/Delivery/Console/Contract/cli-v2.json`; generation one is retained unchanged.
+
 ## MCP stdio
 
 ```bash

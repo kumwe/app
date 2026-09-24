@@ -54,6 +54,50 @@ The generated `tool_error.registry` is the finite vocabulary the runtime mapper 
 message, retry decision and feasible exception/stable-code classification is included in both its own digest and
 the generation's primary `contract_sha256`.
 
+## Studio authoring for machine callers
+
+Studio's contextual Content authoring was browser-only: the administrator mount opened an opaque authoring context
+and a host session, and the Studio shell dispatched the seven authoring operations at
+`POST /administrator/studio/ports/authoring/{operation}`. Machine callers now reach the same host through REST,
+CLI and MCP without a second implementation of any rule.
+
+**Authority binding.** A machine caller never asserts an actor, grant, site, target or generation. `open`
+(`POST /api/v1/studio/authoring/sessions`, `studio-authoring open`, `kumwe_studio_authoring_open`) resolves the
+create or edit target through the authorized Content services exactly as the editor page does, then opens the
+opaque authoring context and a hybrid Content-authoring host session. Both bind to the verified credential's actor,
+site, organization, workspace and surface, and — where the browser binds to its rotated session — to a one-way
+digest of the exact credential (`StudioSessionSurfaceBinding`). Only the REST, CLI and MCP surfaces may hold such a
+binding, and they may open only Content-authoring sessions; a binding opened on one surface or credential is refused
+on every other. The session generation is recomputed from live grants, epoch, membership and policy on every call,
+and the caller must echo the generation `open` returned, so a stale generation meets the same
+`studio.host/stale-session-generation` fence the browser meets.
+
+**Operations.** `resolve-target`, `list-types`, `start`, `plan-save`, `save-item`, `save-as-new-type` and
+`save-new-type-version` are all exposed; none is withheld from machines. `StudioMachineAuthoringGateway` builds the
+canonical Producer envelope server-side and dispatches it through the same request-scoped `StudioProducerHostFactory`
+and Producer `Dispatcher` the browser route uses, so authorization, the pinned Studio schemas, the transaction,
+the audit event and every refusal are the browser's. The argument and result documents are the pinned Studio
+documents unchanged. `start` and the three saves are mutations: the REST `Idempotency-Key`, the CLI
+`--operation-id` and the MCP `operationId` become the Studio host's own replay key, so a retry replays the stored
+result, a reused key with changed intent is refused, and no second ledger decides replay.
+
+**Refusals.** Every refusal is Producer's canonical `host-error` category plus diagnostics and safe revision. REST
+publishes them as twelve registered `urn:kumwe:problem:studio-authoring-*` types carrying `studio_category`,
+`studio_diagnostics` and `studio_revision`; the CLI prints them in its JSON failure envelope with a portable exit;
+MCP maps each category to a closed `studio_authoring.*` code (its envelope carries no diagnostics by design).
+
+**Human-approval gates.** The browser authoring journey has no step-up or maker-checker step. The one confirmation it
+has — accepting every consequence a save plan discloses before a `save-as-new-type` or `save-new-type-version` is
+committed — is enforced by the application service for every caller: the save request must carry the plan's exact
+identity and accept each disclosed consequence code. Machine surfaces gain no path to any step-up-gated operation.
+
+**Machine inventory.** The live console dispatches against the generation-two CLI contract
+(`src/Delivery/Console/Contract/cli-v2.json`, generation one plus `studio-authoring`), the MCP catalogue carries
+eight `kumwe_studio_authoring_*` tools, and the REST successor input
+`api/openapi/generations/1.1.0/core.json` adds the eight operations. Retained generation one (CLI, MCP, REST) is
+unchanged; cutting the successor retained generations is a separate release step. `StudioAuthoringMachineParityTest`
+enumerates the browser's authoring operations and fails when one lacks a REST route, CLI action or MCP tool.
+
 ## Production `app` and `web`
 
 `compose.production.yaml` separates two runtime responsibilities built from this repository and its one source

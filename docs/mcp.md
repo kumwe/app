@@ -105,6 +105,24 @@ attempt to consume a high-impact approval therefore fails closed. Complete high-
 ordinary planned actions remain fully executable through MCP. See [Generated business
 surfaces](architecture/generated-business-surfaces.md).
 
+## Studio authoring tools
+
+| Tool | Behavior |
+|---|---|
+| `kumwe_studio_authoring_open` | Open a credential-bound Studio authoring session for a create or edit target |
+| `kumwe_studio_authoring_resolve_target`, `kumwe_studio_authoring_list_types`, `kumwe_studio_authoring_plan_save` | Read operations against an opened session |
+| `kumwe_studio_authoring_start`, `kumwe_studio_authoring_save_item` | Start the session; commit the planned item |
+| `kumwe_studio_authoring_save_as_new_type`, `kumwe_studio_authoring_save_new_type_version` | Create a reusable type; publish a successor version |
+
+Every tool requires `content.read`; the application also requires `studio.mode.hybrid` and Content create or
+update authority, exactly as the administrator editor does. Operation tools take `session`, `sessionGeneration`
+and `document` — the pinned Studio argument as one JSON string, because protocol arguments are decoded without
+the `{}`/`[]` distinction Studio schemas depend on — and return `{operation, replayed, document}`. The mutating
+tools' `operationId` is the Studio host's own replay key (mutation route `studio_host_boundary`), so a retry
+replays the stored result and a changed document under the same ID is refused as
+`studio_authoring.idempotency_key_reused`. Refusals use the closed `studio_authoring.*` codes named after
+Producer's categories; an internal Studio failure stays a generic protocol error.
+
 ## Safe mutations
 
 Every MCP mutation requires an `operationId` containing 16–128 safe characters. Generate one stable ID per intended change and keep it for retries. Kumwe stores its request digest and completed result for 24 hours:

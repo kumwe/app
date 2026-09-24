@@ -197,6 +197,36 @@ All extension routes require `extensions.manage`.
 
 Every extension mutation requires `Idempotency-Key`. Package installation is intentionally not accepted from a server path supplied over REST: upload a package through the authenticated administrator, or install a trusted local artifact with the host-level CLI. This keeps archive and signature handling on an explicit trusted boundary.
 
+## Studio authoring
+
+Studio's contextual Content authoring operations are available to bearer tokens holding `content.read`; the
+application additionally requires `studio.mode.hybrid` and Content create or update authority, exactly as the
+administrator editor does. See [machine contracts](machine-contract/README.md#studio-authoring-for-machine-callers)
+for the authority model.
+
+| Method | Path | Purpose | `Idempotency-Key` |
+|---|---|---|---|
+| `POST` | `/api/v1/studio/authoring/sessions` | Open a credential-bound session for `{"intent":"create"\|"edit", "content_id", "content_type_id", "content_type_version"}` | — |
+| `POST` | `/api/v1/studio/authoring/resolve-target` | Resolve the declared target and start sources | — |
+| `POST` | `/api/v1/studio/authoring/list-types` | Page reusable Content types | — |
+| `POST` | `/api/v1/studio/authoring/start` | Start from `existing`, `from-type` or `blank` | required |
+| `POST` | `/api/v1/studio/authoring/plan-save` | Plan one save outcome against the expected coordinates | — |
+| `POST` | `/api/v1/studio/authoring/save-item` | Commit the item an accepted plan authorizes | required |
+| `POST` | `/api/v1/studio/authoring/save-as-new-type` | Create a reusable type from the design | required |
+| `POST` | `/api/v1/studio/authoring/save-new-type-version` | Publish a successor type version | required |
+
+An operation body is `{"session": "...", "session_generation": "...", "argument": {...}}` with an optional
+`locale`. `argument` is exactly the pinned Studio argument for that operation; the result is
+`{"operation", "replayed", "value"}` where `value` is the canonical Studio result. The expected revision is the
+`expected` coordinates a save intent carries and the plan identity a save references; stale coordinates are refused
+as `studio-authoring-conflict` (409) with `studio.authoring/expected-mismatch`. The key becomes the Studio host's
+replay key: an identical retry returns the stored result with `Idempotency-Replayed: true`, and a reused key with
+other input is `studio-authoring-idempotency-key-reused` (422). Refusals use the `studio-authoring-*` problem types
+and carry `studio_category`, `studio_diagnostics` and, for conflicts, `studio_revision`.
+
+These operations are part of the REST successor input `api/openapi/generations/1.1.0/core.json`; the retained
+1.0.0 generation does not describe them until that successor is accepted.
+
 ## Errors and observability
 
 Failures use `application/problem+json` and include the request correlation identifier. Common responses are `400` for malformed input, `401` for authentication failure, `403` for a missing capability, `404` for an absent resource, `409` for in-progress/retry conflicts, `412` for stale ETags, `413` for an oversized request, and `422` for validation failure.
