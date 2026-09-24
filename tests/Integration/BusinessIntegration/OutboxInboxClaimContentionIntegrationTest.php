@@ -22,6 +22,7 @@ use Kumwe\Integration\IntegrationEvent;
 use Kumwe\Integration\RecordedIntegrationEvent;
 use Kumwe\App\BusinessIntegration\Infrastructure\DoctrineInboxStore;
 use Kumwe\App\BusinessIntegration\Infrastructure\DoctrineOutboxStore;
+use Kumwe\App\BusinessReporting\Infrastructure\DoctrineProjectionEventSequencer;
 use Kumwe\App\Infrastructure\Persistence\DoctrineTransactionManager;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
@@ -252,6 +253,11 @@ final class OutboxInboxClaimContentionIntegrationTest extends TestCase
             $clock,
             $this->contracts(),
             new DeterministicCanonicalEncoder(),
+            new DoctrineProjectionEventSequencer(
+                $this->connection($container),
+                $this->tables($container),
+                $this->transactions($container),
+            ),
         );
     }
 

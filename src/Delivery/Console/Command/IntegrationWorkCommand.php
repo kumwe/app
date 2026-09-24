@@ -7,6 +7,7 @@ namespace Kumwe\App\Delivery\Console\Command;
 use InvalidArgumentException;
 use Kumwe\App\Application\Automation\RuntimeDeadline;
 use Kumwe\App\BusinessIntegration\Application\OutboxDispatcher;
+use Kumwe\App\BusinessIntegration\Application\IntegrationReceiptWorker;
 use Kumwe\App\BusinessIntegration\Application\ProcessWorkDispatcher;
 use Kumwe\App\Delivery\Console\Command;
 use Kumwe\App\Delivery\Console\Output;
@@ -39,6 +40,7 @@ final readonly class IntegrationWorkCommand implements Command
      * @param  ProcessWorkDispatcher        $processes      Process-work dispatcher drained by this worker.
      * @param  ExtensionRuntimeMapCompiler  $runtime        Trusted active extension runtime.
      * @param  RuntimeMaterializationState  $loadedRuntime  Trusted loaded generation used to fence every claim.
+     * @param  IntegrationReceiptWorker     $receipts       Independent consumer and webhook receipt worker.
      *
      * @since  2.0.0
      */
@@ -47,6 +49,7 @@ final readonly class IntegrationWorkCommand implements Command
         private ProcessWorkDispatcher $processes,
         private ExtensionRuntimeMapCompiler $runtime,
         private RuntimeMaterializationState $loadedRuntime,
+        private IntegrationReceiptWorker $receipts,
     ) {
     }
 
@@ -134,6 +137,9 @@ final readonly class IntegrationWorkCommand implements Command
                     $deadline->run(function () use ($workerId, $generation, $lease, &$didWork): void {
                         $didWork = $this->outbox->dispatchOne($workerId, $generation, $lease);
                     });
+                }
+                if ($stream !== 'process') {
+                    $didWork = $this->receipts->dispatchOne($workerId, $generation, $lease) || $didWork;
                 }
                 if ($stream !== 'outbox') {
                     $deadline->run(function () use ($workerId, $generation, $lease, &$didWork): void {

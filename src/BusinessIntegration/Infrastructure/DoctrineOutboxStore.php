@@ -23,6 +23,7 @@ use Kumwe\Integration\RecordedEventEnvelope;
 use Kumwe\Integration\RecordedIntegrationEvent;
 use Kumwe\Integration\IntegrationEvent;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\BusinessReporting\Infrastructure\DoctrineProjectionEventSequencer;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
@@ -31,8 +32,9 @@ use Throwable;
 /**
  * DBAL transactional outbox with expiring leases, fencing, retries, replay and bounded retention.
  *
- * `append()` deliberately opens no transaction: when called within an authoritative Doctrine transaction,
- * its insert is committed or rolled back with that mutation. Dispatch operations use their own short
+ * `append()` joins the authoritative transaction, atomically staging the outbox and projection fact.
+ * Global sequence allocation happens only in a separate transaction before dispatch.
+ * Dispatch operations use their own short
  * transactions and compare worker, token, generation and unexpired lease on every settlement.
  *
  * @since  2.0.0
@@ -54,13 +56,14 @@ final readonly class DoctrineOutboxStore implements OutboxStore
     /**
      * Bind the durable store to its transaction and schema collaborators.
      *
-     * @param   Connection             $database          Shared authoritative connection.
-     * @param   TableNames             $tables            Physical table-name compiler.
-     * @param   TransactionManager     $transactions      Short dispatch transaction boundary.
-     * @param   ClockInterface         $clock             Lease and lifecycle clock.
-     * @param   EventContractRegistry  $contracts         Exact trusted event contracts.
-     * @param   CanonicalEncoder       $canonicalEncoder  Host encoder stored envelopes are rebuilt with.
-     * @param   int                    $retentionDays     Terminal-row retention window.
+     * @param   Connection                        $database          Shared authoritative connection.
+     * @param   TableNames                        $tables            Physical table-name compiler.
+     * @param   TransactionManager                $transactions      Short dispatch transaction boundary.
+     * @param   ClockInterface                    $clock             Lease and lifecycle clock.
+     * @param   EventContractRegistry             $contracts         Exact trusted event contracts.
+     * @param   CanonicalEncoder                  $canonicalEncoder  Host encoder stored envelopes are rebuilt with.
+     * @param   DoctrineProjectionEventSequencer  $sequencer         Publishes committed sources before dispatch.
+     * @param   int                               $retentionDays     Terminal-row retention window.
      *
      * @throws  InvalidArgumentException  When retention falls outside 1 to 3650 days.
      *
@@ -73,6 +76,7 @@ final readonly class DoctrineOutboxStore implements OutboxStore
         private ClockInterface $clock,
         private EventContractRegistry $contracts,
         private CanonicalEncoder $canonicalEncoder,
+        private DoctrineProjectionEventSequencer $sequencer,
         private int $retentionDays = 90,
     ) {
         if ($retentionDays < 1 || $retentionDays > 3_650) {
@@ -102,87 +106,62 @@ final readonly class DoctrineOutboxStore implements OutboxStore
         if ($maximumAttempts < 1 || $maximumAttempts > 100) {
             throw new InvalidArgumentException('Outbox maximum attempts must be between 1 and 100.');
         }
-        $now = $this->clock->now();
-        $this->database->insert($this->tables->raw('integration_outbox'), [
-            'event_id' => $event->eventId(),
-            'event_type' => $event->eventType(),
-            'schema_version' => $event->schemaVersion(),
-            'sensitivity' => $event->sensitivity()->value,
-            'site_identifier' => $event->siteIdentifier(),
-            'organization_id' => $event->organizationId(),
-            'aggregate_type' => $event->aggregateType(),
-            'aggregate_id' => $event->aggregateId(),
-            'aggregate_version' => $event->aggregateVersion(),
-            'correlation_id' => $event->correlationId(),
-            'envelope' => RecordedEventEnvelope::document($event),
-            'status' => 'pending',
-            'available_at' => $availableAt !== null && $availableAt > $now ? $availableAt : $now,
-            'attempts' => 0,
-            'maximum_attempts' => $maximumAttempts,
-            'lease_owner' => null,
-            'lease_token' => null,
-            'lease_acquired_at' => null,
-            'lease_expires_at' => null,
-            'runtime_generation' => null,
-            'failure_classification' => null,
-            'exception_type' => null,
-            'error_message' => null,
-            'dispatched_at' => null,
-            'retained_until' => $now->add(new DateInterval(sprintf('P%dD', $this->retentionDays))),
-            'replay_count' => 0,
-            'replayed_at' => null,
-            'replayed_by' => null,
-            'created_at' => $now,
-            'updated_at' => $now,
-        ], [
-            'envelope' => Types::JSON,
-            'available_at' => Types::DATETIME_IMMUTABLE,
-            'retained_until' => Types::DATETIME_IMMUTABLE,
-            'created_at' => Types::DATETIME_IMMUTABLE,
-            'updated_at' => Types::DATETIME_IMMUTABLE,
-        ]);
-        $journalHead = $this->database->fetchOne(sprintf(
-            'SELECT last_sequence FROM %s WHERE singleton_id = 1%s',
-            $this->tables->quoted('business_projection_event_head'),
-            $this->journalLockClause(),
-        ));
-        if (
-            (!is_int($journalHead) || $journalHead < 0)
-            && (!is_string($journalHead) || preg_match('/^[0-9]+$/D', $journalHead) !== 1)
-        ) {
-            throw new RuntimeException('The projection source journal head is unavailable.');
-        }
-        $envelope = RecordedEventEnvelope::document($event);
-        $this->database->insert($this->tables->raw('business_projection_source_events'), [
-            'event_id' => $event->eventId(),
-            'event_type' => $event->eventType(),
-            'schema_version' => $event->schemaVersion(),
-            'sensitivity' => $event->sensitivity()->value,
-            'envelope' => $envelope,
-            'event_checksum' => $this->canonicalEncoder->digest($envelope),
-            'recorded_at' => $now,
-        ], [
-            'event_id' => Types::GUID,
-            'schema_version' => Types::INTEGER,
-            'envelope' => Types::JSON,
-            'recorded_at' => Types::DATETIME_IMMUTABLE,
-        ]);
-        $sequence = $this->database->fetchOne(sprintf(
-            'SELECT source_sequence FROM %s WHERE event_id = ?',
-            $this->tables->quoted('business_projection_source_events'),
-        ), [$event->eventId()], [Types::GUID]);
-        if (!is_int($sequence) && (!is_string($sequence) || preg_match('/^[1-9][0-9]*$/D', $sequence) !== 1)) {
-            throw new RuntimeException('The projection source journal did not assign an event sequence.');
-        }
-        $sequence = (int) $sequence;
-        $updatedHead = $this->database->executeStatement(sprintf(
-            'UPDATE %s SET last_sequence = ? WHERE singleton_id = 1 AND last_sequence = ?',
-            $this->tables->quoted('business_projection_event_head'),
-        ), [$sequence, (int) $journalHead], [Types::BIGINT, Types::BIGINT]);
-        $this->assertOne(
-            $updatedHead,
-            'The projection source journal head lost its serialization fence.',
-        );
+        $this->transactions->transactional(function () use ($event, $maximumAttempts, $availableAt): void {
+            $now = $this->clock->now();
+            $envelope = RecordedEventEnvelope::document($event);
+            $this->database->insert($this->tables->raw('integration_outbox'), [
+                'event_id' => $event->eventId(),
+                'event_type' => $event->eventType(),
+                'schema_version' => $event->schemaVersion(),
+                'sensitivity' => $event->sensitivity()->value,
+                'site_identifier' => $event->siteIdentifier(),
+                'organization_id' => $event->organizationId(),
+                'aggregate_type' => $event->aggregateType(),
+                'aggregate_id' => $event->aggregateId(),
+                'aggregate_version' => $event->aggregateVersion(),
+                'correlation_id' => $event->correlationId(),
+                'envelope' => $envelope,
+                'status' => 'pending',
+                'available_at' => $availableAt !== null && $availableAt > $now ? $availableAt : $now,
+                'attempts' => 0,
+                'maximum_attempts' => $maximumAttempts,
+                'lease_owner' => null,
+                'lease_token' => null,
+                'lease_acquired_at' => null,
+                'lease_expires_at' => null,
+                'runtime_generation' => null,
+                'failure_classification' => null,
+                'exception_type' => null,
+                'error_message' => null,
+                'dispatched_at' => null,
+                'retained_until' => $now->add(new DateInterval(sprintf('P%dD', $this->retentionDays))),
+                'replay_count' => 0,
+                'replayed_at' => null,
+                'replayed_by' => null,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ], [
+                'envelope' => Types::JSON,
+                'available_at' => Types::DATETIME_IMMUTABLE,
+                'retained_until' => Types::DATETIME_IMMUTABLE,
+                'created_at' => Types::DATETIME_IMMUTABLE,
+                'updated_at' => Types::DATETIME_IMMUTABLE,
+            ]);
+            $this->database->insert($this->tables->raw('business_projection_event_staging'), [
+                'event_id' => $event->eventId(),
+                'event_type' => $event->eventType(),
+                'schema_version' => $event->schemaVersion(),
+                'sensitivity' => $event->sensitivity()->value,
+                'envelope' => $envelope,
+                'event_checksum' => $this->canonicalEncoder->digest($envelope),
+                'recorded_at' => $now,
+            ], [
+                'event_id' => Types::GUID,
+                'schema_version' => Types::INTEGER,
+                'envelope' => Types::JSON,
+                'recorded_at' => Types::DATETIME_IMMUTABLE,
+            ]);
+        });
     }
 
     /**
@@ -199,6 +178,7 @@ final readonly class DoctrineOutboxStore implements OutboxStore
     public function claim(string $workerId, string $runtimeGeneration, int $leaseSeconds): ?OutboxLease
     {
         $this->assertLeaseInput($workerId, $runtimeGeneration, $leaseSeconds);
+        $this->sequencer->sequence();
         return $this->transactions->transactional(function () use (
             $workerId,
             $runtimeGeneration,
@@ -207,11 +187,13 @@ final readonly class DoctrineOutboxStore implements OutboxStore
             $now = $this->clock->now();
             $this->buryExhausted($now);
             $row = $this->database->fetchAssociative(sprintf(
-                'SELECT * FROM %s WHERE attempts < maximum_attempts AND ('
+                'SELECT o.* FROM %s o WHERE EXISTS (SELECT 1 FROM %s j WHERE j.event_id = o.event_id) '
+                . 'AND attempts < maximum_attempts AND ('
                 . "(status = 'pending' AND available_at <= ?) OR "
                 . "(status = 'reserved' AND (lease_expires_at IS NULL OR lease_expires_at <= ?))) "
                 . 'ORDER BY available_at, created_at, event_id LIMIT 1%s',
                 $this->tables->quoted('integration_outbox'),
+                $this->tables->quoted('business_projection_source_events'),
                 $this->lockClause(),
             ), [$now, $now], [Types::DATETIME_IMMUTABLE, Types::DATETIME_IMMUTABLE]);
             if ($row === false) {
@@ -447,9 +429,12 @@ final readonly class DoctrineOutboxStore implements OutboxStore
         }
         return $this->transactions->transactional(function () use ($now, $limit): int {
             $ids = $this->database->fetchFirstColumn(sprintf(
-                "SELECT event_id FROM %s WHERE status IN ('dead', 'dispatched') AND retained_until <= ? "
-                . 'ORDER BY retained_until, event_id LIMIT ?',
+                "SELECT o.event_id FROM %s o WHERE status IN ('dead', 'dispatched') AND retained_until <= ? "
+                . 'AND EXISTS (SELECT 1 FROM %s j WHERE j.event_id = o.event_id) '
+                . 'ORDER BY retained_until, o.event_id LIMIT ?%s',
                 $this->tables->quoted('integration_outbox'),
+                $this->tables->quoted('business_projection_source_events'),
+                $this->lockClause(),
             ), [$now, $limit], [Types::DATETIME_IMMUTABLE, Types::INTEGER]);
             if ($ids === []) {
                 return 0;
@@ -618,25 +603,6 @@ final readonly class DoctrineOutboxStore implements OutboxStore
         $platform = $this->database->getDatabasePlatform();
         return $platform instanceof PostgreSQLPlatform || $platform instanceof AbstractMySQLPlatform
             ? ' FOR UPDATE SKIP LOCKED'
-            : '';
-    }
-
-    /**
-     * Return the blocking database-specific row lock used to serialize journal sequence allocation.
-     *
-     * Unlike work claiming, journal allocation must never skip the locked singleton: waiting ensures
-     * source sequence order is also authoritative transaction commit order.
-     *
-     * @return  string  Driver-specific blocking row-lock suffix.
-     *
-     * @since   2.0.0
-     */
-    private function journalLockClause(): string
-    {
-        $platform = $this->database->getDatabasePlatform();
-
-        return $platform instanceof PostgreSQLPlatform || $platform instanceof AbstractMySQLPlatform
-            ? ' FOR UPDATE'
             : '';
     }
 

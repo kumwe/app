@@ -12,6 +12,9 @@ use Doctrine\DBAL\Exception\ForeignKeyConstraintViolationException;
 use Doctrine\DBAL\Exception\RetryableException;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\DBAL\ParameterType;
+use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
+use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
+use Doctrine\DBAL\Result;
 use Doctrine\DBAL\Types\Type;
 use Doctrine\DBAL\Types\Types;
 use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
@@ -663,14 +666,14 @@ final readonly class DoctrineBusinessRecordWriteRepository implements BusinessRe
         $sourceColumn = $this->physical($association, $sourceLogical);
         $targetColumn = $this->physical($association, $targetLogical);
         $positionColumn = $this->physical($association, 'position');
-        $rows = $this->database->fetchFirstColumn(sprintf(
+        $rows = $this->currentRead(sprintf(
             'SELECT %s FROM %s WHERE %s = ? ORDER BY %s, %s',
             $this->quote($targetColumn),
             $this->quote($association->physicalName),
             $this->quote($sourceColumn),
             $this->quote($positionColumn),
             $this->quote($targetColumn),
-        ), [$source->recordKey], [$this->type($association, $sourceLogical)]);
+        ), [$source->recordKey], [$this->type($association, $sourceLogical)])->fetchFirstColumn();
         $stored = array_map(static function (mixed $value): string {
             if (!is_string($value)) {
                 throw new BusinessRecordSchemaUnavailable('A stored relationship identity is invalid.');
@@ -1432,12 +1435,12 @@ final readonly class DoctrineBusinessRecordWriteRepository implements BusinessRe
         if ($affected === 1) {
             return;
         }
-        $actual = $this->database->fetchOne(sprintf(
+        $actual = $this->currentRead(sprintf(
             'SELECT %s FROM %s WHERE %s = ?',
             $this->quote($this->physical($table, 'version')),
             $this->quote($table->physicalName),
             $this->quote($this->physical($table, 'record_id')),
-        ), [$recordKey], [$this->type($table, 'record_id')]);
+        ), [$recordKey], [$this->type($table, 'record_id')])->fetchOne();
         if ($actual === false || $this->storedInteger($actual) !== $expectedVersion) {
             $this->conflict($table, $recordKey, $expectedVersion);
         }
@@ -1512,12 +1515,13 @@ final readonly class DoctrineBusinessRecordWriteRepository implements BusinessRe
         if ($requested !== null) {
             return $requested;
         }
-        $value = $this->database->fetchOne(sprintf(
-            'SELECT MAX(%s) FROM %s WHERE %s = ?',
+        $value = $this->currentRead(sprintf(
+            'SELECT %s FROM %s WHERE %s = ? ORDER BY %s DESC LIMIT 1',
             $this->quote($this->physical($table, 'position')),
             $this->quote($table->physicalName),
             $this->quote($this->physical($table, $sourceLogical)),
-        ), [$sourceId], [$this->type($table, $sourceLogical)]);
+            $this->quote($this->physical($table, 'position')),
+        ), [$sourceId], [$this->type($table, $sourceLogical)])->fetchOne();
 
         return $value === false || $value === null ? 0 : $this->storedInteger($value) + 1;
     }
@@ -1541,16 +1545,47 @@ final readonly class DoctrineBusinessRecordWriteRepository implements BusinessRe
      */
     private function conflict(PhysicalTableBlueprint $table, string $recordKey, int $expectedVersion): never
     {
-        $actual = $this->database->fetchOne(sprintf(
+        $actual = $this->currentRead(sprintf(
             'SELECT %s FROM %s WHERE %s = ?',
             $this->quote($this->physical($table, 'version')),
             $this->quote($table->physicalName),
             $this->quote($this->physical($table, 'record_id')),
-        ), [$recordKey], [$this->type($table, 'record_id')]);
+        ), [$recordKey], [$this->type($table, 'record_id')])->fetchOne();
         if ($actual === false) {
             throw new BusinessRecordNotFound();
         }
         throw new BusinessRecordVersionConflict($expectedVersion, $this->storedInteger($actual));
+    }
+
+    /**
+     * Read collection and conflict state from the current committed version behind the aggregate row lock.
+     *
+     * A MySQL snapshot may predate acquisition of that lock. Locking reads keep reorders, appended line
+     * positions and compare-and-set diagnostics consistent with the version actually being mutated.
+     * Aggregate owners and relationship targets are locked by the read repository before these queries.
+     *
+     * @param   string        $sql         Bounded selection compiled from the installed blueprint.
+     * @param   list<mixed>   $parameters  Bound aggregate or record identity.
+     * @param   list<string>  $types       Installed column types.
+     *
+     * @return  Result  Current rows pinned until this transaction settles.
+     *
+     * @throws  BusinessRecordTemporarilyUnavailable  When current rows cannot be locked.
+     *
+     * @since   2.0.0
+     */
+    private function currentRead(string $sql, array $parameters, array $types): Result
+    {
+        $this->assertTransaction();
+        $platform = $this->database->getDatabasePlatform();
+        if (!$platform instanceof AbstractMySQLPlatform && !$platform instanceof PostgreSQLPlatform) {
+            throw new BusinessRecordTemporarilyUnavailable();
+        }
+        try {
+            return $this->database->executeQuery($sql . ' FOR UPDATE', $parameters, $types);
+        } catch (DbalException $failure) {
+            throw new BusinessRecordTemporarilyUnavailable($failure);
+        }
     }
 
     /**

@@ -100,14 +100,12 @@
               <span>{{ t(widget.data.progress.help, widget.data.progress.help_parameters|default({})) }}</span>
             {% endif %}
           </div>
-          <div
+          <progress
             class="progress-track"
-            role="progressbar"
             aria-labelledby="dashboard-widget-{{ widget_index }}-progress-label"
-            aria-valuemin="0"
-            aria-valuemax="100"
-            aria-valuenow="{{ widget.data.progress.value }}"
-          ><span style="--progress: {{ widget.data.progress.value }}%"></span></div>
+            max="100"
+            value="{{ widget.data.progress.value }}"
+          >{{ widget.data.progress.value }}%</progress>
         </div>
       {% endif %}
     </div>

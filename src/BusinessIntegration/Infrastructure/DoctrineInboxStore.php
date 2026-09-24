@@ -5,6 +5,10 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessIntegration\Infrastructure;
 
 use DateInterval;
+use Kumwe\CanonicalJson\CanonicalEncoder;
+use Kumwe\Integration\RecordedIntegrationEvent;
+use JsonException;
+use Kumwe\App\Infrastructure\Automation\DoctrineQueuePermits;
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
@@ -95,7 +99,7 @@ final readonly class DoctrineInboxStore implements InboxStore
             throw new InvalidArgumentException('A contributed queue lease cannot exceed its signed policy.');
         }
         if ($policy !== null) {
-            $this->ensureQueueRuntime($policy);
+            $this->permits()->synchronize($policy, $this->clock->now());
         }
         try {
             return $this->receiveTransaction(
@@ -119,6 +123,213 @@ final readonly class DoctrineInboxStore implements InboxStore
     }
 
     /**
+     * Materialize the complete selected fanout atomically without claiming or executing any target.
+     *
+     * Retries only fill absent receipts: completed, pending, poison and live leases remain untouched.
+     *
+     * @param   list<EventConsumerDefinition>  $consumers  Active consumers and webhook receipt declarations.
+     * @param   IntegrationEvent               $event      Sequenced authoritative event.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function materialize(array $consumers, IntegrationEvent $event): void
+    {
+        $this->contracts->assertEvent($event);
+        $this->transactions->transactional(function () use ($consumers, $event): void {
+            $now = $this->clock->now();
+            foreach ($consumers as $consumer) {
+                if ($consumer->eventType() !== $event->eventType()) {
+                    throw new InvalidArgumentException('A fanout receipt declares another event type.');
+                }
+                $this->insertReceipt($consumer, $event, 'pending', $now, ignoreDuplicate: true);
+                $suffix = $this->database->getDatabasePlatform() instanceof AbstractMySQLPlatform
+                    ? ' ON DUPLICATE KEY UPDATE consumer_id = consumer_id'
+                    : ' ON CONFLICT (consumer_id, scope_checksum) DO NOTHING';
+                $this->database->executeStatement(sprintf(
+                    'INSERT INTO %s (consumer_id, scope_checksum, site_identifier, organization_scope, '
+                    . 'last_claimed_at, claim_count) VALUES (?, ?, ?, ?, ?, 0)%s',
+                    $this->tables->quoted('integration_delivery_turns'),
+                    $suffix,
+                ), [$consumer->identifier(), $this->scopeChecksum($event), $event->siteIdentifier(),
+                    $this->organizationScope($event), new DateTimeImmutable('1970-01-01T00:00:00+00:00')], [
+                    Types::STRING, Types::STRING, Types::STRING, Types::STRING, Types::DATETIME_IMMUTABLE,
+                ]);
+            }
+        });
+    }
+
+    /**
+     * Claim a bounded fair batch from the active signed graph in one short transaction.
+     *
+     * Turns are durable per consumer, site and organization. Contended lanes and receipts are skipped;
+     * no handler runs while their locks are held. Pending work binds to the current trusted handler,
+     * while completed receipts remain final and poison restarts only after a signed handler upgrade.
+     *
+     * @param   list<EventConsumerDefinition>  $consumers   Exact active consumer/webhook graph.
+     * @param   CanonicalEncoder               $encoder     Package event reconstruction dependency.
+     * @param   string                         $worker      Replica and process identity.
+     * @param   string                         $generation  Current trusted generation.
+     * @param   int                            $seconds     Requested lease, narrowed to each queue policy.
+     * @param   int                            $limit       Maximum leases, between one and 64.
+     *
+     * @return  list<InboxLease>  Independent durable leases ready for execution outside this transaction.
+     *
+     * @throws  InvalidArgumentException  When the batch bound or worker lease is invalid.
+     *
+     * @since   2.0.0
+     */
+    public function claimBatch(
+        array $consumers,
+        CanonicalEncoder $encoder,
+        string $worker,
+        string $generation,
+        int $seconds,
+        int $limit = 1,
+    ): array {
+        $this->assertClaimInput($worker, $generation, $seconds);
+        if ($limit < 1 || $limit > 64) {
+            throw new InvalidArgumentException('An inbox batch must contain between one and 64 leases.');
+        }
+        if ($consumers === []) {
+            return [];
+        }
+        $catalog = [];
+        $predicates = [];
+        $parameters = [];
+        $types = [];
+        foreach ($consumers as $consumer) {
+            $catalog[$consumer->identifier()][$consumer->eventType()] = $consumer;
+            $predicates[] = '(i.consumer_id = ? AND i.event_type = ? AND ('
+                . "(i.status = 'pending' AND i.available_at <= ?) OR "
+                . "(i.status = 'reserved' AND i.lease_expires_at <= ?) OR "
+                . "(i.status IN ('poison', 'unavailable') AND i.handler_version <> ?)))";
+            array_push(
+                $parameters,
+                $consumer->identifier(),
+                $consumer->eventType(),
+                $this->clock->now(),
+                $this->clock->now(),
+                $consumer->handlerVersion()
+            );
+            array_push(
+                $types,
+                Types::STRING,
+                Types::STRING,
+                Types::DATETIME_IMMUTABLE,
+                Types::DATETIME_IMMUTABLE,
+                Types::STRING
+            );
+            $policy = $this->policies?->policy($consumer->queue());
+            if ($policy !== null) {
+                $this->permits()->synchronize($policy, $this->clock->now());
+            }
+        }
+        $eligible = '(' . implode(' OR ', $predicates) . ')';
+        return $this->transactions->transactional(function () use (
+            $catalog,
+            $encoder,
+            $worker,
+            $generation,
+            $seconds,
+            $limit,
+            $eligible,
+            $parameters,
+            $types,
+        ): array {
+            $leases = [];
+            // A refused/poison lane cannot consume an unbounded poll or starve other consumers.
+            for ($scan = 0; $scan < 64 && count($leases) < $limit; $scan++) {
+                $turn = $this->database->fetchAssociative(sprintf(
+                    'SELECT t.* FROM %s t WHERE EXISTS (SELECT 1 FROM %s i '
+                    . 'WHERE i.consumer_id = t.consumer_id AND i.site_identifier = t.site_identifier '
+                    . "AND COALESCE(i.organization_id, '') = t.organization_scope AND %s) "
+                    . 'ORDER BY t.last_claimed_at, t.claim_count, t.consumer_id, t.scope_checksum LIMIT 1%s',
+                    $this->tables->quoted('integration_delivery_turns'),
+                    $this->tables->quoted('integration_inbox'),
+                    $eligible,
+                    $this->lockClause(true),
+                ), $parameters, $types);
+                if ($turn === false) {
+                    break;
+                }
+                $now = $this->clock->now();
+                $this->database->executeStatement(sprintf(
+                    'UPDATE %s SET last_claimed_at = ?, claim_count = claim_count + 1 '
+                    . 'WHERE consumer_id = ? AND scope_checksum = ?',
+                    $this->tables->quoted('integration_delivery_turns'),
+                ), [$now, $turn['consumer_id'], $turn['scope_checksum']], [
+                    Types::DATETIME_IMMUTABLE, Types::STRING, Types::STRING,
+                ]);
+                $row = $this->database->fetchAssociative(
+                    sprintf(
+                        'SELECT i.* FROM %s i WHERE i.consumer_id = ? AND i.site_identifier = ? '
+                        . "AND COALESCE(i.organization_id, '') = ? AND %s "
+                        . 'ORDER BY i.available_at, i.aggregate_version, i.first_received_at, i.event_id LIMIT 1%s',
+                        $this->tables->quoted('integration_inbox'),
+                        $eligible,
+                        $this->lockClause(true),
+                    ),
+                    [$turn['consumer_id'], $turn['site_identifier'], $turn['organization_scope'], ...$parameters],
+                    [Types::STRING, Types::STRING, Types::STRING, ...$types]
+                );
+                if ($row === false) {
+                    continue;
+                }
+                $definition = $catalog[$this->requiredString($row, 'consumer_id')]
+                    [$this->requiredString($row, 'event_type')];
+                try {
+                    $document = is_string($row['envelope'])
+                        ? json_decode($row['envelope'], true, 64, JSON_THROW_ON_ERROR) : $row['envelope'];
+                    if (!is_array($document) || array_is_list($document)) {
+                        throw new InvalidArgumentException('An inbox envelope must be an object.');
+                    }
+                    /** @var array<string, mixed> $document */
+                    $event = RecordedIntegrationEvent::fromArray($encoder, $document);
+                    $this->contracts->assertEvent($event);
+                    if (
+                        $event->eventId() !== $row['event_id'] || $event->siteIdentifier() !== $row['site_identifier']
+                        || $event->organizationId() !== $row['organization_id']
+                        || $event->eventType() !== $row['event_type']
+                    ) {
+                        throw new InvalidArgumentException('An inbox envelope disagrees with its durable scope.');
+                    }
+                } catch (InvalidArgumentException | JsonException $failure) {
+                    $this->database->update($this->tables->raw('integration_inbox'), [
+                        'status' => 'poison', 'handler_version' => $definition->handlerVersion(),
+                        'error_message' => substr($failure->getMessage(), 0, 4000), 'updated_at' => $now,
+                    ], ['consumer_id' => $row['consumer_id'], 'event_id' => $row['event_id']], [
+                        'updated_at' => Types::DATETIME_IMMUTABLE,
+                    ]);
+                    continue;
+                }
+                $policy = $this->policies?->policy($definition->queue());
+                $result = $this->receiveTransaction(
+                    $this->effectiveConsumer($definition),
+                    $event,
+                    $worker,
+                    $generation,
+                    min($seconds, $policy->leaseSeconds ?? $seconds),
+                    $policy,
+                );
+                if ($result->lease !== null) {
+                    $leases[] = $result->lease;
+                } elseif (in_array($result->disposition, [InboxDisposition::BUSY, InboxDisposition::REORDERED], true)) {
+                    $this->database->executeStatement(sprintf(
+                        'UPDATE %s SET available_at = ? WHERE consumer_id = ? AND event_id = ? '
+                        . "AND status = 'pending' AND available_at <= ?",
+                        $this->tables->quoted('integration_inbox'),
+                    ), [$now->modify('+1 second'), $row['consumer_id'], $row['event_id'], $now], [
+                        Types::DATETIME_IMMUTABLE, Types::STRING, Types::GUID, Types::DATETIME_IMMUTABLE,
+                    ]);
+                }
+            }
+            return $leases;
+        });
+    }
+
+    /**
      * Renew the supplied durable-processing lease.
      *
      * @param   InboxLease  $lease         Fenced lease proving ownership of the durable item.
@@ -137,20 +348,30 @@ final readonly class DoctrineInboxStore implements InboxStore
         if ($policy !== null && $leaseSeconds > $policy->leaseSeconds) {
             throw new InvalidArgumentException('A contributed queue lease cannot exceed its signed policy.');
         }
-        $now = $this->clock->now();
-        $this->assertOne($this->database->executeStatement(sprintf(
-            'UPDATE %s SET lease_expires_at = ?, updated_at = ? WHERE consumer_id = ? AND event_id = ? '
-            . "AND status = 'reserved' AND lease_owner = ? AND lease_token = ? "
-            . 'AND runtime_generation = ? AND lease_expires_at > ?',
-            $this->tables->quoted('integration_inbox'),
-        ), [
-            $now->add(new DateInterval(sprintf('PT%dS', $leaseSeconds))), $now,
-            $lease->consumer->identifier(), $lease->event->eventId(), $lease->workerId,
-            $lease->leaseToken, $lease->runtimeGeneration, $now,
-        ], [
-            Types::DATETIME_IMMUTABLE, Types::DATETIME_IMMUTABLE, Types::STRING, Types::GUID,
-            Types::STRING, Types::GUID, Types::STRING, Types::DATETIME_IMMUTABLE,
-        ]));
+        $this->transactions->transactional(function () use ($lease, $leaseSeconds, $policy): void {
+            $now = $this->clock->now();
+            $this->assertOne($this->database->executeStatement(sprintf(
+                'UPDATE %s SET lease_expires_at = ?, updated_at = ? WHERE consumer_id = ? AND event_id = ? '
+                . "AND status = 'reserved' AND lease_owner = ? AND lease_token = ? "
+                . 'AND runtime_generation = ? AND lease_expires_at > ?',
+                $this->tables->quoted('integration_inbox'),
+            ), [
+                $now->add(new DateInterval(sprintf('PT%dS', $leaseSeconds))), $now,
+                $lease->consumer->identifier(), $lease->event->eventId(), $lease->workerId,
+                $lease->leaseToken, $lease->runtimeGeneration, $now,
+            ], [
+                Types::DATETIME_IMMUTABLE, Types::DATETIME_IMMUTABLE, Types::STRING, Types::GUID,
+                Types::STRING, Types::GUID, Types::STRING, Types::DATETIME_IMMUTABLE,
+            ]));
+            if ($policy !== null) {
+                $this->permits()->renew(
+                    $policy,
+                    $lease->leaseToken,
+                    $now,
+                    $now->add(new DateInterval(sprintf('PT%dS', $leaseSeconds))),
+                );
+            }
+        });
     }
 
     /**
@@ -200,6 +421,9 @@ final readonly class DoctrineInboxStore implements InboxStore
                 Types::DATETIME_IMMUTABLE, Types::DATETIME_IMMUTABLE, Types::STRING, Types::GUID,
                 Types::STRING, Types::GUID, Types::STRING, Types::DATETIME_IMMUTABLE,
             ]));
+            if ($this->policies?->policy($lease->consumer->queue()) !== null) {
+                $this->permits()->release($lease->consumer->queue(), $lease->leaseToken);
+            }
         });
     }
 
@@ -221,27 +445,32 @@ final readonly class DoctrineInboxStore implements InboxStore
         Throwable $failure,
         ?DateTimeImmutable $retryAt,
     ): void {
-        $retry = $classification === FailureClassification::TRANSIENT
-            && $retryAt !== null
-            && $lease->attempts < $lease->consumer->maximumAttempts();
-        $now = $this->clock->now();
-        $this->assertOne($this->database->executeStatement(sprintf(
-            'UPDATE %s SET status = ?, available_at = ?, lease_owner = NULL, lease_token = NULL, '
-            . 'lease_acquired_at = NULL, lease_expires_at = NULL, runtime_generation = NULL, '
-            . 'failure_classification = ?, exception_type = ?, error_message = ?, updated_at = ? '
-            . "WHERE consumer_id = ? AND event_id = ? AND status = 'reserved' AND lease_owner = ? "
-            . 'AND lease_token = ? AND runtime_generation = ? AND lease_expires_at > ?',
-            $this->tables->quoted('integration_inbox'),
-        ), [
-            $retry ? 'pending' : 'poison', $retry && $retryAt > $now ? $retryAt : $now,
-            $classification->value, $failure::class, substr($failure->getMessage(), 0, 4_000), $now,
-            $lease->consumer->identifier(), $lease->event->eventId(), $lease->workerId,
-            $lease->leaseToken, $lease->runtimeGeneration, $now,
-        ], [
-            Types::STRING, Types::DATETIME_IMMUTABLE, Types::STRING, Types::STRING, Types::STRING,
-            Types::DATETIME_IMMUTABLE, Types::STRING, Types::GUID, Types::STRING, Types::GUID,
-            Types::STRING, Types::DATETIME_IMMUTABLE,
-        ]));
+        $this->transactions->transactional(function () use ($lease, $classification, $failure, $retryAt): void {
+            $retry = $classification === FailureClassification::TRANSIENT
+                && $retryAt !== null
+                && $lease->attempts < $lease->consumer->maximumAttempts();
+            $now = $this->clock->now();
+            $this->assertOne($this->database->executeStatement(sprintf(
+                'UPDATE %s SET status = ?, available_at = ?, lease_owner = NULL, lease_token = NULL, '
+                . 'lease_acquired_at = NULL, lease_expires_at = NULL, runtime_generation = NULL, '
+                . 'failure_classification = ?, exception_type = ?, error_message = ?, updated_at = ? '
+                . "WHERE consumer_id = ? AND event_id = ? AND status = 'reserved' AND lease_owner = ? "
+                . 'AND lease_token = ? AND runtime_generation = ? AND lease_expires_at > ?',
+                $this->tables->quoted('integration_inbox'),
+            ), [
+                $retry ? 'pending' : 'poison', $retry && $retryAt > $now ? $retryAt : $now,
+                $classification->value, $failure::class, substr($failure->getMessage(), 0, 4_000), $now,
+                $lease->consumer->identifier(), $lease->event->eventId(), $lease->workerId,
+                $lease->leaseToken, $lease->runtimeGeneration, $now,
+            ], [
+                Types::STRING, Types::DATETIME_IMMUTABLE, Types::STRING, Types::STRING, Types::STRING,
+                Types::DATETIME_IMMUTABLE, Types::STRING, Types::GUID, Types::STRING, Types::GUID,
+                Types::STRING, Types::DATETIME_IMMUTABLE,
+            ]));
+            if ($this->policies?->policy($lease->consumer->queue()) !== null) {
+                $this->permits()->release($lease->consumer->queue(), $lease->leaseToken);
+            }
+        });
     }
 
     /**
@@ -335,16 +564,25 @@ final readonly class DoctrineInboxStore implements InboxStore
                 }
             }
 
-            if ($policy !== null && !$this->claimPolicySlot($policy, $now)) {
-                return new InboxClaimResult(InboxDisposition::BUSY);
-            }
-
             $attempts = $row === false || $handlerUpgraded ? 1 : $this->integer($row, 'attempts') + 1;
             if ($attempts > $consumer->maximumAttempts()) {
                 $this->storePoison($consumer, $event, $now, $row !== false);
                 return new InboxClaimResult(InboxDisposition::POISON);
             }
             $token = Uuid::uuid7()->toString();
+            if (
+                $policy !== null && !$this->permits()->acquire(
+                    $policy,
+                    $now,
+                    'inbox',
+                    $event->eventId(),
+                    $consumer->identifier(),
+                    $token,
+                    $now->add(new DateInterval(sprintf('PT%dS', $leaseSeconds))),
+                )
+            ) {
+                return new InboxClaimResult(InboxDisposition::BUSY);
+            }
             if ($row === false) {
                 $this->insertReceipt(
                     $consumer,
@@ -379,17 +617,6 @@ final readonly class DoctrineInboxStore implements InboxStore
                     Types::STRING, Types::GUID, Types::DATETIME_IMMUTABLE, Types::DATETIME_IMMUTABLE, Types::STRING,
                     Types::DATETIME_IMMUTABLE, Types::STRING, Types::GUID,
                 ]));
-            }
-            if ($policy !== null) {
-                $this->database->update(
-                    $this->tables->raw('job_queue_runtime'),
-                    ['last_claimed_at' => $now, 'updated_at' => $now],
-                    ['queue_id' => $policy->queue],
-                    [
-                        'last_claimed_at' => Types::DATETIME_IMMUTABLE,
-                        'updated_at' => Types::DATETIME_IMMUTABLE,
-                    ],
-                );
             }
             return new InboxClaimResult(InboxDisposition::CLAIMED, new InboxLease(
                 $consumer,
@@ -641,17 +868,18 @@ final readonly class DoctrineInboxStore implements InboxStore
     /**
      * Insert a complete inbox receipt with scope, lease, and failure metadata.
      *
-     * @param   EventConsumerDefinition  $consumer     Signed consumer contract governing the receipt.
-     * @param   IntegrationEvent         $event        Versioned event being validated or processed.
-     * @param   string                   $status       Durable state to record for the receipt.
-     * @param   DateTimeImmutable        $now          Authoritative timestamp for the state transition.
-     * @param   int                      $attempts     Attempt count to record for this receipt.
-     * @param   ?string                  $worker       Stable identity of the claiming worker.
-     * @param   ?string                  $token        Opaque lease token used to fence concurrent workers.
-     * @param   ?string                  $generation   Trusted runtime generation that owns the lease.
-     * @param   ?DateTimeImmutable       $expiresAt    Lease expiration timestamp, when a lease is granted.
-     * @param   ?string                  $error        Sanitized failure detail retained for operators.
-     * @param   ?DateTimeImmutable       $completedAt  Timestamp at which processing completed, when applicable.
+     * @param   EventConsumerDefinition  $consumer         Signed consumer contract governing the receipt.
+     * @param   IntegrationEvent         $event            Versioned event being validated or processed.
+     * @param   string                   $status           Durable state to record for the receipt.
+     * @param   DateTimeImmutable        $now              Authoritative timestamp for the state transition.
+     * @param   int                      $attempts         Attempt count to record for this receipt.
+     * @param   ?string                  $worker           Stable identity of the claiming worker.
+     * @param   ?string                  $token            Opaque lease token used to fence concurrent workers.
+     * @param   ?string                  $generation       Trusted runtime generation that owns the lease.
+     * @param   ?DateTimeImmutable       $expiresAt        Lease expiration timestamp, when a lease is granted.
+     * @param   ?string                  $error            Sanitized failure detail retained for operators.
+     * @param   ?DateTimeImmutable       $completedAt      Timestamp at which processing completed, when applicable.
+     * @param   bool                     $ignoreDuplicate  Preserve every existing receipt during materialization.
      *
      * @return  void
      *
@@ -669,8 +897,9 @@ final readonly class DoctrineInboxStore implements InboxStore
         ?DateTimeImmutable $expiresAt = null,
         ?string $error = null,
         ?DateTimeImmutable $completedAt = null,
+        bool $ignoreDuplicate = false,
     ): void {
-        $this->database->insert($this->tables->raw('integration_inbox'), [
+        $values = [
             'consumer_id' => $consumer->identifier(),
             'event_id' => $event->eventId(),
             'queue' => $consumer->queue(),
@@ -699,7 +928,8 @@ final readonly class DoctrineInboxStore implements InboxStore
             'completed_at' => $completedAt,
             'evidence_compacted_at' => null,
             'updated_at' => $now,
-        ], [
+        ];
+        $types = [
             'envelope' => Types::JSON,
             'available_at' => Types::DATETIME_IMMUTABLE,
             'lease_acquired_at' => Types::DATETIME_IMMUTABLE,
@@ -707,7 +937,24 @@ final readonly class DoctrineInboxStore implements InboxStore
             'first_received_at' => Types::DATETIME_IMMUTABLE,
             'completed_at' => Types::DATETIME_IMMUTABLE,
             'updated_at' => Types::DATETIME_IMMUTABLE,
-        ]);
+        ];
+        if (!$ignoreDuplicate) {
+            $this->database->insert($this->tables->raw('integration_inbox'), $values, $types);
+            return;
+        }
+        $suffix = $this->database->getDatabasePlatform() instanceof AbstractMySQLPlatform
+            ? ' ON DUPLICATE KEY UPDATE consumer_id = consumer_id'
+            : ' ON CONFLICT (consumer_id, event_id) DO NOTHING';
+        $this->database->executeStatement(sprintf(
+            'INSERT INTO %s (%s) VALUES (%s)%s',
+            $this->tables->quoted('integration_inbox'),
+            implode(', ', array_keys($values)),
+            implode(', ', array_fill(0, count($values), '?')),
+            $suffix,
+        ), array_values($values), array_map(
+            static fn (string $key): string => $types[$key] ?? Types::STRING,
+            array_keys($values)
+        ));
     }
 
     /**
@@ -793,81 +1040,36 @@ final readonly class DoctrineInboxStore implements InboxStore
     }
 
     /**
-     * Create the shared queue lock row before the receipt transaction attempts to lock it.
+     * Compose capacity arbitration on the inbox transaction connection.
      *
-     * @param   QueueRuntimePolicy  $policy  Active trusted queue policy.
-     *
-     * @return  void
+     * @return  DoctrineQueuePermits  The same durable permit namespace used by job workers.
      *
      * @since   2.0.0
      */
-    private function ensureQueueRuntime(QueueRuntimePolicy $policy): void
+    private function permits(): DoctrineQueuePermits
     {
-        if (
-            $this->database->fetchOne(sprintf(
-                'SELECT queue_id FROM %s WHERE queue_id = ?',
-                $this->tables->quoted('job_queue_runtime'),
-            ), [$policy->queue]) !== false
-        ) {
-            return;
-        }
-        $now = $this->clock->now();
-        try {
-            $this->database->insert($this->tables->raw('job_queue_runtime'), [
-                'queue_id' => $policy->queue,
-                'lease_seconds' => $policy->leaseSeconds,
-                'maximum_attempts' => $policy->maximumAttempts,
-                'maximum_in_flight' => $policy->maximumInFlight,
-                'retention_days' => $policy->retentionDays,
-                'runtime_generation' => $policy->runtimeGeneration,
-                'last_claimed_at' => null,
-                'updated_at' => $now,
-            ], ['updated_at' => Types::DATETIME_IMMUTABLE]);
-        } catch (UniqueConstraintViolationException) {
-            // A concurrent job or inbox claimant committed the shared lock row.
-        }
+        return new DoctrineQueuePermits($this->database, $this->tables);
     }
 
     /**
-     * Serialize queue-wide capacity across job reservations and inbox delivery leases.
+     * Require a durable identity before using it as a catalog key.
      *
-     * @param   QueueRuntimePolicy  $policy  Active trusted queue policy.
-     * @param   DateTimeImmutable   $now     Instant live fences are compared against.
+     * @param   array<string, mixed>  $row  Durable receipt.
+     * @param   string                $key  Identity column.
      *
-     * @return  bool  True when one more live job or delivery fits below the signed ceiling.
+     * @return  string  Nonempty identity.
      *
-     * @throws  RuntimeException  When the shared queue lock row disappeared unexpectedly.
+     * @throws  RuntimeException  When durable identity is malformed.
      *
      * @since   2.0.0
      */
-    private function claimPolicySlot(QueueRuntimePolicy $policy, DateTimeImmutable $now): bool
+    private function requiredString(array $row, string $key): string
     {
-        $locked = $this->database->fetchOne(sprintf(
-            'SELECT queue_id FROM %s WHERE queue_id = ?%s',
-            $this->tables->quoted('job_queue_runtime'),
-            $this->lockClause(false),
-        ), [$policy->queue]);
-        if ($locked === false) {
-            throw new RuntimeException('The contributed queue runtime lock is unavailable.');
+        $value = $row[$key] ?? null;
+        if (!is_string($value) || $value === '') {
+            throw new RuntimeException('An inbox identity is malformed.');
         }
-        $this->database->update($this->tables->raw('job_queue_runtime'), [
-            'lease_seconds' => $policy->leaseSeconds,
-            'maximum_attempts' => $policy->maximumAttempts,
-            'maximum_in_flight' => $policy->maximumInFlight,
-            'retention_days' => $policy->retentionDays,
-            'runtime_generation' => $policy->runtimeGeneration,
-            'updated_at' => $now,
-        ], ['queue_id' => $policy->queue], ['updated_at' => Types::DATETIME_IMMUTABLE]);
-        $jobs = $this->databaseCount($this->database->fetchOne(sprintf(
-            "SELECT COUNT(*) FROM %s WHERE queue = ? AND status = 'reserved' AND lease_expires_at > ?",
-            $this->tables->quoted('jobs'),
-        ), [$policy->queue, $now], [Types::STRING, Types::DATETIME_IMMUTABLE]));
-        $deliveries = $this->databaseCount($this->database->fetchOne(sprintf(
-            "SELECT COUNT(*) FROM %s WHERE queue = ? AND status = 'reserved' AND lease_expires_at > ?",
-            $this->tables->quoted('integration_inbox'),
-        ), [$policy->queue, $now], [Types::STRING, Types::DATETIME_IMMUTABLE]));
-
-        return $jobs + $deliveries < $policy->maximumInFlight;
+        return $value;
     }
 
     /**
@@ -887,30 +1089,6 @@ final readonly class DoctrineInboxStore implements InboxStore
             throw new RuntimeException(sprintf('Inbox field "%s" is not an integer.', $key));
         }
         return (int) $value;
-    }
-
-    /**
-     * Normalize a DBAL aggregate count without accepting another scalar representation.
-     *
-     * @param   mixed  $value  Raw aggregate value returned by the active database driver.
-     *
-     * @return  int  Non-negative row count.
-     *
-     * @throws  RuntimeException  When the driver did not return an integer or decimal integer string.
-     *
-     * @since   2.0.0
-     */
-    private function databaseCount(mixed $value): int
-    {
-        if (is_int($value)) {
-            if ($value >= 0) {
-                return $value;
-            }
-        } elseif (is_string($value) && preg_match('/^[0-9]+$/D', $value) === 1) {
-            return (int) $value;
-        }
-
-        throw new RuntimeException('An integration inbox count is invalid.');
     }
 
     /**

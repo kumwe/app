@@ -58,7 +58,10 @@ final class DashboardWidgetTemplateTest extends TestCase
             'aria-labelledby="dashboard-widget-7-progress-label"',
             $html,
         );
-        self::assertStringContainsString('aria-valuenow="67"', $html);
+        self::assertStringContainsString('<progress', $html);
+        self::assertStringContainsString('value="67"', $html);
+        self::assertStringContainsString('max="100"', $html);
+        self::assertStringNotContainsString('style=', $html);
         self::assertStringContainsString('67% published', $html);
     }
 

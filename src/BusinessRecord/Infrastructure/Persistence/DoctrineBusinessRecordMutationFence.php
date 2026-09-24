@@ -26,8 +26,9 @@ use Ramsey\Uuid\Uuid;
  * `SELECT` joins a site's business definition to its schema installation and carries the lock clause,
  * so the two rows are observed together and pinned for the rest of that transaction — an installer
  * cannot publish a version, disable an owner, or alter the physical tables in the window between a
- * caller resolving a definition and touching its rows. The exclusive fence uses `FOR UPDATE`; the
- * shared one is platform-specific, so MySQL and PostgreSQL are named outright and any other platform is
+ * caller resolving a definition and touching its rows. Readers and writers share this generation fence;
+ * exclusive lifecycle and DDL updates still conflict with it. The shared lock is platform-specific, so
+ * MySQL and PostgreSQL are named outright and any other platform is
  * refused rather than quietly served by an unlocked read. Where the join finds nothing a second locking
  * read separates a definition that is absent, or whose owner is disabled, from one whose schema is
  * simply not installed, so the caller learns which of the two it hit. Every DBAL failure is translated,
@@ -53,7 +54,7 @@ final readonly class DoctrineBusinessRecordMutationFence implements BusinessReco
     }
 
     /**
-     * Take the exclusive fence a record mutation runs behind, using `FOR UPDATE`.
+     * Pin the active generation without excluding unrelated record mutations.
      *
      * Only the site is read off the execution context; the actor plays no part in choosing the row, as
      * authorization has already been settled by the time a fence is taken.
@@ -62,7 +63,7 @@ final readonly class DoctrineBusinessRecordMutationFence implements BusinessReco
      * @param   string            $definitionIdentifier  Definition UUID or handle to fence.
      *
      * @return  BusinessRecordMutationGeneration  Installation identity, version, checksums and status as
-     *          observed under the exclusive lock.
+     *          observed under the shared generation lock.
      *
      * @throws  BusinessRecordDefinitionUnavailable  When no definition on this site matches the
      *          identifier, or its owner is disabled.
@@ -77,7 +78,7 @@ final readonly class DoctrineBusinessRecordMutationFence implements BusinessReco
         ExecutionContext $context,
         string $definitionIdentifier,
     ): BusinessRecordMutationGeneration {
-        return $this->acquire($context->site(), $definitionIdentifier, 'FOR UPDATE', false);
+        return $this->shared($context->site(), $definitionIdentifier);
     }
 
     /**

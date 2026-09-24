@@ -134,9 +134,8 @@ test.describe('KIS production component gallery', () => {
     await expect(conflict.getByRole('button', { name: 'Reapply my changes' })).toBeVisible();
 
     await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
-    // WebKit's emulation can leave non-inherited backgrounds stale after a live flip. Reload so this
-    // gallery contract measures one settled dark render; the real-Safari live-switch finding stays open.
-    await page.reload();
+    // The already-rendered page must follow an appearance change without discarding its UI state.
+    await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(9, 19, 33)');
     await expect(page.getByRole('tab', { name: 'Safety and states' }))
       .toHaveAttribute('aria-selected', 'true');
     await expect.poll(async () => page.evaluate(() => getComputedStyle(document.documentElement).colorScheme))

@@ -43,10 +43,9 @@ use Throwable;
  * dead-lettered as the claim scan passes them, up to `EXHAUSTED_REAP_LIMIT` per call, so an exhausted
  * backlog is cleared by the workers themselves rather than by a separate sweeper.
  *
- * A contributed queue additionally locks one `job_queue_runtime` row before it counts live reservations
- * and selects work. That shared lock makes the signed in-flight ceiling durable across processes. Its
- * lease and attempt limits are resolved from the same active trusted catalog; undeclared core queues
- * skip that layer and retain their original behavior.
+ * Contributed queues share bounded durable permits with inbox workers. Each claim locks one available
+ * permit, renewed and settled atomically with its fenced work lease. Expiry bounds crash recovery.
+ * Policy publication serializes only generation changes; unchanged claims never lock the policy row.
  *
  * A site-local row is only claimable through the ownership table joined to an enabled site, so a
  * disabled or retired site quietly stops yielding work instead of offering jobs nothing could run. Every
@@ -188,6 +187,12 @@ final readonly class DoctrineJobQueue implements JobQueue
             if ($executionClass === JobExecutionClass::Site) {
                 $this->ownership->record(AuthorizationResource::item('job', $id), $context->site());
             }
+            (new DoctrineJobQueueFairness($this->database, $this->tables))->record(
+                $queue,
+                $id,
+                $executionClass === JobExecutionClass::Site ? $context->site()->identifier() : null,
+                $context->organization()?->identifier(),
+            );
         });
 
         return $id;
@@ -241,7 +246,7 @@ final readonly class DoctrineJobQueue implements JobQueue
             throw new InvalidArgumentException('A contributed queue lease cannot exceed its signed policy.');
         }
         if ($policy !== null) {
-            $this->ensureQueueRuntime($policy);
+            $this->permits()->synchronize($policy, $this->clock->now());
         }
 
         return $this->transactions->transactional(function () use (
@@ -251,8 +256,12 @@ final readonly class DoctrineJobQueue implements JobQueue
             $policy,
         ): ?StoredJob {
             $now = $this->clock->now();
-            if ($policy !== null && !$this->claimPolicySlot($policy, $now)) {
-                return null;
+            $scope = null;
+            if ($policy !== null) {
+                $scope = (new DoctrineJobQueueFairness($this->database, $this->tables))->claim($queue, $now);
+                if ($scope === null) {
+                    return null;
+                }
             }
             $reaped = 0;
             $jobOwnershipId = $this->database->getDatabasePlatform() instanceof PostgreSQLPlatform
@@ -261,7 +270,7 @@ final readonly class DoctrineJobQueue implements JobQueue
 
             while ($reaped < self::EXHAUSTED_REAP_LIMIT) {
                 $row = $this->database->fetchAssociative(sprintf(
-                    'SELECT j.* FROM %s j WHERE j.queue = ? AND (j.execution_scope = ? OR '
+                    'SELECT j.* FROM %s j WHERE j.queue = ?%s AND (j.execution_scope = ? OR '
                     . '(j.execution_scope = ? AND EXISTS (SELECT 1 FROM %s o INNER JOIN %s s '
                     . 'ON s.identifier = o.site_identifier WHERE o.resource_type = ? '
                     . 'AND o.resource_id = %s AND s.enabled = ?))) AND ('
@@ -270,11 +279,13 @@ final readonly class DoctrineJobQueue implements JobQueue
                     . ') ORDER BY j.priority DESC, j.available_at, j.created_at, j.id '
                     . 'LIMIT 1 FOR UPDATE SKIP LOCKED',
                     $this->tables->quoted('jobs'),
+                    $scope === null ? '' : ' AND j.worker_scope = ?',
                     $this->tables->quoted('resource_site_ownership'),
                     $this->tables->quoted('sites'),
                     $jobOwnershipId,
                 ), [
                     $queue,
+                    ...($scope === null ? [] : [$scope]),
                     JobExecutionClass::Installation->value,
                     JobExecutionClass::Site->value,
                     'job',
@@ -283,6 +294,7 @@ final readonly class DoctrineJobQueue implements JobQueue
                     $now,
                 ], [
                     Types::STRING,
+                    ...($scope === null ? [] : [Types::STRING]),
                     Types::STRING,
                     Types::STRING,
                     Types::STRING,
@@ -329,6 +341,19 @@ final readonly class DoctrineJobQueue implements JobQueue
                 }
 
                 $token = Uuid::uuid7()->toString();
+                if (
+                    $policy !== null && !$this->permits()->acquire(
+                        $policy,
+                        $now,
+                        'job',
+                        $row['id'],
+                        '',
+                        $token,
+                        $now->add(new DateInterval(sprintf('PT%dS', $leaseSeconds))),
+                    )
+                ) {
+                    return null;
+                }
                 $affected = $this->database->executeStatement(sprintf(
                     "UPDATE %s SET status = 'reserved', lease_owner = ?, lease_token = ?, lease_acquired_at = ?, "
                     . 'lease_expires_at = ?, attempts = attempts + 1, updated_at = ? WHERE id = ? AND ('
@@ -352,17 +377,7 @@ final readonly class DoctrineJobQueue implements JobQueue
                 $this->assertLeaseUpdated($affected);
                 $row['attempts'] = $attempts + 1;
                 $row['lease_token'] = $token;
-                if ($policy !== null) {
-                    $this->database->update(
-                        $this->tables->raw('job_queue_runtime'),
-                        ['last_claimed_at' => $now, 'updated_at' => $now],
-                        ['queue_id' => $queue],
-                        [
-                            'last_claimed_at' => Types::DATETIME_IMMUTABLE,
-                            'updated_at' => Types::DATETIME_IMMUTABLE,
-                        ],
-                    );
-                }
+
 
                 return $this->map($row);
             }
@@ -408,22 +423,32 @@ final readonly class DoctrineJobQueue implements JobQueue
             throw new InvalidArgumentException('A contributed queue lease cannot exceed its signed policy.');
         }
 
-        $now = $this->clock->now();
-        $this->assertLeaseUpdated($this->database->executeStatement(sprintf(
-            'UPDATE %s SET lease_expires_at = ?, updated_at = ? WHERE id = ? '
-            . "AND status = 'reserved' AND lease_owner = ? AND lease_token = ? AND lease_expires_at > ?",
-            $this->tables->quoted('jobs'),
-        ), [
-            $now->add(new DateInterval(sprintf('PT%dS', $leaseSeconds))),
-            $now,
-            $job->id,
-            $workerId,
-            $job->leaseToken,
-            $now,
-        ], [
-            Types::DATETIME_IMMUTABLE, Types::DATETIME_IMMUTABLE, Types::GUID,
-            Types::STRING, Types::STRING, Types::DATETIME_IMMUTABLE,
-        ]));
+        $this->transactions->transactional(function () use ($job, $workerId, $leaseSeconds, $policy): void {
+            $now = $this->clock->now();
+            $this->assertLeaseUpdated($this->database->executeStatement(sprintf(
+                'UPDATE %s SET lease_expires_at = ?, updated_at = ? WHERE id = ? '
+                . "AND status = 'reserved' AND lease_owner = ? AND lease_token = ? AND lease_expires_at > ?",
+                $this->tables->quoted('jobs'),
+            ), [
+                $now->add(new DateInterval(sprintf('PT%dS', $leaseSeconds))),
+                $now,
+                $job->id,
+                $workerId,
+                $job->leaseToken,
+                $now,
+            ], [
+                Types::DATETIME_IMMUTABLE, Types::DATETIME_IMMUTABLE, Types::GUID,
+                Types::STRING, Types::STRING, Types::DATETIME_IMMUTABLE,
+            ]));
+            if ($policy !== null) {
+                $this->permits()->renew(
+                    $policy,
+                    $job->leaseToken,
+                    $now,
+                    $now->add(new DateInterval(sprintf('PT%dS', $leaseSeconds))),
+                );
+            }
+        });
     }
 
     /**
@@ -449,16 +474,22 @@ final readonly class DoctrineJobQueue implements JobQueue
     {
         $this->authorizeWorker($context, AuthorizationResource::item('queue', $job->queue));
         $this->assertWorker($workerId);
-        $now = $this->clock->now();
-        $this->assertLeaseUpdated($this->database->executeStatement(sprintf(
-            "UPDATE %s SET status = 'completed', lease_owner = NULL, lease_token = NULL, lease_acquired_at = NULL, "
-            . 'lease_expires_at = NULL, completed_at = ?, updated_at = ? '
-            . "WHERE id = ? AND status = 'reserved' AND lease_owner = ? AND lease_token = ? AND lease_expires_at > ?",
-            $this->tables->quoted('jobs'),
-        ), [$now, $now, $job->id, $workerId, $job->leaseToken, $now], [
-            Types::DATETIME_IMMUTABLE, Types::DATETIME_IMMUTABLE, Types::GUID, Types::STRING,
-            Types::STRING, Types::DATETIME_IMMUTABLE,
-        ]));
+        $this->transactions->transactional(function () use ($job, $workerId): void {
+            $now = $this->clock->now();
+            $this->assertLeaseUpdated($this->database->executeStatement(sprintf(
+                "UPDATE %s SET status = 'completed', lease_owner = NULL, lease_token = NULL, lease_acquired_at = NULL, "
+                . 'lease_expires_at = NULL, completed_at = ?, updated_at = ? '
+                . "WHERE id = ? AND status = 'reserved' AND lease_owner = ? "
+                . 'AND lease_token = ? AND lease_expires_at > ?',
+                $this->tables->quoted('jobs'),
+            ), [$now, $now, $job->id, $workerId, $job->leaseToken, $now], [
+                Types::DATETIME_IMMUTABLE, Types::DATETIME_IMMUTABLE, Types::GUID, Types::STRING,
+                Types::STRING, Types::DATETIME_IMMUTABLE,
+            ]));
+            if ($this->policies?->policy($job->queue) !== null) {
+                $this->permits()->release($job->queue, $job->leaseToken);
+            }
+        });
     }
 
     /**
@@ -514,6 +545,9 @@ final readonly class DoctrineJobQueue implements JobQueue
                     Types::DATETIME_IMMUTABLE, Types::DATETIME_IMMUTABLE, Types::GUID, Types::STRING,
                     Types::STRING, Types::DATETIME_IMMUTABLE,
                 ]));
+                if ($this->policies?->policy($job->queue) !== null) {
+                    $this->permits()->release($job->queue, $job->leaseToken);
+                }
                 return;
             }
 
@@ -545,6 +579,9 @@ final readonly class DoctrineJobQueue implements JobQueue
                 'failed_at' => Types::DATETIME_IMMUTABLE,
                 'created_at' => Types::DATETIME_IMMUTABLE,
             ]);
+            if ($this->policies?->policy($job->queue) !== null) {
+                $this->permits()->release($job->queue, $job->leaseToken);
+            }
         });
     }
 
@@ -906,93 +943,15 @@ final readonly class DoctrineJobQueue implements JobQueue
     }
 
     /**
-     * Create the durable queue lock row before a claim transaction attempts to lock it.
+     * Compose the shared host persistence adapter on this transaction connection.
      *
-     * The insert runs before the claim transaction so a PostgreSQL unique collision can roll back its
-     * own implicit statement without aborting the transaction that performs the claim. A concurrent
-     * first worker may win the insert; the loser treats that expected collision as proof the row now
-     * exists and proceeds to the same `FOR UPDATE` lock.
-     *
-     * @param   QueueRuntimePolicy  $policy  Active trusted queue policy.
-     *
-     * @return  void
+     * @return  DoctrineQueuePermits  Durable capacity shared with inbox deliveries.
      *
      * @since   2.0.0
      */
-    private function ensureQueueRuntime(QueueRuntimePolicy $policy): void
+    private function permits(): DoctrineQueuePermits
     {
-        if (
-            $this->database->fetchOne(sprintf(
-                'SELECT queue_id FROM %s WHERE queue_id = ?',
-                $this->tables->quoted('job_queue_runtime'),
-            ), [$policy->queue]) !== false
-        ) {
-            return;
-        }
-        $now = $this->clock->now();
-        try {
-            $this->database->insert($this->tables->raw('job_queue_runtime'), [
-                'queue_id' => $policy->queue,
-                'lease_seconds' => $policy->leaseSeconds,
-                'maximum_attempts' => $policy->maximumAttempts,
-                'maximum_in_flight' => $policy->maximumInFlight,
-                'retention_days' => $policy->retentionDays,
-                'runtime_generation' => $policy->runtimeGeneration,
-                'last_claimed_at' => null,
-                'updated_at' => $now,
-            ], ['updated_at' => Types::DATETIME_IMMUTABLE]);
-        } catch (UniqueConstraintViolationException) {
-            // A concurrent first claimant committed the singleton row.
-        }
-    }
-
-    /**
-     * Serialize declared-queue claims and reserve capacity below the signed in-flight ceiling.
-     *
-     * Every claimant first takes the same durable policy row `FOR UPDATE`, then counts only live fenced
-     * leases. Claim transactions therefore cannot both observe the same spare slot and exceed the
-     * ceiling across worker processes. Expired leases do not consume capacity and remain eligible for
-     * the normal fenced re-claim path.
-     *
-     * @param   QueueRuntimePolicy  $policy  Active trusted queue policy.
-     * @param   DateTimeImmutable   $now     Instant live leases are compared against.
-     *
-     * @return  bool  True when another live reservation fits under the ceiling.
-     *
-     * @throws  RuntimeException  When the policy lock row disappeared unexpectedly.
-     *
-     * @since   2.0.0
-     */
-    private function claimPolicySlot(QueueRuntimePolicy $policy, DateTimeImmutable $now): bool
-    {
-        $locked = $this->database->fetchOne(sprintf(
-            'SELECT queue_id FROM %s WHERE queue_id = ? FOR UPDATE',
-            $this->tables->quoted('job_queue_runtime'),
-        ), [$policy->queue]);
-        if ($locked === false) {
-            throw new RuntimeException('The contributed queue runtime lock is unavailable.');
-        }
-        $this->database->update($this->tables->raw('job_queue_runtime'), [
-            'lease_seconds' => $policy->leaseSeconds,
-            'maximum_attempts' => $policy->maximumAttempts,
-            'maximum_in_flight' => $policy->maximumInFlight,
-            'retention_days' => $policy->retentionDays,
-            'runtime_generation' => $policy->runtimeGeneration,
-            'updated_at' => $now,
-        ], ['queue_id' => $policy->queue], [
-            'updated_at' => Types::DATETIME_IMMUTABLE,
-        ]);
-        $inFlight = $this->databaseCount($this->database->fetchOne(sprintf(
-            "SELECT COUNT(*) FROM %s WHERE queue = ? AND status = 'reserved' AND lease_expires_at > ?",
-            $this->tables->quoted('jobs'),
-        ), [$policy->queue, $now], [Types::STRING, Types::DATETIME_IMMUTABLE]));
-
-        $inFlight += $this->databaseCount($this->database->fetchOne(sprintf(
-            "SELECT COUNT(*) FROM %s WHERE queue = ? AND status = 'reserved' AND lease_expires_at > ?",
-            $this->tables->quoted('integration_inbox'),
-        ), [$policy->queue, $now], [Types::STRING, Types::DATETIME_IMMUTABLE]));
-
-        return $inFlight < $policy->maximumInFlight;
+        return new DoctrineQueuePermits($this->database, $this->tables);
     }
 
     /**
@@ -1035,30 +994,6 @@ final readonly class DoctrineJobQueue implements JobQueue
             throw new RuntimeException(sprintf('Queued job field %s is not an integer.', $field));
         }
         return (int) $value;
-    }
-
-    /**
-     * Normalize a DBAL aggregate count without accepting another scalar representation.
-     *
-     * @param   mixed  $value  Raw aggregate value returned by the active database driver.
-     *
-     * @return  int  Non-negative row count.
-     *
-     * @throws  RuntimeException  When the driver did not return an integer or decimal integer string.
-     *
-     * @since   2.0.0
-     */
-    private function databaseCount(mixed $value): int
-    {
-        if (is_int($value)) {
-            if ($value >= 0) {
-                return $value;
-            }
-        } elseif (is_string($value) && preg_match('/^[0-9]+$/D', $value) === 1) {
-            return (int) $value;
-        }
-
-        throw new RuntimeException('A queued work count is invalid.');
     }
 
     /**

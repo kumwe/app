@@ -19,6 +19,7 @@ use Kumwe\Integration\EventSensitivity;
 use Kumwe\Integration\IntegrationEvent;
 use Kumwe\Integration\RecordedIntegrationEvent;
 use Kumwe\App\BusinessIntegration\Infrastructure\DoctrineOutboxStore;
+use Kumwe\App\BusinessReporting\Infrastructure\DoctrineProjectionEventSequencer;
 use Kumwe\App\Delivery\Console\Command\IntegrationWorkCommand;
 use Kumwe\App\Delivery\Console\Output;
 use Kumwe\App\Extension\Runtime\ExtensionRuntimeMapCompiler;
@@ -93,6 +94,7 @@ final class HungEndpointDeadlineIntegrationTest extends TestCase
             $clock,
             $contracts,
             new DeterministicCanonicalEncoder(),
+            new DoctrineProjectionEventSequencer($connection, $tables, new DoctrineTransactionManager($connection)),
         );
         $transport = new HungOutboundEndpoint(self::ENDPOINT_HANG_SECONDS);
         $command = new IntegrationWorkCommand(
@@ -100,6 +102,7 @@ final class HungEndpointDeadlineIntegrationTest extends TestCase
             $processes,
             $compiler,
             $loaded,
+            self::createStub(\Kumwe\App\BusinessIntegration\Application\IntegrationReceiptWorker::class),
         );
         $event = $this->event();
         $outbox->append($event, 5);

@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Kernel;
 
+use Kumwe\App\Infrastructure\Persistence\Migration\QueueWorkerPermitsMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\BusinessRecordScaleMigration;
+use Kumwe\App\BusinessReporting\Infrastructure\DoctrineProjectionEventSequencer;
+use Kumwe\App\BusinessIntegration\Application\IntegrationReceiptWorker;
+use Kumwe\App\BusinessIntegration\Infrastructure\RuntimeIntegrationReceiptWorker;
 use Kumwe\CanonicalJson\CanonicalEncoder;
 use Doctrine\DBAL\Connection;
 use Kumwe\App\Application\Automation\AutomationManagementService;
@@ -2547,6 +2552,8 @@ final class ContainerFactory
                     new StudioMediaUploadMigration(self::service($container, TableNames::class)),
                     new StudioContentAuthoringContextMigration(self::service($container, TableNames::class)),
                     new StudioContentAuthoringContextRetentionMigration(self::service($container, TableNames::class)),
+                    new BusinessRecordScaleMigration(self::service($container, TableNames::class)),
+                    new QueueWorkerPermitsMigration(self::service($container, TableNames::class)),
                 ],
                 self::acceptedHistoricalChecksums(),
             ), true);
@@ -3102,6 +3109,13 @@ final class ContainerFactory
         $container->share(DashboardPreferenceQueryDecoder::class, new DashboardPreferenceQueryDecoder(), true);
         $eventContracts = $contributionRegistries->validateIntegrationContributions();
         $container->share(EventContractRegistry::class, $eventContracts, true);
+        $container->share(DoctrineProjectionEventSequencer::class, static fn (
+            Container $container,
+        ): DoctrineProjectionEventSequencer => new DoctrineProjectionEventSequencer(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+            self::service($container, TransactionManager::class),
+        ), true);
         $container->share(OutboxStore::class, static fn (Container $container): OutboxStore =>
             new DoctrineOutboxStore(
                 self::service($container, Connection::class),
@@ -3110,8 +3124,9 @@ final class ContainerFactory
                 self::service($container, ClockInterface::class),
                 self::service($container, EventContractRegistry::class),
                 self::service($container, CanonicalEncoder::class),
+                self::service($container, DoctrineProjectionEventSequencer::class),
             ), true);
-        $container->share(InboxStore::class, static fn (Container $container): InboxStore =>
+        $container->share(DoctrineInboxStore::class, static fn (Container $container): DoctrineInboxStore =>
             new DoctrineInboxStore(
                 self::service($container, Connection::class),
                 self::service($container, TableNames::class),
@@ -3120,6 +3135,8 @@ final class ContainerFactory
                 self::service($container, EventContractRegistry::class),
                 self::service($container, QueueRuntimePolicyCatalog::class),
             ), true);
+        $container->share(InboxStore::class, static fn (Container $container): InboxStore =>
+            self::service($container, DoctrineInboxStore::class), true);
         $container->share(ProcessManagerStore::class, static fn (Container $container): ProcessManagerStore =>
             new DoctrineProcessManagerStore(
                 self::service($container, Connection::class),
@@ -3655,6 +3672,7 @@ final class ContainerFactory
                 self::service($container, CanonicalEncoder::class),
                 self::service($container, TrustedRuntimeGenerationGuard::class),
                 self::service($container, RuntimeMaterializationState::class),
+                self::service($container, DoctrineProjectionEventSequencer::class),
                 self::service($container, ExtensionContributionRegistrySet::class)
                     ->projections()
                     ->executableEntries(),
@@ -3684,11 +3702,23 @@ final class ContainerFactory
             Container $container,
         ): IntegrationEventFanout => new RuntimeIntegrationEventTransport(
             self::service($container, ExtensionContributionRegistrySet::class),
+            self::service($container, DoctrineInboxStore::class),
+            self::service($container, ProjectionRuntime::class),
+            self::service($container, RuntimeMaterializationState::class),
+            self::service($container, TrustedRuntimeGenerationGuard::class),
+        ), true);
+        $container->share(IntegrationReceiptWorker::class, static fn (
+            Container $container,
+        ): IntegrationReceiptWorker => new RuntimeIntegrationReceiptWorker(
+            self::service($container, DoctrineInboxStore::class),
+            self::service($container, ExtensionContributionRegistrySet::class),
+            self::service($container, CanonicalEncoder::class),
             self::service($container, IntegrationEventConsumerDispatcher::class),
             self::service($container, DurableOutboundAdapterDispatcher::class),
-            self::service($container, ProjectionRuntime::class),
+            self::service($container, TrustedRuntimeGenerationGuard::class),
             SystemPrincipal::issue($kernelProof, SystemIdentity::Worker),
-            self::service($container, RuntimeMaterializationState::class),
+            self::service($container, QueueRuntimePolicyCatalog::class),
+            self::service($container, LoggerInterface::class),
         ), true);
         $container->share(OutboxDispatcher::class, static fn (Container $container): OutboxDispatcher =>
             new OutboxDispatcher(
@@ -6589,6 +6619,7 @@ final class ContainerFactory
             self::service($container, ProcessWorkDispatcher::class),
             self::service($container, ExtensionRuntimeMapCompiler::class),
             self::service($container, RuntimeMaterializationState::class),
+            self::service($container, IntegrationReceiptWorker::class),
         ), true);
         $container->share(ReportCommand::class, static fn (Container $container): ReportCommand =>
             new ReportCommand(

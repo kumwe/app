@@ -8,6 +8,8 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use DateTimeZone;
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
+use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\DBAL\Types\Types;
@@ -195,7 +197,9 @@ final readonly class DoctrineBusinessRecordIdempotencyRepository implements Busi
      * bound holds on platforms that will not accept a limit on a delete, and taking the oldest expiries
      * first is what lets repeated calls drain a backlog. A completed entry is collectable once it has
      * expired; an in-progress one only once it has expired and holds no live lease, which frees a key
-     * whose command died mid-transaction without cancelling one that is still running.
+     * whose command died mid-transaction without cancelling one that is still running. Candidates are
+     * locked with SKIP LOCKED through deletion: concurrent purgers partition work, and an active command
+     * or lease extension is neither waited on nor deleted from a stale candidate list.
      *
      * @param   DateTimeImmutable  $now    Instant expiry and lease liveness are measured against.
      * @param   int                $limit  Most entries to delete in this call, 1 to 1000.
@@ -214,22 +218,20 @@ final readonly class DoctrineBusinessRecordIdempotencyRepository implements Busi
         if ($limit < 1 || $limit > 1000) {
             throw new LogicException('The idempotency purge batch is outside its bounded range.');
         }
-        $ids = $this->database->createQueryBuilder()
-            ->select('id')
-            ->from($this->tables->raw('business_command_idempotency'))
-            ->where('expires_at <= :now')
-            ->andWhere(
-                '(state = :completed '
-                . 'OR (state = :progress AND (lease_expires_at IS NULL OR lease_expires_at <= :now)))',
-            )
-            ->orderBy('expires_at', 'ASC')
-            ->addOrderBy('id', 'ASC')
-            ->setParameter('now', $now, Types::DATETIME_IMMUTABLE)
-            ->setParameter('completed', BusinessRecordIdempotencyState::Completed->value)
-            ->setParameter('progress', BusinessRecordIdempotencyState::InProgress->value)
-            ->setMaxResults($limit)
-            ->executeQuery()
-            ->fetchFirstColumn();
+        $platform = $this->database->getDatabasePlatform();
+        $lock = $platform instanceof AbstractMySQLPlatform || $platform instanceof PostgreSQLPlatform
+            ? ' FOR UPDATE SKIP LOCKED'
+            : '';
+        $ids = $this->database->fetchFirstColumn(sprintf(
+            'SELECT id FROM %s WHERE expires_at <= ? AND (state = ? '
+            . 'OR (state = ? AND (lease_expires_at IS NULL OR lease_expires_at <= ?))) '
+            . 'ORDER BY expires_at, id LIMIT ?%s',
+            $this->tables->quoted('business_command_idempotency'),
+            $lock,
+        ), [
+            $now, BusinessRecordIdempotencyState::Completed->value,
+            BusinessRecordIdempotencyState::InProgress->value, $now, $limit,
+        ], [Types::DATETIME_IMMUTABLE, Types::STRING, Types::STRING, Types::DATETIME_IMMUTABLE, Types::INTEGER]);
         if ($ids === []) {
             return 0;
         }

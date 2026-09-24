@@ -126,6 +126,84 @@ final class DashboardPreferenceFormPresenterTest extends TestCase
     }
 
     /**
+     * Preserve opaque role choices and their positions while personal choices still use live visibility.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testRetainsRoleChoicesOutsideTheEditorsVisibility(): void
+    {
+        $surface = SurfaceId::fromString('core.portal.home');
+        $actor = '018f22e2-7c8b-7ab0-8f3a-88e8026bb301';
+        $group = PresentationAccessGroup::fromRole(
+            '018f22e2-7c8b-7ab0-8f3a-88e8026bb303',
+            'operations',
+            'Operations',
+        );
+        $selected = ['acme.hidden-workflow', 'acme.visible-workflow'];
+        $state = new DashboardPreferenceState(
+            $surface,
+            $actor,
+            $this->preference(
+                $surface,
+                CustomizationScope::User,
+                $actor,
+                CustomizationSlot::DashboardCards,
+                $selected,
+                2,
+            ),
+            null,
+            [new DashboardPreferenceAccessGroupState(
+                $surface,
+                $group,
+                $this->preference(
+                    $surface,
+                    CustomizationScope::RoleWorkspace,
+                    $group->id,
+                    CustomizationSlot::DashboardCards,
+                    $selected,
+                    3,
+                ),
+                $this->preference(
+                    $surface,
+                    CustomizationScope::RoleWorkspace,
+                    $group->id,
+                    CustomizationSlot::NavigationShortcuts,
+                    $selected,
+                    4,
+                ),
+            )],
+            true,
+            new DashboardPreferenceQuery(),
+            false,
+            false,
+            false,
+        );
+        $catalog = new DashboardWorkflowCatalog(SurfaceArea::Portal, $surface, [[
+            'id' => 'acme.visible-workflow',
+            'label' => 'Visible workflow',
+            'description' => 'Open the visible workflow.',
+            'href' => '/portal/workflows/visible',
+            'icon' => 'dashboard',
+            'group' => 'Operations',
+        ]]);
+        $projection = (new DashboardPreferenceFormPresenter())->present($state, [], [], $catalog);
+        self::assertSame(['acme.visible-workflow'], $projection->forms[0]['selected_widget_ids']);
+        $role = $projection->forms[1];
+        foreach (['widget', 'shortcut'] as $kind) {
+            self::assertSame($selected, $role['selected_' . $kind . '_ids']);
+            self::assertSame(['acme.hidden-workflow' => 1, 'acme.visible-workflow' => 2], $role[$kind . '_order']);
+            $choice = $role['available_' . $kind . 's'][0];
+            self::assertSame('acme.hidden-workflow', $choice['id']);
+            self::assertTrue($choice['outside_visibility']);
+            self::assertArrayNotHasKey('href', $choice);
+        }
+        self::assertSame(3, $role['widget_version']);
+        self::assertSame(4, $role['shortcut_version']);
+    }
+
+    /**
      * Proves malformed effective fallbacks fail at the presentation boundary.
      *
      * @return  void

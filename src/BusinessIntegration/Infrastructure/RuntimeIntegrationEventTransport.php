@@ -4,17 +4,13 @@ declare(strict_types=1);
 
 namespace Kumwe\App\BusinessIntegration\Infrastructure;
 
-use Kumwe\Context\Value\SiteContext;
-use Kumwe\App\Application\Authorization\SystemPrincipal;
 use Kumwe\Automation\PermanentFailure;
-use Kumwe\App\BusinessIntegration\Application\DurableOutboundAdapterDispatcher;
-use Kumwe\Integration\InboxDisposition;
-use Kumwe\App\BusinessIntegration\Application\IntegrationDeliveryBackpressure;
 use Kumwe\App\BusinessIntegration\Application\IntegrationEventFanout;
-use Kumwe\App\BusinessIntegration\Application\IntegrationEventConsumerDispatcher;
 use Kumwe\Extension\Spi\BusinessIntegration\Application\IntegrationEventHandler;
 use Kumwe\Extension\Spi\BusinessIntegration\Application\IntegrationEventTransport;
 use Kumwe\Integration\EventConsumerDefinition;
+use Kumwe\Integration\ConsumerIdempotency;
+use Kumwe\App\BusinessIntegration\Application\TrustedRuntimeGenerationGuard;
 use Kumwe\Integration\EventSensitivity;
 use Kumwe\Integration\IntegrationEvent;
 use Kumwe\Integration\WebhookContributionDefinition;
@@ -24,35 +20,32 @@ use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
 use RuntimeException;
 
 /**
- * Deterministically fans an outbox fact into every active consumer and outbound adapter.
+ * Materializes an independent durable receipt for every active consumer and outbound adapter.
  *
- * Each target owns an independent inbox receipt. If a later target fails, targets already completed
- * are skipped on the next outbox attempt, preventing duplicate effects while preserving at-least-once
- * recovery for unavailable, reordered, or upgraded consumers.
+ * Publication runs no consumer or network effect. A short receipt transaction is all-or-nothing,
+ * and replay preserves every existing receipt. Workers claim and settle targets independently.
  *
  * @since  2.0.0
  */
 final readonly class RuntimeIntegrationEventTransport implements IntegrationEventFanout
 {
     /**
-     * Create the runtime integration event transport.
+     * Bind outbox publication to durable fanout materialization and projection sequencing.
      *
-     * @param  ExtensionContributionRegistrySet    $contributions  Active owner-bound runtime contribution registries.
-     * @param  IntegrationEventConsumerDispatcher  $consumers      Durable dispatcher for internal consumers.
-     * @param  DurableOutboundAdapterDispatcher    $outbound       Durable outbound dispatcher used for webhook fan-out.
-     * @param  ProjectionRuntime                   $projections    Idempotent live projection dispatcher.
-     * @param  SystemPrincipal                     $worker         Stable identity of the claiming worker.
-     * @param  RuntimeMaterializationState         $runtime        Trusted active extension runtime.
+     * @param  ExtensionContributionRegistrySet  $contributions  Active trusted executable declarations.
+     * @param  DoctrineInboxStore                $inbox          Host receipt materialization adapter.
+     * @param  ProjectionRuntime                 $projections    Idempotent live projection application.
+     * @param  RuntimeMaterializationState       $runtime        Immutable loaded generation.
+     * @param  TrustedRuntimeGenerationGuard     $guard          Current trust and generation authority.
      *
      * @since  2.0.0
      */
     public function __construct(
         private ExtensionContributionRegistrySet $contributions,
-        private IntegrationEventConsumerDispatcher $consumers,
-        private DurableOutboundAdapterDispatcher $outbound,
+        private DoctrineInboxStore $inbox,
         private ProjectionRuntime $projections,
-        private SystemPrincipal $worker,
         private RuntimeMaterializationState $runtime,
+        private TrustedRuntimeGenerationGuard $guard,
     ) {
     }
 
@@ -94,16 +87,8 @@ final readonly class RuntimeIntegrationEventTransport implements IntegrationEven
         if (!$this->runtime->trusted || $this->runtime->generation < 0) {
             throw new RuntimeException('Integration delivery requires a trusted runtime generation.');
         }
-        $generation = (string) $this->runtime->generation;
-        $workerId = $this->runtime->replicaId . ':integration';
-        $context = $this->worker->context(
-            SiteContext::fromString($event->siteIdentifier()),
-            'integration-' . $event->eventId(),
-            $event->correlationId(),
-        );
-
-        $this->projections->apply($event);
-
+        $this->guard->assertCurrent((string) $this->runtime->generation);
+        $receipts = [];
         foreach ($this->contributions->eventConsumers()->executableEntries() as $entry) {
             $definition = $entry['definition'];
             $handler = $entry['implementation'];
@@ -113,22 +98,7 @@ final readonly class RuntimeIntegrationEventTransport implements IntegrationEven
             if ($definition->eventType() !== $event->eventType()) {
                 continue;
             }
-            $disposition = $this->consumers->consume(
-                $definition,
-                $event,
-                $handler,
-                $context,
-                $workerId,
-                $generation,
-            );
-            if (in_array($disposition, [InboxDisposition::BUSY, InboxDisposition::REORDERED], true)) {
-                throw new IntegrationDeliveryBackpressure(
-                    'An active integration consumer is temporarily at capacity or awaiting event order.',
-                );
-            }
-            if (!in_array($disposition, [InboxDisposition::CLAIMED, InboxDisposition::DUPLICATE], true)) {
-                throw new RuntimeException('An active integration consumer is not currently claimable.');
-            }
+            $receipts[] = $definition;
         }
 
         foreach ($this->contributions->webhooks()->executableEntries() as $entry) {
@@ -143,21 +113,20 @@ final readonly class RuntimeIntegrationEventTransport implements IntegrationEven
             if (!in_array($event->eventType(), $definition->eventTypes(), true)) {
                 continue;
             }
-            $disposition = $this->outbound->dispatch(
-                $definition,
-                $adapter,
-                $event,
-                $workerId,
-                $generation,
+            $receipts[] = new EventConsumerDefinition(
+                $definition->identifier(),
+                $event->eventType(),
+                $definition->schemaVersions(),
+                $definition->handlerVersion(),
+                $definition->queue(),
+                $definition->idempotency() === ConsumerIdempotency::AGGREGATE_VERSION,
+                $definition->idempotency(),
+                $definition->maximumAttempts(),
+                $definition->sensitivityCeiling(),
             );
-            if (in_array($disposition, [InboxDisposition::BUSY, InboxDisposition::REORDERED], true)) {
-                throw new IntegrationDeliveryBackpressure(
-                    'An active outbound adapter is temporarily at capacity or awaiting event order.',
-                );
-            }
-            if (!in_array($disposition, [InboxDisposition::CLAIMED, InboxDisposition::DUPLICATE], true)) {
-                throw new RuntimeException('An active outbound adapter does not support this event revision.');
-            }
         }
+        $this->projections->apply($event);
+        $this->guard->assertCurrent((string) $this->runtime->generation);
+        $this->inbox->materialize($receipts, $event);
     }
 }

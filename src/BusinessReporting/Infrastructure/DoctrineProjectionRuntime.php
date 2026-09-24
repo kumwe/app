@@ -39,14 +39,15 @@ final readonly class DoctrineProjectionRuntime implements ProjectionRuntime
     /**
      * Capture active projection implementations and durable-store dependencies.
      *
-     * @param   Connection                     $database          Shared authoritative database connection.
-     * @param   TableNames                     $tables            Portable physical table-name compiler.
-     * @param   TransactionManager             $transactions      Atomic generation and live-apply boundary.
-     * @param   ClockInterface                 $clock             Authoritative persistence clock.
-     * @param   CanonicalEncoder               $canonicalEncoder  Host encoder the store rebuilds envelopes with.
-     * @param   TrustedRuntimeGenerationGuard  $runtime           Staleness fence for worker and operator execution.
-     * @param   RuntimeMaterializationState    $loadedRuntime     Exact trusted generation loaded by this process.
-     * @param   iterable<mixed>                $entries           Active registry entries containing definitions and
+     * @param   Connection                        $database          Shared authoritative database connection.
+     * @param   TableNames                        $tables            Portable physical table-name compiler.
+     * @param   TransactionManager                $transactions      Atomic generation and live-apply boundary.
+     * @param   ClockInterface                    $clock             Authoritative persistence clock.
+     * @param   CanonicalEncoder                  $canonicalEncoder  Host encoder the store rebuilds envelopes with.
+     * @param   TrustedRuntimeGenerationGuard     $runtime           Staleness fence for worker and operator execution.
+     * @param   RuntimeMaterializationState       $loadedRuntime     Exact trusted generation loaded by this process.
+     * @param   DoctrineProjectionEventSequencer  $sequencer         Committed-source publication boundary.
+     * @param   iterable<mixed>                   $entries           Active registry entries containing definitions and
      *          builders.
      *
      * @throws  InvalidArgumentException  When an entry is malformed or duplicated.
@@ -61,6 +62,7 @@ final readonly class DoctrineProjectionRuntime implements ProjectionRuntime
         private CanonicalEncoder $canonicalEncoder,
         private TrustedRuntimeGenerationGuard $runtime,
         private RuntimeMaterializationState $loadedRuntime,
+        private DoctrineProjectionEventSequencer $sequencer,
         iterable $entries,
     ) {
         $indexed = [];
@@ -231,6 +233,7 @@ final readonly class DoctrineProjectionRuntime implements ProjectionRuntime
             $this->transactions,
             $this->clock,
             $this->canonicalEncoder,
+            $this->sequencer,
         );
     }
 

@@ -885,8 +885,10 @@
         "Kumwe\\App\\BusinessIntegration\\Application\\DurableOutboundAdapterDispatcher": {
             "kind": "class",
             "layer": "application",
-            "surface": "6a8b44cface9dea71c0b5a3d",
-            "growth": null
+            "surface": "1a9ecd3872c9d67d5d1c6a56",
+            "growth": {
+                "record": "KUMWE-CGR-2026-030"
+            }
         },
         "Kumwe\\App\\BusinessIntegration\\Application\\IntegrationDeliveryBackpressure": {
             "kind": "class",
@@ -897,7 +899,7 @@
         "Kumwe\\App\\BusinessIntegration\\Application\\IntegrationEventConsumerDispatcher": {
             "kind": "class",
             "layer": "application",
-            "surface": "0e147cf08dee2113ea65f51b",
+            "surface": "dbef7dd5a4f1cebd7e8d8d21",
             "growth": {
                 "record": "KUMWE-CGR-2026-004"
             }
@@ -914,6 +916,14 @@
             "surface": "48252b8cec4773dab0507b8f",
             "growth": {
                 "record": "KUMWE-CGR-2026-004"
+            }
+        },
+        "Kumwe\\App\\BusinessIntegration\\Application\\IntegrationReceiptWorker": {
+            "kind": "interface",
+            "layer": "application",
+            "surface": "feb85a2ff9c86f11741c745d",
+            "growth": {
+                "record": "KUMWE-CGR-2026-030"
             }
         },
         "Kumwe\\App\\BusinessIntegration\\Application\\JobQueueIntegrationEventHandler": {
@@ -987,13 +997,19 @@
         "Kumwe\\App\\BusinessIntegration\\Infrastructure\\DoctrineInboxStore": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "e51240a0c2538d10ffd428f3",
-            "growth": null
+            "surface": "1025300ba859b4d28179c1ec",
+            "growth": {
+                "classification": "host-infrastructure",
+                "implements": [
+                    "Kumwe\\Integration\\InboxStore"
+                ],
+                "extends": null
+            }
         },
         "Kumwe\\App\\BusinessIntegration\\Infrastructure\\DoctrineOutboxStore": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "36dc82378a60dea9134f2170",
+            "surface": "fbdeac928730d740611bbd83",
             "growth": {
                 "classification": "host-infrastructure",
                 "implements": [
@@ -1023,8 +1039,26 @@
         "Kumwe\\App\\BusinessIntegration\\Infrastructure\\RuntimeIntegrationEventTransport": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "0e926e8d9d932c7d4452d6ad",
-            "growth": null
+            "surface": "345d130de7ed7b2ce7d6ca23",
+            "growth": {
+                "classification": "host-infrastructure",
+                "implements": [
+                    "Kumwe\\App\\BusinessIntegration\\Application\\IntegrationEventFanout"
+                ],
+                "extends": null
+            }
+        },
+        "Kumwe\\App\\BusinessIntegration\\Infrastructure\\RuntimeIntegrationReceiptWorker": {
+            "kind": "class",
+            "layer": "infrastructure",
+            "surface": "b49f9b5e86dd0767fe5ed206",
+            "growth": {
+                "classification": "host-infrastructure",
+                "implements": [
+                    "Kumwe\\App\\BusinessIntegration\\Application\\IntegrationReceiptWorker"
+                ],
+                "extends": null
+            }
         },
         "Kumwe\\App\\BusinessRecord\\Application\\BusinessRecordCustomActionGuard": {
             "kind": "interface",
@@ -2022,10 +2056,20 @@
             "surface": "3a7b6db5543a902e46161522",
             "growth": null
         },
+        "Kumwe\\App\\BusinessReporting\\Infrastructure\\DoctrineProjectionEventSequencer": {
+            "kind": "class",
+            "layer": "infrastructure",
+            "surface": "b471263a5697213214e793cb",
+            "growth": {
+                "classification": "host-infrastructure",
+                "implements": [],
+                "extends": null
+            }
+        },
         "Kumwe\\App\\BusinessReporting\\Infrastructure\\DoctrineProjectionRuntime": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "262f46a0f577a6f9c6071c3a",
+            "surface": "0f6d213bf6fecbbdd4fca9a2",
             "growth": {
                 "classification": "host-infrastructure",
                 "implements": [
@@ -2037,7 +2081,7 @@
         "Kumwe\\App\\BusinessReporting\\Infrastructure\\DoctrineProjectionStore": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "5400c703c27fba11a26d97cd",
+            "surface": "a46c1d6b89cd77a30b03e7bf",
             "growth": {
                 "classification": "host-infrastructure",
                 "implements": [
@@ -2933,8 +2977,14 @@
         "Kumwe\\App\\Delivery\\Console\\Command\\IntegrationWorkCommand": {
             "kind": "class",
             "layer": "delivery",
-            "surface": "b5abee1ab3604bbf999bba75",
-            "growth": null
+            "surface": "e7546ed1ac56067c2235974d",
+            "growth": {
+                "classification": "host-delivery",
+                "implements": [
+                    "Kumwe\\App\\Delivery\\Console\\Command"
+                ],
+                "extends": null
+            }
         },
         "Kumwe\\App\\Delivery\\Console\\Command\\ListExtensionsCommand": {
             "kind": "class",
@@ -4699,6 +4749,26 @@
                 "extends": null
             }
         },
+        "Kumwe\\App\\Infrastructure\\Automation\\DoctrineJobQueueFairness": {
+            "kind": "class",
+            "layer": "infrastructure",
+            "surface": "86820ad630b2e9f8a5ff7ba8",
+            "growth": {
+                "classification": "host-infrastructure",
+                "implements": [],
+                "extends": null
+            }
+        },
+        "Kumwe\\App\\Infrastructure\\Automation\\DoctrineQueuePermits": {
+            "kind": "class",
+            "layer": "infrastructure",
+            "surface": "b54cbeba963fe43e805b966f",
+            "growth": {
+                "classification": "host-infrastructure",
+                "implements": [],
+                "extends": null
+            }
+        },
         "Kumwe\\App\\Infrastructure\\Automation\\DoctrineQueueRuntimeOperations": {
             "kind": "class",
             "layer": "infrastructure",
@@ -5022,6 +5092,18 @@
             "surface": "8b7594e99c5182cfab34ac1b",
             "growth": null
         },
+        "Kumwe\\App\\Infrastructure\\Persistence\\Migration\\BusinessRecordScaleMigration": {
+            "kind": "class",
+            "layer": "infrastructure",
+            "surface": "81de5a5af939914e5f7b65cd",
+            "growth": {
+                "classification": "host-infrastructure",
+                "implements": [
+                    "Kumwe\\App\\Infrastructure\\Persistence\\Migration\\Migration"
+                ],
+                "extends": null
+            }
+        },
         "Kumwe\\App\\Infrastructure\\Persistence\\Migration\\BusinessSecurityPortalMigration": {
             "kind": "class",
             "layer": "infrastructure",
@@ -5259,6 +5341,18 @@
             "layer": "infrastructure",
             "surface": "aef69700def9493c2ac2def9",
             "growth": null
+        },
+        "Kumwe\\App\\Infrastructure\\Persistence\\Migration\\QueueWorkerPermitsMigration": {
+            "kind": "class",
+            "layer": "infrastructure",
+            "surface": "aef69700def9493c2ac2def9",
+            "growth": {
+                "classification": "host-infrastructure",
+                "implements": [
+                    "Kumwe\\App\\Infrastructure\\Persistence\\Migration\\RepeatableMigration"
+                ],
+                "extends": null
+            }
         },
         "Kumwe\\App\\Infrastructure\\Persistence\\Migration\\RecordEncryptionKeyRingMigration": {
             "kind": "class",

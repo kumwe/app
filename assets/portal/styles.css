@@ -4,6 +4,15 @@
 @import "./phase-five.css";
 
 :root {
+  color-scheme: light dark;
+  --portal-ink: light-dark(#12231f, #ecf6f1);
+  --portal-muted: light-dark(#52645f, #aebfb8);
+  --portal-paper: light-dark(#f5f7f2, #101814);
+  --portal-panel: light-dark(#ffffff, #17231e);
+  --portal-line: light-dark(#d6ded8, #34473f);
+  --portal-accent: light-dark(#176b58, #6dd6b8);
+  --portal-danger: light-dark(#8b2525, #ff9aa7);
+
   --kumwe-border: var(--portal-line);
   --kumwe-border-strong: color-mix(in srgb, var(--portal-line), var(--portal-ink) 22%);
   --kumwe-surface: var(--portal-panel);
@@ -16,8 +25,8 @@
   --kumwe-accent-soft: color-mix(in srgb, var(--portal-accent), transparent 84%);
   --kumwe-info: var(--portal-accent);
   --kumwe-info-soft: color-mix(in srgb, var(--portal-accent), transparent 86%);
-  --kumwe-warning: #8b5a00;
-  --kumwe-warning-soft: #fff2cf;
+  --kumwe-warning: light-dark(#8b5a00, #f0be5a);
+  --kumwe-warning-soft: light-dark(#fff2cf, #3b301e);
   --kumwe-danger: var(--portal-danger);
   --kumwe-danger-strong: var(--portal-danger);
   --kumwe-danger-soft: color-mix(in srgb, var(--portal-danger), transparent 86%);
@@ -69,7 +78,3 @@ code, pre { font-family: var(--kumwe-font-mono); }
 .notice.danger { border-color: var(--portal-danger); background: var(--kumwe-danger-soft); color: var(--portal-danger); }
 .empty-state { display: grid; min-height: 12rem; place-items: center; padding: 2rem 1rem; border: 1px dashed var(--portal-line); border-radius: .6rem; text-align: center; }
 .empty-state-content { max-width: 31rem; }
-
-@media (prefers-color-scheme: dark) {
-  :root { --kumwe-warning: #f0be5a; --kumwe-warning-soft: #3b301e; }
-}
