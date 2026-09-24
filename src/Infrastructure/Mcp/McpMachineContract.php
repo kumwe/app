@@ -25,12 +25,23 @@ use stdClass;
 final readonly class McpMachineContract
 {
     /**
-     * Retained contract generation identifier.
+     * Current contract generation identifier the live catalogue is generated as.
+     *
+     * Generation two is generation one plus the eight Studio authoring tools and their error rows; every
+     * generation-one tool, schema and error row is unchanged, and `mcp-v1.json` stays retained beside it.
      *
      * @var    string
      * @since  2.0.0
      */
-    public const string GENERATION = 'mcp-v1';
+    public const string GENERATION = 'mcp-v2';
+
+    /**
+     * Earlier generations the live catalogue must keep serving byte-for-byte.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
+    public const array RETAINED_GENERATIONS = ['mcp-v1'];
 
     /**
      * Canonical tool-error envelope identifier.
@@ -41,12 +52,12 @@ final readonly class McpMachineContract
     public const string ERROR_SCHEMA = 'kumwe.mcp.tool-error.v1';
 
     /**
-     * Number of tools retained by this generation.
+     * Number of tools this generation declares.
      *
      * @var    int
      * @since  2.0.0
      */
-    public const int TOOL_COUNT = 75;
+    public const int TOOL_COUNT = 83;
 
     /**
      * Number of resources retained by this generation.
