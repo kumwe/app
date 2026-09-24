@@ -17,6 +17,9 @@ use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 use Kumwe\App\Tests\Support\InterfaceTranslation;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\Contribution\ContributionOwner;
+use Kumwe\Access\ResourcePolicyTarget;
+use Kumwe\App\Extension\Contribution\CapabilityDefinition;
+use Kumwe\App\Extension\Contribution\ResourcePolicyDefinition;
 use Kumwe\Portal\Contract\PortalNavigationDefinition;
 use Kumwe\Portal\Contract\PortalWorkspaceDefinition;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -78,15 +81,38 @@ final class PortalRendererNavigationWordingTest extends TestCase
     }
 
     /**
+     * An extension's portal entry keeps the text its owner declared while core entries beside it translate.
+     *
+     * The catalogue carries wording only for core identifiers. An extension that happened to reuse a core
+     * identifier's shape must never be relabelled with core wording, so ownership, not the identifier, decides
+     * whether the catalogue is consulted at all.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAnExtensionPortalEntryKeepsItsDeclaredTextInATranslatedLocale(): void
+    {
+        $renderer = $this->renderer('ar', true);
+
+        $rows = $this->rowsById($renderer->visibleNavigation($this->session(['acme.tools.portal'])));
+
+        self::assertSame('Acme desk', $rows['acme.tools.portal-desk']['label']);
+        self::assertSame('Open the acme desk.', $rows['acme.tools.portal-desk']['description']);
+        self::assertSame('نظرة عامة', $rows['core.portal-home']['label']);
+    }
+
+    /**
      * Build a renderer over core plus one unmapped entry, printing workspaces and entries.
      *
-     * @param   ?string  $locale  Request locale, or null for no translation extension.
+     * @param   ?string  $locale     Request locale, or null for no translation extension.
+     * @param   bool     $extension  Whether an `acme/tools` workspace and entry are also registered.
      *
      * @return  PortalRenderer  Renderer whose visibility predicate admits every entry.
      *
      * @since   2.0.0
      */
-    private function renderer(?string $locale): PortalRenderer
+    private function renderer(?string $locale, bool $extension = false): PortalRenderer
     {
         $registries = new ExtensionContributionRegistrySet(
             new DeterministicCanonicalEncoder(),
@@ -109,6 +135,32 @@ final class PortalRendererNavigationWordingTest extends TestCase
             'portal.access',
             10,
         ));
+        if ($extension) {
+            $acme = ContributionOwner::extension('acme/tools');
+            $registries->capabilities()->register(
+                $acme,
+                new CapabilityDefinition('acme.tools.portal', 'Use the acme desk', 'Use the acme portal desk.'),
+            );
+            $registries->resourcePolicies()->register($acme, new ResourcePolicyDefinition(
+                'acme.tools.portal-session',
+                'acme.tools.portal',
+                [new ResourcePolicyTarget('portal_session')],
+            ));
+            $registries->portalWorkspaces()->register(
+                $acme,
+                new PortalWorkspaceDefinition('acme.tools.portal', 'Acme', 'Acme portal workspace.', 95),
+            );
+            $registries->portalNavigation()->register($acme, new PortalNavigationDefinition(
+                'acme.tools.portal-desk',
+                'acme.tools.portal',
+                'Acme desk',
+                'Open the acme desk.',
+                '/portal/acme-desk',
+                'dashboard',
+                'acme.tools.portal',
+                20,
+            ));
+        }
         $twig = new Environment(new ArrayLoader([
             'portal/proof.twig' => '{% for workspace in portal_workspaces %}'
                 . '{{ workspace.id }}={{ workspace.label }}:{{ workspace.description }}|{% endfor %}'
@@ -131,17 +183,19 @@ final class PortalRendererNavigationWordingTest extends TestCase
     /**
      * Build a resolved portal session holding portal access.
      *
+     * @param   list<string>  $extra  Further capabilities the principal holds.
+     *
      * @return  PortalSession  Session for the default site without an organization membership.
      *
      * @since   2.0.0
      */
-    private function session(): PortalSession
+    private function session(array $extra = []): PortalSession
     {
         $now = new DateTimeImmutable('2026-08-15T10:00:00+00:00');
         $principal = AuthenticatedPrincipal::issueFromStrings(
             new \stdClass(),
             '018f0000-0000-7000-8000-000000000001',
-            ['portal.access'],
+            ['portal.access', ...$extra],
         );
 
         return new PortalSession(
