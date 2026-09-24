@@ -5140,7 +5140,7 @@
         "Kumwe\\App\\Infrastructure\\Mcp\\KumweMcpHandlers": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "daa43af05eca0a8616b52ccc",
+            "surface": "effa93d925426c5a82cfdf21",
             "growth": {
                 "classification": "host-infrastructure",
                 "implements": [],

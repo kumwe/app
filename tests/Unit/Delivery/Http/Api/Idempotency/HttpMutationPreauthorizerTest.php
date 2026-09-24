@@ -40,7 +40,6 @@ final class HttpMutationPreauthorizerTest extends TestCase
      */
     public function testParityMutationsArePreauthorizedAgainstTheirExactResource(): void
     {
-        $user = '018f22e2-7c8b-7ab0-8f3a-88e8026bb301';
         $approval = '018f22e2-7c8b-7ab0-8f3a-88e8026bb604';
         $cases = [
             ['POST', '/api/v1/media', 'content.update', 'media', '*'],
@@ -54,9 +53,6 @@ final class HttpMutationPreauthorizerTest extends TestCase
                 'approval_request',
                 $approval,
             ],
-            ['POST', '/api/v1/users/' . $user . '/password-reset', 'users.manage', 'user', $user],
-            ['POST', '/api/v1/users/' . $user . '/step-up/revoke', 'users.manage', 'user', $user],
-            ['POST', '/api/v1/users/' . $user . '/sessions/terminate', 'users.manage', 'user', $user],
         ];
         foreach ($cases as [$method, $path, $capability, $type, $identifier]) {
             $calls = [];

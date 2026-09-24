@@ -400,24 +400,12 @@ Revoke API or MCP credentials immediately with `access revoke-token --site=corpo
 
 ### Credential rotation and recovery
 
-```bash
-php bin/kumwe access reset-password \
-  --site=corporate --token-file=/run/secrets/kumwe-identity-token \
-  --user=USER_ID --password-file=/run/secrets/replacement-password \
-  --reason='Lost device, ticket 4711'
-php bin/kumwe access revoke-step-up \
-  --site=corporate --token-file=/run/secrets/kumwe-identity-token \
-  --user=USER_ID --reason='Authenticator lost, recovery codes spent'
-php bin/kumwe access terminate-sessions \
-  --site=corporate --token-file=/run/secrets/kumwe-identity-token \
-  --user=USER_ID --reason='Shared workstation'
-```
-
-All three need a token carrying `users.manage` and a written reason, and all three advance the account's security
-epoch, so the subject's API tokens, portal sessions, administrator sessions and outstanding step-up verifications
-stop working on their next request. `reset-password` refuses your own account: replacing your own password
-requires proving the current one, which only the administrator screen asks for. `revoke-step-up` destroys the
-account's unspent recovery codes and is what allows it to enroll a replacement authenticator.
+`access reset-password`, `access revoke-step-up` and `access terminate-sessions` remain in the retained `cli-v1`
+contract, but they are refused to every console token with the access screen's own step-up refusal
+(`The step-up credential is invalid, expired, or already used.`, exit status 1). The screen performs each of them
+only behind a payload-bound human step-up proof for the exact change, and a bearer credential cannot carry one, so
+a stolen `users.manage` token cannot reset a peer's password, strip their second factor or sign them out. Use the
+**Access** screen, or, when every operator is locked out, the host-local break-glass below.
 
 ### Break-glass credential recovery
 

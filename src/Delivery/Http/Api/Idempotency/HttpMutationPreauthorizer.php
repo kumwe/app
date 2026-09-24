@@ -222,11 +222,6 @@ final readonly class HttpMutationPreauthorizer
             $this->assert($context, 'users.manage', AuthorizationResource::collection('user'));
             return;
         }
-        $credentialRecovery = '#^/api/v1/users/([^/]+)/(?:password-reset|step-up/revoke|sessions/terminate)$#D';
-        if ($method === 'POST' && preg_match($credentialRecovery, $path, $match) === 1) {
-            $this->assert($context, 'users.manage', AuthorizationResource::item('user', rawurldecode($match[1])));
-            return;
-        }
         if (preg_match('#^/api/v1/users/([^/]+)(?:/roles/([^/]+))?$#D', $path, $match) === 1) {
             $this->assert($context, 'users.manage', AuthorizationResource::item('user', rawurldecode($match[1])));
             if (isset($match[2])) {

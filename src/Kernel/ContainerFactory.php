@@ -6400,9 +6400,6 @@ final class ContainerFactory
             ['POST', '/api/v1/tokens/{tokenId}/rotate', 'api.v1.tokens.rotate'],
             ['DELETE', '/api/v1/users/{id}/tokens', 'api.v1.tokens.emergency-revoke'],
             ['DELETE', '/api/v1/users/{id}/tokens/emergency', 'api.v1.tokens.emergency-revoke-all'],
-            ['POST', '/api/v1/users/{id}/password-reset', 'api.v1.users.password-reset'],
-            ['POST', '/api/v1/users/{id}/step-up/revoke', 'api.v1.users.step-up-revoke'],
-            ['POST', '/api/v1/users/{id}/sessions/terminate', 'api.v1.users.sessions-terminate'],
             ] as [$method, $path, $name]
         ) {
             self::apiRoute($application->route(

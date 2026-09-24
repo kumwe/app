@@ -2461,27 +2461,6 @@
                 ],
                 "type": "object"
             },
-            "PasswordResetRequest": {
-                "additionalProperties": false,
-                "properties": {
-                    "password": {
-                        "maxLength": 4096,
-                        "minLength": 1,
-                        "type": "string",
-                        "writeOnly": true
-                    },
-                    "reason": {
-                        "maxLength": 500,
-                        "minLength": 1,
-                        "type": "string"
-                    }
-                },
-                "required": [
-                    "password",
-                    "reason"
-                ],
-                "type": "object"
-            },
             "PostingPeriod": {
                 "additionalProperties": false,
                 "properties": {
@@ -4687,19 +4666,6 @@
                 ],
                 "type": "object"
             },
-            "SessionTerminationResult": {
-                "additionalProperties": false,
-                "properties": {
-                    "sessions_terminated": {
-                        "minimum": 0,
-                        "type": "integer"
-                    }
-                },
-                "required": [
-                    "sessions_terminated"
-                ],
-                "type": "object"
-            },
             "SitePresentation": {
                 "additionalProperties": false,
                 "properties": {
@@ -4806,19 +4772,6 @@
                     "timezone",
                     "search_indexing_enabled",
                     "presentation"
-                ],
-                "type": "object"
-            },
-            "StepUpRevocationResult": {
-                "additionalProperties": false,
-                "properties": {
-                    "revoked_credentials": {
-                        "minimum": 0,
-                        "type": "integer"
-                    }
-                },
-                "required": [
-                    "revoked_credentials"
                 ],
                 "type": "object"
             },
@@ -10880,72 +10833,6 @@
                 ]
             }
         },
-        "/api/v1/users/{id}/password-reset": {
-            "post": {
-                "operationId": "resetUserPassword",
-                "parameters": [
-                    {
-                        "$ref": "#/components/parameters/IdempotencyKey"
-                    }
-                ],
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/PasswordResetRequest"
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/SessionTerminationResult"
-                                }
-                            }
-                        },
-                        "description": "Replace another account password and end its sessions"
-                    },
-                    "400": {
-                        "$ref": "#/components/responses/BadRequest"
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/Unauthorized"
-                    },
-                    "403": {
-                        "$ref": "#/components/responses/Forbidden"
-                    },
-                    "409": {
-                        "$ref": "#/components/responses/Conflict"
-                    },
-                    "422": {
-                        "$ref": "#/components/responses/Unprocessable"
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": [],
-                        "siteContext": []
-                    }
-                ],
-                "summary": "Replace another account password and end its sessions",
-                "x-kumwe-api-version": "v1",
-                "x-kumwe-contract-version": "1.1.0",
-                "x-kumwe-idempotency": "required",
-                "x-kumwe-middleware-contracts": [
-                    "bearer-authentication",
-                    "idempotency-key"
-                ],
-                "x-kumwe-precondition": "none",
-                "x-kumwe-request-body": "json",
-                "x-kumwe-required-capabilities": [
-                    "users.manage"
-                ]
-            }
-        },
         "/api/v1/users/{id}/roles/{roleId}": {
             "delete": {
                 "operationId": "revokeRole",
@@ -11007,138 +10894,6 @@
                 ],
                 "x-kumwe-precondition": "none",
                 "x-kumwe-request-body": "none",
-                "x-kumwe-required-capabilities": [
-                    "users.manage"
-                ]
-            }
-        },
-        "/api/v1/users/{id}/sessions/terminate": {
-            "post": {
-                "operationId": "terminateUserSessions",
-                "parameters": [
-                    {
-                        "$ref": "#/components/parameters/IdempotencyKey"
-                    }
-                ],
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/TokenRevocationRequest"
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/SessionTerminationResult"
-                                }
-                            }
-                        },
-                        "description": "End every session the user holds"
-                    },
-                    "400": {
-                        "$ref": "#/components/responses/BadRequest"
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/Unauthorized"
-                    },
-                    "403": {
-                        "$ref": "#/components/responses/Forbidden"
-                    },
-                    "409": {
-                        "$ref": "#/components/responses/Conflict"
-                    },
-                    "422": {
-                        "$ref": "#/components/responses/Unprocessable"
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": [],
-                        "siteContext": []
-                    }
-                ],
-                "summary": "End every session the user holds",
-                "x-kumwe-api-version": "v1",
-                "x-kumwe-contract-version": "1.1.0",
-                "x-kumwe-idempotency": "required",
-                "x-kumwe-middleware-contracts": [
-                    "bearer-authentication",
-                    "idempotency-key"
-                ],
-                "x-kumwe-precondition": "none",
-                "x-kumwe-request-body": "json",
-                "x-kumwe-required-capabilities": [
-                    "users.manage"
-                ]
-            }
-        },
-        "/api/v1/users/{id}/step-up/revoke": {
-            "post": {
-                "operationId": "revokeUserStepUpCredentials",
-                "parameters": [
-                    {
-                        "$ref": "#/components/parameters/IdempotencyKey"
-                    }
-                ],
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/TokenRevocationRequest"
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/StepUpRevocationResult"
-                                }
-                            }
-                        },
-                        "description": "Retire every second factor the user holds"
-                    },
-                    "400": {
-                        "$ref": "#/components/responses/BadRequest"
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/Unauthorized"
-                    },
-                    "403": {
-                        "$ref": "#/components/responses/Forbidden"
-                    },
-                    "409": {
-                        "$ref": "#/components/responses/Conflict"
-                    },
-                    "422": {
-                        "$ref": "#/components/responses/Unprocessable"
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": [],
-                        "siteContext": []
-                    }
-                ],
-                "summary": "Retire every second factor the user holds",
-                "x-kumwe-api-version": "v1",
-                "x-kumwe-contract-version": "1.1.0",
-                "x-kumwe-idempotency": "required",
-                "x-kumwe-middleware-contracts": [
-                    "bearer-authentication",
-                    "idempotency-key"
-                ],
-                "x-kumwe-precondition": "none",
-                "x-kumwe-request-body": "json",
                 "x-kumwe-required-capabilities": [
                     "users.manage"
                 ]

@@ -1,7 +1,7 @@
 {
     "format": "kumwe-rest-machine-contract-snapshot-v1",
     "generation": "1.1.0",
-    "openapi_semantic_sha256": "5751f43a6cb1108af886e8b304e996519cf36a1193179f2d91f800567d88a88f",
+    "openapi_semantic_sha256": "b024dbcdadc7e6981aeeecd74e3b2f5fa37c1927f35a0d5635c36303bf26cc45",
     "operations": {
         "activateExtension": {
             "contract_sha256": "b45490458cd5ee55cbe702d67b307ae5a854986407f411ca3b1cdbc33a8acc72",
@@ -513,11 +513,6 @@
             "method": "POST",
             "path": "/api/v1/business-periods/reopen"
         },
-        "resetUserPassword": {
-            "contract_sha256": "7d55b5072765d7ccf10e9b0ce449eaf5259c1dd7986f61914faacd0cb52e6075",
-            "method": "POST",
-            "path": "/api/v1/users/{id}/password-reset"
-        },
         "resolveStudioAuthoringTarget": {
             "contract_sha256": "7a075bfb115e0a691359f52dfa05839eabbf45984fb34176a91290765d6e8f32",
             "method": "POST",
@@ -557,11 +552,6 @@
             "contract_sha256": "cefcc36d8e6cf8ee35a51a1544d1f6addfaf5714f4dc0f60900a0059d34609e7",
             "method": "DELETE",
             "path": "/api/v1/users/{id}/tokens"
-        },
-        "revokeUserStepUpCredentials": {
-            "contract_sha256": "0e8a0dd0cfb551c082165991b7245720d01f9f8ebb6ad69cfa95885654df9531",
-            "method": "POST",
-            "path": "/api/v1/users/{id}/step-up/revoke"
         },
         "rotateExtensionTrustKey": {
             "contract_sha256": "c182ac5add8564aa9ac25a0abb83a141a1648f7eed483615e69116b2289098ba",
@@ -617,11 +607,6 @@
             "contract_sha256": "cb52b1df0294b18af8323f5e8ba65e8ecbe15cff01d6b50dd3994719d3a42fcb",
             "method": "POST",
             "path": "/api/v1/business-definitions/{identifier}/supersede"
-        },
-        "terminateUserSessions": {
-            "contract_sha256": "60fadae401c2be89a3d044cefb89b89da1d0b494dd0f08a1611448156faaa4db",
-            "method": "POST",
-            "path": "/api/v1/users/{id}/sessions/terminate"
         },
         "transitionContent": {
             "contract_sha256": "2718849a903bc5f854de1a3388881478a86fd7dc289cc57dcdb2aa222785b90c",
@@ -787,7 +772,6 @@
         "MenuItemPatch": "7d6bb47e77875730c5568a20e3b2107b4855223228bd36317e753af7e7a54130",
         "MenuPatch": "c38cfe3bdf9b66b04dc06b29fd12f5059f08d9ee64632f7dbbcff0b8c1832bf7",
         "OpenApiDocument": "0d09ab129801abeadc690718b1993dc57a527a52d4cd6ed1bed6ceda9d708d28",
-        "PasswordResetRequest": "7abe81feffe678a2795e947d85f14fa1774a080a1be916a71478b0c62337c357",
         "PostingPeriod": "80d9ed95ab9534e8c28179527afd3810e9566d28bdce5d43853fd282f690a4e2",
         "PostingPeriodCloseInput": "4e2bc2161808ec9c0197951d0a8a304ccb33e01f62be3235c96ceec945478a95",
         "PostingPeriodCollection": "00d6342415442948bac2fe08f92ea8a9cf99e5ed9357cc8a32ee1329644d2e5e",
@@ -807,10 +791,8 @@
         "ScheduleCreate": "883c451d48e2826d4be7fe8c51604a546783b2b905c00206d83d5fe0815b1061",
         "ScheduleState": "3a296771cd5c88c9b16fb9573fb9c05e49871370cd9bfbb7c05626485f42a1a2",
         "SecurityEventCollection": "efe9295f48ae12f8fb2bb5386f940e4cf2c3863f35a71835d51c08fe99206a2a",
-        "SessionTerminationResult": "5029a04b8dc6c40383450d3d1391039f62a210e5aea87c04683fcc8697a6cf57",
         "SitePresentation": "97350398f5700a5a4412b0b556d2f2ee67ee65d90804ff3a6ec084a6881e3a7d",
         "SiteSettings": "c73e0911385f0ef20a0c084511858621e9eb5ddb7b719f094177338119e18179",
-        "StepUpRevocationResult": "713ba9754ec2f77e84f1f57187a8a3e0268f2dc43048823313a76bffad62f09a",
         "StudioAuthoringOpenRequest": "ebe2ab541d0a774868c29edc300ddb5e8fa9a8af5955cbf1988f05e3a92533ec",
         "StudioAuthoringOperationRequest": "152b479d8d369b6924d332914aae72e016ed0b1637dfcb6eeb5cb88dd442f1e2",
         "StudioAuthoringOperationResult": "d5b9d7680c14e74f230bc9aa8e564dd8d16791632e5cba1f9d7f90cd57eb2b98",

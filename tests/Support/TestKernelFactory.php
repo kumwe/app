@@ -6,9 +6,13 @@ namespace Kumwe\App\Tests\Support;
 
 use Doctrine\DBAL\Connection;
 use Kumwe\App\Kernel\Container;
+use DateTimeImmutable;
+use DateTimeZone;
+use Kumwe\Context\Value\AuthenticatedSurface;
 use Kumwe\Context\Value\AuthenticationStrength;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Context\Value\SiteContext;
+use Kumwe\Context\Value\StepUpProof;
 use Kumwe\App\Application\Authorization\SystemPrincipal;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionRepository;
@@ -25,6 +29,7 @@ use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Kernel\ContainerFactory;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Psr\Clock\ClockInterface;
+use Ramsey\Uuid\Uuid;
 use RuntimeException;
 use Throwable;
 
@@ -211,6 +216,59 @@ final class TestKernelFactory
             SiteContext::default(),
             AuthenticationStrength::Password,
             'integration-' . bin2hex(random_bytes(16)),
+        );
+    }
+
+    /**
+     * Build the integration administrator context the access screen hands in after a consumed step-up.
+     *
+     * The browser consumes a payload-bound proof before it calls an account-recovery act; this stands in for
+     * that consumed proof so the application service can be exercised as the screen reaches it.
+     *
+     * @param   Container  $container  Booted kernel.
+     *
+     * @return  ExecutionContext  Multi-factor administrator context carrying a step-up proof.
+     *
+     * @throws  RuntimeException  When the administrator cannot be authenticated.
+     *
+     * @since   2.0.0
+     */
+    public static function steppedAdministratorContext(Container $container): ExecutionContext
+    {
+        $identities = $container->get(AdministratorIdentityGateway::class);
+        $principal = $identities instanceof AdministratorIdentityGateway
+            ? $identities->authenticate(self::EMAIL, self::PASSWORD, 'integration-tests')
+            : null;
+        if ($principal === null) {
+            self::administratorContext($container);
+            $principal = $identities instanceof AdministratorIdentityGateway
+                ? $identities->authenticate(self::EMAIL, self::PASSWORD, 'integration-tests')
+                : null;
+        }
+        if ($principal === null) {
+            throw new RuntimeException('The integration administrator could not be authenticated.');
+        }
+        $session = Uuid::uuid7()->toString();
+        $now = new DateTimeImmutable('now', new DateTimeZone('UTC'));
+
+        return $principal->context(
+            SiteContext::default(),
+            AuthenticationStrength::MultiFactor,
+            'integration-stepped-' . bin2hex(random_bytes(16)),
+            surface: AuthenticatedSurface::Administrator,
+            sessionId: $session,
+            stepUpProof: new StepUpProof(
+                $principal->subject(),
+                $session,
+                SiteContext::default(),
+                null,
+                'totp',
+                $now->modify('-1 minute'),
+                $now->modify('+4 minutes'),
+                bin2hex(random_bytes(16)),
+                purpose: 'identity.access_control.integration.payload.' . str_repeat('0', 64),
+                securityEpoch: $principal->securityEpoch(),
+            ),
         );
     }
 
