@@ -61,6 +61,19 @@ use Ramsey\Uuid\Uuid;
 final readonly class ContentService
 {
     /**
+     * Most stored rows one authorization-filtered listing or browse examines (P5-G).
+     *
+     * Readability is decided per record after the store answers, so an actor who may read few entries
+     * would otherwise walk a site's whole table. The walk stops after this many rows, matching the
+     * repository's deepest window; a short result then means the scan bound was reached or the store ran
+     * out, and a caller narrows with the browser's filters rather than paging deeper.
+     *
+     * @var    int
+     * @since  2.0.0
+     */
+    private const int MAXIMUM_SCANNED_ROWS = 10_100;
+
+    /**
      * Workflow recorded against entries governed by the built-in editorial lifecycle.
      *
      * Stamped on records created without a published `WorkflowDefinition`, so an installation running
@@ -125,8 +138,9 @@ final readonly class ContentService
      *
      * The limit counts readable records, not stored rows: the repository is walked in batches and each
      * record is put to the gateway individually, so a caller asking for a hundred receives a hundred
-     * only when that many survive the check. A short result therefore means the store ran out, never
-     * that permission trimmed the page.
+     * only when that many survive the check within the first `MAXIMUM_SCANNED_ROWS` stored rows. A short
+     * result therefore means the store ran out or the scan bound was reached, never that permission
+     * trimmed a page the bound had room for.
      *
      * @param   ExecutionContext  $context         Actor and site the listing is performed for.
      * @param   int               $limit           Readable records to return; between 1 and 500.
@@ -166,7 +180,7 @@ final readonly class ContentService
                 }
             }
             $offset += count($page);
-        } while (count($page) === $pageSize);
+        } while (count($page) === $pageSize && $offset + $pageSize <= self::MAXIMUM_SCANNED_ROWS);
 
         return $result;
     }
@@ -177,7 +191,9 @@ final readonly class ContentService
      * Because readability is decided per record rather than in SQL, the store's offset cannot be the
      * user's offset: batches are fetched, unreadable records dropped, the records belonging to earlier
      * pages skipped, and one record more than the page holds is taken to learn whether a next page
-     * exists. That is also why the result carries neighbour flags rather than a total count.
+     * exists. That is also why the result carries neighbour flags rather than a total count. The walk
+     * examines at most `MAXIMUM_SCANNED_ROWS` stored rows, so a page past that depth comes back empty
+     * with no next page and the administrator narrows the browse with its filters instead.
      *
      * @param   ExecutionContext    $context  Actor and site the browse is performed for.
      * @param   ContentBrowseQuery  $query    Validated filters, ordering and page the browser asked for.
@@ -220,7 +236,7 @@ final readonly class ContentService
                 }
             }
             $offset += count($batch);
-        } while (count($batch) === $batchSize);
+        } while (count($batch) === $batchSize && $offset + $batchSize <= self::MAXIMUM_SCANNED_ROWS);
 
         $hasNext = count($items) > $query->perPage;
         if ($hasNext) {

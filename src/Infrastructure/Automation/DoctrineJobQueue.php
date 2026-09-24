@@ -71,6 +71,14 @@ use Throwable;
 final readonly class DoctrineJobQueue implements JobQueue, JobOriginLookup
 {
     /**
+     * Most job rows one authorization-filtered listing examines (P5-G).
+     *
+     * @var    int
+     * @since  2.0.0
+     */
+    public const int MAXIMUM_LISTED_SCAN = 10_100;
+
+    /**
      * Most attempt-exhausted rows a single `claim()` call will dead-letter before giving up on that pass.
      *
      * Reaping happens inline on the claim path, so this bounds how long one poll may spend clearing dead
@@ -818,8 +826,9 @@ final readonly class DoctrineJobQueue implements JobQueue, JobOriginLookup
      *
      * Rows are read a page at a time and each is put to an `automation.manage` decision, so the limit
      * counts jobs the caller may actually see rather than rows scanned, and paging continues until that
-     * many are collected or the table is exhausted. A refusal drops the row silently, which is why this
-     * is the one entry point that does not raise on a denial.
+     * many are collected, the table is exhausted, or `MAXIMUM_LISTED_SCAN` rows have been examined, so a
+     * caller who may see few jobs never walks a large history (P5-G). A refusal drops the row silently,
+     * which is why this is the one entry point that does not raise on a denial.
      *
      * @param   ExecutionContext  $context  Actor and site each row is authorized against.
      * @param   int               $limit    Largest number of visible rows to hand back, 1 to 500.
@@ -861,7 +870,7 @@ final readonly class DoctrineJobQueue implements JobQueue, JobOriginLookup
                 }
             }
             $offset += count($rows);
-        } while (count($rows) === $pageSize);
+        } while (count($rows) === $pageSize && $offset + $pageSize <= self::MAXIMUM_LISTED_SCAN);
 
         return $result;
     }

@@ -57,7 +57,8 @@ Roadmap packages `P5-G`, `P5-H` and `P5-I`. Companion pages: [Retention](retenti
 |---|---|---|
 | Page size | `kumwe/record-query` `RecordQuerySpecification` | 1–200 |
 | Sorts | same | ≤ 5, no duplicate field |
-| Filter depth / relation hops / operations | same | ≤ 8 / ≤ 2 / ≤ 64 |
+| Filter depth / relation hops (join depth) / operations | same | ≤ 8 / ≤ 2 / ≤ 64 |
+| Bound parameters from a query | `SetFilter` (≤ 100 values) × operations | ≤ 6,400 plus scope and policy bindings |
 | Pagination | same; `RecordCursorCodec` | keyset cursor only, signed, bound to the query digest |
 | Row and field policy before joins, counts and paging | `DoctrineBusinessRecordQueryCompiler` with `BusinessRecordAccessPlan` | compiled into the `WHERE` |
 | Value set | `RecordRequestGuard::values` | ≤ 256 fields, depth/node budget via `RecordValueGuard` |
@@ -66,16 +67,61 @@ Roadmap packages `P5-G`, `P5-H` and `P5-I`. Companion pages: [Retention](retenti
 | Interactive report rows | `kumwe/reporting` `ReportDefinition::synchronousRowCap` | 1–1,000 |
 | Export rows / columns / cell length | `ReportService`, `RecordExportReportProvider` | ≤ 100,000 / 64 / 4,096 |
 | Export bytes | `FilesystemExportArtifactStorage` | ≤ 128 MiB (max 512 MiB) |
-| Administrator list depth | `DoctrineAccessControlRepository::MAXIMUM_OFFSET` (new) | offset ≤ 10,000; filtered walks examine ≤ 10,100 rows |
+| Administrator list depth | `DoctrineAccessControlRepository::MAXIMUM_OFFSET` | offset ≤ 10,000; filtered walks examine ≤ 10,100 rows |
+| Content list and browser depth | `DoctrineContentRepository::MAXIMUM_OFFSET`, `ContentService` scan bound | offset ≤ 10,000; authorization-filtered walks examine ≤ 10,100 rows |
+| Job list | `DoctrineJobQueue::MAXIMUM_LISTED_SCAN` | authorization-filtered walk examines ≤ 10,100 rows |
 | Scrape and readiness probes | `RuntimeMetricCollector::PROBE_CAP`, `DoctrineRetentionObserver::PROBE_CAP` | 10,000 / 100,000 index entries |
 | Exact diagnostics | `LedgerCensus` | ≤ 30 s server statement timeout |
+| Execution time per browse statement | `DoctrineBusinessRecordReadRepository` through `BoundedStatementExecutor` | 5 s, cancelled by the engine |
+| Result bytes per browse statement | same | 8 MiB of column bytes, refused before decoding |
+| Relationship include fan-out | `DoctrineBusinessRecordReadRepository::MAX_INCLUDED_ROWS` | ≤ 1,000 rows per include |
+| Query count per page | `GeneratedBusinessQueryBudgetIntegrationTest`, `MachineAdapterQueryBudgetIntegrationTest` | constant in page size through REST, MCP and CLI |
 
 Indexes for scope, identity, version and the fields a definition declares indexed, unique, sortable or
 filterable are created by the physical schema compiler when the definition is installed, and `tests/Integration/Performance` holds the
 declared hot plans (`docs/quality/hot-plans.json`) to an indexed access path on every engine.
-Not yet bounded by code in this change: a per-statement execution-time cap on generated record browses
-(the engines' lock and statement timeouts apply) and a declared result-byte cap on synchronous REST pages
-beyond the 200-row page size.
+**Execution-time and byte bounds.** Every statement of a browse — the page, the aggregates, the reference
+identities and each relationship include — runs through `BoundedStatementExecutor` under the repository's
+`StatementBudget` (5 s, 8 MiB). The engine enforces the time: MariaDB runs the statement as `SET
+STATEMENT max_statement_time = 5 FOR SELECT …`, MySQL carries the `MAX_EXECUTION_TIME(5000)` optimizer
+hint, and PostgreSQL sets a transaction-local `statement_timeout` inside the read transaction, or a
+savepoint of it that is rolled back afterwards so the caller's own timeout and transaction survive. A
+cancelled statement stops examining rows and releases its snapshot on the server. Rows are then
+materialized one at a time and their column bytes summed, and a page past 8 MiB is released and refused.
+Both refusals surface as `InvalidBusinessRecordQuery` — HTTP 422 on REST, the same stable code on MCP and
+the CLI — asking the caller to narrow the filter or page, so REST, MCP, CLI and browser pages share one
+byte cap. The 5 s default sits below PHP-FPM's request timeout and the 30 s maximum a `StatementBudget`
+accepts. `BoundedStatementExecutorIntegrationTest` proves the engine cancellation, the byte refusal and
+the untouched caller transaction on MariaDB and PostgreSQL; `BoundedStatementExecutorTest` pins MySQL's
+hint, which no local engine runs.
+
+**Examined rows.** Pagination is keyset-only and the page statement's `WHERE` carries scope, row policy
+and the cursor predicate before `ORDER BY … LIMIT page + 1`. For a sort on a field the definition declares
+`indexed` or `unique`, the installed index leads with the scope columns and the field. The compiler leaves
+out the null-rank term for a NOT NULL column (it ranks every row alike), seeks with a bare comparison, and
+after a unique NOT NULL key emits no identity tie-breaker (the key is already total inside the
+equality-bound scope, and MariaDB cannot extend a unique index with the primary key), so the engine reads
+the page in index order. `BrowseExaminedRowsIntegrationTest` measures at most 4 × (page + 1) examined rows
+for a unique and for an indexed ordering on a 1,503-row table, on MariaDB (session `Handler_read_*`
+counters) and PostgreSQL (`EXPLAIN (ANALYZE)` actual rows); the previous compiled order examined every row
+(1,525 handler reads on MariaDB, 1,503 rows on PostgreSQL). Three orderings are not index-served, because
+the record table's indexes are compiled by the `kumwe/business-schema` package, not by App: the default
+order (last update, newest first — the package emits no `(scope, updated_at)` index), a field that is
+`sortable` but neither `indexed` nor `unique`, and a nullable or descending sort (the rank term and the
+ascending identity tie-breaker need a sort). Those pages examine every row in scope and are bounded by the
+5 s execution-time cap above; the remedy is a package release that indexes `(scope, updated_at, record_id)`
+and every sortable field.
+
+**Query-count growth.** `GeneratedBusinessQueryBudgetIntegrationTest` holds generated discovery, operation
+maps and relationship hydration to budgets that do not grow with definitions, relationship width or page
+size, and `MachineAdapterQueryBudgetIntegrationTest` holds the REST, MCP and CLI adapters to the same
+statement count at a one-row and a twelve-row page with a relationship include, so no adapter adds a
+per-row statement on top of the shared service.
+
+**Replicas.** Kumwe routes every read to the authoritative primary: authorization, generation checks,
+stale-sensitive workflows and read-after-write responses never read a replica. A read replica serves only
+explicitly eventual reporting that an operator points at it (for example a BI tool or an export copied
+from a replica snapshot); nothing in the application reads one.
 
 ## Storage forecast (P5-I)
 

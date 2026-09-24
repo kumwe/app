@@ -6,22 +6,23 @@ namespace Kumwe\App\Infrastructure\Retention;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception as DbalException;
-use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
-use Doctrine\DBAL\Platforms\MariaDBPlatform;
-use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use InvalidArgumentException;
 use Kumwe\App\Application\Retention\LedgerCensus;
 use Kumwe\App\Application\Retention\LedgerCount;
 use Kumwe\App\Application\Retention\RetentionStore;
+use Kumwe\App\Infrastructure\Persistence\BoundedStatementExecutor;
+use Kumwe\App\Infrastructure\Persistence\StatementBudget;
+use Kumwe\App\Infrastructure\Persistence\StatementBudgetExceeded;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 
 /**
  * Exact `COUNT(*)` of a hot store under a server-enforced statement timeout.
  *
  * The timeout is the engine's own, not a PHP alarm, so a cancelled scan releases its snapshot on the
- * server: MariaDB runs the statement under `SET STATEMENT max_statement_time`, MySQL under the
- * `MAX_EXECUTION_TIME` optimizer hint, and PostgreSQL inside a transaction with `SET LOCAL
- * statement_timeout`. A cancellation is reported as a timed-out count, never as an exception.
+ * server through `BoundedStatementExecutor`: MariaDB runs the statement under `SET STATEMENT
+ * max_statement_time`, MySQL under the `MAX_EXECUTION_TIME` optimizer hint, and PostgreSQL with a
+ * transaction-local `statement_timeout`. A cancellation is reported as a timed-out count, never as an
+ * exception.
  *
  * @since  2.0.0
  */
@@ -58,40 +59,15 @@ final readonly class DoctrineLedgerCensus implements LedgerCensus
             throw new InvalidArgumentException('A ledger census timeout must be between 1 and 30000 milliseconds.');
         }
         $table = $this->tables->quoted(DoctrineRetentionObserver::physicalTable($store));
-        $platform = $this->database->getDatabasePlatform();
         $started = hrtime(true);
         try {
-            if ($platform instanceof PostgreSQLPlatform) {
-                $rows = $this->database->transactional(function (Connection $connection) use (
-                    $table,
-                    $timeoutMilliseconds,
-                ): mixed {
-                    $connection->executeStatement(
-                        sprintf("SET LOCAL statement_timeout = '%dms'", $timeoutMilliseconds),
-                    );
-
-                    return $connection->fetchOne(sprintf('SELECT COUNT(*) FROM %s', $table));
-                });
-            } elseif ($platform instanceof MariaDBPlatform) {
-                $rows = $this->database->fetchOne(sprintf(
-                    'SET STATEMENT max_statement_time = %F FOR SELECT COUNT(*) FROM %s',
-                    $timeoutMilliseconds / 1_000,
-                    $table,
-                ));
-            } elseif ($platform instanceof AbstractMySQLPlatform) {
-                $rows = $this->database->fetchOne(sprintf(
-                    'SELECT /*+ MAX_EXECUTION_TIME(%d) */ COUNT(*) FROM %s',
-                    $timeoutMilliseconds,
-                    $table,
-                ));
-            } else {
-                $rows = $this->database->fetchOne(sprintf('SELECT COUNT(*) FROM %s', $table));
-            }
-        } catch (DbalException $failure) {
-            if (!$this->timedOut($failure)) {
-                throw $failure;
-            }
-
+            $rows = (new BoundedStatementExecutor($this->database))->fetchAll(
+                sprintf('SELECT COUNT(*) AS counted FROM %s', $table),
+                [],
+                [],
+                new StatementBudget($timeoutMilliseconds, 1_024),
+            );
+        } catch (StatementBudgetExceeded) {
             return new LedgerCount(
                 $store,
                 null,
@@ -101,38 +77,15 @@ final readonly class DoctrineLedgerCensus implements LedgerCensus
                 self::COST_CLASS,
             );
         }
+        $counted = $rows[0]['counted'] ?? 0;
 
         return new LedgerCount(
             $store,
-            is_int($rows) ? $rows : (is_string($rows) && is_numeric($rows) ? (int) $rows : 0),
+            is_int($counted) ? $counted : (is_string($counted) && is_numeric($counted) ? (int) $counted : 0),
             false,
             (hrtime(true) - $started) / 1_000_000,
             $timeoutMilliseconds,
             self::COST_CLASS,
         );
-    }
-
-    /**
-     * Recognise the engine's statement-timeout cancellation.
-     *
-     * @param   DbalException  $failure  Failure raised by the count.
-     *
-     * @return  bool  True for MariaDB 1969, MySQL 3024 or PostgreSQL SQLSTATE 57014.
-     *
-     * @since   2.0.0
-     */
-    private function timedOut(DbalException $failure): bool
-    {
-        for ($cause = $failure; $cause !== null; $cause = $cause->getPrevious()) {
-            $message = $cause->getMessage();
-            if (
-                str_contains($message, '1969') || str_contains($message, '3024') || str_contains($message, '57014')
-                || str_contains($message, 'max_statement_time') || str_contains($message, 'statement timeout')
-            ) {
-                return true;
-            }
-        }
-
-        return false;
     }
 }
