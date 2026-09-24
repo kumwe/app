@@ -5130,7 +5130,7 @@
         "Kumwe\\App\\Infrastructure\\Mcp\\BusinessMcpHandlers": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "e7061ee2d7427b3113db98dd",
+            "surface": "1ae3e83213592aba8d91b9c0",
             "growth": {
                 "classification": "host-infrastructure",
                 "implements": [],
@@ -5140,7 +5140,7 @@
         "Kumwe\\App\\Infrastructure\\Mcp\\KumweMcpHandlers": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "effa93d925426c5a82cfdf21",
+            "surface": "25fcac6fc78e4f6241892fbb",
             "growth": {
                 "classification": "host-infrastructure",
                 "implements": [],

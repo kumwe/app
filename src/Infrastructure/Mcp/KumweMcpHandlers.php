@@ -16,6 +16,7 @@ use Kumwe\Context\Value\SiteContext;
 use Kumwe\App\Application\Automation\AutomationManagementService;
 use Kumwe\Content\Application\ContentNotFound;
 use Kumwe\Content\Application\ContentRecord;
+use Kumwe\App\Content\Application\ContentModelService;
 use Kumwe\App\Content\Application\ContentService;
 use Kumwe\App\Extension\Application\ExtensionManager;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
@@ -30,7 +31,10 @@ use Kumwe\Navigation\Application\MenuRecord;
 use Kumwe\Navigation\Application\MenuItemRecord;
 use Kumwe\App\Navigation\Application\NavigationService;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionService;
+use Kumwe\BusinessDefinition\Application\DefinitionDraft;
 use Kumwe\BusinessDefinition\Application\DefinitionVersionRecord;
+use Kumwe\Content\Domain\ContentTypeDefinition;
+use Kumwe\Content\Workflow\Domain\WorkflowDefinition;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaService;
 use Kumwe\BusinessSchema\Domain\SchemaPlan;
 use Kumwe\BusinessSchema\Domain\SchemaPlanStep;
@@ -109,6 +113,8 @@ final readonly class KumweMcpHandlers
      *         save and withdraw through; null only in isolated tests that exercise no wording tool.
      * @param  ?BusinessSecurityAdministrationService  $businessSecurity  Business Security read model the overview
      *         tool answers from; null only in isolated tests that exercise no Business Security tool.
+     * @param ?ContentModelService $models Content types and workflows the model tools list,
+     *         read, create and update; null only in isolated tests that exercise no model tool.
      *
      * @since  2.0.0
      */
@@ -135,6 +141,7 @@ final readonly class KumweMcpHandlers
         private ?MediaService $media = null,
         private ?MessageOverrideService $wording = null,
         private ?BusinessSecurityAdministrationService $businessSecurity = null,
+        private ?ContentModelService $models = null,
     ) {
     }
 
@@ -175,6 +182,7 @@ final readonly class KumweMcpHandlers
             media: $this->media,
             wording: $this->wording,
             businessSecurity: $this->businessSecurity,
+            models: $this->models,
         );
     }
 
@@ -251,6 +259,7 @@ final readonly class KumweMcpHandlers
             media: $this->media,
             wording: $this->wording,
             businessSecurity: $this->businessSecurity,
+            models: $this->models,
         );
     }
 
@@ -3289,6 +3298,518 @@ final readonly class KumweMcpHandlers
     }
 
     /**
+     * Read one content entry, trashed entries included, as the editor opens it.
+     *
+     * @param   string  $id  Entry UUID.
+     *
+     * @return  array<string, mixed>  The stored record.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `content.read`.
+     * @throws  ContentNotFound  When the site holds no such entry.
+     *
+     * @since   2.0.0
+     */
+    public function getContent(string $id): array
+    {
+        $this->require('content.read');
+
+        return $this->content->get($this->context(), $id, true)->toArray();
+    }
+
+    /**
+     * Read one menu.
+     *
+     * @param   string  $id  Menu UUID.
+     *
+     * @return  array<string, mixed>  The stored menu.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `navigation.manage`.
+     *
+     * @since   2.0.0
+     */
+    public function getMenu(string $id): array
+    {
+        $this->require('navigation.manage');
+
+        return $this->navigation->menu($this->context(), $id)->toArray();
+    }
+
+    /**
+     * Rename one menu at an expected version under a replay-safe operation identity.
+     *
+     * @param   string  $operationId  Idempotency key this write is fenced on.
+     * @param   string  $id           Menu UUID.
+     * @param   int     $version      Version the caller last read.
+     * @param   string  $handle       New menu handle.
+     * @param   string  $title        New menu title.
+     *
+     * @return  array<string, mixed>  The stored menu, or the stored copy on a repeat.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `navigation.manage`.
+     *
+     * @since   2.0.0
+     */
+    public function updateMenu(string $operationId, string $id, int $version, string $handle, string $title): array
+    {
+        $this->require('navigation.manage');
+        $this->preauthorize($operationId, 'navigation.manage', AuthorizationResource::item('menu', $id));
+
+        return $this->mutations->run(
+            $this->context($operationId),
+            'menu.update',
+            $operationId,
+            compact('id', 'version', 'handle', 'title'),
+            fn (): array => $this->navigation->updateMenu(
+                $this->context($operationId),
+                $id,
+                $version,
+                $handle,
+                $title,
+            )->toArray(),
+        );
+    }
+
+    /**
+     * Delete one menu at an expected version under a replay-safe operation identity.
+     *
+     * @param   string  $operationId  Idempotency key this write is fenced on.
+     * @param   string  $id           Menu UUID.
+     * @param   int     $version      Version the caller last read.
+     *
+     * @return  array{deleted: true}  Confirmation, or the stored copy on a repeat.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `navigation.manage`.
+     *
+     * @since   2.0.0
+     */
+    public function deleteMenu(string $operationId, string $id, int $version): array
+    {
+        $this->require('navigation.manage');
+        $this->preauthorize($operationId, 'navigation.manage', AuthorizationResource::item('menu', $id));
+
+        return $this->mutations->run(
+            $this->context($operationId),
+            'menu.delete',
+            $operationId,
+            compact('id', 'version'),
+            function () use ($operationId, $id, $version): array {
+                $this->navigation->deleteMenu($this->context($operationId), $id, $version);
+
+                return ['deleted' => true];
+            },
+        );
+    }
+
+    /**
+     * List the site's content types, as the content models screen does.
+     *
+     * @return  array{items: list<array<string, mixed>>}  Content types.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `content.read`.
+     *
+     * @since   2.0.0
+     */
+    public function listContentTypes(): array
+    {
+        $this->require('content.read');
+
+        return ['items' => array_map(
+            static fn (ContentTypeDefinition $type): array => $type->toArray(),
+            $this->contentModels()->contentTypes($this->context()),
+        )];
+    }
+
+    /**
+     * Read one content type by handle or UUID, optionally at an exact version.
+     *
+     * @param   string  $id       Handle or UUID.
+     * @param   ?int    $version  Exact version, or null for the current one.
+     *
+     * @return  array<string, mixed>  The content type.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `content.read`.
+     *
+     * @since   2.0.0
+     */
+    public function getContentType(string $id, ?int $version = null): array
+    {
+        $this->require('content.read');
+
+        return $this->contentModels()->contentType($this->context(), $id, $version)->toArray();
+    }
+
+    /**
+     * Create one content type under a replay-safe operation identity.
+     *
+     * @param   string                $operationId  Idempotency key this write is fenced on.
+     * @param   string                $handle       New type handle.
+     * @param   string                $name         Display name.
+     * @param   string                $workflow     Workflow handle or UUID the type is bound to.
+     * @param   array<string, mixed>  $schema       Field schema document.
+     *
+     * @return  array<string, mixed>  The stored type, or the stored copy on a repeat.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `content.update`.
+     *
+     * @since   2.0.0
+     */
+    public function createContentType(
+        string $operationId,
+        string $handle,
+        string $name,
+        string $workflow,
+        array $schema = [],
+    ): array {
+        $this->require('content.update');
+        $this->preauthorize($operationId, 'content.update', AuthorizationResource::collection('content_type'));
+
+        return $this->mutations->run(
+            $this->context($operationId),
+            'content-type.create',
+            $operationId,
+            compact('handle', 'name', 'workflow', 'schema'),
+            fn (): array => $this->contentModels()->createContentType(
+                $this->context($operationId),
+                $handle,
+                $name,
+                $workflow,
+                $schema,
+            )->toArray(),
+        );
+    }
+
+    /**
+     * Publish a new version of one content type at an expected version under a replay-safe identity.
+     *
+     * @param   string                $operationId    Idempotency key this write is fenced on.
+     * @param   string                $id             Type UUID.
+     * @param   int                   $version        Version the caller last read.
+     * @param   string                $name           Display name.
+     * @param   string                $workflow       Workflow handle or UUID.
+     * @param   array<string, mixed>  $schema         Field schema document.
+     * @param   bool                  $allowBreaking  Whether a breaking schema change is accepted.
+     *
+     * @return  array<string, mixed>  The stored type, or the stored copy on a repeat.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `content.update`.
+     *
+     * @since   2.0.0
+     */
+    public function updateContentType(
+        string $operationId,
+        string $id,
+        int $version,
+        string $name,
+        string $workflow,
+        array $schema = [],
+        bool $allowBreaking = false,
+    ): array {
+        $this->require('content.update');
+        $this->preauthorize($operationId, 'content.update', AuthorizationResource::item('content_type', $id));
+
+        return $this->mutations->run(
+            $this->context($operationId),
+            'content-type.update',
+            $operationId,
+            compact('id', 'version', 'name', 'workflow', 'schema', 'allowBreaking'),
+            fn (): array => $this->contentModels()->updateContentType(
+                $this->context($operationId),
+                $id,
+                $version,
+                $name,
+                $workflow,
+                $schema,
+                $allowBreaking,
+            )->toArray(),
+        );
+    }
+
+    /**
+     * List the site's workflows, as the content models screen does.
+     *
+     * @return  array{items: list<array<string, mixed>>}  Workflows.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `content.read`.
+     *
+     * @since   2.0.0
+     */
+    public function listWorkflows(): array
+    {
+        $this->require('content.read');
+
+        return ['items' => array_map(
+            static fn (WorkflowDefinition $workflow): array => $workflow->toArray(),
+            $this->contentModels()->workflows($this->context()),
+        )];
+    }
+
+    /**
+     * Read one workflow by handle or UUID, optionally at an exact version.
+     *
+     * @param   string  $id       Handle or UUID.
+     * @param   ?int    $version  Exact version, or null for the current one.
+     *
+     * @return  array<string, mixed>  The workflow.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `content.read`.
+     *
+     * @since   2.0.0
+     */
+    public function getWorkflow(string $id, ?int $version = null): array
+    {
+        $this->require('content.read');
+
+        return $this->contentModels()->workflow($this->context(), $id, $version)->toArray();
+    }
+
+    /**
+     * Create one workflow under a replay-safe operation identity.
+     *
+     * @param   string                      $operationId  Idempotency key this write is fenced on.
+     * @param   string                      $handle       New workflow handle.
+     * @param   string                      $name         Display name.
+     * @param   list<array<string, mixed>>  $states       Declared states.
+     * @param   list<array<string, mixed>>  $transitions  Declared transitions.
+     *
+     * @return  array<string, mixed>  The stored workflow, or the stored copy on a repeat.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `content.update`.
+     *
+     * @since   2.0.0
+     */
+    public function createWorkflow(
+        string $operationId,
+        string $handle,
+        string $name,
+        array $states,
+        array $transitions,
+    ): array {
+        $this->require('content.update');
+        $this->preauthorize($operationId, 'content.update', AuthorizationResource::collection('workflow'));
+
+        return $this->mutations->run(
+            $this->context($operationId),
+            'workflow.create',
+            $operationId,
+            compact('handle', 'name', 'states', 'transitions'),
+            fn (): array => $this->contentModels()->createWorkflow(
+                $this->context($operationId),
+                $handle,
+                $name,
+                $states,
+                $transitions,
+            )->toArray(),
+        );
+    }
+
+    /**
+     * Publish a new version of one workflow at an expected version under a replay-safe identity.
+     *
+     * @param   string                      $operationId    Idempotency key this write is fenced on.
+     * @param   string                      $id             Workflow UUID.
+     * @param   int                         $version        Version the caller last read.
+     * @param   string                      $name           Display name.
+     * @param   list<array<string, mixed>>  $states         Declared states.
+     * @param   list<array<string, mixed>>  $transitions    Declared transitions.
+     * @param   bool                        $allowBreaking  Whether a breaking change is accepted.
+     *
+     * @return  array<string, mixed>  The stored workflow, or the stored copy on a repeat.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `content.update`.
+     *
+     * @since   2.0.0
+     */
+    public function updateWorkflow(
+        string $operationId,
+        string $id,
+        int $version,
+        string $name,
+        array $states,
+        array $transitions,
+        bool $allowBreaking = false,
+    ): array {
+        $this->require('content.update');
+        $this->preauthorize($operationId, 'content.update', AuthorizationResource::item('workflow', $id));
+
+        return $this->mutations->run(
+            $this->context($operationId),
+            'workflow.update',
+            $operationId,
+            compact('id', 'version', 'name', 'states', 'transitions', 'allowBreaking'),
+            fn (): array => $this->contentModels()->updateWorkflow(
+                $this->context($operationId),
+                $id,
+                $version,
+                $name,
+                $states,
+                $transitions,
+                $allowBreaking,
+            )->toArray(),
+        );
+    }
+
+    /**
+     * Save one business definition document as the working draft under a replay-safe identity.
+     *
+     * @param   string                $operationId       Idempotency key this write is fenced on.
+     * @param   array<string, mixed>  $definition        Definition document.
+     * @param   ?int                  $expectedRevision  Draft revision the caller last read, or null for a new one.
+     *
+     * @return  array<string, mixed>  The stored draft, or the stored copy on a repeat.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `content.update`.
+     *
+     * @since   2.0.0
+     */
+    public function saveBusinessDefinitionDraft(
+        string $operationId,
+        array $definition,
+        ?int $expectedRevision = null,
+    ): array {
+        $this->require('content.update');
+        $this->preauthorize(
+            $operationId,
+            'content.update',
+            AuthorizationResource::collection('business_definition'),
+        );
+
+        return $this->mutations->run(
+            $this->context($operationId),
+            'business_definition.draft.save',
+            $operationId,
+            compact('definition', 'expectedRevision'),
+            fn (): array => self::definitionDraft($this->definitions->importDraft(
+                $this->context($operationId),
+                $definition,
+                $expectedRevision,
+            )),
+        );
+    }
+
+    /**
+     * Validate the working draft of one definition, as the definitions screen's validate control does.
+     *
+     * Validation is audited, so it is fenced like a write.
+     *
+     * @param   string  $operationId  Idempotency key this call is fenced on.
+     * @param   string  $handle       Definition handle or UUID.
+     *
+     * @return  array<string, mixed>  The validated draft, or the stored copy on a repeat.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `content.update`.
+     *
+     * @since   2.0.0
+     */
+    public function validateBusinessDefinitionDraft(string $operationId, string $handle): array
+    {
+        $this->require('content.update');
+        $this->preauthorize(
+            $operationId,
+            'content.update',
+            AuthorizationResource::collection('business_definition'),
+        );
+
+        return $this->mutations->run(
+            $this->context($operationId),
+            'business_definition.validate',
+            $operationId,
+            compact('handle'),
+            fn (): array => self::definitionDraft($this->definitions->validateDraft(
+                $this->context($operationId),
+                $handle,
+            )),
+        );
+    }
+
+    /**
+     * Mark one published definition version superseded under a replay-safe identity.
+     *
+     * @param   string  $operationId  Idempotency key this write is fenced on.
+     * @param   string  $handle       Definition handle or UUID.
+     * @param   int     $version      Published version.
+     *
+     * @return  array<string, mixed>  The version record, or the stored copy on a repeat.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `content.update`.
+     *
+     * @since   2.0.0
+     */
+    public function supersedeBusinessDefinition(string $operationId, string $handle, int $version): array
+    {
+        return $this->retireBusinessDefinition($operationId, 'supersede', $handle, $version);
+    }
+
+    /**
+     * Mark one published definition version deprecated under a replay-safe identity.
+     *
+     * @param   string  $operationId  Idempotency key this write is fenced on.
+     * @param   string  $handle       Definition handle or UUID.
+     * @param   int     $version      Published version.
+     *
+     * @return  array<string, mixed>  The version record, or the stored copy on a repeat.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `content.update`.
+     *
+     * @since   2.0.0
+     */
+    public function deprecateBusinessDefinition(string $operationId, string $handle, int $version): array
+    {
+        return $this->retireBusinessDefinition($operationId, 'deprecate', $handle, $version);
+    }
+
+    /**
+     * Withdraw one published definition version so the runtime refuses it, under a replay-safe identity.
+     *
+     * @param   string  $operationId  Idempotency key this write is fenced on.
+     * @param   string  $handle       Definition handle or UUID.
+     * @param   int     $version      Published version.
+     *
+     * @return  array<string, mixed>  The version record, or the stored copy on a repeat.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `content.update`.
+     *
+     * @since   2.0.0
+     */
+    public function rejectBusinessDefinition(string $operationId, string $handle, int $version): array
+    {
+        return $this->retireBusinessDefinition($operationId, 'reject', $handle, $version);
+    }
+
+    /**
+     * Read one record with exactly one declared relationship hydrated, as the relationship screen does.
+     *
+     * @param   string  $definition       Definition UUID or handle.
+     * @param   string  $record           Public record identity.
+     * @param   string  $relationship     Declared relationship handle.
+     * @param   bool    $includeArchived  Whether an archived source may be addressed.
+     * @param   bool    $includeDeleted   Whether a soft-deleted source may be addressed.
+     *
+     * @return  array<string, mixed>  Safe detail model with the one relationship.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `business.record.read`.
+     *
+     * @since   2.0.0
+     */
+    public function readBusinessRelationship(
+        string $definition,
+        string $record,
+        string $relationship,
+        bool $includeArchived = false,
+        bool $includeDeleted = false,
+    ): array {
+        $this->require('business.record.read');
+
+        return $this->businessRecords->relationship(
+            $this->context(),
+            $definition,
+            $record,
+            $relationship,
+            $includeArchived,
+            $includeDeleted,
+        );
+    }
+
+    /**
      * Execute one ordinary declared action; a high-impact attempt fails closed without browser step-up.
      *
      * @param   string                $operationId        Caller-chosen stable operation identity.
@@ -3425,15 +3946,8 @@ final readonly class KumweMcpHandlers
     public function getBusinessDefinitionDraft(string $handle): array
     {
         $this->require('content.read');
-        $draft = $this->definitions->draft($this->context(), $handle);
 
-        return [
-            'revision' => $draft->revision,
-            'checksum' => $draft->checksum,
-            'updated_by' => $draft->updatedBy,
-            'updated_at' => $draft->updatedAt->format(DATE_ATOM),
-            'definition' => $draft->definition->toArray(),
-        ];
+        return self::definitionDraft($this->definitions->draft($this->context(), $handle));
     }
 
     /**
@@ -4057,6 +4571,81 @@ final readonly class KumweMcpHandlers
         return $operationId === null
             ? $context
             : $context->child('mcp-' . $operationId, $operationId);
+    }
+
+    /**
+     * Run one published-version status change behind the definitions capability and the mutation fence.
+     *
+     * @param   string  $operationId  Idempotency key this write is fenced on.
+     * @param   string  $action       `supersede`, `deprecate` or `reject`.
+     * @param   string  $handle       Definition handle or UUID.
+     * @param   int     $version      Published version.
+     *
+     * @return  array<string, mixed>  The version record, or the stored copy on a repeat.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `content.update`.
+     *
+     * @since   2.0.0
+     */
+    private function retireBusinessDefinition(
+        string $operationId,
+        string $action,
+        string $handle,
+        int $version,
+    ): array {
+        $this->require('content.update');
+        $this->preauthorize(
+            $operationId,
+            'content.update',
+            AuthorizationResource::collection('business_definition'),
+        );
+
+        return $this->mutations->run(
+            $this->context($operationId),
+            'business_definition.' . $action,
+            $operationId,
+            compact('handle', 'version'),
+            fn (): array => $this->definitionVersion(match ($action) {
+                'supersede' => $this->definitions->supersede($this->context($operationId), $handle, $version),
+                'deprecate' => $this->definitions->deprecate($this->context($operationId), $handle, $version),
+                default => $this->definitions->reject($this->context($operationId), $handle, $version),
+            }),
+        );
+    }
+
+    /**
+     * Project one definition draft as the draft tools answer it.
+     *
+     * @param   DefinitionDraft  $draft  Stored draft.
+     *
+     * @return  array<string, mixed>  Revision, checksum, author, time and definition body.
+     *
+     * @since   2.0.0
+     */
+    private static function definitionDraft(DefinitionDraft $draft): array
+    {
+        return [
+            'revision' => $draft->revision,
+            'checksum' => $draft->checksum,
+            'updated_by' => $draft->updatedBy,
+            'updated_at' => $draft->updatedAt->format(DATE_ATOM),
+            'definition' => $draft->definition->toArray(),
+        ];
+    }
+
+    /**
+     * Resolve the content model service this server was composed with.
+     *
+     * @return  ContentModelService  Content model service.
+     *
+     * @throws  InvalidArgumentException  When the server was composed without content models.
+     *
+     * @since   2.0.0
+     */
+    private function contentModels(): ContentModelService
+    {
+        return $this->models
+            ?? throw new InvalidArgumentException('Content models are unavailable on this server.');
     }
 
     /**

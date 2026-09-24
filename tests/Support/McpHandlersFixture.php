@@ -8,6 +8,7 @@ use Kumwe\App\Application\Automation\AutomationManagementService;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionService;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaService;
 use Kumwe\App\BusinessSecurity\Application\Administration\BusinessSecurityAdministrationService;
+use Kumwe\App\Content\Application\ContentModelService;
 use Kumwe\App\Content\Application\ContentService;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Extension\Infrastructure\RedisLockedExtensionManager;
@@ -33,6 +34,7 @@ final class McpHandlersFixture
         ?MediaService $media = null,
         ?MessageOverrideService $wording = null,
         ?BusinessSecurityAdministrationService $businessSecurity = null,
+        ?ContentModelService $models = null,
     ): KumweMcpHandlers {
         return new KumweMcpHandlers(
             $catalog,
@@ -54,6 +56,7 @@ final class McpHandlersFixture
             media: $media,
             wording: $wording,
             businessSecurity: $businessSecurity,
+            models: $models,
         );
     }
 

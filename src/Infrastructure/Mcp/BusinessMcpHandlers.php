@@ -293,6 +293,39 @@ final readonly class BusinessMcpHandlers
     }
 
     /**
+     * Read one record with exactly one declared relationship hydrated, through the shared surface facade.
+     *
+     * @param   ExecutionContext  $context          Authenticated MCP execution context.
+     * @param   string            $definition       Definition UUID or handle.
+     * @param   string            $record           Public record identity.
+     * @param   string            $relationship     Declared relationship handle.
+     * @param   bool              $includeArchived  Whether an archived source may be addressed.
+     * @param   bool              $includeDeleted   Whether a soft-deleted source may be addressed.
+     *
+     * @return  array<string, mixed>  Safe detail model with the one relationship.
+     *
+     * @since   2.0.0
+     */
+    public function relationship(
+        ExecutionContext $context,
+        string $definition,
+        string $record,
+        string $relationship,
+        bool $includeArchived = false,
+        bool $includeDeleted = false,
+    ): array {
+        return $this->business->relationship(
+            $context,
+            BusinessSurface::Mcp,
+            $definition,
+            $record,
+            $relationship,
+            $includeArchived,
+            $includeDeleted,
+        );
+    }
+
+    /**
      * Read one bounded page of policy-filtered generated record history.
      *
      * @param   ExecutionContext  $context        Authenticated MCP execution context.

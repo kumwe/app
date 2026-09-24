@@ -7213,6 +7213,7 @@ final class ContainerFactory
                 media: self::service($container, MediaService::class),
                 wording: self::service($container, MessageOverrideService::class),
                 businessSecurity: self::service($container, BusinessSecurityAdministrationService::class),
+                models: self::service($container, ContentModelService::class),
             ), true);
         $container->share(KumweMcpServerFactory::class, static fn (Container $container): KumweMcpServerFactory =>
             new KumweMcpServerFactory(

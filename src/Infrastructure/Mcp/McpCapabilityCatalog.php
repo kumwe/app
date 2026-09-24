@@ -146,7 +146,34 @@ final class McpCapabilityCatalog
         'kumwe_business_security_overview' => [McpRiskClass::Read, self::VIA_BUSINESS_SECURITY],
         'kumwe_business_plan_bulk' => [McpRiskClass::Read, self::VIA_RECORDS],
         'kumwe_business_bulk' => [McpRiskClass::ScopedWrite, self::VIA_RECORDS],
+        'kumwe_content_get' => [McpRiskClass::Read, self::VIA_CONTENT],
+        'kumwe_menu_get' => [McpRiskClass::Read, self::VIA_NAVIGATION],
+        'kumwe_menu_update' => [McpRiskClass::ScopedWrite, self::VIA_NAVIGATION],
+        'kumwe_menu_delete' => [McpRiskClass::Destructive, self::VIA_NAVIGATION],
+        'kumwe_content_type_list' => [McpRiskClass::Read, self::VIA_CONTENT_MODELS],
+        'kumwe_content_type_get' => [McpRiskClass::Read, self::VIA_CONTENT_MODELS],
+        'kumwe_content_type_create' => [McpRiskClass::ScopedWrite, self::VIA_CONTENT_MODELS],
+        'kumwe_content_type_update' => [McpRiskClass::ScopedWrite, self::VIA_CONTENT_MODELS],
+        'kumwe_workflow_list' => [McpRiskClass::Read, self::VIA_CONTENT_MODELS],
+        'kumwe_workflow_get' => [McpRiskClass::Read, self::VIA_CONTENT_MODELS],
+        'kumwe_workflow_create' => [McpRiskClass::ScopedWrite, self::VIA_CONTENT_MODELS],
+        'kumwe_workflow_update' => [McpRiskClass::ScopedWrite, self::VIA_CONTENT_MODELS],
+        'kumwe_business_definition_draft_save' => [McpRiskClass::ScopedWrite, self::VIA_DEFINITIONS],
+        'kumwe_business_definition_validate' => [McpRiskClass::ScopedWrite, self::VIA_DEFINITIONS],
+        'kumwe_business_definition_supersede' => [McpRiskClass::ScopedWrite, self::VIA_DEFINITIONS],
+        'kumwe_business_definition_deprecate' => [McpRiskClass::ScopedWrite, self::VIA_DEFINITIONS],
+        'kumwe_business_definition_reject' => [McpRiskClass::Destructive, self::VIA_DEFINITIONS],
+        'kumwe_business_relation_read' => [McpRiskClass::Read, self::VIA_RECORDS],
     ];
+
+    /**
+     * Non-MCP route for the content type and workflow tools.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const string VIA_CONTENT_MODELS = 'Administrator console: Content models, /api/v1/content-types and '
+        . '/api/v1/workflows, or bin/kumwe content-model.';
 
     /**
      * Non-MCP route for the Business Security overview, and the only route to its stepped-up writes.
@@ -1555,6 +1582,325 @@ final class McpCapabilityCatalog
                 ['type' => 'object', 'additionalProperties' => true],
             ),
             ...$this->businessBulkTools(),
+            ...$this->editorialTools(),
+            ...$this->definitionLifecycleTools(),
+        ];
+    }
+
+    /**
+     * Declare the content, menu, content type and workflow tools the editorial screens' operations need.
+     *
+     * @return  list<array{
+     *            name: string, title: string, description: string, handler: string,
+     *            capability: string|null, capabilityResolver: string|McpDynamicCapabilityResolver,
+     *            mutationGuard: McpMutationGuardMode, readOnly: bool, destructive: bool, idempotent: bool,
+     *            inputSchema: array<string, mixed>, outputSchema: array<string, mixed>
+     *          }>  Tool declarations in registration order.
+     *
+     * @since   2.0.0
+     */
+    private function editorialTools(): array
+    {
+        $identifier = ['type' => 'string', 'minLength' => 1, 'maxLength' => 191];
+        $version = ['type' => 'integer', 'minimum' => 1];
+        $text = ['type' => 'string', 'minLength' => 1, 'maxLength' => 191];
+        $object = ['type' => 'object', 'additionalProperties' => true];
+        $list = $this->closedObject(['items' => ['type' => 'array', 'maxItems' => 1000]], ['items']);
+        $documents = ['type' => 'array', 'maxItems' => 200, 'items' => $object];
+        $typeProperties = [
+            'name' => $text,
+            'workflow' => $identifier,
+            'schema' => ['type' => 'object', 'additionalProperties' => true],
+        ];
+        $workflowProperties = ['name' => $text, 'states' => $documents, 'transitions' => $documents];
+
+        return [
+            $this->tool(
+                'kumwe_content_get',
+                'Read content',
+                'Read one content entry, trashed ones included.',
+                'getContent',
+                'content.read',
+                true,
+                false,
+                true,
+                ['id' => $identifier],
+                $object,
+                ['id'],
+            ),
+            $this->tool(
+                'kumwe_menu_get',
+                'Read a menu',
+                'Read one navigation menu.',
+                'getMenu',
+                'navigation.manage',
+                true,
+                false,
+                true,
+                ['id' => $identifier],
+                $object,
+                ['id'],
+            ),
+            $this->tool(
+                'kumwe_menu_update',
+                'Update a menu',
+                'Rename one menu at the version you read.',
+                'updateMenu',
+                'navigation.manage',
+                false,
+                false,
+                true,
+                [
+                    'operationId' => $this->operationId(),
+                    'id' => $identifier,
+                    'version' => $version,
+                    'handle' => $text,
+                    'title' => $text,
+                ],
+                $object,
+                ['operationId', 'id', 'version', 'handle', 'title'],
+            ),
+            $this->tool(
+                'kumwe_menu_delete',
+                'Delete a menu',
+                'Delete one menu and its items at the version you read.',
+                'deleteMenu',
+                'navigation.manage',
+                false,
+                true,
+                true,
+                ['operationId' => $this->operationId(), 'id' => $identifier, 'version' => $version],
+                $this->closedObject(['deleted' => ['type' => 'boolean']], ['deleted']),
+                ['operationId', 'id', 'version'],
+            ),
+            $this->tool(
+                'kumwe_content_type_list',
+                'List content types',
+                'List the site\'s content types.',
+                'listContentTypes',
+                'content.read',
+                true,
+                false,
+                true,
+                [],
+                $list,
+            ),
+            $this->tool(
+                'kumwe_content_type_get',
+                'Read a content type',
+                'Read one content type by handle or id, optionally at a version.',
+                'getContentType',
+                'content.read',
+                true,
+                false,
+                true,
+                ['id' => $identifier, 'version' => $this->nullable($version)],
+                $object,
+                ['id'],
+            ),
+            $this->tool(
+                'kumwe_content_type_create',
+                'Create a content type',
+                'Create a content type bound to a workflow with a field schema.',
+                'createContentType',
+                'content.update',
+                false,
+                false,
+                true,
+                ['operationId' => $this->operationId(), 'handle' => $text, ...$typeProperties],
+                $object,
+                ['operationId', 'handle', 'name', 'workflow'],
+            ),
+            $this->tool(
+                'kumwe_content_type_update',
+                'Publish a content type version',
+                'Publish a new content type version at the version you read.',
+                'updateContentType',
+                'content.update',
+                false,
+                false,
+                true,
+                [
+                    'operationId' => $this->operationId(),
+                    'id' => $identifier,
+                    'version' => $version,
+                    ...$typeProperties,
+                    'allowBreaking' => ['type' => 'boolean'],
+                ],
+                $object,
+                ['operationId', 'id', 'version', 'name', 'workflow'],
+            ),
+            $this->tool(
+                'kumwe_workflow_list',
+                'List workflows',
+                'List the site\'s content workflows.',
+                'listWorkflows',
+                'content.read',
+                true,
+                false,
+                true,
+                [],
+                $list,
+            ),
+            $this->tool(
+                'kumwe_workflow_get',
+                'Read a workflow',
+                'Read one workflow by handle or id, optionally at a version.',
+                'getWorkflow',
+                'content.read',
+                true,
+                false,
+                true,
+                ['id' => $identifier, 'version' => $this->nullable($version)],
+                $object,
+                ['id'],
+            ),
+            $this->tool(
+                'kumwe_workflow_create',
+                'Create a workflow',
+                'Create a content workflow from its states and transitions.',
+                'createWorkflow',
+                'content.update',
+                false,
+                false,
+                true,
+                ['operationId' => $this->operationId(), 'handle' => $text, ...$workflowProperties],
+                $object,
+                ['operationId', 'handle', 'name', 'states', 'transitions'],
+            ),
+            $this->tool(
+                'kumwe_workflow_update',
+                'Publish a workflow version',
+                'Publish a new workflow version at the version you read.',
+                'updateWorkflow',
+                'content.update',
+                false,
+                false,
+                true,
+                [
+                    'operationId' => $this->operationId(),
+                    'id' => $identifier,
+                    'version' => $version,
+                    ...$workflowProperties,
+                    'allowBreaking' => ['type' => 'boolean'],
+                ],
+                $object,
+                ['operationId', 'id', 'version', 'name', 'states', 'transitions'],
+            ),
+        ];
+    }
+
+    /**
+     * Declare the business definition draft, validation and version-status tools and the relationship read.
+     *
+     * @return  list<array{
+     *            name: string, title: string, description: string, handler: string,
+     *            capability: string|null, capabilityResolver: string|McpDynamicCapabilityResolver,
+     *            mutationGuard: McpMutationGuardMode, readOnly: bool, destructive: bool, idempotent: bool,
+     *            inputSchema: array<string, mixed>, outputSchema: array<string, mixed>
+     *          }>  Tool declarations in registration order.
+     *
+     * @since   2.0.0
+     */
+    private function definitionLifecycleTools(): array
+    {
+        $handle = ['type' => 'string', 'minLength' => 1, 'maxLength' => 191];
+        $object = ['type' => 'object', 'additionalProperties' => true];
+        $status = [
+            'operationId' => $this->operationId(),
+            'handle' => $handle,
+            'version' => ['type' => 'integer', 'minimum' => 1],
+        ];
+
+        return [
+            $this->tool(
+                'kumwe_business_definition_draft_save',
+                'Save a definition draft',
+                'Save a definition document as the working draft at the revision you read.',
+                'saveBusinessDefinitionDraft',
+                'content.update',
+                false,
+                false,
+                true,
+                [
+                    'operationId' => $this->operationId(),
+                    'definition' => ['type' => 'object', 'additionalProperties' => true],
+                    'expectedRevision' => $this->nullable(['type' => 'integer', 'minimum' => 1]),
+                ],
+                $object,
+                ['operationId', 'definition'],
+            ),
+            $this->tool(
+                'kumwe_business_definition_validate',
+                'Validate a definition draft',
+                'Validate the working draft with everything it reaches; the validation is audited.',
+                'validateBusinessDefinitionDraft',
+                'content.update',
+                false,
+                false,
+                true,
+                ['operationId' => $this->operationId(), 'handle' => $handle],
+                $object,
+                ['operationId', 'handle'],
+            ),
+            $this->tool(
+                'kumwe_business_definition_supersede',
+                'Supersede a definition version',
+                'Mark one published definition version superseded.',
+                'supersedeBusinessDefinition',
+                'content.update',
+                false,
+                false,
+                true,
+                $status,
+                $object,
+                ['operationId', 'handle', 'version'],
+            ),
+            $this->tool(
+                'kumwe_business_definition_deprecate',
+                'Deprecate a definition version',
+                'Mark one published definition version deprecated.',
+                'deprecateBusinessDefinition',
+                'content.update',
+                false,
+                false,
+                true,
+                $status,
+                $object,
+                ['operationId', 'handle', 'version'],
+            ),
+            $this->tool(
+                'kumwe_business_definition_reject',
+                'Reject a definition version',
+                'Withdraw one published definition version so the runtime refuses it.',
+                'rejectBusinessDefinition',
+                'content.update',
+                false,
+                true,
+                true,
+                $status,
+                $object,
+                ['operationId', 'handle', 'version'],
+            ),
+            $this->tool(
+                'kumwe_business_relation_read',
+                'Read a business relationship',
+                'Read one record with exactly one declared relationship hydrated.',
+                'readBusinessRelationship',
+                'business.record.read',
+                true,
+                false,
+                true,
+                [
+                    'definition' => $this->businessDefinitionIdentifier(),
+                    'record' => $this->businessRecordIdentifier(),
+                    'relationship' => $this->businessHandle(),
+                    'includeArchived' => ['type' => 'boolean'],
+                    'includeDeleted' => ['type' => 'boolean'],
+                ],
+                $object,
+                ['definition', 'record', 'relationship'],
+            ),
         ];
     }
 
