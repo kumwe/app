@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for ar, carrying 2554 messages.
+ * Compiled interface message catalogue for ar, carrying 2565 messages.
  *
  * Generated from ar.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1735,6 +1735,17 @@ return [
     'core.administrator.navigation.type_default' => 'افتراضي النوع',
     'core.administrator.navigation.url_segment' => 'جزء الرابط',
     'core.administrator.navigation.view_website' => 'عرض الموقع الإلكتروني',
+    'core.administrator.rich_text.add_link_label' => 'إضافة رابط',
+    'core.administrator.rich_text.bold_glyph' => 'B',
+    'core.administrator.rich_text.bold_label' => 'غامق',
+    'core.administrator.rich_text.bulleted_list_label' => 'قائمة نقطية',
+    'core.administrator.rich_text.editor_label' => 'محرر النص المنسق',
+    'core.administrator.rich_text.heading' => 'عنوان',
+    'core.administrator.rich_text.help' => 'استخدم شريط الأدوات للعناوين والتأكيد والقوائم والروابط الآمنة.',
+    'core.administrator.rich_text.link' => 'رابط',
+    'core.administrator.rich_text.link_prompt' => 'عنوان URL للرابط',
+    'core.administrator.rich_text.list' => 'قائمة',
+    'core.administrator.rich_text.toolbar_label' => 'تنسيق النص',
     'core.administrator.settings.accent' => 'اللون المميز',
     'core.administrator.settings.active_color_scheme' => 'نظام الألوان النشط',
     'core.administrator.settings.add_color_scheme' => 'إضافة نظام ألوان',

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for zh-Hans, carrying 2554 messages.
+ * Compiled interface message catalogue for zh-Hans, carrying 2565 messages.
  *
  * Generated from zh-Hans.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1735,6 +1735,17 @@ return [
     'core.administrator.navigation.type_default' => '类型默认值',
     'core.administrator.navigation.url_segment' => 'URL 片段',
     'core.administrator.navigation.view_website' => '查看网站',
+    'core.administrator.rich_text.add_link_label' => '添加链接',
+    'core.administrator.rich_text.bold_glyph' => 'B',
+    'core.administrator.rich_text.bold_label' => '加粗',
+    'core.administrator.rich_text.bulleted_list_label' => '项目符号列表',
+    'core.administrator.rich_text.editor_label' => '富文本编辑器',
+    'core.administrator.rich_text.heading' => '标题',
+    'core.administrator.rich_text.help' => '使用工具栏添加标题、强调、列表和安全链接。',
+    'core.administrator.rich_text.link' => '链接',
+    'core.administrator.rich_text.link_prompt' => '链接 URL',
+    'core.administrator.rich_text.list' => '列表',
+    'core.administrator.rich_text.toolbar_label' => '文本格式',
     'core.administrator.settings.accent' => '强调色',
     'core.administrator.settings.active_color_scheme' => '当前配色方案',
     'core.administrator.settings.add_color_scheme' => '添加配色方案',

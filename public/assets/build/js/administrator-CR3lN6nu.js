@@ -1,4 +1,4 @@
-const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["js/studio-composition-CjnLQSi0.js","js/reveal-validation-g1jDnck7.js","js/preview-identity-Bvgz1vbs.js","js/studio-launch-CXFYt2uv.js"])))=>i.map(i=>d[i]);
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["js/studio-composition-Cv5cfsCr.js","js/reveal-validation-g1jDnck7.js","js/preview-identity-Bvgz1vbs.js","js/studio-launch-DrYfLIbn.js"])))=>i.map(i=>d[i]);
 import { a as n, c as A, d as i$1, i as r, l as b, n as setupCopyValues, o as t, r as __decorate, s as i, t as setupValidationReveal } from "./reveal-validation-g1jDnck7.js";
 import { t as setupAppearance } from "./appearance-AWH5eFRF.js";
 //#region assets/administrator/components/command-palette.ts
@@ -397,12 +397,34 @@ KumweJobFields = __decorate([t("kumwe-job-fields")], KumweJobFields);
 //#endregion
 //#region assets/administrator/components/rich-text.ts
 var _KumweRichText;
+/**
+* The wording the toolbar renders, read from `data-message-*` attributes the Twig field template resolves
+* from the interface catalogue in the request's language. The fallbacks are the `en-GB` source, used only
+* when a template renders the element without them.
+*/
+var fallbackWording = {
+	messageToolbar: "Text formatting",
+	messageBold: "Bold",
+	messageBoldGlyph: "B",
+	messageHeading: "Heading",
+	messageBulletedList: "Bulleted list",
+	messageList: "List",
+	messageAddLink: "Add link",
+	messageLink: "Link",
+	messageEditor: "Rich text editor",
+	messageHelp: "Use the toolbar for headings, emphasis, lists, and safe links.",
+	messageLinkPrompt: "Link URL"
+};
 var KumweRichText = class KumweRichText extends i {
 	static {
 		_KumweRichText = this;
 	}
 	createRenderRoot() {
 		return this;
+	}
+	/** Answer one piece of toolbar wording in the language the page was rendered in. */
+	wording(name) {
+		return this.dataset[name] ?? fallbackWording[name];
 	}
 	/** Tags a browser uses as its own block inside a `contenteditable`; everything else is inline. */
 	static blockTags = /* @__PURE__ */ new Set([
@@ -446,7 +468,7 @@ var KumweRichText = class KumweRichText extends i {
 				const command = button.dataset.richTextCommand;
 				editor.focus();
 				if (command === "createLink") {
-					const url = window.prompt("Link URL");
+					const url = window.prompt(this.wording("messageLinkPrompt"));
 					if (url) document.execCommand("createLink", false, url);
 				} else if (command === "formatBlock") document.execCommand("formatBlock", false, "h2");
 				else if (command) document.execCommand(command);
@@ -457,15 +479,15 @@ var KumweRichText = class KumweRichText extends i {
 	render() {
 		return b`
       <div class="rich-text-shell js-only">
-        <div class="rich-text-toolbar" role="toolbar" aria-label="Text formatting">
-          <button type="button" data-rich-text-command="bold" aria-label="Bold"><strong>B</strong></button>
-          <button type="button" data-rich-text-command="formatBlock" aria-label="Heading">Heading</button>
-          <button type="button" data-rich-text-command="insertUnorderedList" aria-label="Bulleted list">List</button>
-          <button type="button" data-rich-text-command="createLink" aria-label="Add link">Link</button>
+        <div class="rich-text-toolbar" role="toolbar" aria-label=${this.wording("messageToolbar")}>
+          <button type="button" data-rich-text-command="bold" aria-label=${this.wording("messageBold")}><strong>${this.wording("messageBoldGlyph")}</strong></button>
+          <button type="button" data-rich-text-command="formatBlock" aria-label=${this.wording("messageHeading")}>${this.wording("messageHeading")}</button>
+          <button type="button" data-rich-text-command="insertUnorderedList" aria-label=${this.wording("messageBulletedList")}>${this.wording("messageList")}</button>
+          <button type="button" data-rich-text-command="createLink" aria-label=${this.wording("messageAddLink")}>${this.wording("messageLink")}</button>
         </div>
         <div class="rich-text-editor" contenteditable="true" role="textbox" aria-multiline="true"
-          aria-label="Rich text editor" data-rich-text-editor></div>
-        <p class="field-help">Use the toolbar for headings, emphasis, lists, and safe links.</p>
+          aria-label=${this.wording("messageEditor")} data-rich-text-editor></div>
+        <p class="field-help">${this.wording("messageHelp")}</p>
       </div>
       <slot></slot>
     `;
@@ -1258,11 +1280,11 @@ setupValidationReveal();
 setupNavigationTargets();
 setupPolicyStepFlows();
 if (document.querySelector("[data-studio-composition]") !== null) __vitePreload(async () => {
-	const { setupStudioComposition } = await import("./studio-composition-CjnLQSi0.js");
+	const { setupStudioComposition } = await import("./studio-composition-Cv5cfsCr.js");
 	return { setupStudioComposition };
 }, __vite__mapDeps([0,1,2])).then(({ setupStudioComposition }) => setupStudioComposition());
 if (document.querySelector("[data-kumwe-studio][data-studio-module-url]") !== null) __vitePreload(async () => {
-	const { setupStudioLaunch } = await import("./studio-launch-CXFYt2uv.js");
+	const { setupStudioLaunch } = await import("./studio-launch-DrYfLIbn.js");
 	return { setupStudioLaunch };
 }, __vite__mapDeps([3,2])).then(({ setupStudioLaunch }) => setupStudioLaunch());
 //#endregion

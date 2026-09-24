@@ -168,6 +168,10 @@ const KUMWE_IDENTICAL_REGISTER = [
         'locales' => ['de', 'es', 'pt-BR'],
         'reason' => 'Token is the established technical term for an API credential in these languages.',
     ],
+    'Link' => [
+        'locales' => ['de', 'pt-BR'],
+        'reason' => 'Link is the established German and Brazilian Portuguese word for a hyperlink.',
+    ],
     'Tokens' => [
         'locales' => ['de', 'es', 'pt-BR'],
         'reason' => 'Plural of the established technical loanword Token in German, Spanish and Portuguese.',

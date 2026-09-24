@@ -1,5 +1,5 @@
 import { c as A$10, d as i$17, l as b$12, s as i$16, u as w$12 } from "./reveal-validation-g1jDnck7.js";
-import { t as __vitePreload } from "./administrator-BcuuVLjW.js";
+import { t as __vitePreload } from "./administrator-CR3lN6nu.js";
 import { a as createCoreLayoutBlockDefinitions, c as STUDIO_STALE_SESSION_GENERATION_DIAGNOSTIC_CODE, d as canonicalStringify, i as coreLayoutInitialProperties, l as STUDIO_WIRE_PROTOCOL_VERSION, n as CORE_LAYOUT_BLOCK_TYPES, o as isCoreLayoutBlockType, r as CORE_LAYOUT_THEME_CONTROLS, s as STUDIO_CONTRACT_VERSION, t as computePreviewDraftDigest, u as cloneContractValue } from "./preview-identity-Bvgz1vbs.js";
 //#region node_modules/@kumwe/studio-core/dist/binding-projection.js
 function projectBlueprintFieldBindings(t, i, a) {

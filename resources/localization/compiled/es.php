@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for es, carrying 2554 messages.
+ * Compiled interface message catalogue for es, carrying 2565 messages.
  *
  * Generated from es.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1735,6 +1735,17 @@ return [
     'core.administrator.navigation.type_default' => 'Predeterminado del tipo',
     'core.administrator.navigation.url_segment' => 'Segmento de URL',
     'core.administrator.navigation.view_website' => 'Ver sitio web',
+    'core.administrator.rich_text.add_link_label' => 'Añadir enlace',
+    'core.administrator.rich_text.bold_glyph' => 'N',
+    'core.administrator.rich_text.bold_label' => 'Negrita',
+    'core.administrator.rich_text.bulleted_list_label' => 'Lista con viñetas',
+    'core.administrator.rich_text.editor_label' => 'Editor de texto enriquecido',
+    'core.administrator.rich_text.heading' => 'Encabezado',
+    'core.administrator.rich_text.help' => 'Usa la barra de herramientas para encabezados, énfasis, listas y enlaces seguros.',
+    'core.administrator.rich_text.link' => 'Enlace',
+    'core.administrator.rich_text.link_prompt' => 'URL del enlace',
+    'core.administrator.rich_text.list' => 'Lista',
+    'core.administrator.rich_text.toolbar_label' => 'Formato de texto',
     'core.administrator.settings.accent' => 'Acento',
     'core.administrator.settings.active_color_scheme' => 'Combinación de colores activa',
     'core.administrator.settings.add_color_scheme' => 'Añadir combinación de colores',

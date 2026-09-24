@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for af, carrying 2554 messages.
+ * Compiled interface message catalogue for af, carrying 2565 messages.
  *
  * Generated from af.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1735,6 +1735,17 @@ return [
     'core.administrator.navigation.type_default' => 'Tipe-verstek',
     'core.administrator.navigation.url_segment' => 'URL-segment',
     'core.administrator.navigation.view_website' => 'Bekyk webwerf',
+    'core.administrator.rich_text.add_link_label' => 'Voeg skakel by',
+    'core.administrator.rich_text.bold_glyph' => 'V',
+    'core.administrator.rich_text.bold_label' => 'Vet',
+    'core.administrator.rich_text.bulleted_list_label' => 'Kolpuntlys',
+    'core.administrator.rich_text.editor_label' => 'Ryketeksredigeerder',
+    'core.administrator.rich_text.heading' => 'Opskrif',
+    'core.administrator.rich_text.help' => 'Gebruik die nutsbalk vir opskrifte, beklemtoning, lyste en veilige skakels.',
+    'core.administrator.rich_text.link' => 'Skakel',
+    'core.administrator.rich_text.link_prompt' => 'Skakel-URL',
+    'core.administrator.rich_text.list' => 'Lys',
+    'core.administrator.rich_text.toolbar_label' => 'Teksformatering',
     'core.administrator.settings.accent' => 'Aksent',
     'core.administrator.settings.active_color_scheme' => 'Aktiewe kleurskema',
     'core.administrator.settings.add_color_scheme' => 'Voeg kleurskema by',

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for pt-BR, carrying 2554 messages.
+ * Compiled interface message catalogue for pt-BR, carrying 2565 messages.
  *
  * Generated from pt-BR.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1735,6 +1735,17 @@ return [
     'core.administrator.navigation.type_default' => 'Padrão do tipo',
     'core.administrator.navigation.url_segment' => 'Segmento de URL',
     'core.administrator.navigation.view_website' => 'Ver site',
+    'core.administrator.rich_text.add_link_label' => 'Adicionar link',
+    'core.administrator.rich_text.bold_glyph' => 'N',
+    'core.administrator.rich_text.bold_label' => 'Negrito',
+    'core.administrator.rich_text.bulleted_list_label' => 'Lista com marcadores',
+    'core.administrator.rich_text.editor_label' => 'Editor de texto rico',
+    'core.administrator.rich_text.heading' => 'Título',
+    'core.administrator.rich_text.help' => 'Use a barra de ferramentas para títulos, ênfase, listas e links seguros.',
+    'core.administrator.rich_text.link' => 'Link',
+    'core.administrator.rich_text.link_prompt' => 'URL do link',
+    'core.administrator.rich_text.list' => 'Lista',
+    'core.administrator.rich_text.toolbar_label' => 'Formatação de texto',
     'core.administrator.settings.accent' => 'Destaque',
     'core.administrator.settings.active_color_scheme' => 'Esquema de cores ativo',
     'core.administrator.settings.add_color_scheme' => 'Adicionar esquema de cores',

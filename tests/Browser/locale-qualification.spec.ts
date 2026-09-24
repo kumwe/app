@@ -104,15 +104,8 @@ const administratorSurfaces: readonly QualifiedSurface[] = [
         'back to content',
       ],
     ],
-    // The content model's name (the header eyebrow and the type choices) and its field labels and help
-    // are definition data. The rich-text toolbar is App wording still rendered in English by its Lit
-    // component; it is excluded by name here and reported against V2-LNG-010 rather than hidden.
-    content: [
-      '.kis-page-header-copy .eyebrow',
-      '.content-model-fields',
-      'select[name="type"]',
-      'kumwe-rich-text .rich-text-shell',
-    ],
+    // The content model's name (the header eyebrow and the type choices) is definition data.
+    content: ['.kis-page-header-copy .eyebrow', 'select[name="type"]'],
     // Studio contextual authoring is the editor's default surface (ADR 0020): once it has mounted, the
     // structured form sits behind the surface toggle, which is then the control that must stay operable.
     // When Studio defers or is unavailable, the form's title field is in front instead.
@@ -135,6 +128,41 @@ const administratorSurfaces: readonly QualifiedSurface[] = [
         'title field',
       ]];
     },
+  },
+  {
+    // The structured form, named explicitly so its fields and the rich-text toolbar are on screen in every
+    // locale rather than behind the Studio surface toggle.
+    id: 'administrator-content-form',
+    path: '/administrator/content/new?surface=form',
+    controls: (page, locale, isMobile) => [
+      ...administratorShell(page, locale, isMobile),
+      [
+        page
+          .getByRole('textbox', { name: leadingWording(message(locale, 'core.administrator.content_form.title')) })
+          .and(page.locator('main input[name="title"]')),
+        'title field',
+      ],
+      [
+        page
+          .getByRole('toolbar', { name: message(locale, 'core.administrator.rich_text.toolbar_label') })
+          .first()
+          .getByRole('button', { name: message(locale, 'core.administrator.rich_text.bold_label') }),
+        'rich-text bold button',
+      ],
+      [
+        page.getByRole('textbox', { name: message(locale, 'core.administrator.rich_text.editor_label') }).first(),
+        'rich-text editor',
+      ],
+    ],
+    // The content model's name and its field labels and help are definition data; the toolbar, the
+    // editor's name and its help line are interface wording and are checked.
+    content: [
+      '.kis-page-header-copy .eyebrow',
+      'select[name="type"]',
+      '.rich-text-source > span',
+      '.rich-text-source > small',
+      '#content-fields label',
+    ],
   },
   {
     id: 'administrator-settings',

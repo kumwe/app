@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for en-GB, carrying 2554 messages.
+ * Compiled interface message catalogue for en-GB, carrying 2565 messages.
  *
  * Generated from en-GB.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1735,6 +1735,17 @@ return [
     'core.administrator.navigation.type_default' => 'Type default',
     'core.administrator.navigation.url_segment' => 'URL segment',
     'core.administrator.navigation.view_website' => 'View website',
+    'core.administrator.rich_text.add_link_label' => 'Add link',
+    'core.administrator.rich_text.bold_glyph' => 'B',
+    'core.administrator.rich_text.bold_label' => 'Bold',
+    'core.administrator.rich_text.bulleted_list_label' => 'Bulleted list',
+    'core.administrator.rich_text.editor_label' => 'Rich text editor',
+    'core.administrator.rich_text.heading' => 'Heading',
+    'core.administrator.rich_text.help' => 'Use the toolbar for headings, emphasis, lists, and safe links.',
+    'core.administrator.rich_text.link' => 'Link',
+    'core.administrator.rich_text.link_prompt' => 'Link URL',
+    'core.administrator.rich_text.list' => 'List',
+    'core.administrator.rich_text.toolbar_label' => 'Text formatting',
     'core.administrator.settings.accent' => 'Accent',
     'core.administrator.settings.active_color_scheme' => 'Active color scheme',
     'core.administrator.settings.add_color_scheme' => 'Add color scheme',

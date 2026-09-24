@@ -12581,6 +12581,105 @@
         <target>إنشاء محتوى</target>
       </segment>
     </unit>
+    <unit id="core.administrator.rich_text.toolbar_label">
+      <notes>
+        <note category="context">Accessible name of the rich-text editor toolbar on content forms.</note>
+      </notes>
+      <segment>
+        <source>Text formatting</source>
+        <target>تنسيق النص</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.rich_text.bold_label">
+      <notes>
+        <note category="context">Accessible name of the toolbar button that makes the selected text bold.</note>
+      </notes>
+      <segment>
+        <source>Bold</source>
+        <target>غامق</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.rich_text.bold_glyph">
+      <notes>
+        <note category="context">The one-letter glyph shown on the bold button. Use the letter your language's word processors show for bold (German F, Spanish N).</note>
+      </notes>
+      <segment>
+        <source>B</source>
+        <target>B</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.rich_text.heading">
+      <notes>
+        <note category="context">Toolbar button that turns the current paragraph into a heading; used as its visible text and accessible name.</note>
+      </notes>
+      <segment>
+        <source>Heading</source>
+        <target>عنوان</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.rich_text.bulleted_list_label">
+      <notes>
+        <note category="context">Accessible name of the toolbar button that starts a bulleted list.</note>
+      </notes>
+      <segment>
+        <source>Bulleted list</source>
+        <target>قائمة نقطية</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.rich_text.list">
+      <notes>
+        <note category="context">Short visible text of the bulleted-list toolbar button.</note>
+      </notes>
+      <segment>
+        <source>List</source>
+        <target>قائمة</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.rich_text.add_link_label">
+      <notes>
+        <note category="context">Accessible name of the toolbar button that turns the selected text into a link.</note>
+      </notes>
+      <segment>
+        <source>Add link</source>
+        <target>إضافة رابط</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.rich_text.link">
+      <notes>
+        <note category="context">Short visible text of the add-link toolbar button.</note>
+      </notes>
+      <segment>
+        <source>Link</source>
+        <target>رابط</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.rich_text.editor_label">
+      <notes>
+        <note category="context">Accessible name of the editable rich-text area.</note>
+      </notes>
+      <segment>
+        <source>Rich text editor</source>
+        <target>محرر النص المنسق</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.rich_text.help">
+      <notes>
+        <note category="context">Help line under the rich-text editor.</note>
+      </notes>
+      <segment>
+        <source>Use the toolbar for headings, emphasis, lists, and safe links.</source>
+        <target>استخدم شريط الأدوات للعناوين والتأكيد والقوائم والروابط الآمنة.</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.rich_text.link_prompt">
+      <notes>
+        <note category="context">Prompt asking for the address when adding a link in the rich-text editor.</note>
+      </notes>
+      <segment>
+        <source>Link URL</source>
+        <target>عنوان URL للرابط</target>
+      </segment>
+    </unit>
     <unit id="core.administrator.content_form.edit_title">
       <notes>
         <note category="context">Browser-title half on the administrator content form when editing. {title} is the entry title.</note>

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for he, carrying 2554 messages.
+ * Compiled interface message catalogue for he, carrying 2565 messages.
  *
  * Generated from he.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1735,6 +1735,17 @@ return [
     'core.administrator.navigation.type_default' => 'ברירת מחדל של הסוג',
     'core.administrator.navigation.url_segment' => 'קטע כתובת URL',
     'core.administrator.navigation.view_website' => 'צפייה באתר',
+    'core.administrator.rich_text.add_link_label' => 'הוספת קישור',
+    'core.administrator.rich_text.bold_glyph' => 'B',
+    'core.administrator.rich_text.bold_label' => 'מודגש',
+    'core.administrator.rich_text.bulleted_list_label' => 'רשימת תבליטים',
+    'core.administrator.rich_text.editor_label' => 'עורך טקסט עשיר',
+    'core.administrator.rich_text.heading' => 'כותרת',
+    'core.administrator.rich_text.help' => 'השתמשו בסרגל הכלים לכותרות, להדגשות, לרשימות ולקישורים בטוחים.',
+    'core.administrator.rich_text.link' => 'קישור',
+    'core.administrator.rich_text.link_prompt' => 'כתובת URL של הקישור',
+    'core.administrator.rich_text.list' => 'רשימה',
+    'core.administrator.rich_text.toolbar_label' => 'עיצוב טקסט',
     'core.administrator.settings.accent' => 'הדגשה',
     'core.administrator.settings.active_color_scheme' => 'ערכת הצבעים הפעילה',
     'core.administrator.settings.add_color_scheme' => 'הוספת ערכת צבעים',
