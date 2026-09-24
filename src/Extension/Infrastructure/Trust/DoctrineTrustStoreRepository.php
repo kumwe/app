@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
+use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
@@ -105,10 +106,46 @@ final readonly class DoctrineTrustStoreRepository implements TrustStoreRepositor
     }
 
     /**
+     * Name the lifecycle advisory lock for exactly this database and table prefix.
+     *
+     * MySQL and MariaDB `GET_LOCK` names are global to the server, so a name built from the table
+     * prefix alone made two installations with the same prefix in different databases refuse each
+     * other's extension operations. The name now digests the current database with the prefixed table
+     * name and stays well inside the 64-character limit. PostgreSQL advisory locks are already scoped
+     * to the database; it receives the same name, so the key is derived identically on every engine.
+     *
+     * @param   AbstractPlatform  $platform  Platform the lock is taken on.
+     *
+     * @return  string  Lock name, at most 64 characters.
+     *
+     * @throws  RuntimeException  When the current database cannot be identified.
+     *
+     * @since   2.0.0
+     */
+    private function lifecycleLockName(AbstractPlatform $platform): string
+    {
+        $database = match (true) {
+            $platform instanceof AbstractMySQLPlatform => $this->database->fetchOne('SELECT DATABASE()'),
+            $platform instanceof PostgreSQLPlatform => $this->database->fetchOne('SELECT current_database()'),
+            default => 'local',
+        };
+        if (!is_string($database) || $database === '') {
+            throw new RuntimeException('The database identity for the extension lifecycle lock is unavailable.');
+        }
+
+        return 'kumwe:extension-lifecycle:' . substr(
+            hash('sha256', $database . "\0" . $this->tables->raw('extension_lifecycle')),
+            0,
+            37,
+        );
+    }
+
+    /**
      * Run an operation while holding the installation-wide extension lifecycle lock.
      *
      * MySQL takes `GET_LOCK` with a zero timeout and PostgreSQL `pg_try_advisory_lock`, both keyed on
-     * the prefixed table name so two installations sharing a server do not block each other. Everywhere
+     * the current database and the prefixed table name so two installations sharing a server do not block
+     * each other: MySQL-family lock names are server-wide, so the database must be part of the name. Everywhere
      * else the lock is a row in `migration_locks` whose unique key provides the exclusion; expired rows
      * are swept first, and the process-local counter is what makes a nested call reuse the row already
      * held instead of colliding with itself. Every path releases in a `finally` block, and none of them
@@ -127,7 +164,7 @@ final readonly class DoctrineTrustStoreRepository implements TrustStoreRepositor
     public function synchronizedLifecycle(callable $operation): mixed
     {
         $platform = $this->database->getDatabasePlatform();
-        $lockName = 'kumwe:' . $this->tables->raw('extension_lifecycle');
+        $lockName = $this->lifecycleLockName($platform);
         if ($platform instanceof AbstractMySQLPlatform) {
             $acquired = $this->database->fetchOne('SELECT GET_LOCK(?, 0)', [$lockName]);
             if (!in_array($acquired, [1, '1', true], true)) {
