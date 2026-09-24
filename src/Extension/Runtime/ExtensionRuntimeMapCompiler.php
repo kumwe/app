@@ -562,7 +562,10 @@ final readonly class ExtensionRuntimeMapCompiler implements TrustRuntimeInvalida
         if ($maximumAgeSeconds < 1) {
             throw new InvalidArgumentException('The runtime readiness age must be positive.');
         }
-        $payload = file_get_contents($this->mapFile . '.ready');
+        // A missing marker is an ordinary unready state, not a warning: the probe runs on every scrape and
+        // load-balancer check, and a warning written into a response body would corrupt it.
+        $path = $this->mapFile . '.ready';
+        $payload = is_file($path) && is_readable($path) ? file_get_contents($path) : false;
         if (!is_string($payload)) {
             return false;
         }

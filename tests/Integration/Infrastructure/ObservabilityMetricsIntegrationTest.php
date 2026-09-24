@@ -12,6 +12,7 @@ use Kumwe\App\Infrastructure\Observability\MetricCatalog;
 use Kumwe\App\Infrastructure\Observability\MetricRecorder;
 use Kumwe\App\Infrastructure\Observability\MetricsAccessPolicy;
 use Kumwe\App\Infrastructure\Observability\ObservabilityContract;
+use Kumwe\App\Infrastructure\Observability\OperationalStatusCollector;
 use Kumwe\App\Infrastructure\Observability\PrometheusExposition;
 use Kumwe\App\Infrastructure\Observability\RedisMetricRecorder;
 use Kumwe\App\Infrastructure\Observability\RuntimeMetricCollector;
@@ -35,6 +36,7 @@ use Ramsey\Uuid\Uuid;
 #[CoversClass(RuntimeMetricCollector::class)]
 #[CoversClass(RedisMetricRecorder::class)]
 #[CoversClass(MetricsHandler::class)]
+#[CoversClass(OperationalStatusCollector::class)]
 final class ObservabilityMetricsIntegrationTest extends TestCase
 {
     private const TOKEN = 'metrics-scrape-token-derived-from-patterned-words-only';
@@ -183,6 +185,59 @@ final class ObservabilityMetricsIntegrationTest extends TestCase
                 $line,
                 sprintf('Line "%s" is not exposition syntax.', $line),
             );
+        }
+    }
+
+    /**
+     * The wired collector publishes the recovery, storage and trust gauges beside the durable ones, and a
+     * backup outcome the shell tools record reaches the exposition on the next scrape.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheWiredCollectorPublishesRecoveryStorageAndTrustGauges(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $collector = $container->get(RuntimeMetricCollector::class);
+        self::assertInstanceOf(RuntimeMetricCollector::class, $collector);
+        $directory = dirname(__DIR__, 3) . '/storage/operations';
+        $created = !is_dir($directory) && mkdir($directory, 0775, true);
+        $status = $directory . '/restore.json';
+        $previous = is_file($status) ? file_get_contents($status) : false;
+        file_put_contents($status, json_encode([
+            'schema' => 'kumwe-operation-status/v1',
+            'operation' => 'restore',
+            'last_outcome' => 'failure',
+            'last_success_at' => null,
+            'last_failure_at' => 1_790_003_600,
+        ], JSON_THROW_ON_ERROR));
+
+        try {
+            $values = [];
+            foreach ($collector->collect() as $sample) {
+                $values[$sample->name . json_encode($sample->labels, JSON_THROW_ON_ERROR)] = $sample->value;
+            }
+
+            self::assertSame(0.0, $values['kumwe_metrics_collection_failed[]']);
+            self::assertSame(
+                1_790_003_600.0,
+                $values['kumwe_recovery_last_failure_timestamp_seconds{"operation":"restore"}'],
+            );
+            self::assertSame(0.0, $values['kumwe_recovery_last_success_timestamp_seconds{"operation":"restore"}']);
+            self::assertGreaterThan(0.0, $values['kumwe_storage_capacity_bytes{"volume":"storage"}']);
+            self::assertArrayHasKey('kumwe_extension_runtime_trusted[]', $values);
+            self::assertSame(0.0, $values['kumwe_extension_revocation_feed_stale[]'], 'An unconfigured feed is fresh.');
+            self::assertSame(0.0, $values['kumwe_extension_revocation_feed_failures[]']);
+        } finally {
+            if (is_string($previous)) {
+                file_put_contents($status, $previous);
+            } else {
+                unlink($status);
+            }
+            if ($created) {
+                rmdir($directory);
+            }
         }
     }
 

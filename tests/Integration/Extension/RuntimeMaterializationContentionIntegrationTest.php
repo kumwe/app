@@ -33,6 +33,36 @@ use Throwable;
 #[CoversClass(RuntimeLeaseWriter::class)]
 final class RuntimeMaterializationContentionIntegrationTest extends TestCase
 {
+    /**
+     * A replica with no readiness marker is simply unready: the probe answers false without emitting a warning,
+     * because the metrics scrape and the load balancer poll it and a warning would corrupt their response body.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAMissingReadinessMarkerIsUnreadyWithoutAWarning(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $compiler = $container->get(ExtensionRuntimeMapCompiler::class);
+        self::assertInstanceOf(ExtensionRuntimeMapCompiler::class, $compiler);
+        $compiler->discardLocal();
+        $warnings = [];
+        set_error_handler(static function (int $severity, string $message) use (&$warnings): bool {
+            $warnings[] = $message;
+
+            return true;
+        });
+        try {
+            $fresh = $compiler->localMarkerFresh(60);
+        } finally {
+            restore_error_handler();
+        }
+
+        self::assertFalse($fresh);
+        self::assertSame([], $warnings);
+    }
+
     public function testLeaseRenewalSurvivesAPeerWriteInsideACallerTransaction(): void
     {
         $container = TestKernelFactory::create(Environment::fromGlobals());
