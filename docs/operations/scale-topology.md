@@ -48,8 +48,43 @@ Roadmap packages `P5-G`, `P5-H` and `P5-I`. Companion pages: [Retention](retenti
   set of permit rows (`DoctrineQueuePermits`). `QueuePermitOverclaimAndFairnessIntegrationTest` proves a
   site adding five jobs per claim cannot keep two smaller sites from their turns and that six racing
   claimants never exceed a ceiling of three. Report and export work is bounded per artifact by the row cap
-  (100,000) and byte ceiling (128 MiB) and runs as queued jobs under the same queue fairness; a per-site
-  cumulative export byte budget is not implemented.
+  (100,000) and byte ceiling (128 MiB) and runs as queued jobs under the same queue fairness.
+- **Per-site export byte budget.** A completed export is charged to its site's cumulative total for the
+  current UTC day (`DoctrineExportSiteByteBudget`, default 4 GiB a site a day, one row per site in
+  `business_report_export_site_budgets`) inside the completion transaction. The charge is one conditional
+  `UPDATE`, so concurrent completions for one site serialize on that row and never both pass on the same
+  remaining budget, while other sites never wait; a completion that would pass it fails durably with
+  `site_byte_budget` and its bytes are deleted. The window is a fixed UTC day, so a site can publish up to
+  twice its budget across one midnight. `ExportSiteByteBudgetIntegrationTest` proves accumulation, refusal,
+  the window, rollback, per-site isolation and six racing processes on MariaDB and PostgreSQL.
+- **Connections per site.** A PHP process holds one connection whatever site it serves, so the connection
+  budget above is per process, not per site: worker processes reach a site's work only through its
+  fairness turns and permits, and HTTP connections are bounded by `pm.max_children` and the listen queue.
+  There is no per-site HTTP concurrency limit in the application; put one in the load balancer when one
+  tenant's request rate must not be able to occupy every FPM child. Rate limits supplement authorization
+  and never replace it.
+
+### Stateless replica qualification
+
+`tests/Integration/Scale/ReplicaTopologyQualificationIntegrationTest.php` composes two replicas — two
+containers, each with its own connection, caches and in-process state — over one primary and proves: a
+command committed through one replica is read after write, replayed from the shared idempotency ledger and
+conflict-checked on the other; a job one replica enqueues is run exactly once by whichever replica's worker
+claims it; and both replicas drain together when the schema ledger stops matching their code and return
+together when it matches again. The six worker pool classes of the capacity contract map to processes and
+are qualified across independent operating-system processes by these tests:
+
+| Pool class | Process | Cross-process proof |
+|---|---|---|
+| High-priority interactive commands | PHP-FPM replicas | `ReplicaTopologyQualificationIntegrationTest`, `SchemaTransitionWriterFenceIntegrationTest` |
+| Event sequencing | `integration:work` sequencer | `SequencerCrashAndRaceIntegrationTest` |
+| Consumer fan-out | `integration:work` consumers | `HungAndPoisonFanoutIntegrationTest` |
+| Queues, schedules and processes | `queue:work --queue=…`, `schedule:run` | `QueuePermitOverclaimAndFairnessIntegrationTest`, `ReplicaTopologyQualificationIntegrationTest` |
+| Reports, exports and projections | `queue:work` on the report queue | `ExportSiteByteBudgetIntegrationTest` (racing completions) |
+| Maintenance and retention | `queue:work` running `system.retention.drain` | `RetentionStoreDrainIntegrationTest`, `ReplicaTopologyQualificationIntegrationTest` |
+
+What these do not qualify is hardware: the number of replicas and processes a given host sustains is the
+capacity sample's question (`docs/operations/capacity-estimate.md`), not a correctness property.
 
 ## Query, index and reporting bounds (P5-G)
 

@@ -13,6 +13,9 @@ use Throwable;
 /**
  * Fences one export generation attempt's private bytes against concurrent publishers and rollback.
  *
+ * When a site byte budget is wired, the completed bytes are charged to the artifact's site inside the
+ * completion transaction, so a refused charge rolls the completion back and deletes the attempt's bytes.
+ *
  * @since  2.0.0
  */
 final readonly class ExportAttemptPublisher
@@ -23,6 +26,7 @@ final readonly class ExportAttemptPublisher
      * @param  ExportArtifactRepository  $artifacts     Durable compare-and-set metadata ledger.
      * @param  ExportArtifactStorage     $storage       Attempt-fenced immutable byte store.
      * @param  TransactionManager        $transactions  Completion metadata and audit transaction owner.
+     * @param  ?ExportSiteByteBudget     $budget        Cumulative per-site byte budget, when enforced.
      *
      * @since  2.0.0
      */
@@ -30,6 +34,7 @@ final readonly class ExportAttemptPublisher
         private ExportArtifactRepository $artifacts,
         private ExportArtifactStorage $storage,
         private TransactionManager $transactions,
+        private ?ExportSiteByteBudget $budget = null,
     ) {
     }
 
@@ -48,6 +53,7 @@ final readonly class ExportAttemptPublisher
      *
      * @return  ExportArtifact  This attempt's completion or the concurrently published completion.
      *
+     * @throws  ExportSiteByteBudgetExhausted  When the bytes would pass the site's budget for the window.
      * @throws  Throwable  When storage, metadata, audit, or cleanup fails without a completed winner.
      *
      * @since   2.0.0
@@ -70,10 +76,17 @@ final readonly class ExportAttemptPublisher
                 $rowCount,
                 $queryDigest,
             );
-            $this->transactions->transactional(function () use ($artifact, $completed, $stored, $audit): void {
+            $this->transactions->transactional(function () use (
+                $artifact,
+                $completed,
+                $stored,
+                $audit,
+                $completedAt,
+            ): void {
                 $this->transactions->afterRollback(function () use ($stored): void {
                     $this->storage->delete($stored->key);
                 });
+                $this->budget?->charge($completed->siteIdentifier, $stored->size, $completedAt);
                 $this->artifacts->save($completed, $artifact->version);
                 $audit($completed);
             });
