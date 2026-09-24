@@ -468,6 +468,95 @@
                 ],
                 "type": "object"
             },
+            "BusinessRecordBulkInput": {
+                "additionalProperties": false,
+                "properties": {
+                    "action": {
+                        "maxLength": 63,
+                        "minLength": 1,
+                        "pattern": "^[a-z][a-z0-9_]{0,62}$",
+                        "type": "string"
+                    },
+                    "input": {
+                        "additionalProperties": {
+                            "$ref": "#/components/schemas/JsonValue"
+                        },
+                        "maxProperties": 128,
+                        "type": "object"
+                    },
+                    "items": {
+                        "items": {
+                            "$ref": "#/components/schemas/BusinessRecordBulkItem"
+                        },
+                        "maxItems": 50,
+                        "minItems": 1,
+                        "type": "array"
+                    },
+                    "operation": {
+                        "enum": [
+                            "archive",
+                            "restore",
+                            "action"
+                        ],
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "operation",
+                    "items"
+                ],
+                "type": "object"
+            },
+            "BusinessRecordBulkItem": {
+                "additionalProperties": false,
+                "properties": {
+                    "expected_version": {
+                        "maximum": 2147483647,
+                        "minimum": 1,
+                        "type": "integer"
+                    },
+                    "record_id": {
+                        "maxLength": 191,
+                        "minLength": 1,
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "record_id",
+                    "expected_version"
+                ],
+                "type": "object"
+            },
+            "BusinessRecordBulkResult": {
+                "additionalProperties": false,
+                "properties": {
+                    "count": {
+                        "minimum": 1,
+                        "type": "integer"
+                    },
+                    "items": {
+                        "items": {
+                            "$ref": "#/components/schemas/JsonValue"
+                        },
+                        "maxItems": 50,
+                        "type": "array"
+                    },
+                    "operation": {
+                        "enum": [
+                            "archive",
+                            "restore",
+                            "action"
+                        ],
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "operation",
+                    "count",
+                    "items"
+                ],
+                "type": "object"
+            },
             "BusinessSchemaApprovalInput": {
                 "additionalProperties": false,
                 "properties": {
@@ -1067,6 +1156,15 @@
                     "definition_id",
                     "current_password"
                 ],
+                "type": "object"
+            },
+            "BusinessSecurityOverview": {
+                "additionalProperties": {
+                    "items": {
+                        "$ref": "#/components/schemas/JsonValue"
+                    },
+                    "type": "array"
+                },
                 "type": "object"
             },
             "CapabilityRecord": {
@@ -4154,6 +4252,99 @@
                 ],
                 "type": "object"
             },
+            "MediaAsset": {
+                "additionalProperties": false,
+                "properties": {
+                    "created_at": {
+                        "format": "date-time",
+                        "type": "string"
+                    },
+                    "deletable": {
+                        "type": "boolean"
+                    },
+                    "id": {
+                        "maxLength": 191,
+                        "minLength": 1,
+                        "type": "string"
+                    },
+                    "is_image": {
+                        "type": "boolean"
+                    },
+                    "mime_type": {
+                        "maxLength": 255,
+                        "minLength": 1,
+                        "type": "string"
+                    },
+                    "name": {
+                        "maxLength": 255,
+                        "minLength": 1,
+                        "type": "string"
+                    },
+                    "size": {
+                        "minimum": 0,
+                        "type": "integer"
+                    },
+                    "size_label": {
+                        "maxLength": 64,
+                        "minLength": 1,
+                        "type": "string"
+                    },
+                    "url": {
+                        "maxLength": 2048,
+                        "minLength": 1,
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "id",
+                    "name",
+                    "mime_type",
+                    "size",
+                    "size_label",
+                    "created_at",
+                    "url",
+                    "is_image",
+                    "deletable"
+                ],
+                "type": "object"
+            },
+            "MediaPage": {
+                "additionalProperties": false,
+                "properties": {
+                    "items": {
+                        "items": {
+                            "$ref": "#/components/schemas/MediaAsset"
+                        },
+                        "maxItems": 96,
+                        "type": "array"
+                    },
+                    "page": {
+                        "minimum": 1,
+                        "type": "integer"
+                    },
+                    "pages": {
+                        "minimum": 1,
+                        "type": "integer"
+                    },
+                    "per_page": {
+                        "maximum": 96,
+                        "minimum": 1,
+                        "type": "integer"
+                    },
+                    "total": {
+                        "minimum": 0,
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "items",
+                    "total",
+                    "page",
+                    "pages",
+                    "per_page"
+                ],
+                "type": "object"
+            },
             "Menu": {
                 "additionalProperties": false,
                 "properties": {
@@ -4484,6 +4675,27 @@
                     "info",
                     "openapi",
                     "paths"
+                ],
+                "type": "object"
+            },
+            "PasswordResetRequest": {
+                "additionalProperties": false,
+                "properties": {
+                    "password": {
+                        "maxLength": 4096,
+                        "minLength": 1,
+                        "type": "string",
+                        "writeOnly": true
+                    },
+                    "reason": {
+                        "maxLength": 500,
+                        "minLength": 1,
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "password",
+                    "reason"
                 ],
                 "type": "object"
             },
@@ -6102,6 +6314,41 @@
                                 "type": "string"
                             },
                             "type": {
+                                "const": "urn:kumwe:problem:media-not-found",
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "detail",
+                            "status",
+                            "title",
+                            "type"
+                        ],
+                        "type": "object"
+                    },
+                    {
+                        "additionalProperties": false,
+                        "properties": {
+                            "detail": {
+                                "maxLength": 4000,
+                                "minLength": 1,
+                                "type": "string"
+                            },
+                            "instance": {
+                                "format": "uri-reference",
+                                "maxLength": 2048,
+                                "type": "string"
+                            },
+                            "status": {
+                                "const": 404,
+                                "type": "integer"
+                            },
+                            "title": {
+                                "maxLength": 200,
+                                "minLength": 1,
+                                "type": "string"
+                            },
+                            "type": {
                                 "const": "urn:kumwe:problem:navigation-not-found",
                                 "type": "string"
                             }
@@ -7450,6 +7697,77 @@
                 ],
                 "type": "object"
             },
+            "SecurityEventCollection": {
+                "additionalProperties": false,
+                "properties": {
+                    "items": {
+                        "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                                "action": {
+                                    "type": "string"
+                                },
+                                "actor_id": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "id": {
+                                    "type": "string"
+                                },
+                                "occurred_at": {
+                                    "type": "string"
+                                },
+                                "outcome": {
+                                    "type": "string"
+                                },
+                                "subject_id": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "subject_type": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                }
+                            },
+                            "required": [
+                                "id",
+                                "occurred_at",
+                                "actor_id",
+                                "action",
+                                "subject_type",
+                                "subject_id",
+                                "outcome"
+                            ],
+                            "type": "object"
+                        },
+                        "maxItems": 100,
+                        "type": "array"
+                    }
+                },
+                "required": [
+                    "items"
+                ],
+                "type": "object"
+            },
+            "SessionTerminationResult": {
+                "additionalProperties": false,
+                "properties": {
+                    "sessions_terminated": {
+                        "minimum": 0,
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "sessions_terminated"
+                ],
+                "type": "object"
+            },
             "SitePresentation": {
                 "additionalProperties": false,
                 "properties": {
@@ -7556,6 +7874,19 @@
                     "timezone",
                     "search_indexing_enabled",
                     "presentation"
+                ],
+                "type": "object"
+            },
+            "StepUpRevocationResult": {
+                "additionalProperties": false,
+                "properties": {
+                    "revoked_credentials": {
+                        "minimum": 0,
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "revoked_credentials"
                 ],
                 "type": "object"
             },
@@ -8091,6 +8422,209 @@
                     "email",
                     "status",
                     "version"
+                ],
+                "type": "object"
+            },
+            "WordingCatalogueMatches": {
+                "additionalProperties": false,
+                "properties": {
+                    "items": {
+                        "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                                "identifier": {
+                                    "maxLength": 191,
+                                    "minLength": 1,
+                                    "type": "string"
+                                },
+                                "layer": {
+                                    "maxLength": 32,
+                                    "minLength": 1,
+                                    "type": "string"
+                                },
+                                "pattern": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "identifier",
+                                "pattern",
+                                "layer"
+                            ],
+                            "type": "object"
+                        },
+                        "maxItems": 200,
+                        "type": "array"
+                    },
+                    "locale": {
+                        "maxLength": 35,
+                        "minLength": 1,
+                        "pattern": "^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "locale",
+                    "items"
+                ],
+                "type": "object"
+            },
+            "WordingOverride": {
+                "additionalProperties": false,
+                "properties": {
+                    "identifier": {
+                        "maxLength": 191,
+                        "minLength": 1,
+                        "type": "string"
+                    },
+                    "layer": {
+                        "enum": [
+                            "site",
+                            "organization"
+                        ],
+                        "type": "string"
+                    },
+                    "locale": {
+                        "maxLength": 35,
+                        "minLength": 1,
+                        "pattern": "^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$",
+                        "type": "string"
+                    },
+                    "organization": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "pattern": {
+                        "maxLength": 4000,
+                        "minLength": 1,
+                        "type": "string"
+                    },
+                    "site": {
+                        "maxLength": 64,
+                        "minLength": 1,
+                        "type": "string"
+                    },
+                    "updated_at": {
+                        "format": "date-time",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "layer",
+                    "site",
+                    "organization",
+                    "locale",
+                    "identifier",
+                    "pattern",
+                    "updated_at"
+                ],
+                "type": "object"
+            },
+            "WordingOverrideCollection": {
+                "additionalProperties": false,
+                "properties": {
+                    "items": {
+                        "items": {
+                            "$ref": "#/components/schemas/WordingOverride"
+                        },
+                        "type": "array"
+                    },
+                    "layer": {
+                        "enum": [
+                            "site",
+                            "organization"
+                        ],
+                        "type": "string"
+                    },
+                    "locale": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                },
+                "required": [
+                    "layer",
+                    "locale",
+                    "items"
+                ],
+                "type": "object"
+            },
+            "WordingOverrideInput": {
+                "additionalProperties": false,
+                "properties": {
+                    "identifier": {
+                        "maxLength": 191,
+                        "minLength": 1,
+                        "type": "string"
+                    },
+                    "layer": {
+                        "enum": [
+                            "site",
+                            "organization"
+                        ],
+                        "type": "string"
+                    },
+                    "locale": {
+                        "maxLength": 35,
+                        "minLength": 1,
+                        "pattern": "^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$",
+                        "type": "string"
+                    },
+                    "pattern": {
+                        "maxLength": 4000,
+                        "minLength": 1,
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "layer",
+                    "locale",
+                    "identifier",
+                    "pattern"
+                ],
+                "type": "object"
+            },
+            "WordingOverrideReference": {
+                "additionalProperties": false,
+                "properties": {
+                    "identifier": {
+                        "maxLength": 191,
+                        "minLength": 1,
+                        "type": "string"
+                    },
+                    "layer": {
+                        "enum": [
+                            "site",
+                            "organization"
+                        ],
+                        "type": "string"
+                    },
+                    "locale": {
+                        "maxLength": 35,
+                        "minLength": 1,
+                        "pattern": "^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "layer",
+                    "locale",
+                    "identifier"
+                ],
+                "type": "object"
+            },
+            "WordingWithdrawal": {
+                "additionalProperties": false,
+                "properties": {
+                    "withdrawn": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "withdrawn"
                 ],
                 "type": "object"
             },
@@ -9479,6 +10013,47 @@
                 ]
             }
         },
+        "/api/v1/business-security": {
+            "get": {
+                "operationId": "readBusinessSecurityOverview",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BusinessSecurityOverview"
+                                }
+                            }
+                        },
+                        "description": "The business security read model the administrator shows"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": [],
+                        "siteContext": []
+                    }
+                ],
+                "summary": "Read organizations, workspaces, memberships, policies, separation rules and approvals",
+                "x-kumwe-api-version": "v1",
+                "x-kumwe-contract-version": "1.0.0",
+                "x-kumwe-idempotency": "none",
+                "x-kumwe-middleware-contracts": [
+                    "bearer-authentication"
+                ],
+                "x-kumwe-precondition": "none",
+                "x-kumwe-request-body": "none",
+                "x-kumwe-required-capabilities": [
+                    "business.security.manage"
+                ]
+            }
+        },
         "/api/v1/business/approvals": {
             "get": {
                 "operationId": "businessApprovalList",
@@ -9655,6 +10230,77 @@
                     }
                 }
             ]
+        },
+        "/api/v1/business/approvals/{approval}/cancel": {
+            "parameters": [
+                {
+                    "in": "path",
+                    "name": "approval",
+                    "required": true,
+                    "schema": {
+                        "format": "uuid",
+                        "type": "string"
+                    }
+                }
+            ],
+            "post": {
+                "operationId": "businessApprovalCancel",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/IdempotencyKey"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Approval request cancelled",
+                        "x-kumwe-body": "none"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "The approval request is not the caller's own pending request on this surface"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Conflict"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Unprocessable"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": [],
+                        "siteContext": []
+                    }
+                ],
+                "summary": "Cancel the caller's own pending business approval request",
+                "x-kumwe-api-version": "v1",
+                "x-kumwe-contract-version": "1.0.0",
+                "x-kumwe-idempotency": "required",
+                "x-kumwe-middleware-contracts": [
+                    "bearer-authentication",
+                    "idempotency-key"
+                ],
+                "x-kumwe-precondition": "none",
+                "x-kumwe-request-body": "none",
+                "x-kumwe-required-capabilities": [
+                    "business.approval.request"
+                ]
+            }
         },
         "/api/v1/business/definitions": {
             "get": {
@@ -10337,6 +10983,92 @@
                 "x-kumwe-required-capabilities": [
                     "business.record.create"
                 ]
+            }
+        },
+        "/api/v1/business/records/{definition}/bulk": {
+            "parameters": [
+                {
+                    "in": "path",
+                    "name": "definition",
+                    "required": true,
+                    "schema": {
+                        "maxLength": 191,
+                        "minLength": 1,
+                        "type": "string"
+                    }
+                }
+            ],
+            "post": {
+                "operationId": "businessRecordBulk",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/IdempotencyKey"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/BusinessRecordBulkInput"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BusinessRecordBulkResult"
+                                }
+                            }
+                        },
+                        "description": "Every selected record changed, in selection order"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "The definition or a selected record is not available"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Conflict"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Unprocessable"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": [],
+                        "siteContext": []
+                    }
+                ],
+                "summary": "Archive, restore or run one declared action on up to fifty records atomically",
+                "x-kumwe-api-version": "v1",
+                "x-kumwe-contract-version": "1.0.0",
+                "x-kumwe-idempotency": "required",
+                "x-kumwe-middleware-contracts": [
+                    "bearer-authentication",
+                    "idempotency-key"
+                ],
+                "x-kumwe-precondition": "none",
+                "x-kumwe-request-body": "json",
+                "x-kumwe-required-capabilities": []
             }
         },
         "/api/v1/business/records/{definition}/search": {
@@ -14031,6 +14763,291 @@
                 ]
             }
         },
+        "/api/v1/media": {
+            "get": {
+                "operationId": "listMedia",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "q",
+                        "required": false,
+                        "schema": {
+                            "maxLength": 200,
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "kind",
+                        "required": false,
+                        "schema": {
+                            "enum": [
+                                "all",
+                                "image",
+                                "document"
+                            ],
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "page",
+                        "required": false,
+                        "schema": {
+                            "maximum": 100000,
+                            "minimum": 1,
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "per_page",
+                        "required": false,
+                        "schema": {
+                            "maximum": 96,
+                            "minimum": 1,
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MediaPage"
+                                }
+                            }
+                        },
+                        "description": "One page of the media library"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Unprocessable"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": [],
+                        "siteContext": []
+                    }
+                ],
+                "summary": "Browse the site media library",
+                "x-kumwe-api-version": "v1",
+                "x-kumwe-contract-version": "1.0.0",
+                "x-kumwe-idempotency": "none",
+                "x-kumwe-middleware-contracts": [
+                    "bearer-authentication"
+                ],
+                "x-kumwe-precondition": "none",
+                "x-kumwe-request-body": "none",
+                "x-kumwe-required-capabilities": [
+                    "content.read"
+                ]
+            },
+            "post": {
+                "operationId": "uploadMedia",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/IdempotencyKey"
+                    },
+                    {
+                        "description": "Original file name; the storage sanitises it.",
+                        "in": "query",
+                        "name": "filename",
+                        "required": true,
+                        "schema": {
+                            "maxLength": 255,
+                            "minLength": 1,
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/octet-stream": {
+                            "schema": {
+                                "format": "binary",
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MediaAsset"
+                                }
+                            }
+                        },
+                        "description": "The stored asset"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Conflict"
+                    },
+                    "413": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "The upload exceeds the configured body limit"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Unprocessable"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": [],
+                        "siteContext": []
+                    }
+                ],
+                "summary": "Upload one file into the site media library",
+                "x-kumwe-api-version": "v1",
+                "x-kumwe-contract-version": "1.0.0",
+                "x-kumwe-idempotency": "required",
+                "x-kumwe-middleware-contracts": [
+                    "bearer-authentication",
+                    "idempotency-key"
+                ],
+                "x-kumwe-precondition": "none",
+                "x-kumwe-request-body": "binary",
+                "x-kumwe-required-capabilities": [
+                    "content.update"
+                ]
+            }
+        },
+        "/api/v1/media/{mediaId}": {
+            "delete": {
+                "operationId": "deleteMedia",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/IdempotencyKey"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Media asset deleted, or it was already absent",
+                        "x-kumwe-body": "none"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Conflict"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Unprocessable"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": [],
+                        "siteContext": []
+                    }
+                ],
+                "summary": "Delete one media asset",
+                "x-kumwe-api-version": "v1",
+                "x-kumwe-contract-version": "1.0.0",
+                "x-kumwe-idempotency": "required",
+                "x-kumwe-middleware-contracts": [
+                    "bearer-authentication",
+                    "idempotency-key"
+                ],
+                "x-kumwe-precondition": "none",
+                "x-kumwe-request-body": "none",
+                "x-kumwe-required-capabilities": [
+                    "content.delete"
+                ]
+            },
+            "get": {
+                "operationId": "getMedia",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MediaAsset"
+                                }
+                            }
+                        },
+                        "description": "The media asset"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "The media asset was not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": [],
+                        "siteContext": []
+                    }
+                ],
+                "summary": "Read one media asset",
+                "x-kumwe-api-version": "v1",
+                "x-kumwe-contract-version": "1.0.0",
+                "x-kumwe-idempotency": "none",
+                "x-kumwe-middleware-contracts": [
+                    "bearer-authentication"
+                ],
+                "x-kumwe-precondition": "none",
+                "x-kumwe-request-body": "none",
+                "x-kumwe-required-capabilities": [
+                    "content.read"
+                ]
+            },
+            "parameters": [
+                {
+                    "in": "path",
+                    "name": "mediaId",
+                    "required": true,
+                    "schema": {
+                        "maxLength": 191,
+                        "minLength": 1,
+                        "type": "string"
+                    }
+                }
+            ]
+        },
         "/api/v1/menu-items/{id}": {
             "delete": {
                 "operationId": "deleteMenuItem",
@@ -14964,6 +15981,47 @@
                 "x-kumwe-request-body": "json",
                 "x-kumwe-required-capabilities": [
                     "automation.manage"
+                ]
+            }
+        },
+        "/api/v1/security-events": {
+            "get": {
+                "operationId": "listSecurityEvents",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SecurityEventCollection"
+                                }
+                            }
+                        },
+                        "description": "Newest security events first"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": [],
+                        "siteContext": []
+                    }
+                ],
+                "summary": "List the most recent identity and access security events",
+                "x-kumwe-api-version": "v1",
+                "x-kumwe-contract-version": "1.0.0",
+                "x-kumwe-idempotency": "none",
+                "x-kumwe-middleware-contracts": [
+                    "bearer-authentication"
+                ],
+                "x-kumwe-precondition": "none",
+                "x-kumwe-request-body": "none",
+                "x-kumwe-required-capabilities": [
+                    "users.manage"
                 ]
             }
         },
@@ -16212,6 +17270,72 @@
                 ]
             }
         },
+        "/api/v1/users/{id}/password-reset": {
+            "post": {
+                "operationId": "resetUserPassword",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/IdempotencyKey"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PasswordResetRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SessionTerminationResult"
+                                }
+                            }
+                        },
+                        "description": "Replace another account password and end its sessions"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Conflict"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Unprocessable"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": [],
+                        "siteContext": []
+                    }
+                ],
+                "summary": "Replace another account password and end its sessions",
+                "x-kumwe-api-version": "v1",
+                "x-kumwe-contract-version": "1.0.0",
+                "x-kumwe-idempotency": "required",
+                "x-kumwe-middleware-contracts": [
+                    "bearer-authentication",
+                    "idempotency-key"
+                ],
+                "x-kumwe-precondition": "none",
+                "x-kumwe-request-body": "json",
+                "x-kumwe-required-capabilities": [
+                    "users.manage"
+                ]
+            }
+        },
         "/api/v1/users/{id}/roles/{roleId}": {
             "delete": {
                 "operationId": "revokeRole",
@@ -16273,6 +17397,138 @@
                 ],
                 "x-kumwe-precondition": "none",
                 "x-kumwe-request-body": "none",
+                "x-kumwe-required-capabilities": [
+                    "users.manage"
+                ]
+            }
+        },
+        "/api/v1/users/{id}/sessions/terminate": {
+            "post": {
+                "operationId": "terminateUserSessions",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/IdempotencyKey"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TokenRevocationRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SessionTerminationResult"
+                                }
+                            }
+                        },
+                        "description": "End every session the user holds"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Conflict"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Unprocessable"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": [],
+                        "siteContext": []
+                    }
+                ],
+                "summary": "End every session the user holds",
+                "x-kumwe-api-version": "v1",
+                "x-kumwe-contract-version": "1.0.0",
+                "x-kumwe-idempotency": "required",
+                "x-kumwe-middleware-contracts": [
+                    "bearer-authentication",
+                    "idempotency-key"
+                ],
+                "x-kumwe-precondition": "none",
+                "x-kumwe-request-body": "json",
+                "x-kumwe-required-capabilities": [
+                    "users.manage"
+                ]
+            }
+        },
+        "/api/v1/users/{id}/step-up/revoke": {
+            "post": {
+                "operationId": "revokeUserStepUpCredentials",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/IdempotencyKey"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TokenRevocationRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StepUpRevocationResult"
+                                }
+                            }
+                        },
+                        "description": "Retire every second factor the user holds"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Conflict"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Unprocessable"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": [],
+                        "siteContext": []
+                    }
+                ],
+                "summary": "Retire every second factor the user holds",
+                "x-kumwe-api-version": "v1",
+                "x-kumwe-contract-version": "1.0.0",
+                "x-kumwe-idempotency": "required",
+                "x-kumwe-middleware-contracts": [
+                    "bearer-authentication",
+                    "idempotency-key"
+                ],
+                "x-kumwe-precondition": "none",
+                "x-kumwe-request-body": "json",
                 "x-kumwe-required-capabilities": [
                     "users.manage"
                 ]
@@ -16375,6 +17631,282 @@
                 "x-kumwe-request-body": "json",
                 "x-kumwe-required-capabilities": [
                     "users.manage"
+                ]
+            }
+        },
+        "/api/v1/wording/catalogue": {
+            "get": {
+                "operationId": "searchWordingCatalogue",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "locale",
+                        "required": true,
+                        "schema": {
+                            "maxLength": 35,
+                            "minLength": 1,
+                            "pattern": "^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "q",
+                        "required": true,
+                        "schema": {
+                            "maxLength": 200,
+                            "minLength": 1,
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "limit",
+                        "required": false,
+                        "schema": {
+                            "maximum": 200,
+                            "minimum": 1,
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WordingCatalogueMatches"
+                                }
+                            }
+                        },
+                        "description": "Matches in identifier order"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Unprocessable"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": [],
+                        "siteContext": []
+                    }
+                ],
+                "summary": "Search the shipped and overridden wording of one locale",
+                "x-kumwe-api-version": "v1",
+                "x-kumwe-contract-version": "1.0.0",
+                "x-kumwe-idempotency": "none",
+                "x-kumwe-middleware-contracts": [
+                    "bearer-authentication"
+                ],
+                "x-kumwe-precondition": "none",
+                "x-kumwe-request-body": "none",
+                "x-kumwe-required-capabilities": [
+                    "localization.overrides.manage"
+                ]
+            }
+        },
+        "/api/v1/wording/overrides": {
+            "get": {
+                "operationId": "listWordingOverrides",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "layer",
+                        "required": false,
+                        "schema": {
+                            "enum": [
+                                "site",
+                                "organization"
+                            ],
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "locale",
+                        "required": false,
+                        "schema": {
+                            "maxLength": 35,
+                            "minLength": 1,
+                            "pattern": "^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WordingOverrideCollection"
+                                }
+                            }
+                        },
+                        "description": "Stored overrides in a stable order"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Unprocessable"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": [],
+                        "siteContext": []
+                    }
+                ],
+                "summary": "List the wording overrides stored in one administered layer",
+                "x-kumwe-api-version": "v1",
+                "x-kumwe-contract-version": "1.0.0",
+                "x-kumwe-idempotency": "none",
+                "x-kumwe-middleware-contracts": [
+                    "bearer-authentication"
+                ],
+                "x-kumwe-precondition": "none",
+                "x-kumwe-request-body": "none",
+                "x-kumwe-required-capabilities": [
+                    "localization.overrides.manage"
+                ]
+            },
+            "put": {
+                "operationId": "saveWordingOverride",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/IdempotencyKey"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/WordingOverrideInput"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WordingOverride"
+                                }
+                            }
+                        },
+                        "description": "The stored override"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Conflict"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Unprocessable"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": [],
+                        "siteContext": []
+                    }
+                ],
+                "summary": "Store replacement wording for one message in one locale and layer",
+                "x-kumwe-api-version": "v1",
+                "x-kumwe-contract-version": "1.0.0",
+                "x-kumwe-idempotency": "required",
+                "x-kumwe-middleware-contracts": [
+                    "bearer-authentication",
+                    "idempotency-key"
+                ],
+                "x-kumwe-precondition": "none",
+                "x-kumwe-request-body": "json",
+                "x-kumwe-required-capabilities": [
+                    "localization.overrides.manage"
+                ]
+            }
+        },
+        "/api/v1/wording/overrides/withdraw": {
+            "post": {
+                "operationId": "withdrawWordingOverride",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/IdempotencyKey"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/WordingOverrideReference"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WordingWithdrawal"
+                                }
+                            }
+                        },
+                        "description": "Whether an override was withdrawn"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Conflict"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Unprocessable"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": [],
+                        "siteContext": []
+                    }
+                ],
+                "summary": "Withdraw one stored wording override",
+                "x-kumwe-api-version": "v1",
+                "x-kumwe-contract-version": "1.0.0",
+                "x-kumwe-idempotency": "required",
+                "x-kumwe-middleware-contracts": [
+                    "bearer-authentication",
+                    "idempotency-key"
+                ],
+                "x-kumwe-precondition": "none",
+                "x-kumwe-request-body": "json",
+                "x-kumwe-required-capabilities": [
+                    "localization.overrides.manage"
                 ]
             }
         },
@@ -16634,7 +18166,7 @@
             "url": "/"
         }
     ],
-    "x-kumwe-business-generation": "66318063400c9c02d82abb7e258d7240f2d01f7d6c81c5742188ffb4900c1168",
+    "x-kumwe-business-generation": "6a4d44d1cf1c88dba7362debfc0e9847a7e370e1cc11a52cf8f3142f3cf4e641",
     "x-kumwe-generated-components": [
         "GeneratedBusinessAction",
         "GeneratedBusinessActionApproval",

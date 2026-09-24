@@ -301,6 +301,13 @@
             "retry_after_seconds": null,
             "retryable": false,
             "status": 404,
+            "type": "urn:kumwe:problem:media-not-found"
+        },
+        {
+            "extensions": {},
+            "retry_after_seconds": null,
+            "retryable": false,
+            "status": 404,
             "type": "urn:kumwe:problem:navigation-not-found"
         },
         {

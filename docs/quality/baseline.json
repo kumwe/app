@@ -3,7 +3,7 @@
     "work_package": "P0-A",
     "authority": "docs/roadmap/README.md",
     "note": "Every figure below is derived from the repository at the recorded commit. Nothing is typed by hand, nothing reads the clock or the machine, and running the generator twice at one commit produces the same document. composer baseline:check fails when it drifts.",
-    "commit": "bfacd5ac125b7c9c335358ef6e241bc07deca8b0",
+    "commit": "91d169374dca7bd0821f029cabb1e2a1b41c744d",
     "recorded_at": "2026-09-24",
     "recorded_from": [],
     "toolchain": {
@@ -39,8 +39,8 @@
             "test_methods": 490
         },
         "unit": {
-            "files": 458,
-            "test_methods": 2378
+            "files": 463,
+            "test_methods": 2398
         }
     },
     "coverage": {
@@ -219,6 +219,11 @@
             },
             {
                 "method": "GET",
+                "path": "/api/v1/business-security",
+                "name": "api.v1.business-security.read"
+            },
+            {
+                "method": "GET",
                 "path": "/api/v1/business/approvals",
                 "name": "api.v1.business.approvals"
             },
@@ -329,6 +334,16 @@
             },
             {
                 "method": "GET",
+                "path": "/api/v1/media",
+                "name": "api.v1.media.list"
+            },
+            {
+                "method": "GET",
+                "path": "/api/v1/media/{mediaId}",
+                "name": "api.v1.media.read"
+            },
+            {
+                "method": "GET",
                 "path": "/api/v1/menus/{menuId}/items",
                 "name": "api.v1.menu-items.list"
             },
@@ -386,6 +401,16 @@
                 "method": "POST",
                 "path": "/api/v1/studio/authoring/sessions",
                 "name": "api.v1.studio.authoring.sessions"
+            },
+            {
+                "method": "GET",
+                "path": "/api/v1/wording/catalogue",
+                "name": "api.v1.wording.catalogue"
+            },
+            {
+                "method": "GET",
+                "path": "/api/v1/wording/overrides",
+                "name": "api.v1.wording.overrides.list"
             },
             {
                 "method": "GET",
@@ -548,8 +573,8 @@
         "openapi": {
             "title": "Kumwe App API",
             "version": "1.1.0",
-            "paths": 92,
-            "operations": 120
+            "paths": 104,
+            "operations": 135
         },
         "migrations": [
             "20260807170000_database_driven_presentation",

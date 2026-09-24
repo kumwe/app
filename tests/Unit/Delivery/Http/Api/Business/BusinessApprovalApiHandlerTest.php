@@ -55,6 +55,42 @@ final class BusinessApprovalApiHandlerTest extends TestCase
     }
 
     /**
+     * A cancellation carries no body and only POST cancels; both refusals happen before the service runs.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testRefusesACancellationBodyOrAnUnsupportedMethodBeforeServiceAccess(): void
+    {
+        $principal = AuthorizationContext::principal(['business.approval.request']);
+        $context = $principal->context(
+            SiteContext::default(),
+            AuthenticationStrength::BearerToken,
+            'business-approval-api-test-0002',
+        );
+        $approval = '018f22e2-7c8b-7ab0-8f3a-88e8026bb604';
+        foreach (
+            [
+                ['POST', '/api/v1/business/approvals/' . $approval . '/cancel', '{"reason":"changed my mind"}'],
+                ['DELETE', '/api/v1/business/approvals/' . $approval, ''],
+            ] as [$method, $path, $body]
+        ) {
+            $request = (new ServerRequestFactory())
+                ->createServerRequest($method, 'https://kumwe.test' . $path)
+                ->withBody((new \Laminas\Diactoros\StreamFactory())->createStream($body))
+                ->withAttribute('approval', $approval)
+                ->withAttribute(AuthenticatedPrincipal::REQUEST_ATTRIBUTE, $principal)
+                ->withAttribute(ExecutionContextAttribute::NAME, $context);
+
+            $response = $this->handler()->handle($request);
+
+            self::assertSame(422, $response->getStatusCode(), $method . ' ' . $path);
+            self::assertSame('application/problem+json', $response->getHeaderLine('Content-Type'));
+        }
+    }
+
+    /**
      * Construct a handler whose repository remains untouched by transport rejection.
      *
      * @return  BusinessApprovalApiHandler  Handler under test.

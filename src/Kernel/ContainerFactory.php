@@ -308,6 +308,9 @@ use Kumwe\App\BusinessSchema\Delivery\Api\BusinessSchemaApiHandler;
 use Kumwe\App\BusinessSchema\Delivery\Api\BusinessSchemaApiPresenter;
 use Kumwe\App\Delivery\Http\Api\Business\BusinessApiResponder;
 use Kumwe\App\Delivery\Http\Api\Business\BusinessApprovalApiHandler;
+use Kumwe\App\Delivery\Http\Api\Business\BusinessSecurityApiHandler;
+use Kumwe\App\Delivery\Http\Api\Localization\WordingApiHandler;
+use Kumwe\App\Delivery\Http\Api\Media\MediaApiHandler;
 use Kumwe\App\Delivery\Http\Api\Business\BusinessApprovalApiPresenter;
 use Kumwe\App\Delivery\Http\Api\Business\BusinessDefinitionDiscoveryApiHandler;
 use Kumwe\App\Delivery\Http\Api\Business\BusinessOperationStatusApiHandler;
@@ -4052,6 +4055,7 @@ final class ContainerFactory
         ): BusinessApprovalSurfaceService => new BusinessApprovalSurfaceService(
             self::service($container, ApprovalQueryService::class),
             self::service($container, BusinessSurfaceCatalog::class),
+            self::service($container, ApprovalService::class),
         ), true);
         $container->share(BusinessOperationStatusRepository::class, static fn (
             Container $container,
@@ -4710,6 +4714,24 @@ final class ContainerFactory
             self::service($container, BusinessApprovalSurfaceService::class),
             self::service($container, BusinessApprovalApiPresenter::class),
             self::service($container, ProblemDetailsResponseFactory::class),
+        ), true);
+        $container->share(MediaApiHandler::class, static fn (
+            Container $container,
+        ): MediaApiHandler => new MediaApiHandler(
+            self::service($container, MediaService::class),
+            self::service($container, ProblemDetailsResponseFactory::class),
+            $root . '/storage/tmp',
+        ), true);
+        $container->share(WordingApiHandler::class, static fn (
+            Container $container,
+        ): WordingApiHandler => new WordingApiHandler(
+            self::service($container, MessageOverrideService::class),
+            self::service($container, ProblemDetailsResponseFactory::class),
+        ), true);
+        $container->share(BusinessSecurityApiHandler::class, static fn (
+            Container $container,
+        ): BusinessSecurityApiHandler => new BusinessSecurityApiHandler(
+            self::service($container, BusinessSecurityAdministrationService::class),
         ), true);
         $container->share(BusinessDefinitionDiscoveryApiHandler::class, static fn (
             Container $container,
@@ -5725,6 +5747,20 @@ final class ContainerFactory
             BusinessApprovalApiHandler::class,
             'api.v1.business.approvals.read',
         ));
+        self::apiRoute($application->post(
+            '/api/v1/business/approvals/{approval}/cancel',
+            [
+                RequireIdempotencyKeyMiddleware::class,
+                PersistentIdempotencyMiddleware::class,
+                BusinessApprovalApiHandler::class,
+            ],
+            'api.v1.business.approvals.cancel',
+        ), 'business.approval.request');
+        self::apiRoute($application->post(
+            '/api/v1/business/records/{definition}/bulk',
+            [RequireIdempotencyKeyMiddleware::class, BusinessRecordApiHandler::class],
+            'api.v1.business.records.bulk',
+        ));
         self::apiRoute($application->get(
             '/api/v1/business/records/{definition}',
             BusinessRecordApiHandler::class,
@@ -6179,6 +6215,7 @@ final class ContainerFactory
             ['GET', '/api/v1/users', 'api.v1.users.list'],
             ['GET', '/api/v1/roles', 'api.v1.roles.list'],
             ['GET', '/api/v1/tokens', 'api.v1.tokens.list'],
+            ['GET', '/api/v1/security-events', 'api.v1.security-events.list'],
             ] as [$method, $path, $name]
         ) {
             self::apiRoute(
@@ -6187,6 +6224,47 @@ final class ContainerFactory
             );
         }
 
+        self::apiRoute($application->get('/api/v1/media', MediaApiHandler::class, 'api.v1.media.list'), 'content.read');
+        self::apiRoute($application->get(
+            '/api/v1/media/{mediaId}',
+            MediaApiHandler::class,
+            'api.v1.media.read',
+        ), 'content.read');
+        self::apiRoute($application->post(
+            '/api/v1/media',
+            [RequireIdempotencyKeyMiddleware::class, PersistentIdempotencyMiddleware::class, MediaApiHandler::class],
+            'api.v1.media.upload',
+        ), 'content.update');
+        self::apiRoute($application->delete(
+            '/api/v1/media/{mediaId}',
+            [RequireIdempotencyKeyMiddleware::class, PersistentIdempotencyMiddleware::class, MediaApiHandler::class],
+            'api.v1.media.delete',
+        ), 'content.delete');
+        self::apiRoute($application->get(
+            '/api/v1/wording/overrides',
+            WordingApiHandler::class,
+            'api.v1.wording.overrides.list',
+        ), 'localization.overrides.manage');
+        self::apiRoute($application->get(
+            '/api/v1/wording/catalogue',
+            WordingApiHandler::class,
+            'api.v1.wording.catalogue',
+        ), 'localization.overrides.manage');
+        self::apiRoute($application->put(
+            '/api/v1/wording/overrides',
+            [RequireIdempotencyKeyMiddleware::class, PersistentIdempotencyMiddleware::class, WordingApiHandler::class],
+            'api.v1.wording.overrides.save',
+        ), 'localization.overrides.manage');
+        self::apiRoute($application->post(
+            '/api/v1/wording/overrides/withdraw',
+            [RequireIdempotencyKeyMiddleware::class, PersistentIdempotencyMiddleware::class, WordingApiHandler::class],
+            'api.v1.wording.overrides.withdraw',
+        ), 'localization.overrides.manage');
+        self::apiRoute($application->get(
+            '/api/v1/business-security',
+            BusinessSecurityApiHandler::class,
+            'api.v1.business-security.read',
+        ), 'business.security.manage');
         self::apiRoute($application->get(
             '/api/v1/settings',
             SiteSettingsApiHandler::class,
@@ -6263,6 +6341,9 @@ final class ContainerFactory
             ['POST', '/api/v1/tokens/{tokenId}/rotate', 'api.v1.tokens.rotate'],
             ['DELETE', '/api/v1/users/{id}/tokens', 'api.v1.tokens.emergency-revoke'],
             ['DELETE', '/api/v1/users/{id}/tokens/emergency', 'api.v1.tokens.emergency-revoke-all'],
+            ['POST', '/api/v1/users/{id}/password-reset', 'api.v1.users.password-reset'],
+            ['POST', '/api/v1/users/{id}/step-up/revoke', 'api.v1.users.step-up-revoke'],
+            ['POST', '/api/v1/users/{id}/sessions/terminate', 'api.v1.users.sessions-terminate'],
             ] as [$method, $path, $name]
         ) {
             self::apiRoute($application->route(

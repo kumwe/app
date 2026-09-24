@@ -2604,8 +2604,10 @@
         "Kumwe\\App\\BusinessSurface\\Application\\BusinessApprovalSurfaceService": {
             "kind": "class",
             "layer": "application",
-            "surface": "6ebe5bb78367a86f2110e110",
-            "growth": null
+            "surface": "94f59ecc0f331e95786cc608",
+            "growth": {
+                "record": "KUMWE-CGR-2026-032"
+            }
         },
         "Kumwe\\App\\BusinessSurface\\Application\\BusinessBulkMutation": {
             "kind": "class",
@@ -2690,8 +2692,10 @@
         "Kumwe\\App\\BusinessSurface\\Application\\BusinessSurfaceUseCases": {
             "kind": "interface",
             "layer": "application",
-            "surface": "46610b1bf047374d29d7a01a",
-            "growth": null
+            "surface": "bfd95429b5bac9f2b624564c",
+            "growth": {
+                "record": "KUMWE-CGR-2026-032"
+            }
         },
         "Kumwe\\App\\BusinessSurface\\Application\\CustomBusinessActionExecutor": {
             "kind": "class",
@@ -3403,8 +3407,14 @@
         "Kumwe\\App\\Delivery\\Http\\Api\\Business\\BusinessRecordApiHandler": {
             "kind": "class",
             "layer": "delivery",
-            "surface": "76cd036dd55ebd8f04f41846",
-            "growth": null
+            "surface": "37240f6fad783ac9c2cb7d24",
+            "growth": {
+                "classification": "host-delivery",
+                "implements": [
+                    "Psr\\Http\\Server\\RequestHandlerInterface"
+                ],
+                "extends": null
+            }
         },
         "Kumwe\\App\\Delivery\\Http\\Api\\Business\\BusinessRecordApiPresenter": {
             "kind": "class",
@@ -3433,6 +3443,18 @@
             "layer": "delivery",
             "surface": "53831a9236d31dde37c3509f",
             "growth": null
+        },
+        "Kumwe\\App\\Delivery\\Http\\Api\\Business\\BusinessSecurityApiHandler": {
+            "kind": "class",
+            "layer": "delivery",
+            "surface": "7dc5bcea86c2ebbaee4dd395",
+            "growth": {
+                "classification": "host-delivery",
+                "implements": [
+                    "Psr\\Http\\Server\\RequestHandlerInterface"
+                ],
+                "extends": null
+            }
         },
         "Kumwe\\App\\Delivery\\Http\\Api\\Business\\PostingPeriodApiHandler": {
             "kind": "class",
@@ -3571,6 +3593,30 @@
             "layer": "delivery",
             "surface": "85fd11efd737fd4bd6ed2321",
             "growth": null
+        },
+        "Kumwe\\App\\Delivery\\Http\\Api\\Localization\\WordingApiHandler": {
+            "kind": "class",
+            "layer": "delivery",
+            "surface": "b821f9739f57b905e7b16304",
+            "growth": {
+                "classification": "host-delivery",
+                "implements": [
+                    "Psr\\Http\\Server\\RequestHandlerInterface"
+                ],
+                "extends": null
+            }
+        },
+        "Kumwe\\App\\Delivery\\Http\\Api\\Media\\MediaApiHandler": {
+            "kind": "class",
+            "layer": "delivery",
+            "surface": "3937b0e127416507b09bf414",
+            "growth": {
+                "classification": "host-delivery",
+                "implements": [
+                    "Psr\\Http\\Server\\RequestHandlerInterface"
+                ],
+                "extends": null
+            }
         },
         "Kumwe\\App\\Delivery\\Http\\Api\\Navigation\\MenuCollectionHandler": {
             "kind": "class",

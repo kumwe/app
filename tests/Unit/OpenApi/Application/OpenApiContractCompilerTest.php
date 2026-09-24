@@ -324,6 +324,50 @@ final class OpenApiContractCompilerTest extends TestCase
     }
 
     /**
+     * Classify a raw octet-stream upload body as binary and every JSON body as json.
+     *
+     * The request-body marker is how a generated client decides whether to encode a document or stream bytes;
+     * the media upload is the one core operation whose body is the file itself.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testMarksAnOctetStreamRequestBodyAsBinaryAndAJsonBodyAsJson(): void
+    {
+        $core = $this->core();
+        $write = [
+            'x-kumwe-required-capabilities' => [],
+            'responses' => ['204' => ['description' => 'Stored.', 'x-kumwe-body' => 'none']],
+        ];
+        $core['paths']['/upload'] = ['post' => [
+            'operationId' => 'uploadBytes',
+            'requestBody' => ['required' => true, 'content' => [
+                'application/octet-stream' => ['schema' => ['type' => 'string', 'format' => 'binary']],
+            ]],
+            ...$write,
+        ]];
+        $core['paths']['/document'] = ['post' => [
+            'operationId' => 'writeDocument',
+            'requestBody' => ['required' => true, 'content' => [
+                'application/json' => ['schema' => ['type' => 'object']],
+            ]],
+            ...$write,
+        ]];
+
+        $compiled = json_decode(
+            (new OpenApiContractCompiler())->compile($core, [], str_repeat('b', 64))->json,
+            true,
+            64,
+            JSON_THROW_ON_ERROR,
+        );
+
+        self::assertIsArray($compiled);
+        self::assertSame('binary', $compiled['paths']['/upload']['post']['x-kumwe-request-body']);
+        self::assertSame('json', $compiled['paths']['/document']['post']['x-kumwe-request-body']);
+    }
+
+    /**
      * Refuse every incomplete operation boundary before publishing a machine contract.
      *
      * Each case starts from the same valid checked-in core shape and corrupts exactly one operation

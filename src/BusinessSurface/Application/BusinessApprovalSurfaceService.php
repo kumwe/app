@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessSurface\Application;
 
 use InvalidArgumentException;
+use Kumwe\Approval\ApprovalDenied;
 use Kumwe\Approval\ApprovalQueryService;
+use Kumwe\Approval\ApprovalService;
 use Kumwe\Approval\ApprovalRequestView;
 use Kumwe\Context\Value\ExecutionContext;
 use Ramsey\Uuid\Uuid;
@@ -43,12 +45,15 @@ final readonly class BusinessApprovalSurfaceService
      *
      * @param  ApprovalQueryService             $approvals  Canonical scoped approval query boundary.
      * @param  BusinessApprovalExposureCatalog  $exposure   Active definition and surface exposure ceiling.
+     * @param  ApprovalService                  $workflow   Canonical maker-checker workflow the administrator
+     *         cancel control also calls; only its requester cancellation is reachable from here.
      *
      * @since  2.0.0
      */
     public function __construct(
         private ApprovalQueryService $approvals,
         private BusinessApprovalExposureCatalog $exposure,
+        private ApprovalService $workflow,
     ) {
     }
 
@@ -88,6 +93,37 @@ final readonly class BusinessApprovalSurfaceService
         string $requestId,
     ): ?ApprovalRequestView {
         return $this->detail($context, $surface, $requestId, true);
+    }
+
+    /**
+     * Cancel the caller's own still-pending live business-record approval request from a machine adapter.
+     *
+     * Visibility is resolved exactly as `businessDetail()` resolves it, so an absent, foreign, unexposed or
+     * cross-surface request is refused with the same non-enumerating `ApprovalDenied`. The cancellation is the
+     * canonical `ApprovalService::cancel()` the administrator cancel control calls: it requires
+     * `business.approval.request`, the original requester on the original authenticated surface and scope, a
+     * still-pending unexpired request, and it records the `approval.cancel` audit event. Cancelling withdraws a
+     * request; it is never a decision. Approve, reject and revoke stay on the stepped-up human surfaces, so a
+     * machine actor can request and withdraw but never decide its own request.
+     *
+     * @param   ExecutionContext  $context    Authenticated requester and exact scope.
+     * @param   BusinessSurface   $surface    Provenance-matching generated machine adapter.
+     * @param   string            $requestId  Exact approval UUID.
+     *
+     * @return  void
+     *
+     * @throws  ApprovalDenied  When the request is not visible on this surface, or is not the caller's own
+     *          current pending request.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the caller may not request approvals.
+     *
+     * @since   2.0.0
+     */
+    public function businessCancel(ExecutionContext $context, BusinessSurface $surface, string $requestId): void
+    {
+        if ($this->businessDetail($context, $surface, $requestId) === null) {
+            throw new ApprovalDenied();
+        }
+        $this->workflow->cancel($context, $requestId);
     }
 
     /**

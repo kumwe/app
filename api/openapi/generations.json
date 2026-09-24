@@ -18,15 +18,15 @@
         },
         {
             "artifact": "api/openapi/generations/1.1.0/openapi.json",
-            "artifact_sha256": "7d10a28abca15e8aa44d1fe8af6046dc2a6b860518c199b1648f340bb78eb429",
+            "artifact_sha256": "5751f43a6cb1108af886e8b304e996519cf36a1193179f2d91f800567d88a88f",
             "compatibility_fixture": "api/openapi/generations/1.1.0/compatibility.json",
-            "compatibility_fixture_sha256": "bb092320bab6e7039a4b83df9d35e1466c0bb806cb1b458d36ca32288840057f",
-            "compiler_generation_sha256": "66318063400c9c02d82abb7e258d7240f2d01f7d6c81c5742188ffb4900c1168",
+            "compatibility_fixture_sha256": "b6160a71d5014491d3662b5eaf91fe5c0c0eac3f15f59e35cf42aed59c2313e5",
+            "compiler_generation_sha256": "6a4d44d1cf1c88dba7362debfc0e9847a7e370e1cc11a52cf8f3142f3cf4e641",
             "core": "api/openapi/generations/1.1.0/core.json",
-            "core_sha256": "b1a726bf9828a5cc5d3964a0cdf614777bc2d8d5144316f4002033fbf52124d8",
+            "core_sha256": "a2b24ba26caea02a77d3b9bc7a72286f7836e74ae14d6122c1785416299862ac",
             "generation": "1.1.0",
             "problem_registry": "api/problem-details/generations/1.1.0.json",
-            "problem_registry_sha256": "b52a7a751e98ad947dd7a07bc73c46c82e33d719d9f5a14bcd2640a6d696319b",
+            "problem_registry_sha256": "f8b46469dc334143723273d5370fd78151b605cf6e74a96df7e5d72e967e1719",
             "route_exclusions": "api/openapi/route-exclusions.json",
             "route_exclusions_sha256": "59ac6b7a4f3e038918982a16c22d4d6869e76ab041a6a0d516be959ef3563f16"
         }

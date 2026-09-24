@@ -26,6 +26,7 @@ use Kumwe\App\BusinessSurface\Application\BusinessSurfaceOperation;
 use Kumwe\App\BusinessSurface\Application\BusinessSurfaceUseCases;
 use Kumwe\App\Delivery\Http\Api\ApiExecutionContext;
 use Kumwe\Context\Value\ExecutionContext;
+use Laminas\Diactoros\Response\JsonResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
@@ -232,6 +233,14 @@ final readonly class BusinessRecordApiHandler implements RequestHandlerInterface
     public const string REORDER = 'records.reorder';
 
     /**
+     * Operation token selecting the atomic bulk archive, restore or declared action.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    public const string BULK = 'records.bulk';
+
+    /**
      * Wire the HTTP adapter to the one record application boundary and shared query/result grammar.
      *
      * @param  BusinessRecordService       $records    Owns every record use case, transaction and policy check.
@@ -285,6 +294,7 @@ final readonly class BusinessRecordApiHandler implements RequestHandlerInterface
                 self::RELATE => $this->relate($request),
                 self::UNRELATE => $this->unrelate($request),
                 self::REORDER => $this->reorder($request),
+                self::BULK => $this->bulk($request),
                 default => throw new InvalidArgumentException('The business-record operation is not supported.'),
             };
         } catch (Throwable $exception) {
@@ -556,6 +566,54 @@ final readonly class BusinessRecordApiHandler implements RequestHandlerInterface
             $input,
             $approvalRequestId,
         ));
+    }
+
+    /**
+     * Apply one atomic bulk archive, restore or declared action to at most fifty selected records.
+     *
+     * This is the generated administrator and portal bulk form over the same `bulk()` use case. Each item
+     * carries the version the caller reviewed, so the per-record optimistic check is the one the browser
+     * form submits; the `Idempotency-Key` is the caller-owned bulk identity each member derives its child
+     * replay key from. A high-impact action that needs approval or step-up is refused for every member.
+     *
+     * @param   ServerRequestInterface  $request  Collection bulk request.
+     *
+     * @return  ResponseInterface  Operation, count and per-record outcomes in selection order.
+     *
+     * @throws  InvalidArgumentException  When the body is not the closed bulk document.
+     *
+     * @since   2.0.0
+     */
+    private function bulk(ServerRequestInterface $request): ResponseInterface
+    {
+        $context = ApiExecutionContext::fromRequest($request);
+        $definition = $this->definition($request);
+        $idempotencyKey = BusinessRecordApiRequest::idempotencyKey($request);
+        $body = BusinessRecordApiRequest::json($request, true);
+        BusinessRecordApiRequest::keys($body, ['operation', 'action', 'input', 'items'], 'bulk body');
+        $operation = match ($body['operation'] ?? null) {
+            'archive' => BusinessSurfaceOperation::Archive,
+            'restore' => BusinessSurfaceOperation::Restore,
+            'action' => BusinessSurfaceOperation::Action,
+            default => throw new InvalidArgumentException('The bulk operation must be archive, restore or action.'),
+        };
+        $items = BusinessRecordApiRequest::normalize(['items' => $body['items'] ?? null])['items'];
+        if (!is_array($items) || !array_is_list($items)) {
+            throw new InvalidArgumentException('The bulk items must be a list.');
+        }
+        /** @var list<array<string, mixed>> $items */
+        $result = $this->surfaces->bulk(
+            $context,
+            BusinessSurface::Api,
+            $definition,
+            $operation,
+            $items,
+            $idempotencyKey->value(),
+            BusinessRecordApiRequest::optionalString($body, 'action'),
+            BusinessRecordApiRequest::optionalObject($body, 'input'),
+        );
+
+        return new JsonResponse($result, 200, ['Cache-Control' => 'no-store']);
     }
 
     /**
@@ -846,6 +904,8 @@ final readonly class BusinessRecordApiHandler implements RequestHandlerInterface
                 && $method === 'POST' => self::CUSTOM_VIEW,
             preg_match('#^/api/v1/business/records/[^/]+/search$#D', $path) === 1 && $method === 'POST'
                 => self::SEARCH,
+            preg_match('#^/api/v1/business/records/[^/]+/bulk$#D', $path) === 1 && $method === 'POST'
+                => self::BULK,
             preg_match('#^/api/v1/business/records/[^/]+$#D', $path) === 1 && $method === 'GET'
                 => self::BROWSE,
             preg_match('#^/api/v1/business/records/[^/]+$#D', $path) === 1 && $method === 'POST'

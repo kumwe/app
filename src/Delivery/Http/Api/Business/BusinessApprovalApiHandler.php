@@ -10,6 +10,7 @@ use Kumwe\App\BusinessSurface\Application\BusinessApprovalSurfaceService;
 use Kumwe\App\BusinessSurface\Application\BusinessSurface;
 use Kumwe\App\Delivery\Http\Api\ApiExecutionContext;
 use Kumwe\App\Delivery\Http\Api\ProblemDetailsResponseFactory;
+use Laminas\Diactoros\Response\EmptyResponse;
 use Laminas\Diactoros\Response\JsonResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -20,9 +21,10 @@ use Throwable;
  * Serves the non-enumerating generated-business approval collection and detail resources.
  *
  * Approval decisions require a fresh single-use browser step-up proof. A bearer API context cannot mint
- * or transport that session-bound proof, so this handler deliberately exposes inspection only; action
- * approval requests are created by the record action-approval resource and decisions remain on the
- * administrator or portal step-up surfaces.
+ * or transport that session-bound proof, so this handler deliberately exposes inspection and the
+ * requester's own cancellation only; action approval requests are created by the record action-approval
+ * resource and decisions remain on the administrator or portal step-up surfaces. Cancelling withdraws a
+ * request the caller made on this surface and is never a vote.
  *
  * @since  2.0.0
  */
@@ -45,7 +47,7 @@ final readonly class BusinessApprovalApiHandler implements RequestHandlerInterfa
     }
 
     /**
-     * List a bounded inbox or read one exact visible approval request.
+     * List a bounded inbox, read one exact visible approval request, or cancel the caller's own request.
      *
      * @param   ServerRequestInterface  $request  Authenticated API request.
      *
@@ -56,11 +58,20 @@ final readonly class BusinessApprovalApiHandler implements RequestHandlerInterfa
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
         try {
-            if (strtoupper($request->getMethod()) !== 'GET') {
-                throw new InvalidArgumentException('Business approval resources support only GET.');
-            }
+            $method = strtoupper($request->getMethod());
             $context = ApiExecutionContext::fromRequest($request);
             $approval = $request->getAttribute('approval');
+            if ($method === 'POST' && str_ends_with($request->getUri()->getPath(), '/cancel')) {
+                if (!is_string($approval) || trim((string) $request->getBody()) !== '') {
+                    throw new InvalidArgumentException('An approval cancellation carries no request body.');
+                }
+                $this->approvals->businessCancel($context, BusinessSurface::Api, $approval);
+
+                return (new EmptyResponse(204))->withHeader('Cache-Control', 'no-store');
+            }
+            if ($method !== 'GET') {
+                throw new InvalidArgumentException('Business approval resources support only GET.');
+            }
             if ($approval !== null) {
                 if (!is_string($approval)) {
                     throw new ApprovalDenied();

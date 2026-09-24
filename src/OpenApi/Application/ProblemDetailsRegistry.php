@@ -154,6 +154,7 @@ final readonly class ProblemDetailsRegistry
             ['invalid-idempotency-key', 400, false, null],
             ['invalid-if-match', 400, false, null],
             ['invalid-plan-request', 400, false, null],
+            ['media-not-found', 404, false, null],
             ['navigation-not-found', 404, false, null],
             ['openapi-contract-unavailable', 503, true, 30],
             ['posting-period-conflict', 409, false, null],
