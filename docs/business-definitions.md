@@ -146,6 +146,23 @@ Publication writes, in one transaction:
 
 Prior versions and their checksums remain immutable. Supersede, deprecate, and reject are lifecycle states stored outside the canonical payload so status changes do not rewrite version bytes.
 
+## Immutable workflow states and closed posting periods
+
+A workflow binding may name `immutable_states`: declared states other than the initial state in which a
+record's content can no longer change and is corrected by a linked reversal (ADR 0003). In the graphical
+editor, the **Workflow** tab's *Immutable states* field takes the same comma-separated handles; naming an
+undeclared state or the initial state is refused before the draft is saved, and clearing the field removes the
+declaration. A field configured with `posting_date` makes the record subject to closed posting periods.
+
+The generated administrator and portal surfaces read both declarations from the catalogue. A record in an
+immutable state, or whose posting date falls in a closed period, renders read-only: a notice carries the
+refusal's own wording, the edit, archive, restore and relation controls are withdrawn, the edit form's
+controls are disabled, and lists mark such records *Read-only*. Workflow actions stay available, because
+immutability freezes content and not the state machine. A submission the service still refuses — a page
+composed before another actor approved the record, or a posting date moved into a closed period — comes
+back as a 409 page with that wording instead of an error page, keeping the operator's typed values when
+the record itself is still open.
+
 ## Extension contributions
 
 Schema-2 packages may declare `contributions.business.field_types` and `contributions.business.definitions`. Their provider registers the identical typed objects through `fieldType()` and `businessDefinition()`. Identifiers must live under the extension namespace, field-type bytes cannot change under an existing identifier, and entity versions must advance by exactly one.

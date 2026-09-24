@@ -318,6 +318,12 @@ step-up enrollment/challenges/recovery, token lifecycle, trust changes, authoriz
 produce redacted, correlated audit events. Never log passwords, TOTP secrets, codes, session or token plaintext,
 policy-sensitive field values, or encrypted-field plaintext.
 
+Redaction is enforced at write time, not left to each service: the audit recorder applies the `kumwe/audit`
+credential denylist to every event's metadata before it is stored or digested, so a credential-shaped key or a
+long opaque value becomes `[redacted]` in the row and in the hash chain. `AuditMetadataWriterPolicyTest` reads
+every audit-writing service under `src/`, refuses credential-shaped literal metadata keys, pins the writer
+inventory, and proves its denylist equals the package redactor's.
+
 For suspected compromise, suspend the subject or membership, increment the security epoch, revoke token families
 and sessions, disable affected extension owners, and preserve audit and approval evidence. See
 [incident response](operations/incident-response.md), [backup and restore](operations/backup-restore.md), and
@@ -327,3 +333,11 @@ Release verification runs unit, integration, functional, browser, architecture, 
 database-matrix gates. Policy tests must prove default denial, deny precedence, attribute bounds, field usage
 isolation, pre-pagination SQL enforcement, non-enumeration, stale membership/token rejection, approval replay
 rejection, TOTP/recovery replay rejection, and extension trust/lifecycle removal.
+
+Browser session evidence is pinned by dedicated tests: both CSRF guards (header and field tokens, header
+precedence, partial, re-cased, foreign and missing tokens, missing session), the Redis sign-in budget's fixed
+fifteen-minute window (ten counted attempts admitted, the eleventh refused, never re-armed, cleared by success,
+fail-closed on outage) against a stand-in client and a live server, the portal session store's find and rotate
+rejection matrix, both sign-out handlers, and the exact `Set-Cookie` strings the live pipeline emits. Every
+session and sign-in cookie is `HttpOnly; SameSite=Strict`, path-confined to `/administrator`, `/portal` or their
+sign-in routes, and carries `Secure` exactly when the configured base URL is `https://`.
