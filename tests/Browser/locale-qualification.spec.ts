@@ -154,10 +154,11 @@ const administratorSurfaces: readonly QualifiedSurface[] = [
         'rich-text editor',
       ],
     ],
-    // The content model's name and its field labels and help are definition data; the toolbar, the
-    // editor's name and its help line are interface wording and are checked.
+    // The content model's name (header eyebrow, sidebar heading, type choices) and its field labels and
+    // help are definition data; the toolbar, the editor's name and its help line are interface wording.
     content: [
       '.kis-page-header-copy .eyebrow',
+      '.editor-sidebar > section:first-child h2',
       'select[name="type"]',
       '.rich-text-source > span',
       '.rich-text-source > small',
