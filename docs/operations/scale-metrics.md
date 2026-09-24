@@ -36,17 +36,18 @@ rows. Host: 4 × Intel Xeon @ 2.80 GHz, 15 GB RAM, database, PHP and tool on one
 
 | Gauge | MariaDB exact ms | MariaDB bounded ms | PostgreSQL exact ms | PostgreSQL bounded ms |
 |---|---|---|---|---|
-| `kumwe_jobs_pending` (20,000 matching) | 17.3 | 6.2 | 1.17 | 0.81 |
-| `kumwe_jobs_dead` | 0.10 | 0.13 | 0.09 | 0.10 |
+| `kumwe_jobs_pending` (20,000 matching) | 13.2 | 14.4 | 1.17 | 0.81 |
+| `kumwe_jobs_dead` | 0.17 | 0.21 | 0.09 | 0.10 |
 | `kumwe_jobs_oldest_due_age_seconds` | 0.05 (569 before the `(status, available_at)` index) | 0.11 | 0.14 | 0.11 |
-| `kumwe_outbox_pending` (20,000 matching) | 30.5 | 4.9 | 1.45 | 1.28 |
-| `kumwe_outbox_oldest_pending_age_seconds` | 14.2 (342 before the index) | 0.17 | 0.16 | 0.12 |
-| retention ingest probe (outbox) | 0.07 | 0.09 | 0.08 | 0.10 |
+| `kumwe_outbox_pending` (20,000 matching) | 43.1 | 5.7 | 1.45 | 1.28 |
+| `kumwe_outbox_oldest_pending_age_seconds` | 25.4 (342 before the index) | 0.20 | 0.16 | 0.12 |
+| retention ingest probe (outbox) | 0.07 | 0.11 | 0.08 | 0.10 |
 
-Every bounded plan is an index range or index-only scan (plans are in the JSON). The bounded depth cost
-is capped by `PROBE_CAP` regardless of backlog; the exact count's cost grows linearly with matching rows,
-which is what the budget refuses. Budget: a scrape of all gauges stays under 250 ms at this size;
-`kumwe_metrics_scrape_duration_seconds` reports the live figure. MySQL 8.4 was not available locally; the
+Every bounded plan is an index range or index-only scan (plans are in the JSON). At 20,000 matching rows
+the capped and exact depth probes cost the same order on MariaDB (the cap is 10,000); the bounded cost is
+capped by `PROBE_CAP` regardless of backlog; the exact count's cost grows linearly with matching rows,
+which is what the budget refuses. The whole-scrape cost is published live as
+`kumwe_metrics_scrape_duration_seconds`; it was not separately benchmarked at this size. MySQL 8.4 was not available locally; the
 capacity workflow runs it.
 
 ## Retention drain measurements
@@ -56,10 +57,12 @@ declared budget (30 s, batches 200→1,000, 250 ms lock budget, half duty cycle)
 
 | Engine | Rows | Batches | Run time | Run rate | Sustained (×0.5) | Required |
 |---|---|---|---|---|---|---|
-| MariaDB 10.11 | 50,000 | 56 | 9.24 s | 5,411 rows/s | 2,706 rows/s | 926 rows/s |
+| MariaDB 10.11 | 50,000 | 102 | 22.12 s | 2,260 rows/s | 1,130 rows/s | 926 rows/s |
 | PostgreSQL 16 | 50,000 | 52 | 0.36 s | 139,546 rows/s | 69,773 rows/s | 926 rows/s |
 
-Both exceed twice the enterprise peak expiry on this host. The drain ran on an otherwise idle database;
+Both exceed twice the enterprise peak expiry on this host. The MariaDB figure varies with load on the
+shared host: an earlier run converged on 1,000-row batches at 5,411 rows/s (2,706 sustained); this run's
+adaptive sizer halved to 400-row batches when batches overran the 250 ms lock budget. The drain ran on an otherwise idle database;
 the concurrent-load figure is not measured here and remains an operator qualification.
 
 ## Low-cardinality metric classes
