@@ -49,7 +49,7 @@ regexTarget = "match"
 regexes = [
   '''^[a-z][a-z0-9_]*_sha256"\s*:\s*"[a-f0-9]{64}"$''',
   '''^[a-z][a-z0-9_]*_(?:digest|sha256):\s*"[a-f0-9]{64}"$''',
-  '''^(?:ApiDiscovery|ExtensionCredentialRequest|ExtensionTrustKey|ExtensionTrustKeyCollection|ExtensionTrustKeyCreate|ExtensionTrustKeyRevoke|ExtensionTrustKeyRotate|IssuedToken|OpenApiDocument|TokenCollection|TokenCreate|TokenRecord|TokenRevocationRequest|TokenRevocationResult|TokenRotate)"\s*:\s*"[a-f0-9]{64}"$''',
+  '''^(?:ApiDiscovery|ExtensionCredentialRequest|ExtensionTrustKey|ExtensionTrustKeyCollection|ExtensionTrustKeyCreate|ExtensionTrustKeyRevoke|ExtensionTrustKeyRotate|IssuedToken|OpenApiDocument|PasswordResetRequest|StudioAuthoringOpenRequest|StudioAuthoringOperationRequest|StudioAuthoringOperationResult|StudioAuthoringSession|TokenCollection|TokenCreate|TokenRecord|TokenRevocationRequest|TokenRevocationResult|TokenRotate)"\s*:\s*"[a-f0-9]{64}"$''',
 ]
 
 # Release attestations and non-roadmap records list a package's requirements as prose, such as
