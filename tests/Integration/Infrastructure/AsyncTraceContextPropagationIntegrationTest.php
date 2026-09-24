@@ -122,6 +122,57 @@ final class AsyncTraceContextPropagationIntegrationTest extends TestCase
     }
 
     /**
+     * The migration adds only the missing nullable origin columns, skips an absent table, and replays as a no-op.
+     *
+     * It runs against private tables under a per-test prefix, one of them already carrying a column as an
+     * interrupted earlier pass would have left it, so the installation the rest of the suite shares is untouched.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheMigrationAddsOnlyMissingNullableColumnsAndReplaysAsANoOp(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $database = self::connection($container);
+        $tables = new TableNames($database, 't' . bin2hex(random_bytes(5)) . '_');
+        try {
+            $database->executeStatement(sprintf(
+                'CREATE TABLE %s (id VARCHAR(36) NOT NULL PRIMARY KEY, correlation_id VARCHAR(191) NULL)',
+                $tables->quoted('jobs'),
+            ));
+            $database->executeStatement(sprintf(
+                'CREATE TABLE %s (id VARCHAR(36) NOT NULL PRIMARY KEY)',
+                $tables->quoted('integration_outbox'),
+            ));
+            $migration = new AsyncTraceContextMigration($tables);
+            $migration->up($database);
+            $migration->up($database);
+
+            $manager = $database->createSchemaManager();
+            $jobs = $manager->introspectTableByUnquotedName($tables->raw('jobs'));
+            foreach (['correlation_id' => 191, 'causation_id' => 191, 'trace_id' => 32] as $column => $length) {
+                self::assertTrue($jobs->hasColumn($column), $column);
+                self::assertFalse($jobs->getColumn($column)->getNotnull(), sprintf('%s stays nullable.', $column));
+                self::assertSame($length, $jobs->getColumn($column)->getLength(), $column);
+            }
+            $outbox = $manager->introspectTableByUnquotedName($tables->raw('integration_outbox'));
+            self::assertSame(32, $outbox->getColumn('trace_id')->getLength());
+            self::assertFalse(
+                $manager->tablesExist([$tables->raw('integration_inbox')]),
+                'An absent table is skipped, not created.',
+            );
+            self::assertSame('20260924130000_async_trace_context', $migration->id());
+            self::assertMatchesRegularExpression('/^[0-9a-f]{64}$/D', $migration->checksum());
+            self::assertSame($migration->checksum(), (new AsyncTraceContextMigration($tables))->checksum());
+        } finally {
+            foreach (['jobs', 'integration_outbox'] as $name) {
+                $database->executeStatement(sprintf('DROP TABLE IF EXISTS %s', $tables->quoted($name)));
+            }
+        }
+    }
+
+    /**
      * A failing attempt is logged under the request's identifiers with its credential-bearing message redacted.
      *
      * @return  void
