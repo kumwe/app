@@ -132,6 +132,16 @@
                             "proves": "Over REST, a user manager cannot reset the password or second factor of an account stronger than itself."
                         },
                         {
+                            "test": "tests/Functional/Security/CredentialTakeoverCeilingTest.php::testMembershipRoleAuthorityCountsTowardsTheCeiling",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Authority held only through an organization membership, even an inactive one, bounds a credential takeover."
+                        },
+                        {
+                            "test": "tests/Functional/Security/CredentialTakeoverCeilingTest.php::testBreakGlassRecoveryCurrentlyStopsAtTheCeilingOfAnAccountHoldingGrants",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Break-glass console recovery is pinned at the ceiling for grant-holding accounts, pending a maintainer decision."
+                        },
+                        {
                             "test": "tests/Integration/Identity/IdentityRecoveryMachineEquivalenceIntegrationTest.php::testRecoveryActsLandOnTheServiceWithTheScreensAuditAction",
                             "job": ".github/workflows/ci.yml#database",
                             "proves": "Recovery acts from REST, the console and MCP land on the one audited service."
@@ -943,6 +953,11 @@
                             "test": "tests/Functional/Security/CredentialTakeoverCeilingTest.php::testAUserManagerCannotTakeOverAStrongerAccount",
                             "job": ".github/workflows/ci.yml#database",
                             "proves": "A machine credential cannot reach beyond its delegation ceiling by taking over a stronger account."
+                        },
+                        {
+                            "test": "tests/Functional/Security/CredentialTakeoverCeilingTest.php::testMembershipRoleAuthorityCountsTowardsTheCeiling",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "The delegation ceiling counts every grant path, direct and membership roles, before a credential changes hands."
                         }
                     ]
                 }
