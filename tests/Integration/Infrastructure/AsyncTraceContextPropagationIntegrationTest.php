@@ -339,6 +339,12 @@ final class AsyncTraceContextPropagationIntegrationTest extends TestCase
             ['subject' => 'subject-' . $suffix],
         );
 
+        // Start from an empty outbox, as the other claim-order scenarios do: an event another test left
+        // pending carries a contract this test's registry does not declare, so claiming it cannot decode it.
+        self::connection($container)->executeStatement(sprintf(
+            'DELETE FROM %s',
+            self::tables($container)->quoted('integration_outbox'),
+        ));
         $correlation->begin($requestId, null, self::TRACE, 'b7ad6b7169203331');
         $outbox->append($event);
         $correlation->end();
