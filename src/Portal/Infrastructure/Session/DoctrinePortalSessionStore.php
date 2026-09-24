@@ -249,7 +249,7 @@ final readonly class DoctrinePortalSessionStore implements PortalSessionStore, S
             $row = $this->database->fetchAssociative(sprintf(
                 'SELECT id, user_id, site_identifier, organization_identifier, membership_id, '
                 . 'workspace_identifier, membership_version, policy_generation, security_epoch, user_agent_digest, '
-                . 'authenticated_at, expires_at '
+                . 'authenticated_at, expires_at, last_seen_at '
                 . 'FROM %s WHERE id = ? AND user_id = ?%s',
                 $this->tables->quoted('portal_sessions'),
                 $this->lockClause(),
@@ -269,6 +269,8 @@ final readonly class DoctrinePortalSessionStore implements PortalSessionStore, S
             if (
                 !$identity instanceof PortalSessionIdentity
                 || $expiresAt <= $verifiedAt
+                || $this->date($row['last_seen_at'] ?? null)
+                    <= $verifiedAt->sub(new DateInterval('PT' . $this->idleSeconds . 'S'))
                 || !$this->contextMatchesRow($identity, $row)
                 || $identity->securityEpoch !== $intent->securityEpoch
                 || $identity->context->site->identifier() !== $intent->siteIdentifier

@@ -261,10 +261,12 @@ final class InterfaceTranslationGateTest extends TestCase
         $contents = file_get_contents($handler);
         self::assertIsString($contents);
         file_put_contents($handler, str_replace(
-            "'error' => \$this->translator->translate('core.administrator.login.invalid_credentials'),",
-            "'error' => 'That email address and password do not match.',",
+            "\$variables['error'] = \$error;",
+            "\$variables += ['error' => 'That email address and password do not match.'];",
             $contents,
+            $replaced,
         ));
+        self::assertSame(1, $replaced, 'The adversarial fixture must actually change the current handler.');
 
         [$status, $output] = $this->execute('tools/verify-translated-strings.php', [], $tree);
 

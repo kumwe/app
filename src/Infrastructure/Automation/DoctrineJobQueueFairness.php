@@ -81,31 +81,43 @@ final readonly class DoctrineJobQueueFairness
         $jobId = $platform instanceof PostgreSQLPlatform ? 'CAST(j.id AS VARCHAR)' : 'j.id';
         $lock = $platform instanceof PostgreSQLPlatform || $platform instanceof AbstractMySQLPlatform
             ? ' FOR UPDATE SKIP LOCKED' : '';
-        $scope = $this->database->fetchOne(sprintf(
+        $candidates = $this->database->fetchFirstColumn(sprintf(
             'SELECT t.scope_key FROM %s t WHERE t.queue_id = ? AND EXISTS (SELECT 1 FROM %s j '
             . 'WHERE j.queue = t.queue_id AND j.worker_scope = t.scope_key AND '
             . "((j.status = 'pending' AND j.available_at <= ?) OR "
             . "(j.status = 'reserved' AND (j.lease_expires_at IS NULL OR j.lease_expires_at <= ?))) "
             . 'AND (j.execution_scope = ? OR EXISTS (SELECT 1 FROM %s o INNER JOIN %s s '
             . 'ON s.identifier = o.site_identifier WHERE o.resource_type = ? AND o.resource_id = %s '
-            . 'AND s.enabled = ?))) ORDER BY t.last_claimed_at, t.claim_count, t.scope_key LIMIT 1%s',
+            . 'AND s.enabled = ?))) ORDER BY t.last_claimed_at, t.claim_count, t.scope_key LIMIT 64',
             $this->tables->quoted('job_queue_turns'),
             $this->tables->quoted('jobs'),
             $this->tables->quoted('resource_site_ownership'),
             $this->tables->quoted('sites'),
             $jobId,
-            $lock,
         ), [$queue, $now, $now, JobExecutionClass::Installation->value, 'job', true], [
             Types::STRING, Types::DATETIME_IMMUTABLE, Types::DATETIME_IMMUTABLE, Types::STRING,
             Types::STRING, Types::BOOLEAN,
         ]);
-        if (!is_string($scope)) {
-            return null;
+        // Lock candidates by primary key. A filesort with FOR UPDATE can lock every scanned
+        // tenant on MySQL/MariaDB, defeating SKIP LOCKED even though the result has LIMIT 1.
+        foreach ($candidates as $candidate) {
+            if (!is_string($candidate)) {
+                throw new RuntimeException('A queue fairness lane has an invalid scope.');
+            }
+            $scope = $this->database->fetchOne(sprintf(
+                'SELECT scope_key FROM %s WHERE queue_id = ? AND scope_key = ?%s',
+                $this->tables->quoted('job_queue_turns'),
+                $lock,
+            ), [$queue, $candidate]);
+            if (!is_string($scope)) {
+                continue;
+            }
+            $this->database->executeStatement(sprintf(
+                'UPDATE %s SET last_claimed_at = ?, claim_count = claim_count + 1 WHERE queue_id = ? AND scope_key = ?',
+                $this->tables->quoted('job_queue_turns'),
+            ), [$now, $queue, $scope], [Types::DATETIME_IMMUTABLE, Types::STRING, Types::STRING]);
+            return $scope;
         }
-        $this->database->executeStatement(sprintf(
-            'UPDATE %s SET last_claimed_at = ?, claim_count = claim_count + 1 WHERE queue_id = ? AND scope_key = ?',
-            $this->tables->quoted('job_queue_turns'),
-        ), [$now, $queue, $scope], [Types::DATETIME_IMMUTABLE, Types::STRING, Types::STRING]);
-        return $scope;
+        return null;
     }
 }

@@ -8,6 +8,7 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\DBAL\Types\Types;
 use Kumwe\Audit\Application\AuditRecorder;
+use Kumwe\Audit\Application\AuditMetadataRedactor;
 use Kumwe\Audit\Domain\AuditEvent;
 use Kumwe\Audit\Domain\AuditEventDigest;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
@@ -58,7 +59,8 @@ final readonly class DoctrineAuditRecorder implements AuditRecorder
     /**
      * Inserts one audit event as a digest-chained row in the prefixed `audit_events` table.
      *
-     * The canonical digest is computed from the event's own fields exactly as they will be stored, and
+     * The package-owned redaction policy removes credential-shaped metadata before it reaches storage.
+     * The canonical digest is computed from the resulting fields exactly as they will be stored, and
      * the witness link is resolved from the highest-positioned row this transaction can see. Both
      * happen inside the caller's transaction, so a failure in either aborts the mutation the event
      * describes.
@@ -73,6 +75,8 @@ final readonly class DoctrineAuditRecorder implements AuditRecorder
      */
     public function record(AuditEvent $event): void
     {
+        $redacted = 0;
+        $metadata = AuditMetadataRedactor::redact($event->metadata(), $redacted);
         $digest = AuditEventDigest::compute(
             $event->id(),
             $event->occurredAt()->format(AuditEventDigest::INSTANT_FORMAT),
@@ -81,7 +85,7 @@ final readonly class DoctrineAuditRecorder implements AuditRecorder
             $event->subjectType(),
             $event->subjectId(),
             $event->outcome(),
-            $event->metadata(),
+            $metadata,
             $this->encoder,
         );
         $head = $this->database->fetchAssociative(sprintf(
@@ -96,7 +100,7 @@ final readonly class DoctrineAuditRecorder implements AuditRecorder
             'subject_type' => $event->subjectType(),
             'subject_id' => $event->subjectId(),
             'outcome' => $event->outcome(),
-            'metadata' => $event->metadata(),
+            'metadata' => $metadata,
             'digest' => $digest,
             'previous_digest' => $head === false ? null : $this->headDigest($head),
         ];

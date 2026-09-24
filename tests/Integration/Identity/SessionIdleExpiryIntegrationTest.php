@@ -10,6 +10,8 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
 use Kumwe\App\Identity\Application\Administration\AdministratorSessionStore;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\App\Identity\Domain\StepUp\StepUpIntent;
+use Kumwe\App\Identity\Application\StepUp\StepUpRejected;
 use Kumwe\App\Identity\Infrastructure\Administration\DoctrineAdministratorSessionStore;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Kernel\Configuration\ApplicationConfiguration;
@@ -89,6 +91,24 @@ final class SessionIdleExpiryIntegrationTest extends TestCase
                 ]);
                 self::assertNull($store->find($token, $userAgent));
                 self::assertSame($expiredAt->format('Y-m-d H:i:s'), $readSeen());
+                $sessionId = $table === 'administrator_sessions'
+                    ? $adminSession->session->id
+                    : $portalSession->session->id;
+                $intent = new StepUpIntent(
+                    $context->actorId(),
+                    $sessionId,
+                    $context->site()->identifier(),
+                    $context->membership()?->organization()->identifier(),
+                    $context->membership()?->workspace()?->identifier(),
+                    'records.approve',
+                    $principal->securityEpoch(),
+                );
+                try {
+                    $store->rotate($intent, $now);
+                    self::fail('Step-up must not revive a session that went idle during the challenge.');
+                } catch (StepUpRejected) {
+                    self::assertSame($expiredAt->format('Y-m-d H:i:s'), $readSeen());
+                }
 
                 $database->update($tables->raw($table), [
                     'last_seen_at' => $now,

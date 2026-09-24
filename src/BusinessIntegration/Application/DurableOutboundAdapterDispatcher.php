@@ -148,6 +148,7 @@ final readonly class DurableOutboundAdapterDispatcher
         try {
             $this->runtime->assertCurrent($lease->runtimeGeneration);
             $adapter->publish($definition, $event);
+            $this->runtime->assertCurrent($lease->runtimeGeneration);
             $this->inbox->complete($lease);
             $this->logger->info('Durable outbound adapter completed.', [
                 'adapter_id' => $definition->identifier(),

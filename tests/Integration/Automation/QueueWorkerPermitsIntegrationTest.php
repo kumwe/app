@@ -14,6 +14,14 @@ use Kumwe\App\Infrastructure\Persistence\Migration\JobRecoveryMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\QueueWorkerPermitsMigration;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\Automation\QueueRuntimePolicy;
+use Kumwe\Automation\QueueRuntimePolicyCatalog;
+use Kumwe\Access\AuthorizationGateway;
+use Kumwe\App\Application\Authorization\SystemPrincipal;
+use Kumwe\App\Application\Authorization\SystemIdentity;
+use Kumwe\App\Infrastructure\Automation\DoctrineQueueRuntimeOperations;
+use Kumwe\App\Infrastructure\Persistence\DoctrineTransactionManager;
+use Kumwe\Context\Value\SiteContext;
+use Psr\Clock\ClockInterface;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
@@ -25,6 +33,7 @@ use RuntimeException;
  * @since  2.0.0
  */
 #[CoversClass(DoctrineQueuePermits::class)]
+#[CoversClass(DoctrineQueueRuntimeOperations::class)]
 #[CoversClass(QueueWorkerPermitsMigration::class)]
 final class QueueWorkerPermitsIntegrationTest extends TestCase
 {
@@ -165,6 +174,58 @@ final class QueueWorkerPermitsIntegrationTest extends TestCase
         )));
         $this->expectException(RuntimeException::class);
         $permits->synchronize($old, $now);
+    }
+
+    /**
+     * Keep the operator timestamp contract after settlement without writing the former hot runtime row.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testInventoryRetainsLastClaimFromDurablePermitsAfterSettlement(): void
+    {
+        [$database, $permits] = $this->store();
+        $tables = new TableNames($database, 'permit_');
+        $now = new DateTimeImmutable('2026-09-24T10:00:00+00:00');
+        $policy = new QueueRuntimePolicy('acme.work', 60, 5, 2, 7, 9);
+        $permits->synchronize($policy, $now);
+        $clock = self::createStub(ClockInterface::class);
+        $clock->method('now')->willReturn($now);
+        $policies = self::createStub(QueueRuntimePolicyCatalog::class);
+        $policies->method('policies')->willReturn([$policy]);
+        $operations = new DoctrineQueueRuntimeOperations(
+            $database,
+            $tables,
+            new DoctrineTransactionManager($database),
+            $clock,
+            self::createStub(AuthorizationGateway::class),
+            $policies,
+        );
+        $context = SystemPrincipal::issue(new \stdClass(), SystemIdentity::Worker)->context(
+            SiteContext::fromString('default'),
+            'queue-inventory',
+            'correlation',
+        );
+        self::assertNull($operations->inventory($context)[0]['last_claimed_at']);
+        foreach ([0, 1] as $offset) {
+            $at = $now->modify(sprintf('+%d seconds', $offset));
+            $token = Uuid::uuid7()->toString();
+            self::assertTrue($database->transactional(static fn (): bool => $permits->acquire(
+                $policy,
+                $at,
+                'job',
+                $token,
+                '',
+                $token,
+                $at->modify('+60 seconds'),
+            )));
+            $database->transactional(static fn () => $permits->release($policy->queue, $token));
+        }
+        $last = $operations->inventory($context)[0]['last_claimed_at'];
+        self::assertIsString($last);
+        self::assertEquals($now->modify('+1 second'), new DateTimeImmutable($last));
+        self::assertNull($database->fetchOne('SELECT last_claimed_at FROM permit_job_queue_runtime'));
     }
 
     /**

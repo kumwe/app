@@ -201,14 +201,17 @@ final readonly class DoctrineInboxStore implements InboxStore
         $types = [];
         foreach ($consumers as $consumer) {
             $catalog[$consumer->identifier()][$consumer->eventType()] = $consumer;
+            $this->prepareConsumer($consumer);
             $predicates[] = '(i.consumer_id = ? AND i.event_type = ? AND ('
                 . "(i.status = 'pending' AND i.available_at <= ?) OR "
                 . "(i.status = 'reserved' AND i.lease_expires_at <= ?) OR "
+                . "(i.status = 'unavailable' AND i.available_at <= ?) OR "
                 . "(i.status IN ('poison', 'unavailable') AND i.handler_version <> ?)))";
             array_push(
                 $parameters,
                 $consumer->identifier(),
                 $consumer->eventType(),
+                $this->clock->now(),
                 $this->clock->now(),
                 $this->clock->now(),
                 $consumer->handlerVersion()
@@ -217,6 +220,7 @@ final readonly class DoctrineInboxStore implements InboxStore
                 $types,
                 Types::STRING,
                 Types::STRING,
+                Types::DATETIME_IMMUTABLE,
                 Types::DATETIME_IMMUTABLE,
                 Types::DATETIME_IMMUTABLE,
                 Types::STRING
@@ -239,20 +243,34 @@ final readonly class DoctrineInboxStore implements InboxStore
             $types,
         ): array {
             $leases = [];
-            // A refused/poison lane cannot consume an unbounded poll or starve other consumers.
-            for ($scan = 0; $scan < 64 && count($leases) < $limit; $scan++) {
-                $turn = $this->database->fetchAssociative(sprintf(
-                    'SELECT t.* FROM %s t WHERE EXISTS (SELECT 1 FROM %s i '
+            // Read bounded candidates first; locking an ordered filesort can lock every tenant.
+            $candidates = $this->database->fetchAllAssociative(
+                sprintf(
+                    'SELECT t.* FROM %s t WHERE NOT EXISTS (SELECT 1 FROM %s h '
+                    . 'WHERE h.consumer_id = t.consumer_id AND (h.lease_expires_at > ? OR h.blocked_until > ?)) '
+                    . 'AND EXISTS (SELECT 1 FROM %s i '
                     . 'WHERE i.consumer_id = t.consumer_id AND i.site_identifier = t.site_identifier '
                     . "AND COALESCE(i.organization_id, '') = t.organization_scope AND %s) "
-                    . 'ORDER BY t.last_claimed_at, t.claim_count, t.consumer_id, t.scope_checksum LIMIT 1%s',
+                    . 'ORDER BY t.last_claimed_at, t.claim_count, t.consumer_id, t.scope_checksum LIMIT 64',
                     $this->tables->quoted('integration_delivery_turns'),
+                    $this->tables->quoted('integration_delivery_health'),
                     $this->tables->quoted('integration_inbox'),
                     $eligible,
-                    $this->lockClause(true),
-                ), $parameters, $types);
-                if ($turn === false) {
+                ),
+                [$this->clock->now(), $this->clock->now(), ...$parameters],
+                [Types::DATETIME_IMMUTABLE, Types::DATETIME_IMMUTABLE, ...$types]
+            );
+            foreach ($candidates as $candidate) {
+                if (count($leases) >= $limit) {
                     break;
+                }
+                $turn = $this->database->fetchAssociative(sprintf(
+                    'SELECT * FROM %s WHERE consumer_id = ? AND scope_checksum = ?%s',
+                    $this->tables->quoted('integration_delivery_turns'),
+                    $this->lockClause(true),
+                ), [$candidate['consumer_id'], $candidate['scope_checksum']]);
+                if ($turn === false) {
+                    continue;
                 }
                 $now = $this->clock->now();
                 $this->database->executeStatement(sprintf(
@@ -262,6 +280,20 @@ final readonly class DoctrineInboxStore implements InboxStore
                 ), [$now, $turn['consumer_id'], $turn['scope_checksum']], [
                     Types::DATETIME_IMMUTABLE, Types::STRING, Types::STRING,
                 ]);
+                // Different tenant turns for one consumer still share one durable execution permit.
+                // Recheck with a lock: the turn query can have observed another replica's old snapshot.
+                $consumerPermit = $this->database->fetchOne(sprintf(
+                    'SELECT consumer_id FROM %s WHERE consumer_id = ? '
+                    . 'AND (lease_expires_at IS NULL OR lease_expires_at <= ?) '
+                    . 'AND (blocked_until IS NULL OR blocked_until <= ?)%s',
+                    $this->tables->quoted('integration_delivery_health'),
+                    $this->lockClause(true),
+                ), [$turn['consumer_id'], $now, $now], [
+                    Types::STRING, Types::DATETIME_IMMUTABLE, Types::DATETIME_IMMUTABLE,
+                ]);
+                if ($consumerPermit === false) {
+                    continue;
+                }
                 $row = $this->database->fetchAssociative(
                     sprintf(
                         'SELECT i.* FROM %s i WHERE i.consumer_id = ? AND i.site_identifier = ? '
@@ -314,7 +346,25 @@ final readonly class DoctrineInboxStore implements InboxStore
                     $policy,
                 );
                 if ($result->lease !== null) {
+                    // Copy the authoritative work expiry exactly. Recomputing it from the earlier
+                    // scan timestamp could let another tenant take the consumer permit prematurely.
+                    $this->database->executeStatement(sprintf(
+                        'UPDATE %s SET lease_token = ?, lease_expires_at = '
+                        . '(SELECT lease_expires_at FROM %s WHERE consumer_id = ? AND event_id = ?) '
+                        . 'WHERE consumer_id = ?',
+                        $this->tables->quoted('integration_delivery_health'),
+                        $this->tables->quoted('integration_inbox'),
+                    ), [$result->lease->leaseToken, $definition->identifier(), $event->eventId(),
+                        $definition->identifier()]);
                     $leases[] = $result->lease;
+                } elseif ($result->disposition === InboxDisposition::UNAVAILABLE) {
+                    // A newly signed schema/sensitivity declaration can restore compatibility even if
+                    // its handler binary version is unchanged. Recheck boundedly without spending attempts.
+                    $this->database->update($this->tables->raw('integration_inbox'), [
+                        'available_at' => $now->modify('+60 seconds'),
+                    ], ['consumer_id' => $row['consumer_id'], 'event_id' => $row['event_id']], [
+                        'available_at' => Types::DATETIME_IMMUTABLE,
+                    ]);
                 } elseif (in_array($result->disposition, [InboxDisposition::BUSY, InboxDisposition::REORDERED], true)) {
                     $this->database->executeStatement(sprintf(
                         'UPDATE %s SET available_at = ? WHERE consumer_id = ? AND event_id = ? '
@@ -332,14 +382,15 @@ final readonly class DoctrineInboxStore implements InboxStore
     /**
      * Renew the supplied durable-processing lease.
      *
-     * @param   InboxLease  $lease         Fenced lease proving ownership of the durable item.
-     * @param   int         $leaseSeconds  Number of seconds before the worker lease expires.
+     * @param   InboxLease  $lease                  Fenced lease proving ownership of the durable item.
+     * @param   int         $leaseSeconds           Number of seconds before the worker lease expires.
+     * @param   bool        $requireConsumerPermit  Whether this is an independently pooled receipt.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    public function renew(InboxLease $lease, int $leaseSeconds): void
+    public function renew(InboxLease $lease, int $leaseSeconds, bool $requireConsumerPermit = false): void
     {
         if ($leaseSeconds < 5 || $leaseSeconds > 3_600) {
             throw new InvalidArgumentException('An inbox lease must last between 5 and 3600 seconds.');
@@ -348,7 +399,12 @@ final readonly class DoctrineInboxStore implements InboxStore
         if ($policy !== null && $leaseSeconds > $policy->leaseSeconds) {
             throw new InvalidArgumentException('A contributed queue lease cannot exceed its signed policy.');
         }
-        $this->transactions->transactional(function () use ($lease, $leaseSeconds, $policy): void {
+        $this->transactions->transactional(function () use (
+            $lease,
+            $leaseSeconds,
+            $policy,
+            $requireConsumerPermit,
+        ): void {
             $now = $this->clock->now();
             $this->assertOne($this->database->executeStatement(sprintf(
                 'UPDATE %s SET lease_expires_at = ?, updated_at = ? WHERE consumer_id = ? AND event_id = ? '
@@ -370,6 +426,17 @@ final readonly class DoctrineInboxStore implements InboxStore
                     $now,
                     $now->add(new DateInterval(sprintf('PT%dS', $leaseSeconds))),
                 );
+            }
+            $renewed = $this->database->executeStatement(sprintf(
+                'UPDATE %s SET lease_expires_at = ? WHERE consumer_id = ? AND lease_token = ? '
+                . 'AND lease_expires_at > ?',
+                $this->tables->quoted('integration_delivery_health'),
+            ), [$now->modify(sprintf('+%d seconds', $leaseSeconds)), $lease->consumer->identifier(),
+                $lease->leaseToken, $now], [
+                Types::DATETIME_IMMUTABLE, Types::STRING, Types::GUID, Types::DATETIME_IMMUTABLE,
+            ]);
+            if ($requireConsumerPermit && (string) $renewed !== '1') {
+                throw new RuntimeException('The worker no longer owns its consumer execution permit.');
             }
         });
     }
@@ -424,6 +491,9 @@ final readonly class DoctrineInboxStore implements InboxStore
             if ($this->policies?->policy($lease->consumer->queue()) !== null) {
                 $this->permits()->release($lease->consumer->queue(), $lease->leaseToken);
             }
+            $this->database->update($this->tables->raw('integration_delivery_health'), [
+                'lease_token' => null, 'lease_expires_at' => null, 'blocked_until' => null, 'failure_streak' => 0,
+            ], ['consumer_id' => $lease->consumer->identifier(), 'lease_token' => $lease->leaseToken]);
         });
     }
 
@@ -470,6 +540,18 @@ final readonly class DoctrineInboxStore implements InboxStore
             if ($this->policies?->policy($lease->consumer->queue()) !== null) {
                 $this->permits()->release($lease->consumer->queue(), $lease->leaseToken);
             }
+            $cooldown = $classification === FailureClassification::TRANSIENT
+                ? $now->modify(sprintf('+%d seconds', max(1, min(
+                    300,
+                    ($retryAt?->getTimestamp() ?? $now->getTimestamp()) - $now->getTimestamp()
+                )))) : null;
+            $this->database->executeStatement(sprintf(
+                'UPDATE %s SET lease_token = NULL, lease_expires_at = NULL, blocked_until = ?, '
+                . 'failure_streak = failure_streak + 1 WHERE consumer_id = ? AND lease_token = ?',
+                $this->tables->quoted('integration_delivery_health'),
+            ), [$cooldown, $lease->consumer->identifier(), $lease->leaseToken], [
+                Types::DATETIME_IMMUTABLE, Types::STRING, Types::GUID,
+            ]);
         });
     }
 
@@ -1037,6 +1119,44 @@ final readonly class DoctrineInboxStore implements InboxStore
             $maximum,
             $consumer->sensitivityCeiling(),
         );
+    }
+
+    /**
+     * Initialize one cross-replica consumer gate and reset circuit backoff on a signed handler upgrade.
+     *
+     * One active receipt per consumer bounds a hung target independently of its queue. The live lease is
+     * retained during upgrades so old and new handlers cannot overlap; only the backoff is reset.
+     *
+     * @param   EventConsumerDefinition  $consumer  Current signed consumer or webhook receipt definition.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    private function prepareConsumer(EventConsumerDefinition $consumer): void
+    {
+        $version = $this->database->fetchOne(sprintf(
+            'SELECT handler_version FROM %s WHERE consumer_id = ?',
+            $this->tables->quoted('integration_delivery_health'),
+        ), [$consumer->identifier()]);
+        if ($version === $consumer->handlerVersion()) {
+            return;
+        }
+        if ($version === false) {
+            $suffix = $this->database->getDatabasePlatform() instanceof AbstractMySQLPlatform
+                ? ' ON DUPLICATE KEY UPDATE consumer_id = consumer_id'
+                : ' ON CONFLICT (consumer_id) DO NOTHING';
+            $this->database->executeStatement(sprintf(
+                'INSERT INTO %s (consumer_id, handler_version, failure_streak) VALUES (?, ?, 0)%s',
+                $this->tables->quoted('integration_delivery_health'),
+                $suffix,
+            ), [$consumer->identifier(), $consumer->handlerVersion()]);
+        }
+        $this->database->executeStatement(sprintf(
+            'UPDATE %s SET handler_version = ?, blocked_until = NULL, failure_streak = 0 '
+            . 'WHERE consumer_id = ? AND handler_version <> ?',
+            $this->tables->quoted('integration_delivery_health'),
+        ), [$consumer->handlerVersion(), $consumer->identifier(), $consumer->handlerVersion()]);
     }
 
     /**

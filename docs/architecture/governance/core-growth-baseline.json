@@ -997,7 +997,7 @@
         "Kumwe\\App\\BusinessIntegration\\Infrastructure\\DoctrineInboxStore": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "1025300ba859b4d28179c1ec",
+            "surface": "1a8557179d6cb776b162517d",
             "growth": {
                 "classification": "host-infrastructure",
                 "implements": [

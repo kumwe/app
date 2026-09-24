@@ -17,6 +17,17 @@ Entries cite the commits that carried them. Version 2.0.0 is not released, so ev
 
 ## [Unreleased]
 
+- Apply the audit package's credential redaction policy before persistence and digest calculation;
+  nested credentials and long opaque values never enter new audit rows, while the exact stored
+  representation remains anchor-verifiable. Existing historical rows are not rewritten. Step-up
+  rotation also refuses sessions that became idle during a challenge. Focused audit and real MariaDB
+  session checks pass 16 tests and 114 assertions (#152).
+
+- Isolate receipt consumers with durable permits and bounded retry cooldowns. Fairness claims individual
+  primary keys to avoid ordered-query lock fanout, and workers recheck leases and current trust before
+  effects and settlement. Real process-kill, expiry, contention and fanout checks pass 19 tests and
+  133 assertions on MariaDB; PostgreSQL/MySQL evidence comes from the required matrix (#152).
+
 - Allow unrelated business records to commit concurrently behind a shared definition-generation fence,
   while retaining row locks, expected-version refusal and exclusive schema transitions. Authoritative
   commits now stage event envelopes; a bounded, replay-safe sequencer assigns journal order after commit,

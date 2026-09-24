@@ -35,6 +35,7 @@ use Kumwe\Integration\EventSchemaDefinition;
 use Kumwe\Integration\EventSensitivity;
 use Kumwe\Integration\RecordedIntegrationEvent;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\TestWith;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
@@ -123,7 +124,7 @@ final class IndependentReceiptFanoutIntegrationTest extends TestCase
             $seen[] = $lease->consumer->identifier() . ':' . $lease->event->siteIdentifier()
                 . ':' . $lease->event->organizationId();
             $store->materialize([$a], $this->event('site-a', 'org-a'));
-            // Leave each lease live, simulating workers that have not returned yet.
+            $store->complete($lease);
         }
         sort($seen);
         self::assertSame(['acme.probe.a:site-a:org-a', 'acme.probe.a:site-a:org-b', 'acme.probe.a:site-b:org-a',
@@ -196,13 +197,17 @@ final class IndependentReceiptFanoutIntegrationTest extends TestCase
     }
 
     /**
-     * Prove an outage rolls back its local effect and does not stall either healthy consumer worker.
+     * Prove an outage or enforced timeout rolls back its effect and preserves healthy consumer progress.
+     *
+     * @param   bool  $hang  Whether the first handler blocks until the real worker deadline interrupts it.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    public function testWorkerExecutesIndependentEffectsAndRetainsOnlyFailedReceiptForRetry(): void
+    #[TestWith([false])]
+    #[TestWith([true])]
+    public function testWorkerExecutesIndependentEffectsAndRetainsOnlyFailedReceiptForRetry(bool $hang): void
     {
         $definitions = [
             $this->consumer('acme.probe.a'), $this->consumer('acme.probe.b'), $this->consumer('acme.probe.c'),
@@ -215,9 +220,12 @@ final class IndependentReceiptFanoutIntegrationTest extends TestCase
         foreach ($definitions as $index => $definition) {
             $handler = $this->createMock(IntegrationEventHandler::class);
             $handler->expects(self::once())->method('handle')->willReturnCallback(
-                static function () use ($database, $definition, $index): void {
+                static function () use ($database, $definition, $index, $hang): void {
                     $database->insert('receipt_effects', ['consumer_id' => $definition->identifier()]);
                     if ($index === 0) {
+                        if ($hang) {
+                            sleep(10);
+                        }
                         throw new RuntimeException('downstream outage');
                     }
                 },
@@ -247,10 +255,14 @@ final class IndependentReceiptFanoutIntegrationTest extends TestCase
             new NullLogger(),
         );
         $store->materialize($definitions, $this->event('default', null));
+        $started = microtime(true);
         for ($replica = 0; $replica < 3; $replica++) {
-            self::assertTrue($worker->dispatchOne('replica-' . $replica, '7', 30));
+            self::assertTrue($worker->dispatchOne('replica-' . $replica, '7', 5));
         }
-        self::assertFalse($worker->dispatchOne('replica-next', '7', 30));
+        self::assertFalse($worker->dispatchOne('replica-next', '7', 5));
+        if ($hang) {
+            self::assertLessThan(7.0, microtime(true) - $started, 'The worker must interrupt the ten-second hang.');
+        }
         self::assertSame(['acme.probe.b', 'acme.probe.c'], $database->fetchFirstColumn(
             'SELECT consumer_id FROM receipt_effects ORDER BY consumer_id',
         ));
@@ -260,15 +272,237 @@ final class IndependentReceiptFanoutIntegrationTest extends TestCase
     }
 
     /**
+     * Prove a hung target and a consumer-wide outage cannot consume sibling capacity or new-traffic retries.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testConsumerConcurrencyAndCircuitBackoffAreSharedAcrossScopesAndReplicas(): void
+    {
+        $a = $this->consumer('acme.probe.a');
+        $b = $this->consumer('acme.probe.b');
+        [$store, $database, $tables, $clock, $contracts] = $this->store([$a, $b]);
+        $store->materialize([$a], $this->event('site-a', 'org-a'));
+        $store->materialize([$a], $this->event('site-b', 'org-b'));
+        $store->materialize([$b], $this->event('site-a', 'org-a'));
+        $leases = $store->claimBatch([$a, $b], new DeterministicCanonicalEncoder(), 'replica-one', '7', 30, 10);
+        self::assertCount(2, $leases, 'One hung consumer has only one active receipt across all scopes.');
+        self::assertSame('acme.probe.a', $leases[0]->consumer->identifier());
+        self::assertSame('acme.probe.b', $leases[1]->consumer->identifier());
+        $store->complete($leases[1]);
+        $store->fail(
+            $leases[0],
+            FailureClassification::TRANSIENT,
+            new RuntimeException('endpoint unavailable'),
+            $clock->now()->modify('+30 seconds')
+        );
+        $store->materialize([$a], $this->event('site-c', 'org-c'));
+        self::assertSame([], $store->claimBatch([$a, $b], new DeterministicCanonicalEncoder(), 'replica-two', '7', 30));
+        $later = new DoctrineInboxStore(
+            $database,
+            $tables,
+            new DoctrineTransactionManager($database),
+            $this->clock($clock->now()->modify('+31 seconds')),
+            $contracts
+        );
+        $probe = $later->claimBatch([$a, $b], new DeterministicCanonicalEncoder(), 'replica-probe', '7', 30, 10);
+        self::assertCount(1, $probe, 'Only one half-open probe is admitted after a downstream outage.');
+        $later->complete($probe[0]);
+        self::assertCount(1, $later->claimBatch(
+            [$a, $b],
+            new DeterministicCanonicalEncoder(),
+            'replica-recovery',
+            '7',
+            30,
+        ));
+    }
+
+    /**
+     * Prove a signed handler upgrade restarts poison attempts but cannot steal an old active receipt.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testGenerationUpgradePreservesActiveFencesAndRestartsOnlyPoisonWork(): void
+    {
+        $a = $this->consumer('acme.probe.a');
+        [$store, $database, $tables, $clock, $contracts] = $this->store([$a]);
+        $store->materialize([$a], $this->event('default', null));
+        $old = $store->claimBatch([$a], new DeterministicCanonicalEncoder(), 'replica-old', '7', 30)[0];
+        $upgraded = new EventConsumerDefinition(
+            $a->identifier(),
+            $a->eventType(),
+            [1],
+            '2.0.0',
+            $a->queue(),
+            false
+        );
+        self::assertSame([], $store->claimBatch(
+            [$upgraded],
+            new DeterministicCanonicalEncoder(),
+            'replica-new',
+            '8',
+            30,
+        ));
+        $store->fail($old, FailureClassification::PERMANENT, new RuntimeException('old handler poison'), null);
+        $replacement = $store->claimBatch([$upgraded], new DeterministicCanonicalEncoder(), 'replica-new', '8', 30);
+        self::assertCount(1, $replacement);
+        self::assertSame(1, $replacement[0]->attempts);
+        self::assertSame('2.0.0', $replacement[0]->consumer->handlerVersion());
+        $store->complete($replacement[0]);
+        $store->materialize([$upgraded], $old->event);
+        self::assertSame([], $store->claimBatch(
+            [$upgraded],
+            new DeterministicCanonicalEncoder(),
+            'replica-new',
+            '8',
+            30,
+        ));
+    }
+
+    /**
+     * Preserve recovery when a signed compatibility declaration expands without a binary version change.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testUnavailableReceiptRechecksCompatibilityWithoutSpendingAttempts(): void
+    {
+        $unsupported = new EventConsumerDefinition('acme.probe.a', 'acme.changed', [2], '1.0.0');
+        [$store, $database, $tables, $clock, $contracts] = $this->store([$unsupported], [1, 2]);
+        $store->materialize([$unsupported], $this->event('default', null));
+        self::assertSame([], $store->claimBatch([$unsupported], new DeterministicCanonicalEncoder(), 'one', '7', 30));
+        $receipt = $store->recent($unsupported->identifier())[0];
+        self::assertSame('unavailable', $receipt['status']);
+        self::assertSame(0, (int) $receipt['attempts']);
+        $compatible = new EventConsumerDefinition('acme.probe.a', 'acme.changed', [1, 2], '1.0.0');
+        self::assertSame([], $store->claimBatch([$compatible], new DeterministicCanonicalEncoder(), 'two', '8', 30));
+        $later = new DoctrineInboxStore(
+            $database,
+            $tables,
+            new DoctrineTransactionManager($database),
+            $this->clock($clock->now()->modify('+61 seconds')),
+            $contracts,
+        );
+        $leases = $later->claimBatch([$compatible], new DeterministicCanonicalEncoder(), 'two', '8', 30);
+        self::assertCount(1, $leases);
+        self::assertSame(1, $leases[0]->attempts);
+        $later->complete($leases[0]);
+        self::assertSame('completed', $later->recent($compatible->identifier())[0]['status']);
+    }
+
+    /**
+     * Prove revocation during an internal effect rolls back that effect before receipt settlement.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTrustRevokedDuringEffectPreventsCommitAndRetainsReceipt(): void
+    {
+        $definition = $this->consumer('acme.probe.a');
+        [$store, $database, $tables, $clock, $contracts] = $this->store([$definition]);
+        $store->materialize([$definition], $this->event('default', null));
+        $lease = $store->claimBatch([$definition], new DeterministicCanonicalEncoder(), 'worker', '7', 30)[0];
+        $database->executeStatement('CREATE TABLE receipt_effects (consumer_id VARCHAR(191) PRIMARY KEY)');
+        $revoked = false;
+        $guard = self::createStub(TrustedRuntimeGenerationGuard::class);
+        $guard->method('assertCurrent')->willReturnCallback(static function () use (&$revoked): void {
+            if ($revoked) {
+                throw new RuntimeException('The runtime trust was revoked.');
+            }
+        });
+        $handler = self::createMock(IntegrationEventHandler::class);
+        $handler->expects(self::once())->method('handle')->willReturnCallback(
+            static function () use ($database, $definition, &$revoked): void {
+                $database->insert('receipt_effects', ['consumer_id' => $definition->identifier()]);
+                $revoked = true;
+            },
+        );
+        $jitter = self::createStub(JitterSource::class);
+        $jitter->method('between')->willReturn(1);
+        $dispatcher = new IntegrationEventConsumerDispatcher(
+            $store,
+            $contracts,
+            new RetryPolicy($clock, $jitter),
+            $guard,
+            new DoctrineTransactionManager($database),
+            new NullLogger(),
+        );
+        $context = SystemPrincipal::issue(new \stdClass(), SystemIdentity::Worker)->context(
+            \Kumwe\Context\Value\SiteContext::fromString('default'),
+            'receipt-revocation',
+            'correlation',
+        );
+        try {
+            $dispatcher->consumeClaimed($lease, $handler, $context);
+            self::fail('A revoked consumer settled its receipt.');
+        } catch (RuntimeException $failure) {
+            self::assertStringContainsString('revoked', $failure->getMessage());
+        }
+        self::assertSame([], $database->fetchFirstColumn('SELECT consumer_id FROM receipt_effects'));
+        self::assertSame('pending', $store->recent($definition->identifier())[0]['status']);
+        self::assertSame(1, (int) $store->recent($definition->identifier())[0]['attempts']);
+    }
+
+    /**
+     * Prove scanning time cannot shorten consumer capacity and a lost consumer fence prevents renewal.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testConsumerPermitUsesExactReceiptExpiryAndMustSurviveBeforeExecution(): void
+    {
+        $definition = $this->consumer('acme.probe.a');
+        [$store, $database, $tables, $clock, $contracts] = $this->store([$definition]);
+        $store->materialize([$definition], $this->event('default', null));
+        $tick = 0;
+        $advancing = self::createStub(ClockInterface::class);
+        $advancing->method('now')->willReturnCallback(static function () use ($clock, &$tick): DateTimeImmutable {
+            return $clock->now()->modify(sprintf('+%d seconds', $tick++));
+        });
+        $pool = new DoctrineInboxStore(
+            $database,
+            $tables,
+            new DoctrineTransactionManager($database),
+            $advancing,
+            $contracts
+        );
+        $lease = $pool->claimBatch([$definition], new DeterministicCanonicalEncoder(), 'worker', '7', 30)[0];
+        $expiry = $database->fetchOne('SELECT lease_expires_at FROM receipt_integration_inbox');
+        self::assertSame(
+            $expiry,
+            $database->fetchOne('SELECT lease_expires_at FROM receipt_integration_delivery_health'),
+        );
+        $database->update(
+            $tables->raw('integration_delivery_health'),
+            ['lease_token' => Uuid::uuid7()->toString()],
+            ['consumer_id' => $definition->identifier()]
+        );
+        try {
+            $pool->renew($lease, 30, requireConsumerPermit: true);
+            self::fail('A pooled worker renewed after losing its consumer execution permit.');
+        } catch (RuntimeException $failure) {
+            self::assertStringContainsString('consumer execution permit', $failure->getMessage());
+        }
+        self::assertSame($expiry, $database->fetchOne('SELECT lease_expires_at FROM receipt_integration_inbox'));
+    }
+
+    /**
      * Build a schema/consumer catalog and isolated durable database.
      *
      * @param   list<EventConsumerDefinition>  $consumers  Trusted graph under test.
+     * @param   list<int>                      $revisions  Available signed schema revisions.
      *
      * @return  array{DoctrineInboxStore, Connection, TableNames, ClockInterface, EventContractRegistry}  Fixture.
      *
      * @since   2.0.0
      */
-    private function store(array $consumers): array
+    private function store(array $consumers, array $revisions = [1]): array
     {
         $database = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
         $tables = new TableNames($database, 'receipt_');
@@ -276,13 +510,14 @@ final class IndependentReceiptFanoutIntegrationTest extends TestCase
         (new BusinessIntegrationSdkMigration($tables))->up($database);
         (new QueueWorkerPermitsMigration($tables))->up($database);
         $encoder = new DeterministicCanonicalEncoder();
-        $contracts = new EventContractRegistry($encoder, [new EventSchemaDefinition(
+        $schemas = array_map(static fn (int $revision): EventSchemaDefinition => new EventSchemaDefinition(
             $encoder,
             'acme.changed',
-            1,
+            $revision,
             EventSensitivity::INTERNAL,
-            ['type' => 'object', 'properties' => ['id' => ['type' => 'string']]]
-        )], $consumers);
+            ['type' => 'object', 'properties' => ['id' => ['type' => 'string']]],
+        ), $revisions);
+        $contracts = new EventContractRegistry($encoder, $schemas, $consumers);
         $clock = $this->clock(new DateTimeImmutable('2026-09-24T10:00:00+00:00'));
         $store = new DoctrineInboxStore(
             $database,

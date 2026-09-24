@@ -463,6 +463,9 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
             $expiresAt = $row['expires_at'] instanceof DateTimeImmutable
                 ? $row['expires_at']
                 : (is_string($row['expires_at'] ?? null) ? new DateTimeImmutable($row['expires_at']) : null);
+            $lastSeenAt = $row['last_seen_at'] instanceof DateTimeImmutable
+                ? $row['last_seen_at']
+                : (is_string($row['last_seen_at'] ?? null) ? new DateTimeImmutable($row['last_seen_at']) : null);
             $organization = is_string($row['organization_identifier'] ?? null)
                 ? $row['organization_identifier']
                 : null;
@@ -470,6 +473,8 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
             if (
                 !$expiresAt instanceof DateTimeImmutable
                 || $expiresAt <= $verifiedAt
+                || !$lastSeenAt instanceof DateTimeImmutable
+                || $lastSeenAt <= $verifiedAt->sub(new DateInterval('PT' . $this->idleSeconds . 'S'))
                 || ($row['site_identifier'] ?? null) !== $intent->siteIdentifier
                 || $organization !== $intent->organizationIdentifier
                 || $workspace !== $intent->workspaceIdentifier

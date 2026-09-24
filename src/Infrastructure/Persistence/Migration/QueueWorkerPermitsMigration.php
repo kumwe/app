@@ -90,8 +90,13 @@ final readonly class QueueWorkerPermitsMigration implements RepeatableMigration
         $permits->addColumn('consumer_id', Types::STRING, ['length' => 191, 'notnull' => false]);
         $permits->addColumn('lease_token', Types::GUID, ['notnull' => false]);
         $permits->addColumn('lease_expires_at', Types::DATETIME_IMMUTABLE, ['notnull' => false]);
+        $permits->addColumn('last_claimed_at', Types::DATETIME_IMMUTABLE, ['notnull' => false]);
         $permits->addPrimaryKeyConstraint(PrimaryKeyConstraint::editor()
             ->setUnquotedColumnNames('queue_id', 'slot_number')->create());
+        $permits->addIndex(
+            ['queue_id', 'lease_token'],
+            'idx_queue_lease_' . substr(hash('sha256', $this->tables->raw('job_queue_permits')), 0, 16)
+        );
         $turns = new Table($this->tables->raw('integration_delivery_turns'));
         $turns->addColumn('consumer_id', Types::STRING, ['length' => 191]);
         $turns->addColumn('scope_checksum', Types::STRING, ['length' => 64]);
@@ -108,7 +113,16 @@ final readonly class QueueWorkerPermitsMigration implements RepeatableMigration
         $jobs->addColumn('claim_count', Types::BIGINT, ['default' => 0]);
         $jobs->addPrimaryKeyConstraint(PrimaryKeyConstraint::editor()
             ->setUnquotedColumnNames('queue_id', 'scope_key')->create());
-        foreach ([$permits, $turns, $jobs] as $table) {
+        $health = new Table($this->tables->raw('integration_delivery_health'));
+        $health->addColumn('consumer_id', Types::STRING, ['length' => 191]);
+        $health->addColumn('handler_version', Types::STRING, ['length' => 64]);
+        $health->addColumn('lease_token', Types::GUID, ['notnull' => false]);
+        $health->addColumn('lease_expires_at', Types::DATETIME_IMMUTABLE, ['notnull' => false]);
+        $health->addColumn('blocked_until', Types::DATETIME_IMMUTABLE, ['notnull' => false]);
+        $health->addColumn('failure_streak', Types::INTEGER, ['default' => 0]);
+        $health->addPrimaryKeyConstraint(PrimaryKeyConstraint::editor()
+            ->setUnquotedColumnNames('consumer_id')->create());
+        foreach ([$permits, $turns, $jobs, $health] as $table) {
             if (!$database->createSchemaManager()->tablesExist([$table->getObjectName()->toString()])) {
                 foreach ($database->getDatabasePlatform()->getCreateTableSQL($table) as $sql) {
                     $database->executeStatement($sql);
@@ -116,18 +130,32 @@ final readonly class QueueWorkerPermitsMigration implements RepeatableMigration
             }
         }
         $manager = $database->createSchemaManager();
+        // Preserve repeatability when a deployment stopped after creating the permit table.
+        $before = $manager->introspectTableByUnquotedName($this->tables->raw('job_queue_permits'));
+        $after = clone $before;
+        if (!$after->hasColumn('last_claimed_at')) {
+            $after->addColumn('last_claimed_at', Types::DATETIME_IMMUTABLE, ['notnull' => false]);
+        }
+        $leaseIndex = 'idx_queue_lease_' . substr(hash('sha256', $this->tables->raw('job_queue_permits')), 0, 16);
+        if (!$after->hasIndex($leaseIndex)) {
+            $after->addIndex(['queue_id', 'lease_token'], $leaseIndex);
+        }
+        $difference = $manager->createComparator()->compareTables($before, $after);
+        foreach ($database->getDatabasePlatform()->getAlterTableSQL($difference) as $sql) {
+            $database->executeStatement($sql);
+        }
         $before = $manager->introspectTableByUnquotedName($this->tables->raw('jobs'));
-        if (!$before->hasColumn('worker_scope')) {
-            $after = clone $before;
+        $after = clone $before;
+        if (!$after->hasColumn('worker_scope')) {
             $after->addColumn('worker_scope', Types::STRING, ['length' => 64, 'notnull' => false]);
-            $after->addIndex(
-                ['queue', 'worker_scope', 'status', 'available_at'],
-                'idx_job_turn_' . substr(hash('sha256', $this->tables->raw('jobs')), 0, 16)
-            );
-            $difference = $manager->createComparator()->compareTables($before, $after);
-            foreach ($database->getDatabasePlatform()->getAlterTableSQL($difference) as $sql) {
-                $database->executeStatement($sql);
-            }
+        }
+        $turnIndex = 'idx_job_turn_' . substr(hash('sha256', $this->tables->raw('jobs')), 0, 16);
+        if (!$after->hasIndex($turnIndex)) {
+            $after->addIndex(['queue', 'worker_scope', 'status', 'available_at'], $turnIndex);
+        }
+        $difference = $manager->createComparator()->compareTables($before, $after);
+        foreach ($database->getDatabasePlatform()->getAlterTableSQL($difference) as $sql) {
+            $database->executeStatement($sql);
         }
         // Resume bounded backfill after a crash. The old ownership table remains the authority source.
         $fairness = new DoctrineJobQueueFairness($database, $this->tables);

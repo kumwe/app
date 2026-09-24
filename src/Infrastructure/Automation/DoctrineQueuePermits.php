@@ -80,19 +80,29 @@ final readonly class DoctrineQueuePermits
             if ($slots !== [] && $this->integer($slots[0]['runtime_generation']) > $policy->runtimeGeneration) {
                 throw new RuntimeException('A stale runtime cannot republish queue permits.');
             }
+            if (
+                $slots !== [] && $this->integer($slots[0]['runtime_generation']) === $policy->runtimeGeneration
+                && $this->integer($slots[0]['maximum_in_flight']) !== $policy->maximumInFlight
+            ) {
+                throw new RuntimeException('A queue policy changed without a runtime generation change.');
+            }
             $adopt = [];
             if ($slots === []) {
-                $adopt = $this->database->fetchAllAssociative(sprintf(
+                $jobs = $this->database->fetchAllAssociative(sprintf(
                     "SELECT 'job' AS work_kind, id AS work_id, '' AS consumer_id, "
                     . 'lease_token, lease_expires_at FROM %s '
-                    . "WHERE queue = ? AND status = 'reserved' AND lease_expires_at > ? UNION ALL "
-                    . "SELECT 'inbox', event_id, consumer_id, lease_token, lease_expires_at FROM %s "
-                    . "WHERE queue = ? AND status = 'reserved' AND lease_expires_at > ?",
+                    . "WHERE queue = ? AND status = 'reserved' AND lease_expires_at > ? LIMIT 1025",
                     $this->tables->quoted('jobs'),
+                ), [$policy->queue, $now], [Types::STRING, Types::DATETIME_IMMUTABLE]);
+                // Separate bounded reads also preserve legacy VARCHAR job tokens on PostgreSQL;
+                // UNION would require coercing them to the inbox's UUID column type.
+                $inbox = $this->database->fetchAllAssociative(sprintf(
+                    "SELECT 'inbox' AS work_kind, event_id AS work_id, consumer_id, lease_token, "
+                    . "lease_expires_at FROM %s WHERE queue = ? AND status = 'reserved' "
+                    . 'AND lease_expires_at > ? LIMIT 1025',
                     $this->tables->quoted('integration_inbox'),
-                ), [$policy->queue, $now, $policy->queue, $now], [
-                    Types::STRING, Types::DATETIME_IMMUTABLE, Types::STRING, Types::DATETIME_IMMUTABLE,
-                ]);
+                ), [$policy->queue, $now], [Types::STRING, Types::DATETIME_IMMUTABLE]);
+                $adopt = [...$jobs, ...$inbox];
             }
             $size = max($policy->maximumInFlight, count($slots), count($adopt));
             if ($size > 1024) {
@@ -177,9 +187,9 @@ final readonly class DoctrineQueuePermits
         }
         $this->database->update($this->tables->raw('job_queue_permits'), [
             'work_kind' => $kind, 'work_id' => $id, 'consumer_id' => $consumerId, 'lease_token' => $token,
-            'lease_expires_at' => $expiresAt,
+            'lease_expires_at' => $expiresAt, 'last_claimed_at' => $now,
         ], ['queue_id' => $policy->queue, 'slot_number' => $row['slot_number']], [
-            'lease_expires_at' => Types::DATETIME_IMMUTABLE,
+            'lease_expires_at' => Types::DATETIME_IMMUTABLE, 'last_claimed_at' => Types::DATETIME_IMMUTABLE,
         ]);
         return true;
     }

@@ -317,6 +317,53 @@ final class AuditTamperEvidenceTest extends TestCase
         self::assertTrue($this->verifier()->verify($this->context())->intact());
     }
 
+    /**
+     * Keep credentials out of the database while sealing the exact redacted event into the audit chain.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testCredentialsAreRedactedBeforeStorageAndAnchoring(): void
+    {
+        $id = Uuid::uuid7()->toString();
+        $metadata = [
+            'request_id' => 'request-safe',
+            'affected_count' => 3,
+            'nested' => ['API-Key' => 'secret-api-value', 'safe' => ['Authorization' => 'Bearer secret-value']],
+            'items' => [['PASSWORD' => 'secret-password'], ['value' => str_repeat('opaque', 30)]],
+        ];
+        $event = new AuditEvent(
+            $id,
+            $this->clock->now(),
+            'actor-1',
+            'identity.user.changed',
+            'identity.user',
+            'user-1',
+            'success',
+            $metadata,
+        );
+        $this->recorder->record($event);
+        $stored = $this->database->fetchOne(sprintf(
+            'SELECT metadata FROM %s WHERE id = ?',
+            $this->tables->quoted('audit_events'),
+        ), [$id]);
+        self::assertIsString($stored);
+        $decoded = json_decode($stored, true, 32, JSON_THROW_ON_ERROR);
+        self::assertSame('request-safe', $decoded['request_id']);
+        self::assertSame(3, $decoded['affected_count']);
+        self::assertSame(AuditMetadataRedactor::PLACEHOLDER, $decoded['nested']['API-Key']);
+        self::assertSame(AuditMetadataRedactor::PLACEHOLDER, $decoded['nested']['safe']['Authorization']);
+        self::assertSame(AuditMetadataRedactor::PLACEHOLDER, $decoded['items'][0]['PASSWORD']);
+        self::assertSame(AuditMetadataRedactor::PLACEHOLDER, $decoded['items'][1]['value']);
+        self::assertStringNotContainsString('secret-', $stored);
+        self::assertStringNotContainsString(str_repeat('opaque', 30), $stored);
+        self::assertSame($metadata, $event->metadata(), 'The immutable event value is never mutated.');
+        $this->clock->advance('+2 hours');
+        self::assertSame(1, $this->anchorWriter()->anchor($this->context()));
+        self::assertTrue($this->verifier()->verify($this->context())->intact());
+    }
+
     public function testRetentionArchivesAnchorsAndPrunesAgedRowsAndStaysVerifiable(): void
     {
         $this->record(3);
