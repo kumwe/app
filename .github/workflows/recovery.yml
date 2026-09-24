@@ -1,0 +1,91 @@
+name: Native database recovery
+
+on:
+  pull_request:
+    paths:
+      - 'tools/*backup*.sh'
+      - 'tools/*restore*.sh'
+      - 'tools/recovery-*.sh'
+      - 'tests/Support/*recovery*'
+      - 'tests/Support/backup-tamper-drill.sh'
+      - 'tests/Unit/Tools/RecoveryToolsTest.php'
+      - '.github/workflows/recovery.yml'
+      - 'docker/php/Dockerfile'
+  push:
+    branches: [master]
+  merge_group:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: recovery-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  native-recovery:
+    name: Native replay (${{ matrix.driver }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        driver: [mariadb, mysql, pgsql]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install signing and reference transport
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends jq minisign restic
+      - name: Install matching native clients
+        if: matrix.driver != 'mysql'
+        uses: ./.github/actions/database-client
+        with:
+          driver: ${{ matrix.driver }}
+      - name: Install isolated MariaDB server
+        if: matrix.driver == 'mariadb'
+        run: sudo apt-get install --yes --no-install-recommends mariadb-server
+      - name: Pull matching MySQL 8.4 server and clients
+        if: matrix.driver == 'mysql'
+        run: docker pull mysql:8.4
+      - name: Install isolated PostgreSQL 17 server
+        if: matrix.driver == 'pgsql'
+        run: sudo apt-get install --yes --no-install-recommends postgresql-17
+      - name: Recover committed before and after states and exercise refusals
+        shell: bash
+        env:
+          KUMWE_RECOVERY_EVIDENCE_DIR: ${{ runner.temp }}/native-recovery
+          KUMWE_RECOVERY_MEASURE_RESTIC: 'yes'
+          KUMWE_RECOVERY_MYSQL_IMAGE: ${{ matrix.driver == 'mysql' && 'mysql:8.4' || '' }}
+        run: |
+          mkdir "$KUMWE_RECOVERY_EVIDENCE_DIR"
+          # Each lane owns fresh clusters on separate ports. PostgreSQL runs as the unprivileged
+          # runner; MySQL needs root ownership for matching official-image server/client binaries.
+          privilege=()
+          if [[ '${{ matrix.driver }}' == mysql ]]; then privilege=(sudo); fi
+          "${privilege[@]}" env PATH="$PATH" \
+            KUMWE_RECOVERY_EVIDENCE_DIR="$KUMWE_RECOVERY_EVIDENCE_DIR" \
+            KUMWE_RECOVERY_MEASURE_RESTIC="$KUMWE_RECOVERY_MEASURE_RESTIC" \
+            KUMWE_RECOVERY_MYSQL_IMAGE="$KUMWE_RECOVERY_MYSQL_IMAGE" \
+            bash tests/Support/recovery-native-drill.sh '${{ matrix.driver }}'
+      - name: Collect secret-free evidence only
+        if: always()
+        run: |
+          mkdir "$RUNNER_TEMP/recovery-report"
+          for name in native-evidence.json pitr.log archive-gap.log gtid-overlap.log tamper.log interruption.log retention.log cycle.log; do
+            if sudo test -f "$RUNNER_TEMP/native-recovery/$name"; then
+              sudo cp "$RUNNER_TEMP/native-recovery/$name" "$RUNNER_TEMP/recovery-report/$name"
+            fi
+          done
+          if sudo test -f "$RUNNER_TEMP/native-recovery/dedup/measurement.json"; then
+            sudo cp "$RUNNER_TEMP/native-recovery/dedup/measurement.json" "$RUNNER_TEMP/recovery-report/dedup.json"
+          fi
+          sudo chown -R "$(id -u):$(id -g)" "$RUNNER_TEMP/recovery-report"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: recovery-${{ matrix.driver }}
+          path: ${{ runner.temp }}/recovery-report
+          retention-days: 14
+          if-no-files-found: error

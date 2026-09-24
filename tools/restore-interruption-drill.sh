@@ -12,8 +12,7 @@
 #
 # It is an operator drill rather than a continuous-integration step because it needs the database dump
 # and restore clients on the host, a scratch database it may drop and recreate, and the privilege to
-# do so — none of which the unit or integration jobs have. Run it against a disposable database when
-# qualifying a release or after changing anything in tools/backup.sh or tools/restore.sh.
+# do so — none of which the unit or integration jobs have. Run it against a disposable database after changing backup or restore behavior. This is runtime recovery evidence, not release qualification.
 #
 # Usage:
 #   KUMWE_DRILL_DB_DRIVER=mariadb|mysql|pgsql \
@@ -114,7 +113,20 @@ echo 'Refused a target this restore did not create, and left it untouched.'
 # The kill point is the first moment a target is moved into place, which is the state the clean-target
 # precondition used to make unrecoverable: the database is populated and some, but not all, of the file
 # targets exist.
-setsid bash "${script_directory}/restore.sh" "$backup_path" > "$work_root/first-run.log" 2>&1 &
+# Interpose only the OS move command in this drill, leaving production restore code unchanged.
+# Killing immediately after the first real publication avoids racing a polling interval on tiny fixtures.
+mkdir "$work_root/bin"
+export KUMWE_DRILL_REAL_MV="$(command -v mv)"
+cat > "$work_root/bin/mv" <<'MOVE'
+#!/usr/bin/env bash
+set -Eeuo pipefail
+"$KUMWE_DRILL_REAL_MV" "$@"
+if [[ "${!#}" == "$KUMWE_RESTORE_MEDIA_DIR" ]]; then
+    kill -KILL -- "-$PPID"
+fi
+MOVE
+chmod 0700 "$work_root/bin/mv"
+PATH="$work_root/bin:$PATH" setsid bash "${script_directory}/restore.sh" "$backup_path" > "$work_root/first-run.log" 2>&1 &
 restore_pid=$!
 deadline=$(( SECONDS + 300 ))
 killed=0

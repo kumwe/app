@@ -241,6 +241,37 @@ EXPOSE 9000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
     CMD ["php-fpm", "-t"]
 
+# Operator recovery images are opt-in targets; application FPM keeps its existing dependencies.
+# All tools/ siblings arrive together through the vendor copy above. Run as the volume owner;
+# PostgreSQL physical recovery must never run as root and uses a separate disposable PGDATA.
+FROM runtime AS recovery-tools
+
+USER root
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends jq minisign restic \
+    && rm -rf /var/lib/apt/lists/*
+USER www-data
+HEALTHCHECK NONE
+ENTRYPOINT ["/bin/bash"]
+CMD ["tools/restore-verify.sh"]
+
+FROM recovery-tools AS recovery-mariadb
+
+USER root
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends mariadb-client \
+    && rm -rf /var/lib/apt/lists/*
+USER www-data
+
+FROM recovery-tools AS recovery-postgres
+
+USER root
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends postgresql-17 \
+    && rm -rf /var/lib/apt/lists/*
+ENV PATH="/usr/lib/postgresql/17/bin:${PATH}"
+USER www-data
+
 FROM ${NGINX_IMAGE} AS web
 
 COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
