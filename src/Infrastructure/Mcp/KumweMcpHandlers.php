@@ -14,6 +14,7 @@ use Kumwe\Access\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\App\Application\Automation\AutomationManagementService;
+use Kumwe\Content\Application\ContentModelNotFound;
 use Kumwe\Content\Application\ContentNotFound;
 use Kumwe\Content\Application\ContentRecord;
 use Kumwe\App\Content\Application\ContentModelService;
@@ -41,6 +42,10 @@ use Kumwe\BusinessSchema\Domain\SchemaPlanStep;
 use Kumwe\App\Extension\Domain\ThemeSurface;
 use Kumwe\App\Site\Application\SiteSettings;
 use Kumwe\App\Studio\Application\Authoring\StudioMachineAuthoringGateway;
+use Kumwe\App\Studio\Application\Composition\StudioCompositionThemeMismatch;
+use Kumwe\App\Studio\Application\Projection\StudioProjectionRejected;
+use Kumwe\App\Studio\Application\Composition\StudioContentComposition;
+use Kumwe\App\Studio\Application\Composition\StudioContentCompositionService;
 use Kumwe\App\Studio\Application\Authoring\StudioMachineAuthoringOperation;
 use Kumwe\App\Studio\Application\Authoring\StudioMachineAuthoringRefused;
 use Kumwe\App\Studio\Domain\Authoring\StudioAuthoringIntent;
@@ -115,6 +120,8 @@ final readonly class KumweMcpHandlers
      *         tool answers from; null only in isolated tests that exercise no Business Security tool.
      * @param ?ContentModelService $models Content types and workflows the model tools list,
      *         read, create and update; null only in isolated tests that exercise no model tool.
+     * @param ?StudioContentCompositionService $compositions Blueprint compositions the composition tools read
+     *         and provision; null only in isolated tests that exercise no composition tool.
      *
      * @since  2.0.0
      */
@@ -142,6 +149,7 @@ final readonly class KumweMcpHandlers
         private ?MessageOverrideService $wording = null,
         private ?BusinessSecurityAdministrationService $businessSecurity = null,
         private ?ContentModelService $models = null,
+        private ?StudioContentCompositionService $compositions = null,
     ) {
     }
 
@@ -183,6 +191,7 @@ final readonly class KumweMcpHandlers
             wording: $this->wording,
             businessSecurity: $this->businessSecurity,
             models: $this->models,
+            compositions: $this->compositions,
         );
     }
 
@@ -260,6 +269,7 @@ final readonly class KumweMcpHandlers
             wording: $this->wording,
             businessSecurity: $this->businessSecurity,
             models: $this->models,
+            compositions: $this->compositions,
         );
     }
 
@@ -3810,6 +3820,76 @@ final readonly class KumweMcpHandlers
     }
 
     /**
+     * Read the Blueprint composition of one Content type version, as the composition screen does.
+     *
+     * @param   string  $contentType  Content type UUID.
+     * @param   int     $version      Published Content type version.
+     *
+     * @return  array<string, mixed>  Coordinates, model, binding and the exact Blueprint head.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `content.read` or `studio.mode.blueprint`.
+     * @throws  ContentModelNotFound  When no composition is provisioned or the model is unavailable, answered as
+     *          `resource.not_found`.
+     * @throws  \DomainException  When the Blueprint is locked to another published theme.
+     *
+     * @since   2.0.0
+     */
+    public function getStudioComposition(string $contentType, int $version): array
+    {
+        $this->require('studio.mode.blueprint');
+        $this->require('content.read');
+
+        return $this->studioComposition(
+            $contentType,
+            $version,
+            fn (StudioContentCompositionService $compositions): ?StudioContentComposition => $compositions->find(
+                $this->context(),
+                $contentType,
+                $version,
+            ),
+        );
+    }
+
+    /**
+     * Provision the empty Blueprint draft of one Content type version under a replay-safe identity.
+     *
+     * @param   string  $operationId  Idempotency key this write is fenced on.
+     * @param   string  $contentType  Content type UUID.
+     * @param   int     $version      Published Content type version.
+     *
+     * @return  array<string, mixed>  The provisioned composition, the one already bound, or the stored copy.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `content.read` or `studio.mode.blueprint`.
+     * @throws  ContentModelNotFound  When the model is unavailable, answered as `resource.not_found`.
+     * @throws  \DomainException  When the Blueprint is locked to another published theme.
+     *
+     * @since   2.0.0
+     */
+    public function provisionStudioComposition(string $operationId, string $contentType, int $version): array
+    {
+        $this->require('studio.mode.blueprint');
+        $this->require('content.read');
+        $this->preauthorize($operationId, 'content.read', AuthorizationResource::item('content_type', $contentType));
+
+        return $this->mutations->run(
+            $this->context($operationId),
+            'studio.composition.provision',
+            $operationId,
+            compact('contentType', 'version'),
+            fn (): array => $this->studioComposition(
+                $contentType,
+                $version,
+                fn (StudioContentCompositionService $service): StudioContentComposition => $service->provision(
+                    $this->context($operationId),
+                    $contentType,
+                    $version,
+                    StudioContentCompositionService::RENDERERS,
+                ),
+            ),
+        );
+    }
+
+    /**
      * Execute one ordinary declared action; a high-impact attempt fails closed without browser step-up.
      *
      * @param   string                $operationId        Caller-chosen stable operation identity.
@@ -4631,6 +4711,51 @@ final readonly class KumweMcpHandlers
             'updated_at' => $draft->updatedAt->format(DATE_ATOM),
             'definition' => $draft->definition->toArray(),
         ];
+    }
+
+    /**
+     * Run one composition read or provisioning and project it as the REST document.
+     *
+     * A missing, unreadable or unprojectable model answers exactly as a composition never provisioned, as REST
+     * and the Studio host do, and a Blueprint locked to another published theme is the screen's refusal.
+     *
+     * @param   string                                                                $contentType  Type UUID.
+     * @param   int                                                                   $version      Type version.
+     * @param   callable(StudioContentCompositionService): ?StudioContentComposition  $operation    Service call.
+     *
+     * @return  array<string, mixed>  Coordinates, model, binding and the exact Blueprint head.
+     *
+     * @throws  ContentModelNotFound  When there is no composition to answer, answered as `resource.not_found`.
+     * @throws  \DomainException  When the Blueprint is locked to another published theme.
+     *
+     * @since   2.0.0
+     */
+    private function studioComposition(string $contentType, int $version, callable $operation): array
+    {
+        try {
+            $composition = $operation($this->studioCompositions());
+        } catch (StudioCompositionThemeMismatch $mismatch) {
+            throw new \DomainException('The Blueprint is locked to a different published theme.', 0, $mismatch);
+        } catch (StudioProjectionRejected) {
+            $composition = null;
+        }
+
+        return ($composition ?? throw new ContentModelNotFound('composition', $contentType, $version))->toArray();
+    }
+
+    /**
+     * Resolve the Blueprint composition service this server was composed with.
+     *
+     * @return  StudioContentCompositionService  Composition service.
+     *
+     * @throws  InvalidArgumentException  When the server was composed without compositions.
+     *
+     * @since   2.0.0
+     */
+    private function studioCompositions(): StudioContentCompositionService
+    {
+        return $this->compositions
+            ?? throw new InvalidArgumentException('Studio compositions are unavailable on this server.');
     }
 
     /**

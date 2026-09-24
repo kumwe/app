@@ -1,7 +1,7 @@
 {
     "format": "kumwe-rest-machine-contract-snapshot-v1",
     "generation": "1.1.0",
-    "openapi_semantic_sha256": "b024dbcdadc7e6981aeeecd74e3b2f5fa37c1927f35a0d5635c36303bf26cc45",
+    "openapi_semantic_sha256": "37881d8f00f902beb6fa441cf786d5f3e47de4916bff9403b667b56d0a83951b",
     "operations": {
         "activateExtension": {
             "contract_sha256": "b45490458cd5ee55cbe702d67b307ae5a854986407f411ca3b1cdbc33a8acc72",
@@ -458,6 +458,11 @@
             "method": "POST",
             "path": "/api/v1/plans"
         },
+        "provisionContentComposition": {
+            "contract_sha256": "f04e3843faf32b02b64cb7b6e39e606e3f1cfae2da4914c326d54f7b4c1d35d6",
+            "method": "POST",
+            "path": "/api/v1/content-types/{id}/versions/{version}/composition"
+        },
         "publishBusinessDefinition": {
             "contract_sha256": "70844eff4519e4144cb0a328c131e9da282cc697e203b7ca9f31915566084a49",
             "method": "POST",
@@ -492,6 +497,11 @@
             "contract_sha256": "e8251533260b74975d5cc7a68aa233421bd898ab20232e7f70617749e5e9e479",
             "method": "GET",
             "path": "/api/v1/business-security"
+        },
+        "readContentComposition": {
+            "contract_sha256": "f5b89b174acbd08a4461bd980e8d25fbd3d16c35d7ae1f714e42b5cb9b6668c2",
+            "method": "GET",
+            "path": "/api/v1/content-types/{id}/versions/{version}/composition"
         },
         "readOpenApiContract": {
             "contract_sha256": "cfbc87948a21322e29cc1d1668d14375afa36739340227c916d7190409fce048",
@@ -664,7 +674,7 @@
             "path": "/api/v1/wording/overrides/withdraw"
         }
     },
-    "problem_registry_sha256": "f8b46469dc334143723273d5370fd78151b605cf6e74a96df7e5d72e967e1719",
+    "problem_registry_sha256": "e546386cdb0a2be6cfa4b1f0c809bc8e61619243b1baede53a4b51315b19a50a",
     "schemas": {
         "ApiDiscovery": "bd7fcdf121a76fbf14d16fb2ebf547aafc908e909b437c1448911cb5abaf420a",
         "BusinessDefinitionCatalog": "70832ee9ba9d9aeaca4d70c8a85ccb1f0559b87f77e3efde8b34f78f4ce2131e",
@@ -778,7 +788,7 @@
         "PostingPeriodReopenInput": "2aec9bde8606ef73edfebb6034d791ab9eca6a81ee60b6082f3cbef5fb61f846",
         "PresentationColors": "164a5e820e0758077e13ef0467a529ab8621c26d7e693b1b1541a290622292ca",
         "PresentationScheme": "5a387bb0bfeb2dd6d746334923fc0a5e68d6f6fb53bbbb403b7123b3bcb5f842",
-        "ProblemDetails": "a9302b707830c35ee85c03a9ebfc1e00fb6e27e6da04cfbb4e0ae630837ca848",
+        "ProblemDetails": "07c7df495ede5fd612338fa32c7c83d35be8a87090e09b55df4dd2ca1f3783ea",
         "Readiness": "c719767e0a09695339595c1b5973b3ad3e7ab0a9fd7ecab024d2c0f12d0610aa",
         "RoleCollection": "2d4b4663fede59f7f8e3ad7cadf9ed34a45b3b6c9517bffa17fb2c7a803219d2",
         "RoleCreate": "cc99141592a35a30c2333e94c53f0c7e145fe11ab932fc2b19df348b06adf604",
@@ -797,6 +807,7 @@
         "StudioAuthoringOperationRequest": "152b479d8d369b6924d332914aae72e016ed0b1637dfcb6eeb5cb88dd442f1e2",
         "StudioAuthoringOperationResult": "d5b9d7680c14e74f230bc9aa8e564dd8d16791632e5cba1f9d7f90cd57eb2b98",
         "StudioAuthoringSession": "603ec58606ee1136e431a6fa3faddbad3cd254942d9bacff1967515b0645c101",
+        "StudioComposition": "a429e840f32a5c3760236065240a7d9ac8f156c4fadd800b0a7ae0657a1c5a33",
         "TokenCollection": "d0eb7a5ab57116f9e03c8eb4ce19cf879d106adf432f989e18749c2ebc9468de",
         "TokenCreate": "bf88a50599290e9255ba87a800bfb8d01efda88c4ffb371b0b1232c3e4704e7a",
         "TokenRecord": "7520a5016e1cf96492c5e13a0a803e3601af19616737433e5d4efa301c1e6015",

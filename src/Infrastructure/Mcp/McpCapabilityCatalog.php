@@ -164,7 +164,18 @@ final class McpCapabilityCatalog
         'kumwe_business_definition_deprecate' => [McpRiskClass::ScopedWrite, self::VIA_DEFINITIONS],
         'kumwe_business_definition_reject' => [McpRiskClass::Destructive, self::VIA_DEFINITIONS],
         'kumwe_business_relation_read' => [McpRiskClass::Read, self::VIA_RECORDS],
+        'kumwe_studio_composition_get' => [McpRiskClass::Read, self::VIA_COMPOSITION],
+        'kumwe_studio_composition_provision' => [McpRiskClass::ScopedWrite, self::VIA_COMPOSITION],
     ];
+
+    /**
+     * Non-MCP route for the Blueprint composition tools.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const string VIA_COMPOSITION = 'Administrator console: Content models, Compose, '
+        . '/api/v1/content-types/{id}/versions/{version}/composition, or bin/kumwe studio-composition.';
 
     /**
      * Non-MCP route for the content type and workflow tools.
@@ -1584,6 +1595,39 @@ final class McpCapabilityCatalog
             ...$this->businessBulkTools(),
             ...$this->editorialTools(),
             ...$this->definitionLifecycleTools(),
+            $this->tool(
+                'kumwe_studio_composition_get',
+                'Read a Blueprint composition',
+                'Read the Blueprint composition of one Content type version, with its document and dependencies.',
+                'getStudioComposition',
+                'studio.mode.blueprint',
+                true,
+                false,
+                true,
+                [
+                    'contentType' => ['type' => 'string', 'format' => 'uuid'],
+                    'version' => ['type' => 'integer', 'minimum' => 1],
+                ],
+                ['type' => 'object', 'additionalProperties' => true],
+                ['contentType', 'version'],
+            ),
+            $this->tool(
+                'kumwe_studio_composition_provision',
+                'Provision a Blueprint composition',
+                'Provision the empty Blueprint draft of one Content type version, or answer the one bound.',
+                'provisionStudioComposition',
+                'studio.mode.blueprint',
+                false,
+                false,
+                true,
+                [
+                    'operationId' => $this->operationId(),
+                    'contentType' => ['type' => 'string', 'format' => 'uuid'],
+                    'version' => ['type' => 'integer', 'minimum' => 1],
+                ],
+                ['type' => 'object', 'additionalProperties' => true],
+                ['operationId', 'contentType', 'version'],
+            ),
         ];
     }
 

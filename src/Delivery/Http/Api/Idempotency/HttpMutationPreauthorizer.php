@@ -137,6 +137,15 @@ final readonly class HttpMutationPreauthorizer
             $this->assert($context, $action, AuthorizationResource::item('content', $id));
             return;
         }
+        $composition = '#^/api/v1/content-types/([^/]+)/versions/[1-9][0-9]*/composition$#D';
+        if ($method === 'POST' && preg_match($composition, $path, $match) === 1) {
+            $this->assert(
+                $context,
+                'content.read',
+                AuthorizationResource::item('content_type', rawurldecode($match[1])),
+            );
+            return;
+        }
         if ($method === 'POST' && $path === '/api/v1/media') {
             $this->assert($context, 'content.update', AuthorizationResource::collection('media'));
             return;

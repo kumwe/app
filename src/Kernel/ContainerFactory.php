@@ -362,6 +362,7 @@ use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringContextReposito
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringService;
 use Kumwe\App\Studio\Application\Authoring\StudioMachineAuthoringGateway;
 use Kumwe\App\Delivery\Http\Api\Studio\StudioAuthoringApiHandler;
+use Kumwe\App\Delivery\Http\Api\Studio\StudioCompositionApiHandler;
 use Kumwe\App\Delivery\Http\Api\Studio\StudioAuthoringProblemMapper;
 use Kumwe\App\Studio\Application\Authoring\HostedContentStudioAuthoringConfigurationProvider;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringTargetResolver;
@@ -567,6 +568,7 @@ use Kumwe\App\Delivery\Console\Command\MediaCommand;
 use Kumwe\App\Delivery\Console\Command\WordingCommand;
 use Kumwe\App\Delivery\Console\Command\BusinessSecurityCommand;
 use Kumwe\App\Delivery\Console\Command\BusinessBulkCommand;
+use Kumwe\App\Delivery\Console\Command\StudioCompositionCommand;
 use Kumwe\App\Delivery\Console\Command\StudioAuthoringCommand;
 use Kumwe\App\Delivery\Console\Output;
 use Kumwe\App\Delivery\Console\StreamOutput;
@@ -4787,6 +4789,12 @@ final class ContainerFactory
             self::service($container, MessageOverrideService::class),
             self::service($container, ProblemDetailsResponseFactory::class),
         ), true);
+        $container->share(StudioCompositionApiHandler::class, static fn (
+            Container $container,
+        ): StudioCompositionApiHandler => new StudioCompositionApiHandler(
+            self::service($container, StudioContentCompositionService::class),
+            self::service($container, ProblemDetailsResponseFactory::class),
+        ), true);
         $container->share(BusinessSecurityApiHandler::class, static fn (
             Container $container,
         ): BusinessSecurityApiHandler => new BusinessSecurityApiHandler(
@@ -6320,6 +6328,20 @@ final class ContainerFactory
             'api.v1.wording.overrides.withdraw',
         ), 'localization.overrides.manage');
         self::apiRoute($application->get(
+            '/api/v1/content-types/{id}/versions/{version}/composition',
+            StudioCompositionApiHandler::class,
+            'api.v1.content-types.composition.read',
+        ), 'content.read', 'studio.mode.blueprint');
+        self::apiRoute($application->post(
+            '/api/v1/content-types/{id}/versions/{version}/composition',
+            [
+                RequireIdempotencyKeyMiddleware::class,
+                PersistentIdempotencyMiddleware::class,
+                StudioCompositionApiHandler::class,
+            ],
+            'api.v1.content-types.composition.provision',
+        ), 'content.read', 'studio.mode.blueprint');
+        self::apiRoute($application->get(
             '/api/v1/business-security',
             BusinessSecurityApiHandler::class,
             'api.v1.business-security.read',
@@ -7055,6 +7077,12 @@ final class ContainerFactory
             self::service($container, MessageOverrideService::class),
             self::service($container, ConsoleAuthorizer::class),
         ), true);
+        $container->share(StudioCompositionCommand::class, static fn (
+            Container $container,
+        ): StudioCompositionCommand => new StudioCompositionCommand(
+            self::service($container, StudioContentCompositionService::class),
+            self::service($container, ConsoleAuthorizer::class),
+        ), true);
         $container->share(BusinessBulkCommand::class, static fn (
             Container $container,
         ): BusinessBulkCommand => new BusinessBulkCommand(
@@ -7140,6 +7168,7 @@ final class ContainerFactory
                 self::service($container, WordingCommand::class),
                 self::service($container, BusinessSecurityCommand::class),
                 self::service($container, BusinessBulkCommand::class),
+                self::service($container, StudioCompositionCommand::class),
                 self::service($container, McpServeCommand::class),
             ], self::service($container, Output::class)), true);
     }
@@ -7214,6 +7243,7 @@ final class ContainerFactory
                 wording: self::service($container, MessageOverrideService::class),
                 businessSecurity: self::service($container, BusinessSecurityAdministrationService::class),
                 models: self::service($container, ContentModelService::class),
+                compositions: self::service($container, StudioContentCompositionService::class),
             ), true);
         $container->share(KumweMcpServerFactory::class, static fn (Container $container): KumweMcpServerFactory =>
             new KumweMcpServerFactory(

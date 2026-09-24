@@ -24,6 +24,7 @@ use Kumwe\App\Localization\Application\MessageOverrideService;
 use Kumwe\App\Media\Application\MediaService;
 use Kumwe\App\Navigation\Application\NavigationService;
 use Kumwe\App\Site\Infrastructure\Persistence\DoctrineSiteSettings;
+use Kumwe\App\Studio\Application\Composition\StudioContentCompositionService;
 use ReflectionClass;
 
 final class McpHandlersFixture
@@ -35,6 +36,7 @@ final class McpHandlersFixture
         ?MessageOverrideService $wording = null,
         ?BusinessSecurityAdministrationService $businessSecurity = null,
         ?ContentModelService $models = null,
+        ?StudioContentCompositionService $compositions = null,
     ): KumweMcpHandlers {
         return new KumweMcpHandlers(
             $catalog,
@@ -57,6 +59,7 @@ final class McpHandlersFixture
             wording: $wording,
             businessSecurity: $businessSecurity,
             models: $models,
+            compositions: $compositions,
         );
     }
 

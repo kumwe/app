@@ -18693,6 +18693,15 @@
         <target>أرشفة ما يصل إلى خمسين سجلًا تجاريًا أو استعادتها أو تشغيل إجراء واحد عليها دفعة واحدة.</target>
       </segment>
     </unit>
+    <unit id="core.console.studio_composition.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/StudioCompositionCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Read or provision the Blueprint composition of a Content type version.</source>
+        <target>قراءة تركيب المخطط لإصدار نوع محتوى أو تجهيزه.</target>
+      </segment>
+    </unit>
     <unit id="core.console.settings.description">
       <notes>
         <note category="context">Console command summary on src/Delivery/Console/Command/ManageSettingsCommand.php.</note>

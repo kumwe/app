@@ -54,6 +54,7 @@ final class StudioAuthoringCommandTest extends TestCase
         'media',
         'security-events',
         'studio-authoring',
+        'studio-composition',
         'wording',
     ];
 

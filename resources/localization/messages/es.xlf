@@ -18693,6 +18693,15 @@
         <target>Archiva, restaura o ejecuta una acción en hasta cincuenta registros de negocio a la vez.</target>
       </segment>
     </unit>
+    <unit id="core.console.studio_composition.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/StudioCompositionCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Read or provision the Blueprint composition of a Content type version.</source>
+        <target>Lee o aprovisiona la composición Blueprint de una versión de tipo de contenido.</target>
+      </segment>
+    </unit>
     <unit id="core.console.settings.description">
       <notes>
         <note category="context">Console command summary on src/Delivery/Console/Command/ManageSettingsCommand.php.</note>

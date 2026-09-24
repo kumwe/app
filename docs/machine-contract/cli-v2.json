@@ -2,7 +2,7 @@
   "format": "kumwe-cli-machine-contract-v1",
   "generation": 2,
   "status": "retained",
-  "surface_digest": "sha256:669fac442a1ff2f3f5ff63dbd1af9c6ddcc75071da6f61b28ee62efbc9a4ad05",
+  "surface_digest": "sha256:187fb36a496a36aea13029dbbc54e11e2bca71f3637bb996dbf1664ac1dc60c8",
   "dispatcher": {
     "list_exit": 0,
     "unknown_command_exit": 64,
@@ -949,6 +949,23 @@
         {"name":"save-item","risk":"mutate","positionals":[],"allowed_options":["site","token-file","session","session-generation","argument-file","operation-id","locale"],"required_options":["site","token-file","session","session-generation","argument-file","operation-id"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
         {"name":"save-as-new-type","risk":"mutate","positionals":[],"allowed_options":["site","token-file","session","session-generation","argument-file","operation-id","locale"],"required_options":["site","token-file","session","session-generation","argument-file","operation-id"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
         {"name":"save-new-type-version","risk":"mutate","positionals":[],"allowed_options":["site","token-file","session","session-generation","argument-file","operation-id","locale"],"required_options":["site","token-file","session","session-generation","argument-file","operation-id"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "studio-composition",
+      "action_argument": true,
+      "default_action": null,
+      "options": [
+        {"name":"site","type":"identifier","enum":[]},
+        {"name":"token-file","type":"secret-file","enum":[]},
+        {"name":"content-type","type":"identifier","enum":[]},
+        {"name":"version","type":"positive-integer","enum":[]}
+      ],
+      "output": {"stdout":"json-document","stderr":"text-lines"},
+      "exit_codes": {"0":"success","1":"operation-failed"},
+      "actions": [
+        {"name":"get","risk":"read","positionals":[],"allowed_options":["site","token-file","content-type","version"],"required_options":["site","token-file","content-type","version"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"provision","risk":"mutate","positionals":[],"allowed_options":["site","token-file","content-type","version"],"required_options":["site","token-file","content-type","version"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
       ]
     },
     {

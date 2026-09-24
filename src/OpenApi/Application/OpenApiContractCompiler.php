@@ -269,6 +269,7 @@ final readonly class OpenApiContractCompiler
             'businessRecordRestore',
             'cancelJob',
             'executeBusinessSchemaPlan',
+            'provisionContentComposition',
             'recoverBusinessSchemaPlan',
             'restoreContent',
             'retryJob',

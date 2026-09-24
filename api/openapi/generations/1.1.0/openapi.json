@@ -7345,6 +7345,76 @@
                                 "type": "string"
                             },
                             "status": {
+                                "const": 404,
+                                "type": "integer"
+                            },
+                            "title": {
+                                "maxLength": 200,
+                                "minLength": 1,
+                                "type": "string"
+                            },
+                            "type": {
+                                "const": "urn:kumwe:problem:studio-composition-not-found",
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "detail",
+                            "status",
+                            "title",
+                            "type"
+                        ],
+                        "type": "object"
+                    },
+                    {
+                        "additionalProperties": false,
+                        "properties": {
+                            "detail": {
+                                "maxLength": 4000,
+                                "minLength": 1,
+                                "type": "string"
+                            },
+                            "instance": {
+                                "format": "uri-reference",
+                                "maxLength": 2048,
+                                "type": "string"
+                            },
+                            "status": {
+                                "const": 409,
+                                "type": "integer"
+                            },
+                            "title": {
+                                "maxLength": 200,
+                                "minLength": 1,
+                                "type": "string"
+                            },
+                            "type": {
+                                "const": "urn:kumwe:problem:studio-composition-theme-mismatch",
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "detail",
+                            "status",
+                            "title",
+                            "type"
+                        ],
+                        "type": "object"
+                    },
+                    {
+                        "additionalProperties": false,
+                        "properties": {
+                            "detail": {
+                                "maxLength": 4000,
+                                "minLength": 1,
+                                "type": "string"
+                            },
+                            "instance": {
+                                "format": "uri-reference",
+                                "maxLength": 2048,
+                                "type": "string"
+                            },
+                            "status": {
                                 "const": 422,
                                 "type": "integer"
                             },
@@ -8025,6 +8095,75 @@
                     "sessionGeneration",
                     "sessionId",
                     "targetId"
+                ],
+                "type": "object"
+            },
+            "StudioComposition": {
+                "additionalProperties": false,
+                "properties": {
+                    "binding_revision": {
+                        "minimum": 1,
+                        "type": "integer"
+                    },
+                    "blueprint": {
+                        "additionalProperties": false,
+                        "properties": {
+                            "dependencies": {
+                                "items": {
+                                    "$ref": "#/components/schemas/JsonValue"
+                                },
+                                "type": "array"
+                            },
+                            "document": {
+                                "additionalProperties": true,
+                                "type": "object"
+                            },
+                            "id": {
+                                "type": "string"
+                            },
+                            "kind": {
+                                "type": "string"
+                            },
+                            "revision": {
+                                "type": "string"
+                            },
+                            "status": {
+                                "type": "string"
+                            },
+                            "version": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "dependencies",
+                            "document",
+                            "id",
+                            "kind",
+                            "revision",
+                            "status",
+                            "version"
+                        ],
+                        "type": "object"
+                    },
+                    "content_type_id": {
+                        "format": "uuid",
+                        "type": "string"
+                    },
+                    "content_type_version": {
+                        "minimum": 1,
+                        "type": "integer"
+                    },
+                    "model": {
+                        "additionalProperties": true,
+                        "type": "object"
+                    }
+                },
+                "required": [
+                    "binding_revision",
+                    "blueprint",
+                    "content_type_id",
+                    "content_type_version",
+                    "model"
                 ],
                 "type": "object"
             },
@@ -13790,6 +13929,156 @@
                 ]
             }
         },
+        "/api/v1/content-types/{id}/versions/{version}/composition": {
+            "get": {
+                "operationId": "readContentComposition",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StudioComposition"
+                                }
+                            }
+                        },
+                        "description": "The Blueprint composition of the Content type version"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "No composition is provisioned, or the Content type version is unavailable to the caller"
+                    },
+                    "409": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "The Blueprint is locked to a different published theme"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Unprocessable"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": [],
+                        "siteContext": []
+                    }
+                ],
+                "summary": "Read the Blueprint composition of one Content type version",
+                "x-kumwe-api-version": "v1",
+                "x-kumwe-contract-version": "1.0.0",
+                "x-kumwe-idempotency": "none",
+                "x-kumwe-middleware-contracts": [
+                    "bearer-authentication"
+                ],
+                "x-kumwe-precondition": "none",
+                "x-kumwe-request-body": "none",
+                "x-kumwe-required-capabilities": [
+                    "content.read",
+                    "studio.mode.blueprint"
+                ]
+            },
+            "parameters": [
+                {
+                    "in": "path",
+                    "name": "id",
+                    "required": true,
+                    "schema": {
+                        "format": "uuid",
+                        "type": "string"
+                    }
+                },
+                {
+                    "in": "path",
+                    "name": "version",
+                    "required": true,
+                    "schema": {
+                        "minimum": 1,
+                        "type": "integer"
+                    }
+                }
+            ],
+            "post": {
+                "operationId": "provisionContentComposition",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/IdempotencyKey"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StudioComposition"
+                                }
+                            }
+                        },
+                        "description": "The provisioned composition, or the one already bound"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "No composition is provisioned, or the Content type version is unavailable to the caller"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Conflict"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Unprocessable"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": [],
+                        "siteContext": []
+                    }
+                ],
+                "summary": "Provision the empty Blueprint draft of one Content type version",
+                "x-kumwe-api-version": "v1",
+                "x-kumwe-contract-version": "1.0.0",
+                "x-kumwe-idempotency": "required",
+                "x-kumwe-middleware-contracts": [
+                    "bearer-authentication",
+                    "idempotency-key"
+                ],
+                "x-kumwe-precondition": "none",
+                "x-kumwe-request-body": "none",
+                "x-kumwe-required-capabilities": [
+                    "content.read",
+                    "studio.mode.blueprint"
+                ]
+            }
+        },
         "/api/v1/content/{id}": {
             "delete": {
                 "operationId": "trashContent",
@@ -17921,7 +18210,7 @@
             "url": "/"
         }
     ],
-    "x-kumwe-business-generation": "47c9c5b7792e72073e485f3362d859f4f3dc7c0fa6c7139501b1257b62bbade2",
+    "x-kumwe-business-generation": "ba47eac5e69a424e6a9b154df1475ce777c594f21f0c798107779f867fd03a97",
     "x-kumwe-generated-components": [
         "GeneratedBusinessAction",
         "GeneratedBusinessActionApproval",

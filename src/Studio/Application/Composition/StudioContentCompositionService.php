@@ -28,6 +28,17 @@ use stdClass;
 final readonly class StudioContentCompositionService
 {
     /**
+     * Renderer capabilities the App preview runtime implements, which every provisioning surface declares.
+     *
+     * The administrator composition screen and the REST, console and MCP provisioning operations all pass this
+     * one set, so a Blueprint provisioned from any surface is admitted against the same renderers.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
+    public const array RENDERERS = ['core.renderer/field', 'core.renderer/layout'];
+
+    /**
      * Bind the exact projection, write stores, admission, lifecycle, audit, and contribution seams.
      *
      * @param  StudioContentProjectionService        $projection     Authorized AP-2 projection service.
@@ -187,7 +198,12 @@ final readonly class StudioContentCompositionService
             throw new RuntimeException('The concurrent Studio composition could not be resolved.');
         }
 
-        return new StudioContentComposition($model, $binding, $artifact);
+        // Project the model again so it names the binding just stored, exactly as every later read answers it.
+        return new StudioContentComposition(
+            $this->authorizedModel($context, $contentTypeId, $contentTypeVersion),
+            $binding,
+            $artifact,
+        );
     }
 
     /**

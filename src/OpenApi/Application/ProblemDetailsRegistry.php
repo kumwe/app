@@ -161,6 +161,8 @@ final readonly class ProblemDetailsRegistry
             ['precondition-failed', 412, false, null],
             ['precondition-required', 428, false, null],
             ['step-up-required', 403, false, null],
+            ['studio-composition-not-found', 404, false, null],
+            ['studio-composition-theme-mismatch', 409, false, null],
             ['validation-failed', 422, false, null],
         ];
         $definitions = [];

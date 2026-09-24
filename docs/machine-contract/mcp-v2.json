@@ -25,7 +25,7 @@
         ]
     },
     "inventory": {
-        "tools": 116,
+        "tools": 118,
         "resources": 1,
         "prompts": 1
     },
@@ -588,7 +588,7 @@
             ]
         }
     ],
-    "contract_sha256": "28230448c89f46cc3923c567dc104c85aac9db379d823680ffb7bb534cd29035",
+    "contract_sha256": "d63286a185ad594ed9cf5450eed2aed6586e3e8a604ec7912161b233aefd1c98",
     "surface": {
         "tools": [
             {
@@ -9011,6 +9011,89 @@
                         "definition",
                         "record",
                         "relationship"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "additionalProperties": true
+                }
+            },
+            {
+                "name": "kumwe_studio_composition_get",
+                "title": "Read a Blueprint composition",
+                "description": "Read the Blueprint composition of one Content type version, with its document and dependencies.",
+                "handler": "getStudioComposition",
+                "capability": "studio.mode.blueprint",
+                "risk": "read",
+                "alternative": "Administrator console: Content models, Compose, /api/v1/content-types/{id}/versions/{version}/composition, or bin/kumwe studio-composition.",
+                "annotations": {
+                    "title": "Read a Blueprint composition",
+                    "readOnlyHint": true,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "contentType": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "version": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    },
+                    "required": [
+                        "contentType",
+                        "version"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "additionalProperties": true
+                }
+            },
+            {
+                "name": "kumwe_studio_composition_provision",
+                "title": "Provision a Blueprint composition",
+                "description": "Provision the empty Blueprint draft of one Content type version, or answer the one bound.",
+                "handler": "provisionStudioComposition",
+                "capability": "studio.mode.blueprint",
+                "risk": "scoped_write",
+                "alternative": "Administrator console: Content models, Compose, /api/v1/content-types/{id}/versions/{version}/composition, or bin/kumwe studio-composition.",
+                "annotations": {
+                    "title": "Provision a Blueprint composition",
+                    "readOnlyHint": false,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "operationId": {
+                            "type": "string",
+                            "minLength": 16,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{15,127}$"
+                        },
+                        "contentType": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "version": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    },
+                    "required": [
+                        "operationId",
+                        "contentType",
+                        "version"
                     ],
                     "additionalProperties": false
                 },

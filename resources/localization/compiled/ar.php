@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for ar, carrying 2568 messages.
+ * Compiled interface message catalogue for ar, carrying 2569 messages.
  *
  * Generated from ar.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -2026,6 +2026,7 @@ return [
     'core.console.settings.description' => 'اقرأ تكوين الموقع أو حدّثه.',
     'core.console.studio_authoring.description' => 'افتح جلسة تأليف في Studio وشغّل عمليات التأليف الخاصة بها.',
     'core.console.studio_authoring.refused' => 'رُفض طلب التأليف في Studio.',
+    'core.console.studio_composition.description' => 'قراءة تركيب المخطط لإصدار نوع محتوى أو تجهيزه.',
     'core.console.theme_administrator_recover.description' => 'استعِد سمة لوحة الإدارة المدمجة المحمية بشكل ذري.',
     'core.console.theme_administrator_recover.restored_the_protected_built_in_administrator' => 'تم استرداد سمة لوحة الإدارة المدمجة المحمية.',
     'core.console.token_create.description' => 'أنشئ رمز وصول API/MCP محدد النطاق واطبعه مرة واحدة.',

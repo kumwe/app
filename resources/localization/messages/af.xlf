@@ -18693,6 +18693,15 @@
         <target>Argiveer, herstel of voer een aksie uit op tot vyftig besigheidsrekords gelyktydig.</target>
       </segment>
     </unit>
+    <unit id="core.console.studio_composition.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/StudioCompositionCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Read or provision the Blueprint composition of a Content type version.</source>
+        <target>Lees of voorsien die Bloudruk-samestelling van 'n inhoudtipe-weergawe.</target>
+      </segment>
+    </unit>
     <unit id="core.console.settings.description">
       <notes>
         <note category="context">Console command summary on src/Delivery/Console/Command/ManageSettingsCommand.php.</note>
