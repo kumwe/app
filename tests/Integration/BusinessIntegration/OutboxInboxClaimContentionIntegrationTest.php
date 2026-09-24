@@ -52,6 +52,14 @@ final class OutboxInboxClaimContentionIntegrationTest extends TestCase
 
     private const EVENT_TYPE = 'business.record.changed';
 
+    /**
+     * Unordered consumer whose receipts the batch-claim contention case materializes and claims.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const FANOUT_CONSUMER = 'acme.contention-fanout';
+
     public function testASecondDispatcherSkipsTheEventTheFirstIsHoldingInsteadOfBlockingOnIt(): void
     {
         $environment = Environment::fromGlobals();
@@ -208,6 +216,107 @@ final class OutboxInboxClaimContentionIntegrationTest extends TestCase
     }
 
     /**
+     * Prove a batch claim on the configured engine routes around a tenant turn and a receipt another session holds.
+     *
+     * Two tenant scopes of one consumer are materialized, twice, so the engine's own duplicate-ignoring
+     * insert is exercised. The primary session then locks the turn of one scope and the receipt row of the
+     * other. The rival replica must skip both instead of waiting, claim nothing, and claim each receipt once
+     * the locks are released.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testABatchClaimSkipsATurnAndAReceiptAnotherSessionHoldsAndClaimsThemOnceReleased(): void
+    {
+        $environment = Environment::fromGlobals();
+        $primary = TestKernelFactory::create($environment);
+        $database = $this->connection($primary);
+        $this->skipWithoutRowLocks($database, 'skip-locked batch claim arbitration');
+
+        $secondary = TestKernelFactory::create($environment);
+        $concurrent = $this->connection($secondary);
+        $clock = new MovableContentionClock(new DateTimeImmutable('2026-08-14T10:00:00', new DateTimeZone('UTC')));
+        $inbox = $this->inbox($primary, $clock);
+        $rival = $this->inbox($secondary, $clock);
+        $tables = $this->tables($primary);
+        $this->boundLockWait($concurrent);
+        $consumer = new EventConsumerDefinition(
+            self::FANOUT_CONSUMER,
+            self::EVENT_TYPE,
+            [1],
+            '1.0.0',
+            'integration.default',
+            false,
+        );
+        foreach (['integration_inbox', 'integration_delivery_turns', 'integration_delivery_health'] as $table) {
+            $database->delete($tables->raw($table), ['consumer_id' => self::FANOUT_CONSUMER]);
+        }
+
+        $held = $this->event(1, 'fanout-' . Uuid::uuid7()->toString(), 'organization-turn');
+        $routed = $this->event(1, 'fanout-' . Uuid::uuid7()->toString(), 'organization-receipt');
+        $inbox->materialize([$consumer], $held);
+        $inbox->materialize([$consumer], $routed);
+        $inbox->materialize([$consumer], $held);
+        self::assertSame(2, (int) $database->fetchOne(sprintf(
+            'SELECT COUNT(*) FROM %s WHERE consumer_id = ?',
+            $tables->quoted('integration_inbox'),
+        ), [self::FANOUT_CONSUMER]), 'A replayed materialization adds no receipt.');
+        self::assertSame(2, (int) $database->fetchOne(sprintf(
+            'SELECT COUNT(*) FROM %s WHERE consumer_id = ?',
+            $tables->quoted('integration_delivery_turns'),
+        ), [self::FANOUT_CONSUMER]), 'A replayed materialization adds no tenant turn.');
+
+        try {
+            // Lock by primary key only: a locking read on a non-key column would lock every scanned turn.
+            $scope = $database->fetchOne(sprintf(
+                'SELECT scope_checksum FROM %s WHERE consumer_id = ? AND organization_scope = ?',
+                $tables->quoted('integration_delivery_turns'),
+            ), [self::FANOUT_CONSUMER, 'organization-turn']);
+            $database->beginTransaction();
+            self::assertSame($scope, $database->fetchOne(sprintf(
+                'SELECT scope_checksum FROM %s WHERE consumer_id = ? AND scope_checksum = ? FOR UPDATE',
+                $tables->quoted('integration_delivery_turns'),
+            ), [self::FANOUT_CONSUMER, $scope]));
+            self::assertSame($routed->eventId(), $database->fetchOne(sprintf(
+                'SELECT event_id FROM %s WHERE consumer_id = ? AND event_id = ? FOR UPDATE',
+                $tables->quoted('integration_inbox'),
+            ), [self::FANOUT_CONSUMER, $routed->eventId()], [Types::STRING, Types::GUID]));
+
+            self::assertSame(
+                [],
+                $rival->claimBatch([$consumer], new DeterministicCanonicalEncoder(), 'fanout-worker-b', '9', 30, 10),
+                'Both held rows were skipped rather than waited on or claimed beside.',
+            );
+            $database->rollBack();
+
+            $claimed = [];
+            for ($turn = 0; $turn < 2; $turn++) {
+                $leases = $rival->claimBatch(
+                    [$consumer],
+                    new DeterministicCanonicalEncoder(),
+                    'fanout-worker-b',
+                    '9',
+                    30,
+                    10,
+                );
+                self::assertCount(1, $leases, 'One consumer holds one execution permit at a time.');
+                $claimed[] = $leases[0]->event->eventId();
+                $rival->complete($leases[0]);
+            }
+            sort($claimed);
+            $expected = [$held->eventId(), $routed->eventId()];
+            sort($expected);
+            self::assertSame($expected, $claimed);
+        } finally {
+            if ($database->isTransactionActive()) {
+                $database->rollBack();
+            }
+            $concurrent->close();
+        }
+    }
+
+    /**
      * Refuse to run a lock-arbitration assertion on an engine whose lock clause compiles to nothing.
      */
     private function skipWithoutRowLocks(Connection $database, string $property): void
@@ -303,8 +412,11 @@ final class OutboxInboxClaimContentionIntegrationTest extends TestCase
         );
     }
 
-    private function event(int $aggregateVersion, ?string $aggregateId = null): IntegrationEvent
-    {
+    private function event(
+        int $aggregateVersion,
+        ?string $aggregateId = null,
+        string $organization = 'organization-contention',
+    ): IntegrationEvent {
         $aggregateId ??= 'record-contention-' . $aggregateVersion;
 
         return new RecordedIntegrationEvent(
@@ -316,7 +428,7 @@ final class OutboxInboxClaimContentionIntegrationTest extends TestCase
             'contention-actor',
             null,
             'default',
-            'organization-contention',
+            $organization,
             'business.record',
             $aggregateId,
             $aggregateVersion,

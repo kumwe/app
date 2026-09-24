@@ -35,8 +35,11 @@ use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
 use Kumwe\Extension\Spi\Application\ExecutionContext;
 use Kumwe\Extension\Spi\BusinessIntegration\Application\IntegrationEventHandler;
+use Kumwe\Extension\Spi\BusinessIntegration\Application\IntegrationEventTransport;
+use Kumwe\Integration\ConsumerIdempotency;
 use Kumwe\Integration\EventConsumerDefinition;
 use Kumwe\Integration\EventSensitivity;
+use Kumwe\Integration\WebhookContributionDefinition;
 use Kumwe\Integration\IntegrationEvent;
 use Kumwe\Contribution\ContributionDefinition;
 use Kumwe\Contribution\ContributionOwner;
@@ -157,6 +160,107 @@ final class RuntimeIntegrationEventTransportTest extends TestCase
 
         self::assertSame('core.runtime-fanout', $transport->identifier());
         self::assertSame(EventSensitivity::SECRET, $transport->sensitivityCeiling());
+    }
+
+    /**
+     * Prove a declared outbound adapter gets its own durable receipt carrying the adapter's signed terms.
+     *
+     * Publication must not call the adapter. It records a pending receipt whose queue, handler revision and
+     * attempt budget come from the webhook declaration, claimable under the consumer contract derived from
+     * it, and an adapter that does not declare the event type gets no receipt at all.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testADeclaredOutboundAdapterReceivesAnIndependentReceiptWithItsSignedTerms(): void
+    {
+        $event = self::event();
+        $declared = new WebhookContributionDefinition(
+            'acme.probe.search-push',
+            ['acme.probe.observed'],
+            [1],
+            '2.1.0',
+            'integration.webhooks',
+            ConsumerIdempotency::AGGREGATE_VERSION,
+            4,
+        );
+        $unrelated = new WebhookContributionDefinition(
+            'acme.probe.audit-push',
+            ['acme.probe.deleted'],
+            [1],
+            '1.0.0',
+            'integration.webhooks',
+        );
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+            withCore: false,
+        );
+        $adapter = $this->createMock(IntegrationEventTransport::class);
+        $adapter->expects(self::never())->method('publish');
+        $registries->webhooks()->register(ContributionOwner::extension('acme/probe'), $declared, $adapter);
+        $registries->webhooks()->register(ContributionOwner::extension('acme/probe'), $unrelated, $adapter);
+        $contracts = new EventContractRegistry(new DeterministicCanonicalEncoder(), [new EventSchemaDefinition(
+            new DeterministicCanonicalEncoder(),
+            'acme.probe.observed',
+            1,
+            EventSensitivity::INTERNAL,
+            [
+                'type' => 'object',
+                'required' => ['record_id'],
+                'properties' => ['record_id' => ['type' => 'string']],
+                'additionalProperties' => false,
+            ],
+        )], []);
+        $database = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
+        $tables = new TableNames($database, 'fanout_');
+        (new CoreSchemaMigration($tables))->up($database);
+        (new BusinessIntegrationSdkMigration($tables))->up($database);
+        (new QueueWorkerPermitsMigration($tables))->up($database);
+        $inbox = new DoctrineInboxStore(
+            $database,
+            $tables,
+            new DoctrineTransactionManager($database),
+            self::clock(),
+            $contracts,
+        );
+        $transport = new RuntimeIntegrationEventTransport(
+            $registries,
+            $inbox,
+            self::projections(),
+            new RuntimeMaterializationState('replica-1', 7, '', '', true),
+            self::createStub(TrustedRuntimeGenerationGuard::class),
+        );
+
+        $transport->publish($event);
+        $transport->publish($event);
+
+        $rows = $inbox->recent('acme.probe.search-push');
+        self::assertCount(1, $rows);
+        self::assertSame($event->eventId(), $rows[0]['event_id']);
+        self::assertSame('pending', $rows[0]['status']);
+        self::assertSame('integration.webhooks', $rows[0]['queue']);
+        self::assertSame('2.1.0', $rows[0]['handler_version']);
+        self::assertSame(4, (int) $rows[0]['maximum_attempts']);
+        self::assertSame([], $inbox->recent('acme.probe.audit-push'));
+        $receipt = $inbox->claimBatch(
+            [new EventConsumerDefinition(
+                'acme.probe.search-push',
+                'acme.probe.observed',
+                [1],
+                '2.1.0',
+                'integration.webhooks',
+                true,
+                ConsumerIdempotency::AGGREGATE_VERSION,
+                4,
+            )],
+            new DeterministicCanonicalEncoder(),
+            'replica-1-worker',
+            '7',
+            30,
+        );
+        self::assertCount(1, $receipt, 'The receipt is claimable under the adapter-derived consumer contract.');
     }
 
     /**

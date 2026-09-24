@@ -16,7 +16,11 @@ use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\Contribution\ContributionOwner;
 use Kumwe\Automation\RetryPolicy;
 use Kumwe\Automation\JitterSource;
+use Kumwe\Automation\QueueRuntimePolicy;
 use Kumwe\Automation\QueueRuntimePolicyCatalog;
+use Kumwe\Extension\Spi\BusinessIntegration\Application\IntegrationEventTransport;
+use Kumwe\Integration\IntegrationEvent;
+use Kumwe\Integration\WebhookContributionDefinition;
 use Kumwe\Extension\Spi\BusinessIntegration\Application\IntegrationEventHandler;
 use Psr\Log\NullLogger;
 use Doctrine\DBAL\Connection;
@@ -25,6 +29,7 @@ use Kumwe\App\BusinessIntegration\Infrastructure\DoctrineInboxStore;
 use Kumwe\App\Infrastructure\Persistence\DoctrineTransactionManager;
 use Kumwe\App\Infrastructure\Persistence\Migration\BusinessIntegrationSdkMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\CoreSchemaMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\JobRecoveryMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\QueueWorkerPermitsMigration;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
@@ -49,6 +54,7 @@ use RuntimeException;
 #[CoversClass(DoctrineInboxStore::class)]
 #[CoversClass(RuntimeIntegrationReceiptWorker::class)]
 #[CoversClass(IntegrationEventConsumerDispatcher::class)]
+#[CoversClass(DurableOutboundAdapterDispatcher::class)]
 #[CoversClass(QueueWorkerPermitsMigration::class)]
 final class IndependentReceiptFanoutIntegrationTest extends TestCase
 {
@@ -493,20 +499,182 @@ final class IndependentReceiptFanoutIntegrationTest extends TestCase
     }
 
     /**
+     * Prove a batch claim refuses an out-of-range bound and answers an empty active graph with no work.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testBatchClaimRejectsUnboundedBatchesAndAnEmptyGraphClaimsNothing(): void
+    {
+        $a = $this->consumer('acme.probe.a');
+        [$store] = $this->store([$a]);
+        $store->materialize([$a], $this->event('default', null));
+        foreach ([0, 65] as $limit) {
+            try {
+                $store->claimBatch([$a], new DeterministicCanonicalEncoder(), 'worker', '7', 30, $limit);
+                self::fail(sprintf('A batch of %d leases was accepted.', $limit));
+            } catch (\InvalidArgumentException $failure) {
+                self::assertStringContainsString('between one and 64', $failure->getMessage());
+            }
+        }
+        self::assertSame([], $store->claimBatch([], new DeterministicCanonicalEncoder(), 'worker', '7', 30, 64));
+        self::assertSame('pending', $store->recent($a->identifier())[0]['status']);
+        self::assertCount(1, $store->claimBatch([$a], new DeterministicCanonicalEncoder(), 'worker', '7', 30, 64));
+    }
+
+    /**
+     * Prove a signed queue's in-flight permit bounds batch claims and follows the lease through settlement.
+     *
+     * With one permit, the second consumer in the batch is deferred as busy without spending an attempt.
+     * Renewal moves the permit expiry with the receipt, and a failed settlement returns the permit so the
+     * deferred receipt becomes claimable.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testQueuePermitBoundsBatchClaimsAndIsRenewedAndReleasedWithTheReceipt(): void
+    {
+        $a = $this->consumer('acme.probe.a');
+        $b = $this->consumer('acme.probe.b');
+        $policies = self::createStub(QueueRuntimePolicyCatalog::class);
+        $policies->method('policy')->willReturn(new QueueRuntimePolicy('integration.default', 30, 5, 1, 7, 7));
+        [$store, $database, $tables, $clock, $contracts] = $this->store([$a, $b], [1], $policies);
+        $store->materialize([$a, $b], $this->event('default', null));
+        $permit = static fn (): array|false => $database->fetchAssociative(sprintf(
+            'SELECT lease_token, lease_expires_at FROM %s WHERE queue_id = ?',
+            $tables->quoted('job_queue_permits'),
+        ), ['integration.default']);
+
+        $leases = $store->claimBatch([$a, $b], new DeterministicCanonicalEncoder(), 'replica-one', '7', 30, 10);
+        self::assertCount(1, $leases, 'One in-flight permit admits one receipt per batch.');
+        self::assertSame('acme.probe.a', $leases[0]->consumer->identifier());
+        $deferred = $store->recent('acme.probe.b')[0];
+        self::assertSame('pending', $deferred['status']);
+        self::assertSame(0, (int) $deferred['attempts']);
+        $instant = static fn (mixed $stored): int => (new DateTimeImmutable(
+            is_string($stored) ? $stored : '@0',
+            new \DateTimeZone('UTC'),
+        ))->getTimestamp();
+        self::assertSame($clock->now()->getTimestamp() + 1, $instant($deferred['available_at']));
+        self::assertSame($leases[0]->leaseToken, $permit()['lease_token'] ?? null);
+
+        $store->renew($leases[0], 20);
+        self::assertSame($clock->now()->getTimestamp() + 20, $instant($permit()['lease_expires_at'] ?? null));
+        try {
+            $store->renew($leases[0], 31);
+            self::fail('A renewal widened the signed queue lease.');
+        } catch (\InvalidArgumentException $failure) {
+            self::assertStringContainsString('signed policy', $failure->getMessage());
+        }
+
+        $store->fail($leases[0], FailureClassification::PERMANENT, new RuntimeException('rejected'), null);
+        self::assertNull($permit()['lease_token'] ?? null, 'Settlement returns the in-flight permit.');
+        self::assertSame('poison', $store->recent('acme.probe.a')[0]['status']);
+        $later = new DoctrineInboxStore(
+            $database,
+            $tables,
+            new DoctrineTransactionManager($database),
+            $this->clock($clock->now()->modify('+2 seconds')),
+            $contracts,
+            $policies,
+        );
+        $next = $later->claimBatch([$a, $b], new DeterministicCanonicalEncoder(), 'replica-two', '7', 30, 10);
+        self::assertCount(1, $next);
+        self::assertSame('acme.probe.b', $next[0]->consumer->identifier());
+        self::assertSame(1, $next[0]->attempts);
+    }
+
+    /**
+     * Prove the worker executes a declared outbound adapter's receipt through the durable adapter dispatcher.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testWorkerDeliversAnOutboundAdapterReceiptAndSettlesIt(): void
+    {
+        $webhook = new WebhookContributionDefinition(
+            'acme.probe.push',
+            ['acme.changed'],
+            [1],
+            '1.0.0',
+            'integration.default',
+        );
+        $receipt = new EventConsumerDefinition(
+            'acme.probe.push',
+            'acme.changed',
+            [1],
+            '1.0.0',
+            'integration.default',
+            false,
+        );
+        [$store, $database, $tables, $clock, $contracts] = $this->store([]);
+        $event = $this->event('default', null);
+        $store->materialize([$receipt], $event);
+        $encoder = new DeterministicCanonicalEncoder();
+        $registry = new ExtensionContributionRegistrySet(
+            $encoder,
+            new SdkFieldConfigurationAdmission(),
+            withCore: false,
+        );
+        $adapter = $this->createMock(IntegrationEventTransport::class);
+        $adapter->expects(self::once())->method('publish')->with(
+            $webhook,
+            self::callback(
+                static fn (IntegrationEvent $delivered): bool => $delivered->eventId() === $event->eventId(),
+            ),
+        );
+        $registry->webhooks()->register(ContributionOwner::extension('acme/probe'), $webhook, $adapter);
+        $guard = self::createStub(TrustedRuntimeGenerationGuard::class);
+        $retries = new RetryPolicy($clock, self::createStub(JitterSource::class));
+        $worker = new RuntimeIntegrationReceiptWorker(
+            $store,
+            $registry,
+            $encoder,
+            new IntegrationEventConsumerDispatcher(
+                $store,
+                $contracts,
+                $retries,
+                $guard,
+                new DoctrineTransactionManager($database),
+                new NullLogger()
+            ),
+            new DurableOutboundAdapterDispatcher($store, $contracts, $retries, $guard, new NullLogger()),
+            $guard,
+            SystemPrincipal::issue(new \stdClass(), SystemIdentity::Worker),
+            self::createStub(QueueRuntimePolicyCatalog::class),
+            new NullLogger(),
+        );
+
+        self::assertTrue($worker->dispatchOne('replica-0', '7', 5));
+        self::assertFalse($worker->dispatchOne('replica-1', '7', 5));
+        $settled = $store->recent('acme.probe.push')[0];
+        self::assertSame('completed', $settled['status']);
+        self::assertSame(1, (int) $settled['attempts']);
+    }
+
+    /**
      * Build a schema/consumer catalog and isolated durable database.
      *
      * @param   list<EventConsumerDefinition>  $consumers  Trusted graph under test.
      * @param   list<int>                      $revisions  Available signed schema revisions.
+     * @param   ?QueueRuntimePolicyCatalog     $policies   Signed queue limits, or null for core defaults.
      *
      * @return  array{DoctrineInboxStore, Connection, TableNames, ClockInterface, EventContractRegistry}  Fixture.
      *
      * @since   2.0.0
      */
-    private function store(array $consumers, array $revisions = [1]): array
-    {
+    private function store(
+        array $consumers,
+        array $revisions = [1],
+        ?QueueRuntimePolicyCatalog $policies = null,
+    ): array {
         $database = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
         $tables = new TableNames($database, 'receipt_');
         (new CoreSchemaMigration($tables))->up($database);
+        (new JobRecoveryMigration($tables))->up($database);
         (new BusinessIntegrationSdkMigration($tables))->up($database);
         (new QueueWorkerPermitsMigration($tables))->up($database);
         $encoder = new DeterministicCanonicalEncoder();
@@ -525,6 +693,7 @@ final class IndependentReceiptFanoutIntegrationTest extends TestCase
             new DoctrineTransactionManager($database),
             $clock,
             $contracts,
+            $policies,
         );
         return [$store, $database, $tables, $clock, $contracts];
     }
