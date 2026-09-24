@@ -577,6 +577,77 @@ final class DashboardPreferenceServiceTest extends TestCase
     }
 
     /**
+     * A save for an access group that no longer exists retains nothing and is refused before any write.
+     *
+     * The retained-selection read only trusts a stored row of a live canonical role. A role deleted after
+     * the form was rendered contributes no retained identifiers, so an identifier outside the editor's own
+     * catalogue is refused as unknown, and even a fully visible selection is refused by the live-group
+     * check instead of writing a row nobody can inherit.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testRoleSaveForAVanishedAccessGroupRetainsNothingAndWritesNothing(): void
+    {
+        $live = PresentationAccessGroup::fromRole(self::ROLE_ID, 'operations', 'Operations');
+        $vanished = 'role:018f22e2-7c8b-7ab0-8f3a-88e8026bb399';
+        $runtime = new DashboardPreferenceTestRuntime([$live]);
+        $context = AuthorizationContext::human(['administrator.access', 'users.manage']);
+        $surface = SurfaceId::fromString('core.administrator.dashboard');
+        $key = new PresentationPreferenceKey(
+            $surface,
+            CustomizationSlot::DashboardCards,
+            CustomizationScope::RoleWorkspace,
+            $vanished,
+        );
+        $this->seed(
+            $runtime,
+            $surface,
+            CustomizationScope::RoleWorkspace,
+            $vanished,
+            CustomizationSlot::DashboardCards,
+            ['acme.finance-workflow'],
+            1,
+        );
+        $save = fn (string $item) => $runtime->service->mutate(
+            $context,
+            SurfaceArea::Administrator,
+            $surface,
+            ContributionOwner::core(),
+            $runtime->decoder->decode([
+                'action' => 'dashboard-cards.save',
+                'scope' => 'role-workspace',
+                'scope_id' => $vanished,
+                'expected_version' => '1',
+                'item_0' => $item,
+                'selected_0' => '1',
+                'order_0' => '1',
+            ]),
+            ['core.dashboard.administrator-context'],
+            [],
+        );
+
+        try {
+            $save('acme.finance-workflow');
+            self::fail('A row left behind by a deleted role must not widen the editor catalogue.');
+        } catch (InvalidArgumentException $refusal) {
+            self::assertSame('A dashboard preference contains an unknown identifier.', $refusal->getMessage());
+        }
+        try {
+            $save('core.dashboard.administrator-context');
+            self::fail('A save for a deleted role must be refused by the live access-group check.');
+        } catch (InvalidArgumentException $refusal) {
+            self::assertSame(
+                'A role/workspace preference requires a current presentation access group.',
+                $refusal->getMessage(),
+            );
+        }
+        self::assertSame(['acme.finance-workflow'], $runtime->preferences->find($key)?->value()->value());
+        self::assertSame(1, $runtime->preferences->find($key)?->version());
+    }
+
+    /**
      * Proves portal area alone never grants access-group preference authority.
      *
      * @return  void
