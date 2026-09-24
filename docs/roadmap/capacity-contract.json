@@ -1,10 +1,16 @@
 {
   "contract": "kumwe-capacity-contract",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "status": "approved",
   "authority": "docs/roadmap/README.md, section 7; ADR 0021 for sampled acceptance",
   "baseline_sha": "26a7b3963c255064754f541dc8286e75dd566b1f",
   "amendments": [
+    {
+      "version": "1.4.0",
+      "decisions": ["P0-D", "P5-I", "ADR 0021"],
+      "change": "Declares the dataset generator the result binding has always required: a Mersenne Twister seeded with a published default seed draws each row's age from a declared six-bucket distribution, the rows are created through the production record service and the record table is backdated to the drawn ages, and every concurrent sample binds the seed, distribution and a digest of the drawn ages. Publishes per-engine storage and write amplification for ordinary creates, document lines, updates and an aged table, the log and replica amplification, the logical backup growth, and the reserve guardrails the runtime enforces.",
+      "not_changed": "The five-million daily planning target, logical transaction counting, objectives, reference workload, topologies and integrity obligations. The aged sample is still single-site and still a sample, not the aged four-business mixed envelope; figures not measured on an engine remain null with their reason."
+    },
     {
       "version": "1.3.0",
       "decisions": ["ADR 0021"],
@@ -334,7 +340,7 @@
       ],
       "estimate_rule": "Daily scenarios multiply measured repeat throughput by 86400 at the same measured worker count. They are time extrapolations, not sustained capacity. No linear CPU, RAM or worker-count multiplier is allowed. Observed ranges are not confidence intervals. Any failed repeat withholds its group's estimate.",
       "variation_rule": "Publish all repeats, including high variation; do not retry away failures or use the legacy CV target to manufacture stability on shared runners.",
-      "scope_limit": "The default workload is fresh single-site small creates and one shared legal-number counter. It does not qualify the aged four-business mixed envelope, document lines, reads, background work, recovery, availability or storage. Unmeasured write amplification and resource saturation remain null, not zero."
+      "scope_limit": "The default workload is fresh single-site small creates and one shared legal-number counter; with --dataset-records the same workloads run on a table first seeded with the declared aged dataset (dataset_generator), and the capacity workflow publishes both. It does not qualify the aged four-business mixed envelope, document lines, reads, background work, recovery, availability or storage. Unmeasured write amplification and resource saturation remain null, not zero."
     },
     "regression_rule": "alert first, then fail on a p95 or memory regression greater than 10% or beyond two standard deviations, unless an approved budget change explains it",
     "result_binding": [
@@ -374,6 +380,25 @@
       "database CPU, connections and IOPS and worker utilisation stay below 70% normal and 85% peak, leaving at least 30% supported headroom"
     ]
   },
+  "dataset_generator": {
+    "authority": "P0-D; ADR 0021",
+    "tool": "tools/PerfDataset.php",
+    "prng": "Random\\Engine\\Mt19937 through Random\\Randomizer::getInt; the bucket is drawn first, then a uniform age inside it",
+    "default_seed": 20260924,
+    "age_distribution": [
+      {"bucket": "last_day", "minimum_days": 0, "maximum_days": 1, "share": 0.05},
+      {"bucket": "last_week", "minimum_days": 1, "maximum_days": 7, "share": 0.1},
+      {"bucket": "last_month", "minimum_days": 7, "maximum_days": 30, "share": 0.2},
+      {"bucket": "last_quarter", "minimum_days": 30, "maximum_days": 90, "share": 0.25},
+      {"bucket": "last_year", "minimum_days": 90, "maximum_days": 365, "share": 0.25},
+      {"bucket": "older", "minimum_days": 365, "maximum_days": 1095, "share": 0.15}
+    ],
+    "creation_rule": "Each generated row is one ordinary LBT through the production BusinessRecordService, so every ledger an LBT writes is populated; only the record table's created_at and updated_at are then rewritten to the drawn age, in generation order. Ledger rows keep their real instants, so retention does not see a pre-aged backlog.",
+    "determinism": "The same seed and row count produce the same ages and digest on every engine and host; a longer dataset extends a shorter one with the same seed (tests/Unit/Performance/PerfDatasetTest.php).",
+    "sampled_command": "php tools/perf-harness.php --concurrent --workers=1,2,4 --samples=30 --warmup=5 --repeats=3 --dataset-records=2000",
+    "storage_command": "php tools/perf-storage.php --workload=aged --records=300 --dataset-records=2000",
+    "binding": "result_binding.dataset_seed and result_binding.dataset_generator (seed, records, distribution, bucket counts and a SHA-256 digest of the drawn ages) in every concurrent report"
+  },
   "storage_forecast": {
     "hot_bytes_formula": "live record bytes + line rows * measured line bytes + retained days * mutations/day * (revision + audit + idempotency + outbox + source-event bytes) + retained days * events/day * fan-out * inbox bytes",
     "worked_example": "At 5,000,000 mutations per day a revisions-enabled event-producing workload adds roughly 5,000,000 daily rows to each of several independent ledgers before consumer fan-out; a 90-day window is about 450,000,000 rows in each unpruned stream. The document profile adds about 15,000,000 line rows per day.",
@@ -388,6 +413,144 @@
     ],
     "free_space_reserve": 0.30,
     "temporary_capacity_rule": "model up to 2x a hot-table size where the engine or operation can require it"
+  },
+  "storage_amplification": {
+    "authority": "P5-I; ADR 0021",
+    "tool": "tools/perf-storage.php",
+    "command": "php tools/perf-storage.php --workload=create|update|document|aged --records=300 --lines=10 --dataset-records=2000 --backup",
+    "workflow": ".github/workflows/capacity.yml#samples measures every workload on MariaDB, MySQL 8.4 and PostgreSQL 17 on each run and retains storage-<engine>-<workload>.json",
+    "measured_on": "2026-09-24, 4 x Intel Xeon 2.80 GHz, 15.7 GiB RAM, database and PHP on one host",
+    "units": "per logical business transaction (LBT); document lines reported per line as well, never folded into the LBT count",
+    "engines": {
+      "mariadb": {
+        "ordinary_create": {
+          "lbt_measured": 300,
+          "physical_row_mutations_per_lbt": 8,
+          "table_bytes_per_lbt": 4041.4,
+          "index_bytes_per_lbt": 1419.9,
+          "log_bytes_per_lbt": 20056.4,
+          "replica_network_bytes_per_lbt_per_replica": 20056.4,
+          "logical_backup_bytes_per_lbt": 6897.3,
+          "undo_indicator_delta": -199
+        },
+        "update_heavy": {
+          "lbt_measured": 300,
+          "physical_row_mutations_per_lbt": 7,
+          "table_bytes_per_lbt": 10595,
+          "index_bytes_per_lbt": 1474.6,
+          "log_bytes_per_lbt": 22669.6,
+          "replica_network_bytes_per_lbt_per_replica": 22669.6,
+          "logical_backup_bytes_per_lbt": 5146.3,
+          "undo_indicator_delta": -225
+        },
+        "document_10_lines": {
+          "lbt_measured": 300,
+          "physical_row_mutations_per_lbt": 18,
+          "table_bytes_per_lbt": 9011.2,
+          "index_bytes_per_lbt": 8410.5,
+          "log_bytes_per_lbt": 27691.1,
+          "replica_network_bytes_per_lbt_per_replica": 27691.1,
+          "logical_backup_bytes_per_lbt": 7982.9,
+          "undo_indicator_delta": -715,
+          "lines_per_lbt": 10,
+          "physical_row_mutations_per_line": 1.8,
+          "bytes_per_line": 1742.2
+        },
+        "ordinary_create_on_aged_table": {
+          "lbt_measured": 300,
+          "physical_row_mutations_per_lbt": 8,
+          "table_bytes_per_lbt": 6990.5,
+          "index_bytes_per_lbt": 983,
+          "log_bytes_per_lbt": 21897.1,
+          "replica_network_bytes_per_lbt_per_replica": 21897.1,
+          "logical_backup_bytes_per_lbt": 6897,
+          "undo_indicator_delta": -305,
+          "dataset_records": 2000,
+          "dataset_digest": "266d674e6ccbda6900d3fef234ec02c0d59bdf2a742d2a3771e99b62bbb6f140"
+        },
+        "logical_dump_bytes_per_second": 5750512,
+        "database_version": "10.11.14-MariaDB-0ubuntu0.24.04.1-log"
+      },
+      "pgsql": {
+        "ordinary_create": {
+          "lbt_measured": 300,
+          "physical_row_mutations_per_lbt": 15.18,
+          "table_bytes_per_lbt": 4532.9,
+          "index_bytes_per_lbt": 1501.9,
+          "log_bytes_per_lbt": 15125.5,
+          "replica_network_bytes_per_lbt_per_replica": 15125.5,
+          "logical_backup_bytes_per_lbt": 6323.9,
+          "undo_indicator_delta": 300
+        },
+        "update_heavy": {
+          "lbt_measured": 300,
+          "physical_row_mutations_per_lbt": 14.38,
+          "table_bytes_per_lbt": 3713.7,
+          "index_bytes_per_lbt": 955.7,
+          "log_bytes_per_lbt": 12007.2,
+          "replica_network_bytes_per_lbt_per_replica": 12007.2,
+          "logical_backup_bytes_per_lbt": 4696.5,
+          "undo_indicator_delta": 600
+        },
+        "document_10_lines": {
+          "lbt_measured": 300,
+          "physical_row_mutations_per_lbt": 25.48,
+          "table_bytes_per_lbt": 5734.4,
+          "index_bytes_per_lbt": 3304.1,
+          "log_bytes_per_lbt": 20439.7,
+          "replica_network_bytes_per_lbt_per_replica": 20439.7,
+          "logical_backup_bytes_per_lbt": 7315.5,
+          "undo_indicator_delta": 300,
+          "lines_per_lbt": 10,
+          "physical_row_mutations_per_line": 2.55,
+          "bytes_per_line": 903.9
+        },
+        "ordinary_create_on_aged_table": {
+          "lbt_measured": 300,
+          "physical_row_mutations_per_lbt": 15.63,
+          "table_bytes_per_lbt": 6335.1,
+          "index_bytes_per_lbt": 1338,
+          "log_bytes_per_lbt": 13087.5,
+          "replica_network_bytes_per_lbt_per_replica": 13087.5,
+          "logical_backup_bytes_per_lbt": 6324.2,
+          "undo_indicator_delta": 300,
+          "dataset_records": 2000,
+          "dataset_digest": "266d674e6ccbda6900d3fef234ec02c0d59bdf2a742d2a3771e99b62bbb6f140"
+        },
+        "logical_dump_bytes_per_second": 71328059,
+        "database_version": "PostgreSQL 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1) on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0, 64-bit"
+      },
+      "mysql": {
+        "status": "measured_by_workflow",
+        "values": null,
+        "reason": "No MySQL server is available in the environment that produced these figures; the capacity workflow measures MySQL 8.4 on every run with the same command and publishes the figures in its summary."
+      }
+    },
+    "definitions": {
+      "physical_row_mutations": "MariaDB and MySQL: session Handler_write + Handler_update + Handler_delete, including internal temporary tables; PostgreSQL: pg_stat_database tuple counters after a forced statistics flush (database-wide).",
+      "table_and_index_bytes": "Catalogue growth of every installation table; InnoDB grows in 16 KiB pages and extents, so small samples are coarse.",
+      "log_bytes": "Binary log position distance (MariaDB, MySQL) or write-ahead log LSN distance (PostgreSQL).",
+      "replica_network_bytes": "A MySQL-family replica receives the binary log and a PostgreSQL streaming replica the write-ahead log byte for byte, so each replica costs the log bytes per LBT in network and relay storage.",
+      "logical_backup_bytes": "Growth of a data-only logical dump (mariadb-dump --single-transaction or pg_dump) of every installation table across the measured LBTs; physical backups copy table and index bytes instead. Restore time is measured by the backup drills.",
+      "undo_indicator": "InnoDB history list length (MariaDB, MySQL) or dead tuples in installation tables (PostgreSQL) before and after the run; purge and autovacuum run concurrently, so the delta can be negative."
+    },
+    "limitations": [
+      "Single-host sample of 300 LBTs per workload; figures describe that host and data size, not a production guarantee (ADR 0021).",
+      "The aged workload creates on a table pre-seeded with the declared 2,000-row aged dataset; it is not the aged four-business mixed envelope.",
+      "Mixed-envelope growth is an estimate: weight the per-workload figures by the workload mix and the document line distribution.",
+      "Vacuum, purge and online index rebuild temporary space are guarded by the reserve below rather than measured per LBT."
+    ]
+  },
+  "reserve_guardrails": {
+    "free_space_reserve": 0.3,
+    "rebuild_space": "twice the installation's largest table (data and indexes), read from the engine catalogue",
+    "enforced_by": "app:health through ReadinessProbe, FilesystemStorageReserve and DoctrineLargestTable; warns under the baseline profile and fails under KUMWE_CAPACITY_PROFILE=enterprise",
+    "configuration": "KUMWE_DATABASE_DATA_PATH names a directory on the database data volume; without it the guardrail reports nothing",
+    "tests": [
+      "tests/Unit/Infrastructure/Persistence/FilesystemStorageReserveTest.php",
+      "tests/Unit/Infrastructure/Persistence/ReadinessProbeTest.php",
+      "tests/Integration/Persistence/LargestTableIntegrationTest.php"
+    ]
   },
   "retention_budget_rule": {
     "maintenance_drain_multiple_of_peak_expiry": 2,

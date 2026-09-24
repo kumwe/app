@@ -13,13 +13,26 @@ supported production capacity, availability or recovery guarantee.
 ```bash
 source .agent-env                         # disposable test database, APP_ENV=testing
 php tools/perf-harness.php --concurrent --workers=1,2,4 --samples=20 --warmup=5 --repeats=2
+# the same on an aged table: each workload is first seeded with the contract's declared dataset
+php tools/perf-harness.php --concurrent --workers=1,2,4 --samples=20 --warmup=5 --repeats=2 \
+    --dataset-records=2000 --dataset-seed=20260924
 # outputs: build/perf/concurrent.json (schema: docs/operations/capacity-report.schema.json)
 #          build/perf/concurrent.md   (the summary the capacity workflow publishes)
 ```
 
+`--dataset-records` creates that many records per workload through the production record service before
+the warm-up, then rewrites their creation and update instants to ages drawn by `tools/PerfDataset.php`: a
+Mersenne Twister seeded with `--dataset-seed` (default 20260924) picks each row's bucket by the contract's
+declared shares (last day 5%, last week 10%, last month 20%, last quarter 25%, last year 25%, one to three
+years 15%) and a uniform age inside it. The report binds `dataset_seed` and `dataset_generator` (seed, row
+count, distribution, bucket counts and a SHA-256 digest of the drawn ages) in `result_binding`, so two runs
+can prove they ran on the same data.
+
 `.github/workflows/capacity.yml` runs the same command on MariaDB, MySQL 8.4 and PostgreSQL 17 for every
-pull request (workers 1,2,4 × 30 samples × 3 repeats) and on dispatch with larger inputs, publishes the
-markdown to the job summary and retains the JSON, raw per-call samples and logs as artifacts.
+pull request (workers 1,2,4 × 30 samples × 3 repeats), once on the fresh dataset and once on the declared
+2,000-record aged dataset, and on dispatch with larger inputs; it then measures storage, log and backup
+amplification per workload (`tools/perf-storage.php`), publishes the markdown to the job summary and
+retains the JSON, raw per-call samples and logs as artifacts.
 
 ## What is recorded
 
@@ -70,10 +83,13 @@ keeps the older per-worker-count time extrapolation (repeat mean × 86,400, obse
   topology with a separate database host. The fitted curve is a property of this host, not of Kumwe.
 - Two or three repeats give very wide t intervals (a lower bound below zero is reported as computed; it
   means the repeat mean is not well determined, not that throughput can be negative).
-- The workload is fresh single-site small creates and one shared legal-number counter; document lines,
-  reads, aged data, background work, retention and the four-business mix are not in the figure.
-- Physical row-mutation amplification is measured separately by `tools/perf-storage.php` (8.0 PRM/LBT on
-  MariaDB, 10.0 on PostgreSQL in the local run) and is not folded into these throughput figures.
+- The workload is single-site small creates and one shared legal-number counter, on a fresh table or on
+  the declared 2,000-record aged table; document lines, reads, background work, retention and the
+  four-business mix are not in the throughput figure (document-line storage amplification is measured
+  separately, see `docs/operations/scale-topology.md`).
+- Physical row-mutation amplification is measured separately by `tools/perf-storage.php` per workload
+  (ordinary create: 8.0 PRM/LBT on MariaDB, 15.2 on PostgreSQL's database-wide counters; see
+  `docs/operations/scale-topology.md`) and is not folded into these throughput figures.
 - Extrapolations assume the same data size and configuration at every concurrency.
 
 ## Local run, 2026-09-24
@@ -116,3 +132,43 @@ competing for four CPUs rather than with a database-side limit. The poor and fai
 wide intervals mean these estimates only rank bottlenecks on this host; a larger sample on the capacity
 workflow, or an operator run with the database on its own host, is required before any planning use.
 Raw reports: `build/perf/concurrent-mariadb.json` and `build/perf/concurrent-pgsql.json` (not committed).
+
+## Aged dataset sample, 2026-09-24
+
+Same host and plan (workers 1, 2, 4; 20 measured calls per worker per repeat after 5 warm-up; 2 repeats),
+with each workload first seeded with the declared dataset: seed 20260924, 2,000 records, age digest
+`266d674e6ccbda6900d3fef234ec02c0d59bdf2a742d2a3771e99b62bbb6f140` on both engines. Seeding took 68 s and
+148 s on MariaDB and is not timed. All 12 repeats per engine passed integrity and overlap checks, 0 errors.
+
+### Measured
+
+| Engine | Operation | Workers | LBT/s mean | 95% CI | CV | p50 / p95 / p99 ms |
+|---|---|---|---|---|---|---|
+| MariaDB | ordinary_small_mutation | 1 | 17.3 | −62.9–97.4 | 0.52 | 52.0 / 135.3 / 236.9 |
+| MariaDB | ordinary_small_mutation | 2 | 37.0 | 5.3–68.8 | 0.10 | 51.1 / 98.0 / 118.2 |
+| MariaDB | ordinary_small_mutation | 4 | 49.3 | 21.9–76.6 | 0.06 | 66.4 / 152.4 / 189.9 |
+| MariaDB | hot_sequence_commit | 1 | 22.7 | −52.9–98.2 | 0.37 | 34.4 / 110.8 / 217.8 |
+| MariaDB | hot_sequence_commit | 2 | 37.9 | 13.5–62.3 | 0.07 | 43.8 / 95.8 / 176.6 |
+| MariaDB | hot_sequence_commit | 4 | 37.9 | 24.1–51.7 | 0.04 | 81.0 / 230.1 / 322.3 |
+| PostgreSQL | ordinary_small_mutation | 1 | 33.6 | −37.0–104.3 | 0.23 | 25.6 / 53.7 / 71.1 |
+| PostgreSQL | ordinary_small_mutation | 2 | 59.5 | 46.7–72.4 | 0.02 | 26.3 / 51.7 / 76.5 |
+| PostgreSQL | ordinary_small_mutation | 4 | 82.4 | −176.4–341.3 | 0.35 | 39.5 / 106.0 / 134.0 |
+| PostgreSQL | hot_sequence_commit | 1 | 46.4 | −7.6–100.5 | 0.13 | 20.5 / 27.9 / 32.7 |
+| PostgreSQL | hot_sequence_commit | 2 | 38.8 | −3.8–81.4 | 0.12 | 40.8 / 100.7 / 203.5 |
+| PostgreSQL | hot_sequence_commit | 4 | 34.4 | 22.1–46.7 | 0.04 | 92.2 / 250.8 / 447.8 |
+
+### Estimated (model output, not measurement)
+
+| Engine | Operation | Model (quality) | λ | σ | κ | R² | 8 callers* | 16* | 64* | Best predicted |
+|---|---|---|---|---|---|---|---|---|---|---|
+| MariaDB | ordinary | USL σ=0 (good) | 16.8 | 0 | 0.0285 | 0.86 | 51.8 | 34.3 | 9.3 | peak N≈5.9* at 54.4 LBT/s ≈ 4.7 M/day (94%) |
+| MariaDB | hot sequence | USL σ=0 (fair) | 22.1 | 0 | 0.110 | 0.78 | 24.6 | 12.9 | 3.2 | peak N≈3.0 at 39.9 LBT/s ≈ 3.4 M/day (69%) |
+| PostgreSQL | ordinary | USL σ=0 (fair) | 33.0 | 0 | 0.0585 | 0.71 | 61.7 | 35.1 | 8.9 | peak N≈4.1 at 77.5 LBT/s ≈ 6.7 M/day (134%) |
+| PostgreSQL | hot sequence | USL (fair) | 46.0 | 1.33 | 0.0311 | 0.71 | 30.6 | 25.9 | 14.0 | N=1 at 46.0 LBT/s ≈ 4.0 M/day (80%) |
+
+\* Extrapolation beyond the measured 1–4 callers. The aged table did not lower single-site throughput on
+this host: every aged mean lies inside the fresh run's wide intervals, and the higher aged means at two and
+four callers are within the host's run-to-run variation rather than an effect of age. The hot-sequence
+fits are still retrograde past two to four callers, as on the fresh table, because every commit serializes
+on one counter row. As before, the models rank bottlenecks on one shared 4-CPU host; they are not capacity
+guarantees. Raw reports: `build/perf/concurrent.json` from each run (not committed).

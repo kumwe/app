@@ -19,6 +19,10 @@ on:
         description: Repeated batches (2–10)
         type: number
         default: 5
+      dataset_records:
+        description: Aged records seeded per workload before the aged sample (0–200000)
+        type: number
+        default: 2000
 
 permissions:
   contents: read
@@ -31,7 +35,7 @@ jobs:
   samples:
     name: Concurrent samples / ${{ matrix.database.driver }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
@@ -105,6 +109,7 @@ jobs:
       SAMPLE_COUNT: ${{ inputs.samples || 30 }}
       SAMPLE_WORKERS: ${{ inputs.workers || '1,2,4' }}
       SAMPLE_REPEATS: ${{ inputs.repeats || 3 }}
+      SAMPLE_DATASET_RECORDS: ${{ inputs.dataset_records || 2000 }}
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -137,13 +142,41 @@ jobs:
         run: |
           php tools/perf-harness.php --concurrent --workers="$SAMPLE_WORKERS" \
             --samples="$SAMPLE_COUNT" --warmup=5 --repeats="$SAMPLE_REPEATS" --timeout=120
+          mv build/perf/concurrent.json build/perf/concurrent-fresh.json
+          mv build/perf/concurrent.md build/perf/concurrent-fresh.md
+      - name: Sample concurrent application commits on the declared aged dataset
+        shell: bash
+        run: |
+          php tools/perf-harness.php --concurrent --workers="$SAMPLE_WORKERS" \
+            --samples="$SAMPLE_COUNT" --warmup=5 --repeats="$SAMPLE_REPEATS" --timeout=120 \
+            --dataset-records="$SAMPLE_DATASET_RECORDS"
+          mv build/perf/concurrent.json build/perf/concurrent-aged.json
+          mv build/perf/concurrent.md build/perf/concurrent-aged.md
+      - name: Measure storage, log and backup amplification per workload
+        shell: bash
+        run: |
+          for workload in create update document aged; do
+            php tools/perf-storage.php --workload="$workload" --records=200 --lines=10 \
+              --dataset-records="$SAMPLE_DATASET_RECORDS" --backup
+          done
       - name: Publish measured results and labelled estimates
         if: always()
         shell: bash
         run: |
-          if [ -f build/perf/concurrent.md ]; then
-            { echo "### ${{ matrix.database.driver }}"; cat build/perf/concurrent.md; } >> "$GITHUB_STEP_SUMMARY"
-          fi
+          for dataset in fresh aged; do
+            if [ -f "build/perf/concurrent-$dataset.md" ]; then
+              { echo "### ${{ matrix.database.driver }} — $dataset dataset"; cat "build/perf/concurrent-$dataset.md"; } \
+                >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done
+          for report in build/perf/storage-*.json; do
+            [ -f "$report" ] || continue
+            { echo "### ${{ matrix.database.driver }} storage — $(basename "$report" .json)"; echo '```json';
+              php -r '$r = json_decode(file_get_contents($argv[1]), true);
+                echo json_encode(["measured" => array_diff_key($r["measured"], ["per_table" => 1]),
+                  "backup" => $r["backup"]], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), "\n";' "$report";
+              echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          done
       - name: Retain observations and failure diagnostics
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

@@ -4,8 +4,11 @@
  * Measure concurrent BusinessRecordService commits on the current test host (P7-A, ADR 0021).
  *
  * Invoke through tools/perf-harness.php --concurrent [--plan] [--workers=1,2,4] [--samples=30]
- * [--warmup=5] [--repeats=3] [--timeout=120]. Each worker owns a fresh kernel and connection. Warm-up,
- * authentication and fixture creation precede the shared measurement barrier. Failed calls remain evidence.
+ * [--warmup=5] [--repeats=3] [--timeout=120] [--dataset-records=0] [--dataset-seed=20260924]. Each worker
+ * owns a fresh kernel and connection. Warm-up, authentication and fixture creation precede the shared
+ * measurement barrier. Failed calls remain evidence. A non-zero --dataset-records first creates that many
+ * records per workload through the production service and backdates them by the contract's declared age
+ * distribution (tools/PerfDataset.php), so the sample runs on an aged table rather than a fresh one.
  *
  * @since  2.0.0
  */
@@ -21,6 +24,7 @@ use Kumwe\App\Kernel\ContainerFactory;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\App\Tests\Support\NeutralBusinessFixture;
 use Kumwe\App\Tests\Support\TestKernelFactory;
+use Kumwe\App\Tools\Performance\PerfDataset;
 use Ramsey\Uuid\Uuid;
 
 use function Kumwe\App\Tools\Performance\capacityMarkdown;
@@ -31,8 +35,10 @@ use function Kumwe\App\Tools\Performance\predictScalability;
 use function Kumwe\App\Tools\Performance\observedOverlap;
 use function Kumwe\App\Tools\Performance\runWorkers;
 use function Kumwe\App\Tools\Performance\sampleStatistics;
+use function Kumwe\App\Tools\Performance\seedAgedRecords;
 
 require_once __DIR__ . '/PerfConcurrentSamples.php';
+require_once __DIR__ . '/PerfDataset.php';
 
 /**
  * Bind processes to the same configured datastore without exposing credentials.
@@ -138,14 +144,15 @@ function perfSampleWorker(string $path): int
 /**
  * Record host resources as exposed to this process, preserving unknown container limits as null.
  *
- * @param   Connection  $database  The authoritative database used by every worker.
- * @param   string      $root      Checkout root.
+ * @param   Connection   $database  The authoritative database used by every worker.
+ * @param   string       $root      Checkout root.
+ * @param   PerfDataset  $dataset   Declared dataset each workload runs on.
  *
- * @return  array<string, mixed>  Host, runtime, source and allowlisted database settings.
+ * @return  array<string, mixed>  Host, runtime, source, dataset and allowlisted database settings.
  *
  * @since   2.0.0
  */
-function perfSampleBinding(Connection $database, string $root): array
+function perfSampleBinding(Connection $database, string $root, PerfDataset $dataset): array
 {
     $read = static fn (string $path): ?string => is_readable($path) ? trim((string) file_get_contents($path)) : null;
     $cpu = $read('/proc/cpuinfo') ?? '';
@@ -199,8 +206,12 @@ function perfSampleBinding(Connection $database, string $root): array
         'database_settings' => $settings,
         'database_fingerprint' => perfDatabaseFingerprint(),
         'application_image_digest' => null,
-        'dataset_seed' => null,
-        'dataset' => 'Fresh unique single-site definitions; generated records accumulate between repeats.',
+        'dataset_seed' => $dataset->seed,
+        'dataset' => $dataset->records === 0
+            ? 'Fresh unique single-site definitions; generated records accumulate between repeats.'
+            : 'Aged single-site definitions: each workload is pre-seeded with the declared dataset through the '
+                . 'record service and backdated by its age distribution; generated records accumulate.',
+        'dataset_generator' => $dataset->describe(),
     ];
 }
 
@@ -236,6 +247,8 @@ foreach (array_slice($argv, 1) as $argument) {
     }
 }
 $options = ['samples' => 30, 'warmup' => 5, 'repeats' => 3, 'timeout' => 120];
+$datasetRecords = 0;
+$datasetSeed = PerfDataset::DEFAULT_SEED;
 $workerCounts = [1, 2, 4];
 $planOnly = false;
 foreach (array_slice($argv, 1) as $argument) {
@@ -250,6 +263,14 @@ foreach (array_slice($argv, 1) as $argument) {
         $workerCounts = array_map('intval', explode(',', $match[1]));
         continue;
     }
+    if (preg_match('/^--dataset-records=(\d+)$/D', $argument, $match) === 1) {
+        $datasetRecords = (int) $match[1];
+        continue;
+    }
+    if (preg_match('/^--dataset-seed=(\d+)$/D', $argument, $match) === 1) {
+        $datasetSeed = (int) $match[1];
+        continue;
+    }
     if (preg_match('/^--(samples|warmup|repeats|timeout)=(\d+)$/D', $argument, $match) === 1) {
         $options[$match[1]] = (int) $match[2];
         continue;
@@ -261,12 +282,20 @@ if (
     $options['samples'] < 1 || $options['samples'] > 1000 || $options['warmup'] > 100
     || $options['repeats'] < 2 || $options['repeats'] > 10 || $options['timeout'] < 1 || $options['timeout'] > 600
     || min($workerCounts) < 1 || max($workerCounts) > 16 || count(array_unique($workerCounts)) !== count($workerCounts)
+    || $datasetRecords > 200_000
 ) {
-    fwrite(STDERR, "Bounds: unique workers 1..16; samples 1..1000; warmup 0..100; repeats 2..10; timeout 1..600.\n");
+    fwrite(
+        STDERR,
+        "Bounds: unique workers 1..16; samples 1..1000; warmup 0..100; repeats 2..10; timeout 1..600; "
+        . "dataset records 0..200000.\n",
+    );
     exit(2);
 }
 sort($workerCounts);
+$dataset = new PerfDataset($datasetSeed, $datasetRecords);
 $plan = $options + [
+    'dataset_records' => $datasetRecords,
+    'dataset_seed' => $datasetSeed,
     'harness' => 'kumwe-concurrent-samples',
     'workers' => $workerCounts,
     'operations' => ['ordinary_small_mutation', 'hot_sequence_commit'],
@@ -275,6 +304,9 @@ $plan = $options + [
     'below_30_samples_per_worker' => $options['samples'] < 30,
     'scope' => 'Single-site callers sharing one authoritative database; one counter for the sequence class.',
 ];
+if ($datasetRecords > 0) {
+    $plan['dataset_age_distribution'] = $dataset->describe()['age_distribution'];
+}
 if ($planOnly) {
     echo json_encode($plan, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR), "\n";
     exit(0);
@@ -304,7 +336,7 @@ $report = [
     'harness' => $plan['harness'],
     'role' => 'sampled_concurrency_evidence_not_production_capacity',
     'plan' => $plan,
-    'result_binding' => perfSampleBinding($database, $root),
+    'result_binding' => perfSampleBinding($database, $root, $dataset),
     'measurements' => [],
     'summary' => [],
     'estimates' => [],
@@ -321,7 +353,14 @@ $report = [
         'reason' => 'Call timings do not count row updates; net growth is not physical write amplification.',
     ],
     'limitations' => [
-        'Fresh single-site small records, not the aged four-business mixed enterprise envelope.',
+        $datasetRecords === 0
+            ? 'Fresh single-site small records, not the aged four-business mixed enterprise envelope.'
+            : sprintf(
+                'Single-site small records on a %d-record aged table per workload (seed %d), not the aged '
+                . 'four-business mixed enterprise envelope.',
+                $datasetRecords,
+                $datasetSeed,
+            ),
         'No document-line, read, background-worker, retention, fault-recovery or long-duration workload.',
         'Overlapping call intervals include lock waits; they do not prove simultaneous database execution.',
         'Internal transaction retries are not instrumented; the harness performs no retry of failed calls.',
@@ -353,6 +392,28 @@ foreach ($plan['operations'] as $operation) {
     }
     $quotedTable = $database->getDatabasePlatform()->quoteSingleIdentifier($table->physicalName);
     $expectedRows = 0;
+    if ($datasetRecords > 0) {
+        $seeding = seedAgedRecords(
+            static function (int $index) use ($records, $context, $definition, $nonce, $operation): string {
+                return $records->create(new CreateRecordCommand(
+                    $context,
+                    $definition->handle,
+                    NeutralBusinessFixture::recordValues('Aged dataset ' . $index),
+                    NeutralBusinessFixture::idempotencyKey(
+                        'perf-aged-' . $nonce . '-' . substr($operation, 0, 3) . '-' . $index,
+                    ),
+                    recordId: Uuid::uuid7()->toString(),
+                ))->recordKey;
+            },
+            $database,
+            $table,
+            $dataset,
+            new DateTimeImmutable('now', new DateTimeZone('UTC')),
+        );
+        $expectedRows = $seeding['seeded'];
+        $report['dataset_seeding'][$operation] = $seeding;
+        printf("%s seeded %d aged records in %.1f s\n", $operation, $seeding['seeded'], $seeding['seconds']);
+    }
     $modelPoints = [];
     foreach ($workerCounts as $workerCount) {
         $rates = [];

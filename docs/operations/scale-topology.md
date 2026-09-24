@@ -125,28 +125,52 @@ from a replica snapshot); nothing in the application reads one.
 
 ## Storage forecast (P5-I)
 
-`php tools/perf-storage.php --records=500` creates 500 ordinary records through `BusinessRecordService`
-and measures per logical business transaction (LBT) on the same host as the other samples:
+`php tools/perf-storage.php --workload=create|update|document|aged --records=300 --lines=10
+--dataset-records=2000 --backup` runs 300 LBTs of one workload through `BusinessRecordService` and measures
+per LBT: physical row mutations (MariaDB session `Handler_write/update/delete`; PostgreSQL
+`pg_stat_database` tuple counters, database-wide), table and index bytes from the catalogue, log bytes
+(binary log position or WAL LSN distance), an undo indicator (InnoDB history list length, PostgreSQL dead
+tuples; purge and autovacuum run concurrently, so it can fall) and, with `--backup`, the growth of a
+data-only logical dump (`mariadb-dump --single-transaction`, `pg_dump`) of every installation table. The
+`aged` workload first seeds the contract's declared 2,000-row aged dataset. Measured on the capacity host
+(4 × Xeon 2.80 GHz, 15.7 GiB, MariaDB 10.11.14 and PostgreSQL 16.15 beside PHP) on 2026-09-24, and
+published per engine in `docs/roadmap/capacity-contract.json` (`storage_amplification`):
 
-| Measured per LBT | MariaDB 10.11 | PostgreSQL 16 |
-|---|---|---|
-| Physical row mutations (PRM/LBT) | 8.0 (session handlers) | 10.0 (tuple counters) |
-| Table bytes | 12,812 | 6,373 |
-| Index bytes | 3,146 | 1,786 |
-| Log bytes (binlog / WAL) | 19,946 | 11,671 |
-| Undo indicator Δ over 500 LBT | +45 history list length | +500 dead tuples |
-| Largest per-table growth | staging 3,146 + 262, revisions 3,047 + 1,081, audit 2,982 + 360, outbox 2,097 | revisions 1,376 + 541, outbox 1,180 + 360, staging 1,180 + 197, audit 1,163 + 180 |
+| Engine | Workload (300 LBT) | PRM/LBT | Table B/LBT | Index B/LBT | Log B/LBT (= replica B/LBT) | Logical dump B/LBT | Undo indicator Δ |
+|---|---|---|---|---|---|---|---|
+| MariaDB 10.11 | Ordinary create | 8.0 | 4,041 | 1,420 | 20,056 | 6,897 | -199 |
+| MariaDB 10.11 | Update | 7.0 | 10,595 | 1,475 | 22,670 | 5,146 | -225 |
+| MariaDB 10.11 | Document, 10 lines | 18.0 | 9,011 | 8,410 | 27,691 | 7,983 | -715 |
+| MariaDB 10.11 | Create on 2,000-row aged table | 8.0 | 6,990 | 983 | 21,897 | 6,897 | -305 |
+| PostgreSQL 16 | Ordinary create | 15.2 | 4,533 | 1,502 | 15,126 | 6,324 | 300 |
+| PostgreSQL 16 | Update | 14.4 | 3,714 | 956 | 12,007 | 4,696 | 600 |
+| PostgreSQL 16 | Document, 10 lines | 25.5 | 5,734 | 3,304 | 20,440 | 7,316 | 300 |
+| PostgreSQL 16 | Create on 2,000-row aged table | 15.6 | 6,335 | 1,338 | 13,088 | 6,324 | 300 |
 
-Estimated at 5,000,000 LBT a day from those bytes (ordinary creates only; InnoDB sizes move in pages, so
-the MariaDB figure is coarse): **MariaDB ≈ 80 GB/day of table+index growth and ≈ 100 GB/day of binary
-log; PostgreSQL ≈ 41 GB/day and ≈ 58 GB/day of WAL**; 30 days ≈ 2.4 TB / 1.2 TB before retention. With the
-30% reserve, provision ≈ 3.4 TB (MariaDB) or ≈ 1.7 TB (PostgreSQL) for a 30-day hot window, plus 2× the
-largest table for an online rebuild. Replica network amplification equals the log bytes per replica.
-Staging rows in the sample were not yet sequenced; in steady state they move to the journal and are
-removed. Backup size and restore time come from the backup drills (`docs/operations/backup-restore.md`);
-document-line, update-heavy and aged-data amplification are not measured here.
+Document lines cost MariaDB 1.8 PRM and 1,742 table and index bytes per line, PostgreSQL 2.55 PRM and 904
+bytes. **Replica amplification** is the log column: a MySQL-family replica receives the binary log and a
+PostgreSQL streaming replica the WAL byte for byte, so each replica adds those bytes per LBT in network and
+relay storage. **MySQL** runs in no environment available to this change; `.github/workflows/capacity.yml`
+measures every workload on MySQL 8.4 (and MariaDB and PostgreSQL 17) on each run and publishes the figures
+in its summary. InnoDB grows in 16 KiB pages and extents, so the MariaDB byte figures at 300 LBTs are coarse
+(an earlier 500-create run measured 12,812 table bytes per LBT where this one measured 4,041).
 
-The **30% free-space reserve** is a readiness guardrail: set `KUMWE_DATABASE_DATA_PATH` to a directory on
-the database data volume that the application host can see; `app:health` then warns (baseline) or fails
-(`KUMWE_CAPACITY_PROFILE=enterprise`) when free space drops below 30%. Without the setting the guardrail
-reports nothing and the operator must monitor the volume directly.
+**Estimated** (arithmetic on the measured figures, not a measurement): at the 5,000,000 LBT/day target
+split as 100,000 documents carrying about 15,000,000 lines and 4,900,000 ordinary mutations, half creates
+and half updates, table and index growth is ≈ 69 GB/day on MariaDB and ≈ 40 GB/day on PostgreSQL before
+retention, log volume (and bytes per replica) ≈ 118 GB/day of binary log and ≈ 76 GB/day of WAL, and
+logical-dump growth ≈ 32 GB/day and ≈ 29 GB/day. The dump ran at 3.2–5.8 MB/s on MariaDB and 41–71 MB/s on
+PostgreSQL on this host, so a logical dump of a 30-day window (≈ 0.9 TB) takes about two days on MariaDB
+and three to four hours on PostgreSQL: at the target volume MariaDB and MySQL need physical or binary-log
+based backups (`docs/operations/backup-restore.md`), which copy the table and index bytes above. With the
+30% reserve, provision ≈ 3 TB (MariaDB) or ≈ 1.7 TB (PostgreSQL) for a 30-day hot window, plus the rebuild
+space below. Restore time is measured by the backup drills, not by this tool.
+
+The **30% free-space reserve and the rebuild space** are one readiness guardrail: set
+`KUMWE_DATABASE_DATA_PATH` to a directory on the database data volume that the application host can see;
+`app:health` then warns (baseline) or fails (`KUMWE_CAPACITY_PROFILE=enterprise`) when free space drops
+below 30% of the volume **or** below twice the installation's largest table (`DoctrineLargestTable`, read
+from the engine's catalogue: `pg_total_relation_size`, or `data_length + index_length`), the temporary space
+an online rebuild of that table or its indexes can need. The report carries `largest_table_bytes` and
+`rebuild_bytes_required` beside the free fraction. Without the setting the guardrail reports nothing and the
+operator must monitor the volume directly.

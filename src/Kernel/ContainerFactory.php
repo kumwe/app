@@ -680,6 +680,7 @@ use Kumwe\App\Infrastructure\Retention\DoctrineRetentionObserver;
 use Kumwe\App\Infrastructure\Retention\RetentionRunLedger;
 use Kumwe\App\Application\Retention\LedgerCensus;
 use Kumwe\App\Infrastructure\Retention\DoctrineLedgerCensus;
+use Kumwe\App\Infrastructure\Persistence\DoctrineLargestTable;
 use Kumwe\App\Infrastructure\Persistence\FilesystemStorageReserve;
 use Kumwe\App\Infrastructure\Observability\InstrumentedTransactionManager;
 use Kumwe\App\Infrastructure\Observability\MetricDocumentCommitObserver;
@@ -2718,7 +2719,14 @@ final class ContainerFactory
                 retention: self::service($container, RetentionObserver::class),
                 retentionReadiness: self::service($container, RetentionReadiness::class),
                 enterprise: $configuration->capacityProfile === 'enterprise',
-                storage: new FilesystemStorageReserve($configuration->databaseDataPath),
+                storage: new FilesystemStorageReserve(
+                    $configuration->databaseDataPath,
+                    0.30,
+                    new DoctrineLargestTable(
+                        self::service($container, Connection::class),
+                        self::service($container, TableNames::class),
+                    ),
+                ),
             ), true);
     }
 
