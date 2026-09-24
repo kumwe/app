@@ -3,34 +3,40 @@
     "file": "js/appearance-C0yRa8Z7.js",
     "name": "appearance"
   },
+  "_preview-identity-Bvgz1vbs.js": {
+    "file": "js/preview-identity-Bvgz1vbs.js",
+    "name": "preview-identity"
+  },
   "_reveal-validation-g1jDnck7.js": {
     "file": "js/reveal-validation-g1jDnck7.js",
     "name": "reveal-validation"
   },
   "assets/administrator/components/studio-composition.ts": {
-    "file": "js/studio-composition-BVIIjemK.js",
+    "file": "js/studio-composition-BDu5NkBu.js",
     "name": "studio-composition",
     "src": "assets/administrator/components/studio-composition.ts",
     "isDynamicEntry": true,
     "imports": [
       "_reveal-validation-g1jDnck7.js",
-      "assets/administrator/main.ts"
+      "assets/administrator/main.ts",
+      "_preview-identity-Bvgz1vbs.js"
     ],
     "dynamicImports": [
       "node_modules/@editorjs/editorjs/dist/editorjs.mjs"
     ]
   },
   "assets/administrator/components/studio-launch.ts": {
-    "file": "js/studio-launch-D9Indt4A.js",
+    "file": "js/studio-launch-BR0M37x2.js",
     "name": "studio-launch",
     "src": "assets/administrator/components/studio-launch.ts",
     "isDynamicEntry": true,
     "imports": [
-      "assets/administrator/main.ts"
+      "assets/administrator/main.ts",
+      "_preview-identity-Bvgz1vbs.js"
     ]
   },
   "assets/administrator/main.ts": {
-    "file": "js/administrator-DbIgfOP4.js",
+    "file": "js/administrator-DuraEI0G.js",
     "name": "administrator",
     "src": "assets/administrator/main.ts",
     "isEntry": true,
@@ -43,7 +49,7 @@
       "assets/administrator/components/studio-launch.ts"
     ],
     "css": [
-      "css/administrator-1MmYlGkx.css"
+      "css/administrator-BfUd_mnx.css"
     ]
   },
   "assets/portal/main.ts": {
