@@ -18720,6 +18720,15 @@
         <target>Studio 组合请求被拒绝。</target>
       </segment>
     </unit>
+    <unit id="core.console.business_schema_evidence.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/BusinessSchemaEvidenceCommand.php.</note>
+      </notes>
+      <segment>
+        <source>File a restore drill as the recovery evidence a destructive schema plan must cite.</source>
+        <target>将恢复演练登记为破坏性架构计划必须引用的恢复证据。</target>
+      </segment>
+    </unit>
     <unit id="core.console.settings.description">
       <notes>
         <note category="context">Console command summary on src/Delivery/Console/Command/ManageSettingsCommand.php.</note>

@@ -301,6 +301,7 @@ use Kumwe\App\BusinessSchema\Application\BusinessSchemaPlanner;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaPlanRepository;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaRecordRepinGateway;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaRecoveryEvidenceRepository;
+use Kumwe\App\BusinessSchema\Application\BusinessSchemaRecoveryEvidenceRecorder;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaService;
 use Kumwe\App\BusinessSchema\Application\DefinitionPhysicalSchemaCompiler;
 use Kumwe\App\BusinessSchema\Application\PhysicalSchemaGateway;
@@ -570,6 +571,7 @@ use Kumwe\App\Delivery\Console\Command\MediaCommand;
 use Kumwe\App\Delivery\Console\Command\WordingCommand;
 use Kumwe\App\Delivery\Console\Command\BusinessSecurityCommand;
 use Kumwe\App\Delivery\Console\Command\BusinessBulkCommand;
+use Kumwe\App\Delivery\Console\Command\BusinessSchemaEvidenceCommand;
 use Kumwe\App\Delivery\Console\Command\StudioBlueprintCommand;
 use Kumwe\App\Delivery\Console\Command\StudioCompositionCommand;
 use Kumwe\App\Delivery\Console\Command\StudioAuthoringCommand;
@@ -4876,6 +4878,14 @@ final class ContainerFactory
             self::service($container, BusinessSchemaApiPresenter::class),
             self::service($container, BusinessApiResponder::class),
             self::service($container, HighImpactCredentialGuard::class),
+            self::service($container, BusinessSchemaRecoveryEvidenceRecorder::class),
+        ), true);
+        $container->share(BusinessSchemaRecoveryEvidenceRecorder::class, static fn (
+            Container $container,
+        ): BusinessSchemaRecoveryEvidenceRecorder => new BusinessSchemaRecoveryEvidenceRecorder(
+            self::service($container, BusinessSchemaService::class),
+            self::service($container, BusinessSchemaEnvironment::class),
+            self::service($container, HighImpactCredentialGuard::class),
         ), true);
         $container->share(PostingPeriodApiHandler::class, static fn (
             Container $container,
@@ -4923,9 +4933,7 @@ final class ContainerFactory
         $container->share(RecordBusinessSchemaRecoveryEvidenceHandler::class, static fn (
             Container $container,
         ): RecordBusinessSchemaRecoveryEvidenceHandler => new RecordBusinessSchemaRecoveryEvidenceHandler(
-            self::service($container, BusinessSchemaService::class),
-            self::service($container, BusinessSchemaEnvironment::class),
-            self::service($container, HighImpactCredentialGuard::class),
+            self::service($container, BusinessSchemaRecoveryEvidenceRecorder::class),
         ), true);
         $container->share(AdministratorContentEditorHandler::class, static fn (
             Container $container,
@@ -6201,6 +6209,7 @@ final class ContainerFactory
             'approve' => 'business.schema.approve',
             'execute' => 'business.schema.execute',
             'recover' => 'business.schema.recover',
+            'recovery-evidence' => 'business.schema.recover',
         ];
         foreach ($planStages as $action => $capability) {
             self::apiRoute($application->post(
@@ -7125,6 +7134,12 @@ final class ContainerFactory
             self::service($container, StudioMachineCompositionGateway::class),
             self::service($container, ConsoleAuthorizer::class),
         ), true);
+        $container->share(BusinessSchemaEvidenceCommand::class, static fn (
+            Container $container,
+        ): BusinessSchemaEvidenceCommand => new BusinessSchemaEvidenceCommand(
+            self::service($container, BusinessSchemaRecoveryEvidenceRecorder::class),
+            self::service($container, ConsoleAuthorizer::class),
+        ), true);
         $container->share(BusinessBulkCommand::class, static fn (
             Container $container,
         ): BusinessBulkCommand => new BusinessBulkCommand(
@@ -7212,6 +7227,7 @@ final class ContainerFactory
                 self::service($container, BusinessBulkCommand::class),
                 self::service($container, StudioCompositionCommand::class),
                 self::service($container, StudioBlueprintCommand::class),
+                self::service($container, BusinessSchemaEvidenceCommand::class),
                 self::service($container, McpServeCommand::class),
             ], self::service($container, Output::class)), true);
     }

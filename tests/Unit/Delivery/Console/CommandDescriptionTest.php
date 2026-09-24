@@ -47,6 +47,7 @@ use Kumwe\App\Delivery\Console\Command\MediaCommand;
 use Kumwe\App\Delivery\Console\Command\WordingCommand;
 use Kumwe\App\Delivery\Console\Command\BusinessSecurityCommand;
 use Kumwe\App\Delivery\Console\Command\BusinessBulkCommand;
+use Kumwe\App\Delivery\Console\Command\BusinessSchemaEvidenceCommand;
 use Kumwe\App\Delivery\Console\Command\StudioBlueprintCommand;
 use Kumwe\App\Delivery\Console\Command\StudioCompositionCommand;
 use Kumwe\App\Delivery\Console\Command\SecurityEventsCommand;
@@ -119,6 +120,7 @@ use ReflectionClass;
 #[CoversClass(BusinessBulkCommand::class)]
 #[CoversClass(StudioCompositionCommand::class)]
 #[CoversClass(StudioBlueprintCommand::class)]
+#[CoversClass(BusinessSchemaEvidenceCommand::class)]
 #[CoversClass(RunExtensionConformanceCommand::class)]
 #[CoversClass(ScaffoldExtensionCommand::class)]
 #[CoversClass(ScheduleRunCommand::class)]
@@ -282,6 +284,7 @@ final class CommandDescriptionTest extends TestCase
             BusinessBulkCommand::class,
             StudioCompositionCommand::class,
             StudioBlueprintCommand::class,
+            BusinessSchemaEvidenceCommand::class,
             UninstallExtensionCommand::class,
             VerifyAuditTrailCommand::class,
             WatchExtensionRuntimeCommand::class,

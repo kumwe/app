@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for ar, carrying 2571 messages.
+ * Compiled interface message catalogue for ar, carrying 2572 messages.
  *
  * Generated from ar.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1947,6 +1947,7 @@ return [
     'core.console.business_record_rekey.description' => 'أعد تشفير أسرار سجلات الأعمال المحفوظة تحت مفتاح التشفير النشط.',
     'core.console.business_report.description' => 'شغّل تقارير مراعية للصلاحيات، واطلب تصديرات CSV مُتحقَّقًا منها أو افحصها أو نزّلها.',
     'core.console.business_schema.description' => 'افحص خطط مخطط الأعمال واعتمدها ونفّذها واستردها.',
+    'core.console.business_schema_evidence.description' => 'سجّل تمرين استعادة بوصفه دليل الاسترداد الذي يجب أن تستشهد به خطة مخطط مدمرة.',
     'core.console.business_security.description' => 'عرض نظرة عامة على أمان الأعمال للمؤسسات والعضويات والسياسات.',
     'core.console.content.description' => 'اسرد المحتوى واقرأه وأنشئه وحدّثه وانقل حالته وانقله إلى سلة المهملات أو استعده.',
     'core.console.content_model.description' => 'اسرد أنواع المحتوى وسير العمل المُصدَّرة واقرأها أو أنشئها أو انشرها.',

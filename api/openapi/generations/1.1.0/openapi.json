@@ -1158,6 +1158,137 @@
                 ],
                 "type": "object"
             },
+            "BusinessSchemaRecoveryEvidence": {
+                "additionalProperties": false,
+                "properties": {
+                    "application_release": {
+                        "type": "string"
+                    },
+                    "backup_created_at": {
+                        "type": "string"
+                    },
+                    "backup_manifest_checksum": {
+                        "type": "string"
+                    },
+                    "database_driver": {
+                        "enum": [
+                            "mariadb",
+                            "mysql",
+                            "pgsql"
+                        ],
+                        "type": "string"
+                    },
+                    "database_server_version": {
+                        "type": "string"
+                    },
+                    "details": {
+                        "additionalProperties": true,
+                        "type": "object"
+                    },
+                    "drill_reference": {
+                        "type": "string"
+                    },
+                    "id": {
+                        "format": "uuid",
+                        "type": "string"
+                    },
+                    "restore_tested": {
+                        "type": "boolean"
+                    },
+                    "site_identifier": {
+                        "type": "string"
+                    },
+                    "source_schema_checksum": {
+                        "type": "string"
+                    },
+                    "verified_at": {
+                        "type": "string"
+                    },
+                    "verified_by": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "application_release",
+                    "backup_created_at",
+                    "backup_manifest_checksum",
+                    "database_driver",
+                    "database_server_version",
+                    "details",
+                    "drill_reference",
+                    "id",
+                    "restore_tested",
+                    "site_identifier",
+                    "source_schema_checksum",
+                    "verified_at",
+                    "verified_by"
+                ],
+                "type": "object"
+            },
+            "BusinessSchemaRecoveryEvidenceInput": {
+                "additionalProperties": false,
+                "properties": {
+                    "backup_created_at": {
+                        "format": "date-time",
+                        "type": "string"
+                    },
+                    "backup_manifest_checksum": {
+                        "maxLength": 128,
+                        "minLength": 1,
+                        "type": "string"
+                    },
+                    "client_version": {
+                        "maxLength": 255,
+                        "minLength": 1,
+                        "type": "string"
+                    },
+                    "current_password": {
+                        "maxLength": 4096,
+                        "minLength": 1,
+                        "type": "string",
+                        "writeOnly": true
+                    },
+                    "drill_reference": {
+                        "maxLength": 255,
+                        "minLength": 1,
+                        "type": "string"
+                    },
+                    "proofs": {
+                        "items": {
+                            "enum": [
+                                "clean_target_restore",
+                                "blueprint_checksum_verified",
+                                "typed_command_verified",
+                                "record_revision_audit_checksums_verified"
+                            ],
+                            "type": "string"
+                        },
+                        "maxItems": 4,
+                        "type": "array",
+                        "uniqueItems": true
+                    },
+                    "restore_target_reference": {
+                        "maxLength": 255,
+                        "minLength": 1,
+                        "type": "string"
+                    },
+                    "verified_at": {
+                        "format": "date-time",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "backup_created_at",
+                    "backup_manifest_checksum",
+                    "client_version",
+                    "current_password",
+                    "drill_reference",
+                    "proofs",
+                    "restore_target_reference",
+                    "verified_at"
+                ],
+                "type": "object"
+            },
             "BusinessSecurityOverview": {
                 "additionalProperties": {
                     "items": {
@@ -10304,6 +10435,100 @@
                 ]
             }
         },
+        "/api/v1/business-schema-plans/{planId}/recovery-evidence": {
+            "post": {
+                "operationId": "recordBusinessSchemaRecoveryEvidence",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/BusinessSchemaPlanId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IdempotencyKey"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/BusinessSchemaRecoveryEvidenceInput"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BusinessSchemaRecoveryEvidence"
+                                }
+                            }
+                        },
+                        "description": "The stored recovery evidence, whose id an approval cites"
+                    },
+                    "403": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "The capability is missing or the current-password re-proof failed"
+                    },
+                    "404": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "No plan with that identifier belongs to this site"
+                    },
+                    "409": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "The drill does not match the site, environment or verifier"
+                    },
+                    "422": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "A member is missing or invalid, a proof is unconfirmed, or the plan has no installed source schema"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": [],
+                        "siteContext": []
+                    }
+                ],
+                "summary": "File a restore drill as recovery evidence for the schema a plan would replace",
+                "x-kumwe-api-version": "v1",
+                "x-kumwe-contract-version": "1.0.0",
+                "x-kumwe-idempotency": "required",
+                "x-kumwe-middleware-contracts": [
+                    "bearer-authentication",
+                    "idempotency-key"
+                ],
+                "x-kumwe-precondition": "none",
+                "x-kumwe-request-body": "json",
+                "x-kumwe-required-capabilities": [
+                    "business.schema.recover"
+                ]
+            }
+        },
         "/api/v1/business-security": {
             "get": {
                 "operationId": "readBusinessSecurityOverview",
@@ -19151,7 +19376,7 @@
             "url": "/"
         }
     ],
-    "x-kumwe-business-generation": "1df07b415920f2ff20ea22d32e16575d7261c93284ebff834470501474932afa",
+    "x-kumwe-business-generation": "0d02e70ec26eb9d50b82ad4cef0fc757736c4ce4cb758599178dac8797c7c6b0",
     "x-kumwe-generated-components": [
         "GeneratedBusinessAction",
         "GeneratedBusinessActionApproval",

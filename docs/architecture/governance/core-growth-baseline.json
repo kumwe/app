@@ -2343,6 +2343,14 @@
             "surface": "0da9fae0aa9ee239ca7aefa4",
             "growth": null
         },
+        "Kumwe\\App\\BusinessSchema\\Application\\BusinessSchemaRecoveryEvidenceRecorder": {
+            "kind": "class",
+            "layer": "application",
+            "surface": "96e39b254c7d2246b4e2e434",
+            "growth": {
+                "record": "KUMWE-CGR-2026-035"
+            }
+        },
         "Kumwe\\App\\BusinessSchema\\Application\\BusinessSchemaRecoveryEvidenceRepository": {
             "kind": "interface",
             "layer": "application",
@@ -2426,8 +2434,14 @@
         "Kumwe\\App\\BusinessSchema\\Delivery\\Administrator\\RecordBusinessSchemaRecoveryEvidenceHandler": {
             "kind": "class",
             "layer": "delivery",
-            "surface": "313a76d19403f8ea8f16ced9",
-            "growth": null
+            "surface": "8d5699275dc947e1dd563309",
+            "growth": {
+                "classification": "host-delivery",
+                "implements": [
+                    "Psr\\Http\\Server\\RequestHandlerInterface"
+                ],
+                "extends": null
+            }
         },
         "Kumwe\\App\\BusinessSchema\\Delivery\\Administrator\\RecoverBusinessSchemaPlanHandler": {
             "kind": "class",
@@ -2438,8 +2452,14 @@
         "Kumwe\\App\\BusinessSchema\\Delivery\\Api\\BusinessSchemaApiHandler": {
             "kind": "class",
             "layer": "delivery",
-            "surface": "0dc701d385f1b31bce3adac2",
-            "growth": null
+            "surface": "1baae2696207da1fc4fd80fc",
+            "growth": {
+                "classification": "host-delivery",
+                "implements": [
+                    "Psr\\Http\\Server\\RequestHandlerInterface"
+                ],
+                "extends": null
+            }
         },
         "Kumwe\\App\\BusinessSchema\\Delivery\\Api\\BusinessSchemaApiPresenter": {
             "kind": "class",
@@ -3069,6 +3089,18 @@
             "layer": "delivery",
             "surface": "f78491cb4461f6f3e7c6a56d",
             "growth": null
+        },
+        "Kumwe\\App\\Delivery\\Console\\Command\\BusinessSchemaEvidenceCommand": {
+            "kind": "class",
+            "layer": "delivery",
+            "surface": "bf68d4fe8b95cf571f222641",
+            "growth": {
+                "classification": "host-delivery",
+                "implements": [
+                    "Kumwe\\App\\Delivery\\Console\\Command"
+                ],
+                "extends": null
+            }
         },
         "Kumwe\\App\\Delivery\\Console\\Command\\BusinessSecurityCommand": {
             "kind": "class",

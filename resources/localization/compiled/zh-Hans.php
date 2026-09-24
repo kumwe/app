@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for zh-Hans, carrying 2571 messages.
+ * Compiled interface message catalogue for zh-Hans, carrying 2572 messages.
  *
  * Generated from zh-Hans.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1947,6 +1947,7 @@ return [
     'core.console.business_record_rekey.description' => '使用当前有效的加密密钥，对已存储的业务记录密钥重新加密。',
     'core.console.business_report.description' => '运行具备权限感知能力的报表，并请求、查看或下载已验证的 CSV 导出文件。',
     'core.console.business_schema.description' => '查看、审批、执行和恢复业务架构计划。',
+    'core.console.business_schema_evidence.description' => '将恢复演练登记为破坏性架构计划必须引用的恢复证据。',
     'core.console.business_security.description' => '显示组织、成员资格和策略的业务安全概览。',
     'core.console.content.description' => '列出、读取、创建、更新、转换、删除或恢复内容。',
     'core.console.content_model.description' => '列出、读取、创建或发布带版本的内容类型和工作流。',

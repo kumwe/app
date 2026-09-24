@@ -1,7 +1,7 @@
 {
     "format": "kumwe-rest-machine-contract-snapshot-v1",
     "generation": "1.1.0",
-    "openapi_semantic_sha256": "047529fde10a6a8d6b4529b4343f72d7035cefed72c750fec49458994f97803f",
+    "openapi_semantic_sha256": "3e906a564127dc777e1561020e966bf568c5c6cc041b148dbcdc81665edc40b8",
     "operations": {
         "activateExtension": {
             "contract_sha256": "b45490458cd5ee55cbe702d67b307ae5a854986407f411ca3b1cdbc33a8acc72",
@@ -533,6 +533,11 @@
             "method": "GET",
             "path": "/api/v1/openapi.json"
         },
+        "recordBusinessSchemaRecoveryEvidence": {
+            "contract_sha256": "9250ec99283c8e7402a57d73065e96fd57e413743731d275e666a6997cd95212",
+            "method": "POST",
+            "path": "/api/v1/business-schema-plans/{planId}/recovery-evidence"
+        },
         "recoverBusinessSchemaPlan": {
             "contract_sha256": "818ed5cd3549e2a084b121bd21b122aa6122ee5727dd8271f9599a14aa80f082",
             "method": "POST",
@@ -734,6 +739,8 @@
         "BusinessSchemaPlanInput": "f195eb0f898d43c9e1c19dd9341b159dedccb502cbddbad8f1ea0a3e490c92b9",
         "BusinessSchemaPlanStep": "356b9afe0919f6cce2970a1e49d238d90260c4941a0005d0333499b92b6a1db0",
         "BusinessSchemaPurgeInput": "0261bf1503d08ae1e170afe14e55aa1c95d60889a8cdcec493916395d26159c7",
+        "BusinessSchemaRecoveryEvidence": "f4fd16f7f86370fe2dfc194b3e7ce1083aa99223666bf5119896f1ea284f7510",
+        "BusinessSchemaRecoveryEvidenceInput": "0d9095c52785dd43c12d1c6cf1967a58b1a82970d6c8d77062cb39213147bd0e",
         "BusinessSecurityOverview": "184191054e38d9cc04e11ad481d92eb2c31d71e96c5b1b95ee46f47e7fc73fe8",
         "CapabilityRecord": "6bb4a13ef0b57fa50f8858c3414f335839973131430bac9260daa50b361ef1ee",
         "Content": "68fce65eab053f2e360cb4c328e8cb534f228ace375738bb876335b0373de657",

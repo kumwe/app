@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for pt-BR, carrying 2571 messages.
+ * Compiled interface message catalogue for pt-BR, carrying 2572 messages.
  *
  * Generated from pt-BR.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1947,6 +1947,7 @@ return [
     'core.console.business_record_rekey.description' => 'Recriptografe os segredos de registros de negócio armazenados sob a chave de criptografia ativa.',
     'core.console.business_report.description' => 'Execute relatórios sensíveis a permissões e solicite, inspecione ou baixe exportações CSV verificadas.',
     'core.console.business_schema.description' => 'Inspecione, aprove, execute e recupere planos de esquema de negócio.',
+    'core.console.business_schema_evidence.description' => 'Registrar um exercício de restauração como a evidência de recuperação que um plano de esquema destrutivo deve citar.',
     'core.console.business_security.description' => 'Mostre a visão geral da Segurança empresarial com organizações, associações e políticas.',
     'core.console.content.description' => 'Liste, leia, crie, atualize, transicione, envie para a lixeira ou restaure conteúdo.',
     'core.console.content_model.description' => 'Liste, leia, crie ou publique tipos de conteúdo e fluxos de trabalho versionados.',

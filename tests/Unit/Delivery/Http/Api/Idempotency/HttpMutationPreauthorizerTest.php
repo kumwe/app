@@ -53,6 +53,25 @@ final class HttpMutationPreauthorizerTest extends TestCase
                 'approval_request',
                 $approval,
             ],
+            ['POST', '/api/v1/extensions', 'extensions.manage', 'extension', '*'],
+            ['PUT', '/api/v1/business-definitions/acme.lead/draft', 'content.update', 'business_definition', '*'],
+            ['POST', '/api/v1/business-definitions/acme.lead/validate', 'content.update', 'business_definition', '*'],
+            ['POST', '/api/v1/business-definitions/acme.lead/publish', 'content.update', 'business_definition', '*'],
+            ['POST', '/api/v1/business-definitions/acme.lead/reject', 'content.update', 'business_definition', '*'],
+            ['POST', '/api/v1/business-periods/close', 'business.period.manage', 'business_posting_period', '*'],
+            ['POST', '/api/v1/business-periods/reopen', 'business.period.manage', 'business_posting_period', '*'],
+            ['POST', '/api/v1/business-schema-plans', 'business.schema.plan', 'business_schema', '*'],
+            ['POST', '/api/v1/business-schema-plans/purge', 'business.schema.destructive', 'business_schema', '*'],
+            ['POST', '/api/v1/business-schema-plans/plan-1/approve', 'business.schema.approve', 'business_schema', '*'],
+            ['POST', '/api/v1/business-schema-plans/plan-1/execute', 'business.schema.execute', 'business_schema', '*'],
+            ['POST', '/api/v1/business-schema-plans/plan-1/recover', 'business.schema.recover', 'business_schema', '*'],
+            [
+                'POST',
+                '/api/v1/business-schema-plans/plan-1/recovery-evidence',
+                'business.schema.recover',
+                'business_schema',
+                '*',
+            ],
         ];
         foreach ($cases as [$method, $path, $capability, $type, $identifier]) {
             $calls = [];
@@ -73,6 +92,34 @@ final class HttpMutationPreauthorizerTest extends TestCase
             );
 
             self::assertSame([[$capability, $type, $identifier]], $calls, $method . ' ' . $path);
+        }
+    }
+
+    /**
+     * A route shape no branch claims, including a schema stage under the wrong verb, is refused by default.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testUnclaimedRoutesAreRefusedByDefault(): void
+    {
+        foreach (
+            [
+                ['GET', '/api/v1/business-schema-plans/purge'],
+                ['POST', '/api/v1/business-schema-plans/plan-1/retire'],
+                ['DELETE', '/api/v1/business-definitions/acme.lead/publish'],
+            ] as [$method, $path]
+        ) {
+            try {
+                $this->preauthorizer($this->createStub(AuthorizationGateway::class))->authorize(
+                    (new ServerRequestFactory())->createServerRequest($method, $path),
+                    AuthorizationContext::human(['content.update']),
+                );
+                self::fail($method . ' ' . $path . ' must be refused.');
+            } catch (\InvalidArgumentException $refused) {
+                self::assertSame('The idempotent endpoint has no exact authorization policy.', $refused->getMessage());
+            }
         }
     }
 

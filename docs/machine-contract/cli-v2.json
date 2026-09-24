@@ -2,7 +2,7 @@
   "format": "kumwe-cli-machine-contract-v1",
   "generation": 2,
   "status": "retained",
-  "surface_digest": "sha256:8adcd2a03be8a355dbe90dbb958d570251a1be1e310ef93a493fd59e12869d6c",
+  "surface_digest": "sha256:276d8130284e011656b4ef4e4e634d1b5df02d8a3a24be1be4b5893353c6e76c",
   "dispatcher": {
     "list_exit": 0,
     "unknown_command_exit": 64,
@@ -366,6 +366,29 @@
         {"name":"approve","risk":"high-impact","positionals":[],"allowed_options":["site","token-file","plan","expected-checksum","confirmation","evidence"],"required_options":["site","token-file","plan","expected-checksum"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
         {"name":"execute","risk":"high-impact","positionals":[],"allowed_options":["site","token-file","plan"],"required_options":["site","token-file","plan"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
         {"name":"recover","risk":"high-impact","positionals":[],"allowed_options":["site","token-file","plan"],"required_options":["site","token-file","plan"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "business-schema-evidence",
+      "action_argument": true,
+      "default_action": null,
+      "options": [
+        {"name":"site","type":"identifier","enum":[]},
+        {"name":"token-file","type":"secret-file","enum":[]},
+        {"name":"plan","type":"identifier","enum":[]},
+        {"name":"proofs","type":"string","enum":[]},
+        {"name":"backup-manifest-checksum","type":"identifier","enum":[]},
+        {"name":"backup-created-at","type":"string","enum":[]},
+        {"name":"verified-at","type":"string","enum":[]},
+        {"name":"drill-reference","type":"string","enum":[]},
+        {"name":"client-version","type":"string","enum":[]},
+        {"name":"restore-target-reference","type":"string","enum":[]},
+        {"name":"password-file","type":"secret-file","enum":[]}
+      ],
+      "output": {"stdout":"json-document","stderr":"text-lines"},
+      "exit_codes": {"0":"success","1":"operation-failed"},
+      "actions": [
+        {"name":"record","risk":"mutate","positionals":[],"allowed_options":["site","token-file","plan","proofs","backup-manifest-checksum","backup-created-at","verified-at","drill-reference","client-version","restore-target-reference","password-file"],"required_options":["site","token-file","plan","proofs","backup-manifest-checksum","backup-created-at","verified-at","drill-reference","client-version","restore-target-reference","password-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
       ]
     },
     {

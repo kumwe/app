@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for af, carrying 2571 messages.
+ * Compiled interface message catalogue for af, carrying 2572 messages.
  *
  * Generated from af.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1947,6 +1947,7 @@ return [
     'core.console.business_record_rekey.description' => 'Herenkripteer gestoorde besigheidsrekord-geheime onder die aktiewe enkripsiesleutel.',
     'core.console.business_report.description' => 'Laat toestemmingsbewuste verslae loop, en versoek, ondersoek of laai geverifieerde CSV-uitvoere af.',
     'core.console.business_schema.description' => 'Ondersoek, keur goed, voer uit, en herstel besigheidskema-planne.',
+    'core.console.business_schema_evidence.description' => 'Liasseer \'n herstel-oefening as die herstelbewys wat \'n vernietigende skemaplan moet aanhaal.',
     'core.console.business_security.description' => 'Wys die Besigheidsekuriteit-oorsig van organisasies, lidmaatskappe en beleide.',
     'core.console.content.description' => 'Lys, lees, skep, werk by, skakel oor, gooi weg, of herstel inhoud.',
     'core.console.content_model.description' => 'Lys, lees, skep of publiseer weergegewe inhoudtipes en werkvloeie.',

@@ -88,9 +88,10 @@ final class BusinessRuntimeBoundaryTest extends TestCase
         $purge = $this->contents(
             'src/BusinessSchema/Delivery/Administrator/CreateBusinessSchemaPurgePlanHandler.php',
         );
-        $evidence = $this->contents(
-            'src/BusinessSchema/Delivery/Administrator/RecordBusinessSchemaRecoveryEvidenceHandler.php',
-        );
+        // The screen, REST and the console file drills through one use case, so its source carries the rules.
+        $evidence = $this->contents('src/BusinessSchema/Application/BusinessSchemaRecoveryEvidenceRecorder.php');
+        $evidenceScreen = 'src/BusinessSchema/Delivery/Administrator/RecordBusinessSchemaRecoveryEvidenceHandler.php';
+        self::assertStringContainsString('BusinessSchemaRecoveryEvidenceRecorder', $this->contents($evidenceScreen));
 
         foreach (
             [

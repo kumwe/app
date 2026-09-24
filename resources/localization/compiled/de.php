@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for de, carrying 2571 messages.
+ * Compiled interface message catalogue for de, carrying 2572 messages.
  *
  * Generated from de.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1947,6 +1947,7 @@ return [
     'core.console.business_record_rekey.description' => 'Verschlüsselt gespeicherte Geheimnisse von Geschäftsdatensätzen erneut unter dem aktiven Verschlüsselungsschlüssel.',
     'core.console.business_report.description' => 'Führt berechtigungsbewusste Berichte aus und fordert geprüfte CSV-Exporte an, prüft oder lädt sie herunter.',
     'core.console.business_schema.description' => 'Prüft, gibt frei, führt aus und stellt Geschäftsschemapläne wieder her.',
+    'core.console.business_schema_evidence.description' => 'Eine Wiederherstellungsübung als Wiederherstellungsnachweis hinterlegen, den ein destruktiver Schemaplan anführen muss.',
     'core.console.business_security.description' => 'Die Business-Security-Übersicht über Organisationen, Mitgliedschaften und Richtlinien anzeigen.',
     'core.console.content.description' => 'Listet Inhalte auf, liest, erstellt, aktualisiert, überführt, verschiebt in den Papierkorb oder stellt sie wieder her.',
     'core.console.content_model.description' => 'Listet versionierte Inhaltstypen und Workflows auf, liest, erstellt oder veröffentlicht sie.',

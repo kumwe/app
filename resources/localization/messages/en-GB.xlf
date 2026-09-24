@@ -16586,6 +16586,14 @@
         <source>The Studio composition request was refused.</source>
       </segment>
     </unit>
+    <unit id="core.console.business_schema_evidence.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/BusinessSchemaEvidenceCommand.php.</note>
+      </notes>
+      <segment>
+        <source>File a restore drill as the recovery evidence a destructive schema plan must cite.</source>
+      </segment>
+    </unit>
     <unit id="core.console.settings.description">
       <notes>
         <note category="context">Console command summary on src/Delivery/Console/Command/ManageSettingsCommand.php.</note>
