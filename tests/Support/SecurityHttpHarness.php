@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Support;
 
 use Kumwe\App\Administrator\Http\Handler\AdministratorLoginHandler;
+use Kumwe\App\Delivery\Console\Command;
+use Kumwe\App\Delivery\Console\Output;
 use Kumwe\App\Http\Middleware\BearerAuthenticationMiddleware;
 use Kumwe\App\Identity\Application\Administration\AccessControlService;
 use Kumwe\App\Identity\Application\Administration\AdministratorIdentityGateway;
@@ -94,6 +96,9 @@ final class SecurityHttpHarness
     /**
      * Build a request on the trusted origin carrying the harness browser's user agent.
      *
+     * The query string is parsed into the query parameters exactly as the SAPI populates `$_GET`, because a
+     * factory-built request otherwise carries the query only in its URI and handlers read the parameters.
+     *
      * @param   string  $method  HTTP method.
      * @param   string  $path    Absolute path, optionally with a query string.
      *
@@ -103,10 +108,17 @@ final class SecurityHttpHarness
      */
     public function request(string $method, string $path): ServerRequestInterface
     {
-        return (new ServerRequestFactory())
+        $request = (new ServerRequestFactory())
             ->createServerRequest($method, self::ORIGIN . $path)
             ->withHeader('Host', 'kumwe.test')
             ->withHeader('User-Agent', self::USER_AGENT);
+        $query = parse_url(self::ORIGIN . $path, PHP_URL_QUERY);
+        if (is_string($query) && $query !== '') {
+            parse_str($query, $parameters);
+            $request = $request->withQueryParams($parameters);
+        }
+
+        return $request;
     }
 
     /**
@@ -162,7 +174,8 @@ final class SecurityHttpHarness
      * @param   string        $audience      Token audience, `kumwe-http` for REST or `kumwe-mcp` for MCP.
      * @param   string        $purpose       Token purpose, `api` for REST or `mcp` for MCP.
      *
-     * @return  array{token: string, subject: string, email: string}  Plaintext token, user UUID and address.
+     * @return  array{token: string, subject: string, email: string, grants: array<string, string>}  Plaintext
+     *          token, user UUID, address, and the grant UUID of each capability for revocation tests.
      *
      * @throws  RuntimeException  When the access-control services are unavailable.
      *
@@ -180,8 +193,9 @@ final class SecurityHttpHarness
         $email = sprintf('security-%s@example.test', $marker);
         $subject = $access->createUser($administrator, $email, 'Security qualification actor', 'correct horse battery');
         $role = $access->createRole($administrator, 'security-' . $marker, 'Security qualification role');
+        $grants = [];
         foreach ($capabilities as $capability) {
-            $access->grant($administrator, $role, $capability);
+            $grants[$capability] = $access->grant($administrator, $role, $capability);
         }
         $access->assignRole($administrator, $subject, $role);
         $issued = $identities->issueAccessToken(
@@ -194,7 +208,7 @@ final class SecurityHttpHarness
             $purpose,
         );
 
-        return ['token' => $issued['token'], 'subject' => $subject, 'email' => $email];
+        return ['token' => $issued['token'], 'subject' => $subject, 'email' => $email, 'grants' => $grants];
     }
 
     /**
@@ -310,6 +324,101 @@ final class SecurityHttpHarness
             ->withHeader('Accept', 'application/json, text/event-stream');
 
         return $session === null ? $request : $request->withHeader('Mcp-Session-Id', $session);
+    }
+
+    /**
+     * Run one console command through its production composition and capture what it printed.
+     *
+     * @param   class-string<Command>  $command    Command class the container composes.
+     * @param   list<string>           $arguments  Arguments exactly as `bin/kumwe` would pass them.
+     *
+     * @return  array{status: int, output: string, errors: string}  Exit status and both output channels.
+     *
+     * @throws  RuntimeException  When the container does not compose the command.
+     *
+     * @since   2.0.0
+     */
+    public function console(string $command, array $arguments): array
+    {
+        $instance = $this->container->get($command);
+        if (!$instance instanceof Command) {
+            throw new RuntimeException('The container does not compose the requested command.');
+        }
+        $output = new class implements Output {
+            use TranslatesConsoleOutput;
+
+            /**
+             * Lines the command printed to standard output.
+             *
+             * @var    list<string>
+             * @since  2.0.0
+             */
+            public array $lines = [];
+
+            /**
+             * Lines the command printed to standard error.
+             *
+             * @var    list<string>
+             * @since  2.0.0
+             */
+            public array $errors = [];
+
+            /**
+             * Record one standard-output line.
+             *
+             * @param   string  $message  Printed line.
+             *
+             * @return  void
+             *
+             * @since   2.0.0
+             */
+            public function line(string $message): void
+            {
+                $this->lines[] = $message;
+            }
+
+            /**
+             * Record one standard-error line.
+             *
+             * @param   string  $message  Printed line.
+             *
+             * @return  void
+             *
+             * @since   2.0.0
+             */
+            public function error(string $message): void
+            {
+                $this->errors[] = $message;
+            }
+        };
+        $status = $instance->execute($arguments, $output);
+
+        return [
+            'status' => $status,
+            'output' => implode("\n", $output->lines),
+            'errors' => implode("\n", $output->errors),
+        ];
+    }
+
+    /**
+     * Write a token into an owner-only file, as an operator hands one to `--token-file`.
+     *
+     * @param   string  $token  Plaintext token.
+     *
+     * @return  string  Absolute path of the protected file; the caller removes it.
+     *
+     * @throws  RuntimeException  When the file cannot be written and protected.
+     *
+     * @since   2.0.0
+     */
+    public function tokenFile(string $token): string
+    {
+        $path = tempnam(sys_get_temp_dir(), 'kumwe-security-token-');
+        if (!is_string($path) || !chmod($path, 0o600) || file_put_contents($path, $token) === false) {
+            throw new RuntimeException('The protected token file could not be written.');
+        }
+
+        return $path;
     }
 
     /**
