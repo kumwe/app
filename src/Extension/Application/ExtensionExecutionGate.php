@@ -19,7 +19,12 @@ interface ExtensionExecutionGate
     /**
      * Report whether the exact boot-time extension generation may still execute.
      *
+     * Impure by contract: every call reads live authority, so two calls around a trust read may disagree
+     * when a lifecycle change commits between them, and that disagreement is the fence readers rely on.
+     *
      * @return  bool  True only while local publication bytes and registry authority still match.
+     *
+     * @phpstan-impure
      *
      * @since   2.0.0
      */
