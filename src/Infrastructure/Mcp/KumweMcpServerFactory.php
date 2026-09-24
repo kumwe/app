@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Infrastructure\Mcp;
 
+use Mcp\Capability\Registry;
 use Mcp\Capability\Registry\ReferenceHandler;
 use Mcp\Schema\ServerCapabilities;
 use Mcp\Schema\ToolAnnotations;
@@ -66,7 +67,8 @@ final readonly class KumweMcpServerFactory
      * own rules. Every entry is then registered before the server is returned, so the returned instance
      * is complete and ready to be handed a transport. Because the handlers carry the caller's context,
      * the result is single-use in practice: build one per HTTP request or per stdio process rather than
-     * caching it.
+     * caching it. Tool calls are answered by `McpToolCallHandler`, registered ahead of the SDK default and
+     * identical to it except that its argument validator reads the schemas as JSON Schema defines them.
      *
      * @param   KumweMcpHandlers  $handlers  Handler object, already bound to the caller's execution context,
      *          whose methods the catalogue entries name.
@@ -91,7 +93,12 @@ final readonly class KumweMcpServerFactory
         /** @var list<array{name: string, title: string, description: string, handler: string}> $prompts */
         $prompts = $this->catalog->prompts();
         $this->validator->assertValid($tools, $resources, $prompts, $handlers);
+        $logger = new McpProtocolLogRedactor($this->logger);
+        $registry = new Registry(null, $logger);
+        $references = new McpToolReferenceHandler(new ReferenceHandler(), $this->errors);
         $builder = Server::builder()
+            ->setRegistry($registry)
+            ->addRequestHandler(new McpToolCallHandler($registry, $references, $logger))
             ->setServerInfo(
                 name: 'Kumwe App',
                 version: $this->serverVersion,
@@ -101,8 +108,8 @@ final readonly class KumweMcpServerFactory
                 'Use the least-privilege token required for each operation. Mutations use the same audited '
                 . 'application services and optimistic concurrency rules as the administrator and REST API.',
             )
-            ->setLogger(new McpProtocolLogRedactor($this->logger))
-            ->setReferenceHandler(new McpToolReferenceHandler(new ReferenceHandler(), $this->errors))
+            ->setLogger($logger)
+            ->setReferenceHandler($references)
             ->setLazyLoading(false)
             ->setCapabilities(new ServerCapabilities(
                 tools: true,

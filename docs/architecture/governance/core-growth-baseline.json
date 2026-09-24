@@ -5100,6 +5100,16 @@
             "surface": "43111b70d9d76aa0144268b8",
             "growth": null
         },
+        "Kumwe\\App\\Infrastructure\\Mcp\\McpEcmaPatternSchemaValidator": {
+            "kind": "class",
+            "layer": "infrastructure",
+            "surface": "0617fee4a486152ccf933072",
+            "growth": {
+                "classification": "host-infrastructure",
+                "implements": [],
+                "extends": "Mcp\\Capability\\Discovery\\SchemaValidator"
+            }
+        },
         "Kumwe\\App\\Infrastructure\\Mcp\\McpJsonSchemaNormalizer": {
             "kind": "class",
             "layer": "infrastructure",
@@ -5153,6 +5163,18 @@
             "layer": "infrastructure",
             "surface": "90b89d7eb7d307522a0edf09",
             "growth": null
+        },
+        "Kumwe\\App\\Infrastructure\\Mcp\\McpToolCallHandler": {
+            "kind": "class",
+            "layer": "infrastructure",
+            "surface": "95d356719320a7cf007e8ac2",
+            "growth": {
+                "classification": "host-infrastructure",
+                "implements": [
+                    "Mcp\\Server\\Handler\\Request\\RequestHandlerInterface"
+                ],
+                "extends": null
+            }
         },
         "Kumwe\\App\\Infrastructure\\Mcp\\McpToolErrorEnvelope": {
             "kind": "class",
