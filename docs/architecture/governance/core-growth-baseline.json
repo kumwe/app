@@ -5136,6 +5136,18 @@
                 "extends": null
             }
         },
+        "Kumwe\\App\\Infrastructure\\Mcp\\McpProtocolLogRedactor": {
+            "kind": "class",
+            "layer": "infrastructure",
+            "surface": "239ecd2c7adcf0ed151f3b61",
+            "growth": {
+                "classification": "host-infrastructure",
+                "implements": [
+                    "Psr\\Log\\LoggerInterface"
+                ],
+                "extends": null
+            }
+        },
         "Kumwe\\App\\Infrastructure\\Mcp\\McpRiskClass": {
             "kind": "enum",
             "layer": "infrastructure",
