@@ -729,6 +729,11 @@
                             "proves": "Declared fields are redacted at every nesting level."
                         },
                         {
+                            "test": "tests/Unit/Infrastructure/Observability/LoggingContractTest.php::testCredentialsInTheMessagePlainValuesAndSerializableObjectsAreScrubbed",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Payload objects are walked through their serialized form before formatting."
+                        },
+                        {
                             "test": "tests/Unit/Http/Middleware/ObservabilityMiddlewareTest.php::testNoRequestPathOrIdentifierEverReachesALabel",
                             "job": ".github/workflows/ci.yml#quality",
                             "proves": "No request path or identifier reaches a metric label."
@@ -1038,6 +1043,11 @@
                             "test": "tests/Integration/Extension/TrustLifecycleIntegrationTest.php::testFinalRotationRefusesDisabledCurrentRelease",
                             "job": ".github/workflows/ci.yml#database",
                             "proves": "Final rotation refuses a disabled current release."
+                        },
+                        {
+                            "test": "tests/Functional/Security/ExtensionTrustRevocationBoundaryTest.php::testAssetsFollowTheSigningKeyThroughRotationAndEmergencyRevocation",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Over HTTP, an asset stays served through a rotation overlap and a premature final revocation is refused."
                         }
                     ]
                 },
@@ -1065,6 +1075,11 @@
                             "test": "tests/Integration/Mcp/McpTrustLifecycleIntegrationTest.php::testEmergencyRevocationHoldsLifecycleLockUntilMcpTransactionCommitsOnMySql",
                             "job": ".github/workflows/ci.yml#database",
                             "proves": "Revocation waits for an in-flight MCP transaction."
+                        },
+                        {
+                            "test": "tests/Functional/Security/ExtensionTrustRevocationBoundaryTest.php::testAssetsFollowTheSigningKeyThroughRotationAndEmergencyRevocation",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "An emergency revocation withdraws the signed asset with the answer a missing file gets."
                         }
                     ]
                 },
@@ -1097,6 +1112,11 @@
                             "test": "tests/Integration/BusinessIntegration/IndependentReceiptFanoutIntegrationTest.php::testGenerationUpgradePreservesActiveFencesAndRestartsOnlyPoisonWork",
                             "job": ".github/workflows/ci.yml#database",
                             "proves": "A generation upgrade preserves active fences."
+                        },
+                        {
+                            "test": "tests/Functional/Security/ExtensionTrustRevocationBoundaryTest.php::testAssetsFollowTheSigningKeyThroughRotationAndEmergencyRevocation",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "A process booted before any trust change is fenced with a retryable 503 over the live pipeline."
                         }
                     ]
                 }
@@ -1192,6 +1212,11 @@
                             "test": "tests/Unit/Kernel/Configuration/ConfigurationFactoryTest.php::testRuntimeSigningKeyCannotReuseApplicationSecret",
                             "job": ".github/workflows/ci.yml#quality",
                             "proves": "Signing keys cannot reuse the application secret."
+                        },
+                        {
+                            "test": "tests/Unit/Kernel/Configuration/ConfigurationFactoryTest.php::testARevocationFeedUrlCarryingCredentialsOrAQueryIsRefused",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "A configured origin cannot smuggle credentials into logs, audit and state."
                         }
                     ]
                 },
@@ -1243,6 +1268,11 @@
                             "test": "tests/Unit/Infrastructure/Observability/LoggingContractTest.php::testTheWiredLoggerWritesOneJsonLineCarryingTheContractAndNoSecret",
                             "job": ".github/workflows/ci.yml#quality",
                             "proves": "The wired logger writes no secret."
+                        },
+                        {
+                            "test": "tests/Unit/Infrastructure/Observability/LoggingContractTest.php::testCredentialsInTheMessagePlainValuesAndSerializableObjectsAreScrubbed",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Credentials in messages, plain values and serializable objects are scrubbed."
                         },
                         {
                             "test": "tests/Unit/Http/Middleware/SecurityMiddlewareTest.php::testProblemResponseDoesNotDiscloseProductionException",
