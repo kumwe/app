@@ -183,6 +183,42 @@ final class BusinessApprovalMachineEquivalenceIntegrationTest extends TestCase
     }
 
     /**
+     * A credential holding no approval authority is refused the MCP inbox and a request's detail outright.
+     *
+     * The MCP inbox tools admit any one approval capability and leave row filtering to the approval query, so
+     * the tool itself is the only gate for a credential holding none of them. It must refuse rather than
+     * answer an empty page, and a real pending request stays unreadable to it.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testACredentialWithoutApprovalAuthorityIsRefusedTheMcpInboxAndDetail(): void
+    {
+        [$container, $harness, $definition] = $this->boot();
+        $request = $this->requestApproval(
+            $harness,
+            'rest',
+            $harness->token('rest', self::AGENT),
+            $definition,
+            $this->record($container, $definition, 'outsider'),
+        );
+        $outsider = $harness->token('mcp', ['business.record.read']);
+
+        $refusals = [
+            'list' => $harness->mcp($outsider, 'kumwe_business_approval_list', ['limit' => 100]),
+            'get' => $harness->mcp($outsider, 'kumwe_business_approval_get', ['approval' => $request]),
+        ];
+
+        foreach ($refusals as $tool => $refused) {
+            self::assertTrue($refused['error'], $tool . ' answered a credential without approval authority.');
+            self::assertIsArray($refused['value'], $tool);
+            self::assertSame('authorization.denied', $refused['value']['code'] ?? null, $tool);
+            self::assertStringNotContainsString($request, (string) json_encode($refused['value']), $tool);
+        }
+    }
+
+    /**
      * No machine surface can decide an approval, and the agent's own credential is refused by the workflow.
      *
      * @return  void
