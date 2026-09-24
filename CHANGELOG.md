@@ -149,7 +149,9 @@ portfolio, soaks, the independent review and the out-of-process extension runtim
 - Refuse every inline style source: the content-security policy sends `style-src 'self'`,
   `style-src-attr 'none'` and `style-src-elem 'self'` on every response. The per-site palette moves from a
   `<body>` style attribute to the digest-versioned same-origin `/presentation/theme.css`; the named residuals
-  are the isolated SVG media policy and CSSOM frame sizing in the Studio shell (`GM-SUP-08`) (#152).
+  are the isolated SVG media policy and CSSOM frame sizing in the Studio shell (`GM-SUP-08`). The Studio preview
+  carries that frame sizing to each swapped-in frame through the CSSOM as well, instead of a copied `style`
+  attribute the policy refuses, so the expanded and medium viewports keep their width (#152).
 
 - Lock exactly one queue permit by primary key when acquiring capacity, so MySQL 8.4's sorted skip-locked read no
   longer locks every free permit it examines and a second replica finds its free slot, and release the dead
