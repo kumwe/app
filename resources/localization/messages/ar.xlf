@@ -5755,7 +5755,7 @@
         <note category="context">Record surface text on templates/administrator/business-definitions.twig.</note>
       </notes>
       <segment>
-        <source>{count, plural, other {# definitions}}</source>
+        <source>{count, plural, one {# definition} other {# definitions}}</source>
         <target>{count, plural, zero {# تعريفات} one {# تعريف} two {# تعريفين} few {# تعريفات} many {# تعريف} other {# تعريف}}</target>
       </segment>
     </unit>
@@ -8986,7 +8986,7 @@
         <note category="context">Record surface text on templates/administrator/business-schema-plans.twig.</note>
       </notes>
       <segment>
-        <source>{count, plural, other {# immutable plans}}</source>
+        <source>{count, plural, one {# immutable plan} other {# immutable plans}}</source>
         <target>{count, plural, zero {# خطط ثابتة} one {# خطة ثابتة} two {# خطتين ثابتتين} few {# خطط ثابتة} many {# خطة ثابتة} other {# خطة ثابتة}}</target>
       </segment>
     </unit>
@@ -19223,7 +19223,7 @@
       </notes>
       <segment>
         <source>Content</source>
-        <target>Content</target>
+        <target>المحتوى</target>
       </segment>
     </unit>
     <unit id="core.studio.contextual.mode-model">
@@ -19232,7 +19232,7 @@
       </notes>
       <segment>
         <source>Model</source>
-        <target>Model</target>
+        <target>النموذج</target>
       </segment>
     </unit>
     <unit id="core.studio.contextual.model-coordinate-mismatch">
@@ -21200,6 +21200,458 @@
       <segment>
         <source>Your password could not be changed. Check your current password and choose a different password with at least 12 characters.</source>
         <target>تعذّر تغيير كلمة مرورك. تحقّق من كلمة مرورك الحالية واختر كلمة مرور مختلفة لا تقل عن 12 حرفًا.</target>
+      </segment>
+    </unit>
+  </file>
+  <file id="core-navigation">
+    <unit id="core.navigation.administrator_workspace.workspace.label">
+      <notes>
+        <note category="context">Administrator sidebar group heading for everyday work.</note>
+      </notes>
+      <segment>
+        <source>Workspace</source>
+        <target>مساحة العمل</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator_workspace.workspace.description">
+      <notes>
+        <note category="context">Explains the Workspace sidebar group.</note>
+      </notes>
+      <segment>
+        <source>Daily content and publishing work.</source>
+        <target>أعمال المحتوى والنشر اليومية.</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator_workspace.structure.label">
+      <notes>
+        <note category="context">Administrator sidebar group heading for models, menus and definitions.</note>
+      </notes>
+      <segment>
+        <source>Structure</source>
+        <target>البنية</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator_workspace.structure.description">
+      <notes>
+        <note category="context">Explains the Structure sidebar group.</note>
+      </notes>
+      <segment>
+        <source>Content structure and public navigation.</source>
+        <target>بنية المحتوى والتنقل العام.</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator_workspace.system.label">
+      <notes>
+        <note category="context">Administrator sidebar group heading for identity, extensions and settings.</note>
+      </notes>
+      <segment>
+        <source>System</source>
+        <target>النظام</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator_workspace.system.description">
+      <notes>
+        <note category="context">Explains the System sidebar group.</note>
+      </notes>
+      <segment>
+        <source>Identity, extensions, automation, and settings.</source>
+        <target>الهوية والامتدادات والأتمتة والإعدادات.</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.dashboard.label">
+      <notes>
+        <note category="context">Administrator navigation entry and command for the dashboard.</note>
+      </notes>
+      <segment>
+        <source>Dashboard</source>
+        <target>لوحة التحكم</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.dashboard.description">
+      <notes>
+        <note category="context">Describes the dashboard entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Overview and publishing activity</source>
+        <target>نظرة عامة ونشاط النشر</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.content.label">
+      <notes>
+        <note category="context">Administrator navigation entry for the content list.</note>
+      </notes>
+      <segment>
+        <source>Content</source>
+        <target>المحتوى</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.content.description">
+      <notes>
+        <note category="context">Describes the content entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Find, edit and publish content</source>
+        <target>البحث عن المحتوى وتحريره ونشره</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.create-content.label">
+      <notes>
+        <note category="context">Administrator navigation entry that opens the content editor for a new item.</note>
+      </notes>
+      <segment>
+        <source>Create content</source>
+        <target>إنشاء محتوى</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.create-content.description">
+      <notes>
+        <note category="context">Describes the create-content entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Start a new content item</source>
+        <target>بدء عنصر محتوى جديد</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.media.label">
+      <notes>
+        <note category="context">Administrator navigation entry for the media library.</note>
+      </notes>
+      <segment>
+        <source>Media</source>
+        <target>الوسائط</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.media.description">
+      <notes>
+        <note category="context">Describes the media entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Browse and upload files</source>
+        <target>استعراض الملفات ورفعها</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.models.label">
+      <notes>
+        <note category="context">Administrator navigation entry for content models.</note>
+      </notes>
+      <segment>
+        <source>Content models</source>
+        <target>نماذج المحتوى</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.models.description">
+      <notes>
+        <note category="context">Describes the content-models entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Fields and publishing workflows</source>
+        <target>الحقول ومسارات عمل النشر</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.navigation.label">
+      <notes>
+        <note category="context">Administrator navigation entry for public menus.</note>
+      </notes>
+      <segment>
+        <source>Menus</source>
+        <target>القوائم</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.navigation.description">
+      <notes>
+        <note category="context">Describes the menus entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Public navigation structure</source>
+        <target>بنية التنقل العام</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.wording.label">
+      <notes>
+        <note category="context">Administrator navigation entry for interface wording overrides.</note>
+      </notes>
+      <segment>
+        <source>Wording</source>
+        <target>الصياغة</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.wording.description">
+      <notes>
+        <note category="context">Describes the wording entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Change interface wording without a deployment</source>
+        <target>تغيير صياغة الواجهة دون نشر إصدار جديد</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.business-definitions.label">
+      <notes>
+        <note category="context">Administrator navigation entry for business definitions.</note>
+      </notes>
+      <segment>
+        <source>Business definitions</source>
+        <target>تعريفات الأعمال</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.business-definitions.description">
+      <notes>
+        <note category="context">Describes the business-definitions entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Operational entities, fields and relationships</source>
+        <target>الكيانات التشغيلية والحقول والعلاقات</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.business-records.label">
+      <notes>
+        <note category="context">Administrator navigation entry for the generated business record workspaces.</note>
+      </notes>
+      <segment>
+        <source>Business workspaces</source>
+        <target>مساحات عمل الأعمال</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.business-records.description">
+      <notes>
+        <note category="context">Describes the business-workspaces entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Work with generated operational records</source>
+        <target>العمل مع السجلات التشغيلية المُولَّدة</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.business-reports.label">
+      <notes>
+        <note category="context">Administrator navigation entry for business reports.</note>
+      </notes>
+      <segment>
+        <source>Business reports</source>
+        <target>تقارير الأعمال</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.business-reports.description">
+      <notes>
+        <note category="context">Describes the business-reports entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Run policy-filtered reports and retrieve verified exports</source>
+        <target>تشغيل تقارير مُصفّاة بالسياسة واسترداد عمليات تصدير موثّقة</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.business-schema-plans.label">
+      <notes>
+        <note category="context">Administrator navigation entry for generated schema plans.</note>
+      </notes>
+      <segment>
+        <source>Schema plans</source>
+        <target>خطط المخطط</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.business-schema-plans.description">
+      <notes>
+        <note category="context">Describes the schema-plans entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Inspect and control generated relational storage</source>
+        <target>فحص التخزين العلائقي المُولَّد والتحكم فيه</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.access.label">
+      <notes>
+        <note category="context">Administrator navigation entry for users, groups and roles.</note>
+      </notes>
+      <segment>
+        <source>Users &amp; access</source>
+        <target>المستخدمون والوصول</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.access.description">
+      <notes>
+        <note category="context">Describes the users-and-access entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>People, groups and permissions</source>
+        <target>الأشخاص والمجموعات والأذونات</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.business-security.label">
+      <notes>
+        <note category="context">Administrator navigation entry for organizations, policy and approvals.</note>
+      </notes>
+      <segment>
+        <source>Business Security</source>
+        <target>أمان الأعمال</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.business-security.description">
+      <notes>
+        <note category="context">Describes the Business Security entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Organizations, policy, approvals and step-up assurance</source>
+        <target>المؤسسات والسياسات والموافقات والتحقق المعزّز</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.extensions.label">
+      <notes>
+        <note category="context">Administrator navigation entry for extensions and themes.</note>
+      </notes>
+      <segment>
+        <source>Extensions</source>
+        <target>الامتدادات</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.extensions.description">
+      <notes>
+        <note category="context">Describes the extensions entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Packages, trust and themes</source>
+        <target>الحزم والثقة والسمات</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.automation.label">
+      <notes>
+        <note category="context">Administrator navigation entry for scheduled and background jobs.</note>
+      </notes>
+      <segment>
+        <source>Automation</source>
+        <target>الأتمتة</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.automation.description">
+      <notes>
+        <note category="context">Describes the automation entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Schedules and background work</source>
+        <target>الجداول الزمنية والعمل في الخلفية</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.settings.label">
+      <notes>
+        <note category="context">Administrator navigation entry for site settings.</note>
+      </notes>
+      <segment>
+        <source>Settings</source>
+        <target>الإعدادات</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.settings.description">
+      <notes>
+        <note category="context">Describes the settings entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Site identity and defaults</source>
+        <target>هوية الموقع والقيم الافتراضية</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.portal_workspace.portal.label">
+      <notes>
+        <note category="context">Portal navigation group heading.</note>
+      </notes>
+      <segment>
+        <source>Portal</source>
+        <target>البوابة</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.portal_workspace.portal.description">
+      <notes>
+        <note category="context">Explains the portal navigation group.</note>
+      </notes>
+      <segment>
+        <source>Your authenticated business workspace.</source>
+        <target>مساحة عمل أعمالك الموثّقة.</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.portal.portal-home.label">
+      <notes>
+        <note category="context">Portal navigation entry for the portal home.</note>
+      </notes>
+      <segment>
+        <source>Overview</source>
+        <target>نظرة عامة</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.portal.portal-home.description">
+      <notes>
+        <note category="context">Describes the portal home entry.</note>
+      </notes>
+      <segment>
+        <source>Open your business workspace.</source>
+        <target>افتح مساحة عمل أعمالك.</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.portal.portal-business-records.label">
+      <notes>
+        <note category="context">Portal navigation entry for business records.</note>
+      </notes>
+      <segment>
+        <source>Business records</source>
+        <target>سجلات الأعمال</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.portal.portal-business-records.description">
+      <notes>
+        <note category="context">Describes the portal business-records entry.</note>
+      </notes>
+      <segment>
+        <source>Open your authorized business record workspaces.</source>
+        <target>افتح مساحات عمل سجلات الأعمال المصرّح لك بها.</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.portal.portal-business-reports.label">
+      <notes>
+        <note category="context">Portal navigation entry for business reports.</note>
+      </notes>
+      <segment>
+        <source>Business reports</source>
+        <target>تقارير الأعمال</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.portal.portal-business-reports.description">
+      <notes>
+        <note category="context">Describes the portal business-reports entry.</note>
+      </notes>
+      <segment>
+        <source>Run authorized reports and retrieve verified exports.</source>
+        <target>شغّل التقارير المصرّح بها واسترد عمليات التصدير الموثّقة.</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.portal.portal-security.label">
+      <notes>
+        <note category="context">Portal navigation entry for account security.</note>
+      </notes>
+      <segment>
+        <source>Account security</source>
+        <target>أمان الحساب</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.portal.portal-security.description">
+      <notes>
+        <note category="context">Describes the portal account-security entry.</note>
+      </notes>
+      <segment>
+        <source>Manage authenticator and recovery verification.</source>
+        <target>إدارة التحقق عبر تطبيق المصادقة ورموز الاسترداد.</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.portal.portal-approvals.label">
+      <notes>
+        <note category="context">Portal navigation entry for maker-checker approvals.</note>
+      </notes>
+      <segment>
+        <source>Approvals</source>
+        <target>الموافقات</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.portal.portal-approvals.description">
+      <notes>
+        <note category="context">Describes the portal approvals entry.</note>
+      </notes>
+      <segment>
+        <source>Review scoped maker-checker requests.</source>
+        <target>مراجعة طلبات المنشئ والمدقق ضمن النطاق.</target>
       </segment>
     </unit>
   </file>

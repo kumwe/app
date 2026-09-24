@@ -5755,7 +5755,7 @@
         <note category="context">Record surface text on templates/administrator/business-definitions.twig.</note>
       </notes>
       <segment>
-        <source>{count, plural, other {# definitions}}</source>
+        <source>{count, plural, one {# definition} other {# definitions}}</source>
         <target>{count, plural, one {# הגדרה} two {# הגדרות} other {# הגדרות}}</target>
       </segment>
     </unit>
@@ -8986,7 +8986,7 @@
         <note category="context">Record surface text on templates/administrator/business-schema-plans.twig.</note>
       </notes>
       <segment>
-        <source>{count, plural, other {# immutable plans}}</source>
+        <source>{count, plural, one {# immutable plan} other {# immutable plans}}</source>
         <target>{count, plural, one {# תוכנית בלתי ניתנת לשינוי} two {# תוכניות בלתי ניתנות לשינוי} other {# תוכניות בלתי ניתנות לשינוי}}</target>
       </segment>
     </unit>
@@ -21200,6 +21200,458 @@
       <segment>
         <source>Your password could not be changed. Check your current password and choose a different password with at least 12 characters.</source>
         <target>לא ניתן היה לשנות את הסיסמה שלכם. בדקו את הסיסמה הנוכחית שלכם ובחרו סיסמה שונה בת 12 תווים לפחות.</target>
+      </segment>
+    </unit>
+  </file>
+  <file id="core-navigation">
+    <unit id="core.navigation.administrator_workspace.workspace.label">
+      <notes>
+        <note category="context">Administrator sidebar group heading for everyday work.</note>
+      </notes>
+      <segment>
+        <source>Workspace</source>
+        <target>סביבת עבודה</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator_workspace.workspace.description">
+      <notes>
+        <note category="context">Explains the Workspace sidebar group.</note>
+      </notes>
+      <segment>
+        <source>Daily content and publishing work.</source>
+        <target>עבודת תוכן ופרסום יומיומית.</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator_workspace.structure.label">
+      <notes>
+        <note category="context">Administrator sidebar group heading for models, menus and definitions.</note>
+      </notes>
+      <segment>
+        <source>Structure</source>
+        <target>מבנה</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator_workspace.structure.description">
+      <notes>
+        <note category="context">Explains the Structure sidebar group.</note>
+      </notes>
+      <segment>
+        <source>Content structure and public navigation.</source>
+        <target>מבנה התוכן והניווט הציבורי.</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator_workspace.system.label">
+      <notes>
+        <note category="context">Administrator sidebar group heading for identity, extensions and settings.</note>
+      </notes>
+      <segment>
+        <source>System</source>
+        <target>מערכת</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator_workspace.system.description">
+      <notes>
+        <note category="context">Explains the System sidebar group.</note>
+      </notes>
+      <segment>
+        <source>Identity, extensions, automation, and settings.</source>
+        <target>זהות, הרחבות, אוטומציה והגדרות.</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.dashboard.label">
+      <notes>
+        <note category="context">Administrator navigation entry and command for the dashboard.</note>
+      </notes>
+      <segment>
+        <source>Dashboard</source>
+        <target>לוח בקרה</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.dashboard.description">
+      <notes>
+        <note category="context">Describes the dashboard entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Overview and publishing activity</source>
+        <target>סקירה ופעילות פרסום</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.content.label">
+      <notes>
+        <note category="context">Administrator navigation entry for the content list.</note>
+      </notes>
+      <segment>
+        <source>Content</source>
+        <target>תוכן</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.content.description">
+      <notes>
+        <note category="context">Describes the content entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Find, edit and publish content</source>
+        <target>איתור, עריכה ופרסום של תוכן</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.create-content.label">
+      <notes>
+        <note category="context">Administrator navigation entry that opens the content editor for a new item.</note>
+      </notes>
+      <segment>
+        <source>Create content</source>
+        <target>יצירת תוכן</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.create-content.description">
+      <notes>
+        <note category="context">Describes the create-content entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Start a new content item</source>
+        <target>התחלת פריט תוכן חדש</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.media.label">
+      <notes>
+        <note category="context">Administrator navigation entry for the media library.</note>
+      </notes>
+      <segment>
+        <source>Media</source>
+        <target>מדיה</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.media.description">
+      <notes>
+        <note category="context">Describes the media entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Browse and upload files</source>
+        <target>עיון בקבצים והעלאתם</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.models.label">
+      <notes>
+        <note category="context">Administrator navigation entry for content models.</note>
+      </notes>
+      <segment>
+        <source>Content models</source>
+        <target>מודלים של תוכן</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.models.description">
+      <notes>
+        <note category="context">Describes the content-models entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Fields and publishing workflows</source>
+        <target>שדות ותהליכי עבודה לפרסום</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.navigation.label">
+      <notes>
+        <note category="context">Administrator navigation entry for public menus.</note>
+      </notes>
+      <segment>
+        <source>Menus</source>
+        <target>תפריטים</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.navigation.description">
+      <notes>
+        <note category="context">Describes the menus entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Public navigation structure</source>
+        <target>מבנה הניווט הציבורי</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.wording.label">
+      <notes>
+        <note category="context">Administrator navigation entry for interface wording overrides.</note>
+      </notes>
+      <segment>
+        <source>Wording</source>
+        <target>ניסוח</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.wording.description">
+      <notes>
+        <note category="context">Describes the wording entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Change interface wording without a deployment</source>
+        <target>שינוי ניסוח הממשק ללא פריסה</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.business-definitions.label">
+      <notes>
+        <note category="context">Administrator navigation entry for business definitions.</note>
+      </notes>
+      <segment>
+        <source>Business definitions</source>
+        <target>הגדרות עסקיות</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.business-definitions.description">
+      <notes>
+        <note category="context">Describes the business-definitions entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Operational entities, fields and relationships</source>
+        <target>ישויות תפעוליות, שדות וקשרים</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.business-records.label">
+      <notes>
+        <note category="context">Administrator navigation entry for the generated business record workspaces.</note>
+      </notes>
+      <segment>
+        <source>Business workspaces</source>
+        <target>סביבות עבודה עסקיות</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.business-records.description">
+      <notes>
+        <note category="context">Describes the business-workspaces entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Work with generated operational records</source>
+        <target>עבודה עם רשומות תפעוליות שנוצרו</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.business-reports.label">
+      <notes>
+        <note category="context">Administrator navigation entry for business reports.</note>
+      </notes>
+      <segment>
+        <source>Business reports</source>
+        <target>דוחות עסקיים</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.business-reports.description">
+      <notes>
+        <note category="context">Describes the business-reports entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Run policy-filtered reports and retrieve verified exports</source>
+        <target>הפעלת דוחות מסוננים לפי מדיניות ואחזור ייצואים מאומתים</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.business-schema-plans.label">
+      <notes>
+        <note category="context">Administrator navigation entry for generated schema plans.</note>
+      </notes>
+      <segment>
+        <source>Schema plans</source>
+        <target>תוכניות סכימה</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.business-schema-plans.description">
+      <notes>
+        <note category="context">Describes the schema-plans entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Inspect and control generated relational storage</source>
+        <target>בדיקה ושליטה באחסון הרלציוני שנוצר</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.access.label">
+      <notes>
+        <note category="context">Administrator navigation entry for users, groups and roles.</note>
+      </notes>
+      <segment>
+        <source>Users &amp; access</source>
+        <target>משתמשים וגישה</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.access.description">
+      <notes>
+        <note category="context">Describes the users-and-access entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>People, groups and permissions</source>
+        <target>אנשים, קבוצות והרשאות</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.business-security.label">
+      <notes>
+        <note category="context">Administrator navigation entry for organizations, policy and approvals.</note>
+      </notes>
+      <segment>
+        <source>Business Security</source>
+        <target>אבטחה עסקית</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.business-security.description">
+      <notes>
+        <note category="context">Describes the Business Security entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Organizations, policy, approvals and step-up assurance</source>
+        <target>ארגונים, מדיניות, אישורים ואימות מוגבר</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.extensions.label">
+      <notes>
+        <note category="context">Administrator navigation entry for extensions and themes.</note>
+      </notes>
+      <segment>
+        <source>Extensions</source>
+        <target>הרחבות</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.extensions.description">
+      <notes>
+        <note category="context">Describes the extensions entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Packages, trust and themes</source>
+        <target>חבילות, אמון וערכות נושא</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.automation.label">
+      <notes>
+        <note category="context">Administrator navigation entry for scheduled and background jobs.</note>
+      </notes>
+      <segment>
+        <source>Automation</source>
+        <target>אוטומציה</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.automation.description">
+      <notes>
+        <note category="context">Describes the automation entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Schedules and background work</source>
+        <target>תזמונים ועבודת רקע</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.settings.label">
+      <notes>
+        <note category="context">Administrator navigation entry for site settings.</note>
+      </notes>
+      <segment>
+        <source>Settings</source>
+        <target>הגדרות</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.settings.description">
+      <notes>
+        <note category="context">Describes the settings entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Site identity and defaults</source>
+        <target>זהות האתר וברירות מחדל</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.portal_workspace.portal.label">
+      <notes>
+        <note category="context">Portal navigation group heading.</note>
+      </notes>
+      <segment>
+        <source>Portal</source>
+        <target>פורטל</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.portal_workspace.portal.description">
+      <notes>
+        <note category="context">Explains the portal navigation group.</note>
+      </notes>
+      <segment>
+        <source>Your authenticated business workspace.</source>
+        <target>סביבת העבודה העסקית המאומתת שלך.</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.portal.portal-home.label">
+      <notes>
+        <note category="context">Portal navigation entry for the portal home.</note>
+      </notes>
+      <segment>
+        <source>Overview</source>
+        <target>סקירה כללית</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.portal.portal-home.description">
+      <notes>
+        <note category="context">Describes the portal home entry.</note>
+      </notes>
+      <segment>
+        <source>Open your business workspace.</source>
+        <target>פתיחת סביבת העבודה העסקית שלך.</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.portal.portal-business-records.label">
+      <notes>
+        <note category="context">Portal navigation entry for business records.</note>
+      </notes>
+      <segment>
+        <source>Business records</source>
+        <target>רשומות עסקיות</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.portal.portal-business-records.description">
+      <notes>
+        <note category="context">Describes the portal business-records entry.</note>
+      </notes>
+      <segment>
+        <source>Open your authorized business record workspaces.</source>
+        <target>פתיחת סביבות העבודה המורשות של הרשומות העסקיות שלך.</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.portal.portal-business-reports.label">
+      <notes>
+        <note category="context">Portal navigation entry for business reports.</note>
+      </notes>
+      <segment>
+        <source>Business reports</source>
+        <target>דוחות עסקיים</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.portal.portal-business-reports.description">
+      <notes>
+        <note category="context">Describes the portal business-reports entry.</note>
+      </notes>
+      <segment>
+        <source>Run authorized reports and retrieve verified exports.</source>
+        <target>הפעלת דוחות מורשים ואחזור ייצואים מאומתים.</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.portal.portal-security.label">
+      <notes>
+        <note category="context">Portal navigation entry for account security.</note>
+      </notes>
+      <segment>
+        <source>Account security</source>
+        <target>אבטחת החשבון</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.portal.portal-security.description">
+      <notes>
+        <note category="context">Describes the portal account-security entry.</note>
+      </notes>
+      <segment>
+        <source>Manage authenticator and recovery verification.</source>
+        <target>ניהול אימות באמצעות מאמת וקודי שחזור.</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.portal.portal-approvals.label">
+      <notes>
+        <note category="context">Portal navigation entry for maker-checker approvals.</note>
+      </notes>
+      <segment>
+        <source>Approvals</source>
+        <target>אישורים</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.portal.portal-approvals.description">
+      <notes>
+        <note category="context">Describes the portal approvals entry.</note>
+      </notes>
+      <segment>
+        <source>Review scoped maker-checker requests.</source>
+        <target>סקירת בקשות עושה-בודק בהיקף מוגדר.</target>
       </segment>
     </unit>
   </file>

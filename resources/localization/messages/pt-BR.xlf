@@ -5755,8 +5755,8 @@
         <note category="context">Record surface text on templates/administrator/business-definitions.twig.</note>
       </notes>
       <segment>
-        <source>{count, plural, other {# definitions}}</source>
-        <target>{count, plural, other {# definições}}</target>
+        <source>{count, plural, one {# definition} other {# definitions}}</source>
+        <target>{count, plural, one {# definição} other {# definições}}</target>
       </segment>
     </unit>
     <unit id="core.administrator.business_definitions.stable_entity_identity">
@@ -8986,8 +8986,8 @@
         <note category="context">Record surface text on templates/administrator/business-schema-plans.twig.</note>
       </notes>
       <segment>
-        <source>{count, plural, other {# immutable plans}}</source>
-        <target>{count, plural, other {# planos imutáveis}}</target>
+        <source>{count, plural, one {# immutable plan} other {# immutable plans}}</source>
+        <target>{count, plural, one {# plano imutável} other {# planos imutáveis}}</target>
       </segment>
     </unit>
     <unit id="core.administrator.business_schema_plans.no_schema_plan_selected">
@@ -19232,7 +19232,7 @@
       </notes>
       <segment>
         <source>Model</source>
-        <target>Model</target>
+        <target>Modelo</target>
       </segment>
     </unit>
     <unit id="core.studio.contextual.model-coordinate-mismatch">
@@ -21200,6 +21200,458 @@
       <segment>
         <source>Your password could not be changed. Check your current password and choose a different password with at least 12 characters.</source>
         <target>Não foi possível alterar sua senha. Verifique sua senha atual e escolha uma senha diferente com pelo menos 12 caracteres.</target>
+      </segment>
+    </unit>
+  </file>
+  <file id="core-navigation">
+    <unit id="core.navigation.administrator_workspace.workspace.label">
+      <notes>
+        <note category="context">Administrator sidebar group heading for everyday work.</note>
+      </notes>
+      <segment>
+        <source>Workspace</source>
+        <target>Espaço de trabalho</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator_workspace.workspace.description">
+      <notes>
+        <note category="context">Explains the Workspace sidebar group.</note>
+      </notes>
+      <segment>
+        <source>Daily content and publishing work.</source>
+        <target>Trabalho diário de conteúdo e publicação.</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator_workspace.structure.label">
+      <notes>
+        <note category="context">Administrator sidebar group heading for models, menus and definitions.</note>
+      </notes>
+      <segment>
+        <source>Structure</source>
+        <target>Estrutura</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator_workspace.structure.description">
+      <notes>
+        <note category="context">Explains the Structure sidebar group.</note>
+      </notes>
+      <segment>
+        <source>Content structure and public navigation.</source>
+        <target>Estrutura de conteúdo e navegação pública.</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator_workspace.system.label">
+      <notes>
+        <note category="context">Administrator sidebar group heading for identity, extensions and settings.</note>
+      </notes>
+      <segment>
+        <source>System</source>
+        <target>Sistema</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator_workspace.system.description">
+      <notes>
+        <note category="context">Explains the System sidebar group.</note>
+      </notes>
+      <segment>
+        <source>Identity, extensions, automation, and settings.</source>
+        <target>Identidade, extensões, automação e configurações.</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.dashboard.label">
+      <notes>
+        <note category="context">Administrator navigation entry and command for the dashboard.</note>
+      </notes>
+      <segment>
+        <source>Dashboard</source>
+        <target>Painel</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.dashboard.description">
+      <notes>
+        <note category="context">Describes the dashboard entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Overview and publishing activity</source>
+        <target>Visão geral e atividade de publicação</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.content.label">
+      <notes>
+        <note category="context">Administrator navigation entry for the content list.</note>
+      </notes>
+      <segment>
+        <source>Content</source>
+        <target>Conteúdo</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.content.description">
+      <notes>
+        <note category="context">Describes the content entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Find, edit and publish content</source>
+        <target>Encontrar, editar e publicar conteúdo</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.create-content.label">
+      <notes>
+        <note category="context">Administrator navigation entry that opens the content editor for a new item.</note>
+      </notes>
+      <segment>
+        <source>Create content</source>
+        <target>Criar conteúdo</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.create-content.description">
+      <notes>
+        <note category="context">Describes the create-content entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Start a new content item</source>
+        <target>Iniciar um novo item de conteúdo</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.media.label">
+      <notes>
+        <note category="context">Administrator navigation entry for the media library.</note>
+      </notes>
+      <segment>
+        <source>Media</source>
+        <target>Mídia</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.media.description">
+      <notes>
+        <note category="context">Describes the media entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Browse and upload files</source>
+        <target>Navegar e enviar arquivos</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.models.label">
+      <notes>
+        <note category="context">Administrator navigation entry for content models.</note>
+      </notes>
+      <segment>
+        <source>Content models</source>
+        <target>Modelos de conteúdo</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.models.description">
+      <notes>
+        <note category="context">Describes the content-models entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Fields and publishing workflows</source>
+        <target>Campos e fluxos de publicação</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.navigation.label">
+      <notes>
+        <note category="context">Administrator navigation entry for public menus.</note>
+      </notes>
+      <segment>
+        <source>Menus</source>
+        <target>Menus</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.navigation.description">
+      <notes>
+        <note category="context">Describes the menus entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Public navigation structure</source>
+        <target>Estrutura de navegação pública</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.wording.label">
+      <notes>
+        <note category="context">Administrator navigation entry for interface wording overrides.</note>
+      </notes>
+      <segment>
+        <source>Wording</source>
+        <target>Textos</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.wording.description">
+      <notes>
+        <note category="context">Describes the wording entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Change interface wording without a deployment</source>
+        <target>Alterar os textos da interface sem uma implantação</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.business-definitions.label">
+      <notes>
+        <note category="context">Administrator navigation entry for business definitions.</note>
+      </notes>
+      <segment>
+        <source>Business definitions</source>
+        <target>Definições de negócio</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.business-definitions.description">
+      <notes>
+        <note category="context">Describes the business-definitions entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Operational entities, fields and relationships</source>
+        <target>Entidades operacionais, campos e relacionamentos</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.business-records.label">
+      <notes>
+        <note category="context">Administrator navigation entry for the generated business record workspaces.</note>
+      </notes>
+      <segment>
+        <source>Business workspaces</source>
+        <target>Espaços de trabalho de negócio</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.business-records.description">
+      <notes>
+        <note category="context">Describes the business-workspaces entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Work with generated operational records</source>
+        <target>Trabalhar com registros operacionais gerados</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.business-reports.label">
+      <notes>
+        <note category="context">Administrator navigation entry for business reports.</note>
+      </notes>
+      <segment>
+        <source>Business reports</source>
+        <target>Relatórios de negócio</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.business-reports.description">
+      <notes>
+        <note category="context">Describes the business-reports entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Run policy-filtered reports and retrieve verified exports</source>
+        <target>Executar relatórios filtrados por política e obter exportações verificadas</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.business-schema-plans.label">
+      <notes>
+        <note category="context">Administrator navigation entry for generated schema plans.</note>
+      </notes>
+      <segment>
+        <source>Schema plans</source>
+        <target>Planos de esquema</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.business-schema-plans.description">
+      <notes>
+        <note category="context">Describes the schema-plans entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Inspect and control generated relational storage</source>
+        <target>Inspecionar e controlar o armazenamento relacional gerado</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.access.label">
+      <notes>
+        <note category="context">Administrator navigation entry for users, groups and roles.</note>
+      </notes>
+      <segment>
+        <source>Users &amp; access</source>
+        <target>Usuários e acesso</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.access.description">
+      <notes>
+        <note category="context">Describes the users-and-access entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>People, groups and permissions</source>
+        <target>Pessoas, grupos e permissões</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.business-security.label">
+      <notes>
+        <note category="context">Administrator navigation entry for organizations, policy and approvals.</note>
+      </notes>
+      <segment>
+        <source>Business Security</source>
+        <target>Segurança de Negócio</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.business-security.description">
+      <notes>
+        <note category="context">Describes the Business Security entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Organizations, policy, approvals and step-up assurance</source>
+        <target>Organizações, políticas, aprovações e verificação reforçada</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.extensions.label">
+      <notes>
+        <note category="context">Administrator navigation entry for extensions and themes.</note>
+      </notes>
+      <segment>
+        <source>Extensions</source>
+        <target>Extensões</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.extensions.description">
+      <notes>
+        <note category="context">Describes the extensions entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Packages, trust and themes</source>
+        <target>Pacotes, confiança e temas</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.automation.label">
+      <notes>
+        <note category="context">Administrator navigation entry for scheduled and background jobs.</note>
+      </notes>
+      <segment>
+        <source>Automation</source>
+        <target>Automação</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.automation.description">
+      <notes>
+        <note category="context">Describes the automation entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Schedules and background work</source>
+        <target>Agendamentos e trabalho em segundo plano</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.settings.label">
+      <notes>
+        <note category="context">Administrator navigation entry for site settings.</note>
+      </notes>
+      <segment>
+        <source>Settings</source>
+        <target>Configurações</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.settings.description">
+      <notes>
+        <note category="context">Describes the settings entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Site identity and defaults</source>
+        <target>Identidade do site e padrões</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.portal_workspace.portal.label">
+      <notes>
+        <note category="context">Portal navigation group heading.</note>
+      </notes>
+      <segment>
+        <source>Portal</source>
+        <target>Portal</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.portal_workspace.portal.description">
+      <notes>
+        <note category="context">Explains the portal navigation group.</note>
+      </notes>
+      <segment>
+        <source>Your authenticated business workspace.</source>
+        <target>Seu espaço de trabalho de negócio autenticado.</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.portal.portal-home.label">
+      <notes>
+        <note category="context">Portal navigation entry for the portal home.</note>
+      </notes>
+      <segment>
+        <source>Overview</source>
+        <target>Visão geral</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.portal.portal-home.description">
+      <notes>
+        <note category="context">Describes the portal home entry.</note>
+      </notes>
+      <segment>
+        <source>Open your business workspace.</source>
+        <target>Abra seu espaço de trabalho de negócio.</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.portal.portal-business-records.label">
+      <notes>
+        <note category="context">Portal navigation entry for business records.</note>
+      </notes>
+      <segment>
+        <source>Business records</source>
+        <target>Registros de negócio</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.portal.portal-business-records.description">
+      <notes>
+        <note category="context">Describes the portal business-records entry.</note>
+      </notes>
+      <segment>
+        <source>Open your authorized business record workspaces.</source>
+        <target>Abra seus espaços de trabalho de registros de negócio autorizados.</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.portal.portal-business-reports.label">
+      <notes>
+        <note category="context">Portal navigation entry for business reports.</note>
+      </notes>
+      <segment>
+        <source>Business reports</source>
+        <target>Relatórios de negócio</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.portal.portal-business-reports.description">
+      <notes>
+        <note category="context">Describes the portal business-reports entry.</note>
+      </notes>
+      <segment>
+        <source>Run authorized reports and retrieve verified exports.</source>
+        <target>Execute relatórios autorizados e obtenha exportações verificadas.</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.portal.portal-security.label">
+      <notes>
+        <note category="context">Portal navigation entry for account security.</note>
+      </notes>
+      <segment>
+        <source>Account security</source>
+        <target>Segurança da conta</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.portal.portal-security.description">
+      <notes>
+        <note category="context">Describes the portal account-security entry.</note>
+      </notes>
+      <segment>
+        <source>Manage authenticator and recovery verification.</source>
+        <target>Gerencie a verificação por autenticador e de recuperação.</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.portal.portal-approvals.label">
+      <notes>
+        <note category="context">Portal navigation entry for maker-checker approvals.</note>
+      </notes>
+      <segment>
+        <source>Approvals</source>
+        <target>Aprovações</target>
+      </segment>
+    </unit>
+    <unit id="core.navigation.portal.portal-approvals.description">
+      <notes>
+        <note category="context">Describes the portal approvals entry.</note>
+      </notes>
+      <segment>
+        <source>Review scoped maker-checker requests.</source>
+        <target>Revise solicitações de dupla verificação no seu escopo.</target>
       </segment>
     </unit>
   </file>
