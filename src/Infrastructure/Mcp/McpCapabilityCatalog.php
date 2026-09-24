@@ -123,7 +123,24 @@ final class McpCapabilityCatalog
         'kumwe_business_report_export_request' => [McpRiskClass::ScopedWrite, self::VIA_REPORTING],
         'kumwe_business_report_export_status' => [McpRiskClass::Read, self::VIA_REPORTING],
         'kumwe_business_report_export_download' => [McpRiskClass::Read, self::VIA_REPORTING],
+        'kumwe_studio_authoring_open' => [McpRiskClass::Read, self::VIA_STUDIO],
+        'kumwe_studio_authoring_resolve_target' => [McpRiskClass::Read, self::VIA_STUDIO],
+        'kumwe_studio_authoring_list_types' => [McpRiskClass::Read, self::VIA_STUDIO],
+        'kumwe_studio_authoring_start' => [McpRiskClass::ScopedWrite, self::VIA_STUDIO],
+        'kumwe_studio_authoring_plan_save' => [McpRiskClass::Read, self::VIA_STUDIO],
+        'kumwe_studio_authoring_save_item' => [McpRiskClass::ScopedWrite, self::VIA_STUDIO],
+        'kumwe_studio_authoring_save_as_new_type' => [McpRiskClass::ScopedWrite, self::VIA_STUDIO],
+        'kumwe_studio_authoring_save_new_type_version' => [McpRiskClass::ScopedWrite, self::VIA_STUDIO],
     ];
+
+    /**
+     * Non-MCP route for the Studio authoring tools.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const string VIA_STUDIO = 'Administrator console: Content create or edit opens Studio, '
+        . 'or POST /api/v1/studio/authoring/*, or bin/kumwe studio-authoring.';
 
     /**
      * Route to the same surface for a caller who cannot or should not use the machine surface.
@@ -1471,7 +1488,108 @@ final class McpCapabilityCatalog
                 $this->reportDownloadOutput(),
                 ['artifact'],
             ),
+            ...$this->studioAuthoringTools(),
         ];
+    }
+
+    /**
+     * Declare the Studio authoring tools: one open tool and the seven operations the browser dispatches.
+     *
+     * Every argument document and result travels as one canonical JSON string, because the protocol decodes
+     * tool arguments associatively and would otherwise erase the `{}`/`[]` distinction the pinned Studio
+     * schemas depend on. Mutations hand their `operationId` to the Studio host's own replay boundary.
+     *
+     * @return  list<array{
+     *            name: string, title: string, description: string, handler: string,
+     *            capability: string|null, capabilityResolver: string|McpDynamicCapabilityResolver,
+     *            mutationGuard: McpMutationGuardMode, readOnly: bool, destructive: bool, idempotent: bool,
+     *            inputSchema: array<string, mixed>, outputSchema: array<string, mixed>
+     *          }>  Tool declarations in registration order.
+     *
+     * @since   2.0.0
+     */
+    private function studioAuthoringTools(): array
+    {
+        $session = [
+            'type' => 'string',
+            'minLength' => 1,
+            'maxLength' => 240,
+            'pattern' => '^[A-Za-z0-9][A-Za-z0-9._:/-]*$',
+        ];
+        $generation = ['type' => 'string', 'minLength' => 1, 'maxLength' => 100];
+        $document = ['type' => 'string', 'minLength' => 2, 'maxLength' => 1048576];
+        $locale = ['type' => 'string', 'minLength' => 2, 'maxLength' => 50];
+        $output = $this->closedObject(
+            [
+                'operation' => ['type' => 'string'],
+                'replayed' => ['type' => 'boolean'],
+                'document' => ['type' => 'string'],
+            ],
+            ['operation', 'replayed', 'document'],
+        );
+        $tools = [
+            $this->tool(
+                'kumwe_studio_authoring_open',
+                'Open a Studio authoring session',
+                'Open a credential-bound Studio authoring session for one exact create or edit target.',
+                'openStudioAuthoringSession',
+                'content.read',
+                true,
+                false,
+                true,
+                [
+                    'intent' => ['type' => 'string', 'enum' => ['create', 'edit']],
+                    'content' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 191],
+                    'contentType' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 191],
+                    'contentTypeVersion' => ['type' => 'integer', 'minimum' => 1],
+                ],
+                $this->closedObject(['document' => ['type' => 'string']], ['document']),
+                ['intent'],
+            ),
+        ];
+        $operations = [
+            ['resolve_target', 'studioAuthoringResolveTarget', 'Resolve a Studio authoring target', false],
+            ['list_types', 'studioAuthoringListTypes', 'List reusable Studio content types', false],
+            ['start', 'studioAuthoringStart', 'Start a Studio authoring session', true],
+            ['plan_save', 'studioAuthoringPlanSave', 'Plan a Studio save', false],
+            ['save_item', 'studioAuthoringSaveItem', 'Save a Studio content item', true],
+            ['save_as_new_type', 'studioAuthoringSaveAsNewType', 'Save a Studio design as a new type', true],
+            [
+                'save_new_type_version',
+                'studioAuthoringSaveNewTypeVersion',
+                'Save a new Studio type version',
+                true,
+            ],
+        ];
+        foreach ($operations as [$suffix, $handler, $title, $mutating]) {
+            $properties = [
+                'session' => $session,
+                'sessionGeneration' => $generation,
+                'document' => $document,
+                'locale' => $locale,
+            ];
+            $required = ['session', 'sessionGeneration', 'document'];
+            if ($mutating) {
+                $properties = ['operationId' => $this->operationId(), ...$properties];
+                $required = ['operationId', ...$required];
+            }
+            $tools[] = $this->tool(
+                'kumwe_studio_authoring_' . $suffix,
+                $title,
+                $title . ' through the same Studio host, authorization, replay and audit as the browser.',
+                $handler,
+                'content.read',
+                !$mutating,
+                false,
+                true,
+                $properties,
+                $output,
+                $required,
+                $mutating ? McpMutationGuardMode::StudioHostBoundary : null,
+            );
+        }
+
+        return $tools;
     }
 
     /**
