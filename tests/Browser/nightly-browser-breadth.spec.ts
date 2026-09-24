@@ -54,6 +54,10 @@ test('Nightly browser breadth preserves keyboard, touch, high contrast, zoom and
     await toggle.focus();
     await expect(toggle).toBeFocused();
     expect((await toggle.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44);
+    // The server-rendered toggle is visible before the deferred administrator module has run. The module
+    // marks the root `js` in the same synchronous evaluation that wires the toggle, so wait for that
+    // mark rather than tapping a control whose behaviour has not been attached yet.
+    await expect(page.locator('html')).toHaveClass(/(^|\s)js(\s|$)/u);
     await toggle.tap();
     await expect(toggle).toHaveAttribute('aria-expanded', 'true');
     await expect(
