@@ -19,7 +19,8 @@ built and how to use it; the decision record says why it is shaped this way and 
 | **Formatting** | ICU MessageFormat through `ext-intl` |
 | **Lookup key** | A stable, namespaced, dotted identifier — never the English text |
 | **Resolution** | Core → extension → site → organization, most specific wins, per identifier |
-| **Enforcement** | `composer translation:check`, `composer translation:strings`, `composer assets:direction` |
+| **Language set** | Nine complete catalogues: `en-GB` (source), `en-US`, `af`, `de`, `he`, `ar`, `es`, `pt-BR`, `zh-Hans` |
+| **Enforcement** | `composer translation:check`, `composer translation:strings`, `composer translation:quality`, `composer assets:direction` |
 
 Nothing on the request path parses XML, and nothing anywhere calls `setlocale()`. The locale is an
 argument to a call, which is what lets one long-lived worker process one job in Arabic and the next
@@ -39,13 +40,19 @@ failing to boot.
 1. **Choose an identifier.** It is namespaced by owner, lowercase, dotted, and at least three
    segments: `core.administrator.settings.save_action`.
 2. **Add the unit to `resources/localization/messages/en-GB.xlf`.** `en-GB` is the source language;
-   every other catalogue is authored against it by a translator.
-3. **Run `composer translation:compile`.** The compiled catalogue is generated output and is read
+   every other catalogue is authored against it.
+3. **Add the same unit, with a real `<target>`, to the eight other catalogues in the same change.** All
+   nine must stay complete: `composer translation:compile` refuses a catalogue that is missing an
+   identifier the source declares or leaves a target empty, and `composer translation:quality` refuses
+   a non-English target left identical to prose English unless its register says why that is correct.
+4. **Run `composer translation:compile`.** The compiled catalogue is generated output and is read
    before it is merged, like every other generated artifact in this repository.
-4. **Look it up in the template** with `t('core.administrator.settings.save_action')`.
-5. **Run `composer translation:strings`.** It fails if any enforced template still carries the words
-   inline, if the template references an identifier the catalogue does not carry, or if the catalogue
-   carries an identifier nothing references.
+5. **Look it up in the template** with `t('core.administrator.settings.save_action')`. A heading or a
+   label handed to a component is looked up the same way — `eyebrow: t('…')`, never `eyebrow: 'Publishing'`.
+6. **Run `composer translation:strings` and `composer translation:quality`.** The first fails if any
+   enforced template still carries the words inline, if the template references an identifier the
+   catalogue does not carry, or if the catalogue carries an identifier nothing references. The second
+   formats your message in all nine languages.
 
 ### The message-identifier grammar
 
@@ -102,6 +109,15 @@ Available in a pattern: `plural`, `selectordinal`, `select` (gender, or any flag
 
 Always write a `<note category="context">` when the identifier does not make the situation obvious.
 A translator sees the note and the source text, never the template.
+
+Keep markup and icons out of messages. An `<svg>` or any element outside the `t_html` subset belongs in
+the template around the message: `t()` escapes it, so it would render as literal text, and
+`composer translation:quality` refuses it.
+
+Dates and times on administrator screens go through the ICU skeleton messages
+`core.administrator.common.date`, `core.administrator.common.date_time` and
+`core.administrator.common.date_time_seconds`, never a PHP `date()` format, so each locale chooses its own
+field order, month names, digits and clock: `t('core.administrator.common.date_time', {value: date(at)})`.
 
 ### Messages that contain inline markup
 
@@ -273,6 +289,13 @@ Read the translator through the `Kumwe\App\Localization\Application\Translator` 
 through your constructor. Pass the locale explicitly wherever you are not on the request path — a
 queue handler, a scheduled job, a report — because the locale is an argument and never process state.
 
+Navigation is the one place where contributed wording is declared rather than looked up: an
+`AdministratorNavigationDefinition` or `PortalNavigationDefinition` carries its label and description
+as text, and the shell renders that text as declared. Core's own entries resolve per request through
+`core.navigation.*` messages in all nine catalogues, in the sidebar, the dashboard quick links and the
+command palette alike; an extension that wants its menu in another language declares it in that
+language or ships the wording its own screens look up.
+
 ---
 
 ## Right-to-left
@@ -327,6 +350,13 @@ every surface to the same acceptance as any other locale: the mirrored render ma
 baseline, the document lays out with zero horizontal overflow, and every critical control on the
 surface stays visible and keyboard-reachable after the mirroring.
 
+`right-to-left.spec.ts` covers what a visitor reaches without signing in.
+`signed-in-right-to-left.spec.ts` carries the same acceptance into the administrator shell — the
+dashboard, the content list and the account form — and into the portal home and account security page,
+each with its own baseline per project and a clean WCAG 2.2 AA scan. Any file whose name ends in
+`right-to-left.spec.ts` runs only under the four locale-scoped projects, which is how the signed-in
+baselines stay filed beside the public ones without a configuration change.
+
 ---
 
 ## The checks
@@ -335,8 +365,13 @@ surface stays visible and keyboard-reachable after the mirroring.
 composer translation:compile    # XLIFF -> compiled PHP catalogues
 composer translation:check      # the compiled catalogues match their XLIFF source
 composer translation:strings    # no enforced template, console command or error path carries text inline
+composer translation:quality    # every catalogue formats, pluralizes and is translated in its own language
 composer assets:direction       # no stylesheet pins a rule to one writing direction
 ```
+
+`composer translation:compile` (and therefore `translation:check`) also refuses an incomplete language
+set: each of the nine catalogues must exist, declare its own `trgLang`, carry every identifier the
+source declares and no other, and give every unit a non-empty target.
 
 `composer translation:strings` covers three surfaces. It refuses user-facing text nodes, translatable
 attributes and prose in Twig expressions across `templates/`; it refuses a prose literal handed to the
@@ -346,23 +381,78 @@ exempted by category. It proves both directions of the catalogue contract over b
 identifier a template or a source file looks up exists, and every identifier the catalogue carries is
 referenced by something.
 
+In Twig expressions a literal with a space in it is prose, and so is a capitalised single word filed
+under a key a person reads — `label`, `title`, `eyebrow`, `heading`, `summary` and their siblings — so a
+component heading such as `eyebrow: 'Publishing'` is refused like any other inline wording, while a
+token such as `JSON` is not.
+
 The console rule reads the sink rather than the method name, so a PSR-3 logger's `error()` is left
 alone: a log line is read through a log pipeline, and translating it would break the tooling that
 greps it.
 
-The last three run inside `composer qa`. Each is proven in both directions by
-`tests/Architecture/InterfaceTranslationGateTest.php`: green on the committed tree, and red with a
-useful message on a tree that puts back what it forbids. A check that has only ever been observed
-passing is a check nobody knows works.
+`composer translation:quality` (`tools/verify-catalogue-quality.php`) qualifies each catalogue in its
+own language, which completeness alone cannot:
+
+- **ICU.** Every pattern is compiled and formatted by `MessageFormatter` for its own locale with
+  representative arguments — counts across the plural boundaries, every `select` key, a timestamp for
+  dates — and a translation must name exactly the arguments its source names. The `core.studio.shell.*`
+  corpus is formatted by Studio rather than ICU and is held to placeholder parity instead.
+- **Plural categories.** The categories the installed ICU selects for the counts 0 to 1000 are probed per
+  locale — `one`/`other` for English, Afrikaans, German, Spanish and Portuguese; `one`/`two`/`other` for
+  Hebrew (CLDR 42 and later no longer give Hebrew a separate `many`); all six for Arabic; `other` alone
+  for Simplified Chinese — and every `plural` must declare each of them. Spanish and Portuguese `many`
+  applies only to exact multiples of a million, where `other` is grammatical; it is reported, not
+  required.
+- **Untranslated wording.** A non-English target identical to its source fails when the source is prose
+  — it has a letter, no `{` or `/`, is not an upper-case token and is not made only of product names —
+  unless the register in the tool records why the identical word is correct in that language (`Status`
+  in German, `Portal` in Spanish). A register entry that no longer matches fails as stale.
+- **Markup.** A message may carry only the `t_html` subset (`code`, `em`, `span`, `strong`).
+
+These four run inside `composer qa`. Each is proven in both directions — green on the committed tree,
+and red with a useful message on a tree that puts back what it forbids — by
+`tests/Architecture/InterfaceTranslationGateTest.php` and `tests/Architecture/CatalogueQualityGateTest.php`.
+A check that has only ever been observed passing is a check nobody knows works.
 
 ---
 
 ## The language set
 
-`en-GB` is the source. Version 2 states nine: `en-GB`, `en-US`, `af`, `de`, `he`, `ar`, `es`,
-`pt-BR`, `zh-Hans`. Traditional Chinese (`zh-Hant`) is not in Version 2 scope.
+`en-GB` is the source. Version 2 ships nine: `en-GB`, `en-US`, `af`, `de`, `he`, `ar`, `es`, `pt-BR`,
+`zh-Hans`. Traditional Chinese (`zh-Hant`) is not in Version 2 scope.
 
-The translated catalogues for the eight non-source languages are scheduled work and are tracked in
-[`docs/roadmap/findings.json`](roadmap/findings.json) as `V2-LNG-010`. Until a catalogue exists for a
-language, a request that resolves to it renders the source wording — correctly laid out, including
-right-to-left — rather than failing or rendering blank.
+**All nine catalogues are authored and complete.** Each non-source catalogue under
+`resources/localization/messages/` carries a `<target>` for every unit the source declares, authored
+against the `en-GB` source and its context notes; `composer translation:compile` turns each into its
+compiled PHP array and refuses the whole set if any catalogue is missing, incomplete or carries an
+identifier the source does not. A locale that resolves but whose catalogue lacks a message still falls
+back through `pt-BR` → `pt` → `en-GB` rather than rendering blank, but no shipped catalogue relies on
+that for core wording.
+
+### Qualification evidence per locale
+
+Gate B criterion 11 asks for each language to be qualified in its own right (`V2-LNG-010`, `PL-G`).
+The evidence is automated and runs with the browser lane:
+
+| Evidence | Where | What it proves |
+|---|---|---|
+| Catalogue quality | `composer translation:quality` | ICU formatting, CLDR plural coverage, argument parity and real translation for all nine |
+| Locale matrix | `tests/Browser/locale-qualification.spec.ts` | For each of the nine, on the administrator dashboard, content list, content editor, settings, business definitions, business records and access control, the portal home and account security, and the public home: resolved `lang`/`dir`, zero horizontal overflow against both the visual and the layout viewport (a phone that zooms a too-wide page out hides the overflow from the visual one), no overlapping controls, every critical control visible, focusable and uncovered, a clean WCAG 2.2 AA scan, and no catalogue-translated wording left in English. Per-locale screenshots and JSON evidence are attached |
+| Right-to-left baselines | `right-to-left.spec.ts`, `signed-in-right-to-left.spec.ts` | Committed `he` and `ar` baselines for public, administrator and portal surfaces at desktop and mobile |
+| Task journeys | `tests/Browser/locale-journeys.spec.ts` | A content-authoring journey completed in German (long compounds: no truncation, labels aligned, German dates) and a generated-business journey completed in Hebrew (right-to-left layout, typed numbers and instants, Hebrew dates, a Hebrew status announcement) |
+
+The matrix and the journeys run inside the `desktop-chromium` and `mobile-chromium` projects, one
+browser context per locale, rather than multiplying projects; the right-to-left baselines belong to the
+four locale-scoped Chromium projects. Pixel baselines are Chromium's: desktop Firefox and WebKit run the
+same matrix and journeys nightly with snapshots ignored, as every breadth project does, and their
+screenshots are evidence only.
+
+The wording check reads the catalogue, not a guess: a visible string is untranslated when it equals a
+source message whose translation in that locale differs. Operator-authored content (a page body, a menu
+label, the site footer), definition data (content-model names and field labels, workflow-state names,
+business definition labels) and wording declared by an installed extension's manifest are content in
+their own language, not core interface wording, and are left out by named region. Two surfaces are
+known to still carry English that the catalogue does not yet own: the rich-text editor's toolbar, whose
+Lit component renders its own labels, and the content-model, workflow and theme-preset names seeded as
+data. The first needs its component to read catalogue wording and a rebuilt frontend; the second is
+content translation under ADR 0002's content model.
