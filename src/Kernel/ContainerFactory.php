@@ -2148,6 +2148,7 @@ final class ContainerFactory
             self::service($container, StudioCompositionContributionCatalog::class),
             self::service($container, StudioCoreCatalog::class),
             self::service($container, StudioBlockRendererRuntime::class),
+            self::service($container, Translator::class),
         ), true);
         $container->share(
             StudioContextualAuthoringConfigurationProvider::class,

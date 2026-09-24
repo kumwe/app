@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for af, carrying 2580 messages.
+ * Compiled interface message catalogue for af, carrying 2592 messages.
  *
  * Generated from af.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1284,6 +1284,17 @@ return [
     'core.administrator.content_form.save_changes_again_to_apply_your' => 'Stoor veranderinge weer om jou inskrywings bo-op weergawe {current_version} toe te pas.',
     'core.administrator.content_form.search_file_names' => 'Soek lêername',
     'core.administrator.content_form.structured_editor_fallback' => 'Gestruktureerde redigeerder-terugvalopsie',
+    'core.administrator.content_form.studio_block_date' => 'Datum',
+    'core.administrator.content_form.studio_block_date_and_time' => 'Datum en tyd',
+    'core.administrator.content_form.studio_block_decimal' => 'Desimaal',
+    'core.administrator.content_form.studio_block_integer' => 'Heelgetal',
+    'core.administrator.content_form.studio_block_keyboard' => 'Kies die blok en gebruik dan die inspekteur om sy veldbinding te kies.',
+    'core.administrator.content_form.studio_block_media' => 'Media',
+    'core.administrator.content_form.studio_block_resource' => 'Hulpbron',
+    'core.administrator.content_form.studio_block_rich_text' => 'Ryk teks',
+    'core.administrator.content_form.studio_block_text' => 'Teks',
+    'core.administrator.content_form.studio_block_value' => 'Waarde',
+    'core.administrator.content_form.studio_block_yes_or_no' => 'Ja of nee',
     'core.administrator.content_form.studio_breaking_schema_change' => 'Die nuwe weergawe verwyder of vernou velde; gestoorde items het dalk migrasie nodig.',
     'core.administrator.content_form.studio_changes_saved' => 'Studio het hierdie item gestoor.',
     'core.administrator.content_form.studio_dependent_entries_remain' => 'Ander items van hierdie tipe behou die huidige weergawe totdat hulle gemigreer word.',
@@ -1298,6 +1309,7 @@ return [
     'core.administrator.content_form.studio_page_builder_is_ready' => 'Die Studio-bladsybouer is gereed.',
     'core.administrator.content_form.studio_page_builder_loads_when_you_switch' => 'Die bladsybouer laai wanneer jy daarheen oorskakel.',
     'core.administrator.content_form.studio_page_builder_unavailable_use_the' => 'Die Studio-bladsybouer is nie vir hierdie inhoudkonteks beskikbaar nie. Gebruik die gestruktureerde redigeerder hieronder; Kumwe sal die presiese inhoudtipe en weergawe behou wanneer jy stoor.',
+    'core.administrator.content_form.studio_pattern_empty_section' => 'Leë afdeling',
     'core.administrator.content_form.studio_preview' => 'Geverifieerde voorskou',
     'core.administrator.content_form.studio_preview_could_not_be_rendered' => 'Die voorskou kon nie vertoon word nie.',
     'core.administrator.content_form.studio_preview_frame' => 'Geverifieerde voorskou van hierdie item',

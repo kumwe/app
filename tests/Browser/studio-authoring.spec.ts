@@ -508,10 +508,10 @@ test('the accepted item previews through the authenticated channel and renders p
  * to the surface toggle and on into Studio's create-source chooser, picks a start with the arrow keys and
  * opens the contextual shell with Enter. Every stop of every walk must be visible, inside the viewport and
  * announced with an accessible name; the chooser and the shell header are reached in reading order; the
- * declared presentations and the mode tabs answer the keyboard; a typed field is defined and a block is
- * inserted through explicit controls with no drag, and on a touch device the same controls answer a tap. At
- * 320 CSS pixels, the reflow width WCAG 1.4.10 names, the editor still fits without horizontal scrolling, and
- * the WCAG 2.2 AA scan stays clean throughout.
+ * declared presentations and the mode tabs answer the keyboard; a typed field is defined, and a block and the
+ * App's canonical pattern are inserted through explicit controls with no drag, and on a touch device the same
+ * controls answer a tap. At 320 CSS pixels, the reflow width WCAG 1.4.10 names, the editor still fits without
+ * horizontal scrolling, and the WCAG 2.2 AA scan stays clean throughout.
  */
 test('the contextual shell is operable by keyboard alone with named controls in reading order', async ({ page }) => {
   test.slow();
@@ -614,6 +614,12 @@ test('the contextual shell is operable by keyboard alone with named controls in 
   await tabUntil(page, inPalette, 40);
   await page.keyboard.press('Enter');
   await expect.poll(() => rootTypes(shell)).toHaveLength(1);
+  // The App's canonical empty-section pattern is offered beside the blocks, named in the interface locale, and
+  // applies from the keyboard too.
+  const pattern = text('core.administrator.content_form.studio_pattern_empty_section');
+  await tabUntil(page, (stop) => stop.name === pattern, 80);
+  await page.keyboard.press('Enter');
+  await expect.poll(() => rootTypes(shell)).toContain('studio.core/section');
   await expectAccessible(page);
 
   // Touch: on a touch-capable device the same explicit controls answer a tap.

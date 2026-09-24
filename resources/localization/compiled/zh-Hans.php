@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for zh-Hans, carrying 2580 messages.
+ * Compiled interface message catalogue for zh-Hans, carrying 2592 messages.
  *
  * Generated from zh-Hans.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1284,6 +1284,17 @@ return [
     'core.administrator.content_form.save_changes_again_to_apply_your' => '再次保存更改，将您的输入应用到版本 {current_version} 之上。',
     'core.administrator.content_form.search_file_names' => '搜索文件名',
     'core.administrator.content_form.structured_editor_fallback' => '结构化编辑器（备用）',
+    'core.administrator.content_form.studio_block_date' => '日期',
+    'core.administrator.content_form.studio_block_date_and_time' => '日期和时间',
+    'core.administrator.content_form.studio_block_decimal' => '小数',
+    'core.administrator.content_form.studio_block_integer' => '整数',
+    'core.administrator.content_form.studio_block_keyboard' => '选择该块，然后使用检查器选择其字段绑定。',
+    'core.administrator.content_form.studio_block_media' => '媒体',
+    'core.administrator.content_form.studio_block_resource' => '资源',
+    'core.administrator.content_form.studio_block_rich_text' => '富文本',
+    'core.administrator.content_form.studio_block_text' => '文本',
+    'core.administrator.content_form.studio_block_value' => '值',
+    'core.administrator.content_form.studio_block_yes_or_no' => '是或否',
     'core.administrator.content_form.studio_breaking_schema_change' => '新版本会移除或收窄字段；已存储的项可能需要迁移。',
     'core.administrator.content_form.studio_changes_saved' => 'Studio 已保存此项内容。',
     'core.administrator.content_form.studio_dependent_entries_remain' => '此类型的其他项在迁移之前保留当前版本。',
@@ -1298,6 +1309,7 @@ return [
     'core.administrator.content_form.studio_page_builder_is_ready' => 'Studio 页面构建器已就绪。',
     'core.administrator.content_form.studio_page_builder_loads_when_you_switch' => '切换到页面构建器时才会加载。',
     'core.administrator.content_form.studio_page_builder_unavailable_use_the' => '此内容上下文不支持 Studio 页面构建器。请使用下方的结构化编辑器；保存时 Kumwe 会保留确切的内容类型和版本。',
+    'core.administrator.content_form.studio_pattern_empty_section' => '空白区块',
     'core.administrator.content_form.studio_preview' => '已验证的预览',
     'core.administrator.content_form.studio_preview_could_not_be_rendered' => '无法渲染预览。',
     'core.administrator.content_form.studio_preview_frame' => '此项内容的已验证预览',

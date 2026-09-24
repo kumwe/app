@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for ar, carrying 2580 messages.
+ * Compiled interface message catalogue for ar, carrying 2592 messages.
  *
  * Generated from ar.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1284,6 +1284,17 @@ return [
     'core.administrator.content_form.save_changes_again_to_apply_your' => 'احفظ التغييرات مرة أخرى لتطبيق إدخالاتك فوق الإصدار {current_version}.',
     'core.administrator.content_form.search_file_names' => 'البحث في أسماء الملفات',
     'core.administrator.content_form.structured_editor_fallback' => 'المحرر المهيكل الاحتياطي',
+    'core.administrator.content_form.studio_block_date' => 'التاريخ',
+    'core.administrator.content_form.studio_block_date_and_time' => 'التاريخ والوقت',
+    'core.administrator.content_form.studio_block_decimal' => 'عدد عشري',
+    'core.administrator.content_form.studio_block_integer' => 'عدد صحيح',
+    'core.administrator.content_form.studio_block_keyboard' => 'حدّد الكتلة، ثم استخدم الفاحص لاختيار ربط الحقل الخاص بها.',
+    'core.administrator.content_form.studio_block_media' => 'الوسائط',
+    'core.administrator.content_form.studio_block_resource' => 'مورد',
+    'core.administrator.content_form.studio_block_rich_text' => 'نص منسّق',
+    'core.administrator.content_form.studio_block_text' => 'نص',
+    'core.administrator.content_form.studio_block_value' => 'القيمة',
+    'core.administrator.content_form.studio_block_yes_or_no' => 'نعم أو لا',
     'core.administrator.content_form.studio_breaking_schema_change' => 'يزيل الإصدار الجديد حقولًا أو يضيّقها؛ وقد تحتاج العناصر المخزنة إلى ترحيل.',
     'core.administrator.content_form.studio_changes_saved' => 'حفظ Studio هذا العنصر.',
     'core.administrator.content_form.studio_dependent_entries_remain' => 'تحتفظ العناصر الأخرى من هذا النوع بالإصدار الحالي حتى يتم ترحيلها.',
@@ -1298,6 +1309,7 @@ return [
     'core.administrator.content_form.studio_page_builder_is_ready' => 'منشئ صفحات Studio جاهز.',
     'core.administrator.content_form.studio_page_builder_loads_when_you_switch' => 'يُحمَّل منشئ الصفحات عند التبديل إليه.',
     'core.administrator.content_form.studio_page_builder_unavailable_use_the' => 'منشئ صفحات Studio غير متاح لسياق المحتوى هذا. استخدم المحرر المهيكل أدناه؛ سيحافظ Kumwe على نوع المحتوى والإصدار بالتحديد عند الحفظ.',
+    'core.administrator.content_form.studio_pattern_empty_section' => 'قسم فارغ',
     'core.administrator.content_form.studio_preview' => 'معاينة موثّقة',
     'core.administrator.content_form.studio_preview_could_not_be_rendered' => 'تعذّر عرض المعاينة.',
     'core.administrator.content_form.studio_preview_frame' => 'معاينة موثّقة لهذا العنصر',

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for es, carrying 2580 messages.
+ * Compiled interface message catalogue for es, carrying 2592 messages.
  *
  * Generated from es.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1284,6 +1284,17 @@ return [
     'core.administrator.content_form.save_changes_again_to_apply_your' => 'Guarda los cambios de nuevo para aplicar tus datos sobre la versión {current_version}.',
     'core.administrator.content_form.search_file_names' => 'Buscar nombres de archivo',
     'core.administrator.content_form.structured_editor_fallback' => 'Editor estructurado alternativo',
+    'core.administrator.content_form.studio_block_date' => 'Fecha',
+    'core.administrator.content_form.studio_block_date_and_time' => 'Fecha y hora',
+    'core.administrator.content_form.studio_block_decimal' => 'Decimal',
+    'core.administrator.content_form.studio_block_integer' => 'Número entero',
+    'core.administrator.content_form.studio_block_keyboard' => 'Seleccione el bloque y luego use el inspector para elegir su vínculo de campo.',
+    'core.administrator.content_form.studio_block_media' => 'Multimedia',
+    'core.administrator.content_form.studio_block_resource' => 'Recurso',
+    'core.administrator.content_form.studio_block_rich_text' => 'Texto enriquecido',
+    'core.administrator.content_form.studio_block_text' => 'Texto',
+    'core.administrator.content_form.studio_block_value' => 'Valor',
+    'core.administrator.content_form.studio_block_yes_or_no' => 'Sí o no',
     'core.administrator.content_form.studio_breaking_schema_change' => 'La nueva versión elimina o restringe campos; es posible que los elementos almacenados necesiten migración.',
     'core.administrator.content_form.studio_changes_saved' => 'Studio guardó este elemento.',
     'core.administrator.content_form.studio_dependent_entries_remain' => 'Los demás elementos de este tipo conservan la versión actual hasta que se migren.',
@@ -1298,6 +1309,7 @@ return [
     'core.administrator.content_form.studio_page_builder_is_ready' => 'El constructor de páginas de Studio está listo.',
     'core.administrator.content_form.studio_page_builder_loads_when_you_switch' => 'El constructor de páginas se carga cuando cambias a él.',
     'core.administrator.content_form.studio_page_builder_unavailable_use_the' => 'El constructor de páginas de Studio no está disponible para este contexto de contenido. Usa el editor estructurado de abajo; Kumwe conservará el tipo de contenido y la versión exactos al guardar.',
+    'core.administrator.content_form.studio_pattern_empty_section' => 'Sección vacía',
     'core.administrator.content_form.studio_preview' => 'Vista previa autenticada',
     'core.administrator.content_form.studio_preview_could_not_be_rendered' => 'No se pudo representar la vista previa.',
     'core.administrator.content_form.studio_preview_frame' => 'Vista previa autenticada de este elemento',

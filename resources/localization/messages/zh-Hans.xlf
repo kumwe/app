@@ -13004,6 +13004,114 @@
         <target>将根据此设计创建一个新的可复用内容类型，此项将采用它。</target>
       </segment>
     </unit>
+    <unit id="core.administrator.content_form.studio_block_text">
+      <notes>
+        <note category="context">Label of an App-owned Content field block in the contextual Studio palette beside templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Text</source>
+        <target>文本</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_block_rich_text">
+      <notes>
+        <note category="context">Label of an App-owned Content field block in the contextual Studio palette beside templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Rich text</source>
+        <target>富文本</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_block_integer">
+      <notes>
+        <note category="context">Label of an App-owned Content field block in the contextual Studio palette beside templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Integer</source>
+        <target>整数</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_block_decimal">
+      <notes>
+        <note category="context">Label of an App-owned Content field block in the contextual Studio palette beside templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Decimal</source>
+        <target>小数</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_block_yes_or_no">
+      <notes>
+        <note category="context">Label of an App-owned Content field block in the contextual Studio palette beside templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Yes or no</source>
+        <target>是或否</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_block_date">
+      <notes>
+        <note category="context">Label of an App-owned Content field block in the contextual Studio palette beside templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Date</source>
+        <target>日期</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_block_date_and_time">
+      <notes>
+        <note category="context">Label of an App-owned Content field block in the contextual Studio palette beside templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Date and time</source>
+        <target>日期和时间</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_block_media">
+      <notes>
+        <note category="context">Label of an App-owned Content field block in the contextual Studio palette beside templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Media</source>
+        <target>媒体</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_block_resource">
+      <notes>
+        <note category="context">Label of an App-owned Content field block in the contextual Studio palette beside templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Resource</source>
+        <target>资源</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_block_value">
+      <notes>
+        <note category="context">Name of the value port every App-owned Content field block exposes in the contextual Studio inspector.</note>
+      </notes>
+      <segment>
+        <source>Value</source>
+        <target>值</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_block_keyboard">
+      <notes>
+        <note category="context">Keyboard guidance the contextual Studio shows for an App-owned Content field block.</note>
+      </notes>
+      <segment>
+        <source>Select the block, then use the inspector to choose its field binding.</source>
+        <target>选择该块，然后使用检查器选择其字段绑定。</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_pattern_empty_section">
+      <notes>
+        <note category="context">Label of the App-owned empty-section pattern in the contextual Studio palette beside templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Empty section</source>
+        <target>空白区块</target>
+      </segment>
+    </unit>
     <unit id="core.administrator.content_form.discard_unsaved_studio_changes">
       <notes>
         <note category="context">Confirmation shown when the author leaves Studio with unsaved changes.</note>

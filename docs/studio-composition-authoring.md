@@ -62,8 +62,9 @@ closed capability projection and return context, and answers every operation thr
 - inline, minimized, maximized and fullscreen presentation of the same session, and a deterministic return to
   the accepted item's edit context;
 - the interface-locale Studio message catalogue served by the localization port, fetched alongside the module so
-  the shell never shows source-language labels first, and the host's own return label and save consequences
-  resolved in the same interface locale;
+  the shell never shows source-language labels first, and the host's own return label, save consequences and
+  palette entries (the App's Content field blocks and its empty-section pattern) resolved in the same interface
+  locale;
 - keyboard-only operation from the Content editor's skip link through the start chooser, the start, the
   presentations, the mode tabs, field definition and non-drag block insertion, with focus returned to the Studio
   region's heading when the shell replaces the chooser;

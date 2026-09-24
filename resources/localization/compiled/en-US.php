@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for en-US, carrying 2580 messages.
+ * Compiled interface message catalogue for en-US, carrying 2592 messages.
  *
  * Generated from en-US.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1284,6 +1284,17 @@ return [
     'core.administrator.content_form.save_changes_again_to_apply_your' => 'Save changes again to apply your entries on top of version {current_version}.',
     'core.administrator.content_form.search_file_names' => 'Search file names',
     'core.administrator.content_form.structured_editor_fallback' => 'Structured editor fallback',
+    'core.administrator.content_form.studio_block_date' => 'Date',
+    'core.administrator.content_form.studio_block_date_and_time' => 'Date and time',
+    'core.administrator.content_form.studio_block_decimal' => 'Decimal',
+    'core.administrator.content_form.studio_block_integer' => 'Integer',
+    'core.administrator.content_form.studio_block_keyboard' => 'Select the block, then use the inspector to choose its field binding.',
+    'core.administrator.content_form.studio_block_media' => 'Media',
+    'core.administrator.content_form.studio_block_resource' => 'Resource',
+    'core.administrator.content_form.studio_block_rich_text' => 'Rich text',
+    'core.administrator.content_form.studio_block_text' => 'Text',
+    'core.administrator.content_form.studio_block_value' => 'Value',
+    'core.administrator.content_form.studio_block_yes_or_no' => 'Yes or no',
     'core.administrator.content_form.studio_breaking_schema_change' => 'The new version removes or narrows fields; stored items may need migration.',
     'core.administrator.content_form.studio_changes_saved' => 'Studio saved this item.',
     'core.administrator.content_form.studio_dependent_entries_remain' => 'Other items of this type keep the current version until they are migrated.',
@@ -1298,6 +1309,7 @@ return [
     'core.administrator.content_form.studio_page_builder_is_ready' => 'The Studio page builder is ready.',
     'core.administrator.content_form.studio_page_builder_loads_when_you_switch' => 'The page builder loads when you switch to it.',
     'core.administrator.content_form.studio_page_builder_unavailable_use_the' => 'The Studio page builder is not available for this content context. Use the structured editor below; Kumwe will preserve the exact content type and version when you save.',
+    'core.administrator.content_form.studio_pattern_empty_section' => 'Empty section',
     'core.administrator.content_form.studio_preview' => 'Authenticated preview',
     'core.administrator.content_form.studio_preview_could_not_be_rendered' => 'The preview could not be rendered.',
     'core.administrator.content_form.studio_preview_frame' => 'Authenticated preview of this item',

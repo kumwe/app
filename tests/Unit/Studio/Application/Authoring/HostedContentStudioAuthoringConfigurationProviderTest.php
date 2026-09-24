@@ -48,6 +48,7 @@ use Kumwe\App\Studio\Domain\Authoring\StudioAuthoringIntent;
 use Kumwe\App\Studio\Domain\Host\StudioHostSession;
 use Kumwe\App\Studio\Domain\Host\StudioResourceKind;
 use Kumwe\App\Tests\Support\AuthorizationContext;
+use Kumwe\App\Tests\Support\InterfaceTranslation;
 use Kumwe\Transaction\Testing\ImmediateTransactionManager;
 use Kumwe\Content\Workflow\Domain\Workflow;
 use Kumwe\Producer\Deployment\StudioBrowserAssetLocator;
@@ -451,6 +452,7 @@ final class HostedContentStudioAuthoringConfigurationProviderTest extends TestCa
             new StudioCompositionContributionCatalog($registries, $runtime),
             StudioCoreCatalog::fromFile($root . '/resources/studio-contract/core-catalog.json', '0.1.0-beta.3'),
             $runtime,
+            InterfaceTranslation::translator(),
         );
         $provider = new HostedContentStudioAuthoringConfigurationProvider(
             $contextAuthority,

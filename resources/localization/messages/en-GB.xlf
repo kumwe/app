@@ -11517,6 +11517,102 @@
         <source>A new reusable content type is created from this design and this item adopts it.</source>
       </segment>
     </unit>
+    <unit id="core.administrator.content_form.studio_block_text">
+      <notes>
+        <note category="context">Label of an App-owned Content field block in the contextual Studio palette beside templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Text</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_block_rich_text">
+      <notes>
+        <note category="context">Label of an App-owned Content field block in the contextual Studio palette beside templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Rich text</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_block_integer">
+      <notes>
+        <note category="context">Label of an App-owned Content field block in the contextual Studio palette beside templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Integer</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_block_decimal">
+      <notes>
+        <note category="context">Label of an App-owned Content field block in the contextual Studio palette beside templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Decimal</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_block_yes_or_no">
+      <notes>
+        <note category="context">Label of an App-owned Content field block in the contextual Studio palette beside templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Yes or no</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_block_date">
+      <notes>
+        <note category="context">Label of an App-owned Content field block in the contextual Studio palette beside templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Date</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_block_date_and_time">
+      <notes>
+        <note category="context">Label of an App-owned Content field block in the contextual Studio palette beside templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Date and time</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_block_media">
+      <notes>
+        <note category="context">Label of an App-owned Content field block in the contextual Studio palette beside templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Media</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_block_resource">
+      <notes>
+        <note category="context">Label of an App-owned Content field block in the contextual Studio palette beside templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Resource</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_block_value">
+      <notes>
+        <note category="context">Name of the value port every App-owned Content field block exposes in the contextual Studio inspector.</note>
+      </notes>
+      <segment>
+        <source>Value</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_block_keyboard">
+      <notes>
+        <note category="context">Keyboard guidance the contextual Studio shows for an App-owned Content field block.</note>
+      </notes>
+      <segment>
+        <source>Select the block, then use the inspector to choose its field binding.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_pattern_empty_section">
+      <notes>
+        <note category="context">Label of the App-owned empty-section pattern in the contextual Studio palette beside templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Empty section</source>
+      </segment>
+    </unit>
     <unit id="core.administrator.content_form.discard_unsaved_studio_changes">
       <notes>
         <note category="context">Confirmation shown when the author leaves Studio with unsaved changes.</note>

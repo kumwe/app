@@ -108,6 +108,14 @@ test('the contextual Studio shell runs right-to-left with localized names and ke
   }
   expect([...visited].sort()).toEqual([studio('mode-blueprint'), studio('mode-content'), studio('mode-model')].sort());
 
+  // The App's own palette entries are named in this language as well, beside Studio's first-party blocks.
+  await shell.getByRole('tab', { name: studio('mode-blueprint') }).click();
+  const palette = shell.getByRole('complementary', { name: message(locale, 'core.studio.shell.palette-label') });
+  for (const id of ['studio_block_yes_or_no', 'studio_block_text', 'studio_pattern_empty_section']) {
+    const name = message(locale, `core.administrator.content_form.${id}`);
+    await expect(palette.getByRole('button', { name, exact: true })).toBeVisible();
+  }
+
   await expectNoDocumentOverflow(page, { root: '#administrator-content', detectControlOverlaps: false });
   await expectAccessible(page);
 });

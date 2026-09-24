@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for he, carrying 2580 messages.
+ * Compiled interface message catalogue for he, carrying 2592 messages.
  *
  * Generated from he.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1284,6 +1284,17 @@ return [
     'core.administrator.content_form.save_changes_again_to_apply_your' => 'שמרו שוב את השינויים כדי להחיל את הנתונים שהזנתם על גבי גרסה {current_version}.',
     'core.administrator.content_form.search_file_names' => 'חיפוש שמות קבצים',
     'core.administrator.content_form.structured_editor_fallback' => 'עורך מובנה חלופי',
+    'core.administrator.content_form.studio_block_date' => 'תאריך',
+    'core.administrator.content_form.studio_block_date_and_time' => 'תאריך ושעה',
+    'core.administrator.content_form.studio_block_decimal' => 'מספר עשרוני',
+    'core.administrator.content_form.studio_block_integer' => 'מספר שלם',
+    'core.administrator.content_form.studio_block_keyboard' => 'בחרו את הבלוק ואז השתמשו בבודק כדי לבחור את קישור השדה שלו.',
+    'core.administrator.content_form.studio_block_media' => 'מדיה',
+    'core.administrator.content_form.studio_block_resource' => 'משאב',
+    'core.administrator.content_form.studio_block_rich_text' => 'טקסט עשיר',
+    'core.administrator.content_form.studio_block_text' => 'טקסט',
+    'core.administrator.content_form.studio_block_value' => 'ערך',
+    'core.administrator.content_form.studio_block_yes_or_no' => 'כן או לא',
     'core.administrator.content_form.studio_breaking_schema_change' => 'הגרסה החדשה מסירה או מצמצמת שדות; ייתכן שפריטים שמורים יצטרכו העברה.',
     'core.administrator.content_form.studio_changes_saved' => 'Studio שמר פריט זה.',
     'core.administrator.content_form.studio_dependent_entries_remain' => 'פריטים אחרים מסוג זה שומרים על הגרסה הנוכחית עד שיועברו.',
@@ -1298,6 +1309,7 @@ return [
     'core.administrator.content_form.studio_page_builder_is_ready' => 'בונה העמודים של Studio מוכן.',
     'core.administrator.content_form.studio_page_builder_loads_when_you_switch' => 'בונה העמודים ייטען כשתעברו אליו.',
     'core.administrator.content_form.studio_page_builder_unavailable_use_the' => 'בונה העמודים של Studio אינו זמין להקשר תוכן זה. השתמשו בעורך המובנה שלהלן; Kumwe ישמר את סוג התוכן והגרסה המדויקים בעת השמירה.',
+    'core.administrator.content_form.studio_pattern_empty_section' => 'מקטע ריק',
     'core.administrator.content_form.studio_preview' => 'תצוגה מקדימה מאומתת',
     'core.administrator.content_form.studio_preview_could_not_be_rendered' => 'לא ניתן היה להציג את התצוגה המקדימה.',
     'core.administrator.content_form.studio_preview_frame' => 'תצוגה מקדימה מאומתת של פריט זה',
