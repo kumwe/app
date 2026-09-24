@@ -18,6 +18,7 @@ use Kumwe\App\Infrastructure\Mcp\McpCapabilityCatalog;
 use Kumwe\App\Infrastructure\Mcp\McpMutationGuard;
 use Kumwe\App\Infrastructure\Mcp\ReportMcpHandlers;
 use Kumwe\App\Infrastructure\Time\SystemClock;
+use Kumwe\App\Localization\Application\MessageOverrideService;
 use Kumwe\App\Media\Application\MediaService;
 use Kumwe\App\Navigation\Application\NavigationService;
 use Kumwe\App\Site\Infrastructure\Persistence\DoctrineSiteSettings;
@@ -29,6 +30,7 @@ final class McpHandlersFixture
         McpCapabilityCatalog $catalog,
         ?ExtensionExecutionGate $extensionRuntime = null,
         ?MediaService $media = null,
+        ?MessageOverrideService $wording = null,
     ): KumweMcpHandlers {
         return new KumweMcpHandlers(
             $catalog,
@@ -48,6 +50,7 @@ final class McpHandlersFixture
             AuthorizationContext::gateway(),
             extensionRuntime: $extensionRuntime,
             media: $media,
+            wording: $wording,
         );
     }
 

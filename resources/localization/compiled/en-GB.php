@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for en-GB, carrying 2565 messages.
+ * Compiled interface message catalogue for en-GB, carrying 2566 messages.
  *
  * Generated from en-GB.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -2032,6 +2032,7 @@ return [
     'core.console.user_create_admin.created_administrator' => 'Created administrator {id}.',
     'core.console.user_create_admin.description' => 'Create an administrator from a protected password file.',
     'core.console.user_recover_credentials.description' => 'Break-glass: reset a password, retire second factors, or end sessions from the host.',
+    'core.console.wording.description' => 'List, search, save or withdraw wording overrides.',
     'core.identity.password.change_refused' => 'Your password could not be changed. Check your current password and choose a different password with at least 12 characters.',
     'core.identity.password.confirmation_mismatch' => 'The new password and its confirmation do not match.',
     'core.interface_standard.dashboard.access_group_browser_heading' => 'Access-group defaults',

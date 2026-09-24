@@ -2,7 +2,7 @@
   "format": "kumwe-cli-machine-contract-v1",
   "generation": 2,
   "status": "retained",
-  "surface_digest": "sha256:51859b0de68e33676d637d6ca153632448535ca817e7053e5b65dba1a1a7244a",
+  "surface_digest": "sha256:01a202fb8f36a7cf5ba1c70d4e60b971338e10dc35d11055e977f939f41eed29",
   "dispatcher": {
     "list_exit": 0,
     "unknown_command_exit": 64,
@@ -982,6 +982,29 @@
         {"name":"reset-password","risk":"high-impact","positionals":[],"allowed_options":["email","password-file","reason"],"required_options":["email","password-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
         {"name":"revoke-step-up","risk":"high-impact","positionals":[],"allowed_options":["email","reason"],"required_options":["email"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
         {"name":"terminate-sessions","risk":"high-impact","positionals":[],"allowed_options":["email","reason"],"required_options":["email"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "wording",
+      "action_argument": true,
+      "default_action": "overrides",
+      "options": [
+        {"name":"site","type":"identifier","enum":[]},
+        {"name":"token-file","type":"secret-file","enum":[]},
+        {"name":"layer","type":"enum","enum":["site","organization"]},
+        {"name":"locale","type":"identifier","enum":[]},
+        {"name":"query","type":"string","enum":[]},
+        {"name":"limit","type":"positive-integer","enum":[]},
+        {"name":"identifier","type":"identifier","enum":[]},
+        {"name":"pattern","type":"string","enum":[]}
+      ],
+      "output": {"stdout":"json-document","stderr":"text-lines"},
+      "exit_codes": {"0":"success","1":"operation-failed"},
+      "actions": [
+        {"name":"catalogue","risk":"read","positionals":[],"allowed_options":["site","token-file","locale","query","limit"],"required_options":["site","token-file","locale"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"overrides","risk":"read","positionals":[],"allowed_options":["site","token-file","layer","locale"],"required_options":["site","token-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"save","risk":"mutate","positionals":[],"allowed_options":["site","token-file","layer","locale","identifier","pattern"],"required_options":["site","token-file","locale","identifier","pattern"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]},
+        {"name":"withdraw","risk":"mutate","positionals":[],"allowed_options":["site","token-file","layer","locale","identifier"],"required_options":["site","token-file","locale","identifier"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
       ]
     }
   ]

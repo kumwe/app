@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for pt-BR, carrying 2565 messages.
+ * Compiled interface message catalogue for pt-BR, carrying 2566 messages.
  *
  * Generated from pt-BR.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -2032,6 +2032,7 @@ return [
     'core.console.user_create_admin.created_administrator' => 'Administrador {id} criado.',
     'core.console.user_create_admin.description' => 'Crie um administrador a partir de um arquivo de senha protegido.',
     'core.console.user_recover_credentials.description' => 'Emergência: redefina uma senha, desative fatores secundários ou encerre sessões a partir do host.',
+    'core.console.wording.description' => 'Liste, pesquise, salve ou retire substituições de redação.',
     'core.identity.password.change_refused' => 'Não foi possível alterar sua senha. Verifique sua senha atual e escolha uma senha diferente com pelo menos 12 caracteres.',
     'core.identity.password.confirmation_mismatch' => 'A nova senha e a confirmação não coincidem.',
     'core.interface_standard.dashboard.access_group_browser_heading' => 'Padrões do grupo de acesso',

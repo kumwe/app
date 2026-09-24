@@ -44,6 +44,7 @@ use Kumwe\App\Delivery\Console\Command\RecoverMigrationLockCommand;
 use Kumwe\App\Delivery\Console\Command\RotateRecordSecretsCommand;
 use Kumwe\App\Delivery\Console\Command\BusinessApprovalCommand;
 use Kumwe\App\Delivery\Console\Command\MediaCommand;
+use Kumwe\App\Delivery\Console\Command\WordingCommand;
 use Kumwe\App\Delivery\Console\Command\SecurityEventsCommand;
 use Kumwe\App\Delivery\Console\Command\StudioAuthoringCommand;
 use Kumwe\App\Delivery\Console\Command\RunExtensionConformanceCommand;
@@ -109,6 +110,7 @@ use ReflectionClass;
 #[CoversClass(SecurityEventsCommand::class)]
 #[CoversClass(BusinessApprovalCommand::class)]
 #[CoversClass(MediaCommand::class)]
+#[CoversClass(WordingCommand::class)]
 #[CoversClass(RunExtensionConformanceCommand::class)]
 #[CoversClass(ScaffoldExtensionCommand::class)]
 #[CoversClass(ScheduleRunCommand::class)]
@@ -267,6 +269,7 @@ final class CommandDescriptionTest extends TestCase
             SecurityEventsCommand::class,
             BusinessApprovalCommand::class,
             MediaCommand::class,
+            WordingCommand::class,
             UninstallExtensionCommand::class,
             VerifyAuditTrailCommand::class,
             WatchExtensionRuntimeCommand::class,

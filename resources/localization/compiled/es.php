@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for es, carrying 2565 messages.
+ * Compiled interface message catalogue for es, carrying 2566 messages.
  *
  * Generated from es.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -2032,6 +2032,7 @@ return [
     'core.console.user_create_admin.created_administrator' => 'Se creó el administrador {id}.',
     'core.console.user_create_admin.description' => 'Crea un administrador a partir de un archivo de contraseña protegido.',
     'core.console.user_recover_credentials.description' => 'Acceso de emergencia: restablece una contraseña, retira segundos factores o finaliza sesiones desde el host.',
+    'core.console.wording.description' => 'Enumera, busca, guarda o retira sustituciones de redacción.',
     'core.identity.password.change_refused' => 'No se pudo cambiar tu contraseña. Comprueba tu contraseña actual y elige una contraseña diferente de al menos 12 caracteres.',
     'core.identity.password.confirmation_mismatch' => 'La contraseña nueva y su confirmación no coinciden.',
     'core.interface_standard.dashboard.access_group_browser_heading' => 'Valores predeterminados del grupo de acceso',

@@ -43,6 +43,10 @@ use Kumwe\App\Studio\Domain\Authoring\StudioAuthoringIntent;
 use Kumwe\App\Identity\Domain\UserStatus;
 use Kumwe\App\Media\Application\MediaAsset;
 use Kumwe\App\Media\Application\MediaService;
+use Kumwe\App\Localization\Application\MessageOverrideService;
+use Kumwe\Localization\Application\MessageFormattingFailed;
+use Kumwe\Localization\Application\MessageOverrideRecord;
+use Kumwe\Localization\Domain\MessageCatalogueLayer;
 use Psr\Clock\ClockInterface;
 
 /**
@@ -100,6 +104,8 @@ final readonly class KumweMcpHandlers
      *         host; null only in isolated tests that exercise no Studio tool.
      * @param  ?MediaService                   $media             Media library the media tools browse, read, upload
      *         and delete through; null only in isolated tests that exercise no media tool.
+     * @param  ?MessageOverrideService         $wording           Wording overrides the wording tools list, search,
+     *         save and withdraw through; null only in isolated tests that exercise no wording tool.
      *
      * @since  2.0.0
      */
@@ -124,6 +130,7 @@ final readonly class KumweMcpHandlers
         private ?ExtensionExecutionGate $extensionRuntime = null,
         private ?StudioMachineAuthoringGateway $studioAuthoring = null,
         private ?MediaService $media = null,
+        private ?MessageOverrideService $wording = null,
     ) {
     }
 
@@ -162,6 +169,7 @@ final readonly class KumweMcpHandlers
             extensionRuntime: $this->extensionRuntime,
             studioAuthoring: $this->studioAuthoring,
             media: $this->media,
+            wording: $this->wording,
         );
     }
 
@@ -236,6 +244,7 @@ final readonly class KumweMcpHandlers
             extensionRuntime: $this->extensionRuntime,
             studioAuthoring: $this->studioAuthoring,
             media: $this->media,
+            wording: $this->wording,
         );
     }
 
@@ -3173,6 +3182,154 @@ final readonly class KumweMcpHandlers
     }
 
     /**
+     * List the stored wording overrides of one administered layer, as the Wording screen does.
+     *
+     * @param   string   $layer   `site`, or `organization` for the credential's membership organization.
+     * @param   ?string  $locale  Restrict to one carried locale, or null for every locale.
+     *
+     * @return  array{layer: string, locale: ?string, items: list<array<string, mixed>>}  Overrides.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `localization.overrides.manage`.
+     * @throws  InvalidArgumentException  When the layer is not administered or the locale is not carried.
+     *
+     * @since   2.0.0
+     */
+    public function listWordingOverrides(string $layer = 'site', ?string $locale = null): array
+    {
+        $this->require('localization.overrides.manage');
+        $administered = self::wordingLayer($layer);
+
+        return [
+            'layer' => $administered->value,
+            'locale' => $locale,
+            'items' => array_map(
+                static fn (MessageOverrideRecord $record): array => $record->toArray(),
+                $this->wordingOverrides()->overrides($this->context(), $administered, $locale),
+            ),
+        ];
+    }
+
+    /**
+     * Search the shipped wording of one carried locale an override starts from.
+     *
+     * @param   string  $locale  Carried locale tag.
+     * @param   string  $query   Case-insensitive identifier or wording substring; empty for the first page.
+     * @param   int     $limit   Matches to return, from one to two hundred.
+     *
+     * @return  array{locale: string, items: list<array{identifier: string, pattern: string, layer: string}>}  Hits.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `localization.overrides.manage`.
+     * @throws  InvalidArgumentException  When the locale is not carried.
+     *
+     * @since   2.0.0
+     */
+    public function searchWordingCatalogue(string $locale, string $query = '', int $limit = 50): array
+    {
+        $this->require('localization.overrides.manage');
+
+        return [
+            'locale' => $locale,
+            'items' => $this->wordingOverrides()->searchCatalogue($this->context(), $locale, $query, $limit),
+        ];
+    }
+
+    /**
+     * Store one wording override under a replay-safe operation identity.
+     *
+     * @param   string  $operationId  Idempotency key this write is fenced on.
+     * @param   string  $layer        Administered layer, `site` or `organization`.
+     * @param   string  $locale       Carried locale tag.
+     * @param   string  $identifier   Message identifier whose wording is replaced.
+     * @param   string  $pattern      Replacement ICU pattern.
+     *
+     * @return  array<string, mixed>  The stored override, or the stored copy on a repeat.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `localization.overrides.manage`.
+     * @throws  InvalidArgumentException  When the layer, locale, identifier or ICU pattern is refused.
+     *
+     * @since   2.0.0
+     */
+    public function saveWordingOverride(
+        string $operationId,
+        string $layer,
+        string $locale,
+        string $identifier,
+        string $pattern,
+    ): array {
+        $this->require('localization.overrides.manage');
+        $this->preauthorize(
+            $operationId,
+            'localization.overrides.manage',
+            AuthorizationResource::collection('message_override'),
+        );
+        $administered = self::wordingLayer($layer);
+
+        return $this->mutations->run(
+            $this->context($operationId),
+            'wording.override.save',
+            $operationId,
+            compact('layer', 'locale', 'identifier', 'pattern'),
+            function () use ($operationId, $administered, $locale, $identifier, $pattern): array {
+                try {
+                    return $this->wordingOverrides()->override(
+                        $this->context($operationId),
+                        $administered,
+                        $locale,
+                        $identifier,
+                        $pattern,
+                    )->toArray();
+                } catch (MessageFormattingFailed $refused) {
+                    // ICU refusals are the caller's input, answered as `request.invalid` like REST's 422.
+                    throw new InvalidArgumentException($refused->getMessage(), 0, $refused);
+                }
+            },
+        );
+    }
+
+    /**
+     * Withdraw one wording override under a replay-safe operation identity.
+     *
+     * @param   string  $operationId  Idempotency key this write is fenced on.
+     * @param   string  $layer        Administered layer, `site` or `organization`.
+     * @param   string  $locale       Carried locale tag.
+     * @param   string  $identifier   Message identifier to stop overriding.
+     *
+     * @return  array{withdrawn: bool}  Whether an override was withdrawn.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `localization.overrides.manage`.
+     * @throws  InvalidArgumentException  When the layer, locale or identifier is refused.
+     *
+     * @since   2.0.0
+     */
+    public function withdrawWordingOverride(
+        string $operationId,
+        string $layer,
+        string $locale,
+        string $identifier,
+    ): array {
+        $this->require('localization.overrides.manage');
+        $this->preauthorize(
+            $operationId,
+            'localization.overrides.manage',
+            AuthorizationResource::collection('message_override'),
+        );
+        $administered = self::wordingLayer($layer);
+
+        return $this->mutations->run(
+            $this->context($operationId),
+            'wording.override.withdraw',
+            $operationId,
+            compact('layer', 'locale', 'identifier'),
+            fn (): array => ['withdrawn' => $this->wordingOverrides()->withdraw(
+                $this->context($operationId),
+                $administered,
+                $locale,
+                $identifier,
+            )],
+        );
+    }
+
+    /**
      * Execute one ordinary declared action; a high-impact attempt fails closed without browser step-up.
      *
      * @param   string                $operationId        Caller-chosen stable operation identity.
@@ -3941,6 +4098,42 @@ final readonly class KumweMcpHandlers
         return $operationId === null
             ? $context
             : $context->child('mcp-' . $operationId, $operationId);
+    }
+
+    /**
+     * Resolve the wording overrides service this server was composed with.
+     *
+     * @return  MessageOverrideService  Wording overrides service.
+     *
+     * @throws  InvalidArgumentException  When the server was composed without wording overrides.
+     *
+     * @since   2.0.0
+     */
+    private function wordingOverrides(): MessageOverrideService
+    {
+        return $this->wording
+            ?? throw new InvalidArgumentException('Wording overrides are unavailable on this server.');
+    }
+
+    /**
+     * Resolve one administered wording layer; the service refuses any other layer again.
+     *
+     * @param   string  $layer  `site` or `organization`.
+     *
+     * @return  MessageCatalogueLayer  The named layer.
+     *
+     * @throws  InvalidArgumentException  When the value names no administered layer.
+     *
+     * @since   2.0.0
+     */
+    private static function wordingLayer(string $layer): MessageCatalogueLayer
+    {
+        $resolved = MessageCatalogueLayer::tryFrom($layer);
+        if ($resolved !== MessageCatalogueLayer::Site && $resolved !== MessageCatalogueLayer::Organization) {
+            throw new InvalidArgumentException('An administered wording layer is required.');
+        }
+
+        return $resolved;
     }
 
     /**

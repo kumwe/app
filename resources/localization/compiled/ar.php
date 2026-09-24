@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for ar, carrying 2565 messages.
+ * Compiled interface message catalogue for ar, carrying 2566 messages.
  *
  * Generated from ar.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -2032,6 +2032,7 @@ return [
     'core.console.user_create_admin.created_administrator' => 'تم إنشاء المسؤول {id}.',
     'core.console.user_create_admin.description' => 'أنشئ مسؤولًا من ملف كلمة مرور محمي.',
     'core.console.user_recover_credentials.description' => 'الوصول الطارئ: أعد تعيين كلمة مرور، أو أوقِف العوامل الثانية، أو أنهِ الجلسات من المضيف.',
+    'core.console.wording.description' => 'عرض تجاوزات الصياغة أو البحث فيها أو حفظها أو سحبها.',
     'core.identity.password.change_refused' => 'تعذّر تغيير كلمة مرورك. تحقّق من كلمة مرورك الحالية واختر كلمة مرور مختلفة لا تقل عن 12 حرفًا.',
     'core.identity.password.confirmation_mismatch' => 'لا تتطابق كلمة المرور الجديدة مع تأكيدها.',
     'core.interface_standard.dashboard.access_group_browser_heading' => 'إعدادات مجموعة الوصول الافتراضية',

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for zh-Hans, carrying 2565 messages.
+ * Compiled interface message catalogue for zh-Hans, carrying 2566 messages.
  *
  * Generated from zh-Hans.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -2032,6 +2032,7 @@ return [
     'core.console.user_create_admin.created_administrator' => '已创建管理员 {id}。',
     'core.console.user_create_admin.description' => '根据受保护的密码文件创建一名管理员。',
     'core.console.user_recover_credentials.description' => '紧急操作：从主机重置密码、停用第二验证要素或终止会话。',
+    'core.console.wording.description' => '列出、搜索、保存或撤回措辞覆盖。',
     'core.identity.password.change_refused' => '您的密码未能更改。请检查当前密码，并选择一个不同的、至少 12 个字符的新密码。',
     'core.identity.password.confirmation_mismatch' => '新密码与确认密码不一致。',
     'core.interface_standard.dashboard.access_group_browser_heading' => '访问组默认设置',

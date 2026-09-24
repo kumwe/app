@@ -25,7 +25,7 @@
         ]
     },
     "inventory": {
-        "tools": 95,
+        "tools": 99,
         "resources": 1,
         "prompts": 1
     },
@@ -588,7 +588,7 @@
             ]
         }
     ],
-    "contract_sha256": "67b097c1c3408dd4592adeccd66d7314a100e00aa12de3fec0757f146c5de93f",
+    "contract_sha256": "c8765cc4032d38917a51e03cf140d5257365bd8b88936936eecde4cf50dfbe48",
     "surface": {
         "tools": [
             {
@@ -7785,6 +7785,252 @@
                     "required": [
                         "id",
                         "deleted"
+                    ],
+                    "additionalProperties": false
+                }
+            },
+            {
+                "name": "kumwe_wording_override_list",
+                "title": "List wording overrides",
+                "description": "List the stored wording overrides of the site or the credential's organization.",
+                "handler": "listWordingOverrides",
+                "capability": "localization.overrides.manage",
+                "risk": "read",
+                "alternative": "Administrator console: Wording, /api/v1/wording, or bin/kumwe wording.",
+                "annotations": {
+                    "title": "List wording overrides",
+                    "readOnlyHint": true,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "layer": {
+                            "type": "string",
+                            "enum": [
+                                "site",
+                                "organization"
+                            ]
+                        },
+                        "locale": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "minLength": 2,
+                                    "maxLength": 35
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ]
+                        }
+                    },
+                    "required": [],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "layer": {
+                            "type": "string"
+                        },
+                        "locale": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        },
+                        "items": {
+                            "type": "array",
+                            "maxItems": 1000
+                        }
+                    },
+                    "required": [
+                        "layer",
+                        "locale",
+                        "items"
+                    ],
+                    "additionalProperties": false
+                }
+            },
+            {
+                "name": "kumwe_wording_catalogue_search",
+                "title": "Search shipped wording",
+                "description": "Search the shipped wording of one locale that an override starts from.",
+                "handler": "searchWordingCatalogue",
+                "capability": "localization.overrides.manage",
+                "risk": "read",
+                "alternative": "Administrator console: Wording, /api/v1/wording, or bin/kumwe wording.",
+                "annotations": {
+                    "title": "Search shipped wording",
+                    "readOnlyHint": true,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "locale": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 35
+                        },
+                        "query": {
+                            "type": "string",
+                            "maxLength": 200
+                        },
+                        "limit": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 200
+                        }
+                    },
+                    "required": [
+                        "locale"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "locale": {
+                            "type": "string"
+                        },
+                        "items": {
+                            "type": "array",
+                            "maxItems": 1000
+                        }
+                    },
+                    "required": [
+                        "locale",
+                        "items"
+                    ],
+                    "additionalProperties": false
+                }
+            },
+            {
+                "name": "kumwe_wording_override_save",
+                "title": "Save a wording override",
+                "description": "Replace one message's wording for one locale with a validated ICU pattern.",
+                "handler": "saveWordingOverride",
+                "capability": "localization.overrides.manage",
+                "risk": "scoped_write",
+                "alternative": "Administrator console: Wording, /api/v1/wording, or bin/kumwe wording.",
+                "annotations": {
+                    "title": "Save a wording override",
+                    "readOnlyHint": false,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "operationId": {
+                            "type": "string",
+                            "minLength": 16,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{15,127}$"
+                        },
+                        "layer": {
+                            "type": "string",
+                            "enum": [
+                                "site",
+                                "organization"
+                            ]
+                        },
+                        "locale": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 35
+                        },
+                        "identifier": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 191
+                        },
+                        "pattern": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 4000
+                        }
+                    },
+                    "required": [
+                        "operationId",
+                        "layer",
+                        "locale",
+                        "identifier",
+                        "pattern"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "additionalProperties": true
+                }
+            },
+            {
+                "name": "kumwe_wording_override_withdraw",
+                "title": "Withdraw a wording override",
+                "description": "Stop overriding one message for one locale so the shipped wording applies again.",
+                "handler": "withdrawWordingOverride",
+                "capability": "localization.overrides.manage",
+                "risk": "scoped_write",
+                "alternative": "Administrator console: Wording, /api/v1/wording, or bin/kumwe wording.",
+                "annotations": {
+                    "title": "Withdraw a wording override",
+                    "readOnlyHint": false,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "operationId": {
+                            "type": "string",
+                            "minLength": 16,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{15,127}$"
+                        },
+                        "layer": {
+                            "type": "string",
+                            "enum": [
+                                "site",
+                                "organization"
+                            ]
+                        },
+                        "locale": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 35
+                        },
+                        "identifier": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 191
+                        }
+                    },
+                    "required": [
+                        "operationId",
+                        "layer",
+                        "locale",
+                        "identifier"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "withdrawn": {
+                            "type": "boolean"
+                        }
+                    },
+                    "required": [
+                        "withdrawn"
                     ],
                     "additionalProperties": false
                 }

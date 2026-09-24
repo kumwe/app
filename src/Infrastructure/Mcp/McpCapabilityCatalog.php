@@ -143,7 +143,19 @@ final class McpCapabilityCatalog
         'kumwe_media_get' => [McpRiskClass::Read, self::VIA_MEDIA],
         'kumwe_media_upload' => [McpRiskClass::ScopedWrite, self::VIA_MEDIA],
         'kumwe_media_delete' => [McpRiskClass::Destructive, self::VIA_MEDIA],
+        'kumwe_wording_override_list' => [McpRiskClass::Read, self::VIA_WORDING],
+        'kumwe_wording_catalogue_search' => [McpRiskClass::Read, self::VIA_WORDING],
+        'kumwe_wording_override_save' => [McpRiskClass::ScopedWrite, self::VIA_WORDING],
+        'kumwe_wording_override_withdraw' => [McpRiskClass::ScopedWrite, self::VIA_WORDING],
     ];
+
+    /**
+     * Non-MCP route for the wording override tools.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const string VIA_WORDING = 'Administrator console: Wording, /api/v1/wording, or bin/kumwe wording.';
 
     /**
      * Non-MCP route for the media library tools.
@@ -1521,6 +1533,101 @@ final class McpCapabilityCatalog
             ...$this->accessRecoveryTools(),
             ...$this->businessApprovalTools(),
             ...$this->mediaTools(),
+            ...$this->wordingTools(),
+        ];
+    }
+
+    /**
+     * Declare the wording override tools: the administrator Wording screen's list, search, save and withdraw.
+     *
+     * @return  list<array{
+     *            name: string, title: string, description: string, handler: string,
+     *            capability: string|null, capabilityResolver: string|McpDynamicCapabilityResolver,
+     *            mutationGuard: McpMutationGuardMode, readOnly: bool, destructive: bool, idempotent: bool,
+     *            inputSchema: array<string, mixed>, outputSchema: array<string, mixed>
+     *          }>  Tool declarations in registration order.
+     *
+     * @since   2.0.0
+     */
+    private function wordingTools(): array
+    {
+        $layer = ['type' => 'string', 'enum' => ['site', 'organization']];
+        $locale = ['type' => 'string', 'minLength' => 2, 'maxLength' => 35];
+        $identifier = ['type' => 'string', 'minLength' => 1, 'maxLength' => 191];
+        $pattern = ['type' => 'string', 'minLength' => 1, 'maxLength' => 4000];
+        $items = ['type' => 'array', 'maxItems' => 1000];
+
+        return [
+            $this->tool(
+                'kumwe_wording_override_list',
+                'List wording overrides',
+                'List the stored wording overrides of the site or the credential\'s organization.',
+                'listWordingOverrides',
+                'localization.overrides.manage',
+                true,
+                false,
+                true,
+                ['layer' => $layer, 'locale' => $this->nullable($locale)],
+                $this->closedObject([
+                    'layer' => ['type' => 'string'],
+                    'locale' => ['type' => ['string', 'null']],
+                    'items' => $items,
+                ], ['layer', 'locale', 'items']),
+            ),
+            $this->tool(
+                'kumwe_wording_catalogue_search',
+                'Search shipped wording',
+                'Search the shipped wording of one locale that an override starts from.',
+                'searchWordingCatalogue',
+                'localization.overrides.manage',
+                true,
+                false,
+                true,
+                [
+                    'locale' => $locale,
+                    'query' => ['type' => 'string', 'maxLength' => 200],
+                    'limit' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 200],
+                ],
+                $this->closedObject(['locale' => ['type' => 'string'], 'items' => $items], ['locale', 'items']),
+                ['locale'],
+            ),
+            $this->tool(
+                'kumwe_wording_override_save',
+                'Save a wording override',
+                'Replace one message\'s wording for one locale with a validated ICU pattern.',
+                'saveWordingOverride',
+                'localization.overrides.manage',
+                false,
+                false,
+                true,
+                [
+                    'operationId' => $this->operationId(),
+                    'layer' => $layer,
+                    'locale' => $locale,
+                    'identifier' => $identifier,
+                    'pattern' => $pattern,
+                ],
+                ['type' => 'object', 'additionalProperties' => true],
+                ['operationId', 'layer', 'locale', 'identifier', 'pattern'],
+            ),
+            $this->tool(
+                'kumwe_wording_override_withdraw',
+                'Withdraw a wording override',
+                'Stop overriding one message for one locale so the shipped wording applies again.',
+                'withdrawWordingOverride',
+                'localization.overrides.manage',
+                false,
+                false,
+                true,
+                [
+                    'operationId' => $this->operationId(),
+                    'layer' => $layer,
+                    'locale' => $locale,
+                    'identifier' => $identifier,
+                ],
+                $this->closedObject(['withdrawn' => ['type' => 'boolean']], ['withdrawn']),
+                ['operationId', 'layer', 'locale', 'identifier'],
+            ),
         ];
     }
 

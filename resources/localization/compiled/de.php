@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for de, carrying 2565 messages.
+ * Compiled interface message catalogue for de, carrying 2566 messages.
  *
  * Generated from de.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -2032,6 +2032,7 @@ return [
     'core.console.user_create_admin.created_administrator' => 'Administrator {id} erstellt.',
     'core.console.user_create_admin.description' => 'Erstellt einen Administrator aus einer geschützten Passwortdatei.',
     'core.console.user_recover_credentials.description' => 'Notfallzugriff: Setzt vom Host aus ein Passwort zurück, legt zweite Faktoren still oder beendet Sitzungen.',
+    'core.console.wording.description' => 'Formulierungsüberschreibungen auflisten, durchsuchen, speichern oder zurückziehen.',
     'core.identity.password.change_refused' => 'Ihr Passwort konnte nicht geändert werden. Überprüfen Sie Ihr aktuelles Passwort und wählen Sie ein anderes Passwort mit mindestens 12 Zeichen.',
     'core.identity.password.confirmation_mismatch' => 'Das neue Passwort und seine Bestätigung stimmen nicht überein.',
     'core.interface_standard.dashboard.access_group_browser_heading' => 'Standardwerte der Zugriffsgruppe',

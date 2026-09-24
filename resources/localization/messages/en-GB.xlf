@@ -16538,6 +16538,14 @@
         <source>Browse, read, upload or delete files in the site media library.</source>
       </segment>
     </unit>
+    <unit id="core.console.wording.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/WordingCommand.php.</note>
+      </notes>
+      <segment>
+        <source>List, search, save or withdraw wording overrides.</source>
+      </segment>
+    </unit>
     <unit id="core.console.settings.description">
       <notes>
         <note category="context">Console command summary on src/Delivery/Console/Command/ManageSettingsCommand.php.</note>

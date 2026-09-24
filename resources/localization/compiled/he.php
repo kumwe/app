@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for he, carrying 2565 messages.
+ * Compiled interface message catalogue for he, carrying 2566 messages.
  *
  * Generated from he.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -2032,6 +2032,7 @@ return [
     'core.console.user_create_admin.created_administrator' => 'נוצר מנהל {id}.',
     'core.console.user_create_admin.description' => 'צרו מנהל מקובץ סיסמה מוגן.',
     'core.console.user_recover_credentials.description' => 'שבירת זכוכית: אפסו סיסמה, בטלו גורמי אימות שניים, או סיימו הפעלות מתוך המארח.',
+    'core.console.wording.description' => 'הצגה, חיפוש, שמירה או משיכה של דריסות ניסוח.',
     'core.identity.password.change_refused' => 'לא ניתן היה לשנות את הסיסמה שלכם. בדקו את הסיסמה הנוכחית שלכם ובחרו סיסמה שונה בת 12 תווים לפחות.',
     'core.identity.password.confirmation_mismatch' => 'הסיסמה החדשה והאימות שלה אינם תואמים.',
     'core.interface_standard.dashboard.access_group_browser_heading' => 'ברירות מחדל של קבוצת הגישה',

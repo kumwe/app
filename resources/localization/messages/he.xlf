@@ -18666,6 +18666,15 @@
         <target>עיינו, קראו, העלו או מחקו קבצים בספריית המדיה של האתר.</target>
       </segment>
     </unit>
+    <unit id="core.console.wording.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/WordingCommand.php.</note>
+      </notes>
+      <segment>
+        <source>List, search, save or withdraw wording overrides.</source>
+        <target>הצגה, חיפוש, שמירה או משיכה של דריסות ניסוח.</target>
+      </segment>
+    </unit>
     <unit id="core.console.settings.description">
       <notes>
         <note category="context">Console command summary on src/Delivery/Console/Command/ManageSettingsCommand.php.</note>

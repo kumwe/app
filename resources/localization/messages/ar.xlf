@@ -18666,6 +18666,15 @@
         <target>تصفّح ملفات مكتبة وسائط الموقع أو قراءتها أو رفعها أو حذفها.</target>
       </segment>
     </unit>
+    <unit id="core.console.wording.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/WordingCommand.php.</note>
+      </notes>
+      <segment>
+        <source>List, search, save or withdraw wording overrides.</source>
+        <target>عرض تجاوزات الصياغة أو البحث فيها أو حفظها أو سحبها.</target>
+      </segment>
+    </unit>
     <unit id="core.console.settings.description">
       <notes>
         <note category="context">Console command summary on src/Delivery/Console/Command/ManageSettingsCommand.php.</note>

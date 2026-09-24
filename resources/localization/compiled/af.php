@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for af, carrying 2565 messages.
+ * Compiled interface message catalogue for af, carrying 2566 messages.
  *
  * Generated from af.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -2032,6 +2032,7 @@ return [
     'core.console.user_create_admin.created_administrator' => 'Administrateur {id} geskep.',
     'core.console.user_create_admin.description' => 'Skep ’n administrateur vanaf ’n beskermde wagwoordlêer.',
     'core.console.user_recover_credentials.description' => 'Noodtoegang: stel ’n wagwoord terug, trek tweede faktore terug, of beëindig sessies vanaf die gasheer.',
+    'core.console.wording.description' => 'Lys, deursoek, stoor of onttrek bewoordingsoorskrywings.',
     'core.identity.password.change_refused' => 'Jou wagwoord kon nie verander word nie. Kontroleer jou huidige wagwoord en kies ’n ander wagwoord met ten minste 12 karakters.',
     'core.identity.password.confirmation_mismatch' => 'Die nuwe wagwoord en die bevestiging daarvan stem nie ooreen nie.',
     'core.interface_standard.dashboard.access_group_browser_heading' => 'Toegangsgroep-verstekke',

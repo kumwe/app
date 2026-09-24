@@ -3362,6 +3362,18 @@
             "surface": "0c3d2a88c3cb6445581fb235",
             "growth": null
         },
+        "Kumwe\\App\\Delivery\\Console\\Command\\WordingCommand": {
+            "kind": "class",
+            "layer": "delivery",
+            "surface": "e85ca7fd4b3d81cf16480544",
+            "growth": {
+                "classification": "host-delivery",
+                "implements": [
+                    "Kumwe\\App\\Delivery\\Console\\Command"
+                ],
+                "extends": null
+            }
+        },
         "Kumwe\\App\\Delivery\\Console\\ConsoleApplication": {
             "kind": "class",
             "layer": "delivery",
@@ -5104,7 +5116,7 @@
         "Kumwe\\App\\Infrastructure\\Mcp\\KumweMcpHandlers": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "2369b2cf83e87300f99696cf",
+            "surface": "56629c6bb4797e1c1cc5741e",
             "growth": {
                 "classification": "host-infrastructure",
                 "implements": [],
