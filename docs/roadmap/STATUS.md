@@ -26,7 +26,7 @@ record is not thereby a new machine-evidence candidate.
 | **Current phase** | Gate A passed. Runtime implementation and Gate B preparation proceed. |
 | **In flight** | All thirteen executable Gate A criteria are verified at exact candidate `67cf6c02` by terminal-green CI, Nightly, Security and Development Compose runs. Its reproducible baseline names measured source `a4ded133`; criterion 12's released-artifact evidence remains `2adb2ebe` and `v2.0.0-alpha.4`. Remaining open work continues without reopening Gate A. |
 | **Next** | Adopt `kumwe/conversion-extension` once a successor release ships a record inside the StrictYaml subset (`KUMWE-MIG-2026-028`). The extension-sdk release train is adopted as `KUMWE-TRAIN-2026-033`: the SDK, contribution, automation, integration, record-query, reporting, interface-standard, administrator-contract, portal-contract and business-surface-contract entered through the migration ledger, the `kumwe/producer` `0.3.0 as 0.2.99` alias is retired, the legacy registry is empty and `kumwe/extension-sdk` `0.3.3` is locked at its published release. Computation Phase 2 retires the App PHP executors through `KUMWE-CS-2026-008` (pull request 151): conditions, formulas, invariants, report materialization and every persisted digest run through the admitted native runtime. The programme of record is `docs/architecture/migrations/audits/2026-09-07/`; the ledger state is `docs/architecture/migrations/`. |
-| **Open decisions** | `V2-QA-014` needs a real-Safari appearance-switch result before the stale WebKit background can be classified as a product defect or a Playwright-only emulation defect. It belongs to Gate B's accountable human-interface acceptance and does not block Gate A. The offline-numbering question was decided — allocation at synchronisation time, [ADR 0008](decisions/0008-numbering-under-disconnection.md) — and implemented, which met Gate A criterion 11. |
+| **Open decisions** | Acceptance and capacity decisions are settled in [ADR 0021](decisions/0021-automated-acceptance-and-sampled-capacity.md): automated browser and language evidence, sampled concurrent capacity, and maintainer merge as the sole human acceptance. Runtime work and its verification remain separate from those decisions. |
 | **Gate A** | Passed on 2026-08-22. All 13 executable criteria are met; acceptance is recorded in [ADR 0010](decisions/0010-gate-a-assessment.md). |
 | **Gate B** | Not assessed. Gate A is passed; the remaining Gate B runtime and qualification work is open. |
 
@@ -64,7 +64,7 @@ remains in README.
 | 5 | `P5-A` … `P5-I` | `V2-SCL-001`, `V2-SCL-002`, `V2-SCL-004` – `V2-SCL-008` |
 | 6 | `P6-A` … `P6-D` | `V2-DR-001` – `V2-DR-004`, `V2-OPS-001`, `GM-BAK-04`, `GM-BAK-08` |
 | S | `S-E` … `S-G` | `V2-STU-005` – `V2-STU-007` |
-| 7 | `P7-A` … `P7-I` | `V2-UX-001`, `V2-UX-002`, `V2-QA-014`, `GM-AUD-08`, `GM-IDN-04` – `GM-IDN-07`, `GM-SUP-05`, `GM-SUP-08`, `GM-OBS-05`, `V2-UX-003` |
+| 7 | `P7-A` … `P7-I` | `V2-UX-001`, `V2-UX-002`, `V2-QA-014`, `GM-AUD-08`, `GM-IDN-06`, `GM-SUP-05`, `GM-SUP-08`, `GM-OBS-05`, `V2-UX-003` |
 | M | Lane M maintainability backlog | `V2-ARC-002`, `V2-QA-010` |
 | N | Lane N, no packages assigned yet | `V3-NC-001` – `V3-NC-004` |
 
@@ -97,7 +97,7 @@ product-owner correction to D16 rather than a nineteenth decision.
 
 ## Ledger snapshot
 
-**43 open findings** in [`findings.json`](findings.json). The ledger holds open work only.
+**40 open findings** in [`findings.json`](findings.json). The ledger holds open work only.
 
 | State | Count |
 |---|---|

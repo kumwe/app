@@ -75,8 +75,15 @@ user_agent='Kumwe-Deployment-Probe/2'
 
 login_body="$probe_root/login.body"
 login_headers="$probe_root/login.headers"
+login_form_status="$(http_status "$login_body" "$login_headers" \
+    --header "User-Agent: $user_agent" --cookie-jar "$probe_root/login.cookies" \
+    "$base_url/administrator/login")"
+[[ "$login_form_status" == 200 ]] || fail "administrator login form returned HTTP $login_form_status"
+login_csrf="$(csrf_from_html "$login_body")"
+[[ -n "$login_csrf" ]] || fail 'administrator login form omitted its CSRF token'
 login_status="$(http_status "$login_body" "$login_headers" \
     --request POST \
+    --cookie "$probe_root/login.cookies" --data-urlencode "_csrf=$login_csrf" \
     --header "User-Agent: $user_agent" \
     --data-urlencode "email=$KUMWE_PROBE_ADMIN_EMAIL" \
     --data-urlencode "password=$KUMWE_PROBE_ADMIN_PASSWORD" \
@@ -188,6 +195,7 @@ limited_admin_create_status="$(http_status "$probe_root/limited-admin-create.bod
     || fail "limited administrator fixture creation returned HTTP $limited_admin_create_status"
 limited_login_status="$(http_status "$probe_root/limited-login.body" "$probe_root/limited-login.headers" \
     --request POST \
+    --cookie "$probe_root/login.cookies" --data-urlencode "_csrf=$login_csrf" \
     --header "User-Agent: $user_agent" \
     --data-urlencode "email=$limited_admin_email" \
     --data-urlencode "password=$limited_admin_password" \
@@ -196,7 +204,7 @@ unset limited_admin_password limited_admin_request
 [[ "$limited_login_status" == 403 ]] \
     || fail "user without administrator.access logged in with HTTP $limited_login_status instead of 403"
 limited_session_cookie="$(header_value set-cookie "$probe_root/limited-login.headers")"
-[[ -z "$limited_session_cookie" ]] \
+[[ "$limited_session_cookie" != kumwe_administrator=* ]] \
     || fail 'user without administrator.access received an administrator session cookie'
 
 api_request="{\"title\":\"API $page_marker\",\"slug\":\"api-$page_slug\",\"data\":{\"body\":\"API $page_marker\"}}"

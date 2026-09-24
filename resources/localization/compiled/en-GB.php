@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for en-GB, carrying 2414 messages.
+ * Compiled interface message catalogue for en-GB, carrying 2416 messages.
  *
  * Generated from en-GB.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -794,7 +794,7 @@ return [
     'core.administrator.business_list.state' => 'State',
     'core.administrator.business_list.summary_cards' => '{plural_label} summary cards',
     'core.administrator.business_list.table' => 'Table',
-    'core.administrator.business_list.the_bulk_operation_completed_for_record' => 'The bulk operation completed for {completed_bulk_count} record{value}.',
+    'core.administrator.business_list.the_bulk_operation_completed_for_record' => '{completed_bulk_count, plural, one {The bulk operation completed for # record.} other {The bulk operation completed for # records.}}{value, select, other {}}',
     'core.administrator.business_list.the_current_scope_and_filters_returned' => 'The current scope and filters returned no visible records.',
     'core.administrator.business_list.view' => 'View',
     'core.administrator.business_report.available_reports' => 'Available reports',
@@ -810,7 +810,7 @@ return [
     'core.administrator.business_report.no_detail_view' => 'No detail view',
     'core.administrator.business_report.no_matching_rows' => 'No matching rows.',
     'core.administrator.business_report.open_details' => 'Open details',
-    'core.administrator.business_report.parameter' => '{parameters} parameter{parameters2}',
+    'core.administrator.business_report.parameter' => '{parameters, plural, one {# parameter} other {# parameters}}{parameters2, select, other {}}',
     'core.administrator.business_report.policy_filtered_reporting_workspace' => 'Policy-filtered reporting workspace',
     'core.administrator.business_report.query_digest' => 'Query digest',
     'core.administrator.business_report.queued_exports_appear_here_with_status' => 'Queued exports appear here with status, row count, and verified download details.',
@@ -1935,6 +1935,8 @@ return [
     'core.console.user_create_admin.created_administrator' => 'Created administrator {id}.',
     'core.console.user_create_admin.description' => 'Create an administrator from a protected password file.',
     'core.console.user_recover_credentials.description' => 'Break-glass: reset a password, retire second factors, or end sessions from the host.',
+    'core.identity.password.change_refused' => 'Your password could not be changed. Check your current password and choose a different password with at least 12 characters.',
+    'core.identity.password.confirmation_mismatch' => 'The new password and its confirmation do not match.',
     'core.interface_standard.dashboard.access_group_browser_heading' => 'Access-group defaults',
     'core.interface_standard.dashboard.access_group_browser_help' => 'One access group is loaded at a time so even a dense dashboard remains easy to review. Browse in role-code order or search by role code or name.',
     'core.interface_standard.dashboard.access_group_code' => 'Role code: {code}',

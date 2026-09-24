@@ -56,6 +56,7 @@ final readonly class DoctrinePortalSessionStore implements PortalSessionStore, S
      * @param   TransactionManager           $transactions  Shared nesting-aware transaction coordinator.
      * @param   string                       $bindingKey    Dedicated raw key of at least 32 bytes.
      * @param   DateInterval                 $lifetime      Absolute portal session lifetime, 5 minutes through 7 days.
+     * @param   int                          $idleSeconds   Maximum inactivity before refusing a cookie.
      *
      * @throws  InvalidArgumentException  When the key or lifetime falls outside its security bound.
      *
@@ -70,6 +71,7 @@ final readonly class DoctrinePortalSessionStore implements PortalSessionStore, S
         private TransactionManager $transactions,
         private string $bindingKey,
         private DateInterval $lifetime = new DateInterval('PT8H'),
+        private int $idleSeconds = 1_800,
     ) {
         if (strlen($bindingKey) < 32) {
             throw new InvalidArgumentException('The portal session binding key must contain at least 32 bytes.');
@@ -78,6 +80,9 @@ final readonly class DoctrinePortalSessionStore implements PortalSessionStore, S
         $seconds = $now->add($lifetime)->getTimestamp() - $now->getTimestamp();
         if ($seconds < 300 || $seconds > 604_800) {
             throw new InvalidArgumentException('The portal session lifetime must be 5 minutes through 7 days.');
+        }
+        if ($idleSeconds < 60 || $idleSeconds > 86_400) {
+            throw new InvalidArgumentException('Portal session inactivity must be one minute through one day.');
         }
     }
 
@@ -179,7 +184,7 @@ final readonly class DoctrinePortalSessionStore implements PortalSessionStore, S
         $row = $this->database->fetchAssociative(sprintf(
             'SELECT id, user_id, csrf_token, site_identifier, organization_identifier, membership_id, '
             . 'workspace_identifier, membership_version, policy_generation, security_epoch, user_agent_digest, '
-            . 'authenticated_at, step_up_at, expires_at '
+            . 'authenticated_at, step_up_at, expires_at, last_seen_at '
             . 'FROM %s WHERE token_digest = ?',
             $this->tables->quoted('portal_sessions'),
         ), [hash('sha256', $cookieToken)]);
@@ -189,7 +194,11 @@ final readonly class DoctrinePortalSessionStore implements PortalSessionStore, S
         $now = $this->clock->now();
         $expiresAt = $this->date($row['expires_at'] ?? null);
         $storedDigest = $this->requiredString($row, 'user_agent_digest');
-        if ($expiresAt <= $now || !hash_equals($storedDigest, $this->userAgentDigest($userAgent))) {
+        if (
+            $expiresAt <= $now
+            || $this->date($row['last_seen_at'] ?? null) <= $now->sub(new DateInterval('PT' . $this->idleSeconds . 'S'))
+            || !hash_equals($storedDigest, $this->userAgentDigest($userAgent))
+        ) {
             return null;
         }
         $identity = $this->identities->load(
@@ -203,12 +212,14 @@ final readonly class DoctrinePortalSessionStore implements PortalSessionStore, S
         if (!$identity instanceof PortalSessionIdentity || !$this->contextMatchesRow($identity, $row)) {
             return null;
         }
-        $this->database->update(
-            $this->tables->raw('portal_sessions'),
-            ['last_seen_at' => $now],
-            ['id' => $this->requiredString($row, 'id')],
-            ['last_seen_at' => Types::DATETIME_IMMUTABLE],
-        );
+        $this->database->executeStatement(sprintf(
+            'UPDATE %s SET last_seen_at = ? WHERE id = ? AND last_seen_at < ?',
+            $this->tables->quoted('portal_sessions'),
+        ), [$now, $this->requiredString($row, 'id'), $now], [
+            Types::DATETIME_IMMUTABLE,
+            Types::STRING,
+            Types::DATETIME_IMMUTABLE,
+        ]);
 
         return new PortalSession(
             $this->requiredString($row, 'id'),

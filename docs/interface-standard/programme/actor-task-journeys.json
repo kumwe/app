@@ -311,6 +311,13 @@
       "actor_ids": ["template-author", "system-administrator"],
       "primary_outcome": "Approved appearance and composition change globally while semantics, security, accessibility and recovery remain intact.",
       "journey_ids": ["journey.presentation-customization"]
+    },
+    {
+      "id": "task.identity.self-service",
+      "label": "Change the current account password",
+      "actor_ids": ["portal-member", "content-operator", "security-administrator"],
+      "primary_outcome": "An authenticated person proves the current password and replaces it without identity-management privileges; all prior credentials cease to work.",
+      "journey_ids": []
     }
   ],
   "journeys": [

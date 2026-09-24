@@ -7258,7 +7258,7 @@
         <note category="context">Record surface text on templates/administrator/business-list.twig, templates/portal/business-list.twig.</note>
       </notes>
       <segment>
-        <source>The bulk operation completed for {completed_bulk_count} record{value}.</source>
+        <source>{completed_bulk_count, plural, one {The bulk operation completed for # record.} other {The bulk operation completed for # records.}}{value, select, other {}}</source>
       </segment>
     </unit>
     <unit id="core.administrator.business_list.collection_views">
@@ -7714,7 +7714,7 @@
         <note category="context">Record surface text on templates/administrator/business-report.twig, templates/portal/business-report.twig.</note>
       </notes>
       <segment>
-        <source>{parameters} parameter{parameters2}</source>
+        <source>{parameters, plural, one {# parameter} other {# parameters}}{parameters2, select, other {}}</source>
       </segment>
     </unit>
     <unit id="core.administrator.business_report.runner">
@@ -18655,4 +18655,16 @@
     </unit>
   </file>
   <!-- END GENERATED STUDIO AUTHORING MESSAGES -->
+  <file id="core-identity">
+    <unit id="core.identity.password.confirmation_mismatch">
+      <segment>
+        <source>The new password and its confirmation do not match.</source>
+      </segment>
+    </unit>
+    <unit id="core.identity.password.change_refused">
+      <segment>
+        <source>Your password could not be changed. Check your current password and choose a different password with at least 12 characters.</source>
+      </segment>
+    </unit>
+  </file>
 </xliff>

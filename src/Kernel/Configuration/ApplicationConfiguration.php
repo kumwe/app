@@ -100,6 +100,7 @@ final readonly class ApplicationConfiguration
      * @param   string                         $studioBrowserBaseUrl          Base every pinned Studio browser asset is
      *          loaded from in the npm package layout `<base>/<package>@<version>/dist/browser/<path>`: the public
      *          registry CDN by default, or a self-hosted mirror or site-absolute path that keeps the same shape.
+     * @param int $sessionIdleSeconds Maximum inactivity on both browser surfaces.
      *
      * @throws  InvalidArgumentException  When a setting is malformed, a secret is too short or
      *          reused, an identity is not a stable identifier, or a production-only rule is violated.
@@ -137,7 +138,11 @@ final readonly class ApplicationConfiguration
         public ?string $metricsToken = null,
         public BusinessRecordReplayWindow $idempotencyReplay = new BusinessRecordReplayWindow(),
         public string $studioBrowserBaseUrl = self::DEFAULT_STUDIO_BROWSER_BASE_URL,
+        public int $sessionIdleSeconds = 1_800,
     ) {
+        if ($sessionIdleSeconds < 60 || $sessionIdleSeconds > 86_400) {
+            throw new InvalidArgumentException('APP_SESSION_IDLE_SECONDS must be between 60 and 86400.');
+        }
         if (filter_var($baseUrl, FILTER_VALIDATE_URL) === false) {
             throw new InvalidArgumentException('APP_BASE_URL must contain an absolute URL.');
         }

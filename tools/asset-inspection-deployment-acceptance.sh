@@ -779,8 +779,14 @@ app_token "$cli_token_file" business-report download --artifact="$artifact" --ou
 exercise_mcp_report
 admin_headers="$work_root/administrator-login.headers"
 admin_body="$work_root/administrator-login.body"
+[[ "$(curl --silent --show-error --dump-header "$admin_headers" --output "$admin_body" \
+    --cookie-jar "$work_root/administrator-login.cookies" --write-out '%{http_code}' \
+    "$base_url/administrator/login")" == 200 ]] || fail 'administrator login form failed'
+admin_login_csrf="$(sed -n 's/.*name="_csrf" value="\([^"]*\)".*/\1/p' "$admin_body" | head -n 1)"
+[[ -n "$admin_login_csrf" ]] || fail 'administrator login form omitted its CSRF token'
 admin_password="$(<"$KUMWE_ACCEPTANCE_ADMIN_PASSWORD_FILE")"
 [[ "$(curl --silent --show-error --request POST --dump-header "$admin_headers" --output "$admin_body" \
+    --cookie "$work_root/administrator-login.cookies" --data-urlencode "_csrf=$admin_login_csrf" \
     --write-out '%{http_code}' --data-urlencode "email=$admin_email" \
     --data-urlencode "password=$admin_password" "$base_url/administrator/login")" == 303 ]] \
     || fail 'administrator login failed before contributed-page proof'

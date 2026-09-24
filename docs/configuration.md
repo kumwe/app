@@ -46,6 +46,7 @@ Start from `.env.example` for development. Production Compose maps operator-faci
 | `APP_TRUSTED_PROXIES` | Comma-separated proxy address ranges | Only the actual proxy network |
 | `APP_MAX_BODY_BYTES` | Maximum parsed request body | Match proxy and PHP limits |
 | `APP_ADMIN_SESSION_SECONDS` | Administrator session lifetime | 300–604800 seconds |
+| `APP_SESSION_IDLE_SECONDS` | Administrator and portal inactivity timeout | 60–86400 seconds; default 1800 |
 | `APP_SECRET` | Session and application secret | At least 32 random bytes; prefer `APP_SECRET_FILE` in containers |
 | `EXTENSION_RUNTIME_SIGNING_KEY_ID` | Active versioned runtime-publication key ID | Stable lowercase identifier |
 | `EXTENSION_RUNTIME_SIGNING_KEY` | Dedicated runtime-publication signing secret | Independent 32+ byte secret file |

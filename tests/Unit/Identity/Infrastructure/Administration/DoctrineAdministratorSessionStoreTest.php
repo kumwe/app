@@ -115,7 +115,7 @@ final class DoctrineAdministratorSessionStoreTest extends TestCase
             'membership_version' => 5,
             'policy_generation' => 8,
         ]);
-        $database->expects(self::once())->method('update')->willReturn(1);
+        $database->expects(self::once())->method('executeStatement')->willReturn(1);
         $database->expects(self::once())->method('fetchAllAssociative')->with(
             self::callback(static fn (string $sql): bool => str_contains($sql, 'kumwe_membership_roles')
                 && str_contains($sql, 'w.identifier = ?')
@@ -166,7 +166,7 @@ final class DoctrineAdministratorSessionStoreTest extends TestCase
             'security_epoch' => 3,
             'site_identifier' => SiteContext::DEFAULT,
         ]);
-        $database->expects(self::once())->method('update')->willReturn(1);
+        $database->expects(self::once())->method('executeStatement')->willReturn(1);
         $database->expects(self::once())->method('fetchAllAssociative')->willReturn([[
             'capability' => ['business.record.read'],
             'scope_type' => 'organization',

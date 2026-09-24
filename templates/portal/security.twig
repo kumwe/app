@@ -11,6 +11,7 @@
     } only %}
     {% if notice %}<div class="portal-notice notice" role="status">{{ notice }}</div>{% endif %}
     {% if error %}<div class="portal-alert notice danger" role="alert">{{ error }}</div>{% endif %}
+    <p><a href="/portal/account">{{ t('core.administrator.access_control.change_my_password') }}</a></p>
 
     {% if recovery_codes is not empty %}
         <section class="portal-security-panel portal-secret-once" aria-labelledby="recovery-codes-title">

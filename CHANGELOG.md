@@ -17,6 +17,16 @@ Entries cite the commits that carried them. Version 2.0.0 is not released, so ev
 
 ## [Unreleased]
 
+- Protect administrator sign-in with a short-lived, path-scoped login-CSRF cookie and constant-time
+  token comparison before credential verification (`GM-IDN-04`). Both browser session stores enforce
+  a configurable inactivity window, defaulting to 30 minutes, alongside absolute expiry; rejected
+  clients cannot refresh activity. Production HTTPS refusal remains enforced (`GM-IDN-05`).
+  Ordinary administrator and portal users can replace their own password through separate CSRF-protected
+  account pages, without `users.manage`; current-password throttling, credential epoch invalidation and
+  auditing use the existing identity service (`GM-IDN-07`). Local MariaDB/Redis verification passes
+  48 focused tests with 340 assertions (one existing PHPUnit mock-expectation notice); static analysis
+  and account-surface conformance pass. Maintainer merge supplies acceptance under ADR 0021.
+
 - Close the five adoptions that had merged without their closure record. `KUMWE-CS-2026-002` (sequence, PR #139,
   merged `32d6a6f3`), `KUMWE-CS-2026-004` (access-context, PR #141, merged `795583ee`), `KUMWE-CS-2026-007`
   (canonical-json, PR #138, merged `1e768cbb`), `KUMWE-CS-2026-008` (computation, PR #140, merged `4774e0d5`) and

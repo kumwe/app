@@ -460,42 +460,6 @@
             "closure_sha": null
         },
         {
-            "id": "GM-IDN-04",
-            "title": "The administrator login form has no login-CSRF protection",
-            "severity": "low",
-            "state": "open",
-            "phase": "7",
-            "origin": "gap-matrix",
-            "source_anchors": [
-                {
-                    "file": "src/Administrator/Http/Handler/AdministratorLoginHandler.php",
-                    "symbol": "handle()",
-                    "note": "Reads only email, password and User-Agent. The portal login already implements the pre-session double-submit token."
-                }
-            ],
-            "acceptance_test": "Mirror the portal pattern: set a path-scoped HttpOnly SameSite=Strict CSRF cookie on GET, render it as a hidden field, and hash_equals-compare and rotate on POST before authenticating.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null
-        },
-        {
-            "id": "GM-IDN-05",
-            "title": "The session cookie Secure attribute has no production fail-closed guard, and there is no idle timeout",
-            "severity": "low",
-            "state": "open",
-            "phase": "7",
-            "origin": "gap-matrix",
-            "source_anchors": [
-                {
-                    "file": "src/Kernel/Configuration/ApplicationConfiguration.php",
-                    "symbol": "the production assertions",
-                    "note": "Secure is derived solely from the configured base-URL scheme. last_seen_at is stamped but never used in the resolve predicate."
-                }
-            ],
-            "acceptance_test": "Production configuration refuses a base URL that would serve session cookies without Secure. An idle-window predicate is added to the resolve path or its absence is stated as a deliberate, documented property.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null
-        },
-        {
             "id": "GM-IDN-06",
             "title": "Qualification evidence has session and CSRF test blind spots",
             "severity": "medium",
@@ -510,24 +474,6 @@
                 }
             ],
             "acceptance_test": "Dedicated tests for both CSRF middlewares, the Redis rate-limiter window arithmetic, the portal session store find and rotate rejection matrix, the logout handlers, and the session cookie attribute string.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null
-        },
-        {
-            "id": "GM-IDN-07",
-            "title": "Self-service credential rotation is reachable only by holders of users.manage",
-            "severity": "medium",
-            "state": "open",
-            "phase": "7",
-            "origin": "gap-matrix",
-            "source_anchors": [
-                {
-                    "file": "src/Kernel/ContainerFactory.php",
-                    "symbol": "the /administrator/access route registration",
-                    "note": "Both verbs are gated on users.manage. The portal has a security screen but no password path at all."
-                }
-            ],
-            "acceptance_test": "An ordinary portal member and a narrowly scoped administrator can rotate their own password without an identity administrator performing a reset.",
             "owner": "UNASSIGNED",
             "closure_sha": null
         },

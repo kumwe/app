@@ -55,6 +55,7 @@
         <button class="command-trigger" type="button" aria-label="{{ t('core.administrator.layout.search') }}" data-open-command-palette><svg width="16" height="16" aria-hidden="true"><use href="#kumwe-icon-search"></use></svg><span>{{ t('core.administrator.layout.search') }}</span><kbd>⌘ K</kbd></button>
         <a class="topbar-action" href="/" target="_blank" rel="noopener" aria-label="{{ t('core.administrator.layout.view_website') }}" data-secondary-action><svg aria-hidden="true"><use href="#kumwe-icon-external"></use></svg></a>
         <form action="/administrator/logout" method="post"><input type="hidden" name="_csrf" value="{{ csrf }}"><button class="topbar-action" type="submit" aria-label="{{ t('core.administrator.layout.sign_out') }}"><svg aria-hidden="true"><use href="#kumwe-icon-signout"></use></svg></button></form>
+        <a class="topbar-action" href="/administrator/account" aria-label="{{ t('core.administrator.access_control.change_my_password') }}"><svg aria-hidden="true"><use href="#kumwe-icon-security"></use></svg></a>
       </header>
       <button class="navigation-backdrop" type="button" aria-label="{{ t('core.administrator.layout.close_navigation') }}" data-navigation-backdrop></button>
       <main class="administrator-main" id="administrator-content" tabindex="-1"><div class="administrator-content">

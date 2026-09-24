@@ -84,6 +84,7 @@ use Kumwe\App\Administrator\Http\Handler\AdministratorExtensionActionHandler;
 use Kumwe\App\Administrator\Http\Handler\AdministratorExtensionsHandler;
 use Kumwe\App\Administrator\Http\Handler\AdministratorInterfaceStandardHandler;
 use Kumwe\App\Administrator\Http\Handler\AdministratorLoginHandler;
+use Kumwe\App\Administrator\Http\Handler\AdministratorAccountHandler;
 use Kumwe\App\Administrator\Http\Handler\AdministratorLogoutHandler;
 use Kumwe\App\Administrator\Http\Handler\AdministratorMediaHandler;
 use Kumwe\App\Administrator\Http\Handler\AdministratorNavigationHandler;
@@ -789,6 +790,7 @@ use Kumwe\App\Portal\Http\Handler\PortalHomeHandler;
 use Kumwe\App\Portal\Http\Handler\PortalDashboardPreferencesHandler;
 use Kumwe\App\Portal\Http\Handler\PortalApprovalHandler;
 use Kumwe\App\Portal\Http\Handler\PortalLoginHandler;
+use Kumwe\App\Portal\Http\Handler\PortalAccountHandler;
 use Kumwe\App\Portal\Http\Handler\PortalLogoutHandler;
 use Kumwe\App\Portal\Http\Handler\PortalSecurityHandler;
 use Kumwe\App\Portal\Http\Middleware\PortalAuthorizationMiddleware;
@@ -1562,6 +1564,7 @@ final class ContainerFactory
                 self::service($container, TransactionManager::class),
                 hash_hkdf('sha256', $configuration->secret, 32, 'kumwe-portal-session-binding-v1'),
                 new \DateInterval('PT' . $configuration->administratorSessionSeconds . 'S'),
+                $configuration->sessionIdleSeconds,
             ), true);
             $container->alias(PortalSessionStore::class, DoctrinePortalSessionStore::class);
             $container->share(PortalExecutionContextFactory::class, new DefaultPortalExecutionContextFactory(), true);
@@ -1736,6 +1739,7 @@ final class ContainerFactory
             $provenance,
             $configuration->administratorSessionSeconds,
             self::service($container, MembershipDirectory::class),
+            $configuration->sessionIdleSeconds,
         ), true);
         $container->alias(AdministratorSessionStore::class, DoctrineAdministratorSessionStore::class);
         $container->share(AdministratorStepUpProvider::class, static fn (
@@ -4323,6 +4327,13 @@ final class ContainerFactory
         ), true);
         $configuration = self::service($container, ApplicationConfiguration::class);
         $secureCookie = parse_url($configuration->baseUrl, PHP_URL_SCHEME) === 'https';
+        $container->share(AdministratorAccountHandler::class, static fn (
+            Container $container,
+        ): AdministratorAccountHandler => new AdministratorAccountHandler(
+            self::service($container, AccessControlService::class),
+            self::service($container, AdministratorRenderer::class),
+            $secureCookie,
+        ), true);
         $container->share(AdministratorLoginHandler::class, static fn (
             Container $container,
         ): AdministratorLoginHandler => new AdministratorLoginHandler(
@@ -4351,6 +4362,13 @@ final class ContainerFactory
                 self::service($container, Translator::class),
                 $secureCookie,
                 $configuration->administratorSessionSeconds,
+            ), true);
+            $container->share(PortalAccountHandler::class, static fn (
+                Container $container,
+            ): PortalAccountHandler => new PortalAccountHandler(
+                self::service($container, AccessControlService::class),
+                self::service($container, PortalRenderer::class),
+                $secureCookie,
             ), true);
             $container->share(PortalLogoutHandler::class, static fn (
                 Container $container,
@@ -4959,6 +4977,16 @@ final class ContainerFactory
         );
         if ($portalEnabled) {
             $application->route('/portal/login', PortalLoginHandler::class, ['GET', 'POST'], 'portal.login');
+            self::portalRoute($application->get(
+                '/portal/account',
+                PortalAccountHandler::class,
+                'portal.account',
+            ), 'portal.access');
+            self::portalRoute($application->post(
+                '/portal/account',
+                [PortalCsrfMiddleware::class, PortalAccountHandler::class],
+                'portal.account.update',
+            ), 'portal.access');
             self::portalRoute($application->get('/portal', PortalHomeHandler::class, 'portal.index'), 'portal.access');
             self::portalRoute($application->post(
                 '/portal/dashboard/preferences',
@@ -5397,6 +5425,16 @@ final class ContainerFactory
             AdministratorExtensionsHandler::class,
             'administrator.extensions',
         ), 'extensions.manage');
+        self::administratorRoute($application->get(
+            '/administrator/account',
+            AdministratorAccountHandler::class,
+            'administrator.account',
+        ), 'administrator.access');
+        self::administratorRoute($application->post(
+            '/administrator/account',
+            [AdministratorCsrfMiddleware::class, AdministratorAccountHandler::class],
+            'administrator.account.update',
+        ), 'administrator.access');
         self::administratorRoute($application->post(
             '/administrator/extensions',
             [AdministratorCsrfMiddleware::class, AdministratorExtensionsHandler::class],
