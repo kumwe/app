@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Infrastructure\Observability;
 
 use InvalidArgumentException;
+use Kumwe\App\Application\Retention\RetentionStore;
 
 /**
  * The complete, closed set of metrics this application is allowed to emit.
@@ -41,6 +42,175 @@ final readonly class MetricCatalog
      * @since  2.0.0
      */
     public const HTTP_DURATION = 'kumwe_http_request_duration_seconds';
+
+    /**
+     * Rows removed by retention drains, by store.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    public const RETENTION_DRAINED = 'kumwe_retention_drained_rows_total';
+
+    /**
+     * The six retention gauges, each labelled by store; the label values are the `RetentionStore` cases.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
+    public const RETENTION_GAUGES = [
+        'kumwe_retention_ingest_rows_per_second',
+        'kumwe_retention_expiry_rows_per_second',
+        'kumwe_retention_drain_rows_per_second',
+        'kumwe_retention_backlog_rows',
+        'kumwe_retention_oldest_age_seconds',
+        'kumwe_retention_forecast_seconds_to_capacity',
+    ];
+
+    /**
+     * Retention readiness verdict gauge: 0 ready, 1 warning, 2 failed.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    public const RETENTION_READINESS = 'kumwe_retention_readiness';
+
+    /**
+     * Outermost database transactions by outcome.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    public const TRANSACTIONS = 'kumwe_transactions_total';
+
+    /**
+     * Outermost transaction duration histogram, the lock-hold proxy the scale runbook watches.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    public const TRANSACTION_DURATION = 'kumwe_transaction_duration_seconds';
+
+    /**
+     * Failed outermost transactions by failure class: deadlock, lock timeout or anything else.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    public const TRANSACTION_FAILURES = 'kumwe_transaction_failures_total';
+
+    /**
+     * Capacity-contract operation classes that have a latency objective and an instrumented source.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
+    public const OPERATION_CLASSES = [
+        'document_100_line_commit',
+        'document_1000_line_commit',
+        'queue_time_to_start',
+        'delivery_age',
+    ];
+
+    /**
+     * Operation latency histogram labelled by capacity-contract operation class.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    public const OPERATION_DURATION = 'kumwe_operation_duration_seconds';
+
+    /**
+     * Document lines committed atomically, reported apart from logical transactions.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    public const DOCUMENT_LINES = 'kumwe_document_lines_total';
+
+    /**
+     * Committed source events given a journal sequence.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    public const SEQUENCED_EVENTS = 'kumwe_sequenced_events_total';
+
+    /**
+     * Successful job claims.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    public const QUEUE_CLAIMS = 'kumwe_queue_claims_total';
+
+    /**
+     * Job settlements by outcome.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    public const QUEUE_SETTLEMENTS = 'kumwe_queue_settlements_total';
+
+    /**
+     * Outbox dispatch settlements by outcome.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    public const DISPATCH_SETTLEMENTS = 'kumwe_dispatch_settlements_total';
+
+    /**
+     * Inbox consumer settlements by outcome.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    public const CONSUMER_SETTLEMENTS = 'kumwe_consumer_settlements_total';
+
+    /**
+     * Security decisions refused at an authentication, token or authorization boundary, by event.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    public const SECURITY_EVENTS = 'kumwe_security_events_total';
+
+    /**
+     * Security event kinds that get their own series; anything else folds into `other`.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
+    public const SECURITY_EVENT_KINDS = [
+        'authentication_failed',
+        'authentication_throttled',
+        'token_rejected',
+        'permission_denied',
+    ];
+
+    /**
+     * Backup and restore operations whose last outcome the operation status files record.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
+    public const RECOVERY_OPERATIONS = ['backup', 'restore_verify', 'restore'];
+
+    /**
+     * Storage volumes whose free and total bytes the scrape reads.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
+    public const VOLUMES = ['storage', 'media', 'private'];
+
+    /**
+     * Settlement outcomes shared by queue and dispatch settlements.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
+    public const SETTLEMENT_OUTCOMES = ['completed', 'retried', 'dead'];
 
     /**
      * HTTP methods that get their own series; anything else folds into `other`.
@@ -206,8 +376,176 @@ final readonly class MetricCatalog
                 ['method' => self::METHODS],
                 self::BUCKETS,
             ),
+            new MetricDefinition(
+                self::TRANSACTIONS,
+                MetricType::Counter,
+                'Outermost database transactions, by outcome.',
+                ['outcome' => ['committed', 'rolled_back']],
+            ),
+            new MetricDefinition(
+                self::TRANSACTION_DURATION,
+                MetricType::Histogram,
+                'Outermost database transaction duration in seconds.',
+                [],
+                self::BUCKETS,
+            ),
+            new MetricDefinition(
+                self::TRANSACTION_FAILURES,
+                MetricType::Counter,
+                'Rolled-back outermost transactions, by failure class.',
+                ['class' => ['deadlock', 'lock_timeout']],
+            ),
+            new MetricDefinition(
+                self::OPERATION_DURATION,
+                MetricType::Histogram,
+                'Latency of capacity-contract operation classes in seconds.',
+                ['operation_class' => self::OPERATION_CLASSES],
+                self::BUCKETS,
+            ),
+            new MetricDefinition(
+                self::DOCUMENT_LINES,
+                MetricType::Counter,
+                'Owned document lines committed atomically with their header.',
+            ),
+            new MetricDefinition(self::SEQUENCED_EVENTS, MetricType::Counter, 'Committed source events sequenced.'),
+            new MetricDefinition(self::QUEUE_CLAIMS, MetricType::Counter, 'Jobs claimed by workers.'),
+            new MetricDefinition(
+                self::QUEUE_SETTLEMENTS,
+                MetricType::Counter,
+                'Job settlements, by outcome.',
+                ['outcome' => self::SETTLEMENT_OUTCOMES],
+            ),
+            new MetricDefinition(
+                self::DISPATCH_SETTLEMENTS,
+                MetricType::Counter,
+                'Outbox dispatch settlements, by outcome.',
+                ['outcome' => self::SETTLEMENT_OUTCOMES],
+            ),
+            new MetricDefinition(
+                self::CONSUMER_SETTLEMENTS,
+                MetricType::Counter,
+                'Inbox consumer settlements, by outcome.',
+                ['outcome' => self::SETTLEMENT_OUTCOMES],
+            ),
+            new MetricDefinition(
+                self::SECURITY_EVENTS,
+                MetricType::Counter,
+                'Refused authentication attempts, throttled sign-ins, rejected tokens and denied permissions.',
+                ['event' => self::SECURITY_EVENT_KINDS],
+            ),
+            new MetricDefinition(
+                self::RETENTION_DRAINED,
+                MetricType::Counter,
+                'Rows removed or compacted by retention drains, by store.',
+                ['store' => self::stores()],
+            ),
             ...self::gauges($release, $runtime),
+            ...self::retentionGauges(),
+            ...self::operationalGauges(),
         ];
+    }
+
+    /**
+     * Declare the recovery, storage and extension-trust gauges read from outside the durable tables.
+     *
+     * Each label is a closed, code-declared enumeration: three recovery operations and three storage
+     * volumes. A timestamp gauge of zero means the operation has never been recorded, which the backup-age
+     * alert treats as older than any threshold rather than as healthy.
+     *
+     * @return  list<MetricDefinition>  The declared families.
+     *
+     * @since   2.0.0
+     */
+    private static function operationalGauges(): array
+    {
+        return [
+            new MetricDefinition(
+                'kumwe_recovery_last_success_timestamp_seconds',
+                MetricType::Gauge,
+                'Unix time of the last successful backup, restore verification or restore; 0 when never recorded.',
+                ['operation' => self::RECOVERY_OPERATIONS],
+            ),
+            new MetricDefinition(
+                'kumwe_recovery_last_failure_timestamp_seconds',
+                MetricType::Gauge,
+                'Unix time of the last failed backup, restore verification or restore; 0 when never recorded.',
+                ['operation' => self::RECOVERY_OPERATIONS],
+            ),
+            new MetricDefinition(
+                'kumwe_storage_free_bytes',
+                MetricType::Gauge,
+                'Bytes available to the application on the filesystem holding each storage volume.',
+                ['volume' => self::VOLUMES],
+            ),
+            new MetricDefinition(
+                'kumwe_storage_capacity_bytes',
+                MetricType::Gauge,
+                'Total bytes of the filesystem holding each storage volume.',
+                ['volume' => self::VOLUMES],
+            ),
+            new MetricDefinition(
+                'kumwe_extension_runtime_trusted',
+                MetricType::Gauge,
+                'Whether this process serves a verified, trusted extension runtime generation: 1 yes, 0 no.',
+            ),
+            new MetricDefinition(
+                'kumwe_extension_revocation_feed_stale',
+                MetricType::Gauge,
+                'Whether the configured key revocation feed is older than its staleness budget: 1 stale, 0 fresh.',
+            ),
+            new MetricDefinition(
+                'kumwe_extension_revocation_feed_failures',
+                MetricType::Gauge,
+                'Consecutive failed revocation feed synchronizations; 0 when unconfigured or healthy.',
+            ),
+        ];
+    }
+
+    /**
+     * Enumerate the retention store label values.
+     *
+     * @return  list<string>  Every `RetentionStore` case value.
+     *
+     * @since   2.0.0
+     */
+    private static function stores(): array
+    {
+        return array_map(static fn (RetentionStore $store): string => $store->value, RetentionStore::cases());
+    }
+
+    /**
+     * Declare the six retention gauges per store and the readiness verdict gauge.
+     *
+     * The store label is the one dimension the runbook needs to act on a retention signal, and it is a
+     * closed enumeration of eleven code-declared values, so it widens the exposition by a known, fixed
+     * amount rather than by anything traffic controls.
+     *
+     * @return  list<MetricDefinition>  The declared families.
+     *
+     * @since   2.0.0
+     */
+    private static function retentionGauges(): array
+    {
+        $help = [
+            'kumwe_retention_ingest_rows_per_second' => 'Rows arriving in the store over the trailing window.',
+            'kumwe_retention_expiry_rows_per_second' => 'Rows becoming eligible for removal over the leading window.',
+            'kumwe_retention_drain_rows_per_second' => 'Rows removed per second of the last recorded drain run.',
+            'kumwe_retention_backlog_rows' => 'Eligible rows still present, capped by the observer probe.',
+            'kumwe_retention_oldest_age_seconds' => 'Age of the oldest eligible row; zero when nothing is eligible.',
+            'kumwe_retention_forecast_seconds_to_capacity' => 'Seconds until the backlog reaches capacity at the '
+                . 'current net slope; the maximum value means no exhaustion is predicted.',
+        ];
+        $gauges = [];
+        foreach (self::RETENTION_GAUGES as $name) {
+            $gauges[] = new MetricDefinition($name, MetricType::Gauge, $help[$name], ['store' => self::stores()]);
+        }
+        $gauges[] = new MetricDefinition(
+            self::RETENTION_READINESS,
+            MetricType::Gauge,
+            'Retention readiness verdict: 0 ready, 1 warning, 2 failed.',
+        );
+
+        return $gauges;
     }
 
     /**
@@ -249,6 +587,12 @@ final readonly class MetricCatalog
             'kumwe_process_work_oldest_overdue_age_seconds' => 'Age of the oldest overdue process work item.',
             'kumwe_export_queue_depth' => 'Report export artifacts queued or running.',
             'kumwe_export_artifacts_expired' => 'Report export artifacts past their expiry that are still stored.',
+            'kumwe_projection_staging_backlog' => 'Committed sources awaiting a journal sequence (bounded).',
+            'kumwe_projection_staging_oldest_age_seconds' => 'Age of the oldest committed source awaiting a sequence.',
+            'kumwe_database_connections_in_use' => 'Database sessions currently open on the server.',
+            'kumwe_database_connections_max' => 'Database server session ceiling.',
+            'kumwe_database_replica_lag_seconds' => 'Largest replica replay lag reported; 0 without replicas.',
+            'kumwe_metrics_capped_gauges' => 'Gauges whose bounded probe hit its cap and so report a lower bound.',
             'kumwe_metrics_scrape_duration_seconds' => 'Wall time the last scrape spent collecting these metrics.',
             'kumwe_metrics_collection_failed' => 'Whether the last collection raised: 1 failed, 0 succeeded.',
         ];

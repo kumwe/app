@@ -416,6 +416,23 @@ final readonly class AuthenticatedPrincipal implements Principal
     }
 
     /**
+     * Digest the credential this principal authenticated with, and nothing else.
+     *
+     * A machine surface has no browser session to bind a Studio authoring context to, so the host binds
+     * it to the exact credential instead: the same token resolves the context again, a rotated or
+     * different token does not. Only the credential identity enters the digest, so a grant or epoch
+     * change leaves the binding intact and is caught by the separate authority fingerprint.
+     *
+     * @return  string  Lowercase hexadecimal SHA-256 over the credential identity alone.
+     *
+     * @since   2.0.0
+     */
+    public function credentialFingerprint(): string
+    {
+        return hash('sha256', 'credential:' . $this->credentialId);
+    }
+
+    /**
      * Digest effective authority independently of the browser session or token that presented it.
      *
      * A successful step-up rotates the session credential by design. Long-running maker-checker

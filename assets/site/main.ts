@@ -48,7 +48,7 @@ if (documentNav && documentSections.length > 0 && 'IntersectionObserver' in wind
     observer.observe(section);
   }
   if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    document.documentElement.style.scrollBehavior = 'smooth';
+    document.documentElement.classList.add('site-smooth-scroll');
   }
 }
 

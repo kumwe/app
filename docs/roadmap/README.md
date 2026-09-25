@@ -6,7 +6,7 @@
 
 **Reproducible-baseline measured source** [`a4ded133`](https://github.com/kumwe/app/commit/a4ded13341d41dfbb2b7f69ff072b077510d2338) — candidate `67cf6c02` changes only [`docs/quality/baseline.json`](../quality/baseline.json) from that source
 
-**Machine-readable companions** [`findings.json`](findings.json), [`capacity-contract.json`](capacity-contract.json)
+**Machine-readable companions** [`findings.json`](findings.json), [`capacity-contract.json`](capacity-contract.json), [`acceptance-record.json`](acceptance-record.json)
 
 **Current position** [`STATUS.md`](STATUS.md)
 
@@ -271,8 +271,10 @@ extension-contributed catalogues all run through the ordinary package path. Ever
 console command and user-facing source error resolves from the extracted `en-GB` catalogue, and the
 hardcoded-string gate scans all three surfaces. Extension-contributed items bind to declared translation
 sets through the additive contribution generation. The runtime and authoring contract is described in
-[`docs/interface-translation.md`](../interface-translation.md). Only `V2-LNG-010` remains: the Gate B work
-to complete and qualify the eight non-source catalogues.
+[`docs/interface-translation.md`](../interface-translation.md). The eight non-source catalogues are authored,
+compiled and complete, and `composer translation:quality` qualifies each through ICU, CLDR plural coverage and
+an identical-wording register; `V2-LNG-010` holds the Gate B acceptance of that work and of the per-locale
+browser, accessibility and visual evidence.
 
 **Right-to-left.** Hebrew and Arabic are both in scope and their layout work is the same work, so they were
 done together. The conversion is complete: every inline-axis declaration across `assets/` is now logical —
@@ -692,8 +694,8 @@ rather than degrading to a substituting formatter.
 **Right-to-left is converted.** Across `assets/`: 96 logical inline-axis declarations and zero physical
 ones, no floats, and `composer assets:direction` failing the build on a new physical declaration with an
 allowlist that ships empty. `playwright.config.ts` now runs the right-to-left journeys under four
-locale-scoped projects and files their baselines under those project names. What is unbuilt is the
-screenshots themselves: the four right-to-left baseline directories are empty.
+locale-scoped projects and files their baselines under those project names, and each of the four
+directories carries its committed right-to-left baselines.
 
 **Content is locale-bearing and grouped by logical item.** `ContentEntry` carries a canonical locale and
 translation-group identifier beside its locale-specific slug, workflow state and publication window;
@@ -850,7 +852,7 @@ answer.
 | Data-entry integrity across a failed submission | Provided | validation failure and stale-version conflict both re-render with the submitted values on both generated surfaces and the CMS content editor; see [`CHANGELOG.md`](../../CHANGELOG.md) |
 | Role-specific dashboards | Provided | Decision D15 and [ADR 0006](decisions/0006-unified-dashboard-composition.md): `DashboardComposer` projects the existing capability-, owner-, trust- and area-filtered navigation into workflow widgets and quick links, then resolves the existing KIS `dashboard-cards` and `navigation-shortcuts` preferences across administrator, canonical `role:<uuid>` access-group and user layers. Typed core summaries use the same semantic view contract; see [`CHANGELOG.md`](../../CHANGELOG.md) |
 | Offline-tolerant capture for point of sale | Deferred, not foreclosed | `V2-ERP-007` under decision D14 — deferred beyond Version 2 as a product; three of the four constraints that keep it possible are delivered and recorded in `CHANGELOG.md`, and `V2-POS-002` alone remains |
-| A translated interface | Partial | The layer exists — XLIFF authored, compiled to PHP, formatted by ICU, resolved through the four-step chain with both administered layers stored, negotiated per request. `V2-LNG-001`, `V2-LNG-007` and `V2-LNG-008` hold the remaining extraction and the widened gate; `V2-LNG-010` holds the eight translated catalogues. Decision D11, [ADR 0002](decisions/0002-interface-translation-architecture.md) |
+| A translated interface | Partial | The layer exists — XLIFF authored, compiled to PHP, formatted by ICU, resolved through the four-step chain with both administered layers stored, negotiated per request. `V2-LNG-001`, `V2-LNG-007` and `V2-LNG-008` hold the remaining extraction and the widened gate; `V2-LNG-010` holds Gate B acceptance of the eight translated catalogues, which are authored and complete, and of per-locale qualification. Decision D11, [ADR 0002](decisions/0002-interface-translation-architecture.md) |
 | An operator changing wording without editing files | Provided | Site and organization overrides are stored and administered at `/administrator/wording` under `localization.overrides.manage`; per identifier, never per file. This is also how a vertical relabels core terminology, and an extension contributes its own catalogue through the ordinary package path. See [`CHANGELOG.md`](../../CHANGELOG.md) |
 | Right-to-left presentation | Partial | The stylesheets are direction independent, the layouts emit `dir`, a gate refuses a new physical declaration, and the browser matrix carries a language axis so `he` and `ar` file baselines of their own. `V2-LNG-009` holds the screenshots and the `P2-E` leg that compares them |
 | Multilingual content with per-locale publication state | Provided | `ContentEntry`, `TranslationGroup`, locale-specific slugs and publication windows, negotiated public delivery and explicit root-locale addresses; decision D12 and [`CHANGELOG.md`](../../CHANGELOG.md) |
@@ -1023,6 +1025,13 @@ the integrity objectives at zero**: a run that presents a converted figure witho
 instant fails qualification, which is what makes D10's audit rule a measured property instead of an
 intention.
 
+[ADR 0021](decisions/0021-automated-acceptance-and-sampled-capacity.md) changes how the number is evidenced,
+not the number. Capacity is estimated statistically from repeated concurrent samples on the workflow hardware
+each run records, with measured results published apart from explicitly labelled estimates and their
+extrapolation boundary. Dedicated production-sized hardware and 24-hour rated or 72-hour soak runs are optional
+operator qualification rather than prerequisites, and the five-million figure remains a planning target, never
+a measured production guarantee.
+
 ---
 
 ## 8. The two gates
@@ -1160,7 +1169,7 @@ outside those criteria does not block Gate A.
 candidate `67cf6c02`. [ADR 0010](decisions/0010-gate-a-assessment.md) records the acceptance.
 
 **What Gate A does not assert.** Not enterprise capacity. Not point-in-time recovery. Not operational
-diagnostics. Not the human interface acceptance. Not a release. An extension author after Gate A is
+diagnostics. Not the Gate B interface acceptance. Not a release. An extension author after Gate A is
 building against contracts that will not move; they are not building against a qualified product.
 
 ### Gate B — Version 2 enterprise release
@@ -1171,10 +1180,11 @@ building against contracts that will not move; they are not building against a q
 
 1. No repository-owned critical or high finding is open. Conditional and external risks each have an
    owner, a detection method, a compensating control, a remediation path and a review date.
-2. The five-million envelope is proven on the declared topology: a 24-hour rated run and a 72-hour soak at
-   70% load with zero integrity violations, stable resources, bounded growth and at least 30% headroom.
-   MariaDB and MySQL both meet every objective; PostgreSQL meets the declared portable profile and every
-   correctness gate.
+2. Concurrent capacity samples and explicitly labelled estimates are published under
+   [ADR 0021](decisions/0021-automated-acceptance-and-sampled-capacity.md), using available workflow hardware.
+   The five-million daily envelope is a planning target; an estimate is not a measured production guarantee.
+   Integrity, bounded growth and the three-engine correctness gates remain mandatory. Dedicated hardware
+   and 24-hour rated or 72-hour soak runs are not prerequisites for this increment.
 3. Unrelated record writes no longer serialize on one definition row. Event-producing commits no longer
    lock one installation-wide head. Fan-out and queue claims scale through independent batched workers with
    no duplicate effect. Every hot ledger has a retention policy with at least twice its expiry drain
@@ -1186,7 +1196,8 @@ building against contracts that will not move; they are not building against a q
    discipline.
 6. The exact built application image, web image, Composer package and archive — not rebuilt lookalikes —
    pass the complete qualification contract, and a signed manifest contains every published digest.
-7. Human interface acceptance is complete with named accountable reviewers.
+7. Automated interface and language evidence is complete. Maintainer merge is the sole human acceptance
+   record, with no separate manual checklist, under ADR 0021.
 8. The vertical-neutral proof portfolio installs, runs and uninstalls on all three engines with no core
    edit.
 9. An independent review at the release candidate finds no repository-owned critical or high
@@ -1210,6 +1221,12 @@ building against contracts that will not move; they are not building against a q
     fallback qualification. The signed manifest records the exact Studio versions and compiled assets, and the
     Gate A contributions run without a contract change. `V2-STU-002` and `V2-STU-005` through `V2-STU-007`
     remain open until that evidence exists.
+
+**Assessment.** Not assessed. Each criterion is an entry of [`acceptance-record.json`](acceptance-record.json)
+that names the requirements it depends on, and [`STATUS.md`](STATUS.md) carries the generated state of all
+twelve. Pull request #152 delivers the runtime of Points 1 to 4; exact release-artifact qualification, the proof
+portfolio and the independent review (criteria 6, 8 and 9) are the separate Point 5 track. Under ADR 0021 the
+maintainer's merge accepts what each pull request already records, and it does not itself pass the gate.
 
 ---
 
@@ -1311,8 +1328,9 @@ Internal code may be decomposed freely; public contracts require semantic versio
 migration guidance and passing fixtures.
 
 **P0-D — Capacity contract.** Already delivered as [`capacity-contract.json`](capacity-contract.json). This
-work package extends it with the deterministic dataset generator seeds and age distribution, and the exact
-per-topology hardware figures, once the reference hardware is procured.
+work package extends it with the deterministic dataset generator seeds and age distribution. The hardware
+figures are no longer waiting on procured reference hardware: under ADR 0021 (contract 1.3.0) every sample
+records the workflow hardware, database configuration and runtime versions it ran on.
 
 **P0-E — Architecture and security decisions.** Approve, as recorded decisions, before implementation.
 Decisions live in [`decisions/`](decisions/) one per file, numbered, each stating its context, the decision,
@@ -1421,16 +1439,14 @@ release execute, and make the gates strong enough to protect every later phase.
 **Entry conditions.** Phase 0 decisions 1, 7 and 8 recorded. May run in parallel with phase 1 where file
 ownership is disjoint.
 
-**P2-B — Truthful coverage attribution and ratchets.** Findings: `V2-QA-001`. The contract, the canonical
-engine, the attribution gate, the changed-line ratchet and the measured global baseline are delivered and
-recorded in [`CHANGELOG.md`](../../CHANGELOG.md); `docs/quality/coverage-contract.json` is where the rules now
-live. What remains is the attribution itself and the branch ratchet. Name the classes each of the 43 behavioural
-tests still on the pending list exercises — 39 under `tests/Integration` plus four named individually — so only
-the reasoned allowlist is left. Decide the branch floor: either instrument the canonical leg with a driver that
-reports branches, or replace the rule with one that can be measured, because a floor the tooling cannot read is
-a statement rather than a gate. Then apply the rest of the ratchet the roadmap states: positive plus denial and
-conflict and replay and rollback paths on
-public behaviour, and enumerated transitions on high-risk state machines regardless of percentage.
+**P2-B — Truthful coverage attribution and ratchets.** Findings: `V2-QA-001`, closed. The contract, the
+canonical engine, the attribution gate, the changed-line ratchet, the measured global baseline and the
+attribution itself are delivered and recorded in [`CHANGELOG.md`](../../CHANGELOG.md);
+`docs/quality/coverage-contract.json` is where the rules live. Every behavioural test names the classes it
+exercises, so the pending list is empty and only the reasoned allowlist remains, and the enforced
+changed-refusal floor replaced the branch floor the canonical driver cannot measure. What remains is the rest of
+the ratchet the roadmap states: positive plus denial and conflict and replay and rollback paths on public
+behaviour, and enumerated transitions on high-risk state machines regardless of percentage.
 
 **P2-C — Live checks in place of source-string assertions.** The semantic dependency checker this package
 opened with is delivered and recorded in [`CHANGELOG.md`](../../CHANGELOG.md): `composer architecture:policy`
@@ -1496,7 +1512,8 @@ published digest, with published digests equal to tested digests.
 **P2-I — Performance harness and deterministic budgets.** Build the dataset generator, workload driver,
 query-plan capture, metric collection and result schema. Characterize current master and record its
 breakpoints — as a baseline fact, never marketed as capability. Enforce the deterministic per-change
-budgets from the capacity contract. Absolute latency and throughput come from dedicated runners.
+budgets from the capacity contract. Absolute latency and throughput come from repeated concurrent samples on
+the recorded workflow hardware (ADR 0021); dedicated runners are optional operator qualification.
 
 **Exit gate.** One manifest defines local, CI, nightly and release semantics. Documentation claims match
 the executed gate or are clearly conditional. Behavioural tests contribute truthful attribution and the
@@ -1967,8 +1984,11 @@ repository-owned critical and high finding.
 
 **Entry conditions.** Phases 5 and 6 exit gates passed.
 
-**P7-A — Enterprise benchmark, stress and soak.** Run the weekly and release programme from the capacity
-contract on versioned dedicated hardware: a 24-hour rated run, a 72-hour soak at 70% load, peak and spike
+**P7-A — Sampled concurrency and capacity estimates.** ADR 0021 replaces the dedicated-hardware and
+24-hour/72-hour duration prerequisites with repeated concurrent samples on available workflow hardware.
+Record the actual machine, worker counts, database configuration, sample variation, latency, errors and
+throughput. Separate measured results from estimates and disclose extrapolation and shared-database limits.
+Larger operator qualification can additionally exercise peak and spike
 and stress and breakpoint profiles, worker outage and backlog recovery, primary failover and replica lag,
 Redis loss, worker `SIGKILL`, network delay, downstream timeout, disk pressure, storage outage, generation
 transition during traffic, retention during load, fan-out at three and ten with slow and poison consumers,
@@ -1981,7 +2001,7 @@ all three engines, a representative dataset and target concurrency. Every drill 
 error, retryability, audit evidence, metric and alert, operator runbook, data invariant, recovery action
 and maximum recovery time.
 
-**P7-C — Security and privacy qualification.** An independent threat-led review plus automated and manual
+**P7-C — Security and privacy qualification.** An independent threat-led agent review plus automated
 evidence across authentication and session handling, request-forgery and content-policy and upload and
 traversal and server-side-request boundaries, query and identifier and pagination and exhaustion inputs,
 row and field and action and report and export and event and log non-disclosure, maker-checker and
@@ -2004,7 +2024,7 @@ lag, disk forecast, extension trust and security events; synthetic probes; dashb
 operations from transport retries; and operator drills confirming each critical alert is actionable and
 clears after recovery. Closes `GM-OBS-05` by decision or by implementation, never by silence.
 
-**P7-E — Accountable human interface acceptance.** Findings: `V2-UX-001`, `V2-QA-014`. Named accountable reviewers
+**P7-E — Automated interface acceptance.** Findings: `V2-UX-001`, `V2-QA-014`. Workflows
 complete five archetype task journeys with task-based evidence: content authoring and media and navigation
 and workflow and publication; an exact-value thousand-line document drafted, reviewed, approved, posted,
 inspected in history and exported; a relationship and self-service portal flow; a mobile assignment flow
@@ -2015,16 +2035,16 @@ ergonomics and assistive technology. Fix the known generic debt: detached requir
 labels and defaults, extremely long ungrouped mobile forms, insufficient progressive disclosure, and raw
 platform terminology presented as a business-user workflow.
 
-On real Safari, a reviewer also changes the operating-system appearance while an administrator page remains
-open and records whether the rendered background follows it. That experiment closes `V2-QA-014` either with
-a cascade-level product repair or with an upstream Playwright report and a settled-render assertion; emulated
-WebKit alone cannot stand in for accountable human acceptance on the native browser.
+The browser workflow changes appearance while an administrator page remains open and asserts that the
+rendered background follows it. A reproducible defect receives a cascade-level repair and regression test.
+Report each tested engine accurately: Playwright WebKit is not evidence of a person using native Safari.
 
 Two journeys are additionally run in a non-source language, one of them right-to-left: terminology,
 truncation, line wrapping, form-label alignment, date and number rendering and assistive-technology
-announcement are all locale-dependent, and a review conducted only in `en-GB` cannot see any of it. The
-reviewer for the right-to-left journey reads the language; a left-to-right reader inspecting a mirrored
-layout is not acceptance evidence.
+announcement are all locale-dependent, and tests conducted only in `en-GB` cannot see any of it. Catalogue,
+placeholder, bidirectional layout and accessibility checks run automatically. Record their actual coverage
+without claiming fluent human review. Maintainer merge accepts the completed work; no additional human
+browser, assistive-technology or language checklist is required (ADR 0021).
 
 **P7-F — Vertical-neutral signed proof portfolio.** Conformance fixtures built as separately signed
 extensions from the released SDK. They are not products; they prove that products need no core edit.
@@ -2073,7 +2093,7 @@ and may not contradict a release claim.
 
 **Exit gate.** Section 8, Gate B.
 
-**Non-goals.** Do not build products in the proof portfolio. Do not self-attest the human gate. Do not
+**Non-goals.** Do not build products in the proof portfolio. Do not claim maintainer acceptance before merge. Do not
 accept a green source test as proof of an untested artifact. Do not hide an infrastructure prerequisite or
 a conditional risk. Do not call trusted in-process code sandboxed. Do not resume vertical work before
 section 12.
@@ -2234,7 +2254,7 @@ are classified and frozen, validated at admission and install, and proven by a s
 fixture covering every kind.
 
 **Exit gate, Gate B half.** Section 8, Gate B criterion 12. The qualification itself runs in phase 7:
-`P7-E` adds a composition journey to its accountable human acceptance, `P7-C` covers the preview and
+`P7-E` adds a composition journey to its automated interface acceptance, `P7-C` covers the preview and
 media boundaries in its security qualification, `P7-F` adds a contributed composition block to the
 proof portfolio so the Gate A declarations are exercised by a real extension, and `P7-G` records the
 pinned package versions in the signed manifest.
@@ -2327,8 +2347,14 @@ what is still outstanding, and something that was fixed the day it was noticed w
 enough to be written down. The changelog still records it, because the changelog is the record of what has
 been done — planned or not.
 
-[`STATUS.md`](STATUS.md) is the short view an agent reads first. It is updated whenever a phase or gate
-moves, and it is mechanically derivable from the ledger.
+[`STATUS.md`](STATUS.md) is the short view an agent reads first. Its phase board, open-work table, Gate B
+criteria and ledger snapshot are generated by `composer acceptance:summary` from
+[`acceptance-record.json`](acceptance-record.json) and this ledger. The record carries one entry per open
+requirement — every open finding, every package not yet delivered, every Gate B criterion — linking its text
+reference to its runtime owner, tests, CI jobs, artifacts, decision, outstanding note, state and track, and it
+marks work committed on another branch as pending integration. `composer acceptance:check` fails when an entry
+names a path, CI job, artifact or anchor that does not exist, when the record and this ledger or the package
+definitions disagree, or when a generated block drifts from it.
 
 ### 10.1.1 The lifecycle check
 
@@ -2387,12 +2413,17 @@ A change is not complete until it contains all of the following.
 10. **Clean install, upgrade, deployment and recovery evidence** when persistence or composition changes.
 11. **A release note, security notice or migration guide** where the change is externally visible.
 12. **A clean working tree** after every generator and build has run.
-13. **The ledger updated**: `findings.json`, and `STATUS.md` if a phase or gate moved.
+13. **The ledger and the acceptance record updated**: `findings.json` and the requirement's entry in
+    `acceptance-record.json`, with `STATUS.md` regenerated by `composer acceptance:summary`.
 14. **Completed work moved to the changelog**: every finding this change finishes is deleted from
     `findings.json` and written into `CHANGELOG.md` under the right category, citing this change's commits.
     Work this change completed that was never on the roadmap goes straight into `CHANGELOG.md` with
     nothing to remove. A pull request that finishes work without touching the changelog is incomplete.
-15. **Reviewer sign-off from the owner of the affected invariant.**
+15. **Review by the owner of the affected invariant and acceptance by merge.** An independent agent may
+    perform the review and records it as an agent review. The maintainer's merge, once every required check is
+    green, is the sole human acceptance (ADR 0021): no human checkbox, manual browser, Safari or right-to-left
+    review, or follow-up acceptance commit is required, so the merged documentation already states what the
+    merge accepts.
 
 And the standing prohibitions: never weaken, skip, retry away or delete a legitimate test to make a change
 pass; never combine an unrelated cleanup with a substantive change; never introduce service location or a
@@ -2436,7 +2467,7 @@ following.
 7. **Lifecycle and trust hold.** Disable, revoke, quarantine, reactivate and uninstall with no executable
    leakage and no data loss; purge stays separate and recoverable; trusted in-process and untrusted
    out-of-process boundaries are described honestly.
-8. **Human interface acceptance passes**, with automated desktop, mobile, cross-browser, accessibility,
+8. **Automated interface acceptance passes**, with desktop, mobile, cross-browser, accessibility,
    visual and no-JavaScript evidence for the five archetype journeys, in all nine supported languages, with
    right-to-left qualified against its own baselines and an operator able to relabel a core term at site
    scope without a deployment.
@@ -2481,7 +2512,7 @@ What was **not** done: the integration, functional and browser suites were not e
 need live database and browser services this environment does not provide. Absolute performance figures
 were not measured; every capacity number in `capacity-contract.json` is a target, not an observation, and
 phase 2 produces the first honest measurement of current master. The reference hardware for phase 5 and
-phase 7 does not exist yet, so the topology entries in the capacity contract carry requirements rather than
-figures. Nothing in phases E and L has been prototyped: the language and conversion work is described from
+phase 7 did not exist, so the topology entries in the capacity contract carry requirements rather than
+figures; ADR 0021 later replaced that hardware with sampled workflow hardware recorded per run. Nothing in phases E and L has been prototyped: the language and conversion work is described from
 the contract it must satisfy and the code it must not disturb, and the first honest measurement of what
 extraction actually costs comes from `PL-C`.

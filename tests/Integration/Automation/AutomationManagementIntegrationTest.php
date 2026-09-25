@@ -163,6 +163,18 @@ final class AutomationManagementIntegrationTest extends TestCase
             'first_received_at' => Types::DATETIME_IMMUTABLE,
             'updated_at' => Types::DATETIME_IMMUTABLE,
         ]);
+        // An inbox claim occupies the shared durable permit in the same transaction as its reservation.
+        $database->update($tables->raw('job_queue_permits'), [
+            'work_kind' => 'inbox',
+            'work_id' => $deliveryEventId,
+            'consumer_id' => 'acme.queue-capacity',
+            'lease_token' => $deliveryToken,
+            'lease_expires_at' => $now->modify('+10 minutes'),
+            'last_claimed_at' => $now,
+        ], ['queue_id' => $queueName, 'slot_number' => 0], [
+            'lease_expires_at' => Types::DATETIME_IMMUTABLE,
+            'last_claimed_at' => Types::DATETIME_IMMUTABLE,
+        ]);
         self::assertNull($queue->claim($worker, $queueName, 'policy-worker-three', 30));
 
         $old = new DateTimeImmutable('-2 days');
@@ -184,6 +196,14 @@ final class AutomationManagementIntegrationTest extends TestCase
             'completed_at' => Types::DATETIME_IMMUTABLE,
             'updated_at' => Types::DATETIME_IMMUTABLE,
         ]);
+        // Settlement releases the permit under the same fenced token.
+        $database->update($tables->raw('job_queue_permits'), [
+            'work_kind' => null,
+            'work_id' => null,
+            'consumer_id' => null,
+            'lease_token' => null,
+            'lease_expires_at' => null,
+        ], ['queue_id' => $queueName, 'lease_token' => $deliveryToken]);
         $second = $queue->claim($worker, $queueName, 'policy-worker-three', 30);
         self::assertNotNull($second);
         self::assertSame($secondId, $second->id);
@@ -239,6 +259,96 @@ final class AutomationManagementIntegrationTest extends TestCase
         self::assertContains($retainedReceipt['envelope'], ['{}', []]);
         self::assertNull($retainedReceipt['error_message']);
         self::assertNotNull($retainedReceipt['evidence_compacted_at']);
+    }
+
+    /**
+     * A contributed queue's permit follows its job's lease: renewed with it and released by a retry.
+     *
+     * The permit is the queue's durable in-flight ceiling, so it must never outlive or undercut the lease it
+     * stands for. A renewal moves the permit's expiry with the job's, a failed attempt that will be retried
+     * frees the permit at once rather than when the old lease would have lapsed, and a queue whose only job
+     * waits for its retry offers no fairness turn at all.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAContributedQueuePermitIsRenewedWithItsLeaseAndReleasedByARetry(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $database = $container->get(Connection::class);
+        $tables = $container->get(TableNames::class);
+        $transactions = $container->get(TransactionManager::class);
+        $clock = $container->get(ClockInterface::class);
+        $authorization = $container->get(AuthorizationGateway::class);
+        $ownership = $container->get(ResourceSiteOwnershipWriter::class);
+        $scope = $container->get(JobExecutionScope::class);
+        self::assertInstanceOf(Connection::class, $database);
+        self::assertInstanceOf(TableNames::class, $tables);
+        self::assertInstanceOf(TransactionManager::class, $transactions);
+        self::assertInstanceOf(ClockInterface::class, $clock);
+        self::assertInstanceOf(AuthorizationGateway::class, $authorization);
+        self::assertInstanceOf(ResourceSiteOwnershipWriter::class, $ownership);
+        self::assertInstanceOf(JobExecutionScope::class, $scope);
+        $queueName = 'permit-' . substr(Uuid::uuid7()->toString(), 0, 12);
+        $queue = new DoctrineJobQueue(
+            $database,
+            $tables,
+            $transactions,
+            $clock,
+            'queue-permit-test',
+            $authorization,
+            $ownership,
+            $scope,
+            new ConfiguredQueuePolicyCatalog(new QueueRuntimePolicy($queueName, 60, 3, 1, 1, 7), 4),
+        );
+        $administrator = TestKernelFactory::administratorContext($container);
+        $worker = TestKernelFactory::workerContext($container);
+        $jobId = $queue->enqueue($administrator, 'system.sessions.purge', [], new DateTimeImmutable('now'), $queueName);
+        $permit = static fn (): array|false => $database->fetchAssociative(sprintf(
+            'SELECT lease_token, lease_expires_at FROM %s WHERE queue_id = ? AND slot_number = 0',
+            $tables->quoted('job_queue_permits'),
+        ), [$queueName]);
+
+        try {
+            $claimed = $queue->claim($worker, $queueName, 'permit-worker', 10);
+            self::assertNotNull($claimed);
+            self::assertSame($jobId, $claimed->id);
+            $held = $permit();
+            self::assertIsArray($held);
+            self::assertSame($claimed->leaseToken, $held['lease_token']);
+            $queue->renew($worker, $claimed, 'permit-worker', 60);
+            $renewed = $permit();
+            self::assertIsArray($renewed);
+            self::assertSame($claimed->leaseToken, $renewed['lease_token']);
+            self::assertGreaterThan(
+                new DateTimeImmutable((string) $held['lease_expires_at']),
+                new DateTimeImmutable((string) $renewed['lease_expires_at']),
+                'The permit expiry moves with the renewed lease.',
+            );
+
+            $queue->fail($worker, $claimed, 'permit-worker', new RuntimeException('transient'), false);
+            $released = $permit();
+            self::assertIsArray($released);
+            self::assertNull($released['lease_token'], 'A retried attempt frees its permit at once.');
+            self::assertSame('pending', $database->fetchOne(sprintf(
+                'SELECT status FROM %s WHERE id = ?',
+                $tables->quoted('jobs'),
+            ), [$jobId]));
+            self::assertNull(
+                $queue->claim($worker, $queueName, 'permit-worker', 10),
+                'A queue whose only job waits for its retry offers no turn.',
+            );
+        } finally {
+            foreach (['job_queue_permits', 'job_queue_turns', 'job_queue_runtime'] as $table) {
+                $database->delete($tables->raw($table), ['queue_id' => $queueName]);
+            }
+            $database->delete(
+                $tables->raw('resource_site_ownership'),
+                ['resource_type' => 'job', 'resource_id' => $jobId],
+            );
+            $database->delete($tables->raw('jobs'), ['queue' => $queueName]);
+        }
     }
 
     public function testScheduleAndJobManagementLifecycleOnConfiguredDatabase(): void

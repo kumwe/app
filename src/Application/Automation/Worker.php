@@ -29,7 +29,10 @@ use Kumwe\Automation\PermanentFailure;
  * the worker's own reach. Every settlement goes back through the queue carrying the claim's fencing
  * token, so a worker that lost its lease cannot complete or fail a job a sibling has since taken. The
  * handler itself runs under a wall-clock alarm, so work that wedges surfaces as a failed job instead
- * of as a worker process that never returns.
+ * of as a worker process that never returns. The job's context carries the correlation identifier the
+ * job was queued under, when the store recorded one, so the job's audit rows, events and follow-up jobs
+ * stay joined to the operation that caused them rather than to the worker process that happened to run
+ * them.
  *
  * @since  2.0.0
  */
@@ -45,6 +48,8 @@ final readonly class Worker
      * @param  SystemPrincipal        $system            Issues the context a site-scoped job runs under.
      * @param  JobExecutionScope      $jobScope          Re-checks a row's stored execution class.
      * @param  GlobalJobPrincipals    $globalPrincipals  Issues the context a global job type runs under.
+     * @param  ?JobOriginLookup       $origins           Reads the correlation a job was queued under; null
+     *         keeps the worker's own correlation on every job.
      *
      * @since  2.0.0
      */
@@ -56,6 +61,7 @@ final readonly class Worker
         private SystemPrincipal $system,
         private JobExecutionScope $jobScope,
         private GlobalJobPrincipals $globalPrincipals,
+        private ?JobOriginLookup $origins = null,
     ) {
     }
 
@@ -106,17 +112,18 @@ final readonly class Worker
 
         try {
             $executionClass = $this->jobScope->assertStoredClass($job->type, $job->executionClass);
+            $correlationId = $this->origins?->correlationOf($job) ?? $context->correlationId();
             $jobContext = $executionClass === JobExecutionClass::Installation
                 ? $this->globalPrincipals->context(
                     $job->type,
                     $this->jobScope,
                     'global-job-' . $job->id,
-                    $context->correlationId(),
+                    $correlationId,
                 )
                 : $this->system->context(
                     $this->ownership->scopeFor(AuthorizationResource::item('job', $job->id))->requireSite(),
                     'worker-job-' . $job->id,
-                    $context->correlationId(),
+                    $correlationId,
                 );
         } catch (AuthorizationResourceOwnershipUnknown) {
             // A site may be retired immediately after the claim transaction commits.

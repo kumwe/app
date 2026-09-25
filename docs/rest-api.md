@@ -1,6 +1,6 @@
 # REST API
 
-The versioned API is rooted at `/api/v1`. Its authoritative machine-readable contract is [api/openapi/kumwe-v1.json](../api/openapi/kumwe-v1.json). Generate clients and validation fixtures from that document rather than scraping this guide.
+The versioned API is rooted at `/api/v1`. Its authoritative machine-readable contract is the current generation named by [api/openapi/generations.json](../api/openapi/generations.json), now [1.1.0](../api/openapi/generations/1.1.0/openapi.json); the retained [1.0.0 artifact](../api/openapi/kumwe-v1.json) is unchanged. Generate clients and validation fixtures from that document rather than scraping this guide.
 
 ## Authentication
 
@@ -165,6 +165,14 @@ All identity administration routes require `users.manage`.
 The token creation response contains the plaintext token once. Lists never contain token material. Do not log or
 retry the creation response through an intermediary that records bodies.
 
+Resetting another account's password, retiring its second factors and ending its sessions are not available over
+REST. The administrator access screen demands a payload-bound human step-up proof for each, and no API token can
+carry one; `AccessControlService` refuses them to any human context without a consumed proof. Use the access screen,
+or the host-level `bin/kumwe user:recover-credentials` break-glass, and revoke a peer's tokens with
+`DELETE /api/v1/users/{id}/tokens`. The access screen also steps up before the operations listed above; that the
+v1 REST contract does not is recorded as an assurance gap in the
+[parity inventory](machine-contract/README.md#browser-to-machine-parity-inventory).
+
 ## Plan previews
 
 `POST /api/v1/plans` validates a non-executable change plan for approved review workflows. It requires `content.read` and an idempotency key. Applying state changes still uses the corresponding content, navigation, or identity endpoint.
@@ -191,11 +199,91 @@ All extension routes require `extensions.manage`.
 | Method | Path | Purpose |
 |---|---|---|
 | `GET` | `/api/v1/extensions` | List installed extensions and lifecycle state |
+| `POST` | `/api/v1/extensions` | Install one package, disabled, from its ZIP archive |
 | `POST` | `/api/v1/extensions/{vendor}/{name}/activate` | Activate an installed extension |
 | `POST` | `/api/v1/extensions/{vendor}/{name}/disable` | Disable an active extension |
 | `DELETE` | `/api/v1/extensions/{vendor}/{name}` | Uninstall an extension and run its lifecycle cleanup |
 
-Every extension mutation requires `Idempotency-Key`. Package installation is intentionally not accepted from a server path supplied over REST: upload a package through the authenticated administrator, or install a trusted local artifact with the host-level CLI. This keeps archive and signature handling on an explicit trusted boundary.
+Every extension mutation requires `Idempotency-Key`. An install sends the package ZIP itself as the
+`application/octet-stream` body, never a server path, with the optional `key_id` and `signature` query pair the
+extensions screen's form carries; both or neither must be present. The archive is staged privately and removed
+whichever way the install goes, and `ExtensionManager::install()` applies the same trust rules the screen and
+`bin/kumwe extension:install` apply. The response is `201` with the registry row as the collection lists it. An
+unreadable, invalid or untrusted package is a `422`, as the screen reports it. The install changes the extension
+runtime, so the serving process drains and answers `503` with `Retry-After` until it has reloaded. MCP offers no
+install tool: adding executable code stays outside its authority boundary.
+
+## Studio authoring
+
+Studio's contextual Content authoring operations are available to bearer tokens holding `content.read`; the
+application additionally requires `studio.mode.hybrid` and Content create or update authority, exactly as the
+administrator editor does. See [machine contracts](machine-contract/README.md#studio-authoring-for-machine-callers)
+for the authority model.
+
+| Method | Path | Purpose | `Idempotency-Key` |
+|---|---|---|---|
+| `POST` | `/api/v1/studio/authoring/sessions` | Open a credential-bound session for `{"intent":"create"\|"edit", "content_id", "content_type_id", "content_type_version"}` | — |
+| `POST` | `/api/v1/studio/authoring/resolve-target` | Resolve the declared target and start sources | — |
+| `POST` | `/api/v1/studio/authoring/list-types` | Page reusable Content types | — |
+| `POST` | `/api/v1/studio/authoring/start` | Start from `existing`, `from-type` or `blank` | required |
+| `POST` | `/api/v1/studio/authoring/plan-save` | Plan one save outcome against the expected coordinates | — |
+| `POST` | `/api/v1/studio/authoring/save-item` | Commit the item an accepted plan authorizes | required |
+| `POST` | `/api/v1/studio/authoring/save-as-new-type` | Create a reusable type from the design | required |
+| `POST` | `/api/v1/studio/authoring/save-new-type-version` | Publish a successor type version | required |
+
+An operation body is `{"session": "...", "session_generation": "...", "argument": {...}}` with an optional
+`locale`. `argument` is exactly the pinned Studio argument for that operation; the result is
+`{"operation", "replayed", "value"}` where `value` is the canonical Studio result. The expected revision is the
+`expected` coordinates a save intent carries and the plan identity a save references; stale coordinates are refused
+as `studio-authoring-conflict` (409) with `studio.authoring/expected-mismatch`. The key becomes the Studio host's
+replay key: an identical retry returns the stored result with `Idempotency-Replayed: true`, and a reused key with
+other input is `studio-authoring-idempotency-key-reused` (422). Refusals use the `studio-authoring-*` problem types
+and carry `studio_category`, `studio_diagnostics` and, for conflicts, `studio_revision`.
+
+These operations are described by REST generation 1.1.0 (`api/openapi/generations/1.1.0/openapi.json`), which the
+runtime serves as the current contract; the retained 1.0.0 artifact is unchanged.
+
+## Studio compositions
+
+A Content type version's Blueprint composition is read and provisioned exactly as the administrator composition
+screen does it. Both routes require `content.read` and `studio.mode.blueprint`. See
+[machine contracts](machine-contract/README.md#blueprint-composition-for-machine-callers).
+
+| Method | Path | Purpose | `Idempotency-Key` |
+|---|---|---|---|
+| `GET` | `/api/v1/content-types/{id}/versions/{version}/composition` | Read the model, binding and Blueprint head | — |
+| `POST` | `/api/v1/content-types/{id}/versions/{version}/composition` | Provision the empty Blueprint draft, or answer the bound one | required |
+| `POST` | `/api/v1/studio/composition/sessions` | Open a Blueprint session for `{"content_type_id", "content_type_version", "mode"}` | — |
+| `POST` | `/api/v1/studio/composition/load` | Load the Blueprint, or a historical revision | — |
+| `POST` | `/api/v1/studio/composition/dependencies` | List the dependencies the revision locks | — |
+| `POST` | `/api/v1/studio/composition/save` | Save one draft revision | required |
+| `POST` | `/api/v1/studio/composition/publish` | Publish the draft (`content.publish`) | required |
+| `POST` | `/api/v1/studio/composition/unpublish` | Return it to draft (`content.unpublish`) | required |
+
+A composition that was never provisioned, or a model the caller cannot read, is `studio-composition-not-found`
+(404). A Blueprint locked to another published theme is `studio-composition-theme-mismatch` (409). An artifact
+operation body is `{"session", "session_generation", "argument", "expected_revision"?, "locale"?}`. `argument` is the
+artifact reference `{"id", "version"}`, or for a save the complete Blueprint document, and each mutation names the
+`expected_revision` it replaces. The result is `{"operation", "replayed", "value", "revision"}`. Refusals use the
+`studio-authoring-*` problem types, and a stale revision is `studio-authoring-conflict` (409).
+
+## Business schema recovery evidence
+
+`POST /api/v1/business-schema-plans/{planId}/recovery-evidence` (`business.schema.recover`, `Idempotency-Key`) files
+a restore drill as the evidence a destructive plan's approval cites. The body carries the confirmed `proofs`
+(`clean_target_restore`, `blueprint_checksum_verified`, `typed_command_verified`,
+`record_revision_audit_checksums_verified`), `backup_manifest_checksum`, `backup_created_at`, `verified_at`,
+`drill_reference`, `client_version`, `restore_target_reference` and `current_password`. The application binds the
+evidence to the plan's source schema and stamps the live database driver, server version and release, exactly as the
+schema screen does. The response is `201` with the stored evidence, whose `id` an approval sends as
+`recovery_evidence_id`. The purge plan and a high-impact approval re-prove `current_password` the same way.
+
+## Browser-to-machine parity
+
+Every administrator and portal browser operation has a REST equivalent, or is recorded with a reason in
+`docs/machine-contract/browser-machine-parity.json`. `composer machine:parity` fails the quality lane when a browser
+route has no entry or an entry names an operation id this contract does not declare. See
+[the parity inventory](machine-contract/README.md#browser-to-machine-parity-inventory).
 
 ## Errors and observability
 

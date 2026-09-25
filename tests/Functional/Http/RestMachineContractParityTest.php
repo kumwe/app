@@ -45,7 +45,20 @@ final class RestMachineContractParityTest extends TestCase
     public function testLiveRestSurfaceMatchesTheCompleteMachineContract(): void
     {
         $root = dirname(__DIR__, 3);
-        $document = $this->object($root . '/api/openapi/kumwe-v1.json');
+        $ledger = $this->object($root . '/api/openapi/generations.json');
+        self::assertIsArray($ledger['generations'] ?? null);
+        $retained = [];
+        $artifact = null;
+        foreach ($ledger['generations'] as $row) {
+            self::assertIsArray($row);
+            self::assertIsString($row['generation'] ?? null);
+            $retained[] = $row['generation'];
+            if ($row['generation'] === ($ledger['current'] ?? null)) {
+                $artifact = $row['artifact'] ?? null;
+            }
+        }
+        self::assertIsString($artifact, 'The ledger names no current REST artifact.');
+        $document = $this->object($root . '/' . $artifact);
         $operations = $this->operations($document);
         $routes = $this->routes();
         $restRoutes = array_filter(
@@ -100,7 +113,11 @@ final class RestMachineContractParityTest extends TestCase
                 $operation['x-kumwe-api-version'] ?? null,
                 $key . ' route version drifted.',
             );
-            self::assertSame('1.0.0', $operation['x-kumwe-contract-version'] ?? null);
+            self::assertContains(
+                $operation['x-kumwe-contract-version'] ?? null,
+                $retained,
+                $key . ' names a contract version no retained generation introduced.',
+            );
         }
 
         $allowlist = $this->object($root . '/api/openapi/route-exclusions.json');

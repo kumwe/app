@@ -4,8 +4,8 @@
 {% block content %}
   <div class="kis-phase-five" data-kis-surface="core.administrator.extensions">
     {% include '@kis/page-header.twig' with {
-      eyebrow: 'Platform',
-      title: 'Extensions',
+      eyebrow: t('core.administrator.extensions.platform'),
+      title: t('core.administrator.extensions.extensions'),
       purpose: t('core.administrator.extensions.install_verified_packages_manage_activation_and')
     } only %}
     <nav class="kis-phase-five-section-nav" aria-label="{{ t('core.administrator.extensions.extension_management_concerns') }}">
@@ -156,7 +156,7 @@
                   <input type="hidden" name="identifier" value="{{ extension.identifier }}">
                   {% if 'administrator' in extension.theme_surfaces %}<label>{{ t('core.administrator.access_control.current_password') }}<input type="password" name="current_password" autocomplete="current-password" required></label>{% endif %}
                   <p>{{ t('core.administrator.extensions.uninstalling_removes_this_package_from_the') }}</p>
-                  <button class="danger" type="submit" name="action" value="uninstall" data-confirm="Uninstall {{ extension.identifier }}?">{{ t('core.administrator.extensions.uninstall', {identifier: extension.identifier}) }}</button>
+                  <button class="danger" type="submit" name="action" value="uninstall" data-confirm="{{ t('core.administrator.extensions.uninstall_confirm', {identifier: extension.identifier}) }}">{{ t('core.administrator.extensions.uninstall', {identifier: extension.identifier}) }}</button>
                 </form>
               </details>
             </article>

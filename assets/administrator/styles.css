@@ -6,7 +6,7 @@
 
 @layer tokens {
   :root {
-    color-scheme: light;
+    color-scheme: light dark;
     --kumwe-font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     --kumwe-font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
     --kumwe-navy-950: #08152a;
@@ -21,6 +21,44 @@
     --kumwe-silver-500: #a3a4a4;
     --kumwe-silver-200: #d7e1e6;
     --kumwe-silver-100: #eaedee;
+    --kumwe-canvas: light-dark(#f4f7fb, #091321);
+    --kumwe-surface: light-dark(#fff, #101d2c);
+    --kumwe-surface-elevated: light-dark(#fff, #142337);
+    --kumwe-surface-subtle: light-dark(#eef3f8, #1b2b3e);
+    --kumwe-surface-hover: light-dark(#e7edf5, #22354b);
+    --kumwe-text: light-dark(#152238, #eef5fb);
+    --kumwe-text-muted: light-dark(#5e6e82, #aebdca);
+    --kumwe-text-subtle: light-dark(#5a6a7e, #8496a7);
+    --kumwe-border: light-dark(var(--kumwe-silver-200), #2a3d52);
+    --kumwe-border-strong: light-dark(#bdc9d7, #43596f);
+    --kumwe-accent: light-dark(var(--kumwe-blue-600), var(--kumwe-blue-300));
+    --kumwe-accent-strong: light-dark(var(--kumwe-blue-700), var(--kumwe-blue-200));
+    --kumwe-accent-soft: light-dark(#e5f4fb, #17374e);
+    --kumwe-info: light-dark(#2563a8, #8fc4ff);
+    --kumwe-info-soft: light-dark(#e8f2ff, #17304b);
+    --kumwe-warning: light-dark(#8f5d00, #f0be5a);
+    --kumwe-warning-soft: light-dark(#fff3d1, #3b301e);
+    --kumwe-danger: light-dark(#b3283d, #ff8999);
+    --kumwe-danger-strong: light-dark(#8e1f31, #ffadba);
+    --kumwe-danger-soft: light-dark(#ffeaed, #49242d);
+    --kumwe-success: light-dark(#147249, #6dd6a5);
+    --kumwe-success-soft: light-dark(#e4f6ed, #183c30);
+    --kumwe-radius-sm: .45rem;
+    --kumwe-radius-md: .7rem;
+    --kumwe-radius-lg: 1rem;
+    --kumwe-radius-xl: 1.25rem;
+    --kumwe-shadow-sm: 0 1px 2px rgb(16 33 55 / .07), 0 2px 8px rgb(16 33 55 / .04);
+    --kumwe-shadow-md: 0 12px 30px rgb(16 33 55 / .10), 0 2px 8px rgb(16 33 55 / .06);
+    --kumwe-shadow-xl: 0 28px 80px rgb(5 17 36 / .28);
+    --kumwe-sidebar-width: 17.5rem;
+    --kumwe-topbar-height: 4.25rem;
+    --kumwe-content-width: 96rem;
+    --kumwe-focus: 0 0 0 3px rgb(7 143 215 / .28);
+  }
+
+  /* The appearance script restates the scheme on the root so WebKit recomputes every consumer live. */
+  :root[data-kumwe-scheme="light"] {
+    color-scheme: light;
     --kumwe-canvas: #f4f7fb;
     --kumwe-surface: #fff;
     --kumwe-surface-elevated: #fff;
@@ -43,44 +81,49 @@
     --kumwe-danger-soft: #ffeaed;
     --kumwe-success: #147249;
     --kumwe-success-soft: #e4f6ed;
-    --kumwe-radius-sm: .45rem;
-    --kumwe-radius-md: .7rem;
-    --kumwe-radius-lg: 1rem;
-    --kumwe-radius-xl: 1.25rem;
-    --kumwe-shadow-sm: 0 1px 2px rgb(16 33 55 / .07), 0 2px 8px rgb(16 33 55 / .04);
-    --kumwe-shadow-md: 0 12px 30px rgb(16 33 55 / .10), 0 2px 8px rgb(16 33 55 / .06);
-    --kumwe-shadow-xl: 0 28px 80px rgb(5 17 36 / .28);
-    --kumwe-sidebar-width: 17.5rem;
-    --kumwe-topbar-height: 4.25rem;
-    --kumwe-content-width: 96rem;
-    --kumwe-focus: 0 0 0 3px rgb(7 143 215 / .28);
   }
 
+  :root[data-kumwe-scheme="dark"] {
+    color-scheme: dark;
+    --kumwe-canvas: #091321;
+    --kumwe-surface: #101d2c;
+    --kumwe-surface-elevated: #142337;
+    --kumwe-surface-subtle: #1b2b3e;
+    --kumwe-surface-hover: #22354b;
+    --kumwe-text: #eef5fb;
+    --kumwe-text-muted: #aebdca;
+    --kumwe-text-subtle: #8496a7;
+    --kumwe-border: #2a3d52;
+    --kumwe-border-strong: #43596f;
+    --kumwe-accent: var(--kumwe-blue-300);
+    --kumwe-accent-strong: var(--kumwe-blue-200);
+    --kumwe-accent-soft: #17374e;
+    --kumwe-info: #8fc4ff;
+    --kumwe-info-soft: #17304b;
+    --kumwe-warning: #f0be5a;
+    --kumwe-warning-soft: #3b301e;
+    --kumwe-danger: #ff8999;
+    --kumwe-danger-strong: #ffadba;
+    --kumwe-danger-soft: #49242d;
+    --kumwe-success: #6dd6a5;
+    --kumwe-success-soft: #183c30;
+  }
+
+  /*
+   * Restating the scheme on the root alone was not enough for WebKit: after a live switch it repainted
+   * every background but kept the previous scheme's text colour on descendants that only inherit it
+   * (the topbar title, headings, strong, paragraphs, list values), while a bare span beside them
+   * updated. That is a matched-style cache reused across the switch. Naming the scheme on every
+   * element gives each scheme its own matched declarations and makes the root attribute invalidate
+   * the whole subtree, so a switch re-resolves every descendant against the new tokens. The value is
+   * the one each element already inherits, so no engine renders differently.
+   */
+  :root[data-kumwe-scheme="light"] * { color-scheme: light; }
+  :root[data-kumwe-scheme="dark"] * { color-scheme: dark; }
+
+  /* Theme colours resolve at each consuming property when the appearance changes. */
   @media (prefers-color-scheme: dark) {
     :root {
-      color-scheme: dark;
-      --kumwe-canvas: #091321;
-      --kumwe-surface: #101d2c;
-      --kumwe-surface-elevated: #142337;
-      --kumwe-surface-subtle: #1b2b3e;
-      --kumwe-surface-hover: #22354b;
-      --kumwe-text: #eef5fb;
-      --kumwe-text-muted: #aebdca;
-      --kumwe-text-subtle: #8496a7;
-      --kumwe-border: #2a3d52;
-      --kumwe-border-strong: #43596f;
-      --kumwe-accent: var(--kumwe-blue-300);
-      --kumwe-accent-strong: var(--kumwe-blue-200);
-      --kumwe-accent-soft: #17374e;
-      --kumwe-info: #8fc4ff;
-      --kumwe-info-soft: #17304b;
-      --kumwe-warning: #f0be5a;
-      --kumwe-warning-soft: #3b301e;
-      --kumwe-danger: #ff8999;
-      --kumwe-danger-strong: #ffadba;
-      --kumwe-danger-soft: #49242d;
-      --kumwe-success: #6dd6a5;
-      --kumwe-success-soft: #183c30;
       --kumwe-shadow-sm: 0 1px 2px rgb(0 0 0 / .2), 0 3px 12px rgb(0 0 0 / .12);
       --kumwe-shadow-md: 0 14px 38px rgb(0 0 0 / .25);
     }
@@ -184,6 +227,8 @@
   .administrator-navigation ul { display: grid; gap: .16rem; margin: 0; padding: 0; list-style: none; }
   .administrator-navigation a { display: flex; align-items: center; gap: .72rem; min-height: max(2.75rem, var(--kis-touch-target)); padding: .55rem .72rem; border-radius: .58rem; color: #bfcfdb; font-size: .86rem; font-weight: 590; text-decoration: none; transition: background .15s ease, color .15s ease, transform .15s ease; }
   .administrator-navigation a:hover { background: rgb(255 255 255 / .075); color: #fff; transform: translateX(2px); }
+  /* A transform has no logical form, so the hover nudge follows the reading direction explicitly. */
+  [dir="rtl"] .administrator-navigation a:hover { transform: translateX(-2px); }
   .administrator-navigation a[aria-current="page"] { background: linear-gradient(90deg, rgb(7 143 215 / .24), rgb(163 214 240 / .13)); color: #fff; box-shadow: inset 3px 0 var(--kumwe-blue-500); }
   .administrator-navigation svg { width: 1.15rem; height: 1.15rem; flex: 0 0 auto; color: #8ba5b8; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
   .administrator-navigation a[aria-current="page"] svg { color: var(--kumwe-blue-200); }
@@ -276,7 +321,10 @@
   .table-toolbar .search-field { min-width: min(100%, 20rem); flex: 1 1 18rem; }
   .table-toolbar label { min-width: 8.5rem; }
   .table-toolbar .toolbar-submit { align-self: end; }
-  .table-wrap { width: 100%; overflow-x: auto; }
+  /* The wrap is the containing block of anything absolutely positioned inside the table, such as a
+     visually hidden column label; otherwise that box escapes the scroller, widens the document and makes
+     a phone zoom the whole page out. */
+  .table-wrap { position: relative; width: 100%; overflow-x: auto; }
   table { width: 100%; min-width: 48rem; }
   .automation-schedules table { min-width: 40rem; }
   .automation-builder .two-column { grid-template-columns: 1fr; }
@@ -546,6 +594,9 @@
   @media (max-width: 68rem) {
     .administrator-shell { grid-template: "topbar" var(--kumwe-topbar-height) "main" 1fr / minmax(0, 1fr); }
     .administrator-sidebar { transform: translateX(-102%); transition: transform .2s ease; box-shadow: var(--kumwe-shadow-xl); }
+    /* The sidebar is anchored at inline-start, which is the right edge when the page reads right-to-left,
+       so the collapsed drawer must leave towards the right; moving it left would park it over the page. */
+    [dir="rtl"] .administrator-sidebar { transform: translateX(102%); }
     .administrator-shell[data-navigation-open] .administrator-sidebar { transform: none; }
     .administrator-topbar .navigation-toggle { display: grid; }
     .navigation-backdrop { position: fixed; z-index: 35; inset: 0; border: 0; background: rgb(4 12 24 / .58); backdrop-filter: blur(2px); }
@@ -830,6 +881,25 @@ button[disabled], button[aria-disabled="true"] { cursor: not-allowed; opacity: .
 }
 
 .studio-authoring-status[data-studio-launch-state='failed'],
-.studio-authoring-status[data-studio-launch-state='error'] {
+.studio-authoring-status[data-studio-launch-state='error'],
+.studio-authoring-status[data-studio-preview-state='failed'] {
   color: var(--color-danger, #a3261a);
+}
+.business-record-lock-fields { min-inline-size: 0; margin: 0; padding: 0; border: 0; }
+
+.studio-authoring-region[data-studio-surface='form'] .studio-authoring-preview {
+  display: none;
+}
+
+.studio-authoring-preview-frame {
+  inline-size: 100%;
+  min-inline-size: 0;
+  block-size: 32rem;
+  border: 1px solid var(--color-border, #d5dbe3);
+  border-radius: var(--radius-2, 0.5rem);
+  background: var(--color-surface, #fff);
+}
+
+.studio-authoring-preview-frame[hidden] {
+  display: none;
 }

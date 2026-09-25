@@ -54,6 +54,10 @@ test('Nightly browser breadth preserves keyboard, touch, high contrast, zoom and
     await toggle.focus();
     await expect(toggle).toBeFocused();
     expect((await toggle.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44);
+    // The server-rendered toggle is visible before the deferred administrator module has run. The module
+    // marks the root `js` in the same synchronous evaluation that wires the toggle, so wait for that
+    // mark rather than tapping a control whose behaviour has not been attached yet.
+    await expect(page.locator('html')).toHaveClass(/(^|\s)js(\s|$)/u);
     await toggle.tap();
     await expect(toggle).toHaveAttribute('aria-expanded', 'true');
     await expect(
@@ -193,4 +197,31 @@ test('Nightly browser breadth preserves keyboard, touch, high contrast, zoom and
     contentType: 'application/json',
   });
   await attachEvidenceScreenshot(page, testInfo);
+});
+
+/** V2-QA-014: exercise both live directions on Chromium, Firefox and WebKit without navigation. */
+test('live appearance switches repaint existing controls and preserve keyboard state', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'light', reducedMotion: 'reduce', forcedColors: 'none' });
+  await signIn(page);
+  await page.goto('/administrator/interface-standard?tab=overview');
+  const button = page.locator('.button[href$="administrator"]').first();
+  await expect(button).toBeVisible();
+  await button.focus();
+  const documentIdentity = await page.evaluate(() => performance.timeOrigin);
+  for (const [scheme, canvas, surface, foreground] of [
+    ['dark', 'rgb(9, 19, 33)', 'rgb(16, 29, 44)', 'rgb(238, 245, 251)'],
+    ['light', 'rgb(244, 247, 251)', 'rgb(255, 255, 255)', 'rgb(21, 34, 56)'],
+    ['dark', 'rgb(9, 19, 33)', 'rgb(16, 29, 44)', 'rgb(238, 245, 251)'],
+  ] as const) {
+    await page.emulateMedia({ colorScheme: scheme });
+    await expect(page.locator('body')).toHaveCSS('background-color', canvas);
+    await expect(button).toHaveCSS('background-color', surface);
+    await expect(button).toHaveCSS('color', foreground);
+    await expect(button).toBeFocused();
+    expect(await page.evaluate(() => performance.timeOrigin)).toBe(documentIdentity);
+    const scan = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
+      .analyze();
+    expect(scan.violations, JSON.stringify(scan.violations, null, 2)).toEqual([]);
+  }
 });

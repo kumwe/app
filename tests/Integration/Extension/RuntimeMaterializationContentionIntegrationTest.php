@@ -33,6 +33,36 @@ use Throwable;
 #[CoversClass(RuntimeLeaseWriter::class)]
 final class RuntimeMaterializationContentionIntegrationTest extends TestCase
 {
+    /**
+     * A replica with no readiness marker is simply unready: the probe answers false without emitting a warning,
+     * because the metrics scrape and the load balancer poll it and a warning would corrupt their response body.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAMissingReadinessMarkerIsUnreadyWithoutAWarning(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $compiler = $container->get(ExtensionRuntimeMapCompiler::class);
+        self::assertInstanceOf(ExtensionRuntimeMapCompiler::class, $compiler);
+        $compiler->discardLocal();
+        $warnings = [];
+        set_error_handler(static function (int $severity, string $message) use (&$warnings): bool {
+            $warnings[] = $message;
+
+            return true;
+        });
+        try {
+            $fresh = $compiler->localMarkerFresh(60);
+        } finally {
+            restore_error_handler();
+        }
+
+        self::assertFalse($fresh);
+        self::assertSame([], $warnings);
+    }
+
     public function testLeaseRenewalSurvivesAPeerWriteInsideACallerTransaction(): void
     {
         $container = TestKernelFactory::create(Environment::fromGlobals());
@@ -124,5 +154,36 @@ final class RuntimeMaterializationContentionIntegrationTest extends TestCase
         $after = $database->fetchOne($read, [$state->replicaId]);
         self::assertIsString($after);
         self::assertNotSame($before, $after, 'The lease must still be renewed outside a transaction.');
+    }
+
+    /**
+     * Prove every rapid republication is read back as itself, never as the previous generation.
+     *
+     * Successive publications with the same action differ only in their generation, so while the number of
+     * digits stays the same their local files have equal sizes, are written within the same second, and the
+     * write-then-rename replacement can reuse the inode just freed. A memo keyed on that `stat` metadata served
+     * the previous, still-verified document for the new generation, and a freshly booted kernel loaded an
+     * extension set that no longer existed. The memo is now keyed on the signed marker's bytes.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testRapidRepublicationIsNeverReadBackAsThePreviousGeneration(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $compiler = $container->get(ExtensionRuntimeMapCompiler::class);
+        self::assertInstanceOf(ExtensionRuntimeMapCompiler::class, $compiler);
+        $compiler->reconcileAndMaterialize();
+
+        for ($attempt = 0; $attempt < 12; ++$attempt) {
+            $published = $compiler->advance('test.republish');
+            self::assertSame($published, $compiler->materialize());
+            self::assertSame(
+                $published,
+                $compiler->inspectLocal()->generation,
+                sprintf('Republication %d was read back as an older generation.', $attempt),
+            );
+        }
     }
 }

@@ -137,6 +137,14 @@
         <source>What you have now</source>
       </segment>
     </unit>
+    <unit id="core.interface_standard.dashboard.outside_visibility">
+      <notes>
+        <note category="context">Stored role choice outside the preference editor's current visibility.</note>
+      </notes>
+      <segment>
+        <source>Outside your visibility. This saved choice is kept when you save.</source>
+      </segment>
+    </unit>
   </file>
   <file id="core-interface-standard">
     <unit id="core.interface_standard.drawer.close">
@@ -872,6 +880,14 @@
     <unit id="core.administrator.layout.navigation_label">
       <segment>
         <source>Administrator navigation</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.layout.account_group">
+      <notes>
+        <note category="context">Sidebar navigation group holding the signed-in administrator's own account tasks.</note>
+      </notes>
+      <segment>
+        <source>My account</source>
       </segment>
     </unit>
     <unit id="core.administrator.layout.open_navigation">
@@ -2693,6 +2709,38 @@
         <source>Users</source>
       </segment>
     </unit>
+    <unit id="core.administrator.access_control.identity">
+      <notes>
+        <note category="context">Eyebrow above the access-control heading on templates/administrator/access-control.twig.</note>
+      </notes>
+      <segment>
+        <source>Identity</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.access_control.grants_tab">
+      <notes>
+        <note category="context">Access-control section tab listing capability grants.</note>
+      </notes>
+      <segment>
+        <source>Grants</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.access_control.assignments">
+      <notes>
+        <note category="context">Access-control section tab listing role assignments.</note>
+      </notes>
+      <segment>
+        <source>Assignments</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.access_control.tokens">
+      <notes>
+        <note category="context">Access-control section tab listing API tokens.</note>
+      </notes>
+      <segment>
+        <source>Tokens</source>
+      </segment>
+    </unit>
     <unit id="core.administrator.access_control.browse_identity_state_first_edit_emergency">
       <notes>
         <note category="context">Record surface text on templates/administrator/access-control.twig.</note>
@@ -3267,6 +3315,30 @@
       </notes>
       <segment>
         <source>A direct identity role does not create organization membership or workspace access.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.common.date">
+      <notes>
+        <note category="context">A calendar date on an administrator screen. {value} is the moment. The ICU skeleton lets each locale choose its own order, month name and digits; change it only if the locale needs different fields.</note>
+      </notes>
+      <segment>
+        <source>{value, date, ::yMMMd}</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.common.date_time">
+      <notes>
+        <note category="context">A date and time to the minute on an administrator screen. {value} is the moment, shown in the server time zone. The ICU skeleton lets each locale choose its own order, month name, digits and 12- or 24-hour clock.</note>
+      </notes>
+      <segment>
+        <source>{value, date, ::yMMMdjmm}</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.common.date_time_seconds">
+      <notes>
+        <note category="context">A date and time to the second on an administrator screen, for audit and operation evidence. {value} is the moment. The ICU skeleton lets each locale choose its own order, month name, digits and clock.</note>
+      </notes>
+      <segment>
+        <source>{value, date, ::yMMMdjmmss}</source>
       </segment>
     </unit>
     <unit id="core.administrator.access_control.continue_portal_provisioning">
@@ -4011,6 +4083,22 @@
       </notes>
       <segment>
         <source>Automation</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.automation.delete_schedule_confirm">
+      <notes>
+        <note category="context">Confirmation before deleting a schedule. {name} is the schedule name.</note>
+      </notes>
+      <segment>
+        <source>Delete the {name} schedule?</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.automation.operations">
+      <notes>
+        <note category="context">Eyebrow above the automation heading.</note>
+      </notes>
+      <segment>
+        <source>Operations</source>
       </segment>
     </unit>
     <unit id="core.administrator.automation.automation_concerns">
@@ -5058,7 +5146,31 @@
         <note category="context">Record surface text on templates/administrator/business-definitions.twig.</note>
       </notes>
       <segment>
-        <source>{count, plural, other {# definitions}}</source>
+        <source>{count, plural, one {# definition} other {# definitions}}</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.business_definitions.mark_version_confirm">
+      <notes>
+        <note category="context">Confirmation before changing a definition version lifecycle. {action} is the lifecycle state keyword.</note>
+      </notes>
+      <segment>
+        <source>Mark version {version} as {action}?</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.business_definitions.publish_version_confirm">
+      <notes>
+        <note category="context">Confirmation before publishing a definition version, which cannot be changed afterwards.</note>
+      </notes>
+      <segment>
+        <source>Publish this immutable definition version?</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.business_definitions.entities">
+      <notes>
+        <note category="context">Title of the definition catalogue toolbar on templates/administrator/business-definitions.twig.</note>
+      </notes>
+      <segment>
+        <source>Entities</source>
       </segment>
     </unit>
     <unit id="core.administrator.business_definitions.stable_entity_identity">
@@ -6301,6 +6413,22 @@
         <source>Comma separated stable handles</source>
       </segment>
     </unit>
+    <unit id="core.administrator.business_definitions.immutable_states">
+      <notes>
+        <note category="context">Label of the definition editor field declaring the workflow states that close a record.</note>
+      </notes>
+      <segment>
+        <source>Immutable states</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.business_definitions.immutable_states_help">
+      <notes>
+        <note category="context">Help under the immutable-states field of the definition editor.</note>
+      </notes>
+      <segment>
+        <source>Records entering these states can no longer be edited and are corrected by a linked reversal. Name declared states other than the initial state; leave empty to remove the declaration.</source>
+      </segment>
+    </unit>
     <unit id="core.administrator.business_definitions.initial_state">
       <notes>
         <note category="context">Record surface text on templates/administrator/business-definitions.twig.</note>
@@ -7258,7 +7386,7 @@
         <note category="context">Record surface text on templates/administrator/business-list.twig, templates/portal/business-list.twig.</note>
       </notes>
       <segment>
-        <source>The bulk operation completed for {completed_bulk_count} record{value}.</source>
+        <source>{completed_bulk_count, plural, one {The bulk operation completed for # record.} other {The bulk operation completed for # records.}}{value, select, other {}}</source>
       </segment>
     </unit>
     <unit id="core.administrator.business_list.collection_views">
@@ -7714,7 +7842,7 @@
         <note category="context">Record surface text on templates/administrator/business-report.twig, templates/portal/business-report.twig.</note>
       </notes>
       <segment>
-        <source>{parameters} parameter{parameters2}</source>
+        <source>{parameters, plural, one {# parameter} other {# parameters}}{parameters2, select, other {}}</source>
       </segment>
     </unit>
     <unit id="core.administrator.business_report.runner">
@@ -7930,7 +8058,7 @@
         <note category="context">Record surface text on templates/administrator/business-schema-plans.twig.</note>
       </notes>
       <segment>
-        <source>{count, plural, other {# immutable plans}}</source>
+        <source>{count, plural, one {# immutable plan} other {# immutable plans}}</source>
       </segment>
     </unit>
     <unit id="core.administrator.business_schema_plans.no_schema_plan_selected">
@@ -8003,6 +8131,46 @@
       </notes>
       <segment>
         <source>Schema plans</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.business_schema_plans.purge_confirm">
+      <notes>
+        <note category="context">Confirmation before creating a plan that permanently removes a preserved schema.</note>
+      </notes>
+      <segment>
+        <source>Create a destructive purge plan for this preserved business schema?</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.business_schema_plans.execute_confirm">
+      <notes>
+        <note category="context">Confirmation before executing an approved schema plan against the database.</note>
+      </notes>
+      <segment>
+        <source>Execute this exact approved physical-schema plan?</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.business_schema_plans.recover_confirm">
+      <notes>
+        <note category="context">Confirmation before resuming an interrupted schema execution.</note>
+      </notes>
+      <segment>
+        <source>Recover this interrupted schema execution from its durable journal?</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.business_schema_plans.before">
+      <notes>
+        <note category="context">Column heading for the storage state before a schema plan applies.</note>
+      </notes>
+      <segment>
+        <source>Before</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.business_schema_plans.after">
+      <notes>
+        <note category="context">Column heading for the storage state after a schema plan applies.</note>
+      </notes>
+      <segment>
+        <source>After</source>
       </segment>
     </unit>
     <unit id="core.administrator.business_schema_plans.inspect_and_control_generated_relational_storage">
@@ -8811,6 +8979,14 @@
       </notes>
       <segment>
         <source>Business Security</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.business_security.overview">
+      <notes>
+        <note category="context">Business Security tab showing the overview.</note>
+      </notes>
+      <segment>
+        <source>Overview</source>
       </segment>
     </unit>
     <unit id="core.administrator.business_security.govern_organization_boundaries_membership_row_an">
@@ -10965,6 +11141,94 @@
         <source>Create content</source>
       </segment>
     </unit>
+    <unit id="core.administrator.rich_text.toolbar_label">
+      <notes>
+        <note category="context">Accessible name of the rich-text editor toolbar on content forms.</note>
+      </notes>
+      <segment>
+        <source>Text formatting</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.rich_text.bold_label">
+      <notes>
+        <note category="context">Accessible name of the toolbar button that makes the selected text bold.</note>
+      </notes>
+      <segment>
+        <source>Bold</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.rich_text.bold_glyph">
+      <notes>
+        <note category="context">The one-letter glyph shown on the bold button. Use the letter your language's word processors show for bold (German F, Spanish N).</note>
+      </notes>
+      <segment>
+        <source>B</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.rich_text.heading">
+      <notes>
+        <note category="context">Toolbar button that turns the current paragraph into a heading; used as its visible text and accessible name.</note>
+      </notes>
+      <segment>
+        <source>Heading</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.rich_text.bulleted_list_label">
+      <notes>
+        <note category="context">Accessible name of the toolbar button that starts a bulleted list.</note>
+      </notes>
+      <segment>
+        <source>Bulleted list</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.rich_text.list">
+      <notes>
+        <note category="context">Short visible text of the bulleted-list toolbar button.</note>
+      </notes>
+      <segment>
+        <source>List</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.rich_text.add_link_label">
+      <notes>
+        <note category="context">Accessible name of the toolbar button that turns the selected text into a link.</note>
+      </notes>
+      <segment>
+        <source>Add link</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.rich_text.link">
+      <notes>
+        <note category="context">Short visible text of the add-link toolbar button.</note>
+      </notes>
+      <segment>
+        <source>Link</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.rich_text.editor_label">
+      <notes>
+        <note category="context">Accessible name of the editable rich-text area.</note>
+      </notes>
+      <segment>
+        <source>Rich text editor</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.rich_text.help">
+      <notes>
+        <note category="context">Help line under the rich-text editor.</note>
+      </notes>
+      <segment>
+        <source>Use the toolbar for headings, emphasis, lists, and safe links.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.rich_text.link_prompt">
+      <notes>
+        <note category="context">Prompt asking for the address when adding a link in the rich-text editor.</note>
+      </notes>
+      <segment>
+        <source>Link URL</source>
+      </segment>
+    </unit>
     <unit id="core.administrator.content_form.edit_title">
       <notes>
         <note category="context">Browser-title half on the administrator content form when editing. {title} is the entry title.</note>
@@ -11115,6 +11379,238 @@
       </notes>
       <segment>
         <source>Studio saved this item.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_preview">
+      <notes>
+        <note category="context">Eyebrow of the host-owned authenticated preview beside the contextual Studio mount on templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Authenticated preview</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_preview_shows_the_last_saved">
+      <notes>
+        <note category="context">Explanation of what the contextual Studio preview renders on templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>The preview renders this item&apos;s last saved composition through the same template and theme path the published page uses.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.preview_this_item">
+      <notes>
+        <note category="context">Action that renders the authenticated preview of the contextual Studio session on templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Preview this item</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_preview_is_rendering">
+      <notes>
+        <note category="context">Preview status while the authenticated preview channel renders on templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Rendering the preview.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_preview_is_ready">
+      <notes>
+        <note category="context">Preview status once the single-use preview document loaded on templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>The preview shows the last saved composition of this item.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_preview_is_stale">
+      <notes>
+        <note category="context">Preview status after a save superseded the rendered preview on templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>The item changed since this preview; preview it again.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_preview_needs_a_saved_item">
+      <notes>
+        <note category="context">Preview status when the Studio session holds unsaved or not yet created work on templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Save the item before previewing it; the preview shows accepted revisions only.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_preview_could_not_be_rendered">
+      <notes>
+        <note category="context">Preview status when the authenticated preview channel refused or failed on templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>The preview could not be rendered.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_preview_frame">
+      <notes>
+        <note category="context">Accessible title of the same-origin preview frame beside the contextual Studio mount on templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Authenticated preview of this item</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_return_destination">
+      <notes>
+        <note category="context">Destination the contextual Studio return control names, inserted into Studio's "Return to {destination}" message on templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>the content editor</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_item_created">
+      <notes>
+        <note category="context">Save consequence the contextual Studio shows before saving a new item from the Content editor.</note>
+      </notes>
+      <segment>
+        <source>A new content item is created in its initial workflow state.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_item_revision_advances">
+      <notes>
+        <note category="context">Save consequence the contextual Studio shows before saving an existing item from the Content editor.</note>
+      </notes>
+      <segment>
+        <source>The item receives a new revision; its workflow state does not change.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_dependent_entries_remain">
+      <notes>
+        <note category="context">Save consequence the contextual Studio shows before saving a new version of a reusable content type.</note>
+      </notes>
+      <segment>
+        <source>Other items of this type keep the current version until they are migrated.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_item_adopts_successor">
+      <notes>
+        <note category="context">Save consequence the contextual Studio shows before the edited item moves to a new version of its content type.</note>
+      </notes>
+      <segment>
+        <source>This item adopts the new type version; its values are kept.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_breaking_schema_change">
+      <notes>
+        <note category="context">Save consequence the contextual Studio shows when a new content-type version removes or narrows fields.</note>
+      </notes>
+      <segment>
+        <source>The new version removes or narrows fields; stored items may need migration.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_new_type_for_new_item">
+      <notes>
+        <note category="context">Save consequence the contextual Studio shows before a not-yet-saved item's design becomes a new reusable content type.</note>
+      </notes>
+      <segment>
+        <source>A new reusable content type is created from this design and this item uses it.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_new_type_for_item">
+      <notes>
+        <note category="context">Save consequence the contextual Studio shows before a saved item's design becomes a new reusable content type.</note>
+      </notes>
+      <segment>
+        <source>A new reusable content type is created from this design and this item adopts it.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_block_text">
+      <notes>
+        <note category="context">Label of an App-owned Content field block in the contextual Studio palette beside templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Text</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_block_rich_text">
+      <notes>
+        <note category="context">Label of an App-owned Content field block in the contextual Studio palette beside templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Rich text</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_block_integer">
+      <notes>
+        <note category="context">Label of an App-owned Content field block in the contextual Studio palette beside templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Integer</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_block_decimal">
+      <notes>
+        <note category="context">Label of an App-owned Content field block in the contextual Studio palette beside templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Decimal</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_block_yes_or_no">
+      <notes>
+        <note category="context">Label of an App-owned Content field block in the contextual Studio palette beside templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Yes or no</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_block_date">
+      <notes>
+        <note category="context">Label of an App-owned Content field block in the contextual Studio palette beside templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Date</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_block_date_and_time">
+      <notes>
+        <note category="context">Label of an App-owned Content field block in the contextual Studio palette beside templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Date and time</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_block_media">
+      <notes>
+        <note category="context">Label of an App-owned Content field block in the contextual Studio palette beside templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Media</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_block_resource">
+      <notes>
+        <note category="context">Label of an App-owned Content field block in the contextual Studio palette beside templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Resource</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_block_value">
+      <notes>
+        <note category="context">Name of the value port every App-owned Content field block exposes in the contextual Studio inspector.</note>
+      </notes>
+      <segment>
+        <source>Value</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_block_keyboard">
+      <notes>
+        <note category="context">Keyboard guidance the contextual Studio shows for an App-owned Content field block.</note>
+      </notes>
+      <segment>
+        <source>Select the block, then use the inspector to choose its field binding.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_pattern_empty_section">
+      <notes>
+        <note category="context">Label of the App-owned empty-section pattern in the contextual Studio palette beside templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Empty section</source>
       </segment>
     </unit>
     <unit id="core.administrator.content_form.discard_unsaved_studio_changes">
@@ -11445,12 +11941,20 @@
         <source>Content</source>
       </segment>
     </unit>
-    <unit id="core.administrator.content_list.svg_aria_hidden_true_use_href">
+    <unit id="core.administrator.content_list.move_to_trash_confirm">
       <notes>
-        <note category="context">Record surface text on templates/administrator/content-list.twig.</note>
+        <note category="context">Confirmation before moving a content item to the trash. {title} is the item title.</note>
       </notes>
       <segment>
-        <source>&lt;svg aria-hidden="true"&gt;&lt;use href="#kumwe-icon-plus"&gt;&lt;/use&gt;&lt;/svg&gt;Create content</source>
+        <source>Move ‘{title}’ to trash?</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_list.publishing">
+      <notes>
+        <note category="context">Eyebrow above the content list heading.</note>
+      </notes>
+      <segment>
+        <source>Publishing</source>
       </segment>
     </unit>
     <unit id="core.administrator.content_list.title_or_url_slug">
@@ -12163,6 +12667,22 @@
       </notes>
       <segment>
         <source>Extensions</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.extensions.uninstall_confirm">
+      <notes>
+        <note category="context">Confirmation before uninstalling an extension. {identifier} is the package name.</note>
+      </notes>
+      <segment>
+        <source>Uninstall {identifier}?</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.extensions.platform">
+      <notes>
+        <note category="context">Eyebrow above the extensions heading.</note>
+      </notes>
+      <segment>
+        <source>Platform</source>
       </segment>
     </unit>
     <unit id="core.administrator.extensions.extension_management_concerns">
@@ -13205,6 +13725,102 @@
         <source>Operations</source>
       </segment>
     </unit>
+    <unit id="core.administrator.interface_standard.density_empty">
+      <notes>
+        <note category="context">Fixture density in the interface standard gallery: no records.</note>
+      </notes>
+      <segment>
+        <source>Empty</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.interface_standard.density_sparse">
+      <notes>
+        <note category="context">Fixture density in the interface standard gallery: a few records.</note>
+      </notes>
+      <segment>
+        <source>Sparse</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.interface_standard.density_representative">
+      <notes>
+        <note category="context">Fixture density in the interface standard gallery: a typical amount of data.</note>
+      </notes>
+      <segment>
+        <source>Representative</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.interface_standard.density_dense">
+      <notes>
+        <note category="context">Fixture density in the interface standard gallery: a lot of data.</note>
+      </notes>
+      <segment>
+        <source>Dense</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.interface_standard.density_extreme">
+      <notes>
+        <note category="context">Fixture density in the interface standard gallery: the largest data the surface must hold.</note>
+      </notes>
+      <segment>
+        <source>Extreme</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.interface_standard.density_error">
+      <notes>
+        <note category="context">Fixture state in the interface standard gallery: the data failed to load.</note>
+      </notes>
+      <segment>
+        <source>Error</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.interface_standard.save_unchanged">
+      <notes>
+        <note category="context">Save state in the interface standard gallery: nothing has changed.</note>
+      </notes>
+      <segment>
+        <source>Unchanged</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.interface_standard.save_unsaved">
+      <notes>
+        <note category="context">Save state in the interface standard gallery: changes not yet saved.</note>
+      </notes>
+      <segment>
+        <source>Unsaved</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.interface_standard.save_saving">
+      <notes>
+        <note category="context">Save state in the interface standard gallery: a save is in progress.</note>
+      </notes>
+      <segment>
+        <source>Saving</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.interface_standard.save_saved">
+      <notes>
+        <note category="context">Save state in the interface standard gallery: the change is stored.</note>
+      </notes>
+      <segment>
+        <source>Saved</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.interface_standard.save_conflict">
+      <notes>
+        <note category="context">Save state in the interface standard gallery: someone else changed the item first.</note>
+      </notes>
+      <segment>
+        <source>Conflict</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.interface_standard.save_failed">
+      <notes>
+        <note category="context">Save state in the interface standard gallery: the save was refused.</note>
+      </notes>
+      <segment>
+        <source>Failed</source>
+      </segment>
+    </unit>
     <unit id="core.administrator.interface_standard.reference">
       <notes>
         <note category="context">Record surface text on templates/administrator/interface-standard.twig.</note>
@@ -14005,6 +14621,38 @@
         <source>Site settings</source>
       </segment>
     </unit>
+    <unit id="core.administrator.media.delete_asset_confirm">
+      <notes>
+        <note category="context">Confirmation before deleting a media file. {name} is the file name.</note>
+      </notes>
+      <segment>
+        <source>Delete {name}? Content using its URL will show a broken link.</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.navigation.delete_item_confirm">
+      <notes>
+        <note category="context">Confirmation before deleting a menu item. {title} is the item title.</note>
+      </notes>
+      <segment>
+        <source>Delete the ‘{title}’ menu item?</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.navigation.delete_menu_confirm">
+      <notes>
+        <note category="context">Confirmation before deleting a menu and its links. {title} is the menu title.</note>
+      </notes>
+      <segment>
+        <source>Delete ‘{title}’ and all its links?</source>
+      </segment>
+    </unit>
+    <unit id="core.administrator.settings.website">
+      <notes>
+        <note category="context">Eyebrow above the site settings heading.</note>
+      </notes>
+      <segment>
+        <source>Website</source>
+      </segment>
+    </unit>
     <unit id="core.administrator.settings.control_the_public_identity_homepage_menu">
       <notes>
         <note category="context">Record surface text on templates/administrator/settings.twig.</note>
@@ -14803,6 +15451,14 @@
     <unit id="core.portal.login.submit">
       <segment>
         <source>Sign in</source>
+      </segment>
+    </unit>
+    <unit id="core.portal.approval_detail.review">
+      <notes>
+        <note category="context">Approval detail tab where the reviewer decides.</note>
+      </notes>
+      <segment>
+        <source>Review</source>
       </segment>
     </unit>
     <unit id="core.portal.login.help_summary">
@@ -16002,6 +16658,102 @@
         <source>List, close, and re-open business posting periods.</source>
       </segment>
     </unit>
+    <unit id="core.console.studio_authoring.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/StudioAuthoringCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Open a Studio authoring session and run its authoring operations.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.studio_authoring.refused">
+      <notes>
+        <note category="context">Message member of the studio-authoring command's JSON failure envelope; the category and diagnostic codes beside it carry the machine meaning.</note>
+      </notes>
+      <segment>
+        <source>The Studio authoring request was refused.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.security_events.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/SecurityEventsCommand.php.</note>
+      </notes>
+      <segment>
+        <source>List the newest identity and access security events.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.business_approval.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/BusinessApprovalCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Withdraw your own pending business approval request.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.media.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/MediaCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Browse, read, upload or delete files in the site media library.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.wording.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/WordingCommand.php.</note>
+      </notes>
+      <segment>
+        <source>List, search, save or withdraw wording overrides.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.business_security.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/BusinessSecurityCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Show the Business Security overview of organizations, memberships and policies.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.business_bulk.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/BusinessBulkCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Archive, restore or run one action on up to fifty business records at once.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.studio_composition.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/StudioCompositionCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Read or provision the Blueprint composition of a Content type version.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.studio_blueprint.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/StudioBlueprintCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Open a Blueprint composition session and load, save, publish or unpublish its Blueprint.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.studio_blueprint.refused">
+      <notes>
+        <note category="context">Message member of the studio-blueprint command's JSON failure envelope; the category and diagnostic codes beside it carry the machine meaning.</note>
+      </notes>
+      <segment>
+        <source>The Studio composition request was refused.</source>
+      </segment>
+    </unit>
+    <unit id="core.console.business_schema_evidence.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/BusinessSchemaEvidenceCommand.php.</note>
+      </notes>
+      <segment>
+        <source>File a restore drill as the recovery evidence a destructive schema plan must cite.</source>
+      </segment>
+    </unit>
     <unit id="core.console.settings.description">
       <notes>
         <note category="context">Console command summary on src/Delivery/Console/Command/ManageSettingsCommand.php.</note>
@@ -16292,6 +17044,198 @@
     </unit>
   </file>
   <file id="core-business-browser">
+    <unit id="core.business.relationship_kind.single">
+      <notes>
+        <note category="context">Kind of a relationship that links a generated record to at most one other record.</note>
+      </notes>
+      <segment>
+        <source>One linked record</source>
+      </segment>
+    </unit>
+    <unit id="core.business.relationship_kind.many">
+      <notes>
+        <note category="context">Kind of a relationship that links a generated record to any number of other records.</note>
+      </notes>
+      <segment>
+        <source>Linked records</source>
+      </segment>
+    </unit>
+    <unit id="core.business.relationship_kind.lines">
+      <notes>
+        <note category="context">Kind of a relationship holding the lines a generated record owns, such as document or job card lines.</note>
+      </notes>
+      <segment>
+        <source>Record lines</source>
+      </segment>
+    </unit>
+    <unit id="core.business.state.active">
+      <notes>
+        <note category="context">State of a generated record that has no workflow state and is neither archived nor deleted.</note>
+      </notes>
+      <segment>
+        <source>Active</source>
+      </segment>
+    </unit>
+    <unit id="core.business.state.archived">
+      <notes>
+        <note category="context">State of a generated record that has been archived.</note>
+      </notes>
+      <segment>
+        <source>Archived</source>
+      </segment>
+    </unit>
+    <unit id="core.business.state.deleted">
+      <notes>
+        <note category="context">State of a generated record that has been deleted.</note>
+      </notes>
+      <segment>
+        <source>Deleted</source>
+      </segment>
+    </unit>
+    <unit id="core.business.history.create">
+      <notes>
+        <note category="context">Business label for one revision operation on a generated record history page.</note>
+      </notes>
+      <segment>
+        <source>Created</source>
+      </segment>
+    </unit>
+    <unit id="core.business.history.update">
+      <notes>
+        <note category="context">Business label for one revision operation on a generated record history page.</note>
+      </notes>
+      <segment>
+        <source>Edited</source>
+      </segment>
+    </unit>
+    <unit id="core.business.history.archive">
+      <notes>
+        <note category="context">Business label for one revision operation on a generated record history page.</note>
+      </notes>
+      <segment>
+        <source>Archived</source>
+      </segment>
+    </unit>
+    <unit id="core.business.history.restore">
+      <notes>
+        <note category="context">Business label for one revision operation on a generated record history page.</note>
+      </notes>
+      <segment>
+        <source>Restored</source>
+      </segment>
+    </unit>
+    <unit id="core.business.history.delete">
+      <notes>
+        <note category="context">Business label for one revision operation on a generated record history page.</note>
+      </notes>
+      <segment>
+        <source>Deleted</source>
+      </segment>
+    </unit>
+    <unit id="core.business.history.document_create">
+      <notes>
+        <note category="context">Business label for one revision operation on a generated record history page.</note>
+      </notes>
+      <segment>
+        <source>Document created</source>
+      </segment>
+    </unit>
+    <unit id="core.business.history.document_amend">
+      <notes>
+        <note category="context">Business label for one revision operation on a generated record history page.</note>
+      </notes>
+      <segment>
+        <source>Document amended</source>
+      </segment>
+    </unit>
+    <unit id="core.business.history.action">
+      <notes>
+        <note category="context">Business label for one revision operation on a generated record history page.</note>
+      </notes>
+      <segment>
+        <source>Workflow action</source>
+      </segment>
+    </unit>
+    <unit id="core.business.history.relate">
+      <notes>
+        <note category="context">Business label for one revision operation on a generated record history page. {label} is the relationship label.</note>
+      </notes>
+      <segment>
+        <source>Added to {label}</source>
+      </segment>
+    </unit>
+    <unit id="core.business.history.unrelate">
+      <notes>
+        <note category="context">Business label for one revision operation on a generated record history page. {label} is the relationship label.</note>
+      </notes>
+      <segment>
+        <source>Removed from {label}</source>
+      </segment>
+    </unit>
+    <unit id="core.business.history.reorder">
+      <notes>
+        <note category="context">Business label for one revision operation on a generated record history page. {label} is the relationship label.</note>
+      </notes>
+      <segment>
+        <source>Reordered {label}</source>
+      </segment>
+    </unit>
+    <unit id="core.business.history.relation">
+      <notes>
+        <note category="context">Business label for one revision operation on a generated record history page.</note>
+      </notes>
+      <segment>
+        <source>related records</source>
+      </segment>
+    </unit>
+    <unit id="core.business.history.change">
+      <notes>
+        <note category="context">Business label for one revision operation on a generated record history page.</note>
+      </notes>
+      <segment>
+        <source>Changed</source>
+      </segment>
+    </unit>
+    <unit id="core.business.refusal.immutable">
+      <notes>
+        <note category="context">Refusal shown on a generated record whose workflow state the definition declares immutable. Same sentence the record service refuses with.</note>
+      </notes>
+      <segment>
+        <source>The business record is immutable in its current workflow state and is corrected by a linked reversal.</source>
+      </segment>
+    </unit>
+    <unit id="core.business.refusal.posting_period_closed">
+      <notes>
+        <note category="context">Refusal shown on a generated record whose posting date falls in a closed posting period. {period} is the period key.</note>
+      </notes>
+      <segment>
+        <source>Posting period {period} is closed for the declared posting date.</source>
+      </segment>
+    </unit>
+    <unit id="core.business.refusal.read_only_badge">
+      <notes>
+        <note category="context">Badge beside the state of a listed generated record that can no longer be edited.</note>
+      </notes>
+      <segment>
+        <source>Read-only</source>
+      </segment>
+    </unit>
+    <unit id="core.business.refusal.read_only_title">
+      <notes>
+        <note category="context">Heading of the notice on a generated record that can no longer be edited.</note>
+      </notes>
+      <segment>
+        <source>This record is read-only</source>
+      </segment>
+    </unit>
+    <unit id="core.business.refusal.read_only_help">
+      <notes>
+        <note category="context">Explains what remains possible on a read-only generated record.</note>
+      </notes>
+      <segment>
+        <source>You can still open it, review its history and run the workflow actions it offers.</source>
+      </segment>
+    </unit>
     <unit id="core.business.browser.record_failed_validation">
       <notes>
         <note category="context">Error summary above a generated record form whose values were refused.</note>
@@ -16418,6 +17362,70 @@
       </notes>
       <segment>
         <source>Null</source>
+      </segment>
+    </unit>
+    <unit id="core.business.table.scroll_choice_details">
+      <notes>
+        <note category="context">Accessible name of the horizontally scrolling choice-details table, in the administrator and the portal.</note>
+      </notes>
+      <segment>
+        <source>Scroll horizontally to review choice details</source>
+      </segment>
+    </unit>
+    <unit id="core.business.table.scroll_selected_columns">
+      <notes>
+        <note category="context">Accessible name of a horizontally scrolling business record list, in the administrator and the portal.</note>
+      </notes>
+      <segment>
+        <source>Scroll horizontally to review every selected column</source>
+      </segment>
+    </unit>
+    <unit id="core.business.table.scroll_result_columns">
+      <notes>
+        <note category="context">Accessible name of a horizontally scrolling report result table, in the administrator and the portal.</note>
+      </notes>
+      <segment>
+        <source>Scroll horizontally to review every result column</source>
+      </segment>
+    </unit>
+    <unit id="core.business.record_view.summary">
+      <notes>
+        <note category="context">Business record tab showing the record summary, in the administrator and the portal.</note>
+      </notes>
+      <segment>
+        <source>Summary</source>
+      </segment>
+    </unit>
+    <unit id="core.business.record_view.relations">
+      <notes>
+        <note category="context">Business record tab showing related records.</note>
+      </notes>
+      <segment>
+        <source>Relations</source>
+      </segment>
+    </unit>
+    <unit id="core.business.record_view.actions">
+      <notes>
+        <note category="context">Business record tab showing the actions available on the record.</note>
+      </notes>
+      <segment>
+        <source>Actions</source>
+      </segment>
+    </unit>
+    <unit id="core.business.record_view.history">
+      <notes>
+        <note category="context">Business record tab showing the record revision history.</note>
+      </notes>
+      <segment>
+        <source>History</source>
+      </segment>
+    </unit>
+    <unit id="core.business.report.reports">
+      <notes>
+        <note category="context">Eyebrow above a business report heading, in the administrator and the portal.</note>
+      </notes>
+      <segment>
+        <source>Reports</source>
       </segment>
     </unit>
     <unit id="core.business.form.kind_object">
@@ -18655,4 +19663,418 @@
     </unit>
   </file>
   <!-- END GENERATED STUDIO AUTHORING MESSAGES -->
+  <file id="core-identity">
+    <unit id="core.identity.password.confirmation_mismatch">
+      <segment>
+        <source>The new password and its confirmation do not match.</source>
+      </segment>
+    </unit>
+    <unit id="core.identity.password.change_refused">
+      <segment>
+        <source>Your password could not be changed. Check your current password and choose a different password with at least 12 characters.</source>
+      </segment>
+    </unit>
+  </file>
+  <file id="core-navigation">
+    <unit id="core.navigation.administrator_workspace.workspace.label">
+      <notes>
+        <note category="context">Administrator sidebar group heading for everyday work.</note>
+      </notes>
+      <segment>
+        <source>Workspace</source>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator_workspace.workspace.description">
+      <notes>
+        <note category="context">Explains the Workspace sidebar group.</note>
+      </notes>
+      <segment>
+        <source>Daily content and publishing work.</source>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator_workspace.structure.label">
+      <notes>
+        <note category="context">Administrator sidebar group heading for models, menus and definitions.</note>
+      </notes>
+      <segment>
+        <source>Structure</source>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator_workspace.structure.description">
+      <notes>
+        <note category="context">Explains the Structure sidebar group.</note>
+      </notes>
+      <segment>
+        <source>Content structure and public navigation.</source>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator_workspace.system.label">
+      <notes>
+        <note category="context">Administrator sidebar group heading for identity, extensions and settings.</note>
+      </notes>
+      <segment>
+        <source>System</source>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator_workspace.system.description">
+      <notes>
+        <note category="context">Explains the System sidebar group.</note>
+      </notes>
+      <segment>
+        <source>Identity, extensions, automation, and settings.</source>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.dashboard.label">
+      <notes>
+        <note category="context">Administrator navigation entry and command for the dashboard.</note>
+      </notes>
+      <segment>
+        <source>Dashboard</source>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.dashboard.description">
+      <notes>
+        <note category="context">Describes the dashboard entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Overview and publishing activity</source>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.content.label">
+      <notes>
+        <note category="context">Administrator navigation entry for the content list.</note>
+      </notes>
+      <segment>
+        <source>Content</source>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.content.description">
+      <notes>
+        <note category="context">Describes the content entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Find, edit and publish content</source>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.create-content.label">
+      <notes>
+        <note category="context">Administrator navigation entry that opens the content editor for a new item.</note>
+      </notes>
+      <segment>
+        <source>Create content</source>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.create-content.description">
+      <notes>
+        <note category="context">Describes the create-content entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Start a new content item</source>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.media.label">
+      <notes>
+        <note category="context">Administrator navigation entry for the media library.</note>
+      </notes>
+      <segment>
+        <source>Media</source>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.media.description">
+      <notes>
+        <note category="context">Describes the media entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Browse and upload files</source>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.models.label">
+      <notes>
+        <note category="context">Administrator navigation entry for content models.</note>
+      </notes>
+      <segment>
+        <source>Content models</source>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.models.description">
+      <notes>
+        <note category="context">Describes the content-models entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Fields and publishing workflows</source>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.navigation.label">
+      <notes>
+        <note category="context">Administrator navigation entry for public menus.</note>
+      </notes>
+      <segment>
+        <source>Menus</source>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.navigation.description">
+      <notes>
+        <note category="context">Describes the menus entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Public navigation structure</source>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.wording.label">
+      <notes>
+        <note category="context">Administrator navigation entry for interface wording overrides.</note>
+      </notes>
+      <segment>
+        <source>Wording</source>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.wording.description">
+      <notes>
+        <note category="context">Describes the wording entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Change interface wording without a deployment</source>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.business-definitions.label">
+      <notes>
+        <note category="context">Administrator navigation entry for business definitions.</note>
+      </notes>
+      <segment>
+        <source>Business definitions</source>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.business-definitions.description">
+      <notes>
+        <note category="context">Describes the business-definitions entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Operational entities, fields and relationships</source>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.business-records.label">
+      <notes>
+        <note category="context">Administrator navigation entry for the generated business record workspaces.</note>
+      </notes>
+      <segment>
+        <source>Business workspaces</source>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.business-records.description">
+      <notes>
+        <note category="context">Describes the business-workspaces entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Work with generated operational records</source>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.business-reports.label">
+      <notes>
+        <note category="context">Administrator navigation entry for business reports.</note>
+      </notes>
+      <segment>
+        <source>Business reports</source>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.business-reports.description">
+      <notes>
+        <note category="context">Describes the business-reports entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Run policy-filtered reports and retrieve verified exports</source>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.business-schema-plans.label">
+      <notes>
+        <note category="context">Administrator navigation entry for generated schema plans.</note>
+      </notes>
+      <segment>
+        <source>Schema plans</source>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.business-schema-plans.description">
+      <notes>
+        <note category="context">Describes the schema-plans entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Inspect and control generated relational storage</source>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.access.label">
+      <notes>
+        <note category="context">Administrator navigation entry for users, groups and roles.</note>
+      </notes>
+      <segment>
+        <source>Users &amp; access</source>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.access.description">
+      <notes>
+        <note category="context">Describes the users-and-access entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>People, groups and permissions</source>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.business-security.label">
+      <notes>
+        <note category="context">Administrator navigation entry for organizations, policy and approvals.</note>
+      </notes>
+      <segment>
+        <source>Business Security</source>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.business-security.description">
+      <notes>
+        <note category="context">Describes the Business Security entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Organizations, policy, approvals and step-up assurance</source>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.extensions.label">
+      <notes>
+        <note category="context">Administrator navigation entry for extensions and themes.</note>
+      </notes>
+      <segment>
+        <source>Extensions</source>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.extensions.description">
+      <notes>
+        <note category="context">Describes the extensions entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Packages, trust and themes</source>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.automation.label">
+      <notes>
+        <note category="context">Administrator navigation entry for scheduled and background jobs.</note>
+      </notes>
+      <segment>
+        <source>Automation</source>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.automation.description">
+      <notes>
+        <note category="context">Describes the automation entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Schedules and background work</source>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.settings.label">
+      <notes>
+        <note category="context">Administrator navigation entry for site settings.</note>
+      </notes>
+      <segment>
+        <source>Settings</source>
+      </segment>
+    </unit>
+    <unit id="core.navigation.administrator.settings.description">
+      <notes>
+        <note category="context">Describes the settings entry in the command palette and quick links.</note>
+      </notes>
+      <segment>
+        <source>Site identity and defaults</source>
+      </segment>
+    </unit>
+    <unit id="core.navigation.portal_workspace.portal.label">
+      <notes>
+        <note category="context">Portal navigation group heading.</note>
+      </notes>
+      <segment>
+        <source>Portal</source>
+      </segment>
+    </unit>
+    <unit id="core.navigation.portal_workspace.portal.description">
+      <notes>
+        <note category="context">Explains the portal navigation group.</note>
+      </notes>
+      <segment>
+        <source>Your authenticated business workspace.</source>
+      </segment>
+    </unit>
+    <unit id="core.navigation.portal.portal-home.label">
+      <notes>
+        <note category="context">Portal navigation entry for the portal home.</note>
+      </notes>
+      <segment>
+        <source>Overview</source>
+      </segment>
+    </unit>
+    <unit id="core.navigation.portal.portal-home.description">
+      <notes>
+        <note category="context">Describes the portal home entry.</note>
+      </notes>
+      <segment>
+        <source>Open your business workspace.</source>
+      </segment>
+    </unit>
+    <unit id="core.navigation.portal.portal-business-records.label">
+      <notes>
+        <note category="context">Portal navigation entry for business records.</note>
+      </notes>
+      <segment>
+        <source>Business records</source>
+      </segment>
+    </unit>
+    <unit id="core.navigation.portal.portal-business-records.description">
+      <notes>
+        <note category="context">Describes the portal business-records entry.</note>
+      </notes>
+      <segment>
+        <source>Open your authorized business record workspaces.</source>
+      </segment>
+    </unit>
+    <unit id="core.navigation.portal.portal-business-reports.label">
+      <notes>
+        <note category="context">Portal navigation entry for business reports.</note>
+      </notes>
+      <segment>
+        <source>Business reports</source>
+      </segment>
+    </unit>
+    <unit id="core.navigation.portal.portal-business-reports.description">
+      <notes>
+        <note category="context">Describes the portal business-reports entry.</note>
+      </notes>
+      <segment>
+        <source>Run authorized reports and retrieve verified exports.</source>
+      </segment>
+    </unit>
+    <unit id="core.navigation.portal.portal-security.label">
+      <notes>
+        <note category="context">Portal navigation entry for account security.</note>
+      </notes>
+      <segment>
+        <source>Account security</source>
+      </segment>
+    </unit>
+    <unit id="core.navigation.portal.portal-security.description">
+      <notes>
+        <note category="context">Describes the portal account-security entry.</note>
+      </notes>
+      <segment>
+        <source>Manage authenticator and recovery verification.</source>
+      </segment>
+    </unit>
+    <unit id="core.navigation.portal.portal-approvals.label">
+      <notes>
+        <note category="context">Portal navigation entry for maker-checker approvals.</note>
+      </notes>
+      <segment>
+        <source>Approvals</source>
+      </segment>
+    </unit>
+    <unit id="core.navigation.portal.portal-approvals.description">
+      <notes>
+        <note category="context">Describes the portal approvals entry.</note>
+      </notes>
+      <segment>
+        <source>Review scoped maker-checker requests.</source>
+      </segment>
+    </unit>
+  </file>
 </xliff>

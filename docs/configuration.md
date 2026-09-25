@@ -46,6 +46,7 @@ Start from `.env.example` for development. Production Compose maps operator-faci
 | `APP_TRUSTED_PROXIES` | Comma-separated proxy address ranges | Only the actual proxy network |
 | `APP_MAX_BODY_BYTES` | Maximum parsed request body | Match proxy and PHP limits |
 | `APP_ADMIN_SESSION_SECONDS` | Administrator session lifetime | 300–604800 seconds |
+| `APP_SESSION_IDLE_SECONDS` | Administrator and portal inactivity timeout | 60–86400 seconds; default 1800 |
 | `APP_SECRET` | Session and application secret | At least 32 random bytes; prefer `APP_SECRET_FILE` in containers |
 | `EXTENSION_RUNTIME_SIGNING_KEY_ID` | Active versioned runtime-publication key ID | Stable lowercase identifier |
 | `EXTENSION_RUNTIME_SIGNING_KEY` | Dedicated runtime-publication signing secret | Independent 32+ byte secret file |
@@ -61,7 +62,7 @@ Start from `.env.example` for development. Production Compose maps operator-faci
 | `KUMWE_PROCESS_ID` | Stable process role identity | `app-runtime`, `queue-worker`, or `scheduler` |
 | `EXTENSIONS_ALLOW_UNSIGNED_LOCAL` | Allow unsigned local packages | Must be `false` when `APP_ENV=production`; boot refuses the combination |
 | `EXTENSIONS_CONFORMANCE_ADMISSION` | Whether admission collects advisory authoring checks | `scan` (default); `off` skips only advisory checks and is refused in production. The earlier `enforce` and `warn` spellings are still accepted and select `scan` |
-| `EXTENSIONS_REVOCATION_FEED_URL` | Upstream revocation list origin | Absolute `https://` URL or absolute path to a local mirror; unset consumes no feed |
+| `EXTENSIONS_REVOCATION_FEED_URL` | Upstream revocation list origin | Absolute `https://` URL without credentials or a query string, or absolute path to a local mirror; unset consumes no feed |
 | `EXTENSIONS_REVOCATION_FEED_KEY` | Pinned Ed25519 public key the feed is verified against | Base64 32-byte key, or `_FILE`; required with the URL and never taken from the trust store |
 | `EXTENSIONS_REVOCATION_FEED_MAX_STALE_SECONDS` | How long a verified fetch stays fresh | 3600 to 2592000; default 172800, after which the feed reads as stale |
 | `KUMWE_LOG_LEVEL` | Lowest severity written to the log stream | Unset; `config/observability.php` declares `info`. Set it — not `APP_DEBUG` — to change verbosity |

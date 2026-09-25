@@ -28,6 +28,106 @@ final readonly class ContentPageRenderService
     }
 
     /**
+     * Path of the same-origin stylesheet that carries a site's validated palette to its public pages.
+     *
+     * The palette used to travel as a `style` attribute on `<body>`, which is the one thing that kept
+     * `style-src-attr 'unsafe-inline'` in the content-security policy. It now travels as this
+     * stylesheet, served by `SitePresentationStylesheetHandler` and linked from the layout's `<head>`,
+     * so every public response is covered by `style-src 'self'` alone.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    public const string THEME_STYLESHEET_PATH = '/presentation/theme.css';
+
+    /**
+     * Build the CSS text that installs the active palette as custom properties on `<body>`.
+     *
+     * The text is derived from the same settings snapshot and the same per-menu scheme override the
+     * page itself was rendered with, so the stylesheet a page links always says what its `<body>`
+     * used to carry inline. Every property name and value is validated again here, because the text
+     * is served as CSS and nothing between the settings store and the browser may loosen it.
+     *
+     * @param   ?string  $schemeOverride  Menu-bound colour scheme handle, or null for the site default.
+     *
+     * @return  string  A single `body{...}` rule of validated `--site-*` declarations.
+     *
+     * @throws  \InvalidArgumentException  When the stored palette carries a property or value outside
+     *          the validated grammar.
+     *
+     * @since   2.0.0
+     */
+    public function themeStylesheet(?string $schemeOverride): string
+    {
+        $settings = $this->settings->current();
+        $presentation = SitePresentation::from(
+            $settings['presentation'] ?? SitePresentation::defaults(),
+        )->withSchemeOverride($schemeOverride)->toView();
+
+        return self::themeDeclarations($presentation['css_variables']);
+    }
+
+    /**
+     * Build the link a page uses to fetch its theme stylesheet, versioned by the stylesheet's own digest.
+     *
+     * The digest in the query lets the stylesheet handler answer with a long immutable cache lifetime
+     * whenever the link and the served text agree, while a palette change rewrites every page's link
+     * and so reaches the browser on its next page load. A scheme override is named only when it is a
+     * well-formed handle; anything else could never match a stored scheme and so renders the default
+     * palette, which is exactly what omitting it serves.
+     *
+     * @param   ?string  $schemeOverride  Menu-bound colour scheme handle, or null for the site default.
+     * @param   string   $stylesheet      The CSS text `themeStylesheet()` produced for that override.
+     *
+     * @return  string  Same-origin path with `scheme` and `v` query parameters.
+     *
+     * @since   2.0.0
+     */
+    public static function themeStylesheetHref(?string $schemeOverride, string $stylesheet): string
+    {
+        $query = [];
+        if (is_string($schemeOverride) && preg_match('/^[a-z][a-z0-9_]{0,63}$/D', $schemeOverride) === 1) {
+            $query['scheme'] = $schemeOverride;
+        }
+        $query['v'] = hash('sha256', $stylesheet);
+
+        return self::THEME_STYLESHEET_PATH . '?' . http_build_query($query, '', '&', PHP_QUERY_RFC3986);
+    }
+
+    /**
+     * Turn the validated `css_variables` map into one `body{...}` rule, refusing anything off-grammar.
+     *
+     * @param   mixed  $variables  The `css_variables` entry of a presentation view.
+     *
+     * @return  string  `body{` followed by `--name:#rrggbb;` declarations and `}`.
+     *
+     * @throws  \InvalidArgumentException  When the map is not a keyed array, or a property or value
+     *          falls outside the validated grammar.
+     *
+     * @since   2.0.0
+     */
+    private static function themeDeclarations(mixed $variables): string
+    {
+        if (!is_array($variables) || array_is_list($variables)) {
+            throw new \InvalidArgumentException('The generated theme style variables are invalid.');
+        }
+        $declarations = '';
+        foreach ($variables as $property => $value) {
+            if (
+                !is_string($property)
+                || preg_match('/^--[a-z0-9-]+$/D', $property) !== 1
+                || !is_string($value)
+                || preg_match('/^#[a-f0-9]{6}$/D', $value) !== 1
+            ) {
+                throw new \InvalidArgumentException('A generated theme style variable is invalid.');
+            }
+            $declarations .= $property . ':' . $value . ';';
+        }
+
+        return 'body{' . $declarations . '}';
+    }
+
+    /**
      * Render one content page through the same validated site presentation pipeline.
      *
      * @param   string                       $template               Site layout name without `.twig`.
@@ -66,7 +166,12 @@ final readonly class ContentPageRenderService
         $presentation = SitePresentation::from(
             $settings['presentation'] ?? SitePresentation::defaults(),
         )->withSchemeOverride($schemeOverride)->toView();
-        if (!$includeThemeVariables) {
+        if ($includeThemeVariables) {
+            $presentation['theme_stylesheet'] = self::themeStylesheetHref(
+                $schemeOverride,
+                self::themeDeclarations($presentation['css_variables']),
+            );
+        } else {
             $presentation['css_variables'] = [];
         }
 
@@ -150,10 +255,7 @@ final readonly class ContentPageRenderService
         $presentation = SitePresentation::from(
             $settings['presentation'] ?? SitePresentation::defaults(),
         )->withSchemeOverride($schemeOverride)->toView();
-        $themeVariables = $presentation['css_variables'];
-        if (!is_array($themeVariables) || array_is_list($themeVariables)) {
-            throw new \InvalidArgumentException('The generated theme style variables are invalid.');
-        }
+        $themeStylesheet = self::themeDeclarations($presentation['css_variables']);
         $presentation['css_variables'] = [];
         $variables = [
             'site_name' => $settings['site_name'],
@@ -175,20 +277,8 @@ final readonly class ContentPageRenderService
         }
         $link = sprintf('<link rel="stylesheet" href="%s" data-studio-composition>', $stylesheetHref);
         $html = substr_replace($html, $link, $offset, 0);
-        $declarations = '';
-        foreach ($themeVariables as $property => $value) {
-            if (
-                !is_string($property)
-                || preg_match('/^--[a-z0-9-]+$/D', $property) !== 1
-                || !is_string($value)
-                || preg_match('/^#[a-f0-9]{6}$/D', $value) !== 1
-            ) {
-                throw new \InvalidArgumentException('A generated theme style variable is invalid.');
-            }
-            $declarations .= $property . ':' . $value . ';';
-        }
 
-        return ['html' => $html, 'themeStylesheet' => 'body{' . $declarations . '}'];
+        return ['html' => $html, 'themeStylesheet' => $themeStylesheet];
     }
 
     /**

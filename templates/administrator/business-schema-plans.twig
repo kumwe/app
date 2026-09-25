@@ -4,7 +4,7 @@
 {% block context_subtitle %}{{ t('core.administrator.business_schema_plans.inspect_and_control_generated_relational_storage') }}{% endblock %}
 {% block content %}
   {% embed '@kis/page-header.twig' with {
-    eyebrow: 'Structure',
+    eyebrow: t('core.navigation.administrator_workspace.structure.label'),
     title: t('core.administrator.business_schema_plans.business_schema_plans'),
     purpose: t('core.administrator.business_schema_plans.compare_canonical_definitions_with_installed_rel')
   } %}{% endembed %}
@@ -144,8 +144,8 @@
                     <td><code data-visual-mask>{{ operation.table }}</code><br><span data-visual-mask>{{ operation.subject }}</span></td>
                     <td class="schema-operation-comparison">
                       {% for comparison in [
-                        {label: 'Before', state: operation.before},
-                        {label: 'After', state: operation.after}
+                        {label: t('core.administrator.business_schema_plans.before'), state: operation.before},
+                        {label: t('core.administrator.business_schema_plans.after'), state: operation.after}
                       ] %}
                         {% set state = comparison.state %}
                         <div class="schema-operation-state">
@@ -271,7 +271,7 @@
             <form action="/administrator/business-schema-plans/{{ plan.id|url_encode }}/execute" method="post">
               <input type="hidden" name="_csrf" value="{{ csrf }}">
               <input type="hidden" name="return_tab" value="execution">
-              <button class="primary" type="submit" data-confirm="Execute this exact approved physical-schema plan?">{{ t('core.administrator.business_schema_plans.execute_approved_plan') }}</button>
+              <button class="primary" type="submit" data-confirm="{{ t('core.administrator.business_schema_plans.execute_confirm') }}">{{ t('core.administrator.business_schema_plans.execute_approved_plan') }}</button>
             </form>
           </section>
         {% else %}
@@ -288,7 +288,7 @@
             <form action="/administrator/business-schema-plans/{{ plan.id|url_encode }}/recover" method="post">
               <input type="hidden" name="_csrf" value="{{ csrf }}">
               <input type="hidden" name="return_tab" value="recovery">
-              <button type="submit" data-confirm="Recover this interrupted schema execution from its durable journal?">{{ t('core.administrator.business_schema_plans.start_recovery') }}</button>
+              <button type="submit" data-confirm="{{ t('core.administrator.business_schema_plans.recover_confirm') }}">{{ t('core.administrator.business_schema_plans.start_recovery') }}</button>
             </form>
           </section>
         {% else %}
@@ -304,7 +304,7 @@
               <div class="notice danger"><span><strong>{{ t('core.administrator.business_schema_plans.destructive_lifecycle_operation') }}</strong> {{ t('core.administrator.business_schema_plans.a_purge_remains_a_separate_checksummed') }}</span></div>
               <label>{{ t('core.administrator.business_schema_plans.exact_installed_definition_id') }}<small>{{ t('core.administrator.business_definitions.type') }} <code data-visual-mask>{{ installation.definition_id }}</code></small><input name="confirmation" autocomplete="off" required></label>
               <label>{{ t('core.administrator.access_control.current_password') }}<input type="password" name="current_password" autocomplete="current-password" required></label>
-              <button class="danger" type="submit" data-confirm="Create a destructive purge plan for this preserved business schema?">{{ t('core.administrator.business_schema_plans.create_purge_plan') }}</button>
+              <button class="danger" type="submit" data-confirm="{{ t('core.administrator.business_schema_plans.purge_confirm') }}">{{ t('core.administrator.business_schema_plans.create_purge_plan') }}</button>
             </form>
           </section>
         {% endif %}

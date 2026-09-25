@@ -39,6 +39,7 @@ final readonly class Environment
         'APP_TRUSTED_PROXIES',
         'APP_MAX_BODY_BYTES',
         'APP_ADMIN_SESSION_SECONDS',
+        'APP_SESSION_IDLE_SECONDS',
         'APP_SECRET',
         'APP_SECRET_FILE',
         'RECORD_ENCRYPTION_KEY_ID',

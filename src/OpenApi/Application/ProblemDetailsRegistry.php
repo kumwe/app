@@ -9,8 +9,10 @@ use InvalidArgumentException;
 /**
  * Finite registry of the core problem codes public REST clients may branch on.
  *
- * This is the runtime source for the checked-in `api/problem-details/kumwe-v1.json` generation. The
- * generated OpenAPI problem union is assembled from the same rows, so status, retry and extension semantics
+ * This is the runtime source for the current checked-in registry generation
+ * (`api/problem-details/generations/1.1.0.json`); the retained `api/problem-details/kumwe-v1.json` is its
+ * byte-stable predecessor, and every one of its rows is still present here unchanged. The generated OpenAPI
+ * problem union is assembled from the same rows, so status, retry and extension semantics
  * cannot diverge between handler validation, the standalone registry and the REST schema.
  *
  * @since  2.0.0
@@ -152,12 +154,15 @@ final readonly class ProblemDetailsRegistry
             ['invalid-idempotency-key', 400, false, null],
             ['invalid-if-match', 400, false, null],
             ['invalid-plan-request', 400, false, null],
+            ['media-not-found', 404, false, null],
             ['navigation-not-found', 404, false, null],
             ['openapi-contract-unavailable', 503, true, 30],
             ['posting-period-conflict', 409, false, null],
             ['precondition-failed', 412, false, null],
             ['precondition-required', 428, false, null],
             ['step-up-required', 403, false, null],
+            ['studio-composition-not-found', 404, false, null],
+            ['studio-composition-theme-mismatch', 409, false, null],
             ['validation-failed', 422, false, null],
         ];
         $definitions = [];
@@ -167,6 +172,15 @@ final readonly class ProblemDetailsRegistry
                 $status,
                 $retryable,
                 $retryAfterSeconds,
+            );
+        }
+        foreach (self::studioAuthoringRows() as [$code, $status, $retryable, $retryAfterSeconds]) {
+            $definitions[] = new ProblemDetailsDefinition(
+                'urn:kumwe:problem:' . $code,
+                $status,
+                $retryable,
+                $retryAfterSeconds,
+                self::studioAuthoringExtensions(),
             );
         }
         $definitions[] = new ProblemDetailsDefinition(
@@ -184,6 +198,70 @@ final readonly class ProblemDetailsRegistry
         );
 
         return $definitions;
+    }
+
+    /**
+     * Problem types a refused Studio authoring operation is published under, one per Producer status.
+     *
+     * Each carries Producer's category and diagnostic codes as closed extension members, so the REST
+     * refusal names exactly what the browser's `host-error` names.
+     *
+     * @return  list<array{string, int, bool, ?int}>  Code, status, retryability and fixed retry delay.
+     *
+     * @since   2.0.0
+     */
+    private static function studioAuthoringRows(): array
+    {
+        return [
+            ['studio-authoring-conflict', 409, false, null],
+            ['studio-authoring-forbidden', 403, false, null],
+            ['studio-authoring-idempotency-in-progress', 409, true, 1],
+            ['studio-authoring-idempotency-key-reused', 422, false, null],
+            ['studio-authoring-internal', 500, false, null],
+            ['studio-authoring-invalid-request', 400, false, null],
+            ['studio-authoring-limit-exceeded', 413, false, null],
+            ['studio-authoring-not-found', 404, false, null],
+            ['studio-authoring-rate-limited', 429, true, null],
+            ['studio-authoring-unauthenticated', 401, false, null],
+            ['studio-authoring-unavailable', 503, true, 1],
+            ['studio-authoring-validation-failed', 422, false, null],
+        ];
+    }
+
+    /**
+     * Closed extension members every Studio authoring problem publishes.
+     *
+     * @return  array<string, array{required: bool, schema: array<string, mixed>}>  Extension declarations.
+     *
+     * @since   2.0.0
+     */
+    private static function studioAuthoringExtensions(): array
+    {
+        return [
+            'studio_category' => [
+                'required' => true,
+                'schema' => [
+                    'enum' => [
+                        'cancelled', 'conflict', 'forbidden', 'incompatible', 'internal', 'invalid-request',
+                        'limit-exceeded', 'not-found', 'rate-limited', 'unauthenticated', 'unavailable',
+                        'validation-failed',
+                    ],
+                    'type' => 'string',
+                ],
+            ],
+            'studio_diagnostics' => [
+                'required' => true,
+                'schema' => [
+                    'items' => ['maxLength' => 160, 'minLength' => 1, 'type' => 'string'],
+                    'maxItems' => 64,
+                    'type' => 'array',
+                ],
+            ],
+            'studio_revision' => [
+                'required' => false,
+                'schema' => ['maxLength' => 200, 'minLength' => 1, 'type' => 'string'],
+            ],
+        ];
     }
 
     /**

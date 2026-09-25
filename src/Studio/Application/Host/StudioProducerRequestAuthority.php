@@ -29,6 +29,14 @@ final class StudioProducerRequestAuthority implements AuthorizationInterface
     private ?StudioHostSessionSnapshot $snapshot = null;
 
     /**
+     * Whether the mutation boundary answered this dispatch from a stored keyed outcome.
+     *
+     * @var    bool
+     * @since  2.0.0
+     */
+    private bool $replayed = false;
+
+    /**
      * Bind one Producer dispatch to trusted App request evidence.
      *
      * @param  ExecutionContext             $context           Fresh authenticated App execution context.
@@ -114,6 +122,33 @@ final class StudioProducerRequestAuthority implements AuthorizationInterface
     public function snapshot(): StudioHostSessionSnapshot
     {
         return $this->snapshot ?? throw new LogicException('Producer must authorize before invoking an App host port.');
+    }
+
+    /**
+     * Record that the mutation boundary replayed a stored outcome instead of running the port.
+     *
+     * Producer's response carries no replay marker, so the boundary leaves this evidence on the
+     * request-scoped authority and a machine adapter reads it to answer with its own replay signal.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function noteReplay(): void
+    {
+        $this->replayed = true;
+    }
+
+    /**
+     * Report whether this dispatch was answered from a stored keyed outcome.
+     *
+     * @return  bool  True after the mutation boundary replayed rather than performed the mutation.
+     *
+     * @since   2.0.0
+     */
+    public function replayed(): bool
+    {
+        return $this->replayed;
     }
 
     /**

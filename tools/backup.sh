@@ -1,11 +1,16 @@
 #!/usr/bin/env bash
 
 set -Eeuo pipefail
+umask 077
+
+script_directory="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+source "${script_directory}/recovery-common.sh"
 
 fail() {
-    echo "Kumwe backup failed: $*" >&2
-    exit 1
+    recovery_fail "Kumwe backup failed: $*"
 }
+
+recovery_begin backup backup
 
 require_command() {
     command -v "$1" >/dev/null 2>&1 || fail "required command '$1' is unavailable"
@@ -33,7 +38,9 @@ require_command date
 require_command flock
 require_command jq
 require_command sha256sum
-require_command tar
+require_command cp
+require_command find
+require_command sort
 
 require_value KUMWE_BACKUP_DIR
 require_value KUMWE_DB_NAME
@@ -105,6 +112,16 @@ done < <(find "$media_root" "$private_root" "$extensions_root" "$extension_asset
 database_password="$(<"$KUMWE_DB_PASSWORD_FILE")"
 [[ -n "$database_password" ]] || fail 'database password file is empty'
 
+pitr_mode="${KUMWE_BACKUP_PITR:-off}"
+[[ "$pitr_mode" == on || "$pitr_mode" == off ]] || fail 'KUMWE_BACKUP_PITR must be on or off'
+pitr='null'
+
+# Refuse recursive snapshots before creating staging under the backup root.
+for source_root in "$media_root" "$private_root" "$extensions_root" "$extension_assets_root"; do
+    [[ "$backup_root/" != "$source_root/"* ]] || fail 'backup root is inside a payload tree'
+    recovery_tree_safe "$source_root"
+done
+
 timestamp="$(date -u +'%Y%m%dT%H%M%SZ')"
 backup_name="kumwe-${KUMWE_RELEASE}-${timestamp}"
 final_directory="${backup_root}/${backup_name}"
@@ -118,7 +135,8 @@ cleanup() {
         rmdir "$staging_directory" 2>/dev/null || true
     fi
 }
-trap cleanup EXIT INT TERM
+trap 'recovery_finish $?; cleanup' EXIT
+trap cleanup INT TERM
 
 lock_path="${backup_root}/.kumwe-backup.lock"
 [[ ! -L "$lock_path" ]] || fail 'backup lock path must not be a symbolic link'
@@ -148,8 +166,25 @@ if [[ "$database_driver" == pgsql ]]; then
         || fail 'database is not a ready Kumwe 2.x schema; legacy and incomplete schemas are refused'
     pg_dump "${connection_arguments[@]}" \
         --file="${staging_directory}/database.dump" \
-        --format=custom --no-owner --no-password --no-privileges --serializable-deferrable
+        --format=custom --compress=0 --no-owner --no-password --no-privileges --serializable-deferrable
     database_format='postgresql-custom'
+    if [[ "$pitr_mode" == on ]]; then
+        require_command pg_basebackup
+        require_command pg_verifybackup
+        pg_basebackup --host="$database_host" --port="$database_port" --username="$KUMWE_DB_USER" \
+            --no-password --pgdata="$staging_directory/pg-base" --format=plain --wal-method=stream \
+            --checkpoint=fast --manifest-checksums=SHA256
+        recovery_tree_safe "$staging_directory/pg-base"
+        pg_verifybackup "$staging_directory/pg-base" >&2
+        jq -e '."WAL-Ranges" | length == 1' "$staging_directory/pg-base/backup_manifest" >/dev/null \
+            || fail 'PITR base must cover exactly one timeline'
+        source_id="$(psql "${connection_arguments[@]}" -XAt --set=ON_ERROR_STOP=1 \
+            --command='SELECT system_identifier FROM pg_control_system()')"
+        pitr="$(jq --arg source_id "$source_id" '."WAL-Ranges"[0] | {
+            kind: "postgresql-wal", source_id: $source_id, timeline: .Timeline,
+            start_lsn: ."Start-LSN", end_lsn: ."End-LSN"
+        }' "$staging_directory/pg-base/backup_manifest")"
+    fi
     unset PGPASSWORD
 else
     dump_arguments=()
@@ -178,12 +213,33 @@ else
         --execute="SELECT version FROM \`${migration_table}\` WHERE version = '${required_migration}'")"
     [[ "$applied_migration" == "$required_migration" ]] \
         || fail 'database is not a ready Kumwe 2.x schema; legacy and incomplete schemas are refused'
+    if [[ "$pitr_mode" == on ]]; then
+        status_sql='SHOW MASTER STATUS'
+        gtid_sql='SELECT @@GLOBAL.gtid_binlog_pos'
+        identity_sql='SELECT @@GLOBAL.server_id'
+        if [[ "$database_driver" == mysql ]]; then
+            status_sql='SHOW BINARY LOG STATUS'
+            gtid_sql='SELECT @@GLOBAL.gtid_executed'
+            identity_sql='SELECT @@GLOBAL.server_uuid'
+        fi
+        [[ "$($database_client "${connection_arguments[@]}" --execute='SELECT @@GLOBAL.binlog_format')" == ROW ]] \
+            || fail 'PITR requires ROW binary logging'
+        coordinate="$($database_client "${connection_arguments[@]}" --execute="$status_sql")"
+        IFS=$'\t' read -r binlog_file binlog_position ignored <<< "$coordinate"
+        [[ "$binlog_file" =~ ^[a-zA-Z0-9_-]+\.[0-9]+$ && "$binlog_position" =~ ^[0-9]+$ ]] \
+            || fail 'binary logging is disabled or its coordinate is unavailable'
+        pitr="$(jq -n --arg file "$binlog_file" --argjson position "$binlog_position" \
+            --arg gtid "$($database_client "${connection_arguments[@]}" --raw --execute="$gtid_sql")" \
+            --arg source_id "$($database_client "${connection_arguments[@]}" --execute="$identity_sql")" \
+            '{kind: "binlog", file: $file, position: $position, gtid: $gtid, source_id: $source_id}')"
+    fi
     "$database_dump" \
         --host="$database_host" \
         --port="$database_port" \
         --user="$KUMWE_DB_USER" \
         --single-transaction \
         --quick \
+        --skip-dump-date \
         --skip-lock-tables \
         --triggers \
         --hex-blob \
@@ -195,21 +251,32 @@ else
 fi
 unset database_password
 
-tar --create --gzip --one-file-system --file="${staging_directory}/media.tar.gz" --directory="$media_root" .
-tar --create --gzip --one-file-system --file="${staging_directory}/private.tar.gz" --directory="$private_root" .
-tar --create --gzip --one-file-system --file="${staging_directory}/extensions.tar.gz" \
-    --directory="$extensions_root" .
-tar --create --gzip --one-file-system --file="${staging_directory}/extension-assets.tar.gz" \
-    --directory="$extension_assets_root" .
-
-for archive in media private extensions extension-assets; do
-    if tar --list --verbose --gzip --file="${staging_directory}/${archive}.tar.gz" \
-        | awk 'substr($1, 1, 1) !~ /^[-d]$/ { found = 1 } END { exit found ? 0 : 1 }'; then
-        fail "created ${archive} archive contains a symbolic link or unsupported file type"
-    fi
+for tree in media private extensions extension-assets; do
+    case "$tree" in
+        media) source_root="$media_root" ;;
+        private) source_root="$private_root" ;;
+        extensions) source_root="$extensions_root" ;;
+        extension-assets) source_root="$extension_assets_root" ;;
+    esac
+    cp -a --one-file-system --reflink=auto -- "$source_root" "$staging_directory/$tree"
 done
+recovery_tree_safe "$staging_directory"
+if [[ "$database_driver" == pgsql && "$pitr_mode" == on ]]; then
+    export PGPASSWORD="$(<"$KUMWE_DB_PASSWORD_FILE")"
+    target_name="kumwe_${timestamp}_$$"
+    target_lsn="$(psql "${connection_arguments[@]}" -XAt --set=ON_ERROR_STOP=1 \
+        --command="SELECT pg_create_restore_point('$target_name')")"
+    pitr="$(jq --arg name "$target_name" --arg lsn "$target_lsn" \
+        '. + {target_name: $name, target_lsn: $lsn}' <<< "$pitr")"
+    psql "${connection_arguments[@]}" -XAt --set=ON_ERROR_STOP=1 --command='SELECT pg_switch_wal()' >&2
+    unset PGPASSWORD
+fi
+payload_snapshot_at="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
 
 jq -n \
+    --argjson directories "$(recovery_directories "$staging_directory")" \
+    --argjson pitr "$pitr" \
+    --arg payload_snapshot_at "$payload_snapshot_at" \
     --arg created_at "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" \
     --arg database "$KUMWE_DB_NAME" \
     --arg database_driver "$database_driver" \
@@ -217,7 +284,10 @@ jq -n \
     --arg database_table_prefix "$table_prefix" \
     --arg release "$KUMWE_RELEASE" \
     '{
-        format: "kumwe-backup-v2",
+        format: "kumwe-backup-v3",
+        directories: $directories,
+        pitr: $pitr,
+        payload_snapshot_at: $payload_snapshot_at,
         product: "Kumwe App",
         product_major: 2,
         release: $release,
@@ -226,24 +296,23 @@ jq -n \
         database_driver: $database_driver,
         database_format: $database_format,
         database_table_prefix: $database_table_prefix,
-        contents: ["database.dump", "extension-assets.tar.gz", "extensions.tar.gz", "media.tar.gz", "private.tar.gz"]
+        contents: ["database.dump", "extension-assets", "extensions", "media", "private"]
     }' > "${staging_directory}/manifest.json"
 
-(
-    cd -- "$staging_directory"
-    sha256sum database.dump extension-assets.tar.gz extensions.tar.gz manifest.json media.tar.gz private.tar.gz > checksums.sha256
-)
+recovery_checksums "$staging_directory" > "$staging_directory/checksums.sha256"
 
 if [[ -n "${KUMWE_BACKUP_SIGNING_SECRET_KEY_FILE:-}" ]]; then
     require_command minisign
     [[ -r "$KUMWE_BACKUP_SIGNING_SECRET_KEY_FILE" ]] || fail 'backup signing key file is not readable'
     minisign -S -s "$KUMWE_BACKUP_SIGNING_SECRET_KEY_FILE" \
         -m "${staging_directory}/checksums.sha256" \
-        -x "${staging_directory}/checksums.sha256.minisig"
+        -x "${staging_directory}/checksums.sha256.minisig" >&2
 fi
 
 chmod -R go-rwx "$staging_directory"
 mv -- "$staging_directory" "$final_directory"
-trap - EXIT INT TERM
+trap 'recovery_finish $?' EXIT
+trap - INT TERM
+recovery_log info 'Kumwe backup snapshot written.' backup "$backup_name" database_driver "$database_driver"
 
 echo "$final_directory"

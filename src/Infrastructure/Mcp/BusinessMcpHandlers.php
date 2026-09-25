@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Infrastructure\Mcp;
 
 use InvalidArgumentException;
+use Kumwe\App\BusinessSurface\Application\BusinessApprovalSurfaceService;
 use Kumwe\App\BusinessSurface\Application\BusinessHistoryUseCase;
 use Kumwe\App\BusinessSurface\Application\BusinessMutationPlanService;
 use Kumwe\App\BusinessSurface\Application\BusinessOperationStatusService;
@@ -12,6 +13,9 @@ use Kumwe\App\BusinessSurface\Application\BusinessSurface;
 use Kumwe\App\BusinessSurface\Application\BusinessSurfaceCatalog;
 use Kumwe\App\BusinessSurface\Application\BusinessSurfaceOperation;
 use Kumwe\App\BusinessSurface\Application\BusinessSurfaceService;
+use Kumwe\Approval\ApprovalDenied;
+use Kumwe\Approval\ApprovalRequestView;
+use Kumwe\Approval\ApprovalVoteView;
 use Kumwe\Context\Value\ExecutionContext;
 
 /**
@@ -22,7 +26,8 @@ use Kumwe\Context\Value\ExecutionContext;
  * the shared policy-filtered catalog, record behavior comes from `BusinessSurfaceService` and its
  * `BusinessRecordService` mutation boundary, and every mutation additionally crosses `McpMutationGuard` so
  * transport retries replay instead of writing twice.
- * No approval vote or step-up proof operation is exposed.
+ * No approval vote or step-up proof operation is exposed: an agent may read the approvals exposed to MCP and
+ * withdraw a request it made, but never decide one.
  *
  * @since  2.0.0
  */
@@ -35,6 +40,21 @@ final readonly class BusinessMcpHandlers
      * @since  2.0.0
      */
     private BusinessHistoryUseCase $history;
+
+    /**
+     * Capabilities any one of which admits the scoped approval inbox and detail, as on REST and the console.
+     *
+     * The approval query service then narrows every row to what that exact authority may see, so holding one of
+     * these is admission to the inbox, never visibility of a particular request.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
+    public const array APPROVAL_CAPABILITIES = [
+        'business.approval.request',
+        'business.approval.approve',
+        'business.approval.manage',
+    ];
 
     /**
      * Exact authorization capability associated with every generated-business mutation.
@@ -53,17 +73,22 @@ final readonly class BusinessMcpHandlers
         'reorder' => 'business.record.relate',
         'request_action' => 'business.record.action',
         'execute_action' => 'business.record.action',
+        'bulk_archive' => 'business.record.archive',
+        'bulk_restore' => 'business.record.restore',
+        'bulk_action' => 'business.record.action',
     ];
 
     /**
      * Bind generated metadata, shared surface behavior, and the MCP replay fence.
      *
-     * @param  BusinessSurfaceCatalog          $catalog     Shared policy-filtered generated metadata.
-     * @param  BusinessSurfaceService          $business    Shared generated-business use-case facade.
-     * @param  BusinessMutationPlanService     $plans       Signed runtime, policy and version plan binder.
-     * @param  McpMutationGuard                $mutations   Credential-bound MCP mutation and replay fence.
-     * @param  BusinessOperationStatusService  $operations  Caller-bound canonical record-ledger status lookup.
-     * @param  ?BusinessHistoryUseCase         $history     Shared bounded history port; defaults to the facade.
+     * @param  BusinessSurfaceCatalog           $catalog     Shared policy-filtered generated metadata.
+     * @param  BusinessSurfaceService           $business    Shared generated-business use-case facade.
+     * @param  BusinessMutationPlanService      $plans       Signed runtime, policy and version plan binder.
+     * @param  McpMutationGuard                 $mutations   Credential-bound MCP mutation and replay fence.
+     * @param  BusinessOperationStatusService   $operations  Caller-bound canonical record-ledger status lookup.
+     * @param  ?BusinessHistoryUseCase          $history     Shared bounded history port; defaults to the facade.
+     * @param  ?BusinessApprovalSurfaceService  $approvals   Surface-exposed approval inbox and requester
+     *         cancellation; null only in isolated tests that exercise no approval tool.
      *
      * @since  2.0.0
      */
@@ -74,8 +99,82 @@ final readonly class BusinessMcpHandlers
         private McpMutationGuard $mutations,
         private BusinessOperationStatusService $operations,
         ?BusinessHistoryUseCase $history = null,
+        private ?BusinessApprovalSurfaceService $approvals = null,
     ) {
         $this->history = $history ?? $business;
+    }
+
+    /**
+     * List the approval requests exposed to MCP that this actor may see, newest first.
+     *
+     * @param   ExecutionContext  $context  Authenticated MCP execution context.
+     * @param   int               $limit    Maximum requests, from 1 through 100.
+     *
+     * @return  array{items: list<array<string, mixed>>}  Safe request summaries.
+     *
+     * @throws  \InvalidArgumentException  When the limit is outside its bounds.
+     *
+     * @since   2.0.0
+     */
+    public function approvals(ExecutionContext $context, int $limit = 50): array
+    {
+        if ($limit < 1 || $limit > 100) {
+            throw new InvalidArgumentException('The approval inbox limit must be between 1 and 100.');
+        }
+
+        return ['items' => array_map(
+            self::approvalSummary(...),
+            $this->approvalService()->businessInbox($context, BusinessSurface::Mcp, $limit),
+        )];
+    }
+
+    /**
+     * Read one approval request exposed to MCP with its redacted decision history.
+     *
+     * @param   ExecutionContext  $context   Authenticated MCP execution context.
+     * @param   string            $approval  Approval request UUID.
+     *
+     * @return  array<string, mixed>  Safe request summary and votes.
+     *
+     * @throws  ApprovalDenied  When the request is absent, foreign or not exposed to MCP.
+     *
+     * @since   2.0.0
+     */
+    public function approval(ExecutionContext $context, string $approval): array
+    {
+        $request = $this->approvalService()->businessDetail($context, BusinessSurface::Mcp, $approval)
+            ?? throw new ApprovalDenied();
+
+        return [
+            ...self::approvalSummary($request),
+            'votes' => array_map(static fn (ApprovalVoteView $vote): array => [
+                'decision' => $vote->decision,
+                'reason' => $vote->reason,
+                'decided_at' => $vote->decidedAt->format(DATE_ATOM),
+            ], $request->votes),
+        ];
+    }
+
+    /**
+     * Withdraw this actor's own pending approval request made on MCP.
+     *
+     * Visibility is resolved on the MCP surface first, then `ApprovalService::cancel()` requires the original
+     * requester, surface binding and pending state and records `approval.cancel`. It is never a decision.
+     *
+     * @param   ExecutionContext  $context   Authenticated MCP execution context.
+     * @param   string            $approval  Approval request UUID.
+     *
+     * @return  array{approval_request_id: string, status: string}  The withdrawn request.
+     *
+     * @throws  ApprovalDenied  When the request is not this actor's own current pending request on MCP.
+     *
+     * @since   2.0.0
+     */
+    public function cancelApproval(ExecutionContext $context, string $approval): array
+    {
+        $this->approvalService()->businessCancel($context, BusinessSurface::Mcp, $approval);
+
+        return ['approval_request_id' => $approval, 'status' => 'cancelled'];
     }
 
     /**
@@ -194,6 +293,39 @@ final readonly class BusinessMcpHandlers
     }
 
     /**
+     * Read one record with exactly one declared relationship hydrated, through the shared surface facade.
+     *
+     * @param   ExecutionContext  $context          Authenticated MCP execution context.
+     * @param   string            $definition       Definition UUID or handle.
+     * @param   string            $record           Public record identity.
+     * @param   string            $relationship     Declared relationship handle.
+     * @param   bool              $includeArchived  Whether an archived source may be addressed.
+     * @param   bool              $includeDeleted   Whether a soft-deleted source may be addressed.
+     *
+     * @return  array<string, mixed>  Safe detail model with the one relationship.
+     *
+     * @since   2.0.0
+     */
+    public function relationship(
+        ExecutionContext $context,
+        string $definition,
+        string $record,
+        string $relationship,
+        bool $includeArchived = false,
+        bool $includeDeleted = false,
+    ): array {
+        return $this->business->relationship(
+            $context,
+            BusinessSurface::Mcp,
+            $definition,
+            $record,
+            $relationship,
+            $includeArchived,
+            $includeDeleted,
+        );
+    }
+
+    /**
      * Read one bounded page of policy-filtered generated record history.
      *
      * @param   ExecutionContext  $context        Authenticated MCP execution context.
@@ -282,6 +414,101 @@ final readonly class BusinessMcpHandlers
                 $action,
                 $input,
                 $approvalRequestId,
+            ),
+        );
+    }
+
+    /**
+     * Plan one atomic bulk archive, restore or declared action over at most fifty reviewed records.
+     *
+     * The plan seals the definition, runtime, policy, actor and the exact selection with its reviewed versions,
+     * as the administrator bulk confirmation does before its submission.
+     *
+     * @param   ExecutionContext                                   $context      Authenticated MCP context.
+     * @param   string                                             $operationId  16 to 128 character bulk identity.
+     * @param   string                                             $operation    `archive`, `restore` or `action`.
+     * @param   string                                             $definition   Definition UUID or handle.
+     * @param   list<array{record: string, expectedVersion: int}>  $items        Reviewed selection.
+     * @param   ?string                                            $action       Bulk-enabled action handle.
+     * @param   array<string, mixed>                               $input        Shared action input.
+     *
+     * @return  array<string, mixed>  Signed plan, binding summary and five-minute expiry.
+     *
+     * @throws  InvalidArgumentException  When the operation, selection, action or input is malformed.
+     *
+     * @since   2.0.0
+     */
+    public function planBulk(
+        ExecutionContext $context,
+        string $operationId,
+        string $operation,
+        string $definition,
+        array $items,
+        ?string $action = null,
+        array $input = [],
+    ): array {
+        return $this->plans->create(
+            $context,
+            BusinessSurface::Mcp,
+            self::bulkOperation($operation),
+            self::bulkInput(self::operationId($operationId), $operation, $definition, $items, $action, $input),
+        );
+    }
+
+    /**
+     * Apply one planned atomic bulk archive, restore or declared action through the shared bulk use case.
+     *
+     * Every member uses the deterministic child operation identity the browser and REST bulk forms derive, and a
+     * stale reviewed version, policy denial or failed member rolls the whole selection back.
+     *
+     * @param   ExecutionContext                                   $context      Authorized MCP context.
+     * @param   string                                             $operationId  Planned bulk identity.
+     * @param   string                                             $plan         Signed plan for these arguments.
+     * @param   string                                             $operation    `archive`, `restore` or `action`.
+     * @param   string                                             $definition   Definition UUID or handle.
+     * @param   list<array{record: string, expectedVersion: int}>  $items        Reviewed selection.
+     * @param   ?string                                            $action       Bulk-enabled action handle.
+     * @param   array<string, mixed>                               $input        Shared action input.
+     *
+     * @return  array<string, mixed>  Operation, count and per-member outcomes, or the identical replay.
+     *
+     * @throws  InvalidArgumentException  When the plan or arguments are refused.
+     *
+     * @since   2.0.0
+     */
+    public function bulk(
+        ExecutionContext $context,
+        string $operationId,
+        string $plan,
+        string $operation,
+        string $definition,
+        array $items,
+        ?string $action = null,
+        array $input = [],
+    ): array {
+        $planned = self::bulkInput($operationId, $operation, $definition, $items, $action, $input);
+        unset($planned['operation_id']);
+        $selection = self::bulkSelection($items);
+
+        return $this->mutate(
+            $context,
+            self::bulkOperation($operation),
+            $operationId,
+            $plan,
+            $planned,
+            fn (): array => $this->business->bulk(
+                $context,
+                BusinessSurface::Mcp,
+                $definition,
+                match ($operation) {
+                    'archive' => BusinessSurfaceOperation::Archive,
+                    'restore' => BusinessSurfaceOperation::Restore,
+                    default => BusinessSurfaceOperation::Action,
+                },
+                $selection,
+                $operationId,
+                $action,
+                $input,
             ),
         );
     }
@@ -1020,6 +1247,93 @@ final readonly class BusinessMcpHandlers
     }
 
     /**
+     * Map a public bulk operation onto its closed plan operation.
+     *
+     * @param   string  $operation  `archive`, `restore` or `action`.
+     *
+     * @return  string  `bulk_archive`, `bulk_restore` or `bulk_action`.
+     *
+     * @throws  InvalidArgumentException  When the operation is not a bulk operation.
+     *
+     * @since   2.0.0
+     */
+    public static function bulkOperation(string $operation): string
+    {
+        return match ($operation) {
+            'archive', 'restore', 'action' => 'bulk_' . $operation,
+            default => throw new InvalidArgumentException('The bulk operation must be archive, restore or action.'),
+        };
+    }
+
+    /**
+     * Build the canonical bulk plan input from MCP arguments.
+     *
+     * @param   string                $operationId  Bulk identity.
+     * @param   string                $operation    `archive`, `restore` or `action`.
+     * @param   string                $definition   Definition UUID or handle.
+     * @param   array<mixed>          $items        MCP selection of `record` and `expectedVersion` pairs.
+     * @param   ?string               $action       Bulk-enabled action handle.
+     * @param   array<string, mixed>  $input        Shared action input.
+     *
+     * @return  array<string, mixed>  Canonical plan input.
+     *
+     * @throws  InvalidArgumentException  When a selection member is malformed.
+     *
+     * @since   2.0.0
+     */
+    private static function bulkInput(
+        string $operationId,
+        string $operation,
+        string $definition,
+        array $items,
+        ?string $action,
+        array $input,
+    ): array {
+        $planned = [
+            'operation_id' => $operationId,
+            'definition' => $definition,
+            'items' => self::bulkSelection($items),
+        ];
+        if (self::bulkOperation($operation) === 'bulk_action') {
+            $planned['action'] = $action;
+            $planned['input'] = $input;
+        } elseif ($action !== null || $input !== []) {
+            throw new InvalidArgumentException('Only a bulk action accepts an action and input.');
+        }
+
+        return $planned;
+    }
+
+    /**
+     * Translate the MCP bulk selection into the bulk use case's `record_id` and `expected_version` members.
+     *
+     * @param   array<mixed>  $items  MCP selection of `record` and `expectedVersion` pairs.
+     *
+     * @return  list<array{record_id: string, expected_version: int}>  Use-case selection.
+     *
+     * @throws  InvalidArgumentException  When a member is not exactly a record and a version.
+     *
+     * @since   2.0.0
+     */
+    private static function bulkSelection(array $items): array
+    {
+        $selection = [];
+        foreach ($items as $item) {
+            if (
+                !is_array($item)
+                || array_diff(array_keys($item), ['record', 'expectedVersion']) !== []
+                || !is_string($item['record'] ?? null)
+                || !is_int($item['expectedVersion'] ?? null)
+            ) {
+                throw new InvalidArgumentException('A bulk item needs exactly record and expectedVersion.');
+            }
+            $selection[] = ['record_id' => $item['record'], 'expected_version' => $item['expectedVersion']];
+        }
+
+        return $selection;
+    }
+
+    /**
      * Bind a closed public mutation name to the internal MCP ledger operation.
      *
      * @param   string  $operation  Closed mutation name.
@@ -1035,5 +1349,48 @@ final readonly class BusinessMcpHandlers
         self::capabilityFor($operation);
 
         return 'business_record.' . $operation;
+    }
+
+    /**
+     * Resolve the approval surface service, which only isolated tests leave unwired.
+     *
+     * @return  BusinessApprovalSurfaceService  Composed approval surface.
+     *
+     * @throws  InvalidArgumentException  When the delegate was composed without it.
+     *
+     * @since   2.0.0
+     */
+    private function approvalService(): BusinessApprovalSurfaceService
+    {
+        return $this->approvals
+            ?? throw new InvalidArgumentException('Business approvals are unavailable on this MCP server.');
+    }
+
+    /**
+     * Project one approval without requester, checker-role or binding-digest evidence, as REST does.
+     *
+     * @param   ApprovalRequestView  $request  Scoped approval projection.
+     *
+     * @return  array<string, mixed>  Safe request summary.
+     *
+     * @since   2.0.0
+     */
+    private static function approvalSummary(ApprovalRequestView $request): array
+    {
+        return [
+            'approval_request_id' => $request->id,
+            'action' => $request->action,
+            'resource_type' => $request->resourceType,
+            'resource_version' => $request->resourceVersion,
+            'required_quorum' => $request->requiredQuorum,
+            'approval_count' => $request->approvalCount,
+            'status' => $request->status->value,
+            'version' => $request->version,
+            'created_at' => $request->createdAt->format(DATE_ATOM),
+            'expires_at' => $request->expiresAt->format(DATE_ATOM),
+            'can_approve' => $request->canApprove,
+            'can_cancel' => $request->canCancel,
+            'can_revoke' => $request->canRevoke,
+        ];
     }
 }

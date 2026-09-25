@@ -189,9 +189,10 @@ whether host authority was ever used to reach an account is a search for that on
 events**. Hold host access more narrowly than administrator access, and keep at least two separately controlled
 owner accounts with separately stored recovery codes so the lockout stays hypothetical.
 
-The console also carries the ordinary authorized forms of the same operations — `bin/kumwe access reset-password`,
-`revoke-step-up` and `terminate-sessions` — which need a token carrying `users.manage` and behave exactly as the
-screens do. Reach for those in runbooks and for `user:recover-credentials` only in the lockout.
+The retained console actions `bin/kumwe access reset-password`, `revoke-step-up` and `terminate-sessions` are
+refused to every token: the screen performs these acts only behind a payload-bound step-up proof of the operator's
+own second factor, and no bearer credential can carry one. REST and MCP publish no form of them. Use the screen,
+and `user:recover-credentials` only in the lockout.
 
 ## Business security and second factor
 

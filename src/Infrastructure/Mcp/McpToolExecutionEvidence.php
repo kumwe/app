@@ -15,7 +15,8 @@ use ReflectionMethod;
  * private same-class helpers, so shared paths such as job actions and extension lifecycle locks cannot hide
  * a missing check. Literal capabilities must reach an equal `require()` call, generated-business writes
  * must bind the catalogue capability to their closed operation, and every mutation must reach the actual
- * `McpMutationGuard::run()` collaborator locally or through `BusinessMcpHandlers`. Source-unavailable or
+ * `McpMutationGuard::run()` collaborator locally or through `BusinessMcpHandlers`, or — for Studio authoring —
+ * hand its `operationId` to the Studio host's own replay boundary. Source-unavailable or
  * ambiguous bindings fail closed instead of being accepted on the strength of catalogue metadata alone.
  *
  * @since  2.0.0
@@ -99,7 +100,48 @@ final readonly class McpToolExecutionEvidence
             );
         }
 
+        if (
+            $guard === McpMutationGuardMode::StudioHostBoundary
+            && !$this->reachesStudioHostBoundary($handlers::class, $tool['handler'])
+        ) {
+            $violations[] = sprintf(
+                'Mutating tool "%s" does not hand its operationId to the Studio host replay boundary.',
+                $tool['name'],
+            );
+        }
+
         return $violations;
+    }
+
+    /**
+     * Prove a Studio authoring or Blueprint mutation reaches its Studio gateway keyed by the tool's operation identity.
+     *
+     * @param   class-string  $class    Handler class whose reachable source is inspected.
+     * @param   string        $handler  Public method registered for this tool.
+     *
+     * @return  bool  True when reachable source calls `studioAuthoring()->perform()` or `studioBlueprints()->perform()`
+     *          keyed by `$operationId`.
+     *
+     * @since   2.0.0
+     */
+    private function reachesStudioHostBoundary(string $class, string $handler): bool
+    {
+        $entry = $this->methodSource($class, $handler);
+        if ($entry === null || preg_match('/\$operationId\b/', $entry) !== 1) {
+            return false;
+        }
+        foreach ($this->reachableSources($class, $handler) as $source) {
+            if (
+                preg_match(
+                    '/\$this->(?:studioAuthoring|studioBlueprints)\(\)\s*->\s*perform\([^;]*\$operationId\s*,/s',
+                    $source,
+                ) === 1
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -186,6 +228,17 @@ final readonly class McpToolExecutionEvidence
                 $source,
                 '$this->require(BusinessMcpHandlers::capabilityFor($operation))',
             ) && $this->provesLiteralCapability($class, $handler, 'business.record.read'),
+            McpDynamicCapabilityResolver::ApprovalInbox => str_contains(
+                $source,
+                '$this->requireAny(BusinessMcpHandlers::APPROVAL_CAPABILITIES)',
+            ),
+            McpDynamicCapabilityResolver::BusinessBulk => str_contains(
+                $source,
+                '$this->businessMutationContext($operationId, BusinessMcpHandlers::bulkOperation($operation))',
+            ) || (str_contains(
+                $source,
+                '$this->require(BusinessMcpHandlers::capabilityFor(BusinessMcpHandlers::bulkOperation($operation)))',
+            ) && $this->provesLiteralCapability($class, $handler, 'business.record.read')),
         };
     }
 

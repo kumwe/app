@@ -20,13 +20,20 @@ use Kumwe\Automation\ExpiredJobLease;
 use Kumwe\Automation\JobExecutionClass;
 use Kumwe\Automation\JobQueue;
 use Kumwe\App\Application\Automation\JobExecutionScope;
+use Kumwe\App\Application\Automation\JobOriginLookup;
 use Kumwe\Automation\QueueRuntimePolicy;
 use Kumwe\Automation\QueueRuntimePolicyCatalog;
 use Kumwe\Automation\StoredJob;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Access\Capability;
+use Kumwe\App\Infrastructure\Observability\CorrelationContext;
+use Kumwe\App\Infrastructure\Observability\MetricCatalog;
+use Kumwe\App\Infrastructure\Observability\MetricRecorder;
+use Kumwe\App\Infrastructure\Observability\NullMetricRecorder;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Psr\Clock\ClockInterface;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
 use Throwable;
@@ -43,10 +50,9 @@ use Throwable;
  * dead-lettered as the claim scan passes them, up to `EXHAUSTED_REAP_LIMIT` per call, so an exhausted
  * backlog is cleared by the workers themselves rather than by a separate sweeper.
  *
- * A contributed queue additionally locks one `job_queue_runtime` row before it counts live reservations
- * and selects work. That shared lock makes the signed in-flight ceiling durable across processes. Its
- * lease and attempt limits are resolved from the same active trusted catalog; undeclared core queues
- * skip that layer and retain their original behavior.
+ * Contributed queues share bounded durable permits with inbox workers. Each claim locks one available
+ * permit, renewed and settled atomically with its fenced work lease. Expiry bounds crash recovery.
+ * Policy publication serializes only generation changes; unchanged claims never lock the policy row.
  *
  * A site-local row is only claimable through the ownership table joined to an enabled site, so a
  * disabled or retired site quietly stops yielding work instead of offering jobs nothing could run. Every
@@ -54,10 +60,24 @@ use Throwable;
  * operators, `system.worker.operate` for the worker loop, and `all()` filters row by row rather than
  * refusing the caller outright.
  *
+ * Each row also records where it came from: the correlation and request identifiers of the context that
+ * queued it and the upstream W3C trace identifier that unit of work had accepted. A claim opens a `job`
+ * log frame carrying them, and the settlement closes it after writing one structured line naming the
+ * outcome, so every line a job writes — and the lifecycle of the job itself — joins the operation that
+ * caused it. `correlationOf()` hands the same correlation to the worker for the job's execution context.
+ *
  * @since  2.0.0
  */
-final readonly class DoctrineJobQueue implements JobQueue
+final readonly class DoctrineJobQueue implements JobQueue, JobOriginLookup
 {
+    /**
+     * Most job rows one authorization-filtered listing examines (P5-G).
+     *
+     * @var    int
+     * @since  2.0.0
+     */
+    public const int MAXIMUM_LISTED_SCAN = 10_100;
+
     /**
      * Most attempt-exhausted rows a single `claim()` call will dead-letter before giving up on that pass.
      *
@@ -82,6 +102,10 @@ final readonly class DoctrineJobQueue implements JobQueue
      * @param  JobExecutionScope            $jobScope       Classifies a job type as installation-wide or site-local.
      * @param  ?QueueRuntimePolicyCatalog   $policies       Active contributed queue and job limits; null preserves
      *         the established behavior for isolated core queue instances.
+     * @param  MetricRecorder               $metrics        Counts claims and settlements and times queue start.
+     * @param  ?CorrelationContext          $correlation    Log-context holder a claim opens its `job` frame on
+     *         and whose upstream trace identifier an enqueue records; null records and opens nothing.
+     * @param  LoggerInterface              $logger         Receives one structured line per job settlement.
      *
      * @since  2.0.0
      */
@@ -95,6 +119,9 @@ final readonly class DoctrineJobQueue implements JobQueue
         private ResourceSiteOwnershipWriter $ownership,
         private JobExecutionScope $jobScope,
         private ?QueueRuntimePolicyCatalog $policies = null,
+        private MetricRecorder $metrics = new NullMetricRecorder(),
+        private ?CorrelationContext $correlation = null,
+        private LoggerInterface $logger = new NullLogger(),
     ) {
     }
 
@@ -179,6 +206,9 @@ final readonly class DoctrineJobQueue implements JobQueue
                 'completed_at' => null,
                 'created_at' => $now,
                 'updated_at' => $now,
+                'correlation_id' => $context->correlationId(),
+                'causation_id' => $context->requestId(),
+                'trace_id' => $this->correlation?->traceId(),
             ], [
                 'payload' => Types::JSON,
                 'available_at' => Types::DATETIME_IMMUTABLE,
@@ -188,6 +218,12 @@ final readonly class DoctrineJobQueue implements JobQueue
             if ($executionClass === JobExecutionClass::Site) {
                 $this->ownership->record(AuthorizationResource::item('job', $id), $context->site());
             }
+            (new DoctrineJobQueueFairness($this->database, $this->tables))->record(
+                $queue,
+                $id,
+                $executionClass === JobExecutionClass::Site ? $context->site()->identifier() : null,
+                $context->organization()?->identifier(),
+            );
         });
 
         return $id;
@@ -241,18 +277,24 @@ final readonly class DoctrineJobQueue implements JobQueue
             throw new InvalidArgumentException('A contributed queue lease cannot exceed its signed policy.');
         }
         if ($policy !== null) {
-            $this->ensureQueueRuntime($policy);
+            $this->permits()->synchronize($policy, $this->clock->now());
         }
 
-        return $this->transactions->transactional(function () use (
+        $origin = [];
+        $job = $this->transactions->transactional(function () use (
             $queue,
             $workerId,
             $leaseSeconds,
             $policy,
+            &$origin,
         ): ?StoredJob {
             $now = $this->clock->now();
-            if ($policy !== null && !$this->claimPolicySlot($policy, $now)) {
-                return null;
+            $scope = null;
+            if ($policy !== null) {
+                $scope = (new DoctrineJobQueueFairness($this->database, $this->tables))->claim($queue, $now);
+                if ($scope === null) {
+                    return null;
+                }
             }
             $reaped = 0;
             $jobOwnershipId = $this->database->getDatabasePlatform() instanceof PostgreSQLPlatform
@@ -261,7 +303,7 @@ final readonly class DoctrineJobQueue implements JobQueue
 
             while ($reaped < self::EXHAUSTED_REAP_LIMIT) {
                 $row = $this->database->fetchAssociative(sprintf(
-                    'SELECT j.* FROM %s j WHERE j.queue = ? AND (j.execution_scope = ? OR '
+                    'SELECT j.* FROM %s j WHERE j.queue = ?%s AND (j.execution_scope = ? OR '
                     . '(j.execution_scope = ? AND EXISTS (SELECT 1 FROM %s o INNER JOIN %s s '
                     . 'ON s.identifier = o.site_identifier WHERE o.resource_type = ? '
                     . 'AND o.resource_id = %s AND s.enabled = ?))) AND ('
@@ -270,11 +312,13 @@ final readonly class DoctrineJobQueue implements JobQueue
                     . ') ORDER BY j.priority DESC, j.available_at, j.created_at, j.id '
                     . 'LIMIT 1 FOR UPDATE SKIP LOCKED',
                     $this->tables->quoted('jobs'),
+                    $scope === null ? '' : ' AND j.worker_scope = ?',
                     $this->tables->quoted('resource_site_ownership'),
                     $this->tables->quoted('sites'),
                     $jobOwnershipId,
                 ), [
                     $queue,
+                    ...($scope === null ? [] : [$scope]),
                     JobExecutionClass::Installation->value,
                     JobExecutionClass::Site->value,
                     'job',
@@ -283,6 +327,7 @@ final readonly class DoctrineJobQueue implements JobQueue
                     $now,
                 ], [
                     Types::STRING,
+                    ...($scope === null ? [] : [Types::STRING]),
                     Types::STRING,
                     Types::STRING,
                     Types::STRING,
@@ -329,6 +374,25 @@ final readonly class DoctrineJobQueue implements JobQueue
                 }
 
                 $token = Uuid::uuid7()->toString();
+                $staleToken = $row['lease_token'] ?? null;
+                if ($policy !== null && $row['status'] === 'reserved' && is_string($staleToken) && $staleToken !== '') {
+                    // The expired lease fences its previous holder out of settlement, so the permit that
+                    // holder still names is dead capacity; free it before this claim competes for one.
+                    $this->permits()->release($queue, $staleToken);
+                }
+                if (
+                    $policy !== null && !$this->permits()->acquire(
+                        $policy,
+                        $now,
+                        'job',
+                        $row['id'],
+                        '',
+                        $token,
+                        $now->add(new DateInterval(sprintf('PT%dS', $leaseSeconds))),
+                    )
+                ) {
+                    return null;
+                }
                 $affected = $this->database->executeStatement(sprintf(
                     "UPDATE %s SET status = 'reserved', lease_owner = ?, lease_token = ?, lease_acquired_at = ?, "
                     . 'lease_expires_at = ?, attempts = attempts + 1, updated_at = ? WHERE id = ? AND ('
@@ -352,23 +416,29 @@ final readonly class DoctrineJobQueue implements JobQueue
                 $this->assertLeaseUpdated($affected);
                 $row['attempts'] = $attempts + 1;
                 $row['lease_token'] = $token;
-                if ($policy !== null) {
-                    $this->database->update(
-                        $this->tables->raw('job_queue_runtime'),
-                        ['last_claimed_at' => $now, 'updated_at' => $now],
-                        ['queue_id' => $queue],
-                        [
-                            'last_claimed_at' => Types::DATETIME_IMMUTABLE,
-                            'updated_at' => Types::DATETIME_IMMUTABLE,
-                        ],
+                $this->metrics->increment(MetricCatalog::QUEUE_CLAIMS);
+                $available = is_string($row['available_at'] ?? null)
+                    ? date_create_immutable($row['available_at'])
+                    : false;
+                if ($available !== false) {
+                    $this->metrics->observe(
+                        MetricCatalog::OPERATION_DURATION,
+                        ['operation_class' => 'queue_time_to_start'],
+                        max(0.0, (float) ($now->format('U.u') - $available->format('U.u'))),
                     );
                 }
+
+
+                $origin = $row;
 
                 return $this->map($row);
             }
 
             return null;
         });
+        $this->openFrame($context, $job, $origin);
+
+        return $job;
     }
 
     /**
@@ -408,22 +478,32 @@ final readonly class DoctrineJobQueue implements JobQueue
             throw new InvalidArgumentException('A contributed queue lease cannot exceed its signed policy.');
         }
 
-        $now = $this->clock->now();
-        $this->assertLeaseUpdated($this->database->executeStatement(sprintf(
-            'UPDATE %s SET lease_expires_at = ?, updated_at = ? WHERE id = ? '
-            . "AND status = 'reserved' AND lease_owner = ? AND lease_token = ? AND lease_expires_at > ?",
-            $this->tables->quoted('jobs'),
-        ), [
-            $now->add(new DateInterval(sprintf('PT%dS', $leaseSeconds))),
-            $now,
-            $job->id,
-            $workerId,
-            $job->leaseToken,
-            $now,
-        ], [
-            Types::DATETIME_IMMUTABLE, Types::DATETIME_IMMUTABLE, Types::GUID,
-            Types::STRING, Types::STRING, Types::DATETIME_IMMUTABLE,
-        ]));
+        $this->transactions->transactional(function () use ($job, $workerId, $leaseSeconds, $policy): void {
+            $now = $this->clock->now();
+            $this->assertLeaseUpdated($this->database->executeStatement(sprintf(
+                'UPDATE %s SET lease_expires_at = ?, updated_at = ? WHERE id = ? '
+                . "AND status = 'reserved' AND lease_owner = ? AND lease_token = ? AND lease_expires_at > ?",
+                $this->tables->quoted('jobs'),
+            ), [
+                $now->add(new DateInterval(sprintf('PT%dS', $leaseSeconds))),
+                $now,
+                $job->id,
+                $workerId,
+                $job->leaseToken,
+                $now,
+            ], [
+                Types::DATETIME_IMMUTABLE, Types::DATETIME_IMMUTABLE, Types::GUID,
+                Types::STRING, Types::STRING, Types::DATETIME_IMMUTABLE,
+            ]));
+            if ($policy !== null) {
+                $this->permits()->renew(
+                    $policy,
+                    $job->leaseToken,
+                    $now,
+                    $now->add(new DateInterval(sprintf('PT%dS', $leaseSeconds))),
+                );
+            }
+        });
     }
 
     /**
@@ -449,16 +529,25 @@ final readonly class DoctrineJobQueue implements JobQueue
     {
         $this->authorizeWorker($context, AuthorizationResource::item('queue', $job->queue));
         $this->assertWorker($workerId);
-        $now = $this->clock->now();
-        $this->assertLeaseUpdated($this->database->executeStatement(sprintf(
-            "UPDATE %s SET status = 'completed', lease_owner = NULL, lease_token = NULL, lease_acquired_at = NULL, "
-            . 'lease_expires_at = NULL, completed_at = ?, updated_at = ? '
-            . "WHERE id = ? AND status = 'reserved' AND lease_owner = ? AND lease_token = ? AND lease_expires_at > ?",
-            $this->tables->quoted('jobs'),
-        ), [$now, $now, $job->id, $workerId, $job->leaseToken, $now], [
-            Types::DATETIME_IMMUTABLE, Types::DATETIME_IMMUTABLE, Types::GUID, Types::STRING,
-            Types::STRING, Types::DATETIME_IMMUTABLE,
-        ]));
+        $this->transactions->transactional(function () use ($job, $workerId): void {
+            $now = $this->clock->now();
+            $this->assertLeaseUpdated($this->database->executeStatement(sprintf(
+                "UPDATE %s SET status = 'completed', lease_owner = NULL, lease_token = NULL, lease_acquired_at = NULL, "
+                . 'lease_expires_at = NULL, completed_at = ?, updated_at = ? '
+                . "WHERE id = ? AND status = 'reserved' AND lease_owner = ? "
+                . 'AND lease_token = ? AND lease_expires_at > ?',
+                $this->tables->quoted('jobs'),
+            ), [$now, $now, $job->id, $workerId, $job->leaseToken, $now], [
+                Types::DATETIME_IMMUTABLE, Types::DATETIME_IMMUTABLE, Types::GUID, Types::STRING,
+                Types::STRING, Types::DATETIME_IMMUTABLE,
+            ]));
+            if ($this->policies?->policy($job->queue) !== null) {
+                $this->permits()->release($job->queue, $job->leaseToken);
+            }
+        });
+        $this->metrics->increment(MetricCatalog::QUEUE_SETTLEMENTS, ['outcome' => 'completed']);
+        $this->logger->info('Job completed.', self::describe($job) + ['outcome' => 'success']);
+        $this->correlation?->leave('job');
     }
 
     /**
@@ -514,6 +603,9 @@ final readonly class DoctrineJobQueue implements JobQueue
                     Types::DATETIME_IMMUTABLE, Types::DATETIME_IMMUTABLE, Types::GUID, Types::STRING,
                     Types::STRING, Types::DATETIME_IMMUTABLE,
                 ]));
+                if ($this->policies?->policy($job->queue) !== null) {
+                    $this->permits()->release($job->queue, $job->leaseToken);
+                }
                 return;
             }
 
@@ -545,7 +637,100 @@ final readonly class DoctrineJobQueue implements JobQueue
                 'failed_at' => Types::DATETIME_IMMUTABLE,
                 'created_at' => Types::DATETIME_IMMUTABLE,
             ]);
+            if ($this->policies?->policy($job->queue) !== null) {
+                $this->permits()->release($job->queue, $job->leaseToken);
+            }
         });
+        $this->metrics->increment(MetricCatalog::QUEUE_SETTLEMENTS, ['outcome' => $dead ? 'dead' : 'retried']);
+        $line = self::describe($job) + [
+            'classification' => $permanent ? 'permanent' : 'transient',
+            'will_retry' => !$dead,
+            'exception' => $failure,
+        ];
+        if ($dead) {
+            $this->logger->error('Job dead-lettered.', $line + ['outcome' => 'dead']);
+        } else {
+            $this->logger->warning('Job attempt failed; retry scheduled.', $line + ['outcome' => 'retried']);
+        }
+        $this->correlation?->leave('job');
+    }
+
+    /**
+     * Read the correlation identifier recorded when the job was queued.
+     *
+     * @param   StoredJob  $job  Job the worker has just claimed.
+     *
+     * @return  ?string  The producing operation's correlation identifier, or null for a row written
+     *          before origins were recorded.
+     *
+     * @since   2.0.0
+     */
+    public function correlationOf(StoredJob $job): ?string
+    {
+        $correlation = $this->database->fetchOne(sprintf(
+            'SELECT correlation_id FROM %s WHERE id = ?',
+            $this->tables->quoted('jobs'),
+        ), [$job->id], [Types::GUID]);
+
+        return is_string($correlation) && $correlation !== '' ? $correlation : null;
+    }
+
+    /**
+     * Open the `job` log frame for a claimed row, or close a stale one when nothing was claimed.
+     *
+     * A row written before origins were recorded falls back to the claimer's own correlation, so a
+     * legacy job's lines are still joined to the worker that ran it rather than left uncorrelated.
+     *
+     * @param   ExecutionContext      $context  Worker context, the fallback correlation source.
+     * @param   ?StoredJob            $job      Claimed job, or null when the queue had nothing runnable.
+     * @param   array<string, mixed>  $row      Stored row of the claimed job, holding its recorded origin.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    private function openFrame(ExecutionContext $context, ?StoredJob $job, array $row): void
+    {
+        if ($this->correlation === null) {
+            return;
+        }
+        if ($job === null) {
+            $this->correlation->leave('job');
+
+            return;
+        }
+        $text = static fn (string $key): ?string => is_string($row[$key] ?? null) && $row[$key] !== ''
+            ? $row[$key]
+            : null;
+        $this->correlation->enter(
+            'job',
+            ($job->executionClass === JobExecutionClass::Installation->value ? 'global-job-' : 'worker-job-')
+                . $job->id,
+            $text('correlation_id') ?? $context->correlationId(),
+            $text('causation_id'),
+            $text('trace_id'),
+            ['operation' => 'job'] + self::describe($job),
+        );
+        $this->logger->debug('Job claimed.', ['outcome' => 'claimed']);
+    }
+
+    /**
+     * Name a job the way every lifecycle line and frame does.
+     *
+     * @param   StoredJob  $job  Job being described.
+     *
+     * @return  array{job_id: string, job_type: string, queue: string, attempt: string}  Bounded identifiers.
+     *
+     * @since   2.0.0
+     */
+    private static function describe(StoredJob $job): array
+    {
+        return [
+            'job_id' => $job->id,
+            'job_type' => $job->type,
+            'queue' => $job->queue,
+            'attempt' => (string) $job->attempts,
+        ];
     }
 
     /**
@@ -641,8 +826,9 @@ final readonly class DoctrineJobQueue implements JobQueue
      *
      * Rows are read a page at a time and each is put to an `automation.manage` decision, so the limit
      * counts jobs the caller may actually see rather than rows scanned, and paging continues until that
-     * many are collected or the table is exhausted. A refusal drops the row silently, which is why this
-     * is the one entry point that does not raise on a denial.
+     * many are collected, the table is exhausted, or `MAXIMUM_LISTED_SCAN` rows have been examined, so a
+     * caller who may see few jobs never walks a large history (P5-G). A refusal drops the row silently,
+     * which is why this is the one entry point that does not raise on a denial.
      *
      * @param   ExecutionContext  $context  Actor and site each row is authorized against.
      * @param   int               $limit    Largest number of visible rows to hand back, 1 to 500.
@@ -684,7 +870,7 @@ final readonly class DoctrineJobQueue implements JobQueue
                 }
             }
             $offset += count($rows);
-        } while (count($rows) === $pageSize);
+        } while (count($rows) === $pageSize && $offset + $pageSize <= self::MAXIMUM_LISTED_SCAN);
 
         return $result;
     }
@@ -860,6 +1046,16 @@ final readonly class DoctrineJobQueue implements JobQueue
             'failed_at' => Types::DATETIME_IMMUTABLE,
             'created_at' => Types::DATETIME_IMMUTABLE,
         ]);
+        $this->logger->error('Job dead-lettered after its final lease expired.', array_filter([
+            'job_id' => $this->requiredString($row, 'id'),
+            'job_type' => $this->requiredString($row, 'job_type'),
+            'queue' => $this->requiredString($row, 'queue'),
+            'attempt' => (string) $this->integer($row, 'attempts'),
+            'correlation_id' => is_string($row['correlation_id'] ?? null) ? $row['correlation_id'] : null,
+            'causation_id' => is_string($row['causation_id'] ?? null) ? $row['causation_id'] : null,
+            'classification' => 'transient',
+            'outcome' => 'dead',
+        ], static fn (?string $value): bool => $value !== null));
     }
 
     /**
@@ -906,93 +1102,15 @@ final readonly class DoctrineJobQueue implements JobQueue
     }
 
     /**
-     * Create the durable queue lock row before a claim transaction attempts to lock it.
+     * Compose the shared host persistence adapter on this transaction connection.
      *
-     * The insert runs before the claim transaction so a PostgreSQL unique collision can roll back its
-     * own implicit statement without aborting the transaction that performs the claim. A concurrent
-     * first worker may win the insert; the loser treats that expected collision as proof the row now
-     * exists and proceeds to the same `FOR UPDATE` lock.
-     *
-     * @param   QueueRuntimePolicy  $policy  Active trusted queue policy.
-     *
-     * @return  void
+     * @return  DoctrineQueuePermits  Durable capacity shared with inbox deliveries.
      *
      * @since   2.0.0
      */
-    private function ensureQueueRuntime(QueueRuntimePolicy $policy): void
+    private function permits(): DoctrineQueuePermits
     {
-        if (
-            $this->database->fetchOne(sprintf(
-                'SELECT queue_id FROM %s WHERE queue_id = ?',
-                $this->tables->quoted('job_queue_runtime'),
-            ), [$policy->queue]) !== false
-        ) {
-            return;
-        }
-        $now = $this->clock->now();
-        try {
-            $this->database->insert($this->tables->raw('job_queue_runtime'), [
-                'queue_id' => $policy->queue,
-                'lease_seconds' => $policy->leaseSeconds,
-                'maximum_attempts' => $policy->maximumAttempts,
-                'maximum_in_flight' => $policy->maximumInFlight,
-                'retention_days' => $policy->retentionDays,
-                'runtime_generation' => $policy->runtimeGeneration,
-                'last_claimed_at' => null,
-                'updated_at' => $now,
-            ], ['updated_at' => Types::DATETIME_IMMUTABLE]);
-        } catch (UniqueConstraintViolationException) {
-            // A concurrent first claimant committed the singleton row.
-        }
-    }
-
-    /**
-     * Serialize declared-queue claims and reserve capacity below the signed in-flight ceiling.
-     *
-     * Every claimant first takes the same durable policy row `FOR UPDATE`, then counts only live fenced
-     * leases. Claim transactions therefore cannot both observe the same spare slot and exceed the
-     * ceiling across worker processes. Expired leases do not consume capacity and remain eligible for
-     * the normal fenced re-claim path.
-     *
-     * @param   QueueRuntimePolicy  $policy  Active trusted queue policy.
-     * @param   DateTimeImmutable   $now     Instant live leases are compared against.
-     *
-     * @return  bool  True when another live reservation fits under the ceiling.
-     *
-     * @throws  RuntimeException  When the policy lock row disappeared unexpectedly.
-     *
-     * @since   2.0.0
-     */
-    private function claimPolicySlot(QueueRuntimePolicy $policy, DateTimeImmutable $now): bool
-    {
-        $locked = $this->database->fetchOne(sprintf(
-            'SELECT queue_id FROM %s WHERE queue_id = ? FOR UPDATE',
-            $this->tables->quoted('job_queue_runtime'),
-        ), [$policy->queue]);
-        if ($locked === false) {
-            throw new RuntimeException('The contributed queue runtime lock is unavailable.');
-        }
-        $this->database->update($this->tables->raw('job_queue_runtime'), [
-            'lease_seconds' => $policy->leaseSeconds,
-            'maximum_attempts' => $policy->maximumAttempts,
-            'maximum_in_flight' => $policy->maximumInFlight,
-            'retention_days' => $policy->retentionDays,
-            'runtime_generation' => $policy->runtimeGeneration,
-            'updated_at' => $now,
-        ], ['queue_id' => $policy->queue], [
-            'updated_at' => Types::DATETIME_IMMUTABLE,
-        ]);
-        $inFlight = $this->databaseCount($this->database->fetchOne(sprintf(
-            "SELECT COUNT(*) FROM %s WHERE queue = ? AND status = 'reserved' AND lease_expires_at > ?",
-            $this->tables->quoted('jobs'),
-        ), [$policy->queue, $now], [Types::STRING, Types::DATETIME_IMMUTABLE]));
-
-        $inFlight += $this->databaseCount($this->database->fetchOne(sprintf(
-            "SELECT COUNT(*) FROM %s WHERE queue = ? AND status = 'reserved' AND lease_expires_at > ?",
-            $this->tables->quoted('integration_inbox'),
-        ), [$policy->queue, $now], [Types::STRING, Types::DATETIME_IMMUTABLE]));
-
-        return $inFlight < $policy->maximumInFlight;
+        return new DoctrineQueuePermits($this->database, $this->tables);
     }
 
     /**
@@ -1035,30 +1153,6 @@ final readonly class DoctrineJobQueue implements JobQueue
             throw new RuntimeException(sprintf('Queued job field %s is not an integer.', $field));
         }
         return (int) $value;
-    }
-
-    /**
-     * Normalize a DBAL aggregate count without accepting another scalar representation.
-     *
-     * @param   mixed  $value  Raw aggregate value returned by the active database driver.
-     *
-     * @return  int  Non-negative row count.
-     *
-     * @throws  RuntimeException  When the driver did not return an integer or decimal integer string.
-     *
-     * @since   2.0.0
-     */
-    private function databaseCount(mixed $value): int
-    {
-        if (is_int($value)) {
-            if ($value >= 0) {
-                return $value;
-            }
-        } elseif (is_string($value) && preg_match('/^[0-9]+$/D', $value) === 1) {
-            return (int) $value;
-        }
-
-        throw new RuntimeException('A queued work count is invalid.');
     }
 
     /**

@@ -77,7 +77,34 @@ Gauges, recomputed from the durable rows on each scrape:
 - `kumwe_inbox_pending`, `kumwe_inbox_oldest_pending_age_seconds`, `kumwe_inbox_poison`;
 - `kumwe_process_work_overdue`, `kumwe_process_work_oldest_overdue_age_seconds`;
 - `kumwe_export_queue_depth`, `kumwe_export_artifacts_expired`;
-- `kumwe_metrics_scrape_duration_seconds`, `kumwe_metrics_collection_failed`.
+- `kumwe_metrics_scrape_duration_seconds`, `kumwe_metrics_collection_failed`;
+- per `store` (a closed enumeration of eleven hot ledgers): `kumwe_retention_ingest_rows_per_second`,
+  `kumwe_retention_expiry_rows_per_second`, `kumwe_retention_drain_rows_per_second`,
+  `kumwe_retention_backlog_rows`, `kumwe_retention_oldest_age_seconds`,
+  `kumwe_retention_forecast_seconds_to_capacity`, the counter `kumwe_retention_drained_rows_total`, and the
+  unlabelled `kumwe_retention_readiness`. See [Retention](retention.md).
+
+Operational gauges, read on each scrape from the replica itself:
+
+- `kumwe_recovery_last_success_timestamp_seconds{operation}` and
+  `kumwe_recovery_last_failure_timestamp_seconds{operation}` for `backup`, `restore_verify` and `restore` — Unix
+  time of the latest recorded outcome, `0` when none was ever recorded. The recovery tools write them (see
+  [Recovery outcomes](#recovery-outcomes-on-the-metrics-endpoint)); this is the backup-age and restore-failure
+  source.
+- `kumwe_storage_free_bytes{volume}` and `kumwe_storage_capacity_bytes{volume}` for the `storage`, `media` and
+  `private` volumes under the installation's `storage/` directory — the nearly-full and disk-forecast source.
+- `kumwe_extension_runtime_trusted` — `1` when the replica serves a verified, signed extension runtime.
+- `kumwe_extension_revocation_feed_stale` and `kumwe_extension_revocation_feed_failures` — whether the signing-key
+  revocation feed is older than its window, and its consecutive fetch failures.
+
+Security and consumer counters, accumulated in Redis like the HTTP ones:
+
+- `kumwe_security_events_total{event}` — `authentication_failed`, `authentication_throttled`, `token_rejected`
+  and `permission_denied`. They are counted where the decision is taken (the sign-in rate limiter, the access
+  token verifier, the authorization gateway), never parsed back out of logs.
+- `kumwe_consumer_settlements_total{outcome}` — inbox receipts `completed`, `retried` or `dead`, beside the
+  queue's own `kumwe_queue_settlements_total{outcome}`. Business dashboards count completions; retries are
+  transport cost and live on their own dashboard.
 
 `kumwe_metrics_collection_failed` is the one to wire first. It reports that the endpoint answered but
 could not read the durable gauges, which is the difference between "the queue is empty" and "I cannot see
@@ -86,8 +113,11 @@ the queue".
 ### Cardinality is a correctness property
 
 Every label a Kumwe metric can carry is enumerated in `src/Infrastructure/Observability/MetricCatalog.php`,
-and any value outside its enumeration folds into `other`. The whole exposition is bounded to well under
-two hundred time series regardless of traffic, and a unit test re-checks that bound on every change.
+and any value outside its enumeration folds into `other`. The whole exposition is bounded to fewer than 256
+time series regardless of traffic, and a unit test re-checks that bound on every change. The alert rules and
+dashboards are held to the same rule: `composer observability:rules` refuses any expression that selects,
+groups by or matches a label outside its closed enumeration, and any alert whose expression could yield more
+than 32 series.
 
 There is deliberately **no** `path`, `route`, `site`, `user`, `record` or `tenant` label anywhere. A path
 label on this application would publish every business record identifier ever requested and mint a
@@ -117,11 +147,148 @@ failure, and the readiness probe already reports Redis separately.
 
 ### Alerting rules
 
-`deploy/observability/alerts.yaml` ships loadable Prometheus rules for every signal above, with concrete
-thresholds. Each rule names the runbook section that says what to do about it and states, in a `caught`
-annotation, the specific failure it would have caught — because an alert nobody can act on trains an
-on-call rotation to ignore the page that matters. Treat the thresholds as starting points and tune the
-`for` durations before the numbers.
+`deploy/observability/alerts.yaml` ships 45 loadable Prometheus rules, with concrete thresholds, for
+availability, latency, errors, saturation, lock waits, deadlocks and transaction retries, queue, outbox and
+inbox age, retention drain, backup age, restore failure, replica lag, the disk forecast, extension trust and
+security events. Load it beside a scrape job named `kumwe` for `/metrics` and the synthetic probe's textfile.
+Treat the thresholds as starting points and tune the `for` durations before the numbers.
+
+Every rule carries exactly two labels, from closed vocabularies:
+
+- `severity` — `page` (ten rules: someone must act now) or `ticket` (it will be worse tomorrow, not tonight);
+- `component` — `availability`, `http`, `database`, `queue`, `integration`, `reporting`, `retention`,
+  `recovery`, `storage`, `extension`, `security` or `observability`.
+
+And four annotations: `summary`, `description`, `runbook` — a link to the alert's own section of
+[the runbooks](runbooks.md) — and `caught`, the concrete failure the rule would have caught, because an alert
+nobody can act on trains an on-call rotation to ignore the page that matters. Durable signals (queues,
+outbox, inbox, retention, recovery) read the same database from every replica, so their rules aggregate with
+`max()` and page once per installation; per-process signals (scrape, readiness, trust, storage) keep
+`instance` so the page names the replica.
+
+`deploy/observability/alertmanager.yaml` carries the nine inhibition rules to merge into your Alertmanager
+configuration: a replica that cannot be scraped mutes its own readiness, trust and storage alerts; an untrusted
+runtime mutes the readiness failure it causes on the same replica; a metrics collection failure mutes every
+alert computed from the durable gauges it could not read; no live worker mutes the queue, export and retention
+backlogs it explains; a critical error rate mutes the elevated one; a stale backup mutes the failing-backup
+ticket; a nearly full volume mutes its own forecast; an authentication burst mutes the throttling it causes;
+and a failing `liveness` probe check mutes the probe's other checks. Every `equal` label exists on both the
+source and the target alert — a label absent from both compares equal and would mute unrelated alerts.
+
+Three gates keep the rules honest:
+
+- `composer observability:rules` (in `composer qa` and the CI quality job, offline) parses the rules with a
+  strict YAML reader and a PromQL parser and refuses: an expression over a series Kumwe does not emit, a label
+  outside its enumeration, a matcher value the label can never take, a counter function over a gauge or the
+  reverse, more than 32 series per alert, an annotation template naming a label the expression drops, a
+  runbook link that is not the alert's own section, an inhibition whose `equal` labels one side lacks, a
+  dashboard query failing the same checks, a business panel counting retries, a page alert without exactly one
+  drill, and a stale generated promtool file.
+- `promtool test rules deploy/observability/tests/alerts.test.yaml` — generated from
+  `deploy/observability/tests/scenarios.json` — proves every rule quiet on a healthy series, firing on the
+  failure it names with its exact labels and annotations, and clear again after recovery.
+- The [alert drills](#alert-drills) induce each page condition in the real application.
+
+### Dashboards
+
+`deploy/observability/dashboards/` holds three Grafana dashboards over the same metrics; each asks for its
+Prometheus data source through a `datasource` template variable when imported:
+
+- **Kumwe — business operations** — requests and successful responses, request latency, document and record
+  commits, committed transactions, jobs completed, events delivered and sequenced, and delivery age. Only
+  completed work is counted here, so a retry storm cannot make the business look busier.
+- **Kumwe — transport and retries** — job attempts retried or buried and the retry ratio, outbox dispatches and
+  inbox consumptions retried, dead or poisoned, dead letters waiting for an operator, expired leases, rolled-back
+  transactions, deadlocks and lock timeouts, the oldest waiting work and backlog depth: the cost of getting the
+  business work done.
+- **Kumwe — platform health** — one row per page family, each panel titled with the alerts it explains:
+  availability (readiness, the synthetic probe, the error ratio, release skew, worker liveness, scheduler lag),
+  saturation (database connections, replica lag, scrape cost), recovery and storage (backup and restore age,
+  free storage, retention age and forecast), and trust and security (extension runtime trust, security events).
+
+The rule gate checks every panel query exactly like an alert expression, and refuses a retry or rollback
+series on the business dashboard.
+
+### Synthetic probes
+
+Internal gauges answer "is the application healthy"; they cannot see an ingress serving an expired certificate
+or a trusted-host list that rejects the public name. `tools/synthetic-probe.php` checks the deployment from
+outside, read-only, the way a visitor and a scraper do:
+
+```bash
+php tools/synthetic-probe.php --base-url=https://www.example.org \
+    --metrics-token-file=/run/secrets/kumwe-metrics-token --api-token-file=/run/secrets/kumwe-probe-token \
+    --textfile=/var/lib/node_exporter/textfile/kumwe_probe.prom
+```
+
+| Check | Passes when |
+|---|---|
+| `liveness` | `GET /health/live` answers 200 |
+| `readiness` | `GET /health/ready` answers 200 |
+| `public_page` | the public page answers 200 with a body and echoes the probe's `X-Request-ID` and W3C `traceparent` |
+| `metrics` | with `--metrics-token-file`, `/metrics` refuses an anonymous scrape (401 or 404) and serves the credentialed one |
+| `api` | with `--api-token-file`, an authenticated read of `/api/v1/content` answers 200 with JSON |
+
+Run it every minute from a host outside the deployment (a cron entry or a systemd timer beside node_exporter).
+Each check prints one JSON line; the exit status is 0 when every check passed, 1 when one failed and 64 for a
+usage error. `--textfile` writes `kumwe_probe_success{check}`, `kumwe_probe_duration_seconds{check}` and
+`kumwe_probe_last_run_timestamp_seconds` atomically for node_exporter's textfile collector; the probe's
+requests carry the `Kumwe-Synthetic-Probe/1` user agent so they are recognisable in access logs. The read token
+should be a dedicated read-only token. `KumweSyntheticProbeFailing` pages on a failing check and
+`KumweSyntheticProbeStale` tickets when the probe itself stops reporting.
+
+### Recovery outcomes on the metrics endpoint
+
+`tools/backup.sh`, `tools/backup-cycle.sh`, `tools/restore-verify.sh` and `tools/restore.sh` record the outcome
+of every run as `<operation>.json` (`kumwe-operation-status/v1`) in `KUMWE_OPERATIONS_STATUS_DIR`. Point that
+variable at the application's `storage/operations` directory — shared with the web containers when the tools
+run in their own — and the metrics endpoint publishes the recovery gauges above on the next scrape. The status
+file is written atomically, holds only timestamps, the outcome, the release and the run's correlation identifier,
+and is refused if it is a symbolic link or larger than 64 KiB. Without it the gauges read `0` and
+`KumweBackupStale` pages fifteen minutes after the rules are loaded: a backup that is not recorded is
+indistinguishable from one that did not happen.
+
+### Alert drills
+
+Every page-severity alert has an automated operator drill, `tools/alert-drill.php`, which the
+**Observability drills** workflow (`.github/workflows/observability.yml`) runs on MariaDB and PostgreSQL for
+every change. `bash tools/alert-drill.sh` runs the same thing locally: it fetches the pinned promtool and
+amtool releases (verifying their SHA-256), runs the offline gate, `promtool check rules`, the promtool
+scenarios and `amtool check-config`, then the drills. Point `DB_*` at a disposable database first; the
+drills restore what they change but they do change it.
+
+Each drill starts the real application (PHP's built-in server in front of the real front controller, the
+runtime watcher, and a worker when it needs one), observes the healthy replica through real scrapes of the
+protected `/metrics` endpoint, induces the condition, observes it for longer than the rule's `for:`, performs
+the recovery the alert's runbook section prescribes, and observes again:
+
+| Drill | Alert | Induced condition | Recovery |
+|---|---|---|---|
+| `scrape-target-down` | `KumweScrapeTargetDown` | the web server is stopped | start it |
+| `readiness-failing` | `KumweReadinessFailing` | the runtime watcher stops until the readiness marker ages out | materialize, restart the watcher |
+| `synthetic-probe-failing` | `KumweSyntheticProbeFailing` | `APP_TRUSTED_HOSTS` drops the public name the probe uses | restore the list |
+| `server-error-rate-critical` | `KumweServerErrorRateCritical` | a second replica with a wrong `DB_TABLE_PREFIX` takes half the traffic | redeploy it correctly |
+| `no-live-worker` | `KumweNoLiveWorker` | the only worker drains on `SIGTERM` | start `queue:work` |
+| `extension-runtime-untrusted` | `KumweExtensionRuntimeUntrusted` | the signed runtime map is altered with the watcher stopped | `extension:runtime:materialize` |
+| `authentication-failure-burst` | `KumweAuthenticationFailureBurst` | fifteen failed sign-ins a minute across distinct accounts | the burst stops |
+| `backup-stale` | `KumweBackupStale` | a real backup, then one the database refuses, then three hours with none | a real `tools/backup.sh` |
+| `restore-failed` | `KumweRestoreFailed` | `tools/restore-verify.sh` refuses a tampered real snapshot | verify the intact snapshot |
+| `storage-nearly-full` | `KumweStorageNearlyFull` | the media volume (a 64 MiB tmpfs in CI) is filled to 2% free | delete the fill |
+
+The drill cannot wait five minutes for every `for:` clause, so each scrape is placed one evaluation interval
+apart on a synthetic clock and the whole timeline is replayed to `promtool test rules` against the committed
+`alerts.yaml`: the alert must be quiet on the healthy scrapes, firing with its exact labels and its `runbook`
+annotation after the induced ones, and quiet again after recovery. What is replayed is what was scraped —
+a failed scrape becomes `up == 0`, a vanished series gets a staleness marker, and recorded timestamps keep
+their real age. Only `backup-stale` lets synthetic time pass without new scrapes, holding the last real one
+for three hours and twenty minutes, because that is the condition. The drill also requires the alert's
+runbook section to name it and to prescribe, in its **Act** step, the recovery it performed, so a runbook
+that drifts from what works fails the build as surely as a rule that stops firing.
+
+Evidence is `build/observability/drills.json` (`kumwe-alert-drills/v1`: per drill the induced condition, the
+recovery, the runbook section, the healthy, firing and cleared instants, the phases, promtool's verdict) plus
+each drill's promtool fixture under `build/observability/drills/`, retained as the `alert-drills-<engine>`
+workflow artifact.
 
 ## Logs
 
@@ -147,14 +314,30 @@ Three things are guaranteed on every line and worth relying on when you build qu
   produced and the consumers that handled them, so one business operation is `grep`-able end to end.
   `causation_id` names the event or request that directly caused this one. Both come from the durable
   event envelope, not from a log-time guess.
-- **`release`, `runtime`, `outcome`** — which build wrote it, which surface (`http` or `console`), and
-  whether the thing succeeded. `outcome` is derived from severity when the caller did not state it, so
-  `outcome=failure` is a complete filter over failures rather than a partial one.
-- **redaction** — any context key naming `authorization`, `cookie`, `password`, `secret`, `set-cookie` or
-  `token` loses its value at every nesting level, and an attached exception is reduced to class, scrubbed
+- **`release`, `runtime`, `outcome`** — which build wrote it, which process role wrote it, and whether the
+  thing succeeded. `runtime` is `http` for the front controller, `worker` for `queue:work`, `scheduler` for
+  `schedule:run`, `integration` for `integration:work`, `mcp` for `mcp:serve` and `console` for every other
+  command; the recovery tools write `backup` and `restore`. `outcome` is derived from severity when the caller
+  did not state it, so `outcome=failure` is a complete filter over failures rather than a partial one.
+- **redaction** — any context key naming `api_key`, `authorization`, `cookie`, `credential`, `passphrase`,
+  `password`, `private_key`, `secret`, `session`, `set-cookie` or `token` loses its value at every nesting
+  level; credentials in a URI's user-information part and `key=value` credential assignments are scrubbed from
+  the message itself and from every string value; and an attached exception is reduced to class, scrubbed
   message, file and line with **no stack trace**. Traces carry frame arguments and frame arguments carry
   secrets; the class, message and line are what you actually grep for, and a full trace belongs in a
-  debugger against a reproduction.
+  debugger against a reproduction. The shell recovery tools apply the same key list and scrubbing with `jq`.
+
+Work that runs outside a request logs under the identifiers of the operation that caused it. When a worker
+claims a job, the scheduler dispatches an occurrence, the outbox dispatcher claims a message or a consumer
+takes an inbox receipt, it opens a log frame for the lifetime of that claim carrying the originating
+`correlation_id` and `trace_id`, a `causation_id`, and a bounded subject: `operation` plus `job_id`,
+`job_type`, `queue` and `attempt`; or `event_id`, `event_type` and `consumer_id`; or `schedule_id`. The frame
+closes when the claim settles, so a worker's next job never inherits the last one's identifiers. The
+lifecycle lines to query are `Job claimed.`, `Job completed.`, `Job attempt failed; retry scheduled.`,
+`Job dead-lettered.`, `Scheduler pass dispatched due schedules.`, `Schedule occurrence dispatched.`,
+`Projection sources sequenced.`, `Projection source sequencing failed.`, `Retention drain run finished.`
+and, from the recovery tools, `Kumwe backup started.` and `Kumwe backup completed.` (likewise for
+`restore verification` and `restore`) or `… stopped before completing.`
 
 Never log request or event bodies by default. Credentials, authorization headers, cookies, passwords,
 secrets, session identifiers, plaintext tokens, extension signing material, report parameters, export
@@ -164,18 +347,36 @@ belong in structured fields, not high-cardinality metric labels.
 Set `KUMWE_LOG_LEVEL` — not `APP_DEBUG` — to change verbosity. Debug also widens the detail a 500 response
 discloses, so raising verbosity through it turns a logging decision into a disclosure decision.
 
-### Trace context
+### Trace context propagation (not distributed tracing)
 
-Kumwe ships **no tracer and no exporter**, and adding an OpenTelemetry SDK is a supply-chain decision this
-release does not take. What it does do is participate in a trace somebody else is recording: a well-formed
-W3C `traceparent` on an inbound request is accepted, its `trace_id` and `span_id` are stamped onto every
-log line that request writes, and the header is echoed back. A malformed or reserved-all-zero value is
-ignored entirely, and no trace identifier is ever invented — an identifier that joins to nothing is worse
-than an absent one.
+Kumwe propagates W3C trace context; it does **not** do distributed tracing. It ships no tracer, no span
+recorder, no sampler and no exporter, and nothing in the runtime reads the `tracing` block of
+`config/observability.php` — `enabled: false`, `exporter: none` and `sample_ratio: 0.0` are the truthful
+declaration of that, not switches that turn tracing on. Adopting a tracer and an exporter is a separately
+reviewed dependency and configuration decision
+([ADR 0022](../roadmap/decisions/0022-trace-propagation-without-an-exporter.md)), not a setting.
 
-So if your proxy or an upstream service already emits `traceparent`, Kumwe's log stream joins that trace
-today. If nothing upstream emits one, `correlation_id` remains the identifier to stitch on. See
-`docs/qualification/gap-matrix.md` for what adopting a real tracer would require.
+What Kumwe does today, exactly:
+
+- A well-formed W3C `traceparent` on an inbound HTTP request is accepted. Its `trace_id` and `span_id` are
+  stamped onto every log record that request writes, and the header is echoed back unchanged.
+- A malformed value, or the reserved all-zero identifiers, is ignored entirely. Kumwe never invents a
+  trace or span identifier and never starts a span of its own, so its log lines join an upstream trace
+  or carry no trace identifier at all.
+- Propagation crosses the durable asynchronous boundaries. A job, scheduled occurrence, outbox message or
+  inbox receipt records the `correlation_id`, `causation_id` and `trace_id` of the operation that produced
+  it, and the worker, scheduler, dispatcher and consumer that later claim it log under those identifiers.
+  A job's execution context is issued with the recorded correlation. Rows written before this was recorded
+  fall back to the claiming process's own correlation. Still no span is started for the asynchronous hop:
+  the `trace_id` is carried so the lines join the upstream trace, not to build one.
+
+What an operator can do today:
+
+- Put a proxy, ingress or upstream service that already records traces in front of Kumwe. Its spans
+  and Kumwe's JSON log lines then join on `trace_id`, in whatever backend receives both.
+- Where nothing upstream emits `traceparent`, stitch requests and their asynchronous follow-up work on
+  `correlation_id`, which every log line and every durable job, outbox and audit record carries.
+- Measure latency and saturation from the protected `/metrics` endpoint rather than from spans.
 
 Durable database rows and audit records are authoritative for event/job/process/export recovery. Redis is
 coordination state. Do not report a queue as healthy merely because Redis responds, and do not mutate outbox,

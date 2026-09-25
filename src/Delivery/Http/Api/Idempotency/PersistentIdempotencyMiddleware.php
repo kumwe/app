@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Delivery\Http\Api\Idempotency;
 
+use ArrayObject;
 use DateTimeImmutable;
 use JsonException;
 use Kumwe\App\Application\Authorization\ExecutionContextAttribute;
@@ -38,7 +39,8 @@ use Throwable;
  * at all, so a replay can never be used to probe for a mutation the caller may not perform. The
  * handler's writes and the record that marks the key spent commit in one transaction, so a stored replay
  * always corresponds to an effect that actually landed; a 5xx or a thrown fault deletes the reservation
- * instead, leaving the key free for another attempt.
+ * instead, leaving the key free for another attempt. A 4xx refusal the handler mapped from a nested unit's
+ * failure rolls the transaction back, so it is returned to the caller as answered but is never recorded.
  *
  * @since  2.0.0
  */
@@ -158,6 +160,8 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
             }
         }
 
+        /** @var ArrayObject<string, ResponseInterface> $refusal */
+        $refusal = new ArrayObject();
         try {
             return $this->transactions->transactional(function () use (
                 $handler,
@@ -166,12 +170,16 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
                 $operation,
                 $keyValue,
                 $ownerToken,
+                $refusal,
             ): ResponseInterface {
                 $response = $handler->handle($request);
                 if ($response->getStatusCode() >= 500) {
                     throw new ServerFailureResponse($response);
                 }
                 $this->complete($subject, $operation, $keyValue, $ownerToken, $response);
+                if ($response->getStatusCode() >= 400) {
+                    $refusal['response'] = $response;
+                }
                 return $response;
             });
         } catch (ServerFailureResponse $failure) {
@@ -179,6 +187,13 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
             return $failure->response;
         } catch (Throwable $failure) {
             $this->release($subject, $operation, $keyValue, $ownerToken, false);
+            $answered = $refusal['response'] ?? null;
+            if ($answered instanceof ResponseInterface) {
+                // The handler already answered with a refusal it mapped from a nested unit's failure. That
+                // failure left the transaction rollback-only, so nothing - not even the key's record - was
+                // committed: the refusal is returned unrecorded and the key is free for another attempt.
+                return $answered;
+            }
             throw $failure;
         }
     }

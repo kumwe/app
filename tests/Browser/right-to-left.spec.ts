@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { message } from './support/interface-catalogue';
 import { expectNoDocumentOverflow } from './support/interface-diagnostics';
 
 /**
@@ -25,37 +26,43 @@ import { expectNoDocumentOverflow } from './support/interface-diagnostics';
  * exercise negotiation as a real client drives it, rather than only the explicit `locale` parameter.
  */
 
+/**
+ * Every accessible name below is read from the project's own catalogue, because every shipped locale is
+ * complete: a Hebrew or Arabic reader hears the translated name, and a locator that still asked for the
+ * English one only ever matched while those catalogues fell back to the source language. The one literal
+ * name left, the `Home` menu link, is site content rather than interface wording, so no catalogue owns it.
+ */
 const surfaces = [
   {
     id: 'public-home',
     path: '/',
     // The mobile navigation lives behind its toggle, so the toggle is the critical control there;
     // on desktop the navigation itself is on the surface and its first link stands for it.
-    criticalControls: (page: Page, isMobile: boolean): Locator[] =>
+    criticalControls: (page: Page, isMobile: boolean, locale: RightToLeftLocale): Locator[] =>
       isMobile
-        ? [page.getByRole('button', { name: 'Open site navigation' })]
+        ? [page.getByRole('button', { name: message(locale, 'core.site.layout.open_navigation') })]
         : [
             page
-              .getByRole('navigation', { name: 'Main navigation' })
+              .getByRole('navigation', { name: message(locale, 'core.site.layout.main_navigation') })
               .getByRole('link', { name: 'Home' }),
           ],
   },
   {
     id: 'administrator-login',
     path: '/administrator/login',
-    criticalControls: (page: Page): Locator[] => [
-      page.getByLabel('Email address'),
-      page.getByLabel('Password'),
-      page.getByRole('button', { name: 'Sign in to Kumwe' }),
+    criticalControls: (page: Page, _isMobile: boolean, locale: RightToLeftLocale): Locator[] => [
+      page.getByLabel(message(locale, 'core.administrator.login.email_label')),
+      page.getByLabel(message(locale, 'core.administrator.login.password_label')),
+      page.getByRole('button', { name: message(locale, 'core.administrator.login.submit') }),
     ],
   },
   {
     id: 'portal-login',
     path: '/portal/login',
-    criticalControls: (page: Page): Locator[] => [
-      page.getByLabel('Email address'),
-      page.getByLabel('Password'),
-      page.getByRole('button', { name: 'Sign in' }),
+    criticalControls: (page: Page, _isMobile: boolean, locale: RightToLeftLocale): Locator[] => [
+      page.getByLabel(message(locale, 'core.portal.login.email_label')),
+      page.getByLabel(message(locale, 'core.portal.login.password_label')),
+      page.getByRole('button', { name: message(locale, 'core.portal.login.submit') }),
     ],
   },
 ] as const;
@@ -147,7 +154,7 @@ test.describe('Right-to-left presentation', () => {
 
       // Zero inaccessible critical control: every control a visitor needs on this surface remains
       // visible and reachable by keyboard after the mirroring.
-      for (const control of surface.criticalControls(page, isMobile)) {
+      for (const control of surface.criticalControls(page, isMobile, locale)) {
         await expect(control).toBeVisible();
         await control.focus();
         await expect(control).toBeFocused();
@@ -180,10 +187,11 @@ test.describe('Right-to-left presentation', () => {
     const root = page.locator('html');
     await expect(root).toHaveAttribute('lang', locale);
     await expect(root).toHaveAttribute('dir', 'rtl');
-    // The interface is what must survive the unusable value. Until the translated catalogues land
-    // the wording is still the source language, and that is the point: a message no layer carries
-    // renders as the source text rather than as nothing.
-    await expect(page.getByRole('button', { name: 'Sign in to Kumwe' })).toBeVisible();
+    // The interface is what must survive the unusable value: the negotiated language's own catalogue
+    // renders the sign-in control, so the page is usable in the reader's language rather than blank.
+    await expect(page.getByRole('button', {
+      name: message(locale, 'core.administrator.login.submit'),
+    })).toBeVisible();
   });
 
   test('the Studio composition shell and exact preview remain right-to-left without overflow', async ({
@@ -191,9 +199,10 @@ test.describe('Right-to-left presentation', () => {
   }, testInfo) => {
     const locale = projectLocale(testInfo.project.name);
     await open(page, '/administrator/login', locale);
-    await page.getByLabel('Email address').fill(administratorEmail);
-    await page.getByLabel('Password').fill(administratorPassword);
-    await page.getByRole('button', { name: 'Sign in to Kumwe' }).click();
+    await page.getByLabel(message(locale, 'core.administrator.login.email_label')).fill(administratorEmail);
+    await page.getByLabel(message(locale, 'core.administrator.login.password_label'))
+      .fill(administratorPassword);
+    await page.getByRole('button', { name: message(locale, 'core.administrator.login.submit') }).click();
     await page.goto('/administrator/content-models');
     const model = page.locator('[data-content-type-id][data-content-type-version]').first();
     if (await model.getAttribute('open') === null) {
@@ -204,11 +213,16 @@ test.describe('Right-to-left presentation', () => {
     expect(modelId).not.toBeNull();
     expect(modelVersion).not.toBeNull();
     await page.goto(`/administrator/content-models/${modelId}/versions/${modelVersion}/composition`);
-    const provision = page.getByRole('button', { name: 'Create composition' });
+    const provision = page.getByRole('button', {
+      name: message(locale, 'core.administrator.studio_composition.provision_action'),
+    });
     if (await provision.isVisible()) await provision.click();
 
     const shell = page.locator('kumwe-studio');
-    const section = shell.getByRole('complementary', { name: 'Block palette' })
+    const palette = shell.getByRole('complementary', {
+      name: message(locale, 'core.studio.shell.palette-label'),
+    });
+    const section = palette
       .getByRole('button', { name: 'Section', exact: true });
     await expect(section).toBeVisible();
     await section.click();
@@ -227,7 +241,6 @@ test.describe('Right-to-left presentation', () => {
     await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
     await expect(page.locator('html')).toHaveAttribute('lang', locale);
     await expectNoDocumentOverflow(page);
-    await expect(shell.getByRole('complementary', { name: 'Block palette' }))
-      .toHaveCSS('direction', 'rtl');
+    await expect(palette).toHaveCSS('direction', 'rtl');
   });
 });

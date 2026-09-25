@@ -1223,7 +1223,8 @@ test('portal generated forms complete a no-JavaScript lifecycle', async ({ brows
     await expectPortalRecordName(page, updatedName);
     await page.getByRole('link', { name: 'History', exact: true }).click();
     await expect(page.getByRole('heading', { level: 1, name: 'Record history' })).toBeVisible();
-    await expect(page.getByText('update', { exact: true }).first()).toBeVisible();
+    await expect(page.locator('[data-revision-operation="update"]').first()).toHaveText('Edited');
+    await expect(page.getByText('update', { exact: true })).toHaveCount(0);
     await page.goto(`/portal/business/${businessDefinitionHandle}`);
     await page.getByLabel('Search records').fill(updatedName);
     await page.getByRole('button', { name: 'Apply', exact: true }).click();

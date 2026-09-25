@@ -4,15 +4,25 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Unit\Studio\Application\Preview;
 
+use DateTimeImmutable;
 use Kumwe\Audit\Application\AuditRecorder;
+use Kumwe\Context\Value\AuthenticatedSurface;
+use Kumwe\Context\Value\AuthenticationStrength;
 use Kumwe\Context\Value\ExecutionContext;
+use Kumwe\Context\Value\SiteContext;
 use Kumwe\Content\Application\ContentModelRepository;
 use Kumwe\App\Content\Application\ContentModelService;
 use Kumwe\Content\Application\ContentRepository;
 use Kumwe\App\Content\Application\ContentService;
 use Kumwe\Content\Domain\JsonSchemaValidator;
 use Kumwe\Content\Domain\SchemaCompatibilityChecker;
+use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringContextAuthority;
+use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringContextBinding;
+use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringContextRepository;
+use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringTarget;
+use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringTargetResolver;
 use Kumwe\App\Studio\Application\Host\StudioHostSessionSnapshot;
+use Kumwe\App\Studio\Application\Host\StudioResourceContextKeyFactory;
 use Kumwe\App\Studio\Application\Preview\ContentStudioPreviewBindingSource;
 use Kumwe\App\Studio\Application\Preview\StudioPreviewRefused;
 use Kumwe\App\Studio\Application\Projection\ContentProjectionBindingRepository;
@@ -20,6 +30,7 @@ use Kumwe\App\Studio\Application\Projection\ContentStudioProjector;
 use Kumwe\App\Studio\Application\Projection\RecordAuthorizedStudioContentFieldDisclosure;
 use Kumwe\App\Studio\Application\Projection\StudioContentProjectionService;
 use Kumwe\Producer\Schema\StudioDocumentSchemaRegistry;
+use Kumwe\App\Studio\Domain\Authoring\StudioAuthoringIntent;
 use Kumwe\App\Studio\Domain\Host\StudioHostSession;
 use Kumwe\App\Studio\Domain\Host\StudioResourceKind;
 use Kumwe\App\Studio\Domain\Host\StudioSessionMode;
@@ -52,7 +63,7 @@ final class ContentStudioPreviewBindingSourceTest extends TestCase
      */
     public function testBlueprintSessionCannotResolveAnotherArtifact(): void
     {
-        $source = new ContentStudioPreviewBindingSource($this->content());
+        $source = new ContentStudioPreviewBindingSource($this->content(), $this->contexts());
         $draft = self::draft();
 
         self::assertRefused(
@@ -74,7 +85,7 @@ final class ContentStudioPreviewBindingSourceTest extends TestCase
      */
     public function testContentModelCoordinatesAndVersionsFailClosedBeforeProjection(): void
     {
-        $source = new ContentStudioPreviewBindingSource($this->content());
+        $source = new ContentStudioPreviewBindingSource($this->content(), $this->contexts());
 
         self::assertRefused(
             'studio.preview/resource-refused',
@@ -121,6 +132,67 @@ final class ContentStudioPreviewBindingSourceTest extends TestCase
     }
 
     /**
+     * A contextual authoring session previews only a target its context authority re-authorizes, and a blank
+     * canvas whose reusable type does not exist yet has nothing a preview could render.
+     *
+     * @return  void
+     *
+     * @since  2.0.0
+     */
+    public function testContextualAuthoringSessionsFollowTheirAuthorityAndRefuseABlankCanvas(): void
+    {
+        $administrator = AuthorizationContext::principal(['content.create', 'content.read'])->context(
+            SiteContext::default(),
+            AuthenticationStrength::Password,
+            'test-request-0002',
+            surface: AuthenticatedSurface::Administrator,
+            sessionId: 'administrator-session-preview',
+        );
+        $key = 'contexts/' . hash('sha256', 'blank-canvas-preview');
+        $blank = new ContentStudioAuthoringContextBinding(
+            $key,
+            AuthorizationContext::SUBJECT,
+            'default',
+            null,
+            null,
+            AuthenticatedSurface::Administrator->value,
+            hash('sha256', 'administrator-session-preview'),
+            $administrator->approvalFingerprint(),
+            new ContentStudioAuthoringTarget(
+                StudioAuthoringIntent::Create,
+                null,
+                null,
+                null,
+                null,
+                null,
+                '/administrator/content/new',
+            ),
+            new DateTimeImmutable('2026-09-24T10:00:00+00:00'),
+            new DateTimeImmutable('2026-09-24T11:00:00+00:00'),
+        );
+        $source = new ContentStudioPreviewBindingSource($this->content(), $this->contexts([$key => $blank]));
+
+        self::assertRefused(
+            'studio.preview/resource-refused',
+            fn () => $source->resolve(
+                self::context(),
+                self::snapshot(StudioResourceKind::ContentAuthoring, 'contexts/' . hash('sha256', 'unknown')),
+                self::draft(),
+            ),
+            'a context nobody holds',
+        );
+        self::assertRefused(
+            'studio.preview/resource-refused',
+            fn () => $source->resolve(
+                $administrator,
+                self::snapshot(StudioResourceKind::ContentAuthoring, $key),
+                self::draft(),
+            ),
+            'a blank canvas before its type exists',
+        );
+    }
+
+    /**
      * Build the real projection boundary over inert persistence collaborators.
      *
      * @return  StudioContentProjectionService  Normally constructed projection boundary.
@@ -155,6 +227,52 @@ final class ContentStudioPreviewBindingSourceTest extends TestCase
                 new RecordAuthorizedStudioContentFieldDisclosure(),
                 new JsonSchemaValidator(),
             ),
+        );
+    }
+
+    /**
+     * Build the real context authority over an in-memory binding store.
+     *
+     * @param   array<string, ContentStudioAuthoringContextBinding>  $bindings  Bindings the store holds.
+     *
+     * @return  ContentStudioAuthoringContextAuthority  Normally constructed authority.
+     *
+     * @since  2.0.0
+     */
+    private function contexts(array $bindings = []): ContentStudioAuthoringContextAuthority
+    {
+        $repository = $this->createStub(ContentStudioAuthoringContextRepository::class);
+        $repository->method('find')->willReturnCallback(
+            static fn (string $contextKey): ?ContentStudioAuthoringContextBinding => $bindings[$contextKey] ?? null,
+        );
+        $clock = $this->createStub(ClockInterface::class);
+        $clock->method('now')->willReturn(new DateTimeImmutable('2026-09-24T10:30:00+00:00'));
+
+        return new ContentStudioAuthoringContextAuthority(
+            $repository,
+            $this->createStub(StudioResourceContextKeyFactory::class),
+            new ContentStudioAuthoringTargetResolver(AuthorizationContext::gateway()),
+            new ContentModelService(
+                $this->createStub(ContentModelRepository::class),
+                new JsonSchemaValidator(),
+                new SchemaCompatibilityChecker(),
+                AuthorizationContext::gateway(),
+                AuthorizationContext::ownershipWriter(),
+                $this->createStub(AuditRecorder::class),
+                new ImmediateTransactionManager(),
+                $this->createStub(ClockInterface::class),
+            ),
+            new ContentService(
+                $this->createStub(ContentRepository::class),
+                $this->createStub(AuditRecorder::class),
+                new ImmediateTransactionManager(),
+                $this->createStub(ClockInterface::class),
+                new Workflow(),
+                AuthorizationContext::gateway(),
+                AuthorizationContext::ownershipWriter(),
+            ),
+            $clock,
+            3600,
         );
     }
 

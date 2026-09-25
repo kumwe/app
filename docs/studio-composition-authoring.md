@@ -39,66 +39,106 @@ configuration, or HTML is not an App contract and does not cross the host bounda
 
 ## Current App truth
 
-The pinned coordinated Studio family is `0.1.0-rc.1`; exact package and corpus bytes are recorded by
-[`resources/studio-contract/PIN.json`](../resources/studio-contract/PIN.json). The release-candidate label describes
-that coordinated Studio package family. It does **not** by itself prove Kumwe App's integrated contextual-authoring
-journey.
+The pinned coordinated Studio family is `0.1.0-beta.3`; exact package and corpus bytes are recorded by
+[`resources/studio-contract/PIN.json`](../resources/studio-contract/PIN.json). The beta label describes that
+coordinated Studio package family; it does **not** by itself prove Kumwe App's integrated journey.
 
-App currently has valuable low-level integration primitives:
+Content New and Content Edit mount the pinned, compiled Studio browser module in place for the exact PHP-resolved
+target. PHP opens an opaque authoring context and a hybrid host session per mount, emits one Producer-proven
+`studio-deployment` document with the exact operation routes, same-origin credentials, CSRF header, locale,
+closed capability projection and return context, and answers every operation through
+`ContentStudioAuthoringService`, `StudioAuthoringHostPort` and the other App host ports:
 
-- a compiled browser shell and Studio-owned Blueprint canvas;
-- authenticated PHP session and host-port dispatch;
-- an App-only opaque Content authoring-context store that binds exact create/edit targets to the authenticated
-  actor, site, membership, administrator session, and approval generation, then re-loads and re-authorizes the
-  target on every successful resolution;
-- PHP-backed permission, artifact/recovery, media/resource, preview, localization, and telemetry operations;
-- read-only Content model and entry projection;
-- versioned Studio artifact persistence, optimistic concurrency, and audit;
-- extension contribution admission and owner-aware activation; and
-- trusted preview and published Content composition rendering.
+- blank and reusable-type starts on Content New, and an exact existing-item start on Content Edit that hydrates
+  the item's accepted type, Model, Blueprint and Entry revisions and values;
+- typed fields through Studio's Model control, Entry values through its Content mode, and Blueprint layout with
+  the host allocating node identities for palette and keyboard insertion;
+- `save-item`, `save-as-new-type` and `save-new-type-version` as separately planned PHP transactions with
+  visible consequences, value exclusion, an immutable successor type/Model/Blueprint, expected-revision
+  conflicts, idempotent replay and audit through the Producer mutation boundary; the session records the start
+  it opened with and declares a constant set of save outcomes, so Studio reconciles every accepted save. A
+  session without a recorded start (a context opened before migration `20260924060000_studio_content_authoring_start`)
+  is refused with `studio.authoring/start-required` before any plan or write; starting it again, or reopening the
+  editor, records the start. Contexts expire with the administrator session, so no data migration is needed;
+- a successor type version keeps its reusable type's Blueprint identity with a new revision, and a stored
+  reusable Blueprint locks exactly the blocks it composes, each of which must have a live renderer;
+- inline, minimized, maximized and fullscreen presentation of the same session, and a deterministic return to
+  the accepted item's edit context;
+- the interface-locale Studio message catalogue served by the localization port, fetched alongside the module so
+  the shell never shows source-language labels first, and the host's own return label, save consequences and
+  palette entries (the App's Content field blocks and its empty-section pattern) resolved in the same interface
+  locale;
+- keyboard-only operation from the Content editor's skip link through the start chooser, the start, the
+  presentations, the mode tabs, field definition and non-drag block insertion, with focus returned to the Studio
+  region's heading when the shell replaces the chooser;
+- a host-owned authenticated preview beside the shell over the origin-pinned, replay-resistant preview port,
+  resolving the saved item's own values behind the opaque context, and trusted public rendering through PHP
+  and Twig once the workflow publishes the item;
+- the structured form as the explicitly labelled `STUDIO-PROD-014` fallback, remembered per editor and used
+  when the runtime or configuration is unavailable.
 
-The composed authoring route,
-`/administrator/content-models/{id}/versions/{version}/composition`, is nevertheless Blueprint-only. It is reached
-from an already-created immutable Content-type version, while Content models and entry values are still created or
-edited through separate App forms.
-The model host port is read-only and generic artifact save updates an existing draft only. Therefore App does not
-yet provide blank-or-type creation, entry editing, field/model creation, the three explicit save outcomes, or the
-complete context-preserving acceptance journey inside Studio. That is a major integration gap, not an alternative
-product interpretation and not a reason to weaken the target.
+The journey is automated in `tests/Browser/studio-authoring.spec.ts` on Chromium desktop and mobile, with its
+interface locale as a parameter, and in `tests/Integration/Studio/ContentStudioAuthoringJourneyIntegrationTest.php`
+on every engine. The same spec proves keyboard-only operation, an accessible name and reading order for every
+focus stop, touch on the mobile project, reflow at 320 CSS pixels and the WCAG 2.2 AA scan on every state;
+`tests/Browser/studio-authoring-right-to-left.spec.ts` repeats the keyboard walk in Hebrew and Arabic on desktop
+and mobile with localized names, right-to-left order and no overflow. `tests/Architecture/StudioProductionRuntimeTest.php`
+refuses any production Node.js, npm or Vite requirement.
+[`tests/Fixtures/Studio/composition-acceptance-journey.json`](../tests/Fixtures/Studio/composition-acceptance-journey.json)
+records, step by step, the test that proves it or why it is open. Acceptance follows
+[ADR 0021](roadmap/decisions/0021-automated-acceptance-and-sampled-capacity.md): the maintainer's merge after every
+automated check is green is the acceptance, and no separate human qualification run exists.
 
-The existing generated Content editor remains a transitional fallback until the integrated journey passes the
-canonical acceptance proof.
+What remains open, and why:
 
-The new context authority is not a browser launch or completed `S-G2`: no key is emitted to Studio while the
-canonical configuration contract is unpublished. Its immutable Entry revision deliberately becomes stale after a
-concurrent or accepted save; `S-G4`–`S-G7` must return or atomically advance a successor context under the published
-save contract. Dormant rows cannot authorize without a live matching administrator session and approval generation.
-Every row also has an App-owned hard expiry no later than the configured administrator-session lifetime, checked
-before any Content read and indexed so expired rows are collectible. A bounded installation-wide maintenance job
-physically purges expired rows without interpreting their target or activating a Studio browser contract.
-Successor-context advancement remains deferred to the coordinated save lifecycle rather than being guessed here.
+- **Extension-owned targets.** App declares one core target, `kumwe.app/content-authoring`. The extension SDK's
+  manifest schema 6 declares block, pattern, field-adapter, inspector, design-vocabulary and migration documents
+  but no authoring-target kind, so an extension cannot yet declare a Studio target or bind its own resource
+  authority. That needs an SDK successor contract; App must not invent a private declaration.
+- **Standalone dual mounting (`STUDIO-PROD-015` steps 1 to 3).** Standalone mode is Studio-owned and App never
+  mounts it: the Content surface is a hosted session, and ADR 0020 forbids turning a configured refusal into local
+  mode. The portable multi-instance mount is proven by the Studio package, not by an App page.
+- **Authoring from a clean packaged start.** The deployed-artifact lane runs without a database by design, and the
+  production-topology deployment-acceptance job does not yet drive a Studio session.
+- **Pinned-release limitations.** In `0.1.0-beta.3` a reusable-type save result must echo the live Entry that
+  the save request does not carry, so values entered before a blank canvas becomes a type cannot survive that
+  save; save requests do not carry the presentation, so a save must happen in the presentation the session
+  started in; the hosted in-shell preview cannot stage a live draft, so the App preview shows accepted
+  revisions only; and the create-source chooser and save confirmation render without catalogue overrides. Each
+  needs a Studio release before App can close it.
+- **Extension field adapters, patterns and block migration in the contextual shell.** An admitted extension block
+  is used, saved, previewed and rendered, and on every engine a disabled extension withdraws its block from the
+  contextual catalogue while an item composing it still opens with the unresolved block preserved, its values
+  still save, a type save that could no longer lock the block is refused, and an upgrade keeping the block's exact
+  coordinates restores it. Extension field adapters cannot bind because Content models carry no extension field
+  kinds; the SDK fixture's pattern depends on block types the fixture does not declare; and no App path applies a
+  composition migration document, nor does the SDK ship a fixture with a versioned block and its migration.
+
+The model-version composition route,
+`/administrator/content-models/{id}/versions/{version}/composition`, remains a transitional Blueprint-only
+surface and is not the authoring entry point.
 
 ## Product-contract mapping
 
 | Requirement | App status | Required App outcome |
 |---|---|---|
-| `STUDIO-PROD-001` | Open | Launch from Content create/edit with the exact trusted resource context. |
-| `STUDIO-PROD-002` | Open | Offer blank and reusable-type starts without copying entry values. |
-| `STUDIO-PROD-003` | Open | Compose layout, fields, bindings, and values without a manual screen hand-off. |
-| `STUDIO-PROD-004` | Partial primitives | Present one reusable type while preserving exact Model, Blueprint, policy, and revision identities. |
-| `STUDIO-PROD-005` | Open | Hydrate the item's exact accepted type, Model, Blueprint, Entry revisions, and values. |
-| `STUDIO-PROD-006` | Open | Implement separately confirmed item-save, new-type-version, and new-type outcomes. |
-| `STUDIO-PROD-007` | Partial primitives | Preserve full session state across inline/minimized/maximized/fullscreen presentation and return. |
-| `STUDIO-PROD-008` | Open | Resolve core and extension content areas through one generic Studio target declaration. |
-| `STUDIO-PROD-009` | Partial primitives | Apply the canonical contribution lifecycle to blocks, field adapters, and patterns on admitted targets. |
-| `STUDIO-PROD-010` | Partial primitives | Route every durable effect through declared host APIs and PHP App authority. |
-| `STUDIO-PROD-011` | Implemented deployment rule; acceptance pending | Ship compiled assets; require no Node.js, npm, Vite, or JavaScript server in production. |
-| `STUDIO-PROD-012` | Open | Remove pre-creation, copy/paste, catalogue-first, and manual revision reconciliation. |
-| `STUDIO-PROD-013` | Partial primitives | Prove keyboard, explicit-control, touch, assistive-technology, zoom, directionality, and reflow parity. |
-| `STUDIO-PROD-014` | Enforced documentation rule | Keep target, primitive, integration, package, conformance, gate, and fallback claims distinct. |
-| `STUDIO-PROD-015` | Not passed | Prove the complete integrated acceptance journey exactly as specified by Studio. |
+| `STUDIO-PROD-001` | Implemented, automated | Launch from Content create/edit with the exact trusted resource context. |
+| `STUDIO-PROD-002` | Implemented, automated | Offer blank and reusable-type starts without copying entry values. |
+| `STUDIO-PROD-003` | Implemented with pinned-release limits | Compose layout, fields, bindings, and values without a manual screen hand-off. |
+| `STUDIO-PROD-004` | Implemented, automated | Present one reusable type while preserving exact Model, Blueprint, policy, and revision identities. |
+| `STUDIO-PROD-005` | Implemented, automated | Hydrate the item's exact accepted type, Model, Blueprint, Entry revisions, and values. |
+| `STUDIO-PROD-006` | Implemented, automated | Implement separately confirmed item-save, new-type-version, and new-type outcomes. |
+| `STUDIO-PROD-007` | Implemented with pinned-release limits | Preserve full session state across inline/minimized/maximized/fullscreen presentation and return. |
+| `STUDIO-PROD-008` | Partial | Resolve core and extension content areas through one generic Studio target declaration. |
+| `STUDIO-PROD-009` | Partial | Apply the canonical contribution lifecycle to blocks, field adapters, and patterns on admitted targets. |
+| `STUDIO-PROD-010` | Implemented, automated | Route every durable effect through declared host APIs and PHP App authority. |
+| `STUDIO-PROD-011` | Implemented, automated refusal | Ship compiled assets; require no Node.js, npm, Vite, or JavaScript server in production. |
+| `STUDIO-PROD-012` | Implemented, automated | Remove pre-creation, copy/paste, catalogue-first, and manual revision reconciliation. |
+| `STUDIO-PROD-013` | Implemented with pinned-release limits | Prove keyboard, explicit-control, touch, assistive-technology, zoom, directionality, and reflow parity. |
+| `STUDIO-PROD-014` | Enforced | Keep target, primitive, integration, package, conformance, gate, and fallback claims distinct. |
+| `STUDIO-PROD-015` | Automated in part; not accepted | Prove the complete integrated acceptance journey exactly as specified by Studio. |
 
-`Partial primitives` never means the end-to-end requirement is delivered.
+`Partial` and `Implemented with pinned-release limits` never mean the end-to-end requirement is accepted.
 
 ## Configuration-first deployment boundary
 
@@ -165,11 +205,12 @@ Studio repository and then consumed by App, never invented as a private parallel
 Extensions do not embed or fork Studio. A schema-6 extension declares canonical Studio
 `block-definition`, `pattern`, `field-adapter`, `inspector`, `design-vocabulary`, and `migration` documents plus
 bounded App host bindings. The App resolves them into the same Studio generation as first-party tools. An
-extension surface that declares an eligible Studio target can request contextual authoring for its authorized
-resource; it must not create a new editor, expose Editor.js, or bypass the PHP host operations above.
+extension surface must not create a new editor, expose Editor.js, or bypass the PHP host operations above.
 
-Contribution admission and activation primitives already exist. Seamless contextual use from extension-owned
-content areas remains part of the open integrated journey and must be proven by `STUDIO-PROD-015`.
+Contribution admission, activation, disable and upgrade already reach the contextual catalogue. An extension
+surface cannot yet request contextual authoring for its own resource: schema 6 has no Studio target declaration,
+so seamless contextual use from extension-owned content areas stays open until the SDK defines one, and it must
+then be proven by `STUDIO-PROD-015`.
 
 ## Successor App pull request, small working goals
 

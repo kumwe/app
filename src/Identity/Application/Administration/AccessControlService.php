@@ -16,6 +16,7 @@ use Kumwe\Audit\Application\AuditRecorder;
 use Kumwe\Audit\Domain\AuditEvent;
 use Kumwe\App\Identity\Application\Security\PasswordHasher;
 use Kumwe\App\Identity\Application\StepUp\StepUpCredentialStore;
+use Kumwe\App\Identity\Application\StepUp\StepUpRejected;
 use Kumwe\Access\Capability;
 use Kumwe\App\Identity\Domain\EmailAddress;
 use Kumwe\Access\GrantScope;
@@ -41,6 +42,14 @@ use RuntimeException;
  */
 final readonly class AccessControlService
 {
+    /**
+     * Most rows one authorization-filtered listing examines, matching the repository's deepest page (P5-G).
+     *
+     * @var    int
+     * @since  2.0.0
+     */
+    private const int MAXIMUM_SCANNED_ROWS = 10_100;
+
     /**
      * Wire the store and the collaborators every mutation here depends on.
      *
@@ -413,9 +422,21 @@ final readonly class AccessControlService
      * credential without proving the current one, which is exactly the check `changeOwnPassword()`
      * exists to apply; the refusal keeps the two paths from collapsing into one.
      *
+     * Nor may an actor reset the password of an account holding authority, through any role or organization
+     * membership, that the actor could not delegate.
+     * Choosing another account's password is taking that account over, so without this ceiling a holder of
+     * `users.manage` alone could become any administrator and exercise every capability that administrator
+     * holds — the escalation role assignment and token issuance already refuse. The check runs under the
+     * subject's row lock, so a role granted concurrently cannot slip past it.
+     *
      * The invalidation is identical to the self-service path — one epoch advance retiring the subject's
      * tokens, portal sessions, administrator sessions and step-up proofs, plus the session sweep — so
      * whoever currently holds the account is put out of it by the reset rather than at their leisure.
+     *
+     * A human caller must carry a consumed step-up proof: the access screen obtains one for the exact
+     * submitted change, while a password session or an API, console or MCP token cannot, and is refused
+     * before anything is read. A system actor, such as the host-local `user:recover-credentials`
+     * break-glass, carries no human principal and is not asked for one.
      *
      * @param   ExecutionContext  $context      Actor and site the reset is authorized and audited against.
      * @param   string            $userId       UUID of the account whose password is replaced.
@@ -427,7 +448,8 @@ final readonly class AccessControlService
      * @throws  InvalidArgumentException  When the actor names their own account, the reason is empty or
      *          too long, the replacement fails the password rule, or the subject has no credential.
      * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not manage
-     *          this user.
+     *          this user, or the user holds a grant the actor could not delegate.
+     * @throws  StepUpRejected  When a human caller carries no step-up proof.
      *
      * @since   2.0.0
      */
@@ -437,6 +459,7 @@ final readonly class AccessControlService
         #[\SensitiveParameter] string $newPassword,
         string $reason,
     ): int {
+        self::assertHumanStepUp($context);
         $this->authorize($context, AuthorizationResource::item('user', $userId));
         if ($userId === $context->actorId()) {
             throw new InvalidArgumentException(
@@ -458,6 +481,7 @@ final readonly class AccessControlService
             $at,
         ): int {
             $this->repository->lockUser($userId);
+            $this->assertCanDelegateUser($context, $userId);
             $this->repository->changePassword($userId, $hash, $at);
             $ended = $this->sessions->deleteAllForUser($context, $userId);
             $this->audit($actorId, 'user.password.reset', 'user', $userId, [
@@ -485,7 +509,10 @@ final readonly class AccessControlService
      * advance that retires the subject's outstanding proofs, tokens and sessions along with the
      * credential. Callers on the administrator surface reach it only behind a payload-bound step-up
      * challenge of the actor's own, which is what keeps a stolen session from resetting somebody's
-     * second factor.
+     * second factor; every other human caller is refused for want of that proof, while a system actor
+     * such as the host-local break-glass is not asked for one. As with a password reset, the subject may
+     * hold no grant the actor could not delegate: stripping a stronger account's second factor is the
+     * first half of taking it over.
      *
      * @param   ExecutionContext  $context  Actor and site the retirement is authorized and audited against.
      * @param   string            $userId   UUID of the subject whose second factors are retired.
@@ -496,12 +523,14 @@ final readonly class AccessControlService
      * @throws  InvalidArgumentException  When the reason is empty or too long, or the subject does not
      *          exist and so could not be locked.
      * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not manage
-     *          this user.
+     *          this user, or the user holds a grant the actor could not delegate.
+     * @throws  StepUpRejected  When a human caller carries no step-up proof.
      *
      * @since   2.0.0
      */
     public function revokeStepUpCredentials(ExecutionContext $context, string $userId, string $reason): int
     {
+        self::assertHumanStepUp($context);
         $this->authorize($context, AuthorizationResource::item('user', $userId));
         $reason = $this->reason($reason);
         $actorId = $context->actorId();
@@ -515,6 +544,7 @@ final readonly class AccessControlService
             $at,
         ): int {
             $this->repository->lockUser($userId);
+            $this->assertCanDelegateUser($context, $userId);
             $revoked = $this->stepUp->revokeForSubject($userId, $at, $reason);
             $this->repository->advanceSecurityEpoch($userId);
             $ended = $this->sessions->deleteAllForUser($context, $userId);
@@ -537,7 +567,9 @@ final readonly class AccessControlService
      * working until it expired; suspending the account was the only lever that reached it, and
      * suspension is a much larger act than signing somebody out. This raises the epoch and sweeps the
      * session table, which ends every browser the subject is signed in on without touching their
-     * account's lifecycle state, their roles or their password.
+     * account's lifecycle state, their roles or their password. Like the other recovery acts it demands a
+     * consumed step-up proof from a human caller, which only the access screen can obtain, and asks none of a
+     * system actor such as the host-local break-glass.
      *
      * @param   ExecutionContext  $context  Actor and site the termination is authorized and audited against.
      * @param   string            $userId   UUID of the subject whose sessions are ended.
@@ -549,11 +581,13 @@ final readonly class AccessControlService
      *          exist and so could not be locked.
      * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not manage
      *          this user.
+     * @throws  StepUpRejected  When a human caller carries no step-up proof.
      *
      * @since   2.0.0
      */
     public function terminateUserSessions(ExecutionContext $context, string $userId, string $reason): int
     {
+        self::assertHumanStepUp($context);
         $this->authorize($context, AuthorizationResource::item('user', $userId));
         $reason = $this->reason($reason);
         $actorId = $context->actorId();
@@ -1243,7 +1277,7 @@ final readonly class AccessControlService
                 }
             }
             $offset += count($rows);
-        } while (count($rows) === $pageSize);
+        } while (count($rows) === $pageSize && $offset + $pageSize <= self::MAXIMUM_SCANNED_ROWS);
 
         return $result;
     }
@@ -1327,6 +1361,34 @@ final readonly class AccessControlService
     }
 
     /**
+     * Refuse a credential action against an account holding authority the actor could not delegate.
+     *
+     * Taking over an account through its credentials hands the actor everything that account holds, so
+     * the same delegation ceiling that bounds role assignment bounds it: every capability the subject holds
+     * through any grant path — its direct roles and the roles of every organization membership, active or
+     * not — at the scope it is stored at, must be one the actor may delegate.
+     *
+     * @param   ExecutionContext  $context  Actor whose delegation ceiling is applied.
+     * @param   string            $userId   UUID of the account whose credentials would change.
+     *
+     * @return  void
+     *
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the subject holds a grant beyond the ceiling.
+     *
+     * @since   2.0.0
+     */
+    private function assertCanDelegateUser(ExecutionContext $context, string $userId): void
+    {
+        foreach ($this->repository->userAuthorityGrants($userId) as $grant) {
+            $this->authorization->assertCanDelegate(
+                $context,
+                Capability::fromString($grant['capability']),
+                $this->scope($grant['scope_type'], $grant['scope_identifier']),
+            );
+        }
+    }
+
+    /**
      * Record one successful access-control change in the audit trail.
      *
      * Every call sits inside the mutation's transaction, so the trail commits with the change it
@@ -1355,5 +1417,27 @@ final readonly class AccessControlService
             'success',
             $metadata,
         ));
+    }
+
+    /**
+     * Refuse a human caller that carries no consumed step-up proof before an account-recovery act.
+     *
+     * The access screen consumes a proof bound to the exact submitted change before it calls in, and only a
+     * browser session can obtain one. A context with no human principal is a system actor wired in-process,
+     * such as the host-local credential-recovery break-glass, and is not asked for a proof.
+     *
+     * @param   ExecutionContext  $context  Caller of the recovery act.
+     *
+     * @return  void
+     *
+     * @throws  StepUpRejected  When a human caller carries no step-up proof.
+     *
+     * @since   2.0.0
+     */
+    private static function assertHumanStepUp(ExecutionContext $context): void
+    {
+        if ($context->principal() !== null && $context->stepUpProof() === null) {
+            throw new StepUpRejected();
+        }
     }
 }

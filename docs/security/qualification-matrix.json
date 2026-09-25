@@ -1,0 +1,1616 @@
+{
+    "schema_version": 1,
+    "package": "P7-C",
+    "authority": "docs/roadmap/README.md#phase-7--production-qualification-and-vertical-neutral-proof",
+    "page": "docs/security/qualification-matrix.md",
+    "statement": "automated evidence across authentication and session handling, request-forgery and content-policy and upload and traversal and server-side-request boundaries, query and identifier and pagination and exhaustion inputs, row and field and action and report and export and event and log non-disclosure, maker-checker and separation of duty and step-up and human proof and confused-deputy cases, idempotency conflict and operation ownership, extension signature and trust rotation and revocation and generation fencing, ambient authority and out-of-process controls, secret sources and rotation and redaction across every channel, audit tamper evidence and archival, and tenant isolation under concurrency and noisy-neighbour load.",
+    "note": "Each sub-area names the application tests that prove it and the CI job that runs each one. Scanners in the security workflow supplement these application authorization tests; they never substitute for them. A sub-area without evidence must carry a reasoned out_of_scope entry naming its owning finding. tests/Architecture/SecurityQualificationMatrixTest.php enforces both rules and that every referenced test exists and is run by its job.",
+    "jobs": {
+        ".github/workflows/ci.yml#quality": "PHP 8.5 quality: the unit and architecture suites.",
+        ".github/workflows/ci.yml#database": "PHP 8.5 on MariaDB, MySQL and PostgreSQL: the complete suite, including integration and functional tests.",
+        ".github/workflows/security.yml#source-and-image": "Security: the named P7-C Studio preview invocation, dependency audit, secret scanning and image scans."
+    },
+    "areas": [
+        {
+            "id": "authentication-session",
+            "title": "Authentication and session handling",
+            "sub_areas": [
+                {
+                    "id": "credential-verification",
+                    "title": "Credential verification, non-enumeration and throttling",
+                    "findings": [],
+                    "evidence": [
+                        {
+                            "test": "tests/Unit/Administrator/Http/Handler/AdministratorLoginHandlerTest.php::testAWrongCredentialRerendersWithTheCatalogueRejection",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "A wrong administrator credential creates no session and is answered on the form."
+                        },
+                        {
+                            "test": "tests/Unit/Portal/Http/PortalLoginHandlerTest.php::testCredentialsAndUnavailableMembershipUseTheSameNonEnumeratingResponse",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Unknown accounts, wrong passwords and unavailable memberships are indistinguishable on the portal."
+                        },
+                        {
+                            "test": "tests/Integration/Identity/AuthenticationRateLimitWindowIntegrationTest.php::testTheFixedWindowClosesFifteenMinutesAfterTheFirstAttemptAndASuccessClearsIt",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "The Redis-backed sign-in throttle window opens, closes and clears against the real store."
+                        },
+                        {
+                            "test": "tests/Unit/Identity/Infrastructure/Administration/RedisAuthenticationRateLimiterTest.php::testTheTenthAttemptIsAdmittedAndTheEleventhIsRefused",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "The eleventh attempt inside a window is refused."
+                        },
+                        {
+                            "test": "tests/Unit/Identity/Infrastructure/Security/NativePasswordHasherTest.php::testRejectsPasswordsThatBcryptWouldSilentlyTruncate",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "No password is silently truncated before hashing."
+                        }
+                    ]
+                },
+                {
+                    "id": "session-cookie-posture",
+                    "title": "Session cookie attributes and middleware coverage",
+                    "findings": [
+                        "GM-IDN-05",
+                        "GM-IDN-06"
+                    ],
+                    "evidence": [
+                        {
+                            "test": "tests/Functional/Http/SessionCookiePostureTest.php::testAdministratorCookiesCarryTheExactAttributesForEachTransportPosture",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "The live pipeline issues the exact HttpOnly, SameSite=Strict, path-scoped and Secure-when-TLS administrator cookies."
+                        },
+                        {
+                            "test": "tests/Functional/Http/SessionCookiePostureTest.php::testPortalCookiesCarryTheExactAttributesForEachTransportPosture",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "The same exact attribute set holds for the portal session and its sign-in token."
+                        },
+                        {
+                            "test": "tests/Unit/Portal/Http/PortalSecurityBoundaryTest.php::testAdministratorCookieCannotAuthenticateThePortalButPortalCookieCan",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "An administrator cookie never authenticates the portal surface."
+                        }
+                    ]
+                },
+                {
+                    "id": "session-expiry-and-rotation",
+                    "title": "Idle and absolute expiry, rotation and browser binding",
+                    "findings": [
+                        "GM-IDN-05"
+                    ],
+                    "evidence": [
+                        {
+                            "test": "tests/Integration/Identity/SessionIdleExpiryIntegrationTest.php::testIdleAndAbsoluteExpiryHoldForAdministratorAndPortalSessions",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Idle and absolute expiry are enforced by the stored sessions of both browser surfaces."
+                        },
+                        {
+                            "test": "tests/Unit/Portal/Infrastructure/Session/DoctrinePortalSessionStoreTest.php::testIdleExpiryIsJudgedAtTheExactBoundary",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Idle expiry is judged at the exact instant."
+                        },
+                        {
+                            "test": "tests/Unit/Portal/Infrastructure/Session/DoctrinePortalSessionStoreTest.php::testRotationReplacesTheSessionWithFreshSecretsAndRetiresTheOldCookie",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Privilege change rotates the session and retires the previous cookie."
+                        },
+                        {
+                            "test": "tests/Unit/Portal/Infrastructure/Session/DoctrinePortalSessionStoreTest.php::testAForeignBrowserIsRefusedBeforeTheIdentityIsLoaded",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "A stolen cookie replayed from another browser is refused before identity load."
+                        }
+                    ]
+                },
+                {
+                    "id": "credential-change-revocation",
+                    "title": "Credential change and grant revocation end live sessions and tokens",
+                    "findings": [],
+                    "evidence": [
+                        {
+                            "test": "tests/Integration/Identity/AccessControlIntegrationTest.php::testRemovingAGrantInvalidatesAnAlreadyIssuedTokenImmediately",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Removing a grant invalidates an issued bearer token on the next verification."
+                        },
+                        {
+                            "test": "tests/Unit/Identity/Application/Administration/AccessControlServiceTest.php::testSelfServicePasswordChangeProvesTheCurrentOneAndRetiresEverySession",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "A password change proves the current password and retires every session."
+                        },
+                        {
+                            "test": "tests/Unit/Identity/Application/Administration/AccessControlServiceTest.php::testEmergencyTokenRevocationNowAlsoEndsTheSubjectsBrowserSessions",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Emergency token revocation also ends the subject browser sessions."
+                        },
+                        {
+                            "test": "tests/Unit/Identity/Infrastructure/Administration/DoctrineAdministratorSessionStoreTest.php::testResolutionRefusesASessionIssuedUnderASupersededSecurityEpoch",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "A session minted under a superseded security epoch no longer resolves."
+                        },
+                        {
+                            "test": "tests/Functional/Security/CredentialTakeoverCeilingTest.php::testAUserManagerCannotTakeOverAStrongerAccount",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Over REST, a user manager cannot reset the password or second factor of an account stronger than itself."
+                        },
+                        {
+                            "test": "tests/Functional/Security/CredentialTakeoverCeilingTest.php::testMembershipRoleAuthorityCountsTowardsTheCeiling",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Authority held only through an organization membership, even an inactive one, bounds a credential takeover."
+                        },
+                        {
+                            "test": "tests/Functional/Security/CredentialTakeoverCeilingTest.php::testBreakGlassRecoveryCurrentlyStopsAtTheCeilingOfAnAccountHoldingGrants",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Break-glass console recovery is pinned at the ceiling for grant-holding accounts, pending a maintainer decision."
+                        },
+                        {
+                            "test": "tests/Integration/Identity/IdentityRecoveryMachineEquivalenceIntegrationTest.php::testTheScreensSteppedContextStillReachesTheRecoveryActs",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "The access screen's stepped-up context still reaches every audited recovery act: password reset, second-factor retirement and session termination."
+                        }
+                    ]
+                },
+                {
+                    "id": "bearer-token-binding",
+                    "title": "Bearer token audience, purpose, site and header binding",
+                    "findings": [],
+                    "evidence": [
+                        {
+                            "test": "tests/Unit/Http/Middleware/BearerAuthenticationMiddlewareTest.php::testRequiresOneExplicitSiteHeaderForAuthenticatedRequests",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Every authenticated machine request names exactly one site."
+                        },
+                        {
+                            "test": "tests/Unit/Http/Middleware/BearerAuthenticationMiddlewareTest.php::testMultipleAuthorizationHeadersAreRejectedBeforeVerification",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "An ambiguous Authorization header is refused before verification."
+                        },
+                        {
+                            "test": "tests/Unit/Identity/Infrastructure/Authentication/DoctrineAccessTokenVerifierTest.php::testRejectsUnknownAudiencePurposeBeforeDatabaseLookup",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Tokens are bound to an audience and purpose pair."
+                        },
+                        {
+                            "test": "tests/Unit/Identity/Infrastructure/Authentication/DoctrineAccessTokenVerifierTest.php::testBindsEveryLookupToAdapterAndSiteContext",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Every token lookup is bound to the adapter and the site."
+                        },
+                        {
+                            "test": "tests/Functional/Security/MachineAdapterAuthorityTest.php::testNoAmbientOrMisdirectedCredentialReachesAMachineSurface",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Cookies, query-string tokens and foreign or repeated site headers confer no machine authority over HTTP."
+                        }
+                    ]
+                },
+                {
+                    "id": "self-service-reach",
+                    "title": "Self-service account reach",
+                    "findings": [
+                        "GM-IDN-07"
+                    ],
+                    "evidence": [
+                        {
+                            "test": "tests/Integration/Identity/AccountSelfServiceIntegrationTest.php::testAnOrdinaryUserCanChangeOnlyTheirOwnPassword",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "An ordinary user can change only their own password."
+                        },
+                        {
+                            "test": "tests/Integration/Identity/AccountSelfServiceIntegrationTest.php::testWrongCurrentPasswordsAreThrottled",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Guessing the current password through self-service is throttled."
+                        },
+                        {
+                            "test": "tests/Unit/Identity/Application/Administration/AccessControlServiceTest.php::testAdministrativeResetRefusesToReplaceTheActorsOwnPassword",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "The administrative reset cannot replace the actor own password without proof."
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "request-boundaries",
+            "title": "Request-forgery, content-policy, upload, traversal and server-side-request boundaries",
+            "sub_areas": [
+                {
+                    "id": "request-forgery",
+                    "title": "Cross-site request forgery, including login forgery",
+                    "findings": [
+                        "GM-IDN-04"
+                    ],
+                    "evidence": [
+                        {
+                            "test": "tests/Unit/Administrator/Http/Handler/AdministratorLoginHandlerTest.php::testInvalidLoginTokensNeverAuthenticateOrCreateASession",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "A forged or missing sign-in token never authenticates."
+                        },
+                        {
+                            "test": "tests/Unit/Portal/Http/PortalLoginHandlerTest.php::testForgedLoginTokenIsRejectedBeforeAuthenticationAndRotated",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "A forged portal sign-in token is refused before authentication and rotated."
+                        },
+                        {
+                            "test": "tests/Unit/Administrator/Http/Middleware/AdministratorCsrfMiddlewareTest.php::testATokenThatIsNotTheSessionsIsRefused",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "A token from another session is refused."
+                        },
+                        {
+                            "test": "tests/Unit/Administrator/Http/Middleware/AdministratorCsrfMiddlewareTest.php::testAWrongHeaderIsNotRescuedByACorrectField",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "A wrong header token is not rescued by a correct field."
+                        },
+                        {
+                            "test": "tests/Unit/Portal/Http/Middleware/PortalCsrfMiddlewareTest.php::testATokenThatIsNotTheSessionsIsRefused",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "The portal token is bound to its own session."
+                        }
+                    ]
+                },
+                {
+                    "id": "content-policy",
+                    "title": "Content security policy and response hardening headers",
+                    "findings": [
+                        "GM-SUP-08"
+                    ],
+                    "evidence": [
+                        {
+                            "test": "tests/Unit/Http/Security/SecurityHeadersTest.php::testProvidesHardenedHeadersAndNonce",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Every response carries the hardened header set and a per-response nonce."
+                        },
+                        {
+                            "test": "tests/Unit/Http/Security/SecurityHeadersTest.php::testNoInlineStyleSourceIsAdmittedOnAnyResponse",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "No response admits an inline style source."
+                        },
+                        {
+                            "test": "tests/Functional/Http/PublicThemeStylesheetTest.php::testAdministratorAndPortalResponsesAdmitNoInlineStyleSource",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "The live administrator and portal responses carry the no-inline-style policy."
+                        },
+                        {
+                            "test": "tests/Unit/Http/Middleware/SecurityMiddlewareTest.php::testSvgMediaReceivesAnIsolatedContentSecurityPolicy",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Served SVG media is sandboxed by its own policy."
+                        },
+                        {
+                            "test": "tests/Unit/Http/Security/SecurityHeadersTest.php::testInadmissibleScriptOriginsAreRefused",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Only exact admissible script origins can widen the script directive."
+                        },
+                        {
+                            "test": "tests/Unit/Localization/Application/MessageOverrideServiceTest.php::testAdministeredWordingRefusesActiveMarkupAndAttributes",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Administered wording, now also writable over REST, cannot carry active markup into trusted rendering."
+                        },
+                        {
+                            "test": "tests/Unit/Localization/Presentation/TranslationTwigExtensionTest.php::testAMessageCarryingInlineMarkupKeepsItsElementAndStillEscapesTheValues",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Substituted values are escaped even inside trusted catalogue markup."
+                        }
+                    ]
+                },
+                {
+                    "id": "upload",
+                    "title": "Upload content-type confusion and executable payloads",
+                    "findings": [],
+                    "evidence": [
+                        {
+                            "test": "tests/Unit/Media/Infrastructure/FilesystemMediaStorageTest.php::testRejectsExecutableOrUnknownUploads",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Executable or unknown uploads are refused by byte detection."
+                        },
+                        {
+                            "test": "tests/Unit/Media/Infrastructure/FilesystemMediaStorageTest.php::testExposesBundledSvgAsReadOnlyMediaWithoutAllowingSvgUploads",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "SVG is never accepted from an upload."
+                        },
+                        {
+                            "test": "tests/Unit/Administrator/Http/Handler/AdministratorStudioMediaUploadHandlerTest.php::testBinaryGrantIsBoundToTheFreshAdministratorSession",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "A Studio binary upload grant is bound to the fresh administrator session."
+                        },
+                        {
+                            "test": "tests/Unit/Studio/Application/Media/StudioExternalMediaFetcherTest.php::testResponseTypeMismatchDeletesThePrivateBody",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "An imported body whose declared type disagrees with its bytes is refused and deleted."
+                        },
+                        {
+                            "test": "tests/Functional/Security/UploadAndTraversalBoundaryTest.php::testUploadsAreJudgedByTheirBytesAndNeverByTheClientNameOrType",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Over HTTP, script, markup, SVG and mislabelled uploads are refused by their bytes and a polyglot is stored and served inertly under its detected type."
+                        },
+                        {
+                            "test": "tests/Functional/Security/UploadAndTraversalBoundaryTest.php::testTheRestUploadJudgesTheRawBodyAndIgnoresTheClientPath",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "The REST raw-body upload judges bytes and keeps only the base name of a traversal-shaped filename."
+                        }
+                    ]
+                },
+                {
+                    "id": "traversal",
+                    "title": "Path traversal and symbolic-link escape",
+                    "findings": [],
+                    "evidence": [
+                        {
+                            "test": "tests/Unit/Extension/Infrastructure/Trust/FilesystemExtensionArtifactVerifierTest.php::testRejectsSymlinksRatherThanSilentlyExcludingThemFromTheDigest",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "A symbolic link in a deployed extension is refused."
+                        },
+                        {
+                            "test": "tests/Integration/BusinessReporting/FilesystemExportArtifactStorageTest.php::testRejectsUppercaseAttemptOwnershipAndDirectObjectKeys",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Export storage refuses direct object keys."
+                        },
+                        {
+                            "test": "tests/Unit/Delivery/Console/Command/CommandInputTest.php::testProtectedJsonDocumentRejectsASymlink",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Console document inputs refuse symbolic links."
+                        },
+                        {
+                            "test": "tests/Unit/Extension/Application/Trust/TrustStoreTest.php::testNonEmptyTrustedRuntimeLoadsFromAResolvedNonSymlinkRoot",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "The trusted runtime loads only from a resolved non-link root."
+                        },
+                        {
+                            "test": "tests/Functional/Security/UploadAndTraversalBoundaryTest.php::testTraversalAttemptsAreRefusedLikeMissingFilesAndDeleteNothing",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Every URL-to-file route refuses encoded and literal traversal like a missing file, and a traversal-shaped delete removes nothing."
+                        },
+                        {
+                            "test": "tests/Integration/Extension/ExtensionArchiveTraversalIntegrationTest.php::testAHostileArchiveEntryRefusesTheWholePackageAndEscapesNowhere",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Parent, absolute, backslash, nested and symbolic-link archive entries refuse the whole extension package."
+                        }
+                    ]
+                },
+                {
+                    "id": "server-side-request",
+                    "title": "Server-side request forgery through outbound fetchers, including redirect rebinding",
+                    "findings": [
+                        "V2-STU-005"
+                    ],
+                    "evidence": [
+                        {
+                            "test": "tests/Unit/Studio/Application/Media/StudioExternalMediaFetcherTest.php::testMixedPublicAndPrivateDnsAnswersFailClosedBeforeTransport",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "A DNS answer set mixing public and private addresses is refused before connecting."
+                        },
+                        {
+                            "test": "tests/Unit/Studio/Application/Media/StudioExternalMediaFetcherTest.php::testAHostThatRebindsToARefusedAddressAfterTheCheckIsRefused",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "A host that rebinds to a refused address between checks is refused."
+                        },
+                        {
+                            "test": "tests/Unit/Studio/Application/Media/StudioExternalMediaFetcherTest.php::testRedirectTargetRepeatsLexicalPolicy",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Every redirect hop repeats lexical, DNS and pinning checks."
+                        },
+                        {
+                            "test": "tests/Unit/Studio/Domain/Media/StudioExternalUrlPolicyTest.php::testResolvedAddressesMustBeGloballyRoutable",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Only globally routable addresses are admitted."
+                        },
+                        {
+                            "test": "tests/Unit/Studio/Domain/Media/StudioExternalUrlPolicyTest.php::testRedirectIsRevalidated",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "A redirect is revalidated as a fresh candidate."
+                        },
+                        {
+                            "test": "tests/Unit/Extension/Application/Trust/RevocationFeedSynchronizerTest.php::testPlaintextFeedOriginIsRefused",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "The revocation feed refuses plaintext origins."
+                        },
+                        {
+                            "test": "tests/Integration/Security/OutboundRequestForgeryIntegrationTest.php::testNoInternalAddressSpellingReachesTheLoopbackListener",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "No internal-address spelling or loopback-resolving name reaches a real loopback listener through the production importer."
+                        },
+                        {
+                            "test": "tests/Integration/Security/OutboundRequestForgeryIntegrationTest.php::testTheRevocationFeedTransportRefusesEveryNonTlsOriginBeforeConnecting",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "The revocation feed transport refuses every non-TLS scheme before connecting."
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "input-bounds",
+            "title": "Query, identifier, pagination and exhaustion inputs",
+            "sub_areas": [
+                {
+                    "id": "query",
+                    "title": "Closed query grammar with no injection path",
+                    "findings": [],
+                    "evidence": [
+                        {
+                            "test": "tests/Unit/BusinessSurface/Application/BusinessRecordQueryFactoryTest.php::testBuildsTheCompleteClosedBoundedQueryGrammar",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Every surface builds queries from one closed, bounded grammar."
+                        },
+                        {
+                            "test": "tests/Unit/BusinessSurface/Application/BusinessRecordQueryFactoryTest.php::testRejectsUnknownMembersInsteadOfIgnoringThem",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Unknown query members are refused rather than ignored."
+                        },
+                        {
+                            "test": "tests/Unit/Delivery/Http/Api/Business/BusinessRecordApiRequestTest.php::testRejectsAFilterBeforeItExceedsTheSixtyFourNodeBudget",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "A filter tree is refused before it exceeds its node budget."
+                        },
+                        {
+                            "test": "tests/Unit/BusinessSurface/Delivery/Browser/BusinessBrowserQueryTest.php::testRejectsUnboundedFiltersAndSearchFields",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Browser filters and searches are bounded."
+                        }
+                    ]
+                },
+                {
+                    "id": "identifier",
+                    "title": "Identifier probing and enumeration",
+                    "findings": [],
+                    "evidence": [
+                        {
+                            "test": "tests/Unit/BusinessReporting/ExportServiceTransactionTest.php::testMalformedArtifactIdentifiersRemainIndistinguishableFromMissingArtifacts",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Malformed and missing export identifiers are indistinguishable."
+                        },
+                        {
+                            "test": "tests/Unit/BusinessReporting/RecordExportReportProviderTest.php::testForeignAndMismatchedIdentifiersStayUnavailable",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Foreign identifiers stay unavailable."
+                        },
+                        {
+                            "test": "tests/Unit/Studio/Application/Projection/StudioContentProjectionServiceTest.php::testDeniedAndMissingReadsCollapseToUnavailable",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Denied and missing Studio reads collapse to one answer."
+                        },
+                        {
+                            "test": "tests/Unit/Infrastructure/Mcp/McpCapabilityCatalogTest.php::testGeneratedBusinessStatusIsNonEnumeratingAndDoesNotSelectAnOperation",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "The MCP operation status tool cannot enumerate operations."
+                        },
+                        {
+                            "test": "tests/Functional/Security/RequestInputBoundaryTest.php::testMissingMalformedAndForbiddenIdentifiersAreIndistinguishable",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Over HTTP, missing, malformed and forbidden identifiers get the same answer."
+                        }
+                    ]
+                },
+                {
+                    "id": "pagination",
+                    "title": "Pagination bounds and cursor integrity",
+                    "findings": [],
+                    "evidence": [
+                        {
+                            "test": "tests/Unit/BusinessRecord/Application/RecordCursorCodecTest.php::testSignedCursorRoundTripsAndRejectsPayloadOrSignatureTampering",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Record cursors are signed and tampering is refused."
+                        },
+                        {
+                            "test": "tests/Unit/Studio/Application/Host/StudioResourceHostPortTest.php::testATamperedCursorIsRefused",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "A tampered Studio resource cursor is refused."
+                        },
+                        {
+                            "test": "tests/Unit/Scale/QueryAndResultBoundsTest.php::testDeepOffsetsAreRefusedBeforeAnyStatement",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Deep offsets are refused before any statement runs."
+                        },
+                        {
+                            "test": "tests/Unit/Delivery/Http/Dashboard/DashboardPreferenceQueryDecoderTest.php::testTypedQueryRejectsPageBeyondThePracticalBound",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "A page beyond the practical bound is refused."
+                        },
+                        {
+                            "test": "tests/Unit/Application/Authorization/ApplicationAuthorizationTest.php::testCollectionLimitIsFilledAfterAuthorizationFiltering",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Page limits are filled after authorization filtering, so paging cannot reveal withheld rows."
+                        },
+                        {
+                            "test": "tests/Integration/BusinessRecord/BusinessRecordHistoryPagingIntegrationTest.php::testAmbiguousIdentityIsRefusedAtEveryPageSizeAndCursorPosition",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "History paging refuses ambiguous identities at every cursor position."
+                        },
+                        {
+                            "test": "tests/Functional/Security/RequestInputBoundaryTest.php::testPageAndLimitBoundsAreEnforcedRatherThanClampedOrOverflowed",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Machine limits are enforced by name, and overflowing browser pages fall back instead of failing."
+                        },
+                        {
+                            "test": "tests/Unit/Media/Application/MediaServiceBrowseBoundsTest.php::testAPageNumberAtTheIntegerLimitIsAnEmptyPageRatherThanAnOverflow",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "A media page at the integer limit is an empty page, not an overflow."
+                        }
+                    ]
+                },
+                {
+                    "id": "exhaustion",
+                    "title": "Oversized and exhaustion inputs",
+                    "findings": [],
+                    "evidence": [
+                        {
+                            "test": "tests/Unit/Http/Middleware/SecurityMiddlewareTest.php::testOversizedBodyIsRejected",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "A declared oversized body is refused."
+                        },
+                        {
+                            "test": "tests/Unit/Http/Middleware/SecurityMiddlewareTest.php::testOversizedUndeclaredBodyIsRejectedAndBoundedBodyIsPreserved",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "An undeclared oversized body is refused while streaming."
+                        },
+                        {
+                            "test": "tests/Unit/Scale/QueryAndResultBoundsTest.php::testHistoryValueAndExportBoundsAreRefused",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "History, value and export bounds are enforced."
+                        },
+                        {
+                            "test": "tests/Unit/BusinessReporting/ReportApiDiscoveryTest.php::testSynchronousRowLimitReturnsAStableExportGuidanceProblem",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "A synchronous report that exceeds its row limit is refused with guidance."
+                        },
+                        {
+                            "test": "tests/Unit/Extension/Infrastructure/DoctrineExtensionManagerTest.php::testOversizedCallerArchiveIsRefusedBeforeSnapshotCopy",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "An oversized extension archive is refused before it is copied."
+                        },
+                        {
+                            "test": "tests/Unit/Studio/Application/Host/StudioRecoveryHostPortTest.php::testAnExhaustedWriteWindowIsRefusedAsRateLimited",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Studio recovery writes are rate limited."
+                        },
+                        {
+                            "test": "tests/Functional/Security/RequestInputBoundaryTest.php::testOversizedAndPathologicalInputsAreRefusedBeforeWork",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Over HTTP, oversized bodies, nesting bombs and unusable keys are refused with client errors."
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "non-disclosure",
+            "title": "Row, field, action, report, export, event and log non-disclosure",
+            "sub_areas": [
+                {
+                    "id": "row",
+                    "title": "Row policy precedes every read shape",
+                    "findings": [],
+                    "evidence": [
+                        {
+                            "test": "tests/Integration/BusinessRecord/BusinessRecordPolicyEnforcementIntegrationTest.php::testPolicyPrecedesDirectPageCountAggregateIncludeAndRelationReads",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Row policy precedes direct, page, count, aggregate, include and relation reads."
+                        },
+                        {
+                            "test": "tests/Integration/BusinessRecord/BusinessRecordPolicyCompilerIntegrationTest.php::testRowPolicyPrecedesPagingAndSharesBindingsWithAggregatesAndEvaluator",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Compiled row policy precedes paging on the real engine."
+                        },
+                        {
+                            "test": "tests/Integration/BusinessRecord/BusinessRecordPolicyCompilerIntegrationTest.php::testNoAllowCompilesToFalseForPageAndAggregate",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "No allow rule compiles to an empty result."
+                        },
+                        {
+                            "test": "tests/Unit/Application/Authorization/ApplicationAuthorizationTest.php::testSensitiveCollectionReadFiltersRecordsByExactResourceScope",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Sensitive collections are filtered by exact resource scope."
+                        }
+                    ]
+                },
+                {
+                    "id": "field",
+                    "title": "Field disclosure and secret handling",
+                    "findings": [],
+                    "evidence": [
+                        {
+                            "test": "tests/Integration/BusinessRecord/BusinessRecordPolicyCompilerIntegrationTest.php::testConditionalFieldGrantsIntersectAndMatchingDenyRulesSubtract",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Conditional field grants intersect and deny rules subtract."
+                        },
+                        {
+                            "test": "tests/Integration/BusinessRecord/BusinessRecordPolicyEnforcementIntegrationTest.php::testEntityReferenceNeverReleasesRawKeyWithoutTargetPublicReferenceGrant",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "A reference never releases a raw key without the target grant."
+                        },
+                        {
+                            "test": "tests/Integration/BusinessSurface/GeneratedBusinessRelatedPolicyIntegrationTest.php::testCreateValidationDoesNotRevealFieldsOmittedByTheOperationPlan",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Validation errors do not reveal omitted fields."
+                        },
+                        {
+                            "test": "tests/Unit/Studio/Application/Projection/ContentStudioProjectorTest.php::testPolicyOmissionDoesNotBecomeAFieldExistenceOracle",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Policy omission is not a field-existence oracle."
+                        },
+                        {
+                            "test": "tests/Unit/BusinessRecord/Domain/RecordIntegrityTest.php::testRevisionChecksumCoversMetadataAndDisclosureViewRedactsSecrets",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "The disclosure view of a revision redacts secrets."
+                        },
+                        {
+                            "test": "tests/Integration/Security/SecretFieldChannelNonDisclosureIntegrationTest.php::testASecretValueAppearsInPlaintextInNoTableLogOrReadView",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "A secret field value appears in plaintext in no table, log record or read view."
+                        }
+                    ]
+                },
+                {
+                    "id": "action",
+                    "title": "Action policy and action exposure",
+                    "findings": [],
+                    "evidence": [
+                        {
+                            "test": "tests/Integration/BusinessRecord/BusinessRecordPolicyEnforcementIntegrationTest.php::testActionUsesItsOwnRowAndActionPolicyBeforeMutation",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "An action is gated by its own row and action policy before mutation."
+                        },
+                        {
+                            "test": "tests/Integration/BusinessSurface/GeneratedBusinessActionExposureIntegrationTest.php::testPortalCannotAddressActionOmittedFromSurfaceMetadata",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "The portal cannot address an action the surface omits."
+                        },
+                        {
+                            "test": "tests/Architecture/GeneratedBusinessDeliveryParityTest.php::testActionDispatchRequiresPolicyFilteredSurfaceMembership",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Action dispatch requires policy-filtered surface membership on every adapter."
+                        }
+                    ]
+                },
+                {
+                    "id": "report",
+                    "title": "Report scope and consolidation",
+                    "findings": [],
+                    "evidence": [
+                        {
+                            "test": "tests/Integration/BusinessRecord/BusinessRecordPolicyCompilerIntegrationTest.php::testRelatedPlansInheritReportExportAndActionOperationSemantics",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Report, export and action plans inherit the operation policy."
+                        },
+                        {
+                            "test": "tests/Integration/Authorization/BusinessGroupOwnershipEngineIntegrationTest.php::testAConsolidatedGroupReportReturnsExactlyTheMemberSites",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "A consolidated report returns exactly the member sites."
+                        },
+                        {
+                            "test": "tests/Unit/Application/Authorization/BusinessGroupOwnershipTest.php::testConsolidatedReadingIsRefusedForAGroupTheCallerIsOutside",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Consolidated reading is refused outside the group."
+                        },
+                        {
+                            "test": "tests/Architecture/BusinessReportDeliveryParityTest.php::testEveryMachineAdapterUsesTheSharedReportAndExportServices",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Every adapter reaches reports through the one policy-bound service."
+                        }
+                    ]
+                },
+                {
+                    "id": "export",
+                    "title": "Export generation, ownership and download",
+                    "findings": [],
+                    "evidence": [
+                        {
+                            "test": "tests/Unit/BusinessReporting/ExportGenerationPolicyFenceTest.php::testPolicyFenceSpansPublicationAndOuterRollbackDeletesBytesButKeepsFailureAudit",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "An export publishes only under the policy it was requested with."
+                        },
+                        {
+                            "test": "tests/Unit/BusinessReporting/ExportServiceTransactionTest.php::testPolicySnapshotsRemainInsideStandaloneAndNestedExportTransactions",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Export policy snapshots stay inside the export transaction."
+                        },
+                        {
+                            "test": "tests/Unit/BusinessReporting/RecordExportPipelineTest.php::testDeniedActorsCannotQueueADerivedRecordExport",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "A denied actor cannot queue a record export."
+                        },
+                        {
+                            "test": "tests/Architecture/BusinessReportDeliveryParityTest.php::testBrowserAdaptersExposeCsrfProtectedExecutionAndVerifiedDownload",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Browser downloads are CSRF protected and checksum verified."
+                        }
+                    ]
+                },
+                {
+                    "id": "event",
+                    "title": "Integration event and job payloads",
+                    "findings": [],
+                    "evidence": [
+                        {
+                            "test": "tests/Unit/BusinessRecord/Application/BusinessRecordMutationPublicationTest.php::testPublicationBuildsTheExactTrailInTransactionOrder",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Mutation events carry changed handles, never values."
+                        },
+                        {
+                            "test": "tests/Integration/BusinessIntegration/BusinessIntegrationPersistenceTest.php::testAggregateCheckpointsAreIsolatedBySiteAndOrganizationScope",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Event checkpoints are isolated by site and organization."
+                        },
+                        {
+                            "test": "tests/Unit/BusinessIntegration/Application/ValidatedContributedJobHandlerTest.php::testAPayloadOutsideTheSignedSchemaNeverReachesTheImplementation",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "A payload outside its signed schema never reaches a handler."
+                        },
+                        {
+                            "test": "tests/Unit/BusinessIntegration/Application/JobQueueIntegrationEventHandlerTest.php::testAContextTheAppDidNotIssueIsRefusedBeforeEnqueue",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "A forged context never enqueues an event."
+                        },
+                        {
+                            "test": "tests/Integration/Security/SecretFieldChannelNonDisclosureIntegrationTest.php::testASecretValueAppearsInPlaintextInNoTableLogOrReadView",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "The outbox, journal and audit rows a secret-bearing mutation writes carry no plaintext secret."
+                        }
+                    ]
+                },
+                {
+                    "id": "log",
+                    "title": "Log and metric channels",
+                    "findings": [],
+                    "evidence": [
+                        {
+                            "test": "tests/Functional/Security/McpLogNonDisclosureTest.php::testToolArgumentsNeverReachTheLogChannel",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "An MCP tool call writes none of its arguments to the log."
+                        },
+                        {
+                            "test": "tests/Unit/Infrastructure/Mcp/McpProtocolLogRedactorTest.php::testEveryPayloadShapeIsSummarizedAndEverythingElsePassesThrough",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Every SDK payload shape is summarized before it reaches the logger."
+                        },
+                        {
+                            "test": "tests/Unit/Infrastructure/Observability/LoggingContractTest.php::testDeclaredFieldsLoseTheirValuesAtEveryNestingLevel",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Declared fields are redacted at every nesting level."
+                        },
+                        {
+                            "test": "tests/Unit/Infrastructure/Observability/LoggingContractTest.php::testCredentialsInTheMessagePlainValuesAndSerializableObjectsAreScrubbed",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Payload objects are walked through their serialized form before formatting."
+                        },
+                        {
+                            "test": "tests/Unit/Http/Middleware/ObservabilityMiddlewareTest.php::testNoRequestPathOrIdentifierEverReachesALabel",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "No request path or identifier reaches a metric label."
+                        },
+                        {
+                            "test": "tests/Unit/Studio/Application/Media/StudioMediaAuditTest.php::testAuthorizeUploadRecordsOnlySafeLifecycleMetadata",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Studio media records only safe lifecycle metadata."
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "authority-proof",
+            "title": "Maker-checker, separation of duty, step-up, human proof and confused-deputy cases",
+            "sub_areas": [
+                {
+                    "id": "maker-checker",
+                    "title": "Maker-checker approval",
+                    "findings": [],
+                    "evidence": [
+                        {
+                            "test": "tests/Unit/BusinessSecurity/Infrastructure/Persistence/DoctrineApprovalRepositoryTest.php::testDistinctRequesterCannotApproveEvenWithAStillLiveRule",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "The requester cannot approve their own request."
+                        },
+                        {
+                            "test": "tests/Integration/BusinessSecurity/CompetingApproverContentionIntegrationTest.php::testTheSameApproverCannotVoteTwiceEvenFromASecondConnection",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "One approver cannot vote twice, even from a second connection."
+                        },
+                        {
+                            "test": "tests/Integration/BusinessSecurity/CompetingApproverContentionIntegrationTest.php::testASecondApproverWaitsOnTheLockedRequestAndLosesTheQuorumTransition",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Racing approvers serialize on the request."
+                        },
+                        {
+                            "test": "tests/Integration/BusinessSecurity/CompetingApproverContentionIntegrationTest.php::testConsumeAndRevokeOnOneVersionCannotBothLand",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Consumption and revocation cannot both land."
+                        }
+                    ]
+                },
+                {
+                    "id": "separation-of-duty",
+                    "title": "Separation of duty rules",
+                    "findings": [],
+                    "evidence": [
+                        {
+                            "test": "tests/Unit/BusinessSurface/Application/BusinessSurfaceCatalogTest.php::testApprovalExposurePreservesApproverOnlySeparationOfDuties",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Approver-only actors keep separation of duties on every surface."
+                        },
+                        {
+                            "test": "tests/Unit/BusinessSecurity/Application/BusinessSecurityAdministrationServiceTest.php::testSeparationRuleRejectsApprovalActionWithoutLiveApprovalRequestPolicy",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "A separation rule requires a live approval policy."
+                        },
+                        {
+                            "test": "tests/Unit/BusinessSecurity/Infrastructure/Persistence/DoctrineApprovalRepositoryTest.php::testRuleVersionChangeInvalidatesAPreviouslyCreatedRequest",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "A changed rule invalidates pending requests."
+                        },
+                        {
+                            "test": "tests/Unit/BusinessSecurity/Infrastructure/Persistence/DoctrineApprovalRepositoryTest.php::testRuleLookupIsSiteScopedAndFreezesCheckerCapability",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "The checker capability is frozen at request time."
+                        }
+                    ]
+                },
+                {
+                    "id": "step-up",
+                    "title": "Step-up authentication",
+                    "findings": [],
+                    "evidence": [
+                        {
+                            "test": "tests/Unit/Identity/Application/StepUp/TotpStepUpProviderTest.php::testEnrollmentReplayFenceRecoveryConsumptionAndSessionBinding",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Step-up codes are replay fenced and session bound."
+                        },
+                        {
+                            "test": "tests/Unit/Identity/Application/Authorization/AuthorizationServiceTest.php::testStepUpOutranksAnAllowanceAndConfersNoAuthority",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Step-up is required on top of, never instead of, authority."
+                        },
+                        {
+                            "test": "tests/Unit/BusinessSecurity/Infrastructure/Persistence/DoctrineStepUpProofConsumerTest.php::testConsumesOnlyProofWhoseUserEpochIsStillLive",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "A step-up proof is consumed only under a live epoch."
+                        },
+                        {
+                            "test": "tests/Integration/Presentation/McpThemeIntegrationTest.php::testMcpAdministratorThemeActivationFailsClosedWithoutAStepUpRoute",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "MCP cannot perform an administrator step-up action."
+                        },
+                        {
+                            "test": "tests/Unit/Delivery/Console/Command/ThemeCommandTest.php::testCliCannotBypassAdministratorStepUp",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "The CLI cannot bypass administrator step-up."
+                        }
+                    ]
+                },
+                {
+                    "id": "human-proof",
+                    "title": "Actions reserved to an accountable human",
+                    "findings": [],
+                    "evidence": [
+                        {
+                            "test": "tests/Unit/Infrastructure/Mcp/McpCapabilityCatalogTest.php::testGeneratedBusinessSurfacePublishesNoCheckerVoteOrSecretInput",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "No checker vote or secret input is reachable from an agent."
+                        },
+                        {
+                            "test": "tests/Unit/Infrastructure/Mcp/McpCatalogValidatorTest.php::testExtensionLifecycleToolsNeitherPublishNorAcceptAStepUpCredential",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "No MCP tool accepts a step-up credential."
+                        },
+                        {
+                            "test": "tests/Unit/Infrastructure/Mcp/McpCapabilityCatalogTest.php::testDestructivePurgePlanningIsNotReachableFromTheAgentSurface",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Destructive purge planning is not reachable from an agent."
+                        },
+                        {
+                            "test": "tests/Unit/Infrastructure/Mcp/McpCapabilityCatalogTest.php::testTokenRotationIsNotPublishedOnTheMcpSurface",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "An agent cannot mint or rotate credentials."
+                        }
+                    ]
+                },
+                {
+                    "id": "confused-deputy",
+                    "title": "Confused deputy across machine adapters and workers",
+                    "findings": [],
+                    "evidence": [
+                        {
+                            "test": "tests/Unit/Application/Authorization/AdapterAuthorizationParityTest.php::testMcpRetainsContextProvenanceAndFiltersForeignContext",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "MCP keeps its caller provenance and refuses a foreign context."
+                        },
+                        {
+                            "test": "tests/Unit/Application/Authorization/AdapterAuthorizationParityTest.php::testSchedulerCommandCannotUseSystemPrincipalFromForeignAuthority",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "The scheduler cannot borrow a foreign system principal."
+                        },
+                        {
+                            "test": "tests/Unit/Application/Authorization/AdapterAuthorizationParityTest.php::testWorkerRejectsHumanContextBeforeTouchingQueue",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "The worker refuses a human context."
+                        },
+                        {
+                            "test": "tests/Unit/Delivery/Console/Command/CreateAccessTokenCommandTest.php::testTokenAuthorizedIssuanceRejectsOrganizationSelectionOverrides",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "The CLI cannot select an organization the token does not carry."
+                        },
+                        {
+                            "test": "tests/Unit/Delivery/Http/Api/Business/BusinessRecordApiHandlerTest.php::testCreateRefusesClientSelectedOrganizationBeforeCallingTheService",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "REST refuses a client-selected organization."
+                        },
+                        {
+                            "test": "tests/Unit/Delivery/Console/Command/ManageBusinessRecordsCommandTest.php::testInlineValuesAndSubmittedOrganizationAreRejectedBeforeAuthorization",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "The CLI refuses a submitted organization before authorization."
+                        },
+                        {
+                            "test": "tests/Functional/Security/MachineAdapterAuthorityTest.php::testEachAdapterAcceptsOnlyTheCredentialMintedForIt",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "REST, MCP and CLI each accept only the credential minted for them."
+                        },
+                        {
+                            "test": "tests/Functional/Security/MachineAdapterAuthorityTest.php::testANarrowCredentialCannotBorrowAuthorityThroughAnyAdapter",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "A narrow credential cannot create through any of the three machine adapters."
+                        },
+                        {
+                            "test": "tests/Integration/Identity/IdentityRecoveryMachineEquivalenceIntegrationTest.php::testStepUpGatedRecoveryActsAreRefusedOnEveryMachineSurface",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "No machine credential reaches a step-up-gated recovery act: REST and MCP publish none and the console is refused without a human step-up proof."
+                        },
+                        {
+                            "test": "tests/Functional/Security/CredentialTakeoverCeilingTest.php::testAUserManagerCannotTakeOverAStrongerAccount",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "A machine credential cannot reach beyond its delegation ceiling by taking over a stronger account."
+                        },
+                        {
+                            "test": "tests/Functional/Security/CredentialTakeoverCeilingTest.php::testMembershipRoleAuthorityCountsTowardsTheCeiling",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "The delegation ceiling counts every grant path, direct and membership roles, before a credential changes hands."
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "idempotency",
+            "title": "Idempotency conflict and operation ownership",
+            "sub_areas": [
+                {
+                    "id": "conflict",
+                    "title": "Key reuse with different content and concurrent first claims",
+                    "findings": [],
+                    "evidence": [
+                        {
+                            "test": "tests/Integration/Delivery/Http/Api/Idempotency/SecretOnceIdempotencyMiddlewareTest.php::testReusedKeyWithDifferentContentIsRefused",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "A key reused with different content is refused."
+                        },
+                        {
+                            "test": "tests/Integration/Delivery/Http/Api/Idempotency/SecretOnceIdempotencyMiddlewareTest.php::testLiveReservationRefusesAConcurrentAttempt",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "A live reservation refuses a concurrent attempt."
+                        },
+                        {
+                            "test": "tests/Integration/Automation/IdempotencyFirstClaimContentionIntegrationTest.php::testTheLoserOfAFirstClaimIsRefusedInFlightAndNeverReachesTheHandler",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "The loser of a first claim never reaches the handler."
+                        },
+                        {
+                            "test": "tests/Unit/BusinessSurface/Application/BusinessMutationPlanServiceTest.php::testCompletedReplayRejectsPolicyDriftOutsideTheContextFingerprint",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "A replay refuses policy drift."
+                        },
+                        {
+                            "test": "tests/Functional/Security/IdempotencyKeyOwnershipTest.php::testAKeyReplaysOnlyForTheActorAndOperationThatOwnIt",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Over HTTP, the owner alone replays and reuse for other content is refused."
+                        }
+                    ]
+                },
+                {
+                    "id": "operation-ownership",
+                    "title": "Keys are owned by actor, operation and resource",
+                    "findings": [],
+                    "evidence": [
+                        {
+                            "test": "tests/Integration/Delivery/Http/Api/Idempotency/SecretOnceIdempotencyMiddlewareTest.php::testKeyPresentedUnderADifferentCredentialIsRefused",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "A key presented under another credential is refused."
+                        },
+                        {
+                            "test": "tests/Unit/Delivery/Http/Api/Idempotency/PersistentIdempotencyAuthorizationTest.php::testWrongResourceCannotProbeOrReplayAnExistingKey",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "A key cannot probe or replay across resources."
+                        },
+                        {
+                            "test": "tests/Unit/Delivery/Http/Api/Idempotency/PersistentIdempotencyAuthorizationTest.php::testUndelegableTokenRequestCannotReserveIdempotencyRow",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "An unauthorized request reserves nothing."
+                        },
+                        {
+                            "test": "tests/Unit/Studio/Application/Host/StudioProducerRequestAuthorityTest.php::testRevokedAuthorityStopsAKeyedMutationBeforeReplay",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Revoked authority stops a keyed Studio replay."
+                        },
+                        {
+                            "test": "tests/Integration/Mcp/McpMutationGuardIntegrationTest.php::testNestedMapOrderDoesNotChangeTheIdempotencyBinding",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "The MCP idempotency binding is canonical."
+                        },
+                        {
+                            "test": "tests/Functional/Security/IdempotencyKeyOwnershipTest.php::testAKeyReplaysOnlyForTheActorAndOperationThatOwnIt",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Two actors sharing one key each run their own mutation; the key is scoped to its operation."
+                        },
+                        {
+                            "test": "tests/Functional/Security/IdempotencyKeyOwnershipTest.php::testARevokedOwnerIsRefusedBeforeAnyReplay",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "A revoked owner is refused before any replay."
+                        },
+                        {
+                            "test": "tests/Unit/Delivery/Http/Api/Idempotency/HttpMutationPreauthorizerTest.php::testParityMutationsArePreauthorizedAgainstTheirExactResource",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "The browser-parity REST mutations are authorized against their exact resource before the ledger is read."
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "extension-trust",
+            "title": "Extension signature, trust rotation, revocation and generation fencing",
+            "sub_areas": [
+                {
+                    "id": "signature",
+                    "title": "Package and deployed-artifact signatures",
+                    "findings": [],
+                    "evidence": [
+                        {
+                            "test": "tests/Unit/Extension/Application/Trust/PackageTrustPolicyTest.php::testRequiresAValidSignatureFromATrustedKey",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Admission requires a valid signature from a trusted key."
+                        },
+                        {
+                            "test": "tests/Unit/Extension/Infrastructure/Trust/FilesystemExtensionArtifactVerifierTest.php::testRejectsDeployedBytesChangedAfterSignatureVerification",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Deployed bytes changed after verification are refused."
+                        },
+                        {
+                            "test": "tests/Integration/Extension/SupplyChainAdmissionIntegrationTest.php::testAdmissionRecordsAVerifiedInventoryAndRefusesAnEditedPackage",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "An edited package is refused at admission."
+                        },
+                        {
+                            "test": "tests/Unit/Extension/Application/Trust/TrustStoreTest.php::testTamperedLocalPublicationIsRejectedWithoutQuarantiningAuthoritativeRelease",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "A tampered local publication is refused."
+                        }
+                    ]
+                },
+                {
+                    "id": "trust-rotation",
+                    "title": "Trust key rotation",
+                    "findings": [],
+                    "evidence": [
+                        {
+                            "test": "tests/Unit/Extension/Application/Trust/TrustStoreTest.php::testRotationOverlapsAndRefusesFinalRevokeWhileReleaseIsActive",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Rotation overlaps and refuses a final revoke under an active release."
+                        },
+                        {
+                            "test": "tests/Unit/Extension/Application/Trust/TrustStoreTest.php::testRotationCannotSilentlyChangeNamespaceConstraints",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Rotation cannot widen namespace constraints."
+                        },
+                        {
+                            "test": "tests/Integration/Extension/TrustLifecycleIntegrationTest.php::testFinalRotationRefusesDisabledCurrentRelease",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Final rotation refuses a disabled current release."
+                        },
+                        {
+                            "test": "tests/Functional/Security/ExtensionTrustRevocationBoundaryTest.php::testAssetsFollowTheSigningKeyThroughRotationAndEmergencyRevocation",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Over HTTP, an asset stays served through a rotation overlap and a premature final revocation is refused."
+                        }
+                    ]
+                },
+                {
+                    "id": "revocation",
+                    "title": "Emergency and feed revocation",
+                    "findings": [],
+                    "evidence": [
+                        {
+                            "test": "tests/Integration/Extension/TrustLifecycleIntegrationTest.php::testEmergencyRevocationQuarantinesActiveReleaseAcrossDatabasePlatforms",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Emergency revocation quarantines the active release on every engine."
+                        },
+                        {
+                            "test": "tests/Integration/Extension/TrustLifecycleIntegrationTest.php::testKeyRevocationSerializesWithInstallPersistence",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Revocation serializes with a concurrent install."
+                        },
+                        {
+                            "test": "tests/Integration/Extension/SupplyChainAdmissionIntegrationTest.php::testRevocationFeedAppliesRefusesRollbackAndSurvivesAnUnreachableOrigin",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "The signed revocation feed applies, refuses rollback and fails open loudly."
+                        },
+                        {
+                            "test": "tests/Integration/Mcp/McpTrustLifecycleIntegrationTest.php::testEmergencyRevocationHoldsLifecycleLockUntilMcpTransactionCommitsOnMySql",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Revocation waits for an in-flight MCP transaction."
+                        },
+                        {
+                            "test": "tests/Functional/Security/ExtensionTrustRevocationBoundaryTest.php::testAssetsFollowTheSigningKeyThroughRotationAndEmergencyRevocation",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "An emergency revocation withdraws the signed asset with the answer a missing file gets."
+                        }
+                    ]
+                },
+                {
+                    "id": "generation-fencing",
+                    "title": "Runtime generation fencing",
+                    "findings": [],
+                    "evidence": [
+                        {
+                            "test": "tests/Unit/Http/Middleware/ExtensionRuntimeGenerationMiddlewareTest.php::testStaleTrustedRuntimeDrainsBeforeDispatch",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "A stale trusted runtime drains before dispatch."
+                        },
+                        {
+                            "test": "tests/Functional/Http/KernelTest.php::testExtensionGenerationFenceIsInstalledOnlyInTheFullRuntime",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "The generation fence is installed in the full runtime."
+                        },
+                        {
+                            "test": "tests/Unit/BusinessIntegration/Application/BusinessRecordMutationEventPublisherTest.php::testStaleGenerationRefusesBeforeListenerOrOutboxInvocation",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "A stale generation refuses before any listener runs."
+                        },
+                        {
+                            "test": "tests/Unit/Extension/Runtime/TrustEnforcingJobHandlerTest.php::testAnUntrustedPackageIsQuarantinedAndNeverReachesTheDelegate",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Jobs of an untrusted package never run."
+                        },
+                        {
+                            "test": "tests/Integration/BusinessIntegration/IndependentReceiptFanoutIntegrationTest.php::testGenerationUpgradePreservesActiveFencesAndRestartsOnlyPoisonWork",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "A generation upgrade preserves active fences."
+                        },
+                        {
+                            "test": "tests/Functional/Security/ExtensionTrustRevocationBoundaryTest.php::testAssetsFollowTheSigningKeyThroughRotationAndEmergencyRevocation",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "A process booted before any trust change is fenced with a retryable 503 over the live pipeline."
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "ambient-authority",
+            "title": "Ambient authority and out-of-process controls",
+            "sub_areas": [
+                {
+                    "id": "ambient-authority",
+                    "title": "Ambient authority of admitted code and system principals",
+                    "findings": [],
+                    "evidence": [
+                        {
+                            "test": "tests/Architecture/ExtensionTrustPostureTest.php::testTheAmbientAuthorityInventoryShipsWithItsDeploymentControls",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "The ambient-authority inventory ships with its deployment controls."
+                        },
+                        {
+                            "test": "tests/Architecture/ExtensionTrustPostureTest.php::testNoSurfaceClaimsTheBoundaryIsolatesAdmittedCode",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "No surface claims admitted code is isolated."
+                        },
+                        {
+                            "test": "tests/Architecture/ExtensionTrustPostureTest.php::testRecoveryCompositionReachesNoExtensionCodeTemplateOrAsset",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Recovery composition reaches no extension code."
+                        },
+                        {
+                            "test": "tests/Architecture/CustomBusinessHandlerBoundaryTest.php::testCustomBusinessContractsContainNoTransportPersistenceOrContainerDependencies",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Custom handlers receive no transport, persistence or container."
+                        },
+                        {
+                            "test": "tests/Unit/Application/Automation/PurgeIdempotencyRecordsHandlerTest.php::testRejectsAnOrdinaryWorkerPrincipalBeforePurging",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "An ordinary worker principal cannot run a privileged job."
+                        },
+                        {
+                            "test": "tests/Unit/Extension/Runtime/ExtensionExecutionContextTest.php::testASystemContextIsDisclosedWithItsActorTokenAndNoScopes",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "A system context carries no scopes into extension code."
+                        },
+                        {
+                            "test": "tests/Integration/Persistence/AdvisoryLockScopeIntegrationTest.php::testEveryNamedAdvisoryLockDiffersAcrossDatabasesAndMatchesWithinOne",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "No server-wide advisory lock lets one installation hold ambient authority over another."
+                        }
+                    ]
+                },
+                {
+                    "id": "out-of-process",
+                    "title": "Out-of-process execution of untrusted extension code",
+                    "findings": [
+                        "GM-SUP-05"
+                    ],
+                    "out_of_scope": {
+                        "owner": "GM-SUP-05",
+                        "track": "point-5",
+                        "reason": "Running untrusted extension code out of process is a runtime that does not exist yet; it belongs to the separate Point 5 extension track under GM-SUP-05. Until it lands, admitted PHP has full process authority and the product states so on every surface, which the posture evidence pins."
+                    },
+                    "evidence": [
+                        {
+                            "test": "tests/Architecture/ExtensionTrustPostureTest.php::testUntrustedCodeIsUnsupportedAndTheOutOfProcessRouteIsNamed",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Untrusted code is unsupported and the out-of-process route is named."
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "secrets",
+            "title": "Secret sources, rotation and redaction across every channel",
+            "sub_areas": [
+                {
+                    "id": "sources",
+                    "title": "Secret sources",
+                    "findings": [],
+                    "evidence": [
+                        {
+                            "test": "tests/Unit/Kernel/Configuration/ConfigurationFactoryTest.php::testApplicationSecretCanBeReadFromAProtectedFile",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Secrets can come from protected files."
+                        },
+                        {
+                            "test": "tests/Unit/Kernel/Configuration/ConfigurationFactoryTest.php::testASecretSuppliedBothInlineAndByFileIsRefused",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "An ambiguous secret source is refused."
+                        },
+                        {
+                            "test": "tests/Unit/Kernel/Configuration/ConfigurationFactoryTest.php::testSecretMustContainAtLeastThirtyTwoBytes",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "A weak application secret is refused."
+                        },
+                        {
+                            "test": "tests/Unit/Kernel/Configuration/ConfigurationFactoryTest.php::testRuntimeSigningKeyCannotReuseApplicationSecret",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Signing keys cannot reuse the application secret."
+                        },
+                        {
+                            "test": "tests/Unit/Kernel/Configuration/ConfigurationFactoryTest.php::testARevocationFeedUrlCarryingCredentialsOrAQueryIsRefused",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "A configured origin cannot smuggle credentials into logs, audit and state."
+                        }
+                    ]
+                },
+                {
+                    "id": "rotation",
+                    "title": "Secret and key rotation",
+                    "findings": [],
+                    "evidence": [
+                        {
+                            "test": "tests/Integration/BusinessRecord/RecordSecretRotationIntegrationTest.php::testStoredSecretsMoveOntoTheActiveKeyWithoutBecomingUnreadable",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Stored record secrets move onto the active key without loss."
+                        },
+                        {
+                            "test": "tests/Integration/BusinessRecord/RecordSecretRotationIntegrationTest.php::testAnInterruptedRotationResumesWithoutLosingOrDoublingWork",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "An interrupted rotation resumes safely."
+                        },
+                        {
+                            "test": "tests/Unit/BusinessRecord/Infrastructure/SecretKeyLifecycleTest.php::testARotatedApplicationSecretDoesNotStrandEnvelopesWhenTheOldOneIsRetained",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Rotating the application secret strands nothing."
+                        },
+                        {
+                            "test": "tests/Unit/BusinessRecord/Infrastructure/SecretKeyLifecycleTest.php::testARevokedOrForeignKeyFailsClosedWithoutDisclosingAnything",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "A revoked key fails closed."
+                        },
+                        {
+                            "test": "tests/Unit/Kernel/Configuration/ConfigurationFactoryTest.php::testPreviousRuntimeKeyRingCanBeReadFromProtectedFile",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Previous keys are read from a protected key ring."
+                        }
+                    ]
+                },
+                {
+                    "id": "redaction",
+                    "title": "Redaction in log, problem, audit, replay, CLI and MCP channels",
+                    "findings": [
+                        "GM-AUD-08"
+                    ],
+                    "evidence": [
+                        {
+                            "test": "tests/Unit/Infrastructure/Observability/LoggingContractTest.php::testAnAttachedExceptionBecomesABoundedSummaryWithNoTraceAndNoDriverCredential",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Logged exceptions carry no trace or driver credential."
+                        },
+                        {
+                            "test": "tests/Unit/Infrastructure/Observability/LoggingContractTest.php::testTheWiredLoggerWritesOneJsonLineCarryingTheContractAndNoSecret",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "The wired logger writes no secret."
+                        },
+                        {
+                            "test": "tests/Unit/Infrastructure/Observability/LoggingContractTest.php::testCredentialsInTheMessagePlainValuesAndSerializableObjectsAreScrubbed",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Credentials in messages, plain values and serializable objects are scrubbed."
+                        },
+                        {
+                            "test": "tests/Unit/Http/Middleware/SecurityMiddlewareTest.php::testProblemResponseDoesNotDiscloseProductionException",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Problem documents do not disclose exceptions."
+                        },
+                        {
+                            "test": "tests/Unit/Http/Middleware/BearerAuthenticationMiddlewareTest.php::testUnknownTokenReturnsInvalidTokenWithoutEchoingToken",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "A refused token is never echoed."
+                        },
+                        {
+                            "test": "tests/Unit/Http/Handler/MetricsEndpointTest.php::testTheConfiguredTokenIsNeverEchoedBackToTheScraper",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "The metrics token is never echoed."
+                        },
+                        {
+                            "test": "tests/Integration/Audit/AuditTamperEvidenceTest.php::testCredentialsAreRedactedBeforeStorageAndAnchoring",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Audit metadata credentials are redacted before storage."
+                        },
+                        {
+                            "test": "tests/Architecture/AuditMetadataWriterPolicyTest.php::testNoWritingServiceRecordsACredentialShapedMetadataKey",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "No writer records a credential-shaped audit key."
+                        },
+                        {
+                            "test": "tests/Integration/Delivery/Http/Api/Idempotency/SecretOnceIdempotencyMiddlewareTest.php::testTokenSecretIsReturnedOnceAndNeverStoredInIdempotencyState",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "A token secret is never stored for replay."
+                        },
+                        {
+                            "test": "tests/Unit/Delivery/Console/Contract/CliMachineContractTest.php::testRawSecretOptionDefinitionIsRejected",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "The CLI accepts no raw secret option."
+                        },
+                        {
+                            "test": "tests/Functional/Security/McpLogNonDisclosureTest.php::testToolArgumentsNeverReachTheLogChannel",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "MCP payloads never reach the log."
+                        },
+                        {
+                            "test": "tests/Integration/Security/SecretFieldChannelNonDisclosureIntegrationTest.php::testASecretValueAppearsInPlaintextInNoTableLogOrReadView",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "A record secret is sealed in every table and absent from every log record."
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "audit",
+            "title": "Audit tamper evidence and archival",
+            "sub_areas": [
+                {
+                    "id": "tamper-evidence",
+                    "title": "Tamper evidence",
+                    "findings": [],
+                    "evidence": [
+                        {
+                            "test": "tests/Integration/Audit/AuditTamperEvidenceTest.php::testMutationOfAStoredRowIsDetected",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "A mutated row is detected."
+                        },
+                        {
+                            "test": "tests/Integration/Audit/AuditTamperEvidenceTest.php::testDeletionInsideAnAnchoredRangeIsDetectedByTheAnchorCount",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "A deletion inside an anchored range is detected."
+                        },
+                        {
+                            "test": "tests/Integration/Audit/AuditTamperEvidenceTest.php::testReorderingTwoRowsIsDetectedByTheAnchoredRollingDigest",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Reordering is detected."
+                        },
+                        {
+                            "test": "tests/Integration/Audit/AuditTamperEvidenceTest.php::testATamperedAnchorLedgerIsDetectedBeforeTheTrailIsWalked",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "A tampered anchor ledger is detected."
+                        },
+                        {
+                            "test": "tests/Integration/Audit/AuditTamperEvidenceTest.php::testTheDatabaseRefusesUpdatesAndUnguardedDeletes",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "The database refuses rewrites."
+                        },
+                        {
+                            "test": "tests/Integration/Audit/AuditEnforcementUnavailableTest.php::testTamperingIsStillDetectedWhenNothingIsThereToPreventIt",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Tampering is detected without database enforcement."
+                        }
+                    ]
+                },
+                {
+                    "id": "archival",
+                    "title": "Archival, retention and export",
+                    "findings": [],
+                    "evidence": [
+                        {
+                            "test": "tests/Integration/Audit/AuditTamperEvidenceTest.php::testTheExportWritesARedactedChecksummedArchiveAndAuditsItself",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "The archive export is redacted, checksummed and audited."
+                        },
+                        {
+                            "test": "tests/Integration/Audit/AuditTamperEvidenceTest.php::testRetentionArchivesAnchorsAndPrunesAgedRowsAndStaysVerifiable",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Retention archives, anchors and prunes verifiably."
+                        },
+                        {
+                            "test": "tests/Integration/Audit/AuditTamperEvidenceTest.php::testReinsertingAPrunedRowIsDetected",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Reinserting a pruned row is detected."
+                        },
+                        {
+                            "test": "tests/Integration/Audit/AuditTrailRuntimeIntegrationTest.php::testTheGuardedRetentionWindowIsTheOnlyPathThatMayDelete",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Only the guarded retention window may delete."
+                        },
+                        {
+                            "test": "tests/Unit/Delivery/Console/Command/AuditConsoleCommandTest.php::testExportPrintsTheArchiveManifestAndNeverTheArchivedBytes",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "The console export prints the manifest, never the bytes."
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "tenant-isolation",
+            "title": "Tenant isolation under concurrency and noisy-neighbour load",
+            "sub_areas": [
+                {
+                    "id": "concurrency",
+                    "title": "Isolation under concurrency",
+                    "findings": [],
+                    "evidence": [
+                        {
+                            "test": "tests/Integration/Identity/AccessControlIntegrationTest.php::testSiteScopedRevocationCannotReadOrRevokeAnotherSiteToken",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "A site-scoped actor cannot read or revoke another site token."
+                        },
+                        {
+                            "test": "tests/Integration/Identity/AccessControlIntegrationTest.php::testSiteRevocationSerializesWithIssuanceOnTheUserFence",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Revocation and issuance serialize on one fence."
+                        },
+                        {
+                            "test": "tests/Integration/Extension/ExtensionOwnershipLifecycleIntegrationTest.php::testOwnershipRemovalCannotCrossSiteBoundary",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Ownership removal cannot cross a site."
+                        },
+                        {
+                            "test": "tests/Unit/Application/Authorization/ApplicationAuthorizationTest.php::testMembershipScopeCannotAuthorizeForgedOrganizationTarget",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Membership scope cannot authorize a forged organization target."
+                        },
+                        {
+                            "test": "tests/Integration/Security/TenantIsolationIntegrationTest.php::testASiteScopedManagerCannotRewriteThePublicSitesSettings",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "A manager scoped to another site cannot read or rewrite the public site settings."
+                        },
+                        {
+                            "test": "tests/Unit/Site/Infrastructure/Persistence/DoctrineSiteSettingsTest.php::testManagementIsAuthorizedAgainstThePublicSiteRatherThanTheCallersSite",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Settings management is authorized against the public site, never the caller site."
+                        },
+                        {
+                            "test": "tests/Integration/Security/TenantIsolationIntegrationTest.php::testConcurrentWritersInThreeSitesNeverSeeEachOthersResources",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Concurrent writers in three sites never see each other menus and never lose their own."
+                        }
+                    ]
+                },
+                {
+                    "id": "noisy-neighbour",
+                    "title": "Noisy-neighbour fairness",
+                    "findings": [],
+                    "evidence": [
+                        {
+                            "test": "tests/Integration/Automation/QueuePermitOverclaimAndFairnessIntegrationTest.php::testASiteWithASustainedBacklogCannotMonopoliseClaimTurns",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "A backlogged site cannot monopolise claim turns."
+                        },
+                        {
+                            "test": "tests/Integration/Automation/QueuePermitReplicaContentionIntegrationTest.php::testFairTenantTurnsSurviveIndependentReplicasAndBacklog",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Fair tenant turns survive independent replicas."
+                        },
+                        {
+                            "test": "tests/Integration/BusinessIntegration/IndependentReceiptFanoutIntegrationTest.php::testFairTurnsIncludeConsumerSiteAndOrganizationWhileNewTrafficContinues",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Receipt fan-out keeps fair turns per site and organization."
+                        },
+                        {
+                            "test": "tests/Unit/Identity/Infrastructure/Administration/RedisAuthenticationRateLimiterTest.php::testBudgetsAreKeyedPerSubjectAndOriginPairUnderAHashedName",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Throttle budgets are keyed per subject and origin."
+                        },
+                        {
+                            "test": "tests/Integration/Persistence/AdvisoryLockScopeIntegrationTest.php::testLifecycleLocksOfTwoDatabasesOnOneServerDoNotContend",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Two installations on one database server never contend for each other's lifecycle lock."
+                        },
+                        {
+                            "test": "tests/Integration/Persistence/AdvisoryLockScopeIntegrationTest.php::testEveryNamedAdvisoryLockDiffersAcrossDatabasesAndMatchesWithinOne",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Every named advisory lock is scoped to its own database."
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "studio-boundaries",
+            "title": "Studio preview and media boundaries",
+            "sub_areas": [
+                {
+                    "id": "preview",
+                    "title": "Authenticated Studio preview",
+                    "findings": [
+                        "V2-STU-006"
+                    ],
+                    "evidence": [
+                        {
+                            "test": "tests/Unit/Administrator/Http/Handler/AdministratorStudioPreviewDocumentHandlerTest.php::testLiveSingleUseGrantIsDeliveredWithNoStoreFrameHardening",
+                            "job": ".github/workflows/security.yml#source-and-image",
+                            "proves": "The preview grant is single use and frame hardened."
+                        },
+                        {
+                            "test": "tests/Unit/Administrator/Http/StudioPreviewHttpTransportTest.php::testDocumentNavigationDerivesOriginAndRejectsNonCanonicalSequence",
+                            "job": ".github/workflows/security.yml#source-and-image",
+                            "proves": "The preview channel is origin pinned and sequence checked."
+                        },
+                        {
+                            "test": "tests/Integration/Studio/StudioPreviewPersistenceTest.php::testSequenceLedgerRefusesReplayAndOutOfOrderDeliveryOnBothEndpoints",
+                            "job": ".github/workflows/security.yml#source-and-image",
+                            "proves": "Preview messages cannot be replayed."
+                        },
+                        {
+                            "test": "tests/Integration/Studio/StudioPreviewPersistenceTest.php::testExpiredGrantCannotBeClaimed",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "An expired preview grant cannot be claimed."
+                        },
+                        {
+                            "test": "tests/Unit/Http/Security/SecurityHeadersTest.php::testPreviewPolicyIsOtherwiseByteIdenticalToTheAdministratorPolicy",
+                            "job": ".github/workflows/security.yml#source-and-image",
+                            "proves": "The preview policy differs only in its frame directive."
+                        }
+                    ]
+                },
+                {
+                    "id": "media",
+                    "title": "Studio media host",
+                    "findings": [
+                        "V2-STU-005"
+                    ],
+                    "evidence": [
+                        {
+                            "test": "tests/Architecture/StudioMediaBoundaryTest.php::testExternalFetchBoundaryCarriesEveryRequiredSecurityStage",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "The external fetch boundary carries every security stage."
+                        },
+                        {
+                            "test": "tests/Architecture/StudioMediaBoundaryTest.php::testMediaLifecycleMutationsUseTheTransactionalAuditBoundary",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "Media mutations are audited transactionally."
+                        },
+                        {
+                            "test": "tests/Integration/Studio/StudioMediaPersistenceTest.php::testScopedUploadRoundTripAndOptimisticTransition",
+                            "job": ".github/workflows/ci.yml#database",
+                            "proves": "Uploads are scoped and optimistically fenced."
+                        },
+                        {
+                            "test": "tests/Unit/Studio/Application/Media/StudioExternalMediaFetcherTest.php::testNoRefusalCategoryDisclosesTheCandidate",
+                            "job": ".github/workflows/ci.yml#quality",
+                            "proves": "No refusal discloses the candidate."
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

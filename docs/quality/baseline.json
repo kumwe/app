@@ -3,8 +3,8 @@
     "work_package": "P0-A",
     "authority": "docs/roadmap/README.md",
     "note": "Every figure below is derived from the repository at the recorded commit. Nothing is typed by hand, nothing reads the clock or the machine, and running the generator twice at one commit produces the same document. composer baseline:check fails when it drifts.",
-    "commit": "6b88ca558f2541a99b857197362411c52700738b",
-    "recorded_at": "2026-09-24",
+    "commit": "33fff3d3703408e6067e43e69e6182cb07c2f5e0",
+    "recorded_at": "2026-09-25",
     "recorded_from": [],
     "toolchain": {
         "php": "^8.5",
@@ -27,27 +27,27 @@
     },
     "tests": {
         "architecture": {
-            "files": 60,
-            "test_methods": 339
+            "files": 65,
+            "test_methods": 369
         },
         "functional": {
-            "files": 9,
-            "test_methods": 32
+            "files": 19,
+            "test_methods": 56
         },
         "integration": {
-            "files": 115,
-            "test_methods": 429
+            "files": 168,
+            "test_methods": 595
         },
         "unit": {
-            "files": 436,
-            "test_methods": 2238
+            "files": 504,
+            "test_methods": 2565
         }
     },
     "coverage": {
         "canonical_engine": "mariadb",
         "ratchets": 3,
         "recorded_line_coverage_percent": 55.44,
-        "reasoned_attribution_rules": 17,
+        "reasoned_attribution_rules": 20,
         "tests_owing_attribution": 0
     },
     "surfaces": {
@@ -56,6 +56,11 @@
                 "method": "GET",
                 "path": "/administrator/access",
                 "name": "administrator.access-control"
+            },
+            {
+                "method": "GET",
+                "path": "/administrator/account",
+                "name": "administrator.account"
             },
             {
                 "method": "GET",
@@ -214,6 +219,11 @@
             },
             {
                 "method": "GET",
+                "path": "/api/v1/business-security",
+                "name": "api.v1.business-security.read"
+            },
+            {
+                "method": "GET",
                 "path": "/api/v1/business/approvals",
                 "name": "api.v1.business.approvals"
             },
@@ -294,6 +304,11 @@
             },
             {
                 "method": "GET",
+                "path": "/api/v1/content-types/{id}/versions/{version}/composition",
+                "name": "api.v1.content-types.composition.read"
+            },
+            {
+                "method": "GET",
                 "path": "/api/v1/content",
                 "name": "api.v1.content.collection"
             },
@@ -321,6 +336,16 @@
                 "method": "GET",
                 "path": "/api/v1/jobs",
                 "name": "api.v1.jobs.list"
+            },
+            {
+                "method": "GET",
+                "path": "/api/v1/media",
+                "name": "api.v1.media.list"
+            },
+            {
+                "method": "GET",
+                "path": "/api/v1/media/{mediaId}",
+                "name": "api.v1.media.read"
             },
             {
                 "method": "GET",
@@ -363,6 +388,36 @@
                 "name": "api.v1.settings.read"
             },
             {
+                "method": "POST",
+                "path": "/api/v1/studio/authoring/list-types",
+                "name": "api.v1.studio.authoring.list-types"
+            },
+            {
+                "method": "POST",
+                "path": "/api/v1/studio/authoring/plan-save",
+                "name": "api.v1.studio.authoring.plan-save"
+            },
+            {
+                "method": "POST",
+                "path": "/api/v1/studio/authoring/resolve-target",
+                "name": "api.v1.studio.authoring.resolve-target"
+            },
+            {
+                "method": "POST",
+                "path": "/api/v1/studio/authoring/sessions",
+                "name": "api.v1.studio.authoring.sessions"
+            },
+            {
+                "method": "GET",
+                "path": "/api/v1/wording/catalogue",
+                "name": "api.v1.wording.catalogue"
+            },
+            {
+                "method": "GET",
+                "path": "/api/v1/wording/overrides",
+                "name": "api.v1.wording.overrides.list"
+            },
+            {
                 "method": "GET",
                 "path": "/health/live",
                 "name": "health.live"
@@ -376,6 +431,11 @@
                 "method": "GET",
                 "path": "/metrics",
                 "name": "observability.metrics"
+            },
+            {
+                "method": "GET",
+                "path": "/portal/account",
+                "name": "portal.account"
             },
             {
                 "method": "GET",
@@ -474,12 +534,16 @@
             "audit:export",
             "audit:verify",
             "automation",
+            "business-approval",
+            "business-bulk",
             "business-definition",
             "business-periods",
             "business-record",
             "business-record-rekey",
             "business-report",
             "business-schema",
+            "business-schema-evidence",
+            "business-security",
             "content",
             "content-model",
             "database:migrate",
@@ -505,20 +569,26 @@
             "integration:manage",
             "integration:work",
             "mcp:serve",
+            "media",
             "navigation",
             "queue:work",
             "schedule:run",
+            "security-events",
             "settings",
+            "studio-authoring",
+            "studio-blueprint",
+            "studio-composition",
             "theme:administrator:recover",
             "token:create",
             "user:create-admin",
-            "user:recover-credentials"
+            "user:recover-credentials",
+            "wording"
         ],
         "openapi": {
             "title": "Kumwe App API",
-            "version": "1.0.0",
-            "paths": 84,
-            "operations": 112
+            "version": "1.1.0",
+            "paths": 109,
+            "operations": 142
         },
         "migrations": [
             "20260807170000_database_driven_presentation",
@@ -555,7 +625,13 @@
             "20260824030000_studio_media_uploads",
             "20260824040000_studio_preview_grants",
             "20260827010000_studio_content_authoring_contexts",
-            "20260827020000_studio_content_authoring_context_retention"
+            "20260827020000_studio_content_authoring_context_retention",
+            "20260924020000_business_record_scale",
+            "20260924030000_queue_worker_permits",
+            "20260924050000_retention_catalogue",
+            "20260924060000_studio_content_authoring_start",
+            "20260924130000_async_trace_context",
+            "20260924140000_export_site_byte_budget"
         ]
     },
     "quarantine": {
@@ -590,7 +666,7 @@
         "recorded_exemptions": {
             "dependency-graph": 62,
             "idempotency": 0,
-            "test-documentation": 3164
+            "test-documentation": 3121
         }
     }
 }

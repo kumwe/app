@@ -324,3 +324,26 @@
     {% endfor %}
   </div>
 {% endmacro %}
+
+{% macro state_label(record, definition) -%}
+  {%- if record.deleted_at|default(null) -%}
+    {{ t('core.business.state.deleted') }}
+  {%- elseif record.archived_at|default(null) -%}
+    {{ t('core.business.state.archived') }}
+  {%- elseif record.workflow_state|default(null) -%}
+    {%- set declared = definition.workflow.states|default([])|filter(state => state.handle == record.workflow_state)|first -%}
+    {{ declared ? declared.label : record.workflow_state|replace({'_': ' '})|capitalize }}
+  {%- else -%}
+    {{ t('core.business.state.active') }}
+  {%- endif -%}
+{%- endmacro %}
+
+{% macro relationship_kind_label(relationship) -%}
+  {%- if relationship.kind == 'owned_line_collection' -%}
+    {{ t('core.business.relationship_kind.lines') }}
+  {%- elseif relationship.kind in ['one_to_one', 'many_to_one'] -%}
+    {{ t('core.business.relationship_kind.single') }}
+  {%- else -%}
+    {{ t('core.business.relationship_kind.many') }}
+  {%- endif -%}
+{%- endmacro %}

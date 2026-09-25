@@ -1,7 +1,7 @@
 {
-  "format": "kumwe-studio-composition-accountable-acceptance-v1",
-  "schemaVersion": 1,
-  "status": "not_run",
+  "format": "kumwe-studio-composition-acceptance-v2",
+  "schemaVersion": 2,
+  "status": "automated_partial",
   "studioRelease": "0.1.0-beta.3",
   "surface": "core.administrator.content-editor",
   "productContract": {
@@ -23,8 +23,8 @@
       "STUDIO-PROD-014",
       "STUDIO-PROD-015"
     ],
-    "implementationStatus": "incomplete",
-    "acceptanceStatus": "not_run"
+    "implementationStatus": "partial",
+    "acceptanceStatus": "open"
   },
   "runtimeTopology": {
     "browser": "precompiled Studio assets",
@@ -34,132 +34,189 @@
   "currentFallback": {
     "surface": "core.administrator.studio-composition",
     "status": "transitional_incomplete",
-    "description": "The current model-first Blueprint canvas requires a pre-existing Content model/version and is separate from Entry-value editing. Its evidence below proves only fallback primitives, not contextual product acceptance."
+    "description": "The model-first Blueprint canvas remains a transitional route bound to an existing Content type version. Contextual Content New/Edit authoring is the default surface; the structured form is the STUDIO-PROD-014 fallback."
   },
-  "accountableRoles": [
-    "product-owner",
-    "accessibility-reviewer",
-    "localization-reviewer"
-  ],
-  "automationIsNecessaryNotSufficient": true,
+  "acceptance": {
+    "rule": "maintainer-merge-after-green-automated-checks",
+    "description": "Acceptance is the maintainer merging after every automated check is green. There is no separate human qualification run: the automated evidence each step names is the whole record, and a step without it is open until evidence is added."
+  },
   "stepsScope": "current_fallback_primitive_evidence_only",
   "steps": [
     {
       "id": "compose",
-      "humanTask": "On the current incomplete fallback, provision a Content-type-version Blueprint and compose a nested section, grid and field layout using direct manipulation and keyboard commands.",
+      "outcome": "On the transitional Blueprint route, provision a Content-type-version Blueprint and compose a nested section, grid and field layout with direct manipulation and keyboard commands.",
       "automatedEvidence": {
         "path": "tests/Browser/studio-composition.spec.ts",
         "marker": "measured canvas select, reorder and reparent have keyboard parity"
-      },
-      "humanEvidence": null
+      }
     },
     {
       "id": "preview",
-      "humanTask": "On the current incomplete fallback, inspect the exact rendered preview at compact, medium and expanded viewports and confirm selection remains aligned after scroll and reflow.",
+      "outcome": "On the transitional Blueprint route, render the exact preview at compact, medium and expanded widths with selection aligned after scroll and reflow.",
       "automatedEvidence": {
         "path": "tests/Browser/studio-composition.spec.ts",
         "marker": "closed layout intent renders four, two and one columns without surface overflow"
-      },
-      "humanEvidence": null
+      }
     },
     {
       "id": "publish",
-      "humanTask": "On the current incomplete fallback, publish the accepted Blueprint and verify the public composition is the accepted immutable revision.",
+      "outcome": "On the transitional Blueprint route, publish the accepted Blueprint and render the accepted immutable revision publicly.",
       "automatedEvidence": {
         "path": "tests/Browser/studio-composition.spec.ts",
         "marker": "draft lifecycle control sends the canonical publication envelope"
-      },
-      "humanEvidence": null
+      }
     },
     {
       "id": "non-source-language",
-      "humanTask": "On the current incomplete fallback, repeat compose, preview and publish in a configured non-source language, including one right-to-left locale, and review terminology overrides.",
+      "outcome": "On the transitional Blueprint route, compose and preview in a right-to-left interface language.",
       "automatedEvidence": {
         "path": "tests/Browser/right-to-left.spec.ts",
         "marker": "the Studio composition shell and exact preview remain right-to-left without overflow"
-      },
-      "humanEvidence": null
+      }
     }
   ],
   "targetJourney": {
     "id": "STUDIO-PROD-015",
-    "status": "not_run",
-    "implementationStatus": "not_implemented",
-    "humanAcceptanceRun": false,
+    "status": "automated_partial",
+    "implementationStatus": "partial",
     "steps": [
+      {
+        "id": "contextual-mount-and-fallback",
+        "outcome": "Content New mounts the compiled Studio module in place and swaps with the labelled structured-form fallback.",
+        "automatedEvidence": {
+          "path": "tests/Browser/studio-authoring.spec.ts",
+          "marker": "the Studio page builder mounts on Content New and swaps with the structured form"
+        },
+        "automationNote": "Automated."
+      },
+      {
+        "id": "standalone-dual-mount",
+        "outcome": "Mount a standalone and a hosted instance in one ordinary document; export, import and configured-refusal behaviour (STUDIO-PROD-015 steps 1 to 3).",
+        "automatedEvidence": null,
+        "automationNote": "Not automated in App: standalone mode is Studio-owned and App never mounts it. The Content surface is a hosted session, and ADR 0020 forbids turning a configured refusal into local mode, so the portable multi-instance mount is proven by the Studio package itself rather than by an App page."
+      },
       {
         "id": "production-without-node",
         "outcome": "Start a clean production host using compiled Studio browser assets, PHP server authority and no Node.js, npm, Vite, development server or server-side JavaScript process.",
-        "automatedEvidence": null,
-        "humanEvidence": null
+        "automatedEvidence": {
+          "path": "tests/Browser/studio-authoring.spec.ts",
+          "marker": "blank creation defines a typed field, saves a reusable type and saves its item in one session"
+        },
+        "automationNote": "Automated: compiled module with manifest integrity, PHP host ports only, no development-server or socket request (browser), plus tests/Architecture/StudioProductionRuntimeTest.php refusing Node.js, npm and Vite in images, services, entry points, install hooks and PHP processes. Not automated: authoring from a clean packaged start. The deployed-artifact lane runs without a database by design, and the production-topology job in .github/workflows/deployment-acceptance.yml does not yet drive a Studio session."
       },
       {
         "id": "contextual-core-and-extension-launch",
         "outcome": "Resolve one core target and one extension-owned target through the same generic declaration and open Studio from the exact existing item's normal content context; fullscreen only continues and returns to that context.",
-        "automatedEvidence": null,
-        "humanEvidence": null
+        "automatedEvidence": {
+          "path": "tests/Browser/studio-authoring.spec.ts",
+          "marker": "the existing item reopens with its exact revisions, saves, and refuses a stale concurrent save"
+        },
+        "automationNote": "Core target automated from Content New/Edit. Not implemented: an extension-owned content area resolving through the same declaration. The extension SDK (manifest schema 6) declares block-definition, pattern, field-adapter, inspector, design-vocabulary and migration composition documents but no authoring-target kind, so an extension cannot declare a Studio target or bind its own resource authority; App declares one core target (kumwe.app/content-authoring) and must not invent a private declaration shape."
       },
       {
         "id": "exact-reopen-hydration",
         "outcome": "Reopen an existing item and hydrate its exact reusable-type, Model, Blueprint and Entry revisions and its own values without substituting the latest type.",
-        "automatedEvidence": null,
-        "humanEvidence": null
+        "automatedEvidence": {
+          "path": "tests/Browser/studio-authoring.spec.ts",
+          "marker": "the existing item reopens with its exact revisions, saves, and refuses a stale concurrent save"
+        },
+        "automationNote": "Automated."
       },
       {
         "id": "layout-fields-values-save-item-reopen",
         "outcome": "In one session, change layout, add or configure a typed field, enter its Entry value, choose save item, reopen and observe every host-accepted revision without changing the reusable type.",
-        "automatedEvidence": null,
-        "humanEvidence": null
+        "automatedEvidence": {
+          "path": "tests/Browser/studio-authoring.spec.ts",
+          "marker": "the existing item reopens with its exact revisions, saves, and refuses a stale concurrent save"
+        },
+        "automationNote": "Automated for Entry values with save-item and reopen. A layout change is a reusable-type change under itemComposition=denied and is proven by save-new-type-version."
       },
       {
         "id": "create-from-type",
         "outcome": "Create from an authorized reusable content type and receive its exact layout, blocks, fields and bindings with empty Entry values.",
-        "automatedEvidence": null,
-        "humanEvidence": null
+        "automatedEvidence": {
+          "path": "tests/Browser/studio-authoring.spec.ts",
+          "marker": "a new item from the reusable type receives its fields with empty values"
+        },
+        "automationNote": "Automated."
       },
       {
         "id": "create-from-blank",
         "outcome": "Create from a blank canvas, insert layout and content blocks, add or bind typed fields and enter values without leaving Studio or pre-creating another artifact.",
-        "automatedEvidence": null,
-        "humanEvidence": null
+        "automatedEvidence": {
+          "path": "tests/Browser/studio-authoring.spec.ts",
+          "marker": "blank creation defines a typed field, saves a reusable type and saves its item in one session"
+        },
+        "automationNote": "Automated: blank start, typed field through the Model control, values, save. The pinned Studio release requires the type to exist before values are entered because a reusable-type save result must echo the live Entry the request does not carry."
       },
       {
         "id": "save-and-reuse-new-type",
         "outcome": "Choose save as new type, then create another item from it and receive the accepted structure and fields with empty Entry values.",
-        "automatedEvidence": null,
-        "humanEvidence": null
+        "automatedEvidence": {
+          "path": "tests/Browser/studio-authoring.spec.ts",
+          "marker": "a new item from the reusable type receives its fields with empty values"
+        },
+        "automationNote": "Automated."
       },
       {
         "id": "save-new-type-version",
         "outcome": "Choose save new type version and observe immutable successor revisions plus migration and dependent-entry consequences before confirmation.",
-        "automatedEvidence": null,
-        "humanEvidence": null
+        "automatedEvidence": {
+          "path": "tests/Browser/studio-authoring.spec.ts",
+          "marker": "a layout change with an extension block saves an immutable successor type version"
+        },
+        "automationNote": "Automated with visible dependent-entry and adoption consequences and immutable successor coordinates."
       },
       {
         "id": "presentation-continuity",
         "outcome": "Move through every declared inline, minimized, maximized and fullscreen state without losing resource coordinates, selection, history, dirty state, validation, authority, unsaved work or return context.",
-        "automatedEvidence": null,
-        "humanEvidence": null
+        "automatedEvidence": {
+          "path": "tests/Browser/studio-authoring.spec.ts",
+          "marker": "blank creation defines a typed field, saves a reusable type and saves its item in one session"
+        },
+        "automationNote": "Automated for all four states with resource, mode and unsaved work retained, by pointer and by keyboard. The pinned Studio 0.1.0-beta.3 cannot save outside the presentation the session started in, because its save requests do not carry the presentation."
       },
       {
         "id": "extension-contribution-lifecycle",
         "outcome": "Use authorized extension block-definition, field-adapter and pattern contributions, save and render, then prove deterministic disable, unresolved, upgrade and migration behavior.",
-        "automatedEvidence": null,
-        "humanEvidence": null
+        "automatedEvidence": {
+          "path": "tests/Browser/studio-authoring.spec.ts",
+          "marker": "a layout change with an extension block saves an immutable successor type version"
+        },
+        "automationNote": "Automated: the admitted manifest-six grid block is inserted, configured through the inspector, saved into an immutable successor type version, previewed and publicly rendered in the browser journey. On every engine, tests/Integration/Studio/ContentStudioAuthoringJourneyIntegrationTest.php (testAnExtensionBlockIsAuthoredWithdrawnAndRestoredInTheContextualSession) installs and activates a signed manifest-six package, composes its grid into a new reusable type and saves an item; disabling the package withdraws the grid from the contextual catalogue while the item still opens with the unresolved grid preserved in its layout and lock and its values still save; a type save that could no longer lock the grid is refused (studio.authoring/unlocked-block); and an upgrade that keeps the exact block coordinates restores it. The App's canonical empty-section pattern, registered through the same contribution registrar as extension documents, is applied from the contextual palette by keyboard in the journey spec, and a Blueprint composing the section it creates is saved and locked in the integration journey. Not implemented: extension field-adapter use, because Content models carry no extension field kinds for an adapter to bind; extension pattern use, because the SDK fixture pattern depends on block types the fixture does not declare; and block-version migration, because no Kumwe App path applies a composition migration document and the SDK ships no fixture with a versioned block and its migration."
       },
       {
         "id": "accessible-operation",
         "outcome": "Prove equivalent pointer, keyboard, structural-control, touch and required assistive-technology outcomes.",
-        "automatedEvidence": null,
-        "humanEvidence": null
+        "automatedEvidence": {
+          "path": "tests/Browser/studio-authoring.spec.ts",
+          "marker": "the contextual shell is operable by keyboard alone with named controls in reading order"
+        },
+        "automationNote": "Automated on Chromium desktop and mobile: the WCAG 2.2 AA scan (wcag2a, wcag2aa, wcag21aa, wcag22aa) on every state; keyboard-only entry through the skip link, the start chooser, the start, the presentations, the mode tabs, a typed field, a non-drag palette block insertion and the App's canonical pattern; an accessible name, visibility and reading order for every focus stop; focus returned to the region heading when the shell replaces the chooser; the same controls by tap on the touch-capable mobile project; and reflow at 320 CSS pixels without horizontal scrolling. The Hebrew and Arabic projects repeat the keyboard walk with localized names in tests/Browser/studio-authoring-right-to-left.spec.ts."
+      },
+      {
+        "id": "locales-and-direction",
+        "outcome": "Run the contextual shell in a translated interface language, including right-to-left, with every control named in that language and no horizontal overflow.",
+        "automatedEvidence": {
+          "path": "tests/Browser/studio-authoring-right-to-left.spec.ts",
+          "marker": "the contextual Studio shell runs right-to-left with localized names and keyboard operation"
+        },
+        "automationNote": "Automated on the desktop and mobile Hebrew and Arabic projects: right-to-left document and shell direction, the shell header, the host return label and the App's own palette blocks and pattern named from the locale catalogue, right-to-left header order, arrow-key mode tabs, the WCAG 2.2 AA scan and zero horizontal overflow. The full journey takes its interface locale from KUMWE_STUDIO_JOURNEY_LOCALE. The pinned Studio 0.1.0-beta.3 renders its create-source chooser and save-confirmation chrome without catalogue overrides; host-authored consequences inside that confirmation are localized."
       },
       {
         "id": "php-authority-record",
         "outcome": "Record that every durable effect passed through authenticated, authorized, validated, transactional, versioned and audited Kumwe PHP APIs and application services.",
-        "automatedEvidence": null,
-        "humanEvidence": null
+        "automatedEvidence": {
+          "path": "tests/Browser/studio-authoring.spec.ts",
+          "marker": "the accepted item previews through the authenticated channel and renders publicly once published"
+        },
+        "automationNote": "Automated: every host call is a same-origin POST to the PHP host-port endpoint with the CSRF header; integration tests prove audit and idempotent replay."
       }
-    ]
+    ],
+    "locale": {
+      "parameter": "KUMWE_STUDIO_JOURNEY_LOCALE",
+      "default": "en-GB"
+    }
   },
   "qualificationDependencies": {
     "p7cPreviewMediaSecurity": "pending_independent_review",

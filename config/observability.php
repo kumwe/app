@@ -7,6 +7,12 @@
  * log line must carry, which fields are redacted before a line is written, and the paths and budgets
  * the health probes use. Environment variables tune the deployment-specific parts.
  *
+ * The `tracing` block is a truthful declaration, not a switch. Kumwe ships no tracer and no exporter: it
+ * propagates W3C trace context by accepting a well-formed inbound `traceparent` and stamping its trace and
+ * span identifiers onto that request's log records, and it never records, samples or exports spans. Adopting
+ * an exporter is a separately reviewed dependency decision (docs/roadmap/decisions/0022), so these values
+ * stay disabled until that decision lands together with the code that would read them.
+ *
  * @return array<string, mixed> The observability configuration tree.
  *
  * @since  2.0.0
@@ -27,10 +33,15 @@ return [
             'outcome',
         ],
         'redacted_fields' => [
+            'api_key',
             'authorization',
             'cookie',
+            'credential',
+            'passphrase',
             'password',
+            'private_key',
             'secret',
+            'session',
             'set-cookie',
             'token',
         ],
@@ -53,6 +64,7 @@ return [
             'user_id',
         ],
     ],
+    // Propagation only: no tracer or exporter reads this block (see the file-level note above).
     'tracing' => [
         'enabled' => false,
         'exporter' => 'none',

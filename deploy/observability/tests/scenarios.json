@@ -1,0 +1,605 @@
+{
+    "note": "One scenario per alert in alerts.yaml: input series in promtool notation at a one-minute interval, and three evaluation instants \u2014 before the condition (healthy), after it has held past the rule's `for` (firing) and after recovery (cleared). `php tools/verify-alert-rules.php --write` renders deploy/observability/tests/alerts.test.yaml from this file and the rules, deriving every expected label and annotation from the rule itself; CI runs `promtool test rules` over the result.",
+    "scenarios": {
+        "KumweScrapeTargetDown": {
+            "series": [
+                {
+                    "series": "up{instance=\"app-1:9000\",job=\"kumwe\"}",
+                    "values": "1x9 0x15 1x20"
+                }
+            ],
+            "healthy": "5m",
+            "firing": "20m",
+            "cleared": "30m",
+            "labels": {
+                "instance": "app-1:9000",
+                "job": "kumwe"
+            }
+        },
+        "KumweReadinessFailing": {
+            "series": [
+                {
+                    "series": "kumwe_ready{instance=\"app-1:9000\",job=\"kumwe\"}",
+                    "values": "1x9 0x20 1x20"
+                }
+            ],
+            "healthy": "5m",
+            "firing": "22m",
+            "cleared": "35m",
+            "labels": {
+                "instance": "app-1:9000",
+                "job": "kumwe"
+            }
+        },
+        "KumweSyntheticProbeFailing": {
+            "series": [
+                {
+                    "series": "kumwe_probe_success{check=\"liveness\",instance=\"probe-1:9100\",job=\"node\"}",
+                    "values": "1x9 0x15 1x20"
+                },
+                {
+                    "series": "kumwe_probe_success{check=\"readiness\",instance=\"probe-1:9100\",job=\"node\"}",
+                    "values": "1x45"
+                }
+            ],
+            "healthy": "5m",
+            "firing": "20m",
+            "cleared": "30m",
+            "labels": {
+                "check": "liveness"
+            }
+        },
+        "KumweSyntheticProbeStale": {
+            "series": [
+                {
+                    "series": "kumwe_probe_last_run_timestamp_seconds{instance=\"probe-1:9100\",job=\"node\"}",
+                    "values": "0+60x9 540x30 2460+60x20"
+                }
+            ],
+            "healthy": "5m",
+            "firing": "32m",
+            "cleared": "45m"
+        },
+        "KumweReleaseSkew": {
+            "series": [
+                {
+                    "series": "kumwe_build_info{instance=\"app-1:9000\",job=\"kumwe\",release=\"2.0.0\",runtime=\"http\"}",
+                    "values": "1x80"
+                },
+                {
+                    "series": "kumwe_build_info{instance=\"app-2:9000\",job=\"kumwe\",release=\"2.0.1\",runtime=\"http\"}",
+                    "values": "_x9 1x40 stale"
+                }
+            ],
+            "healthy": "5m",
+            "firing": "45m",
+            "cleared": "56m"
+        },
+        "KumweServerErrorRateElevated": {
+            "series": [
+                {
+                    "series": "kumwe_http_requests_total{instance=\"app-1:9000\",job=\"kumwe\",method=\"GET\",status=\"2xx\"}",
+                    "values": "0+100x60"
+                },
+                {
+                    "series": "kumwe_http_requests_total{instance=\"app-1:9000\",job=\"kumwe\",method=\"GET\",status=\"5xx\"}",
+                    "values": "0x9 0+10x25 250x25"
+                }
+            ],
+            "healthy": "5m",
+            "firing": "30m",
+            "cleared": "45m"
+        },
+        "KumweServerErrorRateCritical": {
+            "series": [
+                {
+                    "series": "kumwe_http_requests_total{instance=\"app-1:9000\",job=\"kumwe\",method=\"GET\",status=\"2xx\"}",
+                    "values": "0+100x60"
+                },
+                {
+                    "series": "kumwe_http_requests_total{instance=\"app-1:9000\",job=\"kumwe\",method=\"GET\",status=\"5xx\"}",
+                    "values": "0x9 0+30x20 600x25"
+                }
+            ],
+            "healthy": "5m",
+            "firing": "22m",
+            "cleared": "40m"
+        },
+        "KumweRequestLatencyHigh": {
+            "series": [
+                {
+                    "series": "kumwe_http_request_duration_seconds_bucket{instance=\"app-1:9000\",job=\"kumwe\",le=\"0.5\",method=\"GET\"}",
+                    "values": "0+10x9 90x31 90+10x30"
+                },
+                {
+                    "series": "kumwe_http_request_duration_seconds_bucket{instance=\"app-1:9000\",job=\"kumwe\",le=\"5\",method=\"GET\"}",
+                    "values": "0+10x70"
+                },
+                {
+                    "series": "kumwe_http_request_duration_seconds_bucket{instance=\"app-1:9000\",job=\"kumwe\",le=\"+Inf\",method=\"GET\"}",
+                    "values": "0+10x70"
+                }
+            ],
+            "healthy": "8m",
+            "firing": "35m",
+            "cleared": "58m"
+        },
+        "KumweDocumentCommitLatencyHigh": {
+            "series": [
+                {
+                    "series": "kumwe_operation_duration_seconds_bucket{instance=\"app-1:9000\",job=\"kumwe\",le=\"5\",operation_class=\"document_1000_line_commit\"}",
+                    "values": "0+10x9 90x31 90+10x30"
+                },
+                {
+                    "series": "kumwe_operation_duration_seconds_bucket{instance=\"app-1:9000\",job=\"kumwe\",le=\"10\",operation_class=\"document_1000_line_commit\"}",
+                    "values": "0+10x70"
+                },
+                {
+                    "series": "kumwe_operation_duration_seconds_bucket{instance=\"app-1:9000\",job=\"kumwe\",le=\"+Inf\",operation_class=\"document_1000_line_commit\"}",
+                    "values": "0+10x70"
+                }
+            ],
+            "healthy": "8m",
+            "firing": "35m",
+            "cleared": "58m",
+            "labels": {
+                "operation_class": "document_1000_line_commit"
+            }
+        },
+        "KumweDatabaseConnectionsSaturated": {
+            "series": [
+                {
+                    "series": "kumwe_database_connections_in_use{instance=\"app-1:9000\",job=\"kumwe\"}",
+                    "values": "20x9 95x20 20x20"
+                },
+                {
+                    "series": "kumwe_database_connections_max{instance=\"app-1:9000\",job=\"kumwe\"}",
+                    "values": "100x50"
+                }
+            ],
+            "healthy": "5m",
+            "firing": "25m",
+            "cleared": "35m"
+        },
+        "KumweDatabaseReplicaLagHigh": {
+            "series": [
+                {
+                    "series": "kumwe_database_replica_lag_seconds{instance=\"app-1:9000\",job=\"kumwe\"}",
+                    "values": "0x9 120x20 0x20"
+                }
+            ],
+            "healthy": "5m",
+            "firing": "25m",
+            "cleared": "35m"
+        },
+        "KumweDeadlocksFrequent": {
+            "series": [
+                {
+                    "series": "kumwe_transaction_failures_total{instance=\"app-1:9000\",job=\"kumwe\",class=\"deadlock\"}",
+                    "values": "0x9 0+2x20 40x30"
+                }
+            ],
+            "healthy": "5m",
+            "firing": "28m",
+            "cleared": "45m"
+        },
+        "KumweLockTimeoutsFrequent": {
+            "series": [
+                {
+                    "series": "kumwe_transaction_failures_total{instance=\"app-1:9000\",job=\"kumwe\",class=\"lock_timeout\"}",
+                    "values": "0x9 0+2x20 40x30"
+                }
+            ],
+            "healthy": "5m",
+            "firing": "28m",
+            "cleared": "45m"
+        },
+        "KumweTransactionRollbackRateHigh": {
+            "series": [
+                {
+                    "series": "kumwe_transactions_total{instance=\"app-1:9000\",job=\"kumwe\",outcome=\"committed\"}",
+                    "values": "0+100x70"
+                },
+                {
+                    "series": "kumwe_transactions_total{instance=\"app-1:9000\",job=\"kumwe\",outcome=\"rolled_back\"}",
+                    "values": "0x9 0+20x25 500x35"
+                }
+            ],
+            "healthy": "5m",
+            "firing": "32m",
+            "cleared": "58m"
+        },
+        "KumweNoLiveWorker": {
+            "series": [
+                {
+                    "series": "kumwe_workers_registered{instance=\"app-1:9000\",job=\"kumwe\"}",
+                    "values": "1x9 0x20 1x20"
+                },
+                {
+                    "series": "kumwe_worker_heartbeat_age_seconds{instance=\"app-1:9000\",job=\"kumwe\"}",
+                    "values": "5x9 0x20 5x20"
+                }
+            ],
+            "healthy": "5m",
+            "firing": "20m",
+            "cleared": "35m"
+        },
+        "KumweJobQueueStalled": {
+            "series": [
+                {
+                    "series": "kumwe_jobs_oldest_due_age_seconds{instance=\"app-1:9000\",job=\"kumwe\"}",
+                    "values": "0x9 1000+60x20 0x20"
+                }
+            ],
+            "healthy": "5m",
+            "firing": "25m",
+            "cleared": "35m"
+        },
+        "KumweJobLeasesExpiring": {
+            "series": [
+                {
+                    "series": "kumwe_jobs_lease_expired{instance=\"app-1:9000\",job=\"kumwe\"}",
+                    "values": "0x9 2x25 0x20"
+                }
+            ],
+            "healthy": "5m",
+            "firing": "30m",
+            "cleared": "40m"
+        },
+        "KumweJobsDeadLettered": {
+            "series": [
+                {
+                    "series": "kumwe_jobs_dead_lettered{instance=\"app-1:9000\",job=\"kumwe\"}",
+                    "values": "0x9 1x15 0x20"
+                }
+            ],
+            "healthy": "5m",
+            "firing": "20m",
+            "cleared": "30m"
+        },
+        "KumweJobRetryRateHigh": {
+            "series": [
+                {
+                    "series": "kumwe_queue_settlements_total{instance=\"app-1:9000\",job=\"kumwe\",outcome=\"completed\"}",
+                    "values": "0+10x70"
+                },
+                {
+                    "series": "kumwe_queue_settlements_total{instance=\"app-1:9000\",job=\"kumwe\",outcome=\"retried\"}",
+                    "values": "0x9 0+10x25 250x35"
+                }
+            ],
+            "healthy": "5m",
+            "firing": "32m",
+            "cleared": "58m"
+        },
+        "KumweSchedulerLagging": {
+            "series": [
+                {
+                    "series": "kumwe_scheduler_lag_seconds{instance=\"app-1:9000\",job=\"kumwe\"}",
+                    "values": "0x9 400x20 0x20"
+                }
+            ],
+            "healthy": "5m",
+            "firing": "25m",
+            "cleared": "35m"
+        },
+        "KumweOutboxBacklogAging": {
+            "series": [
+                {
+                    "series": "kumwe_outbox_oldest_pending_age_seconds{instance=\"app-1:9000\",job=\"kumwe\"}",
+                    "values": "0x9 400x20 0x20"
+                }
+            ],
+            "healthy": "5m",
+            "firing": "25m",
+            "cleared": "35m"
+        },
+        "KumweOutboxDeadLetters": {
+            "series": [
+                {
+                    "series": "kumwe_outbox_dead{instance=\"app-1:9000\",job=\"kumwe\"}",
+                    "values": "0x9 1x25 0x20"
+                }
+            ],
+            "healthy": "5m",
+            "firing": "30m",
+            "cleared": "40m"
+        },
+        "KumweDispatchRetryRateHigh": {
+            "series": [
+                {
+                    "series": "kumwe_dispatch_settlements_total{instance=\"app-1:9000\",job=\"kumwe\",outcome=\"completed\"}",
+                    "values": "0+10x70"
+                },
+                {
+                    "series": "kumwe_dispatch_settlements_total{instance=\"app-1:9000\",job=\"kumwe\",outcome=\"retried\"}",
+                    "values": "0x9 0+10x25 250x35"
+                }
+            ],
+            "healthy": "5m",
+            "firing": "32m",
+            "cleared": "58m"
+        },
+        "KumweInboxBacklogAging": {
+            "series": [
+                {
+                    "series": "kumwe_inbox_oldest_pending_age_seconds{instance=\"app-1:9000\",job=\"kumwe\"}",
+                    "values": "0x9 700x20 0x20"
+                }
+            ],
+            "healthy": "5m",
+            "firing": "25m",
+            "cleared": "35m"
+        },
+        "KumweInboxPoison": {
+            "series": [
+                {
+                    "series": "kumwe_inbox_poison{instance=\"app-1:9000\",job=\"kumwe\"}",
+                    "values": "0x9 1x25 0x20"
+                }
+            ],
+            "healthy": "5m",
+            "firing": "30m",
+            "cleared": "40m"
+        },
+        "KumweProcessWorkOverdue": {
+            "series": [
+                {
+                    "series": "kumwe_process_work_oldest_overdue_age_seconds{instance=\"app-1:9000\",job=\"kumwe\"}",
+                    "values": "0x9 1000x25 0x20"
+                }
+            ],
+            "healthy": "5m",
+            "firing": "30m",
+            "cleared": "40m"
+        },
+        "KumweProjectionSequencingStalled": {
+            "series": [
+                {
+                    "series": "kumwe_projection_staging_oldest_age_seconds{instance=\"app-1:9000\",job=\"kumwe\"}",
+                    "values": "0x9 400x20 0x20"
+                }
+            ],
+            "healthy": "5m",
+            "firing": "25m",
+            "cleared": "35m"
+        },
+        "KumweExportQueueBacklog": {
+            "series": [
+                {
+                    "series": "kumwe_export_queue_depth{instance=\"app-1:9000\",job=\"kumwe\"}",
+                    "values": "0x9 30x40 0x20"
+                }
+            ],
+            "healthy": "5m",
+            "firing": "45m",
+            "cleared": "55m"
+        },
+        "KumweExpiredExportsRetained": {
+            "series": [
+                {
+                    "series": "kumwe_export_artifacts_expired{instance=\"app-1:9000\",job=\"kumwe\"}",
+                    "values": "0x9 3x70 0x20"
+                }
+            ],
+            "healthy": "5m",
+            "firing": "75m",
+            "cleared": "85m"
+        },
+        "KumweRetentionBacklogStale": {
+            "series": [
+                {
+                    "series": "kumwe_retention_oldest_age_seconds{instance=\"app-1:9000\",job=\"kumwe\",store=\"business_idempotency\"}",
+                    "values": "0x9 30000x40 0x20"
+                }
+            ],
+            "healthy": "5m",
+            "firing": "45m",
+            "cleared": "55m",
+            "labels": {
+                "store": "business_idempotency"
+            }
+        },
+        "KumweRetentionCapacityForecast": {
+            "series": [
+                {
+                    "series": "kumwe_retention_forecast_seconds_to_capacity{instance=\"app-1:9000\",job=\"kumwe\",store=\"outbox_source_events\"}",
+                    "values": "315360000x9 100000x70 315360000x20"
+                }
+            ],
+            "healthy": "5m",
+            "firing": "75m",
+            "cleared": "85m",
+            "labels": {
+                "store": "outbox_source_events"
+            }
+        },
+        "KumweRetentionReadinessFailed": {
+            "series": [
+                {
+                    "series": "kumwe_retention_readiness{instance=\"app-1:9000\",job=\"kumwe\"}",
+                    "values": "0x9 2x20 0x20"
+                }
+            ],
+            "healthy": "5m",
+            "firing": "28m",
+            "cleared": "35m"
+        },
+        "KumweBackupStale": {
+            "series": [
+                {
+                    "series": "kumwe_recovery_last_success_timestamp_seconds{instance=\"app-1:9000\",job=\"kumwe\",operation=\"backup\"}",
+                    "values": "0+60x9 540x205 12960+60x20"
+                }
+            ],
+            "healthy": "5m",
+            "firing": "210m",
+            "cleared": "220m"
+        },
+        "KumweBackupFailing": {
+            "series": [
+                {
+                    "series": "kumwe_recovery_last_failure_timestamp_seconds{instance=\"app-1:9000\",job=\"kumwe\",operation=\"backup\"}",
+                    "values": "0x9 600x40"
+                },
+                {
+                    "series": "kumwe_recovery_last_success_timestamp_seconds{instance=\"app-1:9000\",job=\"kumwe\",operation=\"backup\"}",
+                    "values": "0x9 0x30 2400x10"
+                }
+            ],
+            "healthy": "5m",
+            "firing": "20m",
+            "cleared": "45m"
+        },
+        "KumweRestoreFailed": {
+            "series": [
+                {
+                    "series": "kumwe_recovery_last_failure_timestamp_seconds{instance=\"app-1:9000\",job=\"kumwe\",operation=\"restore_verify\"}",
+                    "values": "0x9 600x40"
+                },
+                {
+                    "series": "kumwe_recovery_last_success_timestamp_seconds{instance=\"app-1:9000\",job=\"kumwe\",operation=\"restore_verify\"}",
+                    "values": "300x9 300x30 2400x10"
+                }
+            ],
+            "healthy": "5m",
+            "firing": "15m",
+            "cleared": "45m",
+            "labels": {
+                "operation": "restore_verify"
+            }
+        },
+        "KumweStorageNearlyFull": {
+            "series": [
+                {
+                    "series": "kumwe_storage_free_bytes{instance=\"app-1:9000\",job=\"kumwe\",volume=\"media\"}",
+                    "values": "500x9 20x20 500x20"
+                },
+                {
+                    "series": "kumwe_storage_capacity_bytes{instance=\"app-1:9000\",job=\"kumwe\",volume=\"media\"}",
+                    "values": "1000x50"
+                }
+            ],
+            "healthy": "5m",
+            "firing": "25m",
+            "cleared": "35m",
+            "labels": {
+                "instance": "app-1:9000",
+                "job": "kumwe",
+                "volume": "media"
+            }
+        },
+        "KumweStorageWillFillSoon": {
+            "series": [
+                {
+                    "series": "kumwe_storage_free_bytes{instance=\"app-1:9000\",job=\"kumwe\",volume=\"private\"}",
+                    "values": "390x59 390-3x60 900x60"
+                },
+                {
+                    "series": "kumwe_storage_capacity_bytes{instance=\"app-1:9000\",job=\"kumwe\",volume=\"private\"}",
+                    "values": "1000x200"
+                }
+            ],
+            "healthy": "30m",
+            "firing": "110m",
+            "cleared": "130m",
+            "labels": {
+                "instance": "app-1:9000",
+                "job": "kumwe",
+                "volume": "private"
+            }
+        },
+        "KumweExtensionRuntimeUntrusted": {
+            "series": [
+                {
+                    "series": "kumwe_extension_runtime_trusted{instance=\"app-1:9000\",job=\"kumwe\"}",
+                    "values": "1x9 0x20 1x20"
+                }
+            ],
+            "healthy": "5m",
+            "firing": "20m",
+            "cleared": "35m",
+            "labels": {
+                "instance": "app-1:9000",
+                "job": "kumwe"
+            }
+        },
+        "KumweRevocationFeedStale": {
+            "series": [
+                {
+                    "series": "kumwe_extension_revocation_feed_stale{instance=\"app-1:9000\",job=\"kumwe\"}",
+                    "values": "0x9 1x40 0x20"
+                }
+            ],
+            "healthy": "5m",
+            "firing": "45m",
+            "cleared": "55m"
+        },
+        "KumweAuthenticationFailureBurst": {
+            "series": [
+                {
+                    "series": "kumwe_security_events_total{instance=\"app-1:9000\",job=\"kumwe\",event=\"authentication_failed\"}",
+                    "values": "0x9 0+20x10 200x30"
+                }
+            ],
+            "healthy": "5m",
+            "firing": "18m",
+            "cleared": "35m"
+        },
+        "KumweAuthenticationThrottling": {
+            "series": [
+                {
+                    "series": "kumwe_security_events_total{instance=\"app-1:9000\",job=\"kumwe\",event=\"authentication_throttled\"}",
+                    "values": "0x9 0+5x10 50x30"
+                }
+            ],
+            "healthy": "5m",
+            "firing": "20m",
+            "cleared": "35m"
+        },
+        "KumweTokenRejectionBurst": {
+            "series": [
+                {
+                    "series": "kumwe_security_events_total{instance=\"app-1:9000\",job=\"kumwe\",event=\"token_rejected\"}",
+                    "values": "0x9 0+20x10 200x30"
+                }
+            ],
+            "healthy": "5m",
+            "firing": "20m",
+            "cleared": "35m"
+        },
+        "KumwePermissionDenialBurst": {
+            "series": [
+                {
+                    "series": "kumwe_security_events_total{instance=\"app-1:9000\",job=\"kumwe\",event=\"permission_denied\"}",
+                    "values": "0x9 0+50x10 500x30"
+                }
+            ],
+            "healthy": "5m",
+            "firing": "20m",
+            "cleared": "35m"
+        },
+        "KumweMetricsCollectionFailing": {
+            "series": [
+                {
+                    "series": "kumwe_metrics_collection_failed{instance=\"app-1:9000\",job=\"kumwe\"}",
+                    "values": "0x9 1x20 0x20"
+                }
+            ],
+            "healthy": "5m",
+            "firing": "25m",
+            "cleared": "35m"
+        },
+        "KumweMetricsScrapeSlow": {
+            "series": [
+                {
+                    "series": "kumwe_metrics_scrape_duration_seconds{instance=\"app-1:9000\",job=\"kumwe\"}",
+                    "values": "0.01x9 3x25 0.01x20"
+                }
+            ],
+            "healthy": "5m",
+            "firing": "30m",
+            "cleared": "40m"
+        }
+    }
+}

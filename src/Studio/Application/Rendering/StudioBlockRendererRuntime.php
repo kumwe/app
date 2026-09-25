@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Studio\Application\Rendering;
 
+use ArrayObject;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\Extension\Contribution\StudioPreviewRendererContribution;
 use Kumwe\App\Extension\Runtime\TrustEnforcingStudioPreviewBlockRenderer;
@@ -28,10 +29,34 @@ use Kumwe\Producer\Render\RenderException;
  * re-establishes that trust on every render, so an extension-owned executable of any other shape is a
  * host invariant violation and refuses the whole registry decision instead of being skipped or run.
  *
+ * One host decision — an authoring operation, a deployment document, a published render — may ask for
+ * the registry several times, and every document it emits has to describe the same renderer set: a
+ * deployment whose payloads and generation came from two different builds is refused by Studio as a
+ * generation mismatch. `consistently()` therefore pins the first registry built for each viewport for
+ * the rest of that decision, and forgets it when the decision ends; a later decision always rebuilds.
+ *
  * @since  2.0.0
  */
 final readonly class StudioBlockRendererRuntime
 {
+    /**
+     * Registries the open decision has already built, keyed by viewport; empty when none is open.
+     *
+     * The object wrapper permits the per-decision memo inside this readonly service.
+     *
+     * @var    ArrayObject<string, BlockRendererRegistry>
+     * @since  2.0.0
+     */
+    private ArrayObject $decision;
+
+    /**
+     * Marker holding one entry while a decision is open and none otherwise.
+     *
+     * @var    ArrayObject<int, bool>
+     * @since  2.0.0
+     */
+    private ArrayObject $open;
+
     /**
      * Bind registry composition to the live contribution set and the host field renderer.
      *
@@ -48,19 +73,91 @@ final readonly class StudioBlockRendererRuntime
         private StudioContentFieldBlockRenderer $fields,
         private ?StudioCoreCatalog $catalog = null,
     ) {
+        /** @var array<string, BlockRendererRegistry> $none */
+        $none = [];
+        $this->decision = new ArrayObject($none);
+        /** @var array<int, bool> $closed */
+        $closed = [];
+        $this->open = new ArrayObject($closed);
     }
 
     /**
-     * Return one fresh Producer registry containing only currently trusted exact coordinates.
+     * Run one host decision against a single registry per viewport.
+     *
+     * Every `registry()` call the operation makes, directly or through the contribution catalogue, is
+     * answered by the registry first built for that viewport inside it, so availability is decided once
+     * and every projection, lock and generation the decision derives agrees. A nested call joins the
+     * decision already open. The memo is dropped when the outermost call returns or throws. Pinning
+     * never widens trust: each contributed renderer still re-establishes trust when it executes.
+     *
+     * @template T
+     *
+     * @param   callable(): T  $operation  The decision to run.
+     *
+     * @return  T  Whatever the operation returned, passed back unchanged.
+     *
+     * @since   2.0.0
+     */
+    public function consistently(callable $operation): mixed
+    {
+        if ($this->open->count() > 0) {
+            return $operation();
+        }
+        $this->open->append(true);
+        try {
+            return $operation();
+        } finally {
+            $this->decision->exchangeArray([]);
+            $this->open->exchangeArray([]);
+        }
+    }
+
+    /**
+     * Return the Producer registry containing only currently trusted exact coordinates.
+     *
+     * Outside `consistently()` every call builds a fresh registry; inside it, the first registry built for
+     * a viewport answers every later call for that viewport until the decision ends.
      *
      * @param   ?string  $viewport  Active preview semantic width handed to layout and contributed fragment
      *          renderers; null renders immutable public markup that retains every bounded width.
      *
      * @return  BlockRendererRegistry  Direct canonical registry for one publication or render decision.
      *
+     * @throws  RenderException  When an extension executable is not fenced by live trust, or two trusted
+     *          extensions claim one coordinate.
+     * @throws  \RuntimeException  When a renderer's trust authority cannot be read; the whole decision is
+     *          refused rather than silently omitting that renderer.
+     *
      * @since   2.0.0
      */
     public function registry(?string $viewport = null): BlockRendererRegistry
+    {
+        if ($this->open->count() === 0) {
+            return $this->build($viewport);
+        }
+        $key = $viewport === null ? 'public' : 'preview:' . $viewport;
+        $pinned = $this->decision[$key] ?? null;
+        if ($pinned === null) {
+            $pinned = $this->build($viewport);
+            $this->decision[$key] = $pinned;
+        }
+
+        return $pinned;
+    }
+
+    /**
+     * Build one fresh Producer registry from live contribution and trust authority.
+     *
+     * @param   ?string  $viewport  Active preview semantic width, or null for public markup.
+     *
+     * @return  BlockRendererRegistry  Registry holding only currently trusted exact coordinates.
+     *
+     * @throws  RenderException  When an extension executable is not fenced by live trust, or two trusted
+     *          extensions claim one coordinate.
+     *
+     * @since   2.0.0
+     */
+    private function build(?string $viewport): BlockRendererRegistry
     {
         $registry = BlockRendererRegistry::withCoreCatalog();
         $bindings = [];

@@ -33,14 +33,14 @@ final class McpMachineContractTest extends TestCase
     {
         $contract = new McpMachineContract(new McpCapabilityCatalog());
         $document = $contract->document();
-        $fixture = dirname(__DIR__, 4) . '/docs/machine-contract/mcp-v1.json';
+        $fixture = dirname(__DIR__, 4) . '/docs/machine-contract/' . McpMachineContract::GENERATION . '.json';
 
         self::assertSame(
             McpMachineContract::prettyJson($document),
             file_get_contents($fixture),
         );
         self::assertSame(
-            ['tools' => 75, 'resources' => 1, 'prompts' => 1],
+            ['tools' => 124, 'resources' => 1, 'prompts' => 1],
             $document['inventory'],
         );
         self::assertSame(
@@ -51,6 +51,47 @@ final class McpMachineContractTest extends TestCase
             $document['contract_sha256'],
         );
         self::assertSame('retained', $document['generation']['status']);
+        self::assertSame('mcp-v2', $document['generation']['id']);
+    }
+
+    /**
+     * The live catalogue still serves every retained generation-one tool, resource, prompt and error unchanged.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testRetainedGenerationOneIsStillServedUnchanged(): void
+    {
+        $live = json_decode(
+            McpMachineContract::prettyJson((new McpMachineContract(new McpCapabilityCatalog()))->document()),
+            true,
+            512,
+            JSON_THROW_ON_ERROR,
+        );
+        $retained = json_decode(
+            (string) file_get_contents(dirname(__DIR__, 4) . '/docs/machine-contract/mcp-v1.json'),
+            true,
+            512,
+            JSON_THROW_ON_ERROR,
+        );
+        self::assertIsArray($live);
+        self::assertIsArray($retained);
+        self::assertSame(['mcp-v1'], McpMachineContract::RETAINED_GENERATIONS);
+        self::assertSame(75, $retained['inventory']['tools']);
+        $liveTools = array_column($live['surface']['tools'], null, 'name');
+        foreach ($retained['surface']['tools'] as $tool) {
+            self::assertSame($tool, $liveTools[$tool['name']] ?? null, $tool['name']);
+        }
+        self::assertSame($retained['surface']['resources'], $live['surface']['resources']);
+        self::assertSame($retained['surface']['prompts'], $live['surface']['prompts']);
+        foreach ($retained['tool_error']['registry'] as $row) {
+            self::assertContains($row, $live['tool_error']['registry'], $row['code']);
+        }
+        self::assertSame(
+            array_slice($live['tool_error']['registry'], 0, count($retained['tool_error']['registry'])),
+            $retained['tool_error']['registry'],
+        );
     }
 
     /**

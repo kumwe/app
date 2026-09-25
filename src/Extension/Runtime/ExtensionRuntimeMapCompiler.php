@@ -487,9 +487,11 @@ final readonly class ExtensionRuntimeMapCompiler implements TrustRuntimeInvalida
      * read, a signature from an unavailable key — is reported as an unavailable state rather than an
      * exception, because callers use this to decide whether local state needs rewriting. Artifact
      * digests are deliberately not re-checked here; that cost belongs to materialization. The verified
-     * document is memoised in APCu under a key derived from the map and marker inode metadata and the
-     * key ring identity, so replacing either file or rotating keys misses the cache instead of serving a
-     * stale verification.
+     * document is memoised in APCu under a key derived from the exact bytes of the signed verification
+     * marker — which names the generation, the publication checksum and the SHA-256 of the map it vouches
+     * for — and the key ring identity. File metadata is not enough: two publications of equal size written
+     * within one second can reuse a freed inode and share every `stat` field, and a metadata key then served
+     * the older, still-verified document for the newer generation.
      *
      * @return  RuntimeMaterializationState  Trusted state with the verified publication, or the
      *          unavailable state when local disk holds nothing usable.
@@ -503,8 +505,12 @@ final readonly class ExtensionRuntimeMapCompiler implements TrustRuntimeInvalida
         }
 
         try {
-            $cacheKey = $this->localPublicationCacheKey();
-            if ($cacheKey !== null && function_exists('apcu_enabled') && apcu_enabled()) {
+            $markerPayload = file_get_contents($this->mapFile . '.verified');
+            if (!is_string($markerPayload)) {
+                return RuntimeMaterializationState::unavailable($this->identity->leaseId);
+            }
+            $cacheKey = $this->localPublicationCacheKey($markerPayload);
+            if (function_exists('apcu_enabled') && apcu_enabled()) {
                 $success = false;
                 $cached = apcu_fetch($cacheKey, $success);
                 if ($success && is_array($cached) && !array_is_list($cached)) {
@@ -513,8 +519,7 @@ final readonly class ExtensionRuntimeMapCompiler implements TrustRuntimeInvalida
                 }
             }
             $payload = file_get_contents($this->mapFile);
-            $markerPayload = file_get_contents($this->mapFile . '.verified');
-            if (!is_string($payload) || !is_string($markerPayload)) {
+            if (!is_string($payload)) {
                 return RuntimeMaterializationState::unavailable($this->identity->leaseId);
             }
             $document = json_decode($payload, true, 32, JSON_THROW_ON_ERROR);
@@ -530,7 +535,7 @@ final readonly class ExtensionRuntimeMapCompiler implements TrustRuntimeInvalida
             $this->verifyMarker($marker, $payload);
             $this->verifyDocument($document, false);
             $state = $this->materializationState($document);
-            if ($cacheKey !== null && function_exists('apcu_enabled') && apcu_enabled()) {
+            if (function_exists('apcu_enabled') && apcu_enabled()) {
                 apcu_store($cacheKey, $document, 3_600);
             }
 
@@ -562,7 +567,10 @@ final readonly class ExtensionRuntimeMapCompiler implements TrustRuntimeInvalida
         if ($maximumAgeSeconds < 1) {
             throw new InvalidArgumentException('The runtime readiness age must be positive.');
         }
-        $payload = file_get_contents($this->mapFile . '.ready');
+        // A missing marker is an ordinary unready state, not a warning: the probe runs on every scrape and
+        // load-balancer check, and a warning written into a response body would corrupt it.
+        $path = $this->mapFile . '.ready';
+        $payload = is_file($path) && is_readable($path) ? file_get_contents($path) : false;
         if (!is_string($payload)) {
             return false;
         }
@@ -2017,30 +2025,24 @@ final readonly class ExtensionRuntimeMapCompiler implements TrustRuntimeInvalida
     /**
      * Derive the APCu key a verified local publication may be memoised under.
      *
-     * The key mixes the map path, the key ring's identity and the device, inode, size and timestamps of
-     * both local files, so replacing either file or rotating keys misses the cache rather than serving a
-     * verification that no longer holds.
+     * The key mixes the map path, the key ring's identity and the exact bytes of the verification marker.
+     * The marker is signed over the generation, the publication checksum and the SHA-256 of the map it
+     * vouches for, so a different publication always yields a different key, whenever and however the
+     * files were replaced; a document is only ever stored under the marker bytes it was verified against.
      *
-     * @return  ?string  The cache key, or null when either local file cannot be stat'ed and memoising
-     *          would therefore not be invalidated by a replacement.
+     * @param   string  $markerPayload  Verification marker bytes read in this inspection.
+     *
+     * @return  string  The cache key.
      *
      * @since   2.0.0
      */
-    private function localPublicationCacheKey(): ?string
+    private function localPublicationCacheKey(string $markerPayload): string
     {
-        $map = lstat($this->mapFile);
-        $marker = lstat($this->mapFile . '.verified');
-        if (!is_array($map) || !is_array($marker)) {
-            return null;
-        }
-        $identity = [$this->mapFile, $this->keys->cacheIdentity()];
-        foreach ([$map, $marker] as $metadata) {
-            foreach (['dev', 'ino', 'size', 'mtime', 'ctime'] as $field) {
-                $identity[] = $metadata[$field] ?? null;
-            }
-        }
-
-        return 'kumwe.runtime.publication.' . hash('sha256', RuntimeCanonicalJson::encode($identity));
+        return 'kumwe.runtime.publication.' . hash('sha256', RuntimeCanonicalJson::encode([
+            $this->mapFile,
+            $this->keys->cacheIdentity(),
+            hash('sha256', $markerPayload),
+        ]));
     }
 
     /**

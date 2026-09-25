@@ -71,6 +71,12 @@ final class IndexNamingTest extends TestCase
         '$grantIndex',
         '$cancelOrderIndex',
         '$unique',
+        '$name',
+        "'idx_queue_lease_' . substr(hash('sha256', \$this->tables->raw('job_queue_permits')), 0, 16)",
+        '$leaseIndex',
+        '$turnIndex',
+        "ConstraintNameIsolationMigration::isolatedName( \$name, 'uniq_projection_staging_event', )",
+        '$name',
     ];
 
     /**
@@ -155,7 +161,7 @@ final class IndexNamingTest extends TestCase
         $declarations = self::declarations();
 
         self::assertCount(110, $declarations['literal']);
-        self::assertCount(29, $declarations['derived']);
+        self::assertCount(35, $declarations['derived']);
         self::assertSame(5, self::rawCreateIndexStatements());
         self::assertSame(
             ConstraintNameIsolationMigration::MAXIMUM_IDENTIFIER_BYTES,

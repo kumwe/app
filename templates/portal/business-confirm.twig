@@ -13,9 +13,9 @@
     : operation_labels[confirmation]
 %}
 {% set operation_allowed =
-    (confirmation == 'archive' and available_operations.archive is defined)
+    (confirmation == 'archive' and (available_operations.archive is defined and not record_lock|default(null)))
     or (confirmation == 'delete' and available_operations.delete is defined)
-    or (confirmation == 'restore' and available_operations.restore is defined)
+    or (confirmation == 'restore' and (available_operations.restore is defined and not record_lock|default(null)))
     or (confirmation == 'action' and available_operations.action is defined and selected_actions is not empty)
 %}
 
@@ -26,6 +26,14 @@
 <header class="portal-business-heading">
     <div><p class="eyebrow">{{ t('core.administrator.business_confirm.confirmation_required') }}</p><h1 id="portal-business-confirm-title">{{ operation_label }}</h1><p>{{ t('core.administrator.business_confirm.review_the_exact_record_and_version') }}</p></div>
 </header>
+
+{% if record_lock|default(null) %}
+    <section class="portal-alert business-record-lock" data-kis-state="read-only" data-record-lock="{{ record_lock.code }}" role="status" aria-labelledby="portal-record-lock-title">
+        <h2 id="portal-record-lock-title">{{ t('core.business.refusal.read_only_title') }}</h2>
+        <p data-record-lock-reason>{{ record_lock.message }}</p>
+        <p>{{ t('core.business.refusal.read_only_help') }}</p>
+    </section>
+{% endif %}
 
 <section class="portal-business-panel portal-business-confirmation kis-business-confirmation{% if confirmation in ['delete', 'action'] %} danger{% endif %}"{% if confirmation in ['delete', 'action'] %} data-danger{% endif %} aria-labelledby="portal-business-confirm-title">
     {% if error_summary is defined and error_summary %}<div class="portal-alert" role="alert"><h2>{{ t('core.administrator.business_confirm.action_could_not_be_completed') }}</h2><p>{{ error_summary }}</p></div>{% endif %}

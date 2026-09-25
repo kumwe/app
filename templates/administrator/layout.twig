@@ -47,6 +47,12 @@
               </ul>
             </section>
           {% endfor %}
+          <section class="navigation-group navigation-account" aria-labelledby="navigation-group-account">
+            <h2 class="navigation-group-title" id="navigation-group-account">{{ t('core.administrator.layout.account_group') }}</h2>
+            <ul>
+              <li><a href="/administrator/account"{% if active_navigation == 'account' %} aria-current="page"{% endif %}><svg aria-hidden="true"><use href="#kumwe-icon-security"></use></svg><span>{{ t('core.administrator.access_control.change_my_password') }}</span></a></li>
+            </ul>
+          </section>
         </nav>
       </aside>
       <header class="administrator-topbar">

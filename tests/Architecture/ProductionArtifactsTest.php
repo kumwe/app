@@ -114,11 +114,21 @@ final class ProductionArtifactsTest extends TestCase
         self::assertStringContainsString('${#table_prefix} -le 28', $restore);
         self::assertStringContainsString('database_table_prefix | length <= 28', $verify);
         self::assertStringContainsString('product_major: 2', $backup);
-        self::assertStringContainsString('extension-assets.tar.gz', $backup);
+        self::assertStringContainsString('format: "kumwe-backup-v3"', $backup);
+        self::assertStringContainsString('payload_snapshot_at', $backup);
+        self::assertStringContainsString(
+            'contents: ["database.dump", "extension-assets", "extensions", "media", "private"]',
+            $backup,
+        );
+        self::assertStringContainsString('for tree in media private extensions extension-assets; do', $backup);
+        self::assertStringContainsString('cp -a --one-file-system --reflink=auto', $backup);
+        self::assertStringNotContainsString('tar.gz', $backup);
+        self::assertStringContainsString('--format=custom --compress=0', $backup);
         self::assertStringContainsString('KUMWE_PRIVATE_DIR', $backup);
-        self::assertStringContainsString('private.tar.gz', $backup);
         self::assertStringContainsString('KUMWE_RESTORE_PRIVATE_DIR', $restore);
+        self::assertStringContainsString('kumwe-backup-v3', $restore);
         self::assertStringContainsString('private.tar.gz', $restore);
+        self::assertStringContainsString('kumwe-backup-v2 || "$format" == kumwe-backup-v3', $verify);
         self::assertStringContainsString('private.tar.gz', $verify);
         self::assertStringContainsString('set -Eeuo pipefail', $verify);
         self::assertStringContainsString('Kumwe 1.x and unknown formats are refused', $verify);

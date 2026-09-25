@@ -46,7 +46,10 @@ test.describe('capability-degraded administrator access', () => {
     await openNavigation(page, isMobile);
     const navigation = page.locator('.administrator-navigation');
     await expect(navigation.getByRole('link', { name: 'Dashboard', exact: true })).toBeVisible();
-    await expect(navigation.getByRole('link')).toHaveCount(1);
+    // Every signed-in administrator may rotate their own password, so the account group is the only
+    // other destination the navigation offers an actor holding nothing but administrator.access.
+    await expect(navigation.getByRole('link', { name: 'Change my password', exact: true })).toBeVisible();
+    await expect(navigation.getByRole('link')).toHaveCount(2);
     await expectAccessible(page);
   });
 

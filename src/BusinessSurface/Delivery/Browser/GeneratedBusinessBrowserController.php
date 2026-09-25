@@ -8,7 +8,13 @@ use InvalidArgumentException;
 use JsonException;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Idempotency\IdempotencyKey;
+use DateTimeImmutable;
+use DateTimeZone;
+use Exception;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordImmutable;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordPostingPeriodClosed;
+use Kumwe\App\BusinessRecord\Application\PostingPeriodRepository;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordNotFound;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordValidationFailed;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordVersionConflict;
@@ -38,16 +44,49 @@ use Ramsey\Uuid\Uuid;
 final readonly class GeneratedBusinessBrowserController
 {
     /**
+     * Catalogue labels for revision operations that carry no definition-specific subject.
+     *
+     * A document revision is keyed by its intent (`document.create`, `document.amend`); every other key is
+     * a plain lifecycle operation. An operation missing here is labelled with the neutral change message.
+     *
+     * @var    array<string, string>
+     * @since  2.0.0
+     */
+    private const array REVISION_LABELS = [
+        'create' => 'core.business.history.create',
+        'update' => 'core.business.history.update',
+        'archive' => 'core.business.history.archive',
+        'restore' => 'core.business.history.restore',
+        'delete' => 'core.business.history.delete',
+        'document.create' => 'core.business.history.document_create',
+        'document.amend' => 'core.business.history.document_amend',
+    ];
+
+    /**
+     * Catalogue labels for relationship revisions, each naming the relationship through `{label}`.
+     *
+     * @var    array<string, string>
+     * @since  2.0.0
+     */
+    private const array RELATIONSHIP_REVISION_LABELS = [
+        'relate' => 'core.business.history.relate',
+        'unrelate' => 'core.business.history.unrelate',
+        'reorder' => 'core.business.history.reorder',
+    ];
+
+    /**
      * Configure the shared controller.
      *
-     * @param  BusinessSurfaceService          $business       Generated-business application facade.
-     * @param  BusinessFormInputMapper         $forms          Schema-authorized nested input mapper.
-     * @param  BusinessOperationStatusService  $operations     Caller-bound operation-status lookup.
-     * @param  BusinessCustomViewPresenter     $customViews    Safe generic custom-result projector.
-     * @param  BusinessDocumentPresenter       $documents      Document-view arrangement of safe read models.
-     * @param  ReportService                   $reports        Shared report discovery and execution seam.
-     * @param  RecordExportReportProvider      $recordExports  Derived record-set export reports.
-     * @param  Translator                      $translator     Resolves browser wording for the locale in flight.
+     * @param  BusinessSurfaceService          $business        Generated-business application facade.
+     * @param  BusinessFormInputMapper         $forms           Schema-authorized nested input mapper.
+     * @param  BusinessOperationStatusService  $operations      Caller-bound operation-status lookup.
+     * @param  BusinessCustomViewPresenter     $customViews     Safe generic custom-result projector.
+     * @param  BusinessDocumentPresenter       $documents       Document-view arrangement of safe read models.
+     * @param  ReportService                   $reports         Shared report discovery and execution seam.
+     * @param  RecordExportReportProvider      $recordExports   Derived record-set export reports.
+     * @param  Translator                      $translator      Resolves browser wording for the locale in flight.
+     * @param  ?PostingPeriodRepository        $postingPeriods  Closed-period declarations consulted so a record whose
+     *         posting date falls in a closed period renders read-only affordances; null disables the prediction.
      *
      * @since  2.0.0
      */
@@ -60,6 +99,7 @@ final readonly class GeneratedBusinessBrowserController
         private ReportService $reports,
         private RecordExportReportProvider $recordExports,
         private Translator $translator,
+        private ?PostingPeriodRepository $postingPeriods = null,
     ) {
     }
 
@@ -100,12 +140,24 @@ final readonly class GeneratedBusinessBrowserController
             return $result;
         }
 
-        return new BusinessBrowserResult($result->template, [
+        $data = [
             ...$result->data,
             'operation_id' => 'browser:' . $context->requestId(),
             'completed_operation_id' => $this->completedOperation($query),
             'completed_bulk_count' => $this->completedBulkCount($query),
-        ], status: $result->status);
+        ];
+        if (
+            in_array(
+                $result->template,
+                ['business-detail', 'business-form', 'business-document', 'business-confirm'],
+                true,
+            )
+            && !array_key_exists('record_lock', $data)
+        ) {
+            $data['record_lock'] = $this->recordLock($context, $data);
+        }
+
+        return new BusinessBrowserResult($result->template, $data, status: $result->status);
     }
 
     /**
@@ -643,18 +695,26 @@ final readonly class GeneratedBusinessBrowserController
         }
         $recordTask = $this->recordTask($query);
         if (($query['history'] ?? null) === '1' || $recordTask === 'history') {
+            $history = $this->business->history(
+                $context,
+                $surface,
+                $definition,
+                $record,
+                $this->positive($query['limit'] ?? 100, 200),
+                $this->optionalPositive($query['before_version'] ?? null),
+            );
+            $metadata = $this->metadataMap(
+                $this->business->read($context, $surface, $definition, $record, true, true)['definition'] ?? null,
+                'Generated history definition metadata is unavailable.',
+            );
+
             return new BusinessBrowserResult('business-history', [
                 'definition_handle' => $definition,
                 'record_id' => $record,
                 'record_task' => 'history',
-                ...$this->business->history(
-                    $context,
-                    $surface,
-                    $definition,
-                    $record,
-                    $this->positive($query['limit'] ?? 100, 200),
-                    $this->optionalPositive($query['before_version'] ?? null),
-                ),
+                ...$history,
+                'definition' => $metadata,
+                'revision_labels' => $this->revisionLabels($history['items'] ?? null, $metadata),
             ]);
         }
         $confirmation = $query['confirm'] ?? null;
@@ -1210,7 +1270,10 @@ final readonly class GeneratedBusinessBrowserController
             return new BusinessBrowserResult('business-form', [
                 ...$model,
                 'error_summary' => $this->translator->translate('core.business.browser.record_failed_validation'),
+                'record_errors' => $this->recordErrors($model, $errors),
             ], status: 422);
+        } catch (BusinessRecordImmutable | BusinessRecordPostingPeriodClosed $refusal) {
+            return $this->refused($context, $surface, $definition, $record, $operation, $form, $refusal);
         } catch (BusinessRecordVersionConflict $exception) {
             if ($record === null || !in_array($operation, ['update', 'relate'], true)) {
                 throw $exception;
@@ -1225,6 +1288,261 @@ final readonly class GeneratedBusinessBrowserController
                 $form,
                 $exception->expectedVersion,
             );
+        }
+    }
+
+    /**
+     * Collect the refusal messages that belong to the record as a whole rather than to one rendered field.
+     *
+     * A record rule such as "the total must equal the sum of the lines" is reported under the rule's own
+     * handle, which names no field on the form. Keyed by field it would vanish, leaving the summary asking
+     * the operator to review marked fields when none is marked; returned here, the summary states it.
+     *
+     * @param   array<string, mixed>         $model   Re-rendered form model.
+     * @param   array<string, list<string>>  $errors  Violation messages keyed by the reported field or rule.
+     *
+     * @return  list<string>  Messages for violations no rendered field carries, in reported order.
+     *
+     * @since   2.0.0
+     */
+    private function recordErrors(array $model, array $errors): array
+    {
+        $fields = is_array($model['fields'] ?? null) ? $model['fields'] : [];
+        $rendered = array_column(array_filter($fields, 'is_array'), 'handle');
+        $messages = [];
+        foreach ($errors as $field => $fieldMessages) {
+            if (!in_array($field, $rendered, true)) {
+                array_push($messages, ...$fieldMessages);
+            }
+        }
+
+        return $messages;
+    }
+
+    /**
+     * Give each disclosed revision a business label for its operation and for the fields it changed.
+     *
+     * Revisions store stable identifiers such as `action.post`, `relate.lines` or `document.create`, and
+     * changed fields by handle. Those are platform terms; the history page presents the definition's own
+     * action, relationship and field labels instead, and a catalogue label for the plain lifecycle steps.
+     * An identifier the definition no longer declares falls back to a neutral catalogue label. The labels
+     * travel beside the revisions, aligned by position, so the disclosed revision items stay exactly the
+     * projection every other adapter returns.
+     *
+     * @param   mixed                 $items     Projected revision list.
+     * @param   array<string, mixed>  $metadata  Policy-filtered definition metadata.
+     *
+     * @return  list<array{operation_label: string, changed_labels: list<string>}>  One entry per revision.
+     *
+     * @since   2.0.0
+     */
+    private function revisionLabels(mixed $items, array $metadata): array
+    {
+        if (!is_array($items) || !array_is_list($items)) {
+            return [];
+        }
+        $labels = static function (mixed $collection): array {
+            $map = [];
+            foreach (is_array($collection) ? $collection : [] as $entry) {
+                if (is_array($entry) && is_string($entry['handle'] ?? null) && is_string($entry['label'] ?? null)) {
+                    $map[$entry['handle']] = $entry['label'];
+                }
+            }
+
+            return $map;
+        };
+        $actions = $labels($metadata['actions'] ?? null);
+        $relationships = $labels($metadata['relationships'] ?? null);
+        $fields = $labels($metadata['fields'] ?? null);
+        $labelled = [];
+        foreach ($items as $item) {
+            $item = is_array($item) ? $item : [];
+            $operation = is_string($item['operation'] ?? null) ? $item['operation'] : '';
+            [$kind, $subject] = array_pad(explode('.', $operation, 2), 2, '');
+            $relationship = self::RELATIONSHIP_REVISION_LABELS[$kind] ?? null;
+            $action = $actions[$subject] ?? $this->translator->translate('core.business.history.action');
+            $relation = $relationships[$subject] ?? $this->translator->translate('core.business.history.relation');
+            $label = match (true) {
+                $kind === 'action' => $action,
+                $relationship !== null => $this->translator->translate($relationship, ['label' => $relation]),
+                default => $this->translator->translate(
+                    self::REVISION_LABELS[$operation] ?? 'core.business.history.change',
+                ),
+            };
+            $changed = is_array($item['changed_fields'] ?? null) ? $item['changed_fields'] : [];
+            $labelled[] = [
+                'operation_label' => $label,
+                'changed_labels' => array_values(array_map(
+                    static fn (mixed $handle): string => is_string($handle) ? ($fields[$handle] ?? $handle) : '',
+                    $changed,
+                )),
+            ];
+        }
+
+        return $labelled;
+    }
+
+    /**
+     * Answer an immutable-state or closed-period refusal on the page the operator came from.
+     *
+     * Both refusals used to escape to the global error boundary. A record the refusal locks is shown
+     * again as its detail page carrying read-only affordances and the refusal's own wording, answered
+     * 409 because nothing was written. A new record, or an update whose submitted posting date is the
+     * only thing inside a closed period, keeps the operator's values on the form with the posting-date
+     * field marked, so moving the date into an open period is one correction away.
+     *
+     * @param   ExecutionContext                                           $context     Authenticated actor and scope.
+     * @param BusinessSurface $surface Administrator or portal boundary.
+     * @param   string                                                     $definition  Definition UUID or handle.
+     * @param   ?string                                                    $record      Public record identity, or null.
+     * @param   string                                                     $operation   Refused generated operation.
+     * @param   array<string, mixed>                                       $form        Decoded form body.
+     * @param   BusinessRecordImmutable|BusinessRecordPostingPeriodClosed  $refusal     The service refusal.
+     *
+     * @return  BusinessBrowserResult  409 detail page with a record lock, or 409 form with the field marked.
+     *
+     * @since   2.0.0
+     */
+    private function refused(
+        ExecutionContext $context,
+        BusinessSurface $surface,
+        string $definition,
+        ?string $record,
+        string $operation,
+        array $form,
+        BusinessRecordImmutable|BusinessRecordPostingPeriodClosed $refusal,
+    ): BusinessBrowserResult {
+        $lock = $this->refusalLock($refusal);
+        if ($record !== null) {
+            $model = $this->business->read($context, $surface, $definition, $record, true, true);
+            $current = $this->recordLock($context, $model);
+            if ($current !== null || $operation !== 'update' || $refusal instanceof BusinessRecordImmutable) {
+                return new BusinessBrowserResult('business-detail', [
+                    ...$this->relationshipChoices($context, $surface, $definition, $record, $model, []),
+                    'record_task' => 'summary',
+                    'record_lock' => $current ?? $lock,
+                ], status: 409);
+            }
+        }
+        $metadata = $this->business->form($context, $surface, $definition, $record)['definition'] ?? null;
+        $postingField = is_array($metadata) ? ($metadata['posting_date_field'] ?? null) : null;
+        $errors = is_string($postingField) ? [$postingField => [$lock['message']]] : [];
+        $model = $this->business->form($context, $surface, $definition, $record, $this->values($form), $errors);
+
+        return new BusinessBrowserResult('business-form', [
+            ...$this->formChoices(
+                $context,
+                $surface,
+                $definition,
+                $record,
+                $model,
+                [],
+                $this->nestedObject($form, 'structured'),
+            ),
+            'error_summary' => $lock['message'],
+            'record_lock' => null,
+        ], status: 409);
+    }
+
+    /**
+     * Describe a service refusal in the catalogue wording both browser surfaces render.
+     *
+     * @param   BusinessRecordImmutable|BusinessRecordPostingPeriodClosed  $refusal  The service refusal.
+     *
+     * @return  array{code: string, message: string}  Stable refusal code and its localized wording.
+     *
+     * @since   2.0.0
+     */
+    private function refusalLock(BusinessRecordImmutable|BusinessRecordPostingPeriodClosed $refusal): array
+    {
+        return $refusal instanceof BusinessRecordImmutable
+            ? [
+                'code' => $refusal->stableCode(),
+                'message' => $this->translator->translate('core.business.refusal.immutable'),
+            ]
+            : [
+                'code' => $refusal->stableCode(),
+                'message' => $this->translator->translate(
+                    'core.business.refusal.posting_period_closed',
+                    ['period' => $refusal->periodKey],
+                ),
+            ];
+    }
+
+    /**
+     * Predict whether the service would refuse a content mutation of the rendered record.
+     *
+     * The catalogue metadata names the definition's immutable workflow states and its posting-date
+     * field. A record in an immutable state is locked outright; a record whose stored posting date falls
+     * inside a closed period of its site, or of the operator's organization for an organization-scoped
+     * definition, is locked with that period's refusal. The prediction only chooses affordances: the
+     * service still judges every submission and its refusal is caught in the write path.
+     *
+     * @param   ExecutionContext      $context  Authenticated actor whose site and organization scope periods.
+     * @param   array<string, mixed>  $model    Page model carrying `definition` and `record` metadata.
+     *
+     * @return  ?array{code: string, message: string}  The lock and its wording, or null for an open record.
+     *
+     * @since   2.0.0
+     */
+    private function recordLock(ExecutionContext $context, array $model): ?array
+    {
+        $record = $model['record'] ?? null;
+        $definition = $model['definition'] ?? null;
+        if (!is_array($record) || !is_array($definition)) {
+            return null;
+        }
+        $workflow = $definition['workflow'] ?? null;
+        $immutable = is_array($workflow) ? ($workflow['immutable_states'] ?? []) : [];
+        $state = $record['workflow_state'] ?? null;
+        if (is_string($state) && is_array($immutable) && in_array($state, $immutable, true)) {
+            return $this->refusalLock(new BusinessRecordImmutable($state));
+        }
+        $field = $definition['posting_date_field'] ?? null;
+        $values = $record['values'] ?? null;
+        if ($this->postingPeriods === null || !is_string($field) || !is_array($values)) {
+            return null;
+        }
+        $instant = self::postingInstant($values[$field] ?? null);
+        if ($instant === null) {
+            return null;
+        }
+        $scope = $definition['scope'] ?? null;
+        $organization = in_array($scope, ['organization', 'site_organization'], true)
+            ? $context->organization()?->identifier()
+            : null;
+        $closed = $this->postingPeriods->closedPeriodContaining(
+            $context->site()->identifier(),
+            $organization,
+            $instant,
+        );
+
+        return $closed === null
+            ? null
+            : $this->refusalLock(new BusinessRecordPostingPeriodClosed($closed->key, $instant));
+    }
+
+    /**
+     * Read the instant out of a projected posting-date value.
+     *
+     * @param   mixed  $value  Projected date-time string, or a zoned `{instant, timezone}` document.
+     *
+     * @return  ?DateTimeImmutable  The UTC instant, or null when the value is absent or not temporal.
+     *
+     * @since   2.0.0
+     */
+    private static function postingInstant(mixed $value): ?DateTimeImmutable
+    {
+        if (is_array($value)) {
+            $value = $value['instant'] ?? null;
+        }
+        if (!is_string($value) || $value === '') {
+            return null;
+        }
+        try {
+            return new DateTimeImmutable($value, new DateTimeZone('UTC'));
+        } catch (Exception) {
+            return null;
         }
     }
 

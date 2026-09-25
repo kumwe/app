@@ -105,6 +105,52 @@ attempt to consume a high-impact approval therefore fails closed. Complete high-
 ordinary planned actions remain fully executable through MCP. See [Generated business
 surfaces](architecture/generated-business-surfaces.md).
 
+## Studio authoring tools
+
+| Tool | Behavior |
+|---|---|
+| `kumwe_studio_authoring_open` | Open a credential-bound Studio authoring session for a create or edit target |
+| `kumwe_studio_authoring_resolve_target`, `kumwe_studio_authoring_list_types`, `kumwe_studio_authoring_plan_save` | Read operations against an opened session |
+| `kumwe_studio_authoring_start`, `kumwe_studio_authoring_save_item` | Start the session; commit the planned item |
+| `kumwe_studio_authoring_save_as_new_type`, `kumwe_studio_authoring_save_new_type_version` | Create a reusable type; publish a successor version |
+
+Every tool requires `content.read`; the application also requires `studio.mode.hybrid` and Content create or
+update authority, exactly as the administrator editor does. Operation tools take `session`, `sessionGeneration`
+and `document` — the pinned Studio argument as one JSON string, because protocol arguments are decoded without
+the `{}`/`[]` distinction Studio schemas depend on — and return `{operation, replayed, document}`. The mutating
+tools' `operationId` is the Studio host's own replay key (mutation route `studio_host_boundary`), so a retry
+replays the stored result and a changed document under the same ID is refused as
+`studio_authoring.idempotency_key_reused`. Refusals use the closed `studio_authoring.*` codes named after
+Producer's categories; an internal Studio failure stays a generic protocol error.
+
+## Studio composition tools
+
+| Tool | Behavior |
+|---|---|
+| `kumwe_studio_composition_get`, `kumwe_studio_composition_provision` | Read or provision a Content type version's Blueprint composition |
+| `kumwe_studio_blueprint_open` | Open a credential-bound Blueprint (or read-only) session for a provisioned composition |
+| `kumwe_studio_blueprint_load`, `kumwe_studio_blueprint_dependencies` | Load the Blueprint or a historical revision; list its locked dependencies |
+| `kumwe_studio_blueprint_save`, `kumwe_studio_blueprint_publish`, `kumwe_studio_blueprint_unpublish` | Save a draft revision; publish it; return it to draft |
+
+The composition tools need `content.read` and `studio.mode.blueprint`, and answer the same document as REST and the
+console. The Blueprint tools follow the authoring tools' conventions: the argument is one JSON string and the
+result is `{operation, replayed, document}`, where the document is `{value, revision}`. Each mutation carries its
+`expectedRevision` and hands its `operationId` to the Studio host's replay boundary. Publishing and unpublishing are
+decided separately against `content.publish` and `content.unpublish`, as in the browser.
+
+## Browser-to-machine parity
+
+Every administrator and portal browser operation has an MCP tool, or is recorded with a reason in
+`docs/machine-contract/browser-machine-parity.json`. The MCP-specific reasons are closed:
+- `mcp-credential-boundary`: an operation that takes or returns a secret.
+- `mcp-authority-boundary`: role assignment, capability grants and extension installation.
+- `mcp-password-reproof`: an operation that re-proves a password.
+- `mcp-human-step-up`: role and grant revocation, which the browser gates on a human step-up proof.
+
+Password reset, second-factor revocation and session termination of another account exist on no machine surface.
+`composer machine:parity` fails the quality lane when an entry names a tool the catalogue does not declare. See
+[the parity inventory](machine-contract/README.md#browser-to-machine-parity-inventory).
+
 ## Safe mutations
 
 Every MCP mutation requires an `operationId` containing 16–128 safe characters. Generate one stable ID per intended change and keep it for retries. Kumwe stores its request digest and completed result for 24 hours:

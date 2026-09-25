@@ -29,9 +29,12 @@ use Kumwe\App\Application\Automation\Job\ScheduleRepository;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\App\BusinessIntegration\Application\ScheduleRuntimeSynchronizer;
 use Kumwe\Access\Capability;
+use Kumwe\App\Infrastructure\Observability\CorrelationContext;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\CanonicalJson\CanonicalEncoder;
 use Psr\Clock\ClockInterface;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
 
@@ -83,6 +86,10 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
      * @param  ?ScheduleRuntimeSynchronizer  $contributedSchedules  Optional reconciler for signed extension schedules.
      * @param  ?QueueRuntimePolicyCatalog    $queuePolicies         Active contributed queue and job limits; null
      *         preserves the established core scheduler behavior.
+     * @param  ?CorrelationContext           $correlation           Log-context holder each dispatch pass opens its
+     *         `schedule` frame on; null opens nothing.
+     * @param  LoggerInterface               $logger                Receives one line per dispatched occurrence and
+     *         per pass that dispatched anything.
      *
      * @since  2.0.0
      */
@@ -99,6 +106,8 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
         private CanonicalEncoder $encoder,
         private ?ScheduleRuntimeSynchronizer $contributedSchedules = null,
         private ?QueueRuntimePolicyCatalog $queuePolicies = null,
+        private ?CorrelationContext $correlation = null,
+        private LoggerInterface $logger = new NullLogger(),
     ) {
     }
 
@@ -109,7 +118,9 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
      * taken with `FOR UPDATE SKIP LOCKED` so a second scheduler picks up different work instead of
      * waiting. A site-local schedule is authorized a second time under a system context for its own
      * site, and is skipped when that site is unknown or disabled — the pass continues with the rest
-     * rather than failing. Schedules are taken in due order, so the oldest overdue work goes first.
+     * rather than failing. Schedules are taken in due order, so the oldest overdue work goes first. The
+     * pass runs inside a `schedule` log frame carrying the caller's identifiers, and every job it queues
+     * records them as its origin, so a scheduled job's lines join the pass that produced it.
      *
      * @param   ExecutionContext  $context  Caller the dispatch capability is checked against.
      * @param   int               $limit    Most schedules to claim in this pass, from 1 to 1000.
@@ -134,7 +145,36 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
         if ($limit < 1 || $limit > 1_000) {
             throw new InvalidArgumentException('The scheduler dispatch limit must be between 1 and 1000.');
         }
+        $this->correlation?->enter(
+            'schedule',
+            $context->requestId(),
+            $context->correlationId(),
+            subject: ['operation' => 'schedule'],
+        );
+        try {
+            $dispatched = $this->dispatchPass($context, $limit);
+        } finally {
+            $this->correlation?->leave('schedule');
+        }
 
+        return $dispatched;
+    }
+
+    /**
+     * Claim, enqueue and advance the due schedules of one pass inside one transaction.
+     *
+     * @param   ExecutionContext  $context  Caller the pass runs as; its identifiers become each job's origin.
+     * @param   int               $limit    Most schedules to claim in this pass.
+     *
+     * @return  int  How many schedules were enqueued.
+     *
+     * @throws  RuntimeException  When a claimed row is malformed or its recurrence has no next occurrence.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the pass may not dispatch a site-owned schedule.
+     *
+     * @since   2.0.0
+     */
+    private function dispatchPass(ExecutionContext $context, int $limit): int
+    {
         return $this->transactions->transactional(function () use ($context, $limit): int {
             $scheduleOwnershipId = $this->database->getDatabasePlatform() instanceof PostgreSQLPlatform
                 ? 'CAST(s.id AS VARCHAR)'
@@ -200,8 +240,14 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
                         AuthorizationResource::item('schedule', $scheduleId),
                     );
                 }
-                $this->dispatch($row, $site, $executionClass);
+                $this->dispatch($row, $site, $executionClass, $context);
                 $dispatched++;
+            }
+            if ($dispatched > 0) {
+                $this->logger->info('Scheduler pass dispatched due schedules.', [
+                    'dispatched' => $dispatched,
+                    'outcome' => 'success',
+                ]);
             }
 
             return $dispatched;
@@ -493,6 +539,7 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
      * @param   array<string, mixed>               $row             Claimed schedule row.
      * @param   ?\Kumwe\Context\Value\SiteContext  $site            Owner, null if global.
      * @param   JobExecutionClass                  $executionClass  Scope the job inherits.
+     * @param   ExecutionContext                   $context         Pass context recorded as the job's origin.
      *
      * @return  void
      *
@@ -506,6 +553,7 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
         array $row,
         ?\Kumwe\Context\Value\SiteContext $site,
         JobExecutionClass $executionClass,
+        ExecutionContext $context,
     ): void {
         $id = $this->requiredString($row, 'id');
         $scheduledFor = $this->dateTime($row['next_run_at'] ?? null);
@@ -537,6 +585,9 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
                 'occurrence_key' => (string) ScheduleOccurrenceKey::for($this->encoder, $id, $scheduledFor),
                 'created_at' => $now,
                 'updated_at' => $now,
+                'correlation_id' => $context->correlationId(),
+                'causation_id' => $context->requestId(),
+                'trace_id' => $this->correlation?->traceId(),
             ], [
                 'payload' => Types::JSON,
                 'available_at' => Types::DATETIME_IMMUTABLE,
@@ -550,7 +601,21 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
                 }
                 $this->ownershipWriter->record(AuthorizationResource::item('job', $jobId), $site);
             }
+            (new DoctrineJobQueueFairness($this->database, $this->tables))->record(
+                $queue,
+                $jobId,
+                $site?->identifier(),
+                null,
+            );
             $this->database->releaseSavepoint(self::OCCURRENCE_SAVEPOINT);
+            $this->logger->info('Schedule occurrence dispatched.', [
+                'schedule_id' => $id,
+                'job_id' => $jobId,
+                'job_type' => $jobType,
+                'queue' => $queue,
+                'scheduled_for' => $scheduledFor->format(DATE_ATOM),
+                'outcome' => 'success',
+            ]);
         } catch (UniqueConstraintViolationException) {
             // A concurrent scheduler already emitted this occurrence; undo only the refused insert so
             // the advance below still runs on an engine that aborts a transaction on a failed statement.

@@ -76,12 +76,15 @@ final readonly class ContentStudioAuthoringSession
     /**
      * The host-minted return pointer of the session before any accepted save.
      *
+     * @param   ?stdClass  $label  Destination `messageReference` in the interface locale, or null for the
+     *          source-language destination.
+     *
      * @return  stdClass  Canonical return context.
      *
      * @since   2.0.0
      */
-    public function returnContext(): stdClass
+    public function returnContext(?stdClass $label = null): stdClass
     {
-        return ContentStudioAuthoringDocuments::returnContext($this->host->resourceContextKey);
+        return ContentStudioAuthoringDocuments::returnContext($this->host->resourceContextKey, '', $label);
     }
 }

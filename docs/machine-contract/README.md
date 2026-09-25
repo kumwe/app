@@ -54,6 +54,116 @@ The generated `tool_error.registry` is the finite vocabulary the runtime mapper 
 message, retry decision and feasible exception/stable-code classification is included in both its own digest and
 the generation's primary `contract_sha256`.
 
+## Studio authoring for machine callers
+
+Studio's contextual Content authoring was browser-only: the administrator mount opened an opaque authoring context
+and a host session, and the Studio shell dispatched the seven authoring operations at
+`POST /administrator/studio/ports/authoring/{operation}`. Machine callers now reach the same host through REST,
+CLI and MCP without a second implementation of any rule.
+
+**Authority binding.** A machine caller never asserts an actor, grant, site, target or generation. `open`
+(`POST /api/v1/studio/authoring/sessions`, `studio-authoring open`, `kumwe_studio_authoring_open`) resolves the
+create or edit target through the authorized Content services exactly as the editor page does, then opens the
+opaque authoring context and a hybrid Content-authoring host session. Both bind to the verified credential's actor,
+site, organization, workspace and surface, and — where the browser binds to its rotated session — to a one-way
+digest of the exact credential (`StudioSessionSurfaceBinding`). Only the REST, CLI and MCP surfaces may hold such a
+binding, and they may open only Content-authoring and Blueprint-composition sessions; a binding opened on one surface
+or credential is refused on every other. The session generation is recomputed from live grants, epoch, membership and policy on every call,
+and the caller must echo the generation `open` returned, so a stale generation meets the same
+`studio.host/stale-session-generation` fence the browser meets.
+
+**Operations.** `resolve-target`, `list-types`, `start`, `plan-save`, `save-item`, `save-as-new-type` and
+`save-new-type-version` are all exposed; none is withheld from machines. `StudioMachineAuthoringGateway` builds the
+canonical Producer envelope server-side and dispatches it through the same request-scoped `StudioProducerHostFactory`
+and Producer `Dispatcher` the browser route uses, so authorization, the pinned Studio schemas, the transaction,
+the audit event and every refusal are the browser's. The argument and result documents are the pinned Studio
+documents unchanged. `start` and the three saves are mutations: the REST `Idempotency-Key`, the CLI
+`--operation-id` and the MCP `operationId` become the Studio host's own replay key, so a retry replays the stored
+result, a reused key with changed intent is refused, and no second ledger decides replay.
+
+**Refusals.** Every refusal is Producer's canonical `host-error` category plus diagnostics and safe revision. REST
+publishes them as twelve registered `urn:kumwe:problem:studio-authoring-*` types carrying `studio_category`,
+`studio_diagnostics` and `studio_revision`; the CLI prints them in its JSON failure envelope with a portable exit;
+MCP maps each category to a closed `studio_authoring.*` code (its envelope carries no diagnostics by design).
+
+**Human-approval gates.** The browser authoring journey has no step-up or maker-checker step. The one confirmation it
+has — accepting every consequence a save plan discloses before a `save-as-new-type` or `save-new-type-version` is
+committed — is enforced by the application service for every caller: the save request must carry the plan's exact
+identity and accept each disclosed consequence code. Machine surfaces gain no path to any step-up-gated operation.
+
+## Blueprint composition for machine callers
+
+The administrator composition screen reads or provisions a Content type version's Blueprint composition, opens a
+Blueprint host session for its artifact, and edits it through Producer's `artifact` port. Machine callers do the
+same through `StudioContentCompositionService` and `StudioMachineCompositionGateway`:
+
+- **Read and provision.** `GET` and `POST /api/v1/content-types/{id}/versions/{version}/composition`,
+  `studio-composition get|provision` and `kumwe_studio_composition_get|provision` answer one machine document: the
+  authorized model, the host binding and the exact Blueprint head with its canonical document and locked
+  dependencies. The screen's `content.read` and `studio.mode.blueprint` are required, and provisioning records
+  `studio.composition.provision`.
+- **Edit.** `POST /api/v1/studio/composition/sessions`, `studio-blueprint open` and `kumwe_studio_blueprint_open`
+  open a Blueprint (or read-only) session bound to the credential. `load`, `dependencies`, `save`, `publish` and
+  `unpublish` then dispatch the artifact operation through the browser's own request-scoped Producer host. Each
+  mutation carries the expected revision it replaces and a replay key (the REST `Idempotency-Key`, the CLI
+  `--operation-id`, the MCP `operationId`), so the Blueprint lock and draft-continuity checks, the stale-revision
+  conflict, keyed replay and the separate `content.publish` and `content.unpublish` decisions are the browser's.
+  Refusals use the Studio authoring problem types, exits and codes.
+
+**Machine inventory.** Three successor generations carry the new surfaces, and each retained generation one is
+still served unchanged beside it:
+
+| Contract | Current generation | Retained predecessor | Regenerate with |
+|---|---|---|---|
+| CLI | `cli-v2` — 54 commands (`src/Delivery/Console/Contract/cli-v2.json`, mirrored in `docs/machine-contract/cli-v2.json`) | `cli-v1`, 44 commands | `php tools/verify-cli-machine-contract.php --rehash-successor` after adding a reviewed command, then `--write` |
+| MCP | `mcp-v2` — 124 tools (`docs/machine-contract/mcp-v2.json`) | `mcp-v1`, 75 tools | `php tools/generate-mcp-machine-contract.php --write` |
+| REST | `1.1.0` — 142 operations (`api/openapi/generations/1.1.0/`) | `1.0.0` (`api/openapi/kumwe-v1.json`) | `composer openapi:accept-generation` from `api/openapi/generations/1.1.0/core.json` |
+
+`composer cli:contract` and `composer mcp:contract` prove every generation-one command, tool, resource, prompt and
+error row is still present unchanged. Until these successors are released, an extension of the same unreleased
+generation regenerates its artifact rather than cutting another: re-digest `cli-v2`; delete `mcp-v2.json` and
+re-establish it; or drop the `1.1.0` ledger row and its three generation-owned files and accept again.
+`StudioAuthoringMachineParityTest` enumerates the browser's authoring operations and fails when one lacks a REST
+route, CLI action or MCP tool.
+
+## Browser-to-machine parity inventory
+
+`docs/machine-contract/browser-machine-parity.json` (schema `browser-machine-parity.schema.json`) records every
+administrator and portal browser route, the application operations it performs, and how an agent performs the same
+work. Each operation is classified:
+
+- **`equivalent`** names the application service method the browser handler calls and the REST operation ids, CLI
+  command actions and MCP tools that call the same method with the same authorization, revisions, idempotency,
+  audit and refusals. A surface that deliberately withholds the operation carries a reason from the closed
+  `surface_exemption_reasons` vocabulary: `mcp-credential-boundary` (MCP never accepts or returns a secret),
+  `mcp-authority-boundary` (MCP never widens authority), `mcp-password-reproof` (MCP cannot re-prove a password)
+  and `mcp-human-step-up`.
+- **`browser-only`** carries a reason from the closed `browser_only_reasons` vocabulary: the browser's own sign-in,
+  second factor and session context; `human-decision` (a maker-checker decision a machine may request or cancel but
+  never make); `human-step-up` (requires an interactive human step-up proof, which no machine credential can carry);
+  presentation preferences, navigation and HTML-only steps over data machines read through the named
+  `machine_readable_via` operations; and the Studio shell, preview and direct-upload transfer legs.
+- **`gap`** is always a violation.
+
+Every operation of the Studio host dispatch route (`administrator.studio.host`) is classified individually. The
+current record has 109 browser routes and 223 operations: 146 equivalent, 77 browser-only and none recorded as a
+gap. Password reset, second-factor revocation and session termination of another account are `human-step-up`: no
+machine surface publishes them, and `AccessControlService` refuses them to any human context without a consumed
+step-up proof.
+
+An equivalent operation whose machine surfaces authorize with less assurance than the browser records an
+`assurance_gap`. Fourteen do today: the twelve access-control mutations the released v1 REST, CLI and MCP contracts
+run on a bearer token while the browser demands a payload-bound step-up, and the v1 console's schema purge-plan and
+high-impact approval, which carry no password re-proof. They await a maintainer decision.
+`BrowserMachineParityGateTest` pins the list, so it can only change by a reviewed edit.
+
+`composer machine:parity` (`tools/verify-browser-machine-parity.php`, part of `composer qa` and the CI quality job)
+fails on an unrecorded browser route, a stale entry, a gap, a REST operation, CLI action, MCP tool or service method
+the live contracts do not declare, or a missing reason. `--summary` prints the counts. `BrowserMachineParityGateTest`
+also proves that the literal route table the gate reads is the booted router's, that each refusal fires, and that
+the gate is wired into the quality lane. A new browser route therefore lands with its entry: its REST, CLI and MCP
+equivalents, or a reasoned exemption.
+
 ## Production `app` and `web`
 
 `compose.production.yaml` separates two runtime responsibilities built from this repository and its one source

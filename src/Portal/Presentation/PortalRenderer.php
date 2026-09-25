@@ -6,6 +6,7 @@ namespace Kumwe\App\Portal\Presentation;
 
 use Kumwe\Extension\Spi\Binding\Http\PortalRouteRenderer;
 use Kumwe\Contribution\ContributionOwner;
+use Kumwe\App\Localization\Presentation\TranslationTwigExtension;
 use Kumwe\App\Portal\Application\PortalSession;
 use Kumwe\App\Portal\Contribution\PortalNavigationRegistry;
 use Kumwe\App\Portal\Contribution\PortalTemplateRegistry;
@@ -23,6 +24,53 @@ use Twig\Environment;
  */
 final readonly class PortalRenderer
 {
+    /**
+     * Catalogue identifiers of the wording core's own portal navigation renders in, keyed by entry.
+     *
+     * Contributed navigation carries source-language text because the contribution contract is locale
+     * free. Core's portal entries are authored in all nine catalogues, so they resolve per request
+     * through the translator the templates use; an extension's entries keep their declared text. The
+     * identifiers are written out so the catalogue gate sees each one referenced.
+     *
+     * @var    array<string, array{label: string, description: string}>
+     * @since  2.0.0
+     */
+    private const array CORE_NAVIGATION_WORDING = [
+        'core.portal-home' => [
+            'label' => 'core.navigation.portal.portal-home.label',
+            'description' => 'core.navigation.portal.portal-home.description',
+        ],
+        'core.portal-business-records' => [
+            'label' => 'core.navigation.portal.portal-business-records.label',
+            'description' => 'core.navigation.portal.portal-business-records.description',
+        ],
+        'core.portal-business-reports' => [
+            'label' => 'core.navigation.portal.portal-business-reports.label',
+            'description' => 'core.navigation.portal.portal-business-reports.description',
+        ],
+        'core.portal-security' => [
+            'label' => 'core.navigation.portal.portal-security.label',
+            'description' => 'core.navigation.portal.portal-security.description',
+        ],
+        'core.portal-approvals' => [
+            'label' => 'core.navigation.portal.portal-approvals.label',
+            'description' => 'core.navigation.portal.portal-approvals.description',
+        ],
+    ];
+
+    /**
+     * Catalogue identifiers of core's portal navigation group heading and description, keyed by group.
+     *
+     * @var    array<string, array{label: string, description: string}>
+     * @since  2.0.0
+     */
+    private const array CORE_WORKSPACE_WORDING = [
+        'core.portal' => [
+            'label' => 'core.navigation.portal_workspace.portal.label',
+            'description' => 'core.navigation.portal_workspace.portal.description',
+        ],
+    ];
+
     /**
      * Bind the renderer to its isolated Twig environment and portal-only contribution registries.
      *
@@ -142,10 +190,10 @@ final readonly class PortalRenderer
             $capabilities[$capability->value()] = true;
         }
 
-        return array_values(array_filter(
+        return $this->localizedNavigation(array_values(array_filter(
             $this->navigation->visible($capabilities),
             fn (array $item): bool => $this->visibility->visible($session, $item),
-        ));
+        )));
     }
 
     /**
@@ -168,7 +216,7 @@ final readonly class PortalRenderer
         }
         $navigation = $session instanceof PortalSession
             ? $this->visibleNavigation($session)
-            : $this->navigation->visible($capabilities);
+            : $this->localizedNavigation($this->navigation->visible($capabilities));
 
         $assetEntry = ($this->assets ?? new ViteAssetManifest(''))->entry(
             'assets/portal/main.ts',
@@ -180,10 +228,116 @@ final readonly class PortalRenderer
         $data['portal_organization'] = $session?->identity->context->membership?->organization()->identifier();
         $data['portal_workspace'] = $session?->identity->context->membership?->workspace()?->identifier();
         $data['portal_navigation'] = $navigation;
-        $data['portal_workspaces'] = $this->navigation->visibleWorkspaces($capabilities, $navigation);
+        $data['portal_workspaces'] = $this->localizedWorkspaces(
+            $this->navigation->visibleWorkspaces($capabilities, $navigation),
+        );
         $data['portal_assets'] = $assetEntry->toArray();
         $data['active_navigation'] ??= '';
 
         return $data;
+    }
+
+    /**
+     * Put core's portal navigation into the language of the request, leaving contributed entries as declared.
+     *
+     * Only an entry owned by core and listed in `CORE_NAVIGATION_WORDING` is resolved, and its `group`
+     * follows its workspace heading, so the shell and the dashboard destinations built from the same rows
+     * speak one language. Without a registered translation extension the declared text is kept.
+     *
+     * @param   list<array<string, int|string>>  $rows  Visible navigation rows.
+     *
+     * @return  list<array<string, int|string>>  The same rows, in the same order, with core wording resolved.
+     *
+     * @since   2.0.0
+     */
+    private function localizedNavigation(array $rows): array
+    {
+        $translation = $this->translation();
+        if ($translation === null) {
+            return $rows;
+        }
+        foreach ($rows as $index => $row) {
+            if (($row['owner'] ?? null) !== ContributionOwner::CORE) {
+                continue;
+            }
+            $wording = self::CORE_NAVIGATION_WORDING[(string) ($row['id'] ?? '')] ?? null;
+            if ($wording !== null) {
+                $row['label'] = $this->resolve($translation, $wording['label'], (string) $row['label']);
+                $row['description'] = $this->resolve(
+                    $translation,
+                    $wording['description'],
+                    (string) ($row['description'] ?? ''),
+                );
+            }
+            $group = self::CORE_WORKSPACE_WORDING[(string) ($row['workspace'] ?? '')] ?? null;
+            if ($group !== null) {
+                $row['group'] = $this->resolve($translation, $group['label'], (string) ($row['group'] ?? ''));
+            }
+            $rows[$index] = $row;
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Put core's portal group heading and description into the language of the request.
+     *
+     * @param   list<array{id: string, label: string, description: string, priority: int, dom_id: string}>  $rows
+     *          Visible workspace groups from the registry.
+     *
+     * @return  list<array{id: string, label: string, description: string, priority: int, dom_id: string}>
+     *          The same groups with core wording resolved and contributed groups unchanged.
+     *
+     * @since   2.0.0
+     */
+    private function localizedWorkspaces(array $rows): array
+    {
+        $translation = $this->translation();
+        if ($translation === null) {
+            return $rows;
+        }
+        foreach ($rows as $index => $row) {
+            $wording = self::CORE_WORKSPACE_WORDING[$row['id']] ?? null;
+            if ($wording === null) {
+                continue;
+            }
+            $row['label'] = $this->resolve($translation, $wording['label'], $row['label']);
+            $row['description'] = $this->resolve($translation, $wording['description'], $row['description']);
+            $rows[$index] = $row;
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Answer the translation surface the portal templates resolve messages through.
+     *
+     * @return  ?TranslationTwigExtension  The registered extension, or null when the environment has none.
+     *
+     * @since   2.0.0
+     */
+    private function translation(): ?TranslationTwigExtension
+    {
+        return $this->twig->hasExtension(TranslationTwigExtension::class)
+            ? $this->twig->getExtension(TranslationTwigExtension::class)
+            : null;
+    }
+
+    /**
+     * Resolve one catalogue message, keeping the declared text when no catalogue layer carries it.
+     *
+     * @param   TranslationTwigExtension  $translation  Translation surface bound to the request locale.
+     * @param   string                    $identifier   Catalogue identifier of the wording.
+     * @param   string                    $declared     Source-language text the contribution declared.
+     *
+     * @return  string  The localized wording, or the declared text when the identifier is unresolved.
+     *
+     * @since   2.0.0
+     */
+    private function resolve(TranslationTwigExtension $translation, string $identifier, string $declared): string
+    {
+        $resolved = $translation->translate($identifier);
+
+        return $resolved === $identifier ? $declared : $resolved;
     }
 }

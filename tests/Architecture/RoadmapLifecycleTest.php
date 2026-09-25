@@ -349,11 +349,12 @@ final class RoadmapLifecycleTest extends TestCase
      */
     public function testTheVerifierTreatsAProseLaneAsOpenWork(): void
     {
-        $status = str_replace(
-            '| M — Maintainability | — | Not started |',
+        $status = preg_replace(
+            '/^\| M — Maintainability \| — \| [^|\n]* \|/mu',
             '| M — Maintainability | — | Delivered |',
             $this->contents('docs/roadmap/STATUS.md'),
         );
+        self::assertIsString($status);
         self::assertNotSame($this->contents('docs/roadmap/STATUS.md'), $status);
         $path = $this->writeTemporaryStatus($status);
 

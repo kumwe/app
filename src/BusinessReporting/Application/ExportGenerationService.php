@@ -43,6 +43,7 @@ final readonly class ExportGenerationService
      * @param  TransactionManager              $transactions  Metadata/audit transaction owner.
      * @param  AuditRecorder                   $audit         Redacted audit sink.
      * @param  ClockInterface                  $clock         Trusted wall clock.
+     * @param  ?ExportSiteByteBudget           $budget        Cumulative per-site byte budget, when enforced.
      *
      * @since  2.0.0
      */
@@ -56,8 +57,9 @@ final readonly class ExportGenerationService
         private TransactionManager $transactions,
         private AuditRecorder $audit,
         private ClockInterface $clock,
+        ?ExportSiteByteBudget $budget = null,
     ) {
-        $this->publisher = new ExportAttemptPublisher($artifacts, $storage, $transactions);
+        $this->publisher = new ExportAttemptPublisher($artifacts, $storage, $transactions, $budget);
     }
 
     /**
@@ -68,7 +70,8 @@ final readonly class ExportGenerationService
      *
      * @return  void
      *
-     * @throws  ExportGenerationRejected  When authority, policy, report or expiry no longer matches.
+     * @throws  ExportGenerationRejected  When authority, policy, report or expiry no longer matches, or the
+     *          artifact would pass its site's cumulative export byte budget.
      * @throws  Throwable  On a transient execution, storage or persistence failure.
      *
      * @since   2.0.0
@@ -147,6 +150,14 @@ final readonly class ExportGenerationService
                     'The export authority or policy changed.',
                     0,
                     $cause instanceof ExportGenerationRejected ? $cause : $exception,
+                );
+            }
+            if ($exception instanceof ExportSiteByteBudgetExhausted) {
+                $this->reject($artifact, ExportSiteByteBudgetExhausted::FAILURE_CODE);
+                throw new ExportGenerationRejected(
+                    'The export exceeds its site\'s cumulative export byte budget for this window.',
+                    0,
+                    $exception,
                 );
             }
             if ($exception instanceof ReportRowLimitExceeded) {

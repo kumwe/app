@@ -67,7 +67,12 @@ final class StudioCompositionAuthoringBoundaryTest extends TestCase
             '[AdministratorCsrfMiddleware::class, AdministratorStudioCompositionHandler::class]',
             $container,
         );
-        self::assertSame(2, substr_count($container, "'content.read', 'studio.mode.blueprint'"));
+        // The two browser routes and the two machine routes over the same service demand the same pair.
+        self::assertSame(4, substr_count($container, "'content.read', 'studio.mode.blueprint'"));
+        self::assertSame(2, substr_count(
+            $container,
+            "'/api/v1/content-types/{id}/versions/{version}/composition'",
+        ));
         self::assertStringContainsString("strtoupper(\$request->getMethod()) === 'POST'", $handler);
         self::assertStringContainsString('$this->compositions->provision(', $handler);
         self::assertStringContainsString('new RedirectResponse($path, 303)', $handler);
@@ -151,13 +156,17 @@ final class StudioCompositionAuthoringBoundaryTest extends TestCase
     }
 
     /**
-     * Qualification plumbing names executable evidence without self-attesting human or proof gates.
+     * The acceptance record names executable evidence for every step and no separate human qualification.
+     *
+     * Acceptance is the maintainer's merge after every automated check is green, so the record may not carry a
+     * human task, a human evidence slot, an accountable-role list or a human acceptance run. Each step names
+     * the exact test that proves it, and a contextual journey step without evidence must say why it is open.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    public function testAccountableJourneyRemainsHonestAndReleasePinned(): void
+    public function testAcceptanceRecordNamesAutomatedEvidenceAndIsReleasePinned(): void
     {
         $root = dirname(__DIR__, 2);
         $journey = json_decode(
@@ -174,7 +183,10 @@ final class StudioCompositionAuthoringBoundaryTest extends TestCase
         );
         self::assertIsArray($journey);
         self::assertIsArray($release);
-        self::assertSame('not_run', $journey['status'] ?? null);
+        self::assertSame('kumwe-studio-composition-acceptance-v2', $journey['format'] ?? null);
+        self::assertSame('automated_partial', $journey['status'] ?? null);
+        self::assertSame('maintainer-merge-after-green-automated-checks', $journey['acceptance']['rule'] ?? null);
+        self::assertSame([], self::humanQualificationKeys($journey));
         self::assertSame($release['release'] ?? null, $journey['studioRelease'] ?? null);
         self::assertSame(
             hash('sha256', $this->contents('resources/studio-contract/studio-release.json')),
@@ -183,7 +195,7 @@ final class StudioCompositionAuthoringBoundaryTest extends TestCase
         self::assertSame('open', $journey['qualificationDependencies']['p7fSignedContributedBlockAndRenderer'] ?? null);
         foreach ($journey['steps'] ?? [] as $step) {
             self::assertIsArray($step);
-            self::assertNull($step['humanEvidence'] ?? null);
+            self::assertIsString($step['outcome'] ?? null);
             $evidence = $step['automatedEvidence'] ?? null;
             self::assertIsArray($evidence);
             $path = $evidence['path'] ?? null;
@@ -194,6 +206,47 @@ final class StudioCompositionAuthoringBoundaryTest extends TestCase
             self::assertIsString($source);
             self::assertStringContainsString($marker, $source);
         }
+        $target = $journey['targetJourney'] ?? null;
+        self::assertIsArray($target);
+        self::assertSame('KUMWE_STUDIO_JOURNEY_LOCALE', $target['locale']['parameter'] ?? null);
+        foreach ($target['steps'] ?? [] as $step) {
+            self::assertIsArray($step);
+            self::assertIsString($step['outcome'] ?? null);
+            self::assertIsString($step['automationNote'] ?? null);
+            $evidence = $step['automatedEvidence'] ?? null;
+            if ($evidence === null) {
+                self::assertStringContainsString('Not ', $step['automationNote']);
+                continue;
+            }
+            self::assertIsArray($evidence);
+            $source = file_get_contents($root . '/' . ($evidence['path'] ?? ''));
+            self::assertIsString($source);
+            self::assertStringContainsString("test('" . ($evidence['marker'] ?? "\0"), $source);
+        }
+    }
+
+    /**
+     * Every key of the acceptance record that would reintroduce a separate human qualification step.
+     *
+     * @param   array<mixed>  $document  Decoded acceptance record, or one of its members.
+     *
+     * @return  list<string>  Offending keys, in document order.
+     *
+     * @since   2.0.0
+     */
+    private static function humanQualificationKeys(array $document): array
+    {
+        $found = [];
+        foreach ($document as $key => $value) {
+            if (is_string($key) && preg_match('/^(human|accountable)/i', $key) === 1) {
+                $found[] = $key;
+            }
+            if (is_array($value)) {
+                array_push($found, ...self::humanQualificationKeys($value));
+            }
+        }
+
+        return $found;
     }
 
     /**

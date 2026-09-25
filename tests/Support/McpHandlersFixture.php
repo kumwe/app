@@ -7,6 +7,8 @@ namespace Kumwe\App\Tests\Support;
 use Kumwe\App\Application\Automation\AutomationManagementService;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionService;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaService;
+use Kumwe\App\BusinessSecurity\Application\Administration\BusinessSecurityAdministrationService;
+use Kumwe\App\Content\Application\ContentModelService;
 use Kumwe\App\Content\Application\ContentService;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Extension\Infrastructure\RedisLockedExtensionManager;
@@ -18,8 +20,12 @@ use Kumwe\App\Infrastructure\Mcp\McpCapabilityCatalog;
 use Kumwe\App\Infrastructure\Mcp\McpMutationGuard;
 use Kumwe\App\Infrastructure\Mcp\ReportMcpHandlers;
 use Kumwe\App\Infrastructure\Time\SystemClock;
+use Kumwe\App\Localization\Application\MessageOverrideService;
+use Kumwe\App\Media\Application\MediaService;
 use Kumwe\App\Navigation\Application\NavigationService;
 use Kumwe\App\Site\Infrastructure\Persistence\DoctrineSiteSettings;
+use Kumwe\App\Studio\Application\Authoring\StudioMachineCompositionGateway;
+use Kumwe\App\Studio\Application\Composition\StudioContentCompositionService;
 use ReflectionClass;
 
 final class McpHandlersFixture
@@ -27,6 +33,12 @@ final class McpHandlersFixture
     public static function create(
         McpCapabilityCatalog $catalog,
         ?ExtensionExecutionGate $extensionRuntime = null,
+        ?MediaService $media = null,
+        ?MessageOverrideService $wording = null,
+        ?BusinessSecurityAdministrationService $businessSecurity = null,
+        ?ContentModelService $models = null,
+        ?StudioContentCompositionService $compositions = null,
+        ?StudioMachineCompositionGateway $blueprints = null,
     ): KumweMcpHandlers {
         return new KumweMcpHandlers(
             $catalog,
@@ -45,6 +57,12 @@ final class McpHandlersFixture
             new SystemClock(),
             AuthorizationContext::gateway(),
             extensionRuntime: $extensionRuntime,
+            media: $media,
+            wording: $wording,
+            businessSecurity: $businessSecurity,
+            models: $models,
+            compositions: $compositions,
+            blueprints: $blueprints,
         );
     }
 

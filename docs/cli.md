@@ -334,6 +334,25 @@ php bin/kumwe business-schema execute --site=corporate --token-file=/run/secrets
 
 `get` returns the plan with its durable step journal and the canonical `checksum`. Approval binds to that exact checksum: if the plan changed after you inspected it, approval fails rather than applying something you did not read. High-impact and destructive plans additionally require `--confirmation` and recorded recovery evidence via `--evidence`; see [the transactional business runtime](business-runtime.md) for what that evidence must prove. After an interrupted execution, inspect the journal first, then use `recover`.
 
+`business-schema-evidence record` files the restore drill a destructive plan's approval cites through the same use
+case as the schema screen and REST. It requires `business.schema.recover`, all four clean-target proofs and the
+operator's current password, read from an owner-only `--password-file`. The evidence is bound to the plan's source
+schema and stamped with the live database driver, server version and release. It prints the stored evidence; pass
+its `id` to `approve --evidence`.
+
+```bash
+php bin/kumwe business-schema-evidence record --site=corporate --token-file=/run/secrets/kumwe-recovery-token \
+  --plan=PLAN_ID \
+  --proofs=clean_target_restore,blueprint_checksum_verified,typed_command_verified,record_revision_audit_checksums_verified \
+  --backup-manifest-checksum=CHECKSUM --backup-created-at=2026-09-24T08:00:00Z --verified-at=2026-09-24T09:00:00Z \
+  --drill-reference=DRILL-42 --client-version=mariadb-client-11.4 --restore-target-reference=clean-target-7 \
+  --password-file=/run/secrets/kumwe-operator-password
+```
+
+Unlike the browser and REST, the retained v1 `purge-plan` and high-impact `approve` actions do not re-prove the
+password. The [parity inventory](machine-contract/README.md#browser-to-machine-parity-inventory) records this as an
+assurance gap awaiting a maintainer decision.
+
 ## Navigation
 
 ```bash
@@ -400,24 +419,12 @@ Revoke API or MCP credentials immediately with `access revoke-token --site=corpo
 
 ### Credential rotation and recovery
 
-```bash
-php bin/kumwe access reset-password \
-  --site=corporate --token-file=/run/secrets/kumwe-identity-token \
-  --user=USER_ID --password-file=/run/secrets/replacement-password \
-  --reason='Lost device, ticket 4711'
-php bin/kumwe access revoke-step-up \
-  --site=corporate --token-file=/run/secrets/kumwe-identity-token \
-  --user=USER_ID --reason='Authenticator lost, recovery codes spent'
-php bin/kumwe access terminate-sessions \
-  --site=corporate --token-file=/run/secrets/kumwe-identity-token \
-  --user=USER_ID --reason='Shared workstation'
-```
-
-All three need a token carrying `users.manage` and a written reason, and all three advance the account's security
-epoch, so the subject's API tokens, portal sessions, administrator sessions and outstanding step-up verifications
-stop working on their next request. `reset-password` refuses your own account: replacing your own password
-requires proving the current one, which only the administrator screen asks for. `revoke-step-up` destroys the
-account's unspent recovery codes and is what allows it to enroll a replacement authenticator.
+`access reset-password`, `access revoke-step-up` and `access terminate-sessions` remain in the retained `cli-v1`
+contract, but they are refused to every console token with the access screen's own step-up refusal
+(`The step-up credential is invalid, expired, or already used.`, exit status 1). The screen performs each of them
+only behind a payload-bound human step-up proof for the exact change, and a bearer credential cannot carry one, so
+a stolen `users.manage` token cannot reset a peer's password, strip their second factor or sign them out. Use the
+**Access** screen, or, when every operator is locked out, the host-local break-glass below.
 
 ### Break-glass credential recovery
 
@@ -477,6 +484,60 @@ php bin/kumwe automation jobs --site=corporate --token-file=/run/secrets/kumwe-a
 Use `automation enable`, `automation disable`, and `automation delete` with `--id` and `--version`.
 Use `automation retry` or `automation cancel` with `--id` for queued jobs. Run long-lived worker and
 scheduler processes under a supervisor; use one-shot forms for deployment diagnostics.
+
+## Studio authoring
+
+`studio-authoring` drives Studio's contextual Content authoring through the same host the administrator editor
+uses. Every action requires `--site` and `--token-file`; the token needs `content.read`, and the application also
+requires `studio.mode.hybrid` and Content create or update authority.
+
+| Action | Effect | Options |
+|---|---|---|
+| `open` | read | `--intent=create\|edit`, `--content` (edit), optional `--content-type` and `--content-type-version` |
+| `resolve-target`, `list-types`, `plan-save` | read | `--session`, `--session-generation`, `--argument-file`, optional `--locale` |
+| `start`, `save-item`, `save-as-new-type`, `save-new-type-version` | mutate | the same plus `--operation-id` |
+
+```bash
+php bin/kumwe studio-authoring open --site=corporate --token-file=/run/secrets/kumwe-cli-token \
+  --intent=create --content-type=CONTENT_TYPE_ID
+php bin/kumwe studio-authoring save-item --site=corporate --token-file=/run/secrets/kumwe-cli-token \
+  --session=SESSION_KEY --session-generation=GENERATION \
+  --argument-file=/run/kumwe/save-item.json --operation-id=studio-save-item-0001
+```
+
+`open` prints the session key and generation later actions echo. Each argument is the pinned Studio document for
+that operation, read only from an owner-only protected file. `--operation-id` is the Studio host's replay key:
+an identical retry returns the stored result with `"replayed": true`, and a reused ID with other input is refused.
+Success is `{"ok":true,"data":...,"meta":{"action":...,"surface":"cli","replayed":...}}`. Failures print
+`{"ok":false,"error":{"code":"studio_authoring.*","message":...,"details":{"category","diagnostics","revision"}}}`
+and exit 65 (invalid or validation), 66 (not found), 69 (unavailable), 73 (conflict or reused key), 75 (in
+progress or rate limited), 77 (forbidden) or 1. The live console dispatches this command under the generation-two
+contract `src/Delivery/Console/Contract/cli-v2.json` (mirrored in `docs/machine-contract/cli-v2.json`);
+generation one is retained unchanged.
+
+## Studio compositions
+
+`studio-composition get|provision --content-type=ID --version=N` reads or provisions a Content type version's
+Blueprint composition, as the administrator composition screen does. It needs `content.read` and
+`studio.mode.blueprint`, prints the composition document, and prints any refusal as one line with exit 1.
+
+`studio-blueprint` edits the composition's Blueprint through the same Studio host the screen uses. It uses the
+envelope and exits of `studio-authoring`, with `studio_authoring.*` refusal codes.
+
+| Action | Effect | Options |
+|---|---|---|
+| `open` | read | `--content-type`, `--content-type-version`, optional `--mode=blueprint\|read-only` |
+| `load`, `dependencies` | read | `--session`, `--session-generation`, `--argument-file` (the artifact reference), optional `--locale` |
+| `save`, `publish`, `unpublish` | mutate | the same plus `--expected-revision` and `--operation-id`; a save's argument is the complete Blueprint document |
+
+Publishing needs `content.publish` and unpublishing `content.unpublish`, decided separately as in the browser.
+
+## Browser-to-machine parity
+
+Every administrator and portal browser operation has a console equivalent, or is recorded with a reason in
+`docs/machine-contract/browser-machine-parity.json`. `composer machine:parity` fails the quality lane when a browser
+route has no entry or an entry names a command action `cli-v2` does not declare. See
+[the parity inventory](machine-contract/README.md#browser-to-machine-parity-inventory).
 
 ## MCP stdio
 

@@ -34,6 +34,14 @@
         <p class="text-muted text-small studio-authoring-status" role="status" aria-live="polite" data-studio-launch-status data-studio-launch-state="pending" data-message-failed="{{ t('core.administrator.content_form.studio_page_builder_could_not_start') }}" data-message-ready="{{ t('core.administrator.content_form.studio_page_builder_is_ready') }}" data-message-deferred="{{ t('core.administrator.content_form.studio_page_builder_loads_when_you_switch') }}" data-message-saved="{{ t('core.administrator.content_form.studio_changes_saved') }}" data-message-discard="{{ t('core.administrator.content_form.discard_unsaved_studio_changes') }}">{{ t('core.administrator.content_form.studio_page_builder_is_loading') }}</p>
         <div class="studio-authoring-mount" hidden data-studio-module-url="{{ studio_deployment.moduleUrl }}" data-studio-return-path="{{ studio_deployment.returnPath }}" id="{{ studio_deployment.mountId }}" data-kumwe-studio="{{ studio_deployment.configurationId }}"></div>
         <script id="{{ studio_deployment.configurationId }}" type="application/json">{{ studio_deployment.configurationJson|raw }}</script>
+        <div class="studio-authoring-preview stack" data-studio-preview-region>
+          <div class="studio-authoring-toolbar">
+            <div><p class="eyebrow">{{ t('core.administrator.content_form.studio_preview') }}</p><p class="text-muted text-small">{{ t('core.administrator.content_form.studio_preview_shows_the_last_saved') }}</p></div>
+            <button type="button" class="button" data-studio-preview-action hidden>{{ t('core.administrator.content_form.preview_this_item') }}</button>
+          </div>
+          <p class="text-muted text-small studio-authoring-status" role="status" aria-live="polite" data-studio-preview-status data-studio-preview-state="idle" data-message-rendering="{{ t('core.administrator.content_form.studio_preview_is_rendering') }}" data-message-ready="{{ t('core.administrator.content_form.studio_preview_is_ready') }}" data-message-stale="{{ t('core.administrator.content_form.studio_preview_is_stale') }}" data-message-unsaved="{{ t('core.administrator.content_form.studio_preview_needs_a_saved_item') }}" data-message-failed="{{ t('core.administrator.content_form.studio_preview_could_not_be_rendered') }}"></p>
+          <iframe class="studio-preview-frame studio-authoring-preview-frame" title="{{ t('core.administrator.content_form.studio_preview_frame') }}" data-studio-contextual-preview sandbox="allow-same-origin" hidden></iframe>
+        </div>
       </section>
     {% else %}
       <section class="notice warning stack" role="status" data-studio-authoring-fallback data-studio-authoring-reason="{{ studio_authoring.reason }}">

@@ -1,60 +1,72 @@
 {
+  "_appearance-AWH5eFRF.js": {
+    "file": "js/appearance-AWH5eFRF.js",
+    "name": "appearance"
+  },
+  "_preview-identity-Bvgz1vbs.js": {
+    "file": "js/preview-identity-Bvgz1vbs.js",
+    "name": "preview-identity"
+  },
   "_reveal-validation-g1jDnck7.js": {
     "file": "js/reveal-validation-g1jDnck7.js",
     "name": "reveal-validation"
   },
   "assets/administrator/components/studio-composition.ts": {
-    "file": "js/studio-composition-B7X09ZvF.js",
+    "file": "js/studio-composition-DAvJp3-E.js",
     "name": "studio-composition",
     "src": "assets/administrator/components/studio-composition.ts",
     "isDynamicEntry": true,
     "imports": [
       "_reveal-validation-g1jDnck7.js",
-      "assets/administrator/main.ts"
+      "assets/administrator/main.ts",
+      "_preview-identity-Bvgz1vbs.js"
     ],
     "dynamicImports": [
       "node_modules/@editorjs/editorjs/dist/editorjs.mjs"
     ]
   },
   "assets/administrator/components/studio-launch.ts": {
-    "file": "js/studio-launch-M9nIHenC.js",
+    "file": "js/studio-launch-C_zkxO6n.js",
     "name": "studio-launch",
     "src": "assets/administrator/components/studio-launch.ts",
     "isDynamicEntry": true,
     "imports": [
-      "assets/administrator/main.ts"
+      "assets/administrator/main.ts",
+      "_preview-identity-Bvgz1vbs.js"
     ]
   },
   "assets/administrator/main.ts": {
-    "file": "js/administrator-CdkFVkaC.js",
+    "file": "js/administrator-Co52foq9.js",
     "name": "administrator",
     "src": "assets/administrator/main.ts",
     "isEntry": true,
     "imports": [
-      "_reveal-validation-g1jDnck7.js"
+      "_reveal-validation-g1jDnck7.js",
+      "_appearance-AWH5eFRF.js"
     ],
     "dynamicImports": [
       "assets/administrator/components/studio-composition.ts",
       "assets/administrator/components/studio-launch.ts"
     ],
     "css": [
-      "css/administrator-BN5j6vFg.css"
+      "css/administrator-Dkd7571W.css"
     ]
   },
   "assets/portal/main.ts": {
-    "file": "js/portal-BPZ40z5S.js",
+    "file": "js/portal-CWO4w4h1.js",
     "name": "portal",
     "src": "assets/portal/main.ts",
     "isEntry": true,
     "imports": [
-      "_reveal-validation-g1jDnck7.js"
+      "_reveal-validation-g1jDnck7.js",
+      "_appearance-AWH5eFRF.js"
     ],
     "css": [
-      "css/portal-Bm8FY9nM.css"
+      "css/portal-BlvJuFm-.css"
     ]
   },
   "assets/site/main.ts": {
-    "file": "js/site-DUE4t0bZ.js",
+    "file": "js/site-D-O9Aqa-.js",
     "name": "site",
     "src": "assets/site/main.ts",
     "isEntry": true,
@@ -62,7 +74,7 @@
       "_reveal-validation-g1jDnck7.js"
     ],
     "css": [
-      "css/site-Bg9wT4O4.css"
+      "css/site-BF_30ORM.css"
     ]
   },
   "node_modules/@editorjs/editorjs/dist/editorjs.mjs": {

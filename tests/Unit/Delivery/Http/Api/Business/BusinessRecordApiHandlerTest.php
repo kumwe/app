@@ -21,6 +21,7 @@ use Kumwe\App\BusinessSurface\Application\BusinessRecordQueryFactory;
 use Kumwe\App\BusinessSurface\Application\BusinessRecordProjector;
 use Kumwe\App\BusinessSurface\Application\BusinessSurface;
 use Kumwe\App\BusinessSurface\Application\BusinessSurfaceCatalog;
+use Kumwe\App\BusinessSurface\Application\BusinessSurfaceOperation;
 use Kumwe\App\BusinessSurface\Application\BusinessSurfaceUseCases;
 use Kumwe\App\Delivery\Http\Api\Concurrency\IfMatch;
 use Kumwe\App\Delivery\Http\Api\Concurrency\RequireIfMatchMiddleware;
@@ -228,6 +229,150 @@ final class BusinessRecordApiHandlerTest extends TestCase
         self::assertSame(201, $response->getStatusCode());
         self::assertSame('/api/v1/business/approvals/' . $approvalId, $response->getHeaderLine('Location'));
         self::assertStringContainsString($approvalId, (string) $response->getBody());
+    }
+
+    /**
+     * Dispatch one atomic bulk request through the shared surface facade under the caller's idempotency key.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testBulkDispatchesThroughSharedSurfaceUseCases(): void
+    {
+        [$principal, $context] = $this->identity();
+        $items = [
+            ['record_id' => 'invoice-7', 'expected_version' => 4],
+            ['record_id' => 'invoice-8', 'expected_version' => 2],
+        ];
+        $surfaces = $this->createMock(BusinessSurfaceUseCases::class);
+        $surfaces->expects(self::once())
+            ->method('bulk')
+            ->with(
+                $context,
+                BusinessSurface::Api,
+                'core.invoice',
+                BusinessSurfaceOperation::Action,
+                $items,
+                'record-bulk-0001',
+                'send',
+                ['channel' => 'email'],
+            )
+            ->willReturn(['operation' => 'action', 'count' => 2, 'items' => []]);
+        $response = $this->handler($surfaces)->handle($this->bulkRequest(
+            $principal,
+            $context,
+            json_encode(
+                ['operation' => 'action', 'action' => 'send', 'input' => ['channel' => 'email'], 'items' => $items],
+                JSON_THROW_ON_ERROR,
+            ),
+        ));
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertSame('no-store', $response->getHeaderLine('Cache-Control'));
+        self::assertSame(
+            ['operation' => 'action', 'count' => 2, 'items' => []],
+            json_decode((string) $response->getBody(), true, 8, JSON_THROW_ON_ERROR),
+        );
+    }
+
+    /**
+     * A bulk restore reached by its method and path alone dispatches the restore operation, with no action.
+     *
+     * Without an explicit route token the handler infers the bulk operation from `POST .../bulk`, and the
+     * body's `restore` maps to the facade's restore operation rather than an archive or a named action.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testABulkRestoreInferredFromItsPathDispatchesTheRestoreOperation(): void
+    {
+        [$principal, $context] = $this->identity();
+        $items = [['record_id' => 'invoice-7', 'expected_version' => 5]];
+        $surfaces = $this->createMock(BusinessSurfaceUseCases::class);
+        $surfaces->expects(self::once())
+            ->method('bulk')
+            ->with(
+                $context,
+                BusinessSurface::Api,
+                'core.invoice',
+                BusinessSurfaceOperation::Restore,
+                $items,
+                'record-bulk-0001',
+                null,
+                self::anything(),
+            )
+            ->willReturn(['operation' => 'restore', 'count' => 1, 'items' => []]);
+        $request = $this->bulkRequest(
+            $principal,
+            $context,
+            json_encode(['operation' => 'restore', 'items' => $items], JSON_THROW_ON_ERROR),
+        )->withoutAttribute(BusinessRecordApiHandler::OPERATION_ATTRIBUTE);
+
+        $response = $this->handler($surfaces)->handle($request);
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertSame(
+            ['operation' => 'restore', 'count' => 1, 'items' => []],
+            json_decode((string) $response->getBody(), true, 8, JSON_THROW_ON_ERROR),
+        );
+    }
+
+    /**
+     * Refuse a bulk body outside the closed archive, restore or action vocabulary before the facade runs.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testBulkRefusesAnUnknownOperationOrNonListItemsBeforeTheFacade(): void
+    {
+        [$principal, $context] = $this->identity();
+        $surfaces = $this->createMock(BusinessSurfaceUseCases::class);
+        $surfaces->expects(self::never())->method('bulk');
+        foreach (
+            [
+                '{"operation":"delete","items":[]}',
+                '{"operation":"archive","items":{"a":1}}',
+                '{"operation":"archive","items":[],"extra":true}',
+            ] as $body
+        ) {
+            $response = $this->handler($surfaces)->handle($this->bulkRequest($principal, $context, $body));
+
+            self::assertSame(422, $response->getStatusCode(), $body);
+        }
+    }
+
+    /**
+     * Build one collection bulk request carrying the caller's idempotency key.
+     *
+     * @param   AuthenticatedPrincipal  $principal  Bearer principal.
+     * @param   ExecutionContext        $context    Execution context of the principal.
+     * @param   string                  $json       Exact request body bytes.
+     *
+     * @return  ServerRequestInterface  Request.
+     *
+     * @since   2.0.0
+     */
+    private function bulkRequest(
+        AuthenticatedPrincipal $principal,
+        ExecutionContext $context,
+        string $json,
+    ): ServerRequestInterface {
+        return $this->request($json)
+            ->withUri((new ServerRequestFactory())->createServerRequest(
+                'POST',
+                'https://kumwe.test/api/v1/business/records/core.invoice/bulk',
+            )->getUri())
+            ->withAttribute(BusinessRecordApiHandler::OPERATION_ATTRIBUTE, BusinessRecordApiHandler::BULK)
+            ->withAttribute(BusinessRecordApiHandler::DEFINITION_ATTRIBUTE, 'core.invoice')
+            ->withAttribute(AuthenticatedPrincipal::REQUEST_ATTRIBUTE, $principal)
+            ->withAttribute(ExecutionContextAttribute::NAME, $context)
+            ->withAttribute(
+                RequireIdempotencyKeyMiddleware::ATTRIBUTE,
+                IdempotencyKey::fromHeader('record-bulk-0001'),
+            );
     }
 
     /**

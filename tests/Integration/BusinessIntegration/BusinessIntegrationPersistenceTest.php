@@ -25,6 +25,8 @@ use Kumwe\Integration\ProcessWorkItem;
 use Kumwe\Integration\ProcessWorkKind;
 use Kumwe\App\BusinessIntegration\Infrastructure\DoctrineInboxStore;
 use Kumwe\App\BusinessIntegration\Infrastructure\DoctrineOutboxStore;
+use Kumwe\App\BusinessReporting\Infrastructure\DoctrineProjectionEventSequencer;
+use Kumwe\App\Infrastructure\Persistence\Migration\BusinessRecordScaleMigration;
 use Kumwe\App\BusinessIntegration\Infrastructure\DoctrineProcessManagerStore;
 use Kumwe\App\Infrastructure\Persistence\DoctrineTransactionManager;
 use Kumwe\App\Infrastructure\Persistence\Migration\BusinessIntegrationSdkMigration;
@@ -85,6 +87,11 @@ final class BusinessIntegrationPersistenceTest extends TestCase
         $migration = new BusinessIntegrationSdkMigration($this->tables);
         $migration->up($this->database);
         $migration->up($this->database);
+        (new \Kumwe\App\Infrastructure\Persistence\Migration\JobRecoveryMigration($this->tables))
+            ->up($this->database);
+        (new \Kumwe\App\Infrastructure\Persistence\Migration\QueueWorkerPermitsMigration($this->tables))
+            ->up($this->database);
+        (new BusinessRecordScaleMigration($this->tables))->up($this->database);
     }
 
     public function testOutboxInsertSharesTheAuthoritativeTransactionAndUsesFencedReplayableClaims(): void
@@ -96,6 +103,7 @@ final class BusinessIntegrationPersistenceTest extends TestCase
             $this->clock,
             $this->contracts,
             new DeterministicCanonicalEncoder(),
+            new DoctrineProjectionEventSequencer($this->database, $this->tables, $this->transactions),
         );
         $rolledBack = $this->event(1);
         try {
@@ -138,6 +146,7 @@ final class BusinessIntegrationPersistenceTest extends TestCase
             $this->clock,
             $this->contracts,
             new DeterministicCanonicalEncoder(),
+            new DoctrineProjectionEventSequencer($this->database, $this->tables, $this->transactions),
         );
         $event = $this->event(1);
         $outbox->append($event, 1);
@@ -158,6 +167,7 @@ final class BusinessIntegrationPersistenceTest extends TestCase
             new FixedBusinessIntegrationClock($this->clock->now()->modify('+5 seconds')),
             $this->contracts,
             new DeterministicCanonicalEncoder(),
+            new DoctrineProjectionEventSequencer($this->database, $this->tables, $this->transactions),
         );
         $second = $later->claim('integration-worker-2', '7', 60);
         self::assertNotNull($second);
@@ -434,7 +444,15 @@ final class BusinessIntegrationPersistenceTest extends TestCase
             $inbox->receive($consumer, $first, 'consumer-worker-1', '7', 30)->disposition,
         );
 
-        $this->database->delete($this->tables->raw('jobs'), ['id' => $jobId], ['id' => Types::GUID]);
+        $this->clock = new FixedBusinessIntegrationClock($now->modify('+601 seconds'));
+        $inbox = new DoctrineInboxStore(
+            $this->database,
+            $this->tables,
+            $this->transactions,
+            $this->clock,
+            $contracts,
+            $policy,
+        );
         $firstClaim = $inbox->receive($consumer, $first, 'consumer-worker-1', '7', 30);
         self::assertSame(InboxDisposition::CLAIMED, $firstClaim->disposition);
         self::assertNotNull($firstClaim->lease);
@@ -510,6 +528,7 @@ final class BusinessIntegrationPersistenceTest extends TestCase
             $this->transactions,
             $this->clock,
             new DeterministicCanonicalEncoder(),
+            new DoctrineProjectionEventSequencer($this->database, $this->tables, $this->transactions),
         );
         $process = new ProcessInstance(
             new DeterministicCanonicalEncoder(),

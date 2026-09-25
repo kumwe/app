@@ -137,6 +137,42 @@ final readonly class HttpMutationPreauthorizer
             $this->assert($context, $action, AuthorizationResource::item('content', $id));
             return;
         }
+        $composition = '#^/api/v1/content-types/([^/]+)/versions/[1-9][0-9]*/composition$#D';
+        if ($method === 'POST' && preg_match($composition, $path, $match) === 1) {
+            $this->assert(
+                $context,
+                'content.read',
+                AuthorizationResource::item('content_type', rawurldecode($match[1])),
+            );
+            return;
+        }
+        if ($method === 'POST' && $path === '/api/v1/media') {
+            $this->assert($context, 'content.update', AuthorizationResource::collection('media'));
+            return;
+        }
+        if ($method === 'DELETE' && preg_match('#^/api/v1/media/[^/]+$#D', $path) === 1) {
+            $this->assert($context, 'content.delete', AuthorizationResource::collection('media'));
+            return;
+        }
+        if (
+            ($method === 'PUT' && $path === '/api/v1/wording/overrides')
+            || ($method === 'POST' && $path === '/api/v1/wording/overrides/withdraw')
+        ) {
+            $this->assert(
+                $context,
+                'localization.overrides.manage',
+                AuthorizationResource::collection('message_override'),
+            );
+            return;
+        }
+        if ($method === 'POST' && preg_match('#^/api/v1/business/approvals/([^/]+)/cancel$#D', $path, $match) === 1) {
+            $this->assert(
+                $context,
+                'business.approval.request',
+                AuthorizationResource::item('approval_request', rawurldecode($match[1])),
+            );
+            return;
+        }
         if ($method === 'POST' && $path === '/api/v1/menus') {
             $this->assert($context, 'navigation.manage', AuthorizationResource::collection('menu'));
             return;
@@ -163,6 +199,10 @@ final readonly class HttpMutationPreauthorizer
                 'settings.manage',
                 AuthorizationResource::item('site', $context->site()->identifier()),
             );
+            return;
+        }
+        if ($method === 'POST' && $path === '/api/v1/extensions') {
+            $this->assert($context, 'extensions.manage', AuthorizationResource::collection('extension'));
             return;
         }
         if (preg_match('#^/api/v1/extensions/([^/]+)/([^/]+)(?:/(?:activate|disable))?$#D', $path, $match) === 1) {
@@ -297,6 +337,48 @@ final readonly class HttpMutationPreauthorizer
         }
         if (preg_match('#^/api/v1/jobs/([^/]+)/(?:retry|cancel)$#D', $path, $match) === 1) {
             $this->assert($context, 'automation.manage', AuthorizationResource::item('job', rawurldecode($match[1])));
+            return;
+        }
+        if (
+            ($method === 'PUT' && preg_match('#^/api/v1/business-definitions/[^/]+/draft$#D', $path) === 1)
+            || (
+                $method === 'POST'
+                && preg_match(
+                    '#^/api/v1/business-definitions/[^/]+/(?:validate|publish|supersede|deprecate|reject)$#D',
+                    $path,
+                ) === 1
+            )
+        ) {
+            // The service decides the exact definition; this pre-check is the lifecycle's own capability floor.
+            $this->assert($context, 'content.update', AuthorizationResource::collection('business_definition'));
+            return;
+        }
+        if ($method === 'POST' && preg_match('#^/api/v1/business-periods/(?:close|reopen)$#D', $path) === 1) {
+            $this->assert(
+                $context,
+                'business.period.manage',
+                AuthorizationResource::collection('business_posting_period'),
+            );
+            return;
+        }
+        $schemaStage = match (true) {
+            $method !== 'POST' => null,
+            $path === '/api/v1/business-schema-plans' => 'business.schema.plan',
+            $path === '/api/v1/business-schema-plans/purge' => 'business.schema.destructive',
+            preg_match(
+                '#^/api/v1/business-schema-plans/[^/]+/(approve|execute|recover|recovery-evidence)$#D',
+                $path,
+                $stage,
+            ) === 1 => match ($stage[1]) {
+                'approve' => 'business.schema.approve',
+                'execute' => 'business.schema.execute',
+                default => 'business.schema.recover',
+            },
+            default => null,
+        };
+        if ($schemaStage !== null) {
+            // Each schema stage is independently grantable; the pre-check demands exactly that stage's grant.
+            $this->assert($context, $schemaStage, AuthorizationResource::collection('business_schema'));
             return;
         }
         if ($method === 'POST' && in_array($path, ['/api/v1/content-types', '/api/v1/workflows'], true)) {

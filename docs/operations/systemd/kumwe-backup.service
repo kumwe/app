@@ -1,0 +1,9 @@
+[Unit]
+Description=Kumwe authenticated backup, offsite verification and retention
+
+[Service]
+Type=oneshot
+User=kumwe-backup
+UMask=0077
+EnvironmentFile=/etc/kumwe/backup.env
+ExecStart=/srv/kumwe/tools/backup-cycle.sh

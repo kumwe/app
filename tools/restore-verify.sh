@@ -2,10 +2,14 @@
 
 set -Eeuo pipefail
 
+script_directory="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+source "${script_directory}/recovery-common.sh"
+
 fail() {
-    echo "Kumwe restore verification failed: $*" >&2
-    exit 1
+    recovery_fail "Kumwe restore verification failed: $*"
 }
+
+recovery_begin restore restore_verify 'restore verification'
 
 require_command() {
     command -v "$1" >/dev/null 2>&1 || fail "required command '$1' is unavailable"
@@ -29,17 +33,32 @@ case "$backup_directory" in
     / | /home | /root | /workspace) fail "refusing unsafe backup directory '$backup_directory'" ;;
 esac
 
-for required_file in checksums.sha256 database.dump extension-assets.tar.gz extensions.tar.gz manifest.json media.tar.gz private.tar.gz; do
+for required_file in checksums.sha256 database.dump manifest.json; do
     [[ -f "${backup_directory}/${required_file}" ]] || fail "missing required file '$required_file'"
     [[ ! -L "${backup_directory}/${required_file}" ]] || fail "required file '$required_file' is a symbolic link"
 done
-
-if find "$backup_directory" -xdev -type l -print -quit | grep -q .; then
-    fail 'backup directory contains symbolic links'
+recovery_tree_safe "$backup_directory"
+format="$(jq -r '.format' "$backup_directory/manifest.json")"
+[[ "$format" == kumwe-backup-v2 || "$format" == kumwe-backup-v3 ]] \
+    || fail 'manifest is not a supported Kumwe 2.x backup; Kumwe 1.x and unknown formats are refused'
+if [[ "$format" == kumwe-backup-v3 ]]; then
+    for tree in media private extensions extension-assets; do
+        [[ -d "$backup_directory/$tree" ]] || fail "missing required tree '$tree'"
+    done
+    actual_checksum_files="$(sed -n 's/^[0-9a-f]\{64\}  //p' "$backup_directory/checksums.sha256")"
+    expected_checksum_files="$(recovery_file_list "$backup_directory")"
+    [[ "$(wc -l < "$backup_directory/checksums.sha256")" == \
+        "$(printf '%s\n' "$actual_checksum_files" | wc -l)" ]] || fail 'invalid checksum manifest'
+    [[ "$(jq -c '.directories' "$backup_directory/manifest.json")" == \
+        "$(recovery_directories "$backup_directory" | jq -c .)" ]] || fail 'payload directory inventory differs'
+else
+    for required_file in extension-assets.tar.gz extensions.tar.gz media.tar.gz private.tar.gz; do
+        [[ -f "${backup_directory}/${required_file}" ]] || fail "missing required file '$required_file'"
+    done
+    actual_checksum_files="$(awk '{print $2}' "$backup_directory/checksums.sha256" | sort)"
+    expected_checksum_files="$(printf '%s\n' database.dump extension-assets.tar.gz extensions.tar.gz \
+        manifest.json media.tar.gz private.tar.gz | sort)"
 fi
-
-actual_checksum_files="$({ awk '{print $2}' "${backup_directory}/checksums.sha256" || true; } | sort)"
-expected_checksum_files="$(printf '%s\n' database.dump extension-assets.tar.gz extensions.tar.gz manifest.json media.tar.gz private.tar.gz | sort)"
 [[ "$actual_checksum_files" == "$expected_checksum_files" ]] \
     || fail 'checksum manifest contains an unexpected or missing path'
 
@@ -49,7 +68,7 @@ expected_checksum_files="$(printf '%s\n' database.dump extension-assets.tar.gz e
 )
 
 jq -e '
-    .format == "kumwe-backup-v2"
+    (.format == "kumwe-backup-v2" or .format == "kumwe-backup-v3")
     and .product == "Kumwe App"
     and .product_major == 2
     and (.release | test("^2\\.[0-9]+\\.[0-9]+([+-][0-9A-Za-z.-]+)?$"))
@@ -60,7 +79,27 @@ jq -e '
     )
     and (.database_table_prefix | length <= 28)
     and (.database_table_prefix | test("^[a-z][a-z0-9]*(_[a-z0-9]+)*_$"))
-    and .contents == ["database.dump", "extension-assets.tar.gz", "extensions.tar.gz", "media.tar.gz", "private.tar.gz"]
+    and (if .format == "kumwe-backup-v2" then
+        .contents == ["database.dump", "extension-assets.tar.gz", "extensions.tar.gz", "media.tar.gz", "private.tar.gz"]
+    else
+        .contents == ["database.dump", "extension-assets", "extensions", "media", "private"]
+        and (.payload_snapshot_at | test("^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"))
+        and (.pitr == null or (
+            (.pitr.source_id | type == "string" and length > 0)
+            and (if .database_driver == "pgsql" then
+                .pitr.kind == "postgresql-wal"
+                and (.pitr.timeline | type == "number" and . > 0 and floor == .)
+                and (.pitr.target_name | test("^kumwe_[A-Za-z0-9_]+$"))
+                and ([.pitr.start_lsn, .pitr.end_lsn, .pitr.target_lsn] |
+                    all(.[]; test("^[0-9A-F]+/[0-9A-F]+$")))
+            else
+                .pitr.kind == "binlog"
+                and (.pitr.file | test("^[a-zA-Z0-9_-]+\\.[0-9]+$"))
+                and (.pitr.position | type == "number" and . >= 4 and floor == .)
+                and (.pitr.gtid | type == "string")
+            end)
+        ))
+    end)
 ' "${backup_directory}/manifest.json" >/dev/null \
     || fail 'manifest is not a supported Kumwe 2.x backup; Kumwe 1.x and unknown formats are refused'
 
@@ -94,6 +133,20 @@ else
         <(tr -d '\000' < "${backup_directory}/database.dump"); then
         fail 'SQL database dump contains an unexpected NUL byte'
     fi
+fi
+
+if [[ "$format" == kumwe-backup-v3 ]]; then
+    if [[ "$(jq -r '.pitr.kind // ""' "$backup_directory/manifest.json")" == postgresql-wal ]]; then
+        require_command pg_verifybackup
+        pg_verifybackup "$backup_directory/pg-base"
+        jq -e --slurpfile manifest "$backup_directory/manifest.json" '
+            ."WAL-Ranges" | length == 1 and .[0].Timeline == $manifest[0].pitr.timeline
+            and .[0]."Start-LSN" == $manifest[0].pitr.start_lsn
+            and .[0]."End-LSN" == $manifest[0].pitr.end_lsn
+        ' "$backup_directory/pg-base/backup_manifest" >/dev/null || fail 'physical WAL coordinate differs'
+    fi
+    echo "Verified Kumwe 2.x backup: $backup_directory"
+    exit 0
 fi
 
 for archive in media private extensions extension-assets; do

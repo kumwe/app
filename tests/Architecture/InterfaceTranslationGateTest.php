@@ -59,6 +59,64 @@ final class InterfaceTranslationGateTest extends TestCase
         self::assertStringContainsString('composer translation:compile', $output);
     }
 
+    /**
+     * A single capitalised word handed to a component under a wording key is refused as inline text.
+     *
+     * Sixty-three headings and tab labels such as `eyebrow: 'Publishing'` passed the space-based prose
+     * rule and rendered in English in every locale. The key they are filed under is what marks them as
+     * wording, and a token such as `JSON` or a lower-case value under the same key is still accepted.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheHardcodedStringGateRefusesASingleWordComponentLabel(): void
+    {
+        $tree = $this->treeCopy();
+        file_put_contents(
+            $tree . '/templates/administrator/content-list.twig',
+            "{% include '@kis/page-header.twig' with {eyebrow: 'Publishing', format: 'JSON', tone: 'quiet'} %}\n",
+        );
+
+        [$status, $output] = $this->execute('tools/verify-translated-strings.php', [], $tree);
+
+        self::assertSame(1, $status, $output);
+        self::assertStringContainsString('templates/administrator/content-list.twig', $output);
+        self::assertStringContainsString('Publishing', $output);
+        self::assertStringNotContainsString('JSON', $output);
+        self::assertStringNotContainsString('quiet', $output);
+    }
+
+    /**
+     * Confirmation prompts, responsive-table captions and scroll-region names are refused when inline.
+     *
+     * `data-confirm` feeds a confirmation dialog, `data-label` the caption a narrow screen shows beside
+     * each table cell, and `data-scroll-label` a scroll region's accessible name. Eleven prompts, fourteen
+     * captions and four region names shipped in English before these attributes were registered.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheHardcodedStringGateRefusesInlineConfirmationAndCaptionAttributes(): void
+    {
+        $tree = $this->treeCopy();
+        file_put_contents(
+            $tree . '/templates/administrator/media.twig',
+            "<table><tr><td data-label=\"Status\"><button data-confirm=\"Delete this file?\">"
+                . "{{ t('core.administrator.content_list.trash') }}</button></td></tr></table>"
+                . "<div data-scroll-label=\"Scroll to see more\"></div>\n",
+        );
+
+        [$status, $output] = $this->execute('tools/verify-translated-strings.php', [], $tree);
+
+        self::assertSame(1, $status, $output);
+        self::assertStringContainsString('templates/administrator/media.twig', $output);
+        self::assertStringContainsString('data-label="Status"', $output);
+        self::assertStringContainsString('data-confirm="Delete this file?"', $output);
+        self::assertStringContainsString('data-scroll-label="Scroll to see more"', $output);
+    }
+
     public function testTheHardcodedStringGateEnforcesATemplateNobodyRegistered(): void
     {
         $tree = $this->treeCopy();
@@ -261,10 +319,12 @@ final class InterfaceTranslationGateTest extends TestCase
         $contents = file_get_contents($handler);
         self::assertIsString($contents);
         file_put_contents($handler, str_replace(
-            "'error' => \$this->translator->translate('core.administrator.login.invalid_credentials'),",
-            "'error' => 'That email address and password do not match.',",
+            "\$variables['error'] = \$error;",
+            "\$variables += ['error' => 'That email address and password do not match.'];",
             $contents,
+            $replaced,
         ));
+        self::assertSame(1, $replaced, 'The adversarial fixture must actually change the current handler.');
 
         [$status, $output] = $this->execute('tools/verify-translated-strings.php', [], $tree);
 

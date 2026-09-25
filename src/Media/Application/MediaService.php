@@ -59,7 +59,8 @@ final readonly class MediaService
      *
      * Filtering and slicing happen in memory over the whole library, so the page size is clamped to 96
      * to bound the work a single request can ask for. The `$total` on the returned page counts the
-     * filtered set, not the library.
+     * filtered set, not the library. A page number so large that its offset would overflow an integer
+     * lies past the end of any library and is answered as an empty page rather than a type error.
      *
      * @param   ExecutionContext  $context  Identity and site the listing is scoped to.
      * @param   string            $query    Case-insensitive substring matched against the display name.
@@ -98,9 +99,10 @@ final readonly class MediaService
         ));
         $page = max(1, $page);
         $perPage = min(96, max(1, $perPage));
+        $offset = $page > intdiv(PHP_INT_MAX, $perPage) ? PHP_INT_MAX : ($page - 1) * $perPage;
 
         return new MediaPage(
-            array_slice($assets, ($page - 1) * $perPage, $perPage),
+            array_slice($assets, $offset, $perPage),
             count($assets),
             $page,
             $perPage,

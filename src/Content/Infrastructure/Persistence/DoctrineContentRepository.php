@@ -43,6 +43,14 @@ use RuntimeException;
 final readonly class DoctrineContentRepository implements SiteScopedContentRepository, ContentSearchRepository
 {
     /**
+     * Deepest storage window any listing may start at, so no batch examines more than 10,500 rows (P5-G).
+     *
+     * @var    int
+     * @since  2.0.0
+     */
+    public const int MAXIMUM_OFFSET = 10_000;
+
+    /**
      * Bind the repository to the connection and table-name resolver every statement runs through.
      *
      * @param  Connection  $database  DBAL connection all content reads and writes are issued on.
@@ -66,7 +74,8 @@ final readonly class DoctrineContentRepository implements SiteScopedContentRepos
      *
      * @return  list<ContentRecord>  Empty once the offset has walked past the site's last entry.
      *
-     * @throws  InvalidArgumentException  When the limit falls outside 1 to 500, or the offset is negative.
+     * @throws  InvalidArgumentException  When the limit falls outside 1 to 500, or the offset is negative or
+     *          past `MAXIMUM_OFFSET`.
      * @throws  RuntimeException  When a stored row holds malformed JSON or a wrongly typed column.
      *
      * @since   2.0.0
@@ -89,7 +98,8 @@ final readonly class DoctrineContentRepository implements SiteScopedContentRepos
      *
      * @return  list<ContentRecord>  Empty once the offset has walked past the site's last entry.
      *
-     * @throws  InvalidArgumentException  When the limit falls outside 1 to 500, or the offset is negative.
+     * @throws  InvalidArgumentException  When the limit falls outside 1 to 500, or the offset is negative or
+     *          past `MAXIMUM_OFFSET`.
      * @throws  RuntimeException  When a stored row holds malformed JSON or a wrongly typed column.
      *
      * @since   2.0.0
@@ -103,8 +113,8 @@ final readonly class DoctrineContentRepository implements SiteScopedContentRepos
         if ($limit < 1 || $limit > 500) {
             throw new InvalidArgumentException('The content result limit must be between 1 and 500.');
         }
-        if ($offset < 0) {
-            throw new InvalidArgumentException('The content result offset cannot be negative.');
+        if ($offset < 0 || $offset > self::MAXIMUM_OFFSET) {
+            throw new InvalidArgumentException('The content result offset must be between 0 and 10000.');
         }
 
         $query = $this->database->createQueryBuilder()
@@ -139,7 +149,8 @@ final readonly class DoctrineContentRepository implements SiteScopedContentRepos
      *
      * @return  list<ContentRecord>  Matches in the query's order; empty once the offset passes the last row.
      *
-     * @throws  InvalidArgumentException  When the limit falls outside 1 to 500, or the offset is negative.
+     * @throws  InvalidArgumentException  When the limit falls outside 1 to 500, or the offset is negative or
+     *          past `MAXIMUM_OFFSET`.
      * @throws  RuntimeException  When a stored row holds malformed JSON or a wrongly typed column.
      *
      * @since   2.0.0
@@ -150,7 +161,7 @@ final readonly class DoctrineContentRepository implements SiteScopedContentRepos
         int $limit,
         int $offset,
     ): array {
-        if ($limit < 1 || $limit > 500 || $offset < 0) {
+        if ($limit < 1 || $limit > 500 || $offset < 0 || $offset > self::MAXIMUM_OFFSET) {
             throw new InvalidArgumentException('The content browser window is invalid.');
         }
 
@@ -690,7 +701,9 @@ final readonly class DoctrineContentRepository implements SiteScopedContentRepos
             throw new RuntimeException('Stored content JSON is invalid.', 0, $exception);
         }
 
-        if (!is_array($data) || array_is_list($data)) {
+        // An item whose type declares no data fields stores an empty body, which the JSON column encodes as
+        // `[]`; only a non-empty list is a body that is not an object.
+        if (!is_array($data) || ($data !== [] && array_is_list($data))) {
             throw new RuntimeException('Stored content data must be a JSON object.');
         }
 

@@ -39,6 +39,7 @@ use Kumwe\App\BusinessSchema\Application\BusinessSchemaConflict;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaNotFound;
 use Kumwe\Approval\ApprovalDenied;
 use Kumwe\App\BusinessSurface\Application\BusinessOperationNotFound;
+use Kumwe\App\Studio\Application\Authoring\StudioMachineAuthoringRefused;
 use Kumwe\Content\Application\ContentModelNotFound;
 use Kumwe\Content\Application\ContentNotFound;
 use Kumwe\Content\Domain\VersionConflict;
@@ -278,7 +279,49 @@ final readonly class McpToolErrorVocabulary
                 false,
                 [self::classification(McpToolRefusal::class, 'result.too_large')],
             ),
+            ...self::studioAuthoring(),
         ];
+    }
+
+    /**
+     * Retained rows for Studio authoring refusals, one per Producer category plus the two replay outcomes.
+     *
+     * The code names the same category the browser's `host-error` and the REST and CLI refusals carry. An
+     * internal Studio failure deliberately has no row, so it stays a logged defect with a generic answer.
+     *
+     * @return  list<ErrorDefinition>  Studio authoring rows in compatibility order.
+     *
+     * @since   2.0.0
+     */
+    private static function studioAuthoring(): array
+    {
+        $rows = [];
+        foreach (
+            [
+                'studio_authoring.invalid_request' => false,
+                'studio_authoring.incompatible' => false,
+                'studio_authoring.cancelled' => false,
+                'studio_authoring.unauthenticated' => false,
+                'studio_authoring.forbidden' => false,
+                'studio_authoring.not_found' => false,
+                'studio_authoring.conflict' => false,
+                'studio_authoring.limit_exceeded' => false,
+                'studio_authoring.validation_failed' => false,
+                'studio_authoring.rate_limited' => true,
+                'studio_authoring.unavailable' => true,
+                'studio_authoring.idempotency_key_reused' => false,
+                'studio_authoring.idempotency_in_progress' => true,
+            ] as $code => $retryable
+        ) {
+            $rows[] = self::definition(
+                $code,
+                'The Studio authoring request was refused.',
+                $retryable,
+                [self::classification(StudioMachineAuthoringRefused::class, $code)],
+            );
+        }
+
+        return $rows;
     }
 
     /**
@@ -404,6 +447,7 @@ final readonly class McpToolErrorVocabulary
         return match (true) {
             $exception instanceof McpToolRefusal => $exception->stableCode,
             $exception instanceof BusinessRecordException => $exception->stableCode(),
+            $exception instanceof StudioMachineAuthoringRefused => $exception->stableCode(),
             default => null,
         };
     }

@@ -38,6 +38,9 @@ use Kumwe\App\Studio\Application\Composition\StudioPublishedTheme;
 use Kumwe\App\Studio\Application\Host\StudioHostSessionAuthority;
 use Kumwe\App\Studio\Application\Host\StudioHostSessionRepository;
 use Kumwe\App\Studio\Application\Host\StudioResourceContextKeyFactory;
+use Kumwe\App\Studio\Application\Preview\StudioPreviewSequenceRepository;
+use Kumwe\App\Studio\Application\Preview\StudioPreviewSequenceWaiter;
+use Kumwe\App\Studio\Application\Preview\StudioPreviewTransportGuard;
 use Kumwe\App\Studio\Application\Release\StudioCoreCatalog;
 use Kumwe\App\Studio\Application\Rendering\StudioBlockRendererRuntime;
 use Kumwe\App\Studio\Application\Rendering\StudioContentFieldBlockRenderer;
@@ -45,6 +48,7 @@ use Kumwe\App\Studio\Domain\Authoring\StudioAuthoringIntent;
 use Kumwe\App\Studio\Domain\Host\StudioHostSession;
 use Kumwe\App\Studio\Domain\Host\StudioResourceKind;
 use Kumwe\App\Tests\Support\AuthorizationContext;
+use Kumwe\App\Tests\Support\InterfaceTranslation;
 use Kumwe\Transaction\Testing\ImmediateTransactionManager;
 use Kumwe\Content\Workflow\Domain\Workflow;
 use Kumwe\Producer\Deployment\StudioBrowserAssetLocator;
@@ -121,6 +125,37 @@ final class HostedContentStudioAuthoringConfigurationProviderTest extends TestCa
         self::assertSame('hybrid', $session->composite);
         self::assertFalse($session->preview->enabled);
         self::assertContains('studio.permission/save', $session->permissions);
+        // The host-owned preview surface addresses the origin-pinned channel through the session's own
+        // qualified extension; the in-shell preview stays disabled for the pinned hosted runtime.
+        $guard = new StudioPreviewTransportGuard(
+            'https://kumwe.test',
+            $this->createStub(StudioPreviewSequenceRepository::class),
+            $this->createStub(StudioPreviewSequenceWaiter::class),
+        );
+        $preview = $session->extensions->{HostedContentStudioAuthoringConfigurationProvider::PREVIEW_EXTENSION};
+        self::assertSame($guard->channelId($host), $preview->channelId);
+        self::assertSame($guard->sourceId($host), $preview->sourceId);
+        self::assertSame('https://kumwe.test', $preview->origin);
+        self::assertSame('/administrator/studio/preview', $preview->documentPath);
+        $ports = array_map(static fn (stdClass $port): string => $port->id, $session->hostCapabilities->ports);
+        self::assertSame(
+            [
+                'studio.port/authoring',
+                'studio.port/localization',
+                'studio.port/media',
+                'studio.port/preview',
+                'studio.port/resource',
+            ],
+            $ports,
+        );
+        self::assertSame(
+            '/administrator/studio/ports/preview/render',
+            $document->transport->routing->endpoints->{'preview/render'},
+        );
+        self::assertSame(
+            '/administrator/studio/ports/localization/messages',
+            $document->transport->routing->endpoints->{'localization/messages'},
+        );
 
         $locks = array_map(static fn (stdClass $lock): string => $lock->type, $session->blocks);
         self::assertContains('studio.core/heading', $locks);
@@ -264,6 +299,48 @@ final class HostedContentStudioAuthoringConfigurationProviderTest extends TestCa
             {
                 $this->bindings[$binding->contextKey] = $binding;
             }
+
+            /**
+             * Recorded start sources by key.
+             *
+             * @var    array<string, string>
+             * @since  2.0.0
+             */
+            private array $starts = [];
+
+            /**
+             * Record one start source once.
+             *
+             * @param   string  $contextKey   Opaque key.
+             * @param   string  $startSource  Canonical start source.
+             *
+             * @return  string|null  Recorded start source, or null when the binding is absent.
+             *
+             * @since   2.0.0
+             */
+            public function recordStart(string $contextKey, string $startSource): ?string
+            {
+                if (!isset($this->bindings[$contextKey])) {
+                    return null;
+                }
+                $this->starts[$contextKey] ??= $startSource;
+
+                return $this->starts[$contextKey];
+            }
+
+            /**
+             * Read one recorded start source.
+             *
+             * @param   string  $contextKey  Opaque key.
+             *
+             * @return  string|null  Recorded start source, or null.
+             *
+             * @since   2.0.0
+             */
+            public function start(string $contextKey): ?string
+            {
+                return $this->starts[$contextKey] ?? null;
+            }
         };
         $sessions = new class implements StudioHostSessionRepository {
             /**
@@ -370,12 +447,12 @@ final class HostedContentStudioAuthoringConfigurationProviderTest extends TestCa
             new StudioBuiltInThemeRelease(str_repeat('a', 64)),
         );
         $root = dirname(__DIR__, 5);
+        $runtime = new StudioBlockRendererRuntime($registries, new StudioContentFieldBlockRenderer());
         $catalog = new ContentStudioAuthoringCatalog(
-            new StudioCompositionContributionCatalog(
-                $registries,
-                new StudioBlockRendererRuntime($registries, new StudioContentFieldBlockRenderer()),
-            ),
+            new StudioCompositionContributionCatalog($registries, $runtime),
             StudioCoreCatalog::fromFile($root . '/resources/studio-contract/core-catalog.json', '0.1.0-beta.3'),
+            $runtime,
+            InterfaceTranslation::translator(),
         );
         $provider = new HostedContentStudioAuthoringConfigurationProvider(
             $contextAuthority,
@@ -389,6 +466,11 @@ final class HostedContentStudioAuthoringConfigurationProviderTest extends TestCa
                 StudioContractResources::releaseRecord(),
             ),
             StudioBrowserAssetLocator::npmPackages('https://cdn.jsdelivr.net/npm'),
+            new StudioPreviewTransportGuard(
+                'https://kumwe.test',
+                $this->createStub(StudioPreviewSequenceRepository::class),
+                $this->createStub(StudioPreviewSequenceWaiter::class),
+            ),
             new NullLogger(),
         );
 

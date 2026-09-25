@@ -22,7 +22,7 @@ use Throwable;
 /**
  * Single PSR-15 handler behind every user, role, capability-grant and API-token route of `/api/v1`.
  *
- * Fifteen routes share one handler because they share one job: resolve the actor's execution context,
+ * Sixteen routes share one handler because they share one job: resolve the actor's execution context,
  * hand the request to `AccessControlService` or `AdministratorIdentityGateway`, and turn what comes
  * back — a listing, a new identifier, a revocation count, nothing at all — into a JSON or empty
  * response. Policy, delegation limits and auditing stay in those collaborators; the wire contract is
@@ -32,7 +32,10 @@ use Throwable;
  * both collaborators raise for unusable input; every other failure — an authorization refusal above
  * all — is re-thrown unchanged, since a refusal answered as a validation error would tell a caller its
  * request was malformed rather than forbidden. Every response carries `no-store`: these documents
- * describe credentials and access, and a cached copy of one outlives the grant it reports.
+ * describe credentials and access, and a cached copy of one outlives the grant it reports. Resetting
+ * another account's password, retiring its second factors and ending its sessions are deliberately not
+ * served: the access screen performs them only behind a payload-bound human step-up proof that a bearer
+ * credential cannot carry, and `AccessControlService` refuses them to any human context without one.
  *
  * @since  2.0.0
  */
@@ -110,6 +113,11 @@ final readonly class AccessControlApiHandler implements RequestHandlerInterface
                 'tokens.rotate' => $this->rotateToken($request),
                 'tokens.emergency_revoke' => $this->revokeSubjectTokens($request),
                 'tokens.emergency_revoke_all' => $this->emergencyRevokeAllSubjectTokens($request),
+                'security_events.list' => new JsonResponse(
+                    ['items' => $this->access->securityEvents(ApiExecutionContext::fromRequest($request))],
+                    200,
+                    ['Cache-Control' => 'no-store'],
+                ),
                 default => throw new InvalidArgumentException('The identity operation is not supported.'),
             };
         } catch (Throwable $exception) {
@@ -153,6 +161,7 @@ final readonly class AccessControlApiHandler implements RequestHandlerInterface
             $path === '/api/v1/users' && $method === 'POST' => 'users.create',
             preg_match('#^/api/v1/users/[^/]+$#D', $path) === 1 && $method === 'PATCH' => 'users.update',
             $path === '/api/v1/roles' && $method === 'GET' => 'roles.list',
+            $path === '/api/v1/security-events' && $method === 'GET' => 'security_events.list',
             $path === '/api/v1/roles' && $method === 'POST' => 'roles.create',
             preg_match('#^/api/v1/users/[^/]+/roles/[^/]+$#D', $path) === 1 && $method === 'PUT' => 'roles.assign',
             preg_match('#^/api/v1/users/[^/]+/roles/[^/]+$#D', $path) === 1 && $method === 'DELETE' => 'roles.revoke',

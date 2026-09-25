@@ -9,9 +9,11 @@ use Doctrine\DBAL\Types\Types;
 use Kumwe\App\Application\Readiness\ReadinessStatus;
 use Kumwe\App\Http\Handler\MetricsHandler;
 use Kumwe\App\Infrastructure\Observability\MetricCatalog;
+use Kumwe\App\Infrastructure\Observability\MetricCollector;
 use Kumwe\App\Infrastructure\Observability\MetricRecorder;
 use Kumwe\App\Infrastructure\Observability\MetricsAccessPolicy;
 use Kumwe\App\Infrastructure\Observability\ObservabilityContract;
+use Kumwe\App\Infrastructure\Observability\OperationalStatusCollector;
 use Kumwe\App\Infrastructure\Observability\PrometheusExposition;
 use Kumwe\App\Infrastructure\Observability\RedisMetricRecorder;
 use Kumwe\App\Infrastructure\Observability\RuntimeMetricCollector;
@@ -35,6 +37,7 @@ use Ramsey\Uuid\Uuid;
 #[CoversClass(RuntimeMetricCollector::class)]
 #[CoversClass(RedisMetricRecorder::class)]
 #[CoversClass(MetricsHandler::class)]
+#[CoversClass(OperationalStatusCollector::class)]
 final class ObservabilityMetricsIntegrationTest extends TestCase
 {
     private const TOKEN = 'metrics-scrape-token-derived-from-patterned-words-only';
@@ -186,6 +189,59 @@ final class ObservabilityMetricsIntegrationTest extends TestCase
         }
     }
 
+    /**
+     * The wired collector publishes the recovery, storage and trust gauges beside the durable ones, and a
+     * backup outcome the shell tools record reaches the exposition on the next scrape.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheWiredCollectorPublishesRecoveryStorageAndTrustGauges(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $collector = $container->get(RuntimeMetricCollector::class);
+        self::assertInstanceOf(RuntimeMetricCollector::class, $collector);
+        $directory = dirname(__DIR__, 3) . '/storage/operations';
+        $created = !is_dir($directory) && mkdir($directory, 0775, true);
+        $status = $directory . '/restore.json';
+        $previous = is_file($status) ? file_get_contents($status) : false;
+        file_put_contents($status, json_encode([
+            'schema' => 'kumwe-operation-status/v1',
+            'operation' => 'restore',
+            'last_outcome' => 'failure',
+            'last_success_at' => null,
+            'last_failure_at' => 1_790_003_600,
+        ], JSON_THROW_ON_ERROR));
+
+        try {
+            $values = [];
+            foreach ($collector->collect() as $sample) {
+                $values[$sample->name . json_encode($sample->labels, JSON_THROW_ON_ERROR)] = $sample->value;
+            }
+
+            self::assertSame(0.0, $values['kumwe_metrics_collection_failed[]']);
+            self::assertSame(
+                1_790_003_600.0,
+                $values['kumwe_recovery_last_failure_timestamp_seconds{"operation":"restore"}'],
+            );
+            self::assertSame(0.0, $values['kumwe_recovery_last_success_timestamp_seconds{"operation":"restore"}']);
+            self::assertGreaterThan(0.0, $values['kumwe_storage_capacity_bytes{"volume":"storage"}']);
+            self::assertArrayHasKey('kumwe_extension_runtime_trusted[]', $values);
+            self::assertSame(0.0, $values['kumwe_extension_revocation_feed_stale[]'], 'An unconfigured feed is fresh.');
+            self::assertSame(0.0, $values['kumwe_extension_revocation_feed_failures[]']);
+        } finally {
+            if (is_string($previous)) {
+                file_put_contents($status, $previous);
+            } else {
+                unlink($status);
+            }
+            if ($created) {
+                rmdir($directory);
+            }
+        }
+    }
+
     private function collector(Connection $database, TableNames $tables): RuntimeMetricCollector
     {
         return new RuntimeMetricCollector(
@@ -249,5 +305,66 @@ final class ObservabilityMetricsIntegrationTest extends TestCase
             '2.9.0-qualification',
             'http',
         );
+    }
+
+    /**
+     * An operational read that fails is published as a collection failure beside the gauges it did not break.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAFailingOperationalReadIsPublishedNotRaised(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $database = $container->get(Connection::class);
+        $tables = $container->get(TableNames::class);
+        self::assertInstanceOf(Connection::class, $database);
+        self::assertInstanceOf(TableNames::class, $tables);
+        $collector = new RuntimeMetricCollector(
+            $database,
+            $tables,
+            new SystemClock(),
+            new class implements ReadinessStatus {
+                /**
+                 * Report the replica ready, so only the operational read can fail.
+                 *
+                 * @return  bool  Always true.
+                 *
+                 * @since   2.0.0
+                 */
+                public function ready(): bool
+                {
+                    return true;
+                }
+            },
+            '2.9.0-qualification',
+            'worker',
+            operational: new class implements MetricCollector {
+                /**
+                 * Fail the way an unreadable status directory or volume would.
+                 *
+                 * @return  list<\Kumwe\App\Infrastructure\Observability\MetricSample>  Never returns.
+                 *
+                 * @throws  \RuntimeException  Always.
+                 *
+                 * @since   2.0.0
+                 */
+                public function collect(): array
+                {
+                    throw new \RuntimeException('The status directory is unreadable.');
+                }
+            },
+        );
+
+        $values = [];
+        foreach ($collector->collect() as $sample) {
+            $values[$sample->name] = $sample->value;
+        }
+
+        self::assertSame(1.0, $values['kumwe_metrics_collection_failed']);
+        self::assertSame(1.0, $values['kumwe_ready'], 'The gauges that did read are still published.');
+        self::assertArrayHasKey('kumwe_jobs_pending', $values);
+        self::assertArrayNotHasKey('kumwe_recovery_last_success_timestamp_seconds', $values);
     }
 }

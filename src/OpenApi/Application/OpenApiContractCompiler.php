@@ -264,10 +264,12 @@ final readonly class OpenApiContractCompiler
         ];
         $bodylessWrites = [
             'assignRole',
+            'businessApprovalCancel',
             'businessRecordArchive',
             'businessRecordRestore',
             'cancelJob',
             'executeBusinessSchemaPlan',
+            'provisionContentComposition',
             'recoverBusinessSchemaPlan',
             'restoreContent',
             'retryJob',
@@ -447,7 +449,7 @@ final readonly class OpenApiContractCompiler
                 }
                 $operation['x-kumwe-required-capabilities'] = $capabilities;
                 if (isset($operation['requestBody'])) {
-                    $operation['x-kumwe-request-body'] = 'json';
+                    $operation['x-kumwe-request-body'] = self::requestBodyKind($operation['requestBody']);
                 } elseif (isset($requestSchemas[$operationId])) {
                     $requestContract = $requestSchemas[$operationId];
                     $operation['requestBody'] = [
@@ -2773,5 +2775,32 @@ final readonly class OpenApiContractCompiler
             }
         };
         $walk($document);
+    }
+
+    /**
+     * Classify one declared request body as the JSON or raw binary transport a route accepts.
+     *
+     * A body whose only media types are non-JSON (a raw upload such as `application/octet-stream`) is
+     * `binary`; every other declared body is `json`, which is what every earlier operation declares.
+     *
+     * @param   mixed  $requestBody  Declared OpenAPI request-body object.
+     *
+     * @return  'json'|'binary'  Stable request-body transport marker.
+     *
+     * @since   2.0.0
+     */
+    private static function requestBodyKind(mixed $requestBody): string
+    {
+        $content = is_array($requestBody) ? ($requestBody['content'] ?? null) : null;
+        if (!is_array($content) || $content === []) {
+            return 'json';
+        }
+        foreach (array_keys($content) as $mediaType) {
+            if (!is_string($mediaType) || $mediaType === 'application/json' || str_ends_with($mediaType, '+json')) {
+                return 'json';
+            }
+        }
+
+        return 'binary';
     }
 }

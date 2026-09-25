@@ -22,6 +22,9 @@ use Kumwe\InterfaceStandard\CustomizationSlot;
 use Kumwe\App\InterfaceStandard\PresentationPreferenceKey;
 use Kumwe\InterfaceStandard\SurfaceId;
 use Kumwe\App\Presentation\Application\Dashboard\DashboardComposer;
+use Kumwe\App\Presentation\Application\Dashboard\DashboardWorkflowCatalog;
+use Kumwe\App\Application\Presentation\Preference\PresentationAccessGroup;
+use Kumwe\InterfaceStandard\SurfaceArea;
 use Kumwe\App\Application\Presentation\Dashboard\DashboardPreferenceService;
 use Kumwe\App\Delivery\Http\Dashboard\DashboardPreferenceQueryDecoder;
 use Kumwe\App\Presentation\Twig\AdministratorTwigEnvironment;
@@ -43,6 +46,7 @@ use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
  * @since  2.0.0
  */
 #[CoversClass(AdministratorDashboardPreferencesHandler::class)]
+#[CoversClass(DashboardWorkflowCatalog::class)]
 #[UsesClass(AdministratorRenderer::class)]
 #[UsesClass(DashboardComposer::class)]
 #[UsesClass(DashboardPreferenceService::class)]
@@ -97,6 +101,93 @@ final class AdministratorDashboardPreferencesHandlerTest extends TestCase
             AuthorizationContext::SUBJECT,
         ));
         self::assertSame(['core.dashboard.content-summary'], $stored?->value()->value());
+    }
+
+    /**
+     * An editor lacking a stored widget's capability saves a role form and the role keeps that widget.
+     *
+     * The role row stores `acme.finance-workflow`, which the editor's capability-filtered navigation does not
+     * contain. Submitting the role form with that retained choice saves, the stored selection keeps it for the
+     * role's members, and an identifier outside both the editor catalogue and the role row is still refused.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testARoleFormKeepsAWidgetOutsideTheEditorsVisibility(): void
+    {
+        $group = PresentationAccessGroup::fromRole('018f22e2-7c8b-7ab0-8f3a-88e8026bb303', 'operations', 'Ops');
+        $runtime = new DashboardPreferenceTestRuntime([$group]);
+        $surface = SurfaceId::fromString('core.administrator.dashboard');
+        $runtime->service->mutate(
+            AuthorizationContext::human(['administrator.access', 'users.manage']),
+            SurfaceArea::Administrator,
+            $surface,
+            ContributionOwner::core(),
+            $runtime->decoder->decode([
+                'action' => 'dashboard-cards.save',
+                'scope' => 'role-workspace',
+                'scope_id' => $group->id,
+                'expected_version' => '0',
+                'item_0' => 'acme.finance-workflow',
+                'selected_0' => '1',
+                'order_0' => '1',
+            ]),
+            ['acme.finance-workflow'],
+            [],
+        );
+        $key = new PresentationPreferenceKey(
+            $surface,
+            CustomizationSlot::DashboardCards,
+            CustomizationScope::RoleWorkspace,
+            $group->id,
+        );
+        $version = $runtime->preferences->find($key)?->version();
+        self::assertIsInt($version);
+        $handler = new AdministratorDashboardPreferencesHandler(
+            $runtime->service,
+            $runtime->decoder,
+            new DashboardPreferenceQueryDecoder(),
+            $this->renderer(),
+        );
+
+        $saved = $handler->handle($this->request([
+            'action' => 'dashboard-cards.save',
+            'scope' => 'role-workspace',
+            'scope_id' => $group->id,
+            'expected_version' => (string) $version,
+            'item_0' => 'core.dashboard.administrator-context',
+            'selected_0' => '1',
+            'order_0' => '1',
+            'item_1' => 'acme.finance-workflow',
+            'selected_1' => '1',
+            'order_1' => '2',
+        ], ['administrator.access', 'users.manage']));
+
+        self::assertSame(
+            '/administrator?dashboard-saved=1#dashboard-customization',
+            $saved->getHeaderLine('Location'),
+        );
+        $stored = $runtime->preferences->find($key);
+        self::assertSame(
+            ['core.dashboard.administrator-context', 'acme.finance-workflow'],
+            $stored?->value()->value(),
+        );
+
+        $refused = $handler->handle($this->request([
+            'action' => 'dashboard-cards.save',
+            'scope' => 'role-workspace',
+            'scope_id' => $group->id,
+            'expected_version' => (string) $stored?->version(),
+            'item_0' => 'acme.payroll-workflow',
+            'selected_0' => '1',
+            'order_0' => '1',
+        ], ['administrator.access', 'users.manage']));
+        self::assertSame(
+            '/administrator?dashboard-error=invalid#dashboard-customization',
+            $refused->getHeaderLine('Location'),
+        );
+        self::assertSame($stored?->value()->value(), $runtime->preferences->find($key)?->value()->value());
     }
 
     /**

@@ -1,11 +1,16 @@
 #!/usr/bin/env bash
 
 set -Eeuo pipefail
+umask 077
+
+script_directory="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+source "${script_directory}/recovery-common.sh"
 
 fail() {
-    echo "Kumwe restore failed: $*" >&2
-    exit 1
+    recovery_fail "Kumwe restore failed: $*"
 }
+
+recovery_begin restore restore
 
 require_command() {
     command -v "$1" >/dev/null 2>&1 || fail "required command '$1' is unavailable"
@@ -31,6 +36,9 @@ first_available_command() {
 
 [[ $# -eq 1 ]] || fail 'usage: tools/restore.sh /absolute/path/to/backup'
 
+require_command cp
+require_command flock
+require_command realpath
 require_command awk
 require_command date
 require_command jq
@@ -77,9 +85,18 @@ case "$KUMWE_RESTORE_PRIVATE_DIR" in
     / | /home | /root | /workspace) fail 'refusing unsafe private-data target' ;;
 esac
 
-script_directory="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 bash "${script_directory}/restore-verify.sh" "$1"
 backup_directory="$(cd -- "$1" && pwd -P)"
+database_backup_directory="$backup_directory"
+pitr_restore=false
+if [[ -n "${KUMWE_RESTORE_PAYLOAD_BACKUP:-}" ]]; then
+    bash "$script_directory/restore-verify.sh" "$KUMWE_RESTORE_PAYLOAD_BACKUP"
+    backup_directory="$(cd -- "$KUMWE_RESTORE_PAYLOAD_BACKUP" && pwd -P)"
+    recovery_target_pair "$database_backup_directory" "$backup_directory"
+    pitr_restore=true
+elif [[ -n "${KUMWE_RESTORE_TARGET_TIME:-}" ]]; then
+    fail 'A target later than the payload snapshot is refused; select a verified coherent payload snapshot.'
+fi
 manifest_driver="$(jq -r '.database_driver' "${backup_directory}/manifest.json")"
 database_driver="${KUMWE_RESTORE_DB_DRIVER:-$manifest_driver}"
 [[ "$database_driver" == "$manifest_driver" ]] \
@@ -87,6 +104,9 @@ database_driver="${KUMWE_RESTORE_DB_DRIVER:-$manifest_driver}"
 table_prefix="${KUMWE_RESTORE_DB_TABLE_PREFIX:-$(jq -r '.database_table_prefix' "${backup_directory}/manifest.json")}"
 [[ ${#table_prefix} -le 28 && "$table_prefix" =~ ^[a-z][a-z0-9]*(_[a-z0-9]+)*_$ ]] \
     || fail 'restore database table prefix is invalid'
+
+[[ "$table_prefix" == "$(jq -r '.database_table_prefix' "$backup_directory/manifest.json")" ]] \
+    || fail 'restore table prefix must match the backup'
 
 database_password="$(<"$KUMWE_RESTORE_DB_PASSWORD_FILE")"
 [[ -n "$database_password" ]] || fail 'database password file is empty'
@@ -101,6 +121,32 @@ extensions_parent="$(dirname -- "$KUMWE_RESTORE_EXTENSIONS_DIR")"
 extension_assets_parent="$(dirname -- "$KUMWE_RESTORE_EXTENSION_ASSETS_DIR")"
 [[ -d "$media_parent" && -d "$private_parent" && -d "$extensions_parent" && -d "$extension_assets_parent" ]] \
     || fail 'restore target parent directories must exist'
+
+# Canonical, distinct, non-overlapping targets keep a resumed claim from deleting unrelated data.
+targets=()
+for variable in KUMWE_RESTORE_MEDIA_DIR KUMWE_RESTORE_PRIVATE_DIR KUMWE_RESTORE_EXTENSIONS_DIR \
+    KUMWE_RESTORE_EXTENSION_ASSETS_DIR; do
+    path="${!variable}"
+    [[ "$path" == "$(realpath -m -- "$path")" ]] || fail 'restore targets must be canonical absolute paths'
+    for other in "${targets[@]}" "$backup_directory" "$database_backup_directory"; do
+        [[ "$path/" != "$other/"* && "$other/" != "$path/"* ]] || fail 'restore targets overlap'
+    done
+    targets+=("$path")
+done
+[[ "$restore_manifest" == "$(realpath -m -- "$restore_manifest")" ]] || fail 'manifest path must be canonical'
+for path in "${targets[@]}" "$backup_directory" "$database_backup_directory"; do
+    [[ "$restore_manifest" != "$path/"* ]] || fail 'manifest must be outside restore and backup trees'
+done
+[[ ! -L "$restore_claim" && ! -L "$restore_manifest" && ! -L "${restore_manifest}.lock" ]] \
+    || fail 'restore metadata must not be symbolic links'
+exec 8>>"${restore_manifest}.lock"
+flock -n 8 || fail 'another restore owns this completion manifest'
+[[ ! -e "$restore_manifest" ]] || fail 'restore already completed; use new targets'
+base_id="$(sha256sum "$database_backup_directory/checksums.sha256" | awk '{print $1}')"
+recovery_binding="$(jq -cn --arg base "$base_id" --arg host "$database_host" --arg port "$database_port" \
+    --arg driver "$database_driver" --arg prefix "$table_prefix" --arg pgdata "${KUMWE_RESTORE_PGDATA:-}" \
+    --argjson replay "$pitr_restore" \
+    '{base: $base, host: $host, port: $port, driver: $driver, prefix: $prefix, pgdata: $pgdata, replay: $replay}')"
 
 # The backup identifies itself by the digest of its own checksum list, which restore-verify.sh has
 # just proven covers every file in the archive. A resumed run therefore has to be resuming the same
@@ -126,6 +172,8 @@ if [[ -e "$restore_claim" ]]; then
         || fail 'the interrupted restore owns different targets; resolve it before re-running'
     [[ "$(jq -r '.database' "$restore_claim")" == "$KUMWE_RESTORE_DB_NAME" ]] \
         || fail 'the interrupted restore owns a different database; resolve it before re-running'
+    [[ "$(jq -cS '.recovery_binding' "$restore_claim")" == "$(jq -cS . <<< "$recovery_binding")" ]] \
+        || fail 'the interrupted restore owns a different database connection or recovery target'
     resumed_restore=1
     if [[ "$(jq -r 'if .database_imported then "yes" else "no" end' "$restore_claim")" == 'yes' ]]; then
         database_imported=1
@@ -139,12 +187,19 @@ reclaim_target() {
     local path="$1"
     local label="$2"
 
-    [[ -e "$path" ]] || return 0
+    [[ -e "$path" || -L "$path" ]] || return 0
     [[ $resumed_restore -eq 1 ]] || fail "$label target must not exist"
     [[ -d "$path" && ! -L "$path" ]] || fail "$label target claimed by the interrupted restore is not a directory"
     find "$path" -depth -mindepth 1 -delete
     rmdir "$path"
 }
+
+replay_sql=''
+if [[ "$pitr_restore" == true && "$database_driver" != pgsql && $database_imported == 0 ]]; then
+    replay_sql="$(mktemp)"
+    trap 'recovery_finish $?; rm -f -- "$replay_sql"' EXIT
+    bash "$script_directory/recovery-binlog.sh" "$database_backup_directory" "$backup_directory" > "$replay_sql"
+fi
 
 reclaim_target "$KUMWE_RESTORE_EXTENSIONS_DIR" 'extensions'
 reclaim_target "$KUMWE_RESTORE_EXTENSION_ASSETS_DIR" 'extension assets'
@@ -156,6 +211,7 @@ write_claim() {
     local claim_staging="${restore_claim}.$$"
 
     jq -n \
+        --argjson recovery_binding "$recovery_binding" \
         --arg backup_id "$backup_id" \
         --arg started_at "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" \
         --arg database "$KUMWE_RESTORE_DB_NAME" \
@@ -167,6 +223,7 @@ write_claim() {
         '{
             format: "kumwe-restore-claim-v1",
             backup_id: $backup_id,
+            recovery_binding: $recovery_binding,
             started_at: $started_at,
             database: $database,
             database_imported: $database_imported,
@@ -198,6 +255,7 @@ if [[ $resumed_restore -eq 1 ]]; then
 fi
 
 cleanup() {
+    [[ -z "$replay_sql" ]] || rm -f -- "$replay_sql"
     if [[ -d "$media_staging" ]]; then
         find "$media_staging" -depth -mindepth 1 -delete
         rmdir "$media_staging" 2>/dev/null || true
@@ -215,9 +273,17 @@ cleanup() {
         rmdir "$extension_assets_staging" 2>/dev/null || true
     fi
 }
-trap cleanup EXIT INT TERM
+trap 'recovery_finish $?; cleanup' EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 install -d -m 0750 "$media_staging" "$private_staging" "$extensions_staging" "$extension_assets_staging"
+if [[ "$(jq -r '.format' "$backup_directory/manifest.json")" == kumwe-backup-v3 ]]; then
+    cp -a --one-file-system --reflink=auto -- "$backup_directory/media/." "$media_staging/"
+    cp -a --one-file-system --reflink=auto -- "$backup_directory/private/." "$private_staging/"
+    cp -a --one-file-system --reflink=auto -- "$backup_directory/extensions/." "$extensions_staging/"
+    cp -a --one-file-system --reflink=auto -- "$backup_directory/extension-assets/." "$extension_assets_staging/"
+else
 tar --extract --gzip --file="${backup_directory}/media.tar.gz" --directory="$media_staging" \
     --no-same-owner --no-same-permissions
 tar --extract --gzip --file="${backup_directory}/private.tar.gz" --directory="$private_staging" \
@@ -229,7 +295,16 @@ tar --extract --gzip --file="${backup_directory}/extensions.tar.gz" --directory=
 tar --extract --gzip --file="${backup_directory}/extension-assets.tar.gz" \
     --directory="$extension_assets_staging" --no-same-owner --no-same-permissions
 
-if [[ "$database_driver" == pgsql ]]; then
+fi
+find "$private_staging" -xdev -type d -exec chmod 0700 {} +
+find "$private_staging" -xdev -type f -exec chmod 0600 {} +
+
+if [[ "$database_driver" == pgsql && "$pitr_restore" == true ]]; then
+    [[ $database_imported == 0 ]] || fail 'physical PITR resume requires a new clean target and claim'
+    bash "$script_directory/recovery-postgres.sh" "$database_backup_directory" "$backup_directory"
+    write_claim true
+    applied_migration="$required_migration" # Native recovery verified it before stopping the private cluster.
+elif [[ "$database_driver" == pgsql ]]; then
     require_command pg_restore
     require_command psql
     export PGPASSWORD="$database_password"
@@ -247,7 +322,7 @@ if [[ "$database_driver" == pgsql ]]; then
         # The import is one transaction, so it either lands whole or leaves the database as empty as
         # it found it. That is what lets an interrupted restore be resumed without a manual drop.
         pg_restore "${connection_arguments[@]}" --exit-on-error --single-transaction --no-owner --no-privileges \
-            "${backup_directory}/database.dump"
+            "${database_backup_directory}/database.dump"
         write_claim true
     fi
     applied_migration="$(psql "${connection_arguments[@]}" --no-align --tuples-only --set=ON_ERROR_STOP=1 \
@@ -271,6 +346,27 @@ else
         --skip-column-names
     )
     if [[ $database_imported -eq 0 ]]; then
+        if [[ "$pitr_restore" == true ]]; then
+            [[ "$("$database_client" "${connection_arguments[@]}" --execute='SELECT @@GLOBAL.log_bin')" == 0 ]] \
+                || fail 'binlog recovery requires an isolated destination started with --skip-log-bin; no GTID state is reset'
+            if [[ "$database_driver" == mysql ]]; then
+                # Dropping a database does not remove executed GTIDs. An interrupted replay on a
+                # reused instance could silently skip source transactions even though its tables
+                # are empty. Preserve source GTIDs and refuse any overlap before importing data.
+                # Base64 transports native GTID sets (including MySQL 8.4 tags) without SQL quoting.
+                base_gtids="$(jq -r '.pitr.gtid | @base64' "$database_backup_directory/manifest.json")"
+                target_gtids="$(jq -r '.pitr.gtid | @base64' "$backup_directory/manifest.json")"
+                gtid_safe="$("$database_client" "${connection_arguments[@]}" --execute="
+                    SET @kumwe_base_gtids = FROM_BASE64('$base_gtids');
+                    SET @kumwe_target_gtids = FROM_BASE64('$target_gtids');
+                    SET @kumwe_replay_gtids = GTID_SUBTRACT(@kumwe_target_gtids, @kumwe_base_gtids);
+                    SELECT GTID_SUBSET(@kumwe_base_gtids, @kumwe_target_gtids)
+                        AND GTID_SUBTRACT(@kumwe_replay_gtids,
+                            GTID_SUBTRACT(@kumwe_replay_gtids, @@GLOBAL.gtid_executed)) = '';")"
+                [[ "$gtid_safe" == 1 ]] \
+                    || fail 'MySQL GTID history overlaps replay or changed source history; use a fresh isolated server'
+            fi
+        fi
         existing_relations="$($database_client "${connection_arguments[@]}" \
             --execute="SELECT count(*) FROM information_schema.tables WHERE table_schema = DATABASE()")"
         [[ "$existing_relations" == '0' ]] || fail "$not_empty_message"
@@ -278,7 +374,10 @@ else
         # commit data definition implicitly. An interruption here therefore leaves a partly populated
         # database that this tool will not silently overwrite: the resumed run says so and asks for a
         # freshly created database, which is the only honest way to get back to a known state.
-        "$database_client" "${connection_arguments[@]}" --binary-mode < "${backup_directory}/database.dump"
+        "$database_client" "${connection_arguments[@]}" --binary-mode < "${database_backup_directory}/database.dump"
+        if [[ "$pitr_restore" == true ]]; then
+            "$database_client" "${connection_arguments[@]}" --binary-mode < "$replay_sql"
+        fi
         write_claim true
     fi
     applied_migration="$($database_client "${connection_arguments[@]}" \
@@ -293,7 +392,7 @@ mv -- "$media_staging" "$KUMWE_RESTORE_MEDIA_DIR"
 mv -- "$private_staging" "$KUMWE_RESTORE_PRIVATE_DIR"
 mv -- "$extensions_staging" "$KUMWE_RESTORE_EXTENSIONS_DIR"
 mv -- "$extension_assets_staging" "$KUMWE_RESTORE_EXTENSION_ASSETS_DIR"
-trap - EXIT INT TERM
+[[ -z "$replay_sql" ]] || rm -f -- "$replay_sql"
 unset database_password
 
 # The digest of a restored tree is taken over the sorted per-file digests, so it changes if a file
@@ -313,6 +412,8 @@ tree_files() {
 manifest_staging="${restore_manifest}.complete.$$"
 jq -n \
     --arg backup_id "$backup_id" \
+    --argjson recovery_binding "$recovery_binding" \
+    --argjson recovery_target "$(jq '.pitr // null' "$backup_directory/manifest.json")" \
     --arg backup_created_at "$(jq -r '.created_at' "${backup_directory}/manifest.json")" \
     --arg release "$(jq -r '.release' "${backup_directory}/manifest.json")" \
     --arg completed_at "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" \
@@ -334,6 +435,8 @@ jq -n \
     --argjson resumed "$([[ $resumed_restore -eq 1 ]] && echo true || echo false)" \
     '{
         format: "kumwe-restore-v1",
+        recovery_binding: $recovery_binding,
+        recovery_target: $recovery_target,
         backup_id: $backup_id,
         backup_created_at: $backup_created_at,
         release: $release,

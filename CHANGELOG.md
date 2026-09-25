@@ -17,6 +17,232 @@ Entries cite the commits that carried them. Version 2.0.0 is not released, so ev
 
 ## [Unreleased]
 
+### #152 — Version 2 runtime completion
+
+Pull request #152 (`platform/v2-runtime-completion`) completes Points 1 to 4 of the Version 2 runtime increment
+set by [ADR 0021](docs/roadmap/decisions/0021-automated-acceptance-and-sampled-capacity.md): the Studio journey
+and machine parity, Phase 5 scale, Phase 6 recovery and diagnostics, and the Phase 7 and `PL-G` security,
+interface, language and automation gaps. The maintainer's merge, once every required check is green, accepts
+what this section describes; no human checkbox, manual browser review or follow-up acceptance commit follows it.
+Each requirement delivered here is an entry of
+[`docs/roadmap/acceptance-record.json`](docs/roadmap/acceptance-record.json) naming its runtime owner, tests, CI
+jobs and artifacts; what is still open, and which branch carries it, is generated into
+[`docs/roadmap/STATUS.md`](docs/roadmap/STATUS.md). Exact release-artifact qualification, the extension proof
+portfolio, soaks, the independent review and the out-of-process extension runtime are the separate Point 5 track.
+
+- Add authenticated, dedup-friendly v3 backup trees with retained v2 restore support, native binary-log
+  and PostgreSQL WAL recovery adapters, isolated target claims, interruption handling and scheduled
+  offsite/retention hooks. Local MariaDB 10.11 replay, tamper, resume, spent-approval and restored HTTP
+  replay drills passed; the new three-engine workflow qualifies native MySQL/PostgreSQL execution.
+  These small correctness fixtures do not claim production-volume recovery times (#152).
+
+- Pin MariaDB sessions to traditional current locking reads so a peer commit after an ordinary
+  repeatable read cannot make number allocation fail with snapshot error 1020. Row exclusion,
+  rollback and unrelated-counter progress remain enforced by the production allocator. A two-session
+  regression covers this interleaving; exact MariaDB 12.3 capacity evidence comes from CI (#152).
+
+- Apply the audit package's credential redaction policy before persistence and digest calculation;
+  nested credentials and long opaque values never enter new audit rows, while the exact stored
+  representation remains anchor-verifiable. Existing historical rows are not rewritten. Step-up
+  rotation also refuses sessions that became idle during a challenge. Focused audit and real MariaDB
+  session checks pass 16 tests and 114 assertions (#152).
+
+- Isolate receipt consumers with durable permits and bounded retry cooldowns. Fairness claims individual
+  primary keys to avoid ordered-query lock fanout, and workers recheck leases and current trust before
+  effects and settlement. Real process-kill, expiry, contention and fanout checks pass 19 tests and
+  133 assertions on MariaDB; PostgreSQL/MySQL evidence comes from the required matrix (#152).
+
+- Allow unrelated business records to commit concurrently behind a shared definition-generation fence,
+  while retaining row locks, expected-version refusal and exclusive schema transitions. Authoritative
+  commits now stage event envelopes; a bounded, replay-safe sequencer assigns journal order after commit,
+  and projection checkpoints cannot pass committed unsequenced sources. The scale migration preserves
+  existing journal history and operator retention overrides. Integrated MariaDB tests pass 26 tests and
+  204 assertions, including overlapping writers, schema fencing, late commits, rollback and sequencer
+  contention. Full capacity and cross-engine qualification remain separate from these local results (#152).
+
+- Materialize consumer and webhook receipts before executing independent worker effects. Declared queues
+  share bounded durable worker permits across jobs and inbox work, replacing the policy-row mutex and
+  live-lease count on ordinary claims. Fair tenant turns, current-generation checks, lease fencing and
+  independent retry settlement remain enforced. Drain old worker binaries before applying the new
+  migration; mixed old/new claim protocols are unsupported (#152).
+
+- Add short concurrent capacity samples with independent workers and database connections, warm-up
+  barriers, repeated batches, integrity checks and raw evidence. Results describe the measured host and
+  concurrency, and label daily extrapolations as estimates; they do not promise linear worker scaling.
+  The dedicated three-engine workflow retains partial results on failure (#152).
+
+- Preserve role dashboard choices outside the editor's own visibility, showing a localized explanation
+  without exposing hidden widget details. Remove inline summary styles and directly restate theme
+  surfaces on live appearance changes, naming the scheme on every element so WebKit re-resolves inherited
+  text colour as well as backgrounds, with WebKit regression coverage (#152).
+
+- Protect administrator sign-in with a short-lived, path-scoped login-CSRF cookie and constant-time
+  token comparison before credential verification (`GM-IDN-04`). Both browser session stores enforce
+  a configurable inactivity window, defaulting to 30 minutes, alongside absolute expiry; rejected
+  clients cannot refresh activity. Production HTTPS refusal remains enforced (`GM-IDN-05`).
+  Ordinary administrator and portal users can replace their own password through separate CSRF-protected
+  account pages, without `users.manage`; current-password throttling, credential epoch invalidation and
+  auditing use the existing identity service (`GM-IDN-07`). Local MariaDB/Redis verification passes
+  48 focused tests with 340 assertions (one existing PHPUnit mock-expectation notice); static analysis
+  and account-surface conformance pass. Maintainer merge supplies acceptance under ADR 0021.
+
+- Ship all nine Version 2 interface catalogues. `en-US`, `es`, `de`, `zh-Hans`, `pt-BR`, `af`, `he` and `ar`
+  each carry a translated target for every one of the 2,418 source identifiers, with the CLDR plural categories
+  their language needs, and `composer translation:compile` and `translation:check` refuse an incomplete language
+  set. The new `composer translation:quality` gate, in `composer qa` and CI, formats every pattern through ICU
+  for its own locale, requires every plural category ICU selects, holds arguments and markup to the source and
+  refuses English left in a non-English target outside a reasoned register. Core administrator and portal
+  navigation, administrator dates and the business-definition workspace tabs render in the request language,
+  63 single-word component labels that stayed English resolve through the catalogue and the strings gate now
+  refuses them, and the content list no longer prints icon markup as its button text.
+  `tests/Browser/locale-qualification.spec.ts` signs in and visits the critical administrator, portal and site
+  surfaces in every language on desktop and mobile Chromium, asserting the resolved `lang` and `dir`, zero
+  horizontal overflow, visible and focusable critical controls, a clean WCAG 2.2 AA scan and no translated
+  wording left in English (#152).
+
+- Hold every language to the layout on phones and past sign-in. The collapsed administrator drawer now leaves
+  towards the right in Hebrew and Arabic instead of parking over the page, and a visually hidden column label no
+  longer widens tables so far that a phone zooms the content list out. `signed-in-right-to-left.spec.ts` gives the
+  administrator dashboard, content list and account form and the portal home and account security page their own
+  Hebrew and Arabic baselines at desktop and mobile, and `locale-journeys.spec.ts` completes a German content
+  authoring journey and a Hebrew generated-business journey with typed values, each with zero overflow and a clean
+  accessibility scan. `docs/interface-translation.md` describes the nine shipped catalogues and their per-locale
+  evidence (#152).
+
+- Complete the Phase 5 scale packages `P5-A`, `P5-B`, `P5-C`, `P5-D`, `P5-E` and `P5-F` (`V2-SCL-001`,
+  `V2-SCL-002`, `V2-SCL-004`, `V2-SCL-005`, `V2-SCL-006`, `V2-SCL-007`, `V2-SCL-008`). The shared definition
+  fence, post-commit sequencer, independent receipt fan-out and durable queue permits above are proven across
+  real processes: a schema transition waits for in-flight writers and holds new writers off the retiring
+  generation, a killed writer or sequencer releases its authority and leaves no event missing or duplicated,
+  racing sequencers publish one contiguous range, fan-out three and ten with a hung and a poison consumer never
+  delays an unrelated consumer, and racing claimants never exceed a declared ceiling or starve a smaller site.
+  Every hot ledger is declared in a retention catalogue sized from the capacity contract (926 rows a second,
+  twice the enterprise peak expiry) and drained by the `system.retention.drain` job in batches sized from the
+  previous batch's lock time, with six retention metrics per store and a readiness verdict that warns or fails
+  on a missing setting or a drain slope that predicts exhaustion; audit is pruned only after its archive reads
+  back whole. Durable gauges read at most 10,000 index entries, exact counts move to an operator-only census
+  with a declared cost and a server-enforced statement timeout, and transaction, lock-conflict, sequencing,
+  claim, settlement, connection-saturation and replica-lag metrics carry closed labels (#152).
+
+- Bound administrator access-control paging at an offset of 10,000, enforce the database volume's 30% free-space
+  reserve through readiness when `KUMWE_DATABASE_DATA_PATH` is visible, and add `tools/perf-storage.php` to
+  measure physical row mutations and table, index, log and undo growth per logical transaction and forecast the
+  planning envelope. `docs/operations/scale-topology.md` documents the supported topology and every enforced
+  query and result bound, and names the two bounds not yet enforced. Concurrent capacity runs fit labelled
+  Universal Scalability Law, sigma-zero and Amdahl models to their passing repeats with Student t 95% intervals,
+  mark each prediction as interpolation or extrapolation, and keep measured and estimated sections apart in the
+  report, its schema and the published summary (`P7-A`). No figure is a production capacity guarantee (#152).
+
+- Close the session and request-forgery qualification blind spots (`GM-IDN-06`): dedicated tests cover both
+  CSRF middlewares, the Redis sign-in rate-limiter window, the portal session store's find and rotate refusals,
+  both logout handlers and the exact `Set-Cookie` attributes the pipeline emits. Every audit writer's metadata
+  keys are pinned against the credential denylist the runtime redactor applies, so the static and runtime guards
+  cannot drift (`GM-AUD-08`). A role's dashboard form now saves for an editor who cannot see every stored widget,
+  keeping the role's choices while still refusing unseen additions (`V2-UX-002`) (#152).
+
+- Records in an immutable workflow state or dated into a closed posting period render read-only affordances
+  with the refusal's own wording on the administrator and portal surfaces, a refused write returns to its page
+  with 409, and the definition editor declares and removes immutable states with validation (`V2-UX-003`).
+  Trace-context propagation is documented as propagation, never as tracing, and ADR 0022 records that adopting a
+  tracer and exporter is a separate dependency decision (`GM-OBS-05`) (#152).
+
+- Qualify observability in the real deployment (`P7-D`). Jobs, schedule occurrences, outbox messages and
+  inbox receipts now record the correlation, causation and W3C trace identifiers of the operation that produced
+  them, and the worker, scheduler, dispatcher and consumer log each claim under them, with the process role on
+  every line and credentials scrubbed from messages as well as fields; the backup and restore tools log the same
+  structured, redacted lines and record each outcome for the metrics endpoint. `/metrics` adds recovery age,
+  storage, extension trust, revocation feed and security-event signals within a 256-series bound.
+  `deploy/observability` ships 45 alert rules (ten paging) with runbook sections in
+  `docs/operations/runbooks.md`, nine inhibition rules, promtool scenarios and three dashboards separating
+  business work from transport retries, all refused offline by `composer observability:rules` when a label is
+  unbounded or a link, template or inhibition is unsound. `tools/synthetic-probe.php` checks the deployment from
+  outside, and the Observability drills workflow induces every page condition against the real application on
+  MariaDB and PostgreSQL, proves with promtool that the alert fires with its runbook link, performs the runbook's
+  recovery and proves it clears: 10 of 10 drills pass locally on both engines. Trace context crossing the
+  asynchronous boundaries is recorded as an addendum to ADR 0022; no span exporter is added (#152).
+
+- Refuse every inline style source: the content-security policy sends `style-src 'self'`,
+  `style-src-attr 'none'` and `style-src-elem 'self'` on every response. The per-site palette moves from a
+  `<body>` style attribute to the digest-versioned same-origin `/presentation/theme.css`; the named residuals
+  are the isolated SVG media policy and CSSOM frame sizing in the Studio shell (`GM-SUP-08`). The Studio preview
+  carries that frame sizing to each swapped-in frame through the CSSOM as well, instead of a copied `style`
+  attribute the policy refuses, so the expanded and medium viewports keep their width (#152).
+
+- Lock exactly one queue permit by primary key when acquiring capacity, so MySQL 8.4's sorted skip-locked read no
+  longer locks every free permit it examines and a second replica finds its free slot, and release the dead
+  permit an expired job lease still names before a reclaim competes for capacity, so a lost worker cannot starve
+  a one-slot queue (#152).
+
+- Make Studio the contextual Content authoring journey. Content New and Content Edit mount the pinned
+  `0.1.0-beta.3` Studio module in place for the exact PHP-resolved target: blank and reusable-type starts,
+  exact existing-item hydration, typed fields, entry values and layout, with the host allocating node
+  identities for palette and keyboard insertion and the interface-locale Studio catalogue served by PHP.
+  `save-item`, `save-as-new-type` and `save-new-type-version` are reconciled as separately planned PHP
+  transactions with idempotent replay and one audit row, and a successor type version keeps its reusable
+  Blueprint identity. An authenticated preview beside the shell renders the accepted item through the
+  origin-pinned channel, refusing a foreign origin, a wrong channel and a replayed sequence (`S-F`,
+  `V2-STU-006`); the hardened external-media fetcher refuses a host that rebinds to a refused address and no
+  refusal names the host, path or address (`S-E`, `V2-STU-005`). `tests/Browser/studio-authoring.spec.ts`
+  drives the journey end to end with the locale as a parameter, and an architecture test refuses Node.js, npm
+  or Vite in any production image, service, entry point or process. Extension-owned targets, standalone dual
+  mounting, the extension lifecycle in the contextual shell and the limits of the pinned Studio release remain
+  open (#152).
+
+- Keep one acceptance record for the increment. `docs/roadmap/acceptance-record.json` links every open finding,
+  every roadmap package not yet delivered and every Gate B criterion to its text reference, runtime owner, tests,
+  CI jobs, workflow artifacts, decision, outstanding note, state and track, marking work committed on an agent
+  branch as pending integration. `composer acceptance:check`, in `composer qa` and both CI record jobs, proves
+  that every path, CI job, uploaded artifact and reference exists, that findings match the ledger and packages
+  the README, and that nothing is delivered ahead of what it depends on; `composer acceptance:summary` generates
+  the STATUS.md phase board, open-work table, Gate B criteria and ledger snapshot and the summary page from it.
+  ADR 0021's acceptance rule is written where contributors read it: automated workflow evidence plus the
+  maintainer's merge is the sole acceptance record (#152).
+
+- Let the development server and the browser lane run on a configured port (`KUMWE_DEV_SERVER_PORT`,
+  `KUMWE_BROWSER_BASE_URL`), so parallel local browser runs no longer collide; CI keeps its default (#152).
+
+- Check in the automated half of the security and privacy qualification (`P7-C`).
+  `docs/security/qualification-matrix.json` maps every area and sub-area the roadmap names to the test methods
+  and CI jobs that prove it, records out-of-process controls as `GM-SUP-05`'s Point 5 work, and
+  `SecurityQualificationMatrixTest` refuses a missing test, a test outside its job or an unreasoned gap. New
+  HTTP, console, MCP and two-engine integration tests found and fixed the following:
+  - MCP protocol logs no longer carry tool arguments or results.
+  - Hand-edited media and content list queries no longer end in a server error.
+  - A settings manager scoped to one site can no longer rewrite the installation's public site settings.
+  - A revocation-feed URL carrying credentials or a query is refused.
+  - Log messages, plain values and serializable objects are scrubbed of credentials.
+  - Signed extension assets are served again, judged by the signing key's expiry.
+  - A holder of `users.manage` can no longer reset the password or retire the second factor of an account
+    whose authority exceeds the actor's, whether that authority comes from direct roles or from any
+    organization membership. Break-glass console recovery of such an account now stops at the same ceiling,
+    pending a maintainer decision (#152).
+
+- Stop extension trust reads contending for the lifecycle lock. The Studio preview renderer, contributed job
+  handlers and contributed route handlers took the non-waiting `GET_LOCK`/`pg_try_advisory_lock` lifecycle lock,
+  so under load they refused each other and revocations, and a refused availability check dropped every extension
+  renderer from a Studio registry and changed the contribution generation for that request ("Studio page builder
+  could not start"). Readers now read committed trust fenced by the loaded runtime generation before and after the
+  read (one re-check, then fail closed), a preview fragment rendered across a generation change is discarded, an
+  unreadable trust authority is logged as `extension.trust.indeterminate` and refused instead of read as
+  distrust, and each Studio operation, deployment document and published render decides its renderer registry
+  once. Only lifecycle mutators take the lock. Revoked and lapsed-key releases still never render; MariaDB and
+  PostgreSQL tests hold the lock from a second session to prove both, and that the watcher's no-change pass never
+  contends. The replica's memo of its verified local publication is now keyed on the signed verification
+  marker's bytes rather than file metadata: two equal-size publications written within one second could reuse
+  the freed inode and share every `stat` field, so a freshly booted process loaded the superseded generation
+  (#152).
+
+<!-- #152 in-flight streams. Each lands its entries above this comment, citing the acceptance-record
+     identifiers it flips, when its branch merges into platform/v2-runtime-completion:
+       agent/machine    Studio authoring over REST 1.1.0, CLI generation two and mcp-v2: MACHINE-STUDIO-PARITY
+       agent/recovery   recovery evidence map, deduplication measurement and runtime diagnostics:
+                        P6-A, P6-B, P6-C, P6-D, V2-DR-001, V2-DR-002, V2-DR-003, V2-DR-004, V2-OPS-001,
+                        GM-BAK-04, GM-BAK-08
+       agent/browser    WebKit scheme repaint and translated right-to-left login baselines: V2-QA-014, PL-G,
+                        V2-LNG-010 -->
+
+### Earlier integration work
+
 - Close the five adoptions that had merged without their closure record. `KUMWE-CS-2026-002` (sequence, PR #139,
   merged `32d6a6f3`), `KUMWE-CS-2026-004` (access-context, PR #141, merged `795583ee`), `KUMWE-CS-2026-007`
   (canonical-json, PR #138, merged `1e768cbb`), `KUMWE-CS-2026-008` (computation, PR #140, merged `4774e0d5`) and

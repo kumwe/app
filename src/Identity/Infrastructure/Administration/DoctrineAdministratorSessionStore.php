@@ -72,6 +72,7 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
      *          valid; eight hours unless configured, and never outside five minutes to seven days.
      * @param   ?MembershipDirectory         $memberships        Resolves trusted organization selections;
      *          optional solely for schema-upgrade compatibility in isolated tests.
+     * @param   int                          $idleSeconds        Maximum inactivity before refusing a cookie.
      *
      * @throws  InvalidArgumentException  When the configured lifetime is below 300 or above 604800 seconds.
      *
@@ -88,9 +89,13 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
         private object $provenance,
         private int $lifetimeSeconds = 28_800,
         private ?MembershipDirectory $memberships = null,
+        private int $idleSeconds = 1_800,
     ) {
         if ($lifetimeSeconds < 300 || $lifetimeSeconds > 604_800) {
             throw new InvalidArgumentException('Administrator sessions must last between five minutes and seven days.');
+        }
+        if ($idleSeconds < 60 || $idleSeconds > 86_400) {
+            throw new InvalidArgumentException('Administrator session inactivity must be one minute through one day.');
         }
     }
 
@@ -219,11 +224,15 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
             . 's.site_identifier, s.organization_identifier, s.workspace_identifier, s.membership_id, '
             . 's.membership_version, s.policy_generation '
             . 'FROM %s s INNER JOIN %s u ON u.id = s.user_id '
-            . "WHERE s.token_digest = ? AND s.expires_at > ? AND u.status = 'active' "
+            . "WHERE s.token_digest = ? AND s.expires_at > ? AND s.last_seen_at > ? AND u.status = 'active' "
             . 'AND s.security_epoch = u.security_epoch',
             $this->tables->quoted('administrator_sessions'),
             $this->tables->quoted('users'),
-        ), [hash('sha256', $token), $now], [Types::STRING, Types::DATETIME_IMMUTABLE]);
+        ), [hash('sha256', $token), $now, $now->sub(new DateInterval('PT' . $this->idleSeconds . 'S'))], [
+            Types::STRING,
+            Types::DATETIME_IMMUTABLE,
+            Types::DATETIME_IMMUTABLE,
+        ]);
 
         if (
             $row === false
@@ -243,13 +252,6 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
         $expiresAt = $storedExpiry instanceof DateTimeImmutable
             ? $storedExpiry
             : new DateTimeImmutable($storedExpiry);
-        $this->database->update(
-            $this->tables->raw('administrator_sessions'),
-            ['last_seen_at' => $now],
-            ['id' => $row['id']],
-            ['last_seen_at' => Types::DATETIME_IMMUTABLE],
-        );
-
         try {
             $site = SiteContext::fromString(is_string($row['site_identifier'] ?? null)
                 ? $row['site_identifier']
@@ -291,6 +293,11 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
         } catch (InvalidArgumentException) {
             return null;
         }
+
+        $this->database->executeStatement(sprintf(
+            'UPDATE %s SET last_seen_at = ? WHERE id = ? AND last_seen_at < ?',
+            $this->tables->quoted('administrator_sessions'),
+        ), [$now, $row['id'], $now], [Types::DATETIME_IMMUTABLE, Types::STRING, Types::DATETIME_IMMUTABLE]);
 
         return new AdministratorSession(
             $row['id'],
@@ -456,6 +463,9 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
             $expiresAt = $row['expires_at'] instanceof DateTimeImmutable
                 ? $row['expires_at']
                 : (is_string($row['expires_at'] ?? null) ? new DateTimeImmutable($row['expires_at']) : null);
+            $lastSeenAt = $row['last_seen_at'] instanceof DateTimeImmutable
+                ? $row['last_seen_at']
+                : (is_string($row['last_seen_at'] ?? null) ? new DateTimeImmutable($row['last_seen_at']) : null);
             $organization = is_string($row['organization_identifier'] ?? null)
                 ? $row['organization_identifier']
                 : null;
@@ -463,6 +473,8 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
             if (
                 !$expiresAt instanceof DateTimeImmutable
                 || $expiresAt <= $verifiedAt
+                || !$lastSeenAt instanceof DateTimeImmutable
+                || $lastSeenAt <= $verifiedAt->sub(new DateInterval('PT' . $this->idleSeconds . 'S'))
                 || ($row['site_identifier'] ?? null) !== $intent->siteIdentifier
                 || $organization !== $intent->organizationIdentifier
                 || $workspace !== $intent->workspaceIdentifier

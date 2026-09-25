@@ -72,7 +72,9 @@ final readonly class DoctrineQueueRuntimeOperations implements QueueRuntimeOpera
         foreach ($this->policies->policies() as $policy) {
             $cutoff = $this->cutoff($policy, $now);
             $runtime = $this->database->fetchAssociative(sprintf(
-                'SELECT last_claimed_at, updated_at FROM %s WHERE queue_id = ?',
+                'SELECT COALESCE((SELECT MAX(p.last_claimed_at) FROM %s p WHERE p.queue_id = r.queue_id), '
+                . 'r.last_claimed_at) AS last_claimed_at, r.updated_at FROM %s r WHERE r.queue_id = ?',
+                $this->tables->quoted('job_queue_permits'),
                 $this->tables->quoted('job_queue_runtime'),
             ), [$policy->queue]);
             $jobPending = $this->countJobs($policy->queue, "status = 'pending'");

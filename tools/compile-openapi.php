@@ -36,7 +36,7 @@ if ($arguments !== [] && !$check && !$acceptGeneration) {
 }
 
 // Bump this only with a reviewed successor core input at the derived generation-owned path below.
-$contractGeneration = '1.0.0';
+$contractGeneration = '1.1.0';
 
 /**
  * Resolve immutable retained paths for one REST contract generation.

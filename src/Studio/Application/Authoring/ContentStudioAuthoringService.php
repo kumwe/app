@@ -28,6 +28,7 @@ use Kumwe\App\Studio\Domain\Authoring\StudioAuthoringIntent;
 use Kumwe\App\Studio\Domain\Host\StudioResourceKind;
 use Kumwe\Content\Workflow\Domain\WorkflowDefinition;
 use Kumwe\Context\Value\ExecutionContext;
+use Kumwe\Localization\Application\Translator;
 use Kumwe\Producer\Canonical\CanonicalJson;
 use Kumwe\Producer\Schema\StudioDocumentSchemaRegistry;
 use stdClass;
@@ -129,6 +130,8 @@ final readonly class ContentStudioAuthoringService
      * @param  StudioPublishedTheme                    $theme         Exact published public-theme authority.
      * @param  StudioDocumentSchemaRegistry            $schemas       Producer's pinned schema interpreter.
      * @param ContentStudioAuthoringCatalog $catalog The one block catalog sessions lock and saves admit.
+     * @param  Translator                              $translator    Interface-locale text the host hands Studio
+     *         for its own labels and save consequences.
      *
      * @since  2.0.0
      */
@@ -142,6 +145,7 @@ final readonly class ContentStudioAuthoringService
         private StudioPublishedTheme $theme,
         private StudioDocumentSchemaRegistry $schemas,
         private ContentStudioAuthoringCatalog $catalog,
+        private Translator $translator,
     ) {
     }
 
@@ -157,6 +161,29 @@ final readonly class ContentStudioAuthoringService
      * @since   2.0.0
      */
     public function resolveTarget(
+        ExecutionContext $context,
+        StudioHostSessionSnapshot $snapshot,
+        stdClass $request,
+    ): stdClass {
+        return $this->catalog->consistently(
+            fn (): stdClass => $this->resolveTargetOperation($context, $snapshot, $request),
+        );
+    }
+
+    /**
+     * Perform `resolveTarget` inside the one contribution decision its public entry opened.
+     *
+     * Resolve the declared target for the session's exact resource and intent.
+     *
+     * @param   ExecutionContext           $context   Authenticated administrator request.
+     * @param   StudioHostSessionSnapshot  $snapshot  Authorized host session for this dispatch.
+     * @param   stdClass                   $request   Schema-valid `authoring-target` resolve request.
+     *
+     * @return  stdClass  Schema-valid `authoring-target` resolution.
+     *
+     * @since   2.0.0
+     */
+    private function resolveTargetOperation(
         ExecutionContext $context,
         StudioHostSessionSnapshot $snapshot,
         stdClass $request,
@@ -178,7 +205,7 @@ final readonly class ContentStudioAuthoringService
                 ? ['existing']
                 : ['blank', 'from-type'],
             'initialPresentation' => $presentation,
-            'returnContext' => $session->returnContext(),
+            'returnContext' => $session->returnContext($this->returnLabel()),
         ]);
     }
 
@@ -193,8 +220,34 @@ final readonly class ContentStudioAuthoringService
      *
      * @since   2.0.0
      */
-    public function listTypes(ExecutionContext $context, StudioHostSessionSnapshot $snapshot, stdClass $query): stdClass
-    {
+    public function listTypes(
+        ExecutionContext $context,
+        StudioHostSessionSnapshot $snapshot,
+        stdClass $query,
+    ): stdClass {
+        return $this->catalog->consistently(
+            fn (): stdClass => $this->listTypesOperation($context, $snapshot, $query),
+        );
+    }
+
+    /**
+     * Perform `listTypes` inside the one contribution decision its public entry opened.
+     *
+     * List the reusable Content types the actor may start a new item from.
+     *
+     * @param   ExecutionContext           $context   Authenticated administrator request.
+     * @param   StudioHostSessionSnapshot  $snapshot  Authorized host session for this dispatch.
+     * @param   stdClass                   $query     Schema-valid `reusable-content-type` list query.
+     *
+     * @return  stdClass  Schema-valid `reusable-content-type` list page.
+     *
+     * @since   2.0.0
+     */
+    private function listTypesOperation(
+        ExecutionContext $context,
+        StudioHostSessionSnapshot $snapshot,
+        stdClass $query,
+    ): stdClass {
         $session = $this->session($context, $snapshot, true);
         $this->assertTargetAndContext($session, $query->targetId ?? null, $query->resourceContext ?? null);
         $limit = $query->limit ?? null;
@@ -265,8 +318,34 @@ final readonly class ContentStudioAuthoringService
      *
      * @since   2.0.0
      */
-    public function start(ExecutionContext $context, StudioHostSessionSnapshot $snapshot, stdClass $request): stdClass
-    {
+    public function start(
+        ExecutionContext $context,
+        StudioHostSessionSnapshot $snapshot,
+        stdClass $request,
+    ): stdClass {
+        return $this->catalog->consistently(
+            fn (): stdClass => $this->startOperation($context, $snapshot, $request),
+        );
+    }
+
+    /**
+     * Perform `start` inside the one contribution decision its public entry opened.
+     *
+     * Open the coordinated authoring session for one exact start source.
+     *
+     * @param   ExecutionContext           $context   Authenticated administrator request.
+     * @param   StudioHostSessionSnapshot  $snapshot  Authorized host session for this dispatch.
+     * @param   stdClass                   $request   Schema-valid `authoring-session` start request.
+     *
+     * @return  stdClass  Schema-valid `authoring-session` snapshot.
+     *
+     * @since   2.0.0
+     */
+    private function startOperation(
+        ExecutionContext $context,
+        StudioHostSessionSnapshot $snapshot,
+        stdClass $request,
+    ): stdClass {
         $session = $this->session($context, $snapshot, true);
         $this->assertTargetAndContext($session, $request->targetId ?? null, $request->resourceContext ?? null);
         $source = $request->source ?? null;
@@ -292,7 +371,16 @@ final readonly class ContentStudioAuthoringService
             default => StudioProducerError::refuse('validation-failed', 'studio.authoring/start-unavailable'),
         };
 
-        return $this->snapshot($session, $state, $source, $presentation, $session->returnContext());
+        $held = $this->held(fn (): string => $this->contexts->rememberStart(
+            $context,
+            $session->host->resourceId,
+            CanonicalJson::stringify($source),
+        ));
+        if ($held !== CanonicalJson::stringify($source)) {
+            StudioProducerError::refuse('conflict', 'studio.authoring/start-already-chosen');
+        }
+
+        return $this->snapshot($session, $state, $source, $presentation, $session->returnContext($this->returnLabel()));
     }
 
     /**
@@ -306,12 +394,39 @@ final readonly class ContentStudioAuthoringService
      *
      * @since   2.0.0
      */
-    public function planSave(ExecutionContext $context, StudioHostSessionSnapshot $snapshot, stdClass $intent): stdClass
-    {
+    public function planSave(
+        ExecutionContext $context,
+        StudioHostSessionSnapshot $snapshot,
+        stdClass $intent,
+    ): stdClass {
+        return $this->catalog->consistently(
+            fn (): stdClass => $this->planSaveOperation($context, $snapshot, $intent),
+        );
+    }
+
+    /**
+     * Perform `planSave` inside the one contribution decision its public entry opened.
+     *
+     * Plan one save outcome against live state and disclose its consequences.
+     *
+     * @param   ExecutionContext           $context   Authenticated administrator request.
+     * @param   StudioHostSessionSnapshot  $snapshot  Authorized host session for this dispatch.
+     * @param   stdClass                   $intent    Schema-valid `authoring-save` intent.
+     *
+     * @return  stdClass  Schema-valid `authoring-save` plan.
+     *
+     * @since   2.0.0
+     */
+    private function planSaveOperation(
+        ExecutionContext $context,
+        StudioHostSessionSnapshot $snapshot,
+        stdClass $intent,
+    ): stdClass {
         $session = $this->session($context, $snapshot, false);
         if (($intent->sessionId ?? null) !== $session->sessionId()) {
             StudioProducerError::refuse('validation-failed', 'studio.authoring/session-mismatch');
         }
+        $this->recordedStart($context, $session);
         $draft = $intent->draft ?? null;
         $expected = $intent->expected ?? null;
         if (!$draft instanceof stdClass || !$expected instanceof stdClass) {
@@ -335,6 +450,29 @@ final readonly class ContentStudioAuthoringService
      * @since   2.0.0
      */
     public function saveItem(
+        ExecutionContext $context,
+        StudioHostSessionSnapshot $snapshot,
+        stdClass $request,
+    ): stdClass {
+        return $this->catalog->consistently(
+            fn (): stdClass => $this->saveItemOperation($context, $snapshot, $request),
+        );
+    }
+
+    /**
+     * Perform `saveItem` inside the one contribution decision its public entry opened.
+     *
+     * Commit the item transaction one accepted plan authorizes.
+     *
+     * @param   ExecutionContext           $context   Authenticated administrator request.
+     * @param   StudioHostSessionSnapshot  $snapshot  Authorized host session for this dispatch.
+     * @param   stdClass                   $request   Schema-valid `authoring-save` item request.
+     *
+     * @return  stdClass  Schema-valid `authoring-save` result.
+     *
+     * @since   2.0.0
+     */
+    private function saveItemOperation(
         ExecutionContext $context,
         StudioHostSessionSnapshot $snapshot,
         stdClass $request,
@@ -402,7 +540,13 @@ final readonly class ContentStudioAuthoringService
         $this->contexts->advance($context, $session->host->resourceId, $successor);
         $advanced = $this->advanced($session, $successor);
 
-        return $this->saveResult($advanced, $this->existingState($context, $advanced), $plan, 'save-item', $state);
+        return $this->saveResult(
+            $context,
+            $advanced,
+            $this->existingState($context, $advanced),
+            $plan,
+            'save-item',
+        );
     }
 
     /**
@@ -417,6 +561,29 @@ final readonly class ContentStudioAuthoringService
      * @since   2.0.0
      */
     public function saveNewTypeVersion(
+        ExecutionContext $context,
+        StudioHostSessionSnapshot $snapshot,
+        stdClass $request,
+    ): stdClass {
+        return $this->catalog->consistently(
+            fn (): stdClass => $this->saveNewTypeVersionOperation($context, $snapshot, $request),
+        );
+    }
+
+    /**
+     * Perform `saveNewTypeVersion` inside the one contribution decision its public entry opened.
+     *
+     * Publish an immutable successor version of the session's reusable type and adopt it.
+     *
+     * @param   ExecutionContext           $context   Authenticated administrator request.
+     * @param   StudioHostSessionSnapshot  $snapshot  Authorized host session for this dispatch.
+     * @param   stdClass                   $request   Schema-valid `authoring-save` new-type-version request.
+     *
+     * @return  stdClass  Schema-valid `authoring-save` result.
+     *
+     * @since   2.0.0
+     */
+    private function saveNewTypeVersionOperation(
         ExecutionContext $context,
         StudioHostSessionSnapshot $snapshot,
         stdClass $request,
@@ -456,15 +623,17 @@ final readonly class ContentStudioAuthoringService
         } catch (ContentModelNotFound) {
             StudioProducerError::refuse('not-found', 'studio.authoring/type-not-found');
         }
-        $this->adoptBlueprint($context, $successor, $blueprint);
+        $reference = $state->coordinates->blueprint ?? null;
+        $predecessor = $reference instanceof stdClass ? ($reference->id ?? null) : null;
+        $this->adoptBlueprint($context, $successor, $blueprint, is_string($predecessor) ? $predecessor : null);
         $advanced = $this->adoptType($context, $session, $state, $successor);
 
         return $this->saveResult(
+            $context,
             $advanced,
             $this->stateFor($context, $advanced, $successor),
             $plan,
             'save-new-type-version',
-            $state,
         );
     }
 
@@ -480,6 +649,29 @@ final readonly class ContentStudioAuthoringService
      * @since   2.0.0
      */
     public function saveAsNewType(
+        ExecutionContext $context,
+        StudioHostSessionSnapshot $snapshot,
+        stdClass $request,
+    ): stdClass {
+        return $this->catalog->consistently(
+            fn (): stdClass => $this->saveAsNewTypeOperation($context, $snapshot, $request),
+        );
+    }
+
+    /**
+     * Perform `saveAsNewType` inside the one contribution decision its public entry opened.
+     *
+     * Create a new reusable type from the session's design, excluding every item value.
+     *
+     * @param   ExecutionContext           $context   Authenticated administrator request.
+     * @param   StudioHostSessionSnapshot  $snapshot  Authorized host session for this dispatch.
+     * @param   stdClass                   $request   Schema-valid `authoring-save` new-type request.
+     *
+     * @return  stdClass  Schema-valid `authoring-save` result.
+     *
+     * @since   2.0.0
+     */
+    private function saveAsNewTypeOperation(
         ExecutionContext $context,
         StudioHostSessionSnapshot $snapshot,
         stdClass $request,
@@ -515,11 +707,11 @@ final readonly class ContentStudioAuthoringService
         $advanced = $this->adoptType($context, $session, $state, $created);
 
         return $this->saveResult(
+            $context,
             $advanced,
             $this->stateFor($context, $advanced, $created),
             $plan,
             'save-as-new-type',
-            $state,
         );
     }
 
@@ -545,7 +737,10 @@ final readonly class ContentStudioAuthoringService
             StudioProducerError::refuse('forbidden', 'studio.authoring/session-kind');
         }
         try {
-            $target = $this->contexts->resolve($context, $host->resourceId);
+            $target = $this->held(fn (): ContentStudioAuthoringTarget => $this->contexts->resolve(
+                $context,
+                $host->resourceId,
+            ));
         } catch (ContentStudioAuthoringContextStale $stale) {
             if (!$advanceStale) {
                 StudioProducerError::refuse(
@@ -554,17 +749,52 @@ final readonly class ContentStudioAuthoringService
                     $stale->current->entryRevision,
                 );
             }
-            try {
-                $this->contexts->advance($context, $host->resourceId, $stale->current);
-            } catch (ContentStudioAuthoringContextRefused) {
-                StudioProducerError::refuse('forbidden', 'studio.authoring/context-refused');
-            }
+            $this->held(fn () => $this->contexts->advance($context, $host->resourceId, $stale->current));
             $target = $stale->current;
-        } catch (ContentStudioAuthoringContextRefused) {
-            StudioProducerError::refuse('forbidden', 'studio.authoring/context-refused');
         }
 
         return new ContentStudioAuthoringSession($host, $target, $snapshot->generation, $snapshot->permissions);
+    }
+
+    /**
+     * Run one context-authority call, answering a refused binding with the host's forbidden refusal.
+     *
+     * @template T
+     *
+     * @param   callable(): T  $operation  Call that may find the opaque context absent, foreign or expired.
+     *
+     * @return  T  The call's own result.
+     *
+     * @since   2.0.0
+     */
+    private function held(callable $operation): mixed
+    {
+        try {
+            return $operation();
+        } catch (ContentStudioAuthoringContextRefused) {
+            StudioProducerError::refuse('forbidden', 'studio.authoring/context-refused');
+        }
+    }
+
+    /**
+     * The start source the session recorded when it opened, required before any save is planned.
+     *
+     * @param   ExecutionContext               $context  Authenticated administrator request.
+     * @param   ContentStudioAuthoringSession  $session  Trusted session.
+     *
+     * @return  stdClass  Canonical start source.
+     *
+     * @since   2.0.0
+     */
+    private function recordedStart(ExecutionContext $context, ContentStudioAuthoringSession $session): stdClass
+    {
+        $recorded = $this->held(fn (): ?string => $this->contexts->startOf($context, $session->host->resourceId));
+        $start = $recorded === null ? null : json_decode($recorded, false, 16, JSON_THROW_ON_ERROR);
+        if (!$start instanceof stdClass) {
+            StudioProducerError::refuse('conflict', 'studio.authoring/start-required');
+        }
+
+        return $start;
     }
 
     /**
@@ -844,7 +1074,7 @@ final readonly class ContentStudioAuthoringService
         stdClass $draft,
     ): stdClass {
         $outcome = $draft->outcome ?? null;
-        if (!is_string($outcome) || !in_array($outcome, $this->saveOutcomes($state), true)) {
+        if (!is_string($outcome) || !in_array($outcome, $this->admittedOutcomes($state), true)) {
             StudioProducerError::refuse('validation-failed', 'studio.authoring/outcome-unavailable');
         }
         $consequences = [];
@@ -859,8 +1089,8 @@ final readonly class ContentStudioAuthoringService
                     $state->record === null ? 'kumwe.app/item-created' : 'kumwe.app/item-revision-advances',
                     'information',
                     $state->record === null
-                        ? 'A new content item is created in its initial workflow state.'
-                        : 'The item receives a new revision; its workflow state does not change.',
+                        ? $this->translator->translate('core.administrator.content_form.studio_item_created')
+                        : $this->translator->translate('core.administrator.content_form.studio_item_revision_advances'),
                 );
                 break;
             case 'save-new-type-version':
@@ -874,18 +1104,18 @@ final readonly class ContentStudioAuthoringService
                 $consequences[] = ContentStudioAuthoringDocuments::diagnostic(
                     self::DEPENDENT_ENTRIES,
                     'warning',
-                    'Other items of this type keep the current version until they are migrated.',
+                    $this->translator->translate('core.administrator.content_form.studio_dependent_entries_remain'),
                 );
                 $consequences[] = ContentStudioAuthoringDocuments::diagnostic(
                     self::ITEM_ADOPTS,
                     'information',
-                    'This item adopts the new type version; its values are kept.',
+                    $this->translator->translate('core.administrator.content_form.studio_item_adopts_successor'),
                 );
                 if ($this->breakingChanges($context, $definition, $model) !== []) {
                     $consequences[] = ContentStudioAuthoringDocuments::diagnostic(
                         self::BREAKING_CHANGE,
                         'warning',
-                        'The new version removes or narrows fields; stored items may need migration.',
+                        $this->translator->translate('core.administrator.content_form.studio_breaking_schema_change'),
                     );
                 }
                 break;
@@ -896,8 +1126,8 @@ final readonly class ContentStudioAuthoringService
                     'kumwe.app/new-content-type',
                     'information',
                     $state->record === null
-                        ? 'A new reusable content type is created from this design and this item uses it.'
-                        : 'A new reusable content type is created from this design and this item adopts it.',
+                        ? $this->translator->translate('core.administrator.content_form.studio_new_type_for_new_item')
+                        : $this->translator->translate('core.administrator.content_form.studio_new_type_for_item'),
                 );
                 break;
         }
@@ -908,7 +1138,11 @@ final readonly class ContentStudioAuthoringService
             'kind' => 'authoring-save-plan',
             'id' => $id,
             'revision' => 'plan-r1',
-            'successorContext' => ContentStudioAuthoringDocuments::returnContext($session->key(), $id),
+            'successorContext' => ContentStudioAuthoringDocuments::returnContext(
+                $session->key(),
+                $id,
+                $this->returnLabel(),
+            ),
             'sessionId' => $session->sessionId(),
             'outcome' => $outcome,
             'expected' => $state->coordinates,
@@ -938,6 +1172,7 @@ final readonly class ContentStudioAuthoringService
         stdClass $draft,
         stdClass $request,
     ): stdClass {
+        $this->recordedStart($context, $session);
         $plan = $this->plan($context, $session, $state, $draft);
         $reference = $request->plan ?? null;
         if (
@@ -993,28 +1228,26 @@ final readonly class ContentStudioAuthoringService
     /**
      * Assemble the result of one accepted save around the session's successor state.
      *
+     * @param   ExecutionContext               $context  Authenticated administrator request.
      * @param   ContentStudioAuthoringSession  $session  Session advanced to its successor target.
      * @param   ContentStudioAuthoringState    $state    Fresh projection after the effect.
      * @param   stdClass                       $plan     Accepted plan.
      * @param   string                         $outcome  Accepted outcome.
-     * @param   ContentStudioAuthoringState    $prior    Projection the plan was made against.
      *
      * @return  stdClass  Schema-valid `authoring-save` result.
      *
      * @since   2.0.0
      */
     private function saveResult(
+        ExecutionContext $context,
         ContentStudioAuthoringSession $session,
         ContentStudioAuthoringState $state,
         stdClass $plan,
         string $outcome,
-        ContentStudioAuthoringState $prior,
     ): stdClass {
-        $start = $session->target->intent === StudioAuthoringIntent::Edit
-            ? (object) ['kind' => 'existing']
-            : ($prior->type === null && $state->type === null
-                ? (object) ['kind' => 'blank']
-                : (object) ['kind' => 'from-type', 'type' => $state->coordinates->type]);
+        // Studio reconciles every save against the start the session opened with, so the recorded start
+        // is reported unchanged even after the session created its item or adopted a new reusable type.
+        $start = $this->recordedStart($context, $session);
         $successorContext = $plan->successorContext;
         if (!$successorContext instanceof stdClass) {
             StudioProducerError::refuse('internal', 'studio.authoring/plan-corrupt');
@@ -1077,7 +1310,7 @@ final readonly class ContentStudioAuthoringService
         $document->capabilities = (object) [
             'modes' => ['model', 'blueprint', 'content'],
             'presentationStates' => self::PRESENTATIONS,
-            'saveOutcomes' => $this->saveOutcomes($state),
+            'saveOutcomes' => self::saveOutcomes(),
         ];
         $document->presentation = (object) ['current' => $presentation, 'returnContext' => $returnContext];
         $document->contributionGeneration = $this->contributionGeneration();
@@ -1089,15 +1322,32 @@ final readonly class ContentStudioAuthoringService
     }
 
     /**
-     * The save outcomes one state admits.
+     * The save outcomes every contextual Content session declares.
      *
-     * @param   ContentStudioAuthoringState  $state  Coordinated projection.
+     * The declaration is constant for the session: Studio reconciles each save result against the
+     * capabilities the session started with, and a blank canvas that becomes a reusable type must then be
+     * able to save its item in the same session. Which outcome the current state actually admits is the
+     * plan's decision, and a plan for an outcome the state cannot take is refused by the host.
      *
-     * @return  list<string>  Admitted outcomes.
+     * @return  list<string>  Declared outcomes.
      *
      * @since   2.0.0
      */
-    private function saveOutcomes(ContentStudioAuthoringState $state): array
+    private static function saveOutcomes(): array
+    {
+        return ['save-item', 'save-new-type-version', 'save-as-new-type'];
+    }
+
+    /**
+     * The save outcomes one state admits right now.
+     *
+     * @param   ContentStudioAuthoringState  $state  Coordinated projection.
+     *
+     * @return  list<string>  Admitted outcomes; a blank canvas admits only a new reusable type.
+     *
+     * @since   2.0.0
+     */
+    private function admittedOutcomes(ContentStudioAuthoringState $state): array
     {
         return $state->type === null
             ? ['save-as-new-type']
@@ -1227,9 +1477,11 @@ final readonly class ContentStudioAuthoringService
     /**
      * Persist an authored Blueprint as the composition of one new type version.
      *
-     * @param   ExecutionContext       $context     Authenticated administrator request.
-     * @param   ContentTypeDefinition  $definition  Newly published type version.
-     * @param   stdClass               $blueprint   Authored Blueprint document.
+     * @param   ExecutionContext       $context      Authenticated administrator request.
+     * @param   ContentTypeDefinition  $definition   Newly published type version.
+     * @param   stdClass               $blueprint    Authored Blueprint document.
+     * @param   ?string                $predecessor  Blueprint identity of the version this one succeeds, or null
+     *          for a new reusable type.
      *
      * @return  void
      *
@@ -1239,23 +1491,70 @@ final readonly class ContentStudioAuthoringService
         ExecutionContext $context,
         ContentTypeDefinition $definition,
         stdClass $blueprint,
+        ?string $predecessor = null,
     ): void {
         // A published Blueprint must compose at least one root; an empty layout is stored as the type's
         // draft composition so public rendering keeps the structured template until a layout exists.
         $roots = $blueprint->roots ?? null;
         $status = is_array($roots) && $roots !== [] ? 'published' : 'draft';
+        // The session locks every block it can author; the stored reusable Blueprint locks exactly the
+        // blocks it composes at the session's coordinates, and each of those must have a live renderer, or
+        // the save is refused here rather than the public page later.
+        $stored = json_decode(json_encode($blueprint, JSON_THROW_ON_ERROR), false, 64, JSON_THROW_ON_ERROR);
+        if (!$stored instanceof stdClass || !$stored->dependencyLock instanceof stdClass) {
+            StudioProducerError::refuse('validation-failed', 'studio.authoring/invalid-draft');
+        }
+        // The browser's draft may carry the narrower lock of the Blueprint it started from, so the stored
+        // lock is rebuilt from the session catalog the author composed against. A composed block the catalog
+        // no longer offers (its extension was disabled or removed) cannot be locked, so the type save is
+        // refused rather than storing a layout whose lock does not cover it.
+        $used = self::usedBlockTypes(is_array($roots) ? $roots : []);
+        $stored->dependencyLock->blocks = array_values(array_filter(
+            $this->catalog->blockLocks(),
+            static fn (stdClass $lock): bool => is_string($lock->type ?? null) && isset($used[$lock->type]),
+        ));
+        if (count($stored->dependencyLock->blocks) !== count($used)) {
+            StudioProducerError::refuse('validation-failed', 'studio.authoring/unlocked-block');
+        }
         try {
             $this->compositions->adopt(
                 $context,
                 $definition->id,
                 $definition->version,
-                $blueprint,
-                $this->catalog->blockLocks(),
+                $stored,
+                $this->catalog->renderableBlockLocks(),
                 $status,
+                $predecessor,
             );
         } catch (StudioCompositionLockMismatch) {
             StudioProducerError::refuse('validation-failed', 'studio.authoring/unlocked-block');
         }
+    }
+
+    /**
+     * The block types a Blueprint's node tree composes.
+     *
+     * @param   array<mixed>  $nodes  Root or slot nodes.
+     *
+     * @return  array<string, true>  Composed block types.
+     *
+     * @since   2.0.0
+     */
+    private static function usedBlockTypes(array $nodes): array
+    {
+        $types = [];
+        foreach ($nodes as $node) {
+            $type = $node instanceof stdClass ? ($node->type ?? null) : null;
+            if (is_string($type)) {
+                $types[$type] = true;
+            }
+            $slots = $node instanceof stdClass ? ($node->slots ?? null) : null;
+            foreach ($slots instanceof stdClass ? get_object_vars($slots) : [] as $children) {
+                $types += self::usedBlockTypes(is_array($children) ? $children : []);
+            }
+        }
+
+        return $types;
     }
 
     /**
@@ -1661,6 +1960,24 @@ final readonly class ContentStudioAuthoringService
         return ContentStudioAuthoringDocuments::message(
             'kumwe.content/type-' . substr(hash('sha256', $definition->handle), 0, 32),
             $definition->name,
+        );
+    }
+
+    /**
+     * The destination Studio names on its return control, in the interface locale.
+     *
+     * Studio renders a host message reference by its default text, so the host hands it the text already
+     * resolved in the locale of the request; the key stays stable so the pointer names the same resource.
+     *
+     * @return  stdClass  Schema-valid `messageReference` naming the Content editor.
+     *
+     * @since   2.0.0
+     */
+    private function returnLabel(): stdClass
+    {
+        return ContentStudioAuthoringDocuments::message(
+            'kumwe.app/return-to-content',
+            $this->translator->translate('core.administrator.content_form.studio_return_destination'),
         );
     }
 

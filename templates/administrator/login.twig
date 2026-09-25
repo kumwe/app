@@ -10,6 +10,7 @@
       <p>{{ t('core.administrator.login.purpose') }}</p>
     </header>
     <form action="/administrator/login" method="post" class="stack login-form">
+      <input type="hidden" name="_csrf" value="{{ login_csrf }}">
       <div><p class="eyebrow">{{ t('core.administrator.login.eyebrow') }}</p><h1 id="sign-in-title">{{ t('core.administrator.login.heading') }}</h1></div>
       {% if error is defined %}<div class="notice danger" role="alert">{{ error }}</div>{% endif %}
       <label>{{ t('core.administrator.login.email_label') }}<input type="email" name="email" value="{{ email|default('') }}" autocomplete="username" inputmode="email" required autofocus></label>

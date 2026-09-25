@@ -50,6 +50,18 @@
         "note": "A behavioural test that executes real code and attributes none of it makes the coverage report describe a smaller product than the one being tested. #[CoversNothing] is therefore allowed in exactly two places: on tests whose subject is not a class under src/ at all, which is the reasoned list, and on the behavioural tests that carried it when this gate was switched on, which was the pending list. That list only ever shrinks and was emptied on 2026-08-18 \u2014 every test it excused now names the classes it exercises \u2014 and it stays empty, because a new behavioural test cannot join it.",
         "reasoned": [
             {
+                "path": "tests/Unit/Tools/RecoveryToolsTest.php",
+                "reason": "The subject is the shell recovery tooling under tools/, including snapshot format, authentication, interruption and replay rules; it is not a PHP class under src/."
+            },
+            {
+                "path": "tests/Unit/Tools/RecoveryStructuredLogTest.php",
+                "reason": "The subject is the structured, redacted operator logging and outcome recording in tools/recovery-common.sh, executed for real by bash; it is not a PHP class under src/."
+            },
+            {
+                "path": "tests/Unit/Observability/",
+                "reason": "The subject is the offline alert-rule, inhibition, dashboard, drill and synthetic-probe tooling under tools/Observability/ and its commands; it is not a PHP class under src/."
+            },
+            {
                 "path": "tests/Architecture/",
                 "reason": "Architecture and source-shape tests assert facts about files, workflows, manifests and boundaries. Their subject is the arrangement of the tree, not a class in it."
             },
@@ -115,7 +127,7 @@
             },
             {
                 "path": "tests/Unit/Governance/",
-                "reason": "The subject is tools/Governance, the dependency-free capability-index and core-growth tooling, which is not under src/ and is not part of the released package."
+                "reason": "The subject is tools/Governance, the dependency-free capability-index, core-growth and acceptance-record tooling, which is not under src/ and is not part of the released package."
             }
         ],
         "pending": [],

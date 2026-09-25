@@ -530,7 +530,9 @@ Local revocation has always worked, and an operator can still revoke a key from 
 publishes, which an installation consumes without waiting for its own operator to notice.
 
 Point `EXTENSIONS_REVOCATION_FEED_URL` at an `https://` URL or at an absolute path to a local mirror,
-and pin the issuer's Ed25519 public key in `EXTENSIONS_REVOCATION_FEED_KEY`. The key is pinned in
+and pin the issuer's Ed25519 public key in `EXTENSIONS_REVOCATION_FEED_KEY`. The URL may not carry user
+credentials or a query string: the origin is written to logs, audit entries and feed state, and the list is
+signed, so it needs no authentication. Mirror an access-controlled feed to a local path instead. The key is pinned in
 configuration and never read from the trust store, because the store is what the feed revokes; a feed
 key living inside it would be revocable by the very compromise the feed exists to announce. Schedule the
 `extensions.trust.revocations.synchronize` job to consume it.

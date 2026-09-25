@@ -9,7 +9,7 @@
   <kumwe-business-surface data-kis-business data-kis-component="generated-record-history" data-kis-surface="core.administrator.generated-record" data-record-task="history">
     <header class="page-heading">
       <div>
-        <p class="eyebrow">{{ definition_handle }}</p>
+        <p class="eyebrow">{{ definition.plural_label|default('') }}</p>
         <h1>{{ t('core.administrator.business_history.record_history') }}</h1>
         <p>{% include '@kis/technical-value.twig' with {label: t('core.administrator.business_confirm.record_id'), value: record_id} only %}</p>
       </div>
@@ -22,10 +22,10 @@
       label: t('core.administrator.business_detail.record_tasks'),
       active: 'history',
       tasks: [
-        {id: 'summary', label: 'Summary', href: record_path ~ '?task=summary'},
-        {id: 'relations', label: 'Relations', href: record_path ~ '?task=relations'},
-        {id: 'history', label: 'History', href: record_path ~ '?task=history'},
-        {id: 'actions', label: 'Actions', href: record_path ~ '?task=actions'}
+        {id: 'summary', label: t('core.business.record_view.summary'), href: record_path ~ '?task=summary'},
+        {id: 'relations', label: t('core.business.record_view.relations'), href: record_path ~ '?task=relations'},
+        {id: 'history', label: t('core.business.record_view.history'), href: record_path ~ '?task=history'},
+        {id: 'actions', label: t('core.business.record_view.actions'), href: record_path ~ '?task=actions'}
       ]
     } only %}
 
@@ -33,19 +33,19 @@
       <section class="empty-state"><div class="empty-state-content"><h2>{{ t('core.administrator.business_history.no_revisions_are_available') }}</h2><p>{{ t('core.administrator.business_history.this_record_has_no_visible_history') }}</p></div></section>
     {% else %}
       <ol class="business-history-list kis-business-history">
-        {% for revision in items %}
+        {% for revision in items %}{% set revision_label = revision_labels[loop.index0]|default({}) %}
           <li class="panel business-history-entry kis-business-history-entry">
             <header>
               <div>
-                <p class="eyebrow">{{ revision.operation|replace({'_': ' '}) }}</p>
+                <p class="eyebrow" data-revision-operation="{{ revision.operation }}">{{ revision_label.operation_label|default(revision.operation) }}</p>
                 <h2>{{ t('core.administrator.business_history.version_revision', {record_version: revision.record_version, revision_number: revision.revision_number}) }}</h2>
               </div>
-              <time datetime="{{ revision.occurred_at }}">{{ revision.occurred_at|date('M j, Y H:i:s') }}</time>
+              <time datetime="{{ revision.occurred_at }}">{{ t('core.administrator.common.date_time_seconds', {value: date(revision.occurred_at)}) }}</time>
             </header>
             <p>
               {% if revision.actor_id is defined and revision.actor_id %}{{ t('core.administrator.business_history.performed_by') }} <code>{{ revision.actor_id }}</code>.{% else %}{{ t('core.administrator.business_history.actor_attribution_is_not_disclosed') }}{% endif %}
               {% if revision.changed_fields is not empty %}
-                {{ t('core.administrator.business_history.changed', {changed_fields: (revision.changed_fields|join(', '))}) }}
+                {{ t('core.administrator.business_history.changed', {changed_fields: (revision_label.changed_labels|default(revision.changed_fields)|join(', '))}) }}
               {% endif %}
             </p>
             {% if revision.snapshot is not empty %}

@@ -4,8 +4,8 @@
 {% block content %}
   <div class="kis-phase-five" data-kis-surface="core.administrator.automation">
   {% include '@kis/page-header.twig' with {
-    eyebrow: 'Operations',
-    title: 'Automation',
+    eyebrow: t('core.administrator.automation.operations'),
+    title: t('core.administrator.automation.automation'),
     purpose: t('core.administrator.automation.schedule_registered_work_inspect_delivery_and')
   } only %}
   <nav class="kis-phase-five-section-nav" aria-label="{{ t('core.administrator.automation.automation_concerns') }}">
@@ -25,7 +25,7 @@
           <td><span class="content-title"><strong>{{ schedule.job_type }}</strong><span>{{ schedule.queue }}</span></span></td>
           <td><span data-visual-dynamic>{{ schedule.next_run_at ?: t('core.administrator.automation.not_scheduled') }}</span></td>
           <td><span class="status status-{{ schedule.enabled ? 'published' : 'draft' }}">{{ schedule.enabled ? 'Enabled' : 'Disabled' }}</span></td>
-          <td class="actions"><form action="/administrator/automation" method="post"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="id" value="{{ schedule.id }}"><input type="hidden" name="version" value="{{ schedule.version }}"><button class="link-button" name="action" value="schedule.{{ schedule.enabled ? 'disable' : 'enable' }}">{{ schedule.enabled ? 'Disable' : 'Enable' }}</button><button class="link-button danger" name="action" value="schedule.delete" data-confirm="Delete the {{ schedule.name }} schedule?">{{ t('core.administrator.automation.delete') }}</button></form></td>
+          <td class="actions"><form action="/administrator/automation" method="post"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="id" value="{{ schedule.id }}"><input type="hidden" name="version" value="{{ schedule.version }}"><button class="link-button" name="action" value="schedule.{{ schedule.enabled ? 'disable' : 'enable' }}">{{ schedule.enabled ? 'Disable' : 'Enable' }}</button><button class="link-button danger" name="action" value="schedule.delete" data-confirm="{{ t('core.administrator.automation.delete_schedule_confirm', {name: schedule.name}) }}">{{ t('core.administrator.automation.delete') }}</button></form></td>
         </tr>{% endfor %}</tbody>
       </table></div>{% endif %}
     </section>

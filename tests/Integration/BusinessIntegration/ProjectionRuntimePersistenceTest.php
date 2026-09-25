@@ -8,11 +8,14 @@ use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use InvalidArgumentException;
+use LogicException;
+use Doctrine\DBAL\Exception as DbalException;
 use Kumwe\Integration\EventContractRegistry;
 use Kumwe\App\BusinessIntegration\Application\TrustedRuntimeGenerationGuard;
 use Kumwe\Integration\EventSchemaDefinition;
 use Kumwe\Integration\RecordedIntegrationEvent;
 use Kumwe\App\BusinessIntegration\Infrastructure\DoctrineOutboxStore;
+use Kumwe\App\BusinessReporting\Infrastructure\DoctrineProjectionEventSequencer;
 use Kumwe\App\BusinessReporting\Application\JournalProjectionEvent;
 use Kumwe\App\BusinessReporting\Application\ProjectionRebuildService;
 use Kumwe\App\BusinessReporting\Infrastructure\DoctrineProjectionRuntime;
@@ -20,6 +23,7 @@ use Kumwe\App\BusinessReporting\Infrastructure\DoctrineProjectionStore;
 use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
 use Kumwe\App\Infrastructure\Persistence\DoctrineTransactionManager;
 use Kumwe\App\Infrastructure\Persistence\Migration\BusinessIntegrationSdkMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\BusinessRecordScaleMigration;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\Integration\EventSensitivity;
 use Kumwe\Integration\IntegrationEvent;
@@ -41,6 +45,9 @@ use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
 #[CoversClass(DoctrineProjectionRuntime::class)]
 #[CoversClass(JournalProjectionEvent::class)]
 #[CoversClass(ProjectionRebuildService::class)]
+#[CoversClass(DoctrineProjectionEventSequencer::class)]
+#[CoversClass(DoctrineOutboxStore::class)]
+#[CoversClass(BusinessRecordScaleMigration::class)]
 final class ProjectionRuntimePersistenceTest extends TestCase
 {
     private Connection $database;
@@ -80,6 +87,7 @@ final class ProjectionRuntimePersistenceTest extends TestCase
         $migration = new BusinessIntegrationSdkMigration($this->tables);
         $migration->up($this->database);
         $migration->up($this->database);
+        (new BusinessRecordScaleMigration($this->tables))->up($this->database);
         $this->outbox = new DoctrineOutboxStore(
             $this->database,
             $this->tables,
@@ -87,6 +95,7 @@ final class ProjectionRuntimePersistenceTest extends TestCase
             $this->clock,
             $contracts,
             new DeterministicCanonicalEncoder(),
+            new DoctrineProjectionEventSequencer($this->database, $this->tables, $this->transactions),
         );
         $this->definition = new ProjectionDefinition(
             'acme.record_activity',
@@ -178,6 +187,191 @@ final class ProjectionRuntimePersistenceTest extends TestCase
         self::assertSame('second', $this->activeValue());
     }
 
+    /**
+     * Appending only stages facts; a bounded sequencer publishes each once, in a contiguous committed range.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testStagingDoesNotAllocateCheckpointOrderAndSequencingIsBounded(): void
+    {
+        $this->append($this->event(1, 'first'));
+        $this->append($this->event(2, 'second'));
+        $sequencer = new DoctrineProjectionEventSequencer($this->database, $this->tables, $this->transactions);
+        self::assertSame(0, (int) $this->database->fetchOne(sprintf(
+            'SELECT last_sequence FROM %s WHERE singleton_id = 1',
+            $this->tables->quoted('business_projection_event_head'),
+        )));
+        self::assertSame(1, $sequencer->sequence(1));
+        self::assertSame(1, (int) $this->database->fetchOne(sprintf(
+            'SELECT COUNT(*) FROM %s',
+            $this->tables->quoted('business_projection_event_staging'),
+        )));
+        self::assertSame(1, $sequencer->sequence(1));
+        self::assertSame(0, $sequencer->sequence(1));
+        self::assertSame([1, 2], array_map(intval(...), $this->database->fetchFirstColumn(sprintf(
+            'SELECT source_sequence FROM %s ORDER BY source_sequence',
+            $this->tables->quoted('business_projection_source_events'),
+        ))));
+    }
+
+    /**
+     * A failure after journal insertion and head allocation rolls back the whole range and remains retryable.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testFailureAfterRangeAllocationRestoresHeadJournalAndStaging(): void
+    {
+        // Near-limit valid envelopes cross the statement budget while sharing one atomic range.
+        for ($version = 1; $version <= 20; ++$version) {
+            $this->append($this->event($version, str_repeat('v', 60_000)));
+        }
+        $sequencer = new DoctrineProjectionEventSequencer($this->database, $this->tables, $this->transactions);
+        $this->database->executeStatement(sprintf(
+            "CREATE TRIGGER fail_staging_removal BEFORE DELETE ON %s BEGIN SELECT RAISE(ABORT, 'fixture crash'); END",
+            $this->tables->quoted('business_projection_event_staging'),
+        ));
+        try {
+            $sequencer->sequence();
+            self::fail('A failed transfer must not publish its range.');
+        } catch (DbalException) {
+            self::assertFalse($this->database->isTransactionActive());
+        }
+        self::assertSame(0, (int) $this->database->fetchOne(sprintf(
+            'SELECT last_sequence FROM %s WHERE singleton_id = 1',
+            $this->tables->quoted('business_projection_event_head'),
+        )));
+        self::assertSame(0, (int) $this->database->fetchOne(sprintf(
+            'SELECT COUNT(*) FROM %s',
+            $this->tables->quoted('business_projection_source_events'),
+        )));
+        self::assertSame(20, (int) $this->database->fetchOne(sprintf(
+            'SELECT COUNT(*) FROM %s',
+            $this->tables->quoted('business_projection_event_staging'),
+        )));
+        $this->database->executeStatement('DROP TRIGGER fail_staging_removal');
+        self::assertSame(20, $sequencer->sequence());
+        self::assertSame(0, $sequencer->sequence());
+    }
+
+    /**
+     * A sequencer cannot promote its own uncommitted authoritative event or run with an unbounded batch.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testSequencingRejectsAuthoritativeTransactionsAndInvalidBatchSizes(): void
+    {
+        $sequencer = new DoctrineProjectionEventSequencer($this->database, $this->tables, $this->transactions);
+        foreach ([0, 1_001] as $limit) {
+            try {
+                $sequencer->sequence($limit);
+                self::fail('An invalid batch bound must be refused.');
+            } catch (InvalidArgumentException) {
+                self::assertFalse($this->database->isTransactionActive());
+            }
+        }
+        $this->database->beginTransaction();
+        try {
+            $this->outbox->append($this->event(1, 'uncommitted'));
+            $sequencer->sequence();
+            self::fail('Sequencing must not join an authoritative transaction.');
+        } catch (LogicException) {
+            self::assertTrue($this->database->isTransactionActive());
+        } finally {
+            $this->database->rollBack();
+        }
+        self::assertSame(0, $sequencer->sequence());
+    }
+
+    /**
+     * An event that never reached the journal has no sequence, whether or not a sequencing pass may run first.
+     *
+     * Outside a transaction the store first sequences whatever is staged, so an event committed a moment ago
+     * is still found; one that was never staged is refused rather than given a position. Inside a transaction
+     * no pass may run, and the unknown event is refused directly. A non-canonical identifier is refused before
+     * the journal is read at all.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAnEventThatNeverReachedTheJournalHasNoSequence(): void
+    {
+        $store = new DoctrineProjectionStore(
+            $this->database,
+            $this->tables,
+            $this->transactions,
+            $this->clock,
+            new DeterministicCanonicalEncoder(),
+            new DoctrineProjectionEventSequencer($this->database, $this->tables, $this->transactions),
+        );
+        $staged = $this->event(1, 'staged');
+        $this->append($staged);
+        self::assertGreaterThan(0, $store->eventSequence($staged->eventId()), 'A staged event is sequenced first.');
+        $unknown = Uuid::uuid7()->toString();
+        $refusal = static function (callable $lookup): string {
+            try {
+                $lookup();
+            } catch (RuntimeException | InvalidArgumentException $refused) {
+                return $refused->getMessage();
+            }
+            self::fail('The lookup must be refused.');
+        };
+
+        self::assertSame(
+            'A durable outbox event has not reached the projection source journal.',
+            $refusal(static fn () => $store->eventSequence($unknown)),
+        );
+        $this->database->beginTransaction();
+        try {
+            self::assertSame(
+                'A durable outbox event has not reached the projection source journal.',
+                $refusal(static fn () => $store->eventSequence($unknown)),
+            );
+        } finally {
+            $this->database->rollBack();
+        }
+        self::assertSame(
+            'A projection source event ID must be a canonical lowercase UUID.',
+            $refusal(static fn () => $store->eventSequence(strtoupper($unknown))),
+        );
+    }
+
+    /**
+     * Rebuild activation refuses a committed relevant fact that still awaits sequence assignment.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testRebuildCannotActivateOverCommittedUnsequencedSources(): void
+    {
+        $store = new DoctrineProjectionStore(
+            $this->database,
+            $this->tables,
+            $this->transactions,
+            $this->clock,
+            new DeterministicCanonicalEncoder(),
+            new DoctrineProjectionEventSequencer($this->database, $this->tables, $this->transactions),
+        );
+        $store->begin($this->definition);
+        $this->append($this->event(1, 'pending'));
+        try {
+            $store->commit();
+            self::fail('Activation must not treat an unsequenced committed source as caught up.');
+        } catch (RuntimeException $failure) {
+            self::assertStringContainsString('unsequenced', $failure->getMessage());
+            self::assertNull($store->activeStatus($this->definition->identifier()));
+        } finally {
+            $store->rollback();
+        }
+    }
+
     private function runtime(ProjectionRuntimeBuilder $builder): DoctrineProjectionRuntime
     {
         return new DoctrineProjectionRuntime(
@@ -188,6 +382,7 @@ final class ProjectionRuntimePersistenceTest extends TestCase
             new DeterministicCanonicalEncoder(),
             new ProjectionRuntimeGenerationGuard(),
             new RuntimeMaterializationState('projection-test', 7, '', '', true),
+            new DoctrineProjectionEventSequencer($this->database, $this->tables, $this->transactions),
             [['definition' => $this->definition, 'implementation' => $builder]],
         );
     }

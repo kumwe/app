@@ -276,6 +276,31 @@ final class CommandInput
     }
 
     /**
+     * Decode an owner-protected JSON file as an object graph, preserving empty objects as objects.
+     *
+     * Canonical documents such as Studio authoring arguments distinguish `{}` from `[]`, which an
+     * associative decode erases. The file passes the same protection checks as every other protected input.
+     *
+     * @param   string  $path  Absolute path to an owner-protected JSON document.
+     *
+     * @return  \stdClass  Decoded top-level object.
+     *
+     * @throws  JsonException  When the document is malformed or nests deeper than 64 levels.
+     * @throws  InvalidArgumentException  When the file is unsafe or its top level is not an object.
+     *
+     * @since   2.0.0
+     */
+    public static function protectedJsonDocument(string $path): \stdClass
+    {
+        $object = json_decode(self::protectedFileContents($path), false, 64, JSON_THROW_ON_ERROR);
+        if (!$object instanceof \stdClass) {
+            throw new InvalidArgumentException('A protected JSON document must contain an object.');
+        }
+
+        return $object;
+    }
+
+    /**
      * Decode an owner-protected JSON file whose top level is a bounded string list.
      *
      * Ordered relationship identities are carried this way rather than inline, keeping business identities

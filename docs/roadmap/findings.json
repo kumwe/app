@@ -38,159 +38,6 @@
             "product_owner_decision": "Removed from the critical path. Only the seams the aggregate command and the scale work require are extracted, in phase 3. The remainder runs in lane M, parallel to or after scale work, and never blocks a gate."
         },
         {
-            "id": "V2-SCL-001",
-            "title": "The definition-wide exclusive mutation fence serializes writes to unrelated records",
-            "severity": "high",
-            "state": "reproduced",
-            "phase": "5",
-            "gate": "B",
-            "origin": "review",
-            "source_anchors": [
-                {
-                    "file": "src/BusinessRecord/Infrastructure/Persistence/DoctrineBusinessRecordMutationFence.php",
-                    "symbol": "DoctrineBusinessRecordMutationFence::lock()",
-                    "note": "Line 76. Acquires the schema-installation row with FOR UPDATE and holds it for the caller's whole record transaction."
-                },
-                {
-                    "file": "src/BusinessRecord/Application/BusinessRecordService.php",
-                    "symbol": "mutationFence->lock() call sites",
-                    "note": "Seven direct calls at lines 1404, 1582, 1744, 2588, 2805, 2923 and 3477 cover the mutation paths that acquire this definition-wide fence."
-                },
-                {
-                    "file": "src/BusinessRecord/Infrastructure/Persistence/DoctrineBusinessRecordMutationFence.php",
-                    "symbol": "DoctrineBusinessRecordMutationFence::shared()",
-                    "note": "Line 110. A shared fence already exists (LOCK IN SHARE MODE on MySQL, FOR SHARE on PostgreSQL) and is used by read paths only. It is the natural seam for the generation-aware protocol."
-                }
-            ],
-            "acceptance_test": "Two writers on unrelated records under one definition demonstrably overlap. Two writes to the same expected record version produce one winner and one stable stale-version error. A schema transition waits for in-flight writers and blocks new writers on the old generation. Rollback or crash releases or safely expires authority. Disable and trust revocation win without executing stale extension code. Success is measured as reduced lock-wait and transaction time at target load, not as different SQL text.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null
-        },
-        {
-            "id": "V2-SCL-002",
-            "title": "A singleton projection event head is locked and updated inside the authoritative business transaction",
-            "severity": "high",
-            "state": "reproduced",
-            "phase": "5",
-            "gate": "B",
-            "origin": "review",
-            "source_anchors": [
-                {
-                    "file": "src/BusinessIntegration/Infrastructure/DoctrineOutboxStore.php",
-                    "symbol": "the business_projection_event_head read and update",
-                    "note": "Lines 140-181. A locking read of singleton_id = 1, then a guarded UPDATE of last_sequence, both inside the caller's transaction. Every event-producing commit contends on one installation-wide row."
-                }
-            ],
-            "acceptance_test": "Concurrent commits do not contend on the head row. A transaction that allocates then rolls back creates no visible event. A sequencer crash before or after range allocation is replay-safe and leaves no permanently missing event. Concurrent sequencers cannot duplicate or skip source rows. The sequence is monotonic and no projection checkpoint passes an unsequenced committed event in scope. Backlog sequencing reaches at least twice peak ingest with observable age and rate.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null
-        },
-        {
-            "id": "V2-SCL-004",
-            "title": "The seeded idempotency purge ceiling is two orders of magnitude below enterprise ingress",
-            "severity": "high",
-            "state": "reproduced",
-            "phase": "5",
-            "gate": "B",
-            "origin": "review",
-            "source_anchors": [
-                {
-                    "file": "src/Infrastructure/Persistence/Migration/BusinessRecordIdempotencyRetentionMigration.php",
-                    "symbol": "the seeded schedule row",
-                    "note": "Line 60 seeds cron_expression '43 * * * *' and line 65 seeds payload {\"batch_size\": 500, \"maximum_batches\": 10}. That is 5,000 rows per hour, 120,000 per day."
-                },
-                {
-                    "file": "src/BusinessRecord/Application/BusinessRecordIdempotencyPurger.php",
-                    "symbol": "BusinessRecordIdempotencyPurger::purge()",
-                    "note": "Line 57. The batch is bounded to 1 to 1000 entries per call."
-                }
-            ],
-            "acceptance_test": "Maintenance throughput sustains at least twice the peak expiry rate while the ordinary workload continues, measured at the enterprise profile. Ingest rate, expiry rate, drain rate, backlog, oldest age and forecast-to-capacity are exposed as metrics. Enterprise readiness warns or fails when a required retention setting is absent or the drain slope predicts exhaustion.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null
-        },
-        {
-            "id": "V2-SCL-005",
-            "title": "Durable gauges compute exact aggregates on the primary at scrape time",
-            "severity": "medium",
-            "state": "open",
-            "phase": "5",
-            "gate": "B",
-            "origin": "review",
-            "source_anchors": [
-                {
-                    "file": "src/Infrastructure/Observability/RuntimeMetricCollector.php",
-                    "symbol": "the durable gauge queries",
-                    "note": "COUNT(*) at lines 208 and 227, MIN() at line 270 and MAX() at line 289. The statement count is bounded; the work of an exact count is not bounded by it."
-                }
-            ],
-            "acceptance_test": "Every durable gauge query is benchmarked at representative table size on all three engines. Any gauge exceeding its budget is replaced by a sharded incremental counter or an asynchronously reconciled snapshot, exposed as approximate while durable rows remain authoritative, with an operator-only exact diagnostic carrying an explicit cost and timeout.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null
-        },
-        {
-            "id": "V2-SCL-006",
-            "title": "Integration fan-out executes every consumer and webhook serially in the dispatcher path",
-            "severity": "high",
-            "state": "reproduced",
-            "phase": "5",
-            "gate": "B",
-            "origin": "review",
-            "source_anchors": [
-                {
-                    "file": "src/BusinessIntegration/Infrastructure/RuntimeIntegrationEventTransport.php",
-                    "symbol": "RuntimeIntegrationEventTransport::publish()",
-                    "note": "Line 91. Iterates executable event-consumer entries at line 106 and webhook entries at line 132 in the calling path."
-                },
-                {
-                    "file": "src/BusinessIntegration/Application/IntegrationEventConsumerDispatcher.php",
-                    "symbol": "IntegrationEventConsumerDispatcher",
-                    "note": "The dispatcher the serial loop drives."
-                }
-            ],
-            "acceptance_test": "Independent (consumer, event) receipt rows are materialised in one short transaction and claimed in batches by worker pools. A slow, failing or rate-limited consumer does not delay unrelated consumers. Scenarios: fan-out 3 and 10, one hung consumer, poison payload, crash between claim and effect and settlement, generation change with queued work, retry storm, rate limit, downstream outage, and backlog recovery while new traffic continues.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null
-        },
-        {
-            "id": "V2-SCL-007",
-            "title": "Declared-queue claims take a policy-row mutex and count live leases on the hot path",
-            "severity": "high",
-            "state": "reproduced",
-            "phase": "5",
-            "gate": "B",
-            "origin": "review",
-            "source_anchors": [
-                {
-                    "file": "src/Infrastructure/Automation/DoctrineJobQueue.php",
-                    "symbol": "the runtime-policy lock and live-lease count",
-                    "note": "Line 968 takes the job_queue_runtime row with FOR UPDATE; lines 985 and 990 then run COUNT(*) over reserved rows with unexpired leases. The ordinary claim at line 270 already uses FOR UPDATE SKIP LOCKED, so the mutex is specific to contributed queues with a declared ceiling."
-                }
-            ],
-            "acceptance_test": "A configured queue owns durable concurrency slots claimed with portable leasing. One claim transaction may lease a batch where ordering permits. Completion, expiry, cancellation and recovery release the slot safely. No over-claim beyond declared tolerance, no starvation, bounded recovery after SIGKILL, and no site or organization able to monopolise worker capacity.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null
-        },
-        {
-            "id": "V2-SCL-008",
-            "title": "Hot correctness ledgers have no enterprise hot-and-cold retention budget",
-            "severity": "high",
-            "state": "open",
-            "phase": "5",
-            "gate": "B",
-            "origin": "review",
-            "source_anchors": [
-                {
-                    "file": "src/Infrastructure/Persistence/Migration/BusinessRecordIdempotencyRetentionMigration.php",
-                    "symbol": "the only shipped record-side retention schedule",
-                    "note": "Business command idempotency is the only business ledger with a seeded purge. Audit retention exists but is seeded disabled with a zero window (GM-AUD-07); revisions, outbox source events, sequenced journals, inbox receipts and job attempts have no declared budget."
-                }
-            ],
-            "acceptance_test": "Every hot store declares authoritative purpose, minimum retention, immutability, expiry index or partition strategy, hot and warm and archived state, batch and time and lock and replication budgets, its six retention metrics, backup and restore and legal-hold behaviour, and its failure and reconciliation procedure. Audit pruning happens only after a verifiable anchor is committed and the off-host archive is proven restorable.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null
-        },
-        {
             "id": "V2-REL-001",
             "title": "Release and distribution artifacts are not proven by one exact-SHA build-once chain",
             "severity": "high",
@@ -213,7 +60,7 @@
             "id": "V2-DR-001",
             "title": "Point-in-time recovery is adopted as a platform-supported, operator-configured capability",
             "severity": "high",
-            "state": "accepted_for_implementation",
+            "state": "in_progress",
             "phase": "6",
             "gate": "B",
             "origin": "review",
@@ -238,7 +85,7 @@
             "id": "V2-DR-002",
             "title": "Key-restoration order and encrypted-envelope restore proof",
             "severity": "high",
-            "state": "conditional",
+            "state": "in_progress",
             "phase": "6",
             "gate": "B",
             "origin": "review",
@@ -267,7 +114,7 @@
             "id": "V2-DR-003",
             "title": "The backup artifact is shaped so that off-site deduplication cannot work",
             "severity": "high",
-            "state": "reproduced",
+            "state": "in_progress",
             "phase": "6",
             "gate": "B",
             "origin": "new",
@@ -297,7 +144,7 @@
             "id": "V2-DR-004",
             "title": "The media-versus-database restore ordering rule is stated as a trap, not enforced as a rule",
             "severity": "medium",
-            "state": "open",
+            "state": "in_progress",
             "phase": "6",
             "gate": "B",
             "origin": "new",
@@ -321,7 +168,7 @@
             "id": "V2-OPS-001",
             "title": "No runtime operational introspection: operators can see that the system is unhealthy but not where it is struggling",
             "severity": "high",
-            "state": "accepted_for_implementation",
+            "state": "in_progress",
             "phase": "6",
             "gate": "B",
             "origin": "new",
@@ -344,7 +191,7 @@
         },
         {
             "id": "V2-UX-001",
-            "title": "Accountable human acceptance of the interface standard remains unexecuted",
+            "title": "Workflow acceptance of the interface standard's five archetype task journeys remains unexecuted",
             "severity": "medium",
             "state": "open",
             "phase": "7",
@@ -354,29 +201,10 @@
                 {
                     "file": "docs/interface-standard",
                     "symbol": "the programme ledger",
-                    "note": "composer interface:programme reports 43 surfaces, 90 templates, 24 navigation entries, 19 generated instances, 16 actors, 28 tasks, 13 journeys, 60 work items, 8 findings and 3 verification reports. The human gate is not among the executed evidence."
+                    "note": "composer interface:programme reports 43 surfaces, 90 templates, 24 navigation entries, 19 generated instances, 16 actors, 28 tasks, 13 journeys, 60 work items, 8 findings and 3 verification reports. The five archetype task journeys are not among the executed workflow evidence."
                 }
             ],
-            "acceptance_test": "Named accountable reviewers complete the five archetype task journeys with task-based evidence. Automated Playwright, axe and visual results are necessary and not sufficient. Accessibility evidence covers WCAG 2.2 AA, keyboard and focus and screen-reader semantics, touch targets, zoom and reflow, high contrast, loading and empty and error and denied and confirmation states, essential no-JavaScript flows, and reviewed visual regression on desktop and mobile.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null
-        },
-        {
-            "id": "V2-UX-002",
-            "title": "Role dashboard preference editing conflates the editor's visibility with the role's catalogue",
-            "severity": "medium",
-            "state": "open",
-            "phase": "7",
-            "gate": "B",
-            "origin": "new",
-            "source_anchors": [
-                {
-                    "file": "src/Presentation/Application/Dashboard/DashboardPreferenceFormPresenter.php",
-                    "symbol": "liveIdentifiers",
-                    "note": "Role (access-group) preference forms prune stored selections against the editing administrator's capability-filtered catalogue, so an administrator with narrower visibility silently drops valid entries from a role's stored selection on save, and cannot restore them because delivery validates submissions against the editor's own catalogue."
-                }
-            ],
-            "acceptance_test": "An administrator holding users.manage but lacking a capability required by one widget stored in a role's dashboard selection opens and saves that role's preference form; the stored selection retains the invisible widget, the form discloses it as outside the editor's visibility, and members of the role keep the widget. A submission naming an identifier outside the role's own catalogue is still refused.",
+            "acceptance_test": "Workflows complete the five archetype task journeys with task-based evidence: content authoring with media, navigation, workflow and publication; an exact-value thousand-line document drafted, reviewed, approved, posted, inspected in history and exported; a relationship and self-service portal flow; a mobile assignment flow with parts, labour, measurements and media; and a public catalogue to authenticated order and fulfilment flow with out-of-process payment status. The evidence covers the supported browser engines on desktop and mobile, keyboard and focus, WCAG 2.2 AA assertions, touch targets, zoom and reflow, forced colours, loading, empty, error, denied and confirmation states, essential no-JavaScript flows and visual comparison, with two journeys in a non-source language, one of them right-to-left. Under ADR 0021 that workflow evidence and the maintainer's merge are the acceptance record: no named human reviewer, manual browser, screen-reader or language checklist is required, and a WebKit result is reported as WebKit evidence, never as native Safari.",
             "owner": "UNASSIGNED",
             "closure_sha": null
         },
@@ -405,7 +233,7 @@
             "id": "V2-LNG-010",
             "title": "The eight non-source catalogues and per-locale qualification are unbuilt",
             "severity": "medium",
-            "state": "accepted_for_implementation",
+            "state": "in_progress",
             "phase": "L",
             "gate": "B",
             "origin": "new",
@@ -442,96 +270,6 @@
             "residual": "On a managed service that withholds CREATE TRIGGER there is no database-level prevention of UPDATE or DELETE on audit_events. Tamper evidence, which is what the domain claims, holds unconditionally."
         },
         {
-            "id": "GM-AUD-08",
-            "title": "Audit-metadata redaction is a write-time convention with no runtime guard",
-            "severity": "low",
-            "state": "open",
-            "phase": "7",
-            "origin": "gap-matrix",
-            "source_anchors": [
-                {
-                    "file": "src/Audit/Domain/AuditEvent.php",
-                    "symbol": "the metadata property",
-                    "note": "Stored verbatim; enforcement is per-service discipline. src/Audit/Application/AuditMetadataRedactor.php redacts on the way out of an export only."
-                }
-            ],
-            "acceptance_test": "A denylist decorator around AuditRecorder, or a constructor check, rejecting credential-shaped metadata keys and values, plus unit assertions on each writing service's recorded metadata.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null
-        },
-        {
-            "id": "GM-IDN-04",
-            "title": "The administrator login form has no login-CSRF protection",
-            "severity": "low",
-            "state": "open",
-            "phase": "7",
-            "origin": "gap-matrix",
-            "source_anchors": [
-                {
-                    "file": "src/Administrator/Http/Handler/AdministratorLoginHandler.php",
-                    "symbol": "handle()",
-                    "note": "Reads only email, password and User-Agent. The portal login already implements the pre-session double-submit token."
-                }
-            ],
-            "acceptance_test": "Mirror the portal pattern: set a path-scoped HttpOnly SameSite=Strict CSRF cookie on GET, render it as a hidden field, and hash_equals-compare and rotate on POST before authenticating.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null
-        },
-        {
-            "id": "GM-IDN-05",
-            "title": "The session cookie Secure attribute has no production fail-closed guard, and there is no idle timeout",
-            "severity": "low",
-            "state": "open",
-            "phase": "7",
-            "origin": "gap-matrix",
-            "source_anchors": [
-                {
-                    "file": "src/Kernel/Configuration/ApplicationConfiguration.php",
-                    "symbol": "the production assertions",
-                    "note": "Secure is derived solely from the configured base-URL scheme. last_seen_at is stamped but never used in the resolve predicate."
-                }
-            ],
-            "acceptance_test": "Production configuration refuses a base URL that would serve session cookies without Secure. An idle-window predicate is added to the resolve path or its absence is stated as a deliberate, documented property.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null
-        },
-        {
-            "id": "GM-IDN-06",
-            "title": "Qualification evidence has session and CSRF test blind spots",
-            "severity": "medium",
-            "state": "open",
-            "phase": "7",
-            "origin": "gap-matrix",
-            "source_anchors": [
-                {
-                    "file": "tests/Unit/Administrator/Http/Middleware/AdministratorCsrfMiddlewareTest.php",
-                    "symbol": "AdministratorCsrfMiddleware",
-                    "note": "Dedicated administrator CSRF tests cover a matching token, a wrong token, an absent token and localized refusal language and direction at lines 40, 58, 80 and 100. No test anywhere asserts the session cookie attribute string, and the other acceptance-matrix items remain open."
-                }
-            ],
-            "acceptance_test": "Dedicated tests for both CSRF middlewares, the Redis rate-limiter window arithmetic, the portal session store find and rotate rejection matrix, the logout handlers, and the session cookie attribute string.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null
-        },
-        {
-            "id": "GM-IDN-07",
-            "title": "Self-service credential rotation is reachable only by holders of users.manage",
-            "severity": "medium",
-            "state": "open",
-            "phase": "7",
-            "origin": "gap-matrix",
-            "source_anchors": [
-                {
-                    "file": "src/Kernel/ContainerFactory.php",
-                    "symbol": "the /administrator/access route registration",
-                    "note": "Both verbs are gated on users.manage. The portal has a security screen but no password path at all."
-                }
-            ],
-            "acceptance_test": "An ordinary portal member and a narrowly scoped administrator can rotate their own password without an identity administrator performing a reset.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null
-        },
-        {
             "id": "GM-SUP-05",
             "title": "Out-of-process execution for untrusted code is a documented invariant without a shipped runtime",
             "severity": "medium",
@@ -548,24 +286,6 @@
             "acceptance_test": "Narrowed: the wording and inventory half is delivered and recorded in CHANGELOG.md, so what remains cannot be closed by repository-owned code at all. Closing it needs a shipped runtime in which a signed extension's filesystem, network and database authority is granted explicitly rather than inherited, with the host addressable only through an authenticated adapter contract. Until then, installing an extension means trusting its publisher with the application process, and every surface must go on saying exactly that.",
             "owner": "UNASSIGNED",
             "closure_sha": null
-        },
-        {
-            "id": "GM-SUP-08",
-            "title": "Content-Security-Policy admitted unsafe-inline for styles on every response",
-            "severity": "low",
-            "state": "conditional",
-            "phase": "7",
-            "origin": "gap-matrix",
-            "source_anchors": [
-                {
-                    "file": "src/Http/Security/SecurityHeaders.php",
-                    "symbol": "the style directives",
-                    "note": "Now style-src 'self', style-src-elem 'self' and style-src-attr 'unsafe-inline' in place of one permissive directive."
-                }
-            ],
-            "acceptance_test": "The exfiltration class is removed. The narrowed residual — inline style attributes — is named and owned.",
-            "owner": "UNASSIGNED",
-            "closure_sha": "5bf08c2ce8833e9768245b8e9f6b5e1487cb6994"
         },
         {
             "id": "GM-SUP-09",
@@ -587,28 +307,10 @@
             "forward_reference": "V2-REL-001 is the natural home for this once the build-once chain exists."
         },
         {
-            "id": "GM-OBS-05",
-            "title": "No distributed tracing and no trace exporter",
-            "severity": "medium",
-            "state": "open",
-            "phase": "7",
-            "origin": "gap-matrix",
-            "source_anchors": [
-                {
-                    "file": "config/observability.php",
-                    "symbol": "the tracing block",
-                    "note": "Exporter none, sampling declared. W3C trace-context propagation exists and must not be overstated as distributed tracing."
-                }
-            ],
-            "acceptance_test": "Open by decision. Adopting an exporter is a separately reviewed dependency and configuration decision. Until then, documentation states propagation, never tracing.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null
-        },
-        {
             "id": "GM-BAK-04",
             "title": "Post-restore identity and security acceptance was manual",
             "severity": "medium",
-            "state": "conditional",
+            "state": "in_progress",
             "phase": "6",
             "origin": "gap-matrix",
             "source_anchors": [
@@ -626,7 +328,7 @@
             "id": "GM-BAK-08",
             "title": "Backup scheduling, retention and off-host copy are operator-owned, and whole-table parity is not asserted",
             "severity": "low",
-            "state": "conditional",
+            "state": "in_progress",
             "phase": "6",
             "origin": "gap-matrix",
             "source_anchors": [
@@ -641,62 +343,10 @@
             "forward_reference": "V2-DR-003 changes the artifact this section documents; the reference schedule and the off-host step must be restated for the reshaped payload and the reference transport."
         },
         {
-            "id": "V2-STU-005",
-            "title": "The media port and the external-source obligations the composition contract names have no host implementation",
-            "severity": "high",
-            "state": "in_progress",
-            "phase": "S",
-            "gate": "B",
-            "origin": "new",
-            "source_anchors": [
-                {
-                    "file": "src/Media/",
-                    "symbol": "MediaService and the storage adapter",
-                    "note": "Media exists as a module with its own storage and serving path, but nothing implements the canonical upload session state machine the composition contract negotiates, and no test proves the module's real limits agree with the contract's declared rejections."
-                },
-                {
-                    "file": "docs/roadmap/studio-integration.md",
-                    "symbol": "the external-source obligations",
-                    "note": "The contract's URL policy is lexical by construction. Redirect re-validation, response verification and defence against a host resolving differently between check and fetch are stated as host runtime obligations and cannot be discharged by it."
-                }
-            ],
-            "acceptance_test": "The media port drives the existing media module through the canonical upload session state machine, and every published media policy vector replays against it to the declared accepted plan or stable rejection, so the platform's real limits and the contract agree. Every external media or embed source passes the URL policy before any fetch, and a hardened fetcher refuses a redirect that leaves the policy, a response whose type contradicts its declaration, and a host that resolves to a refused address after the check, each asserted per category and never disclosing the candidate address.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null,
-            "work_package": "S-E",
-            "product_owner_decision": "Decision D16."
-        },
-        {
-            "id": "V2-STU-006",
-            "title": "There is no authenticated preview endpoint, so unpublished composition cannot be rendered without exposing it",
-            "severity": "high",
-            "state": "accepted_for_implementation",
-            "phase": "S",
-            "gate": "B",
-            "origin": "new",
-            "source_anchors": [
-                {
-                    "file": "src/Kernel/ContainerFactory.php",
-                    "symbol": "the published content route",
-                    "note": "Published rendering is a public route by slug and the administrator editor links to the public address in a new tab. Nothing renders an unpublished document for an authorized actor."
-                },
-                {
-                    "file": "src/Http/Security/SecurityHeaders.php",
-                    "symbol": "the administrator content-security policy",
-                    "note": "The policy sends frame-ancestors none with a self-only script source. An embedded preview frame is the one deliberate change the integration requires, and it must be bounded to that route."
-                }
-            ],
-            "acceptance_test": "An authenticated, capability-gated, short-lived preview endpoint renders an unpublished composition document through the same template and theme path published output uses, so preview and publication cannot diverge. The preview channel is origin-pinned and replay-resistant on both ends: a foreign origin, a replayed sequence and a wrong channel identifier are each refused. The administrator content-security policy is otherwise byte-identical to its current value, with no inline script or style allowance introduced, proven by a policy test.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null,
-            "work_package": "S-F",
-            "product_owner_decision": "Decision D16."
-        },
-        {
             "id": "V2-STU-007",
             "title": "Studio is a separate Blueprint-only model-version surface instead of contextual Content authoring",
             "severity": "critical",
-            "state": "accepted_for_implementation",
+            "state": "in_progress",
             "phase": "S",
             "gate": "B",
             "origin": "new",
@@ -722,29 +372,6 @@
             "closure_sha": null,
             "work_package": "S-G",
             "product_owner_decision": "Decision D16 and ADR 0020."
-        },
-        {
-            "id": "V2-UX-003",
-            "title": "Closed and immutable records still render edit affordances, and the definition editor cannot declare immutable states",
-            "severity": "medium",
-            "state": "open",
-            "phase": "7",
-            "origin": "new",
-            "source_anchors": [
-                {
-                    "file": "src/BusinessSurface/Delivery/Browser/GeneratedBusinessBrowserController.php",
-                    "symbol": "GeneratedBusinessBrowserController::write()",
-                    "note": "The generated browser's write path catches validation and version-conflict problems at lines 1165 and 1214, but not immutable or closed-period refusals, so those land on the global error boundary. Generated forms still render edit affordances for records the service will refuse because catalog metadata does not expose immutable states or the posting-date declaration."
-                },
-                {
-                    "file": "src/BusinessDefinition/Administrator/BusinessDefinitionFormMapper.php",
-                    "symbol": "BusinessDefinitionFormMapper::workflow()",
-                    "note": "Lines 281–302 map the administrator workflow form without immutable_states. The declaration is reachable only through canonical documents or an extension contribution."
-                }
-            ],
-            "acceptance_test": "A record in an immutable state or a closed period renders read-only affordances with the refusal's own wording, and the definition editor can declare and remove immutable states with validation.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null
         },
         {
             "id": "V2-REL-002",
@@ -930,9 +557,9 @@
         },
         {
             "id": "V2-QA-014",
-            "title": "WebKit keeps a stale background-color after a live colour-scheme change, and nobody knows whether real Safari does",
+            "title": "WebKit kept stale theme colours after a live colour-scheme change",
             "severity": "medium",
-            "state": "decision_required",
+            "state": "in_progress",
             "phase": "7",
             "gate": "B",
             "origin": "new",
@@ -940,7 +567,7 @@
                 {
                     "file": "tests/Browser/interface-standard.spec.ts",
                     "symbol": "KIS production component gallery",
-                    "note": "Run 32443342932 flipped prefers-color-scheme to dark on an already-rendered page. Desktop-webkit then reported color-contrast 1.1:1 on .button[href$=\"administrator\"], foreground #eef5fb over background #ffffff. The breadth journey now sets the emulation before reloading and scans one settled dark document, while this finding continues to track the unanswered real-Safari live-switch behaviour."
+                    "note": "Run 32443342932 flipped prefers-color-scheme to dark on an already-rendered page. Desktop-webkit then reported color-contrast 1.1:1 on .button[href$=\"administrator\"], foreground #eef5fb over background #ffffff. The breadth journey now also switches both directions live without navigation and asserts the repaint on Chromium, Firefox and WebKit."
                 },
                 {
                     "file": "assets/administrator/styles.css",
@@ -948,10 +575,10 @@
                     "note": "An in-flight transition is ruled out: the same emulateMedia call sets reducedMotion reduce, and this rule forces transition-duration to .01ms !important for every element. The reported #ffffff is also exactly the pre-flip value rather than an interpolated midpoint, and axe samples hundreds of milliseconds later. The value is stuck, not settling, so no change to the transition list can reach it."
                 }
             ],
-            "acceptance_test": "Someone determines on real Safari, not an emulated media override, whether changing the operating system appearance while an administrator page is open leaves background-color at its previous value. If it does, this is a user-facing theming defect and the fix is to stop expressing the theme only as root custom properties consumed through var() -- light-dark(), or real declarations inside the media block, so a media change re-runs the cascade for the non-inherited property. If it does not, the finding belongs to Playwright's setEmulatedMedia path, the assertion is rewritten to emulate before load rather than after, and the browser behaviour is reported upstream with the reproducer.",
+            "acceptance_test": "The browser workflow changes the colour scheme while an administrator page stays open and asserts on Chromium, Firefox and WebKit that every themed surface, backgrounds and inherited text colour alike, follows the switch with no contrast violation. A reproducible defect receives a cascade-level repair and a regression journey. Under ADR 0021 the result is reported as WebKit evidence, never as a claim that a person used native Safari, and no manual Safari check is part of acceptance.",
             "owner": "UNASSIGNED",
             "closure_sha": null,
-            "progress": "Run 32443342932 reproduced the Playwright WebKit path. The breadth journey now reloads after setting the media override, so it validates a settled dark render without pretending to answer live Safari behaviour. The proposed transition-list change remains refuted and no product CSS is guessed. What stays open is the real-Safari experiment and, depending on that result, either a cascade-level product fix or an upstream Playwright report. This is Gate B human-interface acceptance work under P7-E; Gate A explicitly does not assert human acceptance."
+            "progress": "Run 32443342932 reproduced the stale background on Playwright WebKit. The head mirrors the preferred appearance onto a root attribute so WebKit recomputes every light-dark() consumer on a live switch, and the breadth journey asserts both live directions. A later nightly WebKit breadth run then showed descendants that only inherit colour keeping the light foreground; agent/browser names the scheme on every element so the whole subtree re-resolves. ADR 0021 retires the real-Safari experiment: the WebKit workflow journey is the evidence. This entry closes when agent/browser lands and the nightly WebKit breadth job passes on it."
         }
     ]
 }

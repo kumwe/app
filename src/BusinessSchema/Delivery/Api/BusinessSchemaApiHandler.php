@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Kumwe\App\BusinessSchema\Delivery\Api;
 
+use DateTimeImmutable;
 use InvalidArgumentException;
 use Kumwe\App\Application\Security\HighImpactCredentialGuard;
+use Kumwe\App\BusinessSchema\Application\BusinessSchemaRecoveryEvidenceRecorder;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaService;
 use Kumwe\BusinessSchema\Domain\SchemaPlan;
 use Kumwe\App\Delivery\Http\Api\ApiExecutionContext;
@@ -36,10 +38,11 @@ final readonly class BusinessSchemaApiHandler implements RequestHandlerInterface
     /**
      * Wire the REST surface to the service that owns the rules and the collaborators that shape a reply.
      *
-     * @param  BusinessSchemaService       $schema       Authorizes, composes, approves, and runs plans.
-     * @param  BusinessSchemaApiPresenter  $presenter    Renders plans, steps, and outcomes as documents.
-     * @param  BusinessApiResponder        $responder    Maps a failure onto its RFC 9457 problem document.
-     * @param  HighImpactCredentialGuard   $credentials  Re-proves the caller's password before a high-impact stage.
+     * @param  BusinessSchemaService                   $schema       Authorizes, composes, approves, and runs plans.
+     * @param  BusinessSchemaApiPresenter              $presenter    Renders plans, steps, and outcomes as documents.
+     * @param  BusinessApiResponder                    $responder    Maps a failure onto its RFC 9457 problem document.
+     * @param HighImpactCredentialGuard $credentials Re-proves the caller's password before a high-impact stage.
+     * @param  BusinessSchemaRecoveryEvidenceRecorder  $evidence     Files restore drills, as the schema screen does.
      *
      * @since  2.0.0
      */
@@ -48,6 +51,7 @@ final readonly class BusinessSchemaApiHandler implements RequestHandlerInterface
         private BusinessSchemaApiPresenter $presenter,
         private BusinessApiResponder $responder,
         private HighImpactCredentialGuard $credentials,
+        private BusinessSchemaRecoveryEvidenceRecorder $evidence,
     ) {
     }
 
@@ -101,6 +105,7 @@ final readonly class BusinessSchemaApiHandler implements RequestHandlerInterface
                 ['POST', 'recover'] => $this->json($this->presenter->outcome(
                     $this->schema->recover($context, $planId),
                 )),
+                ['POST', 'recovery-evidence'] => $this->recordEvidence($request, $context, $planId),
                 default => throw new InvalidArgumentException('The requested plan operation is not supported.'),
             };
         } catch (Throwable $exception) {
@@ -218,6 +223,91 @@ final readonly class BusinessSchemaApiHandler implements RequestHandlerInterface
     }
 
     /**
+     * File one restore drill as recovery evidence for the schema the plan would replace.
+     *
+     * The body carries only the drill's own facts, the confirmed clean-target `proofs` and `current_password`;
+     * `BusinessSchemaRecoveryEvidenceRecorder` binds the plan's source checksum, re-proves the password under
+     * the screen's purpose and stamps the live environment, so this answers exactly what the screen would file.
+     *
+     * @param   ServerRequestInterface  $request  API request whose JSON body carries `proofs`,
+     *          `backup_manifest_checksum`, `backup_created_at`, `verified_at`, `drill_reference`,
+     *          `client_version`, `restore_target_reference` and `current_password`.
+     * @param   ExecutionContext        $context  Actor and site the drill is credited to.
+     * @param   string                  $planId   Plan identifier captured from the route.
+     *
+     * @return  ResponseInterface  A 201 carrying the stored evidence document, whose `id` an approval cites.
+     *
+     * @throws  InvalidArgumentException  When a member is missing, mistyped or an unreadable timestamp, a proof
+     *          is unconfirmed, or the plan has no installed source schema.
+     *
+     * @since   2.0.0
+     */
+    private function recordEvidence(
+        ServerRequestInterface $request,
+        ExecutionContext $context,
+        string $planId,
+    ): ResponseInterface {
+        $body = ContentApiRequest::json($request);
+        $allowed = [
+            'proofs',
+            'backup_manifest_checksum',
+            'backup_created_at',
+            'verified_at',
+            'drill_reference',
+            'client_version',
+            'restore_target_reference',
+            'current_password',
+        ];
+        if (array_diff(array_keys($body), $allowed) !== []) {
+            throw new InvalidArgumentException('The recovery evidence body contains unsupported fields.');
+        }
+        $proofs = $body['proofs'] ?? null;
+        if (!is_array($proofs) || !array_is_list($proofs) || array_filter($proofs, 'is_string') !== $proofs) {
+            throw new InvalidArgumentException('The recovery evidence proofs must be a list of proof names.');
+        }
+        $password = $body['current_password'] ?? null;
+        if ($password !== null && !is_string($password)) {
+            throw new InvalidArgumentException('The current password must be a string.');
+        }
+        $evidence = $this->evidence->record(
+            $context,
+            $planId,
+            $proofs,
+            ContentApiRequest::requiredString($body, 'backup_manifest_checksum'),
+            self::timestamp($body, 'backup_created_at'),
+            self::timestamp($body, 'verified_at'),
+            ContentApiRequest::requiredString($body, 'drill_reference'),
+            ContentApiRequest::requiredString($body, 'client_version'),
+            ContentApiRequest::requiredString($body, 'restore_target_reference'),
+            $password,
+        );
+
+        return $this->json($evidence->toArray(), 201);
+    }
+
+    /**
+     * Read one required timestamp member, parsed as the schema screen parses its date fields.
+     *
+     * @param   array<string, mixed>  $body   Decoded request body.
+     * @param   string                $field  Member name.
+     *
+     * @return  DateTimeImmutable  Parsed instant.
+     *
+     * @throws  InvalidArgumentException  When the member is missing, blank or unreadable.
+     *
+     * @since   2.0.0
+     */
+    private static function timestamp(array $body, string $field): DateTimeImmutable
+    {
+        $value = ContentApiRequest::requiredString($body, $field);
+        try {
+            return new DateTimeImmutable($value);
+        } catch (\Exception $exception) {
+            throw new InvalidArgumentException(sprintf('The %s member is invalid.', $field), 0, $exception);
+        }
+    }
+
+    /**
      * Require a current-password step-up before a high-impact stage proceeds.
      *
      * An API token is a long-lived credential that can be replayed by whoever holds it, so the two stages
@@ -249,7 +339,7 @@ final readonly class BusinessSchemaApiHandler implements RequestHandlerInterface
         if (!is_string($password) || $password === '') {
             throw new InvalidArgumentException('This operation requires the caller\'s current password.');
         }
-        $this->credentials->assertCurrentPassword($context, $password, $purpose);
+        $this->credentials->assertCurrentPassword($context, $purpose, $password);
     }
 
     /**

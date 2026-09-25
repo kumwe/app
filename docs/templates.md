@@ -336,6 +336,22 @@ enhancements into committed immutable assets; production does not run Node or `n
 packages consume the host asset outlets and may add their own bounded assets, but do not create a second
 client application.
 
+### No inline styles, on any surface
+
+Every response carries `style-src 'self'; style-src-attr 'none'; style-src-elem 'self'`, so a browser
+refuses a `<style>` element and a `style` attribute alike, wherever they come from. Templates,
+contributed views, Lit components and enhancement scripts therefore never emit a `style` attribute, never
+call `setAttribute('style', …)`, and never write a custom property into a `style` attribute either — an
+inline `style="--x: …"` is still an inline style. Per-record or per-site values travel as classes or
+bounded `data-*` attributes matched by a stylesheet rule, and the site palette an operator chooses travels
+as the same-origin stylesheet `/presentation/theme.css?scheme=…&v=<digest>` that the site layout links
+from `<head>`; a complete site override keeps that `<link>` (or `presentation.theme_stylesheet`) if it
+wants the configured palette. Writes through the CSSOM (`element.style.inlineSize = …`) are not
+governed by `style-src-attr` and remain available to scripts, which is how the Studio composition shell
+sizes its preview frames. The only response that admits an inline style source is the isolated
+`image/svg+xml` media policy, `default-src 'none'; style-src 'unsafe-inline'; sandbox`, where
+`default-src 'none'` already forbids every request a stylesheet could make.
+
 ## Deterministic build and static conformance
 
 Build from a clean source directory, never from an installed runtime tree. The same inputs must produce

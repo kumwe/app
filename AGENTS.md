@@ -23,10 +23,13 @@ App-owned after the Capability Reuse Review. Do not ask for renewed human permis
 decisions. Record the evidence and the actual decision maker and reviewer; an independent agent may perform
 the review. An agent review must never be represented as a human GitHub approval.
 
-The maintainer also authorizes agents to rebase-merge work in the assigned scope once the required checks
-pass, then verify the resulting master CI and release workflows. Use the supported GitHub integration and
-respect branch protection, access controls, immutable releases and package release gates. This mandate does
-not waive a failed check or authorize bypassing an external permission requirement.
+The maintainer reserves merging to maintainers. Agents create a draft pull request, push coherent progress,
+complete implementation and required automated checks, and then mark it ready for review. The maintainer's
+merge is the sole human acceptance record; no separate manual test, approval checkbox or follow-up
+documentation commit is required. Record completed implementation and automated evidence in the pull
+request itself. Never represent a draft or an unmerged pull request as already accepted. Use the supported
+GitHub integration and respect branch protection, access controls, immutable releases and package release
+gates. This mandate does not waive a failed check or authorize bypassing an external permission requirement.
 
 Finish the current PR before starting the next unless the maintainer explicitly requests parallel delivery.
 Use parallel agents for independent work that helps that PR land. Push reviewable progress promptly and
@@ -168,16 +171,18 @@ nobody told the record. This is the hole.
 | Add a test with no coverage attribute | PHPUnit risky | `#[CoversClass]` or a reasoned `#[CoversNothing]` path |
 | Add a Domain → Application or Delivery → Infrastructure import | `composer architecture:policy` | Invert it (port inward). Do not grow `dependency-baseline.json` |
 | Add a CLI command and edit `cli-v1.json` in place | `composer cli:contract` | Additive successor generation; the pinned count lives in the contract, tests, tools and roadmap prose — a successor generation moves them together |
-| Add an MCP tool and edit `mcp-v1.json` in place | `composer mcp:contract` | Same freeze. 75 tools. |
+| Add an MCP tool and edit `mcp-v1.json` in place | `composer mcp:contract` | Same freeze. v1 keeps 75 tools; the current `mcp-v2` generation has 124 and must keep serving v1 unchanged. |
+| Add an administrator or portal route, or a Studio host operation, without a parity entry | `composer machine:parity` | Record its REST, CLI and MCP equivalents, or a reasoned browser-only classification or surface exemption, in `docs/machine-contract/browser-machine-parity.json` |
 | Change a public extension type | `composer extension:contract` | Release a new `kumwe/extension-sdk` generation and update the App dependency pin. Never copy its fixtures into App. |
-| Edit XLIFF or a user-facing string | `translation:check` / `translation:strings` | `composer translation:compile` and commit compiled catalogues |
+| Edit XLIFF or a user-facing string | `translation:check` / `translation:strings` / `translation:quality` | `composer translation:compile` and commit compiled catalogues; a new identifier needs a real `<target>` in all nine catalogues |
 | Rebuild front-end and leave `public/assets/build` dirty | CI frontend job | Commit the hashed build, or don't rebuild |
 | Add a graphical route or template without cataloguing it | `composer interface:programme` | Register it in `docs/interface-standard/programme/surface-inventory.json` |
 | Add runtime lines without a `#[CoversClass]` test executing them | CI coverage ratchet (canonical MariaDB leg only) | 90% changed-line and 80% changed-refusal floors; write the test, name the class |
 | Validate persistence SQL on one engine | The MySQL and PostgreSQL CI legs | Run the cross-engine lane locally: `DB_DRIVER=pgsql DB_PORT=5432` after `tools/agent-setup.sh` |
 | Change visible UI without refreshing browser baselines | Hashed screenshot comparisons in the browser jobs | The `refresh-browser-baselines` workflow regenerates them; a CSS change without it loops CI |
 | Mark a finding `closed` | `composer roadmap:check` | Delete the finding, remove the STATUS row, write `CHANGELOG.md` |
-| Write "delivered" in the STATUS open-work table | `roadmap:check` | Remove the row. Completion language belongs in the phase board and changelog |
+| Write "delivered" in the STATUS open-work table | `roadmap:check` | The table is generated: set the entry's state in `docs/roadmap/acceptance-record.json` and regenerate |
+| Deliver a requirement without moving its acceptance-record entry, or edit a generated STATUS block or the summary by hand | `composer acceptance:check` | Update `docs/roadmap/acceptance-record.json`, run `composer acceptance:summary`, commit the record, `STATUS.md` and `acceptance-summary.md` together |
 | Widen a PHPDoc type (`list<string>` → `array`) | PHPStan max | Add prose. Never widen or delete an existing type |
 | Touch a shipped migration that checksums its own bytes | install integrity | Document **before** it ships. Never formatter-pass it afterwards |
 | Introduce a secret-shaped literal, even in a later-fixed commit | `composer security:secrets` | Rewrite the introducing commit, or fingerprint-allowlist in `.gitleaksignore` |
@@ -315,11 +320,13 @@ composition root, not the default home for reusable behaviour. The machinery is 
 
 ```
 [ ] CLI: src/Delivery/Console/. MCP: src/Infrastructure/Mcp/.
-[ ] Do not overwrite docs/machine-contract/cli-v1.json or mcp-v1.json.
+[ ] Do not overwrite docs/machine-contract/cli-v1.json or mcp-v1.json. The current generations are
+    cli-v2 (src/Delivery/Console/Contract/cli-v2.json; `php tools/verify-cli-machine-contract.php
+    --rehash-successor` while unreleased) and mcp-v2 (`php tools/generate-mcp-machine-contract.php --write`).
     Incompatible or additive surface changes need a successor generation.
-[ ] The magic counts (44 commands, 75 MCP tools) live in the retained contract,
+[ ] The magic counts (v1: 44 commands, 75 MCP tools; v2: 54 and 124) live in the contracts,
     in tests, and in tools. A successor generation updates them together.
-[ ] composer cli:contract  /  composer mcp:contract
+[ ] composer cli:contract  /  composer mcp:contract  /  composer machine:parity
 [ ] composer baseline:record
 ```
 
@@ -328,7 +335,8 @@ composition root, not the default home for reusable behaviour. The machinery is 
 ```
 [ ] Identifiers, not prose, in PHP. Copy lives in resources/localization/messages/.
 [ ] composer translation:compile
-[ ] composer translation:check && composer translation:strings && composer assets:direction
+[ ] composer translation:check && composer translation:strings && composer translation:quality
+    && composer assets:direction
 [ ] Logical CSS properties, not left/right. composer assets:direction scans Vite inputs.
 [ ] git diff --exit-code resources/localization
 ```
@@ -348,8 +356,6 @@ composition root, not the default home for reusable behaviour. The machinery is 
 
 ```
 [ ] Delete the finding from docs/roadmap/findings.json. Do not set state: closed.
-[ ] Remove the package/finding from the STATUS.md open-work table.
-    Do not write complete / delivered / done in that table.
 [ ] Write the substance into CHANGELOG.md under Added / Changed / Fixed / Security /
     Deprecated / Removed. Keep-a-Changelog format. Cite the evidence merge-stably:
     an entry written on a branch cites its pull request as (#123), because the rebase
@@ -357,9 +363,13 @@ composition root, not the default home for reusable behaviour. The machinery is 
     on the first master run. Cite a commit hash only when it already sits on master;
     after a rebase leaves an old hash dangling, repoint it to the rebased twin
     (match by commit message) or replace it with the pull-request citation.
-[ ] Lower the STATUS ledger snapshot counts. Update the phase-board cell if a phase moved.
 [ ] Leave the package definition in docs/roadmap/README.md. That is the durable contract.
-[ ] composer roadmap:check
+[ ] Set the requirement's entry in docs/roadmap/acceptance-record.json to `delivered` with its
+    runtime owner, tests, CI jobs (file#job), artifacts and decision; clear outstanding, branches
+    and branch_evidence. Work committed on another branch stays `pending-integration`, naming it.
+[ ] composer acceptance:summary. It regenerates the STATUS.md phase board, open-work table, Gate B
+    criteria and ledger snapshot plus docs/roadmap/acceptance-summary.md; never edit those by hand.
+[ ] composer roadmap:check && composer acceptance:check
 ```
 
 ### Unplanned work
@@ -390,10 +400,10 @@ older contributor files. It currently runs, in order:
 ```
 architecture:policy → baseline:check → quality:contract → docs:api →
 docs:format:check → docs:tests → extension:contract → extension:independence →
-conversion:api → cli:contract → mcp:contract → studio:corpus → studio:dependencies →
+conversion:api → cli:contract → mcp:contract → machine:parity → studio:corpus → studio:dependencies →
 kumwe:capability-index-check → kumwe:core-growth-check → interface:programme →
-roadmap:check → openapi:check → translation:check → translation:strings →
-assets:direction → coverage:attribution → cs → analyse → test
+roadmap:check → acceptance:check → openapi:check → translation:check → translation:strings →
+translation:quality → assets:direction → coverage:attribution → cs → analyse → test
 ```
 
 ```bash
@@ -491,8 +501,8 @@ npm run test:browser                            # public HTML behaviour
     the phase and do not cross its release gate. Investigate existing package APIs before adding App implementation.
     Preserve all concurrent objectives when synchronizing; never resolve a conflicted file wholesale with ours/theirs
     and never hand-edit generated dependency state. Record nontrivial conflicts and tests proving both objectives
-    survived. Agents may prepare and update branches and PRs, rebase-merge verified work in the assigned scope,
-    and verify the resulting release workflows under the standing maintainer mandate. Required checks, branch
+    survived. Agents may prepare and update branches and PRs and prepare verified work for maintainer merge
+    under the standing maintainer mandate. Required checks, branch
     protection, external access controls and immutable-release boundaries remain in force.
     ```
 

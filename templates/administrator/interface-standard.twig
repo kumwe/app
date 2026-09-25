@@ -187,19 +187,19 @@
           </div>
           <div class="kis-state-matrix">
             {% for state in [
-              {id: 'empty', label: 'Empty', message: t('core.administrator.interface_standard.no_resources_exist_yet')},
-              {id: 'sparse', label: 'Sparse', message: t('core.administrator.interface_standard.one_bounded_resource_remains_legible')},
-              {id: 'representative', label: 'Representative', message: t('core.administrator.interface_standard.typical_data_proves_the_ordinary_task')},
-              {id: 'dense', label: 'Dense', message: t('core.administrator.interface_standard.high_information_density_preserves_hierarchy')},
-              {id: 'extreme', label: 'Extreme', message: t('core.administrator.interface_standard.long_identifiers_wrap_without_escape')},
-              {id: 'error', label: 'Error', message: t('core.administrator.interface_standard.validation_and_service_failures_retain_a')},
+              {id: 'empty', label: t('core.administrator.interface_standard.density_empty'), message: t('core.administrator.interface_standard.no_resources_exist_yet')},
+              {id: 'sparse', label: t('core.administrator.interface_standard.density_sparse'), message: t('core.administrator.interface_standard.one_bounded_resource_remains_legible')},
+              {id: 'representative', label: t('core.administrator.interface_standard.density_representative'), message: t('core.administrator.interface_standard.typical_data_proves_the_ordinary_task')},
+              {id: 'dense', label: t('core.administrator.interface_standard.density_dense'), message: t('core.administrator.interface_standard.high_information_density_preserves_hierarchy')},
+              {id: 'extreme', label: t('core.administrator.interface_standard.density_extreme'), message: t('core.administrator.interface_standard.long_identifiers_wrap_without_escape')},
+              {id: 'error', label: t('core.administrator.interface_standard.density_error'), message: t('core.administrator.interface_standard.validation_and_service_failures_retain_a')},
               {id: 'permission-reduced', label: t('core.administrator.interface_standard.permission_reduced'), message: t('core.administrator.interface_standard.unavailable_actions_are_absent')},
-              {id: 'unchanged', label: 'Unchanged', message: t('core.administrator.interface_standard.the_durable_version_and_form_values')},
-              {id: 'unsaved', label: 'Unsaved', message: t('core.administrator.interface_standard.local_changes_are_explicit_before_navigation')},
-              {id: 'saving', label: 'Saving', message: t('core.administrator.interface_standard.work_is_pending_without_blocking_context')},
-              {id: 'saved', label: 'Saved', message: t('core.administrator.interface_standard.durable_completion_is_announced')},
-              {id: 'conflict', label: 'Conflict', message: t('core.administrator.interface_standard.concurrent_change_requires_resolution')},
-              {id: 'failed', label: 'Failed', message: t('core.administrator.interface_standard.failure_retains_input_and_recovery_action')}
+              {id: 'unchanged', label: t('core.administrator.interface_standard.save_unchanged'), message: t('core.administrator.interface_standard.the_durable_version_and_form_values')},
+              {id: 'unsaved', label: t('core.administrator.interface_standard.save_unsaved'), message: t('core.administrator.interface_standard.local_changes_are_explicit_before_navigation')},
+              {id: 'saving', label: t('core.administrator.interface_standard.save_saving'), message: t('core.administrator.interface_standard.work_is_pending_without_blocking_context')},
+              {id: 'saved', label: t('core.administrator.interface_standard.save_saved'), message: t('core.administrator.interface_standard.durable_completion_is_announced')},
+              {id: 'conflict', label: t('core.administrator.interface_standard.save_conflict'), message: t('core.administrator.interface_standard.concurrent_change_requires_resolution')},
+              {id: 'failed', label: t('core.administrator.interface_standard.save_failed'), message: t('core.administrator.interface_standard.failure_retains_input_and_recovery_action')}
             ] %}
               <article class="kis-state-card" data-kis-state="{{ state.id }}">
                 <strong>{{ state.label }}</strong><span>{{ state.message }}</span>

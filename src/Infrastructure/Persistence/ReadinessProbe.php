@@ -6,6 +6,9 @@ namespace Kumwe\App\Infrastructure\Persistence;
 
 use Doctrine\DBAL\Connection;
 use Kumwe\App\Application\Readiness\ReadinessStatus;
+use Kumwe\App\Application\Retention\RetentionObserver;
+use Kumwe\App\Application\Retention\RetentionReadiness;
+use Kumwe\App\Application\Retention\RetentionReadinessState;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
 use Kumwe\App\Extension\Runtime\ExtensionRuntimeMapCompiler;
 use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
@@ -35,26 +38,34 @@ final readonly class ReadinessProbe implements ReadinessStatus
     /**
      * Wire the dependencies whose combined health decides readiness.
      *
-     * @param  Connection                         $database         Connection probed with a trivial query and then
+     * @param  Connection                         $database            Connection probed with a trivial query and then
      *         searched for the migration ledger table.
-     * @param  LoggerInterface                    $logger           Sink for the warning recorded when a check raises
+     * @param  LoggerInterface                    $logger              Sink for the warning recorded when a check raises
      *         instead of answering.
-     * @param  TableNames                         $tables           Resolves the prefixed physical name of the
+     * @param  TableNames                         $tables              Resolves the prefixed physical name of the
      *         `schema_migrations` ledger table.
-     * @param  MigrationRepository                $migrations       Reads the ledger of migrations this database has
+     * @param  MigrationRepository                $migrations          Reads the ledger of migrations this database has
      *         already applied.
-     * @param  MigrationPlan                      $plan             Migration set this build ships, compared against
+     * @param  MigrationPlan                      $plan                Migration set this build ships, compared against
      *         the applied ledger.
-     * @param  NonTransactionalMigrationRecovery  $recovery         Reports migration attempts left unresolved by a
+     * @param  NonTransactionalMigrationRecovery  $recovery            Reports migration attempts left unresolved by a
      *         crash on a platform whose DDL commits implicitly.
-     * @param  RedisRuntime|null                  $redis            Redis binding to ping, or null when this
+     * @param  RedisRuntime|null                  $redis               Redis binding to ping, or null when this
      *         installation runs without Redis.
-     * @param  TrustStore|null                    $trust            Extension trust boundary to re-check, or null when
+     * @param TrustStore|null $trust Extension trust boundary to re-check, or null when
      *         extension support is not wired.
-     * @param  ExtensionRuntimeMapCompiler|null   $runtime          Compiler asked whether the loaded runtime
+     * @param  ExtensionRuntimeMapCompiler|null   $runtime             Compiler asked whether the loaded runtime
      *         generation is still authoritative, or null to leave the runtime out of the verdict.
-     * @param  RuntimeMaterializationState|null   $materialization  Generation this process loaded; a compiler
+     * @param  RuntimeMaterializationState|null   $materialization     Generation this process loaded; a compiler
      *         supplied without it never reads as ready.
+     * @param  RetentionObserver|null             $retention           Source of the retention observations the
+     *         verdict is assessed from, or null to leave retention out of the verdict.
+     * @param  RetentionReadiness|null            $retentionReadiness  Assessment that turns observations into
+     *         a ready, warning or failed verdict; required whenever an observer is supplied.
+     * @param  bool                               $enterprise          Whether the installation declares the
+     *         enterprise capacity profile, under which a missing required retention setting fails.
+     * @param  FilesystemStorageReserve|null      $storage             Free-space guardrail on the database volume;
+     *         below its reserve the verdict fails under the enterprise profile and warns otherwise.
      *
      * @since  2.0.0
      */
@@ -69,7 +80,52 @@ final readonly class ReadinessProbe implements ReadinessStatus
         private ?TrustStore $trust = null,
         private ?ExtensionRuntimeMapCompiler $runtime = null,
         private ?RuntimeMaterializationState $materialization = null,
+        private ?RetentionObserver $retention = null,
+        private ?RetentionReadiness $retentionReadiness = null,
+        private bool $enterprise = false,
+        private ?FilesystemStorageReserve $storage = null,
     ) {
+    }
+
+    /**
+     * Assess retention when an observer is wired: a failed verdict drains, a warning is logged.
+     *
+     * @return  bool  False only for a failed verdict; true when retention is not wired.
+     *
+     * @since   2.0.0
+     */
+    private function retentionReady(): bool
+    {
+        if ($this->retention === null || $this->retentionReadiness === null) {
+            return true;
+        }
+        $verdict = $this->retentionReadiness->assess($this->retention->observeAll(), $this->enterprise);
+        if ($verdict->state === RetentionReadinessState::Warning) {
+            $this->logger->warning('Retention readiness warning.', ['reasons' => $verdict->reasons]);
+        }
+        if ($verdict->state === RetentionReadinessState::Failed) {
+            $this->logger->error('Retention readiness failed.', ['reasons' => $verdict->reasons]);
+        }
+
+        return $verdict->ready();
+    }
+
+    /**
+     * Apply the 30% free-space reserve: below it an enterprise installation drains, a baseline one warns.
+     *
+     * @return  bool  False only when the reserve is violated under the enterprise profile.
+     *
+     * @since   2.0.0
+     */
+    private function storageReady(): bool
+    {
+        $report = $this->storage?->report();
+        if ($report === null || $report['satisfied']) {
+            return true;
+        }
+        $this->logger->warning('Database volume is below its free-space reserve.', ['storage' => $report]);
+
+        return !$this->enterprise;
     }
 
     /**
@@ -113,6 +169,9 @@ final readonly class ReadinessProbe implements ReadinessStatus
                 return false;
             }
             if ($this->recovery->hasUnresolvedAttempts()) {
+                return false;
+            }
+            if (!$this->retentionReady() || !$this->storageReady()) {
                 return false;
             }
 

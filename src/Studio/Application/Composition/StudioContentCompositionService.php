@@ -28,6 +28,17 @@ use stdClass;
 final readonly class StudioContentCompositionService
 {
     /**
+     * Renderer capabilities the App preview runtime implements, which every provisioning surface declares.
+     *
+     * The administrator composition screen and the REST, console and MCP provisioning operations all pass this
+     * one set, so a Blueprint provisioned from any surface is admitted against the same renderers.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
+    public const array RENDERERS = ['core.renderer/field', 'core.renderer/layout'];
+
+    /**
      * Bind the exact projection, write stores, admission, lifecycle, audit, and contribution seams.
      *
      * @param  StudioContentProjectionService        $projection     Authorized AP-2 projection service.
@@ -66,6 +77,8 @@ final readonly class StudioContentCompositionService
      *
      * @return  ?StudioContentComposition  Current exact composition, or null when not provisioned.
      *
+     * @throws  \Kumwe\App\Studio\Application\Projection\StudioProjectionRejected  When the Content type version
+     *          is invalid, absent or not readable by the caller.
      * @throws  StudioCompositionModelMismatch  When the Blueprint model lock differs from the authorized model.
      * @throws  StudioCompositionThemeMismatch  When the Blueprint theme lock differs from the published theme.
      *
@@ -187,7 +200,12 @@ final readonly class StudioContentCompositionService
             throw new RuntimeException('The concurrent Studio composition could not be resolved.');
         }
 
-        return new StudioContentComposition($model, $binding, $artifact);
+        // Project the model again so it names the binding just stored, exactly as every later read answers it.
+        return new StudioContentComposition(
+            $this->authorizedModel($context, $contentTypeId, $contentTypeVersion),
+            $binding,
+            $artifact,
+        );
     }
 
     /**
@@ -259,6 +277,10 @@ final readonly class StudioContentCompositionService
      * @param   list<stdClass>    $admittedLocks       Every exact `{type, version, revision}` lock the authoring
      *          session offered; the authored lock must be a subset at identical coordinates.
      * @param   string            $status              Lifecycle status to store, `draft` or `published`.
+     * @param   ?string           $predecessor         Blueprint identity of the type version this one succeeds,
+     *          or null for a new reusable type. A successor keeps its predecessor's Blueprint identity and
+     *          takes a version of its own, so the reusable type's Blueprint is one artifact with immutable
+     *          successor revisions rather than a new artifact per type version.
      *
      * @return  StudioContentComposition  Newly admitted composition.
      *
@@ -275,6 +297,7 @@ final readonly class StudioContentCompositionService
         stdClass $blueprint,
         array $admittedLocks,
         string $status,
+        ?string $predecessor = null,
     ): StudioContentComposition {
         if ($this->find($context, $contentTypeId, $contentTypeVersion) !== null) {
             throw new RuntimeException('The Content type version already binds a Studio Blueprint.');
@@ -284,8 +307,8 @@ final readonly class StudioContentCompositionService
             $context->site(),
             strtolower($contentTypeId),
             $contentTypeVersion,
-            self::blueprintId($contentTypeId, $contentTypeVersion),
-            '1.0.0',
+            $predecessor ?? self::blueprintId($contentTypeId, $contentTypeVersion),
+            $predecessor === null ? '1.0.0' : $contentTypeVersion . '.0.0',
             null,
             1,
         );

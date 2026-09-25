@@ -270,14 +270,19 @@
                 {% set available_title = available.message_ids ? t(available.title) : available.title %}
                 <div class="kis-dashboard-choice">
                   <input type="hidden" name="item_{{ loop.index0 }}" value="{{ available.id }}">
+                  {% if available.outside_visibility|default(false) %}
+                    <input type="hidden" name="selected_{{ loop.index0 }}" value="1">
+                  {% endif %}
                   <label>
                     <input
                       type="checkbox"
                       name="selected_{{ loop.index0 }}"
                       value="1"
                       {% if available.id in preference.selected_widget_ids %} checked{% endif %}
+                      {% if available.outside_visibility|default(false) %} disabled{% endif %}
                     >
-                    <span><strong>{{ available_title }}</strong><small>{{ available.group }}</small></span>
+                    <span><strong>{{ available_title }}</strong><small>{{ available.outside_visibility|default(false)
+                      ? t('core.interface_standard.dashboard.outside_visibility') : available.group }}</small></span>
                   </label>
                   <label>
                     <span>{{ t('core.interface_standard.dashboard.order_label') }}</span>
@@ -288,6 +293,7 @@
                       min="1"
                       max="256"
                       inputmode="numeric"
+                      {% if available.outside_visibility|default(false) %} readonly{% endif %}
                     >
                   </label>
                 </div>
@@ -316,14 +322,19 @@
               {% for available in preference.available_shortcuts %}
                 <div class="kis-dashboard-choice">
                   <input type="hidden" name="item_{{ loop.index0 }}" value="{{ available.id }}">
+                  {% if available.outside_visibility|default(false) %}
+                    <input type="hidden" name="selected_{{ loop.index0 }}" value="1">
+                  {% endif %}
                   <label>
                     <input
                       type="checkbox"
                       name="selected_{{ loop.index0 }}"
                       value="1"
                       {% if available.id in preference.selected_shortcut_ids %} checked{% endif %}
+                      {% if available.outside_visibility|default(false) %} disabled{% endif %}
                     >
-                    <span><strong>{{ available.title }}</strong><small>{{ available.group }}</small></span>
+                    <span><strong>{{ available.title }}</strong><small>{{ available.outside_visibility|default(false)
+                      ? t('core.interface_standard.dashboard.outside_visibility') : available.group }}</small></span>
                   </label>
                   <label>
                     <span>{{ t('core.interface_standard.dashboard.order_label') }}</span>
@@ -334,6 +345,7 @@
                       min="1"
                       max="256"
                       inputmode="numeric"
+                      {% if available.outside_visibility|default(false) %} readonly{% endif %}
                     >
                   </label>
                 </div>

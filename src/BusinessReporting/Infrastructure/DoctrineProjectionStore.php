@@ -72,11 +72,12 @@ final class DoctrineProjectionStore implements ProjectionEventSource, Projection
     /**
      * Bind one stateful writer session to the shared durable projection tables.
      *
-     * @param  Connection          $database          Shared authoritative database connection.
-     * @param  TableNames          $tables            Portable physical table-name compiler.
-     * @param  TransactionManager  $transactions      Atomic live-apply and generation-activation boundary.
-     * @param  ClockInterface      $clock             Authoritative persistence clock.
-     * @param  CanonicalEncoder    $canonicalEncoder  Host encoder stored source envelopes are rebuilt with.
+     * @param  Connection                        $database          Shared authoritative database connection.
+     * @param  TableNames                        $tables            Portable physical table-name compiler.
+     * @param TransactionManager $transactions Atomic live-apply and generation-activation boundary.
+     * @param  ClockInterface                    $clock             Authoritative persistence clock.
+     * @param CanonicalEncoder $canonicalEncoder Host encoder stored source envelopes are rebuilt with.
+     * @param DoctrineProjectionEventSequencer $sequencer Publishes committed staged sources in bounded batches.
      *
      * @since  2.0.0
      */
@@ -86,6 +87,7 @@ final class DoctrineProjectionStore implements ProjectionEventSource, Projection
         private readonly TransactionManager $transactions,
         private readonly ClockInterface $clock,
         private readonly CanonicalEncoder $canonicalEncoder,
+        private readonly DoctrineProjectionEventSequencer $sequencer,
     ) {
     }
 
@@ -104,6 +106,9 @@ final class DoctrineProjectionStore implements ProjectionEventSource, Projection
     {
         if ($afterSequence < 0 || $limit < 1 || $limit > 1_000) {
             throw new InvalidArgumentException('A projection source page bound is invalid.');
+        }
+        if (!$this->database->isTransactionActive()) {
+            $this->sequencer->sequence($limit);
         }
         [$predicate, $parameters, $types] = $this->sourcePredicate($definition);
         array_unshift($parameters, $afterSequence);
@@ -280,6 +285,15 @@ final class DoctrineProjectionStore implements ProjectionEventSource, Projection
         $generationId = $this->requireGeneration();
         $checksum = $this->transactions->transactional(function () use ($definition, $generationId): string {
             $head = $this->lockJournalHead();
+            [$predicate, $parameters, $types] = $this->sourcePredicate($definition);
+            $pending = $this->database->fetchOne(sprintf(
+                'SELECT event_id FROM %s WHERE %s LIMIT 1',
+                $this->tables->quoted('business_projection_event_staging'),
+                $predicate,
+            ), $parameters, $types);
+            if ($pending !== false) {
+                throw new RuntimeException('The projection has committed unsequenced sources; retry the rebuild.');
+            }
             if ($this->latestRelevantSequence($definition, $head) > $this->lastSequence) {
                 throw new RuntimeException('The projection source advanced during rebuild; retry the rebuild.');
             }
@@ -434,8 +448,15 @@ final class DoctrineProjectionStore implements ProjectionEventSource, Projection
             'SELECT source_sequence FROM %s WHERE event_id = ?',
             $this->tables->quoted('business_projection_source_events'),
         ), [$eventId], [Types::GUID]);
+        if ($sequence === false && !$this->database->isTransactionActive()) {
+            $this->sequencer->sequence(1_000);
+            $sequence = $this->database->fetchOne(sprintf(
+                'SELECT source_sequence FROM %s WHERE event_id = ?',
+                $this->tables->quoted('business_projection_source_events'),
+            ), [$eventId], [Types::GUID]);
+        }
         if ($sequence === false) {
-            throw new RuntimeException('A durable outbox event is missing from the projection source journal.');
+            throw new RuntimeException('A durable outbox event has not reached the projection source journal.');
         }
 
         return $this->positiveInteger($sequence, 'projection source sequence');
@@ -658,7 +679,7 @@ final class DoctrineProjectionStore implements ProjectionEventSource, Projection
     }
 
     /**
-     * Lock and read the serialization fence shared with source-event append transactions.
+     * Lock and read the publication fence shared with committed-source sequencers.
      *
      * @return  int  Latest fully committed immutable source sequence, or zero for an empty journal.
      *

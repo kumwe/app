@@ -42,6 +42,16 @@ use Kumwe\App\Delivery\Console\Command\RecoverAdministratorThemeCommand;
 use Kumwe\App\Delivery\Console\Command\RecoverCredentialsCommand;
 use Kumwe\App\Delivery\Console\Command\RecoverMigrationLockCommand;
 use Kumwe\App\Delivery\Console\Command\RotateRecordSecretsCommand;
+use Kumwe\App\Delivery\Console\Command\BusinessApprovalCommand;
+use Kumwe\App\Delivery\Console\Command\MediaCommand;
+use Kumwe\App\Delivery\Console\Command\WordingCommand;
+use Kumwe\App\Delivery\Console\Command\BusinessSecurityCommand;
+use Kumwe\App\Delivery\Console\Command\BusinessBulkCommand;
+use Kumwe\App\Delivery\Console\Command\BusinessSchemaEvidenceCommand;
+use Kumwe\App\Delivery\Console\Command\StudioBlueprintCommand;
+use Kumwe\App\Delivery\Console\Command\StudioCompositionCommand;
+use Kumwe\App\Delivery\Console\Command\SecurityEventsCommand;
+use Kumwe\App\Delivery\Console\Command\StudioAuthoringCommand;
 use Kumwe\App\Delivery\Console\Command\RunExtensionConformanceCommand;
 use Kumwe\App\Delivery\Console\Command\ScaffoldExtensionCommand;
 use Kumwe\App\Delivery\Console\Command\ScheduleRunCommand;
@@ -101,6 +111,16 @@ use ReflectionClass;
 #[CoversClass(RecoverCredentialsCommand::class)]
 #[CoversClass(RecoverMigrationLockCommand::class)]
 #[CoversClass(RotateRecordSecretsCommand::class)]
+#[CoversClass(StudioAuthoringCommand::class)]
+#[CoversClass(SecurityEventsCommand::class)]
+#[CoversClass(BusinessApprovalCommand::class)]
+#[CoversClass(MediaCommand::class)]
+#[CoversClass(WordingCommand::class)]
+#[CoversClass(BusinessSecurityCommand::class)]
+#[CoversClass(BusinessBulkCommand::class)]
+#[CoversClass(StudioCompositionCommand::class)]
+#[CoversClass(StudioBlueprintCommand::class)]
+#[CoversClass(BusinessSchemaEvidenceCommand::class)]
 #[CoversClass(RunExtensionConformanceCommand::class)]
 #[CoversClass(ScaffoldExtensionCommand::class)]
 #[CoversClass(ScheduleRunCommand::class)]
@@ -255,6 +275,16 @@ final class CommandDescriptionTest extends TestCase
             ScaffoldExtensionCommand::class,
             ScheduleRunCommand::class,
             SignExtensionCommand::class,
+            StudioAuthoringCommand::class,
+            SecurityEventsCommand::class,
+            BusinessApprovalCommand::class,
+            MediaCommand::class,
+            WordingCommand::class,
+            BusinessSecurityCommand::class,
+            BusinessBulkCommand::class,
+            StudioCompositionCommand::class,
+            StudioBlueprintCommand::class,
+            BusinessSchemaEvidenceCommand::class,
             UninstallExtensionCommand::class,
             VerifyAuditTrailCommand::class,
             WatchExtensionRuntimeCommand::class,

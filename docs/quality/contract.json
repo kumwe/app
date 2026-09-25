@@ -97,7 +97,7 @@
             "composer test",
             "vendor/bin/phpunit --colors=always \\"
         ],
-        "note": "The criterion is assessable because this block names what has to be true and tools/quality-contract.php --check proves the workflow does it: the database job's matrix carries all three declared engines, and every leg runs the complete suite \u2014 the legs without coverage through `composer test`, the canonical leg through the coverage invocation of the same suite. Assessing the criterion is then reading the run, not inspecting the workflow."
+        "note": "The criterion is assessable because this block names what has to be true and tools/quality-contract.php --check proves the workflow does it: the database job's matrix carries all three declared engines, and every leg runs the complete suite — the legs without coverage through `composer test`, the canonical leg through the coverage invocation of the same suite. Assessing the criterion is then reading the run, not inspecting the workflow."
     },
     "checks": [
         {
@@ -468,6 +468,58 @@
             }
         },
         {
+            "id": "observability-rules",
+            "title": "Alert rules, inhibitions, runbooks, dashboards and promtool scenarios are sound and bounded",
+            "purpose": "Refuse an alert without a closed severity and component, the four annotations, its own runbook section or a promtool scenario; an expression over an undeclared series, an unbounded or forbidden label, an impossible matcher value or a mistyped function; a template naming a label the alert drops; an inhibition whose equal labels one side lacks; a dashboard query that fails the same checks or counts retries as business work; and a stale generated promtool test file. Runs offline so every qa run proves it; CI's drills job re-checks the syntax with the real promtool and amtool.",
+            "owner": "platform-architecture",
+            "runner": "composer",
+            "composer_script": "observability:rules",
+            "command": "composer observability:rules",
+            "artifact": "console",
+            "in_qa": true,
+            "cadence": [
+                "local",
+                "ci",
+                "nightly",
+                "release"
+            ],
+            "maximum_interval": "per-change",
+            "engines": [],
+            "workflows": {
+                "ci": {
+                    "file": ".github/workflows/ci.yml",
+                    "job": "quality",
+                    "contains": "composer observability:rules"
+                }
+            }
+        },
+        {
+            "id": "alert-drills",
+            "title": "Every critical alert fires against a real induced condition, links its runbook and clears after recovery",
+            "purpose": "Run tools/alert-drill.sh against a real application and database on MariaDB and PostgreSQL: promtool check rules and test rules over the committed scenarios, amtool check-config, then for each page-severity alert induce the condition through the real application, scrape the protected /metrics endpoint, evaluate the shipped rule with promtool over the scraped timeline, prove it fires with its runbook link, perform the runbook recovery, and prove it clears. Evidence is retained as a workflow artifact.",
+            "owner": "quality-engineering",
+            "runner": "workflow",
+            "command": ".github/workflows/observability.yml",
+            "artifact": "build/observability/drills.json",
+            "in_qa": false,
+            "excluded_from_qa_reason": "The drills download pinned promtool and amtool binaries, start web servers and workers, and mutate a disposable database; qa runs offline against a shared development database.",
+            "cadence": [
+                "ci"
+            ],
+            "maximum_interval": "per-change",
+            "engines": [
+                "mariadb",
+                "postgresql"
+            ],
+            "workflows": {
+                "ci": {
+                    "file": ".github/workflows/observability.yml",
+                    "job": "drills",
+                    "contains": "bash tools/alert-drill.sh"
+                }
+            }
+        },
+        {
             "id": "roadmap-lifecycle",
             "title": "The roadmap ledger and changelog retain truthful lifecycle evidence",
             "purpose": "Fail when a finished finding is left behind in the ledger instead of moving to the changelog, or when a changelog citation no longer resolves after history is rewritten.",
@@ -490,6 +542,32 @@
                     "file": ".github/workflows/ci.yml",
                     "job": "quality",
                     "contains": "composer roadmap:check"
+                }
+            }
+        },
+        {
+            "id": "acceptance-record",
+            "title": "The Version 2 acceptance record is truthful and every view of it is derived",
+            "purpose": "Fail when an open finding or README package has no entry, when a delivered entry still sits in the findings ledger, is absent from the changelog or names no test and CI job, when an open or pending entry lacks its outstanding note or branch, when a referenced runtime, test or artifact path, workflow job, uploaded artifact or reference anchor does not exist, when a Gate B criterion has no entry or is delivered ahead of an entry citing it, or when the summary page or a generated STATUS.md block (phase board, open work, Gate B criteria, ledger snapshot) differs from the record.",
+            "owner": "quality-engineering",
+            "runner": "composer",
+            "composer_script": "acceptance:check",
+            "command": "composer acceptance:check",
+            "artifact": "console",
+            "in_qa": true,
+            "cadence": [
+                "local",
+                "ci",
+                "nightly",
+                "release"
+            ],
+            "maximum_interval": "per-change",
+            "engines": [],
+            "workflows": {
+                "ci": {
+                    "file": ".github/workflows/ci.yml",
+                    "job": "quality",
+                    "contains": "composer acceptance:check"
                 }
             }
         },
@@ -620,6 +698,32 @@
                     "file": ".github/workflows/ci.yml",
                     "job": "quality",
                     "contains": "composer mcp:contract"
+                }
+            }
+        },
+        {
+            "id": "browser-machine-parity",
+            "title": "Every browser operation has a machine equivalent or a reasoned exemption",
+            "purpose": "Fail when an administrator or portal browser route has no parity entry, an entry is stale, an operation is recorded as a gap, an equivalent names a REST operation, CLI action, MCP tool or application service the live contracts do not declare, or an exemption or browser-only classification carries no reason from its closed vocabulary.",
+            "owner": "platform-architecture",
+            "runner": "composer",
+            "composer_script": "machine:parity",
+            "command": "composer machine:parity",
+            "artifact": "docs/machine-contract/browser-machine-parity.json",
+            "in_qa": true,
+            "cadence": [
+                "local",
+                "ci",
+                "nightly",
+                "release"
+            ],
+            "maximum_interval": "per-change",
+            "engines": [],
+            "workflows": {
+                "ci": {
+                    "file": ".github/workflows/ci.yml",
+                    "job": "quality",
+                    "contains": "composer machine:parity"
                 }
             }
         },
@@ -802,6 +906,32 @@
                     "file": ".github/workflows/ci.yml",
                     "job": "quality",
                     "contains": "composer translation:strings"
+                }
+            }
+        },
+        {
+            "id": "translation-quality",
+            "title": "Every interface catalogue is qualified in its own language",
+            "purpose": "Format every pattern of all nine catalogues through ICU for its own locale with representative arguments, require every CLDR plural category the locale selects for everyday counts, hold translations to their source's arguments, and fail a non-English target left identical to prose English unless the reasoned register in the tool records why (V2-LNG-010, Gate B criterion 11).",
+            "owner": "localization",
+            "runner": "composer",
+            "composer_script": "translation:quality",
+            "command": "composer translation:quality",
+            "artifact": "console",
+            "in_qa": true,
+            "cadence": [
+                "local",
+                "ci",
+                "nightly",
+                "release"
+            ],
+            "maximum_interval": "per-change",
+            "engines": [],
+            "workflows": {
+                "ci": {
+                    "file": ".github/workflows/ci.yml",
+                    "job": "quality",
+                    "contains": "composer translation:quality"
                 }
             }
         },
@@ -1029,7 +1159,7 @@
             "command": "bash -euo pipefail -c 'npm run check; npm run build; generated_status=\"$(git status --porcelain=v1 --untracked-files=all -- public/assets/build public/assets/site.css)\"; test -z \"$generated_status\"'",
             "artifact": "public/assets/build and public/assets/site.css",
             "in_qa": false,
-            "excluded_from_qa_reason": "It is the frontend contract and runs under Node, not under the PHP entry point. It is a merge and nightly gate rather than a release one because both generated artifacts \u2014 public/assets/build and public/assets/site.css \u2014 are committed, verified byte for byte at merge, and travel into the release archive unchanged.",
+            "excluded_from_qa_reason": "It is the frontend contract and runs under Node, not under the PHP entry point. It is a merge and nightly gate rather than a release one because both generated artifacts — public/assets/build and public/assets/site.css — are committed, verified byte for byte at merge, and travel into the release archive unchanged.",
             "cadence": [
                 "ci",
                 "nightly"
@@ -1151,6 +1281,33 @@
                     "file": ".github/workflows/release.yml",
                     "job": "acceptance",
                     "contains": "uses: ./.github/workflows/deployment-acceptance.yml"
+                }
+            }
+        },
+        {
+            "id": "perf-concurrent-samples",
+            "title": "Concurrent application commits retain raw samples and verify integrity on every supported engine",
+            "purpose": "Measure repeated ordinary and hot-sequence commits with independent database sessions and observed overlap; publish hardware and uncertainty without claiming production capacity.",
+            "owner": "quality-engineering",
+            "runner": "workflow",
+            "command": ".github/workflows/capacity.yml",
+            "artifact": "build/perf/concurrent.json",
+            "in_qa": false,
+            "excluded_from_qa_reason": "The dedicated database matrix runs parallel subprocess workloads and retains raw observations separately from the serial local QA gate.",
+            "cadence": [
+                "ci"
+            ],
+            "maximum_interval": "per-change",
+            "engines": [
+                "mariadb",
+                "mysql",
+                "postgresql"
+            ],
+            "workflows": {
+                "ci": {
+                    "file": ".github/workflows/capacity.yml",
+                    "job": "samples",
+                    "contains": "php tools/perf-harness.php --concurrent"
                 }
             }
         }

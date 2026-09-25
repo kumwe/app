@@ -1540,8 +1540,14 @@ final readonly class DoctrineBusinessRecordQueryCompiler
      *
      * Null placement is emitted as an explicit rank expression ahead of the column itself, so the order
      * does not depend on where an engine puts empty values, and the record identity is always appended
-     * last, which makes the ordering total and therefore safe to page on. A specification that declares
-     * no sort orders by last update, newest first, and its cursor is read from that column.
+     * last, which makes the ordering total and therefore safe to page on. A column the installed schema
+     * declares NOT NULL gets no rank expression: it would rank every row alike, and leaving it out lets an
+     * index that leads with the scope and that column deliver the page in order, so the engine examines
+     * the page rather than sorting every row in scope (P5-G). A key on a unique, NOT NULL field already
+     * makes the ordering total inside the equality-bound scope its unique index covers, so no identity
+     * tie-breaker follows it; MariaDB cannot extend a unique index with the primary key and would otherwise
+     * sort every row. A specification that declares no sort orders by last update, newest first, and its
+     * cursor is read from that column.
      *
      * @param   ResolvedBusinessDefinition  $resolved       Definition and installed schema the sort
      *          handles resolve against.
@@ -1569,6 +1575,7 @@ final readonly class DoctrineBusinessRecordQueryCompiler
     ): array {
         $order = [];
         $cursor = [];
+        $total = false;
         if ($specification->sorts === []) {
             $updated = $this->physical($table, 'updated_at');
             $order[] = $alias . '.' . $this->quote($updated) . ' DESC';
@@ -1594,14 +1601,24 @@ final readonly class DoctrineBusinessRecordQueryCompiler
                 }
                 $physical = $columns[0]->physicalName;
                 $qualified = $alias . '.' . $this->quote($physical);
-                $nullRank = $sort->nullsLast ? '1' : '0';
-                $nonNullRank = $sort->nullsLast ? '0' : '1';
-                $order[] = sprintf('CASE WHEN %s IS NULL THEN %s ELSE %s END ASC', $qualified, $nullRank, $nonNullRank);
+                if ($columns[0]->nullable) {
+                    $nullRank = $sort->nullsLast ? '1' : '0';
+                    $nonNullRank = $sort->nullsLast ? '0' : '1';
+                    $order[] = sprintf(
+                        'CASE WHEN %s IS NULL THEN %s ELSE %s END ASC',
+                        $qualified,
+                        $nullRank,
+                        $nonNullRank,
+                    );
+                }
                 $order[] = $qualified . ' ' . strtoupper($sort->direction->value);
                 $cursor[] = ['field' => $field->handle, 'physical' => $physical];
+                $total = $total || ($field->unique && !$columns[0]->nullable);
             }
         }
-        $order[] = $alias . '.' . $this->quote($this->physical($table, 'record_id')) . ' ASC';
+        if (!$total) {
+            $order[] = $alias . '.' . $this->quote($this->physical($table, 'record_id')) . ' ASC';
+        }
 
         return [$order, $cursor];
     }
@@ -1613,8 +1630,10 @@ final readonly class DoctrineBusinessRecordQueryCompiler
      * and that key to lie beyond the cursor's value, plus a final branch matching every key exactly and a
      * greater record identity. Keys holding no value are compared with `IS NULL`, and a nulls-last key
      * that held none contributes no branch of its own, so no row is repeated or skipped where the valued
-     * rows meet the empty ones. Bindings are appended as the branches are emitted, which is why the
-     * caller takes its aggregate snapshot before calling this.
+     * rows meet the empty ones. A NOT NULL column has no empty rows to keep reachable, so its seek is the
+     * bare comparison an index range can serve, and an ordering made total by a unique NOT NULL key needs
+     * no identity branch, because no other row can share that key within the scope. Bindings are appended
+     * as the branches are emitted, which is why the caller takes its aggregate snapshot before calling this.
      *
      * @param   ResolvedBusinessDefinition  $resolved       Definition and installed schema the sort
      *          handles resolve against.
@@ -1665,6 +1684,8 @@ final readonly class DoctrineBusinessRecordQueryCompiler
                 'value' => new DateTimeImmutable($value, new DateTimeZone('UTC')),
                 'direction' => SortDirection::Descending,
                 'nulls_last' => true,
+                'nullable' => false,
+                'total' => false,
             ];
         } else {
             foreach ($sorts as $index => $sort) {
@@ -1677,6 +1698,8 @@ final readonly class DoctrineBusinessRecordQueryCompiler
                     'value' => $encoded,
                     'direction' => $sort->direction,
                     'nulls_last' => $sort->nullsLast,
+                    'nullable' => $columns[0]->nullable,
+                    'total' => $field->unique && !$columns[0]->nullable,
                 ];
             }
         }
@@ -1699,7 +1722,7 @@ final readonly class DoctrineBusinessRecordQueryCompiler
                 $qualified,
                 $key['value'],
                 $key['direction'],
-                $key['nulls_last'],
+                $key['nulls_last'] && $key['nullable'],
                 $parameters,
                 $types,
                 $key['type'],
@@ -1708,6 +1731,9 @@ final readonly class DoctrineBusinessRecordQueryCompiler
                 $branch[] = $seek;
                 $parts[] = '(' . implode(' AND ', $branch) . ')';
             }
+        }
+        if (in_array(true, array_column($keys, 'total'), true)) {
+            return '(' . implode(' OR ', $parts) . ')';
         }
         $tie = [];
         foreach ($keys as $key) {

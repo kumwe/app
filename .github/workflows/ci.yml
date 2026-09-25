@@ -65,6 +65,7 @@ jobs:
           composer conversion:api
           composer cli:contract
           composer mcp:contract
+          composer machine:parity
           composer studio:corpus
           composer studio:dependencies
           composer kumwe:capability-index-check
@@ -80,12 +81,14 @@ jobs:
         run: |
           composer interface:programme
           composer roadmap:check
+          composer acceptance:check
           composer openapi:check
 
       - name: Verify translation records and coverage attribution
         run: |
           composer translation:check
           composer translation:strings
+          composer translation:quality
           composer assets:direction
           composer coverage:attribution
 
@@ -401,10 +404,11 @@ jobs:
           composer extension:independence
           composer conversion:api
 
-      - name: Verify the retained CLI and MCP machine contracts
+      - name: Verify the retained CLI and MCP machine contracts and browser-machine parity
         run: |
           composer cli:contract
           composer mcp:contract
+          composer machine:parity
 
       - name: Verify the pinned Studio contract corpus and the capability index
         run: |
@@ -413,10 +417,17 @@ jobs:
           composer kumwe:capability-index-check
           composer kumwe:core-growth-check
 
-      - name: Verify the interface programme and the roadmap ledger
+      - name: Verify the interface programme, the roadmap ledger and the acceptance record
         run: |
           composer interface:programme
           composer roadmap:check
+          composer acceptance:check
+
+      # Offline half of the observability gate: rule structure, bounded labels, runbook sections, inhibition
+      # soundness, dashboards and a fresh promtool scenario file. The observability workflow runs the real
+      # promtool, amtool and the alert drills.
+      - name: Verify alert rules, inhibitions, runbooks and dashboards
+        run: composer observability:rules
 
       - name: Verify coverage attribution
         run: composer coverage:attribution
@@ -428,6 +439,7 @@ jobs:
         run: |
           composer translation:check
           composer translation:strings
+          composer translation:quality
           composer assets:direction
 
       - name: Generate coding-standard normalization evidence

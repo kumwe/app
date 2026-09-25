@@ -44,6 +44,9 @@ script_directory="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 repository_root="$(cd -- "${script_directory}/../.." && pwd -P)"
 verify_script="${repository_root}/tools/restore-verify.sh"
 restore_script="${repository_root}/tools/restore.sh"
+source "$repository_root/tools/recovery-common.sh"
+plain_trees=0
+[[ "$(jq -r '.format' "$source_backup/manifest.json")" == kumwe-backup-v3 ]] && plain_trees=1
 [[ -x "$verify_script" || -f "$verify_script" ]] || fail 'tools/restore-verify.sh is unavailable'
 [[ -x "$restore_script" || -f "$restore_script" ]] || fail 'tools/restore.sh is unavailable'
 
@@ -69,8 +72,12 @@ reseal() {
     local backup="$1"
     (
         cd -- "$backup"
-        sha256sum database.dump extension-assets.tar.gz extensions.tar.gz manifest.json media.tar.gz \
-            private.tar.gz > checksums.sha256
+        if [[ $plain_trees == 1 ]]; then
+            recovery_checksums . > checksums.sha256
+        else
+            sha256sum database.dump extension-assets.tar.gz extensions.tar.gz manifest.json media.tar.gz \
+                private.tar.gz > checksums.sha256
+        fi
     )
     if [[ -f "${backup}/checksums.sha256.minisig" && "$signing_available" == 1 ]]; then
         rm -f -- "${backup}/checksums.sha256.minisig"
@@ -140,8 +147,15 @@ verify_case corrupted-database-dump 'database.dump: FAILED' "$corrupted"
 
 # 2. The same guard has to cover the filesystem payloads, not only the database.
 corrupted_media="$(copy_backup corrupted-media-archive)"
-flip_byte "${corrupted_media}/media.tar.gz" 12
-verify_case corrupted-media-archive 'media.tar.gz: FAILED' "$corrupted_media"
+if [[ $plain_trees == 1 ]]; then
+    media_file="$(find "$corrupted_media/media" -type f -size +0c -print -quit)"
+    [[ -n "$media_file" ]] || fail 'drill needs one non-empty media fixture'
+    flip_byte "$media_file" 0
+    verify_case corrupted-media-tree "${media_file#"$corrupted_media/"}: FAILED" "$corrupted_media"
+else
+    flip_byte "${corrupted_media}/media.tar.gz" 12
+    verify_case corrupted-media-archive 'media.tar.gz: FAILED' "$corrupted_media"
+fi
 
 # 3. Editing the manifest is editing a checksummed payload; it must be caught even though the
 #    manifest is metadata rather than data.
@@ -152,13 +166,18 @@ verify_case edited-manifest-without-reseal 'manifest.json: FAILED' "$edited_mani
 
 # 4. A payload that is simply absent must be named, not skipped.
 missing_payload="$(copy_backup missing-payload)"
-rm -f -- "${missing_payload}/private.tar.gz"
-verify_case missing-payload "missing required file 'private.tar.gz'" "$missing_payload"
+if [[ $plain_trees == 1 ]]; then
+    rm -rf -- "$missing_payload/private"
+    verify_case missing-payload "missing required tree 'private'" "$missing_payload"
+else
+    rm -f -- "${missing_payload}/private.tar.gz"
+    verify_case missing-payload "missing required file 'private.tar.gz'" "$missing_payload"
+fi
 
 # 5. A checksum file that no longer describes the payload set must be refused before any checksum
 #    is compared, so an added or dropped line cannot narrow what gets verified.
 narrowed_checksums="$(copy_backup narrowed-checksum-manifest)"
-grep --invert-match ' private.tar.gz$' "${narrowed_checksums}/checksums.sha256" \
+grep --invert-match ' database.dump$' "${narrowed_checksums}/checksums.sha256" \
     > "${narrowed_checksums}/checksums.sha256.tmp"
 mv -- "${narrowed_checksums}/checksums.sha256.tmp" "${narrowed_checksums}/checksums.sha256"
 verify_case narrowed-checksum-manifest 'checksum manifest contains an unexpected or missing path' \
@@ -174,6 +193,13 @@ verify_case old-manifest-version 'manifest is not a supported Kumwe 2.x backup' 
 # 7. An archive member that escapes its extraction root must be refused before extraction, not
 #    contained during it.
 traversal="$(copy_backup traversal-archive)"
+if [[ $plain_trees == 1 ]]; then
+    sed -i 's|  database.dump$|  ../database.dump|' "$traversal/checksums.sha256"
+    verify_case traversal-inventory 'checksum manifest contains an unexpected or missing path' "$traversal"
+    symlinked="$(copy_backup symlink-tree)"
+    ln -s /etc/passwd "$symlinked/extensions/escape"
+    verify_case symlink-tree 'backup directory contains symbolic links' "$symlinked"
+else
 traversal_source="${work_root}/traversal-source"
 install -d -m 0700 "$traversal_source"
 printf 'escaped' > "${traversal_source}/probe.txt"
@@ -191,6 +217,8 @@ ln -s /etc/passwd "${symlink_source}/escape"
 tar --create --gzip --file="${symlinked}/extensions.tar.gz" --directory="$symlink_source" .
 reseal "$symlinked"
 verify_case symlink-archive 'archive contains a symbolic link or unsupported file type' "$symlinked"
+
+fi
 
 # 9. A symbolic link beside the payloads redirects what gets read; the directory itself is checked.
 linked_directory="$(copy_backup symlink-in-backup-directory)"
@@ -211,11 +239,12 @@ if [[ "$signing_available" == 1 ]]; then
     forged="$(copy_backup resealed-after-tamper)"
     [[ -f "${forged}/checksums.sha256.minisig" ]] || fail 'the supplied backup is unsigned'
     flip_byte "${forged}/database.dump" 12
-    (
-        cd -- "$forged"
-        sha256sum database.dump extension-assets.tar.gz extensions.tar.gz manifest.json media.tar.gz \
-            private.tar.gz > checksums.sha256
-    )
+    if [[ $plain_trees == 1 ]]; then
+        recovery_checksums "$forged" > "$forged/checksums.sha256"
+    else
+        (cd -- "$forged" && sha256sum database.dump extension-assets.tar.gz extensions.tar.gz manifest.json \
+            media.tar.gz private.tar.gz > checksums.sha256)
+    fi
     verify_case resealed-after-tamper 'Signature verification failed' "$forged"
 
     # 12. Asking for authentication and getting none must fail, not degrade to checksums only.
@@ -254,6 +283,7 @@ expect_refusal driver-mismatch \
 # 15. A restore target that already exists is somebody's live data.
 install -d -m 0700 "${work_root}/occupied" "${work_root}/occupied/media"
 expect_refusal existing-filesystem-target 'media target must not exist' env \
+    KUMWE_RESTORE_MANIFEST="${work_root}/occupied/restore.json" \
     KUMWE_RESTORE_DB_NAME="${KUMWE_RESTORE_DB_NAME:-kumwe_tamper_drill}" \
     KUMWE_RESTORE_DB_USER="${KUMWE_RESTORE_DB_USER:-kumwe}" \
     KUMWE_RESTORE_DB_PASSWORD_FILE="${KUMWE_RESTORE_DB_PASSWORD_FILE:-/dev/null}" \
@@ -269,6 +299,7 @@ expect_refusal existing-filesystem-target 'media target must not exist' env \
 if [[ -n "${KUMWE_TAMPER_DRILL_OCCUPIED_DB:-}" ]]; then
     install -d -m 0700 "${work_root}/occupied-database"
     expect_refusal non-empty-target-database 'restore database is not empty' env \
+        KUMWE_RESTORE_MANIFEST="${work_root}/occupied-database/restore.json" \
         KUMWE_RESTORE_DB_DRIVER="$manifest_driver" \
         KUMWE_RESTORE_DB_HOST="${KUMWE_RESTORE_DB_HOST:-database}" \
         KUMWE_RESTORE_DB_PORT="${KUMWE_RESTORE_DB_PORT:-}" \

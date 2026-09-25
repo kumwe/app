@@ -38,6 +38,17 @@ use RuntimeException;
 final readonly class DoctrineAccessControlRepository implements AccessControlRepository
 {
     /**
+     * Deepest offset an administrator list may page to, so no page examines more than 10,500 rows (P5-G).
+     *
+     * Deeper browsing is a search, not a page walk; the lists order by an indexed key, so a filter or a
+     * narrower query reaches any row without scanning everything before it.
+     *
+     * @var    int
+     * @since  2.0.0
+     */
+    public const int MAXIMUM_OFFSET = 10_000;
+
+    /**
      * Bind the adapter to the connection it runs on and the table names it resolves through.
      *
      * @param  Connection  $database  DBAL connection every statement uses; transactions belong to the caller.
@@ -63,7 +74,8 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
      * @return  list<array<string, mixed>>  One row per user carrying its columns plus a `roles` key whose
      *          value lists the role id, code and name, ordered by role name.
      *
-     * @throws  InvalidArgumentException  When the limit is outside 1 to 500 or the offset is negative.
+     * @throws  InvalidArgumentException  When the limit is outside 1 to 500, or the offset is negative or
+     *          past `MAXIMUM_OFFSET`.
      *
      * @since   2.0.0
      */
@@ -103,7 +115,8 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
      * @return  list<array<string, mixed>>  One row per role carrying its columns plus a `grants` key whose
      *          value lists the grant id, capability, scope type and scope identifier.
      *
-     * @throws  InvalidArgumentException  When the limit is outside 1 to 500 or the offset is negative.
+     * @throws  InvalidArgumentException  When the limit is outside 1 to 500, or the offset is negative or
+     *          past `MAXIMUM_OFFSET`.
      *
      * @since   2.0.0
      */
@@ -141,7 +154,8 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
      * @return  list<array{code: string, description: string}>  Capability codes with their operator-facing
      *          text, in ascending code order.
      *
-     * @throws  InvalidArgumentException  When the limit is outside 1 to 500 or the offset is negative.
+     * @throws  InvalidArgumentException  When the limit is outside 1 to 500, or the offset is negative or
+     *          past `MAXIMUM_OFFSET`.
      *
      * @since   2.0.0
      */
@@ -1002,6 +1016,39 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
     }
 
     /**
+     * Read the union of a user's direct-role and membership-role grants, whatever the membership state.
+     *
+     * Both paths join the same `role_capability_grants` table, the one that also feeds every principal
+     * this installation builds, so no capability a user can ever exercise is left out of the ceiling.
+     *
+     * @param   string  $userId  UUID of the user being inspected.
+     *
+     * @return  list<array{capability: string, scope_type: string, scope_identifier: ?string}>  Empty when
+     *          the user holds nothing through any path.
+     *
+     * @since   2.0.0
+     */
+    public function userAuthorityGrants(string $userId): array
+    {
+        /** @var list<array{capability: string, scope_type: string, scope_identifier: ?string}> $rows */
+        $rows = $this->database->fetchAllAssociative(sprintf(
+            'SELECT g.capability_code AS capability, g.scope_type, g.scope_identifier '
+            . 'FROM %s ur INNER JOIN %s g ON g.role_id = ur.role_id WHERE ur.user_id = ? '
+            . 'UNION SELECT g.capability_code AS capability, g.scope_type, g.scope_identifier '
+            . 'FROM %s m INNER JOIN %s mr ON mr.membership_id = m.id '
+            . 'INNER JOIN %s g ON g.role_id = mr.role_id WHERE m.user_id = ? '
+            . 'ORDER BY capability, scope_type, scope_identifier',
+            $this->tables->quoted('user_roles'),
+            $this->tables->quoted('role_capability_grants'),
+            $this->tables->quoted('organization_memberships'),
+            $this->tables->quoted('membership_roles'),
+            $this->tables->quoted('role_capability_grants'),
+        ), [$userId, $userId]);
+
+        return $rows;
+    }
+
+    /**
      * Resolve live membership-role authority for one exact organization and optional workspace.
      *
      * @param   string   $userId                  User whose membership authority is being verified.
@@ -1164,13 +1211,14 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
      *
      * @return  void
      *
-     * @throws  InvalidArgumentException  When the limit is outside 1 to 500 or the offset is negative.
+     * @throws  InvalidArgumentException  When the limit is outside 1 to 500, or the offset is negative or
+     *          past `MAXIMUM_OFFSET`.
      *
      * @since   2.0.0
      */
     private function assertPage(int $limit, int $offset): void
     {
-        if ($limit < 1 || $limit > 500 || $offset < 0) {
+        if ($limit < 1 || $limit > 500 || $offset < 0 || $offset > self::MAXIMUM_OFFSET) {
             throw new InvalidArgumentException('The access-control page is invalid.');
         }
     }

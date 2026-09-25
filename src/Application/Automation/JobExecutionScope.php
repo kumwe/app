@@ -36,6 +36,7 @@ final class JobExecutionScope
         'extensions.trust.revocations.synchronize' => SystemIdentity::ExtensionMaterializer,
         'studio.content-authoring-context.purge' => SystemIdentity::InstallationMaintenance,
         'system.idempotency.purge' => SystemIdentity::InstallationMaintenance,
+        'system.retention.drain' => SystemIdentity::InstallationMaintenance,
     ];
 
     /**

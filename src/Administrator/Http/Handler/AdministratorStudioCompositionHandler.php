@@ -33,14 +33,6 @@ use Psr\Http\Server\RequestHandlerInterface;
 final readonly class AdministratorStudioCompositionHandler implements RequestHandlerInterface
 {
     /**
-     * Exact renderer capabilities implemented by the App preview runtime.
-     *
-     * @var    list<string>
-     * @since  2.0.0
-     */
-    private const array RENDERERS = ['core.renderer/field', 'core.renderer/layout'];
-
-    /**
      * Bind the composition application services and server-rendered presentation dependencies.
      *
      * @param  StudioContentCompositionService       $compositions   Blueprint composition application service.
@@ -96,7 +88,7 @@ final readonly class AdministratorStudioCompositionHandler implements RequestHan
                     $context,
                     $contentTypeId,
                     $version,
-                    self::RENDERERS,
+                    StudioContentCompositionService::RENDERERS,
                 );
 
                 return new RedirectResponse($path, 303);
@@ -160,7 +152,7 @@ final readonly class AdministratorStudioCompositionHandler implements RequestHan
         );
         $contributions = $this->contributions->project(
             $capabilities,
-            self::RENDERERS,
+            StudioContentCompositionService::RENDERERS,
             $lock,
         );
 

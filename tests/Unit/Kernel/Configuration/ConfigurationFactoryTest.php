@@ -49,6 +49,60 @@ final class ConfigurationFactoryTest extends TestCase
         (new ConfigurationFactory())->create(new Environment($values));
     }
 
+    /**
+     * Idle expiry is configurable, bounded, and active by default for both browser surfaces.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testSessionIdleTimeoutIsBoundedAndDefaultsToThirtyMinutes(): void
+    {
+        $factory = new ConfigurationFactory();
+        self::assertSame(1800, $factory->create(new Environment($this->values()))->sessionIdleSeconds);
+        foreach ([60, 900, 86400] as $seconds) {
+            $values = $this->values();
+            $values['APP_SESSION_IDLE_SECONDS'] = (string) $seconds;
+            self::assertSame($seconds, $factory->create(new Environment($values))->sessionIdleSeconds);
+        }
+        foreach (['0', '59', '86401', 'invalid'] as $seconds) {
+            $values = $this->values();
+            $values['APP_SESSION_IDLE_SECONDS'] = $seconds;
+            try {
+                $factory->create(new Environment($values));
+                self::fail('An invalid inactivity timeout was accepted.');
+            } catch (InvalidArgumentException $exception) {
+                self::assertStringContainsString('APP_SESSION_IDLE_SECONDS', $exception->getMessage());
+            }
+        }
+    }
+
+    /**
+     * The capacity profile accepts only the two declared profiles, case-insensitively, and defaults to baseline.
+     *
+     * The profile decides whether retention and storage shortfalls drain the process or only warn, so an
+     * unrecognised value must stop the boot rather than silently fall back to the more lenient profile.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheCapacityProfileIsBaselineOrEnterpriseAndNothingElse(): void
+    {
+        $factory = new ConfigurationFactory();
+        self::assertSame('baseline', $factory->create(new Environment($this->values()))->capacityProfile);
+        $values = $this->values();
+        $values['KUMWE_CAPACITY_PROFILE'] = 'Enterprise';
+        self::assertSame('enterprise', $factory->create(new Environment($values))->capacityProfile);
+        $values['KUMWE_CAPACITY_PROFILE'] = 'premium';
+        try {
+            $factory->create(new Environment($values));
+            self::fail('An undeclared capacity profile was accepted.');
+        } catch (InvalidArgumentException $exception) {
+            self::assertSame('KUMWE_CAPACITY_PROFILE must be baseline or enterprise.', $exception->getMessage());
+        }
+    }
+
     public function testProductionRefusesUnsignedLocalExtensions(): void
     {
         $values = $this->values();
@@ -148,6 +202,45 @@ final class ConfigurationFactoryTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
 
         (new ConfigurationFactory())->create(new Environment($values));
+    }
+
+    /**
+     * A feed URL carrying credentials or a query string is refused before it can reach any record.
+     *
+     * The origin is written verbatim to log lines, audit metadata and the feed-state row it is keyed by,
+     * so a basic-auth user, password or signed query parameter in it would be copied into all three.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testARevocationFeedUrlCarryingCredentialsOrAQueryIsRefused(): void
+    {
+        $key = base64_encode(str_repeat("\x07", SODIUM_CRYPTO_SIGN_PUBLICKEYBYTES));
+        $query = 'signed-query-' . 'value';
+        foreach (
+            [
+                'https://mirror-user:mirror-pass@revocations.kumwe.test/list.json',
+                'https://mirror-user@revocations.kumwe.test/list.json',
+                'https://revocations.kumwe.test/list.json?token=' . $query,
+                'https:///list.json',
+            ] as $origin
+        ) {
+            $values = $this->values();
+            $values['EXTENSIONS_REVOCATION_FEED_URL'] = $origin;
+            $values['EXTENSIONS_REVOCATION_FEED_KEY'] = $key;
+            try {
+                (new ConfigurationFactory())->create(new Environment($values));
+                self::fail('The feed origin was accepted: ' . $origin);
+            } catch (InvalidArgumentException $refusal) {
+                self::assertStringNotContainsString('mirror-pass', $refusal->getMessage());
+                self::assertStringNotContainsString($query, $refusal->getMessage());
+            }
+        }
+        $values = $this->values();
+        $values['EXTENSIONS_REVOCATION_FEED_URL'] = '/srv/kumwe/revocations/list.json';
+        $values['EXTENSIONS_REVOCATION_FEED_KEY'] = $key;
+        self::assertTrue((new ConfigurationFactory())->create(new Environment($values))->revocationFeed->isEnabled());
     }
 
     public function testConfiguredRevocationFeedIsAcceptedWithItsPinnedKey(): void

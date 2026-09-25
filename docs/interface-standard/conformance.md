@@ -112,3 +112,56 @@ GitHub is the final confirmation, not the development iteration loop.
 The per-PR report records branch/commit, inventory rows, KIS version, behavior changes, parity result,
 screenshots, checks, database/deployment scope, security/customization/template impact, residual risks, and
 recovery. Whole-system qualification follows the cross-surface journeys in the programme ledger.
+
+## Automated interface acceptance (ADR 0021, P7-E)
+
+[ADR 0021](../roadmap/decisions/0021-automated-acceptance-and-sampled-capacity.md) replaces the named
+human reviewers of the five archetype task journeys with workflow tests; the maintainer's merge is the
+acceptance record. `tests/Browser/user-acceptance-journeys.spec.ts` runs the five journeys, each registered
+in `programme/actor-task-journeys.json` with an `acceptance` block naming its test and the dimensions it
+evidences. The file is named to run after every spec that pins a screenshot, so the content and records the
+journeys create never enter a pinned screenshot of the same project run:
+
+| Journey | Evidence the test records |
+| --- | --- |
+| `journey.acceptance-content-publication` | Media and Content reached from navigation; an empty upload held by the form; a structured draft without raw JSON; review and publication; a menu link with its calculated path; the public page without an inline style, overflow or axe violations; skip-link focus. |
+| `journey.acceptance-exact-document` | A fresh thousand-line draft, written out of process as an import would, found through the disclosed title filter; one thousand exact-value lines rendered with the exact `5005.00` total; a total that disagrees with the lines refused with the rule's own message and the typed values kept; submit, approve and post each behind an explicit confirmation; the posted document read-only with the refusal's own wording; history naming every step in business terms; a verified CSV export carrying the exact total. |
+| `journey.acceptance-portal-relationship` | Anonymous access sent to sign-in; a wrong password that keeps the address; business work reached from the portal home; related records; a refused wrong current password; administrator entry denied. |
+| `journey.acceptance-mobile-assignment` | A site photograph uploaded and attached to a new job card through the media chooser; the job started behind a confirmation and given grouped parts, labour and measurement lines with controls of at least 24 CSS pixels and no overflow; completion making it read-only. |
+| `journey.acceptance-catalogue-order` | The public catalogue leading into the portal; an invalid quantity recovered with the typed values kept; the fulfilment action denied to the customer; a payment recorded out of process through the REST API, a stale `If-Match` refused; the administrator's confirmed fulfilment visible to the customer. |
+
+Every step runs axe with `wcag2a`, `wcag2aa`, `wcag21aa` and `wcag22aa`, and every journey checks that
+visible copy carries no raw platform identifier (`site.default.*`, `core.*`, `business.record.*`,
+`action.*` and similar revision identifiers, or unrendered template syntax). The journeys run on every
+`all` browser project: Chromium desktop and mobile on each pull request and locally, and Firefox and WebKit
+in the nightly workflow. A WebKit result is WebKit evidence; it is not a claim that a person used native
+Safari. The accessibility evidence is automated: it does not stand for a screen-reader user, and the
+workflows describe what they checked rather than inventing human review.
+
+Journey (b) exercises the generic record-lock behaviour of `V2-UX-003`; `tests/Browser/record-lock.spec.ts`
+pins it separately on both surfaces. The content-authoring and generated-business archetypes are also
+completed in German and in Hebrew by `tests/Browser/locale-journeys.spec.ts` (`V2-LNG-010`, `PL-G`); the two
+files share the accessibility scan and sign-in helpers instead of repeating each other.
+
+The journeys found, and the generated surfaces now repair, this generic debt on both administrator and
+portal:
+
+- Record history named revisions by platform identifier (`action.post`, `relate.lines`, `document.create`)
+  and headed the page with the definition handle. It now names each revision in the catalogue's words or by
+  the definition's own action, relationship and field labels, headed by the plural label; the revision items
+  themselves stay the projection every adapter discloses.
+- Record states were raw handles title-cased in the template, with English `Active`, `Archived` and
+  `Deleted` defaults that no catalogue translated. They now use the definition's workflow state label and
+  translated lifecycle words.
+- Relationship kinds were shown as `Owned Line Collection` or `Many To Many`; they now read as record lines,
+  one linked record or linked records, translated.
+- Workflow action buttons appended the transition handle (`Submit for review → Submit`); the action's own
+  label now stands alone.
+- A refused record rule (such as a document total that disagrees with its lines) left the form saying
+  "review the marked fields" with nothing marked; the rule's declared message is now listed in the summary.
+
+Residual debt the journeys record rather than hide: an enum field shows its stored option (`paid`), because
+the definition language owned by `kumwe/business-definition` declares options without labels; a reference
+chosen through the chooser reads "Selected option" rather than the chosen item's name until it is saved;
+and every declared workflow action is offered whatever the record's state, with the record service refusing
+one that cannot fire, because action metadata does not yet disclose each transition's source state.

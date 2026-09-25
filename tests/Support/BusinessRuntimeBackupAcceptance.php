@@ -116,6 +116,7 @@ final class BusinessRuntimeBackupAcceptance
         NeutralBusinessFixture::seedBackupGraph($container, $context);
         self::ensureAuditEvidence($container, $context);
         RestoreSecurityAcceptance::seed($container, $context);
+        RestoreApprovalAcceptance::seed($container, $context);
         RestoredWork::seedSchedule($container, $context, self::DRILL_SCHEDULE, self::DRILL_QUEUE);
         $manifest = self::manifest($container, $context);
         $encoded = CanonicalDefinitionJson::encode($manifest);
@@ -144,6 +145,7 @@ final class BusinessRuntimeBackupAcceptance
 
         self::executeRestoredCommand($container, $context);
         $security = RestoreSecurityAcceptance::accept($container);
+        $approval = RestoreApprovalAcceptance::accept($container);
         $work = RestoredWork::execute($container, self::DRILL_SCHEDULE, self::DRILL_QUEUE);
         $sessionsRemaining = RestoreSecurityAcceptance::assertExpiredSessionsPurged($container);
         $evidence = self::recordRecoveryEvidence($container, $context);
@@ -154,6 +156,7 @@ final class BusinessRuntimeBackupAcceptance
             'typed_update_replayed' => true,
             'secret_plaintext_recovered' => true,
             'security_acceptance' => $security,
+            'approval_acceptance' => $approval,
             'sessions_after_purge' => $sessionsRemaining,
             'work_executed' => $work,
             'recovery_evidence_id' => $evidence,
@@ -419,6 +422,7 @@ final class BusinessRuntimeBackupAcceptance
             'generated_tables' => $generated,
             'control_tables' => $control,
             'identity_security' => RestoreSecurityAcceptance::manifest($container),
+            'approval_security' => RestoreApprovalAcceptance::manifest($container),
             'standalone_record' => self::standaloneState($container, $database, $schemas, $records, $context),
             'relationship_graph' => self::relationshipGraphState(
                 $database,
