@@ -248,6 +248,21 @@ final class TestKernelFactory
         if ($principal === null) {
             throw new RuntimeException('The integration administrator could not be authenticated.');
         }
+
+        return self::steppedContextFor($principal);
+    }
+
+    /**
+     * Build the context the access screen hands in for one authenticated account after a consumed step-up.
+     *
+     * @param   AuthenticatedPrincipal  $principal  Account whose own step-up proof the context carries.
+     *
+     * @return  ExecutionContext  Multi-factor administrator context carrying a step-up proof.
+     *
+     * @since   2.0.0
+     */
+    public static function steppedContextFor(AuthenticatedPrincipal $principal): ExecutionContext
+    {
         $session = Uuid::uuid7()->toString();
         $now = new DateTimeImmutable('now', new DateTimeZone('UTC'));
 
