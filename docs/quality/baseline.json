@@ -3,7 +3,7 @@
     "work_package": "P0-A",
     "authority": "docs/roadmap/README.md",
     "note": "Every figure below is derived from the repository at the recorded commit. Nothing is typed by hand, nothing reads the clock or the machine, and running the generator twice at one commit produces the same document. composer baseline:check fails when it drifts.",
-    "commit": "cbeb678d342100e44e55d523f6dad7d4adb8ddeb",
+    "commit": "1f7b222d531bcd636c545e8b9a27a73873c7e5fa",
     "recorded_at": "2026-09-25",
     "recorded_from": [],
     "toolchain": {
@@ -27,20 +27,20 @@
     },
     "tests": {
         "architecture": {
-            "files": 64,
-            "test_methods": 360
+            "files": 65,
+            "test_methods": 369
         },
         "functional": {
             "files": 19,
             "test_methods": 56
         },
         "integration": {
-            "files": 157,
-            "test_methods": 568
+            "files": 166,
+            "test_methods": 584
         },
         "unit": {
-            "files": 492,
-            "test_methods": 2535
+            "files": 504,
+            "test_methods": 2562
         }
     },
     "coverage": {
@@ -304,6 +304,11 @@
             },
             {
                 "method": "GET",
+                "path": "/api/v1/content-types/{id}/versions/{version}/composition",
+                "name": "api.v1.content-types.composition.read"
+            },
+            {
+                "method": "GET",
                 "path": "/api/v1/content",
                 "name": "api.v1.content.collection"
             },
@@ -530,12 +535,15 @@
             "audit:verify",
             "automation",
             "business-approval",
+            "business-bulk",
             "business-definition",
             "business-periods",
             "business-record",
             "business-record-rekey",
             "business-report",
             "business-schema",
+            "business-schema-evidence",
+            "business-security",
             "content",
             "content-model",
             "database:migrate",
@@ -568,16 +576,19 @@
             "security-events",
             "settings",
             "studio-authoring",
+            "studio-blueprint",
+            "studio-composition",
             "theme:administrator:recover",
             "token:create",
             "user:create-admin",
-            "user:recover-credentials"
+            "user:recover-credentials",
+            "wording"
         ],
         "openapi": {
             "title": "Kumwe App API",
             "version": "1.1.0",
-            "paths": 104,
-            "operations": 135
+            "paths": 109,
+            "operations": 142
         },
         "migrations": [
             "20260807170000_database_driven_presentation",
