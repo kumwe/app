@@ -110,7 +110,12 @@ final class ExtensionStudioPreviewRendererIntegrationTest extends TestCase
                 new DateTimeImmutable('+1 year'),
             );
             $archives[] = $baseArchive = ManifestSixExtensionFixture::package($identifier, '1.0.0', false);
-            $manager->install($baseArchive, $context, $keyId, ManifestSixExtensionFixture::signature($baseArchive, $secretKey));
+            $manager->install(
+                $baseArchive,
+                $context,
+                $keyId,
+                ManifestSixExtensionFixture::signature($baseArchive, $secretKey),
+            );
             $installed[] = $identifier;
             $manager->activate($identifier, $context);
             $trust->synchronizeRuntimeMaterialization();
