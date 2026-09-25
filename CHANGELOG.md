@@ -227,7 +227,10 @@ portfolio, soaks, the independent review and the out-of-process extension runtim
   distrust, and each Studio operation, deployment document and published render decides its renderer registry
   once. Only lifecycle mutators take the lock. Revoked and lapsed-key releases still never render; MariaDB and
   PostgreSQL tests hold the lock from a second session to prove both, and that the watcher's no-change pass never
-  contends (#152).
+  contends. The replica's memo of its verified local publication is now keyed on the signed verification
+  marker's bytes rather than file metadata: two equal-size publications written within one second could reuse
+  the freed inode and share every `stat` field, so a freshly booted process loaded the superseded generation
+  (#152).
 
 <!-- #152 in-flight streams. Each lands its entries above this comment, citing the acceptance-record
      identifiers it flips, when its branch merges into platform/v2-runtime-completion:
