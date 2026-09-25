@@ -1945,8 +1945,10 @@
         "Kumwe\\App\\BusinessReporting\\Application\\ExportAttemptPublisher": {
             "kind": "class",
             "layer": "application",
-            "surface": "39a611fd9996cfa265c35b78",
-            "growth": null
+            "surface": "10e6ba941aa37a9adfcb61d5",
+            "growth": {
+                "record": "KUMWE-CGR-2026-004"
+            }
         },
         "Kumwe\\App\\BusinessReporting\\Application\\ExportDownload": {
             "kind": "class",
@@ -1969,7 +1971,7 @@
         "Kumwe\\App\\BusinessReporting\\Application\\ExportGenerationService": {
             "kind": "class",
             "layer": "application",
-            "surface": "0d7e1c1de35f0cedbcb2b5e3",
+            "surface": "f940b8ff2e2cd49f1c9035b7",
             "growth": {
                 "record": "KUMWE-CGR-2026-004"
             }
@@ -1998,6 +2000,22 @@
             "surface": "0aa552f0b543de5855baf4b8",
             "growth": {
                 "record": "KUMWE-CGR-2026-004"
+            }
+        },
+        "Kumwe\\App\\BusinessReporting\\Application\\ExportSiteByteBudget": {
+            "kind": "interface",
+            "layer": "application",
+            "surface": "ef8222f1837e51b96f207c8c",
+            "growth": {
+                "record": "KUMWE-CGR-2026-043"
+            }
+        },
+        "Kumwe\\App\\BusinessReporting\\Application\\ExportSiteByteBudgetExhausted": {
+            "kind": "class",
+            "layer": "application",
+            "surface": "2a2a1283c710739c03cdfe6b",
+            "growth": {
+                "record": "KUMWE-CGR-2026-043"
             }
         },
         "Kumwe\\App\\BusinessReporting\\Application\\ExportVersionConflict": {
@@ -2201,6 +2219,18 @@
             "layer": "infrastructure",
             "surface": "3a7b6db5543a902e46161522",
             "growth": null
+        },
+        "Kumwe\\App\\BusinessReporting\\Infrastructure\\DoctrineExportSiteByteBudget": {
+            "kind": "class",
+            "layer": "infrastructure",
+            "surface": "774efe49e2ffeb9cfac9de93",
+            "growth": {
+                "classification": "host-infrastructure",
+                "implements": [
+                    "Kumwe\\App\\BusinessReporting\\Application\\ExportSiteByteBudget"
+                ],
+                "extends": null
+            }
         },
         "Kumwe\\App\\BusinessReporting\\Infrastructure\\DoctrineProjectionEventSequencer": {
             "kind": "class",
@@ -5822,6 +5852,18 @@
             "layer": "infrastructure",
             "surface": "aef69700def9493c2ac2def9",
             "growth": null
+        },
+        "Kumwe\\App\\Infrastructure\\Persistence\\Migration\\ExportSiteByteBudgetMigration": {
+            "kind": "class",
+            "layer": "infrastructure",
+            "surface": "aef69700def9493c2ac2def9",
+            "growth": {
+                "classification": "host-infrastructure",
+                "implements": [
+                    "Kumwe\\App\\Infrastructure\\Persistence\\Migration\\RepeatableMigration"
+                ],
+                "extends": null
+            }
         },
         "Kumwe\\App\\Infrastructure\\Persistence\\Migration\\ExtensionContributionCatalogMigration": {
             "kind": "class",
