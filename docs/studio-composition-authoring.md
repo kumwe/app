@@ -56,7 +56,10 @@ closed capability projection and return context, and answers every operation thr
 - `save-item`, `save-as-new-type` and `save-new-type-version` as separately planned PHP transactions with
   visible consequences, value exclusion, an immutable successor type/Model/Blueprint, expected-revision
   conflicts, idempotent replay and audit through the Producer mutation boundary; the session records the start
-  it opened with and declares a constant set of save outcomes, so Studio reconciles every accepted save;
+  it opened with and declares a constant set of save outcomes, so Studio reconciles every accepted save. A
+  session without a recorded start (a context opened before migration `20260924060000_studio_content_authoring_start`)
+  is refused with `studio.authoring/start-required` before any plan or write; starting it again, or reopening the
+  editor, records the start. Contexts expire with the administrator session, so no data migration is needed;
 - a successor type version keeps its reusable type's Blueprint identity with a new revision, and a stored
   reusable Blueprint locks exactly the blocks it composes, each of which must have a live renderer;
 - inline, minimized, maximized and fullscreen presentation of the same session, and a deterministic return to

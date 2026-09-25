@@ -668,17 +668,19 @@ final class ContentStudioAuthoringJourneyIntegrationTest extends TestCase
     }
 
     /**
-     * A session whose start was never recorded reports the start its target and loaded state imply.
+     * A session whose start is not recorded plans and commits nothing until it starts again.
      *
-     * A context opened before starts were recorded carries no start source. Its save result still reports
-     * the start the session's snapshot declared: an edit reports the existing item, and a create that saves
-     * a new reusable type reports the type it loaded, or the blank canvas when it loaded none.
+     * A context opened before starts were recorded carries no start source. Guessing that start after a
+     * durable effect could report a start the session never declared, so the host refuses the plan and the
+     * commit with `studio.authoring/start-required` before any write: the item keeps its revision and no type
+     * is created. Starting the session again records its start, which is the whole migration path for such a
+     * context, and the same save is then accepted.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    public function testASessionWithoutARecordedStartReportsTheStartItsTargetImplies(): void
+    public function testASessionWithoutARecordedStartIsRefusedWithoutADurableEffect(): void
     {
         $container = TestKernelFactory::create(Environment::fromGlobals());
         $context = self::administratorContext($container);
@@ -697,33 +699,7 @@ final class ContentStudioAuthoringJourneyIntegrationTest extends TestCase
             ['body' => 'Before the save.'],
         );
         $definition = $models->contentType($context, $record->contentTypeId, $record->contentTypeVersion);
-        $item = static function (stdClass $snapshot): stdClass {
-            $entry = self::clone($snapshot->state->entry);
-            $entry->values->title = 'Unrecorded start item';
-
-            return (object) ['outcome' => 'save-item', 'entry' => $entry];
-        };
-        $newType = static function (stdClass $snapshot, string $field): stdClass {
-            $model = self::clone($snapshot->state->model);
-            $model->fields[] = self::dataField($field, ucfirst($field));
-
-            return (object) [
-                'outcome' => 'save-as-new-type',
-                'label' => (object) [
-                    'key' => 'kumwe.app/journey-unrecorded-type',
-                    'defaultMessage' => 'Unrecorded start type ' . bin2hex(random_bytes(3)),
-                ],
-                'authoringPolicy' => (object) [
-                    'modes' => ['model', 'blueprint', 'content'],
-                    'itemComposition' => 'denied',
-                ],
-                'model' => $model,
-                'blueprint' => self::clone($snapshot->state->blueprint),
-            ];
-        };
-        // The blank session publishes the reusable type the from-type session then starts from.
-        $createdType = null;
-        foreach (['blank', 'from-type', 'existing'] as $kind) {
+        foreach (['blank', 'existing'] as $kind) {
             $target = $kind === 'existing'
                 ? $targets->edit($context, $record, $definition)
                 : $targets->create($context);
@@ -732,55 +708,52 @@ final class ContentStudioAuthoringJourneyIntegrationTest extends TestCase
             $deployment = json_decode($configuration->configurationJson, false, 32, JSON_THROW_ON_ERROR);
             self::assertInstanceOf(stdClass::class, $deployment);
             $resourceContext = $deployment->session->resourceContext;
-            $dispatch = self::dispatcher(
-                $hosts,
-                $context,
-                $resourceContext->key,
-                $deployment->session->sessionGeneration,
-            );
+            $key = $resourceContext->key;
+            $generation = $deployment->session->sessionGeneration;
+            $dispatch = self::dispatcher($hosts, $context, $key, $generation);
             $dispatch('authoring/resolve-target', 'request', (object) [
                 'targetId' => $deployment->launch->targetId,
                 'intent' => $kind === 'existing' ? 'edit' : 'create',
                 'resourceContext' => $resourceContext,
                 'requestedPresentation' => 'inline',
             ], false);
-            $source = (object) ['kind' => $kind];
-            if ($kind === 'from-type') {
-                self::assertInstanceOf(stdClass::class, $createdType);
-                $source->type = (object) [
-                    'id' => $createdType->id,
-                    'version' => $createdType->version,
-                    'revision' => $createdType->revision,
-                ];
-            }
-            $snapshot = $dispatch('authoring/start', 'request', (object) [
+            $start = (object) [
                 'targetId' => $deployment->launch->targetId,
                 'resourceContext' => $resourceContext,
-                'source' => $source,
+                'source' => (object) ['kind' => $kind],
                 'presentation' => 'inline',
-            ], true);
-            self::assertEquals($source, $snapshot->start);
-
-            // The context forgets its start, as a context opened before starts were recorded never had one.
-            $forgotten = $database->executeStatement(sprintf(
-                'UPDATE %s SET start_source = NULL WHERE context_key = ?',
-                $tables->quoted('studio_content_authoring_contexts'),
-            ), [self::contextKeyOf($container, $resourceContext->key)]);
-            self::assertSame(1, $forgotten, $kind);
-
-            $draft = match ($kind) {
-                'blank' => $newType($snapshot, 'summary'),
-                'from-type' => $newType($snapshot, 'teaser'),
-                default => $item($snapshot),
-            };
-            $plan = $dispatch('authoring/plan-save', 'intent', (object) [
+            ];
+            $snapshot = $dispatch('authoring/start', 'request', $start, true);
+            if ($kind === 'blank') {
+                $model = self::clone($snapshot->state->model);
+                $model->fields[] = self::dataField('summary', 'Summary');
+                $draft = (object) [
+                    'outcome' => 'save-as-new-type',
+                    'label' => (object) [
+                        'key' => 'kumwe.app/journey-unrecorded-type',
+                        'defaultMessage' => 'Unrecorded start type ' . bin2hex(random_bytes(3)),
+                    ],
+                    'authoringPolicy' => (object) [
+                        'modes' => ['model', 'blueprint', 'content'],
+                        'itemComposition' => 'denied',
+                    ],
+                    'model' => $model,
+                    'blueprint' => self::clone($snapshot->state->blueprint),
+                ];
+            } else {
+                $entry = self::clone($snapshot->state->entry);
+                $entry->values->title = 'Unrecorded start item';
+                $draft = (object) ['outcome' => 'save-item', 'entry' => $entry];
+            }
+            $intent = (object) [
                 'contractVersion' => '0.1-draft',
                 'kind' => 'authoring-save-intent',
                 'sessionId' => $snapshot->sessionId,
                 'expected' => $snapshot->state->coordinates,
                 'draft' => $draft,
-            ], false);
-            $result = $dispatch('authoring/' . $draft->outcome, 'request', (object) [
+            ];
+            $plan = $dispatch('authoring/plan-save', 'intent', $intent, false);
+            $request = (object) [
                 'contractVersion' => '0.1-draft',
                 'kind' => 'authoring-' . $draft->outcome . '-request',
                 'plan' => (object) [
@@ -790,10 +763,53 @@ final class ContentStudioAuthoringJourneyIntegrationTest extends TestCase
                 ],
                 'acceptedConsequences' => self::codes($plan),
                 'draft' => $draft,
-            ], true);
+            ];
+
+            // The context forgets its start, as a context opened before starts were recorded never had one.
+            $forgotten = $database->executeStatement(sprintf(
+                'UPDATE %s SET start_source = NULL WHERE context_key = ?',
+                $tables->quoted('studio_content_authoring_contexts'),
+            ), [self::contextKeyOf($container, $key)]);
+            self::assertSame(1, $forgotten, $kind);
+            $types = count($models->contentTypes($context));
+            $version = $content->get($context, $record->entry->id())->entry->version();
+
+            $unplanned = self::respond(
+                $hosts,
+                $context,
+                $key,
+                $generation,
+                'authoring/plan-save',
+                'intent',
+                $intent,
+                false,
+            );
+            self::assertSame('conflict', $unplanned->refusalCategory, $kind . ': ' . $unplanned->body);
+            self::assertStringContainsString('studio.authoring/start-required', $unplanned->body);
+            $unsaved = self::respond(
+                $hosts,
+                $context,
+                $key,
+                $generation,
+                'authoring/' . $draft->outcome,
+                'request',
+                $request,
+                true,
+            );
+            self::assertSame('conflict', $unsaved->refusalCategory, $kind . ': ' . $unsaved->body);
+            self::assertStringContainsString('studio.authoring/start-required', $unsaved->body);
+            self::assertCount($types, $models->contentTypes($context), $kind . ' created no type.');
+            self::assertSame(
+                $version,
+                $content->get($context, $record->entry->id())->entry->version(),
+                $kind . ' left the item at its revision.',
+            );
+
+            // Starting again records the start, and the same save is then accepted.
+            self::assertEquals($snapshot->start, $dispatch('authoring/start', 'request', $start, true)->start);
+            $result = $dispatch('authoring/' . $draft->outcome, 'request', $request, true);
             self::assertSame($draft->outcome, $result->outcome, $kind);
             self::assertEquals($snapshot->start, $result->session->start, $kind);
-            $createdType ??= $result->session->type;
         }
     }
 
