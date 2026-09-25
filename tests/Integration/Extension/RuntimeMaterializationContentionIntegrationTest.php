@@ -155,4 +155,35 @@ final class RuntimeMaterializationContentionIntegrationTest extends TestCase
         self::assertIsString($after);
         self::assertNotSame($before, $after, 'The lease must still be renewed outside a transaction.');
     }
+
+    /**
+     * Prove every rapid republication is read back as itself, never as the previous generation.
+     *
+     * Successive publications with the same action differ only in their generation, so while the number of
+     * digits stays the same their local files have equal sizes, are written within the same second, and the
+     * write-then-rename replacement can reuse the inode just freed. A memo keyed on that `stat` metadata served
+     * the previous, still-verified document for the new generation, and a freshly booted kernel loaded an
+     * extension set that no longer existed. The memo is now keyed on the signed marker's bytes.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testRapidRepublicationIsNeverReadBackAsThePreviousGeneration(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $compiler = $container->get(ExtensionRuntimeMapCompiler::class);
+        self::assertInstanceOf(ExtensionRuntimeMapCompiler::class, $compiler);
+        $compiler->reconcileAndMaterialize();
+
+        for ($attempt = 0; $attempt < 12; ++$attempt) {
+            $published = $compiler->advance('test.republish');
+            self::assertSame($published, $compiler->materialize());
+            self::assertSame(
+                $published,
+                $compiler->inspectLocal()->generation,
+                sprintf('Republication %d was read back as an older generation.', $attempt),
+            );
+        }
+    }
 }
