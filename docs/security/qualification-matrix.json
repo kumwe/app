@@ -142,9 +142,9 @@
                             "proves": "Break-glass console recovery is pinned at the ceiling for grant-holding accounts, pending a maintainer decision."
                         },
                         {
-                            "test": "tests/Integration/Identity/IdentityRecoveryMachineEquivalenceIntegrationTest.php::testRecoveryActsLandOnTheServiceWithTheScreensAuditAction",
+                            "test": "tests/Integration/Identity/IdentityRecoveryMachineEquivalenceIntegrationTest.php::testTheScreensSteppedContextStillReachesTheRecoveryActs",
                             "job": ".github/workflows/ci.yml#database",
-                            "proves": "Recovery acts from REST, the console and MCP land on the one audited service."
+                            "proves": "The access screen's stepped-up context still reaches every audited recovery act: password reset, second-factor retirement and session termination."
                         }
                     ]
                 },
@@ -945,9 +945,9 @@
                             "proves": "A narrow credential cannot create through any of the three machine adapters."
                         },
                         {
-                            "test": "tests/Integration/Identity/IdentityRecoveryMachineEquivalenceIntegrationTest.php::testEverySurfaceRefusesMissingAuthorityAndABlankReason",
+                            "test": "tests/Integration/Identity/IdentityRecoveryMachineEquivalenceIntegrationTest.php::testStepUpGatedRecoveryActsAreRefusedOnEveryMachineSurface",
                             "job": ".github/workflows/ci.yml#database",
-                            "proves": "REST, the console and MCP refuse missing authority identically for identity recovery acts."
+                            "proves": "No machine credential reaches a step-up-gated recovery act: REST and MCP publish none and the console is refused without a human step-up proof."
                         },
                         {
                             "test": "tests/Functional/Security/CredentialTakeoverCeilingTest.php::testAUserManagerCannotTakeOverAStrongerAccount",
