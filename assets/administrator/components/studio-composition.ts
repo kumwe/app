@@ -667,9 +667,19 @@ interface PreviewRenderAttempt {
 
 function createStagingPreviewFrame(active: HTMLIFrameElement): HTMLIFrameElement {
   const candidate = document.createElement('iframe');
-  const omitted = new Set(['data-studio-preview', 'hidden', 'slot', 'src']);
+  // The frame's viewport size lives in its inline style, which the shell writes through the CSSOM.
+  // Copying it as a `style` attribute would be refused by `style-src-attr 'none'`, leaving the swapped
+  // frame at its stylesheet width, so the declarations are carried across through the CSSOM instead.
+  const omitted = new Set(['data-studio-preview', 'hidden', 'slot', 'src', 'style']);
   for (const attribute of active.attributes) {
     if (!omitted.has(attribute.name)) candidate.setAttribute(attribute.name, attribute.value);
+  }
+  for (const property of Array.from(active.style)) {
+    candidate.style.setProperty(
+      property,
+      active.style.getPropertyValue(property),
+      active.style.getPropertyPriority(property),
+    );
   }
   candidate.hidden = true;
   return candidate;
