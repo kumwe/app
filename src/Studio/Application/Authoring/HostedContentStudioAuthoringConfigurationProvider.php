@@ -248,7 +248,11 @@ final readonly class HostedContentStudioAuthoringConfigurationProvider implement
                 $snapshot->permissions,
             );
             $module = $this->assets->locate('browser-module');
-            $document = $this->deployment($context, $session, $csrfToken);
+            // One projection answers every catalog member the deployment carries, so its payloads,
+            // generation and session locks cannot come from two different renderer registry decisions.
+            $document = $this->catalog->consistently(
+                fn (): stdClass => $this->deployment($context, $session, $csrfToken),
+            );
             $json = $this->emitter->document(self::MOUNT_ID, $document);
         } catch (
             ContentStudioAuthoringContextRefused

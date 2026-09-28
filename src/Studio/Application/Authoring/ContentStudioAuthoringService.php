@@ -161,6 +161,29 @@ final readonly class ContentStudioAuthoringService
         StudioHostSessionSnapshot $snapshot,
         stdClass $request,
     ): stdClass {
+        return $this->catalog->consistently(
+            fn (): stdClass => $this->resolveTargetOperation($context, $snapshot, $request),
+        );
+    }
+
+    /**
+     * Perform `resolveTarget` inside the one contribution decision its public entry opened.
+     *
+     * Resolve the declared target for the session's exact resource and intent.
+     *
+     * @param   ExecutionContext           $context   Authenticated administrator request.
+     * @param   StudioHostSessionSnapshot  $snapshot  Authorized host session for this dispatch.
+     * @param   stdClass                   $request   Schema-valid `authoring-target` resolve request.
+     *
+     * @return  stdClass  Schema-valid `authoring-target` resolution.
+     *
+     * @since   2.0.0
+     */
+    private function resolveTargetOperation(
+        ExecutionContext $context,
+        StudioHostSessionSnapshot $snapshot,
+        stdClass $request,
+    ): stdClass {
         $session = $this->session($context, $snapshot, true);
         $this->assertTargetAndContext($session, $request->targetId ?? null, $request->resourceContext ?? null);
         if (($request->intent ?? null) !== $session->target->intent->value) {
@@ -193,8 +216,34 @@ final readonly class ContentStudioAuthoringService
      *
      * @since   2.0.0
      */
-    public function listTypes(ExecutionContext $context, StudioHostSessionSnapshot $snapshot, stdClass $query): stdClass
-    {
+    public function listTypes(
+        ExecutionContext $context,
+        StudioHostSessionSnapshot $snapshot,
+        stdClass $query,
+    ): stdClass {
+        return $this->catalog->consistently(
+            fn (): stdClass => $this->listTypesOperation($context, $snapshot, $query),
+        );
+    }
+
+    /**
+     * Perform `listTypes` inside the one contribution decision its public entry opened.
+     *
+     * List the reusable Content types the actor may start a new item from.
+     *
+     * @param   ExecutionContext           $context   Authenticated administrator request.
+     * @param   StudioHostSessionSnapshot  $snapshot  Authorized host session for this dispatch.
+     * @param   stdClass                   $query     Schema-valid `reusable-content-type` list query.
+     *
+     * @return  stdClass  Schema-valid `reusable-content-type` list page.
+     *
+     * @since   2.0.0
+     */
+    private function listTypesOperation(
+        ExecutionContext $context,
+        StudioHostSessionSnapshot $snapshot,
+        stdClass $query,
+    ): stdClass {
         $session = $this->session($context, $snapshot, true);
         $this->assertTargetAndContext($session, $query->targetId ?? null, $query->resourceContext ?? null);
         $limit = $query->limit ?? null;
@@ -265,8 +314,34 @@ final readonly class ContentStudioAuthoringService
      *
      * @since   2.0.0
      */
-    public function start(ExecutionContext $context, StudioHostSessionSnapshot $snapshot, stdClass $request): stdClass
-    {
+    public function start(
+        ExecutionContext $context,
+        StudioHostSessionSnapshot $snapshot,
+        stdClass $request,
+    ): stdClass {
+        return $this->catalog->consistently(
+            fn (): stdClass => $this->startOperation($context, $snapshot, $request),
+        );
+    }
+
+    /**
+     * Perform `start` inside the one contribution decision its public entry opened.
+     *
+     * Open the coordinated authoring session for one exact start source.
+     *
+     * @param   ExecutionContext           $context   Authenticated administrator request.
+     * @param   StudioHostSessionSnapshot  $snapshot  Authorized host session for this dispatch.
+     * @param   stdClass                   $request   Schema-valid `authoring-session` start request.
+     *
+     * @return  stdClass  Schema-valid `authoring-session` snapshot.
+     *
+     * @since   2.0.0
+     */
+    private function startOperation(
+        ExecutionContext $context,
+        StudioHostSessionSnapshot $snapshot,
+        stdClass $request,
+    ): stdClass {
         $session = $this->session($context, $snapshot, true);
         $this->assertTargetAndContext($session, $request->targetId ?? null, $request->resourceContext ?? null);
         $source = $request->source ?? null;
@@ -319,8 +394,34 @@ final readonly class ContentStudioAuthoringService
      *
      * @since   2.0.0
      */
-    public function planSave(ExecutionContext $context, StudioHostSessionSnapshot $snapshot, stdClass $intent): stdClass
-    {
+    public function planSave(
+        ExecutionContext $context,
+        StudioHostSessionSnapshot $snapshot,
+        stdClass $intent,
+    ): stdClass {
+        return $this->catalog->consistently(
+            fn (): stdClass => $this->planSaveOperation($context, $snapshot, $intent),
+        );
+    }
+
+    /**
+     * Perform `planSave` inside the one contribution decision its public entry opened.
+     *
+     * Plan one save outcome against live state and disclose its consequences.
+     *
+     * @param   ExecutionContext           $context   Authenticated administrator request.
+     * @param   StudioHostSessionSnapshot  $snapshot  Authorized host session for this dispatch.
+     * @param   stdClass                   $intent    Schema-valid `authoring-save` intent.
+     *
+     * @return  stdClass  Schema-valid `authoring-save` plan.
+     *
+     * @since   2.0.0
+     */
+    private function planSaveOperation(
+        ExecutionContext $context,
+        StudioHostSessionSnapshot $snapshot,
+        stdClass $intent,
+    ): stdClass {
         $session = $this->session($context, $snapshot, false);
         if (($intent->sessionId ?? null) !== $session->sessionId()) {
             StudioProducerError::refuse('validation-failed', 'studio.authoring/session-mismatch');
@@ -348,6 +449,29 @@ final readonly class ContentStudioAuthoringService
      * @since   2.0.0
      */
     public function saveItem(
+        ExecutionContext $context,
+        StudioHostSessionSnapshot $snapshot,
+        stdClass $request,
+    ): stdClass {
+        return $this->catalog->consistently(
+            fn (): stdClass => $this->saveItemOperation($context, $snapshot, $request),
+        );
+    }
+
+    /**
+     * Perform `saveItem` inside the one contribution decision its public entry opened.
+     *
+     * Commit the item transaction one accepted plan authorizes.
+     *
+     * @param   ExecutionContext           $context   Authenticated administrator request.
+     * @param   StudioHostSessionSnapshot  $snapshot  Authorized host session for this dispatch.
+     * @param   stdClass                   $request   Schema-valid `authoring-save` item request.
+     *
+     * @return  stdClass  Schema-valid `authoring-save` result.
+     *
+     * @since   2.0.0
+     */
+    private function saveItemOperation(
         ExecutionContext $context,
         StudioHostSessionSnapshot $snapshot,
         stdClass $request,
@@ -441,6 +565,29 @@ final readonly class ContentStudioAuthoringService
         StudioHostSessionSnapshot $snapshot,
         stdClass $request,
     ): stdClass {
+        return $this->catalog->consistently(
+            fn (): stdClass => $this->saveNewTypeVersionOperation($context, $snapshot, $request),
+        );
+    }
+
+    /**
+     * Perform `saveNewTypeVersion` inside the one contribution decision its public entry opened.
+     *
+     * Publish an immutable successor version of the session's reusable type and adopt it.
+     *
+     * @param   ExecutionContext           $context   Authenticated administrator request.
+     * @param   StudioHostSessionSnapshot  $snapshot  Authorized host session for this dispatch.
+     * @param   stdClass                   $request   Schema-valid `authoring-save` new-type-version request.
+     *
+     * @return  stdClass  Schema-valid `authoring-save` result.
+     *
+     * @since   2.0.0
+     */
+    private function saveNewTypeVersionOperation(
+        ExecutionContext $context,
+        StudioHostSessionSnapshot $snapshot,
+        stdClass $request,
+    ): stdClass {
         $session = $this->session($context, $snapshot, false);
         $draft = $this->draft($request, 'save-new-type-version');
         $model = $draft->model ?? null;
@@ -503,6 +650,29 @@ final readonly class ContentStudioAuthoringService
      * @since   2.0.0
      */
     public function saveAsNewType(
+        ExecutionContext $context,
+        StudioHostSessionSnapshot $snapshot,
+        stdClass $request,
+    ): stdClass {
+        return $this->catalog->consistently(
+            fn (): stdClass => $this->saveAsNewTypeOperation($context, $snapshot, $request),
+        );
+    }
+
+    /**
+     * Perform `saveAsNewType` inside the one contribution decision its public entry opened.
+     *
+     * Create a new reusable type from the session's design, excluding every item value.
+     *
+     * @param   ExecutionContext           $context   Authenticated administrator request.
+     * @param   StudioHostSessionSnapshot  $snapshot  Authorized host session for this dispatch.
+     * @param   stdClass                   $request   Schema-valid `authoring-save` new-type request.
+     *
+     * @return  stdClass  Schema-valid `authoring-save` result.
+     *
+     * @since   2.0.0
+     */
+    private function saveAsNewTypeOperation(
         ExecutionContext $context,
         StudioHostSessionSnapshot $snapshot,
         stdClass $request,

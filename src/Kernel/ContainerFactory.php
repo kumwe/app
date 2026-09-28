@@ -2136,6 +2136,7 @@ final class ContainerFactory
         ): ContentStudioAuthoringCatalog => new ContentStudioAuthoringCatalog(
             self::service($container, StudioCompositionContributionCatalog::class),
             self::service($container, StudioCoreCatalog::class),
+            self::service($container, StudioBlockRendererRuntime::class),
         ), true);
         $container->share(
             StudioContextualAuthoringConfigurationProvider::class,
@@ -3145,6 +3146,7 @@ final class ContainerFactory
             $configuration->allowUnsignedLocalExtensions,
             self::service($container, PackageDefinitionSynchronizer::class),
             self::service($container, ExtensionRuntimeWithdrawal::class),
+            self::service($container, LoggerInterface::class),
         ), true);
         $container->share(RevocationListVerifier::class, new SodiumRevocationListVerifier(), true);
         $container->share(RevocationFeedSource::class, new StreamRevocationFeedSource(), true);

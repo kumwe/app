@@ -38,6 +38,8 @@ trait TrustFencedStudioPreviewRenderers
      *
      * @param   StudioPreviewBlockRenderer  $inner      Owner-local SDK implementation under test.
      * @param   string                      $extension  Canonical `vendor/name` owner of the implementation.
+     * @param   ?ExtensionExecutionGate     $execution  Boot-generation gate a test drives to withdraw the
+     *          owner mid-scenario; null for one that stays current.
      *
      * @return  TrustEnforcingStudioPreviewBlockRenderer  Exact production wrapper around the implementation.
      *
@@ -46,6 +48,7 @@ trait TrustFencedStudioPreviewRenderers
     protected static function trustFencedPreviewRenderer(
         StudioPreviewBlockRenderer $inner,
         string $extension,
+        ?ExtensionExecutionGate $execution = null,
     ): TrustEnforcingStudioPreviewBlockRenderer {
         $manifest = json_encode([
             'schema' => 1,
@@ -91,9 +94,6 @@ trait TrustFencedStudioPreviewRenderers
         ];
 
         $repository = self::createStub(TrustStoreRepository::class);
-        $repository->method('synchronizedLifecycle')->willReturnCallback(
-            static fn (callable $operation): mixed => $operation(),
-        );
         $repository->method('activeExtensions')->willReturn([$extension]);
         $repository->method('installedRelease')->willReturn($release);
         $repository->method('usable')->willReturn([
@@ -103,8 +103,10 @@ trait TrustFencedStudioPreviewRenderers
         $verifier->method('verify')->willReturn(true);
         $clock = self::createStub(ClockInterface::class);
         $clock->method('now')->willReturn(new DateTimeImmutable('2026-09-02T08:00:00+00:00'));
-        $execution = self::createStub(ExtensionExecutionGate::class);
-        $execution->method('isCurrent')->willReturn(true);
+        if ($execution === null) {
+            $execution = self::createStub(ExtensionExecutionGate::class);
+            $execution->method('isCurrent')->willReturn(true);
+        }
         $trust = new TrustStore(
             new DeterministicCanonicalEncoder(),
             $repository,

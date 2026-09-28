@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Unit\Studio\Application\Rendering;
 
+use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
+use Kumwe\App\Extension\Application\Trust\TrustStoreRepository;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\BusinessSurface\Presentation\Field\SdkFieldConfigurationAdmission;
 use Kumwe\App\Extension\Runtime\TrustEnforcingStudioPreviewBlockRenderer;
@@ -25,6 +27,7 @@ use Kumwe\Producer\Canonical\CanonicalJson;
 use Kumwe\Producer\Render\BindingResolution;
 use Kumwe\Producer\Render\BlockRenderer;
 use Kumwe\Producer\Render\BlockCoordinate;
+use Kumwe\Producer\Render\BlockRendererRegistry;
 use Kumwe\Producer\Render\CompositionRenderer;
 use Kumwe\Producer\Render\Enhancement;
 use Kumwe\Producer\Render\RenderContext;
@@ -33,6 +36,7 @@ use Kumwe\Producer\Render\RenderException;
 use Kumwe\Producer\Render\RenderResult;
 use Kumwe\Producer\Render\RenderState;
 use Kumwe\Producer\Schema\StudioContractResources;
+use Kumwe\App\Tests\Support\ResidentTrustFixtures;
 use Kumwe\App\Tests\Support\TrustFencedStudioPreviewRenderers;
 use Kumwe\Contribution\ContributionDefinition;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -58,6 +62,7 @@ use Kumwe\App\Tests\Support\DeterministicCanonicalEncoder;
  */
 final class StudioBlockRendererRuntimeTest extends TestCase
 {
+    use ResidentTrustFixtures;
     use TrustFencedStudioPreviewRenderers;
 
     /**
@@ -153,6 +158,110 @@ final class StudioBlockRendererRuntimeTest extends TestCase
         self::assertTrue($runtime->registry()->supports($coordinate));
         $registries->canonicalCompositionDocuments()->remove(ContributionOwner::core());
         self::assertFalse($runtime->registry()->supports($coordinate));
+    }
+
+    /**
+     * Prove one decision decides availability once per viewport, even when authority moves inside it.
+     *
+     * Every registry request a decision makes must describe the same renderer set, or the documents it
+     * emits disagree with each other. The pin is scoped: the next decision reads live authority again.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testOneDecisionPinsItsRegistryPerViewportAndTheNextDecisionRebuilds(): void
+    {
+        $current = true;
+        $reads = 0;
+        $execution = $this->createStub(ExtensionExecutionGate::class);
+        $execution->method('isCurrent')->willReturnCallback(static function () use (&$current, &$reads): bool {
+            ++$reads;
+
+            return $current;
+        });
+        [$registries, $coordinate] = self::extensionRuntime(
+            self::trustFencedPreviewRenderer(self::fixtureRenderer(), 'acme/shop', $execution),
+            false,
+        );
+        $runtime = new StudioBlockRendererRuntime($registries, new StudioContentFieldBlockRenderer());
+
+        $decided = $runtime->consistently(static function () use ($runtime, &$current): array {
+            $first = $runtime->registry();
+            $current = false;
+            $again = $runtime->registry();
+            $nested = $runtime->consistently(static fn (): BlockRendererRegistry => $runtime->registry());
+            $compact = $runtime->registry('compact');
+
+            return [$first, $again, $nested, $compact, $runtime->registry('compact')];
+        });
+
+        self::assertSame($decided[0], $decided[1], 'A decision must reuse the registry it first built.');
+        self::assertSame($decided[0], $decided[2], 'A nested decision must join the open one.');
+        self::assertTrue($decided[0]->supports($coordinate));
+        self::assertNotSame($decided[0], $decided[3], 'Each viewport is decided on its own.');
+        self::assertSame($decided[3], $decided[4]);
+        self::assertFalse($decided[3]->supports($coordinate), 'The compact registry was decided after the move.');
+        self::assertSame(3, $reads, 'Availability is read once per viewport, not once per request.');
+        self::assertFalse($runtime->registry()->supports($coordinate), 'The next decision must rebuild.');
+    }
+
+    /**
+     * Prove a decision that throws forgets its pinned registry, so nothing leaks into the next one.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAFailedDecisionForgetsItsPinnedRegistry(): void
+    {
+        [$registries] = self::extensionRuntime();
+        $runtime = new StudioBlockRendererRuntime($registries, new StudioContentFieldBlockRenderer());
+        $pinned = null;
+
+        try {
+            $runtime->consistently(static function () use ($runtime, &$pinned): never {
+                $pinned = $runtime->registry();
+
+                throw new \LogicException('decision refused');
+            });
+        } catch (\LogicException $refused) {
+            self::assertSame('decision refused', $refused->getMessage());
+        }
+
+        self::assertInstanceOf(BlockRendererRegistry::class, $pinned);
+        self::assertNotSame($pinned, $runtime->registry());
+        self::assertNotSame($runtime->registry(), $runtime->registry(), 'Outside a decision nothing is pinned.');
+    }
+
+    /**
+     * Prove an unreadable trust authority refuses the registry decision instead of dropping the renderer.
+     *
+     * Dropping it would silently narrow the projection and change the contribution generation for one
+     * request, which is exactly the flap that made Studio refuse sessions under load.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAnUnreadableTrustAuthorityRefusesTheDecisionInsteadOfDroppingTheRenderer(): void
+    {
+        $repository = $this->createStub(TrustStoreRepository::class);
+        $repository->method('lockGeneration')->willThrowException(new \RuntimeException('lock wait timeout'));
+        $renderer = new TrustEnforcingStudioPreviewBlockRenderer(
+            self::fixtureRenderer(),
+            self::probeTrustStore($repository),
+            self::scriptedGate(true),
+            'acme/shop',
+            self::probeRuntimeEntry(),
+        );
+        [$registries] = self::extensionRuntime($renderer, false);
+        $runtime = new StudioBlockRendererRuntime($registries, new StudioContentFieldBlockRenderer());
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('The extension trust authority could not be read');
+
+        $runtime->registry();
     }
 
     /**
@@ -635,5 +744,20 @@ final class StudioBlockRendererRuntimeTest extends TestCase
             new BlockCoordinate('acme.shop/grid', '1.0.0', 'grid-block-r1'),
             $renderer,
         ];
+    }
+
+    /**
+     * Build a bounded SDK implementation that emits one constant fixture fragment.
+     *
+     * @return  StudioPreviewBlockRenderer  Implementation a fence can wrap.
+     *
+     * @since   2.0.0
+     */
+    private static function fixtureRenderer(): StudioPreviewBlockRenderer
+    {
+        $renderer = self::createStub(StudioPreviewBlockRenderer::class);
+        $renderer->method('render')->willReturn(new StudioPreviewBlockFragment('div', 'acme-shop-grid', ''));
+
+        return $renderer;
     }
 }

@@ -15,10 +15,14 @@ use Psr\Http\Server\RequestHandlerInterface;
  * Extension and administrator routes are declared once while the application is composed and are never
  * withdrawn, so the router on its own cannot express that an extension was disabled or had its signing
  * key revoked afterwards. The manifest-backed route registries therefore
- * wrap every contributed handler in this one, which takes the installation-wide lifecycle lock and
- * re-runs trust enforcement per request. The route stops answering from the next request onwards, with
- * no router rebuild and no redeployment, and the refusal is allowed to propagate so the request fails
- * closed rather than reaching code the installation no longer trusts.
+ * wrap every contributed handler in this one, which re-runs trust enforcement per request. The route
+ * stops answering from the next request onwards, with no router rebuild and no redeployment, and the
+ * refusal is allowed to propagate so the request fails closed rather than reaching code the installation
+ * no longer trusts. The check reads committed trust authority and deliberately takes no lifecycle lock:
+ * that lock serializes mutators and is taken without waiting, so holding it here made two concurrent
+ * requests to any extension route refuse each other and let request traffic refuse a revocation. The
+ * extension tree a request executes is immutable per release version and is retired only after no live
+ * process lease still names it, so a concurrent install cannot rewrite it underneath the request.
  *
  * @since  2.0.0
  */
@@ -29,8 +33,7 @@ final readonly class TrustEnforcingRequestHandler implements RequestHandlerInter
      *
      * @param  RequestHandlerInterface  $inner      Handler invoked once the extension's trust has been
      *         confirmed for this request.
-     * @param  TrustStore               $trust      Trust boundary consulted per request, and the owner
-     *         of the lifecycle lock the check runs inside.
+     * @param  TrustStore               $trust      Trust boundary consulted per request.
      * @param  string                   $extension  `vendor/name` of the extension that contributed the
      *         route.
      *
@@ -46,10 +49,9 @@ final readonly class TrustEnforcingRequestHandler implements RequestHandlerInter
     /**
      * Enforce the owning extension's trust, then delegate the request to the wrapped handler.
      *
-     * Both the check and the delegation happen inside the lifecycle lock, so a request cannot be served
-     * from an extension tree that an install or uninstall is midway through replacing. Enforcement is
-     * not passive: an extension whose release no longer verifies is quarantined by this very request
-     * before the refusal is raised, which is what makes the failure stick for every later request too.
+     * Enforcement is not passive: an extension whose release no longer verifies is quarantined by this
+     * very request before the refusal is raised, which is what makes the failure stick for every later
+     * request too. A trust authority that cannot be read is refused as such and logged by the store.
      *
      * @param   ServerRequestInterface  $request  Request to serve once trust has been re-established.
      *
@@ -60,14 +62,14 @@ final readonly class TrustEnforcingRequestHandler implements RequestHandlerInter
      *          verification.
      * @throws  \InvalidArgumentException  When the extension identifier, or the package digest or
      *          signature stored on its release, cannot be parsed.
+     * @throws  \RuntimeException  When the trust authority cannot be read.
      *
      * @since   2.0.0
      */
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
-        return $this->trust->synchronizedLifecycle(function () use ($request): ResponseInterface {
-            $this->trust->enforceRuntimeTrust($this->extension);
-            return $this->inner->handle($request);
-        });
+        $this->trust->enforceRuntimeTrust($this->extension);
+
+        return $this->inner->handle($request);
     }
 }
