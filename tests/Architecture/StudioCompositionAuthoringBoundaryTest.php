@@ -194,6 +194,22 @@ final class StudioCompositionAuthoringBoundaryTest extends TestCase
             self::assertIsString($source);
             self::assertStringContainsString($marker, $source);
         }
+        $target = $journey['targetJourney'] ?? null;
+        self::assertIsArray($target);
+        self::assertSame('KUMWE_STUDIO_JOURNEY_LOCALE', $target['locale']['parameter'] ?? null);
+        foreach ($target['steps'] ?? [] as $step) {
+            self::assertIsArray($step);
+            self::assertNull($step['humanEvidence'] ?? null);
+            self::assertIsString($step['automationNote'] ?? null);
+            $evidence = $step['automatedEvidence'] ?? null;
+            if ($evidence === null) {
+                continue;
+            }
+            self::assertIsArray($evidence);
+            $source = file_get_contents($root . '/' . ($evidence['path'] ?? ''));
+            self::assertIsString($source);
+            self::assertStringContainsString("test('" . ($evidence['marker'] ?? "\0"), $source);
+        }
     }
 
     /**

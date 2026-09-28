@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Studio\Application\Preview;
 
+use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringContextAuthority;
+use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringContextRefused;
+use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringContextStale;
+use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringTarget;
 use Kumwe\App\Studio\Application\Host\StudioHostSessionSnapshot;
 use Kumwe\App\Studio\Application\Projection\StudioContentProjectionService;
 use Kumwe\App\Studio\Application\Projection\StudioProjectionRejected;
@@ -17,21 +21,29 @@ use stdClass;
  *
  * A Blueprint session proves direct artifact ownership and carries no entry values. A Content session
  * reuses AP-2 to read the projected model or entry, verifies that model's host-owned Blueprint binding,
- * and exposes only the projected values that survived Content's record and field disclosure policy.
+ * and exposes only the projected values that survived Content's record and field disclosure policy. A
+ * contextual Content authoring session names an opaque authoring context instead of a resource; the
+ * context authority re-resolves and re-authorizes the exact create or edit target behind it on every
+ * render, so a preview shows the stored item's own values (or no values for an item that is not created
+ * yet) and never a substituted entry.
  *
  * @since  2.0.0
  */
 final readonly class ContentStudioPreviewBindingSource implements StudioPreviewBindingSource
 {
     /**
-     * Bind preview resolution to the read-only authorized Content projection.
+     * Bind preview resolution to the read-only authorized Content projection and the context authority.
      *
-     * @param  StudioContentProjectionService  $content  Existing App-owned model and entry read boundary.
+     * @param  StudioContentProjectionService          $content   Existing App-owned model and entry read boundary.
+     * @param  ContentStudioAuthoringContextAuthority  $contexts  Opaque exact-target authority of contextual
+     *         Content authoring sessions.
      *
      * @since  2.0.0
      */
-    public function __construct(private StudioContentProjectionService $content)
-    {
+    public function __construct(
+        private StudioContentProjectionService $content,
+        private ContentStudioAuthoringContextAuthority $contexts,
+    ) {
     }
 
     /**
@@ -61,9 +73,13 @@ final readonly class ContentStudioPreviewBindingSource implements StudioPreviewB
         }
 
         try {
-            [$model, $values] = str_starts_with($snapshot->session->resourceId, 'content-entry:')
-                ? $this->entry($context, $snapshot->session->resourceId)
-                : $this->model($context, $snapshot->session->resourceId, $draft);
+            [$model, $values] = match (true) {
+                $snapshot->session->resourceKind === StudioResourceKind::ContentAuthoring
+                    => $this->authoring($context, $snapshot->session->resourceId),
+                str_starts_with($snapshot->session->resourceId, 'content-entry:')
+                    => $this->entry($context, $snapshot->session->resourceId),
+                default => $this->model($context, $snapshot->session->resourceId, $draft),
+            };
         } catch (StudioProjectionRejected) {
             throw new StudioPreviewRefused('forbidden', 'studio.preview/resource-refused');
         }
@@ -75,6 +91,60 @@ final readonly class ContentStudioPreviewBindingSource implements StudioPreviewB
         self::assertBlueprintBinding($model, $document);
 
         return new StudioPreviewBindingValues($values, new stdClass());
+    }
+
+    /**
+     * Resolve the exact target behind one contextual Content authoring session.
+     *
+     * A stale binding (the actor's approval generation moved since the mount) is followed rather than
+     * refused: a preview is a read that must show the live accepted target, and the authority has
+     * already re-authorized that target before reporting it as stale. A refused context, and a blank
+     * canvas whose reusable type does not exist yet, cannot be previewed.
+     *
+     * @param   ExecutionContext  $context     Authenticated App request authority.
+     * @param   string            $contextKey  Opaque authoring context key the host session is bound to.
+     *
+     * @return  array{0: stdClass, 1: stdClass}  Projected model and the stored entry values, or no values.
+     *
+     * @throws  StudioPreviewRefused  When the context is refused or names no persisted type.
+     *
+     * @since   2.0.0
+     */
+    private function authoring(ExecutionContext $context, string $contextKey): array
+    {
+        try {
+            $target = $this->contexts->resolve($context, $contextKey);
+        } catch (ContentStudioAuthoringContextStale $stale) {
+            $target = $stale->current;
+        } catch (ContentStudioAuthoringContextRefused) {
+            throw new StudioPreviewRefused('forbidden', 'studio.preview/resource-refused');
+        }
+        if ($target->entryId !== null) {
+            return $this->entry($context, $target->entryId);
+        }
+
+        return [$this->targetModel($context, $target), new stdClass()];
+    }
+
+    /**
+     * Project the exact reusable type a create target names, refusing a blank canvas.
+     *
+     * @param   ExecutionContext              $context  Authenticated App request authority.
+     * @param   ContentStudioAuthoringTarget  $target   Trusted create target.
+     *
+     * @return  stdClass  Projected content-model document.
+     *
+     * @throws  StudioPreviewRefused  When the target has no persisted reusable type to render.
+     *
+     * @since   2.0.0
+     */
+    private function targetModel(ExecutionContext $context, ContentStudioAuthoringTarget $target): stdClass
+    {
+        if ($target->modelId === null || $target->modelVersion === null) {
+            throw new StudioPreviewRefused('forbidden', 'studio.preview/resource-refused');
+        }
+
+        return $this->content->model($context, $target->modelId, $target->modelVersion);
     }
 
     /**

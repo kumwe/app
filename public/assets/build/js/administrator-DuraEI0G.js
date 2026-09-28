@@ -1,4 +1,4 @@
-const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["js/studio-composition-BVIIjemK.js","js/reveal-validation-g1jDnck7.js"])))=>i.map(i=>d[i]);
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["js/studio-composition-BDu5NkBu.js","js/reveal-validation-g1jDnck7.js","js/preview-identity-Bvgz1vbs.js","js/studio-launch-BR0M37x2.js"])))=>i.map(i=>d[i]);
 import { a as n, c as A, d as i$1, i as r, l as b, n as setupCopyValues, o as t, r as __decorate, s as i, t as setupValidationReveal } from "./reveal-validation-g1jDnck7.js";
 import { t as setupAppearance } from "./appearance-C0yRa8Z7.js";
 //#region assets/administrator/components/command-palette.ts
@@ -1095,7 +1095,7 @@ function setupPolicyStepFlows() {
 //#region \0vite/preload-helper.js
 var scriptRel = "modulepreload";
 var assetsURL = function(dep) {
-	return "/" + dep;
+	return "/assets/build/" + dep;
 };
 var seen = {};
 var __vitePreload = function preload(baseModule, deps, importerUrl) {
@@ -1258,12 +1258,12 @@ setupValidationReveal();
 setupNavigationTargets();
 setupPolicyStepFlows();
 if (document.querySelector("[data-studio-composition]") !== null) __vitePreload(async () => {
-	const { setupStudioComposition } = await import("./studio-composition-BVIIjemK.js");
+	const { setupStudioComposition } = await import("./studio-composition-BDu5NkBu.js");
 	return { setupStudioComposition };
-}, __vite__mapDeps([0,1])).then(({ setupStudioComposition }) => setupStudioComposition());
+}, __vite__mapDeps([0,1,2])).then(({ setupStudioComposition }) => setupStudioComposition());
 if (document.querySelector("[data-kumwe-studio][data-studio-module-url]") !== null) __vitePreload(async () => {
-	const { setupStudioLaunch } = await import("./studio-launch-D9Indt4A.js");
+	const { setupStudioLaunch } = await import("./studio-launch-BR0M37x2.js");
 	return { setupStudioLaunch };
-}, []).then(({ setupStudioLaunch }) => setupStudioLaunch());
+}, __vite__mapDeps([3,2])).then(({ setupStudioLaunch }) => setupStudioLaunch());
 //#endregion
 export { __vitePreload as t };

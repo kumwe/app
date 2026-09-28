@@ -5618,6 +5618,18 @@
             "surface": "3635ca67fec33f3b158d3fa0",
             "growth": null
         },
+        "Kumwe\\App\\Infrastructure\\Persistence\\Migration\\StudioContentAuthoringStartMigration": {
+            "kind": "class",
+            "layer": "infrastructure",
+            "surface": "aef69700def9493c2ac2def9",
+            "growth": {
+                "classification": "host-infrastructure",
+                "implements": [
+                    "Kumwe\\App\\Infrastructure\\Persistence\\Migration\\RepeatableMigration"
+                ],
+                "extends": null
+            }
+        },
         "Kumwe\\App\\Infrastructure\\Persistence\\Migration\\StudioContentProjectionMigration": {
             "kind": "class",
             "layer": "infrastructure",
@@ -6594,7 +6606,7 @@
         "Kumwe\\App\\Studio\\Application\\Authoring\\ContentStudioAuthoringCatalog": {
             "kind": "class",
             "layer": "application",
-            "surface": "e56b1cdf94290ae0a20c411c",
+            "surface": "6a18da6346d0718fc82de7c5",
             "growth": {
                 "record": "KUMWE-CGR-2026-001"
             }
@@ -6602,7 +6614,7 @@
         "Kumwe\\App\\Studio\\Application\\Authoring\\ContentStudioAuthoringContextAuthority": {
             "kind": "class",
             "layer": "application",
-            "surface": "543dfd5d7c09412b83199ed4",
+            "surface": "e35dca2f6af95d51ee1f6cbb",
             "growth": {
                 "record": "KUMWE-CGR-2026-001"
             }
@@ -6628,7 +6640,7 @@
         "Kumwe\\App\\Studio\\Application\\Authoring\\ContentStudioAuthoringContextRepository": {
             "kind": "interface",
             "layer": "application",
-            "surface": "7b2a169f814c38f3a99e8763",
+            "surface": "2a0f21ec0f5171beaaed11ef",
             "growth": {
                 "record": "KUMWE-CGR-2026-001"
             }
@@ -6704,7 +6716,7 @@
         "Kumwe\\App\\Studio\\Application\\Authoring\\HostedContentStudioAuthoringConfigurationProvider": {
             "kind": "class",
             "layer": "application",
-            "surface": "88f34653a75cbf32e111337b",
+            "surface": "29aca494d0f344a6e0da6649",
             "growth": {
                 "record": "KUMWE-CGR-2026-001"
             }
@@ -6810,7 +6822,7 @@
         "Kumwe\\App\\Studio\\Application\\Composition\\StudioContentCompositionService": {
             "kind": "class",
             "layer": "application",
-            "surface": "9d657850348e53801b9590b1",
+            "surface": "8317a0a2b4261bc52f213d06",
             "growth": {
                 "record": "KUMWE-CGR-2026-001"
             }
@@ -7156,8 +7168,10 @@
         "Kumwe\\App\\Studio\\Application\\Preview\\ContentStudioPreviewBindingSource": {
             "kind": "class",
             "layer": "application",
-            "surface": "9028bc4f81276463b800b979",
-            "growth": null
+            "surface": "690eb277fb1a54ac535a34f8",
+            "growth": {
+                "record": "KUMWE-CGR-2026-021"
+            }
         },
         "Kumwe\\App\\Studio\\Application\\Preview\\ContributedStudioPreviewBlock": {
             "kind": "class",
@@ -7588,7 +7602,7 @@
         "Kumwe\\App\\Studio\\Infrastructure\\Persistence\\DoctrineContentStudioAuthoringContextRepository": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "57cfdfe29b9b1bfe887e483c",
+            "surface": "206e7e4fec5de430d7136be5",
             "growth": {
                 "classification": "host-infrastructure",
                 "implements": [

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for zh-Hans, carrying 2507 messages.
+ * Compiled interface message catalogue for zh-Hans, carrying 2516 messages.
  *
  * Generated from zh-Hans.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1271,6 +1271,7 @@ return [
     'core.administrator.content_form.move_to' => '移至 {to}',
     'core.administrator.content_form.name_the_item_and_choose_the' => '为此条目命名，并选择编辑者可识别的稳定公开地址。',
     'core.administrator.content_form.no_workflow_action_is_available_for' => '您的权限和当前状态下没有可用的工作流操作。',
+    'core.administrator.content_form.preview_this_item' => '预览此项内容',
     'core.administrator.content_form.publication_timing' => '发布时间',
     'core.administrator.content_form.publish_at' => '发布时间',
     'core.administrator.content_form.reload_version' => '重新加载版本 {current_version}',
@@ -1284,6 +1285,14 @@ return [
     'core.administrator.content_form.studio_page_builder_is_ready' => 'Studio 页面构建器已就绪。',
     'core.administrator.content_form.studio_page_builder_loads_when_you_switch' => '切换到页面构建器时才会加载。',
     'core.administrator.content_form.studio_page_builder_unavailable_use_the' => '此内容上下文不支持 Studio 页面构建器。请使用下方的结构化编辑器；保存时 Kumwe 会保留确切的内容类型和版本。',
+    'core.administrator.content_form.studio_preview' => '已验证的预览',
+    'core.administrator.content_form.studio_preview_could_not_be_rendered' => '无法渲染预览。',
+    'core.administrator.content_form.studio_preview_frame' => '此项内容的已验证预览',
+    'core.administrator.content_form.studio_preview_is_ready' => '预览显示此项内容最近保存的编排。',
+    'core.administrator.content_form.studio_preview_is_rendering' => '正在渲染预览。',
+    'core.administrator.content_form.studio_preview_is_stale' => '自此次预览以来此项内容已更改；请重新预览。',
+    'core.administrator.content_form.studio_preview_needs_a_saved_item' => '预览前请先保存此项内容；预览仅显示已接受的修订版本。',
+    'core.administrator.content_form.studio_preview_shows_the_last_saved' => '预览通过与已发布页面相同的模板和主题路径渲染此项内容最近保存的编排。',
     'core.administrator.content_form.the_content_model_refused_these_values' => '内容模型拒绝了这些值。您输入的所有内容仍保留在下方；请更正此处列出的字段后重新保存。',
     'core.administrator.content_form.the_item_could_not_be_saved' => '该条目无法保存',
     'core.administrator.content_form.title' => '标题',
