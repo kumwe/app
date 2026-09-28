@@ -253,9 +253,20 @@ try {
         RetentionCatalogue::REQUIRED_DRAIN_ROWS_PER_SECOND,
     ));
 } finally {
-    $database->executeStatement("DELETE FROM $jobs WHERE queue = ?", [$queue]);
-    $database->executeStatement("DELETE FROM $outbox WHERE event_type = ?", ['perf.gauge' . $nonce]);
-    $database->executeStatement("DELETE FROM $idempotency WHERE site_identifier = ?", ['perf']);
+    // Every seeded row is removed even when a measurement failed; each delete is attempted independently.
+    foreach (
+        [
+            ["DELETE FROM $jobs WHERE job_type = ?", 'perf.gauge'],
+            ["DELETE FROM $outbox WHERE event_type = ?", 'perf.gauge' . $nonce],
+            ["DELETE FROM $idempotency WHERE site_identifier = ?", 'perf'],
+        ] as [$sql, $value]
+    ) {
+        try {
+            $database->executeStatement($sql, [$value]);
+        } catch (Throwable $failure) {
+            fwrite(STDERR, 'Cleanup failed: ' . $failure::class . "\n");
+        }
+    }
 }
 @mkdir($root . '/build/perf', 0775, true);
 file_put_contents(
