@@ -1932,7 +1932,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
             $this->commitTimings->abandon();
             throw $exception;
         }
-        $this->commitTimings->commit((hrtime(true) - $commandStart) / 1_000_000);
+        $this->commitTimings->commit((hrtime(true) - $commandStart) / 1_000_000, count($command->lines));
 
         return $result;
     }

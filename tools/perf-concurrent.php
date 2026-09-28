@@ -23,7 +23,11 @@ use Kumwe\App\Tests\Support\NeutralBusinessFixture;
 use Kumwe\App\Tests\Support\TestKernelFactory;
 use Ramsey\Uuid\Uuid;
 
+use function Kumwe\App\Tools\Performance\capacityMarkdown;
+use function Kumwe\App\Tools\Performance\confidenceInterval95;
 use function Kumwe\App\Tools\Performance\dailyScenario;
+use function Kumwe\App\Tools\Performance\fitScalability;
+use function Kumwe\App\Tools\Performance\predictScalability;
 use function Kumwe\App\Tools\Performance\observedOverlap;
 use function Kumwe\App\Tools\Performance\runWorkers;
 use function Kumwe\App\Tools\Performance\sampleStatistics;
@@ -149,8 +153,10 @@ function perfSampleBinding(Connection $database, string $root): array
     preg_match('/^MemTotal:\s*(\d+) kB/m', $read('/proc/meminfo') ?? '', $memory);
     $settings = [];
     $names = getenv('DB_DRIVER') === 'pgsql'
-        ? ['max_connections', 'shared_buffers', 'work_mem', 'synchronous_commit', 'fsync']
-        : ['max_connections', 'innodb_buffer_pool_size', 'innodb_flush_log_at_trx_commit', 'sync_binlog'];
+        ? ['max_connections', 'shared_buffers', 'work_mem', 'synchronous_commit', 'fsync', 'wal_level',
+            'max_wal_size', 'default_transaction_isolation', 'checkpoint_timeout']
+        : ['max_connections', 'innodb_buffer_pool_size', 'innodb_flush_log_at_trx_commit', 'sync_binlog',
+            'innodb_log_file_size', 'transaction_isolation', 'log_bin', 'binlog_format', 'innodb_lock_wait_timeout'];
     foreach ($names as $name) {
         try {
             $settings[$name] = (string) $database->fetchOne(
@@ -180,6 +186,13 @@ function perfSampleBinding(Connection $database, string $root): array
         'cgroup_cpuset' => $read('/sys/fs/cgroup/cpuset.cpus.effective'),
         'cgroup_memory_max' => $read('/sys/fs/cgroup/memory.max'),
         'php_version' => PHP_VERSION,
+        'php_extensions' => [
+            'pdo_mysql' => phpversion('pdo_mysql') ?: null,
+            'pdo_pgsql' => phpversion('pdo_pgsql') ?: null,
+            'redis' => phpversion('redis') ?: null,
+            'opcache' => function_exists('opcache_get_status') ? 'loaded' : null,
+        ],
+        'load_average_at_start' => function_exists('sys_getloadavg') ? sys_getloadavg() : null,
         'native_engine_version' => phpversion('kumwe_engine'),
         'database_driver' => getenv('DB_DRIVER') ?: null,
         'database_version' => (string) $database->fetchOne('SELECT VERSION()'),
@@ -293,7 +306,14 @@ $report = [
     'plan' => $plan,
     'result_binding' => perfSampleBinding($database, $root),
     'measurements' => [],
+    'summary' => [],
     'estimates' => [],
+    'scalability' => [],
+    'sections' => [
+        'measured' => ['measurements', 'summary'],
+        'estimated' => ['estimates', 'scalability'],
+        'rule' => 'Measured keys hold observations; estimated keys hold arithmetic on them and are never evidence.',
+    ],
     'complete' => false,
     'passed' => false,
     'write_amplification' => [
@@ -333,9 +353,13 @@ foreach ($plan['operations'] as $operation) {
     }
     $quotedTable = $database->getDatabasePlatform()->quoteSingleIdentifier($table->physicalName);
     $expectedRows = 0;
+    $modelPoints = [];
     foreach ($workerCounts as $workerCount) {
         $rates = [];
         $groupPassed = true;
+        $groupLatencies = [];
+        $groupFailed = 0;
+        $groupOverlap = 0;
         for ($repeat = 0; $repeat < $options['repeats']; $repeat++) {
             $directory = $runDirectory . '/' . $operation . '-' . $workerCount . '-' . $repeat;
             mkdir($directory, 0700);
@@ -438,6 +462,12 @@ foreach ($plan['operations'] as $operation) {
             $groupPassed = $groupPassed && $passed;
             $allPassed = $allPassed && $passed;
             $rates[] = $rate;
+            $groupLatencies = array_merge($groupLatencies, $latencies);
+            $groupFailed += count($failedLatencies);
+            $groupOverlap = max($groupOverlap, $overlap);
+            if ($passed) {
+                $modelPoints[] = ['workers' => $workerCount, 'rate' => $rate];
+            }
             $report['measurements'][] = [
                 'operation' => $operation, 'workers' => $workerCount, 'repeat' => $repeat,
                 'attempted' => count($intervals), 'successful_lbt' => $succeeded,
@@ -463,6 +493,20 @@ foreach ($plan['operations'] as $operation) {
                 $passed ? 'PASS' : 'FAIL'
             );
         }
+        $throughputStats = \Kumwe\App\Tools\Performance\sampleStatistics($rates);
+        $report['summary'][] = [
+            'operation' => $operation,
+            'workers' => $workerCount,
+            'all_repeats_passed' => $groupPassed,
+            'throughput_lbt_per_second' => $throughputStats,
+            'throughput_ci95' => confidenceInterval95($rates),
+            'throughput_cv' => $throughputStats['coefficient_of_variation'],
+            'latency_ms' => \Kumwe\App\Tools\Performance\sampleStatistics($groupLatencies),
+            'failed_calls' => $groupFailed,
+            'maximum_observed_overlap' => $groupOverlap,
+            'warmup_per_worker' => $options['warmup'],
+            'samples_per_worker' => $options['samples'],
+        ];
         $report['estimates'][] = [
             'operation' => $operation, 'workers' => $workerCount,
             'measured_worker_range' => [min($workerCounts), max($workerCounts)],
@@ -470,6 +514,30 @@ foreach ($plan['operations'] as $operation) {
             'withheld_reason' => $groupPassed ? null : 'A repeat failed; no successful-only estimate is emitted.',
         ];
     }
+    $fit = fitScalability($modelPoints);
+    $scenarios = [];
+    foreach ([1, 2, 4, 8, 16, 32, 64, 128] as $callers) {
+        $scenarios[] = $callers;
+    }
+    $model = $fit['prediction_model'];
+    $fit['predictions'] = $model === null ? [] : predictScalability(
+        $fit['models'][$model],
+        $fit['measured_worker_counts'],
+        $scenarios,
+        $contract['profiles']['enterprise']['daily_lbt'],
+    );
+    $fit['topology_mapping'] = [
+        'rule' => 'N application servers each running W concurrent callers against one database = N x W callers.',
+        'examples' => ['2 servers x 8 = 16', '4 servers x 16 = 64', '8 servers x 16 = 128'],
+    ];
+    $fit['assumptions'] = [
+        'Only repeats that passed every integrity and overlap check are fitted.',
+        'The same workload, data size, database host and configuration hold at every predicted concurrency.',
+        'Application CPU, network and connection limits beyond the measured host are assumed not to bind.',
+        'A fit through exactly three worker counts interpolates them; its R-squared carries no evidence.',
+        'Predictions outside measured_worker_counts are extrapolations, not supported capacity.',
+    ];
+    $report['scalability'][$operation] = $fit;
 }
 $report['complete'] = true;
 $report['passed'] = $allPassed;
@@ -486,5 +554,6 @@ foreach ($schema['concurrent']['required'] as $key => $type) {
     }
 }
 perfWriteCheckpoint($report, $runDirectory, $root);
-echo "Concurrent report: build/perf/concurrent.json\n";
+file_put_contents($root . '/build/perf/concurrent.md', capacityMarkdown($report));
+echo "Concurrent report: build/perf/concurrent.json and build/perf/concurrent.md\n";
 exit($report['passed'] ? 0 : 1);

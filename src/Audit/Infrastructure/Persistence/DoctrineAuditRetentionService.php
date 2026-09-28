@@ -15,6 +15,7 @@ use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Audit\Application\AuditRecorder;
 use Kumwe\App\Audit\Application\AuditRetentionResult;
 use Kumwe\App\Audit\Application\AuditRetentionService;
+use Kumwe\App\Audit\Infrastructure\Storage\FilesystemAuditArchiveVerifier;
 use Kumwe\Audit\Application\AuditTrailExporter;
 use Kumwe\Audit\Domain\AuditAnchorDigest;
 use Kumwe\Audit\Domain\AuditEvent;
@@ -52,14 +53,16 @@ final readonly class DoctrineAuditRetentionService implements AuditRetentionServ
     /**
      * Bind the retention service to its persistence, exporter, audit and authorization collaborators.
      *
-     * @param  Connection            $database       Connection the audit tables live on.
-     * @param  TableNames            $tables         Resolver for prefixed physical table names.
-     * @param  TransactionManager    $transactions   Commits archive, mark, delete and event as one unit.
-     * @param  AuditTrailExporter    $exporter       Writes the protected archive the prune preserves.
-     * @param  AuditRecorder         $audit          Trail the prune itself is recorded in.
-     * @param  ClockInterface        $clock          Supplies the cutoff and the prune instant.
-     * @param  AuthorizationGateway  $authorization  Decides whether the caller may manage the trail.
-     * @param  CanonicalEncoder      $encoder        Host-bound encoder every prune-mark digest is computed with.
+     * @param  Connection                       $database       Connection the audit tables live on.
+     * @param  TableNames                       $tables         Resolver for prefixed physical table names.
+     * @param  TransactionManager               $transactions   Commits archive, mark, delete and event as one unit.
+     * @param  AuditTrailExporter               $exporter       Writes the protected archive the prune preserves.
+     * @param  AuditRecorder                    $audit          Trail the prune itself is recorded in.
+     * @param  ClockInterface                   $clock          Supplies the cutoff and the prune instant.
+     * @param  AuthorizationGateway             $authorization  Decides whether the caller may manage the trail.
+     * @param CanonicalEncoder $encoder Host-bound encoder every prune-mark digest is computed with.
+     * @param  ?FilesystemAuditArchiveVerifier  $verifier       Re-reads the archive and refuses the prune unless it
+     *         is restorable; null only where an installation stores archives outside the private filesystem.
      *
      * @since  2.0.0
      */
@@ -72,6 +75,7 @@ final readonly class DoctrineAuditRetentionService implements AuditRetentionServ
         private ClockInterface $clock,
         private AuthorizationGateway $authorization,
         private CanonicalEncoder $encoder,
+        private ?FilesystemAuditArchiveVerifier $verifier = null,
     ) {
     }
 
@@ -110,6 +114,7 @@ final readonly class DoctrineAuditRetentionService implements AuditRetentionServ
                 return new AuditRetentionResult(0);
             }
             $export = $this->exporter->export($context, $from, $to);
+            $this->verifier?->assertRestorable($export->archive, $from, $to, $export->eventCount);
             [$count, $rolling] = $this->fold($from, $to);
             $tail = AuditLedger::tail($this->database, $this->tables);
             $sequence = ($tail->sequence ?? 0) + 1;

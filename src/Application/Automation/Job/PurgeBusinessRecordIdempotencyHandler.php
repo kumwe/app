@@ -5,46 +5,39 @@ declare(strict_types=1);
 namespace Kumwe\App\Application\Automation\Job;
 
 use InvalidArgumentException;
-use Kumwe\Automation\JobHandler;
 use Kumwe\Access\AuthorizationGateway;
 use Kumwe\Access\AuthorizationResource;
-use Kumwe\Context\Value\ExecutionContext;
-use Kumwe\App\BusinessRecord\Application\BusinessRecordIdempotencyPurger;
 use Kumwe\Access\Capability;
+use Kumwe\App\Application\Retention\RetentionCatalogue;
+use Kumwe\App\Application\Retention\RetentionDrain;
+use Kumwe\App\Application\Retention\RetentionStore;
+use Kumwe\Automation\JobHandler;
+use Kumwe\Context\Value\ExecutionContext;
 
 /**
- * Bounded retention driver for the business-record command idempotency ledger.
+ * Time-budgeted, adaptively batched retention driver for the business-record command idempotency ledger.
  *
- * The ledger is written by every typed record mutation and is otherwise append-only,
- * so an installation-global schedule owns its expiry. Batching keeps each transaction
- * short enough to avoid blocking concurrent record traffic.
+ * Every typed record mutation writes a ledger entry, so an installation-global schedule owns its expiry.
+ * The seeded schedule once capped removal at a fixed batch size times a fixed batch count, two orders of
+ * magnitude below the enterprise ingress (V2-SCL-004). A run is now bounded by the wall-clock budget the
+ * retention catalogue declares, and the batch size follows what the engine settles inside its lock budget.
  *
  * @since  2.0.0
  */
 final readonly class PurgeBusinessRecordIdempotencyHandler implements JobHandler
 {
     /**
-     * Largest batch a payload may ask for, matching the bound the purger itself enforces.
+     * Bind the handler to the drain, the catalogue and the gateway that guards it.
      *
-     * Rejecting an oversized request here rather than letting the purger raise it keeps the whole
-     * payload validated before the first batch runs, so a mistyped schedule fails without deleting
-     * anything.
-     *
-     * @var    int
-     * @since  2.0.0
-     */
-    private const MAXIMUM_BATCH_SIZE = 1000;
-
-    /**
-     * Bind the handler to the ledger purger and the gateway that guards it.
-     *
-     * @param  BusinessRecordIdempotencyPurger  $records        Purger that runs one bounded delete per call.
-     * @param  AuthorizationGateway             $authorization  Decides whether the job context may sweep.
+     * @param  RetentionDrain        $drain          Drain that removes expired entries inside the budget.
+     * @param  RetentionCatalogue    $catalogue      Declared budget the payload may only narrow.
+     * @param  AuthorizationGateway  $authorization  Decides whether the job context may run the sweep.
      *
      * @since  2.0.0
      */
     public function __construct(
-        private BusinessRecordIdempotencyPurger $records,
+        private RetentionDrain $drain,
+        private RetentionCatalogue $catalogue,
         private AuthorizationGateway $authorization,
     ) {
     }
@@ -62,22 +55,22 @@ final readonly class PurgeBusinessRecordIdempotencyHandler implements JobHandler
     }
 
     /**
-     * Delete expired ledger entries, at most `batch_size` per batch and `maximum_batches` batches.
+     * Drain expired entries within the declared budget, narrowed by any payload override.
      *
      * The capability is re-asserted against this job type rather than trusted from whoever created the
-     * schedule, because a queued job outlives the request that scheduled it. The loop stops early on
-     * the first batch that comes back short, which is the signal that nothing expired is left; a run
-     * that exhausts its batch count simply leaves the remainder to the next occurrence.
+     * schedule, because a queued job outlives the request that scheduled it. The payload's historical
+     * `batch_size` and `maximum_batches` keys remain honoured, but only as caps inside the declared budget.
      *
-     * @param   array<string, mixed>  $payload  Optional integer `batch_size` (default 500, at most
-     *          1000) and `maximum_batches` (default 10, at most 100).
+     * @param   array<string, mixed>  $payload  Optional positive integers `batch_size` (batch ceiling, at most
+     *          1000), `maximum_batches` (cap per run, at most 100) and `time_budget_seconds` (at most the
+     *          declared budget).
      * @param   ExecutionContext      $context  System context the automation capability is checked against.
      *
      * @return  void
      *
-     * @throws  InvalidArgumentException  When either limit is not an integer or falls outside its range.
-     * @throws  \Kumwe\Access\AuthorizationDenied  When the job context may not
-     *          manage this installation-wide job type.
+     * @throws  InvalidArgumentException  When an override is not a positive integer or would widen the budget.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the job context may not manage this installation-wide
+     *          job type.
      *
      * @since   2.0.0
      */
@@ -88,22 +81,26 @@ final readonly class PurgeBusinessRecordIdempotencyHandler implements JobHandler
             Capability::fromString('automation.manage'),
             AuthorizationResource::item('automation_installation', $this->type()),
         );
-        $batchSize = $payload['batch_size'] ?? 500;
-        $maximumBatches = $payload['maximum_batches'] ?? 10;
-        if (
-            !is_int($batchSize)
-            || !is_int($maximumBatches)
-            || $batchSize < 1
-            || $batchSize > self::MAXIMUM_BATCH_SIZE
-            || $maximumBatches < 1
-            || $maximumBatches > 100
-        ) {
+        $overrides = [];
+        foreach (['batch_size', 'maximum_batches', 'time_budget_seconds'] as $key) {
+            $value = $payload[$key] ?? null;
+            if ($value !== null && (!is_int($value) || $value < 1)) {
+                throw new InvalidArgumentException('Business-record idempotency purge limits are invalid.');
+            }
+            $overrides[$key] = $value;
+        }
+        if ($overrides['maximum_batches'] !== null && $overrides['maximum_batches'] > 100) {
             throw new InvalidArgumentException('Business-record idempotency purge limits are invalid.');
         }
-        for ($batch = 0; $batch < $maximumBatches; $batch++) {
-            if ($this->records->purge($batchSize) < $batchSize) {
-                return;
-            }
+        try {
+            $budget = $this->catalogue->policy(RetentionStore::BusinessIdempotency)->budget()->narrowed(
+                $overrides['time_budget_seconds'],
+                $overrides['batch_size'],
+                $overrides['maximum_batches'],
+            );
+        } catch (InvalidArgumentException $widened) {
+            throw new InvalidArgumentException('Business-record idempotency purge limits are invalid.', 0, $widened);
         }
+        $this->drain->drain(RetentionStore::BusinessIdempotency, $budget, $context);
     }
 }
