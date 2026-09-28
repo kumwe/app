@@ -562,9 +562,40 @@ test.describe('authenticated administrator', () => {
       await expect(toggle).toBeHidden();
     }
     await expectAccessible(page);
+    // What the masked widget grid used to prove visually is held here without pinning its data: the
+    // default widget set in its order, a populated recent-content list, the summary's count wording, and
+    // a document that does not overflow horizontally.
+    await expect.poll(() => page.locator('.kis-dashboard-widget-grid [data-kis-dashboard-widget]')
+      .evaluateAll((widgets) => widgets.map((widget) => widget.getAttribute('data-kis-dashboard-widget'))))
+      .toEqual([
+        'core.dashboard.content-summary',
+        'core.dashboard.recent-content',
+        'core.dashboard.administrator-context',
+        'core.business-records',
+        'core.business-reports',
+        'core.automation',
+        'core.content',
+        'core.create-content',
+      ]);
+    const recentContent = page.locator('[data-kis-dashboard-widget="core.dashboard.recent-content"]');
+    await expect(recentContent.locator('.kis-dashboard-activity-list > li').first()).toBeVisible();
+    expect(await recentContent.locator('.kis-dashboard-activity-list > li').count()).toBeGreaterThan(0);
+    await expect(page.locator('[data-kis-dashboard-widget="core.dashboard.content-summary"]'))
+      .toContainText(/Calculated from the latest \d+ readable items?\./u);
+    // The document must not scroll sideways, and nothing in the content column may overflow its box
+    // horizontally; the sidebar's own vertical scrolling is not an overflow.
+    const overflow = await expectNoDocumentOverflow(page, { root: '#administrator-content' });
+    expect(
+      overflow.findings.filter((finding) => finding.kind !== 'control-overlap' && (finding.horizontalPixels ?? 0) > 0),
+      JSON.stringify(overflow),
+    ).toEqual([]);
+    // The widgets report whatever content earlier journeys in the run created: every project's content
+    // journeys run before the next project's dashboard, so a full-page capture would pin their count, their
+    // titles and the wrapped height of the recent-content list. The baseline holds the viewport's shell,
+    // navigation and heading with the widget grid masked, as the signed-in right-to-left baselines do.
+    await page.evaluate(() => window.scrollTo(0, 0));
     await expect(page).toHaveScreenshot('dashboard.png', {
-      fullPage: true,
-      mask: [page.locator('[data-visual-dynamic]')],
+      mask: [page.locator('.kis-dashboard-widget-grid'), page.locator('[data-visual-dynamic]')],
       maskColor: '#ffffff',
     });
   });
