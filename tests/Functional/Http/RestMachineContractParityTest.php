@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Functional\Http;
 
+use BrowserMachineParityVerifier;
 use JsonException;
 use Kumwe\App\Delivery\Http\Api\Concurrency\RequireIfMatchMiddleware;
 use Kumwe\App\Delivery\Http\Api\Idempotency\RequireIdempotencyKeyMiddleware;
@@ -133,6 +134,53 @@ final class RestMachineContractParityTest extends TestCase
         }
         sort($categories, SORT_STRING);
         self::assertSame(['asset', 'health', 'recovery', 'recovery', 'recovery'], $categories);
+    }
+
+    /**
+     * The literal route table the gate reads is the booted router's browser routes, with the recorded handlers.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheLiteralRouteTableIsTheBootedRoutersBrowserRouteSet(): void
+    {
+        $root = dirname(__DIR__, 3);
+        require_once $root . '/tools/verify-browser-machine-parity.php';
+
+        $source = file_get_contents($root . '/src/Kernel/ContainerFactory.php');
+        self::assertIsString($source);
+        $literal = [];
+        foreach (BrowserMachineParityVerifier::browserRoutes($source) as $route) {
+            $literal[$route['name']] = $route['path'] . ' ' . implode(',', $route['methods']);
+        }
+        $live = [];
+        $handlers = [];
+        foreach ($this->routes() as $entry) {
+            $route = $entry['route'];
+            $name = $route->getName();
+            $path = $route->getPath();
+            if (!str_starts_with($path, '/administrator') && !str_starts_with($path, '/portal')) {
+                continue;
+            }
+            $methods = $route->getAllowedMethods();
+            self::assertIsArray($methods, $name);
+            $live[$name] = $path . ' ' . implode(',', $methods);
+            $middleware = $this->middlewareNames($route->getMiddleware());
+            $handlers[$name] = end($middleware);
+        }
+        ksort($literal);
+        ksort($live);
+
+        self::assertSame($live, $literal);
+        $recorded = [];
+        foreach ((new BrowserMachineParityVerifier($root))->record()['routes'] as $route) {
+            self::assertIsArray($route);
+            $recorded[$route['name']] = $route['handler'];
+        }
+        ksort($recorded);
+        ksort($handlers);
+        self::assertSame($handlers, $recorded);
     }
 
     /**

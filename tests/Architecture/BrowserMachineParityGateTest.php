@@ -5,18 +5,8 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Architecture;
 
 use BrowserMachineParityVerifier;
-use Kumwe\App\Kernel\ContainerFactory;
-use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
-use Laminas\Diactoros\ServerRequestFactory;
-use Mezzio\Application;
-use Mezzio\Middleware\LazyLoadingMiddleware;
-use Mezzio\Router\Route;
-use Mezzio\Router\RouterInterface;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
-use Psr\Http\Server\MiddlewareInterface;
-use ReflectionProperty;
-use Traversable;
 
 /**
  * Proves every administrator and portal browser operation has a machine equivalent or a reasoned exemption.
@@ -25,9 +15,9 @@ use Traversable;
  * performs, and for each operation either the REST operation ids, CLI actions and MCP tools that call the same
  * application service, or a browser-only reason. The verifier behind `composer machine:parity` checks the record
  * against the literal route table, the current REST generation, the live CLI generation and the live MCP
- * catalogue. This suite runs that check, proves the literal route table it reads is exactly the booted router's
- * browser route set with the handlers the record names, proves each refusal actually fires on a mutated record,
- * and proves the check is wired into `composer qa`, the quality contract and CI.
+ * catalogue. This suite runs that check, proves each refusal actually fires on a mutated record, and proves
+ * the check is wired into `composer qa`, the quality contract and CI. RestMachineContractParityTest compares
+ * the literal browser route table and recorded handlers with the booted router in the database-backed lane.
  *
  * @since  2.0.0
  */
@@ -84,49 +74,6 @@ final class BrowserMachineParityGateTest extends TestCase
         $summary = BrowserMachineParityVerifier::summary($verifier->record());
         self::assertSame(0, $summary['classifications']['gap']);
         self::assertGreaterThan(0, $summary['classifications']['equivalent']);
-    }
-
-    /**
-     * The literal route table the gate reads is the booted router's browser routes, with the recorded handlers.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    public function testTheLiteralRouteTableIsTheBootedRoutersBrowserRouteSet(): void
-    {
-        $source = file_get_contents($this->root . '/src/Kernel/ContainerFactory.php');
-        self::assertIsString($source);
-        $literal = [];
-        foreach (BrowserMachineParityVerifier::browserRoutes($source) as $route) {
-            $literal[$route['name']] = $route['path'] . ' ' . implode(',', $route['methods']);
-        }
-        $live = [];
-        $handlers = [];
-        foreach ($this->liveRoutes() as $route) {
-            $name = $route->getName();
-            $path = $route->getPath();
-            if (!str_starts_with($path, '/administrator') && !str_starts_with($path, '/portal')) {
-                continue;
-            }
-            $methods = $route->getAllowedMethods();
-            self::assertIsArray($methods, $name);
-            $live[$name] = $path . ' ' . implode(',', $methods);
-            $middleware = self::middlewareNames($route->getMiddleware());
-            $handlers[$name] = end($middleware);
-        }
-        ksort($literal);
-        ksort($live);
-
-        self::assertSame($live, $literal);
-        $recorded = [];
-        foreach ((new BrowserMachineParityVerifier($this->root))->record()['routes'] as $route) {
-            self::assertIsArray($route);
-            $recorded[$route['name']] = $route['handler'];
-        }
-        ksort($recorded);
-        ksort($handlers);
-        self::assertSame($handlers, $recorded);
     }
 
     /**
@@ -386,52 +333,5 @@ final class BrowserMachineParityGateTest extends TestCase
             }
         }
         self::fail('The record has no unexempted equivalent operation.');
-    }
-
-    /**
-     * Boot the application and read every registered route.
-     *
-     * @return  list<Route>  Registered routes.
-     *
-     * @since   2.0.0
-     */
-    private function liveRoutes(): array
-    {
-        $container = (new ContainerFactory())->create(Environment::fromGlobals());
-        self::assertInstanceOf(Application::class, $container->get(Application::class));
-        $router = $container->get(RouterInterface::class);
-        self::assertInstanceOf(RouterInterface::class, $router);
-        $router->match((new ServerRequestFactory())->createServerRequest('GET', 'https://kumwe.test/__routes__'));
-        $routes = (new ReflectionProperty($router, 'routes'))->getValue($router);
-        self::assertIsArray($routes);
-
-        return array_values(array_filter($routes, static fn (mixed $route): bool => $route instanceof Route));
-    }
-
-    /**
-     * Flatten one route's middleware into class names.
-     *
-     * @param   MiddlewareInterface  $middleware  Route middleware.
-     *
-     * @return  list<string>  Middleware and handler class names in order.
-     *
-     * @since   2.0.0
-     */
-    private static function middlewareNames(MiddlewareInterface $middleware): array
-    {
-        if ($middleware instanceof LazyLoadingMiddleware) {
-            return [$middleware->middlewareName];
-        }
-        if ($middleware instanceof Traversable) {
-            $names = [];
-            foreach ($middleware as $nested) {
-                self::assertInstanceOf(MiddlewareInterface::class, $nested);
-                array_push($names, ...self::middlewareNames($nested));
-            }
-
-            return $names;
-        }
-
-        return [$middleware::class];
     }
 }

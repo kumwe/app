@@ -19,6 +19,15 @@ Entries cite the commits that carried them. Version 2.0.0 is not released, so ev
 
 ### #152 — Version 2 runtime completion
 
+- Bind cached extension-runtime trust to the current map bytes as well as the signed marker and key ring.
+  Changing a map after an APCu cache fill now forces verification and refuses the altered document. Alert
+  drills wait for a registered worker with a fresh heartbeat and keep adjacent backup snapshots distinct;
+  the trace propagation fixture drains earlier committed staging before claiming its own event (#152).
+
+- Run the live browser-route parity proof in the database-backed functional suite beside the existing REST
+  route proof. The dependency-light architecture lane retains every parity-record refusal check and no
+  longer tries to boot an application without deployment configuration (#152).
+
 Pull request #152 (`platform/v2-runtime-completion`) completes Points 1 to 4 of the Version 2 runtime increment
 set by [ADR 0021](docs/roadmap/decisions/0021-automated-acceptance-and-sampled-capacity.md): the Studio journey
 and machine parity, Phase 5 scale, Phase 6 recovery and diagnostics, and the Phase 7 and `PL-G` security,

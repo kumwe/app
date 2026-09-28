@@ -437,9 +437,22 @@ final class ThemePersistenceIntegrationTest extends TestCase
             $state = $compiler->reconcileAndMaterialize();
             $payload = file_get_contents($map);
             self::assertIsString($payload);
-            file_put_contents($map, str_replace('runtime.reconcile', 'runtime.corrupted', $payload));
-
-            self::assertFalse($compiler->isCurrent($state));
+            $marker = file_get_contents($map . '.verified');
+            self::assertIsString($marker);
+            // Warm the publication cache before changing only the map, leaving its signed marker intact.
+            self::assertTrue($compiler->inspectLocal()->trusted);
+            self::assertTrue($compiler->inspectLocal()->trusted);
+            $modified = str_replace('runtime.reconcile', 'runtime.corrupted', $payload);
+            self::assertNotSame($payload, $modified);
+            self::assertSame(strlen($payload), strlen($modified), 'The tamper also preserves the file size.');
+            foreach ([$modified, $payload . "\n"] as $tampered) {
+                self::assertSame(strlen($tampered), file_put_contents($map, $tampered));
+                self::assertSame($marker, file_get_contents($map . '.verified'));
+                self::assertFalse($compiler->inspectLocal()->trusted, 'A warm cache must not hide changed map bytes.');
+                self::assertFalse($compiler->isCurrent($state));
+                self::assertSame(strlen($payload), file_put_contents($map, $payload));
+                self::assertTrue($compiler->inspectLocal()->trusted, 'The original signed bytes remain trusted.');
+            }
         } finally {
             foreach ([$map, $map . '.lock', $map . '.verified', $map . '.ready'] as $file) {
                 if (is_file($file)) {
