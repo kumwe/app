@@ -46,6 +46,17 @@ final class DocumentCommitTimingRecorder
     private ?DocumentCommitTimings $latest = null;
 
     /**
+     * Bind the recorder to an optional metrics observer.
+     *
+     * @param  ?DocumentCommitObserver  $observer  Told about every committed document, or null.
+     *
+     * @since  2.0.0
+     */
+    public function __construct(private readonly ?DocumentCommitObserver $observer = null)
+    {
+    }
+
+    /**
      * Open a frame for one document command, discarding anything a broken command left behind.
      *
      * @return  void
@@ -97,16 +108,18 @@ final class DocumentCommitTimingRecorder
      * Close the open frame as the last committed measurement.
      *
      * @param   float  $totalMs  Wall time of the whole command.
+     * @param   int    $lines    Owned lines the command carried, for the document line metric.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    public function commit(float $totalMs): void
+    public function commit(float $totalMs, int $lines = 0): void
     {
         if (!$this->open) {
             return;
         }
+        $this->observer?->committed($lines, $totalMs);
         $this->latest = new DocumentCommitTimings(
             $this->phases['validation'] ?? 0.0,
             $this->phases['lock_wait'] ?? 0.0,

@@ -77,7 +77,12 @@ Gauges, recomputed from the durable rows on each scrape:
 - `kumwe_inbox_pending`, `kumwe_inbox_oldest_pending_age_seconds`, `kumwe_inbox_poison`;
 - `kumwe_process_work_overdue`, `kumwe_process_work_oldest_overdue_age_seconds`;
 - `kumwe_export_queue_depth`, `kumwe_export_artifacts_expired`;
-- `kumwe_metrics_scrape_duration_seconds`, `kumwe_metrics_collection_failed`.
+- `kumwe_metrics_scrape_duration_seconds`, `kumwe_metrics_collection_failed`;
+- per `store` (a closed enumeration of eleven hot ledgers): `kumwe_retention_ingest_rows_per_second`,
+  `kumwe_retention_expiry_rows_per_second`, `kumwe_retention_drain_rows_per_second`,
+  `kumwe_retention_backlog_rows`, `kumwe_retention_oldest_age_seconds`,
+  `kumwe_retention_forecast_seconds_to_capacity`, the counter `kumwe_retention_drained_rows_total`, and the
+  unlabelled `kumwe_retention_readiness`. See [Retention](retention.md).
 
 `kumwe_metrics_collection_failed` is the one to wire first. It reports that the endpoint answered but
 could not read the durable gauges, which is the difference between "the queue is empty" and "I cannot see

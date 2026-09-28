@@ -650,6 +650,21 @@ use Kumwe\App\Infrastructure\Observability\ObservabilityContract;
 use Kumwe\App\Infrastructure\Observability\PrometheusExposition;
 use Kumwe\App\Infrastructure\Observability\RedisMetricRecorder;
 use Kumwe\App\Infrastructure\Observability\RuntimeMetricCollector;
+use Kumwe\App\Application\Automation\Job\DrainRetentionStoreHandler;
+use Kumwe\App\Application\Retention\RetentionCatalogue;
+use Kumwe\App\Application\Retention\RetentionDrain;
+use Kumwe\App\Application\Retention\RetentionObserver;
+use Kumwe\App\Application\Retention\RetentionReadiness;
+use Kumwe\App\Audit\Infrastructure\Storage\FilesystemAuditArchiveVerifier;
+use Kumwe\App\Infrastructure\Persistence\Migration\RetentionCatalogueMigration;
+use Kumwe\App\Infrastructure\Retention\DoctrineRetentionDrain;
+use Kumwe\App\Infrastructure\Retention\DoctrineRetentionObserver;
+use Kumwe\App\Infrastructure\Retention\RetentionRunLedger;
+use Kumwe\App\Application\Retention\LedgerCensus;
+use Kumwe\App\Infrastructure\Retention\DoctrineLedgerCensus;
+use Kumwe\App\Infrastructure\Persistence\FilesystemStorageReserve;
+use Kumwe\App\Infrastructure\Observability\InstrumentedTransactionManager;
+use Kumwe\App\Infrastructure\Observability\MetricDocumentCommitObserver;
 use Kumwe\App\Infrastructure\Automation\DoctrineIdempotencyPurger;
 use Kumwe\App\Infrastructure\Persistence\DoctrineConnectionFactory;
 use Kumwe\App\Infrastructure\Persistence\DoctrineIdempotencyLedger;
@@ -1185,6 +1200,53 @@ final class ContainerFactory
             new LocalRuntimeReadinessProbe(self::service($container, ExtensionRuntimeMapCompiler::class)),
             $configuration->release,
             $surface,
+            self::service($container, RetentionObserver::class),
+            self::service($container, RetentionReadiness::class),
+            $configuration->capacityProfile === 'enterprise',
+        ), true);
+        // Retention (V2-SCL-004, V2-SCL-008): catalogue, run ledger, budgeted drain, bounded observer, verdict.
+        $container->share(RetentionCatalogue::class, RetentionCatalogue::declared(), true);
+        $container->share(RetentionReadiness::class, new RetentionReadiness(), true);
+        $container->share(LedgerCensus::class, static fn (Container $container): LedgerCensus =>
+            new DoctrineLedgerCensus(
+                self::service($container, Connection::class),
+                self::service($container, TableNames::class),
+            ), true);
+        $container->share(RetentionRunLedger::class, static fn (Container $container): RetentionRunLedger =>
+            new RetentionRunLedger(
+                self::service($container, Connection::class),
+                self::service($container, TableNames::class),
+            ), true);
+        $container->share(RetentionObserver::class, static fn (Container $container): RetentionObserver =>
+            new DoctrineRetentionObserver(
+                self::service($container, Connection::class),
+                self::service($container, TableNames::class),
+                self::service($container, ClockInterface::class),
+                self::service($container, RetentionCatalogue::class),
+                self::service($container, RetentionRunLedger::class),
+            ), true);
+        $container->share(RetentionDrain::class, static fn (Container $container): RetentionDrain =>
+            new DoctrineRetentionDrain(
+                self::service($container, Connection::class),
+                self::service($container, TableNames::class),
+                self::service($container, TransactionManager::class),
+                self::service($container, ClockInterface::class),
+                self::service($container, RetentionCatalogue::class),
+                self::service($container, BusinessRecordIdempotencyPurger::class),
+                self::service($container, IdempotencyPurger::class),
+                self::service($container, OutboxStore::class),
+                self::service($container, AuditRetentionService::class),
+                self::service($container, ExportArtifactStorage::class),
+                self::service($container, QueueRuntimePolicyCatalog::class),
+                self::service($container, RetentionRunLedger::class),
+                self::service($container, MetricRecorder::class),
+            ), true);
+        $container->share(DrainRetentionStoreHandler::class, static fn (
+            Container $container,
+        ): DrainRetentionStoreHandler => new DrainRetentionStoreHandler(
+            self::service($container, RetentionDrain::class),
+            self::service($container, RetentionCatalogue::class),
+            self::service($container, AuthorizationGateway::class),
         ), true);
     }
 
@@ -1395,7 +1457,10 @@ final class ContainerFactory
             $databaseConfiguration->tablePrefix,
         ), true);
         $container->share(TransactionManager::class, static fn (Container $container): TransactionManager =>
-            new DoctrineTransactionManager(self::service($container, Connection::class)), true);
+            new InstrumentedTransactionManager(
+                new DoctrineTransactionManager(self::service($container, Connection::class)),
+                self::service($container, MetricRecorder::class),
+            ), true);
         $container->share(TransactionState::class, static fn (Container $container): TransactionState =>
             new DoctrineTransactionState(self::service($container, Connection::class)), true);
         $redisConfiguration = $configuration->redis;
@@ -1807,6 +1872,7 @@ final class ContainerFactory
                 self::service($container, ClockInterface::class),
                 self::service($container, AuthorizationGateway::class),
                 self::service($container, CanonicalEncoder::class),
+                new FilesystemAuditArchiveVerifier($root . '/storage/private/audit-archives'),
             ), true);
         $container->share(ContentRepository::class, static fn (Container $container): ContentRepository =>
             new DoctrineContentRepository(
@@ -2463,6 +2529,7 @@ final class ContainerFactory
                 self::service($container, ResourceSiteOwnershipWriter::class),
                 self::service($container, JobExecutionScope::class),
                 self::service($container, QueueRuntimePolicyCatalog::class),
+                self::service($container, MetricRecorder::class),
             ), true);
         $container->share(DoctrineScheduler::class, static fn (
             Container $container,
@@ -2554,6 +2621,7 @@ final class ContainerFactory
                     new StudioContentAuthoringContextRetentionMigration(self::service($container, TableNames::class)),
                     new BusinessRecordScaleMigration(self::service($container, TableNames::class)),
                     new QueueWorkerPermitsMigration(self::service($container, TableNames::class)),
+                    new RetentionCatalogueMigration(self::service($container, TableNames::class)),
                 ],
                 self::acceptedHistoricalChecksums(),
             ), true);
@@ -2583,6 +2651,10 @@ final class ContainerFactory
                 trust: self::service($container, TrustStore::class),
                 runtime: self::service($container, ExtensionRuntimeMapCompiler::class),
                 materialization: self::service($container, RuntimeMaterializationState::class),
+                retention: self::service($container, RetentionObserver::class),
+                retentionReadiness: self::service($container, RetentionReadiness::class),
+                enterprise: $configuration->capacityProfile === 'enterprise',
+                storage: new FilesystemStorageReserve($configuration->databaseDataPath),
             ), true);
     }
 
@@ -3115,6 +3187,7 @@ final class ContainerFactory
             self::service($container, Connection::class),
             self::service($container, TableNames::class),
             self::service($container, TransactionManager::class),
+            self::service($container, MetricRecorder::class),
         ), true);
         $container->share(OutboxStore::class, static fn (Container $container): OutboxStore =>
             new DoctrineOutboxStore(
@@ -3125,6 +3198,7 @@ final class ContainerFactory
                 self::service($container, EventContractRegistry::class),
                 self::service($container, CanonicalEncoder::class),
                 self::service($container, DoctrineProjectionEventSequencer::class),
+                metrics: self::service($container, MetricRecorder::class),
             ), true);
         $container->share(DoctrineInboxStore::class, static fn (Container $container): DoctrineInboxStore =>
             new DoctrineInboxStore(
@@ -3376,7 +3450,13 @@ final class ContainerFactory
             self::service($container, TableNames::class),
             self::service($container, DoctrineBusinessRecordQueryCompiler::class),
         ), true);
-        $container->share(DocumentCommitTimingRecorder::class, new DocumentCommitTimingRecorder(), true);
+        $container->share(
+            DocumentCommitTimingRecorder::class,
+            static fn (Container $container): DocumentCommitTimingRecorder => new DocumentCommitTimingRecorder(
+                new MetricDocumentCommitObserver(self::service($container, MetricRecorder::class)),
+            ),
+            true,
+        );
         $container->share(BusinessRecordMutationPublication::class, static fn (
             Container $container,
         ): BusinessRecordMutationPublication => new BusinessRecordMutationPublication(
@@ -6244,7 +6324,8 @@ final class ContainerFactory
         $container->share(PurgeIdempotencyRecordsHandler::class, static fn (
             Container $container,
         ): PurgeIdempotencyRecordsHandler => new PurgeIdempotencyRecordsHandler(
-            self::service($container, IdempotencyPurger::class),
+            self::service($container, RetentionDrain::class),
+            self::service($container, RetentionCatalogue::class),
             self::service($container, AuthorizationGateway::class),
         ), true);
         $container->share(
@@ -6266,7 +6347,8 @@ final class ContainerFactory
         $container->share(PurgeBusinessRecordIdempotencyHandler::class, static fn (
             Container $container,
         ): PurgeBusinessRecordIdempotencyHandler => new PurgeBusinessRecordIdempotencyHandler(
-            self::service($container, BusinessRecordIdempotencyPurger::class),
+            self::service($container, RetentionDrain::class),
+            self::service($container, RetentionCatalogue::class),
             self::service($container, AuthorizationGateway::class),
         ), true);
         $container->share(RecordAuditAnchorHandler::class, static fn (
@@ -6313,6 +6395,7 @@ final class ContainerFactory
                 self::service($container, PurgeIdempotencyRecordsHandler::class),
                 self::service($container, PurgeStudioContentAuthoringContextsHandler::class),
                 self::service($container, PurgeBusinessRecordIdempotencyHandler::class),
+                self::service($container, DrainRetentionStoreHandler::class),
                 self::service($container, RecordAuditAnchorHandler::class),
                 self::service($container, VerifyAuditTrailHandler::class),
                 self::service($container, EnforceAuditRetentionHandler::class),

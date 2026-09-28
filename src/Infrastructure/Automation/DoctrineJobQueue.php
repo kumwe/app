@@ -25,6 +25,9 @@ use Kumwe\Automation\QueueRuntimePolicyCatalog;
 use Kumwe\Automation\StoredJob;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Access\Capability;
+use Kumwe\App\Infrastructure\Observability\MetricCatalog;
+use Kumwe\App\Infrastructure\Observability\MetricRecorder;
+use Kumwe\App\Infrastructure\Observability\NullMetricRecorder;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
@@ -81,6 +84,7 @@ final readonly class DoctrineJobQueue implements JobQueue
      * @param  JobExecutionScope            $jobScope       Classifies a job type as installation-wide or site-local.
      * @param  ?QueueRuntimePolicyCatalog   $policies       Active contributed queue and job limits; null preserves
      *         the established behavior for isolated core queue instances.
+     * @param  MetricRecorder               $metrics        Counts claims and settlements and times queue start.
      *
      * @since  2.0.0
      */
@@ -94,6 +98,7 @@ final readonly class DoctrineJobQueue implements JobQueue
         private ResourceSiteOwnershipWriter $ownership,
         private JobExecutionScope $jobScope,
         private ?QueueRuntimePolicyCatalog $policies = null,
+        private MetricRecorder $metrics = new NullMetricRecorder(),
     ) {
     }
 
@@ -383,6 +388,17 @@ final readonly class DoctrineJobQueue implements JobQueue
                 $this->assertLeaseUpdated($affected);
                 $row['attempts'] = $attempts + 1;
                 $row['lease_token'] = $token;
+                $this->metrics->increment(MetricCatalog::QUEUE_CLAIMS);
+                $available = is_string($row['available_at'] ?? null)
+                    ? date_create_immutable($row['available_at'])
+                    : false;
+                if ($available !== false) {
+                    $this->metrics->observe(
+                        MetricCatalog::OPERATION_DURATION,
+                        ['operation_class' => 'queue_time_to_start'],
+                        max(0.0, (float) ($now->format('U.u') - $available->format('U.u'))),
+                    );
+                }
 
 
                 return $this->map($row);
@@ -496,6 +512,7 @@ final readonly class DoctrineJobQueue implements JobQueue
                 $this->permits()->release($job->queue, $job->leaseToken);
             }
         });
+        $this->metrics->increment(MetricCatalog::QUEUE_SETTLEMENTS, ['outcome' => 'completed']);
     }
 
     /**
@@ -589,6 +606,7 @@ final readonly class DoctrineJobQueue implements JobQueue
                 $this->permits()->release($job->queue, $job->leaseToken);
             }
         });
+        $this->metrics->increment(MetricCatalog::QUEUE_SETTLEMENTS, ['outcome' => $dead ? 'dead' : 'retried']);
     }
 
     /**

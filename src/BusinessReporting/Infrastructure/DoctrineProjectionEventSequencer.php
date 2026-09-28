@@ -10,6 +10,9 @@ use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
+use Kumwe\App\Infrastructure\Observability\MetricCatalog;
+use Kumwe\App\Infrastructure\Observability\MetricRecorder;
+use Kumwe\App\Infrastructure\Observability\NullMetricRecorder;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\Transaction\Contract\TransactionManager;
 use LogicException;
@@ -45,6 +48,7 @@ final readonly class DoctrineProjectionEventSequencer
      * @param  Connection          $database      Connection used for a fresh, short transaction.
      * @param  TableNames          $tables        Installation-local physical table names.
      * @param  TransactionManager  $transactions  Atomic range publication and staging removal.
+     * @param  MetricRecorder      $metrics       Counts sequenced events after each committed range.
      *
      * @since  2.0.0
      */
@@ -52,6 +56,7 @@ final readonly class DoctrineProjectionEventSequencer
         private Connection $database,
         private TableNames $tables,
         private TransactionManager $transactions,
+        private MetricRecorder $metrics = new NullMetricRecorder(),
     ) {
     }
 
@@ -81,7 +86,7 @@ final readonly class DoctrineProjectionEventSequencer
             throw new LogicException('Projection sequencing requires its own committed-source transaction.');
         }
 
-        return $this->transactions->transactional(function () use ($limit): int {
+        $sequenced = $this->transactions->transactional(function () use ($limit): int {
             $platform = $this->database->getDatabasePlatform();
             $lock = $platform instanceof AbstractMySQLPlatform || $platform instanceof PostgreSQLPlatform
                 ? ' FOR UPDATE SKIP LOCKED'
@@ -175,6 +180,11 @@ final readonly class DoctrineProjectionEventSequencer
 
             return $count;
         });
+        if ($sequenced > 0) {
+            $this->metrics->increment(MetricCatalog::SEQUENCED_EVENTS, [], (float) $sequenced);
+        }
+
+        return $sequenced;
     }
 
     /**
