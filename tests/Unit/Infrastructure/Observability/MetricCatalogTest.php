@@ -44,8 +44,9 @@ final class MetricCatalogTest extends TestCase
     public function testTheWholeExpositionIsBoundedToAFewHundredSeries(): void
     {
         // The bound is the property that matters: it holds whatever a caller passes, because every
-        // label value outside its enumeration folds into `other` rather than minting a new series.
-        self::assertLessThan(200, self::catalog()->maximumSeries());
+        // label value outside its enumeration folds into `other` rather than minting a new series. The
+        // recovery, storage, trust and security families (P7-D) moved it from under 200 to under 256.
+        self::assertLessThan(256, self::catalog()->maximumSeries());
     }
 
     public function testAnUnenumeratedLabelValueFoldsIntoOtherRatherThanMintingASeries(): void

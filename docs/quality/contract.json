@@ -468,6 +468,32 @@
             }
         },
         {
+            "id": "observability-rules",
+            "title": "Alert rules, inhibitions, runbooks, dashboards and promtool scenarios are sound and bounded",
+            "purpose": "Refuse an alert without a closed severity and component, the four annotations, its own runbook section or a promtool scenario; an expression over an undeclared series, an unbounded or forbidden label, an impossible matcher value or a mistyped function; a template naming a label the alert drops; an inhibition whose equal labels one side lacks; a dashboard query that fails the same checks or counts retries as business work; and a stale generated promtool test file. Runs offline so every qa run proves it; CI's drills job re-checks the syntax with the real promtool and amtool.",
+            "owner": "platform-architecture",
+            "runner": "composer",
+            "composer_script": "observability:rules",
+            "command": "composer observability:rules",
+            "artifact": "console",
+            "in_qa": true,
+            "cadence": [
+                "local",
+                "ci",
+                "nightly",
+                "release"
+            ],
+            "maximum_interval": "per-change",
+            "engines": [],
+            "workflows": {
+                "ci": {
+                    "file": ".github/workflows/ci.yml",
+                    "job": "quality",
+                    "contains": "composer observability:rules"
+                }
+            }
+        },
+        {
             "id": "roadmap-lifecycle",
             "title": "The roadmap ledger and changelog retain truthful lifecycle evidence",
             "purpose": "Fail when a finished finding is left behind in the ledger instead of moving to the changelog, or when a changelog citation no longer resolves after history is rewritten.",

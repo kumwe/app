@@ -27,6 +27,8 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use Kumwe\App\BusinessIntegration\Infrastructure\DoctrineInboxStore;
 use Kumwe\App\Infrastructure\Persistence\DoctrineTransactionManager;
+use Kumwe\App\Infrastructure\Observability\CorrelationContext;
+use Kumwe\App\Infrastructure\Persistence\Migration\AsyncTraceContextMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\BusinessIntegrationSdkMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\CoreSchemaMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\JobRecoveryMigration;
@@ -656,6 +658,89 @@ final class IndependentReceiptFanoutIntegrationTest extends TestCase
     }
 
     /**
+     * A consumer runs inside an `inbox` frame carrying the event's identifiers and the trace its receipt recorded.
+     *
+     * The receipt is materialized while a dispatch frame carrying an upstream trace is open, exactly as the
+     * runtime fan-out does, so the trace crosses the outbox-to-inbox boundary on the durable row and the
+     * consumer's lines join the originating request without any in-memory hand-off.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAConsumerRunsInsideAFrameCarryingTheEventIdentifiersAndTheRecordedTrace(): void
+    {
+        $definition = $this->consumer('acme.probe.trace');
+        [, $database, $tables, $clock, $contracts] = $this->store([$definition]);
+        $correlation = new CorrelationContext();
+        $store = new DoctrineInboxStore(
+            $database,
+            $tables,
+            new DoctrineTransactionManager($database),
+            $clock,
+            $contracts,
+            correlation: $correlation,
+        );
+        $event = $this->event('default', null);
+        $correlation->enter(
+            'outbox',
+            'outbox-dispatch-' . $event->eventId(),
+            'correlation',
+            'cause',
+            '0af7651916cd43dd8448eb211c80319c',
+        );
+        $store->materialize([$definition], $event);
+        $correlation->leave('outbox');
+        $seen = [];
+        $handler = $this->createMock(IntegrationEventHandler::class);
+        $handler->expects(self::once())->method('handle')->willReturnCallback(
+            static function () use ($correlation, &$seen): void {
+                $seen = $correlation->fragment();
+            },
+        );
+        $encoder = new DeterministicCanonicalEncoder();
+        $registry = new ExtensionContributionRegistrySet(
+            $encoder,
+            new SdkFieldConfigurationAdmission(),
+            withCore: false,
+        );
+        $registry->eventConsumers()->register(ContributionOwner::extension('acme/probe'), $definition, $handler);
+        $guard = self::createStub(TrustedRuntimeGenerationGuard::class);
+        $retries = new RetryPolicy($clock, self::createStub(JitterSource::class));
+        $worker = new RuntimeIntegrationReceiptWorker(
+            $store,
+            $registry,
+            $encoder,
+            new IntegrationEventConsumerDispatcher(
+                $store,
+                $contracts,
+                $retries,
+                $guard,
+                new DoctrineTransactionManager($database),
+                new NullLogger(),
+            ),
+            new DurableOutboundAdapterDispatcher($store, $contracts, $retries, $guard, new NullLogger()),
+            $guard,
+            SystemPrincipal::issue(new \stdClass(), SystemIdentity::Worker),
+            self::createStub(QueueRuntimePolicyCatalog::class),
+            new NullLogger(),
+            $correlation,
+        );
+
+        self::assertTrue($worker->dispatchOne('replica-0', '7', 5));
+
+        self::assertSame('integration-' . $event->eventId(), $seen['request_id'] ?? null);
+        self::assertSame('correlation', $seen['correlation_id'] ?? null);
+        self::assertSame('cause', $seen['causation_id'] ?? null);
+        self::assertSame('0af7651916cd43dd8448eb211c80319c', $seen['trace_id'] ?? null);
+        self::assertSame('inbox.consume', $seen['operation'] ?? null);
+        self::assertSame('acme.probe.trace', $seen['consumer_id'] ?? null);
+        self::assertSame($event->eventId(), $seen['event_id'] ?? null);
+        self::assertFalse($correlation->inside('inbox'), 'The attempt must close its frame.');
+        self::assertSame('completed', $store->recent('acme.probe.trace')[0]['status']);
+    }
+
+    /**
      * Build a schema/consumer catalog and isolated durable database.
      *
      * @param   list<EventConsumerDefinition>  $consumers  Trusted graph under test.
@@ -677,6 +762,7 @@ final class IndependentReceiptFanoutIntegrationTest extends TestCase
         (new JobRecoveryMigration($tables))->up($database);
         (new BusinessIntegrationSdkMigration($tables))->up($database);
         (new QueueWorkerPermitsMigration($tables))->up($database);
+        (new AsyncTraceContextMigration($tables))->up($database);
         $encoder = new DeterministicCanonicalEncoder();
         $schemas = array_map(static fn (int $revision): EventSchemaDefinition => new EventSchemaDefinition(
             $encoder,

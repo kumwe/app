@@ -18654,7 +18654,7 @@
       </notes>
       <segment>
         <source>Withdraw your own pending business approval request.</source>
-        <target>מושך את בקשת אישור העסק הממתינה שלכם.</target>
+        <target>משכו את בקשת האישור העסקי הממתינה שלכם.</target>
       </segment>
     </unit>
     <unit id="core.console.media.description">
@@ -18663,7 +18663,7 @@
       </notes>
       <segment>
         <source>Browse, read, upload or delete files in the site media library.</source>
-        <target>עיון, קריאה, העלאה או מחיקה של קבצים בספריית המדיה של האתר.</target>
+        <target>עיינו, קראו, העלו או מחקו קבצים בספריית המדיה של האתר.</target>
       </segment>
     </unit>
     <unit id="core.console.settings.description">

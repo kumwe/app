@@ -160,6 +160,51 @@ final readonly class MetricCatalog
     public const DISPATCH_SETTLEMENTS = 'kumwe_dispatch_settlements_total';
 
     /**
+     * Inbox consumer settlements by outcome.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    public const CONSUMER_SETTLEMENTS = 'kumwe_consumer_settlements_total';
+
+    /**
+     * Security decisions refused at an authentication, token or authorization boundary, by event.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    public const SECURITY_EVENTS = 'kumwe_security_events_total';
+
+    /**
+     * Security event kinds that get their own series; anything else folds into `other`.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
+    public const SECURITY_EVENT_KINDS = [
+        'authentication_failed',
+        'authentication_throttled',
+        'token_rejected',
+        'permission_denied',
+    ];
+
+    /**
+     * Backup and restore operations whose last outcome the operation status files record.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
+    public const RECOVERY_OPERATIONS = ['backup', 'restore_verify', 'restore'];
+
+    /**
+     * Storage volumes whose free and total bytes the scrape reads.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
+    public const VOLUMES = ['storage', 'media', 'private'];
+
+    /**
      * Settlement outcomes shared by queue and dispatch settlements.
      *
      * @var    list<string>
@@ -377,6 +422,18 @@ final readonly class MetricCatalog
                 ['outcome' => self::SETTLEMENT_OUTCOMES],
             ),
             new MetricDefinition(
+                self::CONSUMER_SETTLEMENTS,
+                MetricType::Counter,
+                'Inbox consumer settlements, by outcome.',
+                ['outcome' => self::SETTLEMENT_OUTCOMES],
+            ),
+            new MetricDefinition(
+                self::SECURITY_EVENTS,
+                MetricType::Counter,
+                'Refused authentication attempts, throttled sign-ins, rejected tokens and denied permissions.',
+                ['event' => self::SECURITY_EVENT_KINDS],
+            ),
+            new MetricDefinition(
                 self::RETENTION_DRAINED,
                 MetricType::Counter,
                 'Rows removed or compacted by retention drains, by store.',
@@ -384,6 +441,63 @@ final readonly class MetricCatalog
             ),
             ...self::gauges($release, $runtime),
             ...self::retentionGauges(),
+            ...self::operationalGauges(),
+        ];
+    }
+
+    /**
+     * Declare the recovery, storage and extension-trust gauges read from outside the durable tables.
+     *
+     * Each label is a closed, code-declared enumeration: three recovery operations and three storage
+     * volumes. A timestamp gauge of zero means the operation has never been recorded, which the backup-age
+     * alert treats as older than any threshold rather than as healthy.
+     *
+     * @return  list<MetricDefinition>  The declared families.
+     *
+     * @since   2.0.0
+     */
+    private static function operationalGauges(): array
+    {
+        return [
+            new MetricDefinition(
+                'kumwe_recovery_last_success_timestamp_seconds',
+                MetricType::Gauge,
+                'Unix time of the last successful backup, restore verification or restore; 0 when never recorded.',
+                ['operation' => self::RECOVERY_OPERATIONS],
+            ),
+            new MetricDefinition(
+                'kumwe_recovery_last_failure_timestamp_seconds',
+                MetricType::Gauge,
+                'Unix time of the last failed backup, restore verification or restore; 0 when never recorded.',
+                ['operation' => self::RECOVERY_OPERATIONS],
+            ),
+            new MetricDefinition(
+                'kumwe_storage_free_bytes',
+                MetricType::Gauge,
+                'Bytes available to the application on the filesystem holding each storage volume.',
+                ['volume' => self::VOLUMES],
+            ),
+            new MetricDefinition(
+                'kumwe_storage_capacity_bytes',
+                MetricType::Gauge,
+                'Total bytes of the filesystem holding each storage volume.',
+                ['volume' => self::VOLUMES],
+            ),
+            new MetricDefinition(
+                'kumwe_extension_runtime_trusted',
+                MetricType::Gauge,
+                'Whether this process serves a verified, trusted extension runtime generation: 1 yes, 0 no.',
+            ),
+            new MetricDefinition(
+                'kumwe_extension_revocation_feed_stale',
+                MetricType::Gauge,
+                'Whether the configured key revocation feed is older than its staleness budget: 1 stale, 0 fresh.',
+            ),
+            new MetricDefinition(
+                'kumwe_extension_revocation_feed_failures',
+                MetricType::Gauge,
+                'Consecutive failed revocation feed synchronizations; 0 when unconfigured or healthy.',
+            ),
         ];
     }
 

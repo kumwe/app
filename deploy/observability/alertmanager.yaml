@@ -1,0 +1,86 @@
+# Kumwe Alertmanager routing and inhibition, in Alertmanager configuration format.
+#
+# The `inhibit_rules` are the part to merge into your own configuration: they mute an alert whose cause another,
+# more specific or more severe, alert already pages for, so one fault wakes one person once. The `route` and
+# `receivers` below are a minimal valid shell — `amtool check-config` refuses a file without them — that sends
+# `severity="page"` to one receiver and everything else to another; replace both with your own.
+#
+# Every inhibition names alerts by `alertname` from `alerts.yaml`, and every `equal` label is one both the source
+# and the target alert actually carry: an `equal` label missing from both sides compares equal, so a rule that
+# relied on it would mute unrelated alerts. `composer observability:rules` refuses both mistakes.
+
+route:
+  receiver: kumwe-ticket
+  group_by: [alertname, component]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  routes:
+    - receiver: kumwe-page
+      matchers:
+        - severity="page"
+      repeat_interval: 1h
+
+receivers:
+  - name: kumwe-page
+  - name: kumwe-ticket
+
+inhibit_rules:
+  # A replica that does not answer scrapes cannot report anything else about itself.
+  - source_matchers:
+      - alertname="KumweScrapeTargetDown"
+    target_matchers:
+      - alertname=~"KumweReadinessFailing|KumweExtensionRuntimeUntrusted|KumweStorageNearlyFull|KumweStorageWillFillSoon"
+    equal: [instance]
+
+  # An untrusted runtime is the specific reason the replica reports itself unready; page for the cause.
+  - source_matchers:
+      - alertname="KumweExtensionRuntimeUntrusted"
+    target_matchers:
+      - alertname="KumweReadinessFailing"
+    equal: [instance]
+
+  # While the durable gauges cannot be read, every alert computed from them is reading stale or absent data.
+  - source_matchers:
+      - alertname="KumweMetricsCollectionFailing"
+    target_matchers:
+      - component=~"queue|integration|reporting|retention|recovery|database"
+
+  # No worker means every queue-age symptom has one cause; the worker page is the actionable one.
+  - source_matchers:
+      - alertname="KumweNoLiveWorker"
+    target_matchers:
+      - alertname=~"KumweJobQueueStalled|KumweJobLeasesExpiring|KumweExportQueueBacklog|KumweExpiredExportsRetained|KumweRetentionBacklogStale"
+
+  # A critical error rate already pages; the elevated ticket for the same signal adds nothing.
+  - source_matchers:
+      - alertname="KumweServerErrorRateCritical"
+    target_matchers:
+      - alertname="KumweServerErrorRateElevated"
+
+  # Stale is the stronger statement about the same backups.
+  - source_matchers:
+      - alertname="KumweBackupStale"
+    target_matchers:
+      - alertname="KumweBackupFailing"
+
+  # A nearly full volume already pages; its forecast is no longer news.
+  - source_matchers:
+      - alertname="KumweStorageNearlyFull"
+    target_matchers:
+      - alertname="KumweStorageWillFillSoon"
+    equal: [instance, volume]
+
+  # A failure burst already pages; the throttling it causes is its consequence.
+  - source_matchers:
+      - alertname="KumweAuthenticationFailureBurst"
+    target_matchers:
+      - alertname="KumweAuthenticationThrottling"
+
+  # When the process is not reachable at all, the page, metrics and API checks fail for the same reason.
+  - source_matchers:
+      - alertname="KumweSyntheticProbeFailing"
+      - check="liveness"
+    target_matchers:
+      - alertname="KumweSyntheticProbeFailing"
+      - check=~"readiness|public_page|metrics|api"

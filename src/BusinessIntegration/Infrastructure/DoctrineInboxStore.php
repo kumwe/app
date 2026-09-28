@@ -28,6 +28,10 @@ use Kumwe\Integration\InboxStore;
 use Kumwe\Integration\RecordedEventEnvelope;
 use Kumwe\Integration\EventConsumerDefinition;
 use Kumwe\Integration\IntegrationEvent;
+use Kumwe\App\Infrastructure\Observability\CorrelationContext;
+use Kumwe\App\Infrastructure\Observability\MetricCatalog;
+use Kumwe\App\Infrastructure\Observability\MetricRecorder;
+use Kumwe\App\Infrastructure\Observability\NullMetricRecorder;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
@@ -55,6 +59,9 @@ final readonly class DoctrineInboxStore implements InboxStore
      * @param  EventContractRegistry       $contracts     Exact trusted event catalog.
      * @param  ?QueueRuntimePolicyCatalog  $policies      Active contributed queue limits; null preserves core-only
      *         inbox behavior for isolated instances.
+     * @param  ?CorrelationContext         $correlation   Log-context holder whose upstream trace identifier a new
+     *         receipt records; null records none.
+     * @param  MetricRecorder              $metrics       Counts consumer settlements by outcome.
      *
      * @since  2.0.0
      */
@@ -65,7 +72,31 @@ final readonly class DoctrineInboxStore implements InboxStore
         private ClockInterface $clock,
         private EventContractRegistry $contracts,
         private ?QueueRuntimePolicyCatalog $policies = null,
+        private ?CorrelationContext $correlation = null,
+        private MetricRecorder $metrics = new NullMetricRecorder(),
     ) {
+    }
+
+    /**
+     * Read the upstream W3C trace identifier recorded when a claimed receipt was first received.
+     *
+     * The receipt worker opens its log frame with this, so a consumer's lines join the trace of the
+     * request whose event it is consuming even though the event crossed the outbox to get here.
+     *
+     * @param   InboxLease  $lease  Claimed receipt.
+     *
+     * @return  ?string  The recorded trace identifier, or null when the producer had none.
+     *
+     * @since   2.0.0
+     */
+    public function traceOf(InboxLease $lease): ?string
+    {
+        $trace = $this->database->fetchOne(sprintf(
+            'SELECT trace_id FROM %s WHERE consumer_id = ? AND event_id = ?',
+            $this->tables->quoted('integration_inbox'),
+        ), [$lease->consumer->identifier(), $lease->event->eventId()], [Types::STRING, Types::GUID]);
+
+        return is_string($trace) && $trace !== '' ? $trace : null;
     }
 
     /**
@@ -495,6 +526,7 @@ final readonly class DoctrineInboxStore implements InboxStore
                 'lease_token' => null, 'lease_expires_at' => null, 'blocked_until' => null, 'failure_streak' => 0,
             ], ['consumer_id' => $lease->consumer->identifier(), 'lease_token' => $lease->leaseToken]);
         });
+        $this->metrics->increment(MetricCatalog::CONSUMER_SETTLEMENTS, ['outcome' => 'completed']);
     }
 
     /**
@@ -515,10 +547,10 @@ final readonly class DoctrineInboxStore implements InboxStore
         Throwable $failure,
         ?DateTimeImmutable $retryAt,
     ): void {
-        $this->transactions->transactional(function () use ($lease, $classification, $failure, $retryAt): void {
-            $retry = $classification === FailureClassification::TRANSIENT
-                && $retryAt !== null
-                && $lease->attempts < $lease->consumer->maximumAttempts();
+        $retry = $classification === FailureClassification::TRANSIENT
+            && $retryAt !== null
+            && $lease->attempts < $lease->consumer->maximumAttempts();
+        $this->transactions->transactional(function () use ($lease, $classification, $failure, $retryAt, $retry): void {
             $now = $this->clock->now();
             $this->assertOne($this->database->executeStatement(sprintf(
                 'UPDATE %s SET status = ?, available_at = ?, lease_owner = NULL, lease_token = NULL, '
@@ -553,6 +585,7 @@ final readonly class DoctrineInboxStore implements InboxStore
                 Types::DATETIME_IMMUTABLE, Types::STRING, Types::GUID,
             ]);
         });
+        $this->metrics->increment(MetricCatalog::CONSUMER_SETTLEMENTS, ['outcome' => $retry ? 'retried' : 'dead']);
     }
 
     /**
@@ -1011,6 +1044,11 @@ final readonly class DoctrineInboxStore implements InboxStore
             'evidence_compacted_at' => null,
             'updated_at' => $now,
         ];
+        $traceId = $this->correlation?->traceId();
+        if ($traceId !== null) {
+            // Omitted rather than null, so a receipt written without a trace needs no trace column.
+            $values['trace_id'] = $traceId;
+        }
         $types = [
             'envelope' => Types::JSON,
             'available_at' => Types::DATETIME_IMMUTABLE,

@@ -421,6 +421,12 @@ jobs:
           composer roadmap:check
           composer acceptance:check
 
+      # Offline half of the observability gate: rule structure, bounded labels, runbook sections, inhibition
+      # soundness, dashboards and a fresh promtool scenario file. The observability workflow runs the real
+      # promtool, amtool and the alert drills.
+      - name: Verify alert rules, inhibitions, runbooks and dashboards
+        run: composer observability:rules
+
       - name: Verify coverage attribution
         run: composer coverage:attribution
 

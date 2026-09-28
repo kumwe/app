@@ -24,6 +24,9 @@ use Kumwe\App\Kernel\Container;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\App\Tests\Support\TestKernelFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
+use Monolog\Handler\TestHandler;
+use Monolog\Logger;
+use Monolog\LogRecord;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
 
@@ -83,7 +86,8 @@ final class RetentionDrainIntegrationTest extends TestCase
     }
 
     /**
-     * A time budget stops a run that still has work, and the stop is reported as exhaustion, not clearance.
+     * A time budget stops a run that still has work, and the stop is reported as exhaustion, not clearance,
+     * both in the result and as the warning line an operator's log query filters on.
      *
      * @return  void
      *
@@ -94,6 +98,8 @@ final class RetentionDrainIntegrationTest extends TestCase
         $container = TestKernelFactory::create(Environment::fromGlobals());
         $database = $this->service($container, Connection::class);
         $tables = $this->service($container, TableNames::class);
+        $records = new TestHandler();
+        $this->service($container, Logger::class)->setHandlers([$records]);
         $ids = $this->seedExpiredClaims($database, $tables, 300);
         $result = $this->service($container, RetentionDrain::class)->drain(
             RetentionStore::BusinessIdempotency,
@@ -103,6 +109,16 @@ final class RetentionDrainIntegrationTest extends TestCase
         self::assertSame(200, $result->rowsDrained);
         self::assertTrue($result->budgetExhausted);
         self::assertFalse($result->backlogCleared);
+        $behind = array_values(array_filter(
+            $records->getRecords(),
+            static fn (LogRecord $record): bool
+                => $record->message === 'Retention drain exhausted its budget before clearing the backlog.',
+        ));
+        self::assertCount(1, $behind);
+        self::assertSame('retention.drain', $behind[0]->context['operation']);
+        self::assertSame(RetentionStore::BusinessIdempotency->value, $behind[0]->context['store']);
+        self::assertSame(200, $behind[0]->context['rows_drained']);
+        self::assertSame('behind', $behind[0]->context['outcome']);
         $database->executeStatement(sprintf(
             'DELETE FROM %s WHERE id IN (?)',
             $tables->quoted('business_command_idempotency'),
