@@ -97,4 +97,36 @@ interface BusinessSurfaceUseCases
         string $operationId,
         array $input = [],
     ): array;
+
+    /**
+     * Apply at most fifty archive, restore, or declared bulk-action mutations atomically.
+     *
+     * Every member runs through the same per-record archive, restore or action use case, under a deterministic
+     * child idempotency identity derived from the caller's operation identity, inside one outer transaction:
+     * a policy denial, stale reviewed version, approval requirement or storage fault rolls every member back.
+     *
+     * @param   ExecutionContext            $context      Authenticated actor.
+     * @param   BusinessSurface             $surface      Exact delivery boundary.
+     * @param   string                      $definition   Definition UUID or handle.
+     * @param   BusinessSurfaceOperation    $operation    Archive, restore, or action operation.
+     * @param   list<array<string, mixed>>  $items        Selected records and reviewed expected versions.
+     * @param   string                      $operationId  Caller-owned bulk idempotency identity.
+     * @param   ?string                     $action       Bulk-enabled declared action handle.
+     * @param   array<string, mixed>        $input        Shared bounded action input.
+     *
+     * @return  array{operation: string, count: int, items: list<array<string, mixed>>}  Projected outcomes
+     *          in selection order.
+     *
+     * @since   2.0.0
+     */
+    public function bulk(
+        ExecutionContext $context,
+        BusinessSurface $surface,
+        string $definition,
+        BusinessSurfaceOperation $operation,
+        array $items,
+        string $operationId,
+        ?string $action = null,
+        array $input = [],
+    ): array;
 }

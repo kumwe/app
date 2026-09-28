@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for en-GB, carrying 2518 messages.
+ * Compiled interface message catalogue for en-GB, carrying 2519 messages.
  *
  * Generated from en-GB.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1974,6 +1974,7 @@ return [
     'core.console.queue_work.worker_heartbeat_cleanup_failed' => 'Worker heartbeat cleanup failed: {reason}',
     'core.console.schedule_run.description' => 'Dispatch due schedules once or continuously with --loop.',
     'core.console.schedule_run.dispatched_due_schedule_s' => 'Dispatched {dispatched} due schedule(s).',
+    'core.console.security_events.description' => 'List the newest identity and access security events.',
     'core.console.settings.description' => 'Read or update site configuration.',
     'core.console.studio_authoring.description' => 'Open a Studio authoring session and run its authoring operations.',
     'core.console.studio_authoring.refused' => 'The Studio authoring request was refused.',

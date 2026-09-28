@@ -137,6 +137,33 @@ final readonly class HttpMutationPreauthorizer
             $this->assert($context, $action, AuthorizationResource::item('content', $id));
             return;
         }
+        if ($method === 'POST' && $path === '/api/v1/media') {
+            $this->assert($context, 'content.update', AuthorizationResource::collection('media'));
+            return;
+        }
+        if ($method === 'DELETE' && preg_match('#^/api/v1/media/[^/]+$#D', $path) === 1) {
+            $this->assert($context, 'content.delete', AuthorizationResource::collection('media'));
+            return;
+        }
+        if (
+            ($method === 'PUT' && $path === '/api/v1/wording/overrides')
+            || ($method === 'POST' && $path === '/api/v1/wording/overrides/withdraw')
+        ) {
+            $this->assert(
+                $context,
+                'localization.overrides.manage',
+                AuthorizationResource::collection('message_override'),
+            );
+            return;
+        }
+        if ($method === 'POST' && preg_match('#^/api/v1/business/approvals/([^/]+)/cancel$#D', $path, $match) === 1) {
+            $this->assert(
+                $context,
+                'business.approval.request',
+                AuthorizationResource::item('approval_request', rawurldecode($match[1])),
+            );
+            return;
+        }
         if ($method === 'POST' && $path === '/api/v1/menus') {
             $this->assert($context, 'navigation.manage', AuthorizationResource::collection('menu'));
             return;
@@ -193,6 +220,11 @@ final readonly class HttpMutationPreauthorizer
         }
         if ($method === 'POST' && $path === '/api/v1/users') {
             $this->assert($context, 'users.manage', AuthorizationResource::collection('user'));
+            return;
+        }
+        $credentialRecovery = '#^/api/v1/users/([^/]+)/(?:password-reset|step-up/revoke|sessions/terminate)$#D';
+        if ($method === 'POST' && preg_match($credentialRecovery, $path, $match) === 1) {
+            $this->assert($context, 'users.manage', AuthorizationResource::item('user', rawurldecode($match[1])));
             return;
         }
         if (preg_match('#^/api/v1/users/([^/]+)(?:/roles/([^/]+))?$#D', $path, $match) === 1) {

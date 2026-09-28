@@ -25,7 +25,7 @@
         ]
     },
     "inventory": {
-        "tools": 83,
+        "tools": 88,
         "resources": 1,
         "prompts": 1
     },
@@ -588,7 +588,7 @@
             ]
         }
     ],
-    "contract_sha256": "78fd945311146c0b72595e711d82d76338fb0e3468c0266372603ef645a72374",
+    "contract_sha256": "b41743c1f510aec8301190697dd7b39eda4110b2d1f70ef274f432530a2f9402",
     "surface": {
         "tools": [
             {
@@ -7196,6 +7196,257 @@
                         "operation",
                         "replayed",
                         "document"
+                    ],
+                    "additionalProperties": false
+                }
+            },
+            {
+                "name": "kumwe_security_event_list",
+                "title": "List security events",
+                "description": "List the newest identity and credential security events, newest first.",
+                "handler": "listSecurityEvents",
+                "capability": "users.manage",
+                "risk": "read",
+                "alternative": "Administrator console: Users and roles, or bin/kumwe access.",
+                "annotations": {
+                    "title": "List security events",
+                    "readOnlyHint": true,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {},
+                    "required": [],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "items": {
+                            "type": "array",
+                            "maxItems": 100
+                        }
+                    },
+                    "required": [
+                        "items"
+                    ],
+                    "additionalProperties": false
+                }
+            },
+            {
+                "name": "kumwe_user_step_up_revoke",
+                "title": "Revoke a user's second factors",
+                "description": "Retire every second factor one user holds so a lost authenticator can be re-enrolled.",
+                "handler": "revokeUserStepUpCredentials",
+                "capability": "users.manage",
+                "risk": "installation_global",
+                "alternative": "Administrator console: Users and roles, or bin/kumwe access.",
+                "annotations": {
+                    "title": "Revoke a user's second factors",
+                    "readOnlyHint": false,
+                    "destructiveHint": true,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "operationId": {
+                            "type": "string",
+                            "minLength": 16,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{15,127}$"
+                        },
+                        "userId": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 191
+                        },
+                        "reason": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 500
+                        }
+                    },
+                    "required": [
+                        "operationId",
+                        "userId",
+                        "reason"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "revoked": {
+                            "type": "integer",
+                            "minimum": 0
+                        }
+                    },
+                    "required": [
+                        "revoked"
+                    ],
+                    "additionalProperties": false
+                }
+            },
+            {
+                "name": "kumwe_user_sessions_terminate",
+                "title": "Terminate a user's sessions",
+                "description": "End every session one user holds without changing the account's lifecycle state.",
+                "handler": "terminateUserSessions",
+                "capability": "users.manage",
+                "risk": "installation_global",
+                "alternative": "Administrator console: Users and roles, or bin/kumwe access.",
+                "annotations": {
+                    "title": "Terminate a user's sessions",
+                    "readOnlyHint": false,
+                    "destructiveHint": true,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "operationId": {
+                            "type": "string",
+                            "minLength": 16,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{15,127}$"
+                        },
+                        "userId": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 191
+                        },
+                        "reason": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 500
+                        }
+                    },
+                    "required": [
+                        "operationId",
+                        "userId",
+                        "reason"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "sessions_terminated": {
+                            "type": "integer",
+                            "minimum": 0
+                        }
+                    },
+                    "required": [
+                        "sessions_terminated"
+                    ],
+                    "additionalProperties": false
+                }
+            },
+            {
+                "name": "kumwe_user_role_revoke",
+                "title": "Revoke a role from a user",
+                "description": "Remove one role assignment from a user.",
+                "handler": "revokeUserRole",
+                "capability": "users.manage",
+                "risk": "installation_global",
+                "alternative": "Administrator console: Users and roles, or bin/kumwe access.",
+                "annotations": {
+                    "title": "Revoke a role from a user",
+                    "readOnlyHint": false,
+                    "destructiveHint": true,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "operationId": {
+                            "type": "string",
+                            "minLength": 16,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{15,127}$"
+                        },
+                        "userId": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 191
+                        },
+                        "roleId": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 191
+                        }
+                    },
+                    "required": [
+                        "operationId",
+                        "userId",
+                        "roleId"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "updated": {
+                            "type": "boolean"
+                        }
+                    },
+                    "required": [
+                        "updated"
+                    ],
+                    "additionalProperties": false
+                }
+            },
+            {
+                "name": "kumwe_role_grant_revoke",
+                "title": "Revoke a capability grant",
+                "description": "Remove one capability grant from a role.",
+                "handler": "revokeRoleGrant",
+                "capability": "users.manage",
+                "risk": "installation_global",
+                "alternative": "Administrator console: Users and roles, or bin/kumwe access.",
+                "annotations": {
+                    "title": "Revoke a capability grant",
+                    "readOnlyHint": false,
+                    "destructiveHint": true,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "operationId": {
+                            "type": "string",
+                            "minLength": 16,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{15,127}$"
+                        },
+                        "grantId": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 191
+                        }
+                    },
+                    "required": [
+                        "operationId",
+                        "grantId"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "revoked": {
+                            "type": "boolean"
+                        }
+                    },
+                    "required": [
+                        "revoked"
                     ],
                     "additionalProperties": false
                 }

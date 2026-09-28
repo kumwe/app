@@ -27,8 +27,9 @@ final readonly class McpMachineContract
     /**
      * Current contract generation identifier the live catalogue is generated as.
      *
-     * Generation two is generation one plus the eight Studio authoring tools and their error rows; every
-     * generation-one tool, schema and error row is unchanged, and `mcp-v1.json` stays retained beside it.
+     * Generation two is generation one plus the Studio authoring tools, the browser-parity tools and their
+     * error rows; every generation-one tool, schema and error row is unchanged, and `mcp-v1.json` stays
+     * retained beside it.
      *
      * @var    string
      * @since  2.0.0
@@ -57,7 +58,7 @@ final readonly class McpMachineContract
      * @var    int
      * @since  2.0.0
      */
-    public const int TOOL_COUNT = 83;
+    public const int TOOL_COUNT = 88;
 
     /**
      * Number of resources retained by this generation.

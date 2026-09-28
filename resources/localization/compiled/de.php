@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for de, carrying 2516 messages.
+ * Compiled interface message catalogue for de, carrying 2519 messages.
  *
  * Generated from de.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1974,7 +1974,10 @@ return [
     'core.console.queue_work.worker_heartbeat_cleanup_failed' => 'Bereinigung des Worker-Heartbeats fehlgeschlagen: {reason}',
     'core.console.schedule_run.description' => 'Versendet fällige Zeitpläne einmalig oder fortlaufend mit --loop.',
     'core.console.schedule_run.dispatched_due_schedule_s' => '{dispatched} fällige Zeitpläne versendet.',
+    'core.console.security_events.description' => 'Listet die neuesten Identitäts- und Zugriffssicherheitsereignisse auf.',
     'core.console.settings.description' => 'Liest oder aktualisiert die Website-Konfiguration.',
+    'core.console.studio_authoring.description' => 'Öffnet eine Studio-Bearbeitungssitzung und führt ihre Bearbeitungsvorgänge aus.',
+    'core.console.studio_authoring.refused' => 'Die Studio-Bearbeitungsanfrage wurde abgelehnt.',
     'core.console.theme_administrator_recover.description' => 'Stellt das geschützte integrierte Administrator-Theme atomar wieder her.',
     'core.console.theme_administrator_recover.restored_the_protected_built_in_administrator' => 'Das geschützte integrierte Administrator-Theme wurde wiederhergestellt.',
     'core.console.token_create.description' => 'Erstellt ein bereichsbezogenes API-/MCP-Zugriffstoken und gibt es einmalig aus.',
