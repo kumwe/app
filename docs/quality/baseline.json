@@ -3,7 +3,7 @@
     "work_package": "P0-A",
     "authority": "docs/roadmap/README.md",
     "note": "Every figure below is derived from the repository at the recorded commit. Nothing is typed by hand, nothing reads the clock or the machine, and running the generator twice at one commit produces the same document. composer baseline:check fails when it drifts.",
-    "commit": "d196de052aaca107ee0ac348ad216c6e4599b4f9",
+    "commit": "002938ef6476ce02b478ba0351ac98d02a03845b",
     "recorded_at": "2026-09-28",
     "recorded_from": [],
     "toolchain": {

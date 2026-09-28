@@ -39,7 +39,7 @@ type/Model/Blueprint/Entry hydration and explicit item/type-version/new-type sav
 as a top-level navigation workspace; a full-screen route remains an expanded state of the originating content
 context. Content New/Edit now mounts that contextual journey for the core Content target, automated end to end in
 `tests/Browser/studio-authoring.spec.ts` and `tests/Browser/studio-authoring-right-to-left.spec.ts`; extension-owned
-targets, standalone dual mounting and the pinned-release limitations recorded in
+targets, complete dual-mount acceptance and the pinned-release limitations recorded in
 [`docs/studio-composition-authoring.md`](../studio-composition-authoring.md) remain open, so the component evidence
 below must not be read as an accepted `STUDIO-PROD-015` claim. Acceptance follows
 [ADR 0021](decisions/0021-automated-acceptance-and-sampled-capacity.md): the maintainer's merge after green
@@ -178,6 +178,21 @@ the release, in `resources/localization/messages/*.xlf`; the `studioRelease` coo
 `tests/Fixtures/Studio/composition-acceptance-journey.json` and the unit tests under `tests/Unit/Studio/` that
 assert the release string; the rebuilt `public/assets/build` output; and `docs/architecture/capability-index.md`
 once the Producer version moves.
+
+Rechecked on **2026-09-28** through GitHub releases and exact tag/installed sources: Studio beta.6 remains the
+latest coordinated release, Producer 0.3.0 still pins beta.3, and SDK 0.3.3 still supplies no extension authoring-target
+kind or authoring-resource SPI. The complete prerequisite matrix is in
+[the App host record](../studio-composition-authoring.md#dependency-and-ownership-verification--2026-09-28).
+It distinguishes the missing SDK declaration and Studio preview/localization work from App-owned field identity,
+initial-presentation and packaged qualification work. Beta.3 already reconciles excluded local Entry values and
+presentation; their absence from a type-save request is not by itself an upstream blocker.
+
+The App Content launcher now calls the published explicit mount API for its exact target and requires its own HTTP
+deployment, so a neighboring local instance or failed declaration cannot be claimed by a document-wide discovery
+pass. `tests/Browser/studio-mount-isolation.spec.ts` exercises the committed App bundle with the official beta.3
+module, authoritative 401/403 responses, isolated local downloads and import, and rejection of missing, standalone
+or cross-target Content configuration. The controlled transport fixture establishes this App mount boundary;
+`STUDIO-PROD-015` still needs the complete successful PHP-hosted and packaged acceptance journey.
 
 ## Studio-owned production capability
 

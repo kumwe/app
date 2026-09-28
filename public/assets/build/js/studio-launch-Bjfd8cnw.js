@@ -1,15 +1,14 @@
-import { t as __vitePreload } from "./administrator-Co52foq9.js";
+import { t as __vitePreload } from "./administrator-BaWgCLj0.js";
 import { i as coreLayoutInitialProperties, o as isCoreLayoutBlockType, t as computePreviewDraftDigest } from "./preview-identity-Bvgz1vbs.js";
 //#region assets/administrator/components/studio-launch.ts
 /**
 * Start module for the contextual Studio mount on the Content editor.
 *
 * The pinned Studio browser module never scans the document on its own: importing it has no side
-* effect, and `autoMountStudio()` is the opt-in that discovers `[data-kumwe-studio]` targets and
-* mounts the Producer-emitted deployment next to each one. This module is that opt-in. It imports
+* effect, and `mountStudio()` opens the exact target with its Producer-emitted deployment. It imports
 * the module from the exact URL PHP resolved (the page carries a `modulepreload` with the manifest
 * integrity for the same URL, so the module map already holds the integrity-checked bytes), mounts
-* every target, and owns what the shell deliberately leaves to the host: swapping between the
+* only the Content target, and owns what the shell deliberately leaves to the host: swapping between the
 * page builder and the structured form, dirty-state confirmation, navigation when the shell
 * asks to return, the interface-locale message catalogue, and the authenticated preview surface.
 *
@@ -19,7 +18,7 @@ import { i as coreLayoutInitialProperties, o as isCoreLayoutBlockType, t as comp
 * builder: a mount nobody looks at costs the module download and would leave a second copy of
 * every content field in the document.
 *
-* `autoMountStudio()` resolves only once a session is open. On a create target that offers more
+* `mountStudio()` resolves only once a session is open. On a create target that offers more
 * than a blank start, Studio first attaches its create-source chooser to the mount and awaits the
 * editor's choice, so the surface is brought in front as soon as Studio attaches its first element
 * rather than when the mount promise settles; a hidden chooser could never be answered.
@@ -44,7 +43,7 @@ var PREVIEW_EXTENSION = "kumwe.app/preview";
 /** Prefix of a Blueprint that exists only in the browser session and cannot be previewed yet. */
 var DRAFT_BLUEPRINT_PREFIX = "content-blueprint:draft/";
 function isStudioBrowserModule(candidate) {
-	return typeof candidate === "object" && candidate !== null && typeof candidate.autoMountStudio === "function" && typeof candidate.StudioAuthoringControlRegistry === "function";
+	return typeof candidate === "object" && candidate !== null && typeof candidate.mountStudio === "function" && typeof candidate.parseStudioDeploymentConfiguration === "function" && typeof candidate.StudioAuthoringControlRegistry === "function";
 }
 function isSurface(candidate) {
 	return candidate === "studio" || candidate === "form";
@@ -425,15 +424,17 @@ async function setupStudioLaunch() {
 				moduleUrl
 ), []);
 			if (!isStudioBrowserModule(imported)) throw new TypeError("The Studio browser module does not export the hosted runtime.");
+			const configurationElement = document.getElementById(mount.dataset.kumweStudio ?? "");
+			if (!(configurationElement instanceof HTMLScriptElement) || !region.contains(configurationElement)) throw new TypeError("The Content target has no associated deployment configuration.");
+			const configuration = imported.parseStudioDeploymentConfiguration(configurationElement);
+			if (configuration.transport?.kind !== "http") throw new TypeError("The Content target requires a hosted deployment.");
 			const registry = new imported.StudioAuthoringControlRegistry({ strictContentSecurityPolicy: true });
 			attached.observe(mount, { childList: true });
-			const report = await imported.autoMountStudio({ hosted: () => ({ authoringControlRegistry: registry }) });
+			const handle = await imported.mountStudio(mount, configuration, {
+				root: region,
+				hosted: () => ({ authoringControlRegistry: registry })
+			});
 			attached.disconnect();
-			const handle = report.handles[0];
-			if (report.failures.length > 0 || handle === void 0) {
-				fail(report.failures[0]?.error ?? /* @__PURE__ */ new Error("No Studio target was mounted."));
-				return;
-			}
 			shell = handle.element;
 			const messages = await localized;
 			if (messages !== void 0) shell.messages = messages;

@@ -23,9 +23,9 @@ record is not thereby a new machine-evidence candidate.
 
 | | |
 |---|---|
-| **Current phase** | Gate A passed. Pull request #152 (`platform/v2-runtime-completion`) carries the Version 2 runtime completion, Points 1 to 4. |
-| **In flight** | #152: the Studio journey and machine parity; Phase 5 scale; Phase 6 recovery and diagnostics; Phase 7 and `PL-G` security, interface, language and automation gaps. Every requirement is one entry of [`acceptance-record.json`](acceptance-record.json) with its runtime owner, tests, CI jobs, artifacts, decision, state and track; the phase board, open work, Gate B table and ledger snapshot below are generated from it and from [`findings.json`](findings.json). Work committed on an agent branch but not yet on the pull request head reads *pending integration* and names the branch. |
-| **Next** | Integrate the pending agent branches the open-work table names, then the Point 5 track: exact release-artifact qualification and publication, the extension proof portfolio, optional 24-hour and 72-hour soaks, the independent release-candidate review and the `GM-SUP-05` out-of-process runtime. Adopt `kumwe/conversion-extension` once a successor release ships a record inside the StrictYaml subset (`KUMWE-MIG-2026-028`). |
+| **Current phase** | Gate A passed. Pull request #152 (`platform/v2-runtime-completion`) carries the Version 2 Beta 1 runtime and release qualification, Points 1 through 5. |
+| **In flight** | #152: the Studio journey and machine parity; Phase 5 scale; Phase 6 recovery and diagnostics; Phase 7 and `PL-G` security, interface, language and automation gaps. Every requirement is one entry of [`acceptance-record.json`](acceptance-record.json) with its runtime owner, tests, CI jobs, artifacts, decision, state and track; the phase board, open work, Gate B table and ledger snapshot below are generated from it and from [`findings.json`](findings.json). The 2026-09-28 reconciliation no longer assumes unpublished agent branches survive: integrated work awaiting qualification and missing runtime are explicitly distinguished in each outstanding note. |
+| **Next** | Complete the remaining runtime and failing workflow cases, qualify the exact Beta 1 artifacts, and mark #152 ready only after the required checks pass. The maintainer alone merges; publication follows the qualified release pipeline. Demo redesign and the Version 3 Flutter SDK remain separate. |
 | **Open decisions** | None for #152. [ADR 0021](decisions/0021-automated-acceptance-and-sampled-capacity.md) settles acceptance and capacity: automated workflow evidence plus the maintainer's merge once every required check is green is the sole acceptance record, with no human checkbox, manual browser, Safari or right-to-left review, or follow-up acceptance commit; capacity is estimated statistically from concurrent samples on workflow hardware. The Studio pin stays at `0.1.0-beta.3` with `kumwe/producer` `0.3.0`, because no Producer release re-pins a newer Studio. |
 | **Gate A** | Passed on 2026-08-22. All 13 executable criteria are met; acceptance is recorded in [ADR 0010](decisions/0010-gate-a-assessment.md). |
 | **Gate B** | Not assessed. The criteria table below is generated from the acceptance record; ADR 0021 changes the acceptance method and does not declare Gate B passed. |
@@ -38,19 +38,19 @@ record, never this table. A phase with any open or pending entry cannot read as 
 <!-- acceptance-record:phase-board:begin -->
 | Phase | Gate | State | Blocked on |
 |---|---|---|---|
-| 0 — Truth, contracts and decisions | A | In progress — `P0-C` delivered; `P0-A`, `P0-B`, `P0-D`, `P0-E` open; 2 findings open | — |
+| 0 — Truth, contracts and decisions | A | In progress — `P0-C`, `P0-D` delivered; `P0-A`, `P0-B`, `P0-E` open; 2 findings open | — |
 | 1 — Correctness, security, data entry | A | Delivered — every package complete, including resident extension withdrawal and stale-generation fencing | — |
 | 2 — Truthful gates | A | In progress — `P2-F`, `P2-G`, `P2-I` delivered; `P2-B`, `P2-C`, `P2-D`, `P2-E`, `P2-H` open; 4 findings open | Phase 0 decisions 1, 7 and 8 (`P0-E`) |
 | 3 — Seams and the ownership model | A | Delivered — transaction proof, delivery boundaries, the two aggregate seams, business-group ownership, and the `P3-D` domain-and-application reconciliation recorded in ADR 0012 | — |
 | 4 — Atomic aggregate documents | A | Delivered — `P4-A` … `P4-D` complete: the command, the bulk persistence mechanics, the numbering proof set with ADR 0011 and the bounded invariant | — |
 | E — Enterprise document primitives | A | Delivered — every package and follow-up finding complete | — |
-| L — Language, locale and multilingual content | A, with a B tail | In progress — `PL-A`, `PL-B`, `PL-C`, `PL-D`, `PL-E`, `PL-F` delivered; `PL-G` pending integration; 1 finding pending integration; in flight on `agent/browser` | — |
+| L — Language, locale and multilingual content | A, with a B tail | In progress — `PL-A`, `PL-B`, `PL-C`, `PL-D`, `PL-E`, `PL-F` delivered; `PL-G` open; 1 finding open | — |
 | **Gate A** | | **Passed — 13/13 executable criteria met** | — |
-| 5 — Enterprise scale | B | In progress — `P5-A`, `P5-B`, `P5-C`, `P5-D`, `P5-E`, `P5-F` delivered; `P5-G`, `P5-H`, `P5-I` open | — |
-| 6 — Continuity and introspection | B | In progress — `P6-A`, `P6-B`, `P6-C`, `P6-D` pending integration; 7 findings pending integration; in flight on `agent/recovery` | — |
-| 7 — Qualification | B | In progress — `P7-A`, `P7-D` delivered; `P7-B`, `P7-C`, `P7-E`, `P7-F`, `P7-G`, `P7-H`, `P7-I` open; 1 finding pending integration, 2 findings open; in flight on `agent/browser` | Phases 5 and 6 and `PL-G`; the Point 5 track for `P7-B` and `P7-F` … `P7-I` |
-| S — Studio contextual Content authoring | A, with a B integration | In progress — `S-A`, `S-B`, `S-C`, `S-D`, `S-E`, `S-F` delivered; `S-G` open; 1 finding open, 1 requirement pending integration; in flight on `agent/machine` | A Producer release re-pinning Studio past `0.1.0-beta.3`; none exists (pin kept 2026-09-24) |
-| **Gate B** | | **Not assessed — criteria: 2 delivered, 3 pending integration, 7 open** | Phases 5, 6, 7 and S; the Point 5 track |
+| 5 — Enterprise scale | B | In progress — `P5-A`, `P5-B`, `P5-C`, `P5-D`, `P5-E`, `P5-F`, `P5-I` delivered; `P5-G`, `P5-H` open | — |
+| 6 — Continuity and introspection | B | In progress — `P6-A`, `P6-B`, `P6-C`, `P6-D` open; 7 findings open | — |
+| 7 — Qualification | B | In progress — `P7-A`, `P7-D` delivered; `P7-B`, `P7-C`, `P7-E`, `P7-F`, `P7-G`, `P7-H`, `P7-I` open; 3 findings open; in flight on `agent/browser` | Final Phases 5, 6, PL-G and release-artifact evidence in #152 |
+| S — Studio contextual Content authoring | A, with a B integration | In progress — `S-A`, `S-B`, `S-C`, `S-D`, `S-E`, `S-F` delivered; `S-G` open; 1 finding open, 1 requirement open | A Producer release re-pinning Studio past `0.1.0-beta.3`; none exists (pin kept 2026-09-24) |
+| **Gate B** | | **Not assessed — criteria: 2 delivered, 0 pending integration, 10 open** | Final runtime, Studio, recovery, diagnostics and release qualification evidence; Beta 1 is a prerelease, not a stable Gate B declaration |
 | M — Maintainability | — | In progress — 2 findings open | Phase 3 seams settled. Blocks nothing. |
 | N — Native client platform contracts | — | Not started — Version 3 seed | Nothing in Version 2; blocks nothing. Decision D17, ADR 0009. |
 <!-- acceptance-record:phase-board:end -->
@@ -66,16 +66,16 @@ definition remains in README, and the per-requirement detail is in
 <!-- acceptance-record:open-work:begin -->
 | Phase | Packages | Findings and requirements | Track | Pending integration from |
 |---|---|---|---|---|
-| 0 | `P0-A`, `P0-B`, `P0-D`, `P0-E` | `V2-DOC-002`, `V2-ERP-007` | `maintainability`, `pr-152`, `version-3` | — |
-| 2 | `P2-B`, `P2-C`, `P2-D`, `P2-E`, `P2-H` | `V2-DEMO-001`, `V2-REL-001`, `V2-REL-002`, `GM-SUP-09` | `maintainability`, `point-5` | — |
-| L | `PL-G` | `V2-LNG-010` | `pr-152` | `agent/browser`: `PL-G`, `V2-LNG-010` |
-| 5 | `P5-G`, `P5-H`, `P5-I` | — | `pr-152` | — |
-| 6 | `P6-A`, `P6-B`, `P6-C`, `P6-D` | `V2-DR-001`, `V2-DR-004`, `V2-DR-003`, `V2-DR-002`, `GM-BAK-04`, `GM-BAK-08`, `V2-OPS-001` | `pr-152` | `agent/recovery`: `P6-A`, `P6-B`, `P6-C`, `P6-D`, `V2-DR-001`, `V2-DR-004`, `V2-DR-003`, `V2-DR-002`, `GM-BAK-04`, `GM-BAK-08`, `V2-OPS-001` |
-| 7 | `P7-B`, `P7-C`, `P7-E`, `P7-F`, `P7-G`, `P7-H`, `P7-I` | `V2-UX-001`, `V2-QA-014`, `GM-SUP-05` | `point-5`, `pr-152` | `agent/browser`: `V2-QA-014` |
-| S | `S-G` | `V2-STU-007`, `MACHINE-STUDIO-PARITY` | `pr-152` | `agent/machine`: `MACHINE-STUDIO-PARITY` |
+| 0 | `P0-A`, `P0-B`, `P0-E` | `V2-DOC-002`, `V2-ERP-007` | `maintainability`, `version-3` | — |
+| 2 | `P2-B`, `P2-C`, `P2-D`, `P2-E`, `P2-H` | `V2-DEMO-001`, `V2-REL-001`, `V2-REL-002`, `GM-SUP-09` | `maintainability`, `pr-152` | — |
+| L | `PL-G` | `V2-LNG-010` | `pr-152` | — |
+| 5 | `P5-G`, `P5-H` | — | `pr-152` | — |
+| 6 | `P6-A`, `P6-B`, `P6-C`, `P6-D` | `V2-DR-001`, `V2-DR-004`, `V2-DR-003`, `V2-DR-002`, `GM-BAK-04`, `GM-BAK-08`, `V2-OPS-001` | `pr-152` | — |
+| 7 | `P7-B`, `P7-C`, `P7-E`, `P7-F`, `P7-G`, `P7-H`, `P7-I` | `V2-UX-001`, `V2-QA-014`, `GM-SUP-05` | `pr-152` | — |
+| S | `S-G` | `V2-STU-007`, `MACHINE-STUDIO-PARITY` | `pr-152` | — |
 | M | — | `V2-ARC-002`, `V2-QA-010` | `maintainability` | — |
 | N | — | `V3-NC-001`, `V3-NC-002`, `V3-NC-003`, `V3-NC-004` | `version-3` | — |
-| evidence | — | `GM-AUD-02` | `point-5` | — |
+| evidence | — | `GM-AUD-02` | `pr-152` | — |
 <!-- acceptance-record:open-work:end -->
 
 ## Gate B criteria
@@ -87,17 +87,17 @@ delivered.
 <!-- acceptance-record:gate-b:begin -->
 | # | Criterion | State | Track | Entries not yet delivered |
 |---|---|---|---|---|
-| 1 | No repository-owned critical or high finding is open; every conditional and external risk has an owner, detection method, compensating control, remediation path and review date. | open | `point-5` | `V2-ERP-007`, `V2-REL-001`, `V2-REL-002`, `V2-DR-001`, `V2-DR-003`, `V2-DR-002`, `GM-BAK-04`, `GM-BAK-08`, `V2-OPS-001`, `P7-C`, `V2-STU-007`, `GM-AUD-02` |
+| 1 | No repository-owned critical or high finding is open; every conditional and external risk has an owner, detection method, compensating control, remediation path and review date. | open | `pr-152` | `V2-ERP-007`, `V2-REL-001`, `V2-REL-002`, `V2-DR-001`, `V2-DR-003`, `V2-DR-002`, `GM-BAK-04`, `GM-BAK-08`, `V2-OPS-001`, `P7-C`, `V2-STU-007`, `GM-AUD-02` |
 | 2 | Concurrent capacity samples and explicitly labelled estimates are published from workflow hardware; an estimate is never a production guarantee. | delivered | `pr-152` | — |
 | 3 | Unrelated writes do not serialize on a definition row, commits lock no installation-wide head, fan-out and queue claims scale through batched workers, hot ledgers drain at twice expiry, and monitoring runs no unbudgeted exact count. | delivered | `pr-152` | — |
-| 4 | Point-in-time recovery is proven: coordinates on every engine, replay before and after a chosen transaction, the ordering rule enforced, and the drill run inside the deployed image. | pending-integration (`agent/recovery`) | `pr-152` | `P6-A`, `P6-B`, `P6-C`, `V2-DR-001`, `V2-DR-004`, `V2-DR-003`, `V2-DR-002`, `GM-BAK-04`, `GM-BAK-08` |
-| 5 | Operational diagnostics answer where the system is struggling, within the established cardinality discipline. | pending-integration (`agent/recovery`) | `pr-152` | `P6-D`, `V2-OPS-001` |
-| 6 | The exact built images, Composer package and archive pass the complete qualification contract and a signed manifest contains every published digest. | open | `point-5` | `P2-H`, `V2-REL-001`, `V2-REL-002`, `P7-B`, `P7-G` |
+| 4 | Point-in-time recovery is proven: coordinates on every engine, replay before and after a chosen transaction, the ordering rule enforced, and the drill run inside the deployed image. | open | `pr-152` | `P6-A`, `P6-B`, `P6-C`, `V2-DR-001`, `V2-DR-004`, `V2-DR-003`, `V2-DR-002`, `GM-BAK-04`, `GM-BAK-08` |
+| 5 | Operational diagnostics answer where the system is struggling, within the established cardinality discipline. | open | `pr-152` | `P6-D`, `V2-OPS-001` |
+| 6 | The exact built images, Composer package and archive pass the complete qualification contract and a signed manifest contains every published digest. | open | `pr-152` | `P2-H`, `V2-REL-001`, `V2-REL-002`, `P7-B`, `P7-G` |
 | 7 | Automated interface and language evidence is complete; the maintainer's merge is the sole human acceptance, with no manual checklist. | open | `pr-152` | `PL-G`, `V2-LNG-010`, `P7-E`, `V2-UX-001`, `V2-QA-014` |
-| 8 | The vertical-neutral proof portfolio installs, runs and uninstalls on all three engines with no core edit. | open | `point-5` | `P7-F` |
-| 9 | An independent review at the release candidate finds no repository-owned critical or high contradiction. | open | `point-5` | `P7-I` |
-| 10 | The published envelope states exact units, topology, hardware, versions, dataset, variance and limitations, never 'millions per day'. | open | `pr-152` | `P0-D`, `P5-I` |
-| 11 | All nine languages ship and each is qualified in its own right, with zero horizontal overflow and zero inaccessible critical control. | pending-integration (`agent/browser`) | `pr-152` | `PL-G`, `V2-LNG-010` |
+| 8 | The vertical-neutral proof portfolio installs, runs and uninstalls on all three engines with no core edit. | open | `pr-152` | `P7-F` |
+| 9 | An independent review at the release candidate finds no repository-owned critical or high contradiction. | open | `pr-152` | `P7-I` |
+| 10 | The published envelope states exact units, topology, hardware, versions, dataset, variance and limitations, never 'millions per day'. | open | `pr-152` | — |
+| 11 | All nine languages ship and each is qualified in its own right, with zero horizontal overflow and zero inaccessible critical control. | open | `pr-152` | `PL-G`, `V2-LNG-010` |
 | 12 | Studio contextual Content authoring ships and passes STUDIO-PROD-015 through PHP, with zero production Node.js or npm. | open (`agent/machine`) | `pr-152` | `S-G`, `V2-STU-007`, `MACHINE-STUDIO-PARITY` |
 <!-- acceptance-record:gate-b:end -->
 

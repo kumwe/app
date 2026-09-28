@@ -209,7 +209,8 @@ test.describe('Hebrew generated business work', () => {
       .filter({ hasText: new RegExp(`^${message('he', 'core.administrator.business_detail.created')}$`, 'u') })
       .first()
       .locator('xpath=following-sibling::dd[1]/time');
-    await expect(created).toHaveText(/^\d{1,2} [֐-׿׳"]+ \d{4}, \d{2}:\d{2}$/u);
+    // ICU's Hebrew short-time pattern leaves single-digit hours unpadded.
+    await expect(created).toHaveText(/^\d{1,2} [֐-׿׳"]+ \d{4}, \d{1,2}:\d{2}$/u);
     await expectDirection(page.locator('main'), 'rtl');
     await expectNoDocumentOverflow(page);
     await expectAccessible(page);

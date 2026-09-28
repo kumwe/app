@@ -19,6 +19,16 @@ Entries cite the commits that carried them. Version 2.0.0 is not released, so ev
 
 ### #152 — Version 2 runtime completion
 
+- Isolate contextual Studio mounts to their own configuration and element, preserving independent standalone
+  editors on the same page. Real released-SDK browser tests cover mounting and authority refusals; remaining
+  authoring dependencies stay explicit. Accept the Hebrew locale’s valid unpadded hour representation in
+  browser date assertions (#152).
+
+- Reconcile `P0-D` and `P5-I` with the implemented deterministic aged dataset, four storage workloads,
+  three-engine capacity workflow and storage reserve guardrail. Candidate #152 passed sampled capacity run
+  36404051116; measured observations and estimates remain distinct. Remove stale unpublished-agent-branch
+  completion claims and include exact Beta 1 artifact qualification under the September 28 mandate (#152).
+
 - Bind cached extension-runtime trust to the current map bytes as well as the signed marker and key ring.
   Changing a map after an APCu cache fill now forces verification and refuses the altered document. Alert
   drills wait for a registered worker with a fresh heartbeat and keep adjacent backup snapshots distinct;
@@ -28,7 +38,7 @@ Entries cite the commits that carried them. Version 2.0.0 is not released, so ev
   route proof. The dependency-light architecture lane retains every parity-record refusal check and no
   longer tries to boot an application without deployment configuration (#152).
 
-Pull request #152 (`platform/v2-runtime-completion`) completes Points 1 to 4 of the Version 2 runtime increment
+Pull request #152 (`platform/v2-runtime-completion`) carries Points 1 through 5 of the Version 2 Beta 1 increment
 set by [ADR 0021](docs/roadmap/decisions/0021-automated-acceptance-and-sampled-capacity.md): the Studio journey
 and machine parity, Phase 5 scale, Phase 6 recovery and diagnostics, and the Phase 7 and `PL-G` security,
 interface, language and automation gaps. The maintainer's merge, once every required check is green, accepts
@@ -36,8 +46,8 @@ what this section describes; no human checkbox, manual browser review or follow-
 Each requirement delivered here is an entry of
 [`docs/roadmap/acceptance-record.json`](docs/roadmap/acceptance-record.json) naming its runtime owner, tests, CI
 jobs and artifacts; what is still open, and which branch carries it, is generated into
-[`docs/roadmap/STATUS.md`](docs/roadmap/STATUS.md). Exact release-artifact qualification, the extension proof
-portfolio, soaks, the independent review and the out-of-process extension runtime are the separate Point 5 track.
+[`docs/roadmap/STATUS.md`](docs/roadmap/STATUS.md). The 2026-09-28 amendment brings exact release qualification
+into this PR; the record keeps each unfinished requirement open. Beta 1 is a prerelease, and optional longer soaks remain optional.
 
 - Add authenticated, dedup-friendly v3 backup trees with retained v2 restore support, native binary-log
   and PostgreSQL WAL recovery adapters, isolated target claims, interruption handling and scheduled

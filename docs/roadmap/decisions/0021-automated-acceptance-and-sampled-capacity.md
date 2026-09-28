@@ -11,8 +11,22 @@
 The next App implementation increment starts from merged pull request 151. It completes contextual
 Studio authoring, remaining scale engineering, recovery and diagnostics, and security, interface,
 language and automation gaps. Framework extraction and native acceleration are the baseline, not new work.
-Exact release artifact qualification/publication and the extension proof portfolio remain a separate track.
+The original increment kept exact release artifact qualification/publication and the extension proof portfolio
+on a separate track. The 2026-09-28 amendment below expands the current pull request.
 Demo redesign and the Version 3 Flutter client SDK are outside this increment.
+
+### Scope amendment — 2026-09-28
+
+The product owner instructed agents to finish Points 1 through 5 in pull request #152, repair its rebase
+readiness, and prepare Version 2 Beta 1 (`2.0.0-beta.1`). Exact artifact qualification and release-pipeline
+readiness therefore join the existing runtime increment. The release pipeline must preserve the identity of
+the artifacts it qualifies and publishes. It must not publish the unmerged draft as an accepted release.
+
+Beta 1 is a prerelease, not a claim that the stable Version 2 Gate B assessment has passed. Required runtime,
+security, browser and artifact checks remain enforceable; unresolved requirements and external dependency
+limits remain visible until their implementation and evidence exist. The maintainer still performs the merge.
+The sampled-capacity decision, optional longer soaks, automated acceptance, demo exclusion and Version 3
+boundary are unchanged.
 
 ### Capacity evidence
 

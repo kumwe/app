@@ -2,11 +2,10 @@
  * Start module for the contextual Studio mount on the Content editor.
  *
  * The pinned Studio browser module never scans the document on its own: importing it has no side
- * effect, and `autoMountStudio()` is the opt-in that discovers `[data-kumwe-studio]` targets and
- * mounts the Producer-emitted deployment next to each one. This module is that opt-in. It imports
+ * effect, and `mountStudio()` opens the exact target with its Producer-emitted deployment. It imports
  * the module from the exact URL PHP resolved (the page carries a `modulepreload` with the manifest
  * integrity for the same URL, so the module map already holds the integrity-checked bytes), mounts
- * every target, and owns what the shell deliberately leaves to the host: swapping between the
+ * only the Content target, and owns what the shell deliberately leaves to the host: swapping between the
  * page builder and the structured form, dirty-state confirmation, navigation when the shell
  * asks to return, the interface-locale message catalogue, and the authenticated preview surface.
  *
@@ -16,7 +15,7 @@
  * builder: a mount nobody looks at costs the module download and would leave a second copy of
  * every content field in the document.
  *
- * `autoMountStudio()` resolves only once a session is open. On a create target that offers more
+ * `mountStudio()` resolves only once a session is open. On a create target that offers more
  * than a blank start, Studio first attaches its create-source chooser to the mount and awaits the
  * editor's choice, so the surface is brought in front as soon as Studio attaches its first element
  * rather than when the mount promise settles; a hidden chooser could never be answered.
@@ -51,32 +50,10 @@ const PREVIEW_EXTENSION = 'kumwe.app/preview';
 /** Prefix of a Blueprint that exists only in the browser session and cannot be previewed yet. */
 const DRAFT_BLUEPRINT_PREFIX = 'content-blueprint:draft/';
 
-interface StudioAutoMountFailure {
-  readonly configurationElementId?: string;
-  readonly error: unknown;
-  readonly phase: 'configuration' | 'runtime';
-  readonly target: HTMLElement;
-}
-
-interface StudioMountHandle {
-  readonly element: HTMLElement;
-  readonly target: HTMLElement;
-  dispose(): Promise<void> | void;
-}
-
-interface StudioAutoMountReport {
-  readonly discoveredTargetCount: number;
-  readonly failures: readonly StudioAutoMountFailure[];
-  readonly handles: readonly StudioMountHandle[];
-  dispose(): Promise<void> | void;
-}
-
-interface StudioBrowserModule {
-  readonly StudioAuthoringControlRegistry: new (options: { strictContentSecurityPolicy: boolean }) => unknown;
-  autoMountStudio(options: {
-    hosted: () => { authoringControlRegistry: unknown };
-  }): Promise<StudioAutoMountReport>;
-}
+type StudioBrowserModule = Pick<
+  typeof import('@kumwe/studio'),
+  'mountStudio' | 'parseStudioDeploymentConfiguration' | 'StudioAuthoringControlRegistry'
+>;
 
 interface ReturnRequestDetail {
   readonly returnContext?: { key: string };
@@ -154,7 +131,9 @@ function isStudioBrowserModule(candidate: unknown): candidate is StudioBrowserMo
   return (
     typeof candidate === 'object' &&
     candidate !== null &&
-    typeof (candidate as { autoMountStudio?: unknown }).autoMountStudio === 'function' &&
+    typeof (candidate as { mountStudio?: unknown }).mountStudio === 'function' &&
+    typeof (candidate as { parseStudioDeploymentConfiguration?: unknown }).parseStudioDeploymentConfiguration
+      === 'function' &&
     typeof (candidate as { StudioAuthoringControlRegistry?: unknown }).StudioAuthoringControlRegistry === 'function'
   );
 }
@@ -626,17 +605,23 @@ export async function setupStudioLaunch(): Promise<void> {
       if (!isStudioBrowserModule(imported)) {
         throw new TypeError('The Studio browser module does not export the hosted runtime.');
       }
+      const configurationElement = document.getElementById(mount.dataset.kumweStudio ?? '');
+      if (!(configurationElement instanceof HTMLScriptElement) || !region.contains(configurationElement)) {
+        throw new TypeError('The Content target has no associated deployment configuration.');
+      }
+      const configuration = imported.parseStudioDeploymentConfiguration(configurationElement);
+      if (configuration.transport?.kind !== 'http') {
+        throw new TypeError('The Content target requires a hosted deployment.');
+      }
       const registry = new imported.StudioAuthoringControlRegistry({ strictContentSecurityPolicy: true });
       attached.observe(mount, { childList: true });
-      const report = await imported.autoMountStudio({
+      // The public mount API checks that configuration.mount resolves to this exact element. A document-wide
+      // discovery pass would also claim neighboring local/hosted instances and couple their failures and handles.
+      const handle = await imported.mountStudio(mount, configuration, {
+        root: region,
         hosted: () => ({ authoringControlRegistry: registry }),
       });
       attached.disconnect();
-      const handle = report.handles[0];
-      if (report.failures.length > 0 || handle === undefined) {
-        fail(report.failures[0]?.error ?? new Error('No Studio target was mounted.'));
-        return;
-      }
       shell = handle.element as ContextualShell;
       const messages = await localized;
       if (messages !== undefined) shell.messages = messages;

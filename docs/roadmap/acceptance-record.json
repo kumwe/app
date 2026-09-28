@@ -11,8 +11,8 @@
     "open": "Outstanding on every branch; the outstanding note says what remains and who decides it."
   },
   "tracks": {
-    "pr-152": "This pull request (#152), Points 1 to 4: the Studio journey and machine parity; Phase 5 scale; Phase 6 recovery and diagnostics; Phase 7 and PL-G security, interface, language and automation gaps.",
-    "point-5": "The separate Point 5 track after #152: exact release-artifact qualification and publication, the extension proof portfolio, optional 24-hour and 72-hour soaks, the independent release-candidate review and the GM-SUP-05 out-of-process extension runtime.",
+    "pr-152": "Pull request #152, Points 1 through 5 and Version 2 Beta 1: Studio authoring and machine parity; scale; recovery and operator diagnostics; security, interface, language and automation; exact release-artifact qualification and publication readiness. Maintainer merge remains required.",
+    "point-5": "Release qualification requirements brought into #152 by the product owner on 2026-09-28; completed artifacts and a maintainer merge are prerequisites to Beta 1 publication. Optional longer soaks remain optional under ADR 0021.",
     "maintainability": "The non-gating lane: Lane M and the residual engineering of the Gate A phases 0 and 2, which blocks neither #152 nor Gate B.",
     "version-3": "Lane N and the coordination it owns: Version 3 native-client seeds, never Version 2 deliverables or Gate B evidence."
   },
@@ -39,7 +39,7 @@
       "blocked_on": "—"
     },
     "Gate B": {
-      "blocked_on": "Phases 5, 6, 7 and S; the Point 5 track"
+      "blocked_on": "Final runtime, Studio, recovery, diagnostics and release qualification evidence; Beta 1 is a prerelease, not a stable Gate B declaration"
     }
   },
   "phases": [
@@ -136,7 +136,7 @@
       "id": "7",
       "name": "Qualification",
       "gate": "B",
-      "blocked_on": "Phases 5 and 6 and `PL-G`; the Point 5 track for `P7-B` and `P7-F` … `P7-I`",
+      "blocked_on": "Final Phases 5, 6, PL-G and release-artifact evidence in #152",
       "delivered_packages": []
     },
     {
@@ -232,25 +232,29 @@
       "reference": "docs/roadmap/README.md#phase-0--truth-contracts-and-decisions",
       "runtime_owner": [
         "docs/roadmap/capacity-contract.json",
-        "tools/perf-harness.php"
+        "tools/perf-harness.php",
+        "tools/PerfDataset.php"
       ],
       "tests": [
         "tests/Unit/Tools/PerfHarnessPlanTest.php",
-        "tests/Unit/Performance/PerfHarnessContractTest.php"
+        "tests/Unit/Performance/PerfHarnessContractTest.php",
+        "tests/Unit/Performance/PerfDatasetTest.php"
       ],
       "workflows": [
         ".github/workflows/ci.yml#database",
         ".github/workflows/capacity.yml#samples"
       ],
       "artifacts": [
-        "docs/roadmap/capacity-contract.json"
+        "docs/roadmap/capacity-contract.json",
+        "docs/operations/capacity-estimate.md",
+        ".github/workflows/capacity.yml#capacity-samples-${{ matrix.database.driver }}"
       ],
       "decision": "D1, ADR 0021",
-      "state": "open",
+      "state": "delivered",
       "track": "pr-152",
       "branches": [],
       "branch_evidence": [],
-      "outstanding": "ADR 0021 replaced procured reference hardware with the hardware each workflow run records (contract 1.3.0). The contract still does not declare the dataset seed and age distribution it names as required evidence, and no sample runs an aged dataset, so the published estimate states a fresh single-site dataset as its limitation.",
+      "outstanding": null,
       "gate_b_criteria": [
         10
       ],
@@ -466,10 +470,10 @@
       "artifacts": [],
       "decision": "D2",
       "state": "open",
-      "track": "point-5",
+      "track": "pr-152",
       "branches": [],
       "branch_evidence": [],
-      "outstanding": "Separate Point 5 track by maintainer decision: exact release-artifact qualification and publication, the extension proof portfolio, optional 24-hour and 72-hour soaks, the independent release-candidate review and the GM-SUP-05 runtime follow this pull request.",
+      "outstanding": "Included in #152 by the 2026-09-28 product-owner amendment: implement and qualify this release requirement for Beta 1, keeping publication conditional on the maintainer merge and the exact artifact evidence.",
       "gate_b_criteria": [
         6
       ],
@@ -522,10 +526,10 @@
       "artifacts": [],
       "decision": "D2, ADR 0021",
       "state": "open",
-      "track": "point-5",
+      "track": "pr-152",
       "branches": [],
       "branch_evidence": [],
-      "outstanding": "Separate Point 5 track by maintainer decision: exact release-artifact qualification and publication, the extension proof portfolio, optional 24-hour and 72-hour soaks, the independent release-candidate review and the GM-SUP-05 runtime follow this pull request.",
+      "outstanding": "Included in #152 by the 2026-09-28 product-owner amendment: implement and qualify this release requirement for Beta 1, keeping publication conditional on the maintainer merge and the exact artifact evidence.",
       "gate_b_criteria": [
         1,
         6
@@ -553,10 +557,10 @@
       "artifacts": [],
       "decision": "ADR 0021",
       "state": "open",
-      "track": "point-5",
+      "track": "pr-152",
       "branches": [],
       "branch_evidence": [],
-      "outstanding": "Separate Point 5 track by maintainer decision: exact release-artifact qualification and publication, the extension proof portfolio, optional 24-hour and 72-hour soaks, the independent release-candidate review and the GM-SUP-05 runtime follow this pull request.",
+      "outstanding": "Included in #152 by the 2026-09-28 product-owner amendment: implement and qualify this release requirement for Beta 1, keeping publication conditional on the maintainer merge and the exact artifact evidence.",
       "gate_b_criteria": [
         1,
         6
@@ -583,7 +587,7 @@
       ],
       "decision": "ADR 0021",
       "state": "open",
-      "track": "point-5",
+      "track": "pr-152",
       "branches": [],
       "branch_evidence": [],
       "outstanding": "Needs an agreed licence policy before an SBOM gate means anything, then publication as a build attestation; its home is the Point 5 build-once chain.",
@@ -621,16 +625,11 @@
         ".github/workflows/nightly.yml#nightly-browser-evidence-${{ matrix.database.driver }}"
       ],
       "decision": "D11, ADR 0002, ADR 0021",
-      "state": "pending-integration",
+      "state": "open",
       "track": "pr-152",
-      "branches": [
-        "agent/browser"
-      ],
-      "branch_evidence": [
-        "tests/Browser/right-to-left.spec.ts",
-        "tests/Browser/support/interface-catalogue.ts"
-      ],
-      "outstanding": "The head carries all nine catalogues, the ICU and plural quality gate, the per-locale qualification journey, the right-to-left phone layout fixes it found and signed-in right-to-left baselines for the administrator and portal. agent/browser refiles the translated right-to-left login baselines and names right-to-left controls from each catalogue. Flips when it lands.",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "All nine catalogues, per-locale journeys and signed-in right-to-left baselines are on the PR head. Complete final browser qualification, including the Hebrew time-format assertion and nightly accessibility/focus failures.",
       "gate_b_criteria": [
         7,
         11
@@ -668,16 +667,11 @@
         ".github/workflows/nightly.yml#nightly-browser-evidence-${{ matrix.database.driver }}"
       ],
       "decision": "D11, ADR 0002, ADR 0021",
-      "state": "pending-integration",
+      "state": "open",
       "track": "pr-152",
-      "branches": [
-        "agent/browser"
-      ],
-      "branch_evidence": [
-        "tests/Browser/right-to-left.spec.ts",
-        "tests/Browser/support/interface-catalogue.ts"
-      ],
-      "outstanding": "Flips with PL-G when agent/browser lands. A branch that adds en-GB identifiers, such as agent/machine, must carry the eight translations when it lands, because composer translation:check refuses an incomplete catalogue.",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "All nine catalogues are on the PR head. Complete the final per-locale browser matrix; no fluent human review is required or claimed.",
       "gate_b_criteria": [
         7,
         11
@@ -907,7 +901,9 @@
       "tests": [
         "tests/Integration/Performance/HotPlanRegressionIntegrationTest.php",
         "tests/Integration/BusinessRecord/BusinessRecordPolicyCompilerIntegrationTest.php",
-        "tests/Unit/Scale/QueryAndResultBoundsTest.php"
+        "tests/Unit/Scale/QueryAndResultBoundsTest.php",
+        "tests/Integration/Persistence/BoundedStatementExecutorIntegrationTest.php",
+        "tests/Integration/Performance/BrowseExaminedRowsIntegrationTest.php"
       ],
       "workflows": [
         ".github/workflows/ci.yml#database"
@@ -920,7 +916,7 @@
       "track": "pr-152",
       "branches": [],
       "branch_evidence": [],
-      "outstanding": "The head bounds deep administrator paging and documents every enforced bound in docs/operations/scale-topology.md. Two bounds are recorded as not enforced: a per-statement execution-time cap on generated record browses and a result-byte cap on synchronous REST pages. Plans are not yet proven at aged volume.",
+      "outstanding": "The head enforces engine statement cancellation, an 8 MiB browse-result budget, bounded expansion and query-count checks, with examined-row evidence on aged indexed sorts. Default updated-time, sortable-but-unindexed, nullable and descending sort plans still need canonical schema-index qualification; docs/operations/scale-topology.md records the exact limits.",
       "gate_b_criteria": [],
       "findings": []
     },
@@ -936,7 +932,9 @@
       ],
       "tests": [
         "tests/Integration/Automation",
-        "tests/Integration/Automation/QueuePermitOverclaimAndFairnessIntegrationTest.php"
+        "tests/Integration/Automation/QueuePermitOverclaimAndFairnessIntegrationTest.php",
+        "tests/Integration/Scale/ReplicaTopologyQualificationIntegrationTest.php",
+        "tests/Integration/BusinessReporting/ExportSiteByteBudgetIntegrationTest.php"
       ],
       "workflows": [
         ".github/workflows/ci.yml#database"
@@ -949,7 +947,7 @@
       "track": "pr-152",
       "branches": [],
       "branch_evidence": [],
-      "outstanding": "The head documents the supported topology, drain, generation leases and fairness and proves queue fairness under racing claimants. A per-site cumulative export byte budget is not implemented, and no multi-replica topology is qualified.",
+      "outstanding": "The head implements per-site cumulative export byte budgets and proves two independent application replicas, worker permits, fair turns, shared idempotency and coordinated drain. Complete the combined three-engine evidence and the deployment-level connection-fairness qualification; the documented load-balancer condition is not an App HTTP concurrency limiter.",
       "gate_b_criteria": [],
       "findings": []
     },
@@ -962,22 +960,28 @@
       "runtime_owner": [
         "tools/perf-harness.php",
         "tools/perf-storage.php",
-        "src/Infrastructure/Persistence/FilesystemStorageReserve.php"
+        "src/Infrastructure/Persistence/FilesystemStorageReserve.php",
+        "src/Infrastructure/Persistence/DoctrineLargestTable.php"
       ],
       "tests": [
         "tests/Unit/Performance",
         "tests/Unit/Infrastructure/Persistence/FilesystemStorageReserveTest.php"
       ],
       "workflows": [
-        ".github/workflows/ci.yml#database"
+        ".github/workflows/ci.yml#database",
+        ".github/workflows/capacity.yml#samples"
       ],
-      "artifacts": [],
+      "artifacts": [
+        "docs/operations/scale-topology.md",
+        "docs/roadmap/capacity-contract.json",
+        ".github/workflows/capacity.yml#capacity-samples-${{ matrix.database.driver }}"
+      ],
       "decision": "ADR 0021",
-      "state": "open",
+      "state": "delivered",
       "track": "pr-152",
       "branches": [],
       "branch_evidence": [],
-      "outstanding": "The head enforces the 30% free-space reserve through readiness and publishes a storage forecast measured on MariaDB and PostgreSQL. MySQL, document-line, update-heavy, aged-data, backup and replica amplification are not measured.",
+      "outstanding": null,
       "gate_b_criteria": [
         10
       ],
@@ -1232,17 +1236,11 @@
         ".github/workflows/recovery.yml#recovery-app-http"
       ],
       "decision": "D3, ADR 0021",
-      "state": "pending-integration",
+      "state": "open",
       "track": "pr-152",
-      "branches": [
-        "agent/recovery"
-      ],
-      "branch_evidence": [
-        "tests/Architecture/RecoveryAcceptanceEvidenceTest.php",
-        "tools/backup-dedup-measure.sh",
-        "docs/operations/backup-restore.md"
-      ],
-      "outstanding": "The head carries the v3 plain-tree backups, native binlog and WAL replay, the HTTP restore drill and the three-engine recovery workflow; agent/recovery pins every acceptance clause to its proof, adds the transport-neutral deduplication measurement and records the row-count parity decision. Flips when agent/recovery lands.",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "Native replay, coordinate, ordering, archive-gap, interruption and deduplication drills pass the three-engine recovery workflow on candidate 038bc9fc. Complete qualification inside the exact release artifacts under the Beta 1 build-once chain.",
       "gate_b_criteria": [
         4
       ],
@@ -1277,17 +1275,11 @@
         ".github/workflows/recovery.yml#recovery-app-http"
       ],
       "decision": "D4, ADR 0021",
-      "state": "pending-integration",
+      "state": "open",
       "track": "pr-152",
-      "branches": [
-        "agent/recovery"
-      ],
-      "branch_evidence": [
-        "tests/Architecture/RecoveryAcceptanceEvidenceTest.php",
-        "tools/backup-dedup-measure.sh",
-        "docs/operations/backup-restore.md"
-      ],
-      "outstanding": "The head carries the v3 plain-tree backups, native binlog and WAL replay, the HTTP restore drill and the three-engine recovery workflow; agent/recovery pins every acceptance clause to its proof, adds the transport-neutral deduplication measurement and records the row-count parity decision. Flips when agent/recovery lands.",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "The v3 plain-tree snapshot and retained v2 reader are on the PR head. The three-engine workflow measures real Restic storage deltas and verifies restored bytes. Reconcile the final immutable workflow evidence with release-artifact qualification.",
       "gate_b_criteria": [
         4
       ],
@@ -1321,17 +1313,11 @@
         ".github/workflows/recovery.yml#recovery-app-http"
       ],
       "decision": "ADR 0021",
-      "state": "pending-integration",
+      "state": "open",
       "track": "pr-152",
-      "branches": [
-        "agent/recovery"
-      ],
-      "branch_evidence": [
-        "tests/Architecture/RecoveryAcceptanceEvidenceTest.php",
-        "tools/backup-dedup-measure.sh",
-        "docs/operations/backup-restore.md"
-      ],
-      "outstanding": "The head carries the v3 plain-tree backups, native binlog and WAL replay, the HTTP restore drill and the three-engine recovery workflow; agent/recovery pins every acceptance clause to its proof, adds the transport-neutral deduplication measurement and records the row-count parity decision. Flips when agent/recovery lands.",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "Spent approvals and restored HTTP login/idempotency replay have executable acceptance on the PR head. Whole-table counts remain explicitly optional beside authenticated dump bytes. Complete the final combined and release-artifact evidence.",
       "gate_b_criteria": [
         4
       ],
@@ -1356,18 +1342,11 @@
       ],
       "artifacts": [],
       "decision": "D6, ADR 0021",
-      "state": "pending-integration",
+      "state": "open",
       "track": "pr-152",
-      "branches": [
-        "agent/recovery"
-      ],
-      "branch_evidence": [
-        "src/Application/Diagnostics/DiagnosticsService.php",
-        "tests/Unit/Application/Diagnostics/DiagnosticsServiceTest.php",
-        "tests/Integration/Diagnostics/RuntimeDiagnosticsIntegrationTest.php",
-        "docs/operations/diagnostics.md"
-      ],
-      "outstanding": "agent/recovery adds DiagnosticsService, five bounded engine probes, the diagnostics.read capability, the administrator screen and its JSON document. Its console command awaits the successor CLI generation that agent/machine cuts before the console can dispatch it. Flips when agent/recovery lands.",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "The dedicated capability-gated operator diagnostics surface is absent from the PR head. Implement the five P6-D questions with declared costs, enforced timeouts, bounded results and shared GUI/REST/CLI/MCP authority; monitoring alone does not satisfy this requirement.",
       "gate_b_criteria": [
         5
       ],
@@ -1400,17 +1379,11 @@
         ".github/workflows/recovery.yml#recovery-app-http"
       ],
       "decision": "D3, D4, ADR 0021",
-      "state": "pending-integration",
+      "state": "open",
       "track": "pr-152",
-      "branches": [
-        "agent/recovery"
-      ],
-      "branch_evidence": [
-        "tests/Architecture/RecoveryAcceptanceEvidenceTest.php",
-        "tools/backup-dedup-measure.sh",
-        "docs/operations/backup-restore.md"
-      ],
-      "outstanding": "The head carries the v3 plain-tree backups, native binlog and WAL replay, the HTTP restore drill and the three-engine recovery workflow; agent/recovery pins every acceptance clause to its proof, adds the transport-neutral deduplication measurement and records the row-count parity decision. Flips when agent/recovery lands.",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "The supporting recovery runtime and drills are on the PR head and passed candidate 038bc9fc. Complete the final combined and exact release-artifact evidence; no surviving unpublished agent branch is assumed.",
       "gate_b_criteria": [
         1,
         4
@@ -1444,17 +1417,11 @@
         ".github/workflows/recovery.yml#recovery-app-http"
       ],
       "decision": "ADR 0021",
-      "state": "pending-integration",
+      "state": "open",
       "track": "pr-152",
-      "branches": [
-        "agent/recovery"
-      ],
-      "branch_evidence": [
-        "tests/Architecture/RecoveryAcceptanceEvidenceTest.php",
-        "tools/backup-dedup-measure.sh",
-        "docs/operations/backup-restore.md"
-      ],
-      "outstanding": "The head carries the v3 plain-tree backups, native binlog and WAL replay, the HTTP restore drill and the three-engine recovery workflow; agent/recovery pins every acceptance clause to its proof, adds the transport-neutral deduplication measurement and records the row-count parity decision. Flips when agent/recovery lands.",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "The supporting recovery runtime and drills are on the PR head and passed candidate 038bc9fc. Complete the final combined and exact release-artifact evidence; no surviving unpublished agent branch is assumed.",
       "gate_b_criteria": [
         4
       ],
@@ -1485,17 +1452,11 @@
         ".github/workflows/recovery.yml#recovery-app-http"
       ],
       "decision": "D3, D4, ADR 0021",
-      "state": "pending-integration",
+      "state": "open",
       "track": "pr-152",
-      "branches": [
-        "agent/recovery"
-      ],
-      "branch_evidence": [
-        "tests/Architecture/RecoveryAcceptanceEvidenceTest.php",
-        "tools/backup-dedup-measure.sh",
-        "docs/operations/backup-restore.md"
-      ],
-      "outstanding": "The head carries the v3 plain-tree backups, native binlog and WAL replay, the HTTP restore drill and the three-engine recovery workflow; agent/recovery pins every acceptance clause to its proof, adds the transport-neutral deduplication measurement and records the row-count parity decision. Flips when agent/recovery lands.",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "The supporting recovery runtime and drills are on the PR head and passed candidate 038bc9fc. Complete the final combined and exact release-artifact evidence; no surviving unpublished agent branch is assumed.",
       "gate_b_criteria": [
         1,
         4
@@ -1528,17 +1489,11 @@
         ".github/workflows/recovery.yml#recovery-app-http"
       ],
       "decision": "ADR 0021",
-      "state": "pending-integration",
+      "state": "open",
       "track": "pr-152",
-      "branches": [
-        "agent/recovery"
-      ],
-      "branch_evidence": [
-        "tests/Architecture/RecoveryAcceptanceEvidenceTest.php",
-        "tools/backup-dedup-measure.sh",
-        "docs/operations/backup-restore.md"
-      ],
-      "outstanding": "The head carries the v3 plain-tree backups, native binlog and WAL replay, the HTTP restore drill and the three-engine recovery workflow; agent/recovery pins every acceptance clause to its proof, adds the transport-neutral deduplication measurement and records the row-count parity decision. Flips when agent/recovery lands.",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "The supporting recovery runtime and drills are on the PR head and passed candidate 038bc9fc. Complete the final combined and exact release-artifact evidence; no surviving unpublished agent branch is assumed.",
       "gate_b_criteria": [
         1,
         4
@@ -1571,17 +1526,11 @@
         ".github/workflows/recovery.yml#recovery-app-http"
       ],
       "decision": "ADR 0021",
-      "state": "pending-integration",
+      "state": "open",
       "track": "pr-152",
-      "branches": [
-        "agent/recovery"
-      ],
-      "branch_evidence": [
-        "tests/Architecture/RecoveryAcceptanceEvidenceTest.php",
-        "tools/backup-dedup-measure.sh",
-        "docs/operations/backup-restore.md"
-      ],
-      "outstanding": "The head carries the v3 plain-tree backups, native binlog and WAL replay, the HTTP restore drill and the three-engine recovery workflow; agent/recovery pins every acceptance clause to its proof, adds the transport-neutral deduplication measurement and records the row-count parity decision. Flips when agent/recovery lands.",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "The supporting recovery runtime and drills are on the PR head and passed candidate 038bc9fc. Complete the final combined and exact release-artifact evidence; no surviving unpublished agent branch is assumed.",
       "gate_b_criteria": [
         1,
         4
@@ -1615,17 +1564,11 @@
         ".github/workflows/recovery.yml#recovery-app-http"
       ],
       "decision": "ADR 0021",
-      "state": "pending-integration",
+      "state": "open",
       "track": "pr-152",
-      "branches": [
-        "agent/recovery"
-      ],
-      "branch_evidence": [
-        "tests/Architecture/RecoveryAcceptanceEvidenceTest.php",
-        "tools/backup-dedup-measure.sh",
-        "docs/operations/backup-restore.md"
-      ],
-      "outstanding": "The head carries the v3 plain-tree backups, native binlog and WAL replay, the HTTP restore drill and the three-engine recovery workflow; agent/recovery pins every acceptance clause to its proof, adds the transport-neutral deduplication measurement and records the row-count parity decision. Flips when agent/recovery lands.",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "The supporting recovery runtime and drills are on the PR head and passed candidate 038bc9fc. Complete the final combined and exact release-artifact evidence; no surviving unpublished agent branch is assumed.",
       "gate_b_criteria": [
         1,
         4
@@ -1650,16 +1593,11 @@
       ],
       "artifacts": [],
       "decision": "D6, ADR 0021",
-      "state": "pending-integration",
+      "state": "open",
       "track": "pr-152",
-      "branches": [
-        "agent/recovery"
-      ],
-      "branch_evidence": [
-        "src/Application/Diagnostics/DiagnosticsService.php",
-        "tests/Integration/Diagnostics/RuntimeDiagnosticsIntegrationTest.php"
-      ],
-      "outstanding": "Flips with P6-D when agent/recovery lands.",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "The dedicated operator diagnostics runtime remains to be integrated and qualified; existing monitoring is not its replacement.",
       "gate_b_criteria": [
         1,
         5
@@ -1720,10 +1658,10 @@
       "artifacts": [],
       "decision": "ADR 0021",
       "state": "open",
-      "track": "point-5",
+      "track": "pr-152",
       "branches": [],
       "branch_evidence": [],
-      "outstanding": "Separate Point 5 track by maintainer decision: exact release-artifact qualification and publication, the extension proof portfolio, optional 24-hour and 72-hour soaks, the independent release-candidate review and the GM-SUP-05 runtime follow this pull request. The multi-process drills Phase 5 added are source-level evidence, not the release-artifact drill catalogue this package defines.",
+      "outstanding": "Included in #152 by the 2026-09-28 product-owner amendment: implement and qualify this release requirement for Beta 1, keeping publication conditional on the maintainer merge and the exact artifact evidence.",
       "gate_b_criteria": [
         6
       ],
@@ -1882,10 +1820,10 @@
       "artifacts": [],
       "decision": "ADR 0021",
       "state": "open",
-      "track": "point-5",
+      "track": "pr-152",
       "branches": [],
       "branch_evidence": [],
-      "outstanding": "Separate Point 5 track by maintainer decision: exact release-artifact qualification and publication, the extension proof portfolio, optional 24-hour and 72-hour soaks, the independent release-candidate review and the GM-SUP-05 runtime follow this pull request.",
+      "outstanding": "Included in #152 by the 2026-09-28 product-owner amendment: implement and qualify this release requirement for Beta 1, keeping publication conditional on the maintainer merge and the exact artifact evidence.",
       "gate_b_criteria": [
         8
       ],
@@ -1915,10 +1853,10 @@
       ],
       "decision": "ADR 0021",
       "state": "open",
-      "track": "point-5",
+      "track": "pr-152",
       "branches": [],
       "branch_evidence": [],
-      "outstanding": "Separate Point 5 track by maintainer decision: exact release-artifact qualification and publication, the extension proof portfolio, optional 24-hour and 72-hour soaks, the independent release-candidate review and the GM-SUP-05 runtime follow this pull request.",
+      "outstanding": "Included in #152 by the 2026-09-28 product-owner amendment: implement and qualify this release requirement for Beta 1, keeping publication conditional on the maintainer merge and the exact artifact evidence.",
       "gate_b_criteria": [
         6
       ],
@@ -1945,10 +1883,10 @@
       "artifacts": [],
       "decision": "ADR 0021",
       "state": "open",
-      "track": "point-5",
+      "track": "pr-152",
       "branches": [],
       "branch_evidence": [],
-      "outstanding": "Separate Point 5 track by maintainer decision: exact release-artifact qualification and publication, the extension proof portfolio, optional 24-hour and 72-hour soaks, the independent release-candidate review and the GM-SUP-05 runtime follow this pull request. This record and its generated STATUS.md blocks are one such derived view; the rest of the package's reference set is not generated yet.",
+      "outstanding": "Included in #152 by the 2026-09-28 product-owner amendment: implement and qualify this release requirement for Beta 1, keeping publication conditional on the maintainer merge and the exact artifact evidence.",
       "gate_b_criteria": [],
       "findings": []
     },
@@ -1966,10 +1904,10 @@
       "artifacts": [],
       "decision": "ADR 0021",
       "state": "open",
-      "track": "point-5",
+      "track": "pr-152",
       "branches": [],
       "branch_evidence": [],
-      "outstanding": "Separate Point 5 track by maintainer decision: exact release-artifact qualification and publication, the extension proof portfolio, optional 24-hour and 72-hour soaks, the independent release-candidate review and the GM-SUP-05 runtime follow this pull request.",
+      "outstanding": "Included in #152 by the 2026-09-28 product-owner amendment: implement and qualify this release requirement for Beta 1, keeping publication conditional on the maintainer merge and the exact artifact evidence.",
       "gate_b_criteria": [
         9
       ],
@@ -2317,17 +2255,11 @@
         ".github/workflows/nightly.yml#nightly-browser-evidence-${{ matrix.database.driver }}"
       ],
       "decision": "ADR 0021",
-      "state": "pending-integration",
+      "state": "open",
       "track": "pr-152",
-      "branches": [
-        "agent/browser"
-      ],
-      "branch_evidence": [
-        "assets/administrator/styles.css",
-        "assets/portal/styles.css",
-        "tests/Browser/nightly-browser-breadth.spec.ts"
-      ],
-      "outstanding": "The head mirrors the preferred appearance onto a root attribute so WebKit repaints backgrounds on a live switch. agent/browser names the scheme on every element so inherited text colour re-resolves too. Flips when that branch lands and the nightly WebKit breadth job passes on it; WebKit results are reported as WebKit evidence, never as native Safari.",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "The live WebKit appearance fix is on the PR head. Complete the nightly browser matrix and fix its remaining accessibility and focus failures; retain WebKit evidence without claiming native Safari review.",
       "gate_b_criteria": [
         7
       ],
@@ -2354,7 +2286,7 @@
       "artifacts": [],
       "decision": "ADR 0021",
       "state": "open",
-      "track": "point-5",
+      "track": "pr-152",
       "branches": [],
       "branch_evidence": [],
       "outstanding": "Point 5 track: needs a shipped runtime. Until then every surface states that installing an extension trusts its publisher with the application process.",
@@ -2588,18 +2520,11 @@
       ],
       "artifacts": [],
       "decision": "ADR 0020, ADR 0021",
-      "state": "pending-integration",
+      "state": "open",
       "track": "pr-152",
-      "branches": [
-        "agent/machine"
-      ],
-      "branch_evidence": [
-        "tests/Integration/Studio/StudioMachineAuthoringEquivalenceIntegrationTest.php",
-        "tests/Functional/Http/StudioAuthoringMachineParityTest.php",
-        "docs/machine-contract/cli-v2.json",
-        "docs/machine-contract/mcp-v2.json"
-      ],
-      "outstanding": "agent/machine serves the authoring operations through REST generation 1.1.0, CLI generation two and mcp-v2, each over credential-bound authoring sessions, with an equivalence test through all three surfaces and a parity test requiring a route, action and tool per browser operation. agent/parity carries the same commits. Flips when agent/machine lands.",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "The successor REST 1.1.0, CLI v2 and MCP v2 authoring and composition adapters and equivalence tests are on the PR head. Complete final integrated verification and align any remaining Studio operations with the same host authority.",
       "gate_b_criteria": [
         12
       ]
@@ -2757,7 +2682,7 @@
       "artifacts": [],
       "decision": "ADR 0021",
       "state": "open",
-      "track": "point-5",
+      "track": "pr-152",
       "branches": [],
       "branch_evidence": [],
       "outstanding": "Conditional residual: a managed service that withholds CREATE TRIGGER leaves no database-level prevention, while tamper evidence holds unconditionally. Gate B criterion 1 needs its owner, detection method, compensating control, remediation path and review date recorded for the release-candidate assessment.",
@@ -2785,7 +2710,7 @@
       "artifacts": [],
       "decision": "D2, ADR 0021",
       "state": "open",
-      "track": "point-5",
+      "track": "pr-152",
       "branches": [],
       "branch_evidence": [],
       "outstanding": "Assessed at the release candidate. Every entry citing criterion 1 must be delivered first, including V2-REL-001 and V2-REL-002 on the Point 5 track and V2-STU-007 behind the pinned Studio release, and every conditional finding needs a named owner and review date; the ledger still records UNASSIGNED. Lane N's V3-NC-001 is a Version 3 seed that Lane N excludes from Gate B evidence.",
@@ -2885,13 +2810,11 @@
         ".github/workflows/recovery.yml#recovery-app-http"
       ],
       "decision": "D2, ADR 0021",
-      "state": "pending-integration",
+      "state": "open",
       "track": "pr-152",
-      "branches": [
-        "agent/recovery"
-      ],
+      "branches": [],
       "branch_evidence": [],
-      "outstanding": "Flips when P6-A to P6-C and their findings flip with agent/recovery.",
+      "outstanding": "The native recovery and restored HTTP drills are on the PR head and passed candidate 038bc9fc; complete the exact release-artifact qualification and final combined evidence.",
       "gate_b_criteria": [
         4
       ]
@@ -2911,13 +2834,11 @@
       ],
       "artifacts": [],
       "decision": "D2, ADR 0021",
-      "state": "pending-integration",
+      "state": "open",
       "track": "pr-152",
-      "branches": [
-        "agent/recovery"
-      ],
+      "branches": [],
       "branch_evidence": [],
-      "outstanding": "Flips with P6-D when agent/recovery lands.",
+      "outstanding": "Complete the dedicated operator diagnostics runtime and its five bounded diagnostic questions.",
       "gate_b_criteria": [
         5
       ]
@@ -2941,10 +2862,10 @@
       "artifacts": [],
       "decision": "D2, ADR 0021",
       "state": "open",
-      "track": "point-5",
+      "track": "pr-152",
       "branches": [],
       "branch_evidence": [],
-      "outstanding": "Separate Point 5 track by maintainer decision: exact release-artifact qualification and publication, the extension proof portfolio, optional 24-hour and 72-hour soaks, the independent release-candidate review and the GM-SUP-05 runtime follow this pull request.",
+      "outstanding": "Included in #152 by the 2026-09-28 product-owner amendment: implement and qualify this release requirement for Beta 1, keeping publication conditional on the maintainer merge and the exact artifact evidence.",
       "gate_b_criteria": [
         6
       ]
@@ -2998,10 +2919,10 @@
       "artifacts": [],
       "decision": "D2, ADR 0021",
       "state": "open",
-      "track": "point-5",
+      "track": "pr-152",
       "branches": [],
       "branch_evidence": [],
-      "outstanding": "Separate Point 5 track by maintainer decision: exact release-artifact qualification and publication, the extension proof portfolio, optional 24-hour and 72-hour soaks, the independent release-candidate review and the GM-SUP-05 runtime follow this pull request.",
+      "outstanding": "Included in #152 by the 2026-09-28 product-owner amendment: implement and qualify this release requirement for Beta 1, keeping publication conditional on the maintainer merge and the exact artifact evidence.",
       "gate_b_criteria": [
         8
       ]
@@ -3020,10 +2941,10 @@
       "artifacts": [],
       "decision": "D2, ADR 0021",
       "state": "open",
-      "track": "point-5",
+      "track": "pr-152",
       "branches": [],
       "branch_evidence": [],
-      "outstanding": "Separate Point 5 track by maintainer decision: exact release-artifact qualification and publication, the extension proof portfolio, optional 24-hour and 72-hour soaks, the independent release-candidate review and the GM-SUP-05 runtime follow this pull request.",
+      "outstanding": "Included in #152 by the 2026-09-28 product-owner amendment: implement and qualify this release requirement for Beta 1, keeping publication conditional on the maintainer merge and the exact artifact evidence.",
       "gate_b_criteria": [
         9
       ]
@@ -3052,7 +2973,7 @@
       "track": "pr-152",
       "branches": [],
       "branch_evidence": [],
-      "outstanding": "The head publishes the capacity estimate, topology and storage forecast with their limitations (docs/operations/capacity-estimate.md, scale-topology.md). P0-D's dataset seed and age distribution and P5-I's unmeasured amplification keep the criterion open.",
+      "outstanding": "The declared deterministic aged dataset, all four storage workloads and sampled concurrency run on all three engines. Reconcile the final Beta 1 artifact manifest with those reports and the remaining query-plan and topology qualifications. The reports label estimates and do not promise production throughput.",
       "gate_b_criteria": [
         10
       ]
@@ -3081,13 +3002,11 @@
         ".github/workflows/nightly.yml#nightly-browser-evidence-${{ matrix.database.driver }}"
       ],
       "decision": "D2, ADR 0021",
-      "state": "pending-integration",
+      "state": "open",
       "track": "pr-152",
-      "branches": [
-        "agent/browser"
-      ],
+      "branches": [],
       "branch_evidence": [],
-      "outstanding": "Flips with PL-G and V2-LNG-010 when agent/browser lands, provided every other landing branch carries the translations of the identifiers it adds.",
+      "outstanding": "All nine catalogues and their browser journeys are on the PR head; the final browser and nightly workflows must pass.",
       "gate_b_criteria": [
         11
       ]
