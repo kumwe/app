@@ -128,6 +128,54 @@ an installation, startup, authoring, preview, publication, or production-server 
 Rollback selects the last complete compatible family and its matching corpus. Mixing any two Studio versions,
 or completing Core against unreleased Studio bytes, is prohibited.
 
+### Pin selection — 2026-09-24
+
+**Decision: App stays on Studio `0.1.0-beta.3` with `kumwe/producer` `0.3.0`.** No newer Studio–Producer–App
+combination can be adopted, because no Producer release implements a newer Studio release. Re-evaluate when
+Producer tags a release whose pin names a newer family.
+
+What was checked on 2026-09-24:
+
+- **Producer.** Packagist and the GitHub tags list `v0.1.0`, `v0.2.0`, `v0.2.1`, `v0.2.2` and `v0.3.0`
+  (2026-09-09). `v0.3.0` pins Studio `0.1.0-beta.3`. So do `main` (`c4da532`, 2026-09-12, documentation only)
+  and every open pull-request head (#1–#13). Producer's pin protocol (`docs/host-agreement.md`, "The pin
+  protocol") allows only one order: Studio release, then Producer re-pin, then Producer release, then host pin
+  bump. No stage may be skipped.
+- **Studio.** The npm registry lists `0.1.0-beta.4`, `beta.5`, `beta.6` and `0.1.0-rc.1`; the `beta` dist-tag
+  points to `beta.6`. Each candidate's eight tarballs were packed and read, along with the package changelogs
+  in `kumwe/studio`.
+
+| Candidate | Published | Protocol, schemas, corpus compared with beta.3 | Changes | Can App adopt it? |
+|---|---|---|---|---|
+| `0.1.0-rc.1` | 2026-08-26 | `0.1.0-draft.2`, but only 48 schemas. The 8 missing include `studio-deployment`, `studio-browser-assets` and the five `authoring-*` schemas. Corpus `sha256-4/ChS3pC…`, 9 claimed profiles, no `browserArtifacts` | An older interim snapshot. It is newer than beta.6 by SemVer ordering only, and App left it on 2026-09-01 | No. It is superseded, and Producer 0.3.0's Deployment layer and App's browser-asset loading need the schemas and `browserArtifacts` it lacks |
+| `0.1.0-beta.4` | 2026-09-07 | Same `0.1.0-draft.2`, same 56 schemas, same corpus `sha256-PupdZVv+…` (testkit bytes identical) | Media refuses malformed upload plans before transfer. Renderer-web inspects Mermaid SVG root attributes | No. Producer has no matching re-pin or release |
+| `0.1.0-beta.5` | 2026-09-12 | Same as beta.4 | README text only | No. Producer has no matching re-pin or release |
+| `0.1.0-beta.6` | 2026-09-20 | Same protocol and 56 schemas, but the corpus moves to `sha256-iOb25+tI…`. The authoring catalogue grows from 271 to 279 messages, adding 8 `studio.shell/*` messages | Palette drop onto the canvas, activate-to-edit, a local canvas for hosted sessions that declare no host preview, and a workspace-level command palette | No. Producer has no matching re-pin or release, and the new messages would need App localization work too |
+
+Why a contract-identical candidate (beta.4 or beta.5) still cannot be adopted without Producer:
+
+1. `composer studio:dependencies` runs `tools/verify-producer-studio-alignment.php`. That check requires
+   Producer's vendored release record to match App's byte for byte, along with its SHA-256, package family and
+   per-package npm tarball SHA-256. On 2026-09-24 it was run against beta.5 and beta.6 records and PIN data built
+   from the registry tarballs. Both failed. They reported a different source release, `release_record`, package
+   family, provenance version and tarball digest for all eight packages, and different release bytes. beta.6
+   also failed on the corpus manifest digest.
+2. At run time, App loads the Studio browser module and enhancement runtime through Producer's
+   `studio-assets.json`, which is bound to version `0.1.0-beta.3` and its SRI values. An npm-only bump would
+   compile beta.x TypeScript against a beta.3 browser module. That mixes two families, which the rollback rule
+   above prohibits.
+3. Producer's releasing policy requires the governed GitHub browser archive and detached checksum for any pin it
+   records. That archive import belongs to Producer and cannot be reproduced in App.
+
+What a re-pin to beta.6 will involve once a Producer release exists: the atomic change set in step 4 above; the
+reviewed host qualification in `ContainerFactory::studioContextualAuthoringQualification()` (release, record
+hash, catalog and module digests); `tools/sync-studio-localization.mjs` (its expected count moves from 271 to
+279) and 8 new units translated in every shipped catalogue; the regenerated Studio message notes, which name
+the release, in `resources/localization/messages/*.xlf`; the `studioRelease` coordinate in
+`tests/Fixtures/Studio/composition-acceptance-journey.json` and the unit tests under `tests/Unit/Studio/` that
+assert the release string; the rebuilt `public/assets/build` output; and `docs/architecture/capability-index.md`
+once the Producer version moves.
+
 ## Studio-owned production capability
 
 The coordinated catalog is Studio functionality, not App-local palette code. Every definition has a closed property
