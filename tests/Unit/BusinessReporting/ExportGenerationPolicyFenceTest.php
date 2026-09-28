@@ -37,6 +37,8 @@ use Kumwe\Reporting\Domain\ReportDefinition;
 use Kumwe\Reporting\Domain\ReportValueType;
 use Kumwe\App\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
+use Kumwe\App\BusinessReporting\Application\ExportSiteByteBudget;
+use Kumwe\App\BusinessReporting\Application\ExportSiteByteBudgetExhausted;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
 use RuntimeException;
@@ -111,6 +113,85 @@ final class ExportGenerationPolicyFenceTest extends TestCase
         self::assertSame(['business.report.export.attempt'], $audit->actions());
         self::assertSame(4, $transactions->calls);
         self::assertSame(2, $transactions->maximumDepth);
+        self::assertFalse($transactions->active());
+    }
+
+    /**
+     * A completion that would pass its site's cumulative byte budget is refused durably and loses its bytes.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testASiteByteBudgetRefusalFailsTheArtifactDurablyAndDeletesItsBytes(): void
+    {
+        $transactions = new GenerationFenceTransactions(false);
+        $clock = $this->clock();
+        $now = $clock->now();
+        $context = AuthorizationContext::human(['acme.reports.read', 'business.record.export']);
+        $report = $this->report();
+        $artifact = $this->artifact($context, $report, $now);
+        $artifacts = new GenerationFenceArtifacts($transactions, $artifact);
+        $storage = new GenerationFenceStorage($transactions);
+        $audit = new GenerationFenceAudit($transactions);
+        $authorization = $this->createStub(AuthorizationGateway::class);
+        $authorization->method('decide')->willReturn(
+            new AuthorizationDecision(DecisionState::Allow, 'test', 'allowed'),
+        );
+        $scope = new GenerationFenceScope($transactions);
+        $reports = new ReportDefinitionRegistry([$report]);
+        $exports = new ExportService(
+            $reports,
+            $scope,
+            $artifacts,
+            $storage,
+            $this->createStub(ExportJobDispatcher::class),
+            new GenerationFencePolicy($transactions, str_repeat('a', 64)),
+            $authorization,
+            $transactions,
+            $audit,
+            $clock,
+        );
+        $charges = [];
+        $budget = $this->createStub(ExportSiteByteBudget::class);
+        $budget->method('charge')->willReturnCallback(
+            static function (string $site, int $bytes) use (&$charges): void {
+                $charges[] = [$site, $bytes];
+                throw new ExportSiteByteBudgetExhausted('The site has no export bytes left today.');
+            },
+        );
+        $service = new ExportGenerationService(
+            $artifacts,
+            new GenerationFenceContext($transactions, $context),
+            $exports,
+            new ReportService(
+                $reports,
+                new GenerationFenceReader($transactions),
+                $authorization,
+                $scope,
+                $this->createStub(ReportMaterialization::class),
+            ),
+            new ReportCsvEncoder(),
+            $storage,
+            $transactions,
+            $audit,
+            $clock,
+            $budget,
+        );
+
+        try {
+            $service->generate($artifact->id, $context);
+            self::fail('A completion past the site byte budget must be refused.');
+        } catch (ExportGenerationRejected $rejected) {
+            self::assertInstanceOf(ExportSiteByteBudgetExhausted::class, $rejected->getPrevious());
+        }
+
+        self::assertCount(1, $charges);
+        self::assertSame($artifact->siteIdentifier, $charges[0][0]);
+        self::assertGreaterThan(0, $charges[0][1]);
+        self::assertSame(ExportArtifactStatus::Failed, $artifacts->current()->status);
+        self::assertSame(ExportSiteByteBudgetExhausted::FAILURE_CODE, $artifacts->current()->failureCode);
+        self::assertSame([], $storage->objects, 'The refused attempt keeps no bytes.');
         self::assertFalse($transactions->active());
     }
 

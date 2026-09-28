@@ -242,6 +242,7 @@ use Kumwe\App\BusinessReporting\Infrastructure\BusinessRecordExportPolicySnapsho
 use Kumwe\App\BusinessReporting\Infrastructure\BusinessRecordReportScopeResolver;
 use Kumwe\App\BusinessReporting\Infrastructure\BusinessRecordServiceReportReader;
 use Kumwe\App\BusinessReporting\Infrastructure\DoctrineExportArtifactRepository;
+use Kumwe\App\BusinessReporting\Infrastructure\DoctrineExportSiteByteBudget;
 use Kumwe\App\BusinessReporting\Infrastructure\DoctrineProjectionRuntime;
 use Kumwe\App\BusinessReporting\Infrastructure\FilesystemExportArtifactStorage;
 use Kumwe\App\BusinessReporting\Infrastructure\JobQueueExportJobDispatcher;
@@ -685,6 +686,7 @@ use Kumwe\App\Application\Retention\RetentionReadiness;
 use Kumwe\App\Audit\Infrastructure\Storage\FilesystemAuditArchiveVerifier;
 use Kumwe\App\Infrastructure\Persistence\Migration\RetentionCatalogueMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\AsyncTraceContextMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\ExportSiteByteBudgetMigration;
 use Kumwe\App\Infrastructure\Retention\DoctrineRetentionDrain;
 use Kumwe\App\Infrastructure\Retention\DoctrineRetentionObserver;
 use Kumwe\App\Infrastructure\Retention\RetentionRunLedger;
@@ -2706,6 +2708,7 @@ final class ContainerFactory
                     new RetentionCatalogueMigration(self::service($container, TableNames::class)),
                     new StudioContentAuthoringStartMigration(self::service($container, TableNames::class)),
                     new AsyncTraceContextMigration(self::service($container, TableNames::class)),
+                    new ExportSiteByteBudgetMigration(self::service($container, TableNames::class)),
                 ],
                 self::acceptedHistoricalChecksums(),
             ), true);
@@ -4057,6 +4060,10 @@ final class ContainerFactory
             self::service($container, TransactionManager::class),
             self::service($container, AuditRecorder::class),
             self::service($container, ClockInterface::class),
+            new DoctrineExportSiteByteBudget(
+                self::service($container, Connection::class),
+                self::service($container, TableNames::class),
+            ),
         ), true);
         $container->share(GenerateReportExportHandler::class, static fn (
             Container $container,

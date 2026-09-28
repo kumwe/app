@@ -42,6 +42,22 @@ stops the boot, because a typo must not silently select a default.
 9. Exercise login, public rendering, a reversible draft mutation, menu read, capability denial, API idempotency replay, and one worker/scheduler iteration.
 10. Record deployed digests and retain the previous artifacts and backup according to policy.
 
+### Rolling replacement and draining old processes
+
+When web and automation processes are replaced one at a time rather than all at once, old and new binaries
+run side by side for a while. Drain every old worker (`queue:work`, `integration:work`, scheduler) before
+the target migrations that change durable coordination state, such as queue permits, run. This release
+also renames the extension lifecycle advisory lock: it is now scoped by database as well as table prefix,
+so installations that share a MariaDB or MySQL server no longer block each other. An old process and a
+new process therefore **do not exclude each other on extension lifecycle operations** until every old
+process has drained. Do not install, upgrade, disable or uninstall an extension, and do not change trust
+keys or revocations, until no process of the previous release is running.
+
+Two further bounds in this release take effect per process. Exports completed by a worker of the previous
+release are not charged to the new per-site export byte budget (`business_report_export_site_budgets`),
+and record browses served by a previous-release web process run without the new execution-time and byte
+bounds, until those processes have drained.
+
 For Compose:
 
 ```bash
