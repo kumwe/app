@@ -124,7 +124,7 @@ export default defineConfig({
   webServer: process.env.KUMWE_BROWSER_START_SERVER === '1'
     ? {
         command: 'sh tools/development-server.sh',
-        url: 'http://127.0.0.1:8080/health/ready',
+        url: `${process.env.KUMWE_BROWSER_BASE_URL ?? 'http://127.0.0.1:8080'}/health/ready`,
         reuseExistingServer: false,
         timeout: 30_000,
       }
