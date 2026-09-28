@@ -181,6 +181,7 @@ nobody told the record. This is the hole.
 | Change visible UI without refreshing browser baselines | Hashed screenshot comparisons in the browser jobs | The `refresh-browser-baselines` workflow regenerates them; a CSS change without it loops CI |
 | Mark a finding `closed` | `composer roadmap:check` | Delete the finding, remove the STATUS row, write `CHANGELOG.md` |
 | Write "delivered" in the STATUS open-work table | `roadmap:check` | Remove the row. Completion language belongs in the phase board and changelog |
+| Deliver a requirement without moving its acceptance-record row, or edit the derived summary by hand | `composer acceptance:check` | Update `docs/roadmap/acceptance-record.json`, run `composer acceptance:summary`, commit both |
 | Widen a PHPDoc type (`list<string>` → `array`) | PHPStan max | Add prose. Never widen or delete an existing type |
 | Touch a shipped migration that checksums its own bytes | install integrity | Document **before** it ships. Never formatter-pass it afterwards |
 | Introduce a secret-shaped literal, even in a later-fixed commit | `composer security:secrets` | Rewrite the introducing commit, or fingerprint-allowlist in `.gitleaksignore` |
@@ -362,7 +363,10 @@ composition root, not the default home for reusable behaviour. The machinery is 
     (match by commit message) or replace it with the pull-request citation.
 [ ] Lower the STATUS ledger snapshot counts. Update the phase-board cell if a phase moved.
 [ ] Leave the package definition in docs/roadmap/README.md. That is the durable contract.
-[ ] composer roadmap:check
+[ ] Move the requirement's row in docs/roadmap/acceptance-record.json to `delivered` (runtime owner,
+    tests, workflow artifacts, decision), then composer acceptance:summary and commit the derived
+    docs/roadmap/acceptance-summary.md.
+[ ] composer roadmap:check && composer acceptance:check
 ```
 
 ### Unplanned work
@@ -395,7 +399,7 @@ architecture:policy → baseline:check → quality:contract → docs:api →
 docs:format:check → docs:tests → extension:contract → extension:independence →
 conversion:api → cli:contract → mcp:contract → studio:corpus → studio:dependencies →
 kumwe:capability-index-check → kumwe:core-growth-check → interface:programme →
-roadmap:check → openapi:check → translation:check → translation:strings →
+roadmap:check → acceptance:check → openapi:check → translation:check → translation:strings →
 assets:direction → coverage:attribution → cs → analyse → test
 ```
 

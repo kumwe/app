@@ -80,6 +80,7 @@ jobs:
         run: |
           composer interface:programme
           composer roadmap:check
+          composer acceptance:check
           composer openapi:check
 
       - name: Verify translation records and coverage attribution
@@ -413,10 +414,11 @@ jobs:
           composer kumwe:capability-index-check
           composer kumwe:core-growth-check
 
-      - name: Verify the interface programme and the roadmap ledger
+      - name: Verify the interface programme, the roadmap ledger and the acceptance record
         run: |
           composer interface:programme
           composer roadmap:check
+          composer acceptance:check
 
       - name: Verify coverage attribution
         run: composer coverage:attribution
