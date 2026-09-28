@@ -23,10 +23,11 @@ use Psr\Http\Server\RequestHandlerInterface;
  * The W3C `traceparent` header is accepted alongside it, and accepted only — Kumwe ships no tracer and
  * no exporter, so it does not start spans, sample, or mint a trace of its own. What it does is take a
  * well-formed upstream trace and span identifier, publish them onto every log record this request
- * writes, and echo the header back unchanged. That is enough to join Kumwe's log stream to a trace that
- * a proxy or an upstream service is already recording, which is the part of distributed tracing that
- * has value without a vendor SDK in the dependency tree. Minting identifiers no exporter will ever
- * report would fill the logs with numbers that join to nothing.
+ * writes, and echo the header back unchanged. That is trace-context propagation, not distributed
+ * tracing: it joins Kumwe's log stream to a trace that a proxy or an upstream service is already
+ * recording, without a vendor SDK in the dependency tree, and ADR 0022 keeps adopting an exporter a
+ * separately reviewed decision. Minting identifiers no exporter will ever report would fill the logs
+ * with numbers that join to nothing.
  *
  * @since  2.0.0
  */

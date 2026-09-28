@@ -9,6 +9,7 @@ use Kumwe\Access\AuthorizationDenied;
 use Kumwe\Access\AuthorizationGateway;
 use Kumwe\Access\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
+use Kumwe\App\Application\Presentation\Preference\PresentationAccessGroup;
 use Kumwe\App\Application\Presentation\Preference\PresentationAccessGroupRepository;
 use Kumwe\App\Application\Presentation\Preference\PresentationPreferenceManager;
 use Kumwe\Contribution\ContributionOwner;
@@ -264,6 +265,11 @@ final readonly class DashboardPreferenceService
         $allowed = self::allowlist($mutation->slot === CustomizationSlot::DashboardCards
             ? $allowedWidgetIds
             : $allowedShortcutIds);
+        if ($mutation->scope === CustomizationScope::RoleWorkspace) {
+            foreach ($this->storedRoleSelection($context, $owner, $key) as $identifier) {
+                $allowed[$identifier] = true;
+            }
+        }
         foreach ($mutation->submittedIds as $identifier) {
             if (!isset($allowed[$identifier])) {
                 throw new InvalidArgumentException('A dashboard preference contains an unknown identifier.');
@@ -276,6 +282,58 @@ final readonly class DashboardPreferenceService
             $mutation->selectedIds,
             $mutation->expectedVersion,
         );
+    }
+
+    /**
+     * Read the identifiers the target access-group row already stores, so an editor keeps what they cannot see.
+     *
+     * The editor's visible catalogue is not the role's catalogue. An identifier the role row already stores
+     * was admitted when it was saved, so retaining it is not an addition; anything neither stored nor visible
+     * to the editor stays refused. An absent role or an unreadable row contributes nothing.
+     *
+     * @param   ExecutionContext           $context  Authenticated editor.
+     * @param   ContributionOwner          $owner    Current surface owner.
+     * @param   PresentationPreferenceKey  $key      Exact access-group row being written.
+     *
+     * @return  list<string>  Stored identifiers of the row, or an empty list.
+     *
+     * @throws  InvalidArgumentException  When the stored row carries a malformed identifier list.
+     *
+     * @since   2.0.0
+     */
+    private function storedRoleSelection(
+        ExecutionContext $context,
+        ContributionOwner $owner,
+        PresentationPreferenceKey $key,
+    ): array {
+        $scopeId = $key->scopeId;
+        $roleId = $scopeId === null ? null : PresentationAccessGroup::roleIdFromIdentifier($scopeId);
+        if ($roleId === null || $scopeId === null || !$this->groups->exists($scopeId)) {
+            return [];
+        }
+        $rows = $this->preferences->readMany(
+            $context,
+            $owner,
+            [$key],
+            [PresentationAccessGroup::fromRole($roleId, 'retained', 'Retained selection')],
+        );
+        $stored = $rows[$key->auditSubjectId()] ?? null;
+        if ($stored === null) {
+            return [];
+        }
+        $value = $stored->value()->value();
+        if (!is_array($value) || !array_is_list($value)) {
+            throw new InvalidArgumentException('A stored dashboard preference is not an identifier list.');
+        }
+        $identifiers = [];
+        foreach ($value as $identifier) {
+            if (!is_string($identifier)) {
+                throw new InvalidArgumentException('A stored dashboard preference holds a non-string identifier.');
+            }
+            $identifiers[] = $identifier;
+        }
+
+        return $identifiers;
     }
 
     /**

@@ -7235,6 +7235,24 @@
         <target>以逗号分隔的稳定句柄</target>
       </segment>
     </unit>
+    <unit id="core.administrator.business_definitions.immutable_states">
+      <notes>
+        <note category="context">Label of the definition editor field declaring the workflow states that close a record.</note>
+      </notes>
+      <segment>
+        <source>Immutable states</source>
+        <target>不可变状态</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.business_definitions.immutable_states_help">
+      <notes>
+        <note category="context">Help under the immutable-states field of the definition editor.</note>
+      </notes>
+      <segment>
+        <source>Records entering these states can no longer be edited and are corrected by a linked reversal. Name declared states other than the initial state; leave empty to remove the declaration.</source>
+        <target>进入这些状态的记录将无法再编辑，需通过关联的冲销进行更正。请填写初始状态以外的已声明状态；留空则移除该声明。</target>
+      </segment>
+    </unit>
     <unit id="core.administrator.business_definitions.initial_state">
       <notes>
         <note category="context">Record surface text on templates/administrator/business-definitions.twig.</note>
@@ -18646,6 +18664,51 @@
       <segment>
         <source>Continuously verify authority/artifacts and refresh local runtime readiness.</source>
         <target>持续验证权威来源/构件，并刷新本地运行时就绪状态。</target>
+      </segment>
+    </unit>
+    <unit id="core.business.refusal.immutable">
+      <notes>
+        <note category="context">Refusal shown on a generated record whose workflow state the definition declares immutable. Same sentence the record service refuses with.</note>
+      </notes>
+      <segment>
+        <source>The business record is immutable in its current workflow state and is corrected by a linked reversal.</source>
+        <target>该业务记录在当前工作流状态下不可变，需通过关联的冲销进行更正。</target>
+      </segment>
+    </unit>
+    <unit id="core.business.refusal.posting_period_closed">
+      <notes>
+        <note category="context">Refusal shown on a generated record whose posting date falls in a closed posting period. {period} is the period key.</note>
+      </notes>
+      <segment>
+        <source>Posting period {period} is closed for the declared posting date.</source>
+        <target>所声明过账日期对应的过账期间 {period} 已关闭。</target>
+      </segment>
+    </unit>
+    <unit id="core.business.refusal.read_only_badge">
+      <notes>
+        <note category="context">Badge beside the state of a listed generated record that can no longer be edited.</note>
+      </notes>
+      <segment>
+        <source>Read-only</source>
+        <target>只读</target>
+      </segment>
+    </unit>
+    <unit id="core.business.refusal.read_only_title">
+      <notes>
+        <note category="context">Heading of the notice on a generated record that can no longer be edited.</note>
+      </notes>
+      <segment>
+        <source>This record is read-only</source>
+        <target>此记录为只读</target>
+      </segment>
+    </unit>
+    <unit id="core.business.refusal.read_only_help">
+      <notes>
+        <note category="context">Explains what remains possible on a read-only generated record.</note>
+      </notes>
+      <segment>
+        <source>You can still open it, review its history and run the workflow actions it offers.</source>
+        <target>您仍可打开此记录、查看其历史记录并执行其提供的工作流操作。</target>
       </segment>
     </unit>
   </file>

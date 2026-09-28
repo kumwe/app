@@ -31,9 +31,17 @@
         {% if available_operations.report is defined %}
             <a class="portal-button secondary" href="{{ business_base_path }}/{{ definition.handle|url_encode }}?purpose=report">{{ t('core.administrator.business_detail.report') }}</a>
         {% endif %}
-        {% if available_operations.update is defined and record.deleted_at is null %}<a class="portal-button" href="{{ record_path }}?edit=1">{{ t('core.administrator.business_detail.edit') }}</a>{% endif %}
+        {% if available_operations.update is defined and record.deleted_at is null and not record_lock|default(null) %}<a class="portal-button" href="{{ record_path }}?edit=1">{{ t('core.administrator.business_detail.edit') }}</a>{% endif %}
     </nav>
 </header>
+
+{% if record_lock|default(null) %}
+    <section class="portal-alert business-record-lock" data-kis-state="read-only" data-record-lock="{{ record_lock.code }}" role="status" aria-labelledby="portal-record-lock-title">
+        <h2 id="portal-record-lock-title">{{ t('core.business.refusal.read_only_title') }}</h2>
+        <p data-record-lock-reason>{{ record_lock.message }}</p>
+        <p>{{ t('core.business.refusal.read_only_help') }}</p>
+    </section>
+{% endif %}
 
 {% if completed_operation_id %}
     <div class="portal-notice" role="status">
@@ -122,7 +130,7 @@
                                             <small>{{ t('core.administrator.business_definitions.version', {version: related_record.version}) }}</small>
                                         </span>
                                         {% if relationship_focus|default(null) == relationship.handle
-                                            and available_operations.relation is defined
+                                            and (available_operations.relation is defined and not record_lock|default(null))
                                         %}
                                             <form method="post">
                                                 <input type="hidden" name="_csrf" value="{{ csrf }}">
@@ -139,7 +147,7 @@
                             </ul>
                         {% endif %}
                         {% if relationship_focus|default(null) == relationship.handle
-                            and available_operations.relation is defined
+                            and (available_operations.relation is defined and not record_lock|default(null))
                             and relationship.owned_line_form|default(null)
                         %}
                             {% set line_form = relationship.owned_line_form %}
@@ -176,7 +184,7 @@
                                 <button type="submit">{{ t('core.administrator.business_detail.add', {target_label: line_form.target_label}) }}</button>
                             </form>
                         {% elseif relationship_focus|default(null) == relationship.handle
-                            and available_operations.relation is defined
+                            and (available_operations.relation is defined and not record_lock|default(null))
                             and relationship.choice_available
                         %}
                             <form class="portal-business-relation-form kis-business-relation-form" method="post">
@@ -210,7 +218,7 @@
                                 <button type="submit">{{ t('core.administrator.business_definitions.add_relationship') }}</button>
                             </form>
                         {% elseif relationship_focus|default(null) == relationship.handle
-                            and available_operations.relation is defined
+                            and (available_operations.relation is defined and not record_lock|default(null))
                             and relationship.kind == 'owned_line_collection'
                         %}
                             <p>{{ t('core.administrator.business_detail.no_owned_line_fields_are_available') }}</p>
@@ -218,7 +226,7 @@
                         {% if relationship_focus|default(null) == relationship.handle
                             and relationship.ordered
                             and related is not empty
-                            and available_operations.reorder is defined
+                            and (available_operations.reorder is defined and not record_lock|default(null))
                         %}
                             <form class="portal-business-order-form kis-business-order-form" method="post">
                                 <input type="hidden" name="_csrf" value="{{ csrf }}">
@@ -296,10 +304,10 @@
         {% if record_task in ['summary', 'actions'] %}
         <section class="portal-business-panel portal-business-stack" aria-labelledby="portal-business-lifecycle-title">
             <div><p class="eyebrow">{{ t('core.administrator.business_definitions.lifecycle') }}</p><h2 id="portal-business-lifecycle-title">{{ t('core.administrator.business_detail.record_controls') }}</h2></div>
-            {% if available_operations.restore is defined and (record.archived_at or record.deleted_at) %}
+            {% if (available_operations.restore is defined and not record_lock|default(null)) and (record.archived_at or record.deleted_at) %}
                 <a class="portal-button secondary" href="{{ record_path }}?confirm=restore&archived=1&deleted=1">{{ t('core.administrator.business_confirm.restore_record') }}</a>
             {% endif %}
-            {% if available_operations.archive is defined and record.archived_at is null and record.deleted_at is null %}
+            {% if (available_operations.archive is defined and not record_lock|default(null)) and record.archived_at is null and record.deleted_at is null %}
                 <a class="portal-button secondary" href="{{ record_path }}?confirm=archive">{{ t('core.administrator.business_confirm.archive_record') }}</a>
             {% endif %}
             {% if available_operations.delete is defined and record.deleted_at is null %}

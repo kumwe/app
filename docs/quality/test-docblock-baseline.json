@@ -8,7 +8,7 @@
   "recorded_from": [
     "https://github.com/kumwe/app/actions/runs/32251426675"
   ],
-  "entry_count": 3129,
+  "entry_count": 3128,
   "entries": [
     {
       "file": "tests/Architecture/BusinessDefinitionBoundaryTest.php",
@@ -24744,16 +24744,6 @@
       "file": "tests/Unit/Http/Security/SecurityHeadersTest.php",
       "line": 24,
       "member": "SecurityHeadersTest::testDoesNotEmitHstsForUnverifiedHttp()",
-      "code": "MISSING_DOC",
-      "owner": "quality-engineering",
-      "finding": "V2-QA-010",
-      "expires": "2027-06-30",
-      "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-    },
-    {
-      "file": "tests/Unit/Http/Security/SecurityHeadersTest.php",
-      "line": 29,
-      "member": "SecurityHeadersTest::testInjectedStyleElementsAreRefusedWhileStyleAttributesRemainAdmitted()",
       "code": "MISSING_DOC",
       "owner": "quality-engineering",
       "finding": "V2-QA-010",

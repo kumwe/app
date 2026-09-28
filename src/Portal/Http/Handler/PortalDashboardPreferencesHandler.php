@@ -16,6 +16,7 @@ use Kumwe\App\Portal\Http\PortalRequest;
 use Kumwe\App\Portal\Presentation\PortalRenderer;
 use Kumwe\App\Presentation\Application\Dashboard\DashboardWorkflowCatalog;
 use Laminas\Diactoros\Response\RedirectResponse;
+use Kumwe\InterfaceStandard\CustomizationScope;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
@@ -72,15 +73,20 @@ final readonly class PortalDashboardPreferencesHandler implements RequestHandler
 
         try {
             $mutation = $this->decoder->decode(PortalRequest::form($request));
-            $catalog->assertMutation($mutation, $coreWidgets);
+            if ($mutation->scope === CustomizationScope::User) {
+                $catalog->assertMutation($mutation, $coreWidgets);
+            }
+            // An access-group form may carry identifiers the role stores but this editor cannot see; only
+            // the editor-visible subset is offered, and the service admits the rest solely from the stored row.
+            $admitted = $catalog->admitted($mutation, $coreWidgets);
             $this->preferences->mutate(
                 $context,
                 SurfaceArea::Portal,
                 SurfaceId::fromString('core.portal.home'),
                 ContributionOwner::core(),
                 $mutation,
-                $mutation->submittedIds,
-                $mutation->submittedIds,
+                $admitted,
+                $admitted,
             );
         } catch (PresentationPreferenceVersionConflict) {
             return new RedirectResponse(

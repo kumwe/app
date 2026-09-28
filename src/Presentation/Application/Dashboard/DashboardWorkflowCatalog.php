@@ -198,6 +198,40 @@ final readonly class DashboardWorkflowCatalog
     }
 
     /**
+     * Return the submitted identifiers this editor's live catalogue contains, in submitted order.
+     *
+     * A personal form must consist of exactly these, which `assertMutation()` enforces. An access-group
+     * form may additionally carry identifiers the role already stores but this editor cannot see; delivery
+     * passes only this admitted subset to the application service, which admits a retained identifier
+     * solely because the target role row already stores it, so an editor with narrower visibility can
+     * neither lose nor introduce an identifier outside what they see.
+     *
+     * @param   DashboardPreferenceMutation  $mutation       Typed bounded browser command.
+     * @param   list<string>                 $coreWidgetIds  Current non-workflow widget identifiers.
+     *
+     * @return  list<string>  Submitted identifiers that are live candidates for the mutation's slot.
+     *
+     * @throws  InvalidArgumentException  When a core widget identifier is malformed.
+     *
+     * @since   2.0.0
+     */
+    public function admitted(DashboardPreferenceMutation $mutation, array $coreWidgetIds): array
+    {
+        $core = self::coreIdentifierMap($coreWidgetIds);
+        $admitted = [];
+        foreach ($mutation->submittedIds as $identifier) {
+            if (
+                isset($this->models[$identifier])
+                || ($mutation->slot === CustomizationSlot::DashboardCards && isset($core[$identifier]))
+            ) {
+                $admitted[] = $identifier;
+            }
+        }
+
+        return $admitted;
+    }
+
+    /**
      * Validate only the submitted bounded form identifiers against this complete live catalogue.
      *
      * The application service can then receive the submitted list itself as its bounded allowlist instead of

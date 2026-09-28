@@ -15,9 +15,19 @@
       </div>
       <div class="page-actions">
         <a class="button" href="{{ business_base_path }}/{{ definition.handle|url_encode }}">{{ t('core.administrator.business_detail.back_to_list') }}</a>
-        {% if available_operations.update is defined and record.deleted_at is null %}<a class="button primary" href="{{ record_path }}?edit=1">{{ t('core.administrator.business_detail.edit') }}</a>{% endif %}
+        {% if available_operations.update is defined and record.deleted_at is null and not record_lock|default(null) %}<a class="button primary" href="{{ record_path }}?edit=1">{{ t('core.administrator.business_detail.edit') }}</a>{% endif %}
       </div>
     </header>
+
+    {% if record_lock|default(null) %}
+      <section class="notice warning business-record-lock" data-kis-state="read-only" data-record-lock="{{ record_lock.code }}" role="status" aria-labelledby="business-record-lock-title">
+        <div>
+          <h2 id="business-record-lock-title">{{ t('core.business.refusal.read_only_title') }}</h2>
+          <p data-record-lock-reason>{{ record_lock.message }}</p>
+          <p>{{ t('core.business.refusal.read_only_help') }}</p>
+        </div>
+      </section>
+    {% endif %}
 
     {% if completed_operation_id %}
       <div class="notice success kis-business-document-chrome" role="status">

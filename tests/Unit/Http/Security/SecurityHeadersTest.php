@@ -77,14 +77,35 @@ final class SecurityHeadersTest extends TestCase
         self::assertArrayNotHasKey('Strict-Transport-Security', (new SecurityHeaders(false))->values());
     }
 
-    public function testInjectedStyleElementsAreRefusedWhileStyleAttributesRemainAdmitted(): void
+    /**
+     * No response admits an inline style source: elements and attributes are both refused.
+     *
+     * The `style` attribute was the last inline admission, kept for the palette `<body>` carried
+     * inline. That palette is a same-origin stylesheet now, so the ordinary policy, the nonce policy
+     * and the widened-script policy all spell every style directive without `'unsafe-inline'`.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testNoInlineStyleSourceIsAdmittedOnAnyResponse(): void
     {
-        $policy = (new SecurityHeaders(true))->values()['Content-Security-Policy'];
-
-        self::assertStringContainsString("style-src 'self';", $policy);
-        self::assertStringContainsString("style-src-elem 'self'", $policy);
-        self::assertStringContainsString("style-src-attr 'unsafe-inline'", $policy);
-        self::assertStringNotContainsString("style-src 'self' 'unsafe-inline'", $policy);
+        foreach (
+            [
+            (new SecurityHeaders(true))->values(),
+            (new SecurityHeaders(false, true))->values('safe-nonce'),
+            (new SecurityHeaders(true))->values(null, ['https://cdn.jsdelivr.net']),
+            (new SecurityHeaders(false))->previewValues(),
+            ] as $headers
+        ) {
+            $policy = $headers['Content-Security-Policy'];
+            $directives = self::directives($policy);
+            self::assertSame("style-src 'self'", $directives['style-src']);
+            self::assertSame("style-src-elem 'self'", $directives['style-src-elem']);
+            self::assertSame("style-src-attr 'none'", $directives['style-src-attr']);
+            self::assertStringNotContainsString("'unsafe-inline'", $policy);
+            self::assertStringNotContainsString("'unsafe-hashes'", $policy);
+        }
     }
 
     /**
@@ -148,8 +169,9 @@ final class SecurityHeadersTest extends TestCase
         self::assertArrayNotHasKey('frame-src', $ordinary);
         self::assertSame("frame-src 'self'", $preview['frame-src']);
         self::assertSame("style-src-attr 'none'", $preview['style-src-attr']);
-        unset($ordinary['frame-ancestors'], $ordinary['style-src-attr']);
-        unset($preview['frame-ancestors'], $preview['frame-src'], $preview['style-src-attr']);
+        self::assertSame("style-src-attr 'none'", $ordinary['style-src-attr']);
+        unset($ordinary['frame-ancestors']);
+        unset($preview['frame-ancestors'], $preview['frame-src']);
         self::assertSame($ordinary, $preview);
 
         $policy = $headers->previewValues()['Content-Security-Policy'];

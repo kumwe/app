@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\Administrator\Http\Middleware;
 
 use DateTimeImmutable;
+use InvalidArgumentException;
 use Kumwe\App\Administrator\Http\Middleware\AdministratorCsrfMiddleware;
 use Kumwe\App\Identity\Application\Administration\AdministratorSession;
 use Kumwe\App\Tests\Support\AuthorizationContext;
@@ -12,6 +13,7 @@ use Kumwe\App\Tests\Support\InterfaceTranslation;
 use Laminas\Diactoros\Response\TextResponse;
 use Laminas\Diactoros\ServerRequestFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -24,6 +26,12 @@ use Psr\Http\Server\RequestHandlerInterface;
  * language and direction of the response have to be emitted by hand. These tests hold both halves —
  * that the sentences come from the catalogue rather than from the class, and that `lang`, `dir` and
  * `Content-Language` follow the locale in flight rather than a hardcoded `en-GB`.
+ *
+ * They also hold the guard's full rejection matrix: the session token passes from the header or the
+ * field, the header outranks the field, every partial, empty, re-cased, mistyped or foreign token is
+ * refused without disclosing the real one, the original parsed body survives for schema-authorized
+ * handlers, and a request that reached the guard without a session is refused rather than compared
+ * against nothing.
  *
  * @since  2.0.0
  */
@@ -109,6 +117,123 @@ final class AdministratorCsrfMiddlewareTest extends TestCase
         $body = (string) $response->getBody();
         self::assertStringContainsString('<html lang="he" dir="rtl">', $body);
         self::assertSame('he', $response->getHeaderLine('Content-Language'));
+    }
+
+    /**
+     * A scripted post may carry the token in `X-CSRF-Token` instead of a `_csrf` field.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAMatchingHeaderReachesTheHandler(): void
+    {
+        $handler = new CapturingAdministratorHandler();
+        $request = $this->request(null)->withHeader('X-CSRF-Token', 'csrf-token');
+
+        self::assertSame(200, $this->middleware()->process($request, $handler)->getStatusCode());
+        self::assertSame([], $handler->request?->getParsedBody());
+    }
+
+    /**
+     * A present header outranks the field, so a correct field cannot rescue a wrong header.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAWrongHeaderIsNotRescuedByACorrectField(): void
+    {
+        $handler = new CapturingAdministratorHandler();
+        $request = $this->request('csrf-token')->withHeader('X-CSRF-Token', 'not-the-token');
+
+        self::assertSame(403, $this->middleware()->process($request, $handler)->getStatusCode());
+        self::assertNull($handler->request);
+    }
+
+    /**
+     * Every token that is not exactly the session's is refused, and the refusal never discloses the real one.
+     *
+     * @param   mixed  $candidate  Value the `_csrf` field carries.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    #[DataProvider('refusedTokens')]
+    public function testATokenThatIsNotTheSessionsIsRefused(mixed $candidate): void
+    {
+        $handler = new CapturingAdministratorHandler();
+        $request = $this->request(null)->withParsedBody(['_csrf' => $candidate]);
+
+        $response = $this->middleware()->process($request, $handler);
+
+        self::assertSame(403, $response->getStatusCode());
+        self::assertNull($handler->request);
+        self::assertSame('no-store', $response->getHeaderLine('Cache-Control'));
+        self::assertSame('en-GB', $response->getHeaderLine('Content-Language'));
+        self::assertStringContainsString('<html lang="en-GB" dir="ltr">', (string) $response->getBody());
+        self::assertStringNotContainsString('csrf-token', (string) $response->getBody());
+    }
+
+    /**
+     * Name each refused candidate.
+     *
+     * @return  iterable<string, array{mixed}>  Named candidates.
+     *
+     * @since   2.0.0
+     */
+    public static function refusedTokens(): iterable
+    {
+        yield 'a wrong token' => ['not-the-token'];
+        yield 'an empty token' => [''];
+        yield 'a prefix of the real token' => ['csrf-toke'];
+        yield 'the real token with a suffix' => ['csrf-token '];
+        yield 'the real token in another case' => ['CSRF-TOKEN'];
+        yield 'a list of strings that is not the token' => [['csrf', 'token']];
+        yield 'a keyed array holding the token' => [['nested' => 'csrf-token']];
+        yield 'a portal session token' => ['portal-csrf-token'];
+    }
+
+    /**
+     * The original parsed body survives on the request for handlers that revalidate nested controls.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheOriginalParsedBodyIsRetainedBesideTheFlattenedForm(): void
+    {
+        $handler = new CapturingAdministratorHandler();
+        $body = ['_csrf' => 'csrf-token', 'values' => ['name' => 'Nested'], 'tags' => ['a', 'b']];
+
+        $this->middleware()->process($this->request(null)->withParsedBody($body), $handler);
+
+        $forwarded = $handler->request;
+        self::assertInstanceOf(ServerRequestInterface::class, $forwarded);
+        self::assertSame(['_csrf' => 'csrf-token', 'tags' => 'a,b'], $forwarded->getParsedBody());
+        self::assertSame($body, $forwarded->getAttribute(AdministratorCsrfMiddleware::ATTRIBUTE_PARSED_BODY));
+    }
+
+    /**
+     * A request that reached the guard without a session is refused outright, never compared.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testARequestWithoutASessionIsRefusedOutright(): void
+    {
+        $handler = new CapturingAdministratorHandler();
+        $request = $this->request('csrf-token')->withoutAttribute(AdministratorSession::REQUEST_ATTRIBUTE);
+
+        try {
+            $this->middleware()->process($request, $handler);
+            self::fail('The guard must not run without an administrator session.');
+        } catch (InvalidArgumentException $refusal) {
+            self::assertSame('An administrator session is required.', $refusal->getMessage());
+        }
+        self::assertNull($handler->request);
     }
 
     /**
