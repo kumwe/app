@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Integration\Infrastructure;
 
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use InvalidArgumentException;
 use Kumwe\App\Application\Retention\LedgerCensus;
+use Kumwe\App\Application\Retention\LedgerCount;
 use Kumwe\App\Application\Retention\RetentionStore;
 use Kumwe\App\BusinessReporting\Infrastructure\DoctrineProjectionEventSequencer;
 use Kumwe\App\Infrastructure\Observability\MetricCatalog;
@@ -27,6 +29,7 @@ use PHPUnit\Framework\TestCase;
  */
 #[CoversClass(RuntimeMetricCollector::class)]
 #[CoversClass(DoctrineLedgerCensus::class)]
+#[CoversClass(LedgerCount::class)]
 #[CoversClass(DoctrineProjectionEventSequencer::class)]
 final class BoundedGaugeAndCensusIntegrationTest extends TestCase
 {
@@ -86,6 +89,57 @@ final class BoundedGaugeAndCensusIntegrationTest extends TestCase
         self::assertSame($exact, $count->rows);
         $this->expectException(InvalidArgumentException::class);
         $census->count(RetentionStore::JobHistory, 30_001);
+    }
+
+    /**
+     * A census the engine cannot finish inside its timeout is cancelled and reported as timed out, not zero.
+     *
+     * A peer session holds the job table exclusively, so the exact count can only wait. The engine's own
+     * statement timeout cancels it, and the census answers with no row count, the timeout it ran under and
+     * the time it spent, instead of a number an operator could mistake for an empty ledger.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testACensusBlockedPastItsTimeoutIsReportedAsTimedOutWithoutACount(): void
+    {
+        $environment = Environment::fromGlobals();
+        $container = TestKernelFactory::create($environment);
+        $peer = TestKernelFactory::create($environment)->get(Connection::class);
+        $database = $container->get(Connection::class);
+        $tables = $container->get(TableNames::class);
+        $census = $container->get(LedgerCensus::class);
+        self::assertInstanceOf(Connection::class, $peer);
+        self::assertInstanceOf(Connection::class, $database);
+        self::assertInstanceOf(TableNames::class, $tables);
+        self::assertInstanceOf(LedgerCensus::class, $census);
+        $mysql = $peer->getDatabasePlatform() instanceof AbstractMySQLPlatform;
+        if ($mysql) {
+            // Bounds the wait should an engine ever ignore its statement timeout while blocked on a lock.
+            $database->executeStatement('SET SESSION lock_wait_timeout = 10');
+            $peer->executeStatement(sprintf('LOCK TABLES %s WRITE', $tables->quoted('jobs')));
+        } else {
+            $peer->beginTransaction();
+            $peer->executeStatement(sprintf('LOCK TABLE %s IN ACCESS EXCLUSIVE MODE', $tables->quoted('jobs')));
+        }
+        try {
+            $count = $census->count(RetentionStore::JobHistory, 250);
+        } finally {
+            if ($mysql) {
+                $peer->executeStatement('UNLOCK TABLES');
+            } else {
+                $peer->rollBack();
+            }
+        }
+
+        self::assertSame(RetentionStore::JobHistory, $count->store);
+        self::assertTrue($count->timedOut);
+        self::assertNull($count->rows);
+        self::assertSame(250, $count->timeoutMilliseconds);
+        self::assertGreaterThanOrEqual(200.0, $count->elapsedMilliseconds);
+        self::assertSame('table_scan', $count->costClass);
+        self::assertFalse($census->count(RetentionStore::JobHistory, 5_000)->timedOut, 'The lock is gone.');
     }
 
     /**

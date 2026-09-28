@@ -242,6 +242,137 @@ final class StudioMachineAuthoringEquivalenceIntegrationTest extends TestCase
     }
 
     /**
+     * An unknown item or type, and a target the credential may not create, are refused before a context opens.
+     *
+     * Resolving the target is where the machine surfaces meet the same Content rules the editor applies. An
+     * entry trashed after it was chosen and a type that does not exist are reported as not found under their
+     * own diagnostics, and a
+     * credential that may read but not create is refused as a context refusal that names no policy reason —
+     * in every case before any authoring context is bound, so a refused open leaves nothing to resume.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testUnknownOrUnauthorizedTargetsAreRefusedBeforeAnyContextOpens(): void
+    {
+        $container = $this->boot();
+        $gateway = $container->get(StudioMachineAuthoringGateway::class);
+        $verifier = $container->get(AccessTokenVerifier::class);
+        self::assertInstanceOf(StudioMachineAuthoringGateway::class, $gateway);
+        self::assertInstanceOf(ScopedAccessTokenVerifier::class, $verifier);
+        $context = function (array $capabilities) use ($container, $verifier) {
+            $verified = $verifier->verifyScoped(
+                $this->token($container, $capabilities, 'kumwe-http', 'api'),
+                'kumwe-http',
+                'api',
+                'default',
+            );
+            self::assertNotNull($verified);
+
+            return $verified->context('service-' . bin2hex(random_bytes(8)), AuthenticatedSurface::Api);
+        };
+        $full = $context(self::FULL);
+        $readOnly = $context(['content.read', 'studio.mode.hybrid']);
+        $missing = '018f22e2-7c8b-7ab0-8f3a-' . bin2hex(random_bytes(6));
+        $content = $container->get(ContentService::class);
+        self::assertInstanceOf(ContentService::class, $content);
+        $administrator = TestKernelFactory::administratorContext($container);
+        $trashed = $content->create(
+            $administrator,
+            'Trashed machine target',
+            'studio-machine-trashed-' . bin2hex(random_bytes(4)),
+            ['body' => 'Trashed before the machine opens it.'],
+        );
+        $content->trash($administrator, $trashed->entry->id(), $trashed->entry->version());
+        $outcome = static function (callable $open): array {
+            try {
+                $open();
+            } catch (StudioMachineAuthoringRefused $refused) {
+                return [$refused->category(), $refused->diagnosticCodes()];
+            }
+            self::fail('The open must be refused.');
+        };
+
+        self::assertSame(
+            ['not-found', ['studio.authoring/item-not-found']],
+            $outcome(static fn () => $gateway->open($full, StudioAuthoringIntent::Edit, $trashed->entry->id())),
+        );
+        self::assertSame(
+            ['not-found', ['studio.authoring/type-not-found']],
+            $outcome(static fn () => $gateway->open($full, StudioAuthoringIntent::Create, null, $missing)),
+        );
+        self::assertSame(
+            ['forbidden', ['studio.authoring/context-refused']],
+            $outcome(static fn () => $gateway->open($readOnly, StudioAuthoringIntent::Create)),
+        );
+    }
+
+    /**
+     * An edit session binds the entry's pinned type, a blank create binds none, and reads carry the locale.
+     *
+     * The machine gateway resolves an edit exactly as the Content editor does — the stored entry and the
+     * type version it is pinned to — and offers only the existing start. A create without a type offers the
+     * blank and from-type starts and names no reusable type. A read sent with a caller locale is answered
+     * through the same Producer route as one without.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testEditAndBlankSessionsBindTheirTargetsAndReadsCarryTheLocale(): void
+    {
+        $container = $this->boot();
+        $gateway = $container->get(StudioMachineAuthoringGateway::class);
+        $verifier = $container->get(AccessTokenVerifier::class);
+        $content = $container->get(ContentService::class);
+        self::assertInstanceOf(StudioMachineAuthoringGateway::class, $gateway);
+        self::assertInstanceOf(ScopedAccessTokenVerifier::class, $verifier);
+        self::assertInstanceOf(ContentService::class, $content);
+        $verified = $verifier->verifyScoped(
+            $this->token($container, self::FULL, 'kumwe-http', 'api'),
+            'kumwe-http',
+            'api',
+            'default',
+        );
+        self::assertNotNull($verified);
+        $machine = $verified->context('service-' . bin2hex(random_bytes(8)), AuthenticatedSurface::Api);
+        $entry = $content->create(
+            TestKernelFactory::administratorContext($container),
+            'Machine edit target',
+            'studio-machine-edit-' . bin2hex(random_bytes(4)),
+            ['body' => 'Opened for editing by a machine.'],
+        );
+
+        $edit = $gateway->open($machine, StudioAuthoringIntent::Edit, $entry->entry->id())->toDocument();
+        self::assertSame('edit', $edit->intent);
+        self::assertSame(['existing'], $edit->availableStarts);
+        self::assertStringContainsString($entry->entry->id(), $edit->returnPath);
+
+        $blank = $gateway->open($machine, StudioAuthoringIntent::Create)->toDocument();
+        self::assertSame('create', $blank->intent);
+        self::assertSame(['blank', 'from-type'], $blank->availableStarts);
+        self::assertObjectNotHasProperty('type', $blank, 'A blank create names no reusable type.');
+
+        $resolution = $gateway->perform(
+            $machine,
+            StudioMachineAuthoringOperation::ResolveTarget,
+            $blank->session,
+            $blank->sessionGeneration,
+            (object) [
+                'targetId' => $blank->targetId,
+                'intent' => 'create',
+                'resourceContext' => $blank->resourceContext,
+                'requestedPresentation' => 'inline',
+            ],
+            null,
+            'fr',
+        );
+        self::assertFalse($resolution->replayed);
+        self::assertEquals(['blank', 'from-type'], $resolution->value()->availableStarts);
+    }
+
+    /**
      * Boot the kernel and revoke any equivalence token an interrupted earlier run left active.
      *
      * @return  Container  Migrated kernel.

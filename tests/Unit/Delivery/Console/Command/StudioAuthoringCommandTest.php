@@ -177,6 +177,34 @@ final class StudioAuthoringCommandTest extends TestCase
     }
 
     /**
+     * The command re-reads a reusable-type version strictly even when it is invoked beneath the grammar.
+     *
+     * The frozen console grammar already refuses a version that is not a positive integer, or one given
+     * without a type. The command does not rely on that: invoked directly, a malformed version is refused as
+     * malformed input and a well-formed version without a type is refused by the gateway as a target it will
+     * not guess, both with the invalid-data status and before any Content is read.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheCommandReReadsATypeVersionStrictlyBeneathTheGrammar(): void
+    {
+        $authenticated = self::command(AuthorizationContext::principal(['content.read']));
+        $token = '--token-file=' . $this->file('token');
+
+        foreach (
+            [
+                'malformed version' => ['--content-type=type-1', '--content-type-version=zero'],
+                'version without a type' => ['--content-type-version=2'],
+            ] as $case => $options
+        ) {
+            $arguments = ['open', '--site=default', $token, '--intent=create', ...$options];
+            self::assertSame(65, $authenticated->execute($arguments, new NullOutput()), $case);
+        }
+    }
+
+    /**
      * Protected JSON documents keep empty objects as objects.
      *
      * @return  void

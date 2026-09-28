@@ -123,6 +123,38 @@ final class McpEcmaPatternSchemaValidatorTest extends TestCase
     }
 
     /**
+     * Boolean subschemas keep their meaning through the pattern rewrite and the empty-object restoration.
+     *
+     * JSON Schema allows `true` and `false` wherever a subschema may stand. A `false` pattern property still
+     * forbids every name its rewritten pattern matches, and a `false` branch of an `anyOf` is skipped when
+     * deciding that an empty value must be the object the other branch admits.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testBooleanSubschemasKeepTheirMeaningThroughTheRewrite(): void
+    {
+        $validator = new McpEcmaPatternSchemaValidator();
+        $schema = [
+            'type' => 'object',
+            'properties' => [
+                'headers' => ['type' => 'object', 'patternProperties' => ['^\\u0078-' => false]],
+                'options' => ['anyOf' => [false, ['type' => 'object', 'maxProperties' => 0]]],
+            ],
+        ];
+
+        self::assertSame([], $validator->validateAgainstJsonSchema(
+            ['headers' => ['accept' => 'json'], 'options' => []],
+            $schema,
+        ));
+        self::assertNotSame([], $validator->validateAgainstJsonSchema(
+            ['headers' => ['x-secret' => 'value']],
+            $schema,
+        ), 'A name the forbidding pattern matches is refused.');
+    }
+
+    /**
      * Only unescaped `\uXXXX` sequences are rewritten; an escaped backslash before `u` stays literal.
      *
      * @return  void
