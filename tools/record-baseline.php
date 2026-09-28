@@ -183,7 +183,7 @@ function baselineConsoleCommands(string $root): array
 }
 
 /**
- * Read the operations the published OpenAPI contract declares.
+ * Read the operations the current retained OpenAPI generation declares, as the generation ledger names it.
  *
  * @param   string  $root  Repository root.
  *
@@ -193,7 +193,14 @@ function baselineConsoleCommands(string $root): array
  */
 function baselineOpenApi(string $root): array
 {
-    $document = baselineJson($root . '/api/openapi/kumwe-v1.json');
+    $ledger = baselineJson($root . '/api/openapi/generations.json');
+    $artifact = 'api/openapi/kumwe-v1.json';
+    foreach (is_array($ledger['generations'] ?? null) ? $ledger['generations'] : [] as $row) {
+        if (is_array($row) && ($row['generation'] ?? null) === ($ledger['current'] ?? null)) {
+            $artifact = is_string($row['artifact'] ?? null) ? $row['artifact'] : $artifact;
+        }
+    }
+    $document = baselineJson($root . '/' . $artifact);
     $paths = is_array($document['paths'] ?? null) ? $document['paths'] : [];
     $operations = 0;
     foreach ($paths as $item) {

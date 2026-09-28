@@ -108,11 +108,11 @@ final class McpProtocolContractIntegrationTest extends TestCase
             $session,
         );
         $secondTools = $this->successfulResult($secondToolsExchange);
-        self::assertCount(25, $secondTools['tools']);
+        self::assertCount(McpMachineContract::TOOL_COUNT - 50, $secondTools['tools']);
         self::assertArrayNotHasKey('nextCursor', $secondTools);
 
         $fixtureBytes = (string) file_get_contents(
-            dirname(__DIR__, 3) . '/docs/machine-contract/mcp-v1.json',
+            dirname(__DIR__, 3) . '/docs/machine-contract/' . McpMachineContract::GENERATION . '.json',
         );
         $fixture = json_decode(
             $fixtureBytes,
@@ -206,7 +206,7 @@ final class McpProtocolContractIntegrationTest extends TestCase
             $session,
         ));
         self::assertFalse($discovery['isError']);
-        self::assertSame(75, count($discovery['structuredContent']['tools']));
+        self::assertSame(McpMachineContract::TOOL_COUNT, count($discovery['structuredContent']['tools']));
 
         $refusal = $this->successfulResult($this->exchange(
             $handler,

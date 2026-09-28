@@ -12,6 +12,7 @@ use Kumwe\App\Delivery\Console\ConsoleApplication;
 use Kumwe\App\Delivery\Console\Output;
 use Kumwe\App\Delivery\Http\Api\Studio\StudioAuthoringApiHandler;
 use Kumwe\App\Delivery\Http\Api\Studio\StudioAuthoringProblemMapper;
+use Kumwe\App\Identity\Application\Administration\AccessControlService;
 use Kumwe\App\Identity\Application\Administration\AdministratorIdentityGateway;
 use Kumwe\App\Identity\Application\Authentication\AccessTokenVerifier;
 use Kumwe\App\Identity\Application\Authentication\ScopedAccessTokenVerifier;
@@ -84,6 +85,22 @@ final class StudioMachineAuthoringEquivalenceIntegrationTest extends TestCase
     private const array WITHOUT_MODE = ['content.read', 'content.create', 'content.update'];
 
     /**
+     * Kernel of the running test, kept so its tokens can be revoked afterwards.
+     *
+     * @var    ?Container
+     * @since  2.0.0
+     */
+    private ?Container $container = null;
+
+    /**
+     * Identifiers of the tokens the running test issued.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
+    private array $tokens = [];
+
+    /**
      * Protected files written during one test, removed afterwards.
      *
      * @var    list<string>
@@ -92,7 +109,7 @@ final class StudioMachineAuthoringEquivalenceIntegrationTest extends TestCase
     private array $files = [];
 
     /**
-     * Remove every protected token and argument file a test wrote.
+     * Revoke every token and remove every protected file a test issued, so repeated runs stay under quota.
      *
      * @return  void
      *
@@ -100,6 +117,16 @@ final class StudioMachineAuthoringEquivalenceIntegrationTest extends TestCase
      */
     protected function tearDown(): void
     {
+        if ($this->container !== null) {
+            $access = $this->container->get(AccessControlService::class);
+            self::assertInstanceOf(AccessControlService::class, $access);
+            $administrator = TestKernelFactory::administratorContext($this->container);
+            foreach ($this->tokens as $tokenId) {
+                $access->revokeToken($administrator, $tokenId);
+            }
+        }
+        $this->container = null;
+        $this->tokens = [];
         foreach ($this->files as $file) {
             if (is_file($file)) {
                 unlink($file);
@@ -117,7 +144,7 @@ final class StudioMachineAuthoringEquivalenceIntegrationTest extends TestCase
      */
     public function testTheAuthoringJourneyIsIdenticalThroughTheServiceRestCliAndMcp(): void
     {
-        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $container = $this->boot();
         $traces = [];
         foreach ($this->drivers($container, self::FULL) as $surface => $driver) {
             $traces[$surface] = $this->journey($container, $surface, $driver);
@@ -142,7 +169,7 @@ final class StudioMachineAuthoringEquivalenceIntegrationTest extends TestCase
      */
     public function testEverySurfaceRefusesMissingCapabilityStaleRevisionAndTargetMismatchIdentically(): void
     {
-        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $container = $this->boot();
         $refusals = [];
         $withoutMode = $this->drivers($container, self::WITHOUT_MODE);
         foreach ($this->drivers($container, self::FULL) as $surface => $driver) {
@@ -212,6 +239,34 @@ final class StudioMachineAuthoringEquivalenceIntegrationTest extends TestCase
         self::assertNull($refusals['mcp']['stale_revision']['diagnostics'], 'MCP envelopes stay closed.');
         self::assertNotNull($refusals['rest']['stale_revision']['diagnostics']);
         self::assertNotNull($refusals['cli']['stale_revision']['diagnostics']);
+    }
+
+    /**
+     * Boot the kernel and revoke any equivalence token an interrupted earlier run left active.
+     *
+     * @return  Container  Migrated kernel.
+     *
+     * @since   2.0.0
+     */
+    private function boot(): Container
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $this->container = $container;
+        $access = $container->get(AccessControlService::class);
+        self::assertInstanceOf(AccessControlService::class, $access);
+        $administrator = TestKernelFactory::administratorContext($container);
+        foreach ($access->tokens($administrator) as $token) {
+            if (
+                is_string($token['id'] ?? null)
+                && is_string($token['name'] ?? null)
+                && str_starts_with($token['name'], 'studio-equivalence-')
+                && ($token['revoked_at'] ?? null) === null
+            ) {
+                $access->revokeToken($administrator, $token['id']);
+            }
+        }
+
+        return $container;
     }
 
     /**
@@ -659,12 +714,12 @@ final class StudioMachineAuthoringEquivalenceIntegrationTest extends TestCase
 
             return $body === '' ? [] : ['json' => json_decode($body, true, 512, JSON_THROW_ON_ERROR), 'raw' => $body];
         };
-        $exchange('initialize', [
+        $initialized = $exchange('initialize', [
             'protocolVersion' => '2025-11-25',
             'capabilities' => new stdClass(),
             'clientInfo' => ['name' => 'Kumwe equivalence test', 'version' => '1.0.0'],
         ]);
-        self::assertNotNull($session, 'The MCP server did not open a session.');
+        self::assertNotNull($session, 'The MCP server did not open a session: ' . ($initialized['raw'] ?? ''));
         $exchange('notifications/initialized', [], true);
         $tool = static function (string $name, array $arguments) use ($exchange): array {
             $response = $exchange('tools/call', ['name' => $name, 'arguments' => $arguments]);
@@ -747,6 +802,8 @@ final class StudioMachineAuthoringEquivalenceIntegrationTest extends TestCase
             $audience,
             $purpose,
         );
+
+        $this->tokens[] = $issued['token_id'];
 
         return $issued['token'];
     }

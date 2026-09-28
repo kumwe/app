@@ -1,16 +1,17 @@
 <?php
 
 /**
- * Generate or verify the retained MCP v1 machine-contract fixture.
+ * Generate or verify the current MCP machine-contract generation and prove earlier ones are still served.
  *
  * Usage:
  *   php tools/generate-mcp-machine-contract.php --check
  *   php tools/generate-mcp-machine-contract.php --write
  *
- * `--check` is the CI mode: it builds the contract from the same catalogue the live server registers and
- * compares exact bytes. `--write` can establish a missing generation or confirm identical bytes, but it never
- * replaces a retained artifact. A compatibility change requires a successor generation identifier and path.
- * Neither mode needs a database or application kernel.
+ * `--check` is the CI mode: it builds the contract from the same catalogue the live server registers,
+ * compares exact bytes, and proves every retained earlier generation's tools, resources, prompts and error
+ * rows are still served unchanged. `--write` can establish a missing generation or confirm identical
+ * bytes, but it never replaces a retained artifact. A compatibility change requires a successor
+ * generation identifier and path. Neither mode needs a database or application kernel.
  *
  * @since  2.0.0
  */
@@ -71,6 +72,44 @@ if ($mode === '--write') {
             : sprintf("%s already contains the retained bytes.\n", $artifact),
     );
     exit(0);
+}
+
+// Every earlier retained generation must remain a byte-identical part of the live surface: its tools,
+// resources, prompts and error rows are still served exactly, so a successor can only add.
+$live = json_decode(McpMachineContract::prettyJson($contract->document()), true, 512, JSON_THROW_ON_ERROR);
+foreach (McpMachineContract::RETAINED_GENERATIONS as $retainedGeneration) {
+    $retainedPath = $root . '/docs/machine-contract/' . $retainedGeneration . '.json';
+    $retainedBytes = is_file($retainedPath) ? file_get_contents($retainedPath) : false;
+    $retained = is_string($retainedBytes) ? json_decode($retainedBytes, true, 512, JSON_THROW_ON_ERROR) : null;
+    if (!is_array($retained) || !is_array($live)) {
+        fwrite(STDERR, sprintf("Retained MCP generation %s is missing or unreadable.\n", $retainedGeneration));
+        exit(1);
+    }
+    $liveTools = array_column($live['surface']['tools'], null, 'name');
+    $drift = [];
+    foreach ($retained['surface']['tools'] as $tool) {
+        if (($liveTools[$tool['name']] ?? null) !== $tool) {
+            $drift[] = 'tool ' . $tool['name'];
+        }
+    }
+    foreach (['resources', 'prompts'] as $kind) {
+        if ($retained['surface'][$kind] !== $live['surface'][$kind]) {
+            $drift[] = $kind;
+        }
+    }
+    foreach ($retained['tool_error']['registry'] as $row) {
+        if (!in_array($row, $live['tool_error']['registry'], true)) {
+            $drift[] = 'error ' . $row['code'];
+        }
+    }
+    if ($drift !== []) {
+        fwrite(STDERR, sprintf(
+            "The live MCP surface no longer serves retained generation %s unchanged: %s.\n",
+            $retainedGeneration,
+            implode(', ', $drift),
+        ));
+        exit(1);
+    }
 }
 
 $actual = is_file($path) ? file_get_contents($path) : false;

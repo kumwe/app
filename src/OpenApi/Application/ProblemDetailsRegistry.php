@@ -9,8 +9,10 @@ use InvalidArgumentException;
 /**
  * Finite registry of the core problem codes public REST clients may branch on.
  *
- * This is the runtime source for the checked-in `api/problem-details/kumwe-v1.json` generation. The
- * generated OpenAPI problem union is assembled from the same rows, so status, retry and extension semantics
+ * This is the runtime source for the current checked-in registry generation
+ * (`api/problem-details/generations/1.1.0.json`); the retained `api/problem-details/kumwe-v1.json` is its
+ * byte-stable predecessor, and every one of its rows is still present here unchanged. The generated OpenAPI
+ * problem union is assembled from the same rows, so status, retry and extension semantics
  * cannot diverge between handler validation, the standalone registry and the REST schema.
  *
  * @since  2.0.0
