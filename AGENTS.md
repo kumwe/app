@@ -180,8 +180,8 @@ nobody told the record. This is the hole.
 | Validate persistence SQL on one engine | The MySQL and PostgreSQL CI legs | Run the cross-engine lane locally: `DB_DRIVER=pgsql DB_PORT=5432` after `tools/agent-setup.sh` |
 | Change visible UI without refreshing browser baselines | Hashed screenshot comparisons in the browser jobs | The `refresh-browser-baselines` workflow regenerates them; a CSS change without it loops CI |
 | Mark a finding `closed` | `composer roadmap:check` | Delete the finding, remove the STATUS row, write `CHANGELOG.md` |
-| Write "delivered" in the STATUS open-work table | `roadmap:check` | Remove the row. Completion language belongs in the phase board and changelog |
-| Deliver a requirement without moving its acceptance-record row, or edit the derived summary by hand | `composer acceptance:check` | Update `docs/roadmap/acceptance-record.json`, run `composer acceptance:summary`, commit both |
+| Write "delivered" in the STATUS open-work table | `roadmap:check` | The table is generated: set the entry's state in `docs/roadmap/acceptance-record.json` and regenerate |
+| Deliver a requirement without moving its acceptance-record entry, or edit a generated STATUS block or the summary by hand | `composer acceptance:check` | Update `docs/roadmap/acceptance-record.json`, run `composer acceptance:summary`, commit the record, `STATUS.md` and `acceptance-summary.md` together |
 | Widen a PHPDoc type (`list<string>` → `array`) | PHPStan max | Add prose. Never widen or delete an existing type |
 | Touch a shipped migration that checksums its own bytes | install integrity | Document **before** it ships. Never formatter-pass it afterwards |
 | Introduce a secret-shaped literal, even in a later-fixed commit | `composer security:secrets` | Rewrite the introducing commit, or fingerprint-allowlist in `.gitleaksignore` |
@@ -353,8 +353,6 @@ composition root, not the default home for reusable behaviour. The machinery is 
 
 ```
 [ ] Delete the finding from docs/roadmap/findings.json. Do not set state: closed.
-[ ] Remove the package/finding from the STATUS.md open-work table.
-    Do not write complete / delivered / done in that table.
 [ ] Write the substance into CHANGELOG.md under Added / Changed / Fixed / Security /
     Deprecated / Removed. Keep-a-Changelog format. Cite the evidence merge-stably:
     an entry written on a branch cites its pull request as (#123), because the rebase
@@ -362,11 +360,12 @@ composition root, not the default home for reusable behaviour. The machinery is 
     on the first master run. Cite a commit hash only when it already sits on master;
     after a rebase leaves an old hash dangling, repoint it to the rebased twin
     (match by commit message) or replace it with the pull-request citation.
-[ ] Lower the STATUS ledger snapshot counts. Update the phase-board cell if a phase moved.
 [ ] Leave the package definition in docs/roadmap/README.md. That is the durable contract.
-[ ] Move the requirement's row in docs/roadmap/acceptance-record.json to `delivered` (runtime owner,
-    tests, workflow artifacts, decision), then composer acceptance:summary and commit the derived
-    docs/roadmap/acceptance-summary.md.
+[ ] Set the requirement's entry in docs/roadmap/acceptance-record.json to `delivered` with its
+    runtime owner, tests, CI jobs (file#job), artifacts and decision; clear outstanding, branches
+    and branch_evidence. Work committed on another branch stays `pending-integration`, naming it.
+[ ] composer acceptance:summary. It regenerates the STATUS.md phase board, open-work table, Gate B
+    criteria and ledger snapshot plus docs/roadmap/acceptance-summary.md; never edit those by hand.
 [ ] composer roadmap:check && composer acceptance:check
 ```
 

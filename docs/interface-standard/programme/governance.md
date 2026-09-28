@@ -51,7 +51,9 @@ record. Accepted evidence types are:
 - `parity` — old/new route, field, action, request, authorization, and outcome comparison;
 - `security` — positive and negative actor matrix, threat or abuse case, and fail-closed result;
 - `decision` — approved KIS rule, prototype outcome, compatibility decision, or deviation;
-- `review` — human usability, accessibility, security, or architectural acceptance;
+- `review` — independent usability, accessibility, security, or architectural review. Under ADR 0021 an
+  independent agent may perform it with automated workflow evidence; the maintainer's merge, once every
+  required check is green, is the human acceptance, and no named human reviewer or manual checklist is required;
 - `qualification` — production-topology, database-matrix, backup/restore, artifact, or release evidence.
 
 An evidence record states its producer, source revision, environment, command or review method, result,

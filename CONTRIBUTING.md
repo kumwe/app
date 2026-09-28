@@ -49,6 +49,16 @@ php tools/verify-docblocks.php src   # report members missing documentation
 php tools/format-docblocks.php src   # apply the house alignment rules
 ```
 
+## Acceptance
+
+A pull request is accepted by the maintainer's merge once every required check is green; that merge is the
+sole acceptance record ([ADR 0021](docs/roadmap/decisions/0021-automated-acceptance-and-sampled-capacity.md)).
+Browser, accessibility, visual, locale and right-to-left evidence comes from the workflows, and a WebKit result
+is reported as WebKit evidence, not as a person using Safari. No human checkbox, manual browser, Safari or
+right-to-left review, or follow-up acceptance commit is required. Write the changelog and
+[`docs/roadmap/acceptance-record.json`](docs/roadmap/acceptance-record.json) inside the pull request so the merged
+documentation already states what the merge accepts, and leave unfinished work open there.
+
 ## Security-sensitive changes
 
 Authentication, authorization, session, archive, extension, token, upload and MCP
