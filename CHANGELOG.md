@@ -201,6 +201,22 @@ portfolio, soaks, the independent review and the out-of-process extension runtim
 - Let the development server and the browser lane run on a configured port (`KUMWE_DEV_SERVER_PORT`,
   `KUMWE_BROWSER_BASE_URL`), so parallel local browser runs no longer collide; CI keeps its default (#152).
 
+- Check in the automated half of the security and privacy qualification (`P7-C`).
+  `docs/security/qualification-matrix.json` maps every area and sub-area the roadmap names to the test methods
+  and CI jobs that prove it, records out-of-process controls as `GM-SUP-05`'s Point 5 work, and
+  `SecurityQualificationMatrixTest` refuses a missing test, a test outside its job or an unreasoned gap. New
+  HTTP, console, MCP and two-engine integration tests found and fixed the following:
+  - MCP protocol logs no longer carry tool arguments or results.
+  - Hand-edited media and content list queries no longer end in a server error.
+  - A settings manager scoped to one site can no longer rewrite the installation's public site settings.
+  - A revocation-feed URL carrying credentials or a query is refused.
+  - Log messages, plain values and serializable objects are scrubbed of credentials.
+  - Signed extension assets are served again, judged by the signing key's expiry.
+  - A holder of `users.manage` can no longer reset the password or retire the second factor of an account
+    whose authority exceeds the actor's, whether that authority comes from direct roles or from any
+    organization membership. Break-glass console recovery of such an account now stops at the same ceiling,
+    pending a maintainer decision (#152).
+
 <!-- #152 in-flight streams. Each lands its entries above this comment, citing the acceptance-record
      identifiers it flips, when its branch merges into platform/v2-runtime-completion:
        agent/machine    Studio authoring over REST 1.1.0, CLI generation two and mcp-v2: MACHINE-STUDIO-PARITY
