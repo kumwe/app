@@ -90,8 +90,9 @@ const administratorSurfaces: readonly QualifiedSurface[] = [
         'apply filters',
       ],
     ],
-    // Content titles, and the content-model and workflow-state names a model defines, are content.
-    content: ['table tbody', 'select[name="type"]', 'select[name="status"]'],
+    // Content titles, and the content-model and workflow-state names a model defines, are content; the
+    // rest of each row — its trash action and trashed marker — is interface wording and is checked.
+    content: ['.content-title strong', 'table tbody .status', 'select[name="type"]', 'select[name="status"]'],
   },
   {
     id: 'administrator-content-editor',

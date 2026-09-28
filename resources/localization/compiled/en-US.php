@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for en-US, carrying 2519 messages.
+ * Compiled interface message catalogue for en-US, carrying 2533 messages.
  *
  * Generated from en-US.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -313,6 +313,7 @@ return [
     'core.administrator.automation.create_schedule' => 'Create schedule',
     'core.administrator.automation.cron_expression' => 'Cron expression',
     'core.administrator.automation.delete' => 'Delete',
+    'core.administrator.automation.delete_schedule_confirm' => 'Delete the {name} schedule?',
     'core.administrator.automation.delivery_attempts_and_recoverable_failures_acros' => 'Delivery attempts and recoverable failures across registered queues.',
     'core.administrator.automation.field_batch_size' => 'Batch size',
     'core.administrator.automation.field_content_id' => 'Content ID',
@@ -544,6 +545,7 @@ return [
     'core.administrator.business_definitions.list' => 'List',
     'core.administrator.business_definitions.many_to_many' => 'Many to many',
     'core.administrator.business_definitions.many_to_one' => 'Many to one',
+    'core.administrator.business_definitions.mark_version_confirm' => 'Mark version {version} as {action}?',
     'core.administrator.business_definitions.maximum' => 'Maximum',
     'core.administrator.business_definitions.minimum' => 'Minimum',
     'core.administrator.business_definitions.model_operational_entities_relationships_views_a' => 'Model operational entities, relationships, views, actions and workflows before record storage is introduced.',
@@ -579,6 +581,7 @@ return [
     'core.administrator.business_definitions.publication_gate' => 'Publication gate',
     'core.administrator.business_definitions.publication_is_immutable' => 'Publication is immutable.',
     'core.administrator.business_definitions.publish_version' => 'Publish version {to_version}',
+    'core.administrator.business_definitions.publish_version_confirm' => 'Publish this immutable definition version?',
     'core.administrator.business_definitions.published_by' => 'Published by',
     'core.administrator.business_definitions.read_only' => 'Read only',
     'core.administrator.business_definitions.read_only_access' => 'Read-only access.',
@@ -882,6 +885,7 @@ return [
     'core.administrator.business_schema_plans.exact_installed_definition_id' => 'Exact installed definition ID',
     'core.administrator.business_schema_plans.exact_plan_checksum' => 'Exact plan checksum',
     'core.administrator.business_schema_plans.execute_approved_plan' => 'Execute approved plan',
+    'core.administrator.business_schema_plans.execute_confirm' => 'Execute this exact approved physical-schema plan?',
     'core.administrator.business_schema_plans.execution' => 'Execution',
     'core.administrator.business_schema_plans.execution_becomes_available_only_after_an' => 'Execution becomes available only after an exact approval and only to an operator with the execution capability.',
     'core.administrator.business_schema_plans.execution_gate' => 'Execution gate',
@@ -928,9 +932,11 @@ return [
     'core.administrator.business_schema_plans.published_definition' => 'Published definition',
     'core.administrator.business_schema_plans.published_definitions_create_inspectable_plans_w' => 'Published definitions create inspectable plans without changing physical storage.',
     'core.administrator.business_schema_plans.publishing_a_definition_persists_a_plan' => 'Publishing a definition persists a plan only. Execution always remains a separate authorized operation.',
+    'core.administrator.business_schema_plans.purge_confirm' => 'Create a destructive purge plan for this preserved business schema?',
     'core.administrator.business_schema_plans.record_recovery_evidence' => 'Record recovery evidence',
     'core.administrator.business_schema_plans.record_revision_and_audit_checksums_matched' => 'Record, revision and audit checksums matched',
     'core.administrator.business_schema_plans.record_tested_backup_and_restore_evidence' => 'Record tested backup and restore evidence',
+    'core.administrator.business_schema_plans.recover_confirm' => 'Recover this interrupted schema execution from its durable journal?',
     'core.administrator.business_schema_plans.recovery' => 'Recovery',
     'core.administrator.business_schema_plans.recovery_drill_reference' => 'Recovery drill reference',
     'core.administrator.business_schema_plans.relations' => 'Relations',
@@ -1323,6 +1329,7 @@ return [
     'core.administrator.content_list.edit' => 'Edit {title}',
     'core.administrator.content_list.find_review_and_publish_every_item' => 'Find, review and publish every item on this site.',
     'core.administrator.content_list.items_on_this_page' => '{count, plural, one {# item on this page} other {# items on this page}}',
+    'core.administrator.content_list.move_to_trash_confirm' => 'Move ‘{title}’ to trash?',
     'core.administrator.content_list.next' => 'Next',
     'core.administrator.content_list.no_matching_content' => 'No matching content',
     'core.administrator.content_list.not_public' => '/{slug} · not public',
@@ -1516,6 +1523,7 @@ return [
     'core.administrator.extensions.this_release_predates_install_time_admission' => 'This release predates install-time admission recording, so nothing was inventoried or scanned. Reinstall the package to record a result.',
     'core.administrator.extensions.trust' => 'Trust',
     'core.administrator.extensions.uninstall' => 'Uninstall {identifier}',
+    'core.administrator.extensions.uninstall_confirm' => 'Uninstall {identifier}?',
     'core.administrator.extensions.uninstall_extension' => 'Uninstall extension',
     'core.administrator.extensions.uninstalling_removes_this_package_from_the' => 'Uninstalling removes this package from the runtime. Review owned data and recovery requirements before continuing.',
     'core.administrator.extensions.upload_a_verified_package' => 'Upload a verified package',
@@ -1650,6 +1658,7 @@ return [
     'core.administrator.media.all_files' => 'All files',
     'core.administrator.media.choose_file_first' => 'Choose a media file to upload.',
     'core.administrator.media.copy_url' => 'Copy URL',
+    'core.administrator.media.delete_asset_confirm' => 'Delete {name}? Content using its URL will show a broken link.',
     'core.administrator.media.discover_media' => 'Discover media',
     'core.administrator.media.documents' => 'Documents',
     'core.administrator.media.file_count' => '{count, plural, one {# file} other {# files}}',
@@ -1688,7 +1697,9 @@ return [
     'core.administrator.navigation.create_the_container_first_then_add' => 'Create the container first, then add page, section, or external links.',
     'core.administrator.navigation.create_the_main_menu' => 'Create the main menu',
     'core.administrator.navigation.custom_url' => 'Custom URL',
+    'core.administrator.navigation.delete_item_confirm' => 'Delete the ‘{title}’ menu item?',
     'core.administrator.navigation.delete_menu' => 'Delete {title} menu',
+    'core.administrator.navigation.delete_menu_confirm' => 'Delete ‘{title}’ and all its links?',
     'core.administrator.navigation.deleting' => 'Deleting',
     'core.administrator.navigation.destination' => '· Destination {target_url}',
     'core.administrator.navigation.drag_rows_or_edit_each_numeric' => 'Drag rows or edit each numeric position, then save.',
@@ -1885,6 +1896,9 @@ return [
     'core.business.refusal.read_only_help' => 'You can still open it, review its history and run the workflow actions it offers.',
     'core.business.refusal.read_only_title' => 'This record is read-only',
     'core.business.report.reports' => 'Reports',
+    'core.business.table.scroll_choice_details' => 'Scroll horizontally to review choice details',
+    'core.business.table.scroll_result_columns' => 'Scroll horizontally to review every result column',
+    'core.business.table.scroll_selected_columns' => 'Scroll horizontally to review every selected column',
     'core.console.access.description' => 'List and manage users, roles, and capability grants.',
     'core.console.app_health.description' => 'Check whether Kumwe is ready to serve traffic.',
     'core.console.app_health.kumwe_is_not_ready' => 'Kumwe is not ready.',

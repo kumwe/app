@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for es, carrying 2519 messages.
+ * Compiled interface message catalogue for es, carrying 2533 messages.
  *
  * Generated from es.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -313,6 +313,7 @@ return [
     'core.administrator.automation.create_schedule' => 'Crear programación',
     'core.administrator.automation.cron_expression' => 'Expresión cron',
     'core.administrator.automation.delete' => 'Eliminar',
+    'core.administrator.automation.delete_schedule_confirm' => '¿Eliminar la programación {name}?',
     'core.administrator.automation.delivery_attempts_and_recoverable_failures_acros' => 'Intentos de entrega y errores recuperables en las colas registradas.',
     'core.administrator.automation.field_batch_size' => 'Tamaño del lote',
     'core.administrator.automation.field_content_id' => 'ID de contenido',
@@ -544,6 +545,7 @@ return [
     'core.administrator.business_definitions.list' => 'Lista',
     'core.administrator.business_definitions.many_to_many' => 'Varios a varios',
     'core.administrator.business_definitions.many_to_one' => 'Varios a uno',
+    'core.administrator.business_definitions.mark_version_confirm' => '¿Marcar la versión {version} como {action}?',
     'core.administrator.business_definitions.maximum' => 'Máximo',
     'core.administrator.business_definitions.minimum' => 'Mínimo',
     'core.administrator.business_definitions.model_operational_entities_relationships_views_a' => 'Modela entidades operativas, relaciones, vistas, acciones y flujos de trabajo antes de introducir el almacenamiento de registros.',
@@ -579,6 +581,7 @@ return [
     'core.administrator.business_definitions.publication_gate' => 'Control de publicación',
     'core.administrator.business_definitions.publication_is_immutable' => 'La publicación es inmutable.',
     'core.administrator.business_definitions.publish_version' => 'Publicar la versión {to_version}',
+    'core.administrator.business_definitions.publish_version_confirm' => '¿Publicar esta versión inmutable de la definición?',
     'core.administrator.business_definitions.published_by' => 'Publicado por',
     'core.administrator.business_definitions.read_only' => 'Solo lectura',
     'core.administrator.business_definitions.read_only_access' => 'Acceso de solo lectura.',
@@ -882,6 +885,7 @@ return [
     'core.administrator.business_schema_plans.exact_installed_definition_id' => 'ID exacto de la definición instalada',
     'core.administrator.business_schema_plans.exact_plan_checksum' => 'Suma de comprobación exacta del plan',
     'core.administrator.business_schema_plans.execute_approved_plan' => 'Ejecutar el plan aprobado',
+    'core.administrator.business_schema_plans.execute_confirm' => '¿Ejecutar exactamente este plan de esquema físico aprobado?',
     'core.administrator.business_schema_plans.execution' => 'Ejecución',
     'core.administrator.business_schema_plans.execution_becomes_available_only_after_an' => 'La ejecución solo está disponible tras una aprobación exacta y solo para un operador con la capacidad de ejecución.',
     'core.administrator.business_schema_plans.execution_gate' => 'Control de ejecución',
@@ -928,9 +932,11 @@ return [
     'core.administrator.business_schema_plans.published_definition' => 'Definición publicada',
     'core.administrator.business_schema_plans.published_definitions_create_inspectable_plans_w' => 'Las definiciones publicadas crean planes inspeccionables sin cambiar el almacenamiento físico.',
     'core.administrator.business_schema_plans.publishing_a_definition_persists_a_plan' => 'Publicar una definición solo guarda un plan. La ejecución siempre sigue siendo una operación autorizada independiente.',
+    'core.administrator.business_schema_plans.purge_confirm' => '¿Crear un plan de purga destructivo para este esquema de negocio conservado?',
     'core.administrator.business_schema_plans.record_recovery_evidence' => 'Registrar evidencia de recuperación',
     'core.administrator.business_schema_plans.record_revision_and_audit_checksums_matched' => 'Las sumas de comprobación de registro, revisión y auditoría coincidieron',
     'core.administrator.business_schema_plans.record_tested_backup_and_restore_evidence' => 'Registrar evidencia probada de copia de seguridad y restauración',
+    'core.administrator.business_schema_plans.recover_confirm' => '¿Recuperar esta ejecución de esquema interrumpida desde su diario duradero?',
     'core.administrator.business_schema_plans.recovery' => 'Recuperación',
     'core.administrator.business_schema_plans.recovery_drill_reference' => 'Referencia del simulacro de recuperación',
     'core.administrator.business_schema_plans.relations' => 'Relaciones',
@@ -1323,6 +1329,7 @@ return [
     'core.administrator.content_list.edit' => 'Editar {title}',
     'core.administrator.content_list.find_review_and_publish_every_item' => 'Busca, revisa y publica cada elemento de este sitio.',
     'core.administrator.content_list.items_on_this_page' => '{count, plural, one {# elemento en esta página} other {# elementos en esta página}}',
+    'core.administrator.content_list.move_to_trash_confirm' => '¿Mover «{title}» a la papelera?',
     'core.administrator.content_list.next' => 'Siguiente',
     'core.administrator.content_list.no_matching_content' => 'Sin contenido coincidente',
     'core.administrator.content_list.not_public' => '/{slug} · no público',
@@ -1516,6 +1523,7 @@ return [
     'core.administrator.extensions.this_release_predates_install_time_admission' => 'Esta versión es anterior al registro de admisión en el momento de la instalación, así que no se inventarió ni analizó nada. Reinstala el paquete para registrar un resultado.',
     'core.administrator.extensions.trust' => 'Confianza',
     'core.administrator.extensions.uninstall' => 'Desinstalar {identifier}',
+    'core.administrator.extensions.uninstall_confirm' => '¿Desinstalar {identifier}?',
     'core.administrator.extensions.uninstall_extension' => 'Desinstalar extensión',
     'core.administrator.extensions.uninstalling_removes_this_package_from_the' => 'Desinstalar quita este paquete del entorno de ejecución. Revisa los datos propios y los requisitos de recuperación antes de continuar.',
     'core.administrator.extensions.upload_a_verified_package' => 'Sube un paquete verificado',
@@ -1650,6 +1658,7 @@ return [
     'core.administrator.media.all_files' => 'Todos los archivos',
     'core.administrator.media.choose_file_first' => 'Elige un archivo multimedia para subir.',
     'core.administrator.media.copy_url' => 'Copiar URL',
+    'core.administrator.media.delete_asset_confirm' => '¿Eliminar {name}? El contenido que use su URL mostrará un enlace roto.',
     'core.administrator.media.discover_media' => 'Descubrir contenido multimedia',
     'core.administrator.media.documents' => 'Documentos',
     'core.administrator.media.file_count' => '{count, plural, one {# archivo} other {# archivos}}',
@@ -1688,7 +1697,9 @@ return [
     'core.administrator.navigation.create_the_container_first_then_add' => 'Crea primero el contenedor y, después, añade enlaces de página, sección o externos.',
     'core.administrator.navigation.create_the_main_menu' => 'Crear el menú principal',
     'core.administrator.navigation.custom_url' => 'URL personalizada',
+    'core.administrator.navigation.delete_item_confirm' => '¿Eliminar el elemento de menú «{title}»?',
     'core.administrator.navigation.delete_menu' => 'Eliminar el menú {title}',
+    'core.administrator.navigation.delete_menu_confirm' => '¿Eliminar «{title}» y todos sus enlaces?',
     'core.administrator.navigation.deleting' => 'Eliminando',
     'core.administrator.navigation.destination' => '· Destino {target_url}',
     'core.administrator.navigation.drag_rows_or_edit_each_numeric' => 'Arrastra las filas o edita cada posición numérica y, después, guarda.',
@@ -1885,6 +1896,9 @@ return [
     'core.business.refusal.read_only_help' => 'Aún puedes abrirlo, revisar su historial y ejecutar las acciones de flujo de trabajo que ofrece.',
     'core.business.refusal.read_only_title' => 'Este registro es de solo lectura',
     'core.business.report.reports' => 'Informes',
+    'core.business.table.scroll_choice_details' => 'Desplázate horizontalmente para revisar los detalles de la selección',
+    'core.business.table.scroll_result_columns' => 'Desplázate horizontalmente para revisar cada columna de resultados',
+    'core.business.table.scroll_selected_columns' => 'Desplázate horizontalmente para revisar cada columna seleccionada',
     'core.console.access.description' => 'Lista y gestiona usuarios, roles y concesiones de capacidad.',
     'core.console.app_health.description' => 'Comprueba si Kumwe está listo para atender tráfico.',
     'core.console.app_health.kumwe_is_not_ready' => 'Kumwe no está listo.',

@@ -67,7 +67,7 @@
       {% if choices is empty %}
         <p class="empty-state">{{ t('core.administrator.business_choices.no_available_choices_match_this_search') }}</p>
       {% else %}
-        <div class="table-wrap business-choice-table kis-business-table-region" tabindex="0" role="region" aria-label="{{ t('core.administrator.business_choices.available_choices_table') }}" data-scroll-label="Scroll horizontally to review choice details">
+        <div class="table-wrap business-choice-table kis-business-table-region" tabindex="0" role="region" aria-label="{{ t('core.administrator.business_choices.available_choices_table') }}" data-scroll-label="{{ t('core.business.table.scroll_choice_details') }}">
           <table class="kis-business-table">
             <thead>
               <tr>

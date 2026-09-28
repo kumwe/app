@@ -4643,6 +4643,15 @@
         <target>Automation</target>
       </segment>
     </unit>
+    <unit id="core.administrator.automation.delete_schedule_confirm">
+      <notes>
+        <note category="context">Confirmation before deleting a schedule. {name} is the schedule name.</note>
+      </notes>
+      <segment>
+        <source>Delete the {name} schedule?</source>
+        <target>Delete the {name} schedule?</target>
+      </segment>
+    </unit>
     <unit id="core.administrator.automation.operations">
       <notes>
         <note category="context">Eyebrow above the automation heading.</note>
@@ -5829,6 +5838,24 @@
       <segment>
         <source>{count, plural, one {# definition} other {# definitions}}</source>
         <target>{count, plural, one {# definition} other {# definitions}}</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.business_definitions.mark_version_confirm">
+      <notes>
+        <note category="context">Confirmation before changing a definition version lifecycle. {action} is the lifecycle state keyword.</note>
+      </notes>
+      <segment>
+        <source>Mark version {version} as {action}?</source>
+        <target>Mark version {version} as {action}?</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.business_definitions.publish_version_confirm">
+      <notes>
+        <note category="context">Confirmation before publishing a definition version, which cannot be changed afterwards.</note>
+      </notes>
+      <segment>
+        <source>Publish this immutable definition version?</source>
+        <target>Publish this immutable definition version?</target>
       </segment>
     </unit>
     <unit id="core.administrator.business_definitions.entities">
@@ -9168,6 +9195,33 @@
       <segment>
         <source>Schema plans</source>
         <target>Schema plans</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.business_schema_plans.purge_confirm">
+      <notes>
+        <note category="context">Confirmation before creating a plan that permanently removes a preserved schema.</note>
+      </notes>
+      <segment>
+        <source>Create a destructive purge plan for this preserved business schema?</source>
+        <target>Create a destructive purge plan for this preserved business schema?</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.business_schema_plans.execute_confirm">
+      <notes>
+        <note category="context">Confirmation before executing an approved schema plan against the database.</note>
+      </notes>
+      <segment>
+        <source>Execute this exact approved physical-schema plan?</source>
+        <target>Execute this exact approved physical-schema plan?</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.business_schema_plans.recover_confirm">
+      <notes>
+        <note category="context">Confirmation before resuming an interrupted schema execution.</note>
+      </notes>
+      <segment>
+        <source>Recover this interrupted schema execution from its durable journal?</source>
+        <target>Recover this interrupted schema execution from its durable journal?</target>
       </segment>
     </unit>
     <unit id="core.administrator.business_schema_plans.before">
@@ -13148,6 +13202,15 @@
         <target>Content</target>
       </segment>
     </unit>
+    <unit id="core.administrator.content_list.move_to_trash_confirm">
+      <notes>
+        <note category="context">Confirmation before moving a content item to the trash. {title} is the item title.</note>
+      </notes>
+      <segment>
+        <source>Move ‘{title}’ to trash?</source>
+        <target>Move ‘{title}’ to trash?</target>
+      </segment>
+    </unit>
     <unit id="core.administrator.content_list.publishing">
       <notes>
         <note category="context">Eyebrow above the content list heading.</note>
@@ -13956,6 +14019,15 @@
       <segment>
         <source>Extensions</source>
         <target>Extensions</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.extensions.uninstall_confirm">
+      <notes>
+        <note category="context">Confirmation before uninstalling an extension. {identifier} is the package name.</note>
+      </notes>
+      <segment>
+        <source>Uninstall {identifier}?</source>
+        <target>Uninstall {identifier}?</target>
       </segment>
     </unit>
     <unit id="core.administrator.extensions.platform">
@@ -16143,6 +16215,33 @@
       <segment>
         <source>Site settings</source>
         <target>Site settings</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.media.delete_asset_confirm">
+      <notes>
+        <note category="context">Confirmation before deleting a media file. {name} is the file name.</note>
+      </notes>
+      <segment>
+        <source>Delete {name}? Content using its URL will show a broken link.</source>
+        <target>Delete {name}? Content using its URL will show a broken link.</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.navigation.delete_item_confirm">
+      <notes>
+        <note category="context">Confirmation before deleting a menu item. {title} is the item title.</note>
+      </notes>
+      <segment>
+        <source>Delete the ‘{title}’ menu item?</source>
+        <target>Delete the ‘{title}’ menu item?</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.navigation.delete_menu_confirm">
+      <notes>
+        <note category="context">Confirmation before deleting a menu and its links. {title} is the menu title.</note>
+      </notes>
+      <segment>
+        <source>Delete ‘{title}’ and all its links?</source>
+        <target>Delete ‘{title}’ and all its links?</target>
       </segment>
     </unit>
     <unit id="core.administrator.settings.website">
@@ -18963,6 +19062,33 @@
       <segment>
         <source>Null</source>
         <target>Null</target>
+      </segment>
+    </unit>
+    <unit id="core.business.table.scroll_choice_details">
+      <notes>
+        <note category="context">Accessible name of the horizontally scrolling choice-details table, in the administrator and the portal.</note>
+      </notes>
+      <segment>
+        <source>Scroll horizontally to review choice details</source>
+        <target>Scroll horizontally to review choice details</target>
+      </segment>
+    </unit>
+    <unit id="core.business.table.scroll_selected_columns">
+      <notes>
+        <note category="context">Accessible name of a horizontally scrolling business record list, in the administrator and the portal.</note>
+      </notes>
+      <segment>
+        <source>Scroll horizontally to review every selected column</source>
+        <target>Scroll horizontally to review every selected column</target>
+      </segment>
+    </unit>
+    <unit id="core.business.table.scroll_result_columns">
+      <notes>
+        <note category="context">Accessible name of a horizontally scrolling report result table, in the administrator and the portal.</note>
+      </notes>
+      <segment>
+        <source>Scroll horizontally to review every result column</source>
+        <target>Scroll horizontally to review every result column</target>
       </segment>
     </unit>
     <unit id="core.business.record_view.summary">

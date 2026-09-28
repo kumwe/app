@@ -127,6 +127,18 @@ test.describe('German content authoring', () => {
       path: testInfo.outputPath('de-content-journey.png'),
       contentType: 'image/png',
     });
+
+    // Finish by moving the draft to the trash through the German action, so a journey run earlier in the
+    // same database leaves nothing in the recent-content lists later journeys compare against. The action
+    // asks for confirmation first, and that question is asked in German too.
+    let confirmation = '';
+    page.once('dialog', async (dialog) => {
+      confirmation = dialog.message();
+      await dialog.accept();
+    });
+    await row.getByRole('button', { name: message('de', 'core.administrator.content_list.trash') }).click();
+    await expect(page.locator('table tbody tr').filter({ hasText: title })).toHaveCount(0);
+    expect(confirmation).toBe(message('de', 'core.administrator.content_list.move_to_trash_confirm', { title }));
   });
 });
 

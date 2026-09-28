@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for ar, carrying 2519 messages.
+ * Compiled interface message catalogue for ar, carrying 2533 messages.
  *
  * Generated from ar.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -313,6 +313,7 @@ return [
     'core.administrator.automation.create_schedule' => 'إنشاء جدول',
     'core.administrator.automation.cron_expression' => 'تعبير Cron',
     'core.administrator.automation.delete' => 'حذف',
+    'core.administrator.automation.delete_schedule_confirm' => 'حذف الجدول الزمني {name}؟',
     'core.administrator.automation.delivery_attempts_and_recoverable_failures_acros' => 'محاولات التسليم والإخفاقات القابلة للاسترداد عبر قوائم الانتظار المسجَّلة.',
     'core.administrator.automation.field_batch_size' => 'حجم الدفعة',
     'core.administrator.automation.field_content_id' => 'معرّف المحتوى',
@@ -544,6 +545,7 @@ return [
     'core.administrator.business_definitions.list' => 'القائمة',
     'core.administrator.business_definitions.many_to_many' => 'متعدد إلى متعدد',
     'core.administrator.business_definitions.many_to_one' => 'متعدد إلى واحد',
+    'core.administrator.business_definitions.mark_version_confirm' => 'وضع علامة {action} على الإصدار {version}؟',
     'core.administrator.business_definitions.maximum' => 'الحد الأقصى',
     'core.administrator.business_definitions.minimum' => 'الحد الأدنى',
     'core.administrator.business_definitions.model_operational_entities_relationships_views_a' => 'صمِّم الكيانات التشغيلية والعلاقات وطرق العرض والإجراءات وسير العمل قبل إدخال تخزين السجلات.',
@@ -579,6 +581,7 @@ return [
     'core.administrator.business_definitions.publication_gate' => 'بوابة النشر',
     'core.administrator.business_definitions.publication_is_immutable' => 'النشر غير قابل للتغيير.',
     'core.administrator.business_definitions.publish_version' => 'نشر الإصدار {to_version}',
+    'core.administrator.business_definitions.publish_version_confirm' => 'نشر إصدار التعريف الثابت هذا؟',
     'core.administrator.business_definitions.published_by' => 'نُشر بواسطة',
     'core.administrator.business_definitions.read_only' => 'للقراءة فقط',
     'core.administrator.business_definitions.read_only_access' => 'وصول للقراءة فقط.',
@@ -882,6 +885,7 @@ return [
     'core.administrator.business_schema_plans.exact_installed_definition_id' => 'معرّف التعريف المثبَّت الدقيق',
     'core.administrator.business_schema_plans.exact_plan_checksum' => 'المجموع الاختباري الدقيق للخطة',
     'core.administrator.business_schema_plans.execute_approved_plan' => 'تنفيذ الخطة المعتمدة',
+    'core.administrator.business_schema_plans.execute_confirm' => 'تنفيذ خطة المخطط الفعلي المعتمدة هذه كما هي؟',
     'core.administrator.business_schema_plans.execution' => 'التنفيذ',
     'core.administrator.business_schema_plans.execution_becomes_available_only_after_an' => 'لا يتوفر التنفيذ إلا بعد موافقة دقيقة، ولمشغّل يملك صلاحية التنفيذ فقط.',
     'core.administrator.business_schema_plans.execution_gate' => 'بوابة التنفيذ',
@@ -928,9 +932,11 @@ return [
     'core.administrator.business_schema_plans.published_definition' => 'التعريف المنشور',
     'core.administrator.business_schema_plans.published_definitions_create_inspectable_plans_w' => 'تُنشئ التعريفات المنشورة خططًا قابلة للفحص دون تغيير التخزين الفعلي.',
     'core.administrator.business_schema_plans.publishing_a_definition_persists_a_plan' => 'لا يؤدي نشر تعريف إلا إلى حفظ خطة. ويبقى التنفيذ دائمًا عملية منفصلة ومصرَّحًا بها.',
+    'core.administrator.business_schema_plans.purge_confirm' => 'إنشاء خطة حذف نهائي لمخطط الأعمال المحفوظ هذا؟',
     'core.administrator.business_schema_plans.record_recovery_evidence' => 'تسجيل أدلة الاسترداد',
     'core.administrator.business_schema_plans.record_revision_and_audit_checksums_matched' => 'تطابقت المجاميع الاختبارية للسجل والمراجعة والتدقيق',
     'core.administrator.business_schema_plans.record_tested_backup_and_restore_evidence' => 'تسجيل أدلة نسخ احتياطي واستعادة مختبرة',
+    'core.administrator.business_schema_plans.recover_confirm' => 'استرداد تنفيذ المخطط المتوقف هذا من سجله الدائم؟',
     'core.administrator.business_schema_plans.recovery' => 'الاسترداد',
     'core.administrator.business_schema_plans.recovery_drill_reference' => 'مرجع تمرين الاسترداد',
     'core.administrator.business_schema_plans.relations' => 'العلاقات',
@@ -1323,6 +1329,7 @@ return [
     'core.administrator.content_list.edit' => 'تعديل {title}',
     'core.administrator.content_list.find_review_and_publish_every_item' => 'ابحث عن كل عنصر في هذا الموقع وراجعه وانشره.',
     'core.administrator.content_list.items_on_this_page' => '{count, plural, zero {# عناصر في هذه الصفحة} one {# عنصر في هذه الصفحة} two {# عنصرين في هذه الصفحة} few {# عناصر في هذه الصفحة} many {# عنصر في هذه الصفحة} other {# عنصر في هذه الصفحة}}',
+    'core.administrator.content_list.move_to_trash_confirm' => 'نقل «{title}» إلى سلة المهملات؟',
     'core.administrator.content_list.next' => 'التالي',
     'core.administrator.content_list.no_matching_content' => 'لا يوجد محتوى مطابق',
     'core.administrator.content_list.not_public' => '‎/{slug}‎ · غير عام',
@@ -1516,6 +1523,7 @@ return [
     'core.administrator.extensions.this_release_predates_install_time_admission' => 'يسبق هذا الإصدار تسجيل القبول وقت التثبيت، لذا لم يُجرَّد أو يُفحص أي شيء. أعد تثبيت الحزمة لتسجيل نتيجة.',
     'core.administrator.extensions.trust' => 'الثقة',
     'core.administrator.extensions.uninstall' => 'إلغاء تثبيت {identifier}',
+    'core.administrator.extensions.uninstall_confirm' => 'إلغاء تثبيت {identifier}؟',
     'core.administrator.extensions.uninstall_extension' => 'إلغاء تثبيت الامتداد',
     'core.administrator.extensions.uninstalling_removes_this_package_from_the' => 'يؤدي إلغاء التثبيت إلى إزالة هذه الحزمة من وقت التشغيل. راجع البيانات المملوكة ومتطلبات الاسترداد قبل المتابعة.',
     'core.administrator.extensions.upload_a_verified_package' => 'رفع حزمة مُتحقَّق منها',
@@ -1650,6 +1658,7 @@ return [
     'core.administrator.media.all_files' => 'كل الملفات',
     'core.administrator.media.choose_file_first' => 'اختر ملف وسائط لرفعه.',
     'core.administrator.media.copy_url' => 'نسخ الرابط',
+    'core.administrator.media.delete_asset_confirm' => 'حذف {name}؟ سيعرض المحتوى الذي يستخدم عنوان URL الخاص به رابطًا معطلاً.',
     'core.administrator.media.discover_media' => 'اكتشاف الوسائط',
     'core.administrator.media.documents' => 'المستندات',
     'core.administrator.media.file_count' => '{count, plural, zero {# ملفات} one {# ملف} two {# ملفين} few {# ملفات} many {# ملف} other {# ملف}}',
@@ -1688,7 +1697,9 @@ return [
     'core.administrator.navigation.create_the_container_first_then_add' => 'أنشئ الحاوية أولًا، ثم أضف روابط صفحة أو قسم أو روابط خارجية.',
     'core.administrator.navigation.create_the_main_menu' => 'إنشاء القائمة الرئيسية',
     'core.administrator.navigation.custom_url' => 'رابط مخصص',
+    'core.administrator.navigation.delete_item_confirm' => 'حذف عنصر القائمة «{title}»؟',
     'core.administrator.navigation.delete_menu' => 'حذف قائمة {title}',
+    'core.administrator.navigation.delete_menu_confirm' => 'حذف «{title}» وجميع روابطها؟',
     'core.administrator.navigation.deleting' => 'الحذف',
     'core.administrator.navigation.destination' => '· الوجهة {target_url}',
     'core.administrator.navigation.drag_rows_or_edit_each_numeric' => 'اسحب الصفوف أو عدّل كل موضع رقمي، ثم احفظ.',
@@ -1885,6 +1896,9 @@ return [
     'core.business.refusal.read_only_help' => 'لا يزال بإمكانك فتحه ومراجعة سجله وتشغيل إجراءات سير العمل التي يتيحها.',
     'core.business.refusal.read_only_title' => 'هذا السجل للقراءة فقط',
     'core.business.report.reports' => 'التقارير',
+    'core.business.table.scroll_choice_details' => 'مرّر أفقيًا لمراجعة تفاصيل الاختيار',
+    'core.business.table.scroll_result_columns' => 'مرّر أفقيًا لمراجعة كل أعمدة النتائج',
+    'core.business.table.scroll_selected_columns' => 'مرّر أفقيًا لمراجعة كل عمود محدد',
     'core.console.access.description' => 'اسرد المستخدمين والأدوار ومنح الصلاحيات وأدرها.',
     'core.console.app_health.description' => 'تحقّق مما إذا كان Kumwe جاهزًا لخدمة الحركة.',
     'core.console.app_health.kumwe_is_not_ready' => 'Kumwe غير جاهز.',
