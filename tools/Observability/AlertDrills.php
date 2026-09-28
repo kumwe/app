@@ -98,7 +98,7 @@ final class AlertDrills
         if (!$host->running('watcher')) {
             $materialized = $host->console(['extension:runtime:materialize']);
             if ($materialized['exit'] !== 0) {
-                $materialized = $host->console(['extension:runtime:materialize', '--repair']);
+                $materialized = $host->console(['extension:runtime:materialize']);
             }
             self::check($materialized['exit'] === 0, 'the extension runtime could not be materialized: '
                 . trim($materialized['output']));
@@ -298,7 +298,7 @@ final class AlertDrills
                 self::ticks($host, $timeline, 'induced', 12);
                 self::check($timeline->latest('kumwe_ready', $host->target()) === 0.0, 'kumwe_ready stayed 1');
                 $timeline->expect('firing', true);
-                $materialized = $host->console(['extension:runtime:materialize']);
+                $materialized = $host->console(['extension:runtime:materialize', '--repair']);
                 self::check($materialized['exit'] === 0, 'materialization failed: ' . $materialized['output']);
                 self::startWatcher($host);
                 self::ticks($host, $timeline, 'recovered', 2);
@@ -790,13 +790,18 @@ final class AlertDrills
     {
         $host->spawn('worker', [PHP_BINARY, 'bin/kumwe', 'queue:work', '--sleep-ms=500']);
         self::waitFor(static function () use ($host): bool {
+            $registered = false;
+            $fresh = false;
             foreach ($host->scrape() ?? [] as $sample) {
+                if ($sample['name'] === 'kumwe_workers_registered' && $sample['value'] > 0) {
+                    $registered = true;
+                }
                 if ($sample['name'] === 'kumwe_worker_heartbeat_age_seconds' && $sample['value'] < 60) {
-                    return true;
+                    $fresh = true;
                 }
             }
 
-            return false;
+            return $registered && $fresh;
         }, 60, 'the worker published no heartbeat: ' . $host->logTail('worker'));
     }
 
@@ -811,6 +816,8 @@ final class AlertDrills
      */
     private static function backup(DrillHost $host): string
     {
+        // Snapshot names have whole-second precision, including across two adjacent drills.
+        self::nextSecond();
         $result = $host->run(['bash', 'tools/backup.sh'], $host->recoveryEnvironment(), 900);
         self::check($result['exit'] === 0, 'tools/backup.sh failed: ' . $result['output']);
         $prefix = $host->work . '/backups/kumwe-';

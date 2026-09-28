@@ -396,6 +396,11 @@ final class AsyncTraceContextPropagationIntegrationTest extends TestCase
             'DELETE FROM %s',
             self::tables($container)->quoted('integration_outbox'),
         ));
+        // A claim sequences only one bounded batch. Earlier tests can leave more than that in staging,
+        // even after their outbox rows are gone. Finish that committed backlog before appending the probe.
+        while ($sequencer->sequence() > 0) {
+        }
+        $records->clear();
         $correlation->begin($requestId, null, self::TRACE, 'b7ad6b7169203331');
         $outbox->append($event);
         $correlation->end();
@@ -404,20 +409,9 @@ final class AsyncTraceContextPropagationIntegrationTest extends TestCase
             self::tables($container)->quoted('integration_outbox'),
         ), [$event->eventId()]));
 
-        $lease = null;
-        for ($attempt = 0; $attempt < 50 && $lease === null; $attempt++) {
-            $candidate = $outbox->claim('trace-dispatcher', 'trace-generation', 30);
-            if ($candidate === null) {
-                break;
-            }
-            if ($candidate->event->eventId() === $event->eventId()) {
-                $lease = $candidate;
-                break;
-            }
-            // Another test's event: hand it back untouched so its own drill still sees it.
-            $outbox->defer($candidate, 1);
-        }
+        $lease = $outbox->claim('trace-dispatcher', 'trace-generation', 30);
         self::assertNotNull($lease, 'The traced event must be claimable.');
+        self::assertSame($event->eventId(), $lease->event->eventId());
         $sequenced = self::line($records, 'Projection sources sequenced.');
         self::assertSame('projection.sequence', $sequenced->context['operation']);
         self::assertGreaterThanOrEqual(1, $sequenced->context['sequenced']);

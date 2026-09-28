@@ -489,7 +489,8 @@ final readonly class ExtensionRuntimeMapCompiler implements TrustRuntimeInvalida
      * digests are deliberately not re-checked here; that cost belongs to materialization. The verified
      * document is memoised in APCu under a key derived from the exact bytes of the signed verification
      * marker — which names the generation, the publication checksum and the SHA-256 of the map it vouches
-     * for — and the key ring identity. File metadata is not enough: two publications of equal size written
+     * for — the map bytes actually read and the key ring identity. The marker alone cannot detect a map
+     * altered after a cache fill. File metadata is not enough: two publications of equal size written
      * within one second can reuse a freed inode and share every `stat` field, and a metadata key then served
      * the older, still-verified document for the newer generation.
      *
@@ -506,10 +507,11 @@ final readonly class ExtensionRuntimeMapCompiler implements TrustRuntimeInvalida
 
         try {
             $markerPayload = file_get_contents($this->mapFile . '.verified');
-            if (!is_string($markerPayload)) {
+            $payload = file_get_contents($this->mapFile);
+            if (!is_string($markerPayload) || !is_string($payload)) {
                 return RuntimeMaterializationState::unavailable($this->identity->leaseId);
             }
-            $cacheKey = $this->localPublicationCacheKey($markerPayload);
+            $cacheKey = $this->localPublicationCacheKey($markerPayload, $payload);
             if (function_exists('apcu_enabled') && apcu_enabled()) {
                 $success = false;
                 $cached = apcu_fetch($cacheKey, $success);
@@ -517,10 +519,6 @@ final readonly class ExtensionRuntimeMapCompiler implements TrustRuntimeInvalida
                     /** @var array<string, mixed> $cached */
                     return $this->materializationState($cached);
                 }
-            }
-            $payload = file_get_contents($this->mapFile);
-            if (!is_string($payload)) {
-                return RuntimeMaterializationState::unavailable($this->identity->leaseId);
             }
             $document = json_decode($payload, true, 32, JSON_THROW_ON_ERROR);
             $marker = json_decode($markerPayload, true, 16, JSON_THROW_ON_ERROR);
@@ -2025,23 +2023,24 @@ final readonly class ExtensionRuntimeMapCompiler implements TrustRuntimeInvalida
     /**
      * Derive the APCu key a verified local publication may be memoised under.
      *
-     * The key mixes the map path, the key ring's identity and the exact bytes of the verification marker.
-     * The marker is signed over the generation, the publication checksum and the SHA-256 of the map it
-     * vouches for, so a different publication always yields a different key, whenever and however the
-     * files were replaced; a document is only ever stored under the marker bytes it was verified against.
+     * The key mixes the map path, the key ring's identity and the exact marker and map bytes read together.
+     * A changed map must miss even when its signed marker is untouched: the cached verification only vouches
+     * for the bytes inspected at the time it was stored, not for whatever now occupies the same path.
      *
      * @param   string  $markerPayload  Verification marker bytes read in this inspection.
+     * @param   string  $mapPayload     Runtime map bytes read in this inspection.
      *
      * @return  string  The cache key.
      *
      * @since   2.0.0
      */
-    private function localPublicationCacheKey(string $markerPayload): string
+    private function localPublicationCacheKey(string $markerPayload, string $mapPayload): string
     {
         return 'kumwe.runtime.publication.' . hash('sha256', RuntimeCanonicalJson::encode([
             $this->mapFile,
             $this->keys->cacheIdentity(),
             hash('sha256', $markerPayload),
+            hash('sha256', $mapPayload),
         ]));
     }
 
