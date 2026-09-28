@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for af, carrying 2507 messages.
+ * Compiled interface message catalogue for af, carrying 2516 messages.
  *
  * Generated from af.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1271,6 +1271,7 @@ return [
     'core.administrator.content_form.move_to' => 'Skuif na {to}',
     'core.administrator.content_form.name_the_item_and_choose_the' => 'Noem die item en kies die stabiele openbare adres wat redigeerders sal herken.',
     'core.administrator.content_form.no_workflow_action_is_available_for' => 'Geen werkvloei-aksie is vir jou toestemmings en die huidige status beskikbaar nie.',
+    'core.administrator.content_form.preview_this_item' => 'Voorskou hierdie item',
     'core.administrator.content_form.publication_timing' => 'Publikasietydsberekening',
     'core.administrator.content_form.publish_at' => 'Publiseer om',
     'core.administrator.content_form.reload_version' => 'Herlaai weergawe {current_version}',
@@ -1284,6 +1285,14 @@ return [
     'core.administrator.content_form.studio_page_builder_is_ready' => 'Die Studio-bladsybouer is gereed.',
     'core.administrator.content_form.studio_page_builder_loads_when_you_switch' => 'Die bladsybouer laai wanneer jy daarheen oorskakel.',
     'core.administrator.content_form.studio_page_builder_unavailable_use_the' => 'Die Studio-bladsybouer is nie vir hierdie inhoudkonteks beskikbaar nie. Gebruik die gestruktureerde redigeerder hieronder; Kumwe sal die presiese inhoudtipe en weergawe behou wanneer jy stoor.',
+    'core.administrator.content_form.studio_preview' => 'Geverifieerde voorskou',
+    'core.administrator.content_form.studio_preview_could_not_be_rendered' => 'Die voorskou kon nie vertoon word nie.',
+    'core.administrator.content_form.studio_preview_frame' => 'Geverifieerde voorskou van hierdie item',
+    'core.administrator.content_form.studio_preview_is_ready' => 'Die voorskou wys hierdie item se laaste gestoorde samestelling.',
+    'core.administrator.content_form.studio_preview_is_rendering' => 'Die voorskou word vertoon.',
+    'core.administrator.content_form.studio_preview_is_stale' => 'Die item het sedert hierdie voorskou verander; voorskou dit weer.',
+    'core.administrator.content_form.studio_preview_needs_a_saved_item' => 'Stoor die item voordat jy dit voorskou; die voorskou wys slegs aanvaarde hersienings.',
+    'core.administrator.content_form.studio_preview_shows_the_last_saved' => 'Die voorskou vertoon hierdie item se laaste gestoorde samestelling deur dieselfde sjabloon- en temapad wat die gepubliseerde bladsy gebruik.',
     'core.administrator.content_form.the_content_model_refused_these_values' => 'Die inhoudmodel het hierdie waardes geweier. Alles wat jy getik het, is steeds hieronder; regstel die velde wat hier genoem word en stoor weer.',
     'core.administrator.content_form.the_item_could_not_be_saved' => 'Die item kon nie gestoor word nie',
     'core.administrator.content_form.title' => 'Titel',

@@ -31,7 +31,11 @@ use Kumwe\App\Extension\Runtime\ActiveExtensionSet;
 use Kumwe\App\Extension\Runtime\TrustEnforcingStudioPreviewBlockRenderer;
 use Kumwe\App\Presentation\Application\SitePresentation;
 use Kumwe\App\Site\Application\SiteSettings;
+use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringContextAuthority;
+use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringContextRepository;
+use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringTargetResolver;
 use Kumwe\App\Studio\Application\Composition\ContentBlueprintBindingStore;
+use Kumwe\App\Studio\Application\Host\StudioResourceContextKeyFactory;
 use Kumwe\App\Studio\Application\Composition\StudioBuiltInThemeRelease;
 use Kumwe\App\Studio\Application\Composition\StudioCompositionLockMismatch;
 use Kumwe\App\Studio\Application\Composition\StudioCompositionModelMismatch;
@@ -1018,7 +1022,7 @@ final class StudioContentProjectionServiceTest extends TestCase
             'session-content-preview',
         );
 
-        $values = (new ContentStudioPreviewBindingSource($service))->resolve(
+        $values = (new ContentStudioPreviewBindingSource($service, $this->contexts()))->resolve(
             $context,
             new StudioHostSessionSnapshot(
                 $session,
@@ -1084,6 +1088,47 @@ final class StudioContentProjectionServiceTest extends TestCase
                 new RecordAuthorizedStudioContentFieldDisclosure(),
                 new JsonSchemaValidator(),
             ),
+        );
+    }
+
+    /**
+     * Compose a context authority whose store holds nothing; resource-bound sessions never consult it.
+     *
+     * @return  ContentStudioAuthoringContextAuthority  Authority over an empty binding store.
+     *
+     * @since   2.0.0
+     */
+    private function contexts(): ContentStudioAuthoringContextAuthority
+    {
+        $clock = $this->createStub(ClockInterface::class);
+        $clock->method('now')->willReturn(self::now());
+        $audit = $this->createStub(AuditRecorder::class);
+
+        return new ContentStudioAuthoringContextAuthority(
+            $this->createStub(ContentStudioAuthoringContextRepository::class),
+            $this->createStub(StudioResourceContextKeyFactory::class),
+            new ContentStudioAuthoringTargetResolver(AuthorizationContext::gateway()),
+            new ContentModelService(
+                $this->createStub(ContentModelRepository::class),
+                new JsonSchemaValidator(),
+                new SchemaCompatibilityChecker(),
+                AuthorizationContext::gateway(),
+                AuthorizationContext::ownershipWriter(),
+                $audit,
+                new ImmediateTransactionManager(),
+                $clock,
+            ),
+            new ContentService(
+                $this->createStub(ContentRepository::class),
+                $audit,
+                new ImmediateTransactionManager(),
+                $clock,
+                new Workflow(),
+                AuthorizationContext::gateway(),
+                AuthorizationContext::ownershipWriter(),
+            ),
+            $clock,
+            3600,
         );
     }
 

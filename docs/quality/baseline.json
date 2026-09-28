@@ -3,7 +3,7 @@
     "work_package": "P0-A",
     "authority": "docs/roadmap/README.md",
     "note": "Every figure below is derived from the repository at the recorded commit. Nothing is typed by hand, nothing reads the clock or the machine, and running the generator twice at one commit produces the same document. composer baseline:check fails when it drifts.",
-    "commit": "1635da572ea78a2c638ba440d780b964da8f6fbe",
+    "commit": "ff199f33b5c6943062e01459fe6a68643c188192",
     "recorded_at": "2026-09-24",
     "recorded_from": [],
     "toolchain": {
@@ -27,8 +27,8 @@
     },
     "tests": {
         "architecture": {
-            "files": 62,
-            "test_methods": 351
+            "files": 63,
+            "test_methods": 355
         },
         "functional": {
             "files": 11,
@@ -36,11 +36,11 @@
         },
         "integration": {
             "files": 132,
-            "test_methods": 485
+            "test_methods": 488
         },
         "unit": {
             "files": 452,
-            "test_methods": 2341
+            "test_methods": 2344
         }
     },
     "coverage": {
@@ -568,7 +568,8 @@
             "20260827020000_studio_content_authoring_context_retention",
             "20260924020000_business_record_scale",
             "20260924030000_queue_worker_permits",
-            "20260924050000_retention_catalogue"
+            "20260924050000_retention_catalogue",
+            "20260924060000_studio_content_authoring_start"
         ]
     },
     "quarantine": {

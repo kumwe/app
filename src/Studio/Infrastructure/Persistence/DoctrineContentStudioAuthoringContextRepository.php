@@ -164,6 +164,45 @@ final readonly class DoctrineContentStudioAuthoringContextRepository implements 
     }
 
     /**
+     * Record the start source with a conditional update, so the first choice wins under concurrency.
+     *
+     * @param   string  $contextKey   Opaque key of an existing binding.
+     * @param   string  $startSource  Canonical JSON start source.
+     *
+     * @return  string|null  The start source now recorded, or null when the binding does not exist.
+     *
+     * @since   2.0.0
+     */
+    public function recordStart(string $contextKey, string $startSource): ?string
+    {
+        $this->connection->executeStatement(sprintf(
+            'UPDATE %s SET start_source = ? WHERE context_key = ? AND start_source IS NULL',
+            $this->tables->quoted('studio_content_authoring_contexts'),
+        ), [$startSource, $contextKey]);
+
+        return $this->start($contextKey);
+    }
+
+    /**
+     * Read the recorded start source of one binding.
+     *
+     * @param   string  $contextKey  Opaque key of an existing binding.
+     *
+     * @return  string|null  Canonical JSON start source, or null when none is recorded or the binding is absent.
+     *
+     * @since   2.0.0
+     */
+    public function start(string $contextKey): ?string
+    {
+        $value = $this->connection->fetchOne(sprintf(
+            'SELECT start_source FROM %s WHERE context_key = ?',
+            $this->tables->quoted('studio_content_authoring_contexts'),
+        ), [$contextKey]);
+
+        return is_string($value) && $value !== '' ? $value : null;
+    }
+
+    /**
      * Read one required non-empty textual database column.
      *
      * @param   array<string, mixed>  $row   Fetched database row.

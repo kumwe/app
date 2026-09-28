@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for es, carrying 2507 messages.
+ * Compiled interface message catalogue for es, carrying 2516 messages.
  *
  * Generated from es.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1271,6 +1271,7 @@ return [
     'core.administrator.content_form.move_to' => 'Mover a {to}',
     'core.administrator.content_form.name_the_item_and_choose_the' => 'Nombra el elemento y elige la dirección pública estable que reconocerán los editores.',
     'core.administrator.content_form.no_workflow_action_is_available_for' => 'No hay ninguna acción de flujo de trabajo disponible para tus permisos y el estado actual.',
+    'core.administrator.content_form.preview_this_item' => 'Previsualizar este elemento',
     'core.administrator.content_form.publication_timing' => 'Programación de publicación',
     'core.administrator.content_form.publish_at' => 'Publicar el',
     'core.administrator.content_form.reload_version' => 'Recargar la versión {current_version}',
@@ -1284,6 +1285,14 @@ return [
     'core.administrator.content_form.studio_page_builder_is_ready' => 'El constructor de páginas de Studio está listo.',
     'core.administrator.content_form.studio_page_builder_loads_when_you_switch' => 'El constructor de páginas se carga cuando cambias a él.',
     'core.administrator.content_form.studio_page_builder_unavailable_use_the' => 'El constructor de páginas de Studio no está disponible para este contexto de contenido. Usa el editor estructurado de abajo; Kumwe conservará el tipo de contenido y la versión exactos al guardar.',
+    'core.administrator.content_form.studio_preview' => 'Vista previa autenticada',
+    'core.administrator.content_form.studio_preview_could_not_be_rendered' => 'No se pudo representar la vista previa.',
+    'core.administrator.content_form.studio_preview_frame' => 'Vista previa autenticada de este elemento',
+    'core.administrator.content_form.studio_preview_is_ready' => 'La vista previa muestra la última composición guardada de este elemento.',
+    'core.administrator.content_form.studio_preview_is_rendering' => 'Generando la vista previa.',
+    'core.administrator.content_form.studio_preview_is_stale' => 'El elemento cambió desde esta vista previa; vuelve a previsualizarlo.',
+    'core.administrator.content_form.studio_preview_needs_a_saved_item' => 'Guarda el elemento antes de previsualizarlo; la vista previa solo muestra revisiones aceptadas.',
+    'core.administrator.content_form.studio_preview_shows_the_last_saved' => 'La vista previa representa la última composición guardada de este elemento con la misma ruta de plantilla y tema que usa la página publicada.',
     'core.administrator.content_form.the_content_model_refused_these_values' => 'El modelo de contenido rechazó estos valores. Todo lo que escribiste sigue abajo; corrige los campos indicados aquí y guarda de nuevo.',
     'core.administrator.content_form.the_item_could_not_be_saved' => 'No se pudo guardar el elemento',
     'core.administrator.content_form.title' => 'Título',

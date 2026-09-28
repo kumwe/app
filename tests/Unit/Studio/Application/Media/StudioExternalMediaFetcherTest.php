@@ -132,6 +132,100 @@ final class StudioExternalMediaFetcherTest extends TestCase
     }
 
     /**
+     * A host that resolves to a public address for the first hop and to a refused one when a redirect sends the
+     * fetch back to it is refused before the second connection: every hop re-resolves and re-classifies, and
+     * the pinned transport only ever connects to the address the check approved. No refusal names the host or
+     * either address.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAHostThatRebindsToARefusedAddressAfterTheCheckIsRefused(): void
+    {
+        $path = tempnam(sys_get_temp_dir(), 'studio-fetch-');
+        self::assertIsString($path);
+        file_put_contents($path, 'redirect');
+        $resolver = $this->createMock(StudioExternalAddressResolver::class);
+        $resolver->expects(self::exactly(2))->method('resolve')->with('cdn.example')->willReturnOnConsecutiveCalls(
+            ['93.184.216.34'],
+            ['169.254.169.254'],
+        );
+        $transport = $this->createMock(StudioPinnedHttpTransport::class);
+        $transport->expects(self::once())->method('get')
+            ->with('https://cdn.example/image.png', '93.184.216.34', 4096, self::greaterThan(0))
+            ->willReturn(new StudioPinnedHttpResponse(302, ['location' => '/moved.png'], $path, 8));
+        $fetcher = new StudioExternalMediaFetcher(
+            new StudioExternalUrlPolicy(),
+            $resolver,
+            $transport,
+            $this->signatures('image/png'),
+            ['image/png'],
+            4096,
+        );
+
+        try {
+            $fetcher->fetch('https://cdn.example/image.png');
+            self::fail('A host rebinding to a link-local address after the check must be refused.');
+        } catch (StudioMediaPortRejected $failure) {
+            self::assertSame('studio.media/external-host-refused', $failure->failureCode);
+            foreach (['cdn.example', '169.254.169.254', '93.184.216.34', 'moved.png'] as $disclosed) {
+                self::assertStringNotContainsString($disclosed, $failure->getMessage());
+            }
+        }
+        self::assertFileDoesNotExist($path);
+    }
+
+    /**
+     * Every refusal category is stable and never discloses the candidate address or its resolved answers.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testNoRefusalCategoryDisclosesTheCandidate(): void
+    {
+        $candidate = 'https://secret-host.example/private-path.png';
+        $cases = [
+            'lexical' => ['http://secret-host.example/private-path.png', ['93.184.216.34'], null],
+            'resolution' => [$candidate, ['10.1.2.3'], null],
+            'redirect' => [
+                $candidate,
+                ['93.184.216.34'],
+                [302, ['location' => 'https://127.0.0.1/private-path.png'], 8],
+            ],
+            'response type' => [$candidate, ['93.184.216.34'], [200, ['content-type' => 'text/html'], 4]],
+        ];
+        foreach ($cases as $case => [$url, $answers, $response]) {
+            $path = tempnam(sys_get_temp_dir(), 'studio-fetch-');
+            self::assertIsString($path);
+            file_put_contents($path, 'body');
+            $transport = self::createStub(StudioPinnedHttpTransport::class);
+            if ($response !== null) {
+                [$status, $headers, $bytes] = $response;
+                $transport->method('get')->willReturn(new StudioPinnedHttpResponse($status, $headers, $path, $bytes));
+            }
+            $fetcher = new StudioExternalMediaFetcher(
+                new StudioExternalUrlPolicy(),
+                $this->resolver($answers),
+                $transport,
+                $this->signatures('image/png'),
+                ['image/png'],
+                4096,
+            );
+            try {
+                $fetcher->fetch($url);
+                self::fail('The unsafe candidate was accepted: ' . $case);
+            } catch (StudioMediaPortRejected $failure) {
+                foreach (['secret-host', 'private-path', '10.1.2.3', '127.0.0.1', '93.184.216.34'] as $disclosed) {
+                    self::assertStringNotContainsString($disclosed, $failure->getMessage(), $case);
+                }
+            }
+            @unlink($path);
+        }
+    }
+
+    /**
      * Refuse malformed candidates, exhausted budgets and unusable DNS sets before opening a connection.
      *
      * @return  void

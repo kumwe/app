@@ -81,6 +81,22 @@ final readonly class ContentStudioAuthoringCatalog
     }
 
     /**
+     * The block locks this deployment can render in preview and on the public site.
+     *
+     * The session locks the whole compiled first-party catalog so every block can be authored, but a
+     * reusable type's stored Blueprint may only compose blocks the App's trusted renderer runtime renders:
+     * a published composition is refused rather than silently degraded when a block has no renderer.
+     *
+     * @return  list<stdClass>  Exact `{type, version, revision}` locks with a live renderer.
+     *
+     * @since   2.0.0
+     */
+    public function renderableBlockLocks(): array
+    {
+        return $this->projection()->blockLocks;
+    }
+
+    /**
      * The App-owned canonical documents the browser must admit for its target: field blocks and patterns.
      *
      * Documents whose coordinates the pinned module already compiles in are never shipped twice, and

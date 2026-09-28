@@ -1,68 +1,19 @@
 import { c as A$10, d as i$17, l as b$12, s as i$16, u as w$12 } from "./reveal-validation-g1jDnck7.js";
-import { t as __vitePreload } from "./administrator-DbIgfOP4.js";
-//#region node_modules/@kumwe/studio-core/dist/canonical.js
-function canonicalStringify(e, t = {}) {
-	let r = t.maximumDepth ?? 64;
-	if (!Number.isInteger(r) || r < 1) throw RangeError(`Canonical serialization depth must be a positive integer.`);
-	return n$8(e, r, 0);
-}
-function canonicalUtf8Bytes(t, n = {}) {
-	let r = canonicalStringify(t, n), i = [];
-	for (let e of r) {
-		let t = e.codePointAt(0);
-		if (t === void 0) break;
-		t <= 127 ? i.push(t) : t <= 2047 ? i.push(192 | t >> 6, 128 | t & 63) : t <= 65535 ? i.push(224 | t >> 12, 128 | t >> 6 & 63, 128 | t & 63) : i.push(240 | t >> 18, 128 | t >> 12 & 63, 128 | t >> 6 & 63, 128 | t & 63);
-	}
-	return Uint8Array.from(i);
-}
-function n$8(e, t, i) {
-	if (e === null) return `null`;
-	switch (typeof e) {
-		case `boolean`: return e ? `true` : `false`;
-		case `number`:
-			if (!Number.isFinite(e)) throw TypeError(`Canonical JSON cannot represent a non-finite number.`);
-			return JSON.stringify(Object.is(e, -0) ? 0 : e);
-		case `string`: return JSON.stringify(e);
-		case `object`: break;
-		default: throw TypeError(`Canonical JSON cannot represent a ${typeof e} value.`);
-	}
-	if (i >= t) throw RangeError(`Canonical serialization exceeds the depth limit of ${t}.`);
-	if (Array.isArray(e)) return `[${e.map((e) => {
-		if (e === void 0) throw TypeError(`Canonical JSON arrays cannot contain undefined entries.`);
-		return n$8(e, t, i + 1);
-	}).join(`,`)}]`;
-	let a = Object.getPrototypeOf(e);
-	if (a !== Object.prototype && a !== null) throw TypeError(`Canonical JSON only serializes plain objects and arrays.`);
-	let o = Object.keys(e).sort(r$12), s = [];
-	for (let r of o) {
-		if (r === `__proto__` || r === `prototype` || r === `constructor`) throw TypeError(`Canonical JSON forbids the object member name ${r}.`);
-		let a = e[r];
-		a !== void 0 && s.push(`${JSON.stringify(r)}:${n$8(a, t, i + 1)}`);
-	}
-	return `{${s.join(`,`)}}`;
-}
-function r$12(e, t) {
-	return e < t ? -1 : +(e > t);
-}
-//#endregion
-//#region node_modules/@kumwe/studio-core/dist/clone.js
-function cloneContractValue(e) {
-	return JSON.parse(JSON.stringify(e));
-}
-//#endregion
+import { t as __vitePreload } from "./administrator-DuraEI0G.js";
+import { a as createCoreLayoutBlockDefinitions, c as STUDIO_STALE_SESSION_GENERATION_DIAGNOSTIC_CODE, d as canonicalStringify, i as coreLayoutInitialProperties, l as STUDIO_WIRE_PROTOCOL_VERSION, n as CORE_LAYOUT_BLOCK_TYPES, o as isCoreLayoutBlockType, r as CORE_LAYOUT_THEME_CONTROLS, s as STUDIO_CONTRACT_VERSION, t as computePreviewDraftDigest, u as cloneContractValue } from "./preview-identity-Bvgz1vbs.js";
 //#region node_modules/@kumwe/studio-core/dist/binding-projection.js
 function projectBlueprintFieldBindings(t, i, a) {
 	let o = cloneContractValue(t), s = cloneContractValue(i), l = cloneContractValue(a), u = [], d = cloneContractValue(o.model), f = n$7(o, s, u), p = /* @__PURE__ */ new Map();
-	for (let e of l) p.set(g$13(e.type, e.version), e);
+	for (let e of l) p.set(g$12(e.type, e.version), e);
 	let h = {
 		blueprintId: o.id,
 		definitions: p,
 		diagnostics: u,
-		fields: f ? c$10(s.fields) : [],
+		fields: f ? c$9(s.fields) : [],
 		modelCompatible: f,
 		modelReference: d
 	}, _ = [];
-	return m$15(o.roots, (e) => {
+	return m$14(o.roots, (e) => {
 		_.push(r$11(e, h));
 	}), cloneContractValue({
 		diagnostics: u,
@@ -91,7 +42,7 @@ function n$7(e, t, n) {
 			expected: e.model.revision,
 			member: `revision`
 		}
-	]) i.actual !== i.expected && (r = !1, n.push(h$13(i.code, `The projected model ${i.member} {actual} does not match the Blueprint lock {expected}.`, `error`, {
+	]) i.actual !== i.expected && (r = !1, n.push(h$12(i.code, `The projected model ${i.member} {actual} does not match the Blueprint lock {expected}.`, `error`, {
 		actual: i.actual,
 		expected: i.expected,
 		member: i.member
@@ -99,15 +50,15 @@ function n$7(e, t, n) {
 	return r;
 }
 function r$11(e, t) {
-	let n = t.definitions.get(g$13(e.type, e.version))?.ports ?? [], r = new Set(n.map((e) => e.id)), o = Object.keys(e.bindings).filter((e) => !r.has(e)).sort(v$13), s = [...n.map((n) => i$15(e, n, t)), ...o.map((n) => a$13(e, n, t))];
+	let n = t.definitions.get(g$12(e.type, e.version))?.ports ?? [], r = new Set(n.map((e) => e.id)), o = Object.keys(e.bindings).filter((e) => !r.has(e)).sort(v$13), s = [...n.map((n) => i$15(e, n, t)), ...o.map((n) => a$12(e, n, t))];
 	return {
 		nodeId: e.id,
 		ports: s
 	};
 }
 function i$15(t, n, r) {
-	let i = r.modelCompatible ? r.fields.filter((e) => e.field.authoring?.hidden !== !0 && u$15(e.field, n)).map(({ field: e, fieldPath: t }) => s$12(e, t)) : [], a = t.bindings[n.id];
-	if (a === void 0) return n.required && r.diagnostics.push(h$13(`studio.binding/required-port-unbound`, `Required block port {port} is not bound to a source.`, `warning`, { port: n.id }, {
+	let i = r.modelCompatible ? r.fields.filter((e) => e.field.authoring?.hidden !== !0 && u$14(e.field, n)).map(({ field: e, fieldPath: t }) => s$11(e, t)) : [], a = t.bindings[n.id];
+	if (a === void 0) return n.required && r.diagnostics.push(h$12(`studio.binding/required-port-unbound`, `Required block port {port} is not bound to a source.`, `warning`, { port: n.id }, {
 		artifactId: r.blueprintId,
 		nodeId: t.id
 	})), {
@@ -128,16 +79,16 @@ function i$15(t, n, r) {
 		valueType: n.valueType
 	};
 	let c = [...a.source.fieldPath];
-	if (!r.modelCompatible) return o$10(n, a, c, i);
-	let m = l$15(r.fields, c);
-	return m === void 0 ? (r.diagnostics.push(h$13(`studio.binding/field-missing`, `Binding port {port} addresses field path {fieldPath}, which the locked model no longer declares.`, `error`, {
+	if (!r.modelCompatible) return o$9(n, a, c, i);
+	let m = l$14(r.fields, c);
+	return m === void 0 ? (r.diagnostics.push(h$12(`studio.binding/field-missing`, `Binding port {port} addresses field path {fieldPath}, which the locked model no longer declares.`, `error`, {
 		fieldPath: c.join(`.`),
 		port: n.id
 	}, {
 		artifactId: r.blueprintId,
 		fieldPath: c,
 		nodeId: t.id
-	})), o$10(n, a, c, i)) : d$14(m.field) === n.multiple ? f$16(m.field, n.valueType) ? {
+	})), o$9(n, a, c, i)) : d$14(m.field) === n.multiple ? f$15(m.field, n.valueType) ? {
 		binding: cloneContractValue(a),
 		boundFieldPath: c,
 		candidates: i,
@@ -146,8 +97,8 @@ function i$15(t, n, r) {
 		required: n.required,
 		status: `resolved`,
 		valueType: n.valueType
-	} : (r.diagnostics.push(h$13(`studio.binding/field-kind-incompatible`, `Binding port {port} expects {valueType}, but field {fieldPath} now projects as {fieldKind}.`, `error`, {
-		fieldKind: p$15(m.field),
+	} : (r.diagnostics.push(h$12(`studio.binding/field-kind-incompatible`, `Binding port {port} expects {valueType}, but field {fieldPath} now projects as {fieldKind}.`, `error`, {
+		fieldKind: p$14(m.field),
 		fieldPath: c.join(`.`),
 		port: n.id,
 		valueType: n.valueType
@@ -155,22 +106,22 @@ function i$15(t, n, r) {
 		artifactId: r.blueprintId,
 		fieldPath: c,
 		nodeId: t.id
-	})), o$10(n, a, c, i)) : (r.diagnostics.push(h$13(`studio.binding/field-cardinality-incompatible`, `Binding port {port} and field {fieldPath} no longer have compatible cardinality.`, `error`, {
+	})), o$9(n, a, c, i)) : (r.diagnostics.push(h$12(`studio.binding/field-cardinality-incompatible`, `Binding port {port} and field {fieldPath} no longer have compatible cardinality.`, `error`, {
 		fieldPath: c.join(`.`),
 		port: n.id
 	}, {
 		artifactId: r.blueprintId,
 		fieldPath: c,
 		nodeId: t.id
-	})), o$10(n, a, c, i));
+	})), o$9(n, a, c, i));
 }
-function a$13(t, n, r) {
+function a$12(t, n, r) {
 	let i = t.bindings[n];
 	return i === void 0 ? {
 		candidates: [],
 		port: n,
 		status: `invalid`
-	} : (r.diagnostics.push(h$13(`studio.binding/port-missing`, `Binding port {port} is not declared by the locked block definition.`, `error`, { port: n }, {
+	} : (r.diagnostics.push(h$12(`studio.binding/port-missing`, `Binding port {port} is not declared by the locked block definition.`, `error`, { port: n }, {
 		artifactId: r.blueprintId,
 		nodeId: t.id
 	})), {
@@ -181,7 +132,7 @@ function a$13(t, n, r) {
 		status: `invalid`
 	});
 }
-function o$10(t, n, r, i) {
+function o$9(t, n, r, i) {
 	return {
 		binding: cloneContractValue(n),
 		boundFieldPath: [...r],
@@ -193,7 +144,7 @@ function o$10(t, n, r, i) {
 		valueType: t.valueType
 	};
 }
-function s$12(t, n) {
+function s$11(t, n) {
 	return {
 		cardinality: t.cardinality,
 		...t.authoring?.control === void 0 ? {} : { control: t.authoring.control },
@@ -203,7 +154,7 @@ function s$12(t, n) {
 		label: cloneContractValue(t.label)
 	};
 }
-function c$10(e) {
+function c$9(e) {
 	let t = [], n = (e, r) => {
 		let i = e.map((e, t) => ({
 			field: e,
@@ -219,29 +170,29 @@ function c$10(e) {
 	};
 	return n(e, []), t;
 }
-function l$15(e, t) {
+function l$14(e, t) {
 	return e.find((e) => _$13(e.fieldPath, t));
 }
-function u$15(e, t) {
-	return d$14(e) === t.multiple && f$16(e, t.valueType);
+function u$14(e, t) {
+	return d$14(e) === t.multiple && f$15(e, t.valueType);
 }
 function d$14(e) {
 	return e.cardinality === `many`;
 }
-function f$16(e, t) {
-	let n = p$15(e);
+function f$15(e, t) {
+	let n = p$14(e);
 	return n === t ? !0 : t === `text` ? n === `string` || n === `enum` : t === `number` ? n === `decimal` || n === `integer` : !1;
 }
-function p$15(e) {
+function p$14(e) {
 	return e.kind === `collection` ? e.itemKind ?? `object` : e.kind;
 }
-function m$15(e, t) {
+function m$14(e, t) {
 	for (let n of e) {
 		t(n);
-		for (let e of Object.keys(n.slots).sort(v$13)) m$15(n.slots[e] ?? [], t);
+		for (let e of Object.keys(n.slots).sort(v$13)) m$14(n.slots[e] ?? [], t);
 	}
 }
-function h$13(e, t, n, r, i) {
+function h$12(e, t, n, r, i) {
 	return {
 		code: e,
 		...i === void 0 ? {} : { location: i },
@@ -253,7 +204,7 @@ function h$13(e, t, n, r, i) {
 		severity: n
 	};
 }
-function g$13(e, t) {
+function g$12(e, t) {
 	return `${e}@${t}`;
 }
 function _$13(e, t) {
@@ -263,17 +214,12 @@ function v$13(e, t) {
 	return e < t ? -1 : +(e > t);
 }
 //#endregion
-//#region node_modules/@kumwe/studio-protocol/dist/types.js
-var STUDIO_CONTRACT_VERSION = `0.1-draft`;
-var STUDIO_WIRE_PROTOCOL_VERSION = `0.1.0-draft.2`;
-var STUDIO_STALE_SESSION_GENERATION_DIAGNOSTIC_CODE = `studio.host/stale-session-generation`;
-//#endregion
 //#region node_modules/@kumwe/studio-protocol/dist/guards.js
 var n$6 = /^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*\/[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*$/u;
 var r$10 = /^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$/u;
 var i$14 = /^[a-f0-9]{64}$/u;
-var a$12 = /^studio\.preview\/node\/([a-f0-9]{64})\/(0|[1-9][0-9]{0,4})$/u;
-var o$9 = /* @__PURE__ */ new Set([
+var a$11 = /^studio\.preview\/node\/([a-f0-9]{64})\/(0|[1-9][0-9]{0,4})$/u;
+var o$8 = /* @__PURE__ */ new Set([
 	`cancelled`,
 	`conflict`,
 	`forbidden`,
@@ -299,7 +245,7 @@ function isHostPortError(t) {
 		`diagnostics`,
 		`retryAfterMilliseconds`,
 		`revision`
-	]) && t.contractVersion === STUDIO_CONTRACT_VERSION && t.kind === `host-error` && typeof t.category == `string` && o$9.has(t.category) && w$11(t.message) && typeof t.retryable == `boolean` && (t.correlationId === void 0 || N$7(t.correlationId)) && (t.revision === void 0 || t.category === `conflict` && P$7(t.revision)) && (t.retryAfterMilliseconds === void 0 || (t.category === `rate-limited` || t.category === `unavailable`) && t.retryable && D$9(t.retryAfterMilliseconds) && t.retryAfterMilliseconds <= 864e5) && (t.diagnostics === void 0 || I$5(t.diagnostics, S$12, 1e3));
+	]) && t.contractVersion === STUDIO_CONTRACT_VERSION && t.kind === `host-error` && typeof t.category == `string` && o$8.has(t.category) && w$11(t.message) && typeof t.retryable == `boolean` && (t.correlationId === void 0 || N$7(t.correlationId)) && (t.revision === void 0 || t.category === `conflict` && P$7(t.revision)) && (t.retryAfterMilliseconds === void 0 || (t.category === `rate-limited` || t.category === `unavailable`) && t.retryable && D$9(t.retryAfterMilliseconds) && t.retryAfterMilliseconds <= 864e5) && (t.diagnostics === void 0 || I$5(t.diagnostics, S$12, 1e3));
 }
 function isPreviewMessage(t) {
 	if (!E$11(t) || !T$11(t, [
@@ -312,25 +258,25 @@ function isPreviewMessage(t) {
 		`payload`
 	]) || t.contractVersion !== STUDIO_CONTRACT_VERSION || t.kind !== `preview-message` || !N$7(t.channelId) || !P$7(t.sessionGeneration) || !D$9(t.sequence) || typeof t.type != `string` || !E$11(t.payload)) return !1;
 	switch (t.type) {
-		case `studio.preview/ready`: return f$15(t.payload);
-		case `studio.preview/render`: return p$14(t.payload);
+		case `studio.preview/ready`: return f$14(t.payload);
+		case `studio.preview/render`: return p$13(t.payload);
 		case `studio.preview/rendered`: return isPreviewRenderedPayload(t.payload);
 		case `studio.preview/select`: return b$11(t.payload);
-		case `studio.preview/measure`: return h$12(t.payload);
-		case `studio.preview/measurements`: return g$12(t.payload);
+		case `studio.preview/measure`: return h$11(t.payload);
+		case `studio.preview/measurements`: return g$11(t.payload);
 		case `studio.preview/error`: return x$12(t.payload);
 		case `studio.preview/reload`:
 		case `studio.preview/teardown`: return d$13(t.payload);
-		case `studio.preview/activated`: return s$11(t.payload);
-		case `studio.preview/viewport`: return c$9(t.payload);
-		case `studio.preview/dispose`: return u$14(t.payload);
+		case `studio.preview/activated`: return s$10(t.payload);
+		case `studio.preview/viewport`: return c$8(t.payload);
+		case `studio.preview/dispose`: return u$13(t.payload);
 		default: return !1;
 	}
 }
-function s$11(e) {
+function s$10(e) {
 	return T$11(e, [`interaction`, `marker`]) && isPreviewMarker(e.marker) && (e.interaction === `activate` || e.interaction === `context-menu` || e.interaction === `focus`);
 }
-function c$9(e) {
+function c$8(e) {
 	let t = Object.keys(e);
 	if (t.length === 0 || t.some((e) => ![
 		`height`,
@@ -338,25 +284,25 @@ function c$9(e) {
 		`width`
 	].includes(e))) return !1;
 	let n = Object.hasOwn(e, `viewport`), r = Object.hasOwn(e, `width`), i = Object.hasOwn(e, `height`);
-	return n === (r || i) ? !1 : n ? M$7(e.viewport) : (!r || l$14(e.width)) && (!i || l$14(e.height));
+	return n === (r || i) ? !1 : n ? M$7(e.viewport) : (!r || l$13(e.width)) && (!i || l$13(e.height));
 }
-function l$14(e) {
+function l$13(e) {
 	return typeof e == `number` && Number.isSafeInteger(e) && e >= 240 && e <= 1e4;
 }
-function u$14(e) {
+function u$13(e) {
 	return !j$9(e.reason) || Object.keys(e).some((e) => e !== `draftDigest` && e !== `reason`) ? !1 : e.draftDigest === void 0 || typeof e.draftDigest == `string` && i$14.test(e.draftDigest);
 }
 function d$13(e) {
 	return T$11(e, [`reason`]) && j$9(e.reason);
 }
-function f$15(e) {
+function f$14(e) {
 	return T$11(e, [
 		`protocolVersion`,
 		`renderer`,
 		`viewports`
 	]) && e.protocolVersion === STUDIO_WIRE_PROTOCOL_VERSION && j$9(e.renderer) && F$7(e.viewports, M$7, 20);
 }
-function p$14(e) {
+function p$13(e) {
 	return T$11(e, [
 		`artifactId`,
 		`draftDigest`,
@@ -372,24 +318,24 @@ function isPreviewRenderedPayload(e) {
 		`markers`,
 		`markerMap`,
 		`diagnostics`
-	]) || !N$7(e.requestId) || typeof e.draftDigest != `string` || !i$14.test(e.draftDigest) || !F$7(e.markers, isPreviewMarker, 1e5) || new Set(e.markers).size !== e.markers.length || !I$5(e.diagnostics, S$12, 1e4) || !m$14(e.markerMap)) return !1;
+	]) || !N$7(e.requestId) || typeof e.draftDigest != `string` || !i$14.test(e.draftDigest) || !F$7(e.markers, isPreviewMarker, 1e5) || new Set(e.markers).size !== e.markers.length || !I$5(e.diagnostics, S$12, 1e4) || !m$13(e.markerMap)) return !1;
 	let t = e.markerMap;
 	if (Object.keys(t).length !== e.markers.length) return !1;
 	let n = Object.values(t);
 	return new Set(n).size === n.length && e.markers.every((n, r) => {
-		let i = a$12.exec(n);
+		let i = a$11.exec(n);
 		return i !== null && i[1] === e.draftDigest && Number(i[2]) === r && Object.hasOwn(t, n);
 	});
 }
-function m$14(e) {
+function m$13(e) {
 	if (!E$11(e)) return !1;
 	let t = Object.entries(e);
 	return t.length <= 1e5 && t.every(([e, t]) => isPreviewMarker(e) && N$7(t));
 }
-function h$12(e) {
+function h$11(e) {
 	return T$11(e, [`requestId`, `markers`]) && N$7(e.requestId) && F$7(e.markers, isPreviewMarker, 1e3) && e.markers.length >= 1 && new Set(e.markers).size === e.markers.length;
 }
-function g$12(e) {
+function g$11(e) {
 	if (!T$11(e, [
 		`requestId`,
 		`draftDigest`,
@@ -398,7 +344,7 @@ function g$12(e) {
 		`viewport`
 	]) || !N$7(e.requestId) || typeof e.draftDigest != `string` || !i$14.test(e.draftDigest) || !_$12(e.measurements) || !F$7(e.unknown, isPreviewMarker, 1e3) || new Set(e.unknown).size !== e.unknown.length || !y$12(e.viewport)) return !1;
 	let t = [...Object.keys(e.measurements), ...e.unknown];
-	return new Set(t).size === t.length && t.every((t) => a$12.exec(t)?.[1] === e.draftDigest);
+	return new Set(t).size === t.length && t.every((t) => a$11.exec(t)?.[1] === e.draftDigest);
 }
 function _$12(e) {
 	if (!E$11(e)) return !1;
@@ -489,7 +435,7 @@ function N$7(e) {
 }
 function isPreviewMarker(e, t) {
 	if (typeof e != `string`) return !1;
-	let n = a$12.exec(e);
+	let n = a$11.exec(e);
 	return n !== null && (t === void 0 || n[1] === t);
 }
 function P$7(e) {
@@ -9393,7 +9339,7 @@ function applyOperation(n, r) {
 	switch (r.type) {
 		case `studio.command/insert-node`:
 		case `studio.command/restore-node`:
-			h$11(n, r.payload.node), A$8(E$10(n, r.payload.destination), r.payload.destination.position, cloneContractValue(r.payload.node));
+			h$10(n, r.payload.node), A$8(E$10(n, r.payload.destination), r.payload.destination.position, cloneContractValue(r.payload.node));
 			break;
 		case `studio.command/remove-node`: {
 			let e = j$8(n.roots, r.payload.nodeId);
@@ -9414,7 +9360,7 @@ function applyOperation(n, r) {
 		case `studio.command/duplicate-node`: {
 			let t = j$8(n.roots, r.payload.nodeId);
 			if (t === void 0) throw M$6(r.payload.nodeId);
-			let i = f$14(n, t.node, r.payload.idMap), a = g$11(cloneContractValue(t.node), i);
+			let i = f$13(n, t.node, r.payload.idMap), a = g$10(cloneContractValue(t.node), i);
 			r.payload.destination === void 0 ? A$8(t.collection, t.index + 1, a) : A$8(E$10(n, r.payload.destination), r.payload.destination.position, a);
 			break;
 		}
@@ -9492,23 +9438,23 @@ function applyOperation(n, r) {
 		default: w$10(r);
 	}
 }
-function f$14(e, n, r) {
-	let i = m$13(n), a = /* @__PURE__ */ new Map();
+function f$13(e, n, r) {
+	let i = m$12(n), a = /* @__PURE__ */ new Map();
 	for (let [e, t] of Object.entries(r)) a.set(e, t);
-	if (a.size !== i.size) throw p$13();
+	if (a.size !== i.size) throw p$12();
 	let o = /* @__PURE__ */ new Set();
 	for (let n of i) {
 		let r = a.get(n);
-		if (r === void 0) throw p$13();
+		if (r === void 0) throw p$12();
 		if (o.has(r)) throw new StudioCommandError(`invalid-id-map`, `The identifier map assigns ${r} more than once.`);
 		if (o.add(r), j$8(e.roots, r) !== void 0) throw new StudioCommandError(`duplicate-node`, `Node identifier ${r} is already present.`);
 	}
 	return a;
 }
-function p$13() {
+function p$12() {
 	return new StudioCommandError(`invalid-id-map`, `The identifier map must remap every node of the duplicated subtree exactly once.`);
 }
-function m$13(e) {
+function m$12(e) {
 	let t = /* @__PURE__ */ new Set(), n = [e];
 	for (; n.length > 0;) {
 		let e = n.pop();
@@ -9518,16 +9464,16 @@ function m$13(e) {
 	}
 	return t;
 }
-function h$11(e, n) {
-	for (let r of m$13(n)) if (j$8(e.roots, r) !== void 0) throw new StudioCommandError(`duplicate-node`, `Node identifier ${r} is already present.`);
+function h$10(e, n) {
+	for (let r of m$12(n)) if (j$8(e.roots, r) !== void 0) throw new StudioCommandError(`duplicate-node`, `Node identifier ${r} is already present.`);
 }
-function g$11(e, t) {
+function g$10(e, t) {
 	let n = [e];
 	for (; n.length > 0;) {
 		let e = n.pop();
 		if (e === void 0) break;
 		let r = t.get(e.id);
-		if (r === void 0) throw p$13();
+		if (r === void 0) throw p$12();
 		e.id = r;
 		for (let t of Object.values(e.slots)) n.push(...t);
 	}
@@ -9535,20 +9481,20 @@ function g$11(e, t) {
 }
 function _$11(n, r) {
 	let i = /* @__PURE__ */ new Set();
-	for (let e of r.nodes) for (let t of m$13(e)) i.add(t);
+	for (let e of r.nodes) for (let t of m$12(e)) i.add(t);
 	let a = /* @__PURE__ */ new Map();
 	for (let [e, t] of Object.entries(r.idMap)) a.set(e, t);
-	if (a.size !== i.size) throw p$13();
+	if (a.size !== i.size) throw p$12();
 	let o = /* @__PURE__ */ new Set();
 	for (let e of i) {
 		let r = a.get(e);
-		if (r === void 0) throw p$13();
+		if (r === void 0) throw p$12();
 		if (o.has(r)) throw new StudioCommandError(`invalid-id-map`, `The identifier map assigns ${r} more than once.`);
 		if (o.add(r), j$8(n.roots, r) !== void 0) throw new StudioCommandError(`duplicate-node`, `Node identifier ${r} is already present.`);
 	}
 	let s = E$10(n, r.destination);
 	for (let [t, n] of r.nodes.entries()) {
-		let i = g$11(cloneContractValue(n), a);
+		let i = g$10(cloneContractValue(n), a);
 		O$9(i.extensions ??= {}, `studio.pattern/source`, {
 			id: r.pattern.id,
 			revision: r.pattern.revision,
@@ -9755,20 +9701,20 @@ var i$12 = [
 	`studio.command/reorder-children`,
 	`studio.command/restore-node`
 ];
-var a$11 = Object.freeze({
-	blueprint: m$12(r$8),
-	content: m$12([`studio.command/set-field-value`]),
-	hybrid: m$12([
+var a$10 = Object.freeze({
+	blueprint: m$11(r$8),
+	content: m$11([`studio.command/set-field-value`]),
+	hybrid: m$11([
 		`studio.command/batch`,
 		...i$12,
 		`studio.command/set-field-value`
 	]),
-	model: m$12([`studio.command/add-model-field`]),
-	"read-only": m$12([])
+	model: m$11([`studio.command/add-model-field`]),
+	"read-only": m$11([])
 });
-var o$8 = m$12(i$12);
+var o$7 = m$11(i$12);
 function permittedCommandTypes(e) {
-	return a$11[e];
+	return a$10[e];
 }
 function resolveSessionMode(e) {
 	if (e.sessionState === `read-only`) return `read-only`;
@@ -9779,7 +9725,7 @@ function resolveSessionMode(e) {
 	return e.mode;
 }
 function assertModePermitsCommandType(e, n) {
-	if (!a$11[e].has(n)) throw new StudioCommandError(`mode-forbidden`, `Command type ${n} is not permitted in ${e} mode.`);
+	if (!a$10[e].has(n)) throw new StudioCommandError(`mode-forbidden`, `Command type ${n} is not permitted in ${e} mode.`);
 }
 function assertHybridCommandInBounds(n, r) {
 	switch (r.type) {
@@ -9787,8 +9733,8 @@ function assertHybridCommandInBounds(n, r) {
 			for (let i of r.payload.operations) {
 				let r = i.type;
 				if (r === `studio.command/batch` || r === `studio.command/apply-pattern` || r === `studio.command/reset-inherited-property`) return;
-				if (!o$8.has(i.type)) throw new StudioCommandError(`mode-forbidden`, `Batch operation type ${i.type} is not permitted in hybrid mode.`);
-				s$10(n, i);
+				if (!o$7.has(i.type)) throw new StudioCommandError(`mode-forbidden`, `Batch operation type ${i.type} is not permitted in hybrid mode.`);
+				s$9(n, i);
 				try {
 					applyOperation(n, i);
 				} catch {
@@ -9798,41 +9744,41 @@ function assertHybridCommandInBounds(n, r) {
 			return;
 		case `studio.command/apply-pattern`:
 		case `studio.command/reset-inherited-property`: throw new StudioCommandError(`mode-forbidden`, `Command type ${r.type} is not permitted in hybrid mode.`);
-		default: s$10(n, r);
+		default: s$9(n, r);
 	}
 }
-function s$10(e, n) {
+function s$9(e, n) {
 	switch (n.type) {
 		case `studio.command/insert-node`:
 		case `studio.command/restore-node`:
-			f$13(n.payload.node), l$13(e, n.payload.destination, n.payload.node);
+			f$12(n.payload.node), l$12(e, n.payload.destination, n.payload.node);
 			return;
 		case `studio.command/remove-node`: {
-			let t = c$8(e.roots, n.payload.nodeId);
+			let t = c$7(e.roots, n.payload.nodeId);
 			if (t === void 0) return;
-			f$13(t.node), u$13(t.parent, t.slot);
+			f$12(t.node), u$12(t.parent, t.slot);
 			return;
 		}
 		case `studio.command/move-node`: {
-			let t = c$8(e.roots, n.payload.nodeId);
+			let t = c$7(e.roots, n.payload.nodeId);
 			if (t === void 0) return;
-			f$13(t.node), u$13(t.parent, t.slot), l$13(e, n.payload.destination, t.node);
+			f$12(t.node), u$12(t.parent, t.slot), l$12(e, n.payload.destination, t.node);
 			return;
 		}
 		case `studio.command/duplicate-node`: {
-			let t = c$8(e.roots, n.payload.nodeId);
+			let t = c$7(e.roots, n.payload.nodeId);
 			if (t === void 0) return;
-			f$13(t.node), n.payload.destination === void 0 ? (u$13(t.parent, t.slot), t.parent !== void 0 && d$12(t.parent, t.slot, t.node)) : l$13(e, n.payload.destination, t.node);
+			f$12(t.node), n.payload.destination === void 0 ? (u$12(t.parent, t.slot), t.parent !== void 0 && d$12(t.parent, t.slot, t.node)) : l$12(e, n.payload.destination, t.node);
 			return;
 		}
 		case `studio.command/reorder-children`:
-			if (n.payload.parentNodeId === void 0) throw p$12();
-			u$13(c$8(e.roots, n.payload.parentNodeId)?.node, n.payload.slot);
+			if (n.payload.parentNodeId === void 0) throw p$11();
+			u$12(c$7(e.roots, n.payload.parentNodeId)?.node, n.payload.slot);
 			return;
 		default: throw new StudioCommandError(`mode-forbidden`, `Batch operation type ${n.type} is not permitted in hybrid mode.`);
 	}
 }
-function c$8(e, t, n, r) {
+function c$7(e, t, n, r) {
 	for (let i of e) {
 		if (i.id === t) return n === void 0 ? { node: i } : r === void 0 ? {
 			node: i,
@@ -9843,25 +9789,25 @@ function c$8(e, t, n, r) {
 			slot: r
 		};
 		for (let [e, n] of Object.entries(i.slots)) {
-			let r = c$8(n, t, i, e);
+			let r = c$7(n, t, i, e);
 			if (r !== void 0) return r;
 		}
 	}
 }
-function l$13(e, t, n) {
-	if (t.parentNodeId === void 0) throw p$12();
-	let r = c$8(e.roots, t.parentNodeId)?.node;
-	r !== void 0 && (u$13(r, t.slot), d$12(r, t.slot, n));
+function l$12(e, t, n) {
+	if (t.parentNodeId === void 0) throw p$11();
+	let r = c$7(e.roots, t.parentNodeId)?.node;
+	r !== void 0 && (u$12(r, t.slot), d$12(r, t.slot, n));
 }
-function u$13(e, n) {
-	if (e === void 0) throw p$12();
+function u$12(e, n) {
+	if (e === void 0) throw p$11();
 	if (e.authoring.mode !== `structural` && (n === void 0 || e.authoring.slots?.[n]?.composable !== !0)) throw new StudioCommandError(`mode-forbidden`, `Hybrid composition is bounded to structural slots; node ${e.id} declares neither structural authoring nor a composable marker for the affected slot.`);
 }
 function d$12(e, n, r) {
 	let i = (n === void 0 ? void 0 : e.authoring.slots?.[n])?.allowedBlocks ?? e.authoring.allowedBlocks;
 	if (i !== void 0 && !i.includes(r.type)) throw new StudioCommandError(`mode-forbidden`, `Block type ${r.type} is not an allowed block inside the composable region of node ${e.id}.`);
 }
-function f$13(e) {
+function f$12(e) {
 	let n = [e];
 	for (; n.length > 0;) {
 		let e = n.pop();
@@ -9870,10 +9816,10 @@ function f$13(e) {
 		for (let t of Object.values(e.slots)) n.push(...t);
 	}
 }
-function p$12() {
+function p$11() {
 	return new StudioCommandError(`mode-forbidden`, `Hybrid composition is bounded to structural slots; the document roots are out of bounds.`);
 }
-function m$12(e) {
+function m$11(e) {
 	let t = new Set(e), n = () => {
 		throw TypeError(`The permitted command-type table is immutable.`);
 	};
@@ -9902,7 +9848,7 @@ var CompiledSchemaValidator = class {
 		this.#program = e;
 	}
 	validate(e) {
-		let t = [], n = u$12(this.#program.root, e, ``, t, this.#program, /* @__PURE__ */ new Set(), /* @__PURE__ */ new WeakMap()), r = x$10(t);
+		let t = [], n = u$11(this.#program.root, e, ``, t, this.#program, /* @__PURE__ */ new Set(), /* @__PURE__ */ new WeakMap()), r = x$10(t);
 		if (n === r.length > 0) throw TypeError(`Schema validation verdict and diagnostics disagree.`);
 		return this.errors = r.length > 0 ? r : null, n;
 	}
@@ -9931,7 +9877,7 @@ function compileProfileSchema(e, t = {}) {
 	}
 	let s = /* @__PURE__ */ new WeakMap(), l = /* @__PURE__ */ new WeakMap(), u = [];
 	for (let e of r) i$11(e, s, u);
-	for (let e of u) l.set(e.node, c$7(e, a));
+	for (let e of u) l.set(e.node, c$6(e, a));
 	return new CompiledSchemaValidator({
 		patterns: s,
 		references: l,
@@ -9984,7 +9930,7 @@ function i$11(e, n, r) {
 					d(p, M$5(f, i));
 					break;
 				case `type`:
-					o$7(p, m);
+					o$6(p, m);
 					break;
 				case `enum`:
 					if (!O$8(p) || p.length === 0) throw TypeError(`${m} must be a dense, non-empty JSON array.`);
@@ -9996,11 +9942,11 @@ function i$11(e, n, r) {
 				case `const`:
 				case `default`: break;
 				case `required`:
-					s$9(p, m);
+					s$8(p, m);
 					break;
 				case `dependentRequired`:
 					if (!D$7(p)) throw TypeError(`${m} must be an object of property-name arrays.`);
-					for (let [e, t] of k$7(p)) s$9(t, `${m}.${e}`);
+					for (let [e, t] of k$7(p)) s$8(t, `${m}.${e}`);
 					break;
 				case `maxItems`:
 				case `maxContains`:
@@ -10022,7 +9968,7 @@ function i$11(e, n, r) {
 					if (typeof p != `number` || !Number.isFinite(p) || p <= 0) throw TypeError(`${m} must be a finite number greater than zero.`);
 					break;
 				case `pattern`:
-					n.set(c, a$10(p, m));
+					n.set(c, a$9(p, m));
 					break;
 				case `readOnly`:
 				case `uniqueItems`:
@@ -10053,7 +9999,7 @@ function i$11(e, n, r) {
 	};
 	c(e.root, ``);
 }
-function a$10(e, t) {
+function a$9(e, t) {
 	if (typeof e != `string` || T$9(e) > 500) throw TypeError(`${t} must be a lexical pattern of at most 500 characters.`);
 	try {
 		return new RegExp(e, `u`);
@@ -10061,7 +10007,7 @@ function a$10(e, t) {
 		throw TypeError(`${t} is not a valid Unicode regular expression.`, { cause: e });
 	}
 }
-function o$7(t, n) {
+function o$6(t, n) {
 	if (typeof t == `string`) {
 		if (!e$5.has(t)) throw TypeError(`${n} names an unknown JSON Schema type.`);
 		return;
@@ -10073,7 +10019,7 @@ function o$7(t, n) {
 		r.add(i);
 	}
 }
-function s$9(e, t) {
+function s$8(e, t) {
 	if (!O$8(e)) throw TypeError(`${t} must be a dense array of property names.`);
 	let n = /* @__PURE__ */ new Set();
 	for (let r of e) {
@@ -10081,11 +10027,11 @@ function s$9(e, t) {
 		n.add(r);
 	}
 }
-function c$7(e, t) {
+function c$6(e, t) {
 	let n = `${F$5(e.document, e.pointer)}/$ref`, r = e.reference.indexOf(`#`), i = r === -1 ? e.reference : e.reference.slice(0, r), a = r === -1 ? `` : e.reference.slice(r + 1), o;
 	if (i === ``) o = e.document;
 	else {
-		let r = l$12(e.document.baseUri, i, n), a = t.get(r);
+		let r = l$11(e.document.baseUri, i, n), a = t.get(r);
 		if (a === void 0) throw TypeError(`${n} references ${r}, which is not in the registry.`);
 		o = a;
 	}
@@ -10102,13 +10048,13 @@ function c$7(e, t) {
 	if (typeof u == `boolean` || D$7(u)) return u;
 	throw TypeError(`${n} does not resolve to a schema.`);
 }
-function l$12(e, t, n) {
+function l$11(e, t, n) {
 	if (/^[A-Za-z][A-Za-z0-9+.-]*:/u.test(t)) return t;
 	if (e === void 0) throw TypeError(`${n} uses a relative reference without a document base URI.`);
 	if (t.startsWith(`/`) || t.split(`/`).some((e) => e === `..` || e === `.`)) throw TypeError(`${n} must stay within the schema registry root.`);
 	return e.slice(0, e.lastIndexOf(`/`) + 1) + t;
 }
-function u$12(e, t, n, r, i, a, o) {
+function u$11(e, t, n, r, i, a, o) {
 	if (typeof e == `boolean`) return e || r.push({
 		instancePath: n,
 		keyword: `false`,
@@ -10145,14 +10091,14 @@ function d$11(e, t, n, r, i, a, o) {
 	if (e.$ref !== void 0) {
 		let c = i.references.get(e);
 		if (c === void 0) throw TypeError(`Schema reference was not resolved at compile time.`);
-		u$12(c, t, n, r, i, a, o) || (s = !1);
+		u$11(c, t, n, r, i, a, o) || (s = !1);
 	}
 	let l = e.type;
-	return typeof l == `string` ? S$10(l, t) || c(`type`, `must be ${l}`) : Array.isArray(l) && (l.some((e) => typeof e == `string` && S$10(e, t)) || c(`type`, `must be ${l.join(`,`)}`)), e.enum !== void 0 && Array.isArray(e.enum) && (e.enum.some((e) => w$9(e, t)) || c(`enum`, `must be equal to one of the allowed values`)), Object.hasOwn(e, `const`) && !w$9(e.const, t) && c(`const`, `must be equal to constant`), f$12(e, t, n, r, i, a, o, c), typeof t == `string` ? p$11(e, t, c, i) : typeof t == `number` && Number.isFinite(t) ? m$11(e, t, c) : Array.isArray(t) ? _$10(e, t, n, r, i, o, c) || (s = !1) : E$9(t) && (v$10(e, t, n, r, i, o, c) || (s = !1)), s;
+	return typeof l == `string` ? S$10(l, t) || c(`type`, `must be ${l}`) : Array.isArray(l) && (l.some((e) => typeof e == `string` && S$10(e, t)) || c(`type`, `must be ${l.join(`,`)}`)), e.enum !== void 0 && Array.isArray(e.enum) && (e.enum.some((e) => w$9(e, t)) || c(`enum`, `must be equal to one of the allowed values`)), Object.hasOwn(e, `const`) && !w$9(e.const, t) && c(`const`, `must be equal to constant`), f$11(e, t, n, r, i, a, o, c), typeof t == `string` ? p$10(e, t, c, i) : typeof t == `number` && Number.isFinite(t) ? m$10(e, t, c) : Array.isArray(t) ? _$10(e, t, n, r, i, o, c) || (s = !1) : E$9(t) && (v$10(e, t, n, r, i, o, c) || (s = !1)), s;
 }
-function f$12(e, t, n, r, i, a, o, s) {
-	let c = (e) => u$12(e, t, n, [], i, a, o);
-	if (Array.isArray(e.allOf)) for (let c of e.allOf) u$12(c, t, n, r, i, a, o) || s(`allOf`, `must match all schemas in allOf`);
+function f$11(e, t, n, r, i, a, o, s) {
+	let c = (e) => u$11(e, t, n, [], i, a, o);
+	if (Array.isArray(e.allOf)) for (let c of e.allOf) u$11(c, t, n, r, i, a, o) || s(`allOf`, `must match all schemas in allOf`);
 	if (Array.isArray(e.anyOf) && (e.anyOf.some((e) => c(e)) || s(`anyOf`, `must match a schema in anyOf`)), Array.isArray(e.oneOf)) {
 		let t = 0;
 		for (let n of e.oneOf) if (c(n) && (t += 1) > 1) break;
@@ -10160,10 +10106,10 @@ function f$12(e, t, n, r, i, a, o, s) {
 	}
 	if (e.not !== void 0 && c(e.not) && s(`not`, `must NOT be valid`), e.if !== void 0) {
 		let l = c(e.if) ? e.then : e.else;
-		l !== void 0 && !u$12(l, t, n, r, i, a, o) && s(`if`, `must match the conditional schema`);
+		l !== void 0 && !u$11(l, t, n, r, i, a, o) && s(`if`, `must match the conditional schema`);
 	}
 }
-function p$11(e, t, n, r) {
+function p$10(e, t, n, r) {
 	let i = e.minLength, a = e.maxLength;
 	if (typeof i == `number` || typeof a == `number`) {
 		let e = T$9(t);
@@ -10175,14 +10121,14 @@ function p$11(e, t, n, r) {
 		i.test(t) || n(`pattern`, `must match pattern "${e.pattern}"`);
 	}
 }
-function m$11(e, t, n) {
-	typeof e.minimum == `number` && t < e.minimum && n(`minimum`, `must be >= ${e.minimum}`), typeof e.maximum == `number` && t > e.maximum && n(`maximum`, `must be <= ${e.maximum}`), typeof e.exclusiveMinimum == `number` && t <= e.exclusiveMinimum && n(`exclusiveMinimum`, `must be > ${e.exclusiveMinimum}`), typeof e.exclusiveMaximum == `number` && t >= e.exclusiveMaximum && n(`exclusiveMaximum`, `must be < ${e.exclusiveMaximum}`), typeof e.multipleOf == `number` && (h$10(t, e.multipleOf) || n(`multipleOf`, `must be multiple of ${e.multipleOf}`));
+function m$10(e, t, n) {
+	typeof e.minimum == `number` && t < e.minimum && n(`minimum`, `must be >= ${e.minimum}`), typeof e.maximum == `number` && t > e.maximum && n(`maximum`, `must be <= ${e.maximum}`), typeof e.exclusiveMinimum == `number` && t <= e.exclusiveMinimum && n(`exclusiveMinimum`, `must be > ${e.exclusiveMinimum}`), typeof e.exclusiveMaximum == `number` && t >= e.exclusiveMaximum && n(`exclusiveMaximum`, `must be < ${e.exclusiveMaximum}`), typeof e.multipleOf == `number` && (h$9(t, e.multipleOf) || n(`multipleOf`, `must be multiple of ${e.multipleOf}`));
 }
-function h$10(e, t) {
-	let n = g$10(e), r = g$10(t), i = n.exponent - r.exponent;
+function h$9(e, t) {
+	let n = g$9(e), r = g$9(t), i = n.exponent - r.exponent;
 	return i >= 0 ? n.coefficient * 10n ** BigInt(i) % r.coefficient == 0n : n.coefficient % (r.coefficient * 10n ** BigInt(-i)) == 0n;
 }
-function g$10(e) {
+function g$9(e) {
 	let t = JSON.stringify(Object.is(e, -0) ? 0 : e), n = /^(-?)(\d+)(?:\.(\d+))?(?:e([+-]?\d+))?$/u.exec(t);
 	if (n === null) throw TypeError(`Canonical decimal conversion requires a finite number.`);
 	let r = n[3] ?? ``, i = BigInt(`${n[1] ?? ``}${n[2]}${r}`), a = Number(n[4] ?? 0) - r.length;
@@ -10194,7 +10140,7 @@ function g$10(e) {
 }
 function _$10(e, t, n, r, i, a, o) {
 	let s = !0, c = (e, o) => {
-		u$12(e, t[o], `${n}/${o}`, r, i, /* @__PURE__ */ new Set(), a) || (s = !1);
+		u$11(e, t[o], `${n}/${o}`, r, i, /* @__PURE__ */ new Set(), a) || (s = !1);
 	}, l = Array.isArray(e.prefixItems) ? e.prefixItems : void 0, d = l?.length ?? 0;
 	if (l !== void 0) for (let e = 0; e < Math.min(d, t.length); e += 1) c(l[e], e);
 	let f = e.items;
@@ -10208,19 +10154,19 @@ function _$10(e, t, n, r, i, a, o) {
 	}
 	if (e.contains !== void 0) {
 		let r = typeof e.minContains == `number` ? e.minContains : 1, s = typeof e.maxContains == `number` ? e.maxContains : 1 / 0, c = 0;
-		for (let r = 0; r < t.length; r += 1) u$12(e.contains, t[r], `${n}/${r}`, [], i, /* @__PURE__ */ new Set(), a) && (c += 1);
+		for (let r = 0; r < t.length; r += 1) u$11(e.contains, t[r], `${n}/${r}`, [], i, /* @__PURE__ */ new Set(), a) && (c += 1);
 		(c < r || c > s) && o(`contains`, `must contain ${Number.isFinite(s) ? `between ${r} and ${s}` : `at least ${r}`} matching items`);
 	}
 	return s;
 }
 function v$10(e, t, n, r, i, a, o) {
 	let s = !0, c = Object.keys(t).filter((e) => t[e] !== void 0).sort(j$7), l = (e) => Object.hasOwn(t, e) && t[e] !== void 0, d = D$7(e.properties) ? e.properties : void 0;
-	if (d !== void 0) for (let [e, o] of k$7(d)) l(e) && !u$12(o, t[e], `${n}/${N$5(e)}`, r, i, /* @__PURE__ */ new Set(), a) && (s = !1);
+	if (d !== void 0) for (let [e, o] of k$7(d)) l(e) && !u$11(o, t[e], `${n}/${N$5(e)}`, r, i, /* @__PURE__ */ new Set(), a) && (s = !1);
 	if (Array.isArray(e.required)) for (let t of A$7(e.required)) l(t) || o(`required`, `must have required property '${t}'`);
 	let f = e.additionalProperties;
-	if (f !== void 0) for (let e of c) d !== void 0 && Object.hasOwn(d, e) || (f === !1 ? o(`additionalProperties`, `must NOT have additional properties`) : f !== !0 && !u$12(f, t[e], `${n}/${N$5(e)}`, r, i, /* @__PURE__ */ new Set(), a) && (s = !1));
+	if (f !== void 0) for (let e of c) d !== void 0 && Object.hasOwn(d, e) || (f === !1 ? o(`additionalProperties`, `must NOT have additional properties`) : f !== !0 && !u$11(f, t[e], `${n}/${N$5(e)}`, r, i, /* @__PURE__ */ new Set(), a) && (s = !1));
 	let p = e.propertyNames;
-	if (p !== void 0) for (let e of c) u$12(p, e, n, [], i, /* @__PURE__ */ new Set(), a) || o(`propertyNames`, `property name '${e}' is invalid`);
+	if (p !== void 0) for (let e of c) u$11(p, e, n, [], i, /* @__PURE__ */ new Set(), a) || o(`propertyNames`, `property name '${e}' is invalid`);
 	let m = e.dependentRequired;
 	if (D$7(m)) {
 		for (let [e, t] of k$7(m)) if (!(!l(e) || !Array.isArray(t))) for (let n of A$7(t)) l(n) || o(`dependentRequired`, `must have property ${n} when property ${e} is present`);
@@ -10348,15 +10294,15 @@ var i$10 = Object.freeze({
 });
 function resolveStudioSessionPolicy(e = {}) {
 	let t = e.limits ?? {}, n = {
-		maxChildrenPerSlot: s$8(`maxChildrenPerSlot`, t.maxChildrenPerSlot),
-		maxCommandBatch: s$8(`maxCommandBatch`, t.maxCommandBatch),
-		maxDepth: s$8(`maxDepth`, t.maxDepth),
-		maxExtensionBytes: s$8(`maxExtensionBytes`, t.maxExtensionBytes),
-		maxNodes: s$8(`maxNodes`, t.maxNodes),
-		maxPropertyBytes: s$8(`maxPropertyBytes`, t.maxPropertyBytes),
-		maxRichTextBytes: s$8(`maxRichTextBytes`, t.maxRichTextBytes),
-		maxRichTextDepth: s$8(`maxRichTextDepth`, t.maxRichTextDepth),
-		maxSlotsPerNode: s$8(`maxSlotsPerNode`, t.maxSlotsPerNode)
+		maxChildrenPerSlot: s$7(`maxChildrenPerSlot`, t.maxChildrenPerSlot),
+		maxCommandBatch: s$7(`maxCommandBatch`, t.maxCommandBatch),
+		maxDepth: s$7(`maxDepth`, t.maxDepth),
+		maxExtensionBytes: s$7(`maxExtensionBytes`, t.maxExtensionBytes),
+		maxNodes: s$7(`maxNodes`, t.maxNodes),
+		maxPropertyBytes: s$7(`maxPropertyBytes`, t.maxPropertyBytes),
+		maxRichTextBytes: s$7(`maxRichTextBytes`, t.maxRichTextBytes),
+		maxRichTextDepth: s$7(`maxRichTextDepth`, t.maxRichTextDepth),
+		maxSlotsPerNode: s$7(`maxSlotsPerNode`, t.maxSlotsPerNode)
 	};
 	return Object.freeze({
 		limits: Object.freeze(n),
@@ -10365,7 +10311,7 @@ function resolveStudioSessionPolicy(e = {}) {
 }
 function assertBlueprintCommandPolicy(e, t, n, r) {
 	if (t.type === `studio.command/batch` && t.payload.operations.length > r.limits.maxCommandBatch) throw C$9(`maxCommandBatch`, t.payload.operations.length, r.limits.maxCommandBatch);
-	c$6(e, t, r.permissions), assertBlueprintWithinSessionPolicy(n, r.limits);
+	c$5(e, t, r.permissions), assertBlueprintWithinSessionPolicy(n, r.limits);
 }
 function assertBlueprintWithinSessionPolicy(e, t) {
 	let n = v$9(e.extensions);
@@ -10391,12 +10337,12 @@ function assertBlueprintWithinSessionPolicy(e, t) {
 			});
 		}
 	}
-	g$9(e, t);
+	g$8(e, t);
 }
 function assertEntryWithinSessionPolicy(e, t) {
 	let n = v$9(e.extensions);
 	if (n > t.maxExtensionBytes) throw C$9(`maxExtensionBytes`, n, t.maxExtensionBytes);
-	g$9(e, t);
+	g$8(e, t);
 }
 function assertModelWithinSessionPolicy(e, t) {
 	let n = v$9(e.extensions);
@@ -10408,53 +10354,53 @@ function assertModelWithinSessionPolicy(e, t) {
 		n += v$9(e.extensions), r.push(...e.fields ?? []);
 	}
 	if (n > t.maxExtensionBytes) throw C$9(`maxExtensionBytes`, n, t.maxExtensionBytes);
-	g$9(e, t);
+	g$8(e, t);
 }
-function s$8(e, t) {
+function s$7(e, t) {
 	let n = STUDIO_PROTOCOL_MAXIMUM_COMMAND_POLICY_LIMITS[e], a = t ?? n;
 	if (!Number.isSafeInteger(a) || a < i$10[e] || a > n) throw RangeError(`${e} must be an integer between ${String(i$10[e])} and ${String(n)}.`);
 	return a;
 }
-function c$6(n, r, i) {
+function c$5(n, r, i) {
 	if (r.type === `studio.command/batch`) {
 		let a = cloneContractValue(n);
-		for (let e of r.payload.operations) l$11(a, e, i), applyOperation(a, e);
+		for (let e of r.payload.operations) l$10(a, e, i), applyOperation(a, e);
 		return;
 	}
 	if (r.type === `studio.command/apply-pattern`) {
-		u$11(n, r.payload.destination.parentNodeId, i);
-		for (let e of r.payload.nodes) f$11(e, i);
+		u$10(n, r.payload.destination.parentNodeId, i);
+		for (let e of r.payload.nodes) f$10(e, i);
 		return;
 	}
 	if (r.type === `studio.command/reset-inherited-property`) {
 		d$10(n, r.payload.nodeId, i);
 		return;
 	}
-	l$11(n, r, i);
+	l$10(n, r, i);
 }
-function l$11(e, t, n) {
+function l$10(e, t, n) {
 	switch (t.type) {
 		case `studio.command/insert-node`:
 		case `studio.command/restore-node`:
-			u$11(e, t.payload.destination.parentNodeId, n), f$11(t.payload.node, n);
+			u$10(e, t.payload.destination.parentNodeId, n), f$10(t.payload.node, n);
 			return;
 		case `studio.command/remove-node`: {
-			let r = m$10(e, t.payload.nodeId);
-			p$10(r.parent, n), f$11(r.node, n);
+			let r = m$9(e, t.payload.nodeId);
+			p$9(r.parent, n), f$10(r.node, n);
 			return;
 		}
 		case `studio.command/move-node`: {
-			let r = m$10(e, t.payload.nodeId);
-			p$10(r.parent, n), f$11(r.node, n), u$11(e, t.payload.destination.parentNodeId, n);
+			let r = m$9(e, t.payload.nodeId);
+			p$9(r.parent, n), f$10(r.node, n), u$10(e, t.payload.destination.parentNodeId, n);
 			return;
 		}
 		case `studio.command/duplicate-node`: {
-			let r = m$10(e, t.payload.nodeId);
-			p$10(r.parent, n), f$11(r.node, n), u$11(e, t.payload.destination?.parentNodeId, n);
+			let r = m$9(e, t.payload.nodeId);
+			p$9(r.parent, n), f$10(r.node, n), u$10(e, t.payload.destination?.parentNodeId, n);
 			return;
 		}
 		case `studio.command/reorder-children`:
-			u$11(e, t.payload.parentNodeId, n);
+			u$10(e, t.payload.parentNodeId, n);
 			for (let r of t.payload.order) d$10(e, r, n);
 			return;
 		case `studio.command/remove-binding`:
@@ -10467,43 +10413,43 @@ function l$11(e, t, n) {
 			return;
 	}
 }
-function u$11(e, t, n) {
+function u$10(e, t, n) {
 	t !== void 0 && d$10(e, t, n);
 }
 function d$10(e, t, n) {
-	p$10(m$10(e, t).node, n);
+	p$9(m$9(e, t).node, n);
 }
-function f$11(e, t) {
+function f$10(e, t) {
 	let n = [e];
 	for (; n.length > 0;) {
 		let e = n.pop();
 		if (e === void 0) break;
-		p$10(e, t);
+		p$9(e, t);
 		for (let t of Object.values(e.slots)) n.push(...t);
 	}
 }
-function p$10(e, t) {
+function p$9(e, t) {
 	let r = e?.authoring.requiredPermission;
 	if (r !== void 0 && !t.has(r)) throw new StudioCommandError(`permission-forbidden`, `Node ${String(e?.id)} requires the ${r} permission for this command.`);
 }
-function m$10(e, t) {
-	let r = h$9(e.roots, t);
+function m$9(e, t) {
+	let r = h$8(e.roots, t);
 	if (r === void 0) throw new StudioCommandError(`node-not-found`, `Node ${t} does not exist.`);
 	return r;
 }
-function h$9(e, t, n) {
+function h$8(e, t, n) {
 	for (let r of e) {
 		if (r.id === t) return n === void 0 ? { node: r } : {
 			node: r,
 			parent: n
 		};
 		for (let e of Object.values(r.slots)) {
-			let n = h$9(e, t, r);
+			let n = h$8(e, t, r);
 			if (n !== void 0) return n;
 		}
 	}
 }
-function g$9(e, t) {
+function g$8(e, t) {
 	let n = [e];
 	for (; n.length > 0;) {
 		let e = n.pop();
@@ -10647,7 +10593,7 @@ var StudioSession = class {
 		this.#policy = resolveStudioSessionPolicy({
 			...e.limits === void 0 ? {} : { limits: e.limits },
 			...e.permissions === void 0 ? {} : { permissions: e.permissions }
-		}), this.#history = new StudioHistory(e.document, e.maximumHistoryEntries ?? 100, this.#policy), this.#mode = l$10(e), this.#sessionGeneration = e.sessionGeneration, this.#savedRevision = e.document.revision;
+		}), this.#history = new StudioHistory(e.document, e.maximumHistoryEntries ?? 100, this.#policy), this.#mode = l$9(e), this.#sessionGeneration = e.sessionGeneration, this.#savedRevision = e.document.revision;
 	}
 	get canRedo() {
 		return this.#history.canRedo;
@@ -10698,7 +10644,7 @@ var StudioSession = class {
 	select(t) {
 		let n = this.#history.current, r = [];
 		for (let i of t) if (!r.includes(i)) {
-			if (!u$10(n.roots, i)) throw new StudioCommandError(`node-not-found`, `Node ${i} cannot be selected because it is not in the document.`);
+			if (!u$9(n.roots, i)) throw new StudioCommandError(`node-not-found`, `Node ${i} cannot be selected because it is not in the document.`);
 			r.push(i);
 		}
 		return this.#selection = r, this.selection;
@@ -10721,10 +10667,10 @@ var StudioSession = class {
 		if (t.sessionGeneration !== this.#sessionGeneration) throw new StudioCommandError(`stale-generation`, `Command generation ${t.sessionGeneration} does not match the active session generation.`);
 	}
 	#pruneSelection(e) {
-		this.#selection.length > 0 && (this.#selection = this.#selection.filter((t) => u$10(e.roots, t)));
+		this.#selection.length > 0 && (this.#selection = this.#selection.filter((t) => u$9(e.roots, t)));
 	}
 };
-function l$10(e) {
+function l$9(e) {
 	let { mode: t, sessionState: n } = e;
 	if (t === void 0) {
 		if (n === void 0) throw RangeError(`A session requires an explicit mode or session state.`);
@@ -10733,19 +10679,19 @@ function l$10(e) {
 	if (n !== void 0 && n === `read-only` != (t === `read-only`)) throw RangeError(`Session mode ${t} contradicts session state ${n}; mode read-only is the read-only state.`);
 	return t;
 }
-function u$10(e, t) {
+function u$9(e, t) {
 	for (let n of e) {
 		if (n.id === t) return !0;
-		for (let e of Object.values(n.slots)) if (u$10(e, t)) return !0;
+		for (let e of Object.values(n.slots)) if (u$9(e, t)) return !0;
 	}
 	return !1;
 }
 //#endregion
 //#region node_modules/@kumwe/studio-core/dist/host-session.js
-var p$9 = `studio.port/artifact`;
-var m$9 = `studio.port/model`;
-var h$8 = `studio.port/recovery`;
-var g$8 = `studio.port/resource`;
+var p$8 = `studio.port/artifact`;
+var m$8 = `studio.port/model`;
+var h$7 = `studio.port/recovery`;
+var g$7 = `studio.port/resource`;
 var _$8 = `studio.operation/artifact.load`;
 var v$8 = `studio.operation/artifact.save`;
 var y$8 = `studio.operation/model.get`;
@@ -10782,7 +10728,7 @@ var StudioHostSessionError = class extends Error {
 async function openStudioSession(e, t) {
 	let n = cloneContractValue(t.configuration), r = N$4(n, t.optionalPorts), i = negotiateCapabilities(n.hostCapabilities, {
 		optionalPorts: r,
-		requiredPorts: [p$9],
+		requiredPorts: [p$8],
 		supportedProtocolVersions: [n.protocolVersion]
 	});
 	n.sessionState === `read-only` && (i.sessionState = `read-only`), M$4(n, i);
@@ -11001,14 +10947,14 @@ function j$6(e, t, n) {
 	return r;
 }
 function ee(e, t, n) {
-	let r = t.hostCapabilities.ports.find((e) => e.id === p$9);
+	let r = t.hostCapabilities.ports.find((e) => e.id === p$8);
 	if (r !== void 0) {
 		let e = [_$8];
 		t.sessionState === `editable` && e.push(v$8);
 		for (let t of e) r.operations.includes(t) || n.diagnostics.push(createDiagnostic(`studio.host/missing-required-operation`, `The host does not advertise the required ${t} operation.`, `blocking`, { operationId: t }));
 	}
 	if (!t.features.offlineRecovery) return !1;
-	let i = t.hostCapabilities.ports.find((e) => e.id === h$8);
+	let i = t.hostCapabilities.ports.find((e) => e.id === h$7);
 	if (i === void 0) return !1;
 	let a = !0;
 	for (let e of [
@@ -11016,20 +10962,20 @@ function ee(e, t, n) {
 		S$8,
 		C$8
 	]) i.operations.includes(e) || (a = !1, n.diagnostics.push(createDiagnostic(`studio.host/missing-optional-operation`, `The optional recovery port omits ${e}; recovery is disabled.`, `information`, { operationId: e })));
-	return e.recovery === void 0 && (a = !1, n.diagnostics.push(createDiagnostic(`studio.host/adapter-port-unavailable`, `The capability document advertises recovery but the adapter does not implement it.`, `information`, { port: h$8 }))), a;
+	return e.recovery === void 0 && (a = !1, n.diagnostics.push(createDiagnostic(`studio.host/adapter-port-unavailable`, `The capability document advertises recovery but the adapter does not implement it.`, `information`, { port: h$7 }))), a;
 }
 function te(e, t, n) {
-	let r = t.hostCapabilities.ports.find((e) => e.id === m$9);
+	let r = t.hostCapabilities.ports.find((e) => e.id === m$8);
 	if (r === void 0) return !1;
 	let i = !0;
 	for (let e of [b$8, y$8]) r.operations.includes(e) || (i = !1, n.diagnostics.push(createDiagnostic(`studio.host/missing-optional-operation`, `The model port omits ${e}; model binding is disabled.`, `information`, { operationId: e })));
-	return e.model === void 0 && (i = !1, n.diagnostics.push(createDiagnostic(`studio.host/adapter-port-unavailable`, `The capability document advertises model reads but the adapter does not implement them.`, `information`, { port: m$9 }))), i;
+	return e.model === void 0 && (i = !1, n.diagnostics.push(createDiagnostic(`studio.host/adapter-port-unavailable`, `The capability document advertises model reads but the adapter does not implement them.`, `information`, { port: m$8 }))), i;
 }
 function ne(e, t, n) {
-	let r = t.hostCapabilities.ports.find((e) => e.id === g$8);
+	let r = t.hostCapabilities.ports.find((e) => e.id === g$7);
 	if (r === void 0) return !1;
 	let i = !0;
-	return r.operations.includes(w$8) || (i = !1, n.diagnostics.push(createDiagnostic(`studio.host/missing-optional-operation`, `The resource port omits ${w$8}; resource discovery is disabled.`, `information`, { operationId: w$8 }))), e.resource === void 0 && (i = !1, n.diagnostics.push(createDiagnostic(`studio.host/adapter-port-unavailable`, `The capability document advertises resource discovery but the adapter does not implement it.`, `information`, { port: g$8 }))), i;
+	return r.operations.includes(w$8) || (i = !1, n.diagnostics.push(createDiagnostic(`studio.host/missing-optional-operation`, `The resource port omits ${w$8}; resource discovery is disabled.`, `information`, { operationId: w$8 }))), e.resource === void 0 && (i = !1, n.diagnostics.push(createDiagnostic(`studio.host/adapter-port-unavailable`, `The capability document advertises resource discovery but the adapter does not implement it.`, `information`, { port: g$7 }))), i;
 }
 function M$4(e, t) {
 	e.artifacts.blueprint === void 0 && t.diagnostics.push(createDiagnostic(`studio.host/missing-blueprint-artifact`, `A Blueprint session requires a locked Blueprint artifact reference.`, `blocking`)), (e.mode !== `blueprint` || e.composite !== `single`) && t.diagnostics.push(createDiagnostic(`studio.host/unsupported-session-profile`, `This host-session profile opens only single Blueprint configurations.`, `blocking`, {
@@ -11039,7 +10985,7 @@ function M$4(e, t) {
 }
 function N$4(e, t) {
 	let n = new Set(t ?? []);
-	return n.delete(p$9), e.features.offlineRecovery && n.add(h$8), e.hostCapabilities.ports.some((e) => e.id === m$9) && n.add(m$9), e.hostCapabilities.ports.some((e) => e.id === g$8) && n.add(g$8), [...n];
+	return n.delete(p$8), e.features.offlineRecovery && n.add(h$7), e.hostCapabilities.ports.some((e) => e.id === m$8) && n.add(m$8), e.hostCapabilities.ports.some((e) => e.id === g$7) && n.add(g$7), [...n];
 }
 function createContext(e, t, n) {
 	return {
@@ -11209,10 +11155,10 @@ function $(e) {
 var n$5 = 1e4;
 var r$7 = 1024;
 var i$9 = 1e4;
-var a$9 = 1e3;
-var o$6 = 262144;
-var s$7 = 1024;
-var c$5 = 1e3;
+var a$8 = 1e3;
+var o$5 = 262144;
+var s$6 = 1024;
+var c$4 = 1e3;
 Object.freeze({
 	maxAlternatives: 64,
 	maxDescriptionLength: n$5,
@@ -11220,16 +11166,16 @@ Object.freeze({
 	maxExamples: 100,
 	maxJsonDepth: 64,
 	maxJsonItems: i$9,
-	maxJsonProperties: a$9,
+	maxJsonProperties: a$8,
 	maxObjectKeyLength: 200,
 	maxPropertyNames: 512,
 	maxReferenceLength: 500,
 	maxReferences: 128,
-	maxSchemaBytes: o$6,
+	maxSchemaBytes: o$5,
 	maxSchemaDepth: 32,
 	maxSchemaMapProperties: 512,
-	maxSchemaNodes: s$7,
-	maxTitleLength: c$5
+	maxSchemaNodes: s$6,
+	maxTitleLength: c$4
 });
 Object.freeze([
 	`invalid-root`,
@@ -11248,7 +11194,7 @@ var StudioSchemaProfileError = class extends TypeError {
 	}
 };
 var d$9 = new Set(`$defs.$ref.$schema.additionalProperties.allOf.anyOf.const.default.dependentRequired.description.else.enum.examples.exclusiveMaximum.exclusiveMinimum.if.items.maxItems.maxLength.maxProperties.maximum.minItems.minLength.minProperties.minimum.multipleOf.not.oneOf.prefixItems.properties.propertyNames.readOnly.required.then.title.type.uniqueItems.writeOnly`.split(`.`));
-var f$10 = /* @__PURE__ */ new Set([
+var f$9 = /* @__PURE__ */ new Set([
 	`array`,
 	`boolean`,
 	`integer`,
@@ -11257,21 +11203,21 @@ var f$10 = /* @__PURE__ */ new Set([
 	`object`,
 	`string`
 ]);
-var p$8 = class extends RangeError {};
-var m$8 = class extends TypeError {};
+var p$7 = class extends RangeError {};
+var m$7 = class extends TypeError {};
 function compileStudioPropertySchema(e) {
 	Z(e) || z$2(`invalid-root`, ``, `Studio property schema root must be a JSON Schema object.`);
 	try {
 		G$2(e);
 	} catch (e) {
-		e instanceof p$8 && z$2(`limit-exceeded`, ``, `Studio property schema exceeds ${o$6} canonical UTF-8 bytes.`), e instanceof m$8 || z$2(`invalid-root`, ``, `Studio property schema must be a bounded canonical JSON document.`, e);
+		e instanceof p$7 && z$2(`limit-exceeded`, ``, `Studio property schema exceeds ${o$5} canonical UTF-8 bytes.`), e instanceof m$7 || z$2(`invalid-root`, ``, `Studio property schema must be a bounded canonical JSON document.`, e);
 	}
 	let n = {
 		references: 0,
 		schemaNodes: 0,
 		seen: /* @__PURE__ */ new WeakSet()
 	}, r = [];
-	j$5(() => h$7(e, ``, 1, n), r), j$5(() => I$3(e), r), j$5(() => A$5(e), r);
+	j$5(() => h$6(e, ``, 1, n), r), j$5(() => I$3(e), r), j$5(() => A$5(e), r);
 	let i = M$3(e, r);
 	if (i !== void 0) throw i;
 	try {
@@ -11283,14 +11229,14 @@ function compileStudioPropertySchema(e) {
 function assertStudioPropertySchema(e) {
 	compileStudioPropertySchema(e);
 }
-function h$7(e, t, r, i) {
+function h$6(e, t, r, i) {
 	Z(e) || z$2(`invalid-keyword-value`, t, `${V$2(t)} must be a JSON Schema object.`), X(e, t, i), y$7(t, r, i);
 	for (let [a, o] of q(e)) {
 		let e = B$3(t, a);
 		switch (F$3(a, t), d$9.has(a) || z$2(`unsupported-keyword`, e, `${V$2(e)} uses keyword ${JSON.stringify(a)}, which is not allowed by the Studio Schema Profile.`), a) {
 			case `$defs`:
 			case `properties`:
-				g$7(o, e, r + 1, i);
+				g$6(o, e, r + 1, i);
 				break;
 			case `additionalProperties`:
 			case `else`:
@@ -11332,7 +11278,7 @@ function h$7(e, t, r, i) {
 				E$7(o, e, n$5);
 				break;
 			case `title`:
-				E$7(o, e, c$5);
+				E$7(o, e, c$4);
 				break;
 			case `maxItems`:
 			case `maxLength`:
@@ -11361,11 +11307,11 @@ function h$7(e, t, r, i) {
 		}
 	}
 }
-function g$7(e, t, n, r) {
+function g$6(e, t, n, r) {
 	Z(e) || z$2(`invalid-keyword-value`, t, `${V$2(t)} must be an object of schemas.`), X(e, t, r);
 	let i = Object.keys(e);
 	i.length > 512 && z$2(`limit-exceeded`, t, `${V$2(t)} exceeds 512 schema entries.`);
-	for (let a of i.sort(Y)) F$3(a, t), h$7(e[a], B$3(t, a), n, r);
+	for (let a of i.sort(Y)) F$3(a, t), h$6(e[a], B$3(t, a), n, r);
 }
 function _$7(e, t, n, r) {
 	(!Array.isArray(e) || !J(e)) && z$2(`invalid-keyword-value`, t, `${V$2(t)} must be a dense JSON array of schemas.`), e.length === 0 && z$2(`invalid-keyword-value`, t, `${V$2(t)} must contain at least one schema.`), e.length > 64 && z$2(`limit-exceeded`, t, `${V$2(t)} must contain at most 64 schemas.`), X(e, t, r);
@@ -11376,10 +11322,10 @@ function v$7(e, t, n, r) {
 		y$7(t, n, r);
 		return;
 	}
-	h$7(e, t, n, r);
+	h$6(e, t, n, r);
 }
 function y$7(e, t, n) {
-	t > 32 && z$2(`limit-exceeded`, e, `${V$2(e)} exceeds the Studio Schema Profile depth limit.`), n.schemaNodes += 1, n.schemaNodes > s$7 && z$2(`limit-exceeded`, e, `Studio property schema exceeds ${s$7} schema nodes.`);
+	t > 32 && z$2(`limit-exceeded`, e, `${V$2(e)} exceeds the Studio Schema Profile depth limit.`), n.schemaNodes += 1, n.schemaNodes > s$6 && z$2(`limit-exceeded`, e, `Studio property schema exceeds ${s$6} schema nodes.`);
 }
 function b$7(e, t, n) {
 	U$2(e) || z$2(`invalid-reference`, t, `${V$2(t)} must be a bounded local JSON Pointer reference.`), n.references += 1, n.references > 128 && z$2(`limit-exceeded`, t, `Studio property schema exceeds 128 references.`);
@@ -11410,12 +11356,12 @@ function w$7(e, t, n, r) {
 }
 function T$7(e, t, n) {
 	if (typeof e == `string`) {
-		f$10.has(e) || z$2(`invalid-keyword-value`, t, `${V$2(t)} names an unknown JSON Schema type.`);
+		f$9.has(e) || z$2(`invalid-keyword-value`, t, `${V$2(t)} names an unknown JSON Schema type.`);
 		return;
 	}
 	(!Array.isArray(e) || !J(e) || e.length === 0 || e.length > 7) && z$2(`invalid-keyword-value`, t, `${V$2(t)} must be a type name or a non-empty array of at most seven names.`), X(e, t, n);
 	let r = /* @__PURE__ */ new Set();
-	for (let [n, i] of e.entries()) (typeof i != `string` || !f$10.has(i) || r.has(i)) && z$2(`invalid-keyword-value`, B$3(t, String(n)), `${V$2(t)} must list unique, known JSON Schema type names.`), r.add(i);
+	for (let [n, i] of e.entries()) (typeof i != `string` || !f$9.has(i) || r.has(i)) && z$2(`invalid-keyword-value`, B$3(t, String(n)), `${V$2(t)} must list unique, known JSON Schema type names.`), r.add(i);
 }
 function E$7(e, t, n) {
 	typeof e != `string` && z$2(`invalid-keyword-value`, t, `${V$2(t)} must be a string.`), W$2(e) > n && z$2(`limit-exceeded`, t, `${V$2(t)} exceeds ${n} characters.`);
@@ -11436,7 +11382,7 @@ function k$5(e, t, n, r) {
 		if (Z(e)) {
 			X(e, t, r);
 			let i = Object.keys(e);
-			i.length > a$9 && z$2(`limit-exceeded`, t, `${V$2(t)} exceeds ${a$9} JSON properties.`);
+			i.length > a$8 && z$2(`limit-exceeded`, t, `${V$2(t)} exceeds ${a$8} JSON properties.`);
 			for (let a of i.sort(Y)) F$3(a, t), k$5(e[a], B$3(t, a), n + 1, r);
 			return;
 		}
@@ -11687,7 +11633,7 @@ function W$2(e) {
 }
 function G$2(e) {
 	let t = [e], n = /* @__PURE__ */ new WeakSet(), r = 0, i = (e) => {
-		if (r += e, r > o$6) throw new p$8();
+		if (r += e, r > o$5) throw new p$7();
 	};
 	for (; t.length > 0;) {
 		let e = t.pop();
@@ -11700,34 +11646,34 @@ function G$2(e) {
 				i(e ? 4 : 5);
 				continue;
 			case `number`:
-				if (!Number.isFinite(e)) throw new m$8();
+				if (!Number.isFinite(e)) throw new m$7();
 				i(JSON.stringify(Object.is(e, -0) ? 0 : e).length);
 				continue;
 			case `string`:
 				K(e, i);
 				continue;
 			case `object`: break;
-			default: throw new m$8();
+			default: throw new m$7();
 		}
-		if (n.has(e)) throw new m$8();
+		if (n.has(e)) throw new m$7();
 		if (n.add(e), Array.isArray(e)) {
 			let n = e;
-			if (i(2 + Math.max(0, n.length - 1)), !J(n)) throw new m$8();
+			if (i(2 + Math.max(0, n.length - 1)), !J(n)) throw new m$7();
 			for (let e = n.length - 1; e >= 0; --e) {
 				let r = n[e];
-				if (r === void 0) throw new m$8();
+				if (r === void 0) throw new m$7();
 				t.push(r);
 			}
 			continue;
 		}
-		if (!Z(e)) throw new m$8();
+		if (!Z(e)) throw new m$7();
 		let r = Object.keys(e);
 		i(2 + Math.max(0, r.length - 1));
 		for (let n = r.length - 1; n >= 0; --n) {
 			let a = r[n];
 			if (a === void 0) continue;
 			let o = e[a];
-			if (o === void 0) throw new m$8();
+			if (o === void 0) throw new m$7();
 			K(a, i), i(1), t.push(o);
 		}
 	}
@@ -11842,11 +11788,11 @@ function normalizeVersionRange(e) {
 			let n = e.slice(1), r = parseSemanticVersion(n);
 			return `>=${n} <${r.major}.${r.minor + 1}.0-0`;
 		}
-		return a$8(e), e;
+		return a$7(e), e;
 	}).join(` `);
 }
 function satisfiesVersionRange(e, i) {
-	return parseSemanticVersion(e), normalizeVersionRange(i).split(/\s+/u).map(a$8).every((t) => {
+	return parseSemanticVersion(e), normalizeVersionRange(i).split(/\s+/u).map(a$7).every((t) => {
 		let r = compareSemanticVersions(e, t.version);
 		switch (t.operator) {
 			case `<`: return r < 0;
@@ -11857,7 +11803,7 @@ function satisfiesVersionRange(e, i) {
 		}
 	});
 }
-function a$8(e) {
+function a$7(e) {
 	let n = /^(>=|<=|>|<|=)?([^<>=].*)$/u.exec(e);
 	if (n?.[2] === void 0) throw TypeError(`${e} is not a supported version comparator.`);
 	return parseSemanticVersion(n[2]), {
@@ -12211,165 +12157,6 @@ function E$6(e, t) {
 		},
 		severity: `blocking`
 	};
-}
-//#endregion
-//#region node_modules/@kumwe/studio-core/dist/layout.js
-var CORE_LAYOUT_BLOCK_TYPES = Object.freeze({
-	columns: `studio.core/columns`,
-	grid: `studio.core/grid`,
-	section: `studio.core/section`,
-	stack: `studio.core/stack`
-});
-var CORE_LAYOUT_THEME_CONTROLS = Object.freeze({
-	alignment: `layout-alignment`,
-	collapse: `layout-collapse`,
-	direction: `layout-direction`,
-	spacing: `layout-spacing`,
-	visibility: `layout-visibility`
-});
-var a$7 = Object.freeze([{
-	capability: `studio.renderer/layout`,
-	surface: `preview`,
-	versions: `^1.0.0`
-}, {
-	capability: `studio.renderer/layout`,
-	surface: `web`,
-	versions: `^1.0.0`
-}]);
-var o$5 = [
-	`center`,
-	`end`,
-	`start`,
-	`stretch`
-];
-var s$6 = [
-	`preserve`,
-	`stack`,
-	`wrap`
-];
-var c$4 = [`block`, `inline`];
-var l$9 = [
-	`comfortable`,
-	`compact`,
-	`none`,
-	`spacious`
-];
-var u$9 = [`hidden`, `visible`];
-function isCoreLayoutBlockType(e) {
-	return Object.values(CORE_LAYOUT_BLOCK_TYPES).includes(e);
-}
-function createCoreLayoutBlockDefinitions(e = {}) {
-	let r = g$6([...Object.values(CORE_LAYOUT_BLOCK_TYPES), ...e.acceptedChildTypes ?? []]), i = cloneContractValue(e.rendererRequirements ?? a$7);
-	if (i.length === 0) throw RangeError(`Core layout blocks require at least one trusted renderer capability.`);
-	return [
-		f$9(`section`, r, i),
-		f$9(`stack`, r, i),
-		f$9(`grid`, r, i),
-		f$9(`columns`, r, i)
-	];
-}
-function coreLayoutInitialProperties(e) {
-	switch (e) {
-		case CORE_LAYOUT_BLOCK_TYPES.section: return {};
-		case CORE_LAYOUT_BLOCK_TYPES.stack: return { direction: `block` };
-		case CORE_LAYOUT_BLOCK_TYPES.grid:
-		case CORE_LAYOUT_BLOCK_TYPES.columns: return {
-			collapse: `stack`,
-			columns: 1
-		};
-	}
-}
-function f$9(i, a, o) {
-	let s = CORE_LAYOUT_BLOCK_TYPES[i], c = `${i.charAt(0).toUpperCase()}${i.slice(1)}`, l = [
-		CORE_LAYOUT_THEME_CONTROLS.alignment,
-		CORE_LAYOUT_THEME_CONTROLS.spacing,
-		CORE_LAYOUT_THEME_CONTROLS.visibility
-	];
-	return i === `stack` && l.push(CORE_LAYOUT_THEME_CONTROLS.direction), (i === `grid` || i === `columns`) && l.push(CORE_LAYOUT_THEME_CONTROLS.collapse), {
-		accessibility: {
-			accessibleName: i === `section` ? `derived` : `not-applicable`,
-			category: i === `section` ? `landmark` : `structural`,
-			keyboard: {
-				defaultMessage: `Use the outline commands to insert, move, and reorder layout children.`,
-				key: `studio.blocks/layout-keyboard`
-			},
-			outputChecks: [`studio.check/reading-order`, `studio.check/reflow`],
-			reducedMotion: `not-applicable`
-		},
-		category: `studio.category/layout`,
-		contractVersion: STUDIO_CONTRACT_VERSION,
-		editingModes: [`blueprint`, `content`],
-		icon: {
-			kind: `symbol`,
-			value: i
-		},
-		kind: `block-definition`,
-		label: {
-			defaultMessage: c,
-			key: `studio.blocks/${i}`
-		},
-		owner: {
-			id: `studio.core/blocks`,
-			version: `1.0.0`
-		},
-		ports: [],
-		propertyControls: l.map((e) => ({
-			control: `studio.control/${e}`,
-			property: h$6(e)
-		})),
-		propertySchema: m$7(i),
-		rendererRequirements: cloneContractValue([...o]),
-		revision: `layout-${i}-r1`,
-		slots: [p$7(i, a)],
-		themeControls: l,
-		type: s,
-		version: `1.0.0`
-	};
-}
-function p$7(e, n) {
-	let r = e === `section` ? `content` : `items`;
-	return {
-		accepts: { types: cloneContractValue(n) },
-		id: r,
-		label: {
-			defaultMessage: e === `section` ? `Content` : `Items`,
-			key: e === `section` ? `studio.blocks/section-content` : `studio.blocks/layout-items`
-		},
-		maximum: 100,
-		minimum: 0,
-		ordered: !0
-	};
-}
-function m$7(e) {
-	let t = {
-		alignment: { enum: [...o$5] },
-		spacing: { enum: [...l$9] },
-		visibility: { enum: [...u$9] }
-	};
-	return e === `stack` && (t.direction = { enum: [...c$4] }), (e === `grid` || e === `columns`) && (t.collapse = { enum: [...s$6] }, t.columns = {
-		maximum: 12,
-		minimum: 1,
-		type: `integer`
-	}), {
-		additionalProperties: !1,
-		properties: t,
-		type: `object`
-	};
-}
-function h$6(e) {
-	switch (e) {
-		case CORE_LAYOUT_THEME_CONTROLS.alignment: return `alignment`;
-		case CORE_LAYOUT_THEME_CONTROLS.collapse: return `collapse`;
-		case CORE_LAYOUT_THEME_CONTROLS.direction: return `direction`;
-		case CORE_LAYOUT_THEME_CONTROLS.spacing: return `spacing`;
-		case CORE_LAYOUT_THEME_CONTROLS.visibility: return `visibility`;
-		default: throw RangeError(`Unknown core layout control ${e}.`);
-	}
-}
-function g$6(e) {
-	let t = [...new Set(e)];
-	if (t.sort((e, t) => e < t ? -1 : +(e > t)), t.length === 0) throw RangeError(`A core layout slot requires at least one accepted block type.`);
-	return t;
 }
 //#endregion
 //#region node_modules/@kumwe/studio-core/dist/production.js
@@ -13074,7 +12861,8 @@ function createCoreProductionBlockDefinitions() {
 }
 function coreProductionInitialProperties(e) {
 	if (isCoreLayoutBlockType(e)) return coreLayoutInitialProperties(e);
-	return cloneContractValue(T$5[I$2(e)].defaults);
+	let t = I$2(e);
+	return cloneContractValue(T$5[t].defaults);
 }
 function isCoreProductionBlockType(e) {
 	return f$8.includes(e);
@@ -14450,15 +14238,6 @@ function s$4() {
 		defaultMessage: `Preview measurement failed.`,
 		retryable: !0
 	};
-}
-//#endregion
-//#region node_modules/@kumwe/studio-preview/dist/preview-identity.js
-function canonicalPreviewDraftBytes(t, n = {}) {
-	return canonicalUtf8Bytes(t, n);
-}
-async function computePreviewDraftDigest(e, t = {}) {
-	let n = t.subtle ?? globalThis.crypto.subtle, i = t.maximumDepth === void 0 ? {} : { maximumDepth: t.maximumDepth }, a = Uint8Array.from(canonicalPreviewDraftBytes(e, i)), o = await n.digest(`SHA-256`, a);
-	return [...new Uint8Array(o)].map((e) => e.toString(16).padStart(2, `0`)).join(``);
 }
 //#endregion
 //#region node_modules/@kumwe/studio/dist/preview-surface.js

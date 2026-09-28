@@ -11,6 +11,8 @@ if (releaseRecord.kind !== 'studio-release' || typeof releaseRecord.release !== 
 }
 
 export default defineConfig({
+  // The compiled bundle is served from public/assets/build; dynamic-import preload hints resolve against it.
+  base: '/assets/build/',
   publicDir: false,
   define: {
     __KUMWE_STUDIO_RELEASE__: JSON.stringify(releaseRecord.release),

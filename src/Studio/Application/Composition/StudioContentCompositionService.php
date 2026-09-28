@@ -259,6 +259,10 @@ final readonly class StudioContentCompositionService
      * @param   list<stdClass>    $admittedLocks       Every exact `{type, version, revision}` lock the authoring
      *          session offered; the authored lock must be a subset at identical coordinates.
      * @param   string            $status              Lifecycle status to store, `draft` or `published`.
+     * @param   ?string           $predecessor         Blueprint identity of the type version this one succeeds,
+     *          or null for a new reusable type. A successor keeps its predecessor's Blueprint identity and
+     *          takes a version of its own, so the reusable type's Blueprint is one artifact with immutable
+     *          successor revisions rather than a new artifact per type version.
      *
      * @return  StudioContentComposition  Newly admitted composition.
      *
@@ -275,6 +279,7 @@ final readonly class StudioContentCompositionService
         stdClass $blueprint,
         array $admittedLocks,
         string $status,
+        ?string $predecessor = null,
     ): StudioContentComposition {
         if ($this->find($context, $contentTypeId, $contentTypeVersion) !== null) {
             throw new RuntimeException('The Content type version already binds a Studio Blueprint.');
@@ -284,8 +289,8 @@ final readonly class StudioContentCompositionService
             $context->site(),
             strtolower($contentTypeId),
             $contentTypeVersion,
-            self::blueprintId($contentTypeId, $contentTypeVersion),
-            '1.0.0',
+            $predecessor ?? self::blueprintId($contentTypeId, $contentTypeVersion),
+            $predecessor === null ? '1.0.0' : $contentTypeVersion . '.0.0',
             null,
             1,
         );

@@ -61,6 +61,21 @@ final class StudioLocalizationTelemetryHostPortTest extends TestCase
 
         self::assertCount(160, get_object_vars($result->value));
         self::assertSame('Undo composition', $result->value->{'studio.shell/undo'});
+
+        // The contextual shell and the standalone start surface read their own namespaces from the same
+        // translated catalogue; a namespace this host does not carry contributes nothing rather than failing.
+        $contextual = self::localization(
+            $port,
+            (object) ['locale' => 'en-GB', 'namespaces' => ['studio.contextual', 'studio.standalone', 'studio.other']],
+        );
+        self::assertCount(111, get_object_vars($contextual->value));
+        self::assertSame('Save item', $contextual->value->{'studio.contextual/save-item'});
+        self::assertSame('Save as new type', $contextual->value->{'studio.contextual/save-as-new-type'});
+        self::assertObjectHasProperty('studio.standalone/download-project', $contextual->value);
+        self::assertObjectNotHasProperty('studio.shell/undo', $contextual->value);
+        foreach (array_keys(get_object_vars($contextual->value)) as $wireId) {
+            self::assertMatchesRegularExpression('#^studio\.(contextual|standalone)/[a-z0-9-]+$#', $wireId);
+        }
         self::assertPortRefused(
             static fn () => self::localization(
                 $port,

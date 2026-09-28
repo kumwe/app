@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for en-US, carrying 2507 messages.
+ * Compiled interface message catalogue for en-US, carrying 2516 messages.
  *
  * Generated from en-US.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1271,6 +1271,7 @@ return [
     'core.administrator.content_form.move_to' => 'Move to {to}',
     'core.administrator.content_form.name_the_item_and_choose_the' => 'Name the item and choose the stable public address editors will recognize.',
     'core.administrator.content_form.no_workflow_action_is_available_for' => 'No workflow action is available for your permissions and the current state.',
+    'core.administrator.content_form.preview_this_item' => 'Preview this item',
     'core.administrator.content_form.publication_timing' => 'Publication timing',
     'core.administrator.content_form.publish_at' => 'Publish at',
     'core.administrator.content_form.reload_version' => 'Reload version {current_version}',
@@ -1284,6 +1285,14 @@ return [
     'core.administrator.content_form.studio_page_builder_is_ready' => 'The Studio page builder is ready.',
     'core.administrator.content_form.studio_page_builder_loads_when_you_switch' => 'The page builder loads when you switch to it.',
     'core.administrator.content_form.studio_page_builder_unavailable_use_the' => 'The Studio page builder is not available for this content context. Use the structured editor below; Kumwe will preserve the exact content type and version when you save.',
+    'core.administrator.content_form.studio_preview' => 'Authenticated preview',
+    'core.administrator.content_form.studio_preview_could_not_be_rendered' => 'The preview could not be rendered.',
+    'core.administrator.content_form.studio_preview_frame' => 'Authenticated preview of this item',
+    'core.administrator.content_form.studio_preview_is_ready' => 'The preview shows the last saved composition of this item.',
+    'core.administrator.content_form.studio_preview_is_rendering' => 'Rendering the preview.',
+    'core.administrator.content_form.studio_preview_is_stale' => 'The item changed since this preview; preview it again.',
+    'core.administrator.content_form.studio_preview_needs_a_saved_item' => 'Save the item before previewing it; the preview shows accepted revisions only.',
+    'core.administrator.content_form.studio_preview_shows_the_last_saved' => 'The preview renders this item\'s last saved composition through the same template and theme path the published page uses.',
     'core.administrator.content_form.the_content_model_refused_these_values' => 'The content model refused these values. Everything you typed is still below; correct the fields named here and save again.',
     'core.administrator.content_form.the_item_could_not_be_saved' => 'The item could not be saved',
     'core.administrator.content_form.title' => 'Title',

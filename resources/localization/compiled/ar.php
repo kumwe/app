@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for ar, carrying 2507 messages.
+ * Compiled interface message catalogue for ar, carrying 2516 messages.
  *
  * Generated from ar.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1271,6 +1271,7 @@ return [
     'core.administrator.content_form.move_to' => 'النقل إلى {to}',
     'core.administrator.content_form.name_the_item_and_choose_the' => 'سمِّ العنصر واختر العنوان العام الثابت الذي سيتعرف عليه المحررون.',
     'core.administrator.content_form.no_workflow_action_is_available_for' => 'لا يتوفر أي إجراء سير عمل لصلاحياتك والحالة الحالية.',
+    'core.administrator.content_form.preview_this_item' => 'معاينة هذا العنصر',
     'core.administrator.content_form.publication_timing' => 'توقيت النشر',
     'core.administrator.content_form.publish_at' => 'النشر في',
     'core.administrator.content_form.reload_version' => 'إعادة تحميل الإصدار {current_version}',
@@ -1284,6 +1285,14 @@ return [
     'core.administrator.content_form.studio_page_builder_is_ready' => 'منشئ صفحات Studio جاهز.',
     'core.administrator.content_form.studio_page_builder_loads_when_you_switch' => 'يُحمَّل منشئ الصفحات عند التبديل إليه.',
     'core.administrator.content_form.studio_page_builder_unavailable_use_the' => 'منشئ صفحات Studio غير متاح لسياق المحتوى هذا. استخدم المحرر المهيكل أدناه؛ سيحافظ Kumwe على نوع المحتوى والإصدار بالتحديد عند الحفظ.',
+    'core.administrator.content_form.studio_preview' => 'معاينة موثّقة',
+    'core.administrator.content_form.studio_preview_could_not_be_rendered' => 'تعذّر عرض المعاينة.',
+    'core.administrator.content_form.studio_preview_frame' => 'معاينة موثّقة لهذا العنصر',
+    'core.administrator.content_form.studio_preview_is_ready' => 'تعرض المعاينة آخر تأليف محفوظ لهذا العنصر.',
+    'core.administrator.content_form.studio_preview_is_rendering' => 'جارٍ عرض المعاينة.',
+    'core.administrator.content_form.studio_preview_is_stale' => 'تغيّر العنصر منذ هذه المعاينة؛ عاينه مرة أخرى.',
+    'core.administrator.content_form.studio_preview_needs_a_saved_item' => 'احفظ العنصر قبل معاينته؛ لا تعرض المعاينة إلا المراجعات المقبولة.',
+    'core.administrator.content_form.studio_preview_shows_the_last_saved' => 'تعرض المعاينة آخر تأليف محفوظ لهذا العنصر عبر مسار القالب والسمة نفسه الذي تستخدمه الصفحة المنشورة.',
     'core.administrator.content_form.the_content_model_refused_these_values' => 'رفض نموذج المحتوى هذه القيم. كل ما كتبته لا يزال أدناه؛ صحّح الحقول المذكورة هنا واحفظ مرة أخرى.',
     'core.administrator.content_form.the_item_could_not_be_saved' => 'تعذّر حفظ العنصر',
     'core.administrator.content_form.title' => 'العنوان',
