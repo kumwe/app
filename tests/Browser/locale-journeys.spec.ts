@@ -97,7 +97,13 @@ test.describe('German content authoring', () => {
     const slug = `qualifizierungsbeitrag-${suffix}`;
     await page.locator('main input[name="title"]').fill(title);
     await page.getByRole('textbox', { name: message('de', 'core.administrator.content_form.url_slug') }).fill(slug);
-    await page.locator('[data-rich-text-editor]').first()
+    // The rich-text toolbar and editor answer to their German names.
+    const toolbar = page.getByRole('toolbar', { name: message('de', 'core.administrator.rich_text.toolbar_label') }).first();
+    await expect(toolbar.getByRole('button', { name: message('de', 'core.administrator.rich_text.bold_label') }))
+      .toHaveText(message('de', 'core.administrator.rich_text.bold_glyph'));
+    await expect(toolbar.getByRole('button', { name: message('de', 'core.administrator.rich_text.bulleted_list_label') }))
+      .toHaveText(message('de', 'core.administrator.rich_text.list'));
+    await page.getByRole('textbox', { name: message('de', 'core.administrator.rich_text.editor_label') }).first()
       .fill('Barrierefreiheitsanforderungen und Veröffentlichungszeitpläne in deutscher Sprache.');
     const createDraft = page.getByRole('button', { name: message('de', 'core.administrator.content_form.create_draft') });
     await expectOperableControl(createDraft, 'create draft');

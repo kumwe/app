@@ -80,7 +80,7 @@
             <div class="portal-business-section-heading">
                 <h2 id="portal-business-values-title">{{ t('core.administrator.business_detail.record_details') }}</h2>
                 <span class="portal-business-status">
-                    {{ record.deleted_at ? 'Deleted' : (record.archived_at ? 'Archived' : record.workflow_state|default('Active'))|replace({'_': ' '})|title }}
+                    {{ business_fields.state_label(record, definition) }}
                 </span>
             </div>
             {% if fields is empty %}
@@ -105,7 +105,7 @@
                         <div class="portal-business-section-heading">
                             <div>
                                 <h3 id="portal-relation-{{ relationship.handle }}-title">{{ relationship.label }}</h3>
-                                <p>{{ relationship.kind|replace({'_': ' '})|title }}{% if relationship.ordered %} {{ t('core.administrator.business_detail.ordered') }}{% endif %}</p>
+                                <p>{{ business_fields.relationship_kind_label(relationship) }}{% if relationship.ordered %} {{ t('core.administrator.business_detail.ordered') }}{% endif %}</p>
                             </div>
                             <div class="portal-actions">
                                 <span class="portal-business-count">{{ relationship_loaded ? related|length : '…' }}</span>
@@ -275,7 +275,7 @@
         {% if record_task == 'summary' %}
         <section class="portal-business-panel">
             <p class="eyebrow">{{ t('core.administrator.business_detail.record_state') }}</p>
-            <h2>{{ record.workflow_state|default('Active')|replace({'_': ' '})|title }}</h2>
+            <h2>{{ business_fields.state_label(record, definition) }}</h2>
             <dl class="portal-details portal-business-metadata kis-business-metadata">
                 <div><dt>{{ t('core.administrator.business_detail.created') }}</dt><dd><time datetime="{{ record.created_at }}">{{ record.created_at|date('Y-m-d H:i') }}</time></dd></div>
                 <div><dt>{{ t('core.administrator.business_detail.updated') }}</dt><dd><time datetime="{{ record.updated_at }}">{{ record.updated_at|date('Y-m-d H:i') }}</time></dd></div>
@@ -289,7 +289,7 @@
                 <div><p class="eyebrow">{{ t('core.administrator.business_definitions.workflow') }}</p><h2 id="portal-business-actions-title">{{ t('core.administrator.business_detail.available_actions') }}</h2></div>
                 {% for action in definition.actions %}
                     <a class="portal-button{% if action.high_impact %} danger{% endif %}" href="{{ record_path }}?confirm=action&amp;action={{ action.handle|url_encode }}">
-                        {{ action.label }}{% if action.transition %} → {{ action.transition|replace({'_': ' '})|title }}{% endif %}
+                        {{ action.label }}
                     </a>
                     {% if available_operations.approval is defined and action.high_impact %}
                         <a class="portal-button secondary" href="{{ record_path }}?confirm=action&amp;action={{ action.handle|url_encode }}&amp;approval=1">{{ t('core.administrator.business_detail.request_approval_for', {label: action.label}) }}</a>

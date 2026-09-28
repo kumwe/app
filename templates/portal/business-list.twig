@@ -1,4 +1,5 @@
 {% extends 'portal/layout.twig' %}
+{% import 'portal/_business-fields.twig' as business_fields %}
 
 {% block title %}{{ t('core.portal.business_list.kumwe_portal', {plural_label: definition.plural_label}) }}{% endblock %}
 
@@ -214,7 +215,7 @@
                 </thead>
                 <tbody>
                     {% for item in items %}
-                        {% set item_state = item.deleted_at ? 'Deleted' : (item.archived_at ? 'Archived' : item.workflow_state|default('Active')) %}
+                        {% set item_state = business_fields.state_label(item, definition) %}
                         <tr>
                             {% if bulk_available %}
                                 <td data-label="{{ t('core.administrator.business_choices.select') }}">
@@ -235,7 +236,7 @@
                                     {% endif %}
                                 </td>
                             {% endfor %}
-                            <td data-label="{{ t('core.administrator.business_list.state') }}">{{ item_state|replace({'_': ' '})|title }}{% if definition.workflow|default(null) and item.workflow_state|default(null) in definition.workflow.immutable_states|default([]) %} <span class="status business-record-lock-badge" data-record-lock="business_record.immutable">{{ t('core.business.refusal.read_only_badge') }}</span>{% endif %}</td>
+                            <td data-label="{{ t('core.administrator.business_list.state') }}">{{ item_state }}{% if definition.workflow|default(null) and item.workflow_state|default(null) in definition.workflow.immutable_states|default([]) %} <span class="status business-record-lock-badge" data-record-lock="business_record.immutable">{{ t('core.business.refusal.read_only_badge') }}</span>{% endif %}</td>
                             <td>
                                 {% if available_operations.read is defined %}
                                     <a href="{{ business_base_path }}/{{ definition.handle|url_encode }}/{{ item.record_id|url_encode }}">{{ t('core.administrator.business_list.view') }}</a>
@@ -248,9 +249,9 @@
         </div>
         <ul class="kis-business-card-list" aria-label="{{ t('core.administrator.business_list.summary_cards', {plural_label: definition.plural_label}) }}">
             {% for item in items %}
-                {% set item_state = item.deleted_at ? 'Deleted' : (item.archived_at ? 'Archived' : item.workflow_state|default('Active')) %}
+                {% set item_state = business_fields.state_label(item, definition) %}
                 <li class="kis-business-result-card">
-                    <header><span><strong>{{ definition.singular_label }}</strong><br><code>{{ item.record_id }}</code></span><span>{{ item_state|replace({'_': ' '})|title }}{% if definition.workflow|default(null) and item.workflow_state|default(null) in definition.workflow.immutable_states|default([]) %} <span class="status business-record-lock-badge" data-record-lock="business_record.immutable">{{ t('core.business.refusal.read_only_badge') }}</span>{% endif %}</span></header>
+                    <header><span><strong>{{ definition.singular_label }}</strong><br><code>{{ item.record_id }}</code></span><span>{{ item_state }}{% if definition.workflow|default(null) and item.workflow_state|default(null) in definition.workflow.immutable_states|default([]) %} <span class="status business-record-lock-badge" data-record-lock="business_record.immutable">{{ t('core.business.refusal.read_only_badge') }}</span>{% endif %}</span></header>
                     {% if bulk_available %}<label class="portal-business-checkbox"><input type="checkbox" name="bulk_records[]" value="{{ {'record_id': item.record_id, 'expected_version': item.version}|json_encode }}"><span>{{ t('core.administrator.business_list.select_this_record') }}</span></label>{% endif %}
                     <dl>
                         {% for column in visible_columns %}

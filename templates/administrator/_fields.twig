@@ -16,7 +16,18 @@
     {% elseif field.input == 'select' %}
       <label>{{ field.label }}{% if field.description %}<small>{{ field.description }}</small>{% endif %}<select name="{{ field.name }}"{% if field.required %} required{% endif %}><option value="">{{ t('core.administrator.fields.choose') }}</option>{% for option in field.options %}<option value="{{ option.value }}"{% if option.value == field.value %} selected{% endif %}>{{ option.label }}</option>{% endfor %}</select></label>
     {% elseif field.input == 'rich-text' %}
-      <kumwe-rich-text>
+      <kumwe-rich-text
+        data-message-toolbar="{{ t('core.administrator.rich_text.toolbar_label') }}"
+        data-message-bold="{{ t('core.administrator.rich_text.bold_label') }}"
+        data-message-bold-glyph="{{ t('core.administrator.rich_text.bold_glyph') }}"
+        data-message-heading="{{ t('core.administrator.rich_text.heading') }}"
+        data-message-bulleted-list="{{ t('core.administrator.rich_text.bulleted_list_label') }}"
+        data-message-list="{{ t('core.administrator.rich_text.list') }}"
+        data-message-add-link="{{ t('core.administrator.rich_text.add_link_label') }}"
+        data-message-link="{{ t('core.administrator.rich_text.link') }}"
+        data-message-editor="{{ t('core.administrator.rich_text.editor_label') }}"
+        data-message-help="{{ t('core.administrator.rich_text.help') }}"
+        data-message-link-prompt="{{ t('core.administrator.rich_text.link_prompt') }}">
         <label class="rich-text-source"><span>{{ field.label }}</span>{% if field.description %}<small>{{ field.description }}</small>{% endif %}<textarea name="{{ field.name }}" rows="14"{% if field.required %} required{% endif %}{% if field.min_length is not null %} minlength="{{ field.min_length }}"{% endif %}{% if field.max_length is not null %} maxlength="{{ field.max_length }}"{% endif %}>{{ field.value }}</textarea></label>
       </kumwe-rich-text>
     {% elseif field.input in ['textarea', 'lines'] %}

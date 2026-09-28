@@ -25,7 +25,7 @@
         ]
     },
     "inventory": {
-        "tools": 88,
+        "tools": 95,
         "resources": 1,
         "prompts": 1
     },
@@ -588,7 +588,7 @@
             ]
         }
     ],
-    "contract_sha256": "b41743c1f510aec8301190697dd7b39eda4110b2d1f70ef274f432530a2f9402",
+    "contract_sha256": "67b097c1c3408dd4592adeccd66d7314a100e00aa12de3fec0757f146c5de93f",
     "surface": {
         "tools": [
             {
@@ -7447,6 +7447,344 @@
                     },
                     "required": [
                         "revoked"
+                    ],
+                    "additionalProperties": false
+                }
+            },
+            {
+                "name": "kumwe_business_approval_list",
+                "title": "List business approvals",
+                "description": "List the generated-business approval requests exposed to MCP that this credential may see.",
+                "handler": "listBusinessApprovals",
+                "capability": null,
+                "risk": "read",
+                "alternative": "The portal or administrator approval screens, the protected REST approval resources, or bin/kumwe business-record approvals; decisions need browser step-up.",
+                "annotations": {
+                    "title": "List business approvals",
+                    "readOnlyHint": true,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "limit": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100
+                        }
+                    },
+                    "required": [],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "items": {
+                            "type": "array",
+                            "maxItems": 100
+                        }
+                    },
+                    "required": [
+                        "items"
+                    ],
+                    "additionalProperties": false
+                }
+            },
+            {
+                "name": "kumwe_business_approval_get",
+                "title": "Read a business approval",
+                "description": "Read one generated-business approval request exposed to MCP with its redacted decisions.",
+                "handler": "getBusinessApproval",
+                "capability": null,
+                "risk": "read",
+                "alternative": "The portal or administrator approval screens, the protected REST approval resources, or bin/kumwe business-record approvals; decisions need browser step-up.",
+                "annotations": {
+                    "title": "Read a business approval",
+                    "readOnlyHint": true,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "approval": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    "required": [
+                        "approval"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "additionalProperties": true
+                }
+            },
+            {
+                "name": "kumwe_business_approval_cancel",
+                "title": "Cancel my business approval request",
+                "description": "Withdraw your own pending approval request made on MCP; this never approves or rejects.",
+                "handler": "cancelBusinessApproval",
+                "capability": "business.approval.request",
+                "risk": "scoped_write",
+                "alternative": "The portal or administrator approval screens, the protected REST approval resources, or bin/kumwe business-record approvals; decisions need browser step-up.",
+                "annotations": {
+                    "title": "Cancel my business approval request",
+                    "readOnlyHint": false,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "operationId": {
+                            "type": "string",
+                            "minLength": 16,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{15,127}$"
+                        },
+                        "approval": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    "required": [
+                        "operationId",
+                        "approval"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "approval_request_id": {
+                            "type": "string"
+                        },
+                        "status": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "approval_request_id",
+                        "status"
+                    ],
+                    "additionalProperties": false
+                }
+            },
+            {
+                "name": "kumwe_media_list",
+                "title": "List media",
+                "description": "Browse one page of the site media library, optionally filtered by name and kind.",
+                "handler": "listMedia",
+                "capability": "content.read",
+                "risk": "read",
+                "alternative": "Administrator console: Media, /api/v1/media, or bin/kumwe media.",
+                "annotations": {
+                    "title": "List media",
+                    "readOnlyHint": true,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "type": "string",
+                            "maxLength": 200
+                        },
+                        "kind": {
+                            "type": "string",
+                            "enum": [
+                                "all",
+                                "image",
+                                "document"
+                            ]
+                        },
+                        "page": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100000
+                        },
+                        "perPage": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 96
+                        }
+                    },
+                    "required": [],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "items": {
+                            "type": "array",
+                            "maxItems": 96
+                        },
+                        "total": {
+                            "type": "integer",
+                            "minimum": 0
+                        },
+                        "page": {
+                            "type": "integer",
+                            "minimum": 1
+                        },
+                        "pages": {
+                            "type": "integer",
+                            "minimum": 0
+                        },
+                        "per_page": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    },
+                    "required": [
+                        "items",
+                        "total",
+                        "page",
+                        "pages",
+                        "per_page"
+                    ],
+                    "additionalProperties": false
+                }
+            },
+            {
+                "name": "kumwe_media_get",
+                "title": "Read a media asset",
+                "description": "Read one media library asset's metadata.",
+                "handler": "getMedia",
+                "capability": "content.read",
+                "risk": "read",
+                "alternative": "Administrator console: Media, /api/v1/media, or bin/kumwe media.",
+                "annotations": {
+                    "title": "Read a media asset",
+                    "readOnlyHint": true,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "media": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 191
+                        }
+                    },
+                    "required": [
+                        "media"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "additionalProperties": true
+                }
+            },
+            {
+                "name": "kumwe_media_upload",
+                "title": "Upload a media file",
+                "description": "Store one base64-encoded file in the media library under the given file name.",
+                "handler": "uploadMedia",
+                "capability": "content.update",
+                "risk": "scoped_write",
+                "alternative": "Administrator console: Media, /api/v1/media, or bin/kumwe media.",
+                "annotations": {
+                    "title": "Upload a media file",
+                    "readOnlyHint": false,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "operationId": {
+                            "type": "string",
+                            "minLength": 16,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{15,127}$"
+                        },
+                        "filename": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 255
+                        },
+                        "content": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 16777216
+                        }
+                    },
+                    "required": [
+                        "operationId",
+                        "filename",
+                        "content"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "additionalProperties": true
+                }
+            },
+            {
+                "name": "kumwe_media_delete",
+                "title": "Delete a media asset",
+                "description": "Remove one asset from the media library; an asset already gone is not an error.",
+                "handler": "deleteMedia",
+                "capability": "content.delete",
+                "risk": "destructive",
+                "alternative": "Administrator console: Media, /api/v1/media, or bin/kumwe media.",
+                "annotations": {
+                    "title": "Delete a media asset",
+                    "readOnlyHint": false,
+                    "destructiveHint": true,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "operationId": {
+                            "type": "string",
+                            "minLength": 16,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{15,127}$"
+                        },
+                        "media": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 191
+                        }
+                    },
+                    "required": [
+                        "operationId",
+                        "media"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "id": {
+                            "type": "string"
+                        },
+                        "deleted": {
+                            "type": "boolean"
+                        }
+                    },
+                    "required": [
+                        "id",
+                        "deleted"
                     ],
                     "additionalProperties": false
                 }

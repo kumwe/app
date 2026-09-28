@@ -14,6 +14,7 @@ use Kumwe\Access\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\App\Application\Automation\AutomationManagementService;
+use Kumwe\Content\Application\ContentNotFound;
 use Kumwe\Content\Application\ContentRecord;
 use Kumwe\App\Content\Application\ContentService;
 use Kumwe\App\Extension\Application\ExtensionManager;
@@ -40,6 +41,8 @@ use Kumwe\App\Studio\Application\Authoring\StudioMachineAuthoringOperation;
 use Kumwe\App\Studio\Application\Authoring\StudioMachineAuthoringRefused;
 use Kumwe\App\Studio\Domain\Authoring\StudioAuthoringIntent;
 use Kumwe\App\Identity\Domain\UserStatus;
+use Kumwe\App\Media\Application\MediaAsset;
+use Kumwe\App\Media\Application\MediaService;
 use Psr\Clock\ClockInterface;
 
 /**
@@ -95,6 +98,8 @@ final readonly class KumweMcpHandlers
      *         generation; null only in isolated tests that have no extension runtime.
      * @param  ?StudioMachineAuthoringGateway  $studioAuthoring   Machine entry to the browser's Studio authoring
      *         host; null only in isolated tests that exercise no Studio tool.
+     * @param  ?MediaService                   $media             Media library the media tools browse, read, upload
+     *         and delete through; null only in isolated tests that exercise no media tool.
      *
      * @since  2.0.0
      */
@@ -118,6 +123,7 @@ final readonly class KumweMcpHandlers
         private ?Closure $contextRefresh = null,
         private ?ExtensionExecutionGate $extensionRuntime = null,
         private ?StudioMachineAuthoringGateway $studioAuthoring = null,
+        private ?MediaService $media = null,
     ) {
     }
 
@@ -155,6 +161,7 @@ final readonly class KumweMcpHandlers
             $context,
             extensionRuntime: $this->extensionRuntime,
             studioAuthoring: $this->studioAuthoring,
+            media: $this->media,
         );
     }
 
@@ -228,6 +235,7 @@ final readonly class KumweMcpHandlers
             contextRefresh: $refresh,
             extensionRuntime: $this->extensionRuntime,
             studioAuthoring: $this->studioAuthoring,
+            media: $this->media,
         );
     }
 
@@ -2955,6 +2963,216 @@ final readonly class KumweMcpHandlers
     }
 
     /**
+     * List the generated-business approval requests exposed to MCP that the caller may see.
+     *
+     * The inbox the portal and REST render, narrowed to the MCP surface: any one of the approval capabilities
+     * admits it and the approval query then filters each row. Decisions are not offered here.
+     *
+     * @param   int  $limit  Maximum requests, from 1 through 100.
+     *
+     * @return  array{items: list<array<string, mixed>>}  Safe request summaries.
+     *
+     * @throws  InsufficientCapability  When the caller holds none of the approval capabilities.
+     * @throws  InvalidArgumentException  When the limit is outside its bounds.
+     *
+     * @since   2.0.0
+     */
+    public function listBusinessApprovals(int $limit = 50): array
+    {
+        $this->requireAny(BusinessMcpHandlers::APPROVAL_CAPABILITIES);
+
+        return $this->businessRecords->approvals($this->context('business-approvals-list'), $limit);
+    }
+
+    /**
+     * Read one generated-business approval request exposed to MCP with its redacted decisions.
+     *
+     * @param   string  $approval  Approval request UUID.
+     *
+     * @return  array<string, mixed>  Safe request summary and votes.
+     *
+     * @throws  InsufficientCapability  When the caller holds none of the approval capabilities.
+     * @throws  \Kumwe\Approval\ApprovalDenied  When the request is not visible on MCP.
+     *
+     * @since   2.0.0
+     */
+    public function getBusinessApproval(string $approval): array
+    {
+        $this->requireAny(BusinessMcpHandlers::APPROVAL_CAPABILITIES);
+
+        return $this->businessRecords->approval($this->context('business-approval-read'), $approval);
+    }
+
+    /**
+     * Withdraw the caller's own pending generated-business approval request made on MCP.
+     *
+     * This is the requester's cancel control, never a vote: approve, reject and revoke need a fresh browser
+     * step-up proof and are not published on this surface.
+     *
+     * @param   string  $operationId  Idempotency key this write is fenced on.
+     * @param   string  $approval     Approval request UUID.
+     *
+     * @return  array{approval_request_id: string, status: string}  The withdrawn request.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `business.approval.request`.
+     * @throws  \Kumwe\Approval\ApprovalDenied  When the request is not the caller's own pending request on MCP.
+     *
+     * @since   2.0.0
+     */
+    public function cancelBusinessApproval(string $operationId, string $approval): array
+    {
+        $this->require('business.approval.request');
+        $this->preauthorize(
+            $operationId,
+            'business.approval.request',
+            AuthorizationResource::item('approval_request', $approval),
+        );
+
+        return $this->mutations->run(
+            $this->context($operationId),
+            'business.approval.cancel',
+            $operationId,
+            compact('approval'),
+            fn (): array => $this->businessRecords->cancelApproval($this->context($operationId), $approval),
+        );
+    }
+
+    /**
+     * Browse one page of the site media library exactly as the administrator media screen does.
+     *
+     * @param   string  $query    Case-insensitive display-name filter, at most 200 bytes.
+     * @param   string  $kind     `all`, `image` or `document`.
+     * @param   int     $page     One-based page.
+     * @param   int     $perPage  Page size from one to ninety-six.
+     *
+     * @return  array{items: list<array<string, mixed>>, total: int, page: int, pages: int, per_page: int}  Page.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `content.read`.
+     * @throws  InvalidArgumentException  When the kind is unknown or media is not composed.
+     *
+     * @since   2.0.0
+     */
+    public function listMedia(string $query = '', string $kind = 'all', int $page = 1, int $perPage = 24): array
+    {
+        $this->require('content.read');
+        if (!in_array($kind, ['all', 'image', 'document'], true)) {
+            throw new InvalidArgumentException('The media kind must be all, image or document.');
+        }
+        $result = $this->mediaLibrary()->browse($this->context(), $query, $kind, $page, $perPage);
+
+        return [
+            'items' => array_map(static fn (MediaAsset $asset): array => $asset->toArray(), $result->items),
+            'total' => $result->total,
+            'page' => $result->page,
+            'pages' => $result->pages(),
+            'per_page' => $result->perPage,
+        ];
+    }
+
+    /**
+     * Read one media library asset's metadata.
+     *
+     * @param   string  $media  Asset identifier.
+     *
+     * @return  array<string, mixed>  Asset metadata.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `content.read`.
+     * @throws  ContentNotFound  When the library holds no such asset, answered as `resource.not_found`.
+     *
+     * @since   2.0.0
+     */
+    public function getMedia(string $media): array
+    {
+        $this->require('content.read');
+
+        return ($this->mediaLibrary()->get($this->context(), $media) ?? throw new ContentNotFound($media))
+            ->toArray();
+    }
+
+    /**
+     * Store one base64-encoded file in the media library under a replay-safe operation identity.
+     *
+     * The decoded bytes are staged in an owner-only temporary file the storage copies from, and removed
+     * afterwards. The operation is fenced on the file name and a digest of the content, so the payload itself
+     * is never recorded with the claim.
+     *
+     * @param   string  $operationId  Idempotency key this write is fenced on.
+     * @param   string  $filename     Client file name the asset is stored under.
+     * @param   string  $content      Base64-encoded file content.
+     *
+     * @return  array<string, mixed>  The stored, audited asset, or the stored copy on a repeat.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `content.update`.
+     * @throws  InvalidArgumentException  When the content is not base64 or the service refuses the file.
+     *
+     * @since   2.0.0
+     */
+    public function uploadMedia(string $operationId, string $filename, string $content): array
+    {
+        $this->require('content.update');
+        $this->preauthorize($operationId, 'content.update', AuthorizationResource::collection('media'));
+        $bytes = base64_decode($content, true);
+        if ($bytes === false || $bytes === '') {
+            throw new InvalidArgumentException('The media content must be non-empty base64.');
+        }
+
+        return $this->mutations->run(
+            $this->context($operationId),
+            'media.upload',
+            $operationId,
+            ['filename' => $filename, 'content_sha256' => hash('sha256', $bytes)],
+            function () use ($operationId, $filename, $bytes): array {
+                $staged = tempnam(sys_get_temp_dir(), 'kumwe-mcp-media-');
+                if (!is_string($staged)) {
+                    throw new \RuntimeException('The media upload could not be staged.');
+                }
+                try {
+                    if (!chmod($staged, 0o600) || file_put_contents($staged, $bytes) !== strlen($bytes)) {
+                        throw new \RuntimeException('The media upload could not be staged.');
+                    }
+
+                    return $this->mediaLibrary()->upload($this->context($operationId), $staged, $filename)
+                        ->toArray();
+                } finally {
+                    if (is_file($staged)) {
+                        unlink($staged);
+                    }
+                }
+            },
+        );
+    }
+
+    /**
+     * Remove one asset from the media library under a replay-safe operation identity.
+     *
+     * @param   string  $operationId  Idempotency key this write is fenced on.
+     * @param   string  $media        Asset identifier; one already gone is not an error.
+     *
+     * @return  array{id: string, deleted: true}  Confirmation.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `content.delete`.
+     *
+     * @since   2.0.0
+     */
+    public function deleteMedia(string $operationId, string $media): array
+    {
+        $this->require('content.delete');
+        $this->preauthorize($operationId, 'content.delete', AuthorizationResource::collection('media'));
+
+        return $this->mutations->run(
+            $this->context($operationId),
+            'media.delete',
+            $operationId,
+            compact('media'),
+            function () use ($operationId, $media): array {
+                $this->mediaLibrary()->delete($this->context($operationId), $media);
+
+                return ['id' => $media, 'deleted' => true];
+            },
+        );
+    }
+
+    /**
      * Execute one ordinary declared action; a high-impact attempt fails closed without browser step-up.
      *
      * @param   string                $operationId        Caller-chosen stable operation identity.
@@ -3617,6 +3835,32 @@ final readonly class KumweMcpHandlers
     }
 
     /**
+     * Fail unless the bound credential resolves to a principal holding at least one of several capabilities.
+     *
+     * Reserved for query tools whose canonical service deliberately admits several independent authorities and
+     * then filters every row itself, such as the approval inbox.
+     *
+     * @param   list<string>  $capabilities  Capability codes any one of which admits the call.
+     *
+     * @return  AuthenticatedPrincipal  The resolved actor.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it holds none of the capabilities.
+     *
+     * @since   2.0.0
+     */
+    private function requireAny(array $capabilities): AuthenticatedPrincipal
+    {
+        $principal = $this->principal();
+        foreach ($capabilities as $capability) {
+            if ($principal->hasCapability(Capability::fromString($capability))) {
+                return $principal;
+            }
+        }
+
+        throw new InsufficientCapability(implode('|', $capabilities));
+    }
+
+    /**
      * Fail unless the bound credential resolves to a principal holding a capability.
      *
      * The first line of every protected tool, and deliberately earlier and cheaper than the gateway: it asks
@@ -3697,6 +3941,21 @@ final readonly class KumweMcpHandlers
         return $operationId === null
             ? $context
             : $context->child('mcp-' . $operationId, $operationId);
+    }
+
+    /**
+     * Resolve the media library this server was composed with.
+     *
+     * @return  MediaService  Media library service.
+     *
+     * @throws  InvalidArgumentException  When the server was composed without the media library.
+     *
+     * @since   2.0.0
+     */
+    private function mediaLibrary(): MediaService
+    {
+        return $this->media
+            ?? throw new InvalidArgumentException('The media library is unavailable on this server.');
     }
 
     /**

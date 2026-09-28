@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\Http\Middleware;
 
 use InvalidArgumentException;
+use Kumwe\Context\Value\AuthenticatedSurface;
 use Kumwe\Context\Value\AuthenticationStrength;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\App\Http\Middleware\BearerAuthenticationMiddleware;
@@ -124,7 +125,8 @@ final class BearerAuthenticationMiddlewareTest extends TestCase
                 return $request->getAttribute(AuthenticatedPrincipal::REQUEST_ATTRIBUTE) === $principal
                     && $context instanceof ExecutionContext
                     && $context->principal() === $principal
-                    && $context->authenticationStrength() === AuthenticationStrength::BearerToken;
+                    && $context->authenticationStrength() === AuthenticationStrength::BearerToken
+                    && $context->surface() === AuthenticatedSurface::Api;
             },
         ))->willReturn(new TextResponse('', 204));
         $response = (new BearerAuthenticationMiddleware($verifier))->process(
@@ -210,8 +212,10 @@ final class BearerAuthenticationMiddlewareTest extends TestCase
             static function (ServerRequestInterface $request): bool {
                 $context = $request->getAttribute(ExecutionContextAttribute::NAME);
 
+                // An MCP-audience route yields an MCP-surface context, exactly as the stdio server binds it.
                 return $context instanceof ExecutionContext
-                    && $context->site()->identifier() === 'corporate';
+                    && $context->site()->identifier() === 'corporate'
+                    && $context->surface() === AuthenticatedSurface::Mcp;
             },
         ))->willReturn(new TextResponse('', 204));
         $request = $this->request([

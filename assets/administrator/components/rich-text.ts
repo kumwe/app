@@ -1,9 +1,35 @@
 import { LitElement, html } from 'lit';
 import { customElement } from 'lit/decorators.js';
 
+/**
+ * The wording the toolbar renders, read from `data-message-*` attributes the Twig field template resolves
+ * from the interface catalogue in the request's language. The fallbacks are the `en-GB` source, used only
+ * when a template renders the element without them.
+ */
+const fallbackWording = {
+  messageToolbar: 'Text formatting',
+  messageBold: 'Bold',
+  messageBoldGlyph: 'B',
+  messageHeading: 'Heading',
+  messageBulletedList: 'Bulleted list',
+  messageList: 'List',
+  messageAddLink: 'Add link',
+  messageLink: 'Link',
+  messageEditor: 'Rich text editor',
+  messageHelp: 'Use the toolbar for headings, emphasis, lists, and safe links.',
+  messageLinkPrompt: 'Link URL',
+} as const;
+
+type RichTextWording = keyof typeof fallbackWording;
+
 @customElement('kumwe-rich-text')
 export class KumweRichText extends LitElement {
   override createRenderRoot(): HTMLElement { return this; }
+
+  /** Answer one piece of toolbar wording in the language the page was rendered in. */
+  private wording(name: RichTextWording): string {
+    return this.dataset[name] ?? fallbackWording[name];
+  }
 
   /** Tags a browser uses as its own block inside a `contenteditable`; everything else is inline. */
   private static readonly blockTags = new Set([
@@ -28,7 +54,7 @@ export class KumweRichText extends LitElement {
         const command = button.dataset.richTextCommand;
         editor.focus();
         if (command === 'createLink') {
-          const url = window.prompt('Link URL');
+          const url = window.prompt(this.wording('messageLinkPrompt'));
           if (url) document.execCommand('createLink', false, url);
         } else if (command === 'formatBlock') {
           document.execCommand('formatBlock', false, 'h2');
@@ -43,15 +69,15 @@ export class KumweRichText extends LitElement {
   override render() {
     return html`
       <div class="rich-text-shell js-only">
-        <div class="rich-text-toolbar" role="toolbar" aria-label="Text formatting">
-          <button type="button" data-rich-text-command="bold" aria-label="Bold"><strong>B</strong></button>
-          <button type="button" data-rich-text-command="formatBlock" aria-label="Heading">Heading</button>
-          <button type="button" data-rich-text-command="insertUnorderedList" aria-label="Bulleted list">List</button>
-          <button type="button" data-rich-text-command="createLink" aria-label="Add link">Link</button>
+        <div class="rich-text-toolbar" role="toolbar" aria-label=${this.wording('messageToolbar')}>
+          <button type="button" data-rich-text-command="bold" aria-label=${this.wording('messageBold')}><strong>${this.wording('messageBoldGlyph')}</strong></button>
+          <button type="button" data-rich-text-command="formatBlock" aria-label=${this.wording('messageHeading')}>${this.wording('messageHeading')}</button>
+          <button type="button" data-rich-text-command="insertUnorderedList" aria-label=${this.wording('messageBulletedList')}>${this.wording('messageList')}</button>
+          <button type="button" data-rich-text-command="createLink" aria-label=${this.wording('messageAddLink')}>${this.wording('messageLink')}</button>
         </div>
         <div class="rich-text-editor" contenteditable="true" role="textbox" aria-multiline="true"
-          aria-label="Rich text editor" data-rich-text-editor></div>
-        <p class="field-help">Use the toolbar for headings, emphasis, lists, and safe links.</p>
+          aria-label=${this.wording('messageEditor')} data-rich-text-editor></div>
+        <p class="field-help">${this.wording('messageHelp')}</p>
       </div>
       <slot></slot>
     `;

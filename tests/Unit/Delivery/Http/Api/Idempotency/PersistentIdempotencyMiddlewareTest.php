@@ -58,6 +58,17 @@ final class PersistentIdempotencyMiddlewareTest extends TestCase
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('handler failed');
         $middleware->process($this->request(), new class implements RequestHandlerInterface {
+            /**
+             * Fail the way this case needs.
+             *
+             * @param   ServerRequestInterface  $request  Request under test.
+             *
+             * @return  ResponseInterface  Never returned.
+             *
+             * @throws  RuntimeException  Always.
+             *
+             * @since   2.0.0
+             */
             public function handle(ServerRequestInterface $request): ResponseInterface
             {
                 throw new RuntimeException('handler failed');
@@ -86,6 +97,15 @@ final class PersistentIdempotencyMiddlewareTest extends TestCase
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('no longer owns');
         $middleware->process($this->request(), new class implements RequestHandlerInterface {
+            /**
+             * Answer the fixed response this case needs.
+             *
+             * @param   ServerRequestInterface  $request  Request under test.
+             *
+             * @return  ResponseInterface  Fixed response.
+             *
+             * @since   2.0.0
+             */
             public function handle(ServerRequestInterface $request): ResponseInterface
             {
                 return new Response(status: 201);
@@ -119,6 +139,15 @@ final class PersistentIdempotencyMiddlewareTest extends TestCase
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('no longer owns');
         $middleware->process($this->request(), new class implements RequestHandlerInterface {
+            /**
+             * Answer the fixed response this case needs.
+             *
+             * @param   ServerRequestInterface  $request  Request under test.
+             *
+             * @return  ResponseInterface  Fixed response.
+             *
+             * @since   2.0.0
+             */
             public function handle(ServerRequestInterface $request): ResponseInterface
             {
                 return new Response(status: 503);
@@ -126,9 +155,97 @@ final class PersistentIdempotencyMiddlewareTest extends TestCase
         });
     }
 
-    private function middleware(Connection $database): PersistentIdempotencyMiddleware
+    /**
+     * Proves a refusal the handler mapped from a rolled-back nested unit is returned, not escalated to a fault.
+     *
+     * The transaction manager rethrows the nested failure when the outermost unit ends, after the handler has
+     * already answered 404. The caller receives that answer, and the reservation is released rather than
+     * stored, because nothing the attempt did was committed.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testARefusalFromARolledBackNestedUnitIsReturnedUnrecorded(): void
     {
+        $database = $this->database();
+        $database->expects(self::once())->method('insert');
+        $statements = [];
+        $database->expects(self::exactly(2))->method('executeStatement')->willReturnCallback(
+            static function (string $sql) use (&$statements): int {
+                $statements[] = $sql;
+
+                return 1;
+            },
+        );
+        $middleware = $this->middleware($database, new RuntimeException('nested unit refused'));
+
+        $response = $middleware->process($this->request(), new class implements RequestHandlerInterface {
+            /**
+             * Answer the fixed response this case needs.
+             *
+             * @param   ServerRequestInterface  $request  Request under test.
+             *
+             * @return  ResponseInterface  Fixed response.
+             *
+             * @since   2.0.0
+             */
+            public function handle(ServerRequestInterface $request): ResponseInterface
+            {
+                return new Response(status: 404);
+            }
+        });
+
+        self::assertSame(404, $response->getStatusCode());
+        self::assertCount(2, $statements);
+        self::assertStringContainsString('DELETE FROM', $statements[1]);
+    }
+
+    /**
+     * Proves a success whose commit fails still surfaces the failure instead of claiming the effect landed.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testASuccessWhoseTransactionRollsBackStillRaises(): void
+    {
+        $database = $this->database();
+        $database->expects(self::once())->method('insert');
+        $database->method('executeStatement')->willReturn(1);
+        $middleware = $this->middleware($database, new RuntimeException('commit refused'));
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('commit refused');
+        $middleware->process($this->request(), new class implements RequestHandlerInterface {
+            /**
+             * Answer the fixed response this case needs.
+             *
+             * @param   ServerRequestInterface  $request  Request under test.
+             *
+             * @return  ResponseInterface  Fixed response.
+             *
+             * @since   2.0.0
+             */
+            public function handle(ServerRequestInterface $request): ResponseInterface
+            {
+                return new Response(status: 201);
+            }
+        });
+    }
+
+    private function middleware(
+        Connection $database,
+        ?RuntimeException $rollbackCause = null,
+    ): PersistentIdempotencyMiddleware {
         $clock = new class implements ClockInterface {
+            /**
+             * Answer the fixed instant.
+             *
+             * @return  DateTimeImmutable  Fixed test instant.
+             *
+             * @since   2.0.0
+             */
             public function now(): DateTimeImmutable
             {
                 return new DateTimeImmutable('2026-08-05T10:00:00+00:00');
@@ -138,17 +255,62 @@ final class PersistentIdempotencyMiddlewareTest extends TestCase
             new DoctrineIdempotencyLedger($database, new TableNames($database, 'kumwe_'), $clock),
             $clock,
             new ProblemDetailsResponseFactory(),
-            new class implements TransactionManager {
-                public function transactional(callable $operation): mixed
+            new class ($rollbackCause) implements TransactionManager {
+                /**
+                 * Keep the failure the outermost unit rethrows once the operation returns, if any.
+                 *
+                 * @param  ?RuntimeException  $rollbackCause  Failure a caught nested unit left, or null.
+                 *
+                 * @since  2.0.0
+                 */
+                public function __construct(private ?RuntimeException $rollbackCause)
                 {
-                    return $operation();
                 }
 
+                /**
+                 * Run the operation, then rethrow a nested failure as the outermost transaction manager does.
+                 *
+                 * @param   callable  $operation  Unit of work.
+                 *
+                 * @return  mixed  The operation's result.
+                 *
+                 * @throws  RuntimeException  The configured rollback cause.
+                 *
+                 * @since   2.0.0
+                 */
+                public function transactional(callable $operation): mixed
+                {
+                    $result = $operation();
+                    if ($this->rollbackCause !== null) {
+                        throw $this->rollbackCause;
+                    }
+
+                    return $result;
+                }
+
+                /**
+                 * Run a commit hook immediately.
+                 *
+                 * @param   callable  $operation  Hook.
+                 *
+                 * @return  void
+                 *
+                 * @since   2.0.0
+                 */
                 public function afterCommit(callable $operation): void
                 {
                     $operation();
                 }
 
+                /**
+                 * Discard a rollback hook.
+                 *
+                 * @param   callable  $operation  Hook.
+                 *
+                 * @return  void
+                 *
+                 * @since   2.0.0
+                 */
                 public function afterRollback(callable $operation): void
                 {
                 }

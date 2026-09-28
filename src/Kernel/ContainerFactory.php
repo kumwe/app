@@ -560,7 +560,9 @@ use Kumwe\App\Delivery\Console\Command\RunExtensionConformanceCommand;
 use Kumwe\App\Delivery\Console\Command\UninstallExtensionCommand;
 use Kumwe\App\Delivery\Console\Command\RecoverAdministratorThemeCommand;
 use Kumwe\App\Delivery\Console\ConsoleApplication;
+use Kumwe\App\Delivery\Console\Command\BusinessApprovalCommand;
 use Kumwe\App\Delivery\Console\Command\SecurityEventsCommand;
+use Kumwe\App\Delivery\Console\Command\MediaCommand;
 use Kumwe\App\Delivery\Console\Command\StudioAuthoringCommand;
 use Kumwe\App\Delivery\Console\Output;
 use Kumwe\App\Delivery\Console\StreamOutput;
@@ -6980,6 +6982,18 @@ final class ContainerFactory
             self::service($container, RecordSecretRotation::class),
             self::service($container, ConsoleAuthorizer::class),
         ), true);
+        $container->share(BusinessApprovalCommand::class, static fn (
+            Container $container,
+        ): BusinessApprovalCommand => new BusinessApprovalCommand(
+            self::service($container, BusinessApprovalSurfaceService::class),
+            self::service($container, ConsoleAuthorizer::class),
+            self::service($container, BusinessRecordConsolePresenter::class),
+            self::service($container, BusinessConsoleFailureMapper::class),
+        ), true);
+        $container->share(MediaCommand::class, static fn (Container $container): MediaCommand => new MediaCommand(
+            self::service($container, MediaService::class),
+            self::service($container, ConsoleAuthorizer::class),
+        ), true);
         $container->share(SecurityEventsCommand::class, static fn (
             Container $container,
         ): SecurityEventsCommand => new SecurityEventsCommand(
@@ -7046,6 +7060,8 @@ final class ContainerFactory
                 self::service($container, RotateRecordSecretsCommand::class),
                 self::service($container, StudioAuthoringCommand::class),
                 self::service($container, SecurityEventsCommand::class),
+                self::service($container, BusinessApprovalCommand::class),
+                self::service($container, MediaCommand::class),
                 self::service($container, McpServeCommand::class),
             ], self::service($container, Output::class)), true);
     }
@@ -7083,6 +7099,7 @@ final class ContainerFactory
                 self::service($container, McpMutationGuard::class),
                 self::service($container, BusinessOperationStatusService::class),
                 self::service($container, BusinessSurfaceService::class),
+                self::service($container, BusinessApprovalSurfaceService::class),
             ), true);
         $container->share(ReportMcpHandlers::class, static fn (Container $container): ReportMcpHandlers =>
             new ReportMcpHandlers(
@@ -7115,6 +7132,7 @@ final class ContainerFactory
                 self::service($container, AuthorizationGateway::class),
                 extensionRuntime: self::service($container, ExtensionExecutionGate::class),
                 studioAuthoring: self::service($container, StudioMachineAuthoringGateway::class),
+                media: self::service($container, MediaService::class),
             ), true);
         $container->share(KumweMcpServerFactory::class, static fn (Container $container): KumweMcpServerFactory =>
             new KumweMcpServerFactory(

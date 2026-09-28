@@ -1786,7 +1786,8 @@ test.describe('authenticated administrator', () => {
       await expectAdministratorRecordName(page, updatedName);
       await page.getByRole('link', { name: 'History', exact: true }).click();
       await expect(page.getByRole('heading', { level: 1, name: 'Record history' })).toBeVisible();
-      await expect(page.getByText('update', { exact: true }).first()).toBeVisible();
+      await expect(page.locator('[data-revision-operation="update"]').first()).toHaveText('Edited');
+      await expect(page.getByText('update', { exact: true })).toHaveCount(0);
     } finally {
       await context.close();
     }

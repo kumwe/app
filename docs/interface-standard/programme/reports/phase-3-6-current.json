@@ -906,9 +906,9 @@
       "requirement": "Accountable product, accessibility, security, KIS, and release roles review applicable evidence.",
       "applicability": "required",
       "status": "not_run",
-      "command": "Accountable product, accessibility, security, KIS, programme, and release owners review the committed checkpoint and PR evidence",
-      "environment": "Accountable review on pull request #31.",
-      "result_summary": "Not run: automated qualification is complete, but accountable final human acceptance cannot be self-attested by an implementation agent.",
+      "command": "ADR 0021: npx playwright test tests/Browser/user-acceptance-journeys.spec.ts on every all project; maintainer merge of the pull request is the acceptance record",
+      "environment": "Chromium desktop and mobile locally and on every pull request; Firefox and WebKit in the nightly browser workflow. WebKit results are WebKit evidence, not native Safari evidence.",
+      "result_summary": "Not run as a named-reviewer checklist: ADR 0021 (2026-09-24) replaces it with the five P7-E archetype journeys in tests/Browser/user-acceptance-journeys.spec.ts, registered as journey.acceptance-* with their evidenced dimensions. They pass on Chromium desktop and mobile in the agent/security branch; Firefox and WebKit evidence comes from the nightly workflow. Acceptance remains conditional on the maintainer merge and is not self-attested here.",
       "artifact_paths": [
         "docs/interface-standard/programme/phase-ledger.json",
         "docs/interface-standard/programme/verification-report-template.json"
@@ -986,7 +986,7 @@
   "residual_risks": [
     {
       "severity": "P2",
-      "summary": "P6-007 and Gate F remain intentionally in review until accountable human owners accept the complete evidence bundle.",
+      "summary": "P6-007 and Gate F remain in review until the maintainer merges the pull request carrying the ADR 0021 automated acceptance journeys; nightly Firefox and WebKit journey evidence is not reproducible in the agent sandbox.",
       "owner_role": "programme-owner",
       "finding_ids": []
     }
@@ -1004,6 +1004,6 @@
       "quality-owner",
       "release-owner"
     ],
-    "notes": "All automatable checks and programme work through P6-006 are accepted. HUMAN-REVIEW remains not_run; only accountable final acceptance may move P6-007, Gate F, Phase 6, and the programme to complete."
+    "notes": "All automatable checks and programme work through P6-006 are accepted. HUMAN-REVIEW remains not_run as a manual checklist; under ADR 0021 the P7-E journeys supply the interface evidence and only the maintainer merge moves P6-007, Gate F, Phase 6, and the programme to complete."
   }
 }
