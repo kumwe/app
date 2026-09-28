@@ -4474,7 +4474,7 @@
       "in_progress_work_items": [],
       "blocked_work_items": [],
       "next_ready_work_items": [],
-      "notes": "Phases 0-5, P6-001 through P6-006, and Gates A-E are accepted. Gate F and P6-007 retain accepted automated qualification but await the canonical accountable HUMAN-REVIEW before final programme completion."
+      "notes": "Phases 0-5, P6-001 through P6-006, and Gates A-E are accepted. Gate F and P6-007 retain accepted automated qualification. Under ADR 0021 their review slot takes independent review evidence with the maintainer merge as acceptance, not a separate human review; they complete with the workflow evidence of the five archetype task journeys (V2-UX-001)."
     }
   ]
 }

@@ -271,8 +271,10 @@ extension-contributed catalogues all run through the ordinary package path. Ever
 console command and user-facing source error resolves from the extracted `en-GB` catalogue, and the
 hardcoded-string gate scans all three surfaces. Extension-contributed items bind to declared translation
 sets through the additive contribution generation. The runtime and authoring contract is described in
-[`docs/interface-translation.md`](../interface-translation.md). Only `V2-LNG-010` remains: the Gate B work
-to complete and qualify the eight non-source catalogues.
+[`docs/interface-translation.md`](../interface-translation.md). The eight non-source catalogues are authored,
+compiled and complete, and `composer translation:quality` qualifies each through ICU, CLDR plural coverage and
+an identical-wording register; `V2-LNG-010` holds the Gate B acceptance of that work and of the per-locale
+browser, accessibility and visual evidence.
 
 **Right-to-left.** Hebrew and Arabic are both in scope and their layout work is the same work, so they were
 done together. The conversion is complete: every inline-axis declaration across `assets/` is now logical —
@@ -692,8 +694,8 @@ rather than degrading to a substituting formatter.
 **Right-to-left is converted.** Across `assets/`: 96 logical inline-axis declarations and zero physical
 ones, no floats, and `composer assets:direction` failing the build on a new physical declaration with an
 allowlist that ships empty. `playwright.config.ts` now runs the right-to-left journeys under four
-locale-scoped projects and files their baselines under those project names. What is unbuilt is the
-screenshots themselves: the four right-to-left baseline directories are empty.
+locale-scoped projects and files their baselines under those project names, and each of the four
+directories carries its committed right-to-left baselines.
 
 **Content is locale-bearing and grouped by logical item.** `ContentEntry` carries a canonical locale and
 translation-group identifier beside its locale-specific slug, workflow state and publication window;
@@ -850,7 +852,7 @@ answer.
 | Data-entry integrity across a failed submission | Provided | validation failure and stale-version conflict both re-render with the submitted values on both generated surfaces and the CMS content editor; see [`CHANGELOG.md`](../../CHANGELOG.md) |
 | Role-specific dashboards | Provided | Decision D15 and [ADR 0006](decisions/0006-unified-dashboard-composition.md): `DashboardComposer` projects the existing capability-, owner-, trust- and area-filtered navigation into workflow widgets and quick links, then resolves the existing KIS `dashboard-cards` and `navigation-shortcuts` preferences across administrator, canonical `role:<uuid>` access-group and user layers. Typed core summaries use the same semantic view contract; see [`CHANGELOG.md`](../../CHANGELOG.md) |
 | Offline-tolerant capture for point of sale | Deferred, not foreclosed | `V2-ERP-007` under decision D14 — deferred beyond Version 2 as a product; three of the four constraints that keep it possible are delivered and recorded in `CHANGELOG.md`, and `V2-POS-002` alone remains |
-| A translated interface | Partial | The layer exists — XLIFF authored, compiled to PHP, formatted by ICU, resolved through the four-step chain with both administered layers stored, negotiated per request. `V2-LNG-001`, `V2-LNG-007` and `V2-LNG-008` hold the remaining extraction and the widened gate; `V2-LNG-010` holds the eight translated catalogues. Decision D11, [ADR 0002](decisions/0002-interface-translation-architecture.md) |
+| A translated interface | Partial | The layer exists — XLIFF authored, compiled to PHP, formatted by ICU, resolved through the four-step chain with both administered layers stored, negotiated per request. `V2-LNG-001`, `V2-LNG-007` and `V2-LNG-008` hold the remaining extraction and the widened gate; `V2-LNG-010` holds Gate B acceptance of the eight translated catalogues, which are authored and complete, and of per-locale qualification. Decision D11, [ADR 0002](decisions/0002-interface-translation-architecture.md) |
 | An operator changing wording without editing files | Provided | Site and organization overrides are stored and administered at `/administrator/wording` under `localization.overrides.manage`; per identifier, never per file. This is also how a vertical relabels core terminology, and an extension contributes its own catalogue through the ordinary package path. See [`CHANGELOG.md`](../../CHANGELOG.md) |
 | Right-to-left presentation | Partial | The stylesheets are direction independent, the layouts emit `dir`, a gate refuses a new physical declaration, and the browser matrix carries a language axis so `he` and `ar` file baselines of their own. `V2-LNG-009` holds the screenshots and the `P2-E` leg that compares them |
 | Multilingual content with per-locale publication state | Provided | `ContentEntry`, `TranslationGroup`, locale-specific slugs and publication windows, negotiated public delivery and explicit root-locale addresses; decision D12 and [`CHANGELOG.md`](../../CHANGELOG.md) |
