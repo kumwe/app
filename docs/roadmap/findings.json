@@ -343,58 +343,6 @@
             "forward_reference": "V2-DR-003 changes the artifact this section documents; the reference schedule and the off-host step must be restated for the reshaped payload and the reference transport."
         },
         {
-            "id": "V2-STU-005",
-            "title": "The media port and the external-source obligations the composition contract names have no host implementation",
-            "severity": "high",
-            "state": "in_progress",
-            "phase": "S",
-            "gate": "B",
-            "origin": "new",
-            "source_anchors": [
-                {
-                    "file": "src/Media/",
-                    "symbol": "MediaService and the storage adapter",
-                    "note": "Media exists as a module with its own storage and serving path, but nothing implements the canonical upload session state machine the composition contract negotiates, and no test proves the module's real limits agree with the contract's declared rejections."
-                },
-                {
-                    "file": "docs/roadmap/studio-integration.md",
-                    "symbol": "the external-source obligations",
-                    "note": "The contract's URL policy is lexical by construction. Redirect re-validation, response verification and defence against a host resolving differently between check and fetch are stated as host runtime obligations and cannot be discharged by it."
-                }
-            ],
-            "acceptance_test": "The media port drives the existing media module through the canonical upload session state machine, and every published media policy vector replays against it to the declared accepted plan or stable rejection, so the platform's real limits and the contract agree. Every external media or embed source passes the URL policy before any fetch, and a hardened fetcher refuses a redirect that leaves the policy, a response whose type contradicts its declaration, and a host that resolves to a refused address after the check, each asserted per category and never disclosing the candidate address.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null,
-            "work_package": "S-E",
-            "product_owner_decision": "Decision D16."
-        },
-        {
-            "id": "V2-STU-006",
-            "title": "There is no authenticated preview endpoint, so unpublished composition cannot be rendered without exposing it",
-            "severity": "high",
-            "state": "in_progress",
-            "phase": "S",
-            "gate": "B",
-            "origin": "new",
-            "source_anchors": [
-                {
-                    "file": "src/Kernel/ContainerFactory.php",
-                    "symbol": "the published content route",
-                    "note": "Published rendering is a public route by slug and the administrator editor links to the public address in a new tab. Nothing renders an unpublished document for an authorized actor."
-                },
-                {
-                    "file": "src/Http/Security/SecurityHeaders.php",
-                    "symbol": "the administrator content-security policy",
-                    "note": "The policy sends frame-ancestors none with a self-only script source. An embedded preview frame is the one deliberate change the integration requires, and it must be bounded to that route."
-                }
-            ],
-            "acceptance_test": "An authenticated, capability-gated, short-lived preview endpoint renders an unpublished composition document through the same template and theme path published output uses, so preview and publication cannot diverge. The preview channel is origin-pinned and replay-resistant on both ends: a foreign origin, a replayed sequence and a wrong channel identifier are each refused. The administrator content-security policy is otherwise byte-identical to its current value, with no inline script or style allowance introduced, proven by a policy test.",
-            "owner": "UNASSIGNED",
-            "closure_sha": null,
-            "work_package": "S-F",
-            "product_owner_decision": "Decision D16."
-        },
-        {
             "id": "V2-STU-007",
             "title": "Studio is a separate Blueprint-only model-version surface instead of contextual Content authoring",
             "severity": "critical",

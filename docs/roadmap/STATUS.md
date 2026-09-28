@@ -49,7 +49,7 @@ record, never this table. A phase with any open or pending entry cannot read as 
 | 5 — Enterprise scale | B | In progress — `P5-A`, `P5-B`, `P5-C`, `P5-D`, `P5-E`, `P5-F` delivered; `P5-G`, `P5-H`, `P5-I` open | — |
 | 6 — Continuity and introspection | B | In progress — `P6-A`, `P6-B`, `P6-C`, `P6-D` pending integration; 7 findings pending integration; in flight on `agent/recovery` | — |
 | 7 — Qualification | B | In progress — `P7-A` delivered; `P7-B`, `P7-C`, `P7-D`, `P7-E`, `P7-F`, `P7-G`, `P7-H`, `P7-I` open; 1 finding pending integration, 2 findings open; in flight on `agent/browser`, `agent/languages` | Phases 5 and 6 and `PL-G`; the Point 5 track for `P7-B` and `P7-F` … `P7-I` |
-| S — Studio contextual Content authoring | A, with a B integration | In progress — `S-A`, `S-B`, `S-C`, `S-D` delivered; `S-E`, `S-F` pending integration; `S-G` open; 2 findings pending integration, 1 finding open, 1 requirement pending integration; in flight on `agent/machine`, `agent/studio` | A Producer release re-pinning Studio past `0.1.0-beta.3`; none exists (pin kept 2026-09-24) |
+| S — Studio contextual Content authoring | A, with a B integration | In progress — `S-A`, `S-B`, `S-C`, `S-D`, `S-E`, `S-F` delivered; `S-G` open; 1 finding open, 1 requirement pending integration; in flight on `agent/machine` | A Producer release re-pinning Studio past `0.1.0-beta.3`; none exists (pin kept 2026-09-24) |
 | **Gate B** | | **Not assessed — criteria: 2 delivered, 3 pending integration, 7 open** | Phases 5, 6, 7 and S; the Point 5 track |
 | M — Maintainability | — | In progress — 2 findings open | Phase 3 seams settled. Blocks nothing. |
 | N — Native client platform contracts | — | Not started — Version 3 seed | Nothing in Version 2; blocks nothing. Decision D17, ADR 0009. |
@@ -72,7 +72,7 @@ definition remains in README, and the per-requirement detail is in
 | 5 | `P5-G`, `P5-H`, `P5-I` | — | `pr-152` | — |
 | 6 | `P6-A`, `P6-B`, `P6-C`, `P6-D` | `V2-DR-001`, `V2-DR-004`, `V2-DR-003`, `V2-DR-002`, `GM-BAK-04`, `GM-BAK-08`, `V2-OPS-001` | `pr-152` | `agent/recovery`: `P6-A`, `P6-B`, `P6-C`, `P6-D`, `V2-DR-001`, `V2-DR-004`, `V2-DR-003`, `V2-DR-002`, `GM-BAK-04`, `GM-BAK-08`, `V2-OPS-001` |
 | 7 | `P7-B`, `P7-C`, `P7-D`, `P7-E`, `P7-F`, `P7-G`, `P7-H`, `P7-I` | `V2-UX-001`, `V2-QA-014`, `GM-SUP-05` | `point-5`, `pr-152` | `agent/browser`: `V2-QA-014` |
-| S | `S-E`, `S-F`, `S-G` | `V2-STU-005`, `V2-STU-006`, `V2-STU-007`, `MACHINE-STUDIO-PARITY` | `pr-152` | `agent/machine`: `MACHINE-STUDIO-PARITY`; `agent/studio`: `S-E`, `S-F`, `V2-STU-005`, `V2-STU-006` |
+| S | `S-G` | `V2-STU-007`, `MACHINE-STUDIO-PARITY` | `pr-152` | `agent/machine`: `MACHINE-STUDIO-PARITY` |
 | M | — | `V2-ARC-002`, `V2-QA-010` | `maintainability` | — |
 | N | — | `V3-NC-001`, `V3-NC-002`, `V3-NC-003`, `V3-NC-004` | `version-3` | — |
 | evidence | — | `GM-AUD-02` | `point-5` | — |
@@ -87,7 +87,7 @@ delivered.
 <!-- acceptance-record:gate-b:begin -->
 | # | Criterion | State | Track | Entries not yet delivered |
 |---|---|---|---|---|
-| 1 | No repository-owned critical or high finding is open; every conditional and external risk has an owner, detection method, compensating control, remediation path and review date. | open | `point-5` | `V2-ERP-007`, `V2-REL-001`, `V2-REL-002`, `V2-DR-001`, `V2-DR-003`, `V2-DR-002`, `GM-BAK-04`, `GM-BAK-08`, `V2-OPS-001`, `P7-C`, `V2-STU-005`, `V2-STU-006`, `V2-STU-007`, `GM-AUD-02` |
+| 1 | No repository-owned critical or high finding is open; every conditional and external risk has an owner, detection method, compensating control, remediation path and review date. | open | `point-5` | `V2-ERP-007`, `V2-REL-001`, `V2-REL-002`, `V2-DR-001`, `V2-DR-003`, `V2-DR-002`, `GM-BAK-04`, `GM-BAK-08`, `V2-OPS-001`, `P7-C`, `V2-STU-007`, `GM-AUD-02` |
 | 2 | Concurrent capacity samples and explicitly labelled estimates are published from workflow hardware; an estimate is never a production guarantee. | delivered | `pr-152` | — |
 | 3 | Unrelated writes do not serialize on a definition row, commits lock no installation-wide head, fan-out and queue claims scale through batched workers, hot ledgers drain at twice expiry, and monitoring runs no unbudgeted exact count. | delivered | `pr-152` | — |
 | 4 | Point-in-time recovery is proven: coordinates on every engine, replay before and after a chosen transaction, the ordering rule enforced, and the drill run inside the deployed image. | pending-integration (`agent/recovery`) | `pr-152` | `P6-A`, `P6-B`, `P6-C`, `V2-DR-001`, `V2-DR-004`, `V2-DR-003`, `V2-DR-002`, `GM-BAK-04`, `GM-BAK-08` |
@@ -98,7 +98,7 @@ delivered.
 | 9 | An independent review at the release candidate finds no repository-owned critical or high contradiction. | open | `point-5` | `P7-I` |
 | 10 | The published envelope states exact units, topology, hardware, versions, dataset, variance and limitations, never 'millions per day'. | open | `pr-152` | `P0-D`, `P5-I` |
 | 11 | All nine languages ship and each is qualified in its own right, with zero horizontal overflow and zero inaccessible critical control. | pending-integration (`agent/languages`, `agent/browser`) | `pr-152` | `PL-G`, `V2-LNG-010` |
-| 12 | Studio contextual Content authoring ships and passes STUDIO-PROD-015 through PHP, with zero production Node.js or npm. | open (`agent/studio`, `agent/machine`) | `pr-152` | `S-E`, `S-F`, `S-G`, `V2-STU-005`, `V2-STU-006`, `V2-STU-007`, `MACHINE-STUDIO-PARITY` |
+| 12 | Studio contextual Content authoring ships and passes STUDIO-PROD-015 through PHP, with zero production Node.js or npm. | open (`agent/machine`) | `pr-152` | `S-G`, `V2-STU-007`, `MACHINE-STUDIO-PARITY` |
 <!-- acceptance-record:gate-b:end -->
 
 ## Decisions
@@ -135,7 +135,7 @@ further numbered decisions.
 Generated from [`findings.json`](findings.json) by `composer acceptance:summary`.
 
 <!-- acceptance-record:ledger-snapshot:begin -->
-**27 open findings** in [`findings.json`](findings.json). The ledger holds open work only.
+**25 open findings** in [`findings.json`](findings.json). The ledger holds open work only.
 
 | State | Count |
 |---|---|
@@ -143,7 +143,7 @@ Generated from [`findings.json`](findings.json) by `composer acceptance:summary`
 | `reproduced` | 1 |
 | `decision_required` | 0 |
 | `accepted_for_implementation` | 1 |
-| `in_progress` | 14 |
+| `in_progress` | 12 |
 | `verified` | 0 |
 | `conditional` | 2 |
 | `external` | 0 |
@@ -161,7 +161,7 @@ Generated from [`findings.json`](findings.json) by `composer acceptance:summary`
 | 5 | 0 |
 | 6 | 7 |
 | 7 | 3 |
-| S | 3 |
+| S | 1 |
 | M | 2 |
 | N | 4 |
 | evidence | 1 |
@@ -169,11 +169,11 @@ Generated from [`findings.json`](findings.json) by `composer acceptance:summary`
 | Gate | Findings |
 |---|---|
 | A | 0 |
-| B | 12 |
+| B | 10 |
 | none | 15 |
 
-By severity: 1 critical, 10 high, 11 medium, 5 low.
-By origin: 5 review, 5 gap-matrix, 17 new.
+By severity: 1 critical, 8 high, 11 medium, 5 low.
+By origin: 5 review, 5 gap-matrix, 15 new.
 <!-- acceptance-record:ledger-snapshot:end -->
 
 The 56 findings that were closed when this roadmap was consolidated have left the ledger. Their substance —
@@ -186,8 +186,9 @@ locale-addressing defect, the unreachable catalogue-refusal seam, the Studio con
 (`V2-STU-002`, package `S-B`) and PostgreSQL's schema-global non-primary-index namespace. In #152 the sign-in,
 idle-expiry, self-service and session-qualification findings (`GM-IDN-04` to `GM-IDN-07`), the Phase 5 scale
 findings (`V2-SCL-001`, `V2-SCL-002`, `V2-SCL-004` to `V2-SCL-008`), the audit-metadata guard (`GM-AUD-08`), the
-inline-style policy (`GM-SUP-08`), the tracing decision (`GM-OBS-05`) and the dashboard and read-only interface
-findings (`V2-UX-002`, `V2-UX-003`) left too. Their completed substance is recorded in the changelog.
+inline-style policy (`GM-SUP-08`), the tracing decision (`GM-OBS-05`), the dashboard and read-only interface
+findings (`V2-UX-002`, `V2-UX-003`) and the Studio media and preview findings (`V2-STU-005`, `V2-STU-006`) left
+too. Their completed substance is recorded in the changelog.
 
 ## Gate A criteria
 
