@@ -171,7 +171,7 @@ nobody told the record. This is the hole.
 | Add a test with no coverage attribute | PHPUnit risky | `#[CoversClass]` or a reasoned `#[CoversNothing]` path |
 | Add a Domain → Application or Delivery → Infrastructure import | `composer architecture:policy` | Invert it (port inward). Do not grow `dependency-baseline.json` |
 | Add a CLI command and edit `cli-v1.json` in place | `composer cli:contract` | Additive successor generation; the pinned count lives in the contract, tests, tools and roadmap prose — a successor generation moves them together |
-| Add an MCP tool and edit `mcp-v1.json` in place | `composer mcp:contract` | Same freeze. 75 tools. |
+| Add an MCP tool and edit `mcp-v1.json` in place | `composer mcp:contract` | Same freeze. v1 keeps 75 tools; the current `mcp-v2` generation has 83 and must keep serving v1 unchanged. |
 | Change a public extension type | `composer extension:contract` | Release a new `kumwe/extension-sdk` generation and update the App dependency pin. Never copy its fixtures into App. |
 | Edit XLIFF or a user-facing string | `translation:check` / `translation:strings` / `translation:quality` | `composer translation:compile` and commit compiled catalogues; a new identifier needs a real `<target>` in all nine catalogues |
 | Rebuild front-end and leave `public/assets/build` dirty | CI frontend job | Commit the hashed build, or don't rebuild |
@@ -319,9 +319,11 @@ composition root, not the default home for reusable behaviour. The machinery is 
 
 ```
 [ ] CLI: src/Delivery/Console/. MCP: src/Infrastructure/Mcp/.
-[ ] Do not overwrite docs/machine-contract/cli-v1.json or mcp-v1.json.
+[ ] Do not overwrite docs/machine-contract/cli-v1.json or mcp-v1.json. The current generations are
+    cli-v2 (src/Delivery/Console/Contract/cli-v2.json; `php tools/verify-cli-machine-contract.php
+    --rehash-successor` while unreleased) and mcp-v2 (`php tools/generate-mcp-machine-contract.php --write`).
     Incompatible or additive surface changes need a successor generation.
-[ ] The magic counts (44 commands, 75 MCP tools) live in the retained contract,
+[ ] The magic counts (v1: 44 commands, 75 MCP tools; v2: 45 and 83) live in the contracts,
     in tests, and in tools. A successor generation updates them together.
 [ ] composer cli:contract  /  composer mcp:contract
 [ ] composer baseline:record

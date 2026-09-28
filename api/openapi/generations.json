@@ -1,5 +1,5 @@
 {
-    "current": "1.0.0",
+    "current": "1.1.0",
     "format": "kumwe-rest-machine-contract-generations-v1",
     "generations": [
         {
@@ -13,6 +13,20 @@
             "generation": "1.0.0",
             "problem_registry": "api/problem-details/kumwe-v1.json",
             "problem_registry_sha256": "7715276508a830c4459eaa1f4df82d83daf48b1ea37f268bb90487a2a52a8a80",
+            "route_exclusions": "api/openapi/route-exclusions.json",
+            "route_exclusions_sha256": "59ac6b7a4f3e038918982a16c22d4d6869e76ab041a6a0d516be959ef3563f16"
+        },
+        {
+            "artifact": "api/openapi/generations/1.1.0/openapi.json",
+            "artifact_sha256": "7d10a28abca15e8aa44d1fe8af6046dc2a6b860518c199b1648f340bb78eb429",
+            "compatibility_fixture": "api/openapi/generations/1.1.0/compatibility.json",
+            "compatibility_fixture_sha256": "bb092320bab6e7039a4b83df9d35e1466c0bb806cb1b458d36ca32288840057f",
+            "compiler_generation_sha256": "66318063400c9c02d82abb7e258d7240f2d01f7d6c81c5742188ffb4900c1168",
+            "core": "api/openapi/generations/1.1.0/core.json",
+            "core_sha256": "b1a726bf9828a5cc5d3964a0cdf614777bc2d8d5144316f4002033fbf52124d8",
+            "generation": "1.1.0",
+            "problem_registry": "api/problem-details/generations/1.1.0.json",
+            "problem_registry_sha256": "b52a7a751e98ad947dd7a07bc73c46c82e33d719d9f5a14bcd2640a6d696319b",
             "route_exclusions": "api/openapi/route-exclusions.json",
             "route_exclusions_sha256": "59ac6b7a4f3e038918982a16c22d4d6869e76ab041a6a0d516be959ef3563f16"
         }

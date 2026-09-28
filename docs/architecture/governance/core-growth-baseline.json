@@ -5051,8 +5051,12 @@
         "Kumwe\\App\\Infrastructure\\Mcp\\McpMachineContract": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "f87b0d543c1e8c5f698701fd",
-            "growth": null
+            "surface": "bcd6595fe7e5d22d74fc55dc",
+            "growth": {
+                "classification": "host-infrastructure",
+                "implements": [],
+                "extends": null
+            }
         },
         "Kumwe\\App\\Infrastructure\\Mcp\\McpMutationGuard": {
             "kind": "class",

@@ -13,6 +13,7 @@ use Kumwe\App\Identity\Application\Administration\AdministratorSession;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\App\Delivery\Console\ConsoleApplication;
 use Kumwe\App\Delivery\Console\Contract\CliV1MachineContract;
+use Kumwe\App\Delivery\Console\Contract\CliV2MachineContract;
 use Kumwe\App\Kernel\ContainerFactory;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\App\Tests\Support\AuthorizationContext;
@@ -274,7 +275,7 @@ final class ManagementDeliveryTest extends TestCase
     }
 
     /**
-     * Prove the real composition root registers exactly the retained CLI command generation.
+     * Prove the real composition root registers exactly the current CLI generation, a superset of generation one.
      *
      * @return  void
      *
@@ -287,8 +288,14 @@ final class ManagementDeliveryTest extends TestCase
         self::assertInstanceOf(ConsoleApplication::class, $console);
 
         $names = $console->commandNames();
-        self::assertSame(CliV1MachineContract::contract()->commandNames(), $names);
-        self::assertCount(44, $names);
+        self::assertSame(CliV2MachineContract::contract()->commandNames(), $names);
+        self::assertCount(45, $names);
+        self::assertSame(
+            [],
+            array_values(array_diff(CliV1MachineContract::contract()->commandNames(), $names)),
+            'Every retained generation-one command stays registered.',
+        );
+        self::assertContains('studio-authoring', $names);
 
         // Every business feature reachable over REST is reachable from a shell too.
         self::assertContains('business-definition', $names);
