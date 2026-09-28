@@ -46,6 +46,35 @@ final readonly class PromtoolTests
      */
     public function group(string $alert, array $series, array $checks, array $labels, string $interval = '1m'): array
     {
+        $expected = $this->expectation($alert, $labels);
+        $tests = [];
+        foreach ($checks as $check) {
+            $tests[] = [
+                'eval_time' => $check['at'],
+                'alertname' => $alert,
+                'exp_alerts' => $check['fires'] ? [$expected] : [],
+            ];
+        }
+
+        return ['interval' => $interval, 'input_series' => $series, 'alert_rule_test' => $tests];
+    }
+
+    /**
+     * Build the exact labels and rendered annotations one firing instance of an alert must carry.
+     *
+     * promtool compares both exactly, so this is also how a test proves the runbook link is attached.
+     *
+     * @param   string                 $alert   Alert under test.
+     * @param   array<string, string>  $labels  Series labels the firing instance carries.
+     *
+     * @return  array{exp_labels: array<string, string>, exp_annotations: array<string, string>}  The expectation.
+     *
+     * @throws  RuleViolation  When the alert is unknown or the labels differ from what the rule carries.
+     *
+     * @since   2.0.0
+     */
+    public function expectation(string $alert, array $labels): array
+    {
         $rule = $this->alerts[$alert] ?? throw RuleViolation::at($alert, 'no such alert is declared');
         $expected = array_values(array_diff($this->carried[$alert] ?? [], array_keys($rule->labels)));
         sort($expected);
@@ -64,16 +93,8 @@ final readonly class PromtoolTests
         foreach ($rule->annotations as $key => $template) {
             $annotations[$key] = AnnotationTemplate::render($template, $all + ['alertname' => $alert]);
         }
-        $tests = [];
-        foreach ($checks as $check) {
-            $tests[] = [
-                'eval_time' => $check['at'],
-                'alertname' => $alert,
-                'exp_alerts' => $check['fires'] ? [['exp_labels' => $all, 'exp_annotations' => $annotations]] : [],
-            ];
-        }
 
-        return ['interval' => $interval, 'input_series' => $series, 'alert_rule_test' => $tests];
+        return ['exp_labels' => $all, 'exp_annotations' => $annotations];
     }
 
     /**

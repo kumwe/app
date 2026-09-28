@@ -1,0 +1,160 @@
+name: Observability drills
+
+# Proves the alerting contract end to end on every change: the rule files parse with the real promtool and
+# amtool, the committed promtool scenarios pass, and each page-severity alert fires on a condition induced in
+# the real application against a real database, links its runbook section, and clears after the recovery that
+# section prescribes. See docs/operations/monitoring.md#alert-drills.
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+  merge_group:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: observability-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  drills:
+    name: Alert drills / ${{ matrix.database.driver }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        database:
+          - driver: mariadb
+            image: mariadb:lts
+            port: 3306
+            version: mariadb-12.3.2
+            health: >-
+              --health-cmd "healthcheck.sh --connect --innodb_initialized"
+              --health-interval 5s --health-timeout 5s --health-retries 20
+          - driver: pgsql
+            image: postgres:17-alpine
+            port: 5432
+            version: '17'
+            health: >-
+              --health-cmd "pg_isready -U kumwe -d kumwe_test"
+              --health-interval 5s --health-timeout 5s --health-retries 20
+    services:
+      database:
+        image: ${{ matrix.database.image }}
+        env:
+          MARIADB_DATABASE: kumwe_test
+          MARIADB_USER: kumwe
+          MARIADB_PASSWORD: kumwe_test
+          MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: 'yes'
+          POSTGRES_DB: kumwe_test
+          POSTGRES_USER: kumwe
+          POSTGRES_PASSWORD: kumwe_test
+        ports:
+          - '${{ matrix.database.port }}:${{ matrix.database.port }}'
+        options: ${{ matrix.database.health }}
+      redis:
+        image: redis:8-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      APP_ENV: testing
+      APP_DEBUG: 'false'
+      APP_BASE_URL: https://kumwe.test
+      APP_TRUSTED_HOSTS: kumwe.test
+      EXTENSIONS_ALLOW_UNSIGNED_LOCAL: 'true'
+      DB_DRIVER: ${{ matrix.database.driver }}
+      DB_HOST: 127.0.0.1
+      DB_PORT: ${{ matrix.database.port }}
+      DB_NAME: kumwe_test
+      DB_USER: kumwe
+      DB_PASSWORD: kumwe_test
+      DB_TABLE_PREFIX: kumwe_
+      DB_SSLMODE: disable
+      DB_SERVER_VERSION: ${{ matrix.database.version }}
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: '6379'
+      REDIS_DATABASE: '0'
+      REDIS_NAMESPACE: kumwe.observability
+      KUMWE_SITE_CONTENT_PROFILE: blank
+      KUMWE_BUSINESS_DEMO: 'false'
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: '8.5'
+          extensions: ctype, fileinfo, filter, intl, json, mbstring, openssl, pcntl, pdo, pdo_mysql, pdo_pgsql, redis, sodium, zip
+          coverage: none
+          tools: composer:v2
+      - name: Provision admitted native runtime
+        uses: ./.github/actions/native-runtime
+      - name: Install the matching PostgreSQL client for the backup and restore drills
+        if: matrix.database.driver == 'pgsql'
+        uses: ./.github/actions/database-client
+        with:
+          driver: pgsql
+      # As in the recovery workflow: the MariaDB clients run inside the exact server image, so the backup drills
+      # never dump with a host client older than the server.
+      - name: Run the MariaDB clients inside the server image for the backup and restore drills
+        if: matrix.database.driver == 'mariadb'
+        shell: bash
+        env:
+          KUMWE_DATABASE_CONTAINER: ${{ job.services.database.id }}
+        run: |
+          set -euo pipefail
+          install -d -m 0700 "$RUNNER_TEMP/drill-bin"
+          for name in mariadb mariadb-dump; do
+            printf '#!/usr/bin/env bash\nexec docker exec --interactive --env MYSQL_PWD %q "$(basename -- "$0")" "$@"\n' \
+              "$KUMWE_DATABASE_CONTAINER" > "$RUNNER_TEMP/drill-bin/$name"
+            chmod 0700 "$RUNNER_TEMP/drill-bin/$name"
+          done
+          echo "$RUNNER_TEMP/drill-bin" >> "$GITHUB_PATH"
+      - name: Install locked dependencies
+        run: composer install --no-interaction --prefer-dist
+      - name: Generate ephemeral application secret
+        shell: bash
+        run: echo "APP_SECRET=$(openssl rand -base64 48 | tr -d '\n')" >> "$GITHUB_ENV"
+      - name: Prepare the schema
+        run: |
+          php tests/Support/install-parent-schema.php
+          if [ "$DB_DRIVER" = mariadb ]; then php tools/agent-collation-normalize.php; fi
+          php bin/kumwe database:migrate
+          if [ "$DB_DRIVER" = mariadb ]; then php tools/agent-collation-normalize.php; fi
+      # The storage drill fills the media volume, so it gets a small volume of its own rather than the runner's disk.
+      - name: Mount a small media volume for the storage drill
+        run: |
+          install -d storage/media
+          sudo mount -t tmpfs -o size=64m,mode=0777 tmpfs storage/media
+      - name: Check rules and inhibitions, then induce, fire and clear every page alert
+        run: bash tools/alert-drill.sh --require-all
+      - name: Publish the drill verdicts
+        if: always()
+        shell: bash
+        run: |
+          if [ -f build/observability/drills.json ]; then
+            {
+              echo "### Alert drills on ${{ matrix.database.driver }}"
+              echo
+              echo '| Drill | Alert | Verdict | Seconds |'
+              echo '| --- | --- | --- | --- |'
+              jq -r '.drills[] | "| \(.id) | \(.alert) | \(.status) | \(.seconds) |"' build/observability/drills.json
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Retain the evidence, fixtures and process logs
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: alert-drills-${{ matrix.database.driver }}
+          path: |
+            build/observability/drills.json
+            build/observability/drills
+            build/observability/work/logs
+          if-no-files-found: warn
+          retention-days: 14

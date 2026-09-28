@@ -1779,22 +1779,40 @@
       "reference": "docs/roadmap/README.md#phase-7--production-qualification-and-vertical-neutral-proof",
       "runtime_owner": [
         "config/observability.php",
+        "src/Infrastructure/Observability/CorrelationContext.php",
+        "src/Infrastructure/Observability/OperationalStatusCollector.php",
+        "src/Infrastructure/Persistence/Migration/AsyncTraceContextMigration.php",
+        "tools/recovery-common.sh",
         "deploy/observability/alerts.yaml",
-        "docs/operations/monitoring.md"
+        "deploy/observability/alertmanager.yaml",
+        "deploy/observability/dashboards",
+        "tools/synthetic-probe.php",
+        "tools/alert-drill.php",
+        "docs/operations/monitoring.md",
+        "docs/operations/runbooks.md"
       ],
       "tests": [
-        "tests/Unit/Infrastructure/Observability"
+        "tests/Unit/Infrastructure/Observability",
+        "tests/Unit/Observability",
+        "tests/Unit/Tools/RecoveryStructuredLogTest.php",
+        "tests/Integration/Infrastructure/AsyncTraceContextPropagationIntegrationTest.php",
+        "tests/Integration/Infrastructure/ObservabilityMetricsIntegrationTest.php"
       ],
       "workflows": [
-        ".github/workflows/ci.yml#database"
+        ".github/workflows/ci.yml#quality",
+        ".github/workflows/ci.yml#database",
+        ".github/workflows/observability.yml#drills"
       ],
-      "artifacts": [],
-      "decision": "D6, ADR 0021",
-      "state": "open",
+      "artifacts": [
+        ".github/workflows/observability.yml#alert-drills-${{ matrix.database.driver }}",
+        "docs/roadmap/decisions/0022-trace-propagation-without-an-exporter.md"
+      ],
+      "decision": "D6, ADR 0021, ADR 0022",
+      "state": "delivered",
       "track": "pr-152",
       "branches": [],
       "branch_evidence": [],
-      "outstanding": "The wave 7 contract and its Prometheus rules ship, and GM-OBS-05 is decided by ADR 0022: propagation without an exporter, stated as such. Synthetic probes, business-versus-transport dashboards and operator drills proving each critical alert actionable are not built, and no branch carries them.",
+      "outstanding": null,
       "gate_b_criteria": [],
       "findings": [
         "GM-OBS-05"

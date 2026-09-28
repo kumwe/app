@@ -15,6 +15,7 @@ vendor
 storage/cache/*
 storage/logs/*
 storage/media/*
+storage/operations/*
 storage/sessions/*
 storage/tmp/*
 !storage/cache/.gitkeep
