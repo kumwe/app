@@ -11,6 +11,7 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Logging\Middleware;
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
+use Doctrine\DBAL\Platforms\MariaDBPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Types\Types;
 use Kumwe\App\Kernel\Container;
@@ -29,6 +30,7 @@ use Kumwe\App\BusinessRecord\Application\BusinessRecordService;
 use Kumwe\App\BusinessRecord\Application\Command\CreateRecordCommand;
 use Kumwe\App\BusinessRecord\Application\Command\RelateRecordsCommand;
 use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
+use Kumwe\App\BusinessRecord\Application\Exception\InvalidBusinessRecordQuery;
 use Kumwe\App\BusinessRecord\Application\InstalledBusinessRecordDefinitionResolver;
 use Kumwe\App\BusinessRecord\Application\RecordBrowseResult;
 use Kumwe\App\BusinessRecord\Application\RecordCursorCodec;
@@ -50,7 +52,9 @@ use Kumwe\App\BusinessSurface\Application\BusinessSurface;
 use Kumwe\App\BusinessSurface\Application\BusinessSurfaceCatalog;
 use Kumwe\App\BusinessSurface\Application\BusinessSurfaceOperation;
 use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
+use Kumwe\App\Infrastructure\Persistence\BoundedStatementExecutor;
 use Kumwe\App\Infrastructure\Persistence\DoctrineTransactionManager;
+use Kumwe\App\Infrastructure\Persistence\StatementBudget;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\App\Tests\Support\BusinessQueryCounter;
@@ -65,6 +69,7 @@ use Ramsey\Uuid\Uuid;
 #[CoversClass(BusinessSurfaceCatalog::class)]
 #[CoversClass(DoctrineBusinessRecordAccessController::class)]
 #[CoversClass(DoctrineBusinessRecordReadRepository::class)]
+#[CoversClass(BoundedStatementExecutor::class)]
 /**
  * Proves generated discovery and relationship hydration keep constant database-query budgets.
  *
@@ -389,6 +394,153 @@ final class GeneratedBusinessQueryBudgetIntegrationTest extends TestCase
      */
     public function testRelationshipIncludeQueryBudgetDoesNotGrowWithPageSize(): void
     {
+        [$container, $context, $owner] = $this->relationshipFixture(12);
+        $counter = new BusinessQueryCounter();
+        $countedConnection = $this->countedConnection(
+            $this->service($container, Connection::class),
+            $counter,
+        );
+        try {
+            $reader = $this->reader($container, $countedConnection);
+            [$small, $smallQueries, $smallBookkeeping] = $this->browse(
+                $container,
+                $context,
+                $reader,
+                $counter,
+                $owner->handle,
+                1,
+            );
+            [$large, $largeQueries, $largeBookkeeping] = $this->browse(
+                $container,
+                $context,
+                $reader,
+                $counter,
+                $owner->handle,
+                12,
+            );
+        } finally {
+            $countedConnection->close();
+        }
+
+        self::assertCount(1, $small->records);
+        self::assertCount(12, $large->records);
+        self::assertSame(2, $smallQueries, 'A page with one include should use one page and one include query.');
+        self::assertSame(
+            $this->expectedBookkeeping($countedConnection, $smallQueries),
+            $smallBookkeeping,
+            'Each bounded statement adds only its fixed time-budget bookkeeping.',
+        );
+        self::assertSame($smallBookkeeping, $largeBookkeeping);
+        self::assertSame(
+            $smallQueries,
+            $largeQueries,
+            'Relationship hydration must not issue one query per row.',
+        );
+        foreach ($large->records as $record) {
+            self::assertCount(1, $record->includes['tags']);
+        }
+    }
+
+    /**
+     * Every browse statement is sent under the engine's execution-time bound.
+     *
+     * MariaDB carries the bound on the statement itself; PostgreSQL sets a transaction-local timeout
+     * before each bounded statement, which the counted connection opens its own transaction for.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testEveryBrowseStatementCarriesTheServerTimeBudget(): void
+    {
+        [$container, $context, $owner] = $this->relationshipFixture(3);
+        $counter = new BusinessQueryCounter();
+        $countedConnection = $this->countedConnection($this->service($container, Connection::class), $counter);
+        try {
+            [$page, $data, $bookkeeping] = $this->browse(
+                $container,
+                $context,
+                $this->reader($container, $countedConnection, new StatementBudget(4_000)),
+                $counter,
+                $owner->handle,
+                3,
+            );
+            $platform = $countedConnection->getDatabasePlatform();
+        } finally {
+            $countedConnection->close();
+        }
+
+        self::assertCount(3, $page->records);
+        self::assertSame(2, $data);
+        $statements = array_column($counter->statements(), 'sql');
+        if ($platform instanceof PostgreSQLPlatform) {
+            self::assertSame(2, $bookkeeping);
+            self::assertSame(
+                2,
+                count(array_filter(
+                    $statements,
+                    static fn (string $sql): bool => $sql === "SET LOCAL statement_timeout = '4000ms'",
+                )),
+            );
+
+            return;
+        }
+        self::assertSame(0, $bookkeeping);
+        $bounded = array_filter(
+            $statements,
+            static fn (string $sql): bool => str_starts_with($sql, $platform instanceof MariaDBPlatform
+                ? 'SET STATEMENT max_statement_time = 4.000000 FOR SELECT'
+                : 'SELECT /*+ MAX_EXECUTION_TIME(4000) */'),
+        );
+        self::assertCount(2, $bounded, 'The page and include statements must both carry the time bound.');
+    }
+
+    /**
+     * A page whose rows pass the byte budget is refused as a query to narrow, not returned or truncated.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAPagePassingTheByteBudgetIsRefusedAsAQueryToNarrow(): void
+    {
+        [$container, $context, $owner] = $this->relationshipFixture(3);
+        $counter = new BusinessQueryCounter();
+        $countedConnection = $this->countedConnection($this->service($container, Connection::class), $counter);
+        try {
+            $narrow = $this->reader($container, $countedConnection, new StatementBudget(5_000, 256));
+            try {
+                $this->browse($container, $context, $narrow, $counter, $owner->handle, 3);
+                self::fail('A page wider than its byte budget must be refused.');
+            } catch (InvalidBusinessRecordQuery $refused) {
+                self::assertStringContainsString('byte budget', $refused->getMessage());
+            }
+            [$page] = $this->browse(
+                $container,
+                $context,
+                $this->reader($container, $countedConnection),
+                $counter,
+                $owner->handle,
+                3,
+            );
+        } finally {
+            $countedConnection->close();
+        }
+        self::assertCount(3, $page->records);
+    }
+
+    /**
+     * Install a relationship owner, target and line definition and relate one target to each owner record.
+     *
+     * @param   int  $count  Number of owner records, each related to one new target.
+     *
+     * @return  array{Container, ExecutionContext, EntityTypeDefinition}  Container, administrator context
+     *          and the installed owner definition.
+     *
+     * @since   2.0.0
+     */
+    private function relationshipFixture(int $count): array
+    {
         $container = TestKernelFactory::create(Environment::fromGlobals());
         $context = TestKernelFactory::administratorContext($container);
         $suffix = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), -10));
@@ -413,7 +565,7 @@ final class GeneratedBusinessQueryBudgetIntegrationTest extends TestCase
             ),
         );
         $records = $this->service($container, BusinessRecordService::class);
-        for ($index = 1; $index <= 12; ++$index) {
+        for ($index = 1; $index <= $count; ++$index) {
             $targetId = Uuid::uuid7()->toString();
             $ownerId = Uuid::uuid7()->toString();
             $records->create(new CreateRecordCommand(
@@ -441,44 +593,24 @@ final class GeneratedBusinessQueryBudgetIntegrationTest extends TestCase
             ));
         }
 
-        $counter = new BusinessQueryCounter();
-        $countedConnection = $this->countedConnection(
-            $this->service($container, Connection::class),
-            $counter,
-        );
-        try {
-            $reader = $this->reader($container, $countedConnection);
-            [$small, $smallQueries] = $this->browse(
-                $container,
-                $context,
-                $reader,
-                $counter,
-                $owner->handle,
-                1,
-            );
-            [$large, $largeQueries] = $this->browse(
-                $container,
-                $context,
-                $reader,
-                $counter,
-                $owner->handle,
-                12,
-            );
-        } finally {
-            $countedConnection->close();
-        }
 
-        self::assertCount(1, $small->records);
-        self::assertCount(12, $large->records);
-        self::assertSame(2, $smallQueries, 'A page with one include should use one page and one include query.');
-        self::assertSame(
-            $smallQueries,
-            $largeQueries,
-            'Relationship hydration must not issue one query per row.',
-        );
-        foreach ($large->records as $record) {
-            self::assertCount(1, $record->includes['tags']);
-        }
+        return [$container, $context, $owner];
+    }
+
+    /**
+     * Time-budget bookkeeping statements expected beside the given number of bounded statements.
+     *
+     * @param   Connection  $connection  Counted connection, which holds no transaction of its own.
+     * @param   int         $bounded     Bounded data statements.
+     *
+     * @return  int  One transaction-local timeout per statement on PostgreSQL; none on MariaDB or MySQL,
+     *          whose bound travels on the statement.
+     *
+     * @since   2.0.0
+     */
+    private function expectedBookkeeping(Connection $connection, int $bounded): int
+    {
+        return $connection->getDatabasePlatform() instanceof PostgreSQLPlatform ? $bounded : 0;
     }
 
     /**
@@ -673,7 +805,8 @@ final class GeneratedBusinessQueryBudgetIntegrationTest extends TestCase
      * Construct the production DBAL reader with only its connection instrumented.
      *
      * @param   Container   $container   Real composition root supplying reader dependencies.
-     * @param   Connection  $connection  Instrumented DBAL connection.
+     * @param   Connection       $connection  Instrumented DBAL connection.
+     * @param   StatementBudget  $budget      Time and byte budget of each browse statement.
      *
      * @return  DoctrineBusinessRecordReadRepository  Real physical-table reader.
      *
@@ -682,6 +815,7 @@ final class GeneratedBusinessQueryBudgetIntegrationTest extends TestCase
     private function reader(
         Container $container,
         Connection $connection,
+        StatementBudget $budget = new StatementBudget(),
     ): DoctrineBusinessRecordReadRepository {
         $definitions = $this->service($container, BusinessDefinitionRepository::class);
         $installations = $this->service($container, BusinessSchemaInstallationRepository::class);
@@ -707,6 +841,7 @@ final class GeneratedBusinessQueryBudgetIntegrationTest extends TestCase
             $installations,
             $fence,
             $this->service($container, RecordFieldVisibility::class),
+            $budget,
         );
     }
 
@@ -720,7 +855,8 @@ final class GeneratedBusinessQueryBudgetIntegrationTest extends TestCase
      * @param   string                                $definition  Installed owner handle.
      * @param   int                                   $pageSize    Number of source rows requested.
      *
-     * @return  array{RecordBrowseResult, int}  Browse result and exact DBAL statement count.
+     * @return  array{RecordBrowseResult, int, int}  Browse result, exact count of data statements, and
+     *          count of the time-budget bookkeeping statements sent beside them.
      *
      * @since   2.0.0
      */
@@ -763,7 +899,18 @@ final class GeneratedBusinessQueryBudgetIntegrationTest extends TestCase
             );
         });
 
-        return [$result, $counter->queries()];
+        $bookkeeping = 0;
+        foreach ($counter->statements() as $statement) {
+            if (
+                str_starts_with($statement['sql'], 'SET LOCAL statement_timeout')
+                || str_starts_with($statement['sql'], 'SAVEPOINT kumwe_statement_budget')
+                || str_starts_with($statement['sql'], 'ROLLBACK TO SAVEPOINT kumwe_statement_budget')
+            ) {
+                ++$bookkeeping;
+            }
+        }
+
+        return [$result, $counter->queries() - $bookkeeping, $bookkeeping];
     }
 
     /**

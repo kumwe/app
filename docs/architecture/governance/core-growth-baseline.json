@@ -1843,7 +1843,7 @@
         "Kumwe\\App\\BusinessRecord\\Infrastructure\\Persistence\\DoctrineBusinessRecordReadRepository": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "91366e3fb7bf4c42bef73bec",
+            "surface": "3168f5f77841ac6031b56ce8",
             "growth": {
                 "classification": "host-infrastructure",
                 "implements": [
@@ -2978,12 +2978,12 @@
         "Kumwe\\App\\Content\\Infrastructure\\Persistence\\DoctrineContentRepository": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "b01c51158c2bff2fca243c79",
+            "surface": "c1e24bb3a861fc228ba47d3d",
             "growth": {
                 "classification": "host-infrastructure",
                 "implements": [
-                    "Kumwe\\App\\Content\\Application\\ContentSearchRepository",
-                    "Kumwe\\App\\Content\\Application\\SiteScopedContentRepository"
+                    "Kumwe\\Content\\Application\\ContentSearchRepository",
+                    "Kumwe\\Content\\Application\\SiteScopedContentRepository"
                 ],
                 "extends": null
             }
@@ -5036,7 +5036,7 @@
         "Kumwe\\App\\Infrastructure\\Automation\\DoctrineJobQueue": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "5b42baf0d4bf61a5416d068f",
+            "surface": "4898966959e4e78b35966a18",
             "growth": {
                 "classification": "host-infrastructure",
                 "implements": [
@@ -5449,6 +5449,16 @@
                 "extends": null
             }
         },
+        "Kumwe\\App\\Infrastructure\\Persistence\\BoundedStatementExecutor": {
+            "kind": "class",
+            "layer": "infrastructure",
+            "surface": "974b56e317bb2fa704b8ab7d",
+            "growth": {
+                "classification": "host-infrastructure",
+                "implements": [],
+                "extends": null
+            }
+        },
         "Kumwe\\App\\Infrastructure\\Persistence\\DoctrineConnectionFactory": {
             "kind": "class",
             "layer": "infrastructure",
@@ -5460,6 +5470,16 @@
             "layer": "infrastructure",
             "surface": "07bce62e8c7970f7e7f9a16e",
             "growth": null
+        },
+        "Kumwe\\App\\Infrastructure\\Persistence\\DoctrineLargestTable": {
+            "kind": "class",
+            "layer": "infrastructure",
+            "surface": "93a8e0ddfe5dcdebd7a04b15",
+            "growth": {
+                "classification": "host-infrastructure",
+                "implements": [],
+                "extends": null
+            }
         },
         "Kumwe\\App\\Infrastructure\\Persistence\\DoctrineSecretOnceIdempotencyLedger": {
             "kind": "class",
@@ -5482,7 +5502,7 @@
         "Kumwe\\App\\Infrastructure\\Persistence\\FilesystemStorageReserve": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "32d18e8482eeecab777cddb4",
+            "surface": "feca253cc8660d86ba2b6e1f",
             "growth": {
                 "classification": "host-infrastructure",
                 "implements": [],
@@ -5954,6 +5974,26 @@
             "layer": "infrastructure",
             "surface": "774226a4f8f01e567a6aeab0",
             "growth": null
+        },
+        "Kumwe\\App\\Infrastructure\\Persistence\\StatementBudget": {
+            "kind": "class",
+            "layer": "infrastructure",
+            "surface": "0cde9ce187bef6c61a5ca7a8",
+            "growth": {
+                "classification": "host-infrastructure",
+                "implements": [],
+                "extends": null
+            }
+        },
+        "Kumwe\\App\\Infrastructure\\Persistence\\StatementBudgetExceeded": {
+            "kind": "class",
+            "layer": "infrastructure",
+            "surface": "3dedec4fe64637d0aad229fa",
+            "growth": {
+                "classification": "host-infrastructure",
+                "implements": [],
+                "extends": "RuntimeException"
+            }
         },
         "Kumwe\\App\\Infrastructure\\Persistence\\TableNames": {
             "kind": "class",

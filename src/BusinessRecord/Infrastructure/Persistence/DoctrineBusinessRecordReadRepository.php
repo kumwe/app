@@ -37,6 +37,9 @@ use Kumwe\App\BusinessRecord\Application\ResolvedBusinessDefinition;
 use Kumwe\App\BusinessRecord\Application\StoredOwnedLine;
 use Kumwe\App\BusinessRecord\Application\StoredRecordIdentity;
 use Kumwe\App\BusinessRecord\Domain\RecordValueProtection;
+use Kumwe\App\Infrastructure\Persistence\BoundedStatementExecutor;
+use Kumwe\App\Infrastructure\Persistence\StatementBudget;
+use Kumwe\App\Infrastructure\Persistence\StatementBudgetExceeded;
 use Kumwe\Record\Model\BusinessRecord;
 use Kumwe\Record\Model\RecordScope;
 use Kumwe\Record\Query\CursorPosition;
@@ -66,7 +69,10 @@ use Kumwe\BusinessSchema\Domain\SchemaInstallationStatus;
  * `DoctrineBusinessRecordQueryCompiler` and writing to `DoctrineBusinessRecordWriteRepository`.
  * Anything the installed schema cannot answer is refused as `BusinessRecordSchemaUnavailable`; unlike
  * `DoctrineBusinessRecordMutationFence` this adapter does not translate driver failures, so a DBAL
- * exception reaches the caller as raised.
+ * exception reaches the caller as raised. The page, aggregate, reference and include statements of a
+ * browse each run under the `StatementBudget` through `BoundedStatementExecutor`: the engine cancels a
+ * statement at the execution-time bound and a result whose column bytes pass the byte bound is released
+ * before it is decoded, and either is refused as `InvalidBusinessRecordQuery` so the caller narrows it.
  *
  * @since  2.0.0
  */
@@ -113,6 +119,8 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
      *         installation still for the rest of the transaction before that target is read.
      * @param  RecordFieldVisibility                 $visibility     Judges each field's read visibility
      *         over the complete decoded row before any projection narrows it.
+     * @param  StatementBudget                       $browseBudget   Server execution time and
+     *         materialized bytes each browse statement may use; 5 s and 8 MiB unless the caller narrows it.
      *
      * @since  2.0.0
      */
@@ -126,6 +134,7 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
         private BusinessSchemaInstallationRepository $installations,
         private BusinessRecordMutationFence $fence,
         private RecordFieldVisibility $visibility,
+        private StatementBudget $browseBudget = new StatementBudget(),
     ) {
     }
 
@@ -619,11 +628,7 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
         BusinessRecordAccessPlan $access,
     ): RecordBrowseResult {
         $compiled = $this->queries->compile($resolved, $scope, $specification, $access);
-        $rows = $this->database->executeQuery(
-            $compiled->sql,
-            $compiled->parameters,
-            $compiled->types,
-        )->fetchAllAssociative();
+        $rows = $this->bounded($compiled->sql, $compiled->parameters, $compiled->types);
         $hasMore = count($rows) > $specification->pageSize;
         if ($hasMore) {
             array_pop($rows);
@@ -701,11 +706,11 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
 
         $aggregates = [];
         if ($compiled->aggregateSql !== null) {
-            $row = $this->database->executeQuery(
+            $row = $this->bounded(
                 $compiled->aggregateSql,
                 $compiled->aggregateParameters,
                 $compiled->aggregateTypes,
-            )->fetchAssociative();
+            )[0] ?? false;
             if ($row !== false) {
                 foreach ($row as $alias => $value) {
                     if (is_float($value) || (!is_int($value) && !is_string($value) && $value !== null)) {
@@ -865,13 +870,13 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
             $where[] = $policy->sql;
             array_push($parameters, ...$policy->parameters);
             array_push($types, ...$policy->types);
-            $rows = $this->database->executeQuery(sprintf(
+            $rows = $this->bounded(sprintf(
                 'SELECT r0.%s AS record_key, r0.%s AS public_id FROM %s r0 WHERE %s',
                 $this->quote($this->physical($table, 'record_id')),
                 $this->quote($identity),
                 $this->quote($table->physicalName),
                 implode(' AND ', $where),
-            ), $parameters, $types)->fetchAllAssociative();
+            ), $parameters, $types);
             $public = [];
             foreach ($rows as $row) {
                 $public[$this->string($row, 'record_key')] = $this->string($row, 'public_id');
@@ -1260,7 +1265,7 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
      */
     private function boundedIncludedRows(string $sql, array $parameters, array $types): array
     {
-        $rows = $this->database->executeQuery($sql, $parameters, $types)->fetchAllAssociative();
+        $rows = $this->bounded($sql, $parameters, $types);
         if (count($rows) > self::MAX_INCLUDED_ROWS) {
             throw new InvalidBusinessRecordQuery(
                 'A relationship include exceeds the bounded row budget; reduce the page or requested includes.',
@@ -2265,6 +2270,39 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
     private function quote(string $identifier): string
     {
         return $this->database->getDatabasePlatform()->quoteSingleIdentifier($identifier);
+    }
+
+    /**
+     * Run one browse statement under the browse budget, refusing it as a query the caller must narrow.
+     *
+     * @param   string                           $sql         Complete policy-filtered select.
+     * @param   list<mixed>                      $parameters  Bound values.
+     * @param   list<string|ArrayParameterType>  $types       DBAL parameter types.
+     *
+     * @return  list<array<string, mixed>>  The rows.
+     *
+     * @throws  InvalidBusinessRecordQuery  When the engine cancelled the statement at the time bound or
+     *          its rows passed the byte bound.
+     * @throws  DbalException  When the driver rejects the statement for any other reason.
+     *
+     * @since   2.0.0
+     */
+    private function bounded(string $sql, array $parameters, array $types): array
+    {
+        try {
+            return (new BoundedStatementExecutor($this->database))->fetchAll(
+                $sql,
+                $parameters,
+                $types,
+                $this->browseBudget,
+            );
+        } catch (StatementBudgetExceeded $exceeded) {
+            throw new InvalidBusinessRecordQuery(
+                $exceeded->bound === StatementBudgetExceeded::TIME
+                    ? 'The query exceeded its execution-time budget; narrow the filter or reduce the page size.'
+                    : 'The result exceeded its byte budget; reduce the page size or requested includes.',
+            );
+        }
     }
 
     /**
