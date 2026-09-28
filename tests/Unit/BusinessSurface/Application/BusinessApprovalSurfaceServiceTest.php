@@ -13,9 +13,13 @@ use Kumwe\Access\AuthorizationGateway;
 use Kumwe\Access\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Context\Value\SiteContext;
+use Kumwe\Approval\ApprovalDenied;
 use Kumwe\Approval\ApprovalQueryRepository;
 use Kumwe\Approval\ApprovalQueryService;
+use Kumwe\Approval\ApprovalRepository;
 use Kumwe\Approval\ApprovalRequestView;
+use Kumwe\Approval\ApprovalService;
+use Kumwe\Approval\StepUpProofConsumer;
 use Kumwe\Approval\ApprovalStatus;
 use Kumwe\Access\MembershipDirectory;
 use Kumwe\App\BusinessSurface\Application\BusinessApprovalExposureCatalog;
@@ -23,9 +27,12 @@ use Kumwe\App\BusinessSurface\Application\BusinessApprovalSurfaceService;
 use Kumwe\App\BusinessSurface\Application\BusinessSurface;
 use Kumwe\Access\Capability;
 use Kumwe\App\Tests\Support\AuthorizationContext;
+use Kumwe\App\Tests\Support\RecordingAuditRecorder;
+use Kumwe\Transaction\Testing\ImmediateTransactionManager;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
+use Ramsey\Uuid\UuidFactory;
 
 #[CoversClass(BusinessApprovalSurfaceService::class)]
 /**
@@ -130,15 +137,70 @@ final class BusinessApprovalSurfaceServiceTest extends TestCase
     }
 
     /**
+     * Proves cancellation reaches the canonical workflow only for a request visible on the caller's surface.
+     *
+     * A request that is hidden, malformed or unrelated is refused with the same non-enumerating denial before the
+     * workflow locks anything; a visible request is handed to `ApprovalService::cancel()`, whose own requester,
+     * surface-binding and pending-state checks then decide, here refusing because the store holds no such row.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testCancellationReachesTheWorkflowOnlyForARequestVisibleOnTheSurface(): void
+    {
+        $exposed = $this->approval(
+            '0191574f-f0b8-7bf3-a9aa-91c6b8244e41',
+            'business_record',
+            self::DEFINITION . ':018f22e2-7c8b-7ab0-8f3a-88e8026bb821',
+            'business.record.action:approve',
+        );
+        $hidden = $this->approval(
+            '0191574f-f0b8-7bf3-a9aa-91c6b8244e42',
+            'business_record',
+            self::DEFINITION . ':018f22e2-7c8b-7ab0-8f3a-88e8026bb822',
+            'business.record.action:withdraw',
+        );
+        $context = AuthorizationContext::principal(['business.approval.request', 'business.approval.approve'])->context(
+            SiteContext::default(),
+            AuthenticationStrength::BearerToken,
+            'approval-surface-cancel-test',
+            surface: AuthenticatedSurface::Api,
+        );
+
+        $hiddenWorkflow = $this->createMock(ApprovalRepository::class);
+        $hiddenWorkflow->expects(self::never())->method('lock');
+        try {
+            $this->service([$hidden, $exposed], $hiddenWorkflow)->businessCancel(
+                $context,
+                BusinessSurface::Api,
+                $hidden->id,
+            );
+            self::fail('A request hidden on this surface was handed to the workflow.');
+        } catch (ApprovalDenied) {
+        }
+
+        $visibleWorkflow = $this->createMock(ApprovalRepository::class);
+        $visibleWorkflow->expects(self::once())->method('lock')->with($exposed->id)->willReturn(null);
+        $this->expectException(ApprovalDenied::class);
+        $this->service([$hidden, $exposed], $visibleWorkflow)->businessCancel(
+            $context,
+            BusinessSurface::Api,
+            $exposed->id,
+        );
+    }
+
+    /**
      * Build the gate around real generic query authorization and deterministic exposure metadata.
      *
      * @param   list<ApprovalRequestView>  $approvals  Repository-visible generic approvals.
+     * @param   ?ApprovalRepository        $workflow   Workflow store the cancellation reaches, or an inert stub.
      *
      * @return  BusinessApprovalSurfaceService  Fully executable shared surface gate.
      *
      * @since   2.0.0
      */
-    private function service(array $approvals): BusinessApprovalSurfaceService
+    private function service(array $approvals, ?ApprovalRepository $workflow = null): BusinessApprovalSurfaceService
     {
         $repository = $this->createStub(ApprovalQueryRepository::class);
         $repository->method('visible')->willReturn($approvals);
@@ -191,7 +253,19 @@ final class BusinessApprovalSurfaceServiceTest extends TestCase
             },
         );
 
-        return new BusinessApprovalSurfaceService($query, $exposure);
+        $cancellation = new ApprovalService(
+            $workflow ?? $this->createStub(ApprovalRepository::class),
+            $this->createStub(StepUpProofConsumer::class),
+            $this->createStub(MembershipDirectory::class),
+            new ImmediateTransactionManager(),
+            AuthorizationContext::gateway(),
+            AuthorizationContext::ownershipWriter(),
+            new RecordingAuditRecorder(),
+            $clock,
+            new UuidFactory(),
+        );
+
+        return new BusinessApprovalSurfaceService($query, $exposure, $cancellation);
     }
 
     /**

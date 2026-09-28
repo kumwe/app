@@ -16338,6 +16338,14 @@
         <source>The Studio authoring request was refused.</source>
       </segment>
     </unit>
+    <unit id="core.console.security_events.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/SecurityEventsCommand.php.</note>
+      </notes>
+      <segment>
+        <source>List the newest identity and access security events.</source>
+      </segment>
+    </unit>
     <unit id="core.console.settings.description">
       <notes>
         <note category="context">Console command summary on src/Delivery/Console/Command/ManageSettingsCommand.php.</note>

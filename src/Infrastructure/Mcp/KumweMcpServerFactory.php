@@ -43,7 +43,8 @@ final readonly class KumweMcpServerFactory
      * @param  McpCatalogValidator     $validator      Gate every built server's catalogue is proven against;
      *         stateless, so the default instance is the one the container also shares.
      * @param  LoggerInterface         $logger         Records registration defects and unexpected tool failures;
-     *         application refusals are returned as redacted tool results instead.
+     *         application refusals are returned as redacted tool results instead. The SDK reaches it only
+     *         through `McpProtocolLogRedactor`, so no message or tool payload is ever written to it.
      * @param  McpToolErrorMapper      $errors         Maps expected domain refusals to the retained error envelope.
      *
      * @since  2.0.0
@@ -100,7 +101,7 @@ final readonly class KumweMcpServerFactory
                 'Use the least-privilege token required for each operation. Mutations use the same audited '
                 . 'application services and optimistic concurrency rules as the administrator and REST API.',
             )
-            ->setLogger($this->logger)
+            ->setLogger(new McpProtocolLogRedactor($this->logger))
             ->setReferenceHandler(new McpToolReferenceHandler(new ReferenceHandler(), $this->errors))
             ->setLazyLoading(false)
             ->setCapabilities(new ServerCapabilities(

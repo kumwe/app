@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for es, carrying 2516 messages.
+ * Compiled interface message catalogue for es, carrying 2519 messages.
  *
  * Generated from es.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1974,7 +1974,10 @@ return [
     'core.console.queue_work.worker_heartbeat_cleanup_failed' => 'La limpieza de la señal de latido del trabajador falló: {reason}',
     'core.console.schedule_run.description' => 'Distribuye las programaciones vencidas una vez o de forma continua con --loop.',
     'core.console.schedule_run.dispatched_due_schedule_s' => 'Se distribuyeron {dispatched} programación(es) vencida(s).',
+    'core.console.security_events.description' => 'Muestra los eventos de seguridad de identidad y acceso más recientes.',
     'core.console.settings.description' => 'Lee o actualiza la configuración del sitio.',
+    'core.console.studio_authoring.description' => 'Abre una sesión de autoría de Studio y ejecuta sus operaciones de autoría.',
+    'core.console.studio_authoring.refused' => 'Se rechazó la solicitud de autoría de Studio.',
     'core.console.theme_administrator_recover.description' => 'Restaura de forma atómica el tema de administrador integrado y protegido.',
     'core.console.theme_administrator_recover.restored_the_protected_built_in_administrator' => 'Se restauró el tema de administrador integrado y protegido.',
     'core.console.token_create.description' => 'Crea un token de acceso de API/MCP con ámbito y muéstralo una vez.',

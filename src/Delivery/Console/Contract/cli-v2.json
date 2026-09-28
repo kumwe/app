@@ -2,7 +2,7 @@
   "format": "kumwe-cli-machine-contract-v1",
   "generation": 2,
   "status": "retained",
-  "surface_digest": "sha256:1d08e49f42e4db718544fdbc66f52868af33c098eaec5bfea65feccb5245af69",
+  "surface_digest": "sha256:09e74ce07da71676099f5c2e7985f1328d3c439331cf0977e016af59b86a79a0",
   "dispatcher": {
     "list_exit": 0,
     "unknown_command_exit": 64,
@@ -802,6 +802,20 @@
       "exit_codes": {"0":"dispatched","1":"scheduler-failed"},
       "actions": [
         {"name":"invoke","risk":"mutate","positionals":[],"allowed_options":["loop"],"required_options":[],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
+      ]
+    },
+    {
+      "name": "security-events",
+      "action_argument": true,
+      "default_action": "list",
+      "options": [
+        {"name":"site","type":"identifier","enum":[]},
+        {"name":"token-file","type":"secret-file","enum":[]}
+      ],
+      "output": {"stdout":"json-document","stderr":"text-lines"},
+      "exit_codes": {"0":"success","1":"operation-failed"},
+      "actions": [
+        {"name":"list","risk":"read","positionals":[],"allowed_options":["site","token-file"],"required_options":["site","token-file"],"one_of_options":[],"mutually_exclusive_options":[],"conditional_requirements":[]}
       ]
     },
     {

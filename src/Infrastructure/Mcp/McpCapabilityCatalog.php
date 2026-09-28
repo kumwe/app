@@ -131,6 +131,11 @@ final class McpCapabilityCatalog
         'kumwe_studio_authoring_save_item' => [McpRiskClass::ScopedWrite, self::VIA_STUDIO],
         'kumwe_studio_authoring_save_as_new_type' => [McpRiskClass::ScopedWrite, self::VIA_STUDIO],
         'kumwe_studio_authoring_save_new_type_version' => [McpRiskClass::ScopedWrite, self::VIA_STUDIO],
+        'kumwe_security_event_list' => [McpRiskClass::Read, self::VIA_IDENTITY],
+        'kumwe_user_step_up_revoke' => [McpRiskClass::InstallationGlobal, self::VIA_IDENTITY],
+        'kumwe_user_sessions_terminate' => [McpRiskClass::InstallationGlobal, self::VIA_IDENTITY],
+        'kumwe_user_role_revoke' => [McpRiskClass::InstallationGlobal, self::VIA_IDENTITY],
+        'kumwe_role_grant_revoke' => [McpRiskClass::InstallationGlobal, self::VIA_IDENTITY],
     ];
 
     /**
@@ -1489,6 +1494,99 @@ final class McpCapabilityCatalog
                 ['artifact'],
             ),
             ...$this->studioAuthoringTools(),
+            ...$this->accessRecoveryTools(),
+        ];
+    }
+
+    /**
+     * Declare the identity tools that read the security timeline or reduce an account's authority.
+     *
+     * These are the administrator access screen's recovery and revocation controls. Each one only takes
+     * authority away — a role, a grant, a second factor or a live session — so publishing them cannot widen
+     * what any identity may do; assigning roles and granting capabilities stay off this surface.
+     *
+     * @return  list<array{
+     *            name: string, title: string, description: string, handler: string,
+     *            capability: string|null, capabilityResolver: string|McpDynamicCapabilityResolver,
+     *            mutationGuard: McpMutationGuardMode, readOnly: bool, destructive: bool, idempotent: bool,
+     *            inputSchema: array<string, mixed>, outputSchema: array<string, mixed>
+     *          }>  Tool declarations in registration order.
+     *
+     * @since   2.0.0
+     */
+    private function accessRecoveryTools(): array
+    {
+        $identifier = ['type' => 'string', 'minLength' => 1, 'maxLength' => 191];
+        $reason = ['type' => 'string', 'minLength' => 1, 'maxLength' => 500];
+
+        return [
+            $this->tool(
+                'kumwe_security_event_list',
+                'List security events',
+                'List the newest identity and credential security events, newest first.',
+                'listSecurityEvents',
+                'users.manage',
+                true,
+                false,
+                true,
+                [],
+                $this->closedObject(['items' => ['type' => 'array', 'maxItems' => 100]], ['items']),
+            ),
+            $this->tool(
+                'kumwe_user_step_up_revoke',
+                'Revoke a user\'s second factors',
+                'Retire every second factor one user holds so a lost authenticator can be re-enrolled.',
+                'revokeUserStepUpCredentials',
+                'users.manage',
+                false,
+                true,
+                true,
+                ['operationId' => $this->operationId(), 'userId' => $identifier, 'reason' => $reason],
+                $this->closedObject(['revoked' => ['type' => 'integer', 'minimum' => 0]], ['revoked']),
+                ['operationId', 'userId', 'reason'],
+            ),
+            $this->tool(
+                'kumwe_user_sessions_terminate',
+                'Terminate a user\'s sessions',
+                'End every session one user holds without changing the account\'s lifecycle state.',
+                'terminateUserSessions',
+                'users.manage',
+                false,
+                true,
+                true,
+                ['operationId' => $this->operationId(), 'userId' => $identifier, 'reason' => $reason],
+                $this->closedObject(
+                    ['sessions_terminated' => ['type' => 'integer', 'minimum' => 0]],
+                    ['sessions_terminated'],
+                ),
+                ['operationId', 'userId', 'reason'],
+            ),
+            $this->tool(
+                'kumwe_user_role_revoke',
+                'Revoke a role from a user',
+                'Remove one role assignment from a user.',
+                'revokeUserRole',
+                'users.manage',
+                false,
+                true,
+                true,
+                ['operationId' => $this->operationId(), 'userId' => $identifier, 'roleId' => $identifier],
+                $this->closedObject(['updated' => ['type' => 'boolean']], ['updated']),
+                ['operationId', 'userId', 'roleId'],
+            ),
+            $this->tool(
+                'kumwe_role_grant_revoke',
+                'Revoke a capability grant',
+                'Remove one capability grant from a role.',
+                'revokeRoleGrant',
+                'users.manage',
+                false,
+                true,
+                true,
+                ['operationId' => $this->operationId(), 'grantId' => $identifier],
+                $this->closedObject(['revoked' => ['type' => 'boolean']], ['revoked']),
+                ['operationId', 'grantId'],
+            ),
         ];
     }
 
