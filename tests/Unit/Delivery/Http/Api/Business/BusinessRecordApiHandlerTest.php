@@ -277,6 +277,49 @@ final class BusinessRecordApiHandlerTest extends TestCase
     }
 
     /**
+     * A bulk restore reached by its method and path alone dispatches the restore operation, with no action.
+     *
+     * Without an explicit route token the handler infers the bulk operation from `POST .../bulk`, and the
+     * body's `restore` maps to the facade's restore operation rather than an archive or a named action.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testABulkRestoreInferredFromItsPathDispatchesTheRestoreOperation(): void
+    {
+        [$principal, $context] = $this->identity();
+        $items = [['record_id' => 'invoice-7', 'expected_version' => 5]];
+        $surfaces = $this->createMock(BusinessSurfaceUseCases::class);
+        $surfaces->expects(self::once())
+            ->method('bulk')
+            ->with(
+                $context,
+                BusinessSurface::Api,
+                'core.invoice',
+                BusinessSurfaceOperation::Restore,
+                $items,
+                'record-bulk-0001',
+                null,
+                self::anything(),
+            )
+            ->willReturn(['operation' => 'restore', 'count' => 1, 'items' => []]);
+        $request = $this->bulkRequest(
+            $principal,
+            $context,
+            json_encode(['operation' => 'restore', 'items' => $items], JSON_THROW_ON_ERROR),
+        )->withoutAttribute(BusinessRecordApiHandler::OPERATION_ATTRIBUTE);
+
+        $response = $this->handler($surfaces)->handle($request);
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertSame(
+            ['operation' => 'restore', 'count' => 1, 'items' => []],
+            json_decode((string) $response->getBody(), true, 8, JSON_THROW_ON_ERROR),
+        );
+    }
+
+    /**
      * Refuse a bulk body outside the closed archive, restore or action vocabulary before the facade runs.
      *
      * @return  void

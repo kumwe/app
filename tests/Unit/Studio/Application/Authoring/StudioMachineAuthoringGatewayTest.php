@@ -262,6 +262,47 @@ final class StudioMachineAuthoringGatewayTest extends TestCase
     }
 
     /**
+     * An argument that cannot be written as a wire envelope is refused before any Studio host is created.
+     *
+     * Machine arguments arrive already decoded, so bytes that are not UTF-8 can reach the gateway from a
+     * transport that does not validate them. The envelope is canonical JSON, and a value it cannot carry is the
+     * caller's malformed input, not an internal failure of the host that would have received it.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAnArgumentTheEnvelopeCannotCarryIsRefusedBeforeAnyHostIsCreated(): void
+    {
+        $gateway = self::gateway();
+        $argument = (object) ['title' => "\xB1\x31 invalid"];
+
+        foreach (
+            [
+                static fn () => $gateway->read(
+                    self::context(AuthenticatedSurface::Api),
+                    'contexts/key',
+                    'session-one',
+                    StudioMachineAuthoringOperation::ResolveTarget,
+                    $argument,
+                ),
+                static fn () => $gateway->mutate(
+                    self::context(AuthenticatedSurface::Mcp),
+                    'contexts/key',
+                    'session-one',
+                    StudioMachineAuthoringOperation::SaveItem,
+                    $argument,
+                    'replay-key-0001',
+                ),
+            ] as $call
+        ) {
+            $refused = self::refusal($call);
+            self::assertSame('invalid-request', $refused->category());
+            self::assertSame(['studio.machine/argument-invalid'], $refused->diagnosticCodes());
+        }
+    }
+
+    /**
      * Build a gateway whose collaborators exist but must never be reached by these refusals.
      *
      * @return  StudioMachineAuthoringGateway  Gateway over uninitialized collaborators.

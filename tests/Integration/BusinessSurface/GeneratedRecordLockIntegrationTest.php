@@ -169,6 +169,101 @@ final class GeneratedRecordLockIntegrationTest extends TestCase
     }
 
     /**
+     * Affordances follow the posting instant: a zoned date locks, while undated and undeclared records stay open.
+     *
+     * A zoned posting date is projected as an `{instant, timezone}` document, so the prediction must read its
+     * instant rather than give up on a non-string value. A record with no posting date, the blank create form
+     * and a record of a definition that declares no posting date are all outside every period, even while one
+     * is closed, and keep their edit affordances.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testZonedPostingDatesLockByInstantWhileUndatedAndUndeclaredRecordsStayOpen(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $context = TestKernelFactory::administratorContext($container);
+        $records = $container->get(BusinessRecordService::class);
+        $periods = $container->get(PostingPeriodService::class);
+        $browser = $container->get(GeneratedBusinessBrowserController::class);
+        self::assertInstanceOf(BusinessRecordService::class, $records);
+        self::assertInstanceOf(PostingPeriodService::class, $periods);
+        self::assertInstanceOf(GeneratedBusinessBrowserController::class, $browser);
+        $suffix = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), -10));
+        $document = NeutralBusinessFixture::relationTargetDocument($suffix, Uuid::uuid7()->toString());
+        $document['handle'] = 'site.default.zoned_lock_' . $suffix;
+        $fields = $document['fields'];
+        self::assertIsArray($fields);
+        $fields[] = [
+            'handle' => 'posted_at',
+            'label' => 'Posted at',
+            'type' => 'core.zoned_datetime',
+            'required' => false,
+            'nullable' => true,
+            'configuration' => ['posting_date' => true],
+        ];
+        $document['fields'] = $fields;
+        $zoned = NeutralBusinessFixture::install($container, $context, $document)->handle;
+        $plainDocument = NeutralBusinessFixture::relationTargetDocument('p' . $suffix, Uuid::uuid7()->toString());
+        $plainDocument['handle'] = 'site.default.undated_lock_' . $suffix;
+        $plain = NeutralBusinessFixture::install($container, $context, $plainDocument)->handle;
+        $base = (new DateTimeImmutable('4300-01-01T00:00:00Z'))
+            ->modify('+' . ((int) hexdec(substr($suffix, 0, 8)) % 250_000) . ' days');
+        $period = 'zoned-' . $suffix;
+        $create = function (string $handle, array $values, string $key) use ($records, $context): string {
+            $recordId = Uuid::uuid7()->toString();
+            $records->create(new CreateRecordCommand(
+                $context,
+                $handle,
+                ['label' => 'Zoned lock ' . $recordId, ...$values],
+                NeutralBusinessFixture::idempotencyKey('zoned-lock-' . $key . '-' . $recordId),
+                recordId: $recordId,
+            ));
+
+            return $recordId;
+        };
+        $inside = $create($zoned, ['posted_at' => [
+            'instant' => $base->modify('+2 days')->format('Y-m-d\TH:i:s\Z'),
+            'timezone' => 'Africa/Windhoek',
+        ]], 'inside');
+        $undated = $create($zoned, [], 'undated');
+        $undeclared = $create($plain, [], 'undeclared');
+        $periods->close($context, $period, $base, $base->modify('+10 days'));
+
+        try {
+            $locked = $this->get($browser, $context, $zoned, $inside);
+            self::assertSame(
+                'business_record.posting_period_closed',
+                is_array($locked->data['record_lock']) ? $locked->data['record_lock']['code'] : null,
+                'A zoned posting date inside the closed period locks the record by its instant.',
+            );
+            self::assertNull(
+                $this->get($browser, $context, $zoned, $undated)->data['record_lock'],
+                'A record without a posting date belongs to no period.',
+            );
+            self::assertNull(
+                $this->get($browser, $context, $plain, $undeclared)->data['record_lock'],
+                'A definition without a posting date is untouched by closed periods.',
+            );
+            $blank = $browser->dispatch(
+                $context,
+                BusinessSurface::Administrator,
+                self::BASE,
+                'GET',
+                $zoned,
+                null,
+                ['new' => '1'],
+                [],
+            );
+            self::assertSame('business-form', $blank->template);
+            self::assertNull($blank->data['record_lock'], 'The blank create form has no record to lock.');
+        } finally {
+            $periods->reopen($context, $period);
+        }
+    }
+
+    /**
      * Install a flat definition with an immutable `approved` state and a `posted_on` posting date.
      *
      * @param   \Kumwe\App\Kernel\Container  $container  Real integration container.

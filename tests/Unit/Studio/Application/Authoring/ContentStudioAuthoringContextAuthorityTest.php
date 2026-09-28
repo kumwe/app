@@ -381,6 +381,65 @@ final class ContentStudioAuthoringContextAuthorityTest extends TestCase
     }
 
     /**
+     * Only the session holding a live context may record or read its start, and the first start is kept.
+     *
+     * The recorded start is what every later save is reconciled against, so it is guarded like the context
+     * itself: a malformed or unknown key, a key opened by another actor, and a key whose binding has expired
+     * are all refused without disclosing which, and a second start cannot replace the first.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testOnlyTheHoldingSessionRecordsOrReadsAStartAndTheFirstStartIsKept(): void
+    {
+        $definition = self::definition();
+        $models = $this->createStub(ContentModelRepository::class);
+        $models->method('contentType')->willReturn($definition);
+        $now = new DateTimeImmutable('2026-08-27T00:00:00+00:00');
+        $clock = $this->createStub(ClockInterface::class);
+        $clock->method('now')->willReturnCallback(static function () use (&$now): DateTimeImmutable {
+            return $now;
+        });
+        [$authority] = $this->authority($models, $this->createStub(ContentRepository::class), null, $clock, 300);
+        $context = self::context(['content.create', 'content.read']);
+        $key = $authority->open($context, (new ContentStudioAuthoringTargetResolver(
+            AuthorizationContext::gateway(),
+        ))->create($context));
+
+        self::assertNull($authority->startOf($context, $key), 'An unstarted session has no recorded start.');
+        self::assertSame('{"kind":"blank"}', $authority->rememberStart($context, $key, '{"kind":"blank"}'));
+        self::assertSame(
+            '{"kind":"blank"}',
+            $authority->rememberStart($context, $key, '{"kind":"from-type"}'),
+            'A second start cannot replace the first.',
+        );
+        self::assertSame('{"kind":"blank"}', $authority->startOf($context, $key));
+
+        $stranger = self::context(['content.create', 'content.read'], subject: '018f22e2-7c8b-7ab0-8f3a-88e8026bb3ff');
+        $refusals = 0;
+        foreach (
+            [
+                static fn () => $authority->startOf($context, 'contexts/not-a-digest'),
+                static fn () => $authority->rememberStart($context, 'contexts/' . str_repeat('0', 64), '{}'),
+                static fn () => $authority->startOf($stranger, $key),
+                static fn () => $authority->rememberStart($stranger, $key, '{"kind":"blank"}'),
+            ] as $attempt
+        ) {
+            try {
+                $attempt();
+            } catch (ContentStudioAuthoringContextRefused) {
+                $refusals++;
+            }
+        }
+        self::assertSame(4, $refusals);
+
+        $now = $now->modify('+301 seconds');
+        $this->expectException(ContentStudioAuthoringContextRefused::class);
+        $authority->startOf($context, $key);
+    }
+
+    /**
      * Permission withdrawal remains a non-disclosing refusal and malformed keys never reach persistence.
      *
      * @return  void

@@ -33,6 +33,52 @@ final class DoctrineAdministratorSessionStoreTest extends TestCase
     private const MEMBERSHIP = '018f22e2-7c8b-7ab0-8f3a-88e8026bb412';
     private const USER = '018f22e2-7c8b-7ab0-8f3a-88e8026bb413';
 
+    /**
+     * A session lifetime or inactivity window outside its declared bounds is refused when the store is built.
+     *
+     * Both windows are security settings read from configuration, so an out-of-range value must stop the
+     * boot instead of silently issuing sessions that never go idle or that last longer than a week.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testLifetimeAndInactivityOutsideTheirBoundsAreRefusedAtConstruction(): void
+    {
+        $database = $this->createStub(Connection::class);
+        $transactions = $this->createStub(TransactionManager::class);
+        $build = fn (int $lifetime, int $idle) => new DoctrineAdministratorSessionStore(
+            $database,
+            new TableNames($database, 'kumwe_'),
+            $this->createStub(ClockInterface::class),
+            str_repeat('s', 64),
+            $this->createStub(AuthorizationGateway::class),
+            $transactions,
+            $this->createStub(ResourceSiteOwnershipWriter::class),
+            AuthorizationContext::provenance(),
+            $lifetime,
+            null,
+            $idle,
+        );
+        $build(300, 60);
+        $build(604_800, 86_400);
+        foreach (
+            [
+                [299, 1_800, 'Administrator sessions must last between five minutes and seven days.'],
+                [604_801, 1_800, 'Administrator sessions must last between five minutes and seven days.'],
+                [28_800, 59, 'Administrator session inactivity must be one minute through one day.'],
+                [28_800, 86_401, 'Administrator session inactivity must be one minute through one day.'],
+            ] as [$lifetime, $idle, $message]
+        ) {
+            try {
+                $build($lifetime, $idle);
+                self::fail(sprintf('A %d second lifetime with %d idle seconds was accepted.', $lifetime, $idle));
+            } catch (InvalidArgumentException $refusal) {
+                self::assertSame($message, $refusal->getMessage());
+            }
+        }
+    }
+
     public function testDeleteRemovesExactSessionOwnershipInTheSameTransaction(): void
     {
         $database = $this->database();
