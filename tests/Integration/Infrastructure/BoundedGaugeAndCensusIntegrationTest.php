@@ -9,18 +9,23 @@ use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use InvalidArgumentException;
 use Kumwe\App\Application\Retention\LedgerCensus;
 use Kumwe\App\Application\Retention\LedgerCount;
+use Kumwe\App\Application\Retention\RetentionObserver;
+use Kumwe\App\Application\Retention\RetentionReadiness;
 use Kumwe\App\Application\Retention\RetentionStore;
 use Kumwe\App\BusinessReporting\Infrastructure\DoctrineProjectionEventSequencer;
 use Kumwe\App\Infrastructure\Observability\MetricCatalog;
 use Kumwe\App\Infrastructure\Observability\RuntimeMetricCollector;
 use Kumwe\App\Infrastructure\Persistence\DoctrineTransactionManager;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Infrastructure\Time\SystemClock;
+use Kumwe\App\Application\Readiness\ReadinessStatus;
 use Kumwe\App\Infrastructure\Retention\DoctrineLedgerCensus;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\App\Tests\Support\RecordingMetricRecorder;
 use Kumwe\App\Tests\Support\TestKernelFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 
 /**
  * Proves the bounded scrape, the server gauges and the operator-only exact census on the configured engine.
@@ -64,6 +69,54 @@ final class BoundedGaugeAndCensusIntegrationTest extends TestCase
         }
         self::assertCount(count(RetentionStore::cases()), $stores);
         self::assertLessThanOrEqual(RuntimeMetricCollector::PROBE_CAP, $values['kumwe_jobs_pending']);
+    }
+
+    /**
+     * A retention observer that cannot answer marks the scrape failed while every durable gauge still answers.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAFailingRetentionObserverMarksTheScrapeFailedWithoutLosingIt(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $database = $container->get(Connection::class);
+        $tables = $container->get(TableNames::class);
+        self::assertInstanceOf(Connection::class, $database);
+        self::assertInstanceOf(TableNames::class, $tables);
+        $observer = $this->createStub(RetentionObserver::class);
+        $observer->method('observeAll')->willThrowException(new RuntimeException('The retention probe failed.'));
+        $collector = new RuntimeMetricCollector(
+            $database,
+            $tables,
+            new SystemClock(),
+            new class implements ReadinessStatus {
+                /**
+                 * Report ready.
+                 *
+                 * @return  bool  Always true.
+                 *
+                 * @since   2.0.0
+                 */
+                public function ready(): bool
+                {
+                    return true;
+                }
+            },
+            '2.0.0-scale',
+            'http',
+            $observer,
+            new RetentionReadiness(),
+            true,
+        );
+        $values = [];
+        foreach ($collector->collect() as $sample) {
+            $values[$sample->name] = $sample->value;
+        }
+        self::assertSame(1.0, $values['kumwe_metrics_collection_failed']);
+        self::assertArrayHasKey('kumwe_jobs_pending', $values);
+        self::assertArrayNotHasKey(MetricCatalog::RETENTION_READINESS, $values);
     }
 
     /**
