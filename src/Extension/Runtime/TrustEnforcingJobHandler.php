@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Extension\Runtime;
 
+use InvalidArgumentException;
 use Kumwe\App\Extension\Application\ExtensionExecutionGate;
+use Kumwe\App\Extension\Application\Trust\RuntimePublicationMismatch;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
+use Kumwe\App\Extension\Application\Trust\UntrustedPackage;
 use Kumwe\Extension\Spi\Application\Automation\JobHandler;
 use Kumwe\Extension\Spi\Application\ExecutionContext;
 use Kumwe\Automation\JobContributionDefinition;
+use RuntimeException;
 
 /**
  * Re-establishes exact runtime-generation and package trust before extension job code executes.
@@ -17,10 +21,12 @@ use Kumwe\Automation\JobContributionDefinition;
  * worker for as long as the process lives, so the worker on its own cannot express that the package was
  * superseded, deactivated or had its signing key revoked afterwards. The binding registrar therefore
  * wraps every contributed job handler in this one, which applies the same fence as a Studio preview
- * renderer: the boot generation is checked before and again inside the installation-wide lifecycle
- * lock, package trust is re-run against the exact signed runtime entry that loaded the code, and only
- * then does the delegate run. A refusal propagates so the job fails closed rather than reaching code the
- * installation no longer trusts.
+ * renderer: package trust is re-read from committed authority against the exact signed runtime entry
+ * that loaded the code, the boot generation must be current both before and after that read, and only
+ * then does the delegate run. None of it takes the installation-wide lifecycle lock, which serializes
+ * mutators and is taken without waiting, so two workers no longer refuse each other's jobs. A refusal
+ * propagates so the job fails closed rather than reaching code the installation no longer trusts; the
+ * worker's claim and settlement stay fenced by the same generation.
  *
  * @since  2.0.0
  */
@@ -55,49 +61,41 @@ final readonly class TrustEnforcingJobHandler implements JobHandler
      *
      * @return  void
      *
-     * @throws  \RuntimeException  When this process no longer holds the current trusted generation, or
-     *          the compiled entry no longer describes the authoritative release.
-     * @throws  \Kumwe\App\Extension\Application\Trust\UntrustedPackage  When the package is no longer
-     *          trusted; it is quarantined before the refusal is raised.
+     * @throws  RuntimeException  When this process no longer holds the current trusted generation, the
+     *          generation changed during the trust read, or the trust authority cannot be read.
+     * @throws  RuntimePublicationMismatch  When the compiled entry no longer describes the authoritative
+     *          release.
+     * @throws  UntrustedPackage  When the package is no longer trusted; it is quarantined before the
+     *          refusal is raised.
      *
      * @since   2.0.0
      */
     public function handle(JobContributionDefinition $definition, array $payload, ExecutionContext $context): void
     {
-        $this->execution->assertCurrent();
+        if (!$this->trust->residentRuntimeTrusted($this->execution, $this->extension, $this->runtimeEntry)) {
+            throw new RuntimeException('This process cannot execute a stale or untrusted extension generation.');
+        }
 
-        $this->trust->synchronizedLifecycle(
-            function () use ($definition, $payload, $context): void {
-                $this->execution->assertCurrent();
-                $this->trust->enforceRuntimeTrust($this->extension, $this->runtimeEntry);
-
-                $this->inner->handle($definition, $payload, $context);
-            },
-        );
+        $this->inner->handle($definition, $payload, $context);
     }
 
     /**
      * Report whether the exact boot publication and package trust still authorize this implementation.
      *
+     * A stale generation and a distrust verdict both answer false; a trust authority that cannot be read
+     * propagates instead, because it is not a verdict about the package.
+     *
      * @return  bool  True only while the exact compiled owner/version entry remains current and trusted.
+     *
+     * @throws  RuntimeException  When the trust authority cannot be read; `TrustStore` has logged it.
      *
      * @since   2.0.0
      */
     public function isAvailable(): bool
     {
-        if (!$this->execution->isCurrent()) {
-            return false;
-        }
         try {
-            return $this->trust->synchronizedLifecycle(function (): bool {
-                if (!$this->execution->isCurrent()) {
-                    return false;
-                }
-                $this->trust->enforceRuntimeTrust($this->extension, $this->runtimeEntry);
-
-                return true;
-            });
-        } catch (\Throwable) {
+            return $this->trust->residentRuntimeTrusted($this->execution, $this->extension, $this->runtimeEntry);
+        } catch (UntrustedPackage | RuntimePublicationMismatch | InvalidArgumentException) {
             return false;
         }
     }

@@ -14,6 +14,7 @@ use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Audit\Application\AuditRecorder;
 use Kumwe\Audit\Domain\AuditEvent;
 use Kumwe\App\BusinessDefinition\Application\PackageDefinitionSynchronizer;
+use Kumwe\App\Extension\Application\ExtensionExecutionGate;
 use Kumwe\App\Extension\Application\ExtensionRuntimeWithdrawal;
 use Kumwe\Extension\Manifest\ExtensionIdentifier;
 use Kumwe\Extension\Manifest\ExtensionManifest;
@@ -23,7 +24,9 @@ use Kumwe\Extension\Package\PackageSignature;
 use Kumwe\App\Extension\Runtime\RuntimeCanonicalJson;
 use Kumwe\Access\Capability;
 use Psr\Clock\ClockInterface;
+use Psr\Log\LoggerInterface;
 use Ramsey\Uuid\Uuid;
+use RuntimeException;
 use Throwable;
 
 /**
@@ -38,7 +41,13 @@ use Throwable;
  * Studio preview render and administrator menu render calls `enforceRuntimeTrust()` — which is what makes
  * a key revoked long after installation take effect at the next request rather than at the next
  * deployment. Enforcement fails closed: a release that cannot be verified is quarantined before the
- * failure is raised.
+ * failure is raised, and a trust authority that cannot be read at all is refused and logged rather than
+ * mistaken for distrust.
+ *
+ * Only mutators take the installation-wide lifecycle lock. The enforcement read runs on a committed
+ * snapshot serialized against every trust mutation by the trust generation row, and resident code fences
+ * that read with the runtime generation it loaded (`residentRuntimeTrusted()`), so contention for the
+ * lifecycle lock can neither refuse a trusted extension nor let a withdrawn one run.
  *
  * @since  2.0.0
  */
@@ -72,6 +81,8 @@ final readonly class TrustStore
      *         registers none.
      * @param  ?ExtensionRuntimeWithdrawal        $runtimeWithdrawal           Removes resident contribution
      *         objects after a trust invalidation commits; null in isolated trust tests without a runtime.
+     * @param  ?LoggerInterface                   $logger                      Sink an unreadable trust
+     *         authority is reported to before the enforcement read is refused; null in isolated tests.
      *
      * @since  2.0.0
      */
@@ -88,6 +99,7 @@ final readonly class TrustStore
         private bool $allowUnsignedLocalPackages = false,
         private ?PackageDefinitionSynchronizer $businessDefinitions = null,
         private ?ExtensionRuntimeWithdrawal $runtimeWithdrawal = null,
+        private ?LoggerInterface $logger = null,
     ) {
     }
 
@@ -152,7 +164,9 @@ final readonly class TrustStore
      * Delivery middleware, the locked extension manager and administrator theme recovery all wrap their
      * work in this, so that at most one lifecycle operation is in flight across the installation. It is
      * exposed rather than kept private because those callers need the lock to span more than the single
-     * trust mutation this class would take it for.
+     * trust mutation this class would take it for. It is a mutator lock and nothing else: the store takes
+     * it without waiting, so a reader that took it would refuse whenever another reader or mutator held
+     * it. Readers use `residentRuntimeTrusted()` and `enforceRuntimeTrust()` instead.
      *
      * @template T
      *
@@ -575,13 +589,63 @@ final readonly class TrustStore
     }
 
     /**
+     * Decide from committed authority whether resident code loaded from one exact entry may run now.
+     *
+     * This is the reader path, and it takes no lifecycle lock: that lock is taken without waiting, so a
+     * reader holding it refused every concurrent reader and mutator, and a reader refused by it read the
+     * contention as distrust. The trust read here is `enforceRuntimeTrust()`, a committed snapshot that
+     * the trust generation row serializes against every trust mutation, and the runtime generation this
+     * process loaded fences it on both sides: it must be current before the read and still current after
+     * it. Every lifecycle change that can withdraw an extension publishes a new runtime generation in the
+     * transaction that commits it, so a change that lands during the read turns the second check false.
+     * That disagreement is re-checked once, and fails closed if it persists.
+     *
+     * @param   ExtensionExecutionGate  $execution            Boot-generation fence of the resident code.
+     * @param   string                  $extensionIdentifier  `vendor/name` owner of the resident code.
+     * @param   array<string, mixed>    $entry                Exact signed compiled entry that loaded the code.
+     *
+     * @return  bool  True when the loaded generation was current on both sides of a passing trust read;
+     *          false when it is stale, or changed during the read on both attempts.
+     *
+     * @throws  RuntimePublicationMismatch  When the entry names an extension that is no longer active, or
+     *          disagrees with authoritative release metadata.
+     * @throws  UntrustedPackage  When the release, its signing key, its signature or its deployed bytes no
+     *          longer verify. The extension is quarantined first.
+     * @throws  InvalidArgumentException  When the identifier or the stored release cannot be parsed. The
+     *          extension is quarantined first.
+     * @throws  RuntimeException  When the trust authority cannot be read. The refusal is logged and never
+     *          read as distrust.
+     *
+     * @since   2.0.0
+     */
+    public function residentRuntimeTrusted(
+        ExtensionExecutionGate $execution,
+        string $extensionIdentifier,
+        array $entry,
+    ): bool {
+        for ($attempt = 1; $attempt <= 2; ++$attempt) {
+            if (!$execution->isCurrent()) {
+                return false;
+            }
+            $this->enforceRuntimeTrust($extensionIdentifier, $entry);
+            if ($execution->isCurrent()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Enforces trust for authoritative active inventory records that may be absent from the publication.
      *
      * This runs on every extension request, every extension event dispatch and every administrator menu
      * render, which is what makes a key revoked long after installation bite immediately. Failure is not
      * passive: an extension whose release cannot be verified is quarantined before the exception leaves
      * this method. A publication mismatch is deliberately exempt from that, because the extension is
-     * still sound and only this replica's compiled map is out of step.
+     * still sound and only this replica's compiled map is out of step. So is a read that fails for any
+     * other reason — an unreachable database or an expired lock wait says nothing about the extension, so
+     * it is logged as `extension.trust.indeterminate` and refused as such rather than quarantined.
      *
      * @param   string                     $extensionIdentifier  `vendor/name` of the extension to check.
      * @param   array<string, mixed>|null  $entry                Compiled publication entry to hold
@@ -596,6 +660,8 @@ final readonly class TrustStore
      *          fails, or its deployed bytes have changed. The extension is quarantined first.
      * @throws  InvalidArgumentException  When the identifier is not a valid `vendor/name`, or the stored
      *          manifest, checksum or signature cannot be parsed. The extension is quarantined first.
+     * @throws  RuntimeException  When the trust authority itself cannot be read; the original failure is
+     *          chained and nothing is quarantined.
      *
      * @since   2.0.0
      */
@@ -621,6 +687,18 @@ final readonly class TrustStore
         } catch (UntrustedPackage | InvalidArgumentException $exception) {
             $this->quarantine($extensionIdentifier);
             throw $exception;
+        } catch (Throwable $failure) {
+            $this->logger?->warning('Extension trust could not be determined; the extension is refused.', [
+                'event' => 'extension.trust.indeterminate',
+                'extension' => $extensionIdentifier,
+                'reason' => $failure::class,
+                'message' => $failure->getMessage(),
+            ]);
+            throw new RuntimeException(
+                'The extension trust authority could not be read; the extension is refused until it can be.',
+                0,
+                $failure,
+            );
         }
     }
 

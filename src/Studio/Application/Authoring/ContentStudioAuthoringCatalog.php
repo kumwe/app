@@ -6,6 +6,7 @@ namespace Kumwe\App\Studio\Application\Authoring;
 
 use Kumwe\App\Studio\Application\Composition\StudioCompositionContributionCatalog;
 use Kumwe\App\Studio\Application\Release\StudioCoreCatalog;
+use Kumwe\App\Studio\Application\Rendering\StudioBlockRendererRuntime;
 use Kumwe\Producer\Canonical\CanonicalJson;
 use LogicException;
 use stdClass;
@@ -19,7 +20,10 @@ use stdClass;
  * catalog the pinned release compiles in and its own Content-field blocks, ships those field blocks
  * (and its patterns) as the bundle, and declares them as the target's contribution dependencies.
  * Every member is derived deterministically from the same inputs, so the deployment document, the
- * `authoring/start` snapshot and each accepted save agree on the catalog and on its generation.
+ * `authoring/start` snapshot and each accepted save agree on the catalog and on its generation. One
+ * operation reads several members, and each read projects the live contributions again, so the
+ * operation runs inside `consistently()`: the renderer registry is decided once for it, and every member
+ * it emits comes from that one projection even if trust authority changes while it runs.
  *
  * @since  2.0.0
  */
@@ -30,13 +34,37 @@ final readonly class ContentStudioAuthoringCatalog
      *
      * @param  StudioCompositionContributionCatalog  $contributions  Live App contribution projection.
      * @param  StudioCoreCatalog                     $core           Exact first-party coordinates.
+     * @param  StudioBlockRendererRuntime            $runtime        The renderer registry authority the
+     *         contribution projection reads; the same shared instance, so one decision pins both.
      *
      * @since  2.0.0
      */
     public function __construct(
         private StudioCompositionContributionCatalog $contributions,
         private StudioCoreCatalog $core,
+        private StudioBlockRendererRuntime $runtime,
     ) {
+    }
+
+    /**
+     * Run one authoring operation against a single contribution projection.
+     *
+     * The deployment document, a target resolution, a started session and a save each read the locks,
+     * payloads, dependencies and generation more than once; inside this call they all derive from one
+     * renderer registry decision, so a document can never pair payloads from one projection with the
+     * generation of another.
+     *
+     * @template T
+     *
+     * @param   callable(): T  $operation  The authoring operation to run.
+     *
+     * @return  T  Whatever the operation returned, passed back unchanged.
+     *
+     * @since   2.0.0
+     */
+    public function consistently(callable $operation): mixed
+    {
+        return $this->runtime->consistently($operation);
     }
 
     /**
