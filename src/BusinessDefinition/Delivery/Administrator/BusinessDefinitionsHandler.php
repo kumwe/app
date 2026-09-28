@@ -36,19 +36,22 @@ use Psr\Http\Server\RequestHandlerInterface;
 final readonly class BusinessDefinitionsHandler implements RequestHandlerInterface
 {
     /**
-     * Bounded, URL-addressable tasks exposed by the definition workspace.
+     * Bounded, URL-addressable tasks exposed by the definition workspace, mapped to their label message.
+     *
+     * The value is the catalogue identifier of the tab label, which the template resolves in the request
+     * language; the key is the stable `tab` query value and is never translated.
      *
      * @var    array<string, string>
      * @since  2.0.0
      */
     private const TABS = [
-        'identity' => 'Identity',
-        'fields' => 'Fields',
-        'relationships' => 'Relationships',
-        'delivery' => 'Views and actions',
-        'workflow' => 'Workflow',
-        'publication' => 'Publication',
-        'history' => 'History',
+        'identity' => 'core.administrator.business_definitions.identity',
+        'fields' => 'core.administrator.business_definitions.fields',
+        'relationships' => 'core.administrator.business_definitions.relationships',
+        'delivery' => 'core.administrator.business_definitions.views_and_actions',
+        'workflow' => 'core.administrator.business_definitions.workflow',
+        'publication' => 'core.administrator.business_definitions.publication',
+        'history' => 'core.administrator.business_definitions.history',
     ];
 
     /**
@@ -231,7 +234,8 @@ final readonly class BusinessDefinitionsHandler implements RequestHandlerInterfa
      * @param   string  $selected  Selected definition identifier, or an empty string.
      * @param   bool    $creating  Whether the editor is creating a definition.
      *
-     * @return  list<array{id: string, label: string, href: string}>  Tabs ready for the KIS component.
+     * @return  list<array{id: string, label: string, href: string}>  Tabs for the KIS component; `label` is the
+     *          catalogue identifier the template resolves in the request language.
      *
      * @since   2.0.0
      */

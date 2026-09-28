@@ -61,12 +61,23 @@ final class ResolvedLocaleRenderingTest extends TestCase
         }
     }
 
-    public function testAnUntranslatedLocaleStillRendersTheSourceWordingRatherThanBlanks(): void
+    /**
+     * Proves a right-to-left locale renders its own catalogue wording rather than the source text.
+     *
+     * Every shipped catalogue is complete, so a language the installation carries never falls back
+     * to the source wording on a surface; degrading an uncarried locale is proved by the unit tests.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testARightToLeftLocaleRendersItsOwnCatalogueWordingRatherThanTheSource(): void
     {
         $body = $this->body('/administrator/login', ['Accept-Language' => 'ar']);
 
         self::assertStringContainsString('dir="rtl"', $body);
-        self::assertStringContainsString('Sign in to Kumwe', $body);
+        self::assertStringContainsString('تسجيل الدخول إلى Kumwe', $body);
+        self::assertStringNotContainsString('Sign in to Kumwe', $body);
     }
 
     /** @param array<string, string> $headers */

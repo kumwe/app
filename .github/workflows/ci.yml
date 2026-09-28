@@ -87,6 +87,7 @@ jobs:
         run: |
           composer translation:check
           composer translation:strings
+          composer translation:quality
           composer assets:direction
           composer coverage:attribution
 
@@ -430,6 +431,7 @@ jobs:
         run: |
           composer translation:check
           composer translation:strings
+          composer translation:quality
           composer assets:direction
 
       - name: Generate coding-standard normalization evidence

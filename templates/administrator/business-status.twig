@@ -43,9 +43,9 @@
           <div><dt>{{ t('core.administrator.business_bulk_confirm.record') }}</dt><dd><code>{{ operation_status.result.record_id }}</code></dd></div>
           <div><dt>{{ t('core.administrator.business_status.version') }}</dt><dd>{{ operation_status.result.version }}</dd></div>
         {% endif %}
-        <div><dt>{{ t('core.administrator.business_detail.created') }}</dt><dd><time datetime="{{ operation_status.created_at }}">{{ operation_status.created_at|date('M j, Y H:i:s') }}</time></dd></div>
-        <div><dt>{{ t('core.administrator.business_status.completed') }}</dt><dd><time datetime="{{ operation_status.completed_at }}">{{ operation_status.completed_at|date('M j, Y H:i:s') }}</time></dd></div>
-        <div><dt>{{ t('core.administrator.access_control.expires') }}</dt><dd><time datetime="{{ operation_status.expires_at }}">{{ operation_status.expires_at|date('M j, Y H:i:s') }}</time></dd></div>
+        <div><dt>{{ t('core.administrator.business_detail.created') }}</dt><dd><time datetime="{{ operation_status.created_at }}">{{ t('core.administrator.common.date_time_seconds', {value: date(operation_status.created_at)}) }}</time></dd></div>
+        <div><dt>{{ t('core.administrator.business_status.completed') }}</dt><dd><time datetime="{{ operation_status.completed_at }}">{{ t('core.administrator.common.date_time_seconds', {value: date(operation_status.completed_at)}) }}</time></dd></div>
+        <div><dt>{{ t('core.administrator.access_control.expires') }}</dt><dd><time datetime="{{ operation_status.expires_at }}">{{ t('core.administrator.common.date_time_seconds', {value: date(operation_status.expires_at)}) }}</time></dd></div>
       </dl>
       <div class="page-actions">
         {% if operation_status.operation == 'business.record.action_approval_request' %}
