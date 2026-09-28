@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for ar, carrying 2565 messages.
+ * Compiled interface message catalogue for ar, carrying 2572 messages.
  *
  * Generated from ar.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1940,12 +1940,15 @@ return [
     'core.console.audit_verify.description' => 'تحقّق من سلسلة بصمات مسار التدقيق ومراسيها.',
     'core.console.automation.description' => 'اسرد الجداول والمهام في قائمة الانتظار وأدرها.',
     'core.console.business_approval.description' => 'اسحب طلب موافقة الأعمال المعلّق الخاص بك.',
+    'core.console.business_bulk.description' => 'أرشفة ما يصل إلى خمسين سجلًا تجاريًا أو استعادتها أو تشغيل إجراء واحد عليها دفعة واحدة.',
     'core.console.business_definition.description' => 'اسرد تعريفات كيانات الأعمال وافحصها وأنشئ مسوداتها وتحقّق منها وانشرها وأوقفها.',
     'core.console.business_periods.description' => 'اسرد فترات الترحيل المحاسبي وأغلقها وأعد فتحها.',
     'core.console.business_record.description' => 'اكتشف عمليات الأعمال واستعلم عنها وغيّرها واربطها واطلب الموافقات عليها وأنشئ التقارير وصدّرها وافحصها.',
     'core.console.business_record_rekey.description' => 'أعد تشفير أسرار سجلات الأعمال المحفوظة تحت مفتاح التشفير النشط.',
     'core.console.business_report.description' => 'شغّل تقارير مراعية للصلاحيات، واطلب تصديرات CSV مُتحقَّقًا منها أو افحصها أو نزّلها.',
     'core.console.business_schema.description' => 'افحص خطط مخطط الأعمال واعتمدها ونفّذها واستردها.',
+    'core.console.business_schema_evidence.description' => 'سجّل تمرين استعادة بوصفه دليل الاسترداد الذي يجب أن تستشهد به خطة مخطط مدمرة.',
+    'core.console.business_security.description' => 'عرض نظرة عامة على أمان الأعمال للمؤسسات والعضويات والسياسات.',
     'core.console.content.description' => 'اسرد المحتوى واقرأه وأنشئه وحدّثه وانقل حالته وانقله إلى سلة المهملات أو استعده.',
     'core.console.content_model.description' => 'اسرد أنواع المحتوى وسير العمل المُصدَّرة واقرأها أو أنشئها أو انشرها.',
     'core.console.database_migrate.applied' => 'تم تطبيق {migration}',
@@ -2024,6 +2027,9 @@ return [
     'core.console.settings.description' => 'اقرأ تكوين الموقع أو حدّثه.',
     'core.console.studio_authoring.description' => 'افتح جلسة تأليف في Studio وشغّل عمليات التأليف الخاصة بها.',
     'core.console.studio_authoring.refused' => 'رُفض طلب التأليف في Studio.',
+    'core.console.studio_blueprint.description' => 'افتح جلسة تركيب Blueprint ثم حمّل Blueprint الخاص بها أو احفظه أو انشره أو ألغِ نشره.',
+    'core.console.studio_blueprint.refused' => 'رُفض طلب التركيب في Studio.',
+    'core.console.studio_composition.description' => 'قراءة تركيب المخطط لإصدار نوع محتوى أو تجهيزه.',
     'core.console.theme_administrator_recover.description' => 'استعِد سمة لوحة الإدارة المدمجة المحمية بشكل ذري.',
     'core.console.theme_administrator_recover.restored_the_protected_built_in_administrator' => 'تم استرداد سمة لوحة الإدارة المدمجة المحمية.',
     'core.console.token_create.description' => 'أنشئ رمز وصول API/MCP محدد النطاق واطبعه مرة واحدة.',
@@ -2032,6 +2038,7 @@ return [
     'core.console.user_create_admin.created_administrator' => 'تم إنشاء المسؤول {id}.',
     'core.console.user_create_admin.description' => 'أنشئ مسؤولًا من ملف كلمة مرور محمي.',
     'core.console.user_recover_credentials.description' => 'الوصول الطارئ: أعد تعيين كلمة مرور، أو أوقِف العوامل الثانية، أو أنهِ الجلسات من المضيف.',
+    'core.console.wording.description' => 'عرض تجاوزات الصياغة أو البحث فيها أو حفظها أو سحبها.',
     'core.identity.password.change_refused' => 'تعذّر تغيير كلمة مرورك. تحقّق من كلمة مرورك الحالية واختر كلمة مرور مختلفة لا تقل عن 12 حرفًا.',
     'core.identity.password.confirmation_mismatch' => 'لا تتطابق كلمة المرور الجديدة مع تأكيدها.',
     'core.interface_standard.dashboard.access_group_browser_heading' => 'إعدادات مجموعة الوصول الافتراضية',

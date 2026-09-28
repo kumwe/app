@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for he, carrying 2565 messages.
+ * Compiled interface message catalogue for he, carrying 2572 messages.
  *
  * Generated from he.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1940,12 +1940,15 @@ return [
     'core.console.audit_verify.description' => 'אמתו את שרשרת התקצירים של יומן הביקורת ואת העוגנים שלה.',
     'core.console.automation.description' => 'הציגו רשימה ונהלו תזמונים ומשימות בתור.',
     'core.console.business_approval.description' => 'משכו את בקשת האישור העסקי הממתינה שלכם.',
+    'core.console.business_bulk.description' => 'העברה לארכיון, שחזור או הפעלת פעולה אחת על עד חמישים רשומות עסקיות בבת אחת.',
     'core.console.business_definition.description' => 'הציגו רשימה, בדקו, נסחו טיוטה, אמתו, פרסמו והוציאו משימוש הגדרות ישויות עסקיות.',
     'core.console.business_periods.description' => 'הציגו רשימה, סגרו ופתחו מחדש תקופות רישום עסקיות.',
     'core.console.business_record.description' => 'גלו, שאלו, שנו, קשרו, בקשו אישורים, דווחו, ייצאו ובדקו פעולות עסקיות.',
     'core.console.business_record_rekey.description' => 'הצפינו מחדש סודות של רשומות עסקיות שמורות תחת מפתח ההצפנה הפעיל.',
     'core.console.business_report.description' => 'הריצו דוחות מודעי הרשאות, ובקשו, בדקו או הורידו ייצוא CSV מאומת.',
     'core.console.business_schema.description' => 'בדקו, אשרו, בצעו ושחזרו תוכניות סכימה עסקיות.',
+    'core.console.business_schema_evidence.description' => 'תיוק תרגיל שחזור כראיית השחזור שתוכנית סכמה הרסנית חייבת לצטט.',
+    'core.console.business_security.description' => 'הצגת סקירת אבטחת העסק של ארגונים, חברויות ומדיניות.',
     'core.console.content.description' => 'הציגו רשימה, קראו, צרו, עדכנו, העבירו מצב, העבירו לאשפה או שחזרו תוכן.',
     'core.console.content_model.description' => 'הציגו רשימה, קראו, צרו או פרסמו סוגי תוכן ותהליכי עבודה מנוהלי גרסאות.',
     'core.console.database_migrate.applied' => 'הוחלה {migration}',
@@ -2024,6 +2027,9 @@ return [
     'core.console.settings.description' => 'קראו או עדכנו את תצורת האתר.',
     'core.console.studio_authoring.description' => 'פתחו הפעלת כתיבה ב-Studio והריצו את פעולות הכתיבה שלה.',
     'core.console.studio_authoring.refused' => 'בקשת הכתיבה ב-Studio נדחתה.',
+    'core.console.studio_blueprint.description' => 'פתיחת הפעלת קומפוזיציה של Blueprint וטעינה, שמירה, פרסום או ביטול פרסום של ה-Blueprint שלה.',
+    'core.console.studio_blueprint.refused' => 'בקשת הקומפוזיציה של Studio נדחתה.',
+    'core.console.studio_composition.description' => 'קריאה או הקצאה של הרכב השרטוט של גרסת סוג תוכן.',
     'core.console.theme_administrator_recover.description' => 'שחזרו באופן אטומי את ערכת הנושא המובנית והמוגנת של ממשק הניהול.',
     'core.console.theme_administrator_recover.restored_the_protected_built_in_administrator' => 'ערכת הנושא המובנית והמוגנת של ממשק הניהול שוחזרה.',
     'core.console.token_create.description' => 'צרו אסימון גישה מוגבל היקף ל-API/MCP והדפיסו אותו פעם אחת.',
@@ -2032,6 +2038,7 @@ return [
     'core.console.user_create_admin.created_administrator' => 'נוצר מנהל {id}.',
     'core.console.user_create_admin.description' => 'צרו מנהל מקובץ סיסמה מוגן.',
     'core.console.user_recover_credentials.description' => 'שבירת זכוכית: אפסו סיסמה, בטלו גורמי אימות שניים, או סיימו הפעלות מתוך המארח.',
+    'core.console.wording.description' => 'הצגה, חיפוש, שמירה או משיכה של דריסות ניסוח.',
     'core.identity.password.change_refused' => 'לא ניתן היה לשנות את הסיסמה שלכם. בדקו את הסיסמה הנוכחית שלכם ובחרו סיסמה שונה בת 12 תווים לפחות.',
     'core.identity.password.confirmation_mismatch' => 'הסיסמה החדשה והאימות שלה אינם תואמים.',
     'core.interface_standard.dashboard.access_group_browser_heading' => 'ברירות מחדל של קבוצת הגישה',

@@ -80,6 +80,25 @@ final readonly class BusinessMutationPlanService
         'reorder',
         'request_action',
         'execute_action',
+        'bulk_archive',
+        'bulk_restore',
+        'bulk_action',
+    ];
+
+    /**
+     * Bulk plan operations and the generated-surface operation each one applies to every selected record.
+     *
+     * A bulk plan seals the definition, runtime, policy, actor and the exact selection with its reviewed
+     * versions; it binds no single record, because `BusinessSurfaceService::bulk()` re-proves every reviewed
+     * version atomically when the plan is executed.
+     *
+     * @var    array<string, BusinessSurfaceOperation>
+     * @since  2.0.0
+     */
+    private const array BULK_OPERATIONS = [
+        'bulk_archive' => BusinessSurfaceOperation::Archive,
+        'bulk_restore' => BusinessSurfaceOperation::Restore,
+        'bulk_action' => BusinessSurfaceOperation::Action,
     ];
 
     /**
@@ -364,7 +383,7 @@ final readonly class BusinessMutationPlanService
         );
         $recordId = null;
         $recordVersion = null;
-        if ($operation !== 'create') {
+        if ($operation !== 'create' && !isset(self::BULK_OPERATIONS[$operation])) {
             $recordId = $input['record'];
             if (!is_string($recordId)) {
                 throw self::invalid();
@@ -436,6 +455,8 @@ final readonly class BusinessMutationPlanService
                 'operation_id', 'definition', 'record', 'expected_version', 'action', 'input',
                 'approval_request_id',
             ],
+            'bulk_archive', 'bulk_restore' => ['operation_id', 'definition', 'items'],
+            'bulk_action' => ['operation_id', 'definition', 'items', 'action', 'input'],
         };
         $keys = array_keys($input);
         sort($keys, SORT_STRING);
@@ -452,6 +473,11 @@ final readonly class BusinessMutationPlanService
         RecordRequestGuard::definition($input['definition']);
         RecordValueGuard::assertValue(RecordValueProtection::protect($input));
 
+        if (isset(self::BULK_OPERATIONS[$operation])) {
+            $this->assertBulkInput($operation, $input['operation_id'], $input);
+
+            return;
+        }
         if ($operation === 'create') {
             if (!is_array($input['values']) || ($input['record'] !== null && !is_string($input['record']))) {
                 throw self::invalid();
@@ -477,6 +503,76 @@ final readonly class BusinessMutationPlanService
             'execute_action' => $this->assertActionInput($input, true),
             default => null,
         };
+    }
+
+    /**
+     * Validate one bulk selection with the same closed rules the bulk use case applies.
+     *
+     * @param   string                $operation    `bulk_archive`, `bulk_restore` or `bulk_action`.
+     * @param   string                $operationId  Validated bulk identity.
+     * @param   array<string, mixed>  $input        Canonical bulk input.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When the selection, action or input is malformed or unbounded.
+     *
+     * @since   2.0.0
+     */
+    private function assertBulkInput(string $operation, string $operationId, array $input): void
+    {
+        $items = $input['items'];
+        $action = $input['action'] ?? null;
+        $actionInput = $input['input'] ?? [];
+        if (
+            !is_array($items)
+            || !array_is_list($items)
+            || ($action !== null && !is_string($action))
+            || !is_array($actionInput)
+            || ($actionInput !== [] && array_is_list($actionInput))
+        ) {
+            throw self::invalid();
+        }
+        $selection = [];
+        foreach ($items as $item) {
+            $selection[] = self::stringKeyed($item);
+        }
+        new BusinessBulkMutation(
+            self::BULK_OPERATIONS[$operation],
+            $selection,
+            $operationId,
+            $action,
+            self::stringKeyed($actionInput),
+        );
+        if ($operation === 'bulk_action') {
+            $this->assertValues($actionInput, true);
+        }
+    }
+
+    /**
+     * Narrow one decoded JSON object to its string-keyed members.
+     *
+     * @param   mixed  $value  Decoded candidate object.
+     *
+     * @return  array<string, mixed>  The same members.
+     *
+     * @throws  InvalidArgumentException  When the value is not an object with string keys.
+     *
+     * @since   2.0.0
+     */
+    private static function stringKeyed(mixed $value): array
+    {
+        if (!is_array($value) || ($value !== [] && array_is_list($value))) {
+            throw self::invalid();
+        }
+        $members = [];
+        foreach ($value as $key => $member) {
+            if (!is_string($key)) {
+                throw self::invalid();
+            }
+            $members[$key] = $member;
+        }
+
+        return $members;
     }
 
     /**
@@ -662,6 +758,7 @@ final readonly class BusinessMutationPlanService
             'reorder' => BusinessSurfaceOperation::Reorder,
             'request_action' => BusinessSurfaceOperation::Approval,
             'execute_action' => BusinessSurfaceOperation::Action,
+            'bulk_archive', 'bulk_restore', 'bulk_action' => self::BULK_OPERATIONS[$operation],
             default => throw new InvalidArgumentException(
                 'The generated-business mutation plan operation is unsupported.',
             ),
@@ -682,7 +779,9 @@ final readonly class BusinessMutationPlanService
         return 'business.record.' . match ($operation) {
             'create', 'update', 'archive', 'restore', 'delete' => $operation,
             'relate', 'unrelate', 'reorder' => 'relate',
-            'request_action', 'execute_action' => 'action',
+            'request_action', 'execute_action', 'bulk_action' => 'action',
+            'bulk_archive' => 'archive',
+            'bulk_restore' => 'restore',
             default => throw new InvalidArgumentException(
                 'The generated-business mutation plan operation is unsupported.',
             ),

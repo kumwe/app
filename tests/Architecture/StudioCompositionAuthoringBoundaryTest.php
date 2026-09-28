@@ -67,7 +67,12 @@ final class StudioCompositionAuthoringBoundaryTest extends TestCase
             '[AdministratorCsrfMiddleware::class, AdministratorStudioCompositionHandler::class]',
             $container,
         );
-        self::assertSame(2, substr_count($container, "'content.read', 'studio.mode.blueprint'"));
+        // The two browser routes and the two machine routes over the same service demand the same pair.
+        self::assertSame(4, substr_count($container, "'content.read', 'studio.mode.blueprint'"));
+        self::assertSame(2, substr_count(
+            $container,
+            "'/api/v1/content-types/{id}/versions/{version}/composition'",
+        ));
         self::assertStringContainsString("strtoupper(\$request->getMethod()) === 'POST'", $handler);
         self::assertStringContainsString('$this->compositions->provision(', $handler);
         self::assertStringContainsString('new RedirectResponse($path, 303)', $handler);

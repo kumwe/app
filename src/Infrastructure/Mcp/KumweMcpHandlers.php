@@ -14,8 +14,10 @@ use Kumwe\Access\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\App\Application\Automation\AutomationManagementService;
+use Kumwe\Content\Application\ContentModelNotFound;
 use Kumwe\Content\Application\ContentNotFound;
 use Kumwe\Content\Application\ContentRecord;
+use Kumwe\App\Content\Application\ContentModelService;
 use Kumwe\App\Content\Application\ContentService;
 use Kumwe\App\Extension\Application\ExtensionManager;
 use Kumwe\App\Extension\Application\Trust\TrustStore;
@@ -30,19 +32,33 @@ use Kumwe\Navigation\Application\MenuRecord;
 use Kumwe\Navigation\Application\MenuItemRecord;
 use Kumwe\App\Navigation\Application\NavigationService;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionService;
+use Kumwe\BusinessDefinition\Application\DefinitionDraft;
 use Kumwe\BusinessDefinition\Application\DefinitionVersionRecord;
+use Kumwe\Content\Domain\ContentTypeDefinition;
+use Kumwe\Content\Workflow\Domain\WorkflowDefinition;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaService;
 use Kumwe\BusinessSchema\Domain\SchemaPlan;
 use Kumwe\BusinessSchema\Domain\SchemaPlanStep;
 use Kumwe\App\Extension\Domain\ThemeSurface;
 use Kumwe\App\Site\Application\SiteSettings;
 use Kumwe\App\Studio\Application\Authoring\StudioMachineAuthoringGateway;
+use Kumwe\App\Studio\Application\Composition\StudioCompositionThemeMismatch;
+use Kumwe\App\Studio\Application\Projection\StudioProjectionRejected;
+use Kumwe\App\Studio\Application\Authoring\StudioMachineCompositionGateway;
+use Kumwe\App\Studio\Application\Authoring\StudioMachineCompositionOperation;
+use Kumwe\App\Studio\Application\Composition\StudioContentComposition;
+use Kumwe\App\Studio\Application\Composition\StudioContentCompositionService;
 use Kumwe\App\Studio\Application\Authoring\StudioMachineAuthoringOperation;
 use Kumwe\App\Studio\Application\Authoring\StudioMachineAuthoringRefused;
 use Kumwe\App\Studio\Domain\Authoring\StudioAuthoringIntent;
 use Kumwe\App\Identity\Domain\UserStatus;
 use Kumwe\App\Media\Application\MediaAsset;
 use Kumwe\App\Media\Application\MediaService;
+use Kumwe\App\BusinessSecurity\Application\Administration\BusinessSecurityAdministrationService;
+use Kumwe\App\Localization\Application\MessageOverrideService;
+use Kumwe\Localization\Application\MessageFormattingFailed;
+use Kumwe\Localization\Application\MessageOverrideRecord;
+use Kumwe\Localization\Domain\MessageCatalogueLayer;
 use Psr\Clock\ClockInterface;
 
 /**
@@ -71,35 +87,45 @@ final readonly class KumweMcpHandlers
      * The container builds one unbound instance: neither identity argument is supplied, so every tool refuses
      * until `forContext()` or `forCredential()` hands back a bound copy.
      *
-     * @param  McpCapabilityCatalog            $catalog           Tools, resources and prompts this release exposes,
+     * @param McpCapabilityCatalog $catalog Tools, resources and prompts this release exposes,
      *         as published by `discover()` and the capability resource.
-     * @param  ContentService                  $content           Content entries behind the `kumwe_content_*` tools.
-     * @param  NavigationService               $navigation        Menus and menu items behind the `kumwe_menu_*` tools.
-     * @param  AccessControlService            $access            Users, roles, capabilities and token metadata.
-     * @param  SiteSettings                    $settings          The site settings document, read and replaced whole.
-     * @param  ExtensionManager                $extensions        Extension activation, disabling and removal.
-     * @param  TrustStore                      $trust             Extension signing keys, and the installation-wide
+     * @param ContentService $content Content entries behind the `kumwe_content_*` tools.
+     * @param NavigationService $navigation Menus and menu items behind the `kumwe_menu_*` tools.
+     * @param  AccessControlService                    $access            Users, roles, capabilities and token metadata.
+     * @param SiteSettings $settings The site settings document, read and replaced whole.
+     * @param  ExtensionManager                        $extensions        Extension activation, disabling and removal.
+     * @param TrustStore $trust Extension signing keys, and the installation-wide
      *         lifecycle lock the trust and extension writes are taken under.
-     * @param  AutomationManagementService     $automation        Schedules and jobs behind the automation tools.
-     * @param  BusinessDefinitionService       $definitions       Business entity definition drafts and versions.
-     * @param  BusinessSchemaService           $schema            Schema plans and their approval and execution.
-     * @param  BusinessMcpHandlers             $businessRecords   Bounded generated-business MCP delegate.
-     * @param  ReportMcpHandlers               $businessReports   Bounded report and export MCP delegate.
-     * @param  McpMutationGuard                $mutations         Idempotency fence every write is run through.
-     * @param  ClockInterface                  $clock             Supplies the first-run instant a new schedule is
+     * @param AutomationManagementService $automation Schedules and jobs behind the automation tools.
+     * @param BusinessDefinitionService $definitions Business entity definition drafts and versions.
+     * @param  BusinessSchemaService                   $schema            Schema plans and their approval and execution.
+     * @param  BusinessMcpHandlers                     $businessRecords   Bounded generated-business MCP delegate.
+     * @param  ReportMcpHandlers                       $businessReports   Bounded report and export MCP delegate.
+     * @param  McpMutationGuard                        $mutations         Idempotency fence every write is run through.
+     * @param ClockInterface $clock Supplies the first-run instant a new schedule is
      *         anchored to.
-     * @param  AuthorizationGateway            $authorization     Judges each write against the resource it names,
+     * @param AuthorizationGateway $authorization Judges each write against the resource it names,
      *         before the fence is entered.
-     * @param  ?ExecutionContext               $executionContext  Actor bound by `forContext()`; null while the
+     * @param  ?ExecutionContext                       $executionContext  Actor bound by `forContext()`; null while the
      *         instance is unbound.
-     * @param  ?Closure                        $contextRefresh    Callback bound by `forCredential()` that
+     * @param  ?Closure                                $contextRefresh    Callback bound by `forCredential()` that
      *         re-verifies the retained token and mints a fresh context; null when no credential is retained.
-     * @param  ?ExtensionExecutionGate         $extensionRuntime  Live authority for the resident extension
+     * @param  ?ExtensionExecutionGate                 $extensionRuntime  Live authority for the resident extension
      *         generation; null only in isolated tests that have no extension runtime.
-     * @param  ?StudioMachineAuthoringGateway  $studioAuthoring   Machine entry to the browser's Studio authoring
+     * @param ?StudioMachineAuthoringGateway $studioAuthoring Machine entry to the browser's Studio authoring
      *         host; null only in isolated tests that exercise no Studio tool.
-     * @param  ?MediaService                   $media             Media library the media tools browse, read, upload
+     * @param ?MediaService $media Media library the media tools browse, read, upload
      *         and delete through; null only in isolated tests that exercise no media tool.
+     * @param ?MessageOverrideService $wording Wording overrides the wording tools list, search,
+     *         save and withdraw through; null only in isolated tests that exercise no wording tool.
+     * @param  ?BusinessSecurityAdministrationService  $businessSecurity  Business Security read model the overview
+     *         tool answers from; null only in isolated tests that exercise no Business Security tool.
+     * @param ?ContentModelService $models Content types and workflows the model tools list,
+     *         read, create and update; null only in isolated tests that exercise no model tool.
+     * @param ?StudioContentCompositionService $compositions Blueprint compositions the composition tools read
+     *         and provision; null only in isolated tests that exercise no composition tool.
+     * @param ?StudioMachineCompositionGateway $blueprints Machine entry to the composition screen's Studio host
+     *         the Blueprint tools edit through; null only in isolated tests that exercise no Blueprint tool.
      *
      * @since  2.0.0
      */
@@ -124,6 +150,11 @@ final readonly class KumweMcpHandlers
         private ?ExtensionExecutionGate $extensionRuntime = null,
         private ?StudioMachineAuthoringGateway $studioAuthoring = null,
         private ?MediaService $media = null,
+        private ?MessageOverrideService $wording = null,
+        private ?BusinessSecurityAdministrationService $businessSecurity = null,
+        private ?ContentModelService $models = null,
+        private ?StudioContentCompositionService $compositions = null,
+        private ?StudioMachineCompositionGateway $blueprints = null,
     ) {
     }
 
@@ -162,6 +193,11 @@ final readonly class KumweMcpHandlers
             extensionRuntime: $this->extensionRuntime,
             studioAuthoring: $this->studioAuthoring,
             media: $this->media,
+            wording: $this->wording,
+            businessSecurity: $this->businessSecurity,
+            models: $this->models,
+            compositions: $this->compositions,
+            blueprints: $this->blueprints,
         );
     }
 
@@ -236,6 +272,11 @@ final readonly class KumweMcpHandlers
             extensionRuntime: $this->extensionRuntime,
             studioAuthoring: $this->studioAuthoring,
             media: $this->media,
+            wording: $this->wording,
+            businessSecurity: $this->businessSecurity,
+            models: $this->models,
+            compositions: $this->compositions,
+            blueprints: $this->blueprints,
         );
     }
 
@@ -591,6 +632,266 @@ final readonly class KumweMcpHandlers
             'replayed' => $result->replayed,
             'document' => self::studioJson($result->value()),
         ];
+    }
+
+    /**
+     * Open a Blueprint composition session bound to this credential for one provisioned Content type version.
+     *
+     * @param   string   $contentType         Content type UUID.
+     * @param   int      $contentTypeVersion  Exact Content type version.
+     * @param   ?string  $mode                `blueprint` (the default) or `read-only`.
+     *
+     * @return  array{document: string}  The session document as canonical JSON.
+     *
+     * @throws  StudioMachineAuthoringRefused  When the composition, theme lock or session policy refuses.
+     *
+     * @since   2.0.0
+     */
+    public function openStudioBlueprintSession(
+        string $contentType,
+        int $contentTypeVersion,
+        ?string $mode = null,
+    ): array {
+        $this->require('content.read');
+        if (!in_array($mode ?? 'blueprint', ['blueprint', 'read-only'], true)) {
+            throw StudioMachineAuthoringRefused::of('invalid-request', 'studio.machine/target-invalid');
+        }
+        $session = $this->studioBlueprints()->open(
+            $this->context(),
+            $contentType,
+            $contentTypeVersion,
+            $mode === 'read-only',
+        );
+
+        return ['document' => self::studioJson($session->toDocument())];
+    }
+
+    /**
+     * Load the session's Blueprint, or one immutable historical revision of it.
+     *
+     * @param   string   $session            Opaque session key the open tool returned.
+     * @param   string   $sessionGeneration  Session generation the open tool returned.
+     * @param   string   $document           The artifact reference as one canonical JSON object.
+     * @param   ?string  $locale             Caller locale tag, or null.
+     *
+     * @return  array{operation: string, replayed: bool, document: string}  Canonical result document.
+     *
+     * @throws  StudioMachineAuthoringRefused  When the document is malformed or the Studio host refuses.
+     *
+     * @since   2.0.0
+     */
+    public function studioBlueprintLoad(
+        string $session,
+        string $sessionGeneration,
+        string $document,
+        ?string $locale = null,
+    ): array {
+        return $this->studioBlueprint(
+            StudioMachineCompositionOperation::Load,
+            null,
+            $session,
+            $sessionGeneration,
+            $document,
+            null,
+            $locale,
+        );
+    }
+
+    /**
+     * List the exact dependencies the session's Blueprint revision locks.
+     *
+     * @param   string   $session            Opaque session key the open tool returned.
+     * @param   string   $sessionGeneration  Session generation the open tool returned.
+     * @param   string   $document           The artifact reference as one canonical JSON object.
+     * @param   ?string  $locale             Caller locale tag, or null.
+     *
+     * @return  array{operation: string, replayed: bool, document: string}  Canonical result document.
+     *
+     * @throws  StudioMachineAuthoringRefused  When the document is malformed or the Studio host refuses.
+     *
+     * @since   2.0.0
+     */
+    public function studioBlueprintDependencies(
+        string $session,
+        string $sessionGeneration,
+        string $document,
+        ?string $locale = null,
+    ): array {
+        return $this->studioBlueprint(
+            StudioMachineCompositionOperation::Dependencies,
+            null,
+            $session,
+            $sessionGeneration,
+            $document,
+            null,
+            $locale,
+        );
+    }
+
+    /**
+     * Save one schema-valid draft revision of the session's Blueprint.
+     *
+     * @param   string   $operationId        Studio host replay key.
+     * @param   string   $session            Opaque session key the open tool returned.
+     * @param   string   $sessionGeneration  Session generation the open tool returned.
+     * @param   string   $document           The complete Blueprint document as one canonical JSON object.
+     * @param   string   $expectedRevision   Revision the save replaces.
+     * @param   ?string  $locale             Caller locale tag, or null.
+     *
+     * @return  array{operation: string, replayed: bool, document: string}  Committed or replayed result.
+     *
+     * @throws  StudioMachineAuthoringRefused  When the document is malformed or the Studio host refuses.
+     *
+     * @since   2.0.0
+     */
+    public function studioBlueprintSave(
+        string $operationId,
+        string $session,
+        string $sessionGeneration,
+        string $document,
+        string $expectedRevision,
+        ?string $locale = null,
+    ): array {
+        return $this->studioBlueprint(
+            StudioMachineCompositionOperation::Save,
+            $operationId,
+            $session,
+            $sessionGeneration,
+            $document,
+            $expectedRevision,
+            $locale,
+        );
+    }
+
+    /**
+     * Publish the session's Blueprint draft.
+     *
+     * @param   string   $operationId        Studio host replay key.
+     * @param   string   $session            Opaque session key the open tool returned.
+     * @param   string   $sessionGeneration  Session generation the open tool returned.
+     * @param   string   $document           The artifact reference as one canonical JSON object.
+     * @param   string   $expectedRevision   Revision the publication replaces.
+     * @param   ?string  $locale             Caller locale tag, or null.
+     *
+     * @return  array{operation: string, replayed: bool, document: string}  Committed or replayed result.
+     *
+     * @throws  StudioMachineAuthoringRefused  When the document is malformed or the Studio host refuses.
+     *
+     * @since   2.0.0
+     */
+    public function studioBlueprintPublish(
+        string $operationId,
+        string $session,
+        string $sessionGeneration,
+        string $document,
+        string $expectedRevision,
+        ?string $locale = null,
+    ): array {
+        return $this->studioBlueprint(
+            StudioMachineCompositionOperation::Publish,
+            $operationId,
+            $session,
+            $sessionGeneration,
+            $document,
+            $expectedRevision,
+            $locale,
+        );
+    }
+
+    /**
+     * Return the session's published Blueprint to draft.
+     *
+     * @param   string   $operationId        Studio host replay key.
+     * @param   string   $session            Opaque session key the open tool returned.
+     * @param   string   $sessionGeneration  Session generation the open tool returned.
+     * @param   string   $document           The artifact reference as one canonical JSON object.
+     * @param   string   $expectedRevision   Revision the withdrawal replaces.
+     * @param   ?string  $locale             Caller locale tag, or null.
+     *
+     * @return  array{operation: string, replayed: bool, document: string}  Committed or replayed result.
+     *
+     * @throws  StudioMachineAuthoringRefused  When the document is malformed or the Studio host refuses.
+     *
+     * @since   2.0.0
+     */
+    public function studioBlueprintUnpublish(
+        string $operationId,
+        string $session,
+        string $sessionGeneration,
+        string $document,
+        string $expectedRevision,
+        ?string $locale = null,
+    ): array {
+        return $this->studioBlueprint(
+            StudioMachineCompositionOperation::Unpublish,
+            $operationId,
+            $session,
+            $sessionGeneration,
+            $document,
+            $expectedRevision,
+            $locale,
+        );
+    }
+
+    /**
+     * Dispatch one Blueprint artifact operation, keyed by the caller's operation identity when it mutates.
+     *
+     * @param   StudioMachineCompositionOperation  $operation          Operation to dispatch.
+     * @param   ?string                            $operationId        Studio host replay key of a mutation.
+     * @param   string                             $session            Opaque session key.
+     * @param   string                             $sessionGeneration  Echoed session generation.
+     * @param   string                             $document           Canonical JSON argument.
+     * @param   ?string                            $expectedRevision   Revision a mutation replaces.
+     * @param   ?string                            $locale             Caller locale tag, or null.
+     *
+     * @return  array{operation: string, replayed: bool, document: string}  Result with `{value, revision}`.
+     *
+     * @throws  StudioMachineAuthoringRefused  When the document is malformed or the Studio host refuses.
+     *
+     * @since   2.0.0
+     */
+    private function studioBlueprint(
+        StudioMachineCompositionOperation $operation,
+        ?string $operationId,
+        string $session,
+        string $sessionGeneration,
+        string $document,
+        ?string $expectedRevision,
+        ?string $locale,
+    ): array {
+        $this->require('content.read');
+        $result = $this->studioBlueprints()->perform(
+            $this->context($operationId),
+            $operation,
+            $session,
+            $sessionGeneration,
+            self::studioArgument($document),
+            $expectedRevision,
+            $operationId,
+            $locale,
+        );
+        $answer = $result->toDocument();
+
+        return [
+            'operation' => $operation->value,
+            'replayed' => $result->replayed,
+            'document' => self::studioJson((object) ['value' => $answer->value, 'revision' => $answer->revision]),
+        ];
+    }
+
+    /**
+     * Return the Blueprint composition gateway, refusing when this instance was composed without one.
+     *
+     * @return  StudioMachineCompositionGateway  Machine entry to the composition screen's Studio host.
+     *
+     * @throws  \LogicException  When the handlers were composed without Blueprint composition.
+     *
+     * @since   2.0.0
+     */
+    private function studioBlueprints(): StudioMachineCompositionGateway
+    {
+        return $this->blueprints
+            ?? throw new \LogicException('The MCP handlers were composed without Blueprint composition.');
     }
 
     /**
@@ -1583,153 +1884,6 @@ final readonly class KumweMcpHandlers
     }
 
     /**
-     * Retire every second factor one user holds, as the administrator's recovery control does.
-     *
-     * The subject can then enroll a new authenticator. The reason is recorded on the audit event, and the
-     * subject's security epoch advances so live step-up proofs stop verifying.
-     *
-     * @param   string  $operationId  Idempotency key this write is fenced on.
-     * @param   string  $userId       UUID of the user whose second factors are retired.
-     * @param   string  $reason       Operator justification, 1 to 500 characters once trimmed.
-     *
-     * @return  array{revoked: int}  How many second factors were retired.
-     *
-     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `users.manage`.
-     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses `users.manage` on this user.
-     * @throws  InvalidArgumentException  When the reason is blank or too long, the user does not exist, or the
-     *          operation identifier was already used with different arguments.
-     *
-     * @since   2.0.0
-     */
-    public function revokeUserStepUpCredentials(string $operationId, string $userId, string $reason): array
-    {
-        $this->require('users.manage');
-        $this->preauthorize($operationId, 'users.manage', AuthorizationResource::item('user', $userId));
-
-        return $this->mutations->run(
-            $this->context($operationId),
-            'user.step-up.revoke',
-            $operationId,
-            compact('userId', 'reason'),
-            fn (): array => ['revoked' => $this->access->revokeStepUpCredentials(
-                $this->context($operationId),
-                $userId,
-                $reason,
-            )],
-        );
-    }
-
-    /**
-     * End every session one user holds without changing the account's lifecycle state.
-     *
-     * @param   string  $operationId  Idempotency key this write is fenced on.
-     * @param   string  $userId       UUID of the user whose sessions end.
-     * @param   string  $reason       Operator justification, 1 to 500 characters once trimmed.
-     *
-     * @return  array{sessions_terminated: int}  How many administrator sessions ended.
-     *
-     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `users.manage`.
-     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses `users.manage` on this user.
-     * @throws  InvalidArgumentException  When the reason is blank or too long, the user does not exist, or the
-     *          operation identifier was already used with different arguments.
-     *
-     * @since   2.0.0
-     */
-    public function terminateUserSessions(string $operationId, string $userId, string $reason): array
-    {
-        $this->require('users.manage');
-        $this->preauthorize($operationId, 'users.manage', AuthorizationResource::item('user', $userId));
-
-        return $this->mutations->run(
-            $this->context($operationId),
-            'user.sessions.terminate',
-            $operationId,
-            compact('userId', 'reason'),
-            fn (): array => ['sessions_terminated' => $this->access->terminateUserSessions(
-                $this->context($operationId),
-                $userId,
-                $reason,
-            )],
-        );
-    }
-
-    /**
-     * Remove one role assignment from a user.
-     *
-     * Only the revoking direction is published: assigning a role widens authority and stays on the
-     * administrator, REST and console surfaces. An actor may not take the administrator role off their own
-     * account, exactly as the access screen refuses it.
-     *
-     * @param   string  $operationId  Idempotency key this write is fenced on.
-     * @param   string  $userId       UUID of the user losing the role.
-     * @param   string  $roleId       UUID of the role being removed.
-     *
-     * @return  array{updated: bool}  Always `updated: true`; a refusal arrives as an exception.
-     *
-     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `users.manage`.
-     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses `users.manage` on the user or the role.
-     * @throws  InvalidArgumentException  When the actor removes their own administrator role, or the operation
-     *          identifier was already used with different arguments.
-     *
-     * @since   2.0.0
-     */
-    public function revokeUserRole(string $operationId, string $userId, string $roleId): array
-    {
-        $this->require('users.manage');
-        $this->preauthorize($operationId, 'users.manage', AuthorizationResource::item('user', $userId));
-        $this->preauthorize($operationId, 'users.manage', AuthorizationResource::item('role', $roleId));
-
-        return $this->mutations->run(
-            $this->context($operationId),
-            'user.role.revoke',
-            $operationId,
-            compact('userId', 'roleId'),
-            function () use ($operationId, $userId, $roleId): array {
-                $this->access->revokeRole($this->context($operationId), $userId, $roleId);
-
-                return ['updated' => true];
-            },
-        );
-    }
-
-    /**
-     * Remove one capability grant from a role.
-     *
-     * Only the revoking direction is published: granting a capability widens authority and stays on the
-     * administrator, REST and console surfaces. The service reads the role from the stored grant and
-     * authorizes it too, so naming a grant is not a way to edit a role the caller does not manage.
-     *
-     * @param   string  $operationId  Idempotency key this write is fenced on.
-     * @param   string  $grantId      UUID of the grant being removed.
-     *
-     * @return  array{revoked: bool}  Always `revoked: true`; a refusal arrives as an exception.
-     *
-     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `users.manage`.
-     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses `users.manage` on the grant or its role.
-     * @throws  InvalidArgumentException  When the grant does not exist, or the operation identifier was already
-     *          used with different arguments.
-     *
-     * @since   2.0.0
-     */
-    public function revokeRoleGrant(string $operationId, string $grantId): array
-    {
-        $this->require('users.manage');
-        $this->preauthorize($operationId, 'users.manage', AuthorizationResource::item('grant', $grantId));
-
-        return $this->mutations->run(
-            $this->context($operationId),
-            'role.grant.revoke',
-            $operationId,
-            compact('grantId'),
-            function () use ($operationId, $grantId): array {
-                $this->access->revokeGrant($this->context($operationId), $grantId);
-
-                return ['revoked' => true];
-            },
-        );
-    }
-
-    /**
      * List the extension signing keys and what still depends on each.
      *
      * Every row carries the active releases signed by that key, which is the number an operator needs before
@@ -2583,6 +2737,83 @@ final readonly class KumweMcpHandlers
     }
 
     /**
+     * Plan one atomic bulk archive, restore or declared action over at most fifty reviewed records.
+     *
+     * @param   string                                             $operationId  Bulk identity the plan and the
+     *          eventual mutation share.
+     * @param   string                                             $operation    `archive`, `restore` or `action`.
+     * @param   string                                             $definition   Definition UUID or handle.
+     * @param   list<array{record: string, expectedVersion: int}>  $items        Reviewed selection.
+     * @param   ?string                                            $action       Bulk-enabled action handle.
+     * @param   array<string, mixed>                               $input        Shared action input.
+     *
+     * @return  array<string, mixed>  Signed plan, binding summary and five-minute expiry.
+     *
+     * @throws  InsufficientCapability  When the caller lacks read or the operation's record capability.
+     *
+     * @since   2.0.0
+     */
+    public function planBusinessBulk(
+        string $operationId,
+        string $operation,
+        string $definition,
+        array $items,
+        ?string $action = null,
+        array $input = [],
+    ): array {
+        $this->require('business.record.read');
+        $this->require(BusinessMcpHandlers::capabilityFor(BusinessMcpHandlers::bulkOperation($operation)));
+
+        return $this->businessRecords->planBulk(
+            $this->context(),
+            $operationId,
+            $operation,
+            $definition,
+            $items,
+            $action,
+            $input,
+        );
+    }
+
+    /**
+     * Apply one planned atomic bulk archive, restore or declared action, as the administrator bulk form does.
+     *
+     * @param   string                                             $operationId  Planned bulk identity.
+     * @param   string                                             $plan         Signed plan for these arguments.
+     * @param   string                                             $operation    `archive`, `restore` or `action`.
+     * @param   string                                             $definition   Definition UUID or handle.
+     * @param   list<array{record: string, expectedVersion: int}>  $items        Reviewed selection.
+     * @param   ?string                                            $action       Bulk-enabled action handle.
+     * @param   array<string, mixed>                               $input        Shared action input.
+     *
+     * @return  array<string, mixed>  Operation, count and per-member outcomes, or the identical replay.
+     *
+     * @throws  InsufficientCapability  When the caller lacks the operation's record capability.
+     *
+     * @since   2.0.0
+     */
+    public function executeBusinessBulk(
+        string $operationId,
+        string $plan,
+        string $operation,
+        string $definition,
+        array $items,
+        ?string $action = null,
+        array $input = [],
+    ): array {
+        return $this->businessRecords->bulk(
+            $this->businessMutationContext($operationId, BusinessMcpHandlers::bulkOperation($operation)),
+            $operationId,
+            $plan,
+            $operation,
+            $definition,
+            $items,
+            $action,
+            $input,
+        );
+    }
+
+    /**
      * Plan one exact generated-business mutation against current trusted state.
      *
      * Planning is read-only but requires both record read and the exact mutation capability. The shared
@@ -3173,6 +3404,759 @@ final readonly class KumweMcpHandlers
     }
 
     /**
+     * List the stored wording overrides of one administered layer, as the Wording screen does.
+     *
+     * @param   string   $layer   `site`, or `organization` for the credential's membership organization.
+     * @param   ?string  $locale  Restrict to one carried locale, or null for every locale.
+     *
+     * @return  array{layer: string, locale: ?string, items: list<array<string, mixed>>}  Overrides.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `localization.overrides.manage`.
+     * @throws  InvalidArgumentException  When the layer is not administered or the locale is not carried.
+     *
+     * @since   2.0.0
+     */
+    public function listWordingOverrides(string $layer = 'site', ?string $locale = null): array
+    {
+        $this->require('localization.overrides.manage');
+        $administered = self::wordingLayer($layer);
+
+        return [
+            'layer' => $administered->value,
+            'locale' => $locale,
+            'items' => array_map(
+                static fn (MessageOverrideRecord $record): array => $record->toArray(),
+                $this->wordingOverrides()->overrides($this->context(), $administered, $locale),
+            ),
+        ];
+    }
+
+    /**
+     * Search the shipped wording of one carried locale an override starts from.
+     *
+     * @param   string  $locale  Carried locale tag.
+     * @param   string  $query   Case-insensitive identifier or wording substring; empty for the first page.
+     * @param   int     $limit   Matches to return, from one to two hundred.
+     *
+     * @return  array{locale: string, items: list<array{identifier: string, pattern: string, layer: string}>}  Hits.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `localization.overrides.manage`.
+     * @throws  InvalidArgumentException  When the locale is not carried.
+     *
+     * @since   2.0.0
+     */
+    public function searchWordingCatalogue(string $locale, string $query = '', int $limit = 50): array
+    {
+        $this->require('localization.overrides.manage');
+
+        return [
+            'locale' => $locale,
+            'items' => $this->wordingOverrides()->searchCatalogue($this->context(), $locale, $query, $limit),
+        ];
+    }
+
+    /**
+     * Store one wording override under a replay-safe operation identity.
+     *
+     * @param   string  $operationId  Idempotency key this write is fenced on.
+     * @param   string  $layer        Administered layer, `site` or `organization`.
+     * @param   string  $locale       Carried locale tag.
+     * @param   string  $identifier   Message identifier whose wording is replaced.
+     * @param   string  $pattern      Replacement ICU pattern.
+     *
+     * @return  array<string, mixed>  The stored override, or the stored copy on a repeat.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `localization.overrides.manage`.
+     * @throws  InvalidArgumentException  When the layer, locale, identifier or ICU pattern is refused.
+     *
+     * @since   2.0.0
+     */
+    public function saveWordingOverride(
+        string $operationId,
+        string $layer,
+        string $locale,
+        string $identifier,
+        string $pattern,
+    ): array {
+        $this->require('localization.overrides.manage');
+        $this->preauthorize(
+            $operationId,
+            'localization.overrides.manage',
+            AuthorizationResource::collection('message_override'),
+        );
+        $administered = self::wordingLayer($layer);
+
+        return $this->mutations->run(
+            $this->context($operationId),
+            'wording.override.save',
+            $operationId,
+            compact('layer', 'locale', 'identifier', 'pattern'),
+            function () use ($operationId, $administered, $locale, $identifier, $pattern): array {
+                try {
+                    return $this->wordingOverrides()->override(
+                        $this->context($operationId),
+                        $administered,
+                        $locale,
+                        $identifier,
+                        $pattern,
+                    )->toArray();
+                } catch (MessageFormattingFailed $refused) {
+                    // ICU refusals are the caller's input, answered as `request.invalid` like REST's 422.
+                    throw new InvalidArgumentException($refused->getMessage(), 0, $refused);
+                }
+            },
+        );
+    }
+
+    /**
+     * Withdraw one wording override under a replay-safe operation identity.
+     *
+     * @param   string  $operationId  Idempotency key this write is fenced on.
+     * @param   string  $layer        Administered layer, `site` or `organization`.
+     * @param   string  $locale       Carried locale tag.
+     * @param   string  $identifier   Message identifier to stop overriding.
+     *
+     * @return  array{withdrawn: bool}  Whether an override was withdrawn.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `localization.overrides.manage`.
+     * @throws  InvalidArgumentException  When the layer, locale or identifier is refused.
+     *
+     * @since   2.0.0
+     */
+    public function withdrawWordingOverride(
+        string $operationId,
+        string $layer,
+        string $locale,
+        string $identifier,
+    ): array {
+        $this->require('localization.overrides.manage');
+        $this->preauthorize(
+            $operationId,
+            'localization.overrides.manage',
+            AuthorizationResource::collection('message_override'),
+        );
+        $administered = self::wordingLayer($layer);
+
+        return $this->mutations->run(
+            $this->context($operationId),
+            'wording.override.withdraw',
+            $operationId,
+            compact('layer', 'locale', 'identifier'),
+            fn (): array => ['withdrawn' => $this->wordingOverrides()->withdraw(
+                $this->context($operationId),
+                $administered,
+                $locale,
+                $identifier,
+            )],
+        );
+    }
+
+    /**
+     * Read the Business Security overview the Business Security screen renders.
+     *
+     * The screen's writes are not published: `BusinessSecurityAdministrationService` consumes a fresh human
+     * step-up proof for each of them, which an MCP credential cannot hold.
+     *
+     * @return  array<string, list<array<string, mixed>>>  Organizations, workspaces, memberships, policies,
+     *          separation-of-duty rules and approvals scoped to the credential's site and membership.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `business.security.manage`.
+     * @throws  InvalidArgumentException  When the server was composed without the read model.
+     *
+     * @since   2.0.0
+     */
+    public function businessSecurityOverview(): array
+    {
+        $this->require('business.security.manage');
+        $security = $this->businessSecurity
+            ?? throw new InvalidArgumentException('Business Security is unavailable on this server.');
+
+        return $security->overview($this->context());
+    }
+
+    /**
+     * Read one content entry, trashed entries included, as the editor opens it.
+     *
+     * @param   string  $id  Entry UUID.
+     *
+     * @return  array<string, mixed>  The stored record.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `content.read`.
+     * @throws  ContentNotFound  When the site holds no such entry.
+     *
+     * @since   2.0.0
+     */
+    public function getContent(string $id): array
+    {
+        $this->require('content.read');
+
+        return $this->content->get($this->context(), $id, true)->toArray();
+    }
+
+    /**
+     * Read one menu.
+     *
+     * @param   string  $id  Menu UUID.
+     *
+     * @return  array<string, mixed>  The stored menu.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `navigation.manage`.
+     *
+     * @since   2.0.0
+     */
+    public function getMenu(string $id): array
+    {
+        $this->require('navigation.manage');
+
+        return $this->navigation->menu($this->context(), $id)->toArray();
+    }
+
+    /**
+     * Rename one menu at an expected version under a replay-safe operation identity.
+     *
+     * @param   string  $operationId  Idempotency key this write is fenced on.
+     * @param   string  $id           Menu UUID.
+     * @param   int     $version      Version the caller last read.
+     * @param   string  $handle       New menu handle.
+     * @param   string  $title        New menu title.
+     *
+     * @return  array<string, mixed>  The stored menu, or the stored copy on a repeat.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `navigation.manage`.
+     *
+     * @since   2.0.0
+     */
+    public function updateMenu(string $operationId, string $id, int $version, string $handle, string $title): array
+    {
+        $this->require('navigation.manage');
+        $this->preauthorize($operationId, 'navigation.manage', AuthorizationResource::item('menu', $id));
+
+        return $this->mutations->run(
+            $this->context($operationId),
+            'menu.update',
+            $operationId,
+            compact('id', 'version', 'handle', 'title'),
+            fn (): array => $this->navigation->updateMenu(
+                $this->context($operationId),
+                $id,
+                $version,
+                $handle,
+                $title,
+            )->toArray(),
+        );
+    }
+
+    /**
+     * Delete one menu at an expected version under a replay-safe operation identity.
+     *
+     * @param   string  $operationId  Idempotency key this write is fenced on.
+     * @param   string  $id           Menu UUID.
+     * @param   int     $version      Version the caller last read.
+     *
+     * @return  array{deleted: true}  Confirmation, or the stored copy on a repeat.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `navigation.manage`.
+     *
+     * @since   2.0.0
+     */
+    public function deleteMenu(string $operationId, string $id, int $version): array
+    {
+        $this->require('navigation.manage');
+        $this->preauthorize($operationId, 'navigation.manage', AuthorizationResource::item('menu', $id));
+
+        return $this->mutations->run(
+            $this->context($operationId),
+            'menu.delete',
+            $operationId,
+            compact('id', 'version'),
+            function () use ($operationId, $id, $version): array {
+                $this->navigation->deleteMenu($this->context($operationId), $id, $version);
+
+                return ['deleted' => true];
+            },
+        );
+    }
+
+    /**
+     * List the site's content types, as the content models screen does.
+     *
+     * @return  array{items: list<array<string, mixed>>}  Content types.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `content.read`.
+     *
+     * @since   2.0.0
+     */
+    public function listContentTypes(): array
+    {
+        $this->require('content.read');
+
+        return ['items' => array_map(
+            static fn (ContentTypeDefinition $type): array => $type->toArray(),
+            $this->contentModels()->contentTypes($this->context()),
+        )];
+    }
+
+    /**
+     * Read one content type by handle or UUID, optionally at an exact version.
+     *
+     * @param   string  $id       Handle or UUID.
+     * @param   ?int    $version  Exact version, or null for the current one.
+     *
+     * @return  array<string, mixed>  The content type.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `content.read`.
+     *
+     * @since   2.0.0
+     */
+    public function getContentType(string $id, ?int $version = null): array
+    {
+        $this->require('content.read');
+
+        return $this->contentModels()->contentType($this->context(), $id, $version)->toArray();
+    }
+
+    /**
+     * Create one content type under a replay-safe operation identity.
+     *
+     * @param   string                $operationId  Idempotency key this write is fenced on.
+     * @param   string                $handle       New type handle.
+     * @param   string                $name         Display name.
+     * @param   string                $workflow     Workflow handle or UUID the type is bound to.
+     * @param   array<string, mixed>  $schema       Field schema document.
+     *
+     * @return  array<string, mixed>  The stored type, or the stored copy on a repeat.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `content.update`.
+     *
+     * @since   2.0.0
+     */
+    public function createContentType(
+        string $operationId,
+        string $handle,
+        string $name,
+        string $workflow,
+        array $schema = [],
+    ): array {
+        $this->require('content.update');
+        $this->preauthorize($operationId, 'content.update', AuthorizationResource::collection('content_type'));
+
+        return $this->mutations->run(
+            $this->context($operationId),
+            'content-type.create',
+            $operationId,
+            compact('handle', 'name', 'workflow', 'schema'),
+            fn (): array => $this->contentModels()->createContentType(
+                $this->context($operationId),
+                $handle,
+                $name,
+                $workflow,
+                $schema,
+            )->toArray(),
+        );
+    }
+
+    /**
+     * Publish a new version of one content type at an expected version under a replay-safe identity.
+     *
+     * @param   string                $operationId    Idempotency key this write is fenced on.
+     * @param   string                $id             Type UUID.
+     * @param   int                   $version        Version the caller last read.
+     * @param   string                $name           Display name.
+     * @param   string                $workflow       Workflow handle or UUID.
+     * @param   array<string, mixed>  $schema         Field schema document.
+     * @param   bool                  $allowBreaking  Whether a breaking schema change is accepted.
+     *
+     * @return  array<string, mixed>  The stored type, or the stored copy on a repeat.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `content.update`.
+     *
+     * @since   2.0.0
+     */
+    public function updateContentType(
+        string $operationId,
+        string $id,
+        int $version,
+        string $name,
+        string $workflow,
+        array $schema = [],
+        bool $allowBreaking = false,
+    ): array {
+        $this->require('content.update');
+        $this->preauthorize($operationId, 'content.update', AuthorizationResource::item('content_type', $id));
+
+        return $this->mutations->run(
+            $this->context($operationId),
+            'content-type.update',
+            $operationId,
+            compact('id', 'version', 'name', 'workflow', 'schema', 'allowBreaking'),
+            fn (): array => $this->contentModels()->updateContentType(
+                $this->context($operationId),
+                $id,
+                $version,
+                $name,
+                $workflow,
+                $schema,
+                $allowBreaking,
+            )->toArray(),
+        );
+    }
+
+    /**
+     * List the site's workflows, as the content models screen does.
+     *
+     * @return  array{items: list<array<string, mixed>>}  Workflows.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `content.read`.
+     *
+     * @since   2.0.0
+     */
+    public function listWorkflows(): array
+    {
+        $this->require('content.read');
+
+        return ['items' => array_map(
+            static fn (WorkflowDefinition $workflow): array => $workflow->toArray(),
+            $this->contentModels()->workflows($this->context()),
+        )];
+    }
+
+    /**
+     * Read one workflow by handle or UUID, optionally at an exact version.
+     *
+     * @param   string  $id       Handle or UUID.
+     * @param   ?int    $version  Exact version, or null for the current one.
+     *
+     * @return  array<string, mixed>  The workflow.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `content.read`.
+     *
+     * @since   2.0.0
+     */
+    public function getWorkflow(string $id, ?int $version = null): array
+    {
+        $this->require('content.read');
+
+        return $this->contentModels()->workflow($this->context(), $id, $version)->toArray();
+    }
+
+    /**
+     * Create one workflow under a replay-safe operation identity.
+     *
+     * @param   string                      $operationId  Idempotency key this write is fenced on.
+     * @param   string                      $handle       New workflow handle.
+     * @param   string                      $name         Display name.
+     * @param   list<array<string, mixed>>  $states       Declared states.
+     * @param   list<array<string, mixed>>  $transitions  Declared transitions.
+     *
+     * @return  array<string, mixed>  The stored workflow, or the stored copy on a repeat.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `content.update`.
+     *
+     * @since   2.0.0
+     */
+    public function createWorkflow(
+        string $operationId,
+        string $handle,
+        string $name,
+        array $states,
+        array $transitions,
+    ): array {
+        $this->require('content.update');
+        $this->preauthorize($operationId, 'content.update', AuthorizationResource::collection('workflow'));
+
+        return $this->mutations->run(
+            $this->context($operationId),
+            'workflow.create',
+            $operationId,
+            compact('handle', 'name', 'states', 'transitions'),
+            fn (): array => $this->contentModels()->createWorkflow(
+                $this->context($operationId),
+                $handle,
+                $name,
+                $states,
+                $transitions,
+            )->toArray(),
+        );
+    }
+
+    /**
+     * Publish a new version of one workflow at an expected version under a replay-safe identity.
+     *
+     * @param   string                      $operationId    Idempotency key this write is fenced on.
+     * @param   string                      $id             Workflow UUID.
+     * @param   int                         $version        Version the caller last read.
+     * @param   string                      $name           Display name.
+     * @param   list<array<string, mixed>>  $states         Declared states.
+     * @param   list<array<string, mixed>>  $transitions    Declared transitions.
+     * @param   bool                        $allowBreaking  Whether a breaking change is accepted.
+     *
+     * @return  array<string, mixed>  The stored workflow, or the stored copy on a repeat.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `content.update`.
+     *
+     * @since   2.0.0
+     */
+    public function updateWorkflow(
+        string $operationId,
+        string $id,
+        int $version,
+        string $name,
+        array $states,
+        array $transitions,
+        bool $allowBreaking = false,
+    ): array {
+        $this->require('content.update');
+        $this->preauthorize($operationId, 'content.update', AuthorizationResource::item('workflow', $id));
+
+        return $this->mutations->run(
+            $this->context($operationId),
+            'workflow.update',
+            $operationId,
+            compact('id', 'version', 'name', 'states', 'transitions', 'allowBreaking'),
+            fn (): array => $this->contentModels()->updateWorkflow(
+                $this->context($operationId),
+                $id,
+                $version,
+                $name,
+                $states,
+                $transitions,
+                $allowBreaking,
+            )->toArray(),
+        );
+    }
+
+    /**
+     * Save one business definition document as the working draft under a replay-safe identity.
+     *
+     * @param   string                $operationId       Idempotency key this write is fenced on.
+     * @param   array<string, mixed>  $definition        Definition document.
+     * @param   ?int                  $expectedRevision  Draft revision the caller last read, or null for a new one.
+     *
+     * @return  array<string, mixed>  The stored draft, or the stored copy on a repeat.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `content.update`.
+     *
+     * @since   2.0.0
+     */
+    public function saveBusinessDefinitionDraft(
+        string $operationId,
+        array $definition,
+        ?int $expectedRevision = null,
+    ): array {
+        $this->require('content.update');
+        $this->preauthorize(
+            $operationId,
+            'content.update',
+            AuthorizationResource::collection('business_definition'),
+        );
+
+        return $this->mutations->run(
+            $this->context($operationId),
+            'business_definition.draft.save',
+            $operationId,
+            compact('definition', 'expectedRevision'),
+            fn (): array => self::definitionDraft($this->definitions->importDraft(
+                $this->context($operationId),
+                $definition,
+                $expectedRevision,
+            )),
+        );
+    }
+
+    /**
+     * Validate the working draft of one definition, as the definitions screen's validate control does.
+     *
+     * Validation is audited, so it is fenced like a write.
+     *
+     * @param   string  $operationId  Idempotency key this call is fenced on.
+     * @param   string  $handle       Definition handle or UUID.
+     *
+     * @return  array<string, mixed>  The validated draft, or the stored copy on a repeat.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `content.update`.
+     *
+     * @since   2.0.0
+     */
+    public function validateBusinessDefinitionDraft(string $operationId, string $handle): array
+    {
+        $this->require('content.update');
+        $this->preauthorize(
+            $operationId,
+            'content.update',
+            AuthorizationResource::collection('business_definition'),
+        );
+
+        return $this->mutations->run(
+            $this->context($operationId),
+            'business_definition.validate',
+            $operationId,
+            compact('handle'),
+            fn (): array => self::definitionDraft($this->definitions->validateDraft(
+                $this->context($operationId),
+                $handle,
+            )),
+        );
+    }
+
+    /**
+     * Mark one published definition version superseded under a replay-safe identity.
+     *
+     * @param   string  $operationId  Idempotency key this write is fenced on.
+     * @param   string  $handle       Definition handle or UUID.
+     * @param   int     $version      Published version.
+     *
+     * @return  array<string, mixed>  The version record, or the stored copy on a repeat.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `content.update`.
+     *
+     * @since   2.0.0
+     */
+    public function supersedeBusinessDefinition(string $operationId, string $handle, int $version): array
+    {
+        return $this->retireBusinessDefinition($operationId, 'supersede', $handle, $version);
+    }
+
+    /**
+     * Mark one published definition version deprecated under a replay-safe identity.
+     *
+     * @param   string  $operationId  Idempotency key this write is fenced on.
+     * @param   string  $handle       Definition handle or UUID.
+     * @param   int     $version      Published version.
+     *
+     * @return  array<string, mixed>  The version record, or the stored copy on a repeat.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `content.update`.
+     *
+     * @since   2.0.0
+     */
+    public function deprecateBusinessDefinition(string $operationId, string $handle, int $version): array
+    {
+        return $this->retireBusinessDefinition($operationId, 'deprecate', $handle, $version);
+    }
+
+    /**
+     * Withdraw one published definition version so the runtime refuses it, under a replay-safe identity.
+     *
+     * @param   string  $operationId  Idempotency key this write is fenced on.
+     * @param   string  $handle       Definition handle or UUID.
+     * @param   int     $version      Published version.
+     *
+     * @return  array<string, mixed>  The version record, or the stored copy on a repeat.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `content.update`.
+     *
+     * @since   2.0.0
+     */
+    public function rejectBusinessDefinition(string $operationId, string $handle, int $version): array
+    {
+        return $this->retireBusinessDefinition($operationId, 'reject', $handle, $version);
+    }
+
+    /**
+     * Read one record with exactly one declared relationship hydrated, as the relationship screen does.
+     *
+     * @param   string  $definition       Definition UUID or handle.
+     * @param   string  $record           Public record identity.
+     * @param   string  $relationship     Declared relationship handle.
+     * @param   bool    $includeArchived  Whether an archived source may be addressed.
+     * @param   bool    $includeDeleted   Whether a soft-deleted source may be addressed.
+     *
+     * @return  array<string, mixed>  Safe detail model with the one relationship.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `business.record.read`.
+     *
+     * @since   2.0.0
+     */
+    public function readBusinessRelationship(
+        string $definition,
+        string $record,
+        string $relationship,
+        bool $includeArchived = false,
+        bool $includeDeleted = false,
+    ): array {
+        $this->require('business.record.read');
+
+        return $this->businessRecords->relationship(
+            $this->context(),
+            $definition,
+            $record,
+            $relationship,
+            $includeArchived,
+            $includeDeleted,
+        );
+    }
+
+    /**
+     * Read the Blueprint composition of one Content type version, as the composition screen does.
+     *
+     * @param   string  $contentType  Content type UUID.
+     * @param   int     $version      Published Content type version.
+     *
+     * @return  array<string, mixed>  Coordinates, model, binding and the exact Blueprint head.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `content.read` or `studio.mode.blueprint`.
+     * @throws  ContentModelNotFound  When no composition is provisioned or the model is unavailable, answered as
+     *          `resource.not_found`.
+     * @throws  \DomainException  When the Blueprint is locked to another published theme.
+     *
+     * @since   2.0.0
+     */
+    public function getStudioComposition(string $contentType, int $version): array
+    {
+        $this->require('studio.mode.blueprint');
+        $this->require('content.read');
+
+        return $this->studioComposition(
+            $contentType,
+            $version,
+            fn (StudioContentCompositionService $compositions): ?StudioContentComposition => $compositions->find(
+                $this->context(),
+                $contentType,
+                $version,
+            ),
+        );
+    }
+
+    /**
+     * Provision the empty Blueprint draft of one Content type version under a replay-safe identity.
+     *
+     * @param   string  $operationId  Idempotency key this write is fenced on.
+     * @param   string  $contentType  Content type UUID.
+     * @param   int     $version      Published Content type version.
+     *
+     * @return  array<string, mixed>  The provisioned composition, the one already bound, or the stored copy.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `content.read` or `studio.mode.blueprint`.
+     * @throws  ContentModelNotFound  When the model is unavailable, answered as `resource.not_found`.
+     * @throws  \DomainException  When the Blueprint is locked to another published theme.
+     *
+     * @since   2.0.0
+     */
+    public function provisionStudioComposition(string $operationId, string $contentType, int $version): array
+    {
+        $this->require('studio.mode.blueprint');
+        $this->require('content.read');
+        $this->preauthorize($operationId, 'content.read', AuthorizationResource::item('content_type', $contentType));
+
+        return $this->mutations->run(
+            $this->context($operationId),
+            'studio.composition.provision',
+            $operationId,
+            compact('contentType', 'version'),
+            fn (): array => $this->studioComposition(
+                $contentType,
+                $version,
+                fn (StudioContentCompositionService $service): StudioContentComposition => $service->provision(
+                    $this->context($operationId),
+                    $contentType,
+                    $version,
+                    StudioContentCompositionService::RENDERERS,
+                ),
+            ),
+        );
+    }
+
+    /**
      * Execute one ordinary declared action; a high-impact attempt fails closed without browser step-up.
      *
      * @param   string                $operationId        Caller-chosen stable operation identity.
@@ -3309,15 +4293,8 @@ final readonly class KumweMcpHandlers
     public function getBusinessDefinitionDraft(string $handle): array
     {
         $this->require('content.read');
-        $draft = $this->definitions->draft($this->context(), $handle);
 
-        return [
-            'revision' => $draft->revision,
-            'checksum' => $draft->checksum,
-            'updated_by' => $draft->updatedBy,
-            'updated_at' => $draft->updatedAt->format(DATE_ATOM),
-            'definition' => $draft->definition->toArray(),
-        ];
+        return self::definitionDraft($this->definitions->draft($this->context(), $handle));
     }
 
     /**
@@ -3941,6 +4918,162 @@ final readonly class KumweMcpHandlers
         return $operationId === null
             ? $context
             : $context->child('mcp-' . $operationId, $operationId);
+    }
+
+    /**
+     * Run one published-version status change behind the definitions capability and the mutation fence.
+     *
+     * @param   string  $operationId  Idempotency key this write is fenced on.
+     * @param   string  $action       `supersede`, `deprecate` or `reject`.
+     * @param   string  $handle       Definition handle or UUID.
+     * @param   int     $version      Published version.
+     *
+     * @return  array<string, mixed>  The version record, or the stored copy on a repeat.
+     *
+     * @throws  InsufficientCapability  When the caller lacks `content.update`.
+     *
+     * @since   2.0.0
+     */
+    private function retireBusinessDefinition(
+        string $operationId,
+        string $action,
+        string $handle,
+        int $version,
+    ): array {
+        $this->require('content.update');
+        $this->preauthorize(
+            $operationId,
+            'content.update',
+            AuthorizationResource::collection('business_definition'),
+        );
+
+        return $this->mutations->run(
+            $this->context($operationId),
+            'business_definition.' . $action,
+            $operationId,
+            compact('handle', 'version'),
+            fn (): array => $this->definitionVersion(match ($action) {
+                'supersede' => $this->definitions->supersede($this->context($operationId), $handle, $version),
+                'deprecate' => $this->definitions->deprecate($this->context($operationId), $handle, $version),
+                default => $this->definitions->reject($this->context($operationId), $handle, $version),
+            }),
+        );
+    }
+
+    /**
+     * Project one definition draft as the draft tools answer it.
+     *
+     * @param   DefinitionDraft  $draft  Stored draft.
+     *
+     * @return  array<string, mixed>  Revision, checksum, author, time and definition body.
+     *
+     * @since   2.0.0
+     */
+    private static function definitionDraft(DefinitionDraft $draft): array
+    {
+        return [
+            'revision' => $draft->revision,
+            'checksum' => $draft->checksum,
+            'updated_by' => $draft->updatedBy,
+            'updated_at' => $draft->updatedAt->format(DATE_ATOM),
+            'definition' => $draft->definition->toArray(),
+        ];
+    }
+
+    /**
+     * Run one composition read or provisioning and project it as the REST document.
+     *
+     * A missing, unreadable or unprojectable model answers exactly as a composition never provisioned, as REST
+     * and the Studio host do, and a Blueprint locked to another published theme is the screen's refusal.
+     *
+     * @param   string                                                                $contentType  Type UUID.
+     * @param   int                                                                   $version      Type version.
+     * @param   callable(StudioContentCompositionService): ?StudioContentComposition  $operation    Service call.
+     *
+     * @return  array<string, mixed>  Coordinates, model, binding and the exact Blueprint head.
+     *
+     * @throws  ContentModelNotFound  When there is no composition to answer, answered as `resource.not_found`.
+     * @throws  \DomainException  When the Blueprint is locked to another published theme.
+     *
+     * @since   2.0.0
+     */
+    private function studioComposition(string $contentType, int $version, callable $operation): array
+    {
+        try {
+            $composition = $operation($this->studioCompositions());
+        } catch (StudioCompositionThemeMismatch $mismatch) {
+            throw new \DomainException('The Blueprint is locked to a different published theme.', 0, $mismatch);
+        } catch (StudioProjectionRejected) {
+            $composition = null;
+        }
+
+        return ($composition ?? throw new ContentModelNotFound('composition', $contentType, $version))->toArray();
+    }
+
+    /**
+     * Resolve the Blueprint composition service this server was composed with.
+     *
+     * @return  StudioContentCompositionService  Composition service.
+     *
+     * @throws  InvalidArgumentException  When the server was composed without compositions.
+     *
+     * @since   2.0.0
+     */
+    private function studioCompositions(): StudioContentCompositionService
+    {
+        return $this->compositions
+            ?? throw new InvalidArgumentException('Studio compositions are unavailable on this server.');
+    }
+
+    /**
+     * Resolve the content model service this server was composed with.
+     *
+     * @return  ContentModelService  Content model service.
+     *
+     * @throws  InvalidArgumentException  When the server was composed without content models.
+     *
+     * @since   2.0.0
+     */
+    private function contentModels(): ContentModelService
+    {
+        return $this->models
+            ?? throw new InvalidArgumentException('Content models are unavailable on this server.');
+    }
+
+    /**
+     * Resolve the wording overrides service this server was composed with.
+     *
+     * @return  MessageOverrideService  Wording overrides service.
+     *
+     * @throws  InvalidArgumentException  When the server was composed without wording overrides.
+     *
+     * @since   2.0.0
+     */
+    private function wordingOverrides(): MessageOverrideService
+    {
+        return $this->wording
+            ?? throw new InvalidArgumentException('Wording overrides are unavailable on this server.');
+    }
+
+    /**
+     * Resolve one administered wording layer; the service refuses any other layer again.
+     *
+     * @param   string  $layer  `site` or `organization`.
+     *
+     * @return  MessageCatalogueLayer  The named layer.
+     *
+     * @throws  InvalidArgumentException  When the value names no administered layer.
+     *
+     * @since   2.0.0
+     */
+    private static function wordingLayer(string $layer): MessageCatalogueLayer
+    {
+        $resolved = MessageCatalogueLayer::tryFrom($layer);
+        if ($resolved !== MessageCatalogueLayer::Site && $resolved !== MessageCatalogueLayer::Organization) {
+            throw new InvalidArgumentException('An administered wording layer is required.');
+        }
+
+        return $resolved;
     }
 
     /**

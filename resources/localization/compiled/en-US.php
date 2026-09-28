@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for en-US, carrying 2565 messages.
+ * Compiled interface message catalogue for en-US, carrying 2572 messages.
  *
  * Generated from en-US.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1940,12 +1940,15 @@ return [
     'core.console.audit_verify.description' => 'Verify the audit trail digest chain and its anchors.',
     'core.console.automation.description' => 'List and manage schedules and queued jobs.',
     'core.console.business_approval.description' => 'Withdraw your own pending business approval request.',
+    'core.console.business_bulk.description' => 'Archive, restore or run one action on up to fifty business records at once.',
     'core.console.business_definition.description' => 'List, inspect, draft, validate, publish, and retire business entity definitions.',
     'core.console.business_periods.description' => 'List, close, and re-open business posting periods.',
     'core.console.business_record.description' => 'Discover, query, mutate, relate, request approvals, report, export, and inspect business operations.',
     'core.console.business_record_rekey.description' => 'Re-encrypt stored business-record secrets under the active encryption key.',
     'core.console.business_report.description' => 'Run permission-aware reports and request, inspect, or download verified CSV exports.',
     'core.console.business_schema.description' => 'Inspect, approve, execute, and recover business schema plans.',
+    'core.console.business_schema_evidence.description' => 'File a restore drill as the recovery evidence a destructive schema plan must cite.',
+    'core.console.business_security.description' => 'Show the Business Security overview of organizations, memberships and policies.',
     'core.console.content.description' => 'List, read, create, update, transition, trash, or restore content.',
     'core.console.content_model.description' => 'List, read, create, or publish versioned content types and workflows.',
     'core.console.database_migrate.applied' => 'Applied {migration}',
@@ -2024,6 +2027,9 @@ return [
     'core.console.settings.description' => 'Read or update site configuration.',
     'core.console.studio_authoring.description' => 'Open a Studio authoring session and run its authoring operations.',
     'core.console.studio_authoring.refused' => 'The Studio authoring request was refused.',
+    'core.console.studio_blueprint.description' => 'Open a Blueprint composition session and load, save, publish or unpublish its Blueprint.',
+    'core.console.studio_blueprint.refused' => 'The Studio composition request was refused.',
+    'core.console.studio_composition.description' => 'Read or provision the Blueprint composition of a Content type version.',
     'core.console.theme_administrator_recover.description' => 'Atomically restore the protected built-in administrator theme.',
     'core.console.theme_administrator_recover.restored_the_protected_built_in_administrator' => 'Restored the protected built-in administrator theme.',
     'core.console.token_create.description' => 'Create a scoped API/MCP access token and print it once.',
@@ -2032,6 +2038,7 @@ return [
     'core.console.user_create_admin.created_administrator' => 'Created administrator {id}.',
     'core.console.user_create_admin.description' => 'Create an administrator from a protected password file.',
     'core.console.user_recover_credentials.description' => 'Break-glass: reset a password, retire second factors, or end sessions from the host.',
+    'core.console.wording.description' => 'List, search, save or withdraw wording overrides.',
     'core.identity.password.change_refused' => 'Your password could not be changed. Check your current password and choose a different password with at least 12 characters.',
     'core.identity.password.confirmation_mismatch' => 'The new password and its confirmation do not match.',
     'core.interface_standard.dashboard.access_group_browser_heading' => 'Access-group defaults',

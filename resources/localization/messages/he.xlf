@@ -18666,6 +18666,69 @@
         <target>עיינו, קראו, העלו או מחקו קבצים בספריית המדיה של האתר.</target>
       </segment>
     </unit>
+    <unit id="core.console.wording.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/WordingCommand.php.</note>
+      </notes>
+      <segment>
+        <source>List, search, save or withdraw wording overrides.</source>
+        <target>הצגה, חיפוש, שמירה או משיכה של דריסות ניסוח.</target>
+      </segment>
+    </unit>
+    <unit id="core.console.business_security.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/BusinessSecurityCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Show the Business Security overview of organizations, memberships and policies.</source>
+        <target>הצגת סקירת אבטחת העסק של ארגונים, חברויות ומדיניות.</target>
+      </segment>
+    </unit>
+    <unit id="core.console.business_bulk.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/BusinessBulkCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Archive, restore or run one action on up to fifty business records at once.</source>
+        <target>העברה לארכיון, שחזור או הפעלת פעולה אחת על עד חמישים רשומות עסקיות בבת אחת.</target>
+      </segment>
+    </unit>
+    <unit id="core.console.studio_composition.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/StudioCompositionCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Read or provision the Blueprint composition of a Content type version.</source>
+        <target>קריאה או הקצאה של הרכב השרטוט של גרסת סוג תוכן.</target>
+      </segment>
+    </unit>
+    <unit id="core.console.studio_blueprint.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/StudioBlueprintCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Open a Blueprint composition session and load, save, publish or unpublish its Blueprint.</source>
+        <target>פתיחת הפעלת קומפוזיציה של Blueprint וטעינה, שמירה, פרסום או ביטול פרסום של ה-Blueprint שלה.</target>
+      </segment>
+    </unit>
+    <unit id="core.console.studio_blueprint.refused">
+      <notes>
+        <note category="context">Message member of the studio-blueprint command's JSON failure envelope; the category and diagnostic codes beside it carry the machine meaning.</note>
+      </notes>
+      <segment>
+        <source>The Studio composition request was refused.</source>
+        <target>בקשת הקומפוזיציה של Studio נדחתה.</target>
+      </segment>
+    </unit>
+    <unit id="core.console.business_schema_evidence.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/BusinessSchemaEvidenceCommand.php.</note>
+      </notes>
+      <segment>
+        <source>File a restore drill as the recovery evidence a destructive schema plan must cite.</source>
+        <target>תיוק תרגיל שחזור כראיית השחזור שתוכנית סכמה הרסנית חייבת לצטט.</target>
+      </segment>
+    </unit>
     <unit id="core.console.settings.description">
       <notes>
         <note category="context">Console command summary on src/Delivery/Console/Command/ManageSettingsCommand.php.</note>

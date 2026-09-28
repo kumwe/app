@@ -925,6 +925,20 @@
             "extensions": {},
             "retry_after_seconds": null,
             "retryable": false,
+            "status": 404,
+            "type": "urn:kumwe:problem:studio-composition-not-found"
+        },
+        {
+            "extensions": {},
+            "retry_after_seconds": null,
+            "retryable": false,
+            "status": 409,
+            "type": "urn:kumwe:problem:studio-composition-theme-mismatch"
+        },
+        {
+            "extensions": {},
+            "retry_after_seconds": null,
+            "retryable": false,
             "status": 422,
             "type": "urn:kumwe:problem:validation-failed"
         }

@@ -132,10 +132,6 @@ final class McpCapabilityCatalog
         'kumwe_studio_authoring_save_as_new_type' => [McpRiskClass::ScopedWrite, self::VIA_STUDIO],
         'kumwe_studio_authoring_save_new_type_version' => [McpRiskClass::ScopedWrite, self::VIA_STUDIO],
         'kumwe_security_event_list' => [McpRiskClass::Read, self::VIA_IDENTITY],
-        'kumwe_user_step_up_revoke' => [McpRiskClass::InstallationGlobal, self::VIA_IDENTITY],
-        'kumwe_user_sessions_terminate' => [McpRiskClass::InstallationGlobal, self::VIA_IDENTITY],
-        'kumwe_user_role_revoke' => [McpRiskClass::InstallationGlobal, self::VIA_IDENTITY],
-        'kumwe_role_grant_revoke' => [McpRiskClass::InstallationGlobal, self::VIA_IDENTITY],
         'kumwe_business_approval_list' => [McpRiskClass::Read, self::VIA_APPROVALS],
         'kumwe_business_approval_get' => [McpRiskClass::Read, self::VIA_APPROVALS],
         'kumwe_business_approval_cancel' => [McpRiskClass::ScopedWrite, self::VIA_APPROVALS],
@@ -143,7 +139,84 @@ final class McpCapabilityCatalog
         'kumwe_media_get' => [McpRiskClass::Read, self::VIA_MEDIA],
         'kumwe_media_upload' => [McpRiskClass::ScopedWrite, self::VIA_MEDIA],
         'kumwe_media_delete' => [McpRiskClass::Destructive, self::VIA_MEDIA],
+        'kumwe_wording_override_list' => [McpRiskClass::Read, self::VIA_WORDING],
+        'kumwe_wording_catalogue_search' => [McpRiskClass::Read, self::VIA_WORDING],
+        'kumwe_wording_override_save' => [McpRiskClass::ScopedWrite, self::VIA_WORDING],
+        'kumwe_wording_override_withdraw' => [McpRiskClass::ScopedWrite, self::VIA_WORDING],
+        'kumwe_business_security_overview' => [McpRiskClass::Read, self::VIA_BUSINESS_SECURITY],
+        'kumwe_business_plan_bulk' => [McpRiskClass::Read, self::VIA_RECORDS],
+        'kumwe_business_bulk' => [McpRiskClass::ScopedWrite, self::VIA_RECORDS],
+        'kumwe_content_get' => [McpRiskClass::Read, self::VIA_CONTENT],
+        'kumwe_menu_get' => [McpRiskClass::Read, self::VIA_NAVIGATION],
+        'kumwe_menu_update' => [McpRiskClass::ScopedWrite, self::VIA_NAVIGATION],
+        'kumwe_menu_delete' => [McpRiskClass::Destructive, self::VIA_NAVIGATION],
+        'kumwe_content_type_list' => [McpRiskClass::Read, self::VIA_CONTENT_MODELS],
+        'kumwe_content_type_get' => [McpRiskClass::Read, self::VIA_CONTENT_MODELS],
+        'kumwe_content_type_create' => [McpRiskClass::ScopedWrite, self::VIA_CONTENT_MODELS],
+        'kumwe_content_type_update' => [McpRiskClass::ScopedWrite, self::VIA_CONTENT_MODELS],
+        'kumwe_workflow_list' => [McpRiskClass::Read, self::VIA_CONTENT_MODELS],
+        'kumwe_workflow_get' => [McpRiskClass::Read, self::VIA_CONTENT_MODELS],
+        'kumwe_workflow_create' => [McpRiskClass::ScopedWrite, self::VIA_CONTENT_MODELS],
+        'kumwe_workflow_update' => [McpRiskClass::ScopedWrite, self::VIA_CONTENT_MODELS],
+        'kumwe_business_definition_draft_save' => [McpRiskClass::ScopedWrite, self::VIA_DEFINITIONS],
+        'kumwe_business_definition_validate' => [McpRiskClass::ScopedWrite, self::VIA_DEFINITIONS],
+        'kumwe_business_definition_supersede' => [McpRiskClass::ScopedWrite, self::VIA_DEFINITIONS],
+        'kumwe_business_definition_deprecate' => [McpRiskClass::ScopedWrite, self::VIA_DEFINITIONS],
+        'kumwe_business_definition_reject' => [McpRiskClass::Destructive, self::VIA_DEFINITIONS],
+        'kumwe_business_relation_read' => [McpRiskClass::Read, self::VIA_RECORDS],
+        'kumwe_studio_composition_get' => [McpRiskClass::Read, self::VIA_COMPOSITION],
+        'kumwe_studio_composition_provision' => [McpRiskClass::ScopedWrite, self::VIA_COMPOSITION],
+        'kumwe_studio_blueprint_open' => [McpRiskClass::Read, self::VIA_BLUEPRINT],
+        'kumwe_studio_blueprint_load' => [McpRiskClass::Read, self::VIA_BLUEPRINT],
+        'kumwe_studio_blueprint_dependencies' => [McpRiskClass::Read, self::VIA_BLUEPRINT],
+        'kumwe_studio_blueprint_save' => [McpRiskClass::ScopedWrite, self::VIA_BLUEPRINT],
+        'kumwe_studio_blueprint_publish' => [McpRiskClass::ScopedWrite, self::VIA_BLUEPRINT],
+        'kumwe_studio_blueprint_unpublish' => [McpRiskClass::ScopedWrite, self::VIA_BLUEPRINT],
     ];
+
+    /**
+     * Non-MCP route for the Blueprint composition editing tools.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const string VIA_BLUEPRINT = 'Administrator console: Content models, Compose, '
+        . 'or POST /api/v1/studio/composition/*, or bin/kumwe studio-blueprint.';
+
+    /**
+     * Non-MCP route for the Blueprint composition tools.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const string VIA_COMPOSITION = 'Administrator console: Content models, Compose, '
+        . '/api/v1/content-types/{id}/versions/{version}/composition, or bin/kumwe studio-composition.';
+
+    /**
+     * Non-MCP route for the content type and workflow tools.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const string VIA_CONTENT_MODELS = 'Administrator console: Content models, /api/v1/content-types and '
+        . '/api/v1/workflows, or bin/kumwe content-model.';
+
+    /**
+     * Non-MCP route for the Business Security overview, and the only route to its stepped-up writes.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const string VIA_BUSINESS_SECURITY = 'Administrator console: Business Security, '
+        . '/api/v1/business-security, or bin/kumwe business-security; changes need browser step-up.';
+
+    /**
+     * Non-MCP route for the wording override tools.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const string VIA_WORDING = 'Administrator console: Wording, /api/v1/wording, or bin/kumwe wording.';
 
     /**
      * Non-MCP route for the media library tools.
@@ -1521,6 +1594,538 @@ final class McpCapabilityCatalog
             ...$this->accessRecoveryTools(),
             ...$this->businessApprovalTools(),
             ...$this->mediaTools(),
+            ...$this->wordingTools(),
+            $this->tool(
+                'kumwe_business_security_overview',
+                'Read the Business Security overview',
+                'Read organizations, workspaces, memberships with explained access, policies and approvals.',
+                'businessSecurityOverview',
+                'business.security.manage',
+                true,
+                false,
+                true,
+                [],
+                ['type' => 'object', 'additionalProperties' => true],
+            ),
+            ...$this->businessBulkTools(),
+            ...$this->editorialTools(),
+            ...$this->definitionLifecycleTools(),
+            $this->tool(
+                'kumwe_studio_composition_get',
+                'Read a Blueprint composition',
+                'Read the Blueprint composition of one Content type version, with its document and dependencies.',
+                'getStudioComposition',
+                'studio.mode.blueprint',
+                true,
+                false,
+                true,
+                [
+                    'contentType' => ['type' => 'string', 'format' => 'uuid'],
+                    'version' => ['type' => 'integer', 'minimum' => 1],
+                ],
+                ['type' => 'object', 'additionalProperties' => true],
+                ['contentType', 'version'],
+            ),
+            $this->tool(
+                'kumwe_studio_composition_provision',
+                'Provision a Blueprint composition',
+                'Provision the empty Blueprint draft of one Content type version, or answer the one bound.',
+                'provisionStudioComposition',
+                'studio.mode.blueprint',
+                false,
+                false,
+                true,
+                [
+                    'operationId' => $this->operationId(),
+                    'contentType' => ['type' => 'string', 'format' => 'uuid'],
+                    'version' => ['type' => 'integer', 'minimum' => 1],
+                ],
+                ['type' => 'object', 'additionalProperties' => true],
+                ['operationId', 'contentType', 'version'],
+            ),
+            ...$this->studioBlueprintTools(),
+        ];
+    }
+
+    /**
+     * Declare the content, menu, content type and workflow tools the editorial screens' operations need.
+     *
+     * @return  list<array{
+     *            name: string, title: string, description: string, handler: string,
+     *            capability: string|null, capabilityResolver: string|McpDynamicCapabilityResolver,
+     *            mutationGuard: McpMutationGuardMode, readOnly: bool, destructive: bool, idempotent: bool,
+     *            inputSchema: array<string, mixed>, outputSchema: array<string, mixed>
+     *          }>  Tool declarations in registration order.
+     *
+     * @since   2.0.0
+     */
+    private function editorialTools(): array
+    {
+        $identifier = ['type' => 'string', 'minLength' => 1, 'maxLength' => 191];
+        $version = ['type' => 'integer', 'minimum' => 1];
+        $text = ['type' => 'string', 'minLength' => 1, 'maxLength' => 191];
+        $object = ['type' => 'object', 'additionalProperties' => true];
+        $list = $this->closedObject(['items' => ['type' => 'array', 'maxItems' => 1000]], ['items']);
+        $documents = ['type' => 'array', 'maxItems' => 200, 'items' => $object];
+        $typeProperties = [
+            'name' => $text,
+            'workflow' => $identifier,
+            'schema' => ['type' => 'object', 'additionalProperties' => true],
+        ];
+        $workflowProperties = ['name' => $text, 'states' => $documents, 'transitions' => $documents];
+
+        return [
+            $this->tool(
+                'kumwe_content_get',
+                'Read content',
+                'Read one content entry, trashed ones included.',
+                'getContent',
+                'content.read',
+                true,
+                false,
+                true,
+                ['id' => $identifier],
+                $object,
+                ['id'],
+            ),
+            $this->tool(
+                'kumwe_menu_get',
+                'Read a menu',
+                'Read one navigation menu.',
+                'getMenu',
+                'navigation.manage',
+                true,
+                false,
+                true,
+                ['id' => $identifier],
+                $object,
+                ['id'],
+            ),
+            $this->tool(
+                'kumwe_menu_update',
+                'Update a menu',
+                'Rename one menu at the version you read.',
+                'updateMenu',
+                'navigation.manage',
+                false,
+                false,
+                true,
+                [
+                    'operationId' => $this->operationId(),
+                    'id' => $identifier,
+                    'version' => $version,
+                    'handle' => $text,
+                    'title' => $text,
+                ],
+                $object,
+                ['operationId', 'id', 'version', 'handle', 'title'],
+            ),
+            $this->tool(
+                'kumwe_menu_delete',
+                'Delete a menu',
+                'Delete one menu and its items at the version you read.',
+                'deleteMenu',
+                'navigation.manage',
+                false,
+                true,
+                true,
+                ['operationId' => $this->operationId(), 'id' => $identifier, 'version' => $version],
+                $this->closedObject(['deleted' => ['type' => 'boolean']], ['deleted']),
+                ['operationId', 'id', 'version'],
+            ),
+            $this->tool(
+                'kumwe_content_type_list',
+                'List content types',
+                'List the site\'s content types.',
+                'listContentTypes',
+                'content.read',
+                true,
+                false,
+                true,
+                [],
+                $list,
+            ),
+            $this->tool(
+                'kumwe_content_type_get',
+                'Read a content type',
+                'Read one content type by handle or id, optionally at a version.',
+                'getContentType',
+                'content.read',
+                true,
+                false,
+                true,
+                ['id' => $identifier, 'version' => $this->nullable($version)],
+                $object,
+                ['id'],
+            ),
+            $this->tool(
+                'kumwe_content_type_create',
+                'Create a content type',
+                'Create a content type bound to a workflow with a field schema.',
+                'createContentType',
+                'content.update',
+                false,
+                false,
+                true,
+                ['operationId' => $this->operationId(), 'handle' => $text, ...$typeProperties],
+                $object,
+                ['operationId', 'handle', 'name', 'workflow'],
+            ),
+            $this->tool(
+                'kumwe_content_type_update',
+                'Publish a content type version',
+                'Publish a new content type version at the version you read.',
+                'updateContentType',
+                'content.update',
+                false,
+                false,
+                true,
+                [
+                    'operationId' => $this->operationId(),
+                    'id' => $identifier,
+                    'version' => $version,
+                    ...$typeProperties,
+                    'allowBreaking' => ['type' => 'boolean'],
+                ],
+                $object,
+                ['operationId', 'id', 'version', 'name', 'workflow'],
+            ),
+            $this->tool(
+                'kumwe_workflow_list',
+                'List workflows',
+                'List the site\'s content workflows.',
+                'listWorkflows',
+                'content.read',
+                true,
+                false,
+                true,
+                [],
+                $list,
+            ),
+            $this->tool(
+                'kumwe_workflow_get',
+                'Read a workflow',
+                'Read one workflow by handle or id, optionally at a version.',
+                'getWorkflow',
+                'content.read',
+                true,
+                false,
+                true,
+                ['id' => $identifier, 'version' => $this->nullable($version)],
+                $object,
+                ['id'],
+            ),
+            $this->tool(
+                'kumwe_workflow_create',
+                'Create a workflow',
+                'Create a content workflow from its states and transitions.',
+                'createWorkflow',
+                'content.update',
+                false,
+                false,
+                true,
+                ['operationId' => $this->operationId(), 'handle' => $text, ...$workflowProperties],
+                $object,
+                ['operationId', 'handle', 'name', 'states', 'transitions'],
+            ),
+            $this->tool(
+                'kumwe_workflow_update',
+                'Publish a workflow version',
+                'Publish a new workflow version at the version you read.',
+                'updateWorkflow',
+                'content.update',
+                false,
+                false,
+                true,
+                [
+                    'operationId' => $this->operationId(),
+                    'id' => $identifier,
+                    'version' => $version,
+                    ...$workflowProperties,
+                    'allowBreaking' => ['type' => 'boolean'],
+                ],
+                $object,
+                ['operationId', 'id', 'version', 'name', 'states', 'transitions'],
+            ),
+        ];
+    }
+
+    /**
+     * Declare the business definition draft, validation and version-status tools and the relationship read.
+     *
+     * @return  list<array{
+     *            name: string, title: string, description: string, handler: string,
+     *            capability: string|null, capabilityResolver: string|McpDynamicCapabilityResolver,
+     *            mutationGuard: McpMutationGuardMode, readOnly: bool, destructive: bool, idempotent: bool,
+     *            inputSchema: array<string, mixed>, outputSchema: array<string, mixed>
+     *          }>  Tool declarations in registration order.
+     *
+     * @since   2.0.0
+     */
+    private function definitionLifecycleTools(): array
+    {
+        $handle = ['type' => 'string', 'minLength' => 1, 'maxLength' => 191];
+        $object = ['type' => 'object', 'additionalProperties' => true];
+        $status = [
+            'operationId' => $this->operationId(),
+            'handle' => $handle,
+            'version' => ['type' => 'integer', 'minimum' => 1],
+        ];
+
+        return [
+            $this->tool(
+                'kumwe_business_definition_draft_save',
+                'Save a definition draft',
+                'Save a definition document as the working draft at the revision you read.',
+                'saveBusinessDefinitionDraft',
+                'content.update',
+                false,
+                false,
+                true,
+                [
+                    'operationId' => $this->operationId(),
+                    'definition' => ['type' => 'object', 'additionalProperties' => true],
+                    'expectedRevision' => $this->nullable(['type' => 'integer', 'minimum' => 1]),
+                ],
+                $object,
+                ['operationId', 'definition'],
+            ),
+            $this->tool(
+                'kumwe_business_definition_validate',
+                'Validate a definition draft',
+                'Validate the working draft with everything it reaches; the validation is audited.',
+                'validateBusinessDefinitionDraft',
+                'content.update',
+                false,
+                false,
+                true,
+                ['operationId' => $this->operationId(), 'handle' => $handle],
+                $object,
+                ['operationId', 'handle'],
+            ),
+            $this->tool(
+                'kumwe_business_definition_supersede',
+                'Supersede a definition version',
+                'Mark one published definition version superseded.',
+                'supersedeBusinessDefinition',
+                'content.update',
+                false,
+                false,
+                true,
+                $status,
+                $object,
+                ['operationId', 'handle', 'version'],
+            ),
+            $this->tool(
+                'kumwe_business_definition_deprecate',
+                'Deprecate a definition version',
+                'Mark one published definition version deprecated.',
+                'deprecateBusinessDefinition',
+                'content.update',
+                false,
+                false,
+                true,
+                $status,
+                $object,
+                ['operationId', 'handle', 'version'],
+            ),
+            $this->tool(
+                'kumwe_business_definition_reject',
+                'Reject a definition version',
+                'Withdraw one published definition version so the runtime refuses it.',
+                'rejectBusinessDefinition',
+                'content.update',
+                false,
+                true,
+                true,
+                $status,
+                $object,
+                ['operationId', 'handle', 'version'],
+            ),
+            $this->tool(
+                'kumwe_business_relation_read',
+                'Read a business relationship',
+                'Read one record with exactly one declared relationship hydrated.',
+                'readBusinessRelationship',
+                'business.record.read',
+                true,
+                false,
+                true,
+                [
+                    'definition' => $this->businessDefinitionIdentifier(),
+                    'record' => $this->businessRecordIdentifier(),
+                    'relationship' => $this->businessHandle(),
+                    'includeArchived' => ['type' => 'boolean'],
+                    'includeDeleted' => ['type' => 'boolean'],
+                ],
+                $object,
+                ['definition', 'record', 'relationship'],
+            ),
+        ];
+    }
+
+    /**
+     * Declare the atomic bulk archive, restore and declared-action tools and their plan.
+     *
+     * A bulk write is planned like every generated-business write: the plan seals the definition, runtime,
+     * policy, actor and exact selection with its reviewed versions, and execution re-proves them while the
+     * shared bulk use case rolls the whole selection back on any stale version or refusal.
+     *
+     * @return  list<array{
+     *            name: string, title: string, description: string, handler: string,
+     *            capability: string|null, capabilityResolver: string|McpDynamicCapabilityResolver,
+     *            mutationGuard: McpMutationGuardMode, readOnly: bool, destructive: bool, idempotent: bool,
+     *            inputSchema: array<string, mixed>, outputSchema: array<string, mixed>
+     *          }>  Tool declarations in registration order.
+     *
+     * @since   2.0.0
+     */
+    private function businessBulkTools(): array
+    {
+        $properties = [
+            'operationId' => $this->operationId(),
+            'operation' => ['type' => 'string', 'enum' => ['archive', 'restore', 'action']],
+            'definition' => $this->businessDefinitionIdentifier(),
+            'items' => [
+                'type' => 'array',
+                'minItems' => 1,
+                'maxItems' => 50,
+                'items' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'record' => $this->businessRecordIdentifier(),
+                        'expectedVersion' => ['type' => 'integer', 'minimum' => 1],
+                    ],
+                    'required' => ['record', 'expectedVersion'],
+                    'additionalProperties' => false,
+                ],
+            ],
+            'action' => $this->nullable($this->businessHandle()),
+            'input' => $this->businessValues(true),
+        ];
+
+        return [
+            $this->tool(
+                'kumwe_business_plan_bulk',
+                'Plan a generated business bulk mutation',
+                'Bind one atomic bulk archive, restore or action to current definition, policy and selection.',
+                'planBusinessBulk',
+                McpDynamicCapabilityResolver::BusinessBulk,
+                true,
+                false,
+                true,
+                $properties,
+                $this->businessMutationPlanOutput(),
+                ['operationId', 'operation', 'definition', 'items'],
+            ),
+            $this->tool(
+                'kumwe_business_bulk',
+                'Apply a generated business bulk mutation',
+                'Archive, restore or run one bulk-enabled action on up to 50 reviewed records atomically.',
+                'executeBusinessBulk',
+                McpDynamicCapabilityResolver::BusinessBulk,
+                false,
+                false,
+                true,
+                ['plan' => $this->businessPlan(), ...$properties],
+                ['type' => 'object', 'additionalProperties' => true],
+                ['operationId', 'plan', 'operation', 'definition', 'items'],
+                McpMutationGuardMode::BusinessDelegate,
+            ),
+        ];
+    }
+
+    /**
+     * Declare the wording override tools: the administrator Wording screen's list, search, save and withdraw.
+     *
+     * @return  list<array{
+     *            name: string, title: string, description: string, handler: string,
+     *            capability: string|null, capabilityResolver: string|McpDynamicCapabilityResolver,
+     *            mutationGuard: McpMutationGuardMode, readOnly: bool, destructive: bool, idempotent: bool,
+     *            inputSchema: array<string, mixed>, outputSchema: array<string, mixed>
+     *          }>  Tool declarations in registration order.
+     *
+     * @since   2.0.0
+     */
+    private function wordingTools(): array
+    {
+        $layer = ['type' => 'string', 'enum' => ['site', 'organization']];
+        $locale = ['type' => 'string', 'minLength' => 2, 'maxLength' => 35];
+        $identifier = ['type' => 'string', 'minLength' => 1, 'maxLength' => 191];
+        $pattern = ['type' => 'string', 'minLength' => 1, 'maxLength' => 4000];
+        $items = ['type' => 'array', 'maxItems' => 1000];
+
+        return [
+            $this->tool(
+                'kumwe_wording_override_list',
+                'List wording overrides',
+                'List the stored wording overrides of the site or the credential\'s organization.',
+                'listWordingOverrides',
+                'localization.overrides.manage',
+                true,
+                false,
+                true,
+                ['layer' => $layer, 'locale' => $this->nullable($locale)],
+                $this->closedObject([
+                    'layer' => ['type' => 'string'],
+                    'locale' => ['type' => ['string', 'null']],
+                    'items' => $items,
+                ], ['layer', 'locale', 'items']),
+            ),
+            $this->tool(
+                'kumwe_wording_catalogue_search',
+                'Search shipped wording',
+                'Search the shipped wording of one locale that an override starts from.',
+                'searchWordingCatalogue',
+                'localization.overrides.manage',
+                true,
+                false,
+                true,
+                [
+                    'locale' => $locale,
+                    'query' => ['type' => 'string', 'maxLength' => 200],
+                    'limit' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 200],
+                ],
+                $this->closedObject(['locale' => ['type' => 'string'], 'items' => $items], ['locale', 'items']),
+                ['locale'],
+            ),
+            $this->tool(
+                'kumwe_wording_override_save',
+                'Save a wording override',
+                'Replace one message\'s wording for one locale with a validated ICU pattern.',
+                'saveWordingOverride',
+                'localization.overrides.manage',
+                false,
+                false,
+                true,
+                [
+                    'operationId' => $this->operationId(),
+                    'layer' => $layer,
+                    'locale' => $locale,
+                    'identifier' => $identifier,
+                    'pattern' => $pattern,
+                ],
+                ['type' => 'object', 'additionalProperties' => true],
+                ['operationId', 'layer', 'locale', 'identifier', 'pattern'],
+            ),
+            $this->tool(
+                'kumwe_wording_override_withdraw',
+                'Withdraw a wording override',
+                'Stop overriding one message for one locale so the shipped wording applies again.',
+                'withdrawWordingOverride',
+                'localization.overrides.manage',
+                false,
+                false,
+                true,
+                [
+                    'operationId' => $this->operationId(),
+                    'layer' => $layer,
+                    'locale' => $locale,
+                    'identifier' => $identifier,
+                ],
+                $this->closedObject(['withdrawn' => ['type' => 'boolean']], ['withdrawn']),
+                ['operationId', 'layer', 'locale', 'identifier'],
+            ),
         ];
     }
 
@@ -1683,11 +2288,11 @@ final class McpCapabilityCatalog
     }
 
     /**
-     * Declare the identity tools that read the security timeline or reduce an account's authority.
+     * Declare the identity tool that reads the security timeline.
      *
-     * These are the administrator access screen's recovery and revocation controls. Each one only takes
-     * authority away — a role, a grant, a second factor or a live session — so publishing them cannot widen
-     * what any identity may do; assigning roles and granting capabilities stay off this surface.
+     * The access screen's account-recovery acts — resetting another account's password, retiring its second
+     * factors, ending its sessions — and its role and grant revocations are not published: the browser
+     * performs each only behind a payload-bound human step-up proof, which an MCP credential cannot carry.
      *
      * @return  list<array{
      *            name: string, title: string, description: string, handler: string,
@@ -1700,9 +2305,6 @@ final class McpCapabilityCatalog
      */
     private function accessRecoveryTools(): array
     {
-        $identifier = ['type' => 'string', 'minLength' => 1, 'maxLength' => 191];
-        $reason = ['type' => 'string', 'minLength' => 1, 'maxLength' => 500];
-
         return [
             $this->tool(
                 'kumwe_security_event_list',
@@ -1716,62 +2318,100 @@ final class McpCapabilityCatalog
                 [],
                 $this->closedObject(['items' => ['type' => 'array', 'maxItems' => 100]], ['items']),
             ),
+        ];
+    }
+
+    /**
+     * Declare the Blueprint composition tools: one open tool and the five `artifact` operations of the screen.
+     *
+     * Arguments and results travel as canonical JSON strings for the same reason the authoring tools' do. The
+     * three mutations carry the revision they replace and hand their `operationId` to the Studio host's own
+     * replay boundary.
+     *
+     * @return  list<array{
+     *            name: string, title: string, description: string, handler: string,
+     *            capability: string|null, capabilityResolver: string|McpDynamicCapabilityResolver,
+     *            mutationGuard: McpMutationGuardMode, readOnly: bool, destructive: bool, idempotent: bool,
+     *            inputSchema: array<string, mixed>, outputSchema: array<string, mixed>
+     *          }>  Tool declarations in registration order.
+     *
+     * @since   2.0.0
+     */
+    private function studioBlueprintTools(): array
+    {
+        $session = [
+            'type' => 'string',
+            'minLength' => 1,
+            'maxLength' => 240,
+            'pattern' => '^[A-Za-z0-9][A-Za-z0-9._:/-]*$',
+        ];
+        $generation = ['type' => 'string', 'minLength' => 1, 'maxLength' => 100];
+        $revision = ['type' => 'string', 'minLength' => 1, 'maxLength' => 200];
+        $document = ['type' => 'string', 'minLength' => 2, 'maxLength' => 1048576];
+        $locale = ['type' => 'string', 'minLength' => 2, 'maxLength' => 50];
+        $output = $this->closedObject(
+            [
+                'operation' => ['type' => 'string'],
+                'replayed' => ['type' => 'boolean'],
+                'document' => ['type' => 'string'],
+            ],
+            ['operation', 'replayed', 'document'],
+        );
+        $tools = [
             $this->tool(
-                'kumwe_user_step_up_revoke',
-                'Revoke a user\'s second factors',
-                'Retire every second factor one user holds so a lost authenticator can be re-enrolled.',
-                'revokeUserStepUpCredentials',
-                'users.manage',
+                'kumwe_studio_blueprint_open',
+                'Open a Blueprint composition session',
+                'Open a credential-bound Blueprint session for the composition of one Content type version.',
+                'openStudioBlueprintSession',
+                'content.read',
+                true,
                 false,
                 true,
-                true,
-                ['operationId' => $this->operationId(), 'userId' => $identifier, 'reason' => $reason],
-                $this->closedObject(['revoked' => ['type' => 'integer', 'minimum' => 0]], ['revoked']),
-                ['operationId', 'userId', 'reason'],
-            ),
-            $this->tool(
-                'kumwe_user_sessions_terminate',
-                'Terminate a user\'s sessions',
-                'End every session one user holds without changing the account\'s lifecycle state.',
-                'terminateUserSessions',
-                'users.manage',
-                false,
-                true,
-                true,
-                ['operationId' => $this->operationId(), 'userId' => $identifier, 'reason' => $reason],
-                $this->closedObject(
-                    ['sessions_terminated' => ['type' => 'integer', 'minimum' => 0]],
-                    ['sessions_terminated'],
-                ),
-                ['operationId', 'userId', 'reason'],
-            ),
-            $this->tool(
-                'kumwe_user_role_revoke',
-                'Revoke a role from a user',
-                'Remove one role assignment from a user.',
-                'revokeUserRole',
-                'users.manage',
-                false,
-                true,
-                true,
-                ['operationId' => $this->operationId(), 'userId' => $identifier, 'roleId' => $identifier],
-                $this->closedObject(['updated' => ['type' => 'boolean']], ['updated']),
-                ['operationId', 'userId', 'roleId'],
-            ),
-            $this->tool(
-                'kumwe_role_grant_revoke',
-                'Revoke a capability grant',
-                'Remove one capability grant from a role.',
-                'revokeRoleGrant',
-                'users.manage',
-                false,
-                true,
-                true,
-                ['operationId' => $this->operationId(), 'grantId' => $identifier],
-                $this->closedObject(['revoked' => ['type' => 'boolean']], ['revoked']),
-                ['operationId', 'grantId'],
+                [
+                    'contentType' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 191],
+                    'contentTypeVersion' => ['type' => 'integer', 'minimum' => 1],
+                    'mode' => ['type' => 'string', 'enum' => ['blueprint', 'read-only']],
+                ],
+                $this->closedObject(['document' => ['type' => 'string']], ['document']),
+                ['contentType', 'contentTypeVersion'],
             ),
         ];
+        $operations = [
+            ['load', 'studioBlueprintLoad', 'Load a Studio Blueprint', false],
+            ['dependencies', 'studioBlueprintDependencies', 'List Studio Blueprint dependencies', false],
+            ['save', 'studioBlueprintSave', 'Save a Studio Blueprint draft', true],
+            ['publish', 'studioBlueprintPublish', 'Publish a Studio Blueprint', true],
+            ['unpublish', 'studioBlueprintUnpublish', 'Unpublish a Studio Blueprint', true],
+        ];
+        foreach ($operations as [$suffix, $handler, $title, $mutating]) {
+            $properties = [
+                'session' => $session,
+                'sessionGeneration' => $generation,
+                'document' => $document,
+                'locale' => $locale,
+            ];
+            $required = ['session', 'sessionGeneration', 'document'];
+            if ($mutating) {
+                $properties = ['operationId' => $this->operationId(), ...$properties, 'expectedRevision' => $revision];
+                $required = ['operationId', ...$required, 'expectedRevision'];
+            }
+            $tools[] = $this->tool(
+                'kumwe_studio_blueprint_' . $suffix,
+                $title,
+                $title . ' through the same Studio host, authorization, replay and audit as the composition screen.',
+                $handler,
+                'content.read',
+                !$mutating,
+                false,
+                true,
+                $properties,
+                $output,
+                $required,
+                $mutating ? McpMutationGuardMode::StudioHostBoundary : null,
+            );
+        }
+
+        return $tools;
     }
 
     /**

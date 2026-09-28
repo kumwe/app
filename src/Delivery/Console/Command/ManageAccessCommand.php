@@ -351,7 +351,10 @@ final readonly class ManageAccessCommand implements Command
      * provisioning script, a support rotation. It carries exactly the same rules the screen does: the
      * actor must hold `users.manage` over the account, the reason is mandatory and lands on the audit
      * event beside an actor who is not the subject, and an operator may not reset their own password
-     * this way because that would skip proving the current one.
+     * this way because that would skip proving the current one. The service also demands the consumed
+     * step-up proof the access screen obtains for the exact change; a console token cannot carry one, so
+     * this action is refused with the screen's step-up refusal and the host-local
+     * `user:recover-credentials reset-password` break-glass is the console route.
      *
      * The replacement arrives in a file the operator has locked down rather than as an argument, the
      * same way `user:create-admin` takes one, so it never reaches shell history or the process table.
@@ -366,6 +369,8 @@ final readonly class ManageAccessCommand implements Command
      * @throws  \InvalidArgumentException  When an option is missing, the file is unreadable or empty,
      *          the reason is too long, the replacement is shorter than twelve characters, or the actor
      *          named their own account.
+     * @throws  \Kumwe\App\Identity\Application\StepUp\StepUpRejected  Always for a console token, which
+     *          carries no consumed step-up proof.
      *
      * @since   2.0.0
      */
@@ -390,7 +395,9 @@ final readonly class ManageAccessCommand implements Command
      * while the dead credential is still active, so without this the account is locked out of every
      * step-up-gated mutation permanently. Retiring the credential lifts both at once. It also advances
      * the subject's security epoch, which retires their tokens, sessions and outstanding proofs, so the
-     * reason is mandatory and is what explains that blast radius afterwards.
+     * reason is mandatory and is what explains that blast radius afterwards. Like the reset, it needs the
+     * access screen's consumed step-up proof, so a console token is refused and
+     * `user:recover-credentials revoke-step-up` is the host-local route.
      *
      * @param   array<string, string>  $options  Console options; `user` and `reason` are required.
      * @param   ExecutionContext       $context  Authorized actor the retirement is audited under.
@@ -399,6 +406,8 @@ final readonly class ManageAccessCommand implements Command
      *
      * @throws  \InvalidArgumentException  When `user` or `reason` is missing, the reason is longer than
      *          500 characters, or the account does not exist.
+     * @throws  \Kumwe\App\Identity\Application\StepUp\StepUpRejected  Always for a console token, which
+     *          carries no consumed step-up proof.
      *
      * @since   2.0.0
      */
@@ -418,7 +427,9 @@ final readonly class ManageAccessCommand implements Command
      * contractor's laptop, a report of a stolen phone — where suspending the account would be too
      * large and revoking tokens would not reach the browser at all. The security epoch advances, so
      * portal sessions and outstanding step-up proofs go with the administrator ones; roles, password
-     * and lifecycle status are left exactly as they were.
+     * and lifecycle status are left exactly as they were. It needs the access screen's consumed step-up
+     * proof too, so a console token is refused and `user:recover-credentials terminate-sessions` is the
+     * host-local route.
      *
      * @param   array<string, string>  $options  Console options; `user` and `reason` are required.
      * @param   ExecutionContext       $context  Authorized actor the termination is audited under.
@@ -427,6 +438,8 @@ final readonly class ManageAccessCommand implements Command
      *
      * @throws  \InvalidArgumentException  When `user` or `reason` is missing, the reason is longer than
      *          500 characters, or the account does not exist.
+     * @throws  \Kumwe\App\Identity\Application\StepUp\StepUpRejected  Always for a console token, which
+     *          carries no consumed step-up proof.
      *
      * @since   2.0.0
      */

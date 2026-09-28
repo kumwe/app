@@ -32,6 +32,7 @@ use Kumwe\App\BusinessSurface\Application\BusinessSurface;
 use Kumwe\App\BusinessSurface\Application\BusinessSurfaceCatalog;
 use Kumwe\App\BusinessSurface\Infrastructure\Security\KeyRingMutationPlanCipher;
 use Kumwe\App\Extension\Runtime\RuntimeMaterializationState;
+use Kumwe\App\BusinessSurface\Application\BusinessSurfaceOperation;
 use Kumwe\App\Tests\Support\AuthorizationContext;
 use Kumwe\BusinessPolicy\Application\FieldDisclosurePlan;
 use Kumwe\Secret\Provider\KeyRingKeyProvider;
@@ -181,6 +182,67 @@ final class BusinessMutationPlanServiceTest extends TestCase
             'position' => 1_000_001,
             'target_values' => [],
         ]);
+    }
+
+    /**
+     * Proves bulk plans accept exactly the bulk use case's selection and map to its record capability.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testBulkPlanInputIsTheClosedBulkSelection(): void
+    {
+        $service = $this->service();
+        $reflection = new ReflectionClass($service);
+        $assertInput = $reflection->getMethod('assertInput');
+        $items = [
+            ['record_id' => 'contact-1', 'expected_version' => 2],
+            ['record_id' => 'contact-2', 'expected_version' => 5],
+        ];
+        $archive = ['operation_id' => 'bulk-operation-0001', 'definition' => 'crm.contact', 'items' => $items];
+        $action = [...$archive, 'action' => 'notify', 'input' => ['channel' => 'email']];
+
+        $assertInput->invoke($service, 'bulk_archive', $archive);
+        $assertInput->invoke($service, 'bulk_restore', $archive);
+        $assertInput->invoke($service, 'bulk_action', $action);
+        self::assertSame(
+            ['business.record.archive', 'business.record.restore', 'business.record.action'],
+            array_map(
+                static fn (string $operation): mixed => $reflection->getMethod('capability')->invoke(null, $operation),
+                ['bulk_archive', 'bulk_restore', 'bulk_action'],
+            ),
+        );
+        self::assertSame(
+            [BusinessSurfaceOperation::Archive, BusinessSurfaceOperation::Restore, BusinessSurfaceOperation::Action],
+            array_map(
+                static fn (string $operation): mixed => $reflection->getMethod('surfaceOperation')
+                    ->invoke(null, $operation),
+                ['bulk_archive', 'bulk_restore', 'bulk_action'],
+            ),
+        );
+
+        $refused = 0;
+        foreach (
+            [
+                ['bulk_archive', $action],
+                ['bulk_action', [...$action, 'input' => ['a', 'b']]],
+                ['bulk_action', [...$action, 'action' => 7]],
+                ['bulk_action', [...$action, 'action' => 'Not A Handle']],
+                ['bulk_archive', [...$archive, 'items' => 'contact-1']],
+                ['bulk_archive', [...$archive, 'items' => []]],
+                ['bulk_archive', [...$archive, 'items' => [$items[0], $items[0]]]],
+                ['bulk_archive', [...$archive, 'items' => array_fill(0, 51, $items[0])]],
+                ['bulk_archive', [...$archive, 'items' => [['record_id' => 'contact-1']]]],
+            ] as [$operation, $input]
+        ) {
+            try {
+                $assertInput->invoke($service, $operation, $input);
+            } catch (InvalidArgumentException) {
+                ++$refused;
+            }
+        }
+        self::assertSame(9, $refused);
     }
 
     /**

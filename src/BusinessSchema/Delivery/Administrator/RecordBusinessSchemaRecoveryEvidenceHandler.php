@@ -6,14 +6,10 @@ namespace Kumwe\App\BusinessSchema\Delivery\Administrator;
 
 use InvalidArgumentException;
 use Kumwe\App\Administrator\Http\AdministratorRequest;
-use Kumwe\App\Application\Security\HighImpactCredentialGuard;
-use Kumwe\App\BusinessSchema\Application\BusinessSchemaEnvironment;
-use Kumwe\App\BusinessSchema\Application\BusinessSchemaService;
-use Kumwe\BusinessSchema\Domain\SchemaRecoveryEvidence;
+use Kumwe\App\BusinessSchema\Application\BusinessSchemaRecoveryEvidenceRecorder;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
-use Ramsey\Uuid\Uuid;
 
 /**
  * Records a completed restore drill as the evidence a data-destroying schema plan must cite to be approved.
@@ -24,7 +20,8 @@ use Ramsey\Uuid\Uuid;
  * checksum and stamped with the live database driver, server version and application release read from the
  * environment rather than from the form, so a drill run against a different installation, engine or release
  * cannot later be cited here. Every one of the four clean-target proofs must be confirmed, and the operator
- * re-proves their password, because filing false evidence is what would let a destructive approval through.
+ * re-proves their password, because filing false evidence is what would let a destructive approval through. All of
+ * that is `BusinessSchemaRecoveryEvidenceRecorder`, the use case REST and the console file through as well.
  *
  * The route is mounted on `POST /administrator/business-schema-plans/recovery-evidence` behind the CSRF
  * middleware and demands `business.schema.recover`. Whether the filed evidence then satisfies a particular
@@ -35,28 +32,22 @@ use Ramsey\Uuid\Uuid;
 final readonly class RecordBusinessSchemaRecoveryEvidenceHandler implements RequestHandlerInterface
 {
     /**
-     * Wire the drill form to the service that stores evidence and to the facts it is stamped with.
+     * Wire the drill form to the recovery-evidence use case every surface files through.
      *
-     * @param  BusinessSchemaService      $schemas      Loads the plan, then authorizes and persists the evidence.
-     * @param  BusinessSchemaEnvironment  $environment  Supplies the driver, server version and release to stamp.
-     * @param  HighImpactCredentialGuard  $credentials  Re-proves the operator's password before filing.
+     * @param  BusinessSchemaRecoveryEvidenceRecorder  $evidence  Loads the plan, checks the proofs, re-proves the
+     *         password, stamps the environment and stores the evidence.
      *
      * @since  2.0.0
      */
-    public function __construct(
-        private BusinessSchemaService $schemas,
-        private BusinessSchemaEnvironment $environment,
-        private HighImpactCredentialGuard $credentials,
-    ) {
+    public function __construct(private BusinessSchemaRecoveryEvidenceRecorder $evidence)
+    {
     }
 
     /**
      * File one drill as recovery evidence for the schema the named plan would replace.
      *
-     * The plan is read only to obtain the source schema checksum the evidence binds to, so a plan that
-     * installs a definition for the first time — which has no schema to restore — is refused outright. The
-     * proofs, the verifier and the tested flag are written from what this handler established rather than
-     * copied from the form, leaving the operator to supply only the drill's own identifying facts.
+     * The form supplies only the drill's own identifying facts and the four confirmed proofs; the plan's source
+     * schema checksum, the verifier and the environment stamps come from `BusinessSchemaRecoveryEvidenceRecorder`.
      *
      * @param   ServerRequestInterface  $request  Administrator POST carrying `plan_id`, the four proof
      *          checkboxes, `backup_manifest_checksum`, `backup_created_at`, `verified_at`, `drill_reference`,
@@ -83,51 +74,22 @@ final readonly class RecordBusinessSchemaRecoveryEvidenceHandler implements Requ
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
         $form = AdministratorRequest::form($request);
-        $context = AdministratorRequest::context($request);
         $planId = AdministratorRequest::required($form, 'plan_id');
-        $plan = $this->schemas->plan($context, $planId);
-        if ($plan->fromSchemaChecksum === null) {
-            throw new InvalidArgumentException('Recovery evidence requires an installed source schema.');
-        }
-        foreach (
-            [
-                'clean_target_restore',
-                'blueprint_checksum_verified',
-                'typed_command_verified',
-                'record_revision_audit_checksums_verified',
-            ] as $proof
-        ) {
-            if (($form[$proof] ?? '') !== '1') {
-                throw new InvalidArgumentException('Every clean-target recovery proof must be confirmed.');
-            }
-        }
-        $this->credentials->assertCurrentPassword(
-            $context,
-            'business.schema.recovery-evidence',
-            BusinessSchemaAdministratorRequest::optional($form, 'current_password'),
-        );
-        $evidence = $this->schemas->recordRecoveryEvidence($context, new SchemaRecoveryEvidence(
-            Uuid::uuid7()->toString(),
-            $context->site()->identifier(),
-            $this->environment->databaseDriver(),
-            $this->environment->databaseServerVersion(),
-            $this->environment->applicationRelease(),
-            $plan->fromSchemaChecksum,
+        $evidence = $this->evidence->record(
+            AdministratorRequest::context($request),
+            $planId,
+            array_values(array_filter(
+                BusinessSchemaRecoveryEvidenceRecorder::PROOFS,
+                static fn (string $proof): bool => ($form[$proof] ?? '') === '1',
+            )),
             AdministratorRequest::required($form, 'backup_manifest_checksum'),
-            true,
             BusinessSchemaAdministratorRequest::date($form, 'backup_created_at'),
             BusinessSchemaAdministratorRequest::date($form, 'verified_at'),
-            $context->actorId(),
             AdministratorRequest::required($form, 'drill_reference'),
-            [
-                'blueprint_checksum_verified' => true,
-                'clean_target_restore' => true,
-                'client_version' => AdministratorRequest::required($form, 'client_version'),
-                'record_revision_audit_checksums_verified' => true,
-                'restore_target_reference' => AdministratorRequest::required($form, 'restore_target_reference'),
-                'typed_command_verified' => true,
-            ],
-        ));
+            AdministratorRequest::required($form, 'client_version'),
+            AdministratorRequest::required($form, 'restore_target_reference'),
+            BusinessSchemaAdministratorRequest::optional($form, 'current_password'),
+        );
 
         return BusinessSchemaAdministratorRequest::redirect(
             $planId,
