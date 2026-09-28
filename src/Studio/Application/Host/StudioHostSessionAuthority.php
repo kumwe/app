@@ -146,7 +146,11 @@ final readonly class StudioHostSessionAuthority
     /**
      * Open one mode-specific session from trusted App identity and policy state.
      *
-     * @param   ExecutionContext    $context       Fresh administrator execution context.
+     * The administrator browser may open any resource family its mode fits. A machine surface — REST,
+     * CLI or MCP — may open only a contextual Content authoring session, bound to its credential rather
+     * than to a browser session; every other family stays browser-only.
+     *
+     * @param   ExecutionContext    $context       Fresh authenticated execution context.
      * @param   StudioSessionMode   $mode          Exact canonical authoring mode requested.
      * @param   StudioResourceKind  $resourceKind  Content or Blueprint host resource family.
      * @param   string              $resourceId    Host resource identifier to bind opaquely.
@@ -163,7 +167,11 @@ final readonly class StudioHostSessionAuthority
         StudioResourceKind $resourceKind,
         string $resourceId,
     ): StudioHostSessionSnapshot {
-        if ($context->surface() !== AuthenticatedSurface::Administrator || !self::modeFits($mode, $resourceKind)) {
+        if (
+            !StudioSessionSurfaceBinding::admits($context->surface())
+            || !self::surfaceFits($context->surface(), $resourceKind)
+            || !self::modeFits($mode, $resourceKind)
+        ) {
             throw new StudioHostAccessRefused('studio.host/session-refused', 'forbidden');
         }
         $modeAllowed = $this->modeAllowed($context, $mode);
@@ -451,13 +459,13 @@ final readonly class StudioHostSessionAuthority
      * @param   ExecutionContext   $context  Fresh authenticated App context.
      * @param   StudioHostSession  $session  Stored opaque-key binding.
      *
-     * @return  bool  True only when actor, site, membership and surface all match exactly.
+     * @return  bool  True only when actor, site, membership, surface and surface binding all match exactly.
      *
      * @since   2.0.0
      */
     private static function sameTrustedScope(ExecutionContext $context, StudioHostSession $session): bool
     {
-        return $context->surface() === AuthenticatedSurface::Administrator
+        return StudioSessionSurfaceBinding::admits($context->surface())
             && hash_equals($session->actorId, $context->actorId())
             && hash_equals($session->siteId, $context->site()->identifier())
             && $session->organizationId === $context->organization()?->identifier()
@@ -467,24 +475,36 @@ final readonly class StudioHostSessionAuthority
     }
 
     /**
-     * Bind an opaque resource context to the authenticated administrator session that opened it.
+     * Bind an opaque resource context to the browser session or machine credential that opened it.
      *
-     * @param   ExecutionContext  $context  Fresh trusted administrator context.
+     * @param   ExecutionContext  $context  Fresh trusted execution context.
      *
-     * @return  string  Lowercase SHA-256 digest of the non-exported host session identity.
+     * @return  string  Lowercase SHA-256 digest of the non-exported session identity or credential.
      *
-     * @throws  StudioHostAccessRefused  When no authenticated browser session is present.
+     * @throws  StudioHostAccessRefused  When the context carries nothing a binding may be tied to.
      *
      * @since   2.0.0
      */
     private static function sessionBinding(ExecutionContext $context): string
     {
-        $sessionId = $context->sessionId();
-        if ($sessionId === null) {
-            throw new StudioHostAccessRefused('studio.host/session-refused', 'forbidden');
-        }
+        return StudioSessionSurfaceBinding::digest($context)
+            ?? throw new StudioHostAccessRefused('studio.host/session-refused', 'forbidden');
+    }
 
-        return hash('sha256', $sessionId);
+    /**
+     * Confine machine surfaces to the one resource family the machine contracts publish.
+     *
+     * @param   AuthenticatedSurface  $surface  Surface the execution context authenticated through.
+     * @param   StudioResourceKind    $kind     Requested host resource family.
+     *
+     * @return  bool  True for the administrator browser, or for a machine surface opening Content authoring.
+     *
+     * @since   2.0.0
+     */
+    private static function surfaceFits(AuthenticatedSurface $surface, StudioResourceKind $kind): bool
+    {
+        return !StudioSessionSurfaceBinding::isMachine($surface)
+            || $kind === StudioResourceKind::ContentAuthoring;
     }
 
     /**

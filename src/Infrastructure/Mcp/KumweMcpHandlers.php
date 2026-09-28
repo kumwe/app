@@ -35,6 +35,10 @@ use Kumwe\BusinessSchema\Domain\SchemaPlan;
 use Kumwe\BusinessSchema\Domain\SchemaPlanStep;
 use Kumwe\App\Extension\Domain\ThemeSurface;
 use Kumwe\App\Site\Application\SiteSettings;
+use Kumwe\App\Studio\Application\Authoring\StudioMachineAuthoringGateway;
+use Kumwe\App\Studio\Application\Authoring\StudioMachineAuthoringOperation;
+use Kumwe\App\Studio\Application\Authoring\StudioMachineAuthoringRefused;
+use Kumwe\App\Studio\Domain\Authoring\StudioAuthoringIntent;
 use Kumwe\App\Identity\Domain\UserStatus;
 use Psr\Clock\ClockInterface;
 
@@ -64,31 +68,33 @@ final readonly class KumweMcpHandlers
      * The container builds one unbound instance: neither identity argument is supplied, so every tool refuses
      * until `forContext()` or `forCredential()` hands back a bound copy.
      *
-     * @param  McpCapabilityCatalog         $catalog           Tools, resources and prompts this release exposes,
+     * @param  McpCapabilityCatalog            $catalog           Tools, resources and prompts this release exposes,
      *         as published by `discover()` and the capability resource.
-     * @param  ContentService               $content           Content entries behind the `kumwe_content_*` tools.
-     * @param  NavigationService            $navigation        Menus and menu items behind the `kumwe_menu_*` tools.
-     * @param  AccessControlService         $access            Users, roles, capabilities and token metadata.
-     * @param  SiteSettings                 $settings          The site settings document, read and replaced whole.
-     * @param  ExtensionManager             $extensions        Extension activation, disabling and removal.
-     * @param  TrustStore                   $trust             Extension signing keys, and the installation-wide
+     * @param  ContentService                  $content           Content entries behind the `kumwe_content_*` tools.
+     * @param  NavigationService               $navigation        Menus and menu items behind the `kumwe_menu_*` tools.
+     * @param  AccessControlService            $access            Users, roles, capabilities and token metadata.
+     * @param  SiteSettings                    $settings          The site settings document, read and replaced whole.
+     * @param  ExtensionManager                $extensions        Extension activation, disabling and removal.
+     * @param  TrustStore                      $trust             Extension signing keys, and the installation-wide
      *         lifecycle lock the trust and extension writes are taken under.
-     * @param  AutomationManagementService  $automation        Schedules and jobs behind the automation tools.
-     * @param  BusinessDefinitionService    $definitions       Business entity definition drafts and versions.
-     * @param  BusinessSchemaService        $schema            Schema plans and their approval and execution.
-     * @param  BusinessMcpHandlers          $businessRecords   Bounded generated-business MCP delegate.
-     * @param  ReportMcpHandlers            $businessReports   Bounded report and export MCP delegate.
-     * @param  McpMutationGuard             $mutations         Idempotency fence every write is run through.
-     * @param  ClockInterface               $clock             Supplies the first-run instant a new schedule is
+     * @param  AutomationManagementService     $automation        Schedules and jobs behind the automation tools.
+     * @param  BusinessDefinitionService       $definitions       Business entity definition drafts and versions.
+     * @param  BusinessSchemaService           $schema            Schema plans and their approval and execution.
+     * @param  BusinessMcpHandlers             $businessRecords   Bounded generated-business MCP delegate.
+     * @param  ReportMcpHandlers               $businessReports   Bounded report and export MCP delegate.
+     * @param  McpMutationGuard                $mutations         Idempotency fence every write is run through.
+     * @param  ClockInterface                  $clock             Supplies the first-run instant a new schedule is
      *         anchored to.
-     * @param  AuthorizationGateway         $authorization     Judges each write against the resource it names,
+     * @param  AuthorizationGateway            $authorization     Judges each write against the resource it names,
      *         before the fence is entered.
-     * @param  ?ExecutionContext            $executionContext  Actor bound by `forContext()`; null while the
+     * @param  ?ExecutionContext               $executionContext  Actor bound by `forContext()`; null while the
      *         instance is unbound.
-     * @param  ?Closure                     $contextRefresh    Callback bound by `forCredential()` that
+     * @param  ?Closure                        $contextRefresh    Callback bound by `forCredential()` that
      *         re-verifies the retained token and mints a fresh context; null when no credential is retained.
-     * @param  ?ExtensionExecutionGate      $extensionRuntime  Live authority for the resident extension
+     * @param  ?ExtensionExecutionGate         $extensionRuntime  Live authority for the resident extension
      *         generation; null only in isolated tests that have no extension runtime.
+     * @param  ?StudioMachineAuthoringGateway  $studioAuthoring   Machine entry to the browser's Studio authoring
+     *         host; null only in isolated tests that exercise no Studio tool.
      *
      * @since  2.0.0
      */
@@ -111,6 +117,7 @@ final readonly class KumweMcpHandlers
         private ?ExecutionContext $executionContext = null,
         private ?Closure $contextRefresh = null,
         private ?ExtensionExecutionGate $extensionRuntime = null,
+        private ?StudioMachineAuthoringGateway $studioAuthoring = null,
     ) {
     }
 
@@ -147,6 +154,7 @@ final readonly class KumweMcpHandlers
             $this->authorization,
             $context,
             extensionRuntime: $this->extensionRuntime,
+            studioAuthoring: $this->studioAuthoring,
         );
     }
 
@@ -219,7 +227,421 @@ final readonly class KumweMcpHandlers
             $this->authorization,
             contextRefresh: $refresh,
             extensionRuntime: $this->extensionRuntime,
+            studioAuthoring: $this->studioAuthoring,
         );
+    }
+
+    /**
+     * Open a Studio authoring session bound to this credential for one exact create or edit target.
+     *
+     * @param   string   $intent              `create` or `edit`.
+     * @param   ?string  $content             Entry to edit; required for `edit`.
+     * @param   ?string  $contentType         Reusable Content type a `create` starts from, or null for blank.
+     * @param   ?int     $contentTypeVersion  Exact type version, or null for its current version.
+     *
+     * @return  array{document: string}  The session document as canonical JSON.
+     *
+     * @throws  StudioMachineAuthoringRefused  When the target, live authority or session policy refuses.
+     *
+     * @since   2.0.0
+     */
+    public function openStudioAuthoringSession(
+        string $intent,
+        ?string $content = null,
+        ?string $contentType = null,
+        ?int $contentTypeVersion = null,
+    ): array {
+        $this->require('content.read');
+        $session = $this->studioAuthoring()->open(
+            $this->context(),
+            StudioAuthoringIntent::tryFrom($intent)
+                ?? throw StudioMachineAuthoringRefused::of('invalid-request', 'studio.machine/target-invalid'),
+            $content,
+            $contentType,
+            $contentTypeVersion,
+        );
+
+        return ['document' => self::studioJson($session->toDocument())];
+    }
+
+    /**
+     * Resolve the declared target of an opened Studio authoring session.
+     *
+     * @param   string   $session            Opaque session key the open tool returned.
+     * @param   string   $sessionGeneration  Session generation the open tool returned.
+     * @param   string   $document           The operation's argument as one canonical JSON object.
+     * @param   ?string  $locale             Caller locale tag, or null.
+     *
+     * @return  array{operation: string, replayed: bool, document: string}  Canonical result document.
+     *
+     * @throws  StudioMachineAuthoringRefused  When the document is malformed or the Studio host refuses.
+     *
+     * @since   2.0.0
+     */
+    public function studioAuthoringResolveTarget(
+        string $session,
+        string $sessionGeneration,
+        string $document,
+        ?string $locale = null,
+    ): array {
+        $this->require('content.read');
+
+        return $this->studioAuthoringRead(
+            StudioMachineAuthoringOperation::ResolveTarget,
+            $session,
+            $sessionGeneration,
+            $document,
+            $locale,
+        );
+    }
+
+    /**
+     * Page through the reusable Content types a Studio authoring session may start from.
+     *
+     * @param   string   $session            Opaque session key the open tool returned.
+     * @param   string   $sessionGeneration  Session generation the open tool returned.
+     * @param   string   $document           The operation's argument as one canonical JSON object.
+     * @param   ?string  $locale             Caller locale tag, or null.
+     *
+     * @return  array{operation: string, replayed: bool, document: string}  Canonical result document.
+     *
+     * @throws  StudioMachineAuthoringRefused  When the document is malformed or the Studio host refuses.
+     *
+     * @since   2.0.0
+     */
+    public function studioAuthoringListTypes(
+        string $session,
+        string $sessionGeneration,
+        string $document,
+        ?string $locale = null,
+    ): array {
+        $this->require('content.read');
+
+        return $this->studioAuthoringRead(
+            StudioMachineAuthoringOperation::ListTypes,
+            $session,
+            $sessionGeneration,
+            $document,
+            $locale,
+        );
+    }
+
+    /**
+     * Start the coordinated Studio authoring session from one exact start source.
+     *
+     * The `operationId` is the Studio host's replay key: a retry with the same document replays the stored
+     * result, and the same key with a changed document is refused by that host.
+     *
+     * @param   string   $operationId        Caller-chosen stable replay identity.
+     * @param   string   $session            Opaque session key the open tool returned.
+     * @param   string   $sessionGeneration  Session generation the open tool returned.
+     * @param   string   $document           The operation's argument as one canonical JSON object.
+     * @param   ?string  $locale             Caller locale tag, or null.
+     *
+     * @return  array{operation: string, replayed: bool, document: string}  Committed or replayed result.
+     *
+     * @throws  StudioMachineAuthoringRefused  When the document is malformed or the Studio host refuses.
+     *
+     * @since   2.0.0
+     */
+    public function studioAuthoringStart(
+        string $operationId,
+        string $session,
+        string $sessionGeneration,
+        string $document,
+        ?string $locale = null,
+    ): array {
+        $this->require('content.read');
+
+        return $this->studioAuthoringPerform(
+            StudioMachineAuthoringOperation::Start,
+            $operationId,
+            $session,
+            $sessionGeneration,
+            $document,
+            $locale,
+        );
+    }
+
+    /**
+     * Plan one Studio save outcome against live state and disclose its consequences.
+     *
+     * @param   string   $session            Opaque session key the open tool returned.
+     * @param   string   $sessionGeneration  Session generation the open tool returned.
+     * @param   string   $document           The operation's argument as one canonical JSON object.
+     * @param   ?string  $locale             Caller locale tag, or null.
+     *
+     * @return  array{operation: string, replayed: bool, document: string}  Canonical result document.
+     *
+     * @throws  StudioMachineAuthoringRefused  When the document is malformed or the Studio host refuses.
+     *
+     * @since   2.0.0
+     */
+    public function studioAuthoringPlanSave(
+        string $session,
+        string $sessionGeneration,
+        string $document,
+        ?string $locale = null,
+    ): array {
+        $this->require('content.read');
+
+        return $this->studioAuthoringRead(
+            StudioMachineAuthoringOperation::PlanSave,
+            $session,
+            $sessionGeneration,
+            $document,
+            $locale,
+        );
+    }
+
+    /**
+     * Commit the Content item an accepted Studio save plan authorizes.
+     *
+     * The `operationId` is the Studio host's replay key: a retry with the same document replays the stored
+     * result, and the same key with a changed document is refused by that host.
+     *
+     * @param   string   $operationId        Caller-chosen stable replay identity.
+     * @param   string   $session            Opaque session key the open tool returned.
+     * @param   string   $sessionGeneration  Session generation the open tool returned.
+     * @param   string   $document           The operation's argument as one canonical JSON object.
+     * @param   ?string  $locale             Caller locale tag, or null.
+     *
+     * @return  array{operation: string, replayed: bool, document: string}  Committed or replayed result.
+     *
+     * @throws  StudioMachineAuthoringRefused  When the document is malformed or the Studio host refuses.
+     *
+     * @since   2.0.0
+     */
+    public function studioAuthoringSaveItem(
+        string $operationId,
+        string $session,
+        string $sessionGeneration,
+        string $document,
+        ?string $locale = null,
+    ): array {
+        $this->require('content.read');
+
+        return $this->studioAuthoringPerform(
+            StudioMachineAuthoringOperation::SaveItem,
+            $operationId,
+            $session,
+            $sessionGeneration,
+            $document,
+            $locale,
+        );
+    }
+
+    /**
+     * Create a new reusable Content type from the Studio session's design.
+     *
+     * The `operationId` is the Studio host's replay key: a retry with the same document replays the stored
+     * result, and the same key with a changed document is refused by that host.
+     *
+     * @param   string   $operationId        Caller-chosen stable replay identity.
+     * @param   string   $session            Opaque session key the open tool returned.
+     * @param   string   $sessionGeneration  Session generation the open tool returned.
+     * @param   string   $document           The operation's argument as one canonical JSON object.
+     * @param   ?string  $locale             Caller locale tag, or null.
+     *
+     * @return  array{operation: string, replayed: bool, document: string}  Committed or replayed result.
+     *
+     * @throws  StudioMachineAuthoringRefused  When the document is malformed or the Studio host refuses.
+     *
+     * @since   2.0.0
+     */
+    public function studioAuthoringSaveAsNewType(
+        string $operationId,
+        string $session,
+        string $sessionGeneration,
+        string $document,
+        ?string $locale = null,
+    ): array {
+        $this->require('content.read');
+
+        return $this->studioAuthoringPerform(
+            StudioMachineAuthoringOperation::SaveAsNewType,
+            $operationId,
+            $session,
+            $sessionGeneration,
+            $document,
+            $locale,
+        );
+    }
+
+    /**
+     * Publish an immutable successor version of the session's reusable type.
+     *
+     * The `operationId` is the Studio host's replay key: a retry with the same document replays the stored
+     * result, and the same key with a changed document is refused by that host.
+     *
+     * @param   string   $operationId        Caller-chosen stable replay identity.
+     * @param   string   $session            Opaque session key the open tool returned.
+     * @param   string   $sessionGeneration  Session generation the open tool returned.
+     * @param   string   $document           The operation's argument as one canonical JSON object.
+     * @param   ?string  $locale             Caller locale tag, or null.
+     *
+     * @return  array{operation: string, replayed: bool, document: string}  Committed or replayed result.
+     *
+     * @throws  StudioMachineAuthoringRefused  When the document is malformed or the Studio host refuses.
+     *
+     * @since   2.0.0
+     */
+    public function studioAuthoringSaveNewTypeVersion(
+        string $operationId,
+        string $session,
+        string $sessionGeneration,
+        string $document,
+        ?string $locale = null,
+    ): array {
+        $this->require('content.read');
+
+        return $this->studioAuthoringPerform(
+            StudioMachineAuthoringOperation::SaveNewTypeVersion,
+            $operationId,
+            $session,
+            $sessionGeneration,
+            $document,
+            $locale,
+        );
+    }
+
+    /**
+     * Dispatch one read authoring operation for the bound actor.
+     *
+     * @param   StudioMachineAuthoringOperation  $operation          Operation to dispatch.
+     * @param   string                           $session            Opaque session key.
+     * @param   string                           $sessionGeneration  Echoed session generation.
+     * @param   string                           $document           Canonical JSON argument.
+     * @param   ?string                          $locale             Caller locale tag, or null.
+     *
+     * @return  array{operation: string, replayed: bool, document: string}  Canonical result document.
+     *
+     * @throws  StudioMachineAuthoringRefused  When the document is malformed or the Studio host refuses.
+     *
+     * @since   2.0.0
+     */
+    private function studioAuthoringRead(
+        StudioMachineAuthoringOperation $operation,
+        string $session,
+        string $sessionGeneration,
+        string $document,
+        ?string $locale,
+    ): array {
+        $result = $this->studioAuthoring()->perform(
+            $this->context(),
+            $operation,
+            $session,
+            $sessionGeneration,
+            self::studioArgument($document),
+            null,
+            $locale,
+        );
+
+        return [
+            'operation' => $operation->value,
+            'replayed' => $result->replayed,
+            'document' => self::studioJson($result->value()),
+        ];
+    }
+
+    /**
+     * Dispatch one mutating authoring operation keyed by the caller's operation identity.
+     *
+     * @param   StudioMachineAuthoringOperation  $operation          Operation to dispatch.
+     * @param   string                           $operationId        Studio host replay key.
+     * @param   string                           $session            Opaque session key.
+     * @param   string                           $sessionGeneration  Echoed session generation.
+     * @param   string                           $document           Canonical JSON argument.
+     * @param   ?string                          $locale             Caller locale tag, or null.
+     *
+     * @return  array{operation: string, replayed: bool, document: string}  Committed or replayed result.
+     *
+     * @throws  StudioMachineAuthoringRefused  When the document is malformed or the Studio host refuses.
+     *
+     * @since   2.0.0
+     */
+    private function studioAuthoringPerform(
+        StudioMachineAuthoringOperation $operation,
+        string $operationId,
+        string $session,
+        string $sessionGeneration,
+        string $document,
+        ?string $locale,
+    ): array {
+        $result = $this->studioAuthoring()->perform(
+            $this->context($operationId),
+            $operation,
+            $session,
+            $sessionGeneration,
+            self::studioArgument($document),
+            $operationId,
+            $locale,
+        );
+
+        return [
+            'operation' => $operation->value,
+            'replayed' => $result->replayed,
+            'document' => self::studioJson($result->value()),
+        ];
+    }
+
+    /**
+     * Return the Studio authoring gateway, refusing when this instance was composed without one.
+     *
+     * @return  StudioMachineAuthoringGateway  Machine entry to the browser's Studio host.
+     *
+     * @throws  \LogicException  When the handlers were composed without Studio authoring.
+     *
+     * @since   2.0.0
+     */
+    private function studioAuthoring(): StudioMachineAuthoringGateway
+    {
+        return $this->studioAuthoring
+            ?? throw new \LogicException('The MCP handlers were composed without Studio authoring.');
+    }
+
+    /**
+     * Decode one canonical JSON argument, preserving empty objects as objects.
+     *
+     * The protocol layer decodes tool arguments associatively, which erases the `{}` / `[]` distinction the
+     * pinned Studio schemas depend on, so the argument travels as one JSON string and is decoded here.
+     *
+     * @param   string  $document  JSON object text.
+     *
+     * @return  \stdClass  Decoded argument.
+     *
+     * @throws  StudioMachineAuthoringRefused  When the text is not one JSON object.
+     *
+     * @since   2.0.0
+     */
+    private static function studioArgument(string $document): \stdClass
+    {
+        try {
+            $decoded = json_decode($document, false, 64, JSON_THROW_ON_ERROR);
+        } catch (JsonException) {
+            throw StudioMachineAuthoringRefused::of('invalid-request', 'studio.machine/request-invalid');
+        }
+        if (!$decoded instanceof \stdClass) {
+            throw StudioMachineAuthoringRefused::of('invalid-request', 'studio.machine/request-invalid');
+        }
+
+        return $decoded;
+    }
+
+    /**
+     * Encode one Studio document exactly, keeping empty objects and slashes as written.
+     *
+     * @param   \stdClass  $document  Studio document.
+     *
+     * @return  string  Compact JSON text.
+     *
+     * @throws  JsonException  When the document cannot be encoded.
+     *
+     * @since   2.0.0
+     */
+    private static function studioJson(\stdClass $document): string
+    {
+        return json_encode($document, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
     }
 
     /**
