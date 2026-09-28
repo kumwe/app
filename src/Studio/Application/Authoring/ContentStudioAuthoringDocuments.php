@@ -144,22 +144,27 @@ final readonly class ContentStudioAuthoringDocuments
     /**
      * The host-minted return pointer for one session, or a successor pointer for one accepted save.
      *
-     * @param   string  $resourceContextKey  Opaque host-session key.
-     * @param   string  $discriminator       Empty for the session itself, or the accepted save's fingerprint.
+     * @param   string     $resourceContextKey  Opaque host-session key.
+     * @param   string     $discriminator       Empty for the session itself, or the accepted save's fingerprint.
+     * @param   ?stdClass  $label               Destination `messageReference` in the interface locale, or null
+     *          for the source-language destination.
      *
      * @return  stdClass  Schema-valid common `returnContext`.
      *
      * @since   2.0.0
      */
-    public static function returnContext(string $resourceContextKey, string $discriminator = ''): stdClass
-    {
+    public static function returnContext(
+        string $resourceContextKey,
+        string $discriminator = '',
+        ?stdClass $label = null,
+    ): stdClass {
         return (object) [
             'key' => 'returns/' . substr(
                 hash('sha256', 'kumwe-content-authoring-return:' . $resourceContextKey . "\n" . $discriminator),
                 0,
                 40,
             ),
-            'label' => self::message('kumwe.app/return-to-content', 'Return to the content editor'),
+            'label' => $label ?? self::message('kumwe.app/return-to-content', 'the content editor'),
         ];
     }
 

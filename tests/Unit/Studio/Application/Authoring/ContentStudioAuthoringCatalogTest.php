@@ -13,6 +13,7 @@ use Kumwe\App\Studio\Application\Composition\StudioCompositionContributionCatalo
 use Kumwe\App\Studio\Application\Release\StudioCoreCatalog;
 use Kumwe\App\Studio\Application\Rendering\StudioBlockRendererRuntime;
 use Kumwe\App\Studio\Application\Rendering\StudioContentFieldBlockRenderer;
+use Kumwe\App\Tests\Support\InterfaceTranslation;
 use Kumwe\App\Tests\Support\TrustFencedStudioPreviewRenderers;
 use Kumwe\Extension\Spi\Contribution\CanonicalCompositionDocument;
 use Kumwe\Extension\Spi\Contribution\CanonicalCompositionKind;
@@ -119,6 +120,50 @@ final class ContentStudioAuthoringCatalogTest extends TestCase
     }
 
     /**
+     * The App's own field blocks and pattern reach the palette in the interface locale, while any other owner's
+     * labels, every lock and every coordinate stay exactly as declared.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheAppsOwnPaletteLabelsFollowTheInterfaceLocale(): void
+    {
+        $registries = new ExtensionContributionRegistrySet(
+            new DeterministicCanonicalEncoder(),
+            new SdkFieldConfigurationAdmission(),
+        );
+        self::contributeBlock($registries, 'acme.shop/grid', '1.0.0');
+        $source = self::catalog($registries);
+        $hebrew = self::catalog($registries, null, 'he');
+        $labels = static function (ContentStudioAuthoringCatalog $catalog): array {
+            $found = [];
+            foreach ($catalog->contributionPayloads() as $payload) {
+                $found[(string) ($payload->type ?? $payload->id ?? '')] = $payload;
+            }
+
+            return $found;
+        };
+        $english = $labels($source);
+        $translated = $labels($hebrew);
+
+        self::assertSame('Yes or no', $english['core/field-boolean']->label->defaultMessage);
+        self::assertSame('כן או לא', $translated['core/field-boolean']->label->defaultMessage);
+        self::assertSame('ערך', $translated['core/field-boolean']->ports[0]->label->defaultMessage);
+        self::assertSame('core.composition/field-boolean', $translated['core/field-boolean']->label->key);
+        self::assertSame('מקטע ריק', $translated['core/pattern-empty-section']->label->defaultMessage);
+        foreach ($english as $identity => $payload) {
+            if (!str_starts_with($identity, 'core/')) {
+                self::assertEquals($payload, $translated[$identity], $identity . ' keeps its owner\'s labels.');
+            }
+        }
+        self::assertSame(array_keys($english), array_keys($translated));
+        self::assertEquals($source->blockLocks(), $hebrew->blockLocks());
+        self::assertEquals($source->contributionDependencies(), $hebrew->contributionDependencies());
+        self::assertNotSame($source->contributionGeneration(), $hebrew->contributionGeneration());
+    }
+
+    /**
      * The App's own core contribution declaring a core block at a coordinate the pinned release does not
      * compile in contradicts the immutable lock and is refused before any lock is handed out: the two
      * App-owned records must agree, and drift between them is a build failure, not a silent shadow.
@@ -165,6 +210,7 @@ final class ContentStudioAuthoringCatalogTest extends TestCase
      *
      * @param   ExtensionContributionRegistrySet  $registries  Live contribution registries.
      * @param   ?string                           $record      Core catalogue path; the pinned record by default.
+     * @param   ?string                           $locale      Interface locale; the source locale by default.
      *
      * @return  ContentStudioAuthoringCatalog  Catalogue under test.
      *
@@ -173,6 +219,7 @@ final class ContentStudioAuthoringCatalogTest extends TestCase
     private static function catalog(
         ExtensionContributionRegistrySet $registries,
         ?string $record = null,
+        ?string $locale = null,
     ): ContentStudioAuthoringCatalog {
         $runtime = new StudioBlockRendererRuntime($registries, new StudioContentFieldBlockRenderer());
 
@@ -183,6 +230,7 @@ final class ContentStudioAuthoringCatalogTest extends TestCase
                 '0.1.0-beta.3',
             ),
             $runtime,
+            InterfaceTranslation::translator($locale),
         );
     }
 

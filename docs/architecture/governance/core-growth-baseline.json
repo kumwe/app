@@ -7039,7 +7039,7 @@
         "Kumwe\\App\\Studio\\Application\\Authoring\\ContentStudioAuthoringCatalog": {
             "kind": "class",
             "layer": "application",
-            "surface": "8062c357c55e39670cc12e24",
+            "surface": "faf9960562cdb819a0b302e9",
             "growth": {
                 "record": "KUMWE-CGR-2026-001"
             }
@@ -7087,7 +7087,7 @@
         "Kumwe\\App\\Studio\\Application\\Authoring\\ContentStudioAuthoringDocuments": {
             "kind": "class",
             "layer": "application",
-            "surface": "6c5b24fd4353f7eb01a6819d",
+            "surface": "5628aaa8927300658965ef87",
             "growth": {
                 "record": "KUMWE-CGR-2026-001"
             }
@@ -7107,7 +7107,7 @@
         "Kumwe\\App\\Studio\\Application\\Authoring\\ContentStudioAuthoringService": {
             "kind": "class",
             "layer": "application",
-            "surface": "32b51c1a5d45ad9eaf8584a3",
+            "surface": "0b98cc273e1790109cf43e28",
             "growth": {
                 "record": "KUMWE-CGR-2026-001"
             }
@@ -7115,7 +7115,7 @@
         "Kumwe\\App\\Studio\\Application\\Authoring\\ContentStudioAuthoringSession": {
             "kind": "class",
             "layer": "application",
-            "surface": "2981a52b973a614f33f973f1",
+            "surface": "0b4488d88d5ca17eae112732",
             "growth": {
                 "record": "KUMWE-CGR-2026-001"
             }

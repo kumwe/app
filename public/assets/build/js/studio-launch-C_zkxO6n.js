@@ -1,4 +1,4 @@
-import { t as __vitePreload } from "./administrator-CR3lN6nu.js";
+import { t as __vitePreload } from "./administrator-Co52foq9.js";
 import { i as coreLayoutInitialProperties, o as isCoreLayoutBlockType, t as computePreviewDraftDigest } from "./preview-identity-Bvgz1vbs.js";
 //#region assets/administrator/components/studio-launch.ts
 /**
@@ -147,16 +147,21 @@ var HostPortClient = class {
 		return body;
 	}
 };
-/** Apply the interface-locale Studio catalogue the localization port serves to the mounted shell. */
-async function localizeShell(client, shell) {
+/**
+* Fetch the interface-locale Studio catalogue the localization port serves.
+*
+* The request starts with the launch, alongside the module import, so the catalogue is at hand the moment
+* Studio hands over the shell and its labels never show in the source language first.
+*/
+async function shellMessages(client) {
 	const result = await client.call("localization/messages", {
 		locale: client.deployment.session.locale.resolved,
 		namespaces: MESSAGE_NAMESPACES
 	});
-	if (typeof result.value !== "object" || result.value === null) return;
+	if (typeof result.value !== "object" || result.value === null) return void 0;
 	const messages = {};
 	for (const [key, pattern] of Object.entries(result.value)) if (typeof pattern === "string") messages[key] = { defaultMessage: pattern };
-	shell.messages = messages;
+	return messages;
 }
 /**
 * The host-owned authenticated preview beside the shell.
@@ -323,6 +328,26 @@ function findNode(nodes, id) {
 		}
 	}
 }
+/** The element holding keyboard focus, followed into open shadow roots, or null when focus is on the document. */
+function focusedElement() {
+	let element = document.activeElement;
+	while (element?.shadowRoot?.activeElement) element = element.shadowRoot.activeElement;
+	return element === null || element === document.body || element === document.documentElement ? null : element;
+}
+/**
+* Return keyboard focus to the Studio region's heading.
+*
+* Studio replaces its create-source chooser with the contextual shell once a start is chosen, and the
+* control that held focus leaves the document with the chooser. Focus would otherwise fall back to the
+* top of the page; the region's heading names what just changed and makes the shell the next stops.
+*/
+function focusRegionHeading(region) {
+	const id = region.getAttribute("aria-labelledby");
+	const heading = id === null ? null : document.getElementById(id);
+	if (heading === null) return;
+	heading.tabIndex = -1;
+	heading.focus();
+}
 async function setupStudioLaunch() {
 	const mount = document.querySelector(MOUNT_SELECTOR);
 	const region = mount?.closest("[data-studio-authoring-region]") ?? null;
@@ -381,12 +406,19 @@ async function setupStudioLaunch() {
 		toggle.hidden = true;
 		console.error("Studio page builder failed to mount.", error);
 	};
+	let focusInMount = false;
+	document.addEventListener("focusin", (event) => {
+		focusInMount = event.target instanceof Node && mount.contains(event.target);
+	});
 	let launched = false;
 	const launch = async () => {
 		if (launched) return;
 		launched = true;
 		status.textContent = labels.loading;
 		status.dataset.studioLaunchState = "loading";
+		const localized = client === void 0 ? Promise.resolve(void 0) : shellMessages(client).catch((error) => {
+			console.error("Studio message catalogue unavailable; built-in labels remain.", error);
+		});
 		try {
 			const imported = await __vitePreload(() => import(
 				/* @vite-ignore */
@@ -403,12 +435,10 @@ async function setupStudioLaunch() {
 				return;
 			}
 			shell = handle.element;
-			if (client !== void 0 && deployment !== void 0) {
-				await localizeShell(client, shell).catch((error) => {
-					console.error("Studio message catalogue unavailable; built-in labels remain.", error);
-				});
-				preview = setupPreview(region, shell, client, previewChannelOf(deployment));
-			}
+			const messages = await localized;
+			if (messages !== void 0) shell.messages = messages;
+			if (focusInMount && focusedElement() === null) focusRegionHeading(region);
+			if (client !== void 0 && deployment !== void 0) preview = setupPreview(region, shell, client, previewChannelOf(deployment));
 			reveal();
 		} catch (error) {
 			fail(error);
