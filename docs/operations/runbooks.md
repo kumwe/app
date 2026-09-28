@@ -34,9 +34,12 @@ disagrees with the published extension generation, so the load balancer drains i
 
 - **Check:** `bin/kumwe app:health` on the replica, and the log for `runtime` lines about the extension runtime
   generation. `KumweExtensionRuntimeUntrusted` on the same replica is the more specific cause and inhibits this one.
-- **Act:** `bin/kumwe extension:runtime:materialize` on the replica, then confirm `GET /health/ready` answers 200.
+- **Act:** a marker that aged out means the runtime watcher stopped: restart `bin/kumwe extension:runtime:watch`
+  under its supervisor. `bin/kumwe extension:runtime:materialize` publishes a fresh marker at once; confirm
+  `GET /health/ready` answers 200.
 - **Clears when:** readiness reports 1 for any sample in the five-minute window.
-- **Drill:** `readiness-failing` removes the replica's runtime marker and materializes it again.
+- **Drill:** `readiness-failing` stops the watcher until the marker is older than its thirty-second window, then
+  materializes the runtime and starts the watcher again.
 
 ### KumweSyntheticProbeFailing
 
@@ -46,9 +49,13 @@ disagrees with the published extension generation, so the load balancer drains i
 - **Check:** run the probe by hand from the probe host:
   `php tools/synthetic-probe.php --base-url=https://<site>` — its JSON lines name the failing step and status.
   A failure with every internal signal green points at TLS, DNS, the ingress or `APP_TRUSTED_HOSTS`.
-- **Act:** fix the edge component the probe names; a `liveness` failure inhibits the other checks, so start there.
+- **Act:** fix the edge component the probe names — the ingress, TLS, DNS or a trusted-host list
+  (`APP_TRUSTED_HOSTS`) that dropped the public name; a `liveness` failure inhibits the other checks, so start
+  there.
 - **Clears when:** the check passes on the next probe run.
-- **Drill:** `synthetic-probe-failing` probes a stopped server, then a running one.
+- **Drill:** `synthetic-probe-failing` restarts the replica with `APP_TRUSTED_HOSTS` naming only its address, so the
+  probe (which uses the public name) fails every check while the scrape and readiness stay green, then restores
+  the list.
 
 ### KumweSyntheticProbeStale
 
@@ -81,14 +88,16 @@ Ticket. More than 2% of responses are 5xx for ten minutes.
 
 **Page.** More than 10% of responses are 5xx for five minutes. Treat as an outage.
 
-- **Check:** `GET /health/ready`, the database and Redis first; then log lines with `outcome=failure`,
-  `runtime=http` for the exception class. A credential rotation that reached the secret store but not the running
-  containers is the classic cause.
-- **Act:** restore the dependency or restart the web tier with the current credentials; do not raise log
-  verbosity through `APP_DEBUG`, which also widens what a 500 discloses.
+- **Check:** which replicas answer 5xx (their access logs, or `runtime=http` log lines with `outcome=failure` and
+  the exception class), then `GET /health/ready`, the database and Redis. A replica whose configuration does not
+  match the installation — a mis-templated `DB_TABLE_PREFIX` or database name, a stale release — answers every
+  request with a 5xx while its liveness stays green. A replica that cannot reach the database at all fails before
+  the request pipeline and shows up as `KumweScrapeTargetDown` and a failing probe instead.
+- **Act:** take the failing replica out of rotation and redeploy it with the installation's configuration, or
+  restore the dependency; do not raise log verbosity through `APP_DEBUG`, which also widens what a 500 discloses.
 - **Clears when:** the ratio falls below 10% over five minutes.
-- **Drill:** `server-error-rate-critical` sends traffic to a web server started with a wrong database password,
-  then restarts it with the right one.
+- **Drill:** `server-error-rate-critical` sends half the traffic to a second replica restarted with a wrong
+  `DB_TABLE_PREFIX`, then restarts it with the installation's configuration.
 
 ### KumweRequestLatencyHigh
 
@@ -165,7 +174,8 @@ Ticket. More than 5% of transactions roll back.
 - **Act:** start the worker (`bin/kumwe queue:work`) under its supervisor; if it exits at once, materialize the
   runtime first.
 - **Clears when:** a heartbeat is fresh.
-- **Drill:** `no-live-worker` removes every heartbeat, then runs a real worker pass.
+- **Drill:** `no-live-worker` sends the only worker `SIGTERM`, so it drains and removes its heartbeat, then starts
+  `bin/kumwe queue:work` again.
 
 ### KumweJobQueueStalled
 
@@ -192,7 +202,6 @@ Ticket. The failed-job ledger holds rows.
 - **Act:** fix the cause, then `bin/kumwe automation retry --id=<job> --token-file=<file>`; cancel it only when the
   work no longer matters.
 - **Clears when:** the ledger is empty — retrying or discarding removes the row.
-- **Drill:** `jobs-dead-lettered` exhausts a real job's attempts, then retries it successfully.
 
 ### KumweJobRetryRateHigh
 
@@ -300,7 +309,6 @@ Ticket. A store has held drainable rows for more than six hours.
   lines by `store`; the store's schedule; the retention runs ledger.
 - **Act:** re-enable the schedule, or raise its budget if every run ends `outcome=behind`.
 - **Clears when:** the oldest drainable row is younger than six hours.
-- **Drill:** `retention-backlog-stale` seeds an expired backlog, then runs the real drain.
 
 ### KumweRetentionCapacityForecast
 
@@ -330,7 +338,8 @@ Ticket. An enterprise-profile installation lacks a declared retention setting.
   recorded: confirm `KUMWE_OPERATIONS_STATUS_DIR` points the tools at the application's `storage/operations`.
 - **Act:** fix the failing step and run `tools/backup-cycle.sh` (or `tools/backup.sh` under quiesce) now.
 - **Clears when:** a backup records success.
-- **Drill:** `backup-stale` records a failing backup against a real database, then runs a real one.
+- **Drill:** `backup-stale` runs a real `tools/backup.sh`, then one the database refuses (a stale credential), lets
+  three hours and twenty minutes pass on the drill clock, then runs `tools/backup.sh` again.
 
 ### KumweBackupFailing
 
@@ -381,9 +390,11 @@ Ticket. At the last six hours' rate a volume fills within a day (the nearly-full
 
 - **Check:** `bin/kumwe extension:runtime:materialize` output on the replica; a signing key mismatch between the
   image and the installation is the usual cause. This alert inhibits `KumweReadinessFailing` on the same replica.
-- **Act:** materialize the trusted generation. Never set `EXTENSIONS_ALLOW_UNSIGNED_LOCAL` in production to silence it.
+- **Act:** run `bin/kumwe extension:runtime:materialize` to materialize the trusted generation, and make sure the
+  runtime watcher is running. Never set `EXTENSIONS_ALLOW_UNSIGNED_LOCAL` in production to silence it.
 - **Clears when:** the replica reports a trusted generation.
-- **Drill:** `extension-runtime-untrusted` discards the replica's runtime, then materializes it.
+- **Drill:** `extension-runtime-untrusted` stops the watcher and alters the compiled runtime map so its signature no
+  longer verifies, then materializes the trusted generation and starts the watcher.
 
 ### KumweRevocationFeedStale
 

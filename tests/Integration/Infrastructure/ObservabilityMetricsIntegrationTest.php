@@ -9,6 +9,7 @@ use Doctrine\DBAL\Types\Types;
 use Kumwe\App\Application\Readiness\ReadinessStatus;
 use Kumwe\App\Http\Handler\MetricsHandler;
 use Kumwe\App\Infrastructure\Observability\MetricCatalog;
+use Kumwe\App\Infrastructure\Observability\MetricCollector;
 use Kumwe\App\Infrastructure\Observability\MetricRecorder;
 use Kumwe\App\Infrastructure\Observability\MetricsAccessPolicy;
 use Kumwe\App\Infrastructure\Observability\ObservabilityContract;
@@ -304,5 +305,66 @@ final class ObservabilityMetricsIntegrationTest extends TestCase
             '2.9.0-qualification',
             'http',
         );
+    }
+
+    /**
+     * An operational read that fails is published as a collection failure beside the gauges it did not break.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAFailingOperationalReadIsPublishedNotRaised(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $database = $container->get(Connection::class);
+        $tables = $container->get(TableNames::class);
+        self::assertInstanceOf(Connection::class, $database);
+        self::assertInstanceOf(TableNames::class, $tables);
+        $collector = new RuntimeMetricCollector(
+            $database,
+            $tables,
+            new SystemClock(),
+            new class implements ReadinessStatus {
+                /**
+                 * Report the replica ready, so only the operational read can fail.
+                 *
+                 * @return  bool  Always true.
+                 *
+                 * @since   2.0.0
+                 */
+                public function ready(): bool
+                {
+                    return true;
+                }
+            },
+            '2.9.0-qualification',
+            'worker',
+            operational: new class implements MetricCollector {
+                /**
+                 * Fail the way an unreadable status directory or volume would.
+                 *
+                 * @return  list<\Kumwe\App\Infrastructure\Observability\MetricSample>  Never returns.
+                 *
+                 * @throws  \RuntimeException  Always.
+                 *
+                 * @since   2.0.0
+                 */
+                public function collect(): array
+                {
+                    throw new \RuntimeException('The status directory is unreadable.');
+                }
+            },
+        );
+
+        $values = [];
+        foreach ($collector->collect() as $sample) {
+            $values[$sample->name] = $sample->value;
+        }
+
+        self::assertSame(1.0, $values['kumwe_metrics_collection_failed']);
+        self::assertSame(1.0, $values['kumwe_ready'], 'The gauges that did read are still published.');
+        self::assertArrayHasKey('kumwe_jobs_pending', $values);
+        self::assertArrayNotHasKey('kumwe_recovery_last_success_timestamp_seconds', $values);
     }
 }

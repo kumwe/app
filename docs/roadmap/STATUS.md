@@ -48,7 +48,7 @@ record, never this table. A phase with any open or pending entry cannot read as 
 | **Gate A** | | **Passed — 13/13 executable criteria met** | — |
 | 5 — Enterprise scale | B | In progress — `P5-A`, `P5-B`, `P5-C`, `P5-D`, `P5-E`, `P5-F` delivered; `P5-G`, `P5-H`, `P5-I` open | — |
 | 6 — Continuity and introspection | B | In progress — `P6-A`, `P6-B`, `P6-C`, `P6-D` pending integration; 7 findings pending integration; in flight on `agent/recovery` | — |
-| 7 — Qualification | B | In progress — `P7-A` delivered; `P7-B`, `P7-C`, `P7-D`, `P7-E`, `P7-F`, `P7-G`, `P7-H`, `P7-I` open; 1 finding pending integration, 2 findings open; in flight on `agent/browser` | Phases 5 and 6 and `PL-G`; the Point 5 track for `P7-B` and `P7-F` … `P7-I` |
+| 7 — Qualification | B | In progress — `P7-A`, `P7-D` delivered; `P7-B`, `P7-C`, `P7-E`, `P7-F`, `P7-G`, `P7-H`, `P7-I` open; 1 finding pending integration, 2 findings open; in flight on `agent/browser` | Phases 5 and 6 and `PL-G`; the Point 5 track for `P7-B` and `P7-F` … `P7-I` |
 | S — Studio contextual Content authoring | A, with a B integration | In progress — `S-A`, `S-B`, `S-C`, `S-D`, `S-E`, `S-F` delivered; `S-G` open; 1 finding open, 1 requirement pending integration; in flight on `agent/machine` | A Producer release re-pinning Studio past `0.1.0-beta.3`; none exists (pin kept 2026-09-24) |
 | **Gate B** | | **Not assessed — criteria: 2 delivered, 3 pending integration, 7 open** | Phases 5, 6, 7 and S; the Point 5 track |
 | M — Maintainability | — | In progress — 2 findings open | Phase 3 seams settled. Blocks nothing. |
@@ -71,7 +71,7 @@ definition remains in README, and the per-requirement detail is in
 | L | `PL-G` | `V2-LNG-010` | `pr-152` | `agent/browser`: `PL-G`, `V2-LNG-010` |
 | 5 | `P5-G`, `P5-H`, `P5-I` | — | `pr-152` | — |
 | 6 | `P6-A`, `P6-B`, `P6-C`, `P6-D` | `V2-DR-001`, `V2-DR-004`, `V2-DR-003`, `V2-DR-002`, `GM-BAK-04`, `GM-BAK-08`, `V2-OPS-001` | `pr-152` | `agent/recovery`: `P6-A`, `P6-B`, `P6-C`, `P6-D`, `V2-DR-001`, `V2-DR-004`, `V2-DR-003`, `V2-DR-002`, `GM-BAK-04`, `GM-BAK-08`, `V2-OPS-001` |
-| 7 | `P7-B`, `P7-C`, `P7-D`, `P7-E`, `P7-F`, `P7-G`, `P7-H`, `P7-I` | `V2-UX-001`, `V2-QA-014`, `GM-SUP-05` | `point-5`, `pr-152` | `agent/browser`: `V2-QA-014` |
+| 7 | `P7-B`, `P7-C`, `P7-E`, `P7-F`, `P7-G`, `P7-H`, `P7-I` | `V2-UX-001`, `V2-QA-014`, `GM-SUP-05` | `point-5`, `pr-152` | `agent/browser`: `V2-QA-014` |
 | S | `S-G` | `V2-STU-007`, `MACHINE-STUDIO-PARITY` | `pr-152` | `agent/machine`: `MACHINE-STUDIO-PARITY` |
 | M | — | `V2-ARC-002`, `V2-QA-010` | `maintainability` | — |
 | N | — | `V3-NC-001`, `V3-NC-002`, `V3-NC-003`, `V3-NC-004` | `version-3` | — |

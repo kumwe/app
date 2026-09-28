@@ -21,7 +21,7 @@ foreach (
     [
         'RuleViolation', 'Duration', 'RuleYaml', 'PromQl', 'MetricInventory', 'PromQlAnalysis', 'AlertRule',
         'AnnotationTemplate', 'InhibitionRules', 'RuleGate', 'PromtoolTests', 'Exposition', 'DashboardGate',
-        'SyntheticProbe', 'DrillTimeline',
+        'SyntheticProbe', 'DrillTimeline', 'DrillHost', 'AlertDrill', 'AlertDrills', 'DrillEvaluator',
     ] as $class
 ) {
     if (is_file(__DIR__ . '/' . $class . '.php')) {
