@@ -77,6 +77,16 @@ closed capability projection and return context, and answers every operation thr
 - the structured form as the explicitly labelled `STUDIO-PROD-014` fallback, remembered per editor and used
   when the runtime or configuration is unavailable.
 
+The Content launcher uses Studio's public `parseStudioDeploymentConfiguration()` and
+`mountStudio(target, configuration)` APIs for its exact element. It requires an HTTP deployment and scopes selector
+resolution to its Content region. It does not discover, claim, or use the handle of a neighboring standalone or
+hosted instance. Missing, standalone, or differently targeted configuration leaves the labelled Content fallback;
+a configured host refusal remains a refusal. `tests/Browser/studio-mount-isolation.spec.ts` runs the committed App
+bundle and official beta.3 browser module in ordinary HTML, verifies 401 and 403 isolation, and exercises local
+canonical project and save-intent downloads plus lossless import into a fresh instance without host requests.
+This is host mount-boundary evidence for `STUDIO-PROD-010`, `011`, `012` and `015`, not a new App standalone product
+or evidence that the complete acceptance journey has passed.
+
 The journey is automated in `tests/Browser/studio-authoring.spec.ts` on Chromium desktop and mobile, with its
 interface locale as a parameter, and in `tests/Integration/Studio/ContentStudioAuthoringJourneyIntegrationTest.php`
 on every engine. The same spec proves keyboard-only operation, an accessible name and reading order for every
@@ -95,17 +105,21 @@ What remains open, and why:
   manifest schema 6 declares block, pattern, field-adapter, inspector, design-vocabulary and migration documents
   but no authoring-target kind, so an extension cannot yet declare a Studio target or bind its own resource
   authority. That needs an SDK successor contract; App must not invent a private declaration.
-- **Standalone dual mounting (`STUDIO-PROD-015` steps 1 to 3).** Standalone mode is Studio-owned and App never
-  mounts it: the Content surface is a hosted session, and ADR 0020 forbids turning a configured refusal into local
-  mode. The portable multi-instance mount is proven by the Studio package, not by an App page.
+- **Complete dual-mount acceptance (`STUDIO-PROD-015` steps 1 to 3).** App now proves its own launcher coexists with
+  the official standalone runtime without claiming it, and preserves a configured 401/403 refusal while local
+  export/import remains independent. The fixture uses a controlled HTTP refusal; it does not establish the remaining
+  successful PHP-hosted round trip beside a local instance, missing-operation controls, or the full packaged journey.
+  Standalone behavior remains Studio-owned, and Content never turns a configured refusal into local mode.
 - **Authoring from a clean packaged start.** The deployed-artifact lane runs without a database by design, and the
   production-topology deployment-acceptance job does not yet drive a Studio session.
-- **Pinned-release limitations.** In `0.1.0-beta.3` a reusable-type save result must echo the live Entry that
-  the save request does not carry, so values entered before a blank canvas becomes a type cannot survive that
-  save; save requests do not carry the presentation, so a save must happen in the presentation the session
-  started in; the hosted in-shell preview cannot stage a live draft, so the App preview shows accepted
-  revisions only; and the create-source chooser and save confirmation render without catalogue overrides. Each
-  needs a Studio release before App can close it.
+- **Pinned-release limitations.** The hosted in-shell preview cannot stage a live draft, so the App preview shows
+  accepted revisions only; the create-source chooser and save confirmation render without catalogue overrides.
+  These require Studio changes followed by a matching Producer release. The earlier claim that beta.3 universally
+  requires an echoed live Entry or forbids saving after a presentation change was incorrect: its coordinator accepts
+  the last accepted Entry/presentation and reconciles the excluded local draft. App's remaining new-field identity
+  issue is separate: `schemaFromModel()` accepts a field named `summary`, while `ContentStudioProjector` later emits
+  `data_summary`; local values and bindings using the former name need an explicit host identity mapping. It must not
+  be reported as a missing Studio save-payload capability. See the exact ownership and release report below.
 - **Extension field adapters, patterns and block migration in the contextual shell.** An admitted extension block
   is used, saved, previewed and rendered, and on every engine a disabled extension withdraws its block from the
   contextual catalogue while an item composing it still opens with the unresolved block preserved, its values
@@ -139,6 +153,30 @@ surface and is not the authoring entry point.
 | `STUDIO-PROD-015` | Automated in part; not accepted | Prove the complete integrated acceptance journey exactly as specified by Studio. |
 
 `Partial` and `Implemented with pinned-release limits` never mean the end-to-end requirement is accepted.
+
+### Dependency and ownership verification — 2026-09-28
+
+The GitHub release collections, exact npm packages, Composer lock and corresponding tag sources were inspected.
+The latest published SDK is `v0.3.3` (`3d91050261bc26a5d89966250f88b11705b4923b`), already locked by App;
+Producer is `v0.3.0` (`65d0a10ce39954738f091ec4b5e2626768053c8d`), also already locked. Studio's latest coordinated
+release is `studio-v0.1.0-beta.6` (publication source `e0ca7a39b0ebf1e874d4b7e6d7df35591b4fa6a6`). App and Producer
+remain on beta.3, source `42b149251a9f17a2ef8f32db0d9dd1ac2fcfec8a`, release-record SHA-256
+`c1860c64d1a4ce1e6d9b96ea94a2d63df42e8ebaaf423ed5b4fa4dd841ed39a4`. No pin or vendor bytes changed.
+
+| Requirement and remaining behavior | Exact evidence and owner | Concrete prerequisite and App follow-through |
+|---|---|---|
+| `STUDIO-PROD-008`, `015` step 4: extension-owned target | SDK 0.3.3 `src/Spi/Contribution/CanonicalCompositionKind.php` admits six composition kinds, not `authoring-target`; its public Studio SPI supplies preview rendering, not authoring-resource authority. Studio beta.3 already publishes `authoring-target.schema.json`. | SDK must publish a successor manifest generation carrying the existing canonical target document and a manifest-bound, host-neutral resource-authority SPI, with a runnable extension target fixture. App then admits it under the same trust/generation and capability checks as the core declaration and binds its PHP operations. An App-only manifest kind or a private extension editor is not closure. |
+| `STUDIO-PROD-009`, `015` step 12: usable field adapter, pattern and migration | SDK `resources/fixtures/generations/manifest-6/kumwe.json` names `money`/`decimal` extension field kinds; App Content projects built-in kinds. Its pattern names `section`/`text` dependencies absent from its declarations. Its migration lacks a runnable predecessor/successor fixture. | SDK supplies a self-contained pattern and versioned migration fixture; extension field support must be declared through the owning Content/SDK contract. App still owns target-filtered admission and persistence of accepted migration results, plus disable/unresolved/upgrade browser and database proof. A fixture correction alone cannot close that runtime work. |
+| `STUDIO-PROD-003`, `007`: unsaved Entry and presentation across saves | Beta.3 `packages/core/src/contextual-session.ts`, `assertSaveResult()` and `reconcileExcludedDrafts()`, accepts prior accepted state and preserves excluded local values and presentation; the published core and compiled browser bytes contain this behavior. Upstream tests include “saves a distinct new type without sending Entry values” and “preserves local presentation and adopts the exact planned host successor context”. | No Studio release is needed for that reconciliation. App must preserve exact authored field identities across its `schemaFromModel()` / `ContentStudioProjector` boundary and prove values/bindings before the first type save. For a mount initially opened outside inline, App also needs to retain the accepted initial presentation: `saveResult()` currently always emits inline. Do not add Entry values to reusable-type requests or relax Studio's result guard. |
+| `STUDIO-PROD-003`, `010`: live draft in hosted in-shell preview | Beta.3 `packages/studio-lit/src/hosted-services.ts::assertConfiguredPreviewSupport()` explicitly refuses enabled HTTP preview until a complete draft can be staged. That guard is unchanged in beta.6. | Studio must publish canonical complete-draft staging and its authenticated HTTP binding, with mismatch/cancellation/teardown vectors. Producer must implement and release that exact pin. App can then connect its existing preview authority to the published operation; accepted-revision preview remains the current bounded capability. |
+| `STUDIO-PROD-013`: localized chooser and save confirmation | Beta.3 `hosted-start.ts` calls `messageText()` without per-mount overrides; `hosted-runtime.ts::createSaveConfirmationSurface()` writes fixed English labels. These paths are unchanged in beta.6. | Studio must expose per-mount catalogue input for both surfaces, localize confirmation labels, and publish it. Producer and App adopt the same family and App proves all shipped locales. An App DOM rewrite would duplicate Studio ownership. |
+| `STUDIO-PROD-015`: clean packaged authoring | Existing App source/browser and database evidence does not drive Studio from the production-topology artifact. | App's deployment-acceptance lane must drive the real PHP-hosted journey from the built artifact, without production Node/npm. This is App qualification work, not an upstream release dependency. |
+
+The reuse review used capability-index digest
+`ea1e5091c8c846ec8434e6e45cc04a384e43187b1f5aae9d147b9c0814783826`, Producer's charter, public API/capability/service
+manifests and host agreement, the SDK manifests and Studio SPI, and Studio's public mount documentation, installed
+types, source and browser tests. The implemented App change owns only its Content mount selection and configured
+host requirement. Portable mounting, local export/import, contract validation and reconciliation remain upstream.
 
 ## Configuration-first deployment boundary
 
