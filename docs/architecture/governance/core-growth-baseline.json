@@ -2848,7 +2848,7 @@
         "Kumwe\\App\\BusinessSurface\\Delivery\\Browser\\GeneratedBusinessBrowserController": {
             "kind": "class",
             "layer": "delivery",
-            "surface": "c1021ca6ef9b4371bcc09395",
+            "surface": "53da0b350430aed88c0b0b32",
             "growth": {
                 "classification": "host-delivery",
                 "implements": [],
@@ -4341,6 +4341,18 @@
             "layer": "delivery",
             "surface": "1778a76e581f486a2f59b9db",
             "growth": null
+        },
+        "Kumwe\\App\\Http\\Handler\\SitePresentationStylesheetHandler": {
+            "kind": "class",
+            "layer": "delivery",
+            "surface": "7211b6356981743732da1de4",
+            "growth": {
+                "classification": "host-delivery",
+                "implements": [
+                    "Psr\\Http\\Server\\RequestHandlerInterface"
+                ],
+                "extends": null
+            }
         },
         "Kumwe\\App\\Http\\Handler\\StudioPublishedStylesheetHandler": {
             "kind": "class",
@@ -6376,8 +6388,12 @@
         "Kumwe\\App\\Presentation\\Application\\Dashboard\\DashboardWorkflowCatalog": {
             "kind": "class",
             "layer": "presentation",
-            "surface": "f71020b381e03e9a86163c12",
-            "growth": null
+            "surface": "96796b2d1237acd560f710f4",
+            "growth": {
+                "classification": "host-presentation",
+                "implements": [],
+                "extends": null
+            }
         },
         "Kumwe\\App\\Presentation\\Application\\Dashboard\\DashboardWorkflowPage": {
             "kind": "class",
@@ -6448,7 +6464,7 @@
         "Kumwe\\App\\Presentation\\ContentPageRenderService": {
             "kind": "class",
             "layer": "presentation",
-            "surface": "581d01fbfd0cd147d6eaa118",
+            "surface": "8b5594a855800f5ad1bdd92e",
             "growth": {
                 "classification": "host-presentation",
                 "implements": [],

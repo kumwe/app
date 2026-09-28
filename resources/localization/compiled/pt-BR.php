@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for pt-BR, carrying 2500 messages.
+ * Compiled interface message catalogue for pt-BR, carrying 2507 messages.
  *
  * Generated from pt-BR.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -525,6 +525,8 @@ return [
     'core.administrator.business_definitions.identity_strategy' => 'Estratégia de identidade',
     'core.administrator.business_definitions.immutable_after_creation' => 'Imutável após a criação',
     'core.administrator.business_definitions.immutable_ledger' => 'Registro imutável',
+    'core.administrator.business_definitions.immutable_states' => 'Estados imutáveis',
+    'core.administrator.business_definitions.immutable_states_help' => 'Registros que entram nesses estados não podem mais ser editados e são corrigidos por um estorno vinculado. Informe estados declarados diferentes do estado inicial; deixe vazio para remover a declaração.',
     'core.administrator.business_definitions.import_draft' => 'Importar rascunho',
     'core.administrator.business_definitions.import_strict_definition' => 'Importar definição estrita',
     'core.administrator.business_definitions.imports_use_the_same_strict_validation' => 'As importações usam as mesmas barreiras estritas de validação, propriedade e revisão otimista do editor gráfico.',
@@ -1868,6 +1870,11 @@ return [
     'core.business.record_view.history' => 'Histórico',
     'core.business.record_view.relations' => 'Relações',
     'core.business.record_view.summary' => 'Resumo',
+    'core.business.refusal.immutable' => 'O registro de negócio é imutável em seu estado atual do fluxo de trabalho e é corrigido por um estorno vinculado.',
+    'core.business.refusal.posting_period_closed' => 'O período de lançamento {period} está fechado para a data de lançamento declarada.',
+    'core.business.refusal.read_only_badge' => 'Somente leitura',
+    'core.business.refusal.read_only_help' => 'Você ainda pode abri-lo, revisar o histórico e executar as ações de fluxo de trabalho que ele oferece.',
+    'core.business.refusal.read_only_title' => 'Este registro é somente leitura',
     'core.business.report.reports' => 'Relatórios',
     'core.console.access.description' => 'Liste e gerencie usuários, funções e concessões de capacidade.',
     'core.console.app_health.description' => 'Verifique se o Kumwe está pronto para atender tráfego.',

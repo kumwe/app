@@ -18,6 +18,16 @@
       </div>
     </header>
 
+    {% if record_lock|default(null) %}
+      <section class="notice warning business-record-lock" data-kis-state="read-only" data-record-lock="{{ record_lock.code }}" role="status" aria-labelledby="business-record-lock-title">
+        <div>
+          <h2 id="business-record-lock-title">{{ t('core.business.refusal.read_only_title') }}</h2>
+          <p data-record-lock-reason>{{ record_lock.message }}</p>
+          <p>{{ t('core.business.refusal.read_only_help') }}</p>
+        </div>
+      </section>
+    {% endif %}
+
     {% if version_conflict is defined and record %}
       <section class="notice warning business-version-conflict" data-kis-state="conflict" role="alert" aria-labelledby="business-conflict-title" tabindex="-1">
         <div>
@@ -68,11 +78,11 @@
       {% if fields is empty %}
         <p class="empty-state">{{ t('core.administrator.business_form.no_editable_fields_are_available_for') }}</p>
       {% else %}
-        {{ business_fields.render(fields, definition, record, business_base_path) }}
+        {% if record_lock|default(null) %}<fieldset class="business-record-lock-fields" disabled>{% endif %}{{ business_fields.render(fields, definition, record, business_base_path) }}{% if record_lock|default(null) %}</fieldset>{% endif %}
       {% endif %}
 
       <div class="page-actions">
-        <button class="primary" type="submit">{{ record ? t('core.administrator.business_form.save_changes') : t('core.administrator.business_form.create_record') }}</button>
+        {% if not record_lock|default(null) %}<button class="primary" type="submit">{{ record ? t('core.administrator.business_form.save_changes') : t('core.administrator.business_form.create_record') }}</button>{% endif %}
         <a class="button" href="{{ business_base_path }}/{{ definition.handle|url_encode }}{{ record ? '/' ~ record.record_id|url_encode : '' }}">{{ t('core.administrator.access_control.cancel') }}</a>
       </div>
     </form>

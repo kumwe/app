@@ -11,6 +11,8 @@ use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordService;
 use Kumwe\App\BusinessRecord\Application\Command\CreateRecordCommand;
+use Kumwe\App\BusinessRecord\Application\Command\ExecuteRecordActionCommand;
+use Kumwe\App\BusinessRecord\Application\PostingPeriodService;
 use Kumwe\App\BusinessRecord\Application\Command\RelateRecordsCommand;
 use Kumwe\App\BusinessSecurity\Infrastructure\Persistence\DoctrineBusinessSecurityAdministrationRepository;
 use Kumwe\App\Extension\Application\ExtensionManager;
@@ -1035,6 +1037,129 @@ try {
         ));
         $invoiceVersion = $lineResult->version;
     }
+    // V2-UX-003: a posting-dated document with an immutable `approved` state. One record stays open, one
+    // is approved into the immutable state, and one is dated inside a closed posting period, so both
+    // generated surfaces can prove their read-only affordances and the refusal's own wording.
+    $lockDefinition = NeutralBusinessFixture::install($container, $context, [
+        'id' => '019b40d9-8dd0-7ca2-a0db-9eae6a150702',
+        'owner' => ['type' => 'site', 'identifier' => 'default'],
+        'site' => 'default',
+        'handle' => 'site.default.browser_record_lock',
+        'singular_label' => 'Posted statement',
+        'plural_label' => 'Posted statements',
+        'status' => 'draft',
+        'definition_version' => 0,
+        'storage_mode' => 'relational',
+        'identity_strategy' => 'uuid',
+        'scope' => 'site',
+        'audit_enabled' => true,
+        'revisions_enabled' => true,
+        'fields' => [
+            [
+                'handle' => 'id',
+                'label' => 'ID',
+                'type' => 'core.uuid',
+                'required' => true,
+                'nullable' => false,
+                'unique' => true,
+                'indexed' => true,
+                'immutable_after_create' => true,
+                'server_only' => true,
+                'read_only' => true,
+            ],
+            [
+                'handle' => 'title',
+                'label' => 'Statement title',
+                'type' => 'core.text',
+                'required' => true,
+                'nullable' => false,
+                'length' => 120,
+                'searchable' => true,
+                'filterable' => true,
+                'sortable' => true,
+            ],
+            [
+                'handle' => 'posted_on',
+                'label' => 'Posted on',
+                'type' => 'core.date',
+                'required' => false,
+                'nullable' => true,
+                'filterable' => true,
+                'sortable' => true,
+                'configuration' => ['posting_date' => true],
+            ],
+        ],
+        'relationships' => [],
+        'views' => [[
+            'handle' => 'browser_record_lock_list',
+            'label' => 'Posted statements',
+            'kind' => 'list',
+            'fields' => ['title', 'posted_on'],
+            'filters' => ['title'],
+            'sorts' => ['title'],
+            'administrator' => true,
+            'portal' => true,
+            'public' => false,
+        ]],
+        'actions' => [[
+            'handle' => 'approve',
+            'label' => 'Approve statement',
+            'capability' => 'business.record.action',
+            'administrator' => true,
+            'portal' => false,
+            'public' => false,
+            'transition' => 'approve',
+        ]],
+        'workflow' => [
+            'initial_state' => 'draft',
+            'states' => ['draft', 'approved'],
+            'immutable_states' => ['approved'],
+            'transitions' => [[
+                'handle' => 'approve',
+                'from' => 'draft',
+                'to' => 'approved',
+                'capability' => 'business.record.action',
+            ]],
+        ],
+        'compatibility_metadata' => [],
+        'administrator_exposure' => true,
+        'portal_exposure' => true,
+        'portal_operations' => ['browse', 'read', 'update'],
+        'public_exposure' => false,
+    ]);
+    foreach (
+        [
+            ['019b40d9-8dd0-7ca2-a0db-9eae6a150711', 'Open statement', '2026-08-01'],
+            ['019b40d9-8dd0-7ca2-a0db-9eae6a150712', 'Approved statement', '2026-08-02'],
+            ['019b40d9-8dd0-7ca2-a0db-9eae6a150713', 'Statement in a closed period', '4200-01-05'],
+        ] as [$lockRecordId, $lockTitle, $lockPostedOn]
+    ) {
+        $businessRecords->create(new CreateRecordCommand(
+            $context,
+            $lockDefinition->handle,
+            ['title' => $lockTitle, 'posted_on' => $lockPostedOn],
+            NeutralBusinessFixture::idempotencyKey('browser-record-lock-' . substr($lockRecordId, -4)),
+            recordId: $lockRecordId,
+        ));
+    }
+    $businessRecords->action(new ExecuteRecordActionCommand(
+        $context,
+        $lockDefinition->handle,
+        '019b40d9-8dd0-7ca2-a0db-9eae6a150712',
+        1,
+        'approve',
+        NeutralBusinessFixture::idempotencyKey('browser-record-lock-approve'),
+    ));
+    $postingPeriods = $container->get(PostingPeriodService::class);
+    if (!$postingPeriods instanceof PostingPeriodService) {
+        throw new RuntimeException('The browser posting-period fixture service is unavailable.');
+    }
+    $postingPeriods->close(
+        $context,
+        'browser-record-lock-4200',
+        new DateTimeImmutable('4200-01-01T00:00:00Z'),
+        new DateTimeImmutable('4200-02-01T00:00:00Z'),
+    );
     $transactions->transactional(function () use (
         $security,
         $portalRole,

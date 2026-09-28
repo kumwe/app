@@ -16,6 +16,7 @@ use Kumwe\InterfaceStandard\SurfaceArea;
 use Kumwe\InterfaceStandard\SurfaceId;
 use Kumwe\App\Presentation\Application\Dashboard\DashboardWorkflowCatalog;
 use Laminas\Diactoros\Response\RedirectResponse;
+use Kumwe\InterfaceStandard\CustomizationScope;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
@@ -75,15 +76,20 @@ final readonly class AdministratorDashboardPreferencesHandler implements Request
 
         try {
             $mutation = $this->decoder->decode(AdministratorRequest::form($request));
-            $catalog->assertMutation($mutation, $coreWidgets);
+            if ($mutation->scope === CustomizationScope::User) {
+                $catalog->assertMutation($mutation, $coreWidgets);
+            }
+            // An access-group form may carry identifiers the role stores but this editor cannot see; only
+            // the editor-visible subset is offered, and the service admits the rest solely from the stored row.
+            $admitted = $catalog->admitted($mutation, $coreWidgets);
             $this->preferences->mutate(
                 $context,
                 SurfaceArea::Administrator,
                 SurfaceId::fromString('core.administrator.dashboard'),
                 ContributionOwner::core(),
                 $mutation,
-                $mutation->submittedIds,
-                $mutation->submittedIds,
+                $admitted,
+                $admitted,
             );
         } catch (PresentationPreferenceVersionConflict) {
             return new RedirectResponse(

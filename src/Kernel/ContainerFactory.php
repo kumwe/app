@@ -591,6 +591,7 @@ use Kumwe\App\Http\Handler\MetricsHandler;
 use Kumwe\App\Http\Handler\NotFoundHandler;
 use Kumwe\App\Http\Handler\PublishedContentHandler;
 use Kumwe\App\Http\Handler\StudioPublishedStylesheetHandler;
+use Kumwe\App\Http\Handler\SitePresentationStylesheetHandler;
 use Kumwe\App\Http\Handler\ReadinessHandler;
 use Kumwe\App\Http\Handler\RobotsHandler;
 use Kumwe\App\Http\Middleware\BodyLimitMiddleware;
@@ -4095,6 +4096,7 @@ final class ContainerFactory
             self::service($container, ReportService::class),
             self::service($container, RecordExportReportProvider::class),
             self::service($container, Translator::class),
+            self::service($container, PostingPeriodRepository::class),
         ), true);
         $container->share(OpenApiContractCompiler::class, new OpenApiContractCompiler(), true);
         $container->share(
@@ -4410,6 +4412,11 @@ final class ContainerFactory
             self::service($container, ActiveLocale::class),
             self::service($container, StudioPublishedContentRenderer::class),
             self::service($container, StudioPublishedEnhancementRuntime::class),
+        ), true);
+        $container->share(SitePresentationStylesheetHandler::class, static fn (
+            Container $container,
+        ): SitePresentationStylesheetHandler => new SitePresentationStylesheetHandler(
+            self::service($container, ContentPageRenderService::class),
         ), true);
         $container->share(StudioPublishedStylesheetHandler::class, static fn (
             Container $container,
@@ -5620,6 +5627,11 @@ final class ContainerFactory
             '/studio/styles/{digest}.css',
             StudioPublishedStylesheetHandler::class,
             'site.studio.stylesheet',
+        );
+        $application->get(
+            ContentPageRenderService::THEME_STYLESHEET_PATH,
+            SitePresentationStylesheetHandler::class,
+            'site.presentation.stylesheet',
         );
         $application->get('/media/{id}/{name}', MediaAssetHandler::class, 'site.media.asset');
         $application->get('/assets/extensions/{path:.+}', ExtensionAssetHandler::class, 'site.extension.asset');

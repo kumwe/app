@@ -270,11 +270,13 @@ final readonly class BusinessDefinitionFormMapper
      *
      * @param   array<string, string>  $form  Flattened administrator form, keyed by input name.
      *
-     * @return  array<string, mixed>|null  The initial state, the declared states and up to 128 transitions, or
-     *          null when `workflow_enabled` is unticked and the definition carries no workflow.
+     * @return  array<string, mixed>|null  The initial state, the declared states, up to 128 transitions and the
+     *          declared immutable states when any are named, or null when `workflow_enabled` is unticked and the
+     *          definition carries no workflow. Leaving the immutable-states field empty removes the declaration.
      *
-     * @throws  InvalidArgumentException  When workflow is enabled but the initial state is blank, or a filled
-     *          transition row leaves its from, to or capability blank.
+     * @throws  InvalidArgumentException  When workflow is enabled but the initial state is blank, a filled
+     *          transition row leaves its from, to or capability blank, or an immutable state is undeclared or is
+     *          the initial state.
      *
      * @since   2.0.0
      */
@@ -295,11 +297,23 @@ final readonly class BusinessDefinitionFormMapper
                 'capability' => $this->required($form, "transition_{$index}_capability"),
             ];
         }
-        return [
+        $workflow = [
             'initial_state' => $this->required($form, 'workflow_initial_state'),
             'states' => $this->list($form, 'workflow_states'),
             'transitions' => $transitions,
         ];
+        $immutable = $this->list($form, 'workflow_immutable_states');
+        if ($immutable !== []) {
+            $undeclared = array_diff($immutable, $workflow['states']);
+            if ($undeclared !== [] || in_array($workflow['initial_state'], $immutable, true)) {
+                throw new InvalidArgumentException(
+                    'Immutable states must name declared workflow states other than the initial state.',
+                );
+            }
+            $workflow['immutable_states'] = $immutable;
+        }
+
+        return $workflow;
     }
 
     /**

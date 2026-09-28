@@ -55,15 +55,16 @@ final readonly class SecurityHeaders
      * `script-src` admits same-origin script files only, which is the safe default for pages that
      * carry no inline script at all.
      *
-     * Style is split across three directives rather than left as one permissive `style-src`, because the
-     * two things `'unsafe-inline'` used to admit are not equally dangerous. A `<style>` element is what a
-     * CSS exfiltration attack needs — attribute selectors paired with `url()` requests, or an `@import`
-     * to an attacker origin — and nothing Kumwe renders is one, so `style-src-elem` is `'self'` and an
-     * injected style block simply does not apply. What remains admitted is the `style` attribute, through
-     * `style-src-attr`, which a handful of shipped templates use to carry validated per-site theme
-     * colours and bounded layout values into CSS custom properties; an attribute cannot express a
-     * selector, so the residual is UI redress rather than exfiltration. Removing it needs those values
-     * served as same-origin stylesheets, which `docs/qualification/gap-matrix.md` records as still open.
+     * Style is spelled out as three directives so that no reading of the policy admits an inline
+     * source. `style-src` and `style-src-elem` are `'self'`, which refuses the `<style>` element a CSS
+     * exfiltration attack needs, and `style-src-attr` is `'none'`, which refuses the `style` attribute
+     * as well. Nothing Kumwe renders needs either: the per-site palette that once rode on `<body>` as a
+     * `style` attribute is served by `SitePresentationStylesheetHandler` as a same-origin stylesheet,
+     * administrator layout values travel as bounded `data-*` attributes, and the Studio composition
+     * shell sizes its preview frames through the CSSOM, which no `style-src` directive governs. The
+     * `image/svg+xml` media policy `SecurityHeadersMiddleware` applies is the one place an inline style
+     * source remains, inside a `default-src 'none'` sandbox that forbids every fetch a stylesheet could
+     * make.
      *
      * A script origin widens `script-src` alone, and only by an exact `scheme://host[:port]`: it is how a
      * page that mounts the pinned Studio browser module from the configured npm CDN admits that one
@@ -89,8 +90,8 @@ final readonly class SecurityHeaders
      * Build the exact same-origin preview document policy.
      *
      * The preview route is the sole framed administrator document. Its policy adds only a same-origin
-     * frame source/ancestor relationship and removes the general site's residual inline-style attribute
-     * allowance; script remains self-only and neither eval nor an inline script/style source is admitted.
+     * frame source/ancestor relationship; script remains self-only and neither eval nor an inline
+     * script/style source is admitted, exactly as on every other response.
      *
      * @return  array<string, string>  Hardened headers with SAMEORIGIN framing and no referrer leakage.
      *
@@ -132,7 +133,7 @@ final readonly class SecurityHeaders
                 "object-src 'none'",
                 sprintf('script-src %s', $scriptSource),
                 "style-src 'self'",
-                $preview ? "style-src-attr 'none'" : "style-src-attr 'unsafe-inline'",
+                "style-src-attr 'none'",
                 "style-src-elem 'self'",
         ];
         if ($preview) {

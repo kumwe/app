@@ -991,5 +991,6 @@
       [data-studio-layout-columns="12"]
     ) { --studio-preview-column-count: 1; }
   }
+  html.site-smooth-scroll { scroll-behavior: smooth; }
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; } }
 }

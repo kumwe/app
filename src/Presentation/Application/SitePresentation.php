@@ -220,8 +220,9 @@ final readonly class SitePresentation
      * Export the contract for a template, with the active scheme flattened into CSS custom properties.
      *
      * The `css_variables` map is the whole of what a layout needs to theme itself, and its values are
-     * validated hex literals, so a template may write them straight into a `style` attribute. Use this
-     * rather than `toArray()` whenever the result is handed to Twig.
+     * validated hex literals. `ContentPageRenderService` serves them as a same-origin stylesheet the
+     * layout links, never as a `style` attribute, because the content-security policy admits no inline
+     * style source. Use this rather than `toArray()` whenever the result is handed to Twig.
      *
      * @return  array<string, mixed>  Everything `toArray()` returns, plus `color_mode` and `css_variables`.
      *

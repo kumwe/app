@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for zh-Hans, carrying 2500 messages.
+ * Compiled interface message catalogue for zh-Hans, carrying 2507 messages.
  *
  * Generated from zh-Hans.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -525,6 +525,8 @@ return [
     'core.administrator.business_definitions.identity_strategy' => '标识策略',
     'core.administrator.business_definitions.immutable_after_creation' => '创建后不可更改',
     'core.administrator.business_definitions.immutable_ledger' => '不可变账本',
+    'core.administrator.business_definitions.immutable_states' => '不可变状态',
+    'core.administrator.business_definitions.immutable_states_help' => '进入这些状态的记录将无法再编辑，需通过关联的冲销进行更正。请填写初始状态以外的已声明状态；留空则移除该声明。',
     'core.administrator.business_definitions.import_draft' => '导入草稿',
     'core.administrator.business_definitions.import_strict_definition' => '导入严格定义',
     'core.administrator.business_definitions.imports_use_the_same_strict_validation' => '导入操作使用与图形化编辑器相同的严格验证、所有权和乐观并发修订版本校验。',
@@ -1868,6 +1870,11 @@ return [
     'core.business.record_view.history' => '历史记录',
     'core.business.record_view.relations' => '关系',
     'core.business.record_view.summary' => '摘要',
+    'core.business.refusal.immutable' => '该业务记录在当前工作流状态下不可变，需通过关联的冲销进行更正。',
+    'core.business.refusal.posting_period_closed' => '所声明过账日期对应的过账期间 {period} 已关闭。',
+    'core.business.refusal.read_only_badge' => '只读',
+    'core.business.refusal.read_only_help' => '您仍可打开此记录、查看其历史记录并执行其提供的工作流操作。',
+    'core.business.refusal.read_only_title' => '此记录为只读',
     'core.business.report.reports' => '报表',
     'core.console.access.description' => '列出并管理用户、角色和权限授予。',
     'core.console.app_health.description' => '检查 Kumwe 是否已准备好处理流量。',

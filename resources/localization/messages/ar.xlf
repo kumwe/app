@@ -7235,6 +7235,24 @@
         <target>معرّفات ثابتة مفصولة بفواصل</target>
       </segment>
     </unit>
+    <unit id="core.administrator.business_definitions.immutable_states">
+      <notes>
+        <note category="context">Label of the definition editor field declaring the workflow states that close a record.</note>
+      </notes>
+      <segment>
+        <source>Immutable states</source>
+        <target>الحالات غير القابلة للتغيير</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.business_definitions.immutable_states_help">
+      <notes>
+        <note category="context">Help under the immutable-states field of the definition editor.</note>
+      </notes>
+      <segment>
+        <source>Records entering these states can no longer be edited and are corrected by a linked reversal. Name declared states other than the initial state; leave empty to remove the declaration.</source>
+        <target>لا يمكن تعديل السجلات التي تدخل هذه الحالات بعد ذلك، وتُصحَّح بقيد عكسي مرتبط. سمِّ حالات مُعلَنة غير الحالة الأولية؛ اتركه فارغًا لإزالة الإعلان.</target>
+      </segment>
+    </unit>
     <unit id="core.administrator.business_definitions.initial_state">
       <notes>
         <note category="context">Record surface text on templates/administrator/business-definitions.twig.</note>
@@ -18646,6 +18664,51 @@
       <segment>
         <source>Continuously verify authority/artifacts and refresh local runtime readiness.</source>
         <target>تحقّق باستمرار من السلطة/الأصول وحدّث جاهزية وقت التشغيل المحلي.</target>
+      </segment>
+    </unit>
+    <unit id="core.business.refusal.immutable">
+      <notes>
+        <note category="context">Refusal shown on a generated record whose workflow state the definition declares immutable. Same sentence the record service refuses with.</note>
+      </notes>
+      <segment>
+        <source>The business record is immutable in its current workflow state and is corrected by a linked reversal.</source>
+        <target>سجل الأعمال غير قابل للتغيير في حالة سير العمل الحالية، ويُصحَّح بقيد عكسي مرتبط.</target>
+      </segment>
+    </unit>
+    <unit id="core.business.refusal.posting_period_closed">
+      <notes>
+        <note category="context">Refusal shown on a generated record whose posting date falls in a closed posting period. {period} is the period key.</note>
+      </notes>
+      <segment>
+        <source>Posting period {period} is closed for the declared posting date.</source>
+        <target>فترة الترحيل {period} مغلقة لتاريخ الترحيل المُعلَن.</target>
+      </segment>
+    </unit>
+    <unit id="core.business.refusal.read_only_badge">
+      <notes>
+        <note category="context">Badge beside the state of a listed generated record that can no longer be edited.</note>
+      </notes>
+      <segment>
+        <source>Read-only</source>
+        <target>للقراءة فقط</target>
+      </segment>
+    </unit>
+    <unit id="core.business.refusal.read_only_title">
+      <notes>
+        <note category="context">Heading of the notice on a generated record that can no longer be edited.</note>
+      </notes>
+      <segment>
+        <source>This record is read-only</source>
+        <target>هذا السجل للقراءة فقط</target>
+      </segment>
+    </unit>
+    <unit id="core.business.refusal.read_only_help">
+      <notes>
+        <note category="context">Explains what remains possible on a read-only generated record.</note>
+      </notes>
+      <segment>
+        <source>You can still open it, review its history and run the workflow actions it offers.</source>
+        <target>لا يزال بإمكانك فتحه ومراجعة سجله وتشغيل إجراءات سير العمل التي يتيحها.</target>
       </segment>
     </unit>
   </file>

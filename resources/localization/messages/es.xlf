@@ -7235,6 +7235,24 @@
         <target>Identificadores estables separados por comas</target>
       </segment>
     </unit>
+    <unit id="core.administrator.business_definitions.immutable_states">
+      <notes>
+        <note category="context">Label of the definition editor field declaring the workflow states that close a record.</note>
+      </notes>
+      <segment>
+        <source>Immutable states</source>
+        <target>Estados inmutables</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.business_definitions.immutable_states_help">
+      <notes>
+        <note category="context">Help under the immutable-states field of the definition editor.</note>
+      </notes>
+      <segment>
+        <source>Records entering these states can no longer be edited and are corrected by a linked reversal. Name declared states other than the initial state; leave empty to remove the declaration.</source>
+        <target>Los registros que entran en estos estados ya no se pueden editar y se corrigen mediante una reversión vinculada. Indica estados declarados distintos del estado inicial; déjalo vacío para eliminar la declaración.</target>
+      </segment>
+    </unit>
     <unit id="core.administrator.business_definitions.initial_state">
       <notes>
         <note category="context">Record surface text on templates/administrator/business-definitions.twig.</note>
@@ -18646,6 +18664,51 @@
       <segment>
         <source>Continuously verify authority/artifacts and refresh local runtime readiness.</source>
         <target>Verifica continuamente la autoridad y los artefactos, y actualiza la disponibilidad local del tiempo de ejecución.</target>
+      </segment>
+    </unit>
+    <unit id="core.business.refusal.immutable">
+      <notes>
+        <note category="context">Refusal shown on a generated record whose workflow state the definition declares immutable. Same sentence the record service refuses with.</note>
+      </notes>
+      <segment>
+        <source>The business record is immutable in its current workflow state and is corrected by a linked reversal.</source>
+        <target>El registro de negocio es inmutable en su estado actual del flujo de trabajo y se corrige mediante una reversión vinculada.</target>
+      </segment>
+    </unit>
+    <unit id="core.business.refusal.posting_period_closed">
+      <notes>
+        <note category="context">Refusal shown on a generated record whose posting date falls in a closed posting period. {period} is the period key.</note>
+      </notes>
+      <segment>
+        <source>Posting period {period} is closed for the declared posting date.</source>
+        <target>El periodo contable {period} está cerrado para la fecha contable declarada.</target>
+      </segment>
+    </unit>
+    <unit id="core.business.refusal.read_only_badge">
+      <notes>
+        <note category="context">Badge beside the state of a listed generated record that can no longer be edited.</note>
+      </notes>
+      <segment>
+        <source>Read-only</source>
+        <target>Solo lectura</target>
+      </segment>
+    </unit>
+    <unit id="core.business.refusal.read_only_title">
+      <notes>
+        <note category="context">Heading of the notice on a generated record that can no longer be edited.</note>
+      </notes>
+      <segment>
+        <source>This record is read-only</source>
+        <target>Este registro es de solo lectura</target>
+      </segment>
+    </unit>
+    <unit id="core.business.refusal.read_only_help">
+      <notes>
+        <note category="context">Explains what remains possible on a read-only generated record.</note>
+      </notes>
+      <segment>
+        <source>You can still open it, review its history and run the workflow actions it offers.</source>
+        <target>Aún puedes abrirlo, revisar su historial y ejecutar las acciones de flujo de trabajo que ofrece.</target>
       </segment>
     </unit>
   </file>

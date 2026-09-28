@@ -169,18 +169,32 @@ belong in structured fields, not high-cardinality metric labels.
 Set `KUMWE_LOG_LEVEL` — not `APP_DEBUG` — to change verbosity. Debug also widens the detail a 500 response
 discloses, so raising verbosity through it turns a logging decision into a disclosure decision.
 
-### Trace context
+### Trace context propagation (not distributed tracing)
 
-Kumwe ships **no tracer and no exporter**, and adding an OpenTelemetry SDK is a supply-chain decision this
-release does not take. What it does do is participate in a trace somebody else is recording: a well-formed
-W3C `traceparent` on an inbound request is accepted, its `trace_id` and `span_id` are stamped onto every
-log line that request writes, and the header is echoed back. A malformed or reserved-all-zero value is
-ignored entirely, and no trace identifier is ever invented — an identifier that joins to nothing is worse
-than an absent one.
+Kumwe propagates W3C trace context; it does **not** do distributed tracing. It ships no tracer, no span
+recorder, no sampler and no exporter, and nothing in the runtime reads the `tracing` block of
+`config/observability.php` — `enabled: false`, `exporter: none` and `sample_ratio: 0.0` are the truthful
+declaration of that, not switches that turn tracing on. Adopting a tracer and an exporter is a separately
+reviewed dependency and configuration decision
+([ADR 0022](../roadmap/decisions/0022-trace-propagation-without-an-exporter.md)), not a setting.
 
-So if your proxy or an upstream service already emits `traceparent`, Kumwe's log stream joins that trace
-today. If nothing upstream emits one, `correlation_id` remains the identifier to stitch on. See
-`docs/qualification/gap-matrix.md` for what adopting a real tracer would require.
+What Kumwe does today, exactly:
+
+- A well-formed W3C `traceparent` on an inbound HTTP request is accepted. Its `trace_id` and `span_id` are
+  stamped onto every log record that request writes, and the header is echoed back unchanged.
+- A malformed value, or the reserved all-zero identifiers, is ignored entirely. Kumwe never invents a
+  trace or span identifier and never starts a span of its own, so its log lines join an upstream trace
+  or carry no trace identifier at all.
+- Propagation stops at the request. Queue jobs, outbox and inbox deliveries, the scheduler, the worker
+  and console commands carry `correlation_id` and causation identifiers, not the upstream `trace_id`.
+
+What an operator can do today:
+
+- Put a proxy, ingress or upstream service that already records traces in front of Kumwe. Its spans
+  and Kumwe's JSON log lines then join on `trace_id`, in whatever backend receives both.
+- Where nothing upstream emits `traceparent`, stitch requests and their asynchronous follow-up work on
+  `correlation_id`, which every log line and every durable job, outbox and audit record carries.
+- Measure latency and saturation from the protected `/metrics` endpoint rather than from spans.
 
 Durable database rows and audit records are authoritative for event/job/process/export recovery. Redis is
 coordination state. Do not report a queue as healthy merely because Redis responds, and do not mutate outbox,
