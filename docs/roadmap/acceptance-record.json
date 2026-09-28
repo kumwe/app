@@ -2360,15 +2360,11 @@
       ],
       "artifacts": [],
       "decision": "D16, ADR 0014, ADR 0020",
-      "state": "pending-integration",
+      "state": "delivered",
       "track": "pr-152",
-      "branches": [
-        "agent/studio"
-      ],
-      "branch_evidence": [
-        "tests/Unit/Studio/Application/Media/StudioExternalMediaFetcherTest.php"
-      ],
-      "outstanding": "The head carries the media port, policy-vector replay and hardened fetcher; agent/studio proves the fetcher refuses rebinding and never discloses a candidate address. Flips when agent/studio lands.",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": null,
       "gate_b_criteria": [
         12
       ],
@@ -2387,7 +2383,9 @@
       ],
       "tests": [
         "tests/Unit/Administrator/Http/StudioPreviewHttpTransportTest.php",
-        "tests/Integration/Studio/StudioPreviewPersistenceTest.php"
+        "tests/Integration/Studio/StudioPreviewPersistenceTest.php",
+        "tests/Unit/Studio/Application/Preview/ContentStudioPreviewBindingSourceTest.php",
+        "tests/Browser/studio-authoring.spec.ts"
       ],
       "workflows": [
         ".github/workflows/ci.yml#database",
@@ -2397,16 +2395,11 @@
         ".github/workflows/ci.yml#browser-evidence-${{ matrix.database.driver }}"
       ],
       "decision": "D16, ADR 0017, ADR 0020",
-      "state": "pending-integration",
+      "state": "delivered",
       "track": "pr-152",
-      "branches": [
-        "agent/studio"
-      ],
-      "branch_evidence": [
-        "tests/Unit/Studio/Application/Preview/ContentStudioPreviewBindingSourceTest.php",
-        "tests/Browser/studio-authoring.spec.ts"
-      ],
-      "outstanding": "agent/studio mounts the authenticated preview beside the contextual shell and resolves the saved item's own values behind the opaque context. The pinned Studio release cannot stage a live draft, so preview shows accepted revisions. Flips when agent/studio lands.",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": null,
       "gate_b_criteria": [
         12
       ],
@@ -2426,7 +2419,8 @@
       "tests": [
         "tests/Integration/Studio/ContentStudioAuthoringJourneyIntegrationTest.php",
         "tests/Browser/studio-authoring.spec.ts",
-        "tests/Architecture/StudioContextualAuthoringLaunchBoundaryTest.php"
+        "tests/Architecture/StudioContextualAuthoringLaunchBoundaryTest.php",
+        "tests/Architecture/StudioProductionRuntimeTest.php"
       ],
       "workflows": [
         ".github/workflows/ci.yml#database",
@@ -2440,15 +2434,9 @@
       "decision": "D16, ADR 0020, ADR 0021",
       "state": "open",
       "track": "pr-152",
-      "branches": [
-        "agent/studio"
-      ],
-      "branch_evidence": [
-        "tests/Architecture/StudioProductionRuntimeTest.php",
-        "tests/Browser/studio-authoring.spec.ts",
-        "tests/Integration/Studio/ContentStudioAuthoringJourneyIntegrationTest.php"
-      ],
-      "outstanding": "agent/studio automates the contextual journey and refuses a production Node.js requirement. It records as open: extension-owned targets (STUDIO-PROD-008), standalone dual mounting (STUDIO-PROD-015 steps 1 to 3), extension lifecycle in the contextual shell (STUDIO-PROD-009) and the Studio 0.1.0-beta.3 limits that need a Studio release re-pinned by Producer; no such Producer release exists, so the pin stays.",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "Content New and Edit mount the pinned Studio journey on the head, automated end to end on Chromium desktop and mobile and on every engine, with a refusal of any production Node.js, npm or Vite requirement. The Studio guide records what stays open: extension-owned targets (STUDIO-PROD-008), standalone dual mounting (STUDIO-PROD-015 steps 1 to 3), extension lifecycle in the contextual shell (STUDIO-PROD-009) and the 0.1.0-beta.3 limits that need a Studio release re-pinned by Producer; no such Producer release exists, so the pin stays.",
       "gate_b_criteria": [
         12
       ],
@@ -2461,7 +2449,7 @@
       "kind": "finding",
       "phase": "S",
       "requirement": "The media port and the external-source host obligations the composition contract names are implemented and tested.",
-      "reference": "docs/roadmap/findings.json#V2-STU-005",
+      "reference": "docs/roadmap/README.md#phase-s--studio-contextual-content-authoring-integration",
       "runtime_owner": [
         "src/Studio/Application/Media"
       ],
@@ -2474,15 +2462,11 @@
       ],
       "artifacts": [],
       "decision": "D16, ADR 0014",
-      "state": "pending-integration",
+      "state": "delivered",
       "track": "pr-152",
-      "branches": [
-        "agent/studio"
-      ],
-      "branch_evidence": [
-        "tests/Unit/Studio/Application/Media/StudioExternalMediaFetcherTest.php"
-      ],
-      "outstanding": "Flips with S-E when agent/studio lands.",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": null,
       "gate_b_criteria": [
         1,
         12
@@ -2496,12 +2480,13 @@
       "kind": "finding",
       "phase": "S",
       "requirement": "An authenticated preview endpoint renders unpublished composition without exposing it.",
-      "reference": "docs/roadmap/findings.json#V2-STU-006",
+      "reference": "docs/roadmap/README.md#phase-s--studio-contextual-content-authoring-integration",
       "runtime_owner": [
         "src/Studio/Application/Preview"
       ],
       "tests": [
-        "tests/Integration/Studio/StudioPreviewPersistenceTest.php"
+        "tests/Integration/Studio/StudioPreviewPersistenceTest.php",
+        "tests/Unit/Studio/Application/Preview/ContentStudioPreviewBindingSourceTest.php"
       ],
       "workflows": [
         ".github/workflows/ci.yml#database",
@@ -2511,15 +2496,11 @@
         ".github/workflows/ci.yml#browser-evidence-${{ matrix.database.driver }}"
       ],
       "decision": "D16, ADR 0017",
-      "state": "pending-integration",
+      "state": "delivered",
       "track": "pr-152",
-      "branches": [
-        "agent/studio"
-      ],
-      "branch_evidence": [
-        "tests/Unit/Studio/Application/Preview/ContentStudioPreviewBindingSourceTest.php"
-      ],
-      "outstanding": "Flips with S-F when agent/studio lands.",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": null,
       "gate_b_criteria": [
         1,
         12
@@ -2539,7 +2520,8 @@
       ],
       "tests": [
         "tests/Integration/Studio/ContentStudioAuthoringJourneyIntegrationTest.php",
-        "tests/Browser/studio-authoring.spec.ts"
+        "tests/Browser/studio-authoring.spec.ts",
+        "tests/Architecture/StudioProductionRuntimeTest.php"
       ],
       "workflows": [
         ".github/workflows/ci.yml#database",
@@ -2551,13 +2533,9 @@
       "decision": "D16, ADR 0020",
       "state": "open",
       "track": "pr-152",
-      "branches": [
-        "agent/studio"
-      ],
-      "branch_evidence": [
-        "tests/Architecture/StudioProductionRuntimeTest.php"
-      ],
-      "outstanding": "Stays open with S-G after agent/studio lands: extension-owned targets, standalone dual mounting, extension lifecycle in the contextual shell and the pinned-release limits remain.",
+      "branches": [],
+      "branch_evidence": [],
+      "outstanding": "Stays open with S-G: extension-owned targets, standalone dual mounting, extension lifecycle in the contextual shell and the pinned-release limits remain.",
       "gate_b_criteria": [
         1,
         12
@@ -3115,11 +3093,10 @@
       "state": "open",
       "track": "pr-152",
       "branches": [
-        "agent/studio",
         "agent/machine"
       ],
       "branch_evidence": [],
-      "outstanding": "S-E, S-F and the machine parity requirement flip with agent/studio and agent/machine; S-G and V2-STU-007 stay open on the pinned-release limits and the extension-owned targets.",
+      "outstanding": "S-E and S-F are delivered and the machine parity requirement flips with agent/machine; S-G and V2-STU-007 stay open on the pinned-release limits and the extension-owned targets.",
       "gate_b_criteria": [
         12
       ]
