@@ -169,6 +169,9 @@ final class HotPlanRegressionIntegrationTest extends TestCase
     /**
      * The first captured SELECT that touches one physical table.
      *
+     * A browse statement MariaDB runs under its execution-time bound arrives as `SET STATEMENT … FOR SELECT`;
+     * the bounded `SELECT` inside it is the statement whose plan is captured.
+     *
      * @param   list<array{sql: string, params: array<int|string, mixed>}>  $statements  Captured statements.
      * @param   string                                                      $table       Physical table name.
      *
@@ -179,11 +182,12 @@ final class HotPlanRegressionIntegrationTest extends TestCase
     private function firstSelectOn(array $statements, string $table): ?array
     {
         foreach ($statements as $statement) {
-            if (
-                str_starts_with(ltrim($statement['sql']), 'SELECT')
-                && str_contains($statement['sql'], $table)
-            ) {
-                return $statement;
+            $sql = ltrim($statement['sql']);
+            if (preg_match('/^SET STATEMENT max_statement_time = [0-9.]+ FOR (SELECT\b.*)$/Ds', $sql, $bounded) === 1) {
+                $sql = $bounded[1];
+            }
+            if (str_starts_with($sql, 'SELECT') && str_contains($sql, $table)) {
+                return ['sql' => $sql, 'params' => $statement['params']];
             }
         }
 
