@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Infrastructure\Observability;
 
+use JsonSerializable;
 use Monolog\LogRecord;
 use Monolog\Processor\ProcessorInterface;
 use Throwable;
@@ -22,6 +23,11 @@ use Throwable;
  * - any context or extra key whose name contains a declared redacted field loses its value entirely;
  * - any `Throwable` is replaced by a bounded summary whose message has been scrubbed of URI credentials
  *   and of `key=value` pairs naming a redacted field, and which carries no stack trace at all.
+ *
+ * The same credential scrub also runs over the record message and over every plain string value, and an
+ * object that serializes itself as JSON is walked through its serialized form. A configured origin quoted
+ * as a string, a failure reason copied out of an exception, or a payload object the formatter would expand
+ * after every processor had run could otherwise carry a URI password or a `token=` pair past the key rule.
  *
  * Dropping the trace is a deliberate trade. A trace is the most useful thing in an exception and also
  * the most dangerous: frame arguments can hold the very secrets the first rule just removed. The class,
@@ -85,6 +91,7 @@ final readonly class LogRedactionProcessor implements ProcessorInterface
     public function __invoke(LogRecord $record): LogRecord
     {
         return $record->with(
+            message: $this->redactCredentials($record->message),
             context: $this->walk($record->context, 0),
             extra: $this->walk($record->extra, 0),
         );
@@ -120,7 +127,8 @@ final readonly class LogRedactionProcessor implements ProcessorInterface
      * @param   mixed  $value  Value carried by the record.
      * @param   int    $depth  Current nesting depth.
      *
-     * @return  mixed  The value, an exception summary, or a placeholder.
+     * @return  mixed  The value with credential fragments scrubbed, an exception summary, a walked
+     *          serialization, or a placeholder.
      *
      * @since   2.0.0
      */
@@ -129,11 +137,14 @@ final readonly class LogRedactionProcessor implements ProcessorInterface
         if ($value instanceof Throwable) {
             return $this->summarise($value, $depth);
         }
+        if ($value instanceof JsonSerializable) {
+            $value = $value->jsonSerialize();
+        }
         if (is_array($value)) {
             return $depth >= self::MAX_DEPTH ? self::PLACEHOLDER : $this->walk($value, $depth + 1);
         }
 
-        return $value;
+        return is_string($value) ? $this->redactCredentials($value) : $value;
     }
 
     /**
@@ -179,22 +190,38 @@ final readonly class LogRedactionProcessor implements ProcessorInterface
      */
     private function scrub(string $message): string
     {
-        $scrubbed = (string) preg_replace(
-            '#(?<=://)[^/\s:@]+:[^/\s@]+(?=@)#',
-            self::PLACEHOLDER,
-            $message,
-        );
-        foreach ($this->contract->redactedFields as $field) {
-            $scrubbed = (string) preg_replace(
-                sprintf('#(%s[A-Za-z_-]*\s*[=:]\s*)(?:"[^"]*"|\'[^\']*\'|[^\s,;)&]+)#i', preg_quote($field, '#')),
-                '$1' . self::PLACEHOLDER,
-                $scrubbed,
-            );
-        }
+        $scrubbed = $this->redactCredentials($message);
         if (mb_strlen($scrubbed) > self::MESSAGE_LIMIT) {
             return mb_substr($scrubbed, 0, self::MESSAGE_LIMIT) . '…';
         }
 
         return $scrubbed;
+    }
+
+    /**
+     * Replace the userinfo of a connection URI and any assignment naming a redacted field.
+     *
+     * @param   string  $text  Free text: a record message, a string value or an exception message.
+     *
+     * @return  string  The text with those fragments replaced and nothing else changed.
+     *
+     * @since   2.0.0
+     */
+    private function redactCredentials(string $text): string
+    {
+        $redacted = (string) preg_replace(
+            '#(?<=://)[^/\s:@]+:[^/\s@]+(?=@)#',
+            self::PLACEHOLDER,
+            $text,
+        );
+        foreach ($this->contract->redactedFields as $field) {
+            $redacted = (string) preg_replace(
+                sprintf('#(%s[A-Za-z_-]*\s*[=:]\s*)(?:"[^"]*"|\'[^\']*\'|[^\s,;)&]+)#i', preg_quote($field, '#')),
+                '$1' . self::PLACEHOLDER,
+                $redacted,
+            );
+        }
+
+        return $redacted;
     }
 }

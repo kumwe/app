@@ -28,14 +28,17 @@ final readonly class RevocationFeedConfiguration
      * Validate the feed origin, its pinned verification key and the staleness budget.
      *
      * @param   ?string  $origin           Absolute `https://` URL or absolute local path the signed list
-     *          is read from, or null when the installation consumes no feed.
+     *          is read from, or null when the installation consumes no feed. A URL may carry neither user
+     *          information nor a query string, because the origin is written verbatim to logs, audit
+     *          entries and feed state, none of which may hold a credential.
      * @param   ?string  $publicKeyBase64  Standard base64 of the 32-byte Ed25519 public key every fetched
      *          list must verify against, or null when no feed is configured.
      * @param   int      $maxStaleSeconds  How long a successful fetch stays fresh before the feed is
      *          reported stale; from 3600 to 2592000 seconds.
      *
      * @throws  InvalidArgumentException  When only one of the origin and the key is supplied, the origin
-     *          is neither an `https://` URL nor an absolute path, the key is not a base64 Ed25519 public
+     *          is neither an `https://` URL nor an absolute path, the URL embeds credentials or a query
+     *          string or cannot be parsed, the key is not a base64 Ed25519 public
      *          key, or the staleness budget falls outside the supported window.
      *
      * @since   2.0.0
@@ -54,6 +57,14 @@ final readonly class RevocationFeedConfiguration
         if ($origin !== null && !str_starts_with($origin, 'https://') && !str_starts_with($origin, '/')) {
             throw new InvalidArgumentException(
                 'EXTENSIONS_REVOCATION_FEED_URL must be an https:// URL or an absolute local path.',
+            );
+        }
+        $parts = $origin !== null && str_starts_with($origin, 'https://') ? parse_url($origin) : [];
+        if (!is_array($parts) || isset($parts['user']) || isset($parts['pass']) || isset($parts['query'])) {
+            throw new InvalidArgumentException(
+                'EXTENSIONS_REVOCATION_FEED_URL must not carry credentials or a query string: the origin is '
+                . 'recorded in logs, audit entries and feed state. The list is signed, so serve it without '
+                . 'authentication or mirror it to an absolute local path.',
             );
         }
         if ($publicKeyBase64 !== null) {

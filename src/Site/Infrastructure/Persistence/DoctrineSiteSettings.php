@@ -10,6 +10,7 @@ use InvalidArgumentException;
 use Kumwe\Access\AuthorizationGateway;
 use Kumwe\Access\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
+use Kumwe\Context\Value\SiteContext;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\Audit\Application\AuditRecorder;
 use Kumwe\Audit\Domain\AuditEvent;
@@ -36,6 +37,12 @@ use RuntimeException;
  * version counter that is bumped on write, so a concurrent edit stays traceable afterwards. Nothing
  * here caches — `CachedSiteSettings` fronts this class in production.
  *
+ * The document is stored once for the installation and rendered by its configured public site, so it is
+ * that site's resource. Every managed read and write is authorized against the public site rather than
+ * against whatever site the caller happens to work in: a manager scoped to another business of the group
+ * would otherwise rewrite the name, homepage, locale, indexing and navigation every public page is served
+ * with, after merely arranging for the referenced menu to be one its own site owns.
+ *
  * @since  2.0.0
  */
 final readonly class DoctrineSiteSettings implements SiteSettings
@@ -50,6 +57,8 @@ final readonly class DoctrineSiteSettings implements SiteSettings
      * @param  ClockInterface        $clock          Source of the update timestamp written to each row.
      * @param  AuthorizationGateway  $authorization  Policy proving `settings.manage` before a managed read
      *         or any write.
+     * @param  SiteContext           $site           Public site the installation's settings document belongs
+     *         to; only an actor working in, and authorized for, this site may read or change it.
      * @param  ?ContentService       $content        Reader used to prove the nominated homepage is a
      *         published content entry; null skips that check, as a minimal wiring wants.
      *
@@ -62,6 +71,7 @@ final readonly class DoctrineSiteSettings implements SiteSettings
         private AuditRecorder $audit,
         private ClockInterface $clock,
         private AuthorizationGateway $authorization,
+        private SiteContext $site,
         private ?ContentService $content = null,
     ) {
     }
@@ -240,13 +250,17 @@ final readonly class DoctrineSiteSettings implements SiteSettings
     }
 
     /**
-     * Prove the actor may manage this site's settings, before any other work runs.
+     * Prove the actor may manage the public site's settings, before any other work runs.
+     *
+     * The resource is the public site the document belongs to, not the caller's own site, so the gateway's
+     * ownership check refuses an actor working in any other site whatever its grants there.
      *
      * @param   ExecutionContext  $context  Actor and site to check `settings.manage` for.
      *
      * @return  void
      *
-     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses the actor.
+     * @throws  \Kumwe\Access\AuthorizationDenied  When policy refuses the actor, including any actor working
+     *          in a site other than the public site.
      *
      * @since   2.0.0
      */
@@ -255,7 +269,7 @@ final readonly class DoctrineSiteSettings implements SiteSettings
         $this->authorization->assertAllowed(
             $context,
             Capability::fromString('settings.manage'),
-            AuthorizationResource::item('site', $context->site()->identifier()),
+            AuthorizationResource::item('site', $this->site->identifier()),
         );
     }
 

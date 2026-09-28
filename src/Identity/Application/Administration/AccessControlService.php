@@ -421,6 +421,12 @@ final readonly class AccessControlService
      * credential without proving the current one, which is exactly the check `changeOwnPassword()`
      * exists to apply; the refusal keeps the two paths from collapsing into one.
      *
+     * Nor may an actor reset the password of an account holding authority the actor could not delegate.
+     * Choosing another account's password is taking that account over, so without this ceiling a holder of
+     * `users.manage` alone could become any administrator and exercise every capability that administrator
+     * holds — the escalation role assignment and token issuance already refuse. The check runs under the
+     * subject's row lock, so a role granted concurrently cannot slip past it.
+     *
      * The invalidation is identical to the self-service path — one epoch advance retiring the subject's
      * tokens, portal sessions, administrator sessions and step-up proofs, plus the session sweep — so
      * whoever currently holds the account is put out of it by the reset rather than at their leisure.
@@ -435,7 +441,7 @@ final readonly class AccessControlService
      * @throws  InvalidArgumentException  When the actor names their own account, the reason is empty or
      *          too long, the replacement fails the password rule, or the subject has no credential.
      * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not manage
-     *          this user.
+     *          this user, or the user holds a grant the actor could not delegate.
      *
      * @since   2.0.0
      */
@@ -466,6 +472,7 @@ final readonly class AccessControlService
             $at,
         ): int {
             $this->repository->lockUser($userId);
+            $this->assertCanDelegateUser($context, $userId);
             $this->repository->changePassword($userId, $hash, $at);
             $ended = $this->sessions->deleteAllForUser($context, $userId);
             $this->audit($actorId, 'user.password.reset', 'user', $userId, [
@@ -493,7 +500,8 @@ final readonly class AccessControlService
      * advance that retires the subject's outstanding proofs, tokens and sessions along with the
      * credential. Callers on the administrator surface reach it only behind a payload-bound step-up
      * challenge of the actor's own, which is what keeps a stolen session from resetting somebody's
-     * second factor.
+     * second factor. As with a password reset, the subject may hold no grant the actor could not
+     * delegate: stripping a stronger account's second factor is the first half of taking it over.
      *
      * @param   ExecutionContext  $context  Actor and site the retirement is authorized and audited against.
      * @param   string            $userId   UUID of the subject whose second factors are retired.
@@ -504,7 +512,7 @@ final readonly class AccessControlService
      * @throws  InvalidArgumentException  When the reason is empty or too long, or the subject does not
      *          exist and so could not be locked.
      * @throws  \Kumwe\Access\AuthorizationDenied  When the actor may not manage
-     *          this user.
+     *          this user, or the user holds a grant the actor could not delegate.
      *
      * @since   2.0.0
      */
@@ -523,6 +531,7 @@ final readonly class AccessControlService
             $at,
         ): int {
             $this->repository->lockUser($userId);
+            $this->assertCanDelegateUser($context, $userId);
             $revoked = $this->stepUp->revokeForSubject($userId, $at, $reason);
             $this->repository->advanceSecurityEpoch($userId);
             $ended = $this->sessions->deleteAllForUser($context, $userId);
@@ -1326,6 +1335,33 @@ final readonly class AccessControlService
     private function assertCanDelegateRole(ExecutionContext $context, string $roleId): void
     {
         foreach ($this->repository->roleGrants($roleId) as $grant) {
+            $this->authorization->assertCanDelegate(
+                $context,
+                Capability::fromString($grant['capability']),
+                $this->scope($grant['scope_type'], $grant['scope_identifier']),
+            );
+        }
+    }
+
+    /**
+     * Refuse a credential action against an account holding authority the actor could not delegate.
+     *
+     * Taking over an account through its credentials hands the actor everything that account holds, so
+     * the same delegation ceiling that bounds role assignment bounds it: every capability the subject holds
+     * through its roles, at the scope it holds it, must be one the actor may delegate.
+     *
+     * @param   ExecutionContext  $context  Actor whose delegation ceiling is applied.
+     * @param   string            $userId   UUID of the account whose credentials would change.
+     *
+     * @return  void
+     *
+     * @throws  \Kumwe\Access\AuthorizationDenied  When the subject holds a grant beyond the ceiling.
+     *
+     * @since   2.0.0
+     */
+    private function assertCanDelegateUser(ExecutionContext $context, string $userId): void
+    {
+        foreach ($this->repository->userGrants($userId) as $grant) {
             $this->authorization->assertCanDelegate(
                 $context,
                 Capability::fromString($grant['capability']),
