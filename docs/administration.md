@@ -189,6 +189,11 @@ whether host authority was ever used to reach an account is a search for that on
 events**. Hold host access more narrowly than administrator access, and keep at least two separately controlled
 owner accounts with separately stored recovery codes so the lockout stays hypothetical.
 
+The dedicated, provenance-verified recovery identity can repair an account that already holds grants;
+it does not need a human delegation ceiling to restore those existing credentials. This is confined to
+credential repair and does not authorize system actors to grant roles or issue new authority. Human
+recovery still requires step-up and the caller's delegation ceiling. See [ADR 0023](roadmap/decisions/0023-host-local-credential-recovery.md).
+
 The retained console actions `bin/kumwe access reset-password`, `revoke-step-up` and `terminate-sessions` are
 refused to every token: the screen performs these acts only behind a payload-bound step-up proof of the operator's
 own second factor, and no bearer credential can carry one. REST and MCP publish no form of them. Use the screen,

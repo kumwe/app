@@ -9,7 +9,7 @@
  */
 
 import { createHash } from "node:crypto";
-import { readFile, stat, writeFile } from "node:fs/promises";
+import { readFile, readdir, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -58,9 +58,14 @@ for (const [name, version] of Object.entries(studio.packages ?? {})) {
 
 const artifactNames = [
   `kumwe-app-${release}.zip`,
+  `kumwe-composer-${release}.zip`,
+  "composer-repository.json",
   "kumwe-app.cdx.json",
   "kumwe-archive.cdx.json",
   "kumwe-web.cdx.json",
+  "kumwe-source.cdx.json",
+  "kumwe-license-policy.json",
+  "kumwe-license-evaluation.json",
 ];
 const artifacts = [];
 for (const name of artifactNames) {
@@ -76,7 +81,26 @@ for (const name of artifactNames) {
 
 const manifest = {
   artifacts,
-  contractVersion: "1.0.0",
+  contractVersion: "2.0.0",
+  authority: JSON.parse(await readFile(join(distributionRoot, "release-authority.json"), "utf8")),
+  versionStamp: JSON.parse(await readFile(join(distributionRoot, "release-version-stamp.json"), "utf8")),
+  build: {
+    run: requiredEnvironment("GITHUB_RUN_ID"),
+    attempt: requiredEnvironment("GITHUB_RUN_ATTEMPT"),
+    workflow: requiredEnvironment("GITHUB_WORKFLOW_REF"),
+  },
+  compiledAssets: Object.fromEntries(await Promise.all(
+    (await readdir(join(repositoryRoot, "public/assets/build"), { recursive: true, withFileTypes: true }))
+      .filter((entry) => entry.isFile())
+      .map((entry) => join(entry.parentPath, entry.name)).sort()
+      .map(async (path) => [path.slice(repositoryRoot.length),
+        createHash("sha256").update(await readFile(path)).digest("hex")]),
+  )),
+  inputs: Object.fromEntries(await Promise.all([
+    "composer.lock", "package-lock.json", "resources/native-runtime/source.json",
+    "public/assets/build/.vite/manifest.json",
+  ].map(async (name) => [name, createHash("sha256")
+    .update(await readFile(join(repositoryRoot, name))).digest("hex")]))),
   images: {
     application: { digest: applicationDigest, reference: applicationImage },
     web: { digest: webDigest, reference: webImage },

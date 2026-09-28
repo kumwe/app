@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Identity\Application\Administration;
 
 use InvalidArgumentException;
+use Kumwe\App\Application\Authorization\SystemIdentity;
 use Kumwe\Access\AuthorizationGateway;
 use Kumwe\Access\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
@@ -1367,6 +1368,9 @@ final readonly class AccessControlService
      * the same delegation ceiling that bounds role assignment bounds it: every capability the subject holds
      * through any grant path — its direct roles and the roles of every organization membership, active or
      * not — at the scope it is stored at, must be one the actor may delegate.
+     * The host-local credential-recovery identity instead exercises the recovery authority already
+     * verified by authorize(): it restores existing credentials without granting new authority. No other
+     * system identity is exempt, and the gateway's provenance check runs before this method is reachable.
      *
      * @param   ExecutionContext  $context  Actor whose delegation ceiling is applied.
      * @param   string            $userId   UUID of the account whose credentials would change.
@@ -1379,6 +1383,9 @@ final readonly class AccessControlService
      */
     private function assertCanDelegateUser(ExecutionContext $context, string $userId): void
     {
+        if ($context->systemActor() === SystemIdentity::CredentialRecovery) {
+            return;
+        }
         foreach ($this->repository->userAuthorityGrants($userId) as $grant) {
             $this->authorization->assertCanDelegate(
                 $context,

@@ -7,10 +7,28 @@ on:
         description: Git reference to deploy
         required: false
         type: string
+      release-version:
+        description: Exact version when qualifying release bytes
+        required: false
+        type: string
+      release-artifact:
+        description: Immutable candidate artifact in this workflow run
+        required: false
+        type: string
+      release-manifest:
+        description: Expected candidate manifest SHA-256
+        required: false
+        type: string
   workflow_dispatch:
 
 permissions:
   contents: read
+  packages: read
+  attestations: read
+
+env:
+  KUMWE_RELEASE_VERSION: ${{ inputs.release-version || '2.0.0-beta.1' }}
+  KUMWE_RELEASE_COMMIT: ${{ inputs.ref || github.sha }}
 
 jobs:
   distribution-installation:
@@ -43,7 +61,7 @@ jobs:
       APP_BASE_URL: https://127.0.0.1:18081
       APP_TRUSTED_HOSTS: 127.0.0.1,localhost
       EXTENSIONS_ALLOW_UNSIGNED_LOCAL: 'false'
-      KUMWE_RELEASE: 2.0.0-acceptance
+      KUMWE_RELEASE: ${{ inputs.release-version || '2.0.0-beta.1' }}
       DB_DRIVER: mariadb
       DB_HOST: 127.0.0.1
       DB_PORT: '3306'
@@ -62,6 +80,29 @@ jobs:
         with:
           ref: ${{ inputs.ref || github.sha }}
           fetch-depth: 0
+
+      - name: Require a complete release handoff
+        shell: bash
+        env:
+          RELEASE_ARTIFACT: ${{ inputs.release-artifact }}
+          RELEASE_MANIFEST: ${{ inputs.release-manifest }}
+          RELEASE_VERSION: ${{ inputs.release-version }}
+        run: |
+          set -euo pipefail
+          if [[ -n "$RELEASE_ARTIFACT$RELEASE_MANIFEST$RELEASE_VERSION" ]]; then
+            test -n "$RELEASE_ARTIFACT"
+            test -n "$RELEASE_VERSION"
+            [[ "$RELEASE_MANIFEST" =~ ^[a-f0-9]{64}$ ]]
+          fi
+
+      - name: Fetch and verify exact release candidate
+        if: inputs.release-artifact != ''
+        uses: ./.github/actions/release-candidate
+        with:
+          artifact: ${{ inputs.release-artifact }}
+          manifest: ${{ inputs.release-manifest }}
+          version: ${{ inputs.release-version }}
+          commit: ${{ inputs.ref }}
 
       - name: Install PHP and Composer
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
@@ -94,6 +135,7 @@ jobs:
           key: composer-files-${{ hashFiles('composer.lock') }}
           restore-keys: composer-files-
       - name: Build release ZIP with production dependencies
+        if: inputs.release-artifact == ''
         shell: bash
         run: |
           set -euo pipefail
@@ -105,7 +147,7 @@ jobs:
           tar --extract \
             --file=build/distribution/archive/kumwe-source.tar \
             --directory=build/distribution/package
-          COMPOSER_ROOT_VERSION=2.0.0 composer install \
+          COMPOSER_ROOT_VERSION="$KUMWE_RELEASE_VERSION" composer install \
             --working-dir=build/distribution/package \
             --classmap-authoritative \
             --no-ansi \
@@ -126,23 +168,35 @@ jobs:
           fi
           unzip -q build/distribution/kumwe-app.zip -d "$RUNNER_TEMP/kumwe-zip"
 
+      - name: Unpack the qualified release ZIP
+        if: inputs.release-artifact != ''
+        run: unzip -q "dist/kumwe-app-$KUMWE_RELEASE_VERSION.zip" -d "$RUNNER_TEMP/kumwe-zip"
+
       - name: Verify non-interactive Composer bootstrap
         shell: bash
         env:
           COMPOSER_NO_INTERACTION: '1'
-          COMPOSER_ACCEPTANCE_REPOSITORY: >-
-            {"type":"path","url":"build/distribution/package","options":{"symlink":false,"versions":{"kumwe/app":"2.0.0"}}}
+          RELEASE_ARTIFACT: ${{ inputs.release-artifact }}
         run: |
-          composer create-project \
-            --no-ansi \
-            --no-interaction \
-            --no-progress \
-            --repository="$COMPOSER_ACCEPTANCE_REPOSITORY" \
-            kumwe/app \
-            "$RUNNER_TEMP/kumwe-composer" \
-            '2.0.0'
+          set -euo pipefail
+          if [[ -n "$RELEASE_ARTIFACT" ]]; then
+            # Only the URL changes for local transport; these are the very same published ZIP bytes.
+            jq --arg version "$KUMWE_RELEASE_VERSION" \
+              --arg url "file://$PWD/dist/kumwe-composer-$KUMWE_RELEASE_VERSION.zip" \
+              '.packages["kumwe/app"][$version].dist.url = $url' \
+              dist/composer-repository.json > "$RUNNER_TEMP/composer-repository-local.json"
+            repository="$(jq -cn --arg url "file://$RUNNER_TEMP/composer-repository-local.json" \
+              '{type:"composer",url:$url}')"
+          else
+            repository="$(jq -cn --arg version "$KUMWE_RELEASE_VERSION" \
+              '{type:"path",url:"build/distribution/package",options:{symlink:false,versions:{"kumwe/app":$version}}}')"
+          fi
+          composer create-project --no-ansi --no-interaction --no-progress --no-dev --prefer-dist \
+            --repository="$repository" kumwe/app "$RUNNER_TEMP/kumwe-composer" "$KUMWE_RELEASE_VERSION"
           test -f "$RUNNER_TEMP/kumwe-composer/vendor/autoload.php"
           test ! -e "$RUNNER_TEMP/kumwe-composer/.env"
+          cmp composer.lock "$RUNNER_TEMP/kumwe-composer/composer.lock"
+          cmp composer.lock "$RUNNER_TEMP/kumwe-zip/composer.lock"
 
       - name: Verify non-interactive ZIP bootstrap
         working-directory: ${{ runner.temp }}/kumwe-zip
@@ -226,6 +280,18 @@ jobs:
           curl --fail --silent --show-error --retry 20 --retry-connrefused \
             http://127.0.0.1:18082/administrator/login >/dev/null
 
+      - name: Record completed exact-byte qualification
+        if: inputs.release-artifact != ''
+        run: node tools/release-artifacts.mjs receipt distribution
+      - name: Retain qualification receipt
+        if: inputs.release-artifact != ''
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-qualification-${{ github.run_id }}-${{ github.run_attempt }}-distribution
+          path: dist/qualification-distribution.json
+          if-no-files-found: error
+          retention-days: 30
+
   production-deployment:
     name: Production / ${{ matrix.database.name }}
     runs-on: ubuntu-24.04
@@ -255,7 +321,31 @@ jobs:
         with:
           ref: ${{ inputs.ref || github.sha }}
 
+      - name: Require a complete release handoff
+        shell: bash
+        env:
+          RELEASE_ARTIFACT: ${{ inputs.release-artifact }}
+          RELEASE_MANIFEST: ${{ inputs.release-manifest }}
+          RELEASE_VERSION: ${{ inputs.release-version }}
+        run: |
+          set -euo pipefail
+          if [[ -n "$RELEASE_ARTIFACT$RELEASE_MANIFEST$RELEASE_VERSION" ]]; then
+            test -n "$RELEASE_ARTIFACT"
+            test -n "$RELEASE_VERSION"
+            [[ "$RELEASE_MANIFEST" =~ ^[a-f0-9]{64}$ ]]
+          fi
+
+      - name: Fetch and verify exact release candidate
+        if: inputs.release-artifact != ''
+        uses: ./.github/actions/release-candidate
+        with:
+          artifact: ${{ inputs.release-artifact }}
+          manifest: ${{ inputs.release-manifest }}
+          version: ${{ inputs.release-version }}
+          commit: ${{ inputs.ref }}
+
       - name: Build production images
+        if: inputs.release-artifact == ''
         shell: bash
         run: |
           set -euo pipefail
@@ -263,14 +353,35 @@ jobs:
             --file docker/php/Dockerfile \
             --target runtime \
             --tag kumwe-app:acceptance \
-            --build-arg KUMWE_RELEASE=2.0.0-acceptance \
+            --build-arg KUMWE_RELEASE="$KUMWE_RELEASE_VERSION" \
             .
           docker build \
             --file docker/php/Dockerfile \
             --target web \
             --tag kumwe-web:acceptance \
-            --build-arg KUMWE_RELEASE=2.0.0-acceptance \
+            --build-arg KUMWE_RELEASE="$KUMWE_RELEASE_VERSION" \
             .
+
+      - name: Pull and verify the signed candidate image digests
+        if: inputs.release-artifact != ''
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          echo "$GH_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+          identity="https://github.com/$GITHUB_REPOSITORY/.github/workflows/release.yml@refs/tags/v$KUMWE_RELEASE_VERSION"
+          for image in application web; do
+            reference="$(jq -er --arg name "$image" '.images[$name] | .reference + "@" + .digest' dist/kumwe-release-manifest.json)"
+            cosign verify --certificate-identity="$identity" \
+              --certificate-oidc-issuer=https://token.actions.githubusercontent.com "$reference"
+            cosign verify-attestation --type cyclonedx --certificate-identity="$identity" \
+              --certificate-oidc-issuer=https://token.actions.githubusercontent.com "$reference"
+            gh attestation verify "oci://$reference" --repo "$GITHUB_REPOSITORY" \
+              --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release.yml" \
+              --source-digest "$KUMWE_RELEASE_COMMIT"
+            docker pull "$reference"
+          done
 
       - name: Prepare isolated production configuration
         shell: bash
@@ -279,6 +390,7 @@ jobs:
           DATABASE_IMAGE: ${{ matrix.database.image }}
           DATABASE_PORT: ${{ matrix.database.port }}
           DATABASE_SERVER_VERSION: ${{ matrix.database.server-version }}
+          RELEASE_ARTIFACT: ${{ inputs.release-artifact }}
         run: |
           set -euo pipefail
           secrets_directory="$RUNNER_TEMP/kumwe-secrets"
@@ -304,8 +416,13 @@ jobs:
             "$database_password_file" \
             "$redis_password_file"
           {
-            echo 'KUMWE_APP_IMAGE_REF=kumwe-app:acceptance'
-            echo 'KUMWE_WEB_IMAGE_REF=kumwe-web:acceptance'
+            if [[ -n "$RELEASE_ARTIFACT" ]]; then
+              echo "KUMWE_APP_IMAGE_REF=$(jq -er '.images.application | .reference + "@" + .digest' dist/kumwe-release-manifest.json)"
+              echo "KUMWE_WEB_IMAGE_REF=$(jq -er '.images.web | .reference + "@" + .digest' dist/kumwe-release-manifest.json)"
+            else
+              echo 'KUMWE_APP_IMAGE_REF=kumwe-app:acceptance'
+              echo 'KUMWE_WEB_IMAGE_REF=kumwe-web:acceptance'
+            fi
             echo 'KUMWE_APPLICATION_PULL_POLICY=never'
             echo 'KUMWE_INFRASTRUCTURE_PULL_POLICY=never'
             echo 'KUMWE_BASE_URL=https://kumwe.test'
@@ -313,7 +430,7 @@ jobs:
             echo 'KUMWE_TRUSTED_PROXIES=172.16.0.0/12,192.168.0.0/16'
             echo 'KUMWE_HTTP_BIND=127.0.0.1'
             echo 'KUMWE_HTTP_PORT=18080'
-            echo 'KUMWE_RELEASE=2.0.0-acceptance'
+            echo "KUMWE_RELEASE=$KUMWE_RELEASE_VERSION"
             echo 'KUMWE_DEPLOYMENT_ID=acceptance-deployment'
             echo 'KUMWE_REPLICA_ID=acceptance-replica'
             echo "KUMWE_DATABASE_IMAGE=$DATABASE_IMAGE"
@@ -771,7 +888,7 @@ jobs:
           export KUMWE_EXTENSION_ASSETS_DIR="$source_extension_assets"
           export KUMWE_MEDIA_DIR="$source_media"
           export KUMWE_PRIVATE_DIR="$source_private"
-          export KUMWE_RELEASE=2.0.0
+          export KUMWE_RELEASE="$KUMWE_RELEASE_VERSION"
           backup_path="$(bash tools/backup.sh)"
 
           export KUMWE_RESTORE_DB_DRIVER="$DATABASE_DRIVER"
@@ -839,7 +956,7 @@ jobs:
             --env APP_BASE_URL=https://kumwe.test \
             --env APP_PUBLIC_SITE=default \
             --env APP_TRUSTED_HOSTS=kumwe.test,127.0.0.1,localhost \
-            --env KUMWE_RELEASE=2.0.0-acceptance \
+            --env KUMWE_RELEASE="$KUMWE_RELEASE_VERSION" \
             --env KUMWE_DEPLOYMENT_ID=acceptance-restore \
             --env KUMWE_REPLICA_ID=acceptance-restore \
             --env KUMWE_PROCESS_ID=acceptance-restore \
@@ -862,7 +979,7 @@ jobs:
             --env REDIS_PASSWORD_FILE=/run/secrets/redis_password \
             --env KUMWE_ACCEPTANCE_ADMIN_EMAIL=administrator@kumwe.test \
             --env "KUMWE_ACCEPTANCE_ADMIN_PASSWORD=$(<"$KUMWE_ACCEPTANCE_ADMIN_PASSWORD_FILE")" \
-            kumwe-app:acceptance \
+            "$KUMWE_APP_IMAGE_REF" \
             sh -euc '
               php bin/kumwe extension:runtime:materialize
               php tests/Support/business-runtime-backup-acceptance.php \
@@ -883,6 +1000,18 @@ jobs:
             tree_checksum_manifest "$restore_root/$tree" > "$recovery_root/restored-$tree.sha256"
             cmp "$recovery_root/source-$tree.sha256" "$recovery_root/restored-$tree.sha256"
           done
+
+      - name: Record completed exact-byte qualification
+        if: inputs.release-artifact != ''
+        run: node tools/release-artifacts.mjs receipt ${{ matrix.database.driver }}
+      - name: Retain qualification receipt
+        if: inputs.release-artifact != ''
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-qualification-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.database.driver }}
+          path: dist/qualification-${{ matrix.database.driver }}.json
+          if-no-files-found: error
+          retention-days: 30
 
       - name: Capture deployment diagnostics
         if: failure()

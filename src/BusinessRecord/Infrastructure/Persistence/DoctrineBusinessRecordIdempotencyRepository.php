@@ -200,6 +200,8 @@ final readonly class DoctrineBusinessRecordIdempotencyRepository implements Busi
      * whose command died mid-transaction without cancelling one that is still running. Candidates are
      * locked with SKIP LOCKED through deletion: concurrent purgers partition work, and an active command
      * or lease extension is neither waited on nor deleted from a stale candidate list.
+     * Ties use state before identity to follow the expiry/state index, whose InnoDB suffix is the primary key.
+     * Sorting expiry/identity alone forces a filesort that can lock all candidates before applying the limit.
      *
      * @param   DateTimeImmutable  $now    Instant expiry and lease liveness are measured against.
      * @param   int                $limit  Most entries to delete in this call, 1 to 1000.
@@ -225,7 +227,7 @@ final readonly class DoctrineBusinessRecordIdempotencyRepository implements Busi
         $ids = $this->database->fetchFirstColumn(sprintf(
             'SELECT id FROM %s WHERE expires_at <= ? AND (state = ? '
             . 'OR (state = ? AND (lease_expires_at IS NULL OR lease_expires_at <= ?))) '
-            . 'ORDER BY expires_at, id LIMIT ?%s',
+            . 'ORDER BY expires_at, state, id LIMIT ?%s',
             $this->tables->quoted('business_command_idempotency'),
             $lock,
         ), [

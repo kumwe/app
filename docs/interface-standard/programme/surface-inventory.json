@@ -1050,7 +1050,7 @@
         {"name": "portal.business.mutate", "methods": ["POST"], "path": "/portal/business", "source_anchor": "/portal/business"}
       ],
       "handler_sources": ["src/BusinessSurface/Delivery/Portal/PortalBusinessSurfaceHandler.php", "src/BusinessSurface/Delivery/Browser/GeneratedBusinessBrowserController.php"],
-      "templates": ["templates/portal/business-index.twig", "templates/portal/layout.twig"],
+      "templates": ["templates/portal/business-index.twig", "templates/portal/business-unavailable.twig", "templates/portal/layout.twig"],
       "navigation_ids": ["core.portal-business-records"],
       "capabilities": ["portal.access"],
       "kis_contract": {"standard":"kis-1.0","area":"portal","actor":"portal","intent":"collection","resource":"business-surface","purpose":"Discover explicitly portal-exposed, policy-authorized entity workspaces.","pattern":"collection-workspace","capabilities":["portal.access"],"states":["default","empty","sparse","dense","error","permission-reduced","read-only"],"customization":[{"slot":"columns","scope":"user"},{"slot":"density","scope":"user"},{"slot":"saved-views","scope":"user"}],"responsive":[{"element":"resource-identity","priority":"essential","may_collapse":false},{"element":"collection-actions","priority":"primary","may_collapse":false},{"element":"technical-context","priority":"secondary","may_collapse":true}],"icon":"briefcase"},
@@ -1674,6 +1674,7 @@
     {"path": "templates/portal/business-form.twig", "kind": "surface-state", "surface_ids": ["core.portal.generated-definition", "core.portal.generated-record"]},
     {"path": "templates/portal/business-history.twig", "kind": "surface-state", "surface_ids": ["core.portal.generated-record"]},
     {"path": "templates/portal/business-index.twig", "kind": "surface", "surface_ids": ["core.portal.generated-catalog"]},
+    {"path": "templates/portal/business-unavailable.twig", "kind": "error-state", "surface_ids": ["core.portal.generated-catalog"]},
     {"path": "templates/portal/business-list.twig", "kind": "surface", "surface_ids": ["core.portal.generated-definition"]},
     {"path": "templates/portal/business-report.twig", "kind": "surface", "surface_ids": ["core.portal.reports"]},
     {"path": "templates/portal/business-status.twig", "kind": "surface", "surface_ids": ["core.portal.generated-operation"]},

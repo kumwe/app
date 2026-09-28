@@ -53,8 +53,9 @@ final readonly class InstalledBusinessRecordDefinitionResolver implements Busine
      * A catalog entry whose owner is disabled is skipped, as is one whose installation is missing, not
      * active, or recorded against another site or owner: at this entry point a mismatch is a filter
      * rather than a failure, because the catalog legitimately holds more than this site can use. Once an
-     * installation has passed those filters, a version that is missing, rejected, or whose checksum does
-     * not match is fatal — it means the tables and the published shape have diverged. The result is
+     * installation has passed those filters, a version that is missing or whose checksum does not match
+     * is fatal — it means the tables and the published shape have diverged. A rejected installed version
+     * is deliberately withdrawn and omitted without disabling discovery of unrelated definitions. The result is
      * ordered by definition handle so repeated scans agree with each other. Installations and exact versions
      * are batch-loaded after the bounded catalog read, keeping generated discovery from becoming an N+1 query.
      *
@@ -64,7 +65,7 @@ final readonly class InstalledBusinessRecordDefinitionResolver implements Busine
      *          handle; empty when the site has none.
      *
      * @throws  BusinessRecordSchemaUnavailable  When an active installation names a catalog version that
-     *          is missing or rejected, or whose checksum differs from the one the installation records.
+     *          is missing, or whose checksum differs from the one the installation records.
      *
      * @since   2.0.0
      */
@@ -104,12 +105,15 @@ final readonly class InstalledBusinessRecordDefinitionResolver implements Busine
         foreach ($eligible as [$entry, $installation]) {
             $version = $versions[$entry->id] ?? null;
             if (
-                $version === null || $version->status === DefinitionStatus::Rejected
+                $version === null
                 || !hash_equals($version->definition->checksum(), $installation->definitionChecksum)
             ) {
                 throw new BusinessRecordSchemaUnavailable(
                     'An active installed definition disagrees with its immutable catalog version.',
                 );
+            }
+            if ($version->status === DefinitionStatus::Rejected) {
+                continue;
             }
             $resolved[] = new ResolvedBusinessDefinition($version->definition, $installation);
         }

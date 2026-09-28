@@ -197,7 +197,7 @@ final class BoundedStatementExecutorIntegrationTest extends TestCase
     }
 
     /**
-     * A two-second statement in which the sleep is only part of the query, so MySQL reports its cancellation.
+     * A two-second statement over a real row, so MySQL reports cancellation instead of SLEEP's scalar result.
      *
      * @return  string  Engine-specific statement.
      *
@@ -205,9 +205,16 @@ final class BoundedStatementExecutorIntegrationTest extends TestCase
      */
     private function sleepSql(): string
     {
-        return $this->connection()->getDatabasePlatform() instanceof PostgreSQLPlatform
-            ? 'SELECT 1 AS slept FROM (SELECT pg_sleep(2)) AS waited'
-            : 'SELECT 1 AS slept FROM (SELECT 1 AS n) AS waited WHERE SLEEP(2) = 0';
+        $connection = $this->connection();
+        if ($connection->getDatabasePlatform() instanceof PostgreSQLPlatform) {
+            return 'SELECT 1 AS slept FROM (SELECT pg_sleep(2)) AS waited';
+        }
+        // A constant derived table is optimized away on MySQL. Keep a session-local physical row in the
+        // execution plan so this exercises the timeout error path, not SLEEP's interrupted return value.
+        $connection->executeStatement('CREATE TEMPORARY TABLE kumwe_statement_budget_probe (id INTEGER NOT NULL)');
+        $connection->executeStatement('INSERT INTO kumwe_statement_budget_probe (id) VALUES (1)');
+
+        return 'SELECT id AS slept FROM kumwe_statement_budget_probe WHERE SLEEP(2) = 0';
     }
 
     /**

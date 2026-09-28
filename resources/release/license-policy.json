@@ -1,0 +1,28 @@
+{
+  "kind": "kumwe-source-license-policy",
+  "version": "1.0.0",
+  "scope": "Every Composer production/development dependency, every npm production/development/optional lock entry, and the pinned native source closure. OS packages and workflow actions remain separately inventoried by Syft; this policy makes no licence claim for those components.",
+  "allowed": [
+    "Apache-2.0",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "MIT",
+    "MPL-2.0",
+    "PHP-3.01",
+    "Unicode-3.0"
+  ],
+  "rules": {
+    "missing": "deny",
+    "unknown": "deny",
+    "compoundExpression": "deny pending an explicit policy entry",
+    "multipleDeclarations": "all must be allowed",
+    "exceptions": []
+  },
+  "obligations": {
+    "all": "Preserve upstream licence, copyright and notice files. Publish exact source distribution URLs and source references with the SBOM. No vendor modifications are permitted.",
+    "MPL-2.0": "Retain file-level notices and provide the exact corresponding upstream source distribution for bundled browser modules; App does not modify these upstream files.",
+    "PHP-3.01": "Retain the PHP notice and attribution; do not imply endorsement or rename the application as PHP."
+  },
+  "nativeSourceArchiveSha256": "406a2b9aeadcc5773863fda4c8ba20803ac1f0c389460a99ef0884e303ca9332"
+}

@@ -1514,7 +1514,7 @@
     .kis-phase-five *::before,
     .kis-phase-five *::after {
       scroll-behavior: auto !important;
-      transition-duration: .01ms !important;
+      transition-duration: 0s !important;
     }
   }
 
@@ -2226,7 +2226,10 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+    /* A nonzero duration on every element creates transitions for inherited colours too. WebKit
+       stages those transitions through descendants, briefly mixing light text with a light canvas
+       (or dark text with a dark canvas). Reduced motion must apply the new colours immediately. */
+    *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0s !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
   }
 
   @media print {

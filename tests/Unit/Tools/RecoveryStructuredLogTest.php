@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Unit\Tools;
 
+use Kumwe\App\Tests\Support\ProcessOwnedShutdown;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 
@@ -222,12 +223,12 @@ final class RecoveryStructuredLogTest extends TestCase
     {
         $directory = sys_get_temp_dir() . '/kumwe-status-' . bin2hex(random_bytes(6));
         self::assertTrue(mkdir($directory, 0700));
-        register_shutdown_function(static function () use ($directory): void {
+        register_shutdown_function(ProcessOwnedShutdown::capture(static function () use ($directory): void {
             foreach (glob($directory . '/{,.}*.json*', GLOB_BRACE) ?: [] as $file) {
                 unlink($file);
             }
             rmdir($directory);
-        });
+        }));
 
         return $directory;
     }

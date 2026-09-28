@@ -930,6 +930,10 @@ jobs:
 
   deployment:
     name: Complete deployment acceptance
+    permissions:
+      contents: read
+      packages: read
+      attestations: read
     # Deployment acceptance runs at merge and again at release; a third execution on every pull-request
     # push cost up to ninety further minutes without adding evidence. Merge and release keep the
     # complete acceptance on all three engines and both distribution formats.

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Integration\Demo\Infrastructure;
 
 use FilesystemIterator;
+use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionService;
 use Kumwe\Idempotency\IdempotencyKey;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordService;
 use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
@@ -35,7 +36,7 @@ use RecursiveIteratorIterator;
 final class DemoBusinessProfileExporterTest extends TestCase
 {
     /**
-     * Export a freshly authored definition and record and re-validate the written business package.
+     * Export a freshly authored definition and record, omit a withdrawn contract, and re-validate the package.
      *
      * The live definition lives under its own handle; the package declares it under the export profile's
      * namespace, `site.default.<profile>_<fixture tail>`, as a version-zero draft, and every record
@@ -52,9 +53,11 @@ final class DemoBusinessProfileExporterTest extends TestCase
         $records = $container->get(BusinessRecordService::class);
         $exporter = $container->get(DemoBusinessProfileExporter::class);
         $writer = $container->get(DemoProfileExporter::class);
+        $definitions = $container->get(BusinessDefinitionService::class);
         self::assertInstanceOf(BusinessRecordService::class, $records);
         self::assertInstanceOf(DemoBusinessProfileExporter::class, $exporter);
         self::assertInstanceOf(DemoProfileExporter::class, $writer);
+        self::assertInstanceOf(BusinessDefinitionService::class, $definitions);
 
         $suffix = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), -12));
         $definitionId = Uuid::uuid7()->toString();
@@ -72,6 +75,13 @@ final class DemoBusinessProfileExporterTest extends TestCase
             recordId: $recordId,
         ));
 
+        $withdrawn = NeutralBusinessFixture::install(
+            $container,
+            $context,
+            NeutralBusinessFixture::document('reject' . $suffix, Uuid::uuid7()->toString()),
+        );
+        $definitions->reject($context, $withdrawn->id, $withdrawn->definitionVersion);
+
         $profile = 'export-test-' . $suffix;
         $documents = $exporter->documents($context, $profile);
 
@@ -79,6 +89,7 @@ final class DemoBusinessProfileExporterTest extends TestCase
         self::assertIsArray($documents['profile']['installation_order']);
         foreach ($documents['profile']['installation_order'] as $entry) {
             self::assertIsArray($entry);
+            self::assertNotSame($withdrawn->id, $entry['id'] ?? null);
             if (($entry['id'] ?? null) === $definitionId) {
                 $declared = $entry;
             }

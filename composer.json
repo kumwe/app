@@ -211,6 +211,7 @@
       "/.gitleaks.toml",
       "/.phpunit.cache",
       "/build",
+      "/dist",
       "/compose.yaml",
       "/docker",
       "/phpcs.xml",

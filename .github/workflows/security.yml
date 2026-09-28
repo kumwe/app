@@ -24,6 +24,10 @@ env:
 
 jobs:
   source-and-image:
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -173,11 +177,31 @@ jobs:
           image --exit-code 1 --ignore-unfixed
           --severity HIGH,CRITICAL kumwe-web-security:${GITHUB_SHA}
 
-      - name: Generate source SBOM
+      - name: Install Node.js for source inventory tooling
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+
+      - name: Evaluate complete locked-source licence inventory
+        run: |
+          node --test tools/source-sbom.test.mjs
+          bash tools/source-sbom.sh build/security
+
+      - name: Generate independent filesystem SBOM
         run: |
           install -d build/security
           docker run --rm --volume "$PWD:/src:ro" "$SYFT_IMAGE" \
-            dir:/src -o cyclonedx-json > build/security/kumwe-source.cdx.json
+            dir:/src -o cyclonedx-json > build/security/kumwe-filesystem.cdx.json
+
+      - name: Attest source inventory and licence decision on merged master
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: |
+            build/security/kumwe-source.cdx.json
+            build/security/kumwe-license-policy.json
+            build/security/kumwe-license-evaluation.json
+            build/security/kumwe-filesystem.cdx.json
 
       - name: Upload security evidence
         if: always()
@@ -186,4 +210,4 @@ jobs:
           name: security-evidence-${{ github.sha }}
           path: build/security
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 90
