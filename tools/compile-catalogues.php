@@ -18,6 +18,8 @@
 declare(strict_types=1);
 
 use Kumwe\App\Localization\Infrastructure\MessageCatalogueCompiler;
+use Kumwe\App\Localization\Infrastructure\XliffCatalogueReader;
+use Kumwe\Localization\Application\SupportedLocales;
 
 $root = dirname(__DIR__);
 $autoload = $root . '/vendor/autoload.php';
@@ -95,6 +97,68 @@ foreach ($sources as $source) {
         }
     }
     $written[] = $locale;
+}
+
+// Version 2 ships nine catalogues, and each translated catalogue must carry every identifier the source
+// declares with a translated target: a missing unit or an untranslated target would silently fall back
+// to English on one surface, which is exactly the per-locale completeness Gate B criterion 11 forbids.
+$reader = new XliffCatalogueReader();
+$sourceUnits = $reader->readFile($sourceRoot . '/' . SupportedLocales::SOURCE . '.xlf')->units;
+$sourceIdentifiers = array_keys($sourceUnits);
+$completeness = [];
+foreach ((new SupportedLocales())->tags() as $tag) {
+    $path = $sourceRoot . '/' . $tag . '.xlf';
+    if (!is_file($path)) {
+        $completeness[] = sprintf('%s has no authored catalogue', $tag);
+        continue;
+    }
+    if ($tag === SupportedLocales::SOURCE) {
+        continue;
+    }
+    $catalogue = $reader->readFile($path);
+    if ($catalogue->targetLanguage !== $tag) {
+        $completeness[] = sprintf('%s declares trgLang %s', $tag, $catalogue->targetLanguage ?? '(none)');
+    }
+    $identifiers = array_keys($catalogue->units);
+    $missing = array_diff($sourceIdentifiers, $identifiers);
+    $extra = array_diff($identifiers, $sourceIdentifiers);
+    $untranslated = [];
+    foreach ($catalogue->units as $identifier => $unit) {
+        if ($unit['target'] === null || trim($unit['target']) === '') {
+            $untranslated[] = $identifier;
+        }
+    }
+    if ($missing !== []) {
+        $completeness[] = sprintf(
+            '%s is missing %d identifier(s), first %s',
+            $tag,
+            count($missing),
+            reset($missing),
+        );
+    }
+    if ($extra !== []) {
+        $completeness[] = sprintf(
+            '%s carries %d identifier(s) the source does not, first %s',
+            $tag,
+            count($extra),
+            reset($extra),
+        );
+    }
+    if ($untranslated !== []) {
+        $completeness[] = sprintf(
+            '%s leaves %d unit(s) without a target, first %s',
+            $tag,
+            count($untranslated),
+            reset($untranslated),
+        );
+    }
+}
+if ($completeness !== []) {
+    fwrite(STDERR, sprintf(
+        "The Version 2 language set is incomplete:\n  - %s\n",
+        implode("\n  - ", $completeness),
+    ));
+    exit(1);
 }
 
 $orphans = [];
