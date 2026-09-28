@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for zh-Hans, carrying 2565 messages.
+ * Compiled interface message catalogue for zh-Hans, carrying 2572 messages.
  *
  * Generated from zh-Hans.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1940,12 +1940,15 @@ return [
     'core.console.audit_verify.description' => '验证审计追踪摘要链及其锚点。',
     'core.console.automation.description' => '列出并管理计划和排队中的作业。',
     'core.console.business_approval.description' => '撤回您自己待处理的业务审批请求。',
+    'core.console.business_bulk.description' => '一次性归档、恢复最多五十条业务记录，或对其运行一个操作。',
     'core.console.business_definition.description' => '列出、查看、起草、验证、发布和停用业务实体定义。',
     'core.console.business_periods.description' => '列出、关闭和重新开放业务过账期间。',
     'core.console.business_record.description' => '发现、查询、变更、关联、请求审批、生成报表、导出和查看业务操作。',
     'core.console.business_record_rekey.description' => '使用当前有效的加密密钥，对已存储的业务记录密钥重新加密。',
     'core.console.business_report.description' => '运行具备权限感知能力的报表，并请求、查看或下载已验证的 CSV 导出文件。',
     'core.console.business_schema.description' => '查看、审批、执行和恢复业务架构计划。',
+    'core.console.business_schema_evidence.description' => '将恢复演练登记为破坏性架构计划必须引用的恢复证据。',
+    'core.console.business_security.description' => '显示组织、成员资格和策略的业务安全概览。',
     'core.console.content.description' => '列出、读取、创建、更新、转换、删除或恢复内容。',
     'core.console.content_model.description' => '列出、读取、创建或发布带版本的内容类型和工作流。',
     'core.console.database_migrate.applied' => '已应用 {migration}',
@@ -2024,6 +2027,9 @@ return [
     'core.console.settings.description' => '读取或更新站点配置。',
     'core.console.studio_authoring.description' => '打开 Studio 创作会话并运行其创作操作。',
     'core.console.studio_authoring.refused' => 'Studio 创作请求被拒绝。',
+    'core.console.studio_blueprint.description' => '打开 Blueprint 组合会话，并加载、保存、发布或取消发布其 Blueprint。',
+    'core.console.studio_blueprint.refused' => 'Studio 组合请求被拒绝。',
+    'core.console.studio_composition.description' => '读取或预配内容类型版本的蓝图组合。',
     'core.console.theme_administrator_recover.description' => '原子化恢复受保护的内置管理后台主题。',
     'core.console.theme_administrator_recover.restored_the_protected_built_in_administrator' => '已恢复受保护的内置管理后台主题。',
     'core.console.token_create.description' => '创建一个限定范围的 API/MCP 访问令牌，并一次性打印输出。',
@@ -2032,6 +2038,7 @@ return [
     'core.console.user_create_admin.created_administrator' => '已创建管理员 {id}。',
     'core.console.user_create_admin.description' => '根据受保护的密码文件创建一名管理员。',
     'core.console.user_recover_credentials.description' => '紧急操作：从主机重置密码、停用第二验证要素或终止会话。',
+    'core.console.wording.description' => '列出、搜索、保存或撤回措辞覆盖。',
     'core.identity.password.change_refused' => '您的密码未能更改。请检查当前密码，并选择一个不同的、至少 12 个字符的新密码。',
     'core.identity.password.confirmation_mismatch' => '新密码与确认密码不一致。',
     'core.interface_standard.dashboard.access_group_browser_heading' => '访问组默认设置',

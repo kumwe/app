@@ -28,6 +28,10 @@ use Kumwe\Context\Value\ExecutionContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
+use Kumwe\Context\Value\AuthenticatedSurface;
+use Kumwe\Context\Value\AuthenticationStrength;
+use Kumwe\Context\Value\StepUpProof;
+use Kumwe\App\Identity\Application\StepUp\StepUpRejected;
 use Psr\Clock\ClockInterface;
 
 #[CoversClass(AccessControlService::class)]
@@ -628,6 +632,40 @@ final class AccessControlServiceTest extends TestCase
         $service->changeOwnPassword($this->context(), 'the same passphrase', 'the same passphrase');
     }
 
+    /**
+     * A bearer or password context without a consumed step-up proof is refused every account-recovery act.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testRecoveryActsRefuseAHumanCallerWithoutAStepUpProof(): void
+    {
+        $repository = $this->createMock(AccessControlRepository::class);
+        $repository->expects(self::never())->method('lockUser');
+        $service = $this->service($repository);
+        $refused = 0;
+        foreach (
+            [
+                fn () => $service->resetUserPassword($this->context(), self::USER, 'an issued passphrase', 'lost'),
+                fn () => $service->revokeStepUpCredentials($this->context(), self::USER, 'lost'),
+                fn () => $service->terminateUserSessions($this->context(), self::USER, 'lost'),
+            ] as $call
+        ) {
+            try {
+                $call();
+            } catch (StepUpRejected $refusal) {
+                self::assertSame(
+                    'The step-up credential is invalid, expired, or already used.',
+                    $refusal->getMessage(),
+                );
+                ++$refused;
+            }
+        }
+
+        self::assertSame(3, $refused);
+    }
+
     public function testAdministrativeResetRecordsAnActorOtherThanTheSubjectWithItsReason(): void
     {
         $repository = $this->createMock(AccessControlRepository::class);
@@ -658,7 +696,7 @@ final class AccessControlServiceTest extends TestCase
             null,
             $sessions,
         )->resetUserPassword(
-            $this->context(),
+            $this->steppedContext(),
             self::USER,
             'an issued passphrase',
             '  lost device, ticket 4711  ',
@@ -674,7 +712,7 @@ final class AccessControlServiceTest extends TestCase
         $this->expectExceptionMessage('self-service change');
 
         $this->service($repository)->resetUserPassword(
-            $this->context(),
+            $this->steppedContext(),
             self::ACTOR,
             'an issued passphrase',
             'trying to skip the current password check',
@@ -689,7 +727,7 @@ final class AccessControlServiceTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
 
         $this->service($repository)->resetUserPassword(
-            $this->context(),
+            $this->steppedContext(),
             self::USER,
             'an issued passphrase',
             '   ',
@@ -739,7 +777,7 @@ final class AccessControlServiceTest extends TestCase
             null,
             $stepUp,
             $sessions,
-        )->revokeStepUpCredentials($this->context(), self::USER, 'authenticator lost'));
+        )->revokeStepUpCredentials($this->steppedContext(), self::USER, 'authenticator lost'));
     }
 
     public function testSessionTerminationAdvancesTheEpochWithoutTouchingCredentials(): void
@@ -769,7 +807,7 @@ final class AccessControlServiceTest extends TestCase
             null,
             null,
             $sessions,
-        )->terminateUserSessions($this->context(), self::USER, 'shared workstation'));
+        )->terminateUserSessions($this->steppedContext(), self::USER, 'shared workstation'));
     }
 
     public function testEmergencyTokenRevocationNowAlsoEndsTheSubjectsBrowserSessions(): void
@@ -836,5 +874,37 @@ final class AccessControlServiceTest extends TestCase
     private function context(array $capabilities = ['users.manage']): ExecutionContext
     {
         return AuthorizationContext::human($capabilities, self::ACTOR);
+    }
+
+    /**
+     * Build the context the access screen hands in after consuming a payload-bound step-up proof.
+     *
+     * @return  ExecutionContext  Multi-factor administrator context carrying a step-up proof.
+     *
+     * @since   2.0.0
+     */
+    private function steppedContext(): ExecutionContext
+    {
+        $now = new DateTimeImmutable('2026-08-04T10:00:00+00:00');
+        $session = '0191574f-f0b8-7bf3-a9aa-91c6b8244e16';
+
+        return AuthorizationContext::principal(['users.manage'], self::ACTOR)->context(
+            SiteContext::default(),
+            AuthenticationStrength::MultiFactor,
+            'access-control-stepped-test',
+            surface: AuthenticatedSurface::Administrator,
+            sessionId: $session,
+            stepUpProof: new StepUpProof(
+                self::ACTOR,
+                $session,
+                SiteContext::default(),
+                null,
+                'totp',
+                $now->modify('-1 minute'),
+                $now->modify('+4 minutes'),
+                str_repeat('N', 32),
+                purpose: 'identity.access_control.user.password.reset.payload.' . str_repeat('a', 64),
+            ),
+        );
     }
 }

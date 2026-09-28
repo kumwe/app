@@ -25,7 +25,7 @@
         ]
     },
     "inventory": {
-        "tools": 95,
+        "tools": 124,
         "resources": 1,
         "prompts": 1
     },
@@ -588,7 +588,7 @@
             ]
         }
     ],
-    "contract_sha256": "67b097c1c3408dd4592adeccd66d7314a100e00aa12de3fec0757f146c5de93f",
+    "contract_sha256": "e679065fcf31359ee6966609b9a1409dd1e5cd50829fa675b47900cf0289f44a",
     "surface": {
         "tools": [
             {
@@ -7236,222 +7236,6 @@
                 }
             },
             {
-                "name": "kumwe_user_step_up_revoke",
-                "title": "Revoke a user's second factors",
-                "description": "Retire every second factor one user holds so a lost authenticator can be re-enrolled.",
-                "handler": "revokeUserStepUpCredentials",
-                "capability": "users.manage",
-                "risk": "installation_global",
-                "alternative": "Administrator console: Users and roles, or bin/kumwe access.",
-                "annotations": {
-                    "title": "Revoke a user's second factors",
-                    "readOnlyHint": false,
-                    "destructiveHint": true,
-                    "idempotentHint": true,
-                    "openWorldHint": false
-                },
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {
-                        "operationId": {
-                            "type": "string",
-                            "minLength": 16,
-                            "maxLength": 128,
-                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{15,127}$"
-                        },
-                        "userId": {
-                            "type": "string",
-                            "minLength": 1,
-                            "maxLength": 191
-                        },
-                        "reason": {
-                            "type": "string",
-                            "minLength": 1,
-                            "maxLength": 500
-                        }
-                    },
-                    "required": [
-                        "operationId",
-                        "userId",
-                        "reason"
-                    ],
-                    "additionalProperties": false
-                },
-                "outputSchema": {
-                    "type": "object",
-                    "properties": {
-                        "revoked": {
-                            "type": "integer",
-                            "minimum": 0
-                        }
-                    },
-                    "required": [
-                        "revoked"
-                    ],
-                    "additionalProperties": false
-                }
-            },
-            {
-                "name": "kumwe_user_sessions_terminate",
-                "title": "Terminate a user's sessions",
-                "description": "End every session one user holds without changing the account's lifecycle state.",
-                "handler": "terminateUserSessions",
-                "capability": "users.manage",
-                "risk": "installation_global",
-                "alternative": "Administrator console: Users and roles, or bin/kumwe access.",
-                "annotations": {
-                    "title": "Terminate a user's sessions",
-                    "readOnlyHint": false,
-                    "destructiveHint": true,
-                    "idempotentHint": true,
-                    "openWorldHint": false
-                },
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {
-                        "operationId": {
-                            "type": "string",
-                            "minLength": 16,
-                            "maxLength": 128,
-                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{15,127}$"
-                        },
-                        "userId": {
-                            "type": "string",
-                            "minLength": 1,
-                            "maxLength": 191
-                        },
-                        "reason": {
-                            "type": "string",
-                            "minLength": 1,
-                            "maxLength": 500
-                        }
-                    },
-                    "required": [
-                        "operationId",
-                        "userId",
-                        "reason"
-                    ],
-                    "additionalProperties": false
-                },
-                "outputSchema": {
-                    "type": "object",
-                    "properties": {
-                        "sessions_terminated": {
-                            "type": "integer",
-                            "minimum": 0
-                        }
-                    },
-                    "required": [
-                        "sessions_terminated"
-                    ],
-                    "additionalProperties": false
-                }
-            },
-            {
-                "name": "kumwe_user_role_revoke",
-                "title": "Revoke a role from a user",
-                "description": "Remove one role assignment from a user.",
-                "handler": "revokeUserRole",
-                "capability": "users.manage",
-                "risk": "installation_global",
-                "alternative": "Administrator console: Users and roles, or bin/kumwe access.",
-                "annotations": {
-                    "title": "Revoke a role from a user",
-                    "readOnlyHint": false,
-                    "destructiveHint": true,
-                    "idempotentHint": true,
-                    "openWorldHint": false
-                },
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {
-                        "operationId": {
-                            "type": "string",
-                            "minLength": 16,
-                            "maxLength": 128,
-                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{15,127}$"
-                        },
-                        "userId": {
-                            "type": "string",
-                            "minLength": 1,
-                            "maxLength": 191
-                        },
-                        "roleId": {
-                            "type": "string",
-                            "minLength": 1,
-                            "maxLength": 191
-                        }
-                    },
-                    "required": [
-                        "operationId",
-                        "userId",
-                        "roleId"
-                    ],
-                    "additionalProperties": false
-                },
-                "outputSchema": {
-                    "type": "object",
-                    "properties": {
-                        "updated": {
-                            "type": "boolean"
-                        }
-                    },
-                    "required": [
-                        "updated"
-                    ],
-                    "additionalProperties": false
-                }
-            },
-            {
-                "name": "kumwe_role_grant_revoke",
-                "title": "Revoke a capability grant",
-                "description": "Remove one capability grant from a role.",
-                "handler": "revokeRoleGrant",
-                "capability": "users.manage",
-                "risk": "installation_global",
-                "alternative": "Administrator console: Users and roles, or bin/kumwe access.",
-                "annotations": {
-                    "title": "Revoke a capability grant",
-                    "readOnlyHint": false,
-                    "destructiveHint": true,
-                    "idempotentHint": true,
-                    "openWorldHint": false
-                },
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {
-                        "operationId": {
-                            "type": "string",
-                            "minLength": 16,
-                            "maxLength": 128,
-                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{15,127}$"
-                        },
-                        "grantId": {
-                            "type": "string",
-                            "minLength": 1,
-                            "maxLength": 191
-                        }
-                    },
-                    "required": [
-                        "operationId",
-                        "grantId"
-                    ],
-                    "additionalProperties": false
-                },
-                "outputSchema": {
-                    "type": "object",
-                    "properties": {
-                        "revoked": {
-                            "type": "boolean"
-                        }
-                    },
-                    "required": [
-                        "revoked"
-                    ],
-                    "additionalProperties": false
-                }
-            },
-            {
                 "name": "kumwe_business_approval_list",
                 "title": "List business approvals",
                 "description": "List the generated-business approval requests exposed to MCP that this credential may see.",
@@ -7785,6 +7569,1968 @@
                     "required": [
                         "id",
                         "deleted"
+                    ],
+                    "additionalProperties": false
+                }
+            },
+            {
+                "name": "kumwe_wording_override_list",
+                "title": "List wording overrides",
+                "description": "List the stored wording overrides of the site or the credential's organization.",
+                "handler": "listWordingOverrides",
+                "capability": "localization.overrides.manage",
+                "risk": "read",
+                "alternative": "Administrator console: Wording, /api/v1/wording, or bin/kumwe wording.",
+                "annotations": {
+                    "title": "List wording overrides",
+                    "readOnlyHint": true,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "layer": {
+                            "type": "string",
+                            "enum": [
+                                "site",
+                                "organization"
+                            ]
+                        },
+                        "locale": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "minLength": 2,
+                                    "maxLength": 35
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ]
+                        }
+                    },
+                    "required": [],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "layer": {
+                            "type": "string"
+                        },
+                        "locale": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        },
+                        "items": {
+                            "type": "array",
+                            "maxItems": 1000
+                        }
+                    },
+                    "required": [
+                        "layer",
+                        "locale",
+                        "items"
+                    ],
+                    "additionalProperties": false
+                }
+            },
+            {
+                "name": "kumwe_wording_catalogue_search",
+                "title": "Search shipped wording",
+                "description": "Search the shipped wording of one locale that an override starts from.",
+                "handler": "searchWordingCatalogue",
+                "capability": "localization.overrides.manage",
+                "risk": "read",
+                "alternative": "Administrator console: Wording, /api/v1/wording, or bin/kumwe wording.",
+                "annotations": {
+                    "title": "Search shipped wording",
+                    "readOnlyHint": true,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "locale": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 35
+                        },
+                        "query": {
+                            "type": "string",
+                            "maxLength": 200
+                        },
+                        "limit": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 200
+                        }
+                    },
+                    "required": [
+                        "locale"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "locale": {
+                            "type": "string"
+                        },
+                        "items": {
+                            "type": "array",
+                            "maxItems": 1000
+                        }
+                    },
+                    "required": [
+                        "locale",
+                        "items"
+                    ],
+                    "additionalProperties": false
+                }
+            },
+            {
+                "name": "kumwe_wording_override_save",
+                "title": "Save a wording override",
+                "description": "Replace one message's wording for one locale with a validated ICU pattern.",
+                "handler": "saveWordingOverride",
+                "capability": "localization.overrides.manage",
+                "risk": "scoped_write",
+                "alternative": "Administrator console: Wording, /api/v1/wording, or bin/kumwe wording.",
+                "annotations": {
+                    "title": "Save a wording override",
+                    "readOnlyHint": false,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "operationId": {
+                            "type": "string",
+                            "minLength": 16,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{15,127}$"
+                        },
+                        "layer": {
+                            "type": "string",
+                            "enum": [
+                                "site",
+                                "organization"
+                            ]
+                        },
+                        "locale": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 35
+                        },
+                        "identifier": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 191
+                        },
+                        "pattern": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 4000
+                        }
+                    },
+                    "required": [
+                        "operationId",
+                        "layer",
+                        "locale",
+                        "identifier",
+                        "pattern"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "additionalProperties": true
+                }
+            },
+            {
+                "name": "kumwe_wording_override_withdraw",
+                "title": "Withdraw a wording override",
+                "description": "Stop overriding one message for one locale so the shipped wording applies again.",
+                "handler": "withdrawWordingOverride",
+                "capability": "localization.overrides.manage",
+                "risk": "scoped_write",
+                "alternative": "Administrator console: Wording, /api/v1/wording, or bin/kumwe wording.",
+                "annotations": {
+                    "title": "Withdraw a wording override",
+                    "readOnlyHint": false,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "operationId": {
+                            "type": "string",
+                            "minLength": 16,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{15,127}$"
+                        },
+                        "layer": {
+                            "type": "string",
+                            "enum": [
+                                "site",
+                                "organization"
+                            ]
+                        },
+                        "locale": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 35
+                        },
+                        "identifier": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 191
+                        }
+                    },
+                    "required": [
+                        "operationId",
+                        "layer",
+                        "locale",
+                        "identifier"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "withdrawn": {
+                            "type": "boolean"
+                        }
+                    },
+                    "required": [
+                        "withdrawn"
+                    ],
+                    "additionalProperties": false
+                }
+            },
+            {
+                "name": "kumwe_business_security_overview",
+                "title": "Read the Business Security overview",
+                "description": "Read organizations, workspaces, memberships with explained access, policies and approvals.",
+                "handler": "businessSecurityOverview",
+                "capability": "business.security.manage",
+                "risk": "read",
+                "alternative": "Administrator console: Business Security, /api/v1/business-security, or bin/kumwe business-security; changes need browser step-up.",
+                "annotations": {
+                    "title": "Read the Business Security overview",
+                    "readOnlyHint": true,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {},
+                    "required": [],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "additionalProperties": true
+                }
+            },
+            {
+                "name": "kumwe_business_plan_bulk",
+                "title": "Plan a generated business bulk mutation",
+                "description": "Bind one atomic bulk archive, restore or action to current definition, policy and selection.",
+                "handler": "planBusinessBulk",
+                "capability": null,
+                "risk": "read",
+                "alternative": "The generated record screens, the protected REST record API, or bin/kumwe business-record.",
+                "annotations": {
+                    "title": "Plan a generated business bulk mutation",
+                    "readOnlyHint": true,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "operationId": {
+                            "type": "string",
+                            "minLength": 16,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{15,127}$"
+                        },
+                        "operation": {
+                            "type": "string",
+                            "enum": [
+                                "archive",
+                                "restore",
+                                "action"
+                            ]
+                        },
+                        "definition": {
+                            "type": "string",
+                            "minLength": 3,
+                            "maxLength": 191,
+                            "pattern": "^(?:[0-9a-fA-F-]{36}|[a-z][a-z0-9]*(?:[._-][a-z0-9]+)+)$"
+                        },
+                        "items": {
+                            "type": "array",
+                            "minItems": 1,
+                            "maxItems": 50,
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "record": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 191,
+                                        "pattern": "^[^\\u0000-\\u001F\\u007F]+$"
+                                    },
+                                    "expectedVersion": {
+                                        "type": "integer",
+                                        "minimum": 1
+                                    }
+                                },
+                                "required": [
+                                    "record",
+                                    "expectedVersion"
+                                ],
+                                "additionalProperties": false
+                            }
+                        },
+                        "action": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 63,
+                                    "pattern": "^[a-z][a-z0-9_]{0,62}$"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ]
+                        },
+                        "input": {
+                            "type": "object",
+                            "minProperties": 0,
+                            "maxProperties": 256,
+                            "propertyNames": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 63,
+                                "pattern": "^[a-z][a-z0-9_]{0,62}$"
+                            },
+                            "additionalProperties": true
+                        }
+                    },
+                    "required": [
+                        "operationId",
+                        "operation",
+                        "definition",
+                        "items"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "plan": {
+                            "type": "string",
+                            "minLength": 128,
+                            "maxLength": 4096,
+                            "pattern": "^v2\\.[A-Za-z0-9_-]+$"
+                        },
+                        "operation_id": {
+                            "type": "string",
+                            "minLength": 16,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{15,127}$"
+                        },
+                        "operation": {
+                            "type": "string",
+                            "enum": [
+                                "create",
+                                "update",
+                                "archive",
+                                "restore",
+                                "delete",
+                                "relate",
+                                "unrelate",
+                                "reorder",
+                                "request_action",
+                                "execute_action"
+                            ]
+                        },
+                        "definition_version": {
+                            "type": "integer",
+                            "minimum": 1
+                        },
+                        "record_id": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 191,
+                                    "pattern": "^[^\\u0000-\\u001F\\u007F]+$"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ]
+                        },
+                        "record_version": {
+                            "anyOf": [
+                                {
+                                    "type": "integer",
+                                    "minimum": 1
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ]
+                        },
+                        "destructive": {
+                            "type": "boolean"
+                        },
+                        "approval_required": {
+                            "type": "boolean"
+                        },
+                        "expires_at": {
+                            "type": "string",
+                            "format": "date-time"
+                        }
+                    },
+                    "required": [
+                        "plan",
+                        "operation_id",
+                        "operation",
+                        "definition_version",
+                        "record_id",
+                        "record_version",
+                        "destructive",
+                        "approval_required",
+                        "expires_at"
+                    ],
+                    "additionalProperties": false
+                }
+            },
+            {
+                "name": "kumwe_business_bulk",
+                "title": "Apply a generated business bulk mutation",
+                "description": "Archive, restore or run one bulk-enabled action on up to 50 reviewed records atomically.",
+                "handler": "executeBusinessBulk",
+                "capability": null,
+                "risk": "scoped_write",
+                "alternative": "The generated record screens, the protected REST record API, or bin/kumwe business-record.",
+                "annotations": {
+                    "title": "Apply a generated business bulk mutation",
+                    "readOnlyHint": false,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "plan": {
+                            "type": "string",
+                            "minLength": 128,
+                            "maxLength": 4096,
+                            "pattern": "^v2\\.[A-Za-z0-9_-]+$"
+                        },
+                        "operationId": {
+                            "type": "string",
+                            "minLength": 16,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{15,127}$"
+                        },
+                        "operation": {
+                            "type": "string",
+                            "enum": [
+                                "archive",
+                                "restore",
+                                "action"
+                            ]
+                        },
+                        "definition": {
+                            "type": "string",
+                            "minLength": 3,
+                            "maxLength": 191,
+                            "pattern": "^(?:[0-9a-fA-F-]{36}|[a-z][a-z0-9]*(?:[._-][a-z0-9]+)+)$"
+                        },
+                        "items": {
+                            "type": "array",
+                            "minItems": 1,
+                            "maxItems": 50,
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "record": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 191,
+                                        "pattern": "^[^\\u0000-\\u001F\\u007F]+$"
+                                    },
+                                    "expectedVersion": {
+                                        "type": "integer",
+                                        "minimum": 1
+                                    }
+                                },
+                                "required": [
+                                    "record",
+                                    "expectedVersion"
+                                ],
+                                "additionalProperties": false
+                            }
+                        },
+                        "action": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 63,
+                                    "pattern": "^[a-z][a-z0-9_]{0,62}$"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ]
+                        },
+                        "input": {
+                            "type": "object",
+                            "minProperties": 0,
+                            "maxProperties": 256,
+                            "propertyNames": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 63,
+                                "pattern": "^[a-z][a-z0-9_]{0,62}$"
+                            },
+                            "additionalProperties": true
+                        }
+                    },
+                    "required": [
+                        "operationId",
+                        "plan",
+                        "operation",
+                        "definition",
+                        "items"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "additionalProperties": true
+                }
+            },
+            {
+                "name": "kumwe_content_get",
+                "title": "Read content",
+                "description": "Read one content entry, trashed ones included.",
+                "handler": "getContent",
+                "capability": "content.read",
+                "risk": "read",
+                "alternative": "Administrator console: Content, or bin/kumwe content.",
+                "annotations": {
+                    "title": "Read content",
+                    "readOnlyHint": true,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 191
+                        }
+                    },
+                    "required": [
+                        "id"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "additionalProperties": true
+                }
+            },
+            {
+                "name": "kumwe_menu_get",
+                "title": "Read a menu",
+                "description": "Read one navigation menu.",
+                "handler": "getMenu",
+                "capability": "navigation.manage",
+                "risk": "read",
+                "alternative": "Administrator console: Navigation, or bin/kumwe navigation.",
+                "annotations": {
+                    "title": "Read a menu",
+                    "readOnlyHint": true,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 191
+                        }
+                    },
+                    "required": [
+                        "id"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "additionalProperties": true
+                }
+            },
+            {
+                "name": "kumwe_menu_update",
+                "title": "Update a menu",
+                "description": "Rename one menu at the version you read.",
+                "handler": "updateMenu",
+                "capability": "navigation.manage",
+                "risk": "scoped_write",
+                "alternative": "Administrator console: Navigation, or bin/kumwe navigation.",
+                "annotations": {
+                    "title": "Update a menu",
+                    "readOnlyHint": false,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "operationId": {
+                            "type": "string",
+                            "minLength": 16,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{15,127}$"
+                        },
+                        "id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 191
+                        },
+                        "version": {
+                            "type": "integer",
+                            "minimum": 1
+                        },
+                        "handle": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 191
+                        },
+                        "title": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 191
+                        }
+                    },
+                    "required": [
+                        "operationId",
+                        "id",
+                        "version",
+                        "handle",
+                        "title"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "additionalProperties": true
+                }
+            },
+            {
+                "name": "kumwe_menu_delete",
+                "title": "Delete a menu",
+                "description": "Delete one menu and its items at the version you read.",
+                "handler": "deleteMenu",
+                "capability": "navigation.manage",
+                "risk": "destructive",
+                "alternative": "Administrator console: Navigation, or bin/kumwe navigation.",
+                "annotations": {
+                    "title": "Delete a menu",
+                    "readOnlyHint": false,
+                    "destructiveHint": true,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "operationId": {
+                            "type": "string",
+                            "minLength": 16,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{15,127}$"
+                        },
+                        "id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 191
+                        },
+                        "version": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    },
+                    "required": [
+                        "operationId",
+                        "id",
+                        "version"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "deleted": {
+                            "type": "boolean"
+                        }
+                    },
+                    "required": [
+                        "deleted"
+                    ],
+                    "additionalProperties": false
+                }
+            },
+            {
+                "name": "kumwe_content_type_list",
+                "title": "List content types",
+                "description": "List the site's content types.",
+                "handler": "listContentTypes",
+                "capability": "content.read",
+                "risk": "read",
+                "alternative": "Administrator console: Content models, /api/v1/content-types and /api/v1/workflows, or bin/kumwe content-model.",
+                "annotations": {
+                    "title": "List content types",
+                    "readOnlyHint": true,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {},
+                    "required": [],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "items": {
+                            "type": "array",
+                            "maxItems": 1000
+                        }
+                    },
+                    "required": [
+                        "items"
+                    ],
+                    "additionalProperties": false
+                }
+            },
+            {
+                "name": "kumwe_content_type_get",
+                "title": "Read a content type",
+                "description": "Read one content type by handle or id, optionally at a version.",
+                "handler": "getContentType",
+                "capability": "content.read",
+                "risk": "read",
+                "alternative": "Administrator console: Content models, /api/v1/content-types and /api/v1/workflows, or bin/kumwe content-model.",
+                "annotations": {
+                    "title": "Read a content type",
+                    "readOnlyHint": true,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 191
+                        },
+                        "version": {
+                            "anyOf": [
+                                {
+                                    "type": "integer",
+                                    "minimum": 1
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ]
+                        }
+                    },
+                    "required": [
+                        "id"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "additionalProperties": true
+                }
+            },
+            {
+                "name": "kumwe_content_type_create",
+                "title": "Create a content type",
+                "description": "Create a content type bound to a workflow with a field schema.",
+                "handler": "createContentType",
+                "capability": "content.update",
+                "risk": "scoped_write",
+                "alternative": "Administrator console: Content models, /api/v1/content-types and /api/v1/workflows, or bin/kumwe content-model.",
+                "annotations": {
+                    "title": "Create a content type",
+                    "readOnlyHint": false,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "operationId": {
+                            "type": "string",
+                            "minLength": 16,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{15,127}$"
+                        },
+                        "handle": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 191
+                        },
+                        "name": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 191
+                        },
+                        "workflow": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 191
+                        },
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "required": [
+                        "operationId",
+                        "handle",
+                        "name",
+                        "workflow"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "additionalProperties": true
+                }
+            },
+            {
+                "name": "kumwe_content_type_update",
+                "title": "Publish a content type version",
+                "description": "Publish a new content type version at the version you read.",
+                "handler": "updateContentType",
+                "capability": "content.update",
+                "risk": "scoped_write",
+                "alternative": "Administrator console: Content models, /api/v1/content-types and /api/v1/workflows, or bin/kumwe content-model.",
+                "annotations": {
+                    "title": "Publish a content type version",
+                    "readOnlyHint": false,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "operationId": {
+                            "type": "string",
+                            "minLength": 16,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{15,127}$"
+                        },
+                        "id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 191
+                        },
+                        "version": {
+                            "type": "integer",
+                            "minimum": 1
+                        },
+                        "name": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 191
+                        },
+                        "workflow": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 191
+                        },
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        },
+                        "allowBreaking": {
+                            "type": "boolean"
+                        }
+                    },
+                    "required": [
+                        "operationId",
+                        "id",
+                        "version",
+                        "name",
+                        "workflow"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "additionalProperties": true
+                }
+            },
+            {
+                "name": "kumwe_workflow_list",
+                "title": "List workflows",
+                "description": "List the site's content workflows.",
+                "handler": "listWorkflows",
+                "capability": "content.read",
+                "risk": "read",
+                "alternative": "Administrator console: Content models, /api/v1/content-types and /api/v1/workflows, or bin/kumwe content-model.",
+                "annotations": {
+                    "title": "List workflows",
+                    "readOnlyHint": true,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {},
+                    "required": [],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "items": {
+                            "type": "array",
+                            "maxItems": 1000
+                        }
+                    },
+                    "required": [
+                        "items"
+                    ],
+                    "additionalProperties": false
+                }
+            },
+            {
+                "name": "kumwe_workflow_get",
+                "title": "Read a workflow",
+                "description": "Read one workflow by handle or id, optionally at a version.",
+                "handler": "getWorkflow",
+                "capability": "content.read",
+                "risk": "read",
+                "alternative": "Administrator console: Content models, /api/v1/content-types and /api/v1/workflows, or bin/kumwe content-model.",
+                "annotations": {
+                    "title": "Read a workflow",
+                    "readOnlyHint": true,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 191
+                        },
+                        "version": {
+                            "anyOf": [
+                                {
+                                    "type": "integer",
+                                    "minimum": 1
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ]
+                        }
+                    },
+                    "required": [
+                        "id"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "additionalProperties": true
+                }
+            },
+            {
+                "name": "kumwe_workflow_create",
+                "title": "Create a workflow",
+                "description": "Create a content workflow from its states and transitions.",
+                "handler": "createWorkflow",
+                "capability": "content.update",
+                "risk": "scoped_write",
+                "alternative": "Administrator console: Content models, /api/v1/content-types and /api/v1/workflows, or bin/kumwe content-model.",
+                "annotations": {
+                    "title": "Create a workflow",
+                    "readOnlyHint": false,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "operationId": {
+                            "type": "string",
+                            "minLength": 16,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{15,127}$"
+                        },
+                        "handle": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 191
+                        },
+                        "name": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 191
+                        },
+                        "states": {
+                            "type": "array",
+                            "maxItems": 200,
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        },
+                        "transitions": {
+                            "type": "array",
+                            "maxItems": 200,
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    },
+                    "required": [
+                        "operationId",
+                        "handle",
+                        "name",
+                        "states",
+                        "transitions"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "additionalProperties": true
+                }
+            },
+            {
+                "name": "kumwe_workflow_update",
+                "title": "Publish a workflow version",
+                "description": "Publish a new workflow version at the version you read.",
+                "handler": "updateWorkflow",
+                "capability": "content.update",
+                "risk": "scoped_write",
+                "alternative": "Administrator console: Content models, /api/v1/content-types and /api/v1/workflows, or bin/kumwe content-model.",
+                "annotations": {
+                    "title": "Publish a workflow version",
+                    "readOnlyHint": false,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "operationId": {
+                            "type": "string",
+                            "minLength": 16,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{15,127}$"
+                        },
+                        "id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 191
+                        },
+                        "version": {
+                            "type": "integer",
+                            "minimum": 1
+                        },
+                        "name": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 191
+                        },
+                        "states": {
+                            "type": "array",
+                            "maxItems": 200,
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        },
+                        "transitions": {
+                            "type": "array",
+                            "maxItems": 200,
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        },
+                        "allowBreaking": {
+                            "type": "boolean"
+                        }
+                    },
+                    "required": [
+                        "operationId",
+                        "id",
+                        "version",
+                        "name",
+                        "states",
+                        "transitions"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "additionalProperties": true
+                }
+            },
+            {
+                "name": "kumwe_business_definition_draft_save",
+                "title": "Save a definition draft",
+                "description": "Save a definition document as the working draft at the revision you read.",
+                "handler": "saveBusinessDefinitionDraft",
+                "capability": "content.update",
+                "risk": "scoped_write",
+                "alternative": "Administrator console: Business definitions, or bin/kumwe business-definition.",
+                "annotations": {
+                    "title": "Save a definition draft",
+                    "readOnlyHint": false,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "operationId": {
+                            "type": "string",
+                            "minLength": 16,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{15,127}$"
+                        },
+                        "definition": {
+                            "type": "object",
+                            "additionalProperties": true
+                        },
+                        "expectedRevision": {
+                            "anyOf": [
+                                {
+                                    "type": "integer",
+                                    "minimum": 1
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ]
+                        }
+                    },
+                    "required": [
+                        "operationId",
+                        "definition"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "additionalProperties": true
+                }
+            },
+            {
+                "name": "kumwe_business_definition_validate",
+                "title": "Validate a definition draft",
+                "description": "Validate the working draft with everything it reaches; the validation is audited.",
+                "handler": "validateBusinessDefinitionDraft",
+                "capability": "content.update",
+                "risk": "scoped_write",
+                "alternative": "Administrator console: Business definitions, or bin/kumwe business-definition.",
+                "annotations": {
+                    "title": "Validate a definition draft",
+                    "readOnlyHint": false,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "operationId": {
+                            "type": "string",
+                            "minLength": 16,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{15,127}$"
+                        },
+                        "handle": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 191
+                        }
+                    },
+                    "required": [
+                        "operationId",
+                        "handle"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "additionalProperties": true
+                }
+            },
+            {
+                "name": "kumwe_business_definition_supersede",
+                "title": "Supersede a definition version",
+                "description": "Mark one published definition version superseded.",
+                "handler": "supersedeBusinessDefinition",
+                "capability": "content.update",
+                "risk": "scoped_write",
+                "alternative": "Administrator console: Business definitions, or bin/kumwe business-definition.",
+                "annotations": {
+                    "title": "Supersede a definition version",
+                    "readOnlyHint": false,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "operationId": {
+                            "type": "string",
+                            "minLength": 16,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{15,127}$"
+                        },
+                        "handle": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 191
+                        },
+                        "version": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    },
+                    "required": [
+                        "operationId",
+                        "handle",
+                        "version"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "additionalProperties": true
+                }
+            },
+            {
+                "name": "kumwe_business_definition_deprecate",
+                "title": "Deprecate a definition version",
+                "description": "Mark one published definition version deprecated.",
+                "handler": "deprecateBusinessDefinition",
+                "capability": "content.update",
+                "risk": "scoped_write",
+                "alternative": "Administrator console: Business definitions, or bin/kumwe business-definition.",
+                "annotations": {
+                    "title": "Deprecate a definition version",
+                    "readOnlyHint": false,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "operationId": {
+                            "type": "string",
+                            "minLength": 16,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{15,127}$"
+                        },
+                        "handle": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 191
+                        },
+                        "version": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    },
+                    "required": [
+                        "operationId",
+                        "handle",
+                        "version"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "additionalProperties": true
+                }
+            },
+            {
+                "name": "kumwe_business_definition_reject",
+                "title": "Reject a definition version",
+                "description": "Withdraw one published definition version so the runtime refuses it.",
+                "handler": "rejectBusinessDefinition",
+                "capability": "content.update",
+                "risk": "destructive",
+                "alternative": "Administrator console: Business definitions, or bin/kumwe business-definition.",
+                "annotations": {
+                    "title": "Reject a definition version",
+                    "readOnlyHint": false,
+                    "destructiveHint": true,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "operationId": {
+                            "type": "string",
+                            "minLength": 16,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{15,127}$"
+                        },
+                        "handle": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 191
+                        },
+                        "version": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    },
+                    "required": [
+                        "operationId",
+                        "handle",
+                        "version"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "additionalProperties": true
+                }
+            },
+            {
+                "name": "kumwe_business_relation_read",
+                "title": "Read a business relationship",
+                "description": "Read one record with exactly one declared relationship hydrated.",
+                "handler": "readBusinessRelationship",
+                "capability": "business.record.read",
+                "risk": "read",
+                "alternative": "The generated record screens, the protected REST record API, or bin/kumwe business-record.",
+                "annotations": {
+                    "title": "Read a business relationship",
+                    "readOnlyHint": true,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "definition": {
+                            "type": "string",
+                            "minLength": 3,
+                            "maxLength": 191,
+                            "pattern": "^(?:[0-9a-fA-F-]{36}|[a-z][a-z0-9]*(?:[._-][a-z0-9]+)+)$"
+                        },
+                        "record": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 191,
+                            "pattern": "^[^\\u0000-\\u001F\\u007F]+$"
+                        },
+                        "relationship": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 63,
+                            "pattern": "^[a-z][a-z0-9_]{0,62}$"
+                        },
+                        "includeArchived": {
+                            "type": "boolean"
+                        },
+                        "includeDeleted": {
+                            "type": "boolean"
+                        }
+                    },
+                    "required": [
+                        "definition",
+                        "record",
+                        "relationship"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "additionalProperties": true
+                }
+            },
+            {
+                "name": "kumwe_studio_composition_get",
+                "title": "Read a Blueprint composition",
+                "description": "Read the Blueprint composition of one Content type version, with its document and dependencies.",
+                "handler": "getStudioComposition",
+                "capability": "studio.mode.blueprint",
+                "risk": "read",
+                "alternative": "Administrator console: Content models, Compose, /api/v1/content-types/{id}/versions/{version}/composition, or bin/kumwe studio-composition.",
+                "annotations": {
+                    "title": "Read a Blueprint composition",
+                    "readOnlyHint": true,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "contentType": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "version": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    },
+                    "required": [
+                        "contentType",
+                        "version"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "additionalProperties": true
+                }
+            },
+            {
+                "name": "kumwe_studio_composition_provision",
+                "title": "Provision a Blueprint composition",
+                "description": "Provision the empty Blueprint draft of one Content type version, or answer the one bound.",
+                "handler": "provisionStudioComposition",
+                "capability": "studio.mode.blueprint",
+                "risk": "scoped_write",
+                "alternative": "Administrator console: Content models, Compose, /api/v1/content-types/{id}/versions/{version}/composition, or bin/kumwe studio-composition.",
+                "annotations": {
+                    "title": "Provision a Blueprint composition",
+                    "readOnlyHint": false,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "operationId": {
+                            "type": "string",
+                            "minLength": 16,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{15,127}$"
+                        },
+                        "contentType": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "version": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    },
+                    "required": [
+                        "operationId",
+                        "contentType",
+                        "version"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "additionalProperties": true
+                }
+            },
+            {
+                "name": "kumwe_studio_blueprint_open",
+                "title": "Open a Blueprint composition session",
+                "description": "Open a credential-bound Blueprint session for the composition of one Content type version.",
+                "handler": "openStudioBlueprintSession",
+                "capability": "content.read",
+                "risk": "read",
+                "alternative": "Administrator console: Content models, Compose, or POST /api/v1/studio/composition/*, or bin/kumwe studio-blueprint.",
+                "annotations": {
+                    "title": "Open a Blueprint composition session",
+                    "readOnlyHint": true,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "contentType": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 191
+                        },
+                        "contentTypeVersion": {
+                            "type": "integer",
+                            "minimum": 1
+                        },
+                        "mode": {
+                            "type": "string",
+                            "enum": [
+                                "blueprint",
+                                "read-only"
+                            ]
+                        }
+                    },
+                    "required": [
+                        "contentType",
+                        "contentTypeVersion"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "document": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "document"
+                    ],
+                    "additionalProperties": false
+                }
+            },
+            {
+                "name": "kumwe_studio_blueprint_load",
+                "title": "Load a Studio Blueprint",
+                "description": "Load a Studio Blueprint through the same Studio host, authorization, replay and audit as the composition screen.",
+                "handler": "studioBlueprintLoad",
+                "capability": "content.read",
+                "risk": "read",
+                "alternative": "Administrator console: Content models, Compose, or POST /api/v1/studio/composition/*, or bin/kumwe studio-blueprint.",
+                "annotations": {
+                    "title": "Load a Studio Blueprint",
+                    "readOnlyHint": true,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "session": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 240,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]*$"
+                        },
+                        "sessionGeneration": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 100
+                        },
+                        "document": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 1048576
+                        },
+                        "locale": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 50
+                        }
+                    },
+                    "required": [
+                        "session",
+                        "sessionGeneration",
+                        "document"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "operation": {
+                            "type": "string"
+                        },
+                        "replayed": {
+                            "type": "boolean"
+                        },
+                        "document": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "operation",
+                        "replayed",
+                        "document"
+                    ],
+                    "additionalProperties": false
+                }
+            },
+            {
+                "name": "kumwe_studio_blueprint_dependencies",
+                "title": "List Studio Blueprint dependencies",
+                "description": "List Studio Blueprint dependencies through the same Studio host, authorization, replay and audit as the composition screen.",
+                "handler": "studioBlueprintDependencies",
+                "capability": "content.read",
+                "risk": "read",
+                "alternative": "Administrator console: Content models, Compose, or POST /api/v1/studio/composition/*, or bin/kumwe studio-blueprint.",
+                "annotations": {
+                    "title": "List Studio Blueprint dependencies",
+                    "readOnlyHint": true,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "session": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 240,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]*$"
+                        },
+                        "sessionGeneration": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 100
+                        },
+                        "document": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 1048576
+                        },
+                        "locale": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 50
+                        }
+                    },
+                    "required": [
+                        "session",
+                        "sessionGeneration",
+                        "document"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "operation": {
+                            "type": "string"
+                        },
+                        "replayed": {
+                            "type": "boolean"
+                        },
+                        "document": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "operation",
+                        "replayed",
+                        "document"
+                    ],
+                    "additionalProperties": false
+                }
+            },
+            {
+                "name": "kumwe_studio_blueprint_save",
+                "title": "Save a Studio Blueprint draft",
+                "description": "Save a Studio Blueprint draft through the same Studio host, authorization, replay and audit as the composition screen.",
+                "handler": "studioBlueprintSave",
+                "capability": "content.read",
+                "risk": "scoped_write",
+                "alternative": "Administrator console: Content models, Compose, or POST /api/v1/studio/composition/*, or bin/kumwe studio-blueprint.",
+                "annotations": {
+                    "title": "Save a Studio Blueprint draft",
+                    "readOnlyHint": false,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "operationId": {
+                            "type": "string",
+                            "minLength": 16,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{15,127}$"
+                        },
+                        "session": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 240,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]*$"
+                        },
+                        "sessionGeneration": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 100
+                        },
+                        "document": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 1048576
+                        },
+                        "locale": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 50
+                        },
+                        "expectedRevision": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 200
+                        }
+                    },
+                    "required": [
+                        "operationId",
+                        "session",
+                        "sessionGeneration",
+                        "document",
+                        "expectedRevision"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "operation": {
+                            "type": "string"
+                        },
+                        "replayed": {
+                            "type": "boolean"
+                        },
+                        "document": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "operation",
+                        "replayed",
+                        "document"
+                    ],
+                    "additionalProperties": false
+                }
+            },
+            {
+                "name": "kumwe_studio_blueprint_publish",
+                "title": "Publish a Studio Blueprint",
+                "description": "Publish a Studio Blueprint through the same Studio host, authorization, replay and audit as the composition screen.",
+                "handler": "studioBlueprintPublish",
+                "capability": "content.read",
+                "risk": "scoped_write",
+                "alternative": "Administrator console: Content models, Compose, or POST /api/v1/studio/composition/*, or bin/kumwe studio-blueprint.",
+                "annotations": {
+                    "title": "Publish a Studio Blueprint",
+                    "readOnlyHint": false,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "operationId": {
+                            "type": "string",
+                            "minLength": 16,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{15,127}$"
+                        },
+                        "session": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 240,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]*$"
+                        },
+                        "sessionGeneration": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 100
+                        },
+                        "document": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 1048576
+                        },
+                        "locale": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 50
+                        },
+                        "expectedRevision": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 200
+                        }
+                    },
+                    "required": [
+                        "operationId",
+                        "session",
+                        "sessionGeneration",
+                        "document",
+                        "expectedRevision"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "operation": {
+                            "type": "string"
+                        },
+                        "replayed": {
+                            "type": "boolean"
+                        },
+                        "document": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "operation",
+                        "replayed",
+                        "document"
+                    ],
+                    "additionalProperties": false
+                }
+            },
+            {
+                "name": "kumwe_studio_blueprint_unpublish",
+                "title": "Unpublish a Studio Blueprint",
+                "description": "Unpublish a Studio Blueprint through the same Studio host, authorization, replay and audit as the composition screen.",
+                "handler": "studioBlueprintUnpublish",
+                "capability": "content.read",
+                "risk": "scoped_write",
+                "alternative": "Administrator console: Content models, Compose, or POST /api/v1/studio/composition/*, or bin/kumwe studio-blueprint.",
+                "annotations": {
+                    "title": "Unpublish a Studio Blueprint",
+                    "readOnlyHint": false,
+                    "destructiveHint": false,
+                    "idempotentHint": true,
+                    "openWorldHint": false
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "operationId": {
+                            "type": "string",
+                            "minLength": 16,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{15,127}$"
+                        },
+                        "session": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 240,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]*$"
+                        },
+                        "sessionGeneration": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 100
+                        },
+                        "document": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 1048576
+                        },
+                        "locale": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 50
+                        },
+                        "expectedRevision": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 200
+                        }
+                    },
+                    "required": [
+                        "operationId",
+                        "session",
+                        "sessionGeneration",
+                        "document",
+                        "expectedRevision"
+                    ],
+                    "additionalProperties": false
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "operation": {
+                            "type": "string"
+                        },
+                        "replayed": {
+                            "type": "boolean"
+                        },
+                        "document": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "operation",
+                        "replayed",
+                        "document"
                     ],
                     "additionalProperties": false
                 }

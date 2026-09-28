@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for af, carrying 2565 messages.
+ * Compiled interface message catalogue for af, carrying 2572 messages.
  *
  * Generated from af.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1940,12 +1940,15 @@ return [
     'core.console.audit_verify.description' => 'Verifieer die ouditspoor-opsommingsketting en die ankers daarvan.',
     'core.console.automation.description' => 'Lys en bestuur skedules en take in die tou.',
     'core.console.business_approval.description' => 'Trek jou eie hangende besigheidsgoedkeuringsversoek terug.',
+    'core.console.business_bulk.description' => 'Argiveer, herstel of voer een aksie uit op tot vyftig besigheidsrekords gelyktydig.',
     'core.console.business_definition.description' => 'Lys, ondersoek, ontwerp as konsep, bekragtig, publiseer en trek besigheidsentiteit-definisies terug.',
     'core.console.business_periods.description' => 'Lys, sluit en heropen besigheids-boekingstydperke.',
     'core.console.business_record.description' => 'Ontdek, bevraagteken, muteer, verbind, versoek goedkeurings, rapporteer, voer uit, en ondersoek besigheidsbewerkings.',
     'core.console.business_record_rekey.description' => 'Herenkripteer gestoorde besigheidsrekord-geheime onder die aktiewe enkripsiesleutel.',
     'core.console.business_report.description' => 'Laat toestemmingsbewuste verslae loop, en versoek, ondersoek of laai geverifieerde CSV-uitvoere af.',
     'core.console.business_schema.description' => 'Ondersoek, keur goed, voer uit, en herstel besigheidskema-planne.',
+    'core.console.business_schema_evidence.description' => 'Liasseer \'n herstel-oefening as die herstelbewys wat \'n vernietigende skemaplan moet aanhaal.',
+    'core.console.business_security.description' => 'Wys die Besigheidsekuriteit-oorsig van organisasies, lidmaatskappe en beleide.',
     'core.console.content.description' => 'Lys, lees, skep, werk by, skakel oor, gooi weg, of herstel inhoud.',
     'core.console.content_model.description' => 'Lys, lees, skep of publiseer weergegewe inhoudtipes en werkvloeie.',
     'core.console.database_migrate.applied' => 'Toegepas: {migration}',
@@ -2024,6 +2027,9 @@ return [
     'core.console.settings.description' => 'Lees of werk webwerfkonfigurasie by.',
     'core.console.studio_authoring.description' => 'Open ’n Studio-outeursessie en voer die outeursbewerkings daarvan uit.',
     'core.console.studio_authoring.refused' => 'Die Studio-outeursversoek is geweier.',
+    'core.console.studio_blueprint.description' => 'Open \'n Blueprint-samestellingsessie en laai, stoor, publiseer of onttrek die publikasie van sy Blueprint.',
+    'core.console.studio_blueprint.refused' => 'Die Studio-samestellingversoek is geweier.',
+    'core.console.studio_composition.description' => 'Lees of voorsien die Bloudruk-samestelling van \'n inhoudtipe-weergawe.',
     'core.console.theme_administrator_recover.description' => 'Herstel die beskermde ingeboude administrateurtema atomies.',
     'core.console.theme_administrator_recover.restored_the_protected_built_in_administrator' => 'Die beskermde ingeboude administrateurtema is herstel.',
     'core.console.token_create.description' => 'Skep ’n omvangsgebonde API/MCP-toegangskenteken en druk dit eenmalig.',
@@ -2032,6 +2038,7 @@ return [
     'core.console.user_create_admin.created_administrator' => 'Administrateur {id} geskep.',
     'core.console.user_create_admin.description' => 'Skep ’n administrateur vanaf ’n beskermde wagwoordlêer.',
     'core.console.user_recover_credentials.description' => 'Noodtoegang: stel ’n wagwoord terug, trek tweede faktore terug, of beëindig sessies vanaf die gasheer.',
+    'core.console.wording.description' => 'Lys, deursoek, stoor of onttrek bewoordingsoorskrywings.',
     'core.identity.password.change_refused' => 'Jou wagwoord kon nie verander word nie. Kontroleer jou huidige wagwoord en kies ’n ander wagwoord met ten minste 12 karakters.',
     'core.identity.password.confirmation_mismatch' => 'Die nuwe wagwoord en die bevestiging daarvan stem nie ooreen nie.',
     'core.interface_standard.dashboard.access_group_browser_heading' => 'Toegangsgroep-verstekke',

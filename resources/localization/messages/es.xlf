@@ -18666,6 +18666,69 @@
         <target>Explora, lee, sube o elimina archivos de la biblioteca multimedia del sitio.</target>
       </segment>
     </unit>
+    <unit id="core.console.wording.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/WordingCommand.php.</note>
+      </notes>
+      <segment>
+        <source>List, search, save or withdraw wording overrides.</source>
+        <target>Enumera, busca, guarda o retira sustituciones de redacción.</target>
+      </segment>
+    </unit>
+    <unit id="core.console.business_security.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/BusinessSecurityCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Show the Business Security overview of organizations, memberships and policies.</source>
+        <target>Muestra la vista general de Seguridad empresarial con organizaciones, membresías y políticas.</target>
+      </segment>
+    </unit>
+    <unit id="core.console.business_bulk.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/BusinessBulkCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Archive, restore or run one action on up to fifty business records at once.</source>
+        <target>Archiva, restaura o ejecuta una acción en hasta cincuenta registros de negocio a la vez.</target>
+      </segment>
+    </unit>
+    <unit id="core.console.studio_composition.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/StudioCompositionCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Read or provision the Blueprint composition of a Content type version.</source>
+        <target>Lee o aprovisiona la composición Blueprint de una versión de tipo de contenido.</target>
+      </segment>
+    </unit>
+    <unit id="core.console.studio_blueprint.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/StudioBlueprintCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Open a Blueprint composition session and load, save, publish or unpublish its Blueprint.</source>
+        <target>Abrir una sesión de composición de Blueprint y cargar, guardar, publicar o despublicar su Blueprint.</target>
+      </segment>
+    </unit>
+    <unit id="core.console.studio_blueprint.refused">
+      <notes>
+        <note category="context">Message member of the studio-blueprint command's JSON failure envelope; the category and diagnostic codes beside it carry the machine meaning.</note>
+      </notes>
+      <segment>
+        <source>The Studio composition request was refused.</source>
+        <target>Se rechazó la solicitud de composición de Studio.</target>
+      </segment>
+    </unit>
+    <unit id="core.console.business_schema_evidence.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/BusinessSchemaEvidenceCommand.php.</note>
+      </notes>
+      <segment>
+        <source>File a restore drill as the recovery evidence a destructive schema plan must cite.</source>
+        <target>Registrar un simulacro de restauración como la evidencia de recuperación que debe citar un plan de esquema destructivo.</target>
+      </segment>
+    </unit>
     <unit id="core.console.settings.description">
       <notes>
         <note category="context">Console command summary on src/Delivery/Console/Command/ManageSettingsCommand.php.</note>

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for de, carrying 2565 messages.
+ * Compiled interface message catalogue for de, carrying 2572 messages.
  *
  * Generated from de.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1940,12 +1940,15 @@ return [
     'core.console.audit_verify.description' => 'Prüft die Hashkette des Prüfprotokolls und ihre Anker.',
     'core.console.automation.description' => 'Listet Zeitpläne und eingereihte Aufträge auf und verwaltet sie.',
     'core.console.business_approval.description' => 'Zieht Ihre eigene ausstehende geschäftliche Genehmigungsanfrage zurück.',
+    'core.console.business_bulk.description' => 'Bis zu fünfzig Geschäftsdatensätze auf einmal archivieren, wiederherstellen oder eine Aktion darauf ausführen.',
     'core.console.business_definition.description' => 'Listet Geschäftsentitätsdefinitionen auf, prüft, entwirft, validiert, veröffentlicht und stuft sie aus.',
     'core.console.business_periods.description' => 'Listet Geschäftsbuchungsperioden auf, schließt und öffnet sie erneut.',
     'core.console.business_record.description' => 'Ermittelt, befragt, ändert, verknüpft, fordert Freigaben an, erstellt Berichte, exportiert und prüft Geschäftsvorgänge.',
     'core.console.business_record_rekey.description' => 'Verschlüsselt gespeicherte Geheimnisse von Geschäftsdatensätzen erneut unter dem aktiven Verschlüsselungsschlüssel.',
     'core.console.business_report.description' => 'Führt berechtigungsbewusste Berichte aus und fordert geprüfte CSV-Exporte an, prüft oder lädt sie herunter.',
     'core.console.business_schema.description' => 'Prüft, gibt frei, führt aus und stellt Geschäftsschemapläne wieder her.',
+    'core.console.business_schema_evidence.description' => 'Eine Wiederherstellungsübung als Wiederherstellungsnachweis hinterlegen, den ein destruktiver Schemaplan anführen muss.',
+    'core.console.business_security.description' => 'Die Business-Security-Übersicht über Organisationen, Mitgliedschaften und Richtlinien anzeigen.',
     'core.console.content.description' => 'Listet Inhalte auf, liest, erstellt, aktualisiert, überführt, verschiebt in den Papierkorb oder stellt sie wieder her.',
     'core.console.content_model.description' => 'Listet versionierte Inhaltstypen und Workflows auf, liest, erstellt oder veröffentlicht sie.',
     'core.console.database_migrate.applied' => '{migration} angewendet',
@@ -2024,6 +2027,9 @@ return [
     'core.console.settings.description' => 'Liest oder aktualisiert die Website-Konfiguration.',
     'core.console.studio_authoring.description' => 'Öffnet eine Studio-Bearbeitungssitzung und führt ihre Bearbeitungsvorgänge aus.',
     'core.console.studio_authoring.refused' => 'Die Studio-Bearbeitungsanfrage wurde abgelehnt.',
+    'core.console.studio_blueprint.description' => 'Eine Blueprint-Kompositionssitzung öffnen und ihren Blueprint laden, speichern, veröffentlichen oder die Veröffentlichung zurücknehmen.',
+    'core.console.studio_blueprint.refused' => 'Die Studio-Kompositionsanfrage wurde abgelehnt.',
+    'core.console.studio_composition.description' => 'Die Blueprint-Komposition einer Inhaltstyp-Version lesen oder bereitstellen.',
     'core.console.theme_administrator_recover.description' => 'Stellt das geschützte integrierte Administrator-Theme atomar wieder her.',
     'core.console.theme_administrator_recover.restored_the_protected_built_in_administrator' => 'Das geschützte integrierte Administrator-Theme wurde wiederhergestellt.',
     'core.console.token_create.description' => 'Erstellt ein bereichsbezogenes API-/MCP-Zugriffstoken und gibt es einmalig aus.',
@@ -2032,6 +2038,7 @@ return [
     'core.console.user_create_admin.created_administrator' => 'Administrator {id} erstellt.',
     'core.console.user_create_admin.description' => 'Erstellt einen Administrator aus einer geschützten Passwortdatei.',
     'core.console.user_recover_credentials.description' => 'Notfallzugriff: Setzt vom Host aus ein Passwort zurück, legt zweite Faktoren still oder beendet Sitzungen.',
+    'core.console.wording.description' => 'Formulierungsüberschreibungen auflisten, durchsuchen, speichern oder zurückziehen.',
     'core.identity.password.change_refused' => 'Ihr Passwort konnte nicht geändert werden. Überprüfen Sie Ihr aktuelles Passwort und wählen Sie ein anderes Passwort mit mindestens 12 Zeichen.',
     'core.identity.password.confirmation_mismatch' => 'Das neue Passwort und seine Bestätigung stimmen nicht überein.',
     'core.interface_standard.dashboard.access_group_browser_heading' => 'Standardwerte der Zugriffsgruppe',

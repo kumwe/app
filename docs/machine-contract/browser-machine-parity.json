@@ -1,0 +1,4384 @@
+{
+    "$schema": "./browser-machine-parity.schema.json",
+    "schema": "kumwe-browser-machine-parity/v1",
+    "authority": "docs/machine-contract/README.md",
+    "note": "Every administrator and portal browser route, the application operations it performs, and how an agent performs the same work. An equivalent operation names the application service method the browser handler calls and the REST operation ids, CLI command actions and MCP tools that call it with the same authorization, revisions, idempotency, audit and refusals; a surface that withholds it carries a reason from surface_exemption_reasons. A browser-only operation carries a reason from browser_only_reasons. composition marks an equivalence reached by composing the listed operations. tools/verify-browser-machine-parity.php (composer machine:parity) fails on an unrecorded route, a stale entry, an unknown machine operation or service, or any gap. An equivalent operation whose machine surfaces authorize with less assurance than the browser carries an assurance_gap naming both sides and its decision status; the architecture suite pins that list, so it cannot grow silently.",
+    "machine_contracts": {
+        "rest": "The current generation named by api/openapi/generations.json",
+        "cli": "src/Delivery/Console/Contract/cli-v2.json",
+        "mcp": "Kumwe\\App\\Infrastructure\\Mcp\\McpCapabilityCatalog"
+    },
+    "browser_only_reasons": {
+        "authentication": "The sign-in and sign-out forms and the browser session cookie. Machine callers authenticate with site-bound bearer or stdio tokens on every call.",
+        "human-credential": "The signed-in human's own password and second factor: change, enroll, confirm, challenge and recovery codes. A machine credential is a token, and MCP never accepts an authentication secret.",
+        "session-context": "Selecting the organization and workspace a browser session acts in. A machine credential is bound to its scope when it is issued.",
+        "human-decision": "A maker-checker decision or a change the application service gates on a fresh single-use human step-up proof bound to a browser session. A machine actor may request or cancel but never decide.",
+        "presentation-preference": "Per-user layout preferences of the browser interface; no application data changes.",
+        "navigation": "A landing page of links and counts; machine_readable_via names the operations that read the same data.",
+        "html-presentation": "An HTML-only step (a picker, a confirmation or form re-render, a component gallery) over data machine callers read through machine_readable_via; nothing is written.",
+        "refusal-only": "A route registered only so a misdirected submission is refused.",
+        "studio-preview": "The Studio preview document, its stylesheet and the preview port that renders a draft into the sandboxed frame.",
+        "studio-shell": "Studio shell affordances with no application effect: interface strings, the session permission projection, crash-recovery snapshots of unsaved editor state and client telemetry.",
+        "transfer-protocol": "A leg of the browser's granted direct-binary upload handshake. The application effect is the accepted asset, which machine_readable_via creates in one call.",
+        "human-step-up": "Requires an interactive human step-up proof. The browser demands a fresh, payload-bound, single-use second-factor proof for the change, and no machine credential can carry an equivalent proof that is bound to the operation payload, short-lived and not self-issued, so every machine surface refuses the operation."
+    },
+    "surface_exemption_reasons": {
+        "mcp-credential-boundary": "MCP never accepts an authentication secret and never returns a newly issued credential (docs/mcp.md); REST and the protected console carry the secret.",
+        "mcp-authority-boundary": "MCP never widens authority: role assignment, capability grants and extension package installation need controls a model-tool surface does not carry (docs/mcp.md). Authority-reducing counterparts are published.",
+        "mcp-password-reproof": "The operation re-proves the caller's current password, which MCP cannot carry; a tool would always fail closed (docs/mcp.md).",
+        "mcp-human-step-up": "The browser gates the change on an interactive human step-up proof that no machine credential can carry, so MCP does not publish it (docs/mcp.md)."
+    },
+    "routes": [
+        {
+            "name": "administrator.access-control",
+            "methods": [
+                "GET"
+            ],
+            "path": "/administrator/access",
+            "handler": "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorAccessControlHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Identity\\Application\\Administration\\AccessControlService::users",
+                    "rest": [
+                        "listUsers",
+                        "listRoles",
+                        "listTokens",
+                        "listSecurityEvents"
+                    ],
+                    "cli": [
+                        "access users",
+                        "access roles",
+                        "access tokens",
+                        "security-events list"
+                    ],
+                    "mcp": [
+                        "kumwe_user_list",
+                        "kumwe_role_list",
+                        "kumwe_token_list",
+                        "kumwe_security_event_list"
+                    ],
+                    "note": "Users, roles with the capability vocabulary, token metadata and the security-event timeline are the screen's four sections; each machine read calls the same AccessControlService method."
+                }
+            ]
+        },
+        {
+            "name": "administrator.access-control.update",
+            "methods": [
+                "POST"
+            ],
+            "path": "/administrator/access",
+            "handler": "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorAccessControlHandler",
+            "operations": [
+                {
+                    "operation": "context.select",
+                    "classification": "browser-only",
+                    "reason": "session-context",
+                    "note": "Selects the organization and workspace the browser session acts in and rotates the session cookie. A machine credential carries its scope from issue and is re-verified on every call."
+                },
+                {
+                    "operation": "step_up.begin",
+                    "classification": "browser-only",
+                    "reason": "human-credential",
+                    "note": "Begins enrolling the signed-in human's own authenticator; a machine credential is a bearer token and MCP never accepts an authentication secret."
+                },
+                {
+                    "operation": "step_up.confirm",
+                    "classification": "browser-only",
+                    "reason": "human-credential",
+                    "note": "Confirms the signed-in human's own authenticator enrollment with a one-time code."
+                },
+                {
+                    "operation": "step_up.recovery.reissue",
+                    "classification": "browser-only",
+                    "reason": "human-credential",
+                    "note": "Reissues the signed-in human's own step-up recovery codes after a fresh second-factor proof."
+                },
+                {
+                    "operation": "user.create",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Identity\\Application\\Administration\\AccessControlService::createUser",
+                    "rest": [
+                        "createUser"
+                    ],
+                    "cli": [
+                        "access create-user"
+                    ],
+                    "mcp": [],
+                    "exemptions": {
+                        "mcp": {
+                            "reason": "mcp-credential-boundary",
+                            "note": "Creating an account sets its initial password, a secret the model-tool surface never accepts."
+                        }
+                    },
+                    "assurance_gap": {
+                        "browser": "payload-bound interactive human step-up proof",
+                        "machine": "the site-bound bearer token alone, as the released v1 REST, CLI and MCP contracts define it",
+                        "status": "pending-maintainer-decision"
+                    },
+                    "note": "The browser access screen demands a fresh payload-bound step-up proof for this change (AdministratorAccessControlHandler::stepUpPurpose)."
+                },
+                {
+                    "operation": "user.update",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Identity\\Application\\Administration\\AccessControlService::updateUser",
+                    "rest": [
+                        "updateUser"
+                    ],
+                    "cli": [
+                        "access update-user"
+                    ],
+                    "mcp": [
+                        "kumwe_user_update"
+                    ],
+                    "assurance_gap": {
+                        "browser": "payload-bound interactive human step-up proof",
+                        "machine": "the site-bound bearer token alone, as the released v1 REST, CLI and MCP contracts define it",
+                        "status": "pending-maintainer-decision"
+                    },
+                    "note": "The browser access screen demands a fresh payload-bound step-up proof for this change (AdministratorAccessControlHandler::stepUpPurpose)."
+                },
+                {
+                    "operation": "role.create",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Identity\\Application\\Administration\\AccessControlService::createRole",
+                    "rest": [
+                        "createRole"
+                    ],
+                    "cli": [
+                        "access create-role"
+                    ],
+                    "mcp": [
+                        "kumwe_role_create"
+                    ],
+                    "assurance_gap": {
+                        "browser": "payload-bound interactive human step-up proof",
+                        "machine": "the site-bound bearer token alone, as the released v1 REST, CLI and MCP contracts define it",
+                        "status": "pending-maintainer-decision"
+                    },
+                    "note": "The browser access screen demands a fresh payload-bound step-up proof for this change (AdministratorAccessControlHandler::stepUpPurpose)."
+                },
+                {
+                    "operation": "role.assign",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Identity\\Application\\Administration\\AccessControlService::assignRole",
+                    "rest": [
+                        "assignRole"
+                    ],
+                    "cli": [
+                        "access assign-role"
+                    ],
+                    "mcp": [],
+                    "exemptions": {
+                        "mcp": {
+                            "reason": "mcp-authority-boundary",
+                            "note": "Assigning a role widens an account's authority."
+                        }
+                    },
+                    "assurance_gap": {
+                        "browser": "payload-bound interactive human step-up proof",
+                        "machine": "the site-bound bearer token alone, as the released v1 REST, CLI and MCP contracts define it",
+                        "status": "pending-maintainer-decision"
+                    },
+                    "note": "The browser access screen demands a fresh payload-bound step-up proof for this change (AdministratorAccessControlHandler::stepUpPurpose)."
+                },
+                {
+                    "operation": "role.revoke",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Identity\\Application\\Administration\\AccessControlService::revokeRole",
+                    "rest": [
+                        "revokeRole"
+                    ],
+                    "cli": [
+                        "access revoke-role"
+                    ],
+                    "mcp": [],
+                    "exemptions": {
+                        "mcp": {
+                            "reason": "mcp-human-step-up",
+                            "note": "MCP stopped publishing this change in 2d1a88b4 because the browser gates it on a payload-bound step-up proof."
+                        }
+                    },
+                    "assurance_gap": {
+                        "browser": "payload-bound interactive human step-up proof",
+                        "machine": "the site-bound bearer token alone, as the released v1 REST, CLI and MCP contracts define it",
+                        "status": "pending-maintainer-decision"
+                    },
+                    "note": "The browser access screen demands a fresh payload-bound step-up proof for this change (AdministratorAccessControlHandler::stepUpPurpose)."
+                },
+                {
+                    "operation": "grant.create",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Identity\\Application\\Administration\\AccessControlService::grant",
+                    "rest": [
+                        "createGrant"
+                    ],
+                    "cli": [
+                        "access grant"
+                    ],
+                    "mcp": [],
+                    "exemptions": {
+                        "mcp": {
+                            "reason": "mcp-authority-boundary",
+                            "note": "Granting a capability widens a role's authority."
+                        }
+                    },
+                    "assurance_gap": {
+                        "browser": "payload-bound interactive human step-up proof",
+                        "machine": "the site-bound bearer token alone, as the released v1 REST, CLI and MCP contracts define it",
+                        "status": "pending-maintainer-decision"
+                    },
+                    "note": "The browser access screen demands a fresh payload-bound step-up proof for this change (AdministratorAccessControlHandler::stepUpPurpose)."
+                },
+                {
+                    "operation": "grant.revoke",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Identity\\Application\\Administration\\AccessControlService::revokeGrant",
+                    "rest": [
+                        "revokeGrant"
+                    ],
+                    "cli": [
+                        "access revoke-grant"
+                    ],
+                    "mcp": [],
+                    "exemptions": {
+                        "mcp": {
+                            "reason": "mcp-human-step-up",
+                            "note": "MCP stopped publishing this change in 2d1a88b4 because the browser gates it on a payload-bound step-up proof."
+                        }
+                    },
+                    "assurance_gap": {
+                        "browser": "payload-bound interactive human step-up proof",
+                        "machine": "the site-bound bearer token alone, as the released v1 REST, CLI and MCP contracts define it",
+                        "status": "pending-maintainer-decision"
+                    },
+                    "note": "The browser access screen demands a fresh payload-bound step-up proof for this change (AdministratorAccessControlHandler::stepUpPurpose)."
+                },
+                {
+                    "operation": "grant.synchronize",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Identity\\Application\\Administration\\AccessControlService::grant",
+                    "rest": [
+                        "createGrant",
+                        "revokeGrant"
+                    ],
+                    "cli": [
+                        "access grant",
+                        "access revoke-grant"
+                    ],
+                    "mcp": [],
+                    "composition": true,
+                    "note": "The browser grant matrix applies one role's global checkbox set atomically (AccessControlService::synchronizeGlobalRoleGrants). REST and the console apply the same per-grant rules one grant at a time. The browser access screen demands a fresh payload-bound step-up proof for this change (AdministratorAccessControlHandler::stepUpPurpose).",
+                    "exemptions": {
+                        "mcp": {
+                            "reason": "mcp-human-step-up",
+                            "note": "MCP stopped publishing this change in 2d1a88b4 because the browser gates it on a payload-bound step-up proof."
+                        }
+                    },
+                    "assurance_gap": {
+                        "browser": "payload-bound interactive human step-up proof",
+                        "machine": "the site-bound bearer token alone, as the released v1 REST, CLI and MCP contracts define it",
+                        "status": "pending-maintainer-decision"
+                    }
+                },
+                {
+                    "operation": "token.create",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Identity\\Application\\Administration\\AdministratorIdentityGateway::issueAccessToken",
+                    "rest": [
+                        "createToken"
+                    ],
+                    "cli": [
+                        "token:create"
+                    ],
+                    "mcp": [],
+                    "exemptions": {
+                        "mcp": {
+                            "reason": "mcp-credential-boundary",
+                            "note": "Issuing a token returns a new credential, which the model-tool surface never returns."
+                        }
+                    },
+                    "assurance_gap": {
+                        "browser": "payload-bound interactive human step-up proof",
+                        "machine": "the site-bound bearer token alone, as the released v1 REST, CLI and MCP contracts define it",
+                        "status": "pending-maintainer-decision"
+                    },
+                    "note": "The browser access screen demands a fresh payload-bound step-up proof for this change (AdministratorAccessControlHandler::stepUpPurpose)."
+                },
+                {
+                    "operation": "token.revoke",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Identity\\Application\\Administration\\AccessControlService::revokeToken",
+                    "rest": [
+                        "revokeToken"
+                    ],
+                    "cli": [
+                        "access revoke-token"
+                    ],
+                    "mcp": [
+                        "kumwe_token_revoke"
+                    ],
+                    "assurance_gap": {
+                        "browser": "payload-bound interactive human step-up proof",
+                        "machine": "the site-bound bearer token alone, as the released v1 REST, CLI and MCP contracts define it",
+                        "status": "pending-maintainer-decision"
+                    },
+                    "note": "The browser access screen demands a fresh payload-bound step-up proof for this change (AdministratorAccessControlHandler::stepUpPurpose)."
+                },
+                {
+                    "operation": "token.rotate",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Identity\\Application\\Administration\\AdministratorIdentityGateway::rotateAccessToken",
+                    "rest": [
+                        "rotateToken"
+                    ],
+                    "cli": [
+                        "access rotate-token"
+                    ],
+                    "mcp": [],
+                    "exemptions": {
+                        "mcp": {
+                            "reason": "mcp-credential-boundary",
+                            "note": "Rotation returns the replacement credential, which the model-tool surface never returns."
+                        }
+                    },
+                    "assurance_gap": {
+                        "browser": "payload-bound interactive human step-up proof",
+                        "machine": "the site-bound bearer token alone, as the released v1 REST, CLI and MCP contracts define it",
+                        "status": "pending-maintainer-decision"
+                    },
+                    "note": "The browser access screen demands a fresh payload-bound step-up proof for this change (AdministratorAccessControlHandler::stepUpPurpose)."
+                },
+                {
+                    "operation": "token.emergency_revoke",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Identity\\Application\\Administration\\AccessControlService::emergencyRevokeAllSubjectTokens",
+                    "rest": [
+                        "emergencyRevokeAllUserTokens"
+                    ],
+                    "cli": [
+                        "access emergency-revoke-user-tokens"
+                    ],
+                    "mcp": [
+                        "kumwe_token_emergency_revoke_subject"
+                    ],
+                    "assurance_gap": {
+                        "browser": "payload-bound interactive human step-up proof",
+                        "machine": "the site-bound bearer token alone, as the released v1 REST, CLI and MCP contracts define it",
+                        "status": "pending-maintainer-decision"
+                    },
+                    "note": "The browser access screen demands a fresh payload-bound step-up proof for this change (AdministratorAccessControlHandler::stepUpPurpose)."
+                },
+                {
+                    "operation": "user.password.change",
+                    "classification": "browser-only",
+                    "reason": "human-credential",
+                    "note": "Changes the signed-in human's own password after re-proving the current one; machine credentials are tokens and are rotated, not re-passworded."
+                },
+                {
+                    "operation": "user.password.reset",
+                    "classification": "browser-only",
+                    "reason": "human-step-up",
+                    "note": "Resets another account's password. The browser demands a payload-bound step-up proof; REST, the console and MCP publish no equivalent and AccessControlService refuses a human context without a consumed proof (StepUpRejected). Resetting one's own password is user.password.change; host-level break-glass is bin/kumwe user:recover-credentials."
+                },
+                {
+                    "operation": "user.step_up.revoke",
+                    "classification": "browser-only",
+                    "reason": "human-step-up",
+                    "note": "Retires another account's second factors. The browser demands a payload-bound step-up proof; no machine surface publishes it and AccessControlService refuses a human context without a consumed proof. Host-level break-glass is bin/kumwe user:recover-credentials."
+                },
+                {
+                    "operation": "user.sessions.terminate",
+                    "classification": "browser-only",
+                    "reason": "human-step-up",
+                    "note": "Ends another account's browser sessions. The browser demands a payload-bound step-up proof; no machine surface publishes it and AccessControlService refuses a human context without a consumed proof. Revoking a peer's tokens stays available as token.emergency_revoke."
+                }
+            ]
+        },
+        {
+            "name": "administrator.account",
+            "methods": [
+                "GET"
+            ],
+            "path": "/administrator/account",
+            "handler": "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorAccountHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "browser-only",
+                    "reason": "human-credential",
+                    "note": "Renders the signed-in human's own password-change form; it reads no application data."
+                }
+            ]
+        },
+        {
+            "name": "administrator.account.update",
+            "methods": [
+                "POST"
+            ],
+            "path": "/administrator/account",
+            "handler": "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorAccountHandler",
+            "operations": [
+                {
+                    "operation": "password.change",
+                    "classification": "browser-only",
+                    "reason": "human-credential",
+                    "note": "Changes the signed-in human's own password after re-proving the current one and signs the session out."
+                }
+            ]
+        },
+        {
+            "name": "administrator.automation",
+            "methods": [
+                "GET"
+            ],
+            "path": "/administrator/automation",
+            "handler": "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorAutomationHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Application\\Automation\\AutomationManagementService::schedules",
+                    "rest": [
+                        "listSchedules",
+                        "listJobs"
+                    ],
+                    "cli": [
+                        "automation schedules",
+                        "automation jobs"
+                    ],
+                    "mcp": [
+                        "kumwe_schedule_list",
+                        "kumwe_job_list"
+                    ],
+                    "note": "The schedule listing also carries the schedulable job types the create form offers."
+                }
+            ]
+        },
+        {
+            "name": "administrator.automation.update",
+            "methods": [
+                "POST"
+            ],
+            "path": "/administrator/automation",
+            "handler": "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorAutomationHandler",
+            "operations": [
+                {
+                    "operation": "schedule.create",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Application\\Automation\\AutomationManagementService::createSchedule",
+                    "rest": [
+                        "createSchedule"
+                    ],
+                    "cli": [
+                        "automation create"
+                    ],
+                    "mcp": [
+                        "kumwe_schedule_create"
+                    ]
+                },
+                {
+                    "operation": "schedule.enable",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Application\\Automation\\AutomationManagementService::setScheduleEnabled",
+                    "rest": [
+                        "setScheduleEnabled"
+                    ],
+                    "cli": [
+                        "automation enable"
+                    ],
+                    "mcp": [
+                        "kumwe_schedule_update"
+                    ]
+                },
+                {
+                    "operation": "schedule.disable",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Application\\Automation\\AutomationManagementService::setScheduleEnabled",
+                    "rest": [
+                        "setScheduleEnabled"
+                    ],
+                    "cli": [
+                        "automation disable"
+                    ],
+                    "mcp": [
+                        "kumwe_schedule_update"
+                    ]
+                },
+                {
+                    "operation": "schedule.delete",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Application\\Automation\\AutomationManagementService::deleteSchedule",
+                    "rest": [
+                        "deleteSchedule"
+                    ],
+                    "cli": [
+                        "automation delete"
+                    ],
+                    "mcp": [
+                        "kumwe_schedule_delete"
+                    ]
+                },
+                {
+                    "operation": "job.retry",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Application\\Automation\\AutomationManagementService::retryJob",
+                    "rest": [
+                        "retryJob"
+                    ],
+                    "cli": [
+                        "automation retry"
+                    ],
+                    "mcp": [
+                        "kumwe_job_retry"
+                    ]
+                },
+                {
+                    "operation": "job.cancel",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Application\\Automation\\AutomationManagementService::cancelJob",
+                    "rest": [
+                        "cancelJob"
+                    ],
+                    "cli": [
+                        "automation cancel"
+                    ],
+                    "mcp": [
+                        "kumwe_job_cancel"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "administrator.business",
+            "methods": [
+                "GET"
+            ],
+            "path": "/administrator/business",
+            "handler": "Kumwe\\App\\BusinessSurface\\Delivery\\Administrator\\AdministratorBusinessSurfaceHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessSurface\\Application\\BusinessSurfaceService::discover",
+                    "rest": [
+                        "businessDefinitionDiscover"
+                    ],
+                    "cli": [
+                        "business-record entities"
+                    ],
+                    "mcp": [
+                        "kumwe_business_discover"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "administrator.business-definitions",
+            "methods": [
+                "GET"
+            ],
+            "path": "/administrator/business-definitions",
+            "handler": "Kumwe\\App\\BusinessDefinition\\Delivery\\Administrator\\BusinessDefinitionsHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessDefinition\\Application\\BusinessDefinitionService::catalog",
+                    "rest": [
+                        "listBusinessDefinitions",
+                        "readBusinessDefinition",
+                        "readBusinessDefinitionDraft",
+                        "listBusinessDefinitionHistory",
+                        "previewBusinessDefinitionCompatibility"
+                    ],
+                    "cli": [
+                        "business-definition list",
+                        "business-definition get",
+                        "business-definition draft",
+                        "business-definition history",
+                        "business-definition compatibility"
+                    ],
+                    "mcp": [
+                        "kumwe_business_definition_list",
+                        "kumwe_business_definition_get",
+                        "kumwe_business_definition_draft",
+                        "kumwe_business_definition_history",
+                        "kumwe_business_definition_compatibility"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "administrator.business-definitions.update",
+            "methods": [
+                "POST"
+            ],
+            "path": "/administrator/business-definitions",
+            "handler": "Kumwe\\App\\BusinessDefinition\\Delivery\\Administrator\\BusinessDefinitionsHandler",
+            "operations": [
+                {
+                    "operation": "save",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessDefinition\\Application\\BusinessDefinitionService::importDraft",
+                    "rest": [
+                        "saveBusinessDefinitionDraft"
+                    ],
+                    "cli": [
+                        "business-definition import"
+                    ],
+                    "mcp": [
+                        "kumwe_business_definition_draft_save"
+                    ],
+                    "note": "The browser builder maps its form to the canonical definition document; every surface stores it through the same draft write path at an expected revision."
+                },
+                {
+                    "operation": "validate",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessDefinition\\Application\\BusinessDefinitionService::validateDraft",
+                    "rest": [
+                        "validateBusinessDefinitionDraft"
+                    ],
+                    "cli": [
+                        "business-definition validate"
+                    ],
+                    "mcp": [
+                        "kumwe_business_definition_validate"
+                    ]
+                },
+                {
+                    "operation": "compare",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessDefinition\\Application\\BusinessDefinitionService::compareDraft",
+                    "rest": [
+                        "validateBusinessDefinitionDraft",
+                        "previewBusinessDefinitionCompatibility"
+                    ],
+                    "cli": [
+                        "business-definition validate",
+                        "business-definition compatibility"
+                    ],
+                    "mcp": [
+                        "kumwe_business_definition_validate",
+                        "kumwe_business_definition_compatibility"
+                    ],
+                    "composition": true,
+                    "note": "Compare is the audited validate-and-price step; machine callers run the audited validation and read the same compatibility plan."
+                },
+                {
+                    "operation": "publish",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessDefinition\\Application\\BusinessDefinitionService::publish",
+                    "rest": [
+                        "publishBusinessDefinition"
+                    ],
+                    "cli": [
+                        "business-definition publish"
+                    ],
+                    "mcp": [
+                        "kumwe_business_definition_publish"
+                    ]
+                },
+                {
+                    "operation": "supersede",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessDefinition\\Application\\BusinessDefinitionService::supersede",
+                    "rest": [
+                        "supersedeBusinessDefinitionVersion"
+                    ],
+                    "cli": [
+                        "business-definition supersede"
+                    ],
+                    "mcp": [
+                        "kumwe_business_definition_supersede"
+                    ]
+                },
+                {
+                    "operation": "deprecate",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessDefinition\\Application\\BusinessDefinitionService::deprecate",
+                    "rest": [
+                        "deprecateBusinessDefinitionVersion"
+                    ],
+                    "cli": [
+                        "business-definition deprecate"
+                    ],
+                    "mcp": [
+                        "kumwe_business_definition_deprecate"
+                    ]
+                },
+                {
+                    "operation": "reject",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessDefinition\\Application\\BusinessDefinitionService::reject",
+                    "rest": [
+                        "rejectBusinessDefinitionVersion"
+                    ],
+                    "cli": [
+                        "business-definition reject"
+                    ],
+                    "mcp": [
+                        "kumwe_business_definition_reject"
+                    ]
+                },
+                {
+                    "operation": "import",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessDefinition\\Application\\BusinessDefinitionService::importJson",
+                    "rest": [
+                        "saveBusinessDefinitionDraft"
+                    ],
+                    "cli": [
+                        "business-definition import"
+                    ],
+                    "mcp": [
+                        "kumwe_business_definition_draft_save"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "administrator.business-schema-plans",
+            "methods": [
+                "GET"
+            ],
+            "path": "/administrator/business-schema-plans",
+            "handler": "Kumwe\\App\\BusinessSchema\\Delivery\\Administrator\\BusinessSchemaPlansHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessSchema\\Application\\BusinessSchemaService::plans",
+                    "rest": [
+                        "listBusinessSchemaPlans",
+                        "readBusinessSchemaPlan",
+                        "listSchemaEligibleDefinitions"
+                    ],
+                    "cli": [
+                        "business-schema plans",
+                        "business-schema get",
+                        "business-schema definitions"
+                    ],
+                    "mcp": [
+                        "kumwe_business_schema_plan_list",
+                        "kumwe_business_schema_plan_get",
+                        "kumwe_business_schema_definitions"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "administrator.business-schema-plans.approve",
+            "methods": [
+                "POST"
+            ],
+            "path": "/administrator/business-schema-plans/{id}/approve",
+            "handler": "Kumwe\\App\\BusinessSchema\\Delivery\\Administrator\\ApproveBusinessSchemaPlanHandler",
+            "operations": [
+                {
+                    "operation": "approve",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessSchema\\Application\\BusinessSchemaService::approve",
+                    "rest": [
+                        "approveBusinessSchemaPlan"
+                    ],
+                    "cli": [
+                        "business-schema approve"
+                    ],
+                    "mcp": [
+                        "kumwe_business_schema_plan_approve"
+                    ],
+                    "note": "A high-impact plan re-proves the current password in the browser and over REST (current_password); the MCP tool declines such plans rather than approving them. The released v1 console approves a high-impact plan without the re-proof.",
+                    "assurance_gap": {
+                        "browser": "current-password re-proof for a high-impact plan",
+                        "machine": "the v1 console business-schema approve action carries no password re-proof",
+                        "status": "pending-maintainer-decision"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "administrator.business-schema-plans.execute",
+            "methods": [
+                "POST"
+            ],
+            "path": "/administrator/business-schema-plans/{id}/execute",
+            "handler": "Kumwe\\App\\BusinessSchema\\Delivery\\Administrator\\ExecuteBusinessSchemaPlanHandler",
+            "operations": [
+                {
+                    "operation": "execute",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessSchema\\Application\\BusinessSchemaService::execute",
+                    "rest": [
+                        "executeBusinessSchemaPlan"
+                    ],
+                    "cli": [
+                        "business-schema execute"
+                    ],
+                    "mcp": [
+                        "kumwe_business_schema_plan_execute"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "administrator.business-schema-plans.plan",
+            "methods": [
+                "POST"
+            ],
+            "path": "/administrator/business-schema-plans/plan",
+            "handler": "Kumwe\\App\\BusinessSchema\\Delivery\\Administrator\\CreateBusinessSchemaPlanHandler",
+            "operations": [
+                {
+                    "operation": "plan",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessSchema\\Application\\BusinessSchemaService::createPlan",
+                    "rest": [
+                        "createBusinessSchemaPlan"
+                    ],
+                    "cli": [
+                        "business-schema plan"
+                    ],
+                    "mcp": [
+                        "kumwe_business_schema_plan_create"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "administrator.business-schema-plans.purge",
+            "methods": [
+                "POST"
+            ],
+            "path": "/administrator/business-schema-plans/purge",
+            "handler": "Kumwe\\App\\BusinessSchema\\Delivery\\Administrator\\CreateBusinessSchemaPurgePlanHandler",
+            "operations": [
+                {
+                    "operation": "purge-plan",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessSchema\\Application\\BusinessSchemaService::createPurgePlan",
+                    "rest": [
+                        "createBusinessSchemaPurgePlan"
+                    ],
+                    "cli": [
+                        "business-schema purge-plan"
+                    ],
+                    "mcp": [],
+                    "exemptions": {
+                        "mcp": {
+                            "reason": "mcp-password-reproof",
+                            "note": "Composing a destructive purge plan re-proves the caller's current password."
+                        }
+                    },
+                    "note": "Composing a purge plan re-proves the current password in the browser and over REST (current_password). The released v1 console composes it without the re-proof.",
+                    "assurance_gap": {
+                        "browser": "current-password re-proof",
+                        "machine": "the v1 console business-schema purge-plan action carries no password re-proof",
+                        "status": "pending-maintainer-decision"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "administrator.business-schema-plans.recover",
+            "methods": [
+                "POST"
+            ],
+            "path": "/administrator/business-schema-plans/{id}/recover",
+            "handler": "Kumwe\\App\\BusinessSchema\\Delivery\\Administrator\\RecoverBusinessSchemaPlanHandler",
+            "operations": [
+                {
+                    "operation": "recover",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessSchema\\Application\\BusinessSchemaService::recover",
+                    "rest": [
+                        "recoverBusinessSchemaPlan"
+                    ],
+                    "cli": [
+                        "business-schema recover"
+                    ],
+                    "mcp": [
+                        "kumwe_business_schema_plan_recover"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "administrator.business-schema-plans.recovery-evidence",
+            "methods": [
+                "POST"
+            ],
+            "path": "/administrator/business-schema-plans/recovery-evidence",
+            "handler": "Kumwe\\App\\BusinessSchema\\Delivery\\Administrator\\RecordBusinessSchemaRecoveryEvidenceHandler",
+            "operations": [
+                {
+                    "operation": "record-evidence",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessSchema\\Application\\BusinessSchemaRecoveryEvidenceRecorder::record",
+                    "rest": [
+                        "recordBusinessSchemaRecoveryEvidence"
+                    ],
+                    "cli": [
+                        "business-schema-evidence record"
+                    ],
+                    "mcp": [],
+                    "exemptions": {
+                        "mcp": {
+                            "reason": "mcp-password-reproof",
+                            "note": "Recording a recovery drill re-proves the caller's current password."
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "administrator.business-security",
+            "methods": [
+                "GET"
+            ],
+            "path": "/administrator/business-security",
+            "handler": "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorBusinessSecurityHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessSecurity\\Application\\Administration\\BusinessSecurityAdministrationService::overview",
+                    "rest": [
+                        "readBusinessSecurityOverview"
+                    ],
+                    "cli": [
+                        "business-security overview"
+                    ],
+                    "mcp": [
+                        "kumwe_business_security_overview"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "administrator.business-security.update",
+            "methods": [
+                "POST"
+            ],
+            "path": "/administrator/business-security",
+            "handler": "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorBusinessSecurityHandler",
+            "operations": [
+                {
+                    "operation": "organization.create",
+                    "classification": "browser-only",
+                    "reason": "human-decision",
+                    "machine_readable_via": {
+                        "rest": [
+                            "readBusinessSecurityOverview"
+                        ],
+                        "cli": [
+                            "business-security overview"
+                        ],
+                        "mcp": [
+                            "kumwe_business_security_overview"
+                        ]
+                    },
+                    "note": "BusinessSecurityAdministrationService consumes a fresh single-use human step-up proof for every Business Security change, which a bearer or console credential cannot mint; the overview stays machine-readable."
+                },
+                {
+                    "operation": "workspace.create",
+                    "classification": "browser-only",
+                    "reason": "human-decision",
+                    "machine_readable_via": {
+                        "rest": [
+                            "readBusinessSecurityOverview"
+                        ],
+                        "cli": [
+                            "business-security overview"
+                        ],
+                        "mcp": [
+                            "kumwe_business_security_overview"
+                        ]
+                    },
+                    "note": "BusinessSecurityAdministrationService consumes a fresh single-use human step-up proof for every Business Security change, which a bearer or console credential cannot mint; the overview stays machine-readable."
+                },
+                {
+                    "operation": "membership.create",
+                    "classification": "browser-only",
+                    "reason": "human-decision",
+                    "machine_readable_via": {
+                        "rest": [
+                            "readBusinessSecurityOverview"
+                        ],
+                        "cli": [
+                            "business-security overview"
+                        ],
+                        "mcp": [
+                            "kumwe_business_security_overview"
+                        ]
+                    },
+                    "note": "BusinessSecurityAdministrationService consumes a fresh single-use human step-up proof for every Business Security change, which a bearer or console credential cannot mint; the overview stays machine-readable."
+                },
+                {
+                    "operation": "membership.status",
+                    "classification": "browser-only",
+                    "reason": "human-decision",
+                    "machine_readable_via": {
+                        "rest": [
+                            "readBusinessSecurityOverview"
+                        ],
+                        "cli": [
+                            "business-security overview"
+                        ],
+                        "mcp": [
+                            "kumwe_business_security_overview"
+                        ]
+                    },
+                    "note": "BusinessSecurityAdministrationService consumes a fresh single-use human step-up proof for every Business Security change, which a bearer or console credential cannot mint; the overview stays machine-readable."
+                },
+                {
+                    "operation": "membership.workspace.assign",
+                    "classification": "browser-only",
+                    "reason": "human-decision",
+                    "machine_readable_via": {
+                        "rest": [
+                            "readBusinessSecurityOverview"
+                        ],
+                        "cli": [
+                            "business-security overview"
+                        ],
+                        "mcp": [
+                            "kumwe_business_security_overview"
+                        ]
+                    },
+                    "note": "BusinessSecurityAdministrationService consumes a fresh single-use human step-up proof for every Business Security change, which a bearer or console credential cannot mint; the overview stays machine-readable."
+                },
+                {
+                    "operation": "membership.workspace.revoke",
+                    "classification": "browser-only",
+                    "reason": "human-decision",
+                    "machine_readable_via": {
+                        "rest": [
+                            "readBusinessSecurityOverview"
+                        ],
+                        "cli": [
+                            "business-security overview"
+                        ],
+                        "mcp": [
+                            "kumwe_business_security_overview"
+                        ]
+                    },
+                    "note": "BusinessSecurityAdministrationService consumes a fresh single-use human step-up proof for every Business Security change, which a bearer or console credential cannot mint; the overview stays machine-readable."
+                },
+                {
+                    "operation": "membership.role.assign",
+                    "classification": "browser-only",
+                    "reason": "human-decision",
+                    "machine_readable_via": {
+                        "rest": [
+                            "readBusinessSecurityOverview"
+                        ],
+                        "cli": [
+                            "business-security overview"
+                        ],
+                        "mcp": [
+                            "kumwe_business_security_overview"
+                        ]
+                    },
+                    "note": "BusinessSecurityAdministrationService consumes a fresh single-use human step-up proof for every Business Security change, which a bearer or console credential cannot mint; the overview stays machine-readable."
+                },
+                {
+                    "operation": "membership.role.revoke",
+                    "classification": "browser-only",
+                    "reason": "human-decision",
+                    "machine_readable_via": {
+                        "rest": [
+                            "readBusinessSecurityOverview"
+                        ],
+                        "cli": [
+                            "business-security overview"
+                        ],
+                        "mcp": [
+                            "kumwe_business_security_overview"
+                        ]
+                    },
+                    "note": "BusinessSecurityAdministrationService consumes a fresh single-use human step-up proof for every Business Security change, which a bearer or console credential cannot mint; the overview stays machine-readable."
+                },
+                {
+                    "operation": "resource_policy.create",
+                    "classification": "browser-only",
+                    "reason": "human-decision",
+                    "machine_readable_via": {
+                        "rest": [
+                            "readBusinessSecurityOverview"
+                        ],
+                        "cli": [
+                            "business-security overview"
+                        ],
+                        "mcp": [
+                            "kumwe_business_security_overview"
+                        ]
+                    },
+                    "note": "BusinessSecurityAdministrationService consumes a fresh single-use human step-up proof for every Business Security change, which a bearer or console credential cannot mint; the overview stays machine-readable."
+                },
+                {
+                    "operation": "resource_policy.status",
+                    "classification": "browser-only",
+                    "reason": "human-decision",
+                    "machine_readable_via": {
+                        "rest": [
+                            "readBusinessSecurityOverview"
+                        ],
+                        "cli": [
+                            "business-security overview"
+                        ],
+                        "mcp": [
+                            "kumwe_business_security_overview"
+                        ]
+                    },
+                    "note": "BusinessSecurityAdministrationService consumes a fresh single-use human step-up proof for every Business Security change, which a bearer or console credential cannot mint; the overview stays machine-readable."
+                },
+                {
+                    "operation": "separation_duty.create",
+                    "classification": "browser-only",
+                    "reason": "human-decision",
+                    "machine_readable_via": {
+                        "rest": [
+                            "readBusinessSecurityOverview"
+                        ],
+                        "cli": [
+                            "business-security overview"
+                        ],
+                        "mcp": [
+                            "kumwe_business_security_overview"
+                        ]
+                    },
+                    "note": "BusinessSecurityAdministrationService consumes a fresh single-use human step-up proof for every Business Security change, which a bearer or console credential cannot mint; the overview stays machine-readable."
+                },
+                {
+                    "operation": "separation_duty.status",
+                    "classification": "browser-only",
+                    "reason": "human-decision",
+                    "machine_readable_via": {
+                        "rest": [
+                            "readBusinessSecurityOverview"
+                        ],
+                        "cli": [
+                            "business-security overview"
+                        ],
+                        "mcp": [
+                            "kumwe_business_security_overview"
+                        ]
+                    },
+                    "note": "BusinessSecurityAdministrationService consumes a fresh single-use human step-up proof for every Business Security change, which a bearer or console credential cannot mint; the overview stays machine-readable."
+                },
+                {
+                    "operation": "approval.approve",
+                    "classification": "browser-only",
+                    "reason": "human-decision",
+                    "machine_readable_via": {
+                        "rest": [
+                            "businessApprovalList",
+                            "businessApprovalRead"
+                        ],
+                        "cli": [
+                            "business-record approvals",
+                            "business-record approval"
+                        ],
+                        "mcp": [
+                            "kumwe_business_approval_list",
+                            "kumwe_business_approval_get"
+                        ]
+                    },
+                    "note": "A maker-checker decision needs a fresh step-up proof bound to a browser session. Machine actors may request and cancel their own approvals but never decide one."
+                },
+                {
+                    "operation": "approval.reject",
+                    "classification": "browser-only",
+                    "reason": "human-decision",
+                    "machine_readable_via": {
+                        "rest": [
+                            "businessApprovalList",
+                            "businessApprovalRead"
+                        ],
+                        "cli": [
+                            "business-record approvals",
+                            "business-record approval"
+                        ],
+                        "mcp": [
+                            "kumwe_business_approval_list",
+                            "kumwe_business_approval_get"
+                        ]
+                    },
+                    "note": "A maker-checker decision needs a fresh step-up proof bound to a browser session. Machine actors may request and cancel their own approvals but never decide one."
+                },
+                {
+                    "operation": "approval.revoke",
+                    "classification": "browser-only",
+                    "reason": "human-decision",
+                    "machine_readable_via": {
+                        "rest": [
+                            "businessApprovalList",
+                            "businessApprovalRead"
+                        ],
+                        "cli": [
+                            "business-record approvals",
+                            "business-record approval"
+                        ],
+                        "mcp": [
+                            "kumwe_business_approval_list",
+                            "kumwe_business_approval_get"
+                        ]
+                    },
+                    "note": "A maker-checker decision needs a fresh step-up proof bound to a browser session. Machine actors may request and cancel their own approvals but never decide one."
+                },
+                {
+                    "operation": "approval.cancel",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\Approval\\ApprovalService::cancel",
+                    "rest": [
+                        "businessApprovalCancel"
+                    ],
+                    "cli": [
+                        "business-approval cancel"
+                    ],
+                    "mcp": [
+                        "kumwe_business_approval_cancel"
+                    ],
+                    "note": "Only the original requester may cancel a pending request; cancelling withdraws a request and is never a decision."
+                }
+            ]
+        },
+        {
+            "name": "administrator.business.choices.media.collection",
+            "methods": [
+                "GET"
+            ],
+            "path": "/administrator/business/{definition}/choices/media/{media}",
+            "handler": "Kumwe\\App\\BusinessSurface\\Delivery\\Administrator\\AdministratorBusinessSurfaceHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "browser-only",
+                    "reason": "html-presentation",
+                    "machine_readable_via": {
+                        "rest": [
+                            "businessRecordSearch",
+                            "listMedia"
+                        ],
+                        "cli": [
+                            "business-record list",
+                            "media list"
+                        ],
+                        "mcp": [
+                            "kumwe_business_search",
+                            "kumwe_media_list"
+                        ]
+                    },
+                    "note": "A no-JavaScript picker page listing the records or media a form field may select; machine callers search the same policy-filtered targets directly."
+                }
+            ]
+        },
+        {
+            "name": "administrator.business.choices.media.record",
+            "methods": [
+                "GET"
+            ],
+            "path": "/administrator/business/{definition}/{record}/choices/media/{media}",
+            "handler": "Kumwe\\App\\BusinessSurface\\Delivery\\Administrator\\AdministratorBusinessSurfaceHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "browser-only",
+                    "reason": "html-presentation",
+                    "machine_readable_via": {
+                        "rest": [
+                            "businessRecordSearch",
+                            "listMedia"
+                        ],
+                        "cli": [
+                            "business-record list",
+                            "media list"
+                        ],
+                        "mcp": [
+                            "kumwe_business_search",
+                            "kumwe_media_list"
+                        ]
+                    },
+                    "note": "A no-JavaScript picker page listing the records or media a form field may select; machine callers search the same policy-filtered targets directly."
+                }
+            ]
+        },
+        {
+            "name": "administrator.business.choices.owned-line-field",
+            "methods": [
+                "GET"
+            ],
+            "path": "/administrator/business/{definition}/{record}/choices/owned-lines/{owned_relationship}/{owned_kind:relations|media}/{owned_field}",
+            "handler": "Kumwe\\App\\BusinessSurface\\Delivery\\Administrator\\AdministratorBusinessSurfaceHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "browser-only",
+                    "reason": "html-presentation",
+                    "machine_readable_via": {
+                        "rest": [
+                            "businessRecordSearch",
+                            "listMedia"
+                        ],
+                        "cli": [
+                            "business-record list",
+                            "media list"
+                        ],
+                        "mcp": [
+                            "kumwe_business_search",
+                            "kumwe_media_list"
+                        ]
+                    },
+                    "note": "A no-JavaScript picker page listing the records or media a form field may select; machine callers search the same policy-filtered targets directly."
+                }
+            ]
+        },
+        {
+            "name": "administrator.business.choices.relations.collection",
+            "methods": [
+                "GET"
+            ],
+            "path": "/administrator/business/{definition}/choices/relations/{related}",
+            "handler": "Kumwe\\App\\BusinessSurface\\Delivery\\Administrator\\AdministratorBusinessSurfaceHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "browser-only",
+                    "reason": "html-presentation",
+                    "machine_readable_via": {
+                        "rest": [
+                            "businessRecordSearch",
+                            "listMedia"
+                        ],
+                        "cli": [
+                            "business-record list",
+                            "media list"
+                        ],
+                        "mcp": [
+                            "kumwe_business_search",
+                            "kumwe_media_list"
+                        ]
+                    },
+                    "note": "A no-JavaScript picker page listing the records or media a form field may select; machine callers search the same policy-filtered targets directly."
+                }
+            ]
+        },
+        {
+            "name": "administrator.business.choices.relations.record",
+            "methods": [
+                "GET"
+            ],
+            "path": "/administrator/business/{definition}/{record}/choices/relations/{related}",
+            "handler": "Kumwe\\App\\BusinessSurface\\Delivery\\Administrator\\AdministratorBusinessSurfaceHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "browser-only",
+                    "reason": "html-presentation",
+                    "machine_readable_via": {
+                        "rest": [
+                            "businessRecordSearch",
+                            "listMedia"
+                        ],
+                        "cli": [
+                            "business-record list",
+                            "media list"
+                        ],
+                        "mcp": [
+                            "kumwe_business_search",
+                            "kumwe_media_list"
+                        ]
+                    },
+                    "note": "A no-JavaScript picker page listing the records or media a form field may select; machine callers search the same policy-filtered targets directly."
+                }
+            ]
+        },
+        {
+            "name": "administrator.business.custom-record-view",
+            "methods": [
+                "GET"
+            ],
+            "path": "/administrator/business/{definition}/{record}/views/{view}",
+            "handler": "Kumwe\\App\\BusinessSurface\\Delivery\\Administrator\\AdministratorBusinessSurfaceHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessSurface\\Application\\BusinessSurfaceService::customView",
+                    "rest": [
+                        "businessRecordCustomRecordView"
+                    ],
+                    "cli": [
+                        "business-record view"
+                    ],
+                    "mcp": [
+                        "kumwe_business_view"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "administrator.business.custom-view",
+            "methods": [
+                "GET"
+            ],
+            "path": "/administrator/business/{definition}/views/{view}",
+            "handler": "Kumwe\\App\\BusinessSurface\\Delivery\\Administrator\\AdministratorBusinessSurfaceHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessSurface\\Application\\BusinessSurfaceService::customView",
+                    "rest": [
+                        "businessRecordCustomView"
+                    ],
+                    "cli": [
+                        "business-record view"
+                    ],
+                    "mcp": [
+                        "kumwe_business_view"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "administrator.business.definition",
+            "methods": [
+                "GET"
+            ],
+            "path": "/administrator/business/{definition}",
+            "handler": "Kumwe\\App\\BusinessSurface\\Delivery\\Administrator\\AdministratorBusinessSurfaceHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessSurface\\Application\\BusinessSurfaceService::browse",
+                    "rest": [
+                        "businessRecordBrowse",
+                        "businessRecordSearch",
+                        "businessDefinitionInspect"
+                    ],
+                    "cli": [
+                        "business-record list",
+                        "business-record schema"
+                    ],
+                    "mcp": [
+                        "kumwe_business_search",
+                        "kumwe_business_inspect"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "administrator.business.definition.mutate",
+            "methods": [
+                "POST"
+            ],
+            "path": "/administrator/business/{definition}",
+            "handler": "Kumwe\\App\\BusinessSurface\\Delivery\\Administrator\\AdministratorBusinessSurfaceHandler",
+            "operations": [
+                {
+                    "operation": "create",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessSurface\\Application\\BusinessSurfaceService::create",
+                    "rest": [
+                        "businessRecordCreate"
+                    ],
+                    "cli": [
+                        "business-record create"
+                    ],
+                    "mcp": [
+                        "kumwe_business_create"
+                    ]
+                },
+                {
+                    "operation": "bulk",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessSurface\\Application\\BusinessSurfaceService::bulk",
+                    "rest": [
+                        "businessRecordBulk"
+                    ],
+                    "cli": [
+                        "business-bulk archive",
+                        "business-bulk restore",
+                        "business-bulk action"
+                    ],
+                    "mcp": [
+                        "kumwe_business_bulk"
+                    ]
+                },
+                {
+                    "operation": "prepare",
+                    "classification": "browser-only",
+                    "reason": "html-presentation",
+                    "machine_readable_via": {
+                        "rest": [
+                            "businessDefinitionInspect"
+                        ],
+                        "cli": [
+                            "business-record schema"
+                        ],
+                        "mcp": [
+                            "kumwe_business_inspect"
+                        ]
+                    },
+                    "note": "Re-renders the create or bulk form with structured-field choices or the bulk confirmation; nothing is written until the confirmed submission."
+                }
+            ]
+        },
+        {
+            "name": "administrator.business.mutate",
+            "methods": [
+                "POST"
+            ],
+            "path": "/administrator/business",
+            "handler": "Kumwe\\App\\BusinessSurface\\Delivery\\Administrator\\AdministratorBusinessSurfaceHandler",
+            "operations": [
+                {
+                    "operation": "refused",
+                    "classification": "browser-only",
+                    "reason": "refusal-only",
+                    "note": "The generated index accepts POST only to refuse it: a generated mutation always names a definition."
+                }
+            ]
+        },
+        {
+            "name": "administrator.business.operation",
+            "methods": [
+                "GET"
+            ],
+            "path": "/administrator/business/operations/{operation}",
+            "handler": "Kumwe\\App\\BusinessSurface\\Delivery\\Administrator\\AdministratorBusinessSurfaceHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessSurface\\Application\\BusinessOperationStatusService::getWithDefinitionReference",
+                    "rest": [
+                        "businessOperationStatusRead"
+                    ],
+                    "cli": [
+                        "business-record operation"
+                    ],
+                    "mcp": [
+                        "kumwe_business_operation_status"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "administrator.business.record",
+            "methods": [
+                "GET"
+            ],
+            "path": "/administrator/business/{definition}/{record}",
+            "handler": "Kumwe\\App\\BusinessSurface\\Delivery\\Administrator\\AdministratorBusinessSurfaceHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessSurface\\Application\\BusinessSurfaceService::read",
+                    "rest": [
+                        "businessRecordRead",
+                        "businessRecordHistory"
+                    ],
+                    "cli": [
+                        "business-record get",
+                        "business-record history"
+                    ],
+                    "mcp": [
+                        "kumwe_business_read",
+                        "kumwe_business_history"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "administrator.business.record.mutate",
+            "methods": [
+                "POST"
+            ],
+            "path": "/administrator/business/{definition}/{record}",
+            "handler": "Kumwe\\App\\BusinessSurface\\Delivery\\Administrator\\AdministratorBusinessSurfaceHandler",
+            "operations": [
+                {
+                    "operation": "update",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessSurface\\Application\\BusinessSurfaceService::update",
+                    "rest": [
+                        "businessRecordUpdate"
+                    ],
+                    "cli": [
+                        "business-record update"
+                    ],
+                    "mcp": [
+                        "kumwe_business_update"
+                    ]
+                },
+                {
+                    "operation": "archive",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessSurface\\Application\\BusinessSurfaceService::archive",
+                    "rest": [
+                        "businessRecordArchive"
+                    ],
+                    "cli": [
+                        "business-record archive"
+                    ],
+                    "mcp": [
+                        "kumwe_business_archive"
+                    ]
+                },
+                {
+                    "operation": "restore",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessSurface\\Application\\BusinessSurfaceService::restore",
+                    "rest": [
+                        "businessRecordRestore"
+                    ],
+                    "cli": [
+                        "business-record restore"
+                    ],
+                    "mcp": [
+                        "kumwe_business_restore"
+                    ]
+                },
+                {
+                    "operation": "delete",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessSurface\\Application\\BusinessSurfaceService::delete",
+                    "rest": [
+                        "businessRecordDelete"
+                    ],
+                    "cli": [
+                        "business-record delete"
+                    ],
+                    "mcp": [
+                        "kumwe_business_delete"
+                    ]
+                },
+                {
+                    "operation": "action",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessSurface\\Application\\BusinessSurfaceService::action",
+                    "rest": [
+                        "businessRecordAction"
+                    ],
+                    "cli": [
+                        "business-record action"
+                    ],
+                    "mcp": [
+                        "kumwe_business_execute_action"
+                    ],
+                    "note": "An action whose policy requires approval consumes the exact approved binding; a high-impact action also needs the approver's browser step-up, so machine execution of one fails closed."
+                },
+                {
+                    "operation": "approval",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessSurface\\Application\\BusinessSurfaceService::requestActionApproval",
+                    "rest": [
+                        "businessRecordActionApproval"
+                    ],
+                    "cli": [
+                        "business-record request-action"
+                    ],
+                    "mcp": [
+                        "kumwe_business_request_action"
+                    ]
+                },
+                {
+                    "operation": "prepare",
+                    "classification": "browser-only",
+                    "reason": "html-presentation",
+                    "machine_readable_via": {
+                        "rest": [
+                            "businessDefinitionInspect",
+                            "businessRecordRead"
+                        ],
+                        "cli": [
+                            "business-record schema",
+                            "business-record get"
+                        ],
+                        "mcp": [
+                            "kumwe_business_inspect",
+                            "kumwe_business_read"
+                        ]
+                    },
+                    "note": "Renders the action confirmation or the structured-field configuration step; nothing is written until the confirmed submission."
+                }
+            ]
+        },
+        {
+            "name": "administrator.business.relationship",
+            "methods": [
+                "GET"
+            ],
+            "path": "/administrator/business/{definition}/{record}/relationships/{business_relationship}",
+            "handler": "Kumwe\\App\\BusinessSurface\\Delivery\\Administrator\\AdministratorBusinessSurfaceHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessSurface\\Application\\BusinessSurfaceService::relationship",
+                    "rest": [
+                        "businessRecordRelationRead"
+                    ],
+                    "cli": [
+                        "business-record get"
+                    ],
+                    "mcp": [
+                        "kumwe_business_relation_read"
+                    ],
+                    "note": "The console reads one relationship through the read query's projection includes."
+                }
+            ]
+        },
+        {
+            "name": "administrator.business.relationship.mutate",
+            "methods": [
+                "POST"
+            ],
+            "path": "/administrator/business/{definition}/{record}/relationships/{business_relationship}",
+            "handler": "Kumwe\\App\\BusinessSurface\\Delivery\\Administrator\\AdministratorBusinessSurfaceHandler",
+            "operations": [
+                {
+                    "operation": "relate",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessSurface\\Application\\BusinessSurfaceService::relate",
+                    "rest": [
+                        "businessRecordRelate"
+                    ],
+                    "cli": [
+                        "business-record relate"
+                    ],
+                    "mcp": [
+                        "kumwe_business_relate"
+                    ]
+                },
+                {
+                    "operation": "unrelate",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessSurface\\Application\\BusinessSurfaceService::unrelate",
+                    "rest": [
+                        "businessRecordUnrelate"
+                    ],
+                    "cli": [
+                        "business-record unrelate"
+                    ],
+                    "mcp": [
+                        "kumwe_business_unrelate"
+                    ]
+                },
+                {
+                    "operation": "reorder",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessSurface\\Application\\BusinessSurfaceService::reorder",
+                    "rest": [
+                        "businessRecordReorder"
+                    ],
+                    "cli": [
+                        "business-record reorder"
+                    ],
+                    "mcp": [
+                        "kumwe_business_reorder"
+                    ]
+                },
+                {
+                    "operation": "prepare",
+                    "classification": "browser-only",
+                    "reason": "html-presentation",
+                    "machine_readable_via": {
+                        "rest": [
+                            "businessRecordRelationRead"
+                        ],
+                        "cli": [
+                            "business-record get"
+                        ],
+                        "mcp": [
+                            "kumwe_business_relation_read"
+                        ]
+                    },
+                    "note": "Renders the owned-line structured-field step of a relate form; nothing is written until the confirmed submission."
+                }
+            ]
+        },
+        {
+            "name": "administrator.content",
+            "methods": [
+                "GET"
+            ],
+            "path": "/administrator/content",
+            "handler": "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorContentListHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Content\\Application\\ContentService::list",
+                    "rest": [
+                        "listContent"
+                    ],
+                    "cli": [
+                        "content list"
+                    ],
+                    "mcp": [
+                        "kumwe_content_list"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "administrator.content-models",
+            "methods": [
+                "GET"
+            ],
+            "path": "/administrator/content-models",
+            "handler": "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorContentModelsHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Content\\Application\\ContentModelService::contentTypes",
+                    "rest": [
+                        "listContentTypes",
+                        "listWorkflows"
+                    ],
+                    "cli": [
+                        "content-model list"
+                    ],
+                    "mcp": [
+                        "kumwe_content_type_list",
+                        "kumwe_workflow_list"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "administrator.content-models.composition",
+            "methods": [
+                "GET"
+            ],
+            "path": "/administrator/content-models/{id}/versions/{version}/composition",
+            "handler": "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorStudioCompositionHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Studio\\Application\\Composition\\StudioContentCompositionService::find",
+                    "rest": [
+                        "readContentComposition"
+                    ],
+                    "cli": [
+                        "studio-composition get"
+                    ],
+                    "mcp": [
+                        "kumwe_studio_composition_get"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "administrator.content-models.composition.provision",
+            "methods": [
+                "POST"
+            ],
+            "path": "/administrator/content-models/{id}/versions/{version}/composition",
+            "handler": "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorStudioCompositionHandler",
+            "operations": [
+                {
+                    "operation": "provision",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Studio\\Application\\Composition\\StudioContentCompositionService::provision",
+                    "rest": [
+                        "provisionContentComposition"
+                    ],
+                    "cli": [
+                        "studio-composition provision"
+                    ],
+                    "mcp": [
+                        "kumwe_studio_composition_provision"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "administrator.content-models.update",
+            "methods": [
+                "POST"
+            ],
+            "path": "/administrator/content-models",
+            "handler": "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorContentModelsHandler",
+            "operations": [
+                {
+                    "operation": "content_type.create",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Content\\Application\\ContentModelService::createContentType",
+                    "rest": [
+                        "createContentType"
+                    ],
+                    "cli": [
+                        "content-model create"
+                    ],
+                    "mcp": [
+                        "kumwe_content_type_create"
+                    ]
+                },
+                {
+                    "operation": "content_type.update",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Content\\Application\\ContentModelService::updateContentType",
+                    "rest": [
+                        "publishContentType"
+                    ],
+                    "cli": [
+                        "content-model update"
+                    ],
+                    "mcp": [
+                        "kumwe_content_type_update"
+                    ]
+                },
+                {
+                    "operation": "workflow.create",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Content\\Application\\ContentModelService::createWorkflow",
+                    "rest": [
+                        "createWorkflow"
+                    ],
+                    "cli": [
+                        "content-model create"
+                    ],
+                    "mcp": [
+                        "kumwe_workflow_create"
+                    ]
+                },
+                {
+                    "operation": "workflow.update",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Content\\Application\\ContentModelService::updateWorkflow",
+                    "rest": [
+                        "publishWorkflow"
+                    ],
+                    "cli": [
+                        "content-model update"
+                    ],
+                    "mcp": [
+                        "kumwe_workflow_update"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "administrator.content.create",
+            "methods": [
+                "POST"
+            ],
+            "path": "/administrator/content",
+            "handler": "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorCreateContentHandler",
+            "operations": [
+                {
+                    "operation": "create",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Content\\Application\\ContentService::create",
+                    "rest": [
+                        "createContent"
+                    ],
+                    "cli": [
+                        "content create"
+                    ],
+                    "mcp": [
+                        "kumwe_content_create"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "administrator.content.edit",
+            "methods": [
+                "GET"
+            ],
+            "path": "/administrator/content/{id}/edit",
+            "handler": "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorContentEditorHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Content\\Application\\ContentService::get",
+                    "rest": [
+                        "getContent",
+                        "openStudioAuthoringSession"
+                    ],
+                    "cli": [
+                        "content get",
+                        "studio-authoring open"
+                    ],
+                    "mcp": [
+                        "kumwe_content_get",
+                        "kumwe_studio_authoring_open"
+                    ],
+                    "note": "The edit page reads the item and opens the contextual Studio authoring session for it."
+                }
+            ]
+        },
+        {
+            "name": "administrator.content.new",
+            "methods": [
+                "GET"
+            ],
+            "path": "/administrator/content/new",
+            "handler": "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorContentEditorHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Studio\\Application\\Authoring\\ContentStudioAuthoringLaunchResolver::resolve",
+                    "rest": [
+                        "openStudioAuthoringSession",
+                        "listContentTypes"
+                    ],
+                    "cli": [
+                        "studio-authoring open",
+                        "content-model list"
+                    ],
+                    "mcp": [
+                        "kumwe_studio_authoring_open",
+                        "kumwe_content_type_list"
+                    ],
+                    "note": "The create page offers the content types and opens the contextual Studio authoring session for a new item; machine callers open the same credential-bound session."
+                }
+            ]
+        },
+        {
+            "name": "administrator.content.restore",
+            "methods": [
+                "POST"
+            ],
+            "path": "/administrator/content/{id}/restore",
+            "handler": "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorRestoreContentHandler",
+            "operations": [
+                {
+                    "operation": "restore",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Content\\Application\\ContentService::restore",
+                    "rest": [
+                        "restoreContent"
+                    ],
+                    "cli": [
+                        "content restore"
+                    ],
+                    "mcp": [
+                        "kumwe_content_restore"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "administrator.content.transition",
+            "methods": [
+                "POST"
+            ],
+            "path": "/administrator/content/{id}/transition",
+            "handler": "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorTransitionContentHandler",
+            "operations": [
+                {
+                    "operation": "transition",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Content\\Application\\ContentService::transition",
+                    "rest": [
+                        "transitionContent"
+                    ],
+                    "cli": [
+                        "content transition"
+                    ],
+                    "mcp": [
+                        "kumwe_content_transition"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "administrator.content.trash",
+            "methods": [
+                "POST"
+            ],
+            "path": "/administrator/content/{id}/trash",
+            "handler": "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorTrashContentHandler",
+            "operations": [
+                {
+                    "operation": "trash",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Content\\Application\\ContentService::trash",
+                    "rest": [
+                        "trashContent"
+                    ],
+                    "cli": [
+                        "content trash"
+                    ],
+                    "mcp": [
+                        "kumwe_content_trash"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "administrator.content.update",
+            "methods": [
+                "POST"
+            ],
+            "path": "/administrator/content/{id}",
+            "handler": "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorUpdateContentHandler",
+            "operations": [
+                {
+                    "operation": "update",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Content\\Application\\ContentService::update",
+                    "rest": [
+                        "updateContent"
+                    ],
+                    "cli": [
+                        "content update"
+                    ],
+                    "mcp": [
+                        "kumwe_content_update"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "administrator.dashboard.preferences",
+            "methods": [
+                "POST"
+            ],
+            "path": "/administrator/dashboard/preferences",
+            "handler": "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorDashboardPreferencesHandler",
+            "operations": [
+                {
+                    "operation": "update",
+                    "classification": "browser-only",
+                    "reason": "presentation-preference",
+                    "note": "Stores the signed-in human's dashboard widget layout; it changes no application data."
+                }
+            ]
+        },
+        {
+            "name": "administrator.extensions",
+            "methods": [
+                "GET"
+            ],
+            "path": "/administrator/extensions",
+            "handler": "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorExtensionsHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Extension\\Application\\ExtensionManager::installed",
+                    "rest": [
+                        "listExtensions",
+                        "listExtensionTrustKeys"
+                    ],
+                    "cli": [
+                        "extension:list",
+                        "extension:trust list"
+                    ],
+                    "mcp": [
+                        "kumwe_extension_list",
+                        "kumwe_trust_key_list"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "administrator.extensions.action",
+            "methods": [
+                "POST"
+            ],
+            "path": "/administrator/extensions/action",
+            "handler": "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorExtensionActionHandler",
+            "operations": [
+                {
+                    "operation": "trust-add",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Extension\\Application\\Trust\\TrustStore::add",
+                    "rest": [
+                        "addExtensionTrustKey"
+                    ],
+                    "cli": [
+                        "extension:trust add"
+                    ],
+                    "mcp": [
+                        "kumwe_trust_key_add"
+                    ]
+                },
+                {
+                    "operation": "trust-revoke",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Extension\\Application\\Trust\\TrustStore::finalizeRotation",
+                    "rest": [
+                        "revokeExtensionTrustKey"
+                    ],
+                    "cli": [
+                        "extension:trust finalize-rotation"
+                    ],
+                    "mcp": [
+                        "kumwe_trust_key_revoke"
+                    ]
+                },
+                {
+                    "operation": "trust-emergency-revoke",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Extension\\Application\\Trust\\TrustStore::emergencyRevoke",
+                    "rest": [
+                        "revokeExtensionTrustKey"
+                    ],
+                    "cli": [
+                        "extension:trust emergency-revoke"
+                    ],
+                    "mcp": [
+                        "kumwe_trust_key_revoke"
+                    ]
+                },
+                {
+                    "operation": "trust-rotate",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Extension\\Application\\Trust\\TrustStore::rotate",
+                    "rest": [
+                        "rotateExtensionTrustKey"
+                    ],
+                    "cli": [
+                        "extension:trust rotate"
+                    ],
+                    "mcp": [
+                        "kumwe_trust_key_rotate"
+                    ]
+                },
+                {
+                    "operation": "activate",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Extension\\Application\\ExtensionManager::activate",
+                    "rest": [
+                        "activateExtension"
+                    ],
+                    "cli": [
+                        "extension:activate"
+                    ],
+                    "mcp": [
+                        "kumwe_extension_activate"
+                    ]
+                },
+                {
+                    "operation": "disable",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Extension\\Application\\ExtensionManager::disable",
+                    "rest": [
+                        "disableExtension"
+                    ],
+                    "cli": [
+                        "extension:disable"
+                    ],
+                    "mcp": [
+                        "kumwe_extension_disable"
+                    ]
+                },
+                {
+                    "operation": "uninstall",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Extension\\Application\\ExtensionManager::uninstall",
+                    "rest": [
+                        "uninstallExtension"
+                    ],
+                    "cli": [
+                        "extension:uninstall"
+                    ],
+                    "mcp": [
+                        "kumwe_extension_uninstall"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "administrator.extensions.install",
+            "methods": [
+                "POST"
+            ],
+            "path": "/administrator/extensions",
+            "handler": "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorExtensionsHandler",
+            "operations": [
+                {
+                    "operation": "install",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Extension\\Application\\ExtensionManager::install",
+                    "rest": [
+                        "installExtension"
+                    ],
+                    "cli": [
+                        "extension:install"
+                    ],
+                    "mcp": [],
+                    "exemptions": {
+                        "mcp": {
+                            "reason": "mcp-authority-boundary",
+                            "note": "Installing a package adds trusted executable code to the runtime."
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "administrator.index",
+            "methods": [
+                "GET"
+            ],
+            "path": "/administrator",
+            "handler": "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorDashboardHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "browser-only",
+                    "reason": "navigation",
+                    "machine_readable_via": {
+                        "rest": [
+                            "listContent",
+                            "listJobs",
+                            "businessDefinitionDiscover"
+                        ],
+                        "cli": [
+                            "content list",
+                            "automation jobs",
+                            "business-record entities"
+                        ],
+                        "mcp": [
+                            "kumwe_content_list",
+                            "kumwe_job_list",
+                            "kumwe_business_discover"
+                        ]
+                    },
+                    "note": "The dashboard is a landing page of links, counts and recent items; each widget reads data the machine surfaces list directly."
+                }
+            ]
+        },
+        {
+            "name": "administrator.interface-standard",
+            "methods": [
+                "GET"
+            ],
+            "path": "/administrator/interface-standard",
+            "handler": "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorInterfaceStandardHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "browser-only",
+                    "reason": "html-presentation",
+                    "machine_readable_via": {
+                        "rest": [
+                            "discoverApi"
+                        ],
+                        "cli": [],
+                        "mcp": [
+                            "kumwe_discover"
+                        ]
+                    },
+                    "note": "The Kumwe Interface Standard component gallery renders fixed demonstration states of the browser component kit; it reads no application data."
+                }
+            ]
+        },
+        {
+            "name": "administrator.login",
+            "methods": [
+                "GET",
+                "POST"
+            ],
+            "path": "/administrator/login",
+            "handler": "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorLoginHandler",
+            "operations": [
+                {
+                    "operation": "sign-in",
+                    "classification": "browser-only",
+                    "reason": "authentication",
+                    "note": "The sign-in form and its session cookie; machine callers authenticate with bearer or stdio tokens."
+                }
+            ]
+        },
+        {
+            "name": "administrator.logout",
+            "methods": [
+                "POST"
+            ],
+            "path": "/administrator/logout",
+            "handler": "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorLogoutHandler",
+            "operations": [
+                {
+                    "operation": "sign-out",
+                    "classification": "browser-only",
+                    "reason": "authentication",
+                    "note": "Ends the browser session cookie; machine credentials are revoked instead."
+                }
+            ]
+        },
+        {
+            "name": "administrator.media",
+            "methods": [
+                "GET"
+            ],
+            "path": "/administrator/media",
+            "handler": "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorMediaHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Media\\Application\\MediaService::browse",
+                    "rest": [
+                        "listMedia"
+                    ],
+                    "cli": [
+                        "media list"
+                    ],
+                    "mcp": [
+                        "kumwe_media_list"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "administrator.media.delete",
+            "methods": [
+                "POST"
+            ],
+            "path": "/administrator/media/{id}/delete",
+            "handler": "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorMediaHandler",
+            "operations": [
+                {
+                    "operation": "delete",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Media\\Application\\MediaService::delete",
+                    "rest": [
+                        "deleteMedia"
+                    ],
+                    "cli": [
+                        "media delete"
+                    ],
+                    "mcp": [
+                        "kumwe_media_delete"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "administrator.media.upload",
+            "methods": [
+                "POST"
+            ],
+            "path": "/administrator/media",
+            "handler": "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorMediaHandler",
+            "operations": [
+                {
+                    "operation": "upload",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Media\\Application\\MediaService::upload",
+                    "rest": [
+                        "uploadMedia"
+                    ],
+                    "cli": [
+                        "media upload"
+                    ],
+                    "mcp": [
+                        "kumwe_media_upload"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "administrator.navigation",
+            "methods": [
+                "GET"
+            ],
+            "path": "/administrator/navigation",
+            "handler": "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorNavigationHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Navigation\\Application\\NavigationService::menus",
+                    "rest": [
+                        "listMenus",
+                        "getMenu",
+                        "listMenuItems"
+                    ],
+                    "cli": [
+                        "navigation list",
+                        "navigation items"
+                    ],
+                    "mcp": [
+                        "kumwe_menu_list",
+                        "kumwe_menu_get",
+                        "kumwe_menu_item_list"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "administrator.navigation.update",
+            "methods": [
+                "POST"
+            ],
+            "path": "/administrator/navigation",
+            "handler": "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorNavigationHandler",
+            "operations": [
+                {
+                    "operation": "menu.create",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Navigation\\Application\\NavigationService::createMenu",
+                    "rest": [
+                        "createMenu"
+                    ],
+                    "cli": [
+                        "navigation create-menu"
+                    ],
+                    "mcp": [
+                        "kumwe_menu_create"
+                    ]
+                },
+                {
+                    "operation": "menu.update",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Navigation\\Application\\NavigationService::updateMenu",
+                    "rest": [
+                        "updateMenu"
+                    ],
+                    "cli": [
+                        "navigation update-menu"
+                    ],
+                    "mcp": [
+                        "kumwe_menu_update"
+                    ]
+                },
+                {
+                    "operation": "menu.delete",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Navigation\\Application\\NavigationService::deleteMenu",
+                    "rest": [
+                        "deleteMenu"
+                    ],
+                    "cli": [
+                        "navigation delete-menu"
+                    ],
+                    "mcp": [
+                        "kumwe_menu_delete"
+                    ]
+                },
+                {
+                    "operation": "item.create",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Navigation\\Application\\NavigationService::createItem",
+                    "rest": [
+                        "createMenuItem"
+                    ],
+                    "cli": [
+                        "navigation create-item"
+                    ],
+                    "mcp": [
+                        "kumwe_menu_item_create"
+                    ]
+                },
+                {
+                    "operation": "item.update",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Navigation\\Application\\NavigationService::updateItem",
+                    "rest": [
+                        "updateMenuItem"
+                    ],
+                    "cli": [
+                        "navigation update-item"
+                    ],
+                    "mcp": [
+                        "kumwe_menu_item_update"
+                    ]
+                },
+                {
+                    "operation": "item.delete",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Navigation\\Application\\NavigationService::deleteItem",
+                    "rest": [
+                        "deleteMenuItem"
+                    ],
+                    "cli": [
+                        "navigation delete-item"
+                    ],
+                    "mcp": [
+                        "kumwe_menu_item_delete"
+                    ]
+                },
+                {
+                    "operation": "item.reorder",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Navigation\\Application\\NavigationService::updateItem",
+                    "rest": [
+                        "updateMenuItem"
+                    ],
+                    "cli": [
+                        "navigation update-item"
+                    ],
+                    "mcp": [
+                        "kumwe_menu_item_update"
+                    ],
+                    "composition": true,
+                    "note": "The drag-and-drop order form rewrites positions through NavigationService::updateItem, one item at a time at each item's version, exactly as machine callers do."
+                }
+            ]
+        },
+        {
+            "name": "administrator.report-exports.download",
+            "methods": [
+                "GET"
+            ],
+            "path": "/administrator/reports/exports/{artifact}/download",
+            "handler": "Kumwe\\App\\BusinessReporting\\Delivery\\Administrator\\AdministratorReportHandler",
+            "operations": [
+                {
+                    "operation": "download",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessReporting\\Application\\ExportService::download",
+                    "rest": [
+                        "businessReportExportDownload"
+                    ],
+                    "cli": [
+                        "business-report download"
+                    ],
+                    "mcp": [
+                        "kumwe_business_report_export_download"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "administrator.report-exports.read",
+            "methods": [
+                "GET"
+            ],
+            "path": "/administrator/reports/exports/{artifact}",
+            "handler": "Kumwe\\App\\BusinessReporting\\Delivery\\Administrator\\AdministratorReportHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessReporting\\Application\\ExportService::status",
+                    "rest": [
+                        "businessReportExportStatus"
+                    ],
+                    "cli": [
+                        "business-report status"
+                    ],
+                    "mcp": [
+                        "kumwe_business_report_export_status"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "administrator.reports",
+            "methods": [
+                "GET"
+            ],
+            "path": "/administrator/reports",
+            "handler": "Kumwe\\App\\BusinessReporting\\Delivery\\Administrator\\AdministratorReportHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessReporting\\Application\\ReportService::available",
+                    "rest": [
+                        "businessReportList"
+                    ],
+                    "cli": [
+                        "business-report list"
+                    ],
+                    "mcp": [
+                        "kumwe_business_report_list"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "administrator.reports.execute",
+            "methods": [
+                "POST"
+            ],
+            "path": "/administrator/reports/{report}",
+            "handler": "Kumwe\\App\\BusinessReporting\\Delivery\\Administrator\\AdministratorReportHandler",
+            "operations": [
+                {
+                    "operation": "execute",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessReporting\\Application\\ReportService::execute",
+                    "rest": [
+                        "businessReportExecute"
+                    ],
+                    "cli": [
+                        "business-report run"
+                    ],
+                    "mcp": [
+                        "kumwe_business_report_execute"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "administrator.reports.export",
+            "methods": [
+                "POST"
+            ],
+            "path": "/administrator/reports/{report}/exports",
+            "handler": "Kumwe\\App\\BusinessReporting\\Delivery\\Administrator\\AdministratorReportHandler",
+            "operations": [
+                {
+                    "operation": "export",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessReporting\\Application\\ExportService::request",
+                    "rest": [
+                        "businessReportExportRequest"
+                    ],
+                    "cli": [
+                        "business-report export"
+                    ],
+                    "mcp": [
+                        "kumwe_business_report_export_request"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "administrator.settings",
+            "methods": [
+                "GET"
+            ],
+            "path": "/administrator/settings",
+            "handler": "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorSettingsHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Site\\Application\\SiteSettings::managed",
+                    "rest": [
+                        "getSettings"
+                    ],
+                    "cli": [
+                        "settings get"
+                    ],
+                    "mcp": [
+                        "kumwe_settings_get"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "administrator.settings.update",
+            "methods": [
+                "POST"
+            ],
+            "path": "/administrator/settings",
+            "handler": "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorSettingsHandler",
+            "operations": [
+                {
+                    "operation": "update",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Site\\Application\\SiteSettings::updateAll",
+                    "rest": [
+                        "updateSettings"
+                    ],
+                    "cli": [
+                        "settings update"
+                    ],
+                    "mcp": [
+                        "kumwe_settings_update"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "administrator.studio.host",
+            "methods": [
+                "POST"
+            ],
+            "path": "/administrator/studio/ports/{port}/{operation}",
+            "handler": "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorStudioHostHandler",
+            "operations": [
+                {
+                    "operation": "studio.operation/authoring.list-types",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Studio\\Application\\Host\\StudioAuthoringHostPort::listTypes",
+                    "rest": [
+                        "listStudioAuthoringTypes"
+                    ],
+                    "cli": [
+                        "studio-authoring list-types"
+                    ],
+                    "mcp": [
+                        "kumwe_studio_authoring_list_types"
+                    ]
+                },
+                {
+                    "operation": "studio.operation/authoring.plan-save",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Studio\\Application\\Host\\StudioAuthoringHostPort::planSave",
+                    "rest": [
+                        "planStudioAuthoringSave"
+                    ],
+                    "cli": [
+                        "studio-authoring plan-save"
+                    ],
+                    "mcp": [
+                        "kumwe_studio_authoring_plan_save"
+                    ]
+                },
+                {
+                    "operation": "studio.operation/authoring.resolve-target",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Studio\\Application\\Host\\StudioAuthoringHostPort::resolveTarget",
+                    "rest": [
+                        "resolveStudioAuthoringTarget"
+                    ],
+                    "cli": [
+                        "studio-authoring resolve-target"
+                    ],
+                    "mcp": [
+                        "kumwe_studio_authoring_resolve_target"
+                    ]
+                },
+                {
+                    "operation": "studio.operation/authoring.save-as-new-type",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Studio\\Application\\Host\\StudioAuthoringHostPort::saveAsNewType",
+                    "rest": [
+                        "saveStudioAuthoringAsNewType"
+                    ],
+                    "cli": [
+                        "studio-authoring save-as-new-type"
+                    ],
+                    "mcp": [
+                        "kumwe_studio_authoring_save_as_new_type"
+                    ]
+                },
+                {
+                    "operation": "studio.operation/authoring.save-item",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Studio\\Application\\Host\\StudioAuthoringHostPort::saveItem",
+                    "rest": [
+                        "saveStudioAuthoringItem"
+                    ],
+                    "cli": [
+                        "studio-authoring save-item"
+                    ],
+                    "mcp": [
+                        "kumwe_studio_authoring_save_item"
+                    ]
+                },
+                {
+                    "operation": "studio.operation/authoring.save-new-type-version",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Studio\\Application\\Host\\StudioAuthoringHostPort::saveNewTypeVersion",
+                    "rest": [
+                        "saveStudioAuthoringNewTypeVersion"
+                    ],
+                    "cli": [
+                        "studio-authoring save-new-type-version"
+                    ],
+                    "mcp": [
+                        "kumwe_studio_authoring_save_new_type_version"
+                    ]
+                },
+                {
+                    "operation": "studio.operation/authoring.start",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Studio\\Application\\Host\\StudioAuthoringHostPort::start",
+                    "rest": [
+                        "startStudioAuthoringSession"
+                    ],
+                    "cli": [
+                        "studio-authoring start"
+                    ],
+                    "mcp": [
+                        "kumwe_studio_authoring_start"
+                    ]
+                },
+                {
+                    "operation": "studio.operation/artifact.dependencies",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Studio\\Application\\Authoring\\StudioMachineCompositionGateway::perform",
+                    "rest": [
+                        "listStudioBlueprintDependencies"
+                    ],
+                    "cli": [
+                        "studio-blueprint dependencies"
+                    ],
+                    "mcp": [
+                        "kumwe_studio_blueprint_dependencies"
+                    ],
+                    "note": "The browser shell dispatches the artifact port operation to the Producer host in a Blueprint session; the gateway dispatches the same envelope to the same request-scoped host, with the caller's expected revision and replay key."
+                },
+                {
+                    "operation": "studio.operation/artifact.load",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Studio\\Application\\Authoring\\StudioMachineCompositionGateway::perform",
+                    "rest": [
+                        "loadStudioBlueprint"
+                    ],
+                    "cli": [
+                        "studio-blueprint load"
+                    ],
+                    "mcp": [
+                        "kumwe_studio_blueprint_load"
+                    ],
+                    "note": "The browser shell dispatches the artifact port operation to the Producer host in a Blueprint session; the gateway dispatches the same envelope to the same request-scoped host, with the caller's expected revision and replay key."
+                },
+                {
+                    "operation": "studio.operation/artifact.publish",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Studio\\Application\\Authoring\\StudioMachineCompositionGateway::perform",
+                    "rest": [
+                        "publishStudioBlueprint"
+                    ],
+                    "cli": [
+                        "studio-blueprint publish"
+                    ],
+                    "mcp": [
+                        "kumwe_studio_blueprint_publish"
+                    ],
+                    "note": "The browser shell dispatches the artifact port operation to the Producer host in a Blueprint session; the gateway dispatches the same envelope to the same request-scoped host, with the caller's expected revision and replay key."
+                },
+                {
+                    "operation": "studio.operation/artifact.save",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Studio\\Application\\Authoring\\StudioMachineCompositionGateway::perform",
+                    "rest": [
+                        "saveStudioBlueprint"
+                    ],
+                    "cli": [
+                        "studio-blueprint save"
+                    ],
+                    "mcp": [
+                        "kumwe_studio_blueprint_save"
+                    ],
+                    "note": "The browser shell dispatches the artifact port operation to the Producer host in a Blueprint session; the gateway dispatches the same envelope to the same request-scoped host, with the caller's expected revision and replay key."
+                },
+                {
+                    "operation": "studio.operation/artifact.unpublish",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Studio\\Application\\Authoring\\StudioMachineCompositionGateway::perform",
+                    "rest": [
+                        "unpublishStudioBlueprint"
+                    ],
+                    "cli": [
+                        "studio-blueprint unpublish"
+                    ],
+                    "mcp": [
+                        "kumwe_studio_blueprint_unpublish"
+                    ],
+                    "note": "The browser shell dispatches the artifact port operation to the Producer host in a Blueprint session; the gateway dispatches the same envelope to the same request-scoped host, with the caller's expected revision and replay key."
+                },
+                {
+                    "operation": "studio.operation/localization.messages",
+                    "classification": "browser-only",
+                    "reason": "studio-shell",
+                    "note": "Serves the Studio shell's own interface strings; it reads no application data."
+                },
+                {
+                    "operation": "studio.operation/media.abort-upload",
+                    "classification": "browser-only",
+                    "reason": "transfer-protocol",
+                    "machine_readable_via": {
+                        "rest": [
+                            "uploadMedia"
+                        ],
+                        "cli": [
+                            "media upload"
+                        ],
+                        "mcp": [
+                            "kumwe_media_upload"
+                        ]
+                    },
+                    "note": "Abandons a browser upload grant before any asset exists."
+                },
+                {
+                    "operation": "studio.operation/media.authorize-upload",
+                    "classification": "browser-only",
+                    "reason": "transfer-protocol",
+                    "machine_readable_via": {
+                        "rest": [
+                            "uploadMedia"
+                        ],
+                        "cli": [
+                            "media upload"
+                        ],
+                        "mcp": [
+                            "kumwe_media_upload"
+                        ]
+                    },
+                    "note": "Issues the browser's direct-binary upload grant; no asset exists until the upload completes."
+                },
+                {
+                    "operation": "studio.operation/media.complete-upload",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Studio\\Application\\Media\\StudioMediaService::completeUpload",
+                    "rest": [
+                        "uploadMedia"
+                    ],
+                    "cli": [
+                        "media upload"
+                    ],
+                    "mcp": [
+                        "kumwe_media_upload"
+                    ],
+                    "note": "Completing a grant hands the staged bytes to MediaService::upload, the call a machine upload makes."
+                },
+                {
+                    "operation": "studio.operation/media.get",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Studio\\Application\\Media\\StudioMediaService::get",
+                    "rest": [
+                        "getMedia"
+                    ],
+                    "cli": [
+                        "media get"
+                    ],
+                    "mcp": [
+                        "kumwe_media_get"
+                    ]
+                },
+                {
+                    "operation": "studio.operation/media.import-external",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Studio\\Application\\Media\\StudioMediaService::importExternal",
+                    "rest": [
+                        "uploadMedia"
+                    ],
+                    "cli": [
+                        "media upload"
+                    ],
+                    "mcp": [
+                        "kumwe_media_upload"
+                    ],
+                    "composition": true,
+                    "note": "The host fetches an allowed external address and stores it through MediaService::upload; a machine caller fetches the bytes itself and uploads them through the same service."
+                },
+                {
+                    "operation": "studio.operation/media.list",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Studio\\Application\\Media\\StudioMediaService::list",
+                    "rest": [
+                        "listMedia"
+                    ],
+                    "cli": [
+                        "media list"
+                    ],
+                    "mcp": [
+                        "kumwe_media_list"
+                    ]
+                },
+                {
+                    "operation": "studio.operation/media.upload-status",
+                    "classification": "browser-only",
+                    "reason": "transfer-protocol",
+                    "machine_readable_via": {
+                        "rest": [
+                            "getMedia"
+                        ],
+                        "cli": [
+                            "media get"
+                        ],
+                        "mcp": [
+                            "kumwe_media_get"
+                        ]
+                    },
+                    "note": "Reports the progress of a browser upload grant."
+                },
+                {
+                    "operation": "studio.operation/model.get",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Studio\\Application\\Host\\StudioModelHostPort::get",
+                    "rest": [
+                        "getContentType"
+                    ],
+                    "cli": [
+                        "content-model get"
+                    ],
+                    "mcp": [
+                        "kumwe_content_type_get"
+                    ]
+                },
+                {
+                    "operation": "studio.operation/model.list",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Studio\\Application\\Host\\StudioModelHostPort::list",
+                    "rest": [
+                        "listContentTypes"
+                    ],
+                    "cli": [
+                        "content-model list"
+                    ],
+                    "mcp": [
+                        "kumwe_content_type_list"
+                    ]
+                },
+                {
+                    "operation": "studio.operation/permission.explain",
+                    "classification": "browser-only",
+                    "reason": "studio-shell",
+                    "machine_readable_via": {
+                        "rest": [
+                            "discoverApi"
+                        ],
+                        "cli": [],
+                        "mcp": [
+                            "kumwe_discover"
+                        ]
+                    },
+                    "note": "Explains the shell session's own permission projection so it can hide controls; a machine credential discovers its authority through the discovery operations."
+                },
+                {
+                    "operation": "studio.operation/permission.refresh",
+                    "classification": "browser-only",
+                    "reason": "studio-shell",
+                    "machine_readable_via": {
+                        "rest": [
+                            "discoverApi"
+                        ],
+                        "cli": [],
+                        "mcp": [
+                            "kumwe_discover"
+                        ]
+                    },
+                    "note": "Re-reads the shell session's permission projection after a grant change."
+                },
+                {
+                    "operation": "studio.operation/preview.cancel",
+                    "classification": "browser-only",
+                    "reason": "studio-preview",
+                    "note": "Cancels an in-flight preview render of the shell."
+                },
+                {
+                    "operation": "studio.operation/preview.render",
+                    "classification": "browser-only",
+                    "reason": "studio-preview",
+                    "note": "Renders the shell's draft into the sandboxed preview document."
+                },
+                {
+                    "operation": "studio.operation/recovery.discard",
+                    "classification": "browser-only",
+                    "reason": "studio-shell",
+                    "note": "Discards the shell's crash-recovery snapshot of unsaved editor state; no application data changes."
+                },
+                {
+                    "operation": "studio.operation/recovery.load",
+                    "classification": "browser-only",
+                    "reason": "studio-shell",
+                    "note": "Reloads the shell's crash-recovery snapshot of unsaved editor state."
+                },
+                {
+                    "operation": "studio.operation/recovery.store",
+                    "classification": "browser-only",
+                    "reason": "studio-shell",
+                    "note": "Stores the shell's crash-recovery snapshot of unsaved editor state; machine callers hold their own drafts and nothing becomes application state until a save."
+                },
+                {
+                    "operation": "studio.operation/resource.search",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Studio\\Application\\Host\\StudioResourceHostPort::search",
+                    "rest": [
+                        "listContent"
+                    ],
+                    "cli": [
+                        "content list"
+                    ],
+                    "mcp": [
+                        "kumwe_content_list"
+                    ]
+                },
+                {
+                    "operation": "studio.operation/telemetry.emit",
+                    "classification": "browser-only",
+                    "reason": "studio-shell",
+                    "note": "Records the shell's client telemetry; it changes no application data."
+                }
+            ]
+        },
+        {
+            "name": "administrator.studio.media.upload",
+            "methods": [
+                "PUT"
+            ],
+            "path": "/administrator/studio/media/uploads/{upload}",
+            "handler": "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorStudioMediaUploadHandler",
+            "operations": [
+                {
+                    "operation": "transfer",
+                    "classification": "browser-only",
+                    "reason": "transfer-protocol",
+                    "machine_readable_via": {
+                        "rest": [
+                            "uploadMedia"
+                        ],
+                        "cli": [
+                            "media upload"
+                        ],
+                        "mcp": [
+                            "kumwe_media_upload"
+                        ]
+                    },
+                    "note": "The direct-binary PUT leg of a Studio media upload grant. The application effect is the accepted media asset, which machine callers create with one media upload."
+                }
+            ]
+        },
+        {
+            "name": "administrator.studio.preview.document",
+            "methods": [
+                "GET"
+            ],
+            "path": "/administrator/studio/preview",
+            "handler": "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorStudioPreviewDocumentHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "browser-only",
+                    "reason": "studio-preview",
+                    "note": "The sandboxed Studio preview document the shell frames; it presents a draft render, not application data."
+                }
+            ]
+        },
+        {
+            "name": "administrator.studio.preview.styles",
+            "methods": [
+                "GET"
+            ],
+            "path": "/administrator/studio/preview/styles.css",
+            "handler": "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorStudioPreviewStylesheetHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "browser-only",
+                    "reason": "studio-preview",
+                    "note": "The stylesheet of the sandboxed Studio preview document."
+                }
+            ]
+        },
+        {
+            "name": "administrator.studio.session",
+            "methods": [
+                "POST"
+            ],
+            "path": "/administrator/studio/session",
+            "handler": "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorStudioSessionHandler",
+            "operations": [
+                {
+                    "operation": "open",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Studio\\Application\\Host\\StudioHostSessionAuthority::open",
+                    "rest": [
+                        "openStudioCompositionSession",
+                        "openStudioAuthoringSession"
+                    ],
+                    "cli": [
+                        "studio-blueprint open",
+                        "studio-authoring open"
+                    ],
+                    "mcp": [
+                        "kumwe_studio_blueprint_open",
+                        "kumwe_studio_authoring_open"
+                    ],
+                    "composition": true,
+                    "note": "The browser opens a Blueprint session for a composition and the editor mounts a contextual authoring session; machine callers open the same two families bound to their credential. The generic Content family has no machine form: its operations are the authoring, model, media and resource operations recorded under administrator.studio.host."
+                }
+            ]
+        },
+        {
+            "name": "administrator.wording",
+            "methods": [
+                "GET"
+            ],
+            "path": "/administrator/wording",
+            "handler": "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorWordingHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Localization\\Application\\MessageOverrideService::overrides",
+                    "rest": [
+                        "listWordingOverrides",
+                        "searchWordingCatalogue"
+                    ],
+                    "cli": [
+                        "wording overrides",
+                        "wording catalogue"
+                    ],
+                    "mcp": [
+                        "kumwe_wording_override_list",
+                        "kumwe_wording_catalogue_search"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "administrator.wording.update",
+            "methods": [
+                "POST"
+            ],
+            "path": "/administrator/wording",
+            "handler": "Kumwe\\App\\Administrator\\Http\\Handler\\AdministratorWordingHandler",
+            "operations": [
+                {
+                    "operation": "override.save",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Localization\\Application\\MessageOverrideService::override",
+                    "rest": [
+                        "saveWordingOverride"
+                    ],
+                    "cli": [
+                        "wording save"
+                    ],
+                    "mcp": [
+                        "kumwe_wording_override_save"
+                    ]
+                },
+                {
+                    "operation": "override.withdraw",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\Localization\\Application\\MessageOverrideService::withdraw",
+                    "rest": [
+                        "withdrawWordingOverride"
+                    ],
+                    "cli": [
+                        "wording withdraw"
+                    ],
+                    "mcp": [
+                        "kumwe_wording_override_withdraw"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "portal.account",
+            "methods": [
+                "GET"
+            ],
+            "path": "/portal/account",
+            "handler": "Kumwe\\App\\Portal\\Http\\Handler\\PortalAccountHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "browser-only",
+                    "reason": "human-credential",
+                    "note": "Renders the portal user's own password-change form."
+                }
+            ]
+        },
+        {
+            "name": "portal.account.update",
+            "methods": [
+                "POST"
+            ],
+            "path": "/portal/account",
+            "handler": "Kumwe\\App\\Portal\\Http\\Handler\\PortalAccountHandler",
+            "operations": [
+                {
+                    "operation": "password.change",
+                    "classification": "browser-only",
+                    "reason": "human-credential",
+                    "note": "Changes the portal user's own password after re-proving the current one."
+                }
+            ]
+        },
+        {
+            "name": "portal.approvals",
+            "methods": [
+                "GET"
+            ],
+            "path": "/portal/approvals",
+            "handler": "Kumwe\\App\\Portal\\Http\\Handler\\PortalApprovalHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessSurface\\Application\\BusinessApprovalSurfaceService::portalInbox",
+                    "rest": [
+                        "businessApprovalList"
+                    ],
+                    "cli": [
+                        "business-record approvals"
+                    ],
+                    "mcp": [
+                        "kumwe_business_approval_list"
+                    ],
+                    "note": "Each surface lists the approvals exposed to it; the machine inbox is the API-surface projection of the same approval query."
+                }
+            ]
+        },
+        {
+            "name": "portal.approvals.approve",
+            "methods": [
+                "POST"
+            ],
+            "path": "/portal/approvals/{id}/approve",
+            "handler": "Kumwe\\App\\Portal\\Http\\Handler\\PortalApprovalHandler",
+            "operations": [
+                {
+                    "operation": "approve",
+                    "classification": "browser-only",
+                    "reason": "human-decision",
+                    "machine_readable_via": {
+                        "rest": [
+                            "businessApprovalRead"
+                        ],
+                        "cli": [
+                            "business-record approval"
+                        ],
+                        "mcp": [
+                            "kumwe_business_approval_get"
+                        ]
+                    },
+                    "note": "A maker-checker decision needs a fresh step-up proof bound to a browser session. Machine actors may request and cancel their own approvals but never decide one."
+                }
+            ]
+        },
+        {
+            "name": "portal.approvals.detail",
+            "methods": [
+                "GET"
+            ],
+            "path": "/portal/approvals/{id}",
+            "handler": "Kumwe\\App\\Portal\\Http\\Handler\\PortalApprovalHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessSurface\\Application\\BusinessApprovalSurfaceService::portalDetail",
+                    "rest": [
+                        "businessApprovalRead"
+                    ],
+                    "cli": [
+                        "business-record approval"
+                    ],
+                    "mcp": [
+                        "kumwe_business_approval_get"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "portal.approvals.reject",
+            "methods": [
+                "POST"
+            ],
+            "path": "/portal/approvals/{id}/reject",
+            "handler": "Kumwe\\App\\Portal\\Http\\Handler\\PortalApprovalHandler",
+            "operations": [
+                {
+                    "operation": "reject",
+                    "classification": "browser-only",
+                    "reason": "human-decision",
+                    "machine_readable_via": {
+                        "rest": [
+                            "businessApprovalRead"
+                        ],
+                        "cli": [
+                            "business-record approval"
+                        ],
+                        "mcp": [
+                            "kumwe_business_approval_get"
+                        ]
+                    },
+                    "note": "A maker-checker decision needs a fresh step-up proof bound to a browser session. Machine actors may request and cancel their own approvals but never decide one."
+                }
+            ]
+        },
+        {
+            "name": "portal.approvals.revoke",
+            "methods": [
+                "POST"
+            ],
+            "path": "/portal/approvals/{id}/revoke",
+            "handler": "Kumwe\\App\\Portal\\Http\\Handler\\PortalApprovalHandler",
+            "operations": [
+                {
+                    "operation": "revoke",
+                    "classification": "browser-only",
+                    "reason": "human-decision",
+                    "machine_readable_via": {
+                        "rest": [
+                            "businessApprovalRead"
+                        ],
+                        "cli": [
+                            "business-record approval"
+                        ],
+                        "mcp": [
+                            "kumwe_business_approval_get"
+                        ]
+                    },
+                    "note": "A maker-checker decision needs a fresh step-up proof bound to a browser session. Machine actors may request and cancel their own approvals but never decide one."
+                }
+            ]
+        },
+        {
+            "name": "portal.business",
+            "methods": [
+                "GET"
+            ],
+            "path": "/portal/business",
+            "handler": "Kumwe\\App\\BusinessSurface\\Delivery\\Portal\\PortalBusinessSurfaceHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessSurface\\Application\\BusinessSurfaceService::discover",
+                    "rest": [
+                        "businessDefinitionDiscover"
+                    ],
+                    "cli": [
+                        "business-record entities"
+                    ],
+                    "mcp": [
+                        "kumwe_business_discover"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "portal.business.choices.media.collection",
+            "methods": [
+                "GET"
+            ],
+            "path": "/portal/business/{definition}/choices/media/{media}",
+            "handler": "Kumwe\\App\\BusinessSurface\\Delivery\\Portal\\PortalBusinessSurfaceHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "browser-only",
+                    "reason": "html-presentation",
+                    "machine_readable_via": {
+                        "rest": [
+                            "businessRecordSearch",
+                            "listMedia"
+                        ],
+                        "cli": [
+                            "business-record list",
+                            "media list"
+                        ],
+                        "mcp": [
+                            "kumwe_business_search",
+                            "kumwe_media_list"
+                        ]
+                    },
+                    "note": "A no-JavaScript picker page listing the records or media a form field may select; machine callers search the same policy-filtered targets directly."
+                }
+            ]
+        },
+        {
+            "name": "portal.business.choices.media.record",
+            "methods": [
+                "GET"
+            ],
+            "path": "/portal/business/{definition}/{record}/choices/media/{media}",
+            "handler": "Kumwe\\App\\BusinessSurface\\Delivery\\Portal\\PortalBusinessSurfaceHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "browser-only",
+                    "reason": "html-presentation",
+                    "machine_readable_via": {
+                        "rest": [
+                            "businessRecordSearch",
+                            "listMedia"
+                        ],
+                        "cli": [
+                            "business-record list",
+                            "media list"
+                        ],
+                        "mcp": [
+                            "kumwe_business_search",
+                            "kumwe_media_list"
+                        ]
+                    },
+                    "note": "A no-JavaScript picker page listing the records or media a form field may select; machine callers search the same policy-filtered targets directly."
+                }
+            ]
+        },
+        {
+            "name": "portal.business.choices.owned-line-field",
+            "methods": [
+                "GET"
+            ],
+            "path": "/portal/business/{definition}/{record}/choices/owned-lines/{owned_relationship}/{owned_kind:relations|media}/{owned_field}",
+            "handler": "Kumwe\\App\\BusinessSurface\\Delivery\\Portal\\PortalBusinessSurfaceHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "browser-only",
+                    "reason": "html-presentation",
+                    "machine_readable_via": {
+                        "rest": [
+                            "businessRecordSearch",
+                            "listMedia"
+                        ],
+                        "cli": [
+                            "business-record list",
+                            "media list"
+                        ],
+                        "mcp": [
+                            "kumwe_business_search",
+                            "kumwe_media_list"
+                        ]
+                    },
+                    "note": "A no-JavaScript picker page listing the records or media a form field may select; machine callers search the same policy-filtered targets directly."
+                }
+            ]
+        },
+        {
+            "name": "portal.business.choices.relations.collection",
+            "methods": [
+                "GET"
+            ],
+            "path": "/portal/business/{definition}/choices/relations/{related}",
+            "handler": "Kumwe\\App\\BusinessSurface\\Delivery\\Portal\\PortalBusinessSurfaceHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "browser-only",
+                    "reason": "html-presentation",
+                    "machine_readable_via": {
+                        "rest": [
+                            "businessRecordSearch",
+                            "listMedia"
+                        ],
+                        "cli": [
+                            "business-record list",
+                            "media list"
+                        ],
+                        "mcp": [
+                            "kumwe_business_search",
+                            "kumwe_media_list"
+                        ]
+                    },
+                    "note": "A no-JavaScript picker page listing the records or media a form field may select; machine callers search the same policy-filtered targets directly."
+                }
+            ]
+        },
+        {
+            "name": "portal.business.choices.relations.record",
+            "methods": [
+                "GET"
+            ],
+            "path": "/portal/business/{definition}/{record}/choices/relations/{related}",
+            "handler": "Kumwe\\App\\BusinessSurface\\Delivery\\Portal\\PortalBusinessSurfaceHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "browser-only",
+                    "reason": "html-presentation",
+                    "machine_readable_via": {
+                        "rest": [
+                            "businessRecordSearch",
+                            "listMedia"
+                        ],
+                        "cli": [
+                            "business-record list",
+                            "media list"
+                        ],
+                        "mcp": [
+                            "kumwe_business_search",
+                            "kumwe_media_list"
+                        ]
+                    },
+                    "note": "A no-JavaScript picker page listing the records or media a form field may select; machine callers search the same policy-filtered targets directly."
+                }
+            ]
+        },
+        {
+            "name": "portal.business.custom-record-view",
+            "methods": [
+                "GET"
+            ],
+            "path": "/portal/business/{definition}/{record}/views/{view}",
+            "handler": "Kumwe\\App\\BusinessSurface\\Delivery\\Portal\\PortalBusinessSurfaceHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessSurface\\Application\\BusinessSurfaceService::customView",
+                    "rest": [
+                        "businessRecordCustomRecordView"
+                    ],
+                    "cli": [
+                        "business-record view"
+                    ],
+                    "mcp": [
+                        "kumwe_business_view"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "portal.business.custom-view",
+            "methods": [
+                "GET"
+            ],
+            "path": "/portal/business/{definition}/views/{view}",
+            "handler": "Kumwe\\App\\BusinessSurface\\Delivery\\Portal\\PortalBusinessSurfaceHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessSurface\\Application\\BusinessSurfaceService::customView",
+                    "rest": [
+                        "businessRecordCustomView"
+                    ],
+                    "cli": [
+                        "business-record view"
+                    ],
+                    "mcp": [
+                        "kumwe_business_view"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "portal.business.definition",
+            "methods": [
+                "GET"
+            ],
+            "path": "/portal/business/{definition}",
+            "handler": "Kumwe\\App\\BusinessSurface\\Delivery\\Portal\\PortalBusinessSurfaceHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessSurface\\Application\\BusinessSurfaceService::browse",
+                    "rest": [
+                        "businessRecordBrowse",
+                        "businessRecordSearch",
+                        "businessDefinitionInspect"
+                    ],
+                    "cli": [
+                        "business-record list",
+                        "business-record schema"
+                    ],
+                    "mcp": [
+                        "kumwe_business_search",
+                        "kumwe_business_inspect"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "portal.business.definition.mutate",
+            "methods": [
+                "POST"
+            ],
+            "path": "/portal/business/{definition}",
+            "handler": "Kumwe\\App\\BusinessSurface\\Delivery\\Portal\\PortalBusinessSurfaceHandler",
+            "operations": [
+                {
+                    "operation": "create",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessSurface\\Application\\BusinessSurfaceService::create",
+                    "rest": [
+                        "businessRecordCreate"
+                    ],
+                    "cli": [
+                        "business-record create"
+                    ],
+                    "mcp": [
+                        "kumwe_business_create"
+                    ]
+                },
+                {
+                    "operation": "bulk",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessSurface\\Application\\BusinessSurfaceService::bulk",
+                    "rest": [
+                        "businessRecordBulk"
+                    ],
+                    "cli": [
+                        "business-bulk archive",
+                        "business-bulk restore",
+                        "business-bulk action"
+                    ],
+                    "mcp": [
+                        "kumwe_business_bulk"
+                    ]
+                },
+                {
+                    "operation": "prepare",
+                    "classification": "browser-only",
+                    "reason": "html-presentation",
+                    "machine_readable_via": {
+                        "rest": [
+                            "businessDefinitionInspect"
+                        ],
+                        "cli": [
+                            "business-record schema"
+                        ],
+                        "mcp": [
+                            "kumwe_business_inspect"
+                        ]
+                    },
+                    "note": "Re-renders the create or bulk form with structured-field choices or the bulk confirmation; nothing is written until the confirmed submission."
+                }
+            ]
+        },
+        {
+            "name": "portal.business.mutate",
+            "methods": [
+                "POST"
+            ],
+            "path": "/portal/business",
+            "handler": "Kumwe\\App\\BusinessSurface\\Delivery\\Portal\\PortalBusinessSurfaceHandler",
+            "operations": [
+                {
+                    "operation": "refused",
+                    "classification": "browser-only",
+                    "reason": "refusal-only",
+                    "note": "The generated index accepts POST only to refuse it: a generated mutation always names a definition."
+                }
+            ]
+        },
+        {
+            "name": "portal.business.operation",
+            "methods": [
+                "GET"
+            ],
+            "path": "/portal/business/operations/{operation}",
+            "handler": "Kumwe\\App\\BusinessSurface\\Delivery\\Portal\\PortalBusinessSurfaceHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessSurface\\Application\\BusinessOperationStatusService::getWithDefinitionReference",
+                    "rest": [
+                        "businessOperationStatusRead"
+                    ],
+                    "cli": [
+                        "business-record operation"
+                    ],
+                    "mcp": [
+                        "kumwe_business_operation_status"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "portal.business.record",
+            "methods": [
+                "GET"
+            ],
+            "path": "/portal/business/{definition}/{record}",
+            "handler": "Kumwe\\App\\BusinessSurface\\Delivery\\Portal\\PortalBusinessSurfaceHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessSurface\\Application\\BusinessSurfaceService::read",
+                    "rest": [
+                        "businessRecordRead",
+                        "businessRecordHistory"
+                    ],
+                    "cli": [
+                        "business-record get",
+                        "business-record history"
+                    ],
+                    "mcp": [
+                        "kumwe_business_read",
+                        "kumwe_business_history"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "portal.business.record.mutate",
+            "methods": [
+                "POST"
+            ],
+            "path": "/portal/business/{definition}/{record}",
+            "handler": "Kumwe\\App\\BusinessSurface\\Delivery\\Portal\\PortalBusinessSurfaceHandler",
+            "operations": [
+                {
+                    "operation": "update",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessSurface\\Application\\BusinessSurfaceService::update",
+                    "rest": [
+                        "businessRecordUpdate"
+                    ],
+                    "cli": [
+                        "business-record update"
+                    ],
+                    "mcp": [
+                        "kumwe_business_update"
+                    ]
+                },
+                {
+                    "operation": "archive",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessSurface\\Application\\BusinessSurfaceService::archive",
+                    "rest": [
+                        "businessRecordArchive"
+                    ],
+                    "cli": [
+                        "business-record archive"
+                    ],
+                    "mcp": [
+                        "kumwe_business_archive"
+                    ]
+                },
+                {
+                    "operation": "restore",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessSurface\\Application\\BusinessSurfaceService::restore",
+                    "rest": [
+                        "businessRecordRestore"
+                    ],
+                    "cli": [
+                        "business-record restore"
+                    ],
+                    "mcp": [
+                        "kumwe_business_restore"
+                    ]
+                },
+                {
+                    "operation": "delete",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessSurface\\Application\\BusinessSurfaceService::delete",
+                    "rest": [
+                        "businessRecordDelete"
+                    ],
+                    "cli": [
+                        "business-record delete"
+                    ],
+                    "mcp": [
+                        "kumwe_business_delete"
+                    ]
+                },
+                {
+                    "operation": "action",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessSurface\\Application\\BusinessSurfaceService::action",
+                    "rest": [
+                        "businessRecordAction"
+                    ],
+                    "cli": [
+                        "business-record action"
+                    ],
+                    "mcp": [
+                        "kumwe_business_execute_action"
+                    ],
+                    "note": "An action whose policy requires approval consumes the exact approved binding; a high-impact action also needs the approver's browser step-up, so machine execution of one fails closed."
+                },
+                {
+                    "operation": "approval",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessSurface\\Application\\BusinessSurfaceService::requestActionApproval",
+                    "rest": [
+                        "businessRecordActionApproval"
+                    ],
+                    "cli": [
+                        "business-record request-action"
+                    ],
+                    "mcp": [
+                        "kumwe_business_request_action"
+                    ]
+                },
+                {
+                    "operation": "prepare",
+                    "classification": "browser-only",
+                    "reason": "html-presentation",
+                    "machine_readable_via": {
+                        "rest": [
+                            "businessDefinitionInspect",
+                            "businessRecordRead"
+                        ],
+                        "cli": [
+                            "business-record schema",
+                            "business-record get"
+                        ],
+                        "mcp": [
+                            "kumwe_business_inspect",
+                            "kumwe_business_read"
+                        ]
+                    },
+                    "note": "Renders the action confirmation or the structured-field configuration step; nothing is written until the confirmed submission."
+                }
+            ]
+        },
+        {
+            "name": "portal.business.relationship",
+            "methods": [
+                "GET"
+            ],
+            "path": "/portal/business/{definition}/{record}/relationships/{business_relationship}",
+            "handler": "Kumwe\\App\\BusinessSurface\\Delivery\\Portal\\PortalBusinessSurfaceHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessSurface\\Application\\BusinessSurfaceService::relationship",
+                    "rest": [
+                        "businessRecordRelationRead"
+                    ],
+                    "cli": [
+                        "business-record get"
+                    ],
+                    "mcp": [
+                        "kumwe_business_relation_read"
+                    ],
+                    "note": "The console reads one relationship through the read query's projection includes."
+                }
+            ]
+        },
+        {
+            "name": "portal.business.relationship.mutate",
+            "methods": [
+                "POST"
+            ],
+            "path": "/portal/business/{definition}/{record}/relationships/{business_relationship}",
+            "handler": "Kumwe\\App\\BusinessSurface\\Delivery\\Portal\\PortalBusinessSurfaceHandler",
+            "operations": [
+                {
+                    "operation": "relate",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessSurface\\Application\\BusinessSurfaceService::relate",
+                    "rest": [
+                        "businessRecordRelate"
+                    ],
+                    "cli": [
+                        "business-record relate"
+                    ],
+                    "mcp": [
+                        "kumwe_business_relate"
+                    ]
+                },
+                {
+                    "operation": "unrelate",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessSurface\\Application\\BusinessSurfaceService::unrelate",
+                    "rest": [
+                        "businessRecordUnrelate"
+                    ],
+                    "cli": [
+                        "business-record unrelate"
+                    ],
+                    "mcp": [
+                        "kumwe_business_unrelate"
+                    ]
+                },
+                {
+                    "operation": "reorder",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessSurface\\Application\\BusinessSurfaceService::reorder",
+                    "rest": [
+                        "businessRecordReorder"
+                    ],
+                    "cli": [
+                        "business-record reorder"
+                    ],
+                    "mcp": [
+                        "kumwe_business_reorder"
+                    ]
+                },
+                {
+                    "operation": "prepare",
+                    "classification": "browser-only",
+                    "reason": "html-presentation",
+                    "machine_readable_via": {
+                        "rest": [
+                            "businessRecordRelationRead"
+                        ],
+                        "cli": [
+                            "business-record get"
+                        ],
+                        "mcp": [
+                            "kumwe_business_relation_read"
+                        ]
+                    },
+                    "note": "Renders the owned-line structured-field step of a relate form; nothing is written until the confirmed submission."
+                }
+            ]
+        },
+        {
+            "name": "portal.dashboard.preferences",
+            "methods": [
+                "POST"
+            ],
+            "path": "/portal/dashboard/preferences",
+            "handler": "Kumwe\\App\\Portal\\Http\\Handler\\PortalDashboardPreferencesHandler",
+            "operations": [
+                {
+                    "operation": "update",
+                    "classification": "browser-only",
+                    "reason": "presentation-preference",
+                    "note": "Stores the signed-in portal user's dashboard widget layout; it changes no application data."
+                }
+            ]
+        },
+        {
+            "name": "portal.index",
+            "methods": [
+                "GET"
+            ],
+            "path": "/portal",
+            "handler": "Kumwe\\App\\Portal\\Http\\Handler\\PortalHomeHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "browser-only",
+                    "reason": "navigation",
+                    "machine_readable_via": {
+                        "rest": [
+                            "businessDefinitionDiscover",
+                            "businessApprovalList",
+                            "businessReportList"
+                        ],
+                        "cli": [
+                            "business-record entities",
+                            "business-record approvals",
+                            "business-report list"
+                        ],
+                        "mcp": [
+                            "kumwe_business_discover",
+                            "kumwe_business_approval_list",
+                            "kumwe_business_report_list"
+                        ]
+                    },
+                    "note": "The portal home page links to the portal areas the user may open."
+                }
+            ]
+        },
+        {
+            "name": "portal.login",
+            "methods": [
+                "GET",
+                "POST"
+            ],
+            "path": "/portal/login",
+            "handler": "Kumwe\\App\\Portal\\Http\\Handler\\PortalLoginHandler",
+            "operations": [
+                {
+                    "operation": "sign-in",
+                    "classification": "browser-only",
+                    "reason": "authentication",
+                    "note": "The portal sign-in form and its session cookie; machine callers authenticate with bearer or stdio tokens."
+                }
+            ]
+        },
+        {
+            "name": "portal.logout",
+            "methods": [
+                "POST"
+            ],
+            "path": "/portal/logout",
+            "handler": "Kumwe\\App\\Portal\\Http\\Handler\\PortalLogoutHandler",
+            "operations": [
+                {
+                    "operation": "sign-out",
+                    "classification": "browser-only",
+                    "reason": "authentication",
+                    "note": "Ends the portal session cookie; machine credentials are revoked instead."
+                }
+            ]
+        },
+        {
+            "name": "portal.report-exports.download",
+            "methods": [
+                "GET"
+            ],
+            "path": "/portal/reports/exports/{artifact}/download",
+            "handler": "Kumwe\\App\\BusinessReporting\\Delivery\\Portal\\PortalReportHandler",
+            "operations": [
+                {
+                    "operation": "download",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessReporting\\Application\\ExportService::download",
+                    "rest": [
+                        "businessReportExportDownload"
+                    ],
+                    "cli": [
+                        "business-report download"
+                    ],
+                    "mcp": [
+                        "kumwe_business_report_export_download"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "portal.report-exports.read",
+            "methods": [
+                "GET"
+            ],
+            "path": "/portal/reports/exports/{artifact}",
+            "handler": "Kumwe\\App\\BusinessReporting\\Delivery\\Portal\\PortalReportHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessReporting\\Application\\ExportService::status",
+                    "rest": [
+                        "businessReportExportStatus"
+                    ],
+                    "cli": [
+                        "business-report status"
+                    ],
+                    "mcp": [
+                        "kumwe_business_report_export_status"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "portal.reports",
+            "methods": [
+                "GET"
+            ],
+            "path": "/portal/reports",
+            "handler": "Kumwe\\App\\BusinessReporting\\Delivery\\Portal\\PortalReportHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessReporting\\Application\\ReportService::available",
+                    "rest": [
+                        "businessReportList"
+                    ],
+                    "cli": [
+                        "business-report list"
+                    ],
+                    "mcp": [
+                        "kumwe_business_report_list"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "portal.reports.execute",
+            "methods": [
+                "POST"
+            ],
+            "path": "/portal/reports/{report}",
+            "handler": "Kumwe\\App\\BusinessReporting\\Delivery\\Portal\\PortalReportHandler",
+            "operations": [
+                {
+                    "operation": "execute",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessReporting\\Application\\ReportService::execute",
+                    "rest": [
+                        "businessReportExecute"
+                    ],
+                    "cli": [
+                        "business-report run"
+                    ],
+                    "mcp": [
+                        "kumwe_business_report_execute"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "portal.reports.export",
+            "methods": [
+                "POST"
+            ],
+            "path": "/portal/reports/{report}/exports",
+            "handler": "Kumwe\\App\\BusinessReporting\\Delivery\\Portal\\PortalReportHandler",
+            "operations": [
+                {
+                    "operation": "export",
+                    "classification": "equivalent",
+                    "service": "Kumwe\\App\\BusinessReporting\\Application\\ExportService::request",
+                    "rest": [
+                        "businessReportExportRequest"
+                    ],
+                    "cli": [
+                        "business-report export"
+                    ],
+                    "mcp": [
+                        "kumwe_business_report_export_request"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "portal.security",
+            "methods": [
+                "GET"
+            ],
+            "path": "/portal/security",
+            "handler": "Kumwe\\App\\Portal\\Http\\Handler\\PortalSecurityHandler",
+            "operations": [
+                {
+                    "operation": "read",
+                    "classification": "browser-only",
+                    "reason": "human-credential",
+                    "note": "Renders the portal user's own second-factor enrollment state."
+                }
+            ]
+        },
+        {
+            "name": "portal.security.challenge",
+            "methods": [
+                "POST"
+            ],
+            "path": "/portal/security/challenge",
+            "handler": "Kumwe\\App\\Portal\\Http\\Handler\\PortalSecurityHandler",
+            "operations": [
+                {
+                    "operation": "challenge",
+                    "classification": "browser-only",
+                    "reason": "human-credential",
+                    "note": "Proves the portal user's own second factor for a step-up."
+                }
+            ]
+        },
+        {
+            "name": "portal.security.recovery",
+            "methods": [
+                "POST"
+            ],
+            "path": "/portal/security/recovery",
+            "handler": "Kumwe\\App\\Portal\\Http\\Handler\\PortalSecurityHandler",
+            "operations": [
+                {
+                    "operation": "recover",
+                    "classification": "browser-only",
+                    "reason": "human-credential",
+                    "note": "Redeems the portal user's own step-up recovery code."
+                }
+            ]
+        },
+        {
+            "name": "portal.security.totp.confirm",
+            "methods": [
+                "POST"
+            ],
+            "path": "/portal/security/totp/confirm",
+            "handler": "Kumwe\\App\\Portal\\Http\\Handler\\PortalSecurityHandler",
+            "operations": [
+                {
+                    "operation": "totp.confirm",
+                    "classification": "browser-only",
+                    "reason": "human-credential",
+                    "note": "Confirms the portal user's own authenticator enrollment."
+                }
+            ]
+        },
+        {
+            "name": "portal.security.totp.enroll",
+            "methods": [
+                "POST"
+            ],
+            "path": "/portal/security/totp/enroll",
+            "handler": "Kumwe\\App\\Portal\\Http\\Handler\\PortalSecurityHandler",
+            "operations": [
+                {
+                    "operation": "totp.enroll",
+                    "classification": "browser-only",
+                    "reason": "human-credential",
+                    "note": "Begins enrolling the portal user's own authenticator."
+                }
+            ]
+        }
+    ]
+}

@@ -82,7 +82,12 @@ final class CredentialLifecycleIntegrationTest extends TestCase
         self::assertNotNull($identities->authenticate($email, 'the original passphrase', 'integration'));
         $this->insertSession($container, $database, $tables, $userId, $marker);
 
-        $ended = $access->resetUserPassword($context, $userId, 'a replacement passphrase', 'ticket 4711');
+        $ended = $access->resetUserPassword(
+            TestKernelFactory::steppedAdministratorContext($container),
+            $userId,
+            'a replacement passphrase',
+            'ticket 4711',
+        );
 
         self::assertSame(1, $ended);
         self::assertNull($identities->authenticate($email, 'the original passphrase', 'integration'));
@@ -114,7 +119,12 @@ final class CredentialLifecycleIntegrationTest extends TestCase
             'the original passphrase',
         );
 
-        $access->resetUserPassword($context, $userId, 'a replacement passphrase', 'audited reset ' . $marker);
+        $access->resetUserPassword(
+            TestKernelFactory::steppedAdministratorContext($container),
+            $userId,
+            'a replacement passphrase',
+            'audited reset ' . $marker,
+        );
 
         $matching = array_values(array_filter(
             $access->securityEvents($context),
@@ -144,7 +154,12 @@ final class CredentialLifecycleIntegrationTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('self-service change');
 
-        $access->resetUserPassword($context, $context->actorId(), 'a replacement passphrase', 'trying it on');
+        $access->resetUserPassword(
+            TestKernelFactory::steppedAdministratorContext($container),
+            $context->actorId(),
+            'a replacement passphrase',
+            'trying it on',
+        );
     }
 
     /**
@@ -209,7 +224,11 @@ final class CredentialLifecycleIntegrationTest extends TestCase
         $this->insertSession($container, $database, $tables, $userId, $marker . '-a');
         $this->insertSession($container, $database, $tables, $userId, $marker . '-b');
 
-        $ended = $access->terminateUserSessions($context, $userId, 'shared workstation ' . $marker);
+        $ended = $access->terminateUserSessions(
+            TestKernelFactory::steppedAdministratorContext($container),
+            $userId,
+            'shared workstation ' . $marker,
+        );
 
         self::assertSame(2, $ended);
         self::assertSame(0, $this->sessionCount($database, $tables, $userId));
@@ -248,7 +267,11 @@ final class CredentialLifecycleIntegrationTest extends TestCase
         $credentialId = $this->enrollActiveCredential($credentials, $database, $tables, $userId);
         self::assertNotNull($credentials->active($userId));
 
-        $retired = $access->revokeStepUpCredentials($context, $userId, 'authenticator lost ' . $marker);
+        $retired = $access->revokeStepUpCredentials(
+            TestKernelFactory::steppedAdministratorContext($container),
+            $userId,
+            'authenticator lost ' . $marker,
+        );
 
         self::assertSame(1, $retired);
         self::assertNull($credentials->active($userId));

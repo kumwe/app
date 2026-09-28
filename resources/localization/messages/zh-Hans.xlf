@@ -18666,6 +18666,69 @@
         <target>浏览、读取、上传或删除站点媒体库中的文件。</target>
       </segment>
     </unit>
+    <unit id="core.console.wording.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/WordingCommand.php.</note>
+      </notes>
+      <segment>
+        <source>List, search, save or withdraw wording overrides.</source>
+        <target>列出、搜索、保存或撤回措辞覆盖。</target>
+      </segment>
+    </unit>
+    <unit id="core.console.business_security.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/BusinessSecurityCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Show the Business Security overview of organizations, memberships and policies.</source>
+        <target>显示组织、成员资格和策略的业务安全概览。</target>
+      </segment>
+    </unit>
+    <unit id="core.console.business_bulk.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/BusinessBulkCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Archive, restore or run one action on up to fifty business records at once.</source>
+        <target>一次性归档、恢复最多五十条业务记录，或对其运行一个操作。</target>
+      </segment>
+    </unit>
+    <unit id="core.console.studio_composition.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/StudioCompositionCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Read or provision the Blueprint composition of a Content type version.</source>
+        <target>读取或预配内容类型版本的蓝图组合。</target>
+      </segment>
+    </unit>
+    <unit id="core.console.studio_blueprint.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/StudioBlueprintCommand.php.</note>
+      </notes>
+      <segment>
+        <source>Open a Blueprint composition session and load, save, publish or unpublish its Blueprint.</source>
+        <target>打开 Blueprint 组合会话，并加载、保存、发布或取消发布其 Blueprint。</target>
+      </segment>
+    </unit>
+    <unit id="core.console.studio_blueprint.refused">
+      <notes>
+        <note category="context">Message member of the studio-blueprint command's JSON failure envelope; the category and diagnostic codes beside it carry the machine meaning.</note>
+      </notes>
+      <segment>
+        <source>The Studio composition request was refused.</source>
+        <target>Studio 组合请求被拒绝。</target>
+      </segment>
+    </unit>
+    <unit id="core.console.business_schema_evidence.description">
+      <notes>
+        <note category="context">Console command summary on src/Delivery/Console/Command/BusinessSchemaEvidenceCommand.php.</note>
+      </notes>
+      <segment>
+        <source>File a restore drill as the recovery evidence a destructive schema plan must cite.</source>
+        <target>将恢复演练登记为破坏性架构计划必须引用的恢复证据。</target>
+      </segment>
+    </unit>
     <unit id="core.console.settings.description">
       <notes>
         <note category="context">Console command summary on src/Delivery/Console/Command/ManageSettingsCommand.php.</note>

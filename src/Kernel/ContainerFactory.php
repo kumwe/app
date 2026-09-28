@@ -301,6 +301,7 @@ use Kumwe\App\BusinessSchema\Application\BusinessSchemaPlanner;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaPlanRepository;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaRecordRepinGateway;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaRecoveryEvidenceRepository;
+use Kumwe\App\BusinessSchema\Application\BusinessSchemaRecoveryEvidenceRecorder;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaService;
 use Kumwe\App\BusinessSchema\Application\DefinitionPhysicalSchemaCompiler;
 use Kumwe\App\BusinessSchema\Application\PhysicalSchemaGateway;
@@ -361,7 +362,10 @@ use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringContextPurger;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringContextRepository;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringService;
 use Kumwe\App\Studio\Application\Authoring\StudioMachineAuthoringGateway;
+use Kumwe\App\Studio\Application\Authoring\StudioMachineCompositionGateway;
 use Kumwe\App\Delivery\Http\Api\Studio\StudioAuthoringApiHandler;
+use Kumwe\App\Delivery\Http\Api\Studio\StudioCompositionApiHandler;
+use Kumwe\App\Delivery\Http\Api\Studio\StudioCompositionSessionApiHandler;
 use Kumwe\App\Delivery\Http\Api\Studio\StudioAuthoringProblemMapper;
 use Kumwe\App\Studio\Application\Authoring\HostedContentStudioAuthoringConfigurationProvider;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringTargetResolver;
@@ -564,6 +568,12 @@ use Kumwe\App\Delivery\Console\ConsoleApplication;
 use Kumwe\App\Delivery\Console\Command\BusinessApprovalCommand;
 use Kumwe\App\Delivery\Console\Command\SecurityEventsCommand;
 use Kumwe\App\Delivery\Console\Command\MediaCommand;
+use Kumwe\App\Delivery\Console\Command\WordingCommand;
+use Kumwe\App\Delivery\Console\Command\BusinessSecurityCommand;
+use Kumwe\App\Delivery\Console\Command\BusinessBulkCommand;
+use Kumwe\App\Delivery\Console\Command\BusinessSchemaEvidenceCommand;
+use Kumwe\App\Delivery\Console\Command\StudioBlueprintCommand;
+use Kumwe\App\Delivery\Console\Command\StudioCompositionCommand;
 use Kumwe\App\Delivery\Console\Command\StudioAuthoringCommand;
 use Kumwe\App\Delivery\Console\Output;
 use Kumwe\App\Delivery\Console\StreamOutput;
@@ -2183,6 +2193,13 @@ final class ContainerFactory
             self::service($container, ContentStudioAuthoringTargetResolver::class),
             self::service($container, ContentService::class),
             self::service($container, ContentModelService::class),
+            self::service($container, StudioProducerHostFactory::class),
+        ), true);
+        $container->share(StudioMachineCompositionGateway::class, static fn (
+            Container $container,
+        ): StudioMachineCompositionGateway => new StudioMachineCompositionGateway(
+            self::service($container, StudioContentCompositionService::class),
+            self::service($container, StudioHostSessionAuthority::class),
             self::service($container, StudioProducerHostFactory::class),
         ), true);
         $container->share(ContentStudioAuthoringLaunchResolver::class, static fn (
@@ -4784,6 +4801,18 @@ final class ContainerFactory
             self::service($container, MessageOverrideService::class),
             self::service($container, ProblemDetailsResponseFactory::class),
         ), true);
+        $container->share(StudioCompositionApiHandler::class, static fn (
+            Container $container,
+        ): StudioCompositionApiHandler => new StudioCompositionApiHandler(
+            self::service($container, StudioContentCompositionService::class),
+            self::service($container, ProblemDetailsResponseFactory::class),
+        ), true);
+        $container->share(StudioCompositionSessionApiHandler::class, static fn (
+            Container $container,
+        ): StudioCompositionSessionApiHandler => new StudioCompositionSessionApiHandler(
+            self::service($container, StudioMachineCompositionGateway::class),
+            self::service($container, StudioAuthoringProblemMapper::class),
+        ), true);
         $container->share(BusinessSecurityApiHandler::class, static fn (
             Container $container,
         ): BusinessSecurityApiHandler => new BusinessSecurityApiHandler(
@@ -4849,6 +4878,14 @@ final class ContainerFactory
             self::service($container, BusinessSchemaApiPresenter::class),
             self::service($container, BusinessApiResponder::class),
             self::service($container, HighImpactCredentialGuard::class),
+            self::service($container, BusinessSchemaRecoveryEvidenceRecorder::class),
+        ), true);
+        $container->share(BusinessSchemaRecoveryEvidenceRecorder::class, static fn (
+            Container $container,
+        ): BusinessSchemaRecoveryEvidenceRecorder => new BusinessSchemaRecoveryEvidenceRecorder(
+            self::service($container, BusinessSchemaService::class),
+            self::service($container, BusinessSchemaEnvironment::class),
+            self::service($container, HighImpactCredentialGuard::class),
         ), true);
         $container->share(PostingPeriodApiHandler::class, static fn (
             Container $container,
@@ -4896,9 +4933,7 @@ final class ContainerFactory
         $container->share(RecordBusinessSchemaRecoveryEvidenceHandler::class, static fn (
             Container $container,
         ): RecordBusinessSchemaRecoveryEvidenceHandler => new RecordBusinessSchemaRecoveryEvidenceHandler(
-            self::service($container, BusinessSchemaService::class),
-            self::service($container, BusinessSchemaEnvironment::class),
-            self::service($container, HighImpactCredentialGuard::class),
+            self::service($container, BusinessSchemaRecoveryEvidenceRecorder::class),
         ), true);
         $container->share(AdministratorContentEditorHandler::class, static fn (
             Container $container,
@@ -5082,6 +5117,7 @@ final class ContainerFactory
         ): ExtensionApiHandler => new ExtensionApiHandler(
             self::service($container, ExtensionManager::class),
             self::service($container, ProblemDetailsResponseFactory::class),
+            dirname(__DIR__, 2) . '/storage/tmp',
         ), true);
         $container->share(TrustStoreApiHandler::class, static fn (
             Container $container,
@@ -6075,6 +6111,24 @@ final class ContainerFactory
             'api.v1.studio.authoring.save-new-type-version',
         ), 'content.read');
 
+        // Studio Blueprint composition editing, the composition screen's `artifact` port. The gateway enforces the
+        // Blueprint mode, the separate publish and unpublish authority and every Studio refusal as the browser
+        // host does; mutations carry their Idempotency-Key into the same Studio replay boundary.
+        foreach (['sessions', 'load', 'dependencies'] as $operation) {
+            self::apiRoute($application->post(
+                StudioCompositionSessionApiHandler::PREFIX . $operation,
+                StudioCompositionSessionApiHandler::class,
+                'api.v1.studio.composition.' . $operation,
+            ), 'content.read');
+        }
+        foreach (['save', 'publish', 'unpublish'] as $operation) {
+            self::apiRoute($application->post(
+                StudioCompositionSessionApiHandler::PREFIX . $operation,
+                [RequireIdempotencyKeyMiddleware::class, StudioCompositionSessionApiHandler::class],
+                'api.v1.studio.composition.' . $operation,
+            ), 'content.read');
+        }
+
         // Business definitions. Reading is content.read and every mutation is content.update,
         // matching the administrator screens these routes are the machine equivalent of.
         self::apiRoute($application->get(
@@ -6155,6 +6209,7 @@ final class ContainerFactory
             'approve' => 'business.schema.approve',
             'execute' => 'business.schema.execute',
             'recover' => 'business.schema.recover',
+            'recovery-evidence' => 'business.schema.recover',
         ];
         foreach ($planStages as $action => $capability) {
             self::apiRoute($application->post(
@@ -6317,6 +6372,20 @@ final class ContainerFactory
             'api.v1.wording.overrides.withdraw',
         ), 'localization.overrides.manage');
         self::apiRoute($application->get(
+            '/api/v1/content-types/{id}/versions/{version}/composition',
+            StudioCompositionApiHandler::class,
+            'api.v1.content-types.composition.read',
+        ), 'content.read', 'studio.mode.blueprint');
+        self::apiRoute($application->post(
+            '/api/v1/content-types/{id}/versions/{version}/composition',
+            [
+                RequireIdempotencyKeyMiddleware::class,
+                PersistentIdempotencyMiddleware::class,
+                StudioCompositionApiHandler::class,
+            ],
+            'api.v1.content-types.composition.provision',
+        ), 'content.read', 'studio.mode.blueprint');
+        self::apiRoute($application->get(
             '/api/v1/business-security',
             BusinessSecurityApiHandler::class,
             'api.v1.business-security.read',
@@ -6366,6 +6435,7 @@ final class ContainerFactory
         }
         foreach (
             [
+            ['POST', '/api/v1/extensions', 'api.v1.extensions.install'],
             ['POST', '/api/v1/extensions/{vendor}/{name}/activate', 'api.v1.extensions.activate'],
             ['POST', '/api/v1/extensions/{vendor}/{name}/disable', 'api.v1.extensions.disable'],
             ['DELETE', '/api/v1/extensions/{vendor}/{name}', 'api.v1.extensions.uninstall'],
@@ -6397,9 +6467,6 @@ final class ContainerFactory
             ['POST', '/api/v1/tokens/{tokenId}/rotate', 'api.v1.tokens.rotate'],
             ['DELETE', '/api/v1/users/{id}/tokens', 'api.v1.tokens.emergency-revoke'],
             ['DELETE', '/api/v1/users/{id}/tokens/emergency', 'api.v1.tokens.emergency-revoke-all'],
-            ['POST', '/api/v1/users/{id}/password-reset', 'api.v1.users.password-reset'],
-            ['POST', '/api/v1/users/{id}/step-up/revoke', 'api.v1.users.step-up-revoke'],
-            ['POST', '/api/v1/users/{id}/sessions/terminate', 'api.v1.users.sessions-terminate'],
             ] as [$method, $path, $name]
         ) {
             self::apiRoute($application->route(
@@ -7051,6 +7118,42 @@ final class ContainerFactory
             self::service($container, MediaService::class),
             self::service($container, ConsoleAuthorizer::class),
         ), true);
+        $container->share(WordingCommand::class, static fn (Container $container): WordingCommand => new WordingCommand(
+            self::service($container, MessageOverrideService::class),
+            self::service($container, ConsoleAuthorizer::class),
+        ), true);
+        $container->share(StudioCompositionCommand::class, static fn (
+            Container $container,
+        ): StudioCompositionCommand => new StudioCompositionCommand(
+            self::service($container, StudioContentCompositionService::class),
+            self::service($container, ConsoleAuthorizer::class),
+        ), true);
+        $container->share(StudioBlueprintCommand::class, static fn (
+            Container $container,
+        ): StudioBlueprintCommand => new StudioBlueprintCommand(
+            self::service($container, StudioMachineCompositionGateway::class),
+            self::service($container, ConsoleAuthorizer::class),
+        ), true);
+        $container->share(BusinessSchemaEvidenceCommand::class, static fn (
+            Container $container,
+        ): BusinessSchemaEvidenceCommand => new BusinessSchemaEvidenceCommand(
+            self::service($container, BusinessSchemaRecoveryEvidenceRecorder::class),
+            self::service($container, ConsoleAuthorizer::class),
+        ), true);
+        $container->share(BusinessBulkCommand::class, static fn (
+            Container $container,
+        ): BusinessBulkCommand => new BusinessBulkCommand(
+            self::service($container, BusinessSurfaceService::class),
+            self::service($container, ConsoleAuthorizer::class),
+            self::service($container, BusinessRecordConsolePresenter::class),
+            self::service($container, BusinessConsoleFailureMapper::class),
+        ), true);
+        $container->share(BusinessSecurityCommand::class, static fn (
+            Container $container,
+        ): BusinessSecurityCommand => new BusinessSecurityCommand(
+            self::service($container, BusinessSecurityAdministrationService::class),
+            self::service($container, ConsoleAuthorizer::class),
+        ), true);
         $container->share(SecurityEventsCommand::class, static fn (
             Container $container,
         ): SecurityEventsCommand => new SecurityEventsCommand(
@@ -7119,6 +7222,12 @@ final class ContainerFactory
                 self::service($container, SecurityEventsCommand::class),
                 self::service($container, BusinessApprovalCommand::class),
                 self::service($container, MediaCommand::class),
+                self::service($container, WordingCommand::class),
+                self::service($container, BusinessSecurityCommand::class),
+                self::service($container, BusinessBulkCommand::class),
+                self::service($container, StudioCompositionCommand::class),
+                self::service($container, StudioBlueprintCommand::class),
+                self::service($container, BusinessSchemaEvidenceCommand::class),
                 self::service($container, McpServeCommand::class),
             ], self::service($container, Output::class)), true);
     }
@@ -7190,6 +7299,11 @@ final class ContainerFactory
                 extensionRuntime: self::service($container, ExtensionExecutionGate::class),
                 studioAuthoring: self::service($container, StudioMachineAuthoringGateway::class),
                 media: self::service($container, MediaService::class),
+                wording: self::service($container, MessageOverrideService::class),
+                businessSecurity: self::service($container, BusinessSecurityAdministrationService::class),
+                models: self::service($container, ContentModelService::class),
+                compositions: self::service($container, StudioContentCompositionService::class),
+                blueprints: self::service($container, StudioMachineCompositionGateway::class),
             ), true);
         $container->share(KumweMcpServerFactory::class, static fn (Container $container): KumweMcpServerFactory =>
             new KumweMcpServerFactory(

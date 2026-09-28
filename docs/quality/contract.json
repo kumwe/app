@@ -702,6 +702,32 @@
             }
         },
         {
+            "id": "browser-machine-parity",
+            "title": "Every browser operation has a machine equivalent or a reasoned exemption",
+            "purpose": "Fail when an administrator or portal browser route has no parity entry, an entry is stale, an operation is recorded as a gap, an equivalent names a REST operation, CLI action, MCP tool or application service the live contracts do not declare, or an exemption or browser-only classification carries no reason from its closed vocabulary.",
+            "owner": "platform-architecture",
+            "runner": "composer",
+            "composer_script": "machine:parity",
+            "command": "composer machine:parity",
+            "artifact": "docs/machine-contract/browser-machine-parity.json",
+            "in_qa": true,
+            "cadence": [
+                "local",
+                "ci",
+                "nightly",
+                "release"
+            ],
+            "maximum_interval": "per-change",
+            "engines": [],
+            "workflows": {
+                "ci": {
+                    "file": ".github/workflows/ci.yml",
+                    "job": "quality",
+                    "contains": "composer machine:parity"
+                }
+            }
+        },
+        {
             "id": "studio-contract-corpus",
             "title": "The vendored Studio contract corpus matches its pinned release",
             "purpose": "Recompute every SRI digest the published Studio protocol and testkit manifests declare against the vendored bytes, hold each corpus directory closed in both directions, and fail when the vendored package versions drift from the PIN record (kumwe/app#104, D16).",

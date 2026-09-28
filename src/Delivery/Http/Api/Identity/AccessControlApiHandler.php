@@ -22,7 +22,7 @@ use Throwable;
 /**
  * Single PSR-15 handler behind every user, role, capability-grant and API-token route of `/api/v1`.
  *
- * Nineteen routes share one handler because they share one job: resolve the actor's execution context,
+ * Sixteen routes share one handler because they share one job: resolve the actor's execution context,
  * hand the request to `AccessControlService` or `AdministratorIdentityGateway`, and turn what comes
  * back — a listing, a new identifier, a revocation count, nothing at all — into a JSON or empty
  * response. Policy, delegation limits and auditing stay in those collaborators; the wire contract is
@@ -32,7 +32,10 @@ use Throwable;
  * both collaborators raise for unusable input; every other failure — an authorization refusal above
  * all — is re-thrown unchanged, since a refusal answered as a validation error would tell a caller its
  * request was malformed rather than forbidden. Every response carries `no-store`: these documents
- * describe credentials and access, and a cached copy of one outlives the grant it reports.
+ * describe credentials and access, and a cached copy of one outlives the grant it reports. Resetting
+ * another account's password, retiring its second factors and ending its sessions are deliberately not
+ * served: the access screen performs them only behind a payload-bound human step-up proof that a bearer
+ * credential cannot carry, and `AccessControlService` refuses them to any human context without one.
  *
  * @since  2.0.0
  */
@@ -110,9 +113,6 @@ final readonly class AccessControlApiHandler implements RequestHandlerInterface
                 'tokens.rotate' => $this->rotateToken($request),
                 'tokens.emergency_revoke' => $this->revokeSubjectTokens($request),
                 'tokens.emergency_revoke_all' => $this->emergencyRevokeAllSubjectTokens($request),
-                'users.password_reset' => $this->resetUserPassword($request),
-                'users.step_up_revoke' => $this->revokeStepUpCredentials($request),
-                'users.sessions_terminate' => $this->terminateUserSessions($request),
                 'security_events.list' => new JsonResponse(
                     ['items' => $this->access->securityEvents(ApiExecutionContext::fromRequest($request))],
                     200,
@@ -175,12 +175,6 @@ final readonly class AccessControlApiHandler implements RequestHandlerInterface
                 'tokens.emergency_revoke',
             preg_match('#^/api/v1/users/[^/]+/tokens/emergency$#D', $path) === 1 && $method === 'DELETE' =>
                 'tokens.emergency_revoke_all',
-            preg_match('#^/api/v1/users/[^/]+/password-reset$#D', $path) === 1 && $method === 'POST' =>
-                'users.password_reset',
-            preg_match('#^/api/v1/users/[^/]+/step-up/revoke$#D', $path) === 1 && $method === 'POST' =>
-                'users.step_up_revoke',
-            preg_match('#^/api/v1/users/[^/]+/sessions/terminate$#D', $path) === 1 && $method === 'POST' =>
-                'users.sessions_terminate',
             default => throw new InvalidArgumentException('The identity operation is not supported.'),
         };
     }
@@ -488,87 +482,6 @@ final readonly class AccessControlApiHandler implements RequestHandlerInterface
         );
         $created['secret_returned'] = true;
         return new JsonResponse($created, 201, ['Cache-Control' => 'no-store']);
-    }
-
-    /**
-     * Replace another account's password as an accountable operator act.
-     *
-     * The same service call the administrator's access screen makes: `users.manage` on the exact user, a
-     * mandatory reason stored on the audit event, a refusal when the actor names their own account, and
-     * one security-epoch advance that retires the subject's sessions, tokens and step-up proofs. The
-     * replacement password is accepted once and never echoed.
-     *
-     * @param   ServerRequestInterface  $request  Request whose `id` route attribute names the subject and
-     *          whose JSON body carries `password` and `reason`.
-     *
-     * @return  ResponseInterface  200 carrying the number of administrator sessions the reset ended.
-     *
-     * @throws  InvalidArgumentException  When the body is malformed, the actor names their own account, the
-     *          reason is blank or too long, or the replacement fails the password rule.
-     *
-     * @since   2.0.0
-     */
-    private function resetUserPassword(ServerRequestInterface $request): ResponseInterface
-    {
-        $body = $this->json($request);
-        $ended = $this->access->resetUserPassword(
-            ApiExecutionContext::fromRequest($request),
-            $this->route($request, 'id'),
-            $this->string($body, 'password'),
-            $this->string($body, 'reason'),
-        );
-
-        return new JsonResponse(['sessions_terminated' => $ended], 200, ['Cache-Control' => 'no-store']);
-    }
-
-    /**
-     * Retire every second factor the addressed subject holds so a lost authenticator is recoverable.
-     *
-     * @param   ServerRequestInterface  $request  Request whose `id` route attribute names the subject and
-     *          whose JSON body carries the operator's `reason`.
-     *
-     * @return  ResponseInterface  200 carrying how many credentials were retired.
-     *
-     * @throws  InvalidArgumentException  When the body is malformed, the reason is blank or too long, or the
-     *          subject does not exist.
-     *
-     * @since   2.0.0
-     */
-    private function revokeStepUpCredentials(ServerRequestInterface $request): ResponseInterface
-    {
-        $body = $this->json($request);
-        $revoked = $this->access->revokeStepUpCredentials(
-            ApiExecutionContext::fromRequest($request),
-            $this->route($request, 'id'),
-            $this->string($body, 'reason'),
-        );
-
-        return new JsonResponse(['revoked_credentials' => $revoked], 200, ['Cache-Control' => 'no-store']);
-    }
-
-    /**
-     * End every session the addressed subject holds without changing the account's lifecycle state.
-     *
-     * @param   ServerRequestInterface  $request  Request whose `id` route attribute names the subject and
-     *          whose JSON body carries the operator's `reason`.
-     *
-     * @return  ResponseInterface  200 carrying how many administrator sessions were ended.
-     *
-     * @throws  InvalidArgumentException  When the body is malformed, the reason is blank or too long, or the
-     *          subject does not exist.
-     *
-     * @since   2.0.0
-     */
-    private function terminateUserSessions(ServerRequestInterface $request): ResponseInterface
-    {
-        $body = $this->json($request);
-        $ended = $this->access->terminateUserSessions(
-            ApiExecutionContext::fromRequest($request),
-            $this->route($request, 'id'),
-            $this->string($body, 'reason'),
-        );
-
-        return new JsonResponse(['sessions_terminated' => $ended], 200, ['Cache-Control' => 'no-store']);
     }
 
     /**

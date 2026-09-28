@@ -1,7 +1,7 @@
 {
     "format": "kumwe-rest-machine-contract-snapshot-v1",
     "generation": "1.1.0",
-    "openapi_semantic_sha256": "5751f43a6cb1108af886e8b304e996519cf36a1193179f2d91f800567d88a88f",
+    "openapi_semantic_sha256": "3e906a564127dc777e1561020e966bf568c5c6cc041b148dbcdc81665edc40b8",
     "operations": {
         "activateExtension": {
             "contract_sha256": "b45490458cd5ee55cbe702d67b307ae5a854986407f411ca3b1cdbc33a8acc72",
@@ -333,6 +333,11 @@
             "method": "GET",
             "path": "/api/v1/workflows/{id}"
         },
+        "installExtension": {
+            "contract_sha256": "bfa2c2524ec1670d3177d4d416995281048776d78327780745896a2dc941da5c",
+            "method": "POST",
+            "path": "/api/v1/extensions"
+        },
         "listBusinessDefinitionHistory": {
             "contract_sha256": "450f7579ddaf0c6d8e50bc267047c04d21259fdce0c84e1a4f49e0e972628a49",
             "method": "GET",
@@ -418,6 +423,11 @@
             "method": "POST",
             "path": "/api/v1/studio/authoring/list-types"
         },
+        "listStudioBlueprintDependencies": {
+            "contract_sha256": "6fd946290ff559636f07b6732b442f1e6f00238626dfd0ff5eb275d747391b84",
+            "method": "POST",
+            "path": "/api/v1/studio/composition/dependencies"
+        },
         "listTokens": {
             "contract_sha256": "58b69c9debe297dff3671fc54b79b802ff4f4dd3a0222d853b94b05d43ebc29c",
             "method": "GET",
@@ -438,10 +448,20 @@
             "method": "GET",
             "path": "/api/v1/workflows"
         },
+        "loadStudioBlueprint": {
+            "contract_sha256": "e6f997a87074a93969847ea8c6324ff3b44177e6d544b9f6d037ef2da1ec2263",
+            "method": "POST",
+            "path": "/api/v1/studio/composition/load"
+        },
         "openStudioAuthoringSession": {
             "contract_sha256": "36b2bf140bc0369ed69c794f006d5c8ffc0123f0ada27d7c06a38f8a4c111753",
             "method": "POST",
             "path": "/api/v1/studio/authoring/sessions"
+        },
+        "openStudioCompositionSession": {
+            "contract_sha256": "f4d6d7d579b173632eb38fb91ff179b236bc97a258c5ba934a67c17c73d995c3",
+            "method": "POST",
+            "path": "/api/v1/studio/composition/sessions"
         },
         "planStudioAuthoringSave": {
             "contract_sha256": "5de41f266d487aefbeac2b643390117df5330640960f1605c7963475c875b1cc",
@@ -458,6 +478,11 @@
             "method": "POST",
             "path": "/api/v1/plans"
         },
+        "provisionContentComposition": {
+            "contract_sha256": "f04e3843faf32b02b64cb7b6e39e606e3f1cfae2da4914c326d54f7b4c1d35d6",
+            "method": "POST",
+            "path": "/api/v1/content-types/{id}/versions/{version}/composition"
+        },
         "publishBusinessDefinition": {
             "contract_sha256": "70844eff4519e4144cb0a328c131e9da282cc697e203b7ca9f31915566084a49",
             "method": "POST",
@@ -467,6 +492,11 @@
             "contract_sha256": "5c0e20b6135e746d774930e9cf61e5a45d42864c0e71ca18bcaa7fdca72244f9",
             "method": "PATCH",
             "path": "/api/v1/content-types/{id}"
+        },
+        "publishStudioBlueprint": {
+            "contract_sha256": "ef126743d1fae000690aa77a477b3be276d3e6cb07f24a917cf6ba1131cc13e3",
+            "method": "POST",
+            "path": "/api/v1/studio/composition/publish"
         },
         "publishWorkflow": {
             "contract_sha256": "634a80ed0570dcc989f1b57d3707a29fcc52d6599184028e2c469c0d7d56557f",
@@ -493,10 +523,20 @@
             "method": "GET",
             "path": "/api/v1/business-security"
         },
+        "readContentComposition": {
+            "contract_sha256": "f5b89b174acbd08a4461bd980e8d25fbd3d16c35d7ae1f714e42b5cb9b6668c2",
+            "method": "GET",
+            "path": "/api/v1/content-types/{id}/versions/{version}/composition"
+        },
         "readOpenApiContract": {
             "contract_sha256": "cfbc87948a21322e29cc1d1668d14375afa36739340227c916d7190409fce048",
             "method": "GET",
             "path": "/api/v1/openapi.json"
+        },
+        "recordBusinessSchemaRecoveryEvidence": {
+            "contract_sha256": "9250ec99283c8e7402a57d73065e96fd57e413743731d275e666a6997cd95212",
+            "method": "POST",
+            "path": "/api/v1/business-schema-plans/{planId}/recovery-evidence"
         },
         "recoverBusinessSchemaPlan": {
             "contract_sha256": "818ed5cd3549e2a084b121bd21b122aa6122ee5727dd8271f9599a14aa80f082",
@@ -512,11 +552,6 @@
             "contract_sha256": "97b1c417f6d3dd06dd267b6d1a1eb8bf359c6d1bdb575c4cdd348bc794e12957",
             "method": "POST",
             "path": "/api/v1/business-periods/reopen"
-        },
-        "resetUserPassword": {
-            "contract_sha256": "7d55b5072765d7ccf10e9b0ce449eaf5259c1dd7986f61914faacd0cb52e6075",
-            "method": "POST",
-            "path": "/api/v1/users/{id}/password-reset"
         },
         "resolveStudioAuthoringTarget": {
             "contract_sha256": "7a075bfb115e0a691359f52dfa05839eabbf45984fb34176a91290765d6e8f32",
@@ -558,11 +593,6 @@
             "method": "DELETE",
             "path": "/api/v1/users/{id}/tokens"
         },
-        "revokeUserStepUpCredentials": {
-            "contract_sha256": "0e8a0dd0cfb551c082165991b7245720d01f9f8ebb6ad69cfa95885654df9531",
-            "method": "POST",
-            "path": "/api/v1/users/{id}/step-up/revoke"
-        },
         "rotateExtensionTrustKey": {
             "contract_sha256": "c182ac5add8564aa9ac25a0abb83a141a1648f7eed483615e69116b2289098ba",
             "method": "POST",
@@ -593,6 +623,11 @@
             "method": "POST",
             "path": "/api/v1/studio/authoring/save-new-type-version"
         },
+        "saveStudioBlueprint": {
+            "contract_sha256": "dffff2a19811004ad2387b13d4956d245e2c71b8340d76172c3f941b02a2a458",
+            "method": "POST",
+            "path": "/api/v1/studio/composition/save"
+        },
         "saveWordingOverride": {
             "contract_sha256": "f7c5c2aac645de4be03a84d84f885ecdb60e9b6ace65d01ec84e01a16560f899",
             "method": "PUT",
@@ -618,11 +653,6 @@
             "method": "POST",
             "path": "/api/v1/business-definitions/{identifier}/supersede"
         },
-        "terminateUserSessions": {
-            "contract_sha256": "60fadae401c2be89a3d044cefb89b89da1d0b494dd0f08a1611448156faaa4db",
-            "method": "POST",
-            "path": "/api/v1/users/{id}/sessions/terminate"
-        },
         "transitionContent": {
             "contract_sha256": "2718849a903bc5f854de1a3388881478a86fd7dc289cc57dcdb2aa222785b90c",
             "method": "POST",
@@ -637,6 +667,11 @@
             "contract_sha256": "5b6c4e0d9665234a5b45d8203b13adab7864233405266245921747cde760d004",
             "method": "DELETE",
             "path": "/api/v1/extensions/{vendor}/{name}"
+        },
+        "unpublishStudioBlueprint": {
+            "contract_sha256": "8a8940a588247c4a57c88b80673b78f860a859738bcda9831b1e7b6c7f2c0b6e",
+            "method": "POST",
+            "path": "/api/v1/studio/composition/unpublish"
         },
         "updateContent": {
             "contract_sha256": "e40625a7b52e833e2c248b500e704bff758fae7db78b3414d17668303f9d217f",
@@ -679,7 +714,7 @@
             "path": "/api/v1/wording/overrides/withdraw"
         }
     },
-    "problem_registry_sha256": "f8b46469dc334143723273d5370fd78151b605cf6e74a96df7e5d72e967e1719",
+    "problem_registry_sha256": "e546386cdb0a2be6cfa4b1f0c809bc8e61619243b1baede53a4b51315b19a50a",
     "schemas": {
         "ApiDiscovery": "bd7fcdf121a76fbf14d16fb2ebf547aafc908e909b437c1448911cb5abaf420a",
         "BusinessDefinitionCatalog": "70832ee9ba9d9aeaca4d70c8a85ccb1f0559b87f77e3efde8b34f78f4ce2131e",
@@ -704,6 +739,8 @@
         "BusinessSchemaPlanInput": "f195eb0f898d43c9e1c19dd9341b159dedccb502cbddbad8f1ea0a3e490c92b9",
         "BusinessSchemaPlanStep": "356b9afe0919f6cce2970a1e49d238d90260c4941a0005d0333499b92b6a1db0",
         "BusinessSchemaPurgeInput": "0261bf1503d08ae1e170afe14e55aa1c95d60889a8cdcec493916395d26159c7",
+        "BusinessSchemaRecoveryEvidence": "f4fd16f7f86370fe2dfc194b3e7ce1083aa99223666bf5119896f1ea284f7510",
+        "BusinessSchemaRecoveryEvidenceInput": "0d9095c52785dd43c12d1c6cf1967a58b1a82970d6c8d77062cb39213147bd0e",
         "BusinessSecurityOverview": "184191054e38d9cc04e11ad481d92eb2c31d71e96c5b1b95ee46f47e7fc73fe8",
         "CapabilityRecord": "6bb4a13ef0b57fa50f8858c3414f335839973131430bac9260daa50b361ef1ee",
         "Content": "68fce65eab053f2e360cb4c328e8cb534f228ace375738bb876335b0373de657",
@@ -787,14 +824,13 @@
         "MenuItemPatch": "7d6bb47e77875730c5568a20e3b2107b4855223228bd36317e753af7e7a54130",
         "MenuPatch": "c38cfe3bdf9b66b04dc06b29fd12f5059f08d9ee64632f7dbbcff0b8c1832bf7",
         "OpenApiDocument": "0d09ab129801abeadc690718b1993dc57a527a52d4cd6ed1bed6ceda9d708d28",
-        "PasswordResetRequest": "7abe81feffe678a2795e947d85f14fa1774a080a1be916a71478b0c62337c357",
         "PostingPeriod": "80d9ed95ab9534e8c28179527afd3810e9566d28bdce5d43853fd282f690a4e2",
         "PostingPeriodCloseInput": "4e2bc2161808ec9c0197951d0a8a304ccb33e01f62be3235c96ceec945478a95",
         "PostingPeriodCollection": "00d6342415442948bac2fe08f92ea8a9cf99e5ed9357cc8a32ee1329644d2e5e",
         "PostingPeriodReopenInput": "2aec9bde8606ef73edfebb6034d791ab9eca6a81ee60b6082f3cbef5fb61f846",
         "PresentationColors": "164a5e820e0758077e13ef0467a529ab8621c26d7e693b1b1541a290622292ca",
         "PresentationScheme": "5a387bb0bfeb2dd6d746334923fc0a5e68d6f6fb53bbbb403b7123b3bcb5f842",
-        "ProblemDetails": "a9302b707830c35ee85c03a9ebfc1e00fb6e27e6da04cfbb4e0ae630837ca848",
+        "ProblemDetails": "07c7df495ede5fd612338fa32c7c83d35be8a87090e09b55df4dd2ca1f3783ea",
         "Readiness": "c719767e0a09695339595c1b5973b3ad3e7ab0a9fd7ecab024d2c0f12d0610aa",
         "RoleCollection": "2d4b4663fede59f7f8e3ad7cadf9ed34a45b3b6c9517bffa17fb2c7a803219d2",
         "RoleCreate": "cc99141592a35a30c2333e94c53f0c7e145fe11ab932fc2b19df348b06adf604",
@@ -807,14 +843,17 @@
         "ScheduleCreate": "883c451d48e2826d4be7fe8c51604a546783b2b905c00206d83d5fe0815b1061",
         "ScheduleState": "3a296771cd5c88c9b16fb9573fb9c05e49871370cd9bfbb7c05626485f42a1a2",
         "SecurityEventCollection": "efe9295f48ae12f8fb2bb5386f940e4cf2c3863f35a71835d51c08fe99206a2a",
-        "SessionTerminationResult": "5029a04b8dc6c40383450d3d1391039f62a210e5aea87c04683fcc8697a6cf57",
         "SitePresentation": "97350398f5700a5a4412b0b556d2f2ee67ee65d90804ff3a6ec084a6881e3a7d",
         "SiteSettings": "c73e0911385f0ef20a0c084511858621e9eb5ddb7b719f094177338119e18179",
-        "StepUpRevocationResult": "713ba9754ec2f77e84f1f57187a8a3e0268f2dc43048823313a76bffad62f09a",
         "StudioAuthoringOpenRequest": "ebe2ab541d0a774868c29edc300ddb5e8fa9a8af5955cbf1988f05e3a92533ec",
         "StudioAuthoringOperationRequest": "152b479d8d369b6924d332914aae72e016ed0b1637dfcb6eeb5cb88dd442f1e2",
         "StudioAuthoringOperationResult": "d5b9d7680c14e74f230bc9aa8e564dd8d16791632e5cba1f9d7f90cd57eb2b98",
         "StudioAuthoringSession": "603ec58606ee1136e431a6fa3faddbad3cd254942d9bacff1967515b0645c101",
+        "StudioComposition": "a429e840f32a5c3760236065240a7d9ac8f156c4fadd800b0a7ae0657a1c5a33",
+        "StudioCompositionOpenRequest": "979caec3dc2be4df65c083b73fd09cfd234b68f8e1e428669ffaff489b7ec48a",
+        "StudioCompositionOperationRequest": "b2ca7af33ace1f0b62924c7ce3fe58190f2fae494b82ba1e3397ab4c3fa56a87",
+        "StudioCompositionOperationResult": "1e11f2a74b0ac5c1ae2570a823349be40bf2deddf17e51b5c4cf275f723f52d4",
+        "StudioCompositionSession": "a97a83505e6ccffef660efa310e38356676733e093b198cde9e825ce57ca1931",
         "TokenCollection": "d0eb7a5ab57116f9e03c8eb4ce19cf879d106adf432f989e18749c2ebc9468de",
         "TokenCreate": "bf88a50599290e9255ba87a800bfb8d01efda88c4ffb371b0b1232c3e4704e7a",
         "TokenRecord": "7520a5016e1cf96492c5e13a0a803e3601af19616737433e5d4efa301c1e6015",

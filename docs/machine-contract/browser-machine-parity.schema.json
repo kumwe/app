@@ -1,0 +1,252 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kumwe.dev/schemas/browser-machine-parity.v1",
+  "title": "Kumwe browser-to-machine parity inventory",
+  "description": "docs/machine-contract/browser-machine-parity.json: every administrator and portal browser route, the application operations it performs, and each operation's REST, CLI and MCP equivalent or reasoned exemption. tools/verify-browser-machine-parity.php checks it against the route table and the live machine contracts.",
+  "type": "object",
+  "required": [
+    "schema",
+    "authority",
+    "note",
+    "machine_contracts",
+    "browser_only_reasons",
+    "surface_exemption_reasons",
+    "routes"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "const": "./browser-machine-parity.schema.json"
+    },
+    "schema": {
+      "const": "kumwe-browser-machine-parity/v1"
+    },
+    "authority": {
+      "type": "string",
+      "minLength": 1
+    },
+    "note": {
+      "type": "string",
+      "minLength": 1
+    },
+    "machine_contracts": {
+      "type": "object",
+      "required": [
+        "rest",
+        "cli",
+        "mcp"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "rest": {
+          "type": "string",
+          "minLength": 1
+        },
+        "cli": {
+          "type": "string",
+          "minLength": 1
+        },
+        "mcp": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "browser_only_reasons": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "surface_exemption_reasons": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "routes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/route"
+      }
+    }
+  },
+  "$defs": {
+    "route": {
+      "type": "object",
+      "required": [
+        "name",
+        "methods",
+        "path",
+        "handler",
+        "operations"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^(administrator|portal)(\\.[a-z0-9-]+)*$"
+        },
+        "methods": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "GET",
+              "POST",
+              "PUT",
+              "PATCH",
+              "DELETE"
+            ]
+          }
+        },
+        "path": {
+          "type": "string",
+          "pattern": "^/(administrator|portal)"
+        },
+        "handler": {
+          "type": "string",
+          "pattern": "^Kumwe\\\\App\\\\[A-Za-z0-9_\\\\]+$"
+        },
+        "operations": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/operation"
+          }
+        }
+      }
+    },
+    "operation": {
+      "type": "object",
+      "required": [
+        "operation",
+        "classification"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "operation": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "classification": {
+          "enum": [
+            "equivalent",
+            "browser-only",
+            "gap"
+          ]
+        },
+        "service": {
+          "type": "string",
+          "pattern": "^(Kumwe\\\\[A-Za-z0-9_\\\\]+)::[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "rest": {
+          "$ref": "#/$defs/references"
+        },
+        "cli": {
+          "$ref": "#/$defs/references"
+        },
+        "mcp": {
+          "$ref": "#/$defs/references"
+        },
+        "composition": {
+          "type": "boolean"
+        },
+        "exemptions": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "rest": {
+              "$ref": "#/$defs/exemption"
+            },
+            "cli": {
+              "$ref": "#/$defs/exemption"
+            },
+            "mcp": {
+              "$ref": "#/$defs/exemption"
+            }
+          }
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "machine_readable_via": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "rest": {
+              "$ref": "#/$defs/references"
+            },
+            "cli": {
+              "$ref": "#/$defs/references"
+            },
+            "mcp": {
+              "$ref": "#/$defs/references"
+            }
+          }
+        },
+        "note": {
+          "type": "string",
+          "minLength": 1
+        },
+        "assurance_gap": {
+          "type": "object",
+          "required": [
+            "browser",
+            "machine",
+            "status"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "browser": {
+              "type": "string",
+              "minLength": 1
+            },
+            "machine": {
+              "type": "string",
+              "minLength": 1
+            },
+            "status": {
+              "enum": [
+                "pending-maintainer-decision"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "references": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      }
+    },
+    "exemption": {
+      "type": "object",
+      "required": [
+        "reason",
+        "note"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "note": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

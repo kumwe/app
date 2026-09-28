@@ -78,22 +78,25 @@ final class AccessControlApiHandlerTest extends TestCase
     }
 
     /**
-     * Each recovery write refuses a malformed body or a blank reason as one problem before the store changes.
+     * The account-takeover recovery acts are not served: the browser performs them only behind a human step-up.
+     *
+     * Even with a well-formed body and `users.manage`, the handler resolves no operation for them, so the
+     * store is never reached; in the kernel no route matches at all.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    public function testRecoveryWritesRefuseUnusableInputAsOneProblem(): void
+    public function testTheStepUpGatedRecoveryActsAreNotServed(): void
     {
         $repository = $this->createMock(AccessControlRepository::class);
         $repository->expects(self::never())->method('changePassword');
+        $repository->expects(self::never())->method('advanceSecurityEpoch');
         foreach (
             [
-                ['/password-reset', '[]'],
-                ['/password-reset', '{"password":"a replacement passphrase","reason":"   "}'],
-                ['/step-up/revoke', '{"reason":""}'],
-                ['/sessions/terminate', '{"note":"missing reason"}'],
+                ['/password-reset', '{"password":"a replacement passphrase","reason":"lost device"}'],
+                ['/step-up/revoke', '{"reason":"lost device"}'],
+                ['/sessions/terminate', '{"reason":"lost device"}'],
             ] as [$suffix, $body]
         ) {
             $response = $this->handle(
@@ -103,31 +106,12 @@ final class AccessControlApiHandlerTest extends TestCase
                 $body,
             );
 
-            self::assertSame(422, $response->getStatusCode(), $suffix . ' ' . $body);
-            self::assertSame('application/problem+json', $response->getHeaderLine('Content-Type'));
+            self::assertSame(422, $response->getStatusCode(), $suffix);
+            self::assertStringContainsString(
+                'The identity operation is not supported.',
+                (string) $response->getBody(),
+            );
         }
-    }
-
-    /**
-     * An administrator cannot reset their own password through the operator reset.
-     *
-     * @return  void
-     *
-     * @since   2.0.0
-     */
-    public function testAnOperatorResetOfTheActorsOwnAccountIsRefused(): void
-    {
-        $repository = $this->createMock(AccessControlRepository::class);
-        $repository->expects(self::never())->method('changePassword');
-
-        $response = $this->handle(
-            $repository,
-            'POST',
-            '/api/v1/users/' . AuthorizationContext::SUBJECT . '/password-reset',
-            '{"password":"a replacement passphrase","reason":"lost device"}',
-        );
-
-        self::assertSame(422, $response->getStatusCode());
     }
 
     /**

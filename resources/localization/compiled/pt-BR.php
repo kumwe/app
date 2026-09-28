@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for pt-BR, carrying 2565 messages.
+ * Compiled interface message catalogue for pt-BR, carrying 2572 messages.
  *
  * Generated from pt-BR.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1940,12 +1940,15 @@ return [
     'core.console.audit_verify.description' => 'Verifique a cadeia de resumos da trilha de auditoria e suas âncoras.',
     'core.console.automation.description' => 'Liste e gerencie agendamentos e tarefas na fila.',
     'core.console.business_approval.description' => 'Retire sua própria solicitação de aprovação de negócio pendente.',
+    'core.console.business_bulk.description' => 'Arquive, restaure ou execute uma ação em até cinquenta registros de negócio de uma só vez.',
     'core.console.business_definition.description' => 'Liste, inspecione, crie rascunhos, valide, publique e desative definições de entidades de negócio.',
     'core.console.business_periods.description' => 'Liste, feche e reabra períodos de lançamento de negócio.',
     'core.console.business_record.description' => 'Descubra, consulte, altere, relacione, solicite aprovações, gere relatórios, exporte e inspecione operações de negócio.',
     'core.console.business_record_rekey.description' => 'Recriptografe os segredos de registros de negócio armazenados sob a chave de criptografia ativa.',
     'core.console.business_report.description' => 'Execute relatórios sensíveis a permissões e solicite, inspecione ou baixe exportações CSV verificadas.',
     'core.console.business_schema.description' => 'Inspecione, aprove, execute e recupere planos de esquema de negócio.',
+    'core.console.business_schema_evidence.description' => 'Registrar um exercício de restauração como a evidência de recuperação que um plano de esquema destrutivo deve citar.',
+    'core.console.business_security.description' => 'Mostre a visão geral da Segurança empresarial com organizações, associações e políticas.',
     'core.console.content.description' => 'Liste, leia, crie, atualize, transicione, envie para a lixeira ou restaure conteúdo.',
     'core.console.content_model.description' => 'Liste, leia, crie ou publique tipos de conteúdo e fluxos de trabalho versionados.',
     'core.console.database_migrate.applied' => '{migration} aplicada',
@@ -2024,6 +2027,9 @@ return [
     'core.console.settings.description' => 'Leia ou atualize a configuração do site.',
     'core.console.studio_authoring.description' => 'Abra uma sessão de criação do Studio e execute suas operações de criação.',
     'core.console.studio_authoring.refused' => 'A solicitação de criação do Studio foi recusada.',
+    'core.console.studio_blueprint.description' => 'Abrir uma sessão de composição de Blueprint e carregar, salvar, publicar ou despublicar o seu Blueprint.',
+    'core.console.studio_blueprint.refused' => 'A solicitação de composição do Studio foi recusada.',
+    'core.console.studio_composition.description' => 'Leia ou provisione a composição Blueprint de uma versão de tipo de conteúdo.',
     'core.console.theme_administrator_recover.description' => 'Restaure atomicamente o tema integrado protegido do administrador.',
     'core.console.theme_administrator_recover.restored_the_protected_built_in_administrator' => 'Tema integrado protegido do administrador restaurado.',
     'core.console.token_create.description' => 'Crie um token de acesso de API/MCP com escopo e exiba-o uma vez.',
@@ -2032,6 +2038,7 @@ return [
     'core.console.user_create_admin.created_administrator' => 'Administrador {id} criado.',
     'core.console.user_create_admin.description' => 'Crie um administrador a partir de um arquivo de senha protegido.',
     'core.console.user_recover_credentials.description' => 'Emergência: redefina uma senha, desative fatores secundários ou encerre sessões a partir do host.',
+    'core.console.wording.description' => 'Liste, pesquise, salve ou retire substituições de redação.',
     'core.identity.password.change_refused' => 'Não foi possível alterar sua senha. Verifique sua senha atual e escolha uma senha diferente com pelo menos 12 caracteres.',
     'core.identity.password.confirmation_mismatch' => 'A nova senha e a confirmação não coincidem.',
     'core.interface_standard.dashboard.access_group_browser_heading' => 'Padrões do grupo de acesso',
