@@ -19,6 +19,25 @@ Entries cite the commits that carried them. Version 2.0.0 is not released, so ev
 
 ### #152 — Version 2 runtime completion
 
+- Prepare the Beta 1 release channel and coherent runtime defaults. The release pipeline binds one built
+  candidate’s images and distributions to a signed digest manifest, qualifies those exact subjects, and
+  promotes them without rebuilding. Publication requires the maintainer merge and successful CI on its
+  exact commit; subsequent green master builds retain automatic beta numbering (#152).
+
+- Restore host-local emergency credential repair for accounts that hold grants, after provenance and
+  resource authorization. Human delegation and step-up checks stay enforced, forged recovery identities
+  and workers remain refused, and credential changes retain their audit and revocation effects (ADR 0023).
+  Eight credential-lifecycle integration tests pass with 72 assertions (#152).
+
+- Render portal business denials as localized HTML for browser navigation, with indistinguishable absence
+  and policy refusals. Apply reduced-motion appearance changes immediately so inherited text cannot
+  transition against the wrong canvas. Focused Firefox and WebKit journeys pass without retries (#152).
+
+- Omit deliberately rejected definitions from live discovery and demo export while refusing missing or
+  mismatched installed schemas. Keep idempotency purge locks on the indexed expiry/state order and retain
+  parent ownership of test cleanup across forked races. MariaDB and MySQL exercise the corrected combined
+  regression fixtures (#152).
+
 - Isolate contextual Studio mounts to their own configuration and element, preserving independent standalone
   editors on the same page. Real released-SDK browser tests cover mounting and authority refusals; remaining
   authoring dependencies stay explicit. Accept the Hebrew locale’s valid unpadded hour representation in

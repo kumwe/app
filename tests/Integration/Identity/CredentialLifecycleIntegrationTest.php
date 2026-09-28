@@ -9,6 +9,10 @@ use DateTimeZone;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
+use Kumwe\Access\AuthorizationDenied;
+use Kumwe\App\Application\Authorization\SystemIdentity;
+use Kumwe\App\Application\Authorization\SystemPrincipal;
+use Kumwe\App\Delivery\Console\Command\RecoverCredentialsCommand;
 use Kumwe\App\Kernel\Container;
 use Kumwe\Context\Value\SiteContext;
 use Kumwe\App\Identity\Application\Administration\AccessControlService;
@@ -25,6 +29,7 @@ use Kumwe\App\Infrastructure\Persistence\TableNames;
 use Kumwe\App\Kernel\Configuration\ApplicationConfiguration;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\App\Tests\Support\TestKernelFactory;
+use Kumwe\App\Tests\Support\CapturingMachineConsoleOutput;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
@@ -40,12 +45,104 @@ use Ramsey\Uuid\Uuid;
  * @since  2.0.0
  */
 #[CoversClass(AccessControlService::class)]
+#[CoversClass(RecoverCredentialsCommand::class)]
 #[CoversClass(DoctrineAccessControlRepository::class)]
 #[CoversClass(DoctrineAdministratorSessionStore::class)]
 #[CoversClass(DoctrineStepUpCredentialStore::class)]
 #[CoversClass(CredentialLifecycleMigration::class)]
 final class CredentialLifecycleIntegrationTest extends TestCase
 {
+    /**
+     * Host-local recovery repairs an account with real grants, preserving the audit and revocation effects.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testHostRecoveryRepairsGrantedCredentialsWithoutDelegatingNewAuthority(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $access = $container->get(AccessControlService::class);
+        $identities = $container->get(AdministratorIdentityGateway::class);
+        $tokens = $container->get(AccessTokenVerifier::class);
+        $command = $container->get(RecoverCredentialsCommand::class);
+        self::assertInstanceOf(AccessControlService::class, $access);
+        self::assertInstanceOf(AdministratorIdentityGateway::class, $identities);
+        self::assertInstanceOf(AccessTokenVerifier::class, $tokens);
+        self::assertInstanceOf(RecoverCredentialsCommand::class, $command);
+        $context = TestKernelFactory::administratorContext($container);
+        $marker = bin2hex(random_bytes(8));
+        $email = 'host-recovery-' . $marker . '@example.test';
+        $user = $access->createUser($context, $email, 'Locked-out administrator', 'original recovery phrase');
+        $role = $access->createRole($context, 'host-recovery-' . $marker, 'Recovery authority');
+        $access->grant($context, $role, 'content.read');
+        $access->assignRole($context, $user, $role);
+        $token = $identities->issueAccessToken($context, $email, 'Recovery proof', ['content.read']);
+        self::assertNotNull($tokens->verify($token['token']));
+        $secret = tempnam(sys_get_temp_dir(), 'kumwe-recovery-');
+        self::assertIsString($secret);
+        chmod($secret, 0600);
+        file_put_contents($secret, 'recovered account phrase');
+        try {
+            foreach (['reset-password', 'revoke-step-up', 'terminate-sessions'] as $action) {
+                $output = new CapturingMachineConsoleOutput();
+                self::assertSame(0, $command->execute([
+                    $action,
+                    '--email=' . $email,
+                    '--password-file=' . $secret,
+                    '--reason=host recovery integration',
+                ], $output), implode('\n', $output->errors));
+                self::assertSame([], $output->errors);
+            }
+        } finally {
+            unlink($secret);
+        }
+        self::assertNull($identities->authenticate($email, 'original recovery phrase', 'integration'));
+        self::assertNotNull($identities->authenticate($email, 'recovered account phrase', 'integration'));
+        self::assertNull($tokens->verify($token['token']));
+        $events = array_values(array_filter(
+            $access->securityEvents($context),
+            static fn (array $event): bool => ($event['subject_id'] ?? null) === $user
+                && ($event['actor_id'] ?? null) === SystemIdentity::CredentialRecovery->value,
+        ));
+        self::assertCount(3, $events);
+    }
+
+    /**
+     * The exemption cannot be reached by a forged recovery context or a different trusted system actor.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testRecoveryAuthorityCannotBeForgedOrBorrowedFromAWorker(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $access = $container->get(AccessControlService::class);
+        $identities = $container->get(AdministratorIdentityGateway::class);
+        self::assertInstanceOf(AccessControlService::class, $access);
+        self::assertInstanceOf(AdministratorIdentityGateway::class, $identities);
+        $email = 'refused-recovery-' . bin2hex(random_bytes(8)) . '@example.test';
+        $user = $access->createUser(
+            TestKernelFactory::administratorContext($container),
+            $email,
+            'Recovery refusal subject',
+            'unchanged recovery phrase',
+        );
+        $forged = SystemPrincipal::issue(new \stdClass(), SystemIdentity::CredentialRecovery)->context(
+            SiteContext::default(),
+            'forged-recovery',
+        );
+        foreach ([$forged, TestKernelFactory::workerContext($container)] as $context) {
+            try {
+                $access->resetUserPassword($context, $user, 'forbidden replacement phrase', 'not authorized');
+                self::fail('An unauthorized system identity changed the credential.');
+            } catch (AuthorizationDenied) {
+                self::assertNotNull($identities->authenticate($email, 'unchanged recovery phrase', 'integration'));
+            }
+        }
+    }
+
     /**
      * Proves an administrative reset replaces the credential and retires token, session and proof.
      *

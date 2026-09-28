@@ -217,6 +217,17 @@ test('live appearance switches repaint existing controls and preserve keyboard s
     await expect(page.locator('body')).toHaveCSS('background-color', canvas);
     await expect(button).toHaveCSS('background-color', surface);
     await expect(button).toHaveCSS('color', foreground);
+    // Inherited foregrounds must switch with the canvas, including deeply nested text. A universal
+    // nonzero reduced-motion transition used to animate these even though they declared no transition.
+    for (const text of [
+      page.locator('.topbar-context strong'),
+      page.getByRole('heading', { level: 1 }),
+      page.getByRole('heading', { name: 'Technical values remain secondary' }),
+      page.locator('.metric-value').last(),
+    ]) {
+      await expect(text).toHaveCSS('transition-duration', '0s');
+      await expect(text).toHaveCSS('color', foreground);
+    }
     await expect(button).toBeFocused();
     expect(await page.evaluate(() => performance.timeOrigin)).toBe(documentIdentity);
     const scan = await new AxeBuilder({ page })

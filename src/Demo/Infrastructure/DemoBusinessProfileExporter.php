@@ -10,6 +10,7 @@ use InvalidArgumentException;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionService;
 use Kumwe\BusinessDefinition\Domain\DefinitionOwnerType;
+use Kumwe\BusinessDefinition\Domain\DefinitionStatus;
 use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\BusinessDefinition\Domain\FieldDefinition;
 use Kumwe\BusinessDefinition\Domain\RelationshipKind;
@@ -246,6 +247,7 @@ final readonly class DemoBusinessProfileExporter
      * Core- and extension-owned definitions are deliberately left out: the profile installer imports
      * every document as a site-owned version-zero draft, so a package-owned definition exported here
      * could never be installed as itself and belongs to its package's release channel instead.
+     * Rejected heads are withdrawn contracts, not candidates to republish in a fresh demo installation.
      *
      * @param   ExecutionContext  $context  Authenticated administrator the reads run as.
      *
@@ -257,7 +259,11 @@ final readonly class DemoBusinessProfileExporter
     {
         $definitions = [];
         foreach ($this->definitions->catalog($context) as $entry) {
-            if ($entry->owner->type !== DefinitionOwnerType::Site || $entry->publishedVersion === null) {
+            if (
+                $entry->owner->type !== DefinitionOwnerType::Site
+                || $entry->publishedVersion === null
+                || $entry->status === DefinitionStatus::Rejected
+            ) {
                 continue;
             }
             $definitions[] = $this->definitions->published($context, $entry->id)->definition;

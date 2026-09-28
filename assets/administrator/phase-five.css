@@ -459,7 +459,7 @@
     .kis-phase-five *::before,
     .kis-phase-five *::after {
       scroll-behavior: auto !important;
-      transition-duration: .01ms !important;
+      transition-duration: 0s !important;
     }
   }
 

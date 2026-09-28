@@ -1696,12 +1696,12 @@
       "artifacts": [
         ".github/workflows/security.yml#security-evidence-${{ github.sha }}"
       ],
-      "decision": "ADR 0021",
+      "decision": "ADR 0021, ADR 0023",
       "state": "open",
       "track": "pr-152",
       "branches": [],
       "branch_evidence": [],
-      "outstanding": "GM-IDN-04, GM-IDN-05, GM-IDN-06, GM-IDN-07, GM-AUD-08 and GM-SUP-08 are delivered. docs/security/qualification-matrix.json maps every area and sub-area of the package to tests and CI jobs, and SecurityQualificationMatrixTest refuses a missing test or an unreasoned gap. The threat-led independent agent review is not recorded yet, whether break-glass console recovery is exempt from the credential-takeover delegation ceiling awaits a maintainer decision, and GM-SUP-05's out-of-process runtime stays on the Point 5 track.",
+      "outstanding": "The security matrix and automated controls are on the PR head. ADR 0023 resolves host-local credential recovery under the standing agent mandate, with positive and forged-context regressions. Complete the independent threat-led review, final combined evidence and the supported out-of-process boundary owned by GM-SUP-05; no new human decision checkbox is required.",
       "gate_b_criteria": [
         1
       ],
@@ -1776,7 +1776,8 @@
         "tests/Browser/interface-standard.spec.ts",
         "tests/Browser/nightly-browser-breadth.spec.ts",
         "tests/Browser/locale-qualification.spec.ts",
-        "tests/Browser/locale-journeys.spec.ts"
+        "tests/Browser/locale-journeys.spec.ts",
+        "tests/Browser/user-acceptance-journeys.spec.ts"
       ],
       "workflows": [
         ".github/workflows/ci.yml#browser",
@@ -1793,7 +1794,7 @@
         "agent/browser"
       ],
       "branch_evidence": [],
-      "outstanding": "The head runs the two non-source-language task journeys the package asks for, German content authoring and Hebrew generated business work, and the locale journeys qualify with PL-G. The appearance repair flips with V2-QA-014 on agent/browser. No workflow runs the five archetype task journeys yet (V2-UX-001), and no branch carries them.",
+      "outstanding": "All five archetype browser journeys already run in the ordinary and nightly browser workflows, with German and Hebrew companion journeys. Complete the final combined browser evidence after the portal-denial, reduced-motion and Studio fixes; do not recreate the existing journeys or claim native Safari or fluent human review.",
       "gate_b_criteria": [
         7
       ],
@@ -2209,7 +2210,8 @@
       "tests": [
         "tests/Browser/interface-standard.spec.ts",
         "tests/Browser/administrator.spec.ts",
-        "tests/Browser/portal.spec.ts"
+        "tests/Browser/portal.spec.ts",
+        "tests/Browser/user-acceptance-journeys.spec.ts"
       ],
       "workflows": [
         ".github/workflows/ci.yml#browser",
@@ -2224,7 +2226,7 @@
       "track": "pr-152",
       "branches": [],
       "branch_evidence": [],
-      "outstanding": "No workflow runs the five archetype task journeys yet, and three of them rely on vertical fixtures the Point 5 proof portfolio builds. The KIS programme's P6-007 and Gate F wait on the same evidence; ADR 0021 replaces their named human reviewers with independent review and workflow evidence, and the merge accepts.",
+      "outstanding": "All five archetype browser journeys already run in the ordinary and nightly browser workflows, with German and Hebrew companion journeys. Complete the final combined browser evidence after the portal-denial, reduced-motion and Studio fixes; do not recreate the existing journeys or claim native Safari or fluent human review.",
       "gate_b_criteria": [
         7
       ],
@@ -2289,7 +2291,7 @@
       "track": "pr-152",
       "branches": [],
       "branch_evidence": [],
-      "outstanding": "Point 5 track: needs a shipped runtime. Until then every surface states that installing an extension trusts its publisher with the application process.",
+      "outstanding": "Included in #152 Point 5: qualify the authenticated out-of-process adapter boundary and preserve the explicit trusted-PHP deployment boundary. Do not describe admitted in-process extension PHP as sandboxed.",
       "gate_b_criteria": [],
       "packages": [
         "P7-C"
@@ -2896,7 +2898,7 @@
       "track": "pr-152",
       "branches": [],
       "branch_evidence": [],
-      "outstanding": "Open until V2-UX-001's archetype task journeys run in a workflow. V2-QA-014 and V2-LNG-010 flip with agent/browser.",
+      "outstanding": "The five archetype task journeys are implemented in tests/Browser/user-acceptance-journeys.spec.ts. Complete the final required browser and nightly workflows after integrating the known runtime fixes, and reconcile their task evidence with the KIS programme.",
       "gate_b_criteria": [
         7
       ]

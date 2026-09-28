@@ -25,6 +25,7 @@ use Kumwe\App\Infrastructure\Observability\ObservabilityContract;
 use Kumwe\App\Infrastructure\Observability\OperationalStatusCollector;
 use Kumwe\App\Infrastructure\Observability\PrometheusExposition;
 use Kumwe\App\Tests\Support\RecordingMetricRecorder;
+use Kumwe\App\Tests\Support\ProcessOwnedShutdown;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Context\Value\SiteContext;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -340,12 +341,12 @@ final class OperationalSignalsTest extends TestCase
     {
         $directory = sys_get_temp_dir() . '/kumwe-signals-' . bin2hex(random_bytes(6));
         self::assertTrue(mkdir($directory, 0700));
-        register_shutdown_function(static function () use ($directory): void {
+        register_shutdown_function(ProcessOwnedShutdown::capture(static function () use ($directory): void {
             foreach (glob($directory . '/*') ?: [] as $file) {
                 is_dir($file) ? rmdir($file) : unlink($file);
             }
             rmdir($directory);
-        });
+        }));
 
         return $directory;
     }

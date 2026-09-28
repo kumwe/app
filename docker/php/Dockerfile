@@ -172,6 +172,9 @@ FROM scratch AS composer-cache
 
 FROM php-base AS vendor
 
+ARG KUMWE_RELEASE=2.0.0-beta.1
+ENV COMPOSER_ROOT_VERSION=${KUMWE_RELEASE}
+
 COPY --from=composer /usr/bin/composer /usr/local/bin/composer
 COPY composer.json composer.lock ./
 
@@ -226,7 +229,7 @@ RUN set -eux; \
 
 FROM php-base AS runtime
 
-ARG KUMWE_RELEASE=development
+ARG KUMWE_RELEASE=2.0.0-beta.1
 ENV APP_ENV=production \
     APP_DEBUG=false \
     KUMWE_RELEASE=${KUMWE_RELEASE}

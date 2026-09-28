@@ -22,11 +22,15 @@ use Kumwe\App\BusinessSurface\Application\BusinessSurfaceOperation;
 use Kumwe\App\BusinessSurface\Application\BusinessSurfaceService;
 use Kumwe\App\BusinessSurface\Delivery\Administrator\AdministratorBusinessSurfaceHandler;
 use Kumwe\App\BusinessSurface\Delivery\Browser\GeneratedBusinessBrowserController;
+use Kumwe\App\BusinessSurface\Delivery\Portal\PortalBusinessSurfaceHandler;
 use Kumwe\App\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\App\Identity\Application\Administration\AdministratorSession;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\Localization\Application\ActiveLocale;
 use Kumwe\Localization\Domain\LocaleTag;
+use Kumwe\App\Portal\Application\PortalContext;
+use Kumwe\App\Portal\Application\PortalSession;
+use Kumwe\App\Portal\Application\PortalSessionIdentity;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\App\Tests\Support\NeutralBusinessFixture;
 use Kumwe\App\Tests\Support\TestKernelFactory;
@@ -51,6 +55,7 @@ use Kumwe\App\Application\Authorization\ExecutionContextAttribute;
  */
 #[CoversClass(GeneratedBusinessBrowserController::class)]
 #[CoversClass(AdministratorBusinessSurfaceHandler::class)]
+#[CoversClass(PortalBusinessSurfaceHandler::class)]
 #[CoversClass(BusinessSurfaceService::class)]
 #[CoversClass(BusinessOperationStatusService::class)]
 final class GeneratedBusinessBrowserIntegrationTest extends TestCase
@@ -173,6 +178,80 @@ final class GeneratedBusinessBrowserIntegrationTest extends TestCase
         self::assertSame('no-store', $problem->getHeaderLine('Cache-Control'));
         self::assertSame('urn:kumwe:problem:authorization-denied', $problemBody['type'] ?? null);
         self::assertStringNotContainsString($definition->handle, (string) $problem->getBody());
+    }
+
+    /**
+     * Portal navigations render an opaque refusal and a safe return link; machine callers keep problem JSON.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testUnavailableGeneratedPortalDefinitionNegotiatesTheDenialRepresentation(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $administrator = TestKernelFactory::administratorContext($container);
+        $suffix = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), -10));
+        $definition = NeutralBusinessFixture::install(
+            $container,
+            $administrator,
+            NeutralBusinessFixture::document('portdenial' . $suffix, Uuid::uuid7()->toString()),
+        );
+        $limitedSource = TestKernelFactory::contextFromGrantRows($container, [[
+            'capability' => 'portal.access',
+            'scope_type' => 'global',
+            'scope_identifier' => null,
+        ]]);
+        $principal = $limitedSource->principal();
+        self::assertInstanceOf(AuthenticatedPrincipal::class, $principal);
+        $sessionId = Uuid::uuid7()->toString();
+        $limited = $principal->context(
+            $limitedSource->site(),
+            AuthenticationStrength::Password,
+            'integration-portal-denial-' . $suffix,
+            surface: AuthenticatedSurface::Portal,
+            sessionId: $sessionId,
+        );
+        $session = new PortalSession(
+            $sessionId,
+            new PortalSessionIdentity(
+                $principal,
+                new PortalContext($limitedSource->site(), null),
+                $principal->securityEpoch(),
+            ),
+            str_repeat('portal-denial-csrf-', 2),
+            new DateTimeImmutable(),
+            null,
+            new DateTimeImmutable('+1 hour'),
+        );
+        $handler = $container->get(PortalBusinessSurfaceHandler::class);
+        self::assertInstanceOf(PortalBusinessSurfaceHandler::class, $handler);
+
+        foreach ([$definition->handle, 'site.default.missing_' . $suffix] as $handle) {
+            $request = (new ServerRequestFactory())
+                ->createServerRequest('GET', 'https://kumwe.test/portal/business/' . rawurlencode($handle))
+                ->withHeader('Accept', 'text/html,application/xhtml+xml;q=0.9,*/*;q=0.8')
+                ->withAttribute('definition', $handle)
+                ->withAttribute(ExecutionContextAttribute::NAME, $limited)
+                ->withAttribute(PortalSession::REQUEST_ATTRIBUTE, $session);
+            $page = $handler->handle($request);
+            $pageBody = (string) $page->getBody();
+            self::assertSame(403, $page->getStatusCode());
+            self::assertStringContainsString('text/html', $page->getHeaderLine('Content-Type'));
+            self::assertSame('no-store', $page->getHeaderLine('Cache-Control'));
+            self::assertStringContainsString('The requested business workspace does not exist', $pageBody);
+            self::assertStringContainsString('href="/portal">Back to the dashboard</a>', $pageBody);
+            self::assertStringNotContainsString($handle, $pageBody);
+
+            $problem = $handler->handle($request->withHeader('Accept', 'application/json'));
+            $problemBody = json_decode((string) $problem->getBody(), true, 8, JSON_THROW_ON_ERROR);
+            self::assertIsArray($problemBody);
+            self::assertSame(403, $problem->getStatusCode());
+            self::assertSame('application/problem+json', $problem->getHeaderLine('Content-Type'));
+            self::assertSame('no-store', $problem->getHeaderLine('Cache-Control'));
+            self::assertSame('urn:kumwe:problem:authorization-denied', $problemBody['type'] ?? null);
+            self::assertStringNotContainsString($handle, (string) $problem->getBody());
+        }
     }
 
     /**

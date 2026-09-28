@@ -15,6 +15,7 @@ use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\App\Tests\Support\MachineSurfaceHarness;
 use Kumwe\App\Tests\Support\NeutralBusinessFixture;
 use Kumwe\App\Tests\Support\TestKernelFactory;
+use Kumwe\CanonicalJson\CanonicalEncoder;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
@@ -140,6 +141,8 @@ final class EditorialMcpEquivalenceIntegrationTest extends TestCase
     public function testContentModelToolsMatchRestAndTheConsole(): void
     {
         $container = TestKernelFactory::create(Environment::fromGlobals());
+        $encoder = $container->get(CanonicalEncoder::class);
+        self::assertInstanceOf(CanonicalEncoder::class, $encoder);
         $harness = $this->harness = new MachineSurfaceHarness($container, 'models-parity');
         $capabilities = ['content.read', 'content.update'];
         $rest = $harness->token('rest', $capabilities);
@@ -177,7 +180,11 @@ final class EditorialMcpEquivalenceIntegrationTest extends TestCase
         $typeId = $type['value']['id'];
 
         self::assertSame($harness->rest($rest, 'GET', '/api/v1/workflows/' . $workflowId)['body'], $workflow['value']);
-        self::assertSame($harness->rest($rest, 'GET', '/api/v1/content-types/' . $typeId)['body'], $type['value']);
+        // MySQL's JSON storage reorders object members; compare typed canonical documents while retaining list order.
+        self::assertSame(
+            $encoder->encode($harness->rest($rest, 'GET', '/api/v1/content-types/' . $typeId)['body']),
+            $encoder->encode($type['value']),
+        );
         self::assertSame(
             $harness->cli(ManageContentModelsCommand::class, $cli, ['get', '--kind=content-type', '--id=' . $typeId])
                 ['stdout'],
@@ -222,7 +229,10 @@ final class EditorialMcpEquivalenceIntegrationTest extends TestCase
         ]);
         self::assertFalse($newType['error'], (string) json_encode($newType));
         self::assertFalse($newWorkflow['error'], (string) json_encode($newWorkflow));
-        self::assertSame($harness->rest($rest, 'GET', '/api/v1/content-types/' . $typeId)['body'], $newType['value']);
+        self::assertSame(
+            $encoder->encode($harness->rest($rest, 'GET', '/api/v1/content-types/' . $typeId)['body']),
+            $encoder->encode($newType['value']),
+        );
         self::assertSame(
             $harness->rest($rest, 'GET', '/api/v1/workflows/' . $workflowId)['body'],
             $newWorkflow['value'],

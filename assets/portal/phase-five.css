@@ -105,7 +105,7 @@
   .kis-phase-five-portal *::before,
   .kis-phase-five-portal *::after {
     scroll-behavior: auto !important;
-    transition-duration: .01ms !important;
+    transition-duration: 0s !important;
   }
 }
 

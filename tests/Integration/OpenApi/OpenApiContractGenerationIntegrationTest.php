@@ -4,7 +4,16 @@ declare(strict_types=1);
 
 namespace Kumwe\App\Tests\Integration\OpenApi;
 
+use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Types\Types;
+use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionService;
+use Kumwe\App\BusinessRecord\Application\BusinessRecordDefinitionResolver;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
+use Kumwe\App\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable;
+use Kumwe\App\BusinessRecord\Application\InstalledBusinessRecordDefinitionResolver;
 use Kumwe\App\BusinessSurface\Application\BusinessSurfaceCatalog;
+use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\App\OpenApi\Application\CompiledOpenApiContract;
 use Kumwe\App\OpenApi\Application\OpenApiContractCache;
 use Kumwe\App\OpenApi\Application\OpenApiContractCompiler;
@@ -12,6 +21,7 @@ use Kumwe\App\OpenApi\Application\OpenApiContractLimits;
 use Kumwe\App\OpenApi\Application\OpenApiContractService;
 use Kumwe\App\OpenApi\Application\OpenApiContractUnavailable;
 use Kumwe\App\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\App\Tests\Support\NeutralBusinessFixture;
 use Kumwe\App\Tests\Support\TestKernelFactory;
 use Kumwe\Context\Value\AuthenticationStrength;
@@ -27,8 +37,102 @@ use Ramsey\Uuid\Uuid;
  */
 #[CoversClass(OpenApiContractService::class)]
 #[CoversClass(OpenApiContractCompiler::class)]
+#[CoversClass(InstalledBusinessRecordDefinitionResolver::class)]
 final class OpenApiContractGenerationIntegrationTest extends TestCase
 {
+    /**
+     * Withdraw one installed version without hiding healthy definitions or tolerating corrupt installation metadata.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testRejectedInstalledVersionIsOmittedButCatalogCorruptionStillFailsClosed(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $context = TestKernelFactory::administratorContext($container);
+        $definitions = $container->get(BusinessDefinitionService::class);
+        $resolver = $container->get(BusinessRecordDefinitionResolver::class);
+        $contracts = $container->get(OpenApiContractService::class);
+        $database = $container->get(Connection::class);
+        $tables = $container->get(TableNames::class);
+        self::assertInstanceOf(BusinessDefinitionService::class, $definitions);
+        self::assertInstanceOf(BusinessRecordDefinitionResolver::class, $resolver);
+        self::assertInstanceOf(OpenApiContractService::class, $contracts);
+        self::assertInstanceOf(Connection::class, $database);
+        self::assertInstanceOf(TableNames::class, $tables);
+        $suffix = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), -12));
+        $healthy = NeutralBusinessFixture::install(
+            $container,
+            $context,
+            NeutralBusinessFixture::document('healthy' . $suffix, Uuid::uuid7()->toString()),
+        );
+        $withdrawn = NeutralBusinessFixture::install(
+            $container,
+            $context,
+            NeutralBusinessFixture::document('reject' . $suffix, Uuid::uuid7()->toString()),
+        );
+        $principal = AuthenticatedPrincipal::of($context);
+        self::assertNotNull($principal);
+        $api = $principal->context($context->site(), AuthenticationStrength::BearerToken, 'withdrawal-' . $suffix);
+        $before = $contracts->contract($api);
+        $definitions->reject($context, $withdrawn->id, $withdrawn->definitionVersion);
+
+        $after = $contracts->contract($api);
+        self::assertNotSame($before->generation, $after->generation);
+        self::assertStringContainsString(
+            'Business_' . str_replace(['.', '-'], '_', $healthy->handle) . '_Record',
+            $after->json,
+        );
+        self::assertStringNotContainsString(
+            'Business_' . str_replace(['.', '-'], '_', $withdrawn->handle) . '_Record',
+            $after->json,
+        );
+        self::assertSame($healthy->id, $resolver->forCreate($context, $healthy->id)->definition->id);
+        try {
+            $resolver->forCreate($context, $withdrawn->id);
+            self::fail('A rejected installed version must remain unavailable to direct record operations.');
+        } catch (BusinessRecordDefinitionUnavailable) {
+            self::assertCount(1, $definitions->history($context, $withdrawn->id));
+        }
+
+        $publication = $definitions->published($context, $healthy->id);
+        $changed = EntityTypeDefinition::fromArray([
+            ...$healthy->toArray(),
+            'singular_label' => 'Different immutable catalog bytes',
+        ]);
+        foreach (['checksum', 'missing'] as $corruption) {
+            $database->beginTransaction();
+            try {
+                $identity = ['definition_id' => $healthy->id, 'version' => $healthy->definitionVersion];
+                if ($corruption === 'missing') {
+                    $database->delete($tables->raw('business_definition_versions'), $identity);
+                } else {
+                    $database->update($tables->raw('business_definition_versions'), [
+                        'canonical_payload' => $changed->toArray(),
+                        'checksum' => $changed->checksum(),
+                        'compatibility_plan' => [
+                            ...$publication->compatibility->toArray(),
+                            'to_checksum' => $changed->checksum(),
+                        ],
+                    ], $identity, ['canonical_payload' => Types::JSON, 'compatibility_plan' => Types::JSON]);
+                }
+                try {
+                    $resolver->activeInstalled($context);
+                    self::fail('A missing or mismatched installed version must not be silently omitted.');
+                } catch (BusinessRecordSchemaUnavailable $refusal) {
+                    self::assertSame(
+                        'An active installed definition disagrees with its immutable catalog version.',
+                        $refusal->getMessage(),
+                    );
+                }
+            } finally {
+                $database->rollBack();
+            }
+        }
+        self::assertSame($healthy->id, $resolver->forCreate($context, $healthy->id)->definition->id);
+    }
+
     /**
      * Compile an exact new generation after installing a newly visible definition.
      *

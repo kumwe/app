@@ -483,8 +483,14 @@ test.describe('P7-E archetype task journeys', () => {
     const orderId = orderPath.split('/').pop() ?? '';
 
     await test.step('policy denial: the customer cannot fulfil their own order', async () => {
-      await page.goto(`${orderPath}?confirm=action&action=fulfil`);
+      const denial = await page.goto(`${orderPath}?confirm=action&action=fulfil`);
+      expect(denial?.status()).toBe(403);
+      expect(denial?.headers()['content-type']).toContain('text/html');
+      await expect(page.getByRole('heading', { name: 'You do not have access to this screen' })).toBeVisible();
       await expect(page.getByRole('button', { name: 'Mark as fulfilled' })).toHaveCount(0);
+      await expectAccessible(page);
+      await page.getByRole('link', { name: 'Back to the dashboard' }).click();
+      await expect(page).toHaveURL(/\/portal$/u);
     });
 
     await test.step('out-of-process payment: the adapter records payment and a stale version is refused', async () => {

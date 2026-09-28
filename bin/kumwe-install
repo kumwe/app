@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * Interactive project bootstrap used by `composer create-project kumwe/app`.
  *
@@ -12,12 +10,16 @@ declare(strict_types=1);
  * @since  2.0.0
  */
 
+declare(strict_types=1);
+
+require __DIR__ . '/kumwe-install-functions.php';
+
 $root = dirname(__DIR__);
 $environmentFile = $root . '/.env';
 $interactive = function_exists('stream_isatty')
     && stream_isatty(STDIN)
     && !in_array('--no-interaction', $argv, true);
-$packageRelease = '2.0.0-dev';
+$packageRelease = '2.0.0-beta.1';
 $autoloadFile = $root . '/vendor/autoload.php';
 
 if (is_file($autoloadFile)) {
@@ -194,7 +196,8 @@ if (!is_string($temporaryPasswordFile)) {
 }
 
 try {
-    if (!chmod($temporaryPasswordFile, 0600)
+    if (
+        !chmod($temporaryPasswordFile, 0600)
         || file_put_contents($temporaryPasswordFile, $administratorPassword, LOCK_EX) === false
     ) {
         fail('Could not write the protected administrator password file.');
@@ -230,7 +233,8 @@ if (
     }
 
     try {
-        if (!chmod($temporaryPasswordFile, 0600)
+        if (
+            !chmod($temporaryPasswordFile, 0600)
             || file_put_contents($temporaryPasswordFile, $administratorPassword, LOCK_EX) === false
         ) {
             fail('Could not write the protected administrator password file.');
@@ -258,134 +262,3 @@ if (
 }
 
 fwrite(STDOUT, "\nKumwe is configured. Point the web server document root at public/.\n");
-
-/** @return never */
-function fail(string $message): never
-{
-    fwrite(STDERR, "Kumwe setup failed: {$message}\n");
-    exit(1);
-}
-
-function prompt(string $label, ?string $default = null): string
-{
-    $suffix = $default === null || $default === '' ? '' : " [{$default}]";
-    fwrite(STDOUT, $label . $suffix . ': ');
-    $answer = fgets(STDIN);
-
-    if (!is_string($answer)) {
-        fail('Input ended before configuration was complete.');
-    }
-
-    $answer = trim($answer);
-
-    return $answer === '' && $default !== null ? $default : $answer;
-}
-
-function secretPrompt(string $label): string
-{
-    fwrite(STDOUT, $label . ': ');
-    $terminalState = terminalState();
-
-    if ($terminalState === null) {
-        fail('This terminal cannot hide secret input. Configure secrets non-interactively instead.');
-    }
-
-    setTerminalState('-echo');
-
-    try {
-        $answer = fgets(STDIN);
-    } finally {
-        setTerminalState($terminalState);
-        fwrite(STDOUT, "\n");
-    }
-
-    if (!is_string($answer)) {
-        fail('Input ended before configuration was complete.');
-    }
-
-    return trim($answer);
-}
-
-function terminalState(): ?string
-{
-    $process = proc_open(
-        ['stty', '-g'],
-        [STDIN, ['pipe', 'w'], STDERR],
-        $pipes,
-    );
-
-    if (!is_resource($process) || !isset($pipes[1]) || !is_resource($pipes[1])) {
-        return null;
-    }
-
-    $state = stream_get_contents($pipes[1]);
-    fclose($pipes[1]);
-
-    if (proc_close($process) !== 0 || !is_string($state) || trim($state) === '') {
-        return null;
-    }
-
-    return trim($state);
-}
-
-function setTerminalState(string $state): void
-{
-    $process = proc_open(['stty', $state], [STDIN, STDOUT, STDERR], $pipes);
-
-    if (!is_resource($process) || proc_close($process) !== 0) {
-        fail('Could not protect terminal secret input.');
-    }
-}
-
-function confirmation(string $label, bool $default): bool
-{
-    $answer = strtolower(prompt($label . ($default ? ' [Y/n]' : ' [y/N]'), $default ? 'y' : 'n'));
-
-    return in_array($answer, ['y', 'yes'], true);
-}
-
-function encodeEnvironmentValue(string $value): string
-{
-    return '"' . str_replace(
-        ["\\", '"', "\r", "\n"],
-        ["\\\\", '\\"', '\\r', '\\n'],
-        $value,
-    ) . '"';
-}
-
-/**
- * Reduce discovered demo manifest paths to sorted selectable profile names.
- *
- * @param  list<string>  $paths      Globbed manifest paths.
- * @param  bool          $directory  Whether the profile name is the manifest's directory rather than its file.
- *
- * @return list<string>
- */
-function discoveredProfiles(array $paths, bool $directory = false): array
-{
-    $profiles = [];
-
-    foreach ($paths as $path) {
-        $name = $directory ? basename(dirname($path)) : basename($path, '.json');
-
-        if (preg_match('/^[a-z][a-z0-9-]{0,62}$/D', $name) === 1) {
-            $profiles[] = $name;
-        }
-    }
-
-    sort($profiles);
-
-    return $profiles;
-}
-
-/** @param non-empty-list<string> $command */
-function runCommand(array $command, string $workingDirectory): int
-{
-    $process = proc_open($command, [STDIN, STDOUT, STDERR], $pipes, $workingDirectory);
-
-    if (!is_resource($process)) {
-        fail('Could not start the Kumwe CLI.');
-    }
-
-    return proc_close($process);
-}

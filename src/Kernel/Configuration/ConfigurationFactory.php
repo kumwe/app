@@ -94,7 +94,7 @@ final class ConfigurationFactory
                 $environment->optionalString('BUSINESS_IDEMPOTENCY_RETENTION_SECONDS'),
             ),
             allowUnsignedLocalExtensions: $environment->boolean('EXTENSIONS_ALLOW_UNSIGNED_LOCAL'),
-            release: $environment->string('KUMWE_RELEASE', '2.0.0-dev'),
+            release: $environment->string('KUMWE_RELEASE', '2.0.0-beta.1'),
             secret: $this->fileBackedSecret($environment, 'APP_SECRET') ?? $environment->string('APP_SECRET'),
             runtimeSigningKeyId: $environment->string('EXTENSION_RUNTIME_SIGNING_KEY_ID', 'runtime-v1'),
             runtimeSigningKey: $runtimeKey ?? str_repeat('testing-runtime-key-', 2),

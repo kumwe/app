@@ -1,10 +1,7 @@
 name: Kumwe continuous release
 
-# Every green master build publishes the next pre-release. Releasing is not a decision anyone has to
-# remember to make: the project ships continuously, and the version number counts the builds that
-# earned it. Stable versions are still tagged by hand -- this lane only ever cuts the channel named in
-# .github/release-channel.json, and the release workflow already withholds the moving `latest`, `2` and
-# minor tags from anything that is not a stable version.
+# Every green master build publishes the next prerelease in the declared channel.
+# The release builder stamps that exact tag version into the immutable build inputs.
 
 on:
   workflow_run:

@@ -82,6 +82,19 @@ final readonly class PortalBusinessSurfaceHandler implements RequestHandlerInter
         try {
             return $this->availableResponse($request);
         } catch (BusinessRecordDefinitionUnavailable) {
+            // Navigations need a document Firefox can render, including when a hidden action is requested.
+            // Keep absence and policy denial indistinguishable, as on the administrator surface.
+            if (
+                in_array(strtoupper($request->getMethod()), ['GET', 'HEAD'], true)
+                && str_contains(strtolower($request->getHeaderLine('Accept')), 'text/html')
+            ) {
+                return new HtmlResponse($this->renderer->render(
+                    'business-unavailable',
+                    [],
+                    PortalRequest::session($request),
+                ), 403, ['Cache-Control' => 'no-store']);
+            }
+
             return new JsonResponse([
                 'type' => 'urn:kumwe:problem:authorization-denied',
                 'title' => 'Forbidden',
