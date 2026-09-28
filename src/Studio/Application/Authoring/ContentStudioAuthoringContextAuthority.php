@@ -12,9 +12,9 @@ use Kumwe\App\Content\Application\ContentModelService;
 use Kumwe\Content\Application\ContentNotFound;
 use Kumwe\App\Content\Application\ContentService;
 use Kumwe\App\Studio\Application\Host\StudioResourceContextKeyFactory;
+use Kumwe\App\Studio\Application\Host\StudioSessionSurfaceBinding;
 use Kumwe\App\Studio\Application\Projection\ContentStudioProjector;
 use Kumwe\App\Studio\Domain\Authoring\StudioAuthoringIntent;
-use Kumwe\Context\Value\AuthenticatedSurface;
 use Kumwe\Context\Value\ExecutionContext;
 use Psr\Clock\ClockInterface;
 
@@ -66,9 +66,11 @@ final readonly class ContentStudioAuthoringContextAuthority
      * Open one immutable context only after independently reproducing the supplied trusted target.
      *
      * The returned value is a lookup key, not a token: a later request still needs the same authenticated
-     * administrator scope and browser session, and must pass fresh Content reads and mutation authorization.
+     * scope and the same browser session or machine credential, and must pass fresh Content reads and
+     * mutation authorization. Machine surfaces bind to their credential exactly as the browser binds to
+     * its session; see `StudioSessionSurfaceBinding`.
      *
-     * @param   ExecutionContext              $context  Current authenticated administrator request.
+     * @param   ExecutionContext              $context  Current authenticated administrator or machine request.
      * @param   ContentStudioAuthoringTarget  $target   PHP-resolved target proposed for this mount.
      *
      * @return  string  Opaque key carrying no actor, scope, resource, or authorization information.
@@ -80,7 +82,7 @@ final readonly class ContentStudioAuthoringContextAuthority
      */
     public function open(ExecutionContext $context, ContentStudioAuthoringTarget $target): string
     {
-        if ($context->surface() !== AuthenticatedSurface::Administrator) {
+        if (!StudioSessionSurfaceBinding::admits($context->surface())) {
             self::refuse();
         }
         $sessionBinding = self::sessionBinding($context);
@@ -414,7 +416,7 @@ final readonly class ContentStudioAuthoringContextAuthority
      * @param   ExecutionContext                      $context  Fresh authenticated App context.
      * @param   ContentStudioAuthoringContextBinding  $binding  Stored opaque-key binding.
      *
-     * @return  bool  True only when actor, site, membership, surface, and browser session match exactly.
+     * @return  bool  True only when actor, site, membership, surface and surface binding match exactly.
      *
      * @since   2.0.0
      */
@@ -422,14 +424,15 @@ final readonly class ContentStudioAuthoringContextAuthority
         ExecutionContext $context,
         ContentStudioAuthoringContextBinding $binding,
     ): bool {
-        return $context->surface() === AuthenticatedSurface::Administrator
+        $surfaceBinding = StudioSessionSurfaceBinding::digest($context);
+
+        return $surfaceBinding !== null
             && hash_equals($binding->actorId, $context->actorId())
             && hash_equals($binding->siteId, $context->site()->identifier())
             && $binding->organizationId === $context->organization()?->identifier()
             && $binding->workspaceId === $context->workspace()?->identifier()
             && $binding->surface === $context->surface()->value
-            && $context->sessionId() !== null
-            && hash_equals($binding->sessionBinding, self::sessionBinding($context));
+            && hash_equals($binding->sessionBinding, $surfaceBinding);
     }
 
     /**
@@ -457,24 +460,19 @@ final readonly class ContentStudioAuthoringContextAuthority
     }
 
     /**
-     * Bind an authoring context to the rotated administrator-session identity without storing it.
+     * Bind an authoring context to the browser session or machine credential without storing either.
      *
-     * @param   ExecutionContext  $context  Fresh trusted administrator context.
+     * @param   ExecutionContext  $context  Fresh trusted execution context.
      *
-     * @return  string  Lowercase SHA-256 digest of the non-exported host-session identity.
+     * @return  string  Lowercase SHA-256 digest of the non-exported session identity or credential.
      *
-     * @throws  ContentStudioAuthoringContextRefused  When no authenticated browser session is present.
+     * @throws  ContentStudioAuthoringContextRefused  When the context carries nothing a binding may be tied to.
      *
      * @since   2.0.0
      */
     private static function sessionBinding(ExecutionContext $context): string
     {
-        $sessionId = $context->sessionId();
-        if ($sessionId === null) {
-            self::refuse();
-        }
-
-        return hash('sha256', $sessionId);
+        return StudioSessionSurfaceBinding::digest($context) ?? self::refuse();
     }
 
     /**

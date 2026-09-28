@@ -356,6 +356,9 @@ use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringContextAuthorit
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringContextPurger;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringContextRepository;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringService;
+use Kumwe\App\Studio\Application\Authoring\StudioMachineAuthoringGateway;
+use Kumwe\App\Delivery\Http\Api\Studio\StudioAuthoringApiHandler;
+use Kumwe\App\Delivery\Http\Api\Studio\StudioAuthoringProblemMapper;
 use Kumwe\App\Studio\Application\Authoring\HostedContentStudioAuthoringConfigurationProvider;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringTargetResolver;
 use Kumwe\App\Studio\Application\Authoring\StudioContextualAuthoringAvailability;
@@ -554,6 +557,7 @@ use Kumwe\App\Delivery\Console\Command\RunExtensionConformanceCommand;
 use Kumwe\App\Delivery\Console\Command\UninstallExtensionCommand;
 use Kumwe\App\Delivery\Console\Command\RecoverAdministratorThemeCommand;
 use Kumwe\App\Delivery\Console\ConsoleApplication;
+use Kumwe\App\Delivery\Console\Command\StudioAuthoringCommand;
 use Kumwe\App\Delivery\Console\Output;
 use Kumwe\App\Delivery\Console\StreamOutput;
 use Kumwe\App\Delivery\Http\Api\Idempotency\RequireIdempotencyKeyMiddleware;
@@ -2130,6 +2134,16 @@ final class ContainerFactory
         ): StudioAuthoringHostPort => new StudioAuthoringHostPort(
             self::service($container, ContentStudioAuthoringService::class),
             self::service($container, StudioDocumentSchemaRegistry::class),
+        ), true);
+        $container->share(StudioMachineAuthoringGateway::class, static fn (
+            Container $container,
+        ): StudioMachineAuthoringGateway => new StudioMachineAuthoringGateway(
+            self::service($container, ContentStudioAuthoringContextAuthority::class),
+            self::service($container, StudioHostSessionAuthority::class),
+            self::service($container, ContentStudioAuthoringTargetResolver::class),
+            self::service($container, ContentService::class),
+            self::service($container, ContentModelService::class),
+            self::service($container, StudioProducerHostFactory::class),
         ), true);
         $container->share(ContentStudioAuthoringLaunchResolver::class, static fn (
             Container $container,
@@ -4732,6 +4746,17 @@ final class ContainerFactory
                 $configuration->administratorSessionSeconds,
             ), true);
         }
+        $container->share(StudioAuthoringProblemMapper::class, static fn (
+            Container $container,
+        ): StudioAuthoringProblemMapper => new StudioAuthoringProblemMapper(
+            self::service($container, ProblemDetailsResponseFactory::class),
+        ), true);
+        $container->share(StudioAuthoringApiHandler::class, static fn (
+            Container $container,
+        ): StudioAuthoringApiHandler => new StudioAuthoringApiHandler(
+            self::service($container, StudioMachineAuthoringGateway::class),
+            self::service($container, StudioAuthoringProblemMapper::class),
+        ), true);
         $container->share(BusinessDefinitionApiHandler::class, static fn (
             Container $container,
         ): BusinessDefinitionApiHandler => new BusinessDefinitionApiHandler(
@@ -5913,6 +5938,51 @@ final class ContainerFactory
             ), 'content.update');
         }
 
+        // Studio contextual authoring. The route admits a site-bound API token holding content.read; the gateway
+        // enforces the Studio hybrid mode, Content create/update authority and every Studio refusal exactly
+        // as the browser host does. Mutating operations carry their Idempotency-Key into the Studio host's
+        // own replay boundary, so no second ledger decides replay for this surface.
+        self::apiRoute($application->post(
+            '/api/v1/studio/authoring/sessions',
+            StudioAuthoringApiHandler::class,
+            'api.v1.studio.authoring.sessions',
+        ), 'content.read');
+        self::apiRoute($application->post(
+            '/api/v1/studio/authoring/resolve-target',
+            StudioAuthoringApiHandler::class,
+            'api.v1.studio.authoring.resolve-target',
+        ), 'content.read');
+        self::apiRoute($application->post(
+            '/api/v1/studio/authoring/list-types',
+            StudioAuthoringApiHandler::class,
+            'api.v1.studio.authoring.list-types',
+        ), 'content.read');
+        self::apiRoute($application->post(
+            '/api/v1/studio/authoring/plan-save',
+            StudioAuthoringApiHandler::class,
+            'api.v1.studio.authoring.plan-save',
+        ), 'content.read');
+        self::apiRoute($application->post(
+            '/api/v1/studio/authoring/start',
+            [RequireIdempotencyKeyMiddleware::class, StudioAuthoringApiHandler::class],
+            'api.v1.studio.authoring.start',
+        ), 'content.read');
+        self::apiRoute($application->post(
+            '/api/v1/studio/authoring/save-item',
+            [RequireIdempotencyKeyMiddleware::class, StudioAuthoringApiHandler::class],
+            'api.v1.studio.authoring.save-item',
+        ), 'content.read');
+        self::apiRoute($application->post(
+            '/api/v1/studio/authoring/save-as-new-type',
+            [RequireIdempotencyKeyMiddleware::class, StudioAuthoringApiHandler::class],
+            'api.v1.studio.authoring.save-as-new-type',
+        ), 'content.read');
+        self::apiRoute($application->post(
+            '/api/v1/studio/authoring/save-new-type-version',
+            [RequireIdempotencyKeyMiddleware::class, StudioAuthoringApiHandler::class],
+            'api.v1.studio.authoring.save-new-type-version',
+        ), 'content.read');
+
         // Business definitions. Reading is content.read and every mutation is content.update,
         // matching the administrator screens these routes are the machine equivalent of.
         self::apiRoute($application->get(
@@ -6827,6 +6897,12 @@ final class ContainerFactory
             self::service($container, RecordSecretRotation::class),
             self::service($container, ConsoleAuthorizer::class),
         ), true);
+        $container->share(StudioAuthoringCommand::class, static fn (
+            Container $container,
+        ): StudioAuthoringCommand => new StudioAuthoringCommand(
+            self::service($container, StudioMachineAuthoringGateway::class),
+            self::service($container, ConsoleAuthorizer::class),
+        ), true);
         $container->share(McpServeCommand::class, static fn (Container $container): McpServeCommand =>
             new McpServeCommand(
                 self::service($container, KumweMcpServerFactory::class),
@@ -6879,6 +6955,7 @@ final class ContainerFactory
                 self::service($container, VerifyAuditTrailCommand::class),
                 self::service($container, ExportAuditTrailCommand::class),
                 self::service($container, RotateRecordSecretsCommand::class),
+                self::service($container, StudioAuthoringCommand::class),
                 self::service($container, McpServeCommand::class),
             ], self::service($container, Output::class)), true);
     }
@@ -6947,6 +7024,7 @@ final class ContainerFactory
                 self::service($container, ClockInterface::class),
                 self::service($container, AuthorizationGateway::class),
                 extensionRuntime: self::service($container, ExtensionExecutionGate::class),
+                studioAuthoring: self::service($container, StudioMachineAuthoringGateway::class),
             ), true);
         $container->share(KumweMcpServerFactory::class, static fn (Container $container): KumweMcpServerFactory =>
             new KumweMcpServerFactory(

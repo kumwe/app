@@ -3,7 +3,7 @@
     "work_package": "P0-A",
     "authority": "docs/roadmap/README.md",
     "note": "Every figure below is derived from the repository at the recorded commit. Nothing is typed by hand, nothing reads the clock or the machine, and running the generator twice at one commit produces the same document. composer baseline:check fails when it drifts.",
-    "commit": "6cef5a37f4bdb1096dcd9586e105de38cbcb30ec",
+    "commit": "d8f497fe244d414c65036e8e037303eb9b665056",
     "recorded_at": "2026-09-24",
     "recorded_from": [],
     "toolchain": {
@@ -31,16 +31,16 @@
             "test_methods": 355
         },
         "functional": {
-            "files": 11,
-            "test_methods": 36
+            "files": 12,
+            "test_methods": 40
         },
         "integration": {
-            "files": 132,
-            "test_methods": 488
+            "files": 133,
+            "test_methods": 490
         },
         "unit": {
-            "files": 453,
-            "test_methods": 2357
+            "files": 458,
+            "test_methods": 2377
         }
     },
     "coverage": {
@@ -368,6 +368,26 @@
                 "name": "api.v1.settings.read"
             },
             {
+                "method": "POST",
+                "path": "/api/v1/studio/authoring/list-types",
+                "name": "api.v1.studio.authoring.list-types"
+            },
+            {
+                "method": "POST",
+                "path": "/api/v1/studio/authoring/plan-save",
+                "name": "api.v1.studio.authoring.plan-save"
+            },
+            {
+                "method": "POST",
+                "path": "/api/v1/studio/authoring/resolve-target",
+                "name": "api.v1.studio.authoring.resolve-target"
+            },
+            {
+                "method": "POST",
+                "path": "/api/v1/studio/authoring/sessions",
+                "name": "api.v1.studio.authoring.sessions"
+            },
+            {
                 "method": "GET",
                 "path": "/health/live",
                 "name": "health.live"
@@ -519,6 +539,7 @@
             "queue:work",
             "schedule:run",
             "settings",
+            "studio-authoring",
             "theme:administrator:recover",
             "token:create",
             "user:create-admin",

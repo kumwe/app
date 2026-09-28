@@ -198,6 +198,7 @@ final readonly class StudioProducerMutationBoundary implements MutationBoundaryI
                 retryable: true,
             );
         }
+        $this->authority->noteReplay();
         try {
             $outcome = $this->outcomes->recover(
                 $prior->protectedOutcome,

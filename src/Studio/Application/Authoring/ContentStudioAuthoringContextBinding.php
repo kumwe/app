@@ -6,6 +6,7 @@ namespace Kumwe\App\Studio\Application\Authoring;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
+use Kumwe\App\Studio\Application\Host\StudioSessionSurfaceBinding;
 use Kumwe\App\Studio\Domain\Authoring\StudioAuthoringIntent;
 use Kumwe\Context\Value\AuthenticatedSurface;
 
@@ -28,14 +29,14 @@ final readonly class ContentStudioAuthoringContextBinding
      * @param   string                        $siteId            Active site that owns the Content target.
      * @param   string|null                   $organizationId    Active organization, when selected.
      * @param   string|null                   $workspaceId       Active workspace, when selected.
-     * @param   string                        $surface           Authenticated administrator surface.
-     * @param   string                        $sessionBinding    SHA-256 digest of the browser-session identity.
+     * @param   string                        $surface           Authenticated administrator or machine surface.
+     * @param   string                        $sessionBinding    SHA-256 digest of the browser session or credential.
      * @param   string                        $authorityBinding  SHA-256 digest of the live approval authority.
      * @param   ContentStudioAuthoringTarget  $target            Exact trusted Content target stored server-side.
      * @param   DateTimeImmutable             $createdAt         Instant the binding was opened.
      * @param   DateTimeImmutable             $expiresAt         Hard upper bound on binding authority.
      *
-     * @throws  InvalidArgumentException  When persisted metadata is malformed or not administrator-bound.
+     * @throws  InvalidArgumentException  When persisted metadata is malformed or bound to an inadmissible surface.
      *
      * @since   2.0.0
      */
@@ -57,7 +58,8 @@ final readonly class ContentStudioAuthoringContextBinding
         self::bounded($siteId, 191, 'site');
         self::nullableBounded($organizationId, 191, 'organization');
         self::nullableBounded($workspaceId, 191, 'workspace');
-        if ($surface !== AuthenticatedSurface::Administrator->value) {
+        $admitted = AuthenticatedSurface::tryFrom($surface);
+        if ($admitted === null || !StudioSessionSurfaceBinding::admits($admitted)) {
             throw new InvalidArgumentException('The Studio Content authoring surface is invalid.');
         }
         if (preg_match('/^[a-f0-9]{64}$/D', $sessionBinding) !== 1) {
