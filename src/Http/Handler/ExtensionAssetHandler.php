@@ -21,7 +21,8 @@ use Psr\Http\Server\RequestHandlerInterface;
  * Extension build output is not published by the web server directly, because serving it is a policy
  * decision rather than a file lookup. Every single request re-asks the registry whether the owning
  * extension is still active, whether the installed release is still verified, and whether the signing
- * key behind that verification is enabled, unrevoked, and inside its validity window. Disabling an
+ * key behind that verification is enabled, unrevoked, and unexpired — the same window the trust store
+ * judges a key by, which begins when the key is added. Disabling an
  * extension or revoking its key therefore takes its assets offline on the next request, with no cache to
  * purge — which is also why the responses it does serve are marked private and `no-store`.
  *
@@ -96,12 +97,12 @@ final readonly class ExtensionAssetHandler implements RequestHandlerInterface
             . 'LEFT JOIN %s k ON k.key_id = r.signing_key_id '
             . "WHERE e.runtime_path = ? AND e.status = 'active' AND r.trust_state = 'verified' "
             . 'AND (r.signing_key_id IS NULL OR (k.enabled = ? AND k.revoked_at IS NULL '
-            . 'AND k.not_before <= ? AND (k.expires_at IS NULL OR k.expires_at > ?)))',
+            . 'AND (k.expires_at IS NULL OR k.expires_at > ?)))',
             $this->tables->quoted('extensions'),
             $this->tables->quoted('extension_releases'),
             $this->tables->quoted('extension_trust_keys'),
-        ), [$runtime, true, $this->clock->now(), $this->clock->now()], [
-            Types::STRING, Types::BOOLEAN, Types::DATETIME_IMMUTABLE, Types::DATETIME_IMMUTABLE,
+        ), [$runtime, true, $this->clock->now()], [
+            Types::STRING, Types::BOOLEAN, Types::DATETIME_IMMUTABLE,
         ]);
         if (!is_string($authorized) || $authorized === '') {
             return new EmptyResponse(404, ['Cache-Control' => 'no-store']);

@@ -178,6 +178,45 @@ final class ConfigurationFactoryTest extends TestCase
         (new ConfigurationFactory())->create(new Environment($values));
     }
 
+    /**
+     * A feed URL carrying credentials or a query string is refused before it can reach any record.
+     *
+     * The origin is written verbatim to log lines, audit metadata and the feed-state row it is keyed by,
+     * so a basic-auth user, password or signed query parameter in it would be copied into all three.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testARevocationFeedUrlCarryingCredentialsOrAQueryIsRefused(): void
+    {
+        $key = base64_encode(str_repeat("\x07", SODIUM_CRYPTO_SIGN_PUBLICKEYBYTES));
+        $query = 'signed-query-' . 'value';
+        foreach (
+            [
+                'https://mirror-user:mirror-pass@revocations.kumwe.test/list.json',
+                'https://mirror-user@revocations.kumwe.test/list.json',
+                'https://revocations.kumwe.test/list.json?token=' . $query,
+                'https:///list.json',
+            ] as $origin
+        ) {
+            $values = $this->values();
+            $values['EXTENSIONS_REVOCATION_FEED_URL'] = $origin;
+            $values['EXTENSIONS_REVOCATION_FEED_KEY'] = $key;
+            try {
+                (new ConfigurationFactory())->create(new Environment($values));
+                self::fail('The feed origin was accepted: ' . $origin);
+            } catch (InvalidArgumentException $refusal) {
+                self::assertStringNotContainsString('mirror-pass', $refusal->getMessage());
+                self::assertStringNotContainsString($query, $refusal->getMessage());
+            }
+        }
+        $values = $this->values();
+        $values['EXTENSIONS_REVOCATION_FEED_URL'] = '/srv/kumwe/revocations/list.json';
+        $values['EXTENSIONS_REVOCATION_FEED_KEY'] = $key;
+        self::assertTrue((new ConfigurationFactory())->create(new Environment($values))->revocationFeed->isEnabled());
+    }
+
     public function testConfiguredRevocationFeedIsAcceptedWithItsPinnedKey(): void
     {
         $values = $this->values();

@@ -12,6 +12,7 @@ use Kumwe\Content\Application\ContentRecord;
 use Kumwe\App\Content\Application\ContentService;
 use Kumwe\Content\Domain\ContentTypeDefinition;
 use Kumwe\App\Site\Application\PublicPageLocator;
+use InvalidArgumentException;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -60,7 +61,7 @@ final readonly class AdministratorContentListHandler implements RequestHandlerIn
      *
      * @return  ResponseInterface  The rendered listing, marked `no-store` because it carries a CSRF token.
      *
-     * @throws  \InvalidArgumentException  When a filter, sort or page value in the query string is refused.
+     * @throws  \InvalidArgumentException  When the next page would lie past the browser's last page.
      * @throws  \RuntimeException  When the configured content repository cannot answer browse queries.
      *
      * @since   2.0.0
@@ -101,13 +102,15 @@ final readonly class AdministratorContentListHandler implements RequestHandlerIn
      *
      * Reading through `string()` and `integer()` first means the value object only ever sees trimmed
      * strings and positive integers, so its own checks are about vocabulary and range rather than
-     * type. Non-string keys are dropped, since a query string cannot name a filter numerically.
+     * type. Non-string keys are dropped, since a query string cannot name a filter numerically. A query
+     * string the value object refuses — an out-of-range page, an unknown sort, an oversized search — is
+     * anyone's hand-edited URL rather than a server fault, so the listing falls back to its neutral state
+     * instead of answering with an unhandled error.
      *
      * @param   ServerRequestInterface  $request  Request whose query string carries the browser state.
      *
-     * @return  ContentBrowseQuery  The filters, ordering and page the listing is built from.
-     *
-     * @throws  \InvalidArgumentException  When a value is off the accepted vocabulary or out of range.
+     * @return  ContentBrowseQuery  The filters, ordering and page the listing is built from, or the neutral
+     *          default query when the submitted state is outside the accepted vocabulary or range.
      *
      * @since   2.0.0
      */
@@ -119,15 +122,19 @@ final readonly class AdministratorContentListHandler implements RequestHandlerIn
                 $query[$key] = $value;
             }
         }
-        return new ContentBrowseQuery(
-            $this->string($query, 'q'),
-            $this->string($query, 'status'),
-            $this->string($query, 'type'),
-            $this->string($query, 'scope', 'active'),
-            $this->string($query, 'sort', 'updated_desc'),
-            $this->integer($query, 'page', 1),
-            $this->integer($query, 'per_page', 25),
-        );
+        try {
+            return new ContentBrowseQuery(
+                $this->string($query, 'q'),
+                $this->string($query, 'status'),
+                $this->string($query, 'type'),
+                $this->string($query, 'scope', 'active'),
+                $this->string($query, 'sort', 'updated_desc'),
+                $this->integer($query, 'page', 1),
+                $this->integer($query, 'per_page', 25),
+            );
+        } catch (InvalidArgumentException) {
+            return new ContentBrowseQuery();
+        }
     }
 
     /**
