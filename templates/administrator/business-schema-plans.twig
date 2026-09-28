@@ -4,7 +4,7 @@
 {% block context_subtitle %}{{ t('core.administrator.business_schema_plans.inspect_and_control_generated_relational_storage') }}{% endblock %}
 {% block content %}
   {% embed '@kis/page-header.twig' with {
-    eyebrow: 'Structure',
+    eyebrow: t('core.navigation.administrator_workspace.structure.label'),
     title: t('core.administrator.business_schema_plans.business_schema_plans'),
     purpose: t('core.administrator.business_schema_plans.compare_canonical_definitions_with_installed_rel')
   } %}{% endembed %}
@@ -144,8 +144,8 @@
                     <td><code data-visual-mask>{{ operation.table }}</code><br><span data-visual-mask>{{ operation.subject }}</span></td>
                     <td class="schema-operation-comparison">
                       {% for comparison in [
-                        {label: 'Before', state: operation.before},
-                        {label: 'After', state: operation.after}
+                        {label: t('core.administrator.business_schema_plans.before'), state: operation.before},
+                        {label: t('core.administrator.business_schema_plans.after'), state: operation.after}
                       ] %}
                         {% set state = comparison.state %}
                         <div class="schema-operation-state">

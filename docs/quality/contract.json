@@ -832,6 +832,32 @@
             }
         },
         {
+            "id": "translation-quality",
+            "title": "Every interface catalogue is qualified in its own language",
+            "purpose": "Format every pattern of all nine catalogues through ICU for its own locale with representative arguments, require every CLDR plural category the locale selects for everyday counts, hold translations to their source's arguments, and fail a non-English target left identical to prose English unless the reasoned register in the tool records why (V2-LNG-010, Gate B criterion 11).",
+            "owner": "localization",
+            "runner": "composer",
+            "composer_script": "translation:quality",
+            "command": "composer translation:quality",
+            "artifact": "console",
+            "in_qa": true,
+            "cadence": [
+                "local",
+                "ci",
+                "nightly",
+                "release"
+            ],
+            "maximum_interval": "per-change",
+            "engines": [],
+            "workflows": {
+                "ci": {
+                    "file": ".github/workflows/ci.yml",
+                    "job": "quality",
+                    "contains": "composer translation:quality"
+                }
+            }
+        },
+        {
             "id": "stylesheet-direction",
             "title": "No stylesheet pins a rule to one writing direction",
             "purpose": "Keep the right-to-left conversion from regressing one physical declaration at a time.",

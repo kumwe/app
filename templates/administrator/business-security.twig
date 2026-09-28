@@ -45,12 +45,12 @@
   <nav class="panel" aria-label="{{ t('core.administrator.business_security.business_security_concerns') }}">
     <div class="actions">
       {% for item in [
-        {id: 'overview', label: 'Overview'},
-        {id: 'organizations', label: 'Organizations'},
-        {id: 'memberships', label: 'Memberships'},
-        {id: 'policies', label: 'Policies'},
-        {id: 'approvals', label: 'Approvals'},
-        {id: 'credentials', label: 'Credentials'}
+        {id: 'overview', label: t('core.administrator.business_security.overview')},
+        {id: 'organizations', label: t('core.administrator.business_security.organizations')},
+        {id: 'memberships', label: t('core.administrator.business_security.memberships')},
+        {id: 'policies', label: t('core.administrator.business_security.policies')},
+        {id: 'approvals', label: t('core.administrator.business_security.approvals')},
+        {id: 'credentials', label: t('core.administrator.business_security.credentials')}
       ] %}
         <a class="button{% if section == item.id %} primary{% endif %}" href="/administrator/business-security?section={{ item.id }}"{% if section == item.id %} aria-current="page"{% endif %}>{{ item.label }}</a>
       {% endfor %}

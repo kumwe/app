@@ -4,8 +4,8 @@
 {% block content %}
   <div class="kis-phase-five" data-kis-surface="core.administrator.extensions">
     {% include '@kis/page-header.twig' with {
-      eyebrow: 'Platform',
-      title: 'Extensions',
+      eyebrow: t('core.administrator.extensions.platform'),
+      title: t('core.administrator.extensions.extensions'),
       purpose: t('core.administrator.extensions.install_verified_packages_manage_activation_and')
     } only %}
     <nav class="kis-phase-five-section-nav" aria-label="{{ t('core.administrator.extensions.extension_management_concerns') }}">

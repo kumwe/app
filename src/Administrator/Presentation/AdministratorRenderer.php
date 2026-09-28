@@ -8,6 +8,7 @@ use JsonException;
 use Kumwe\CanonicalJson\CanonicalEncoder;
 use Kumwe\App\Administrator\Navigation\AdministratorNavigationRegistry;
 use Kumwe\App\Extension\Contribution\AdministratorViewRegistry;
+use Kumwe\App\Localization\Presentation\TranslationTwigExtension;
 use Kumwe\Contribution\ContributionOwner;
 use Kumwe\App\Presentation\Asset\ViteAssetManifest;
 use Kumwe\App\Presentation\Twig\AdministratorTwigEnvironment;
@@ -31,6 +32,107 @@ use Twig\Error\Error;
  */
 final readonly class AdministratorRenderer
 {
+    /**
+     * Catalogue identifiers of the wording core's own navigation entries render in, keyed by entry.
+     *
+     * A contributed navigation definition carries its label and description as source-language text,
+     * because the contribution contract is locale-free. Core's entries are the one set whose wording
+     * this repository also authors in all nine catalogues, so they resolve here, per request, through
+     * the same translator the templates use. An extension's entries keep the text their contributor
+     * declared. Each identifier is written out rather than derived so the catalogue gate sees it
+     * referenced and a renamed entry cannot silently fall back to English.
+     *
+     * @var    array<string, array{label: string, description: string}>
+     * @since  2.0.0
+     */
+    private const array CORE_NAVIGATION_WORDING = [
+        'core.dashboard' => [
+            'label' => 'core.navigation.administrator.dashboard.label',
+            'description' => 'core.navigation.administrator.dashboard.description',
+        ],
+        'core.content' => [
+            'label' => 'core.navigation.administrator.content.label',
+            'description' => 'core.navigation.administrator.content.description',
+        ],
+        'core.create-content' => [
+            'label' => 'core.navigation.administrator.create-content.label',
+            'description' => 'core.navigation.administrator.create-content.description',
+        ],
+        'core.media' => [
+            'label' => 'core.navigation.administrator.media.label',
+            'description' => 'core.navigation.administrator.media.description',
+        ],
+        'core.models' => [
+            'label' => 'core.navigation.administrator.models.label',
+            'description' => 'core.navigation.administrator.models.description',
+        ],
+        'core.navigation' => [
+            'label' => 'core.navigation.administrator.navigation.label',
+            'description' => 'core.navigation.administrator.navigation.description',
+        ],
+        'core.wording' => [
+            'label' => 'core.navigation.administrator.wording.label',
+            'description' => 'core.navigation.administrator.wording.description',
+        ],
+        'core.business-definitions' => [
+            'label' => 'core.navigation.administrator.business-definitions.label',
+            'description' => 'core.navigation.administrator.business-definitions.description',
+        ],
+        'core.business-records' => [
+            'label' => 'core.navigation.administrator.business-records.label',
+            'description' => 'core.navigation.administrator.business-records.description',
+        ],
+        'core.business-reports' => [
+            'label' => 'core.navigation.administrator.business-reports.label',
+            'description' => 'core.navigation.administrator.business-reports.description',
+        ],
+        'core.business-schema-plans' => [
+            'label' => 'core.navigation.administrator.business-schema-plans.label',
+            'description' => 'core.navigation.administrator.business-schema-plans.description',
+        ],
+        'core.access' => [
+            'label' => 'core.navigation.administrator.access.label',
+            'description' => 'core.navigation.administrator.access.description',
+        ],
+        'core.business-security' => [
+            'label' => 'core.navigation.administrator.business-security.label',
+            'description' => 'core.navigation.administrator.business-security.description',
+        ],
+        'core.extensions' => [
+            'label' => 'core.navigation.administrator.extensions.label',
+            'description' => 'core.navigation.administrator.extensions.description',
+        ],
+        'core.automation' => [
+            'label' => 'core.navigation.administrator.automation.label',
+            'description' => 'core.navigation.administrator.automation.description',
+        ],
+        'core.settings' => [
+            'label' => 'core.navigation.administrator.settings.label',
+            'description' => 'core.navigation.administrator.settings.description',
+        ],
+    ];
+
+    /**
+     * Catalogue identifiers of core's sidebar group headings and their descriptions, keyed by group.
+     *
+     * @var    array<string, array{label: string, description: string}>
+     * @since  2.0.0
+     */
+    private const array CORE_WORKSPACE_WORDING = [
+        'core.workspace' => [
+            'label' => 'core.navigation.administrator_workspace.workspace.label',
+            'description' => 'core.navigation.administrator_workspace.workspace.description',
+        ],
+        'core.structure' => [
+            'label' => 'core.navigation.administrator_workspace.structure.label',
+            'description' => 'core.navigation.administrator_workspace.structure.description',
+        ],
+        'core.system' => [
+            'label' => 'core.navigation.administrator_workspace.system.label',
+            'description' => 'core.navigation.administrator_workspace.system.description',
+        ],
+    ];
+
     /**
      * Wire the renderer to its themed environment, its fallback, and the sources of the shell data.
      *
@@ -167,7 +269,7 @@ final readonly class AdministratorRenderer
     {
         $registry = $this->navigation ?? AdministratorNavigationRegistry::core($this->canonicalEncoder);
 
-        return $registry->visible($capabilities);
+        return $this->localizedNavigation($registry->visible($capabilities));
     }
 
     /**
@@ -277,14 +379,16 @@ final readonly class AdministratorRenderer
             ?? AdministratorNavigationRegistry::core($this->canonicalEncoder);
         $navigation = $navigationRegistry === null
             ? $this->visibleNavigation($capabilities)
-            : $registry->visible($capabilities);
+            : $this->localizedNavigation($registry->visible($capabilities));
         $assetEntry = ($this->assets ?? new ViteAssetManifest(''))->entry(
             'assets/administrator/main.ts',
             '/assets/administrator.css',
             '/assets/administrator.js',
         );
         $data['administrator_navigation'] = $navigation;
-        $data['administrator_workspaces'] = $registry->visibleWorkspaces($capabilities, $navigation);
+        $data['administrator_workspaces'] = $this->localizedWorkspaces(
+            $registry->visibleWorkspaces($capabilities, $navigation),
+        );
         $data['administrator_assets'] = $assetEntry->toArray();
         try {
             $data['administrator_commands_json'] = json_encode(
@@ -295,5 +399,110 @@ final readonly class AdministratorRenderer
             throw new \RuntimeException('Administrator navigation cannot be encoded.', 0, $exception);
         }
         return $data;
+    }
+
+    /**
+     * Put core's navigation entries into the language of the request, leaving contributed ones as declared.
+     *
+     * Only an entry owned by core and listed in `CORE_NAVIGATION_WORDING` is resolved, and its `group`
+     * follows its workspace heading, so the sidebar, the quick links built from the same rows and the
+     * command palette all speak one language. Without a registered translation extension, as in an
+     * isolated rendering environment, the declared source text is kept rather than an identifier.
+     *
+     * @param   list<array<string, int|string>>  $rows  Visible navigation rows from the registry.
+     *
+     * @return  list<array<string, int|string>>  The same rows, in the same order, with core wording resolved.
+     *
+     * @since   2.0.0
+     */
+    private function localizedNavigation(array $rows): array
+    {
+        $translation = $this->translation();
+        if ($translation === null) {
+            return $rows;
+        }
+        foreach ($rows as $index => $row) {
+            if (($row['owner'] ?? null) !== ContributionOwner::CORE) {
+                continue;
+            }
+            $wording = self::CORE_NAVIGATION_WORDING[(string) ($row['id'] ?? '')] ?? null;
+            if ($wording !== null) {
+                $row['label'] = $this->resolve($translation, $wording['label'], (string) $row['label']);
+                $row['description'] = $this->resolve(
+                    $translation,
+                    $wording['description'],
+                    (string) ($row['description'] ?? ''),
+                );
+            }
+            $group = self::CORE_WORKSPACE_WORDING[(string) ($row['workspace'] ?? '')] ?? null;
+            if ($group !== null) {
+                $row['group'] = $this->resolve($translation, $group['label'], (string) ($row['group'] ?? ''));
+            }
+            $rows[$index] = $row;
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Put core's sidebar group headings and descriptions into the language of the request.
+     *
+     * @param   list<array{id: string, label: string, description: string, priority: int, dom_id: string}>  $rows
+     *          Visible workspace groups from the registry.
+     *
+     * @return  list<array{id: string, label: string, description: string, priority: int, dom_id: string}>
+     *          The same groups with core wording resolved and contributed groups unchanged.
+     *
+     * @since   2.0.0
+     */
+    private function localizedWorkspaces(array $rows): array
+    {
+        $translation = $this->translation();
+        if ($translation === null) {
+            return $rows;
+        }
+        foreach ($rows as $index => $row) {
+            $wording = self::CORE_WORKSPACE_WORDING[$row['id']] ?? null;
+            if ($wording === null) {
+                continue;
+            }
+            $row['label'] = $this->resolve($translation, $wording['label'], $row['label']);
+            $row['description'] = $this->resolve($translation, $wording['description'], $row['description']);
+            $rows[$index] = $row;
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Answer the translation surface the themed environment's templates resolve messages through.
+     *
+     * @return  ?TranslationTwigExtension  The registered extension, or null when the environment has none.
+     *
+     * @since   2.0.0
+     */
+    private function translation(): ?TranslationTwigExtension
+    {
+        return $this->twig->hasExtension(TranslationTwigExtension::class)
+            ? $this->twig->getExtension(TranslationTwigExtension::class)
+            : null;
+    }
+
+    /**
+     * Resolve one catalogue message, keeping the declared text when no catalogue layer carries it.
+     *
+     * @param   TranslationTwigExtension  $translation  Translation surface bound to the request locale.
+     * @param   string                    $identifier   Catalogue identifier of the wording.
+     * @param   string                    $declared     Source-language text the contribution declared.
+     *
+     * @return  string  The localized wording, or the declared text when the identifier is unresolved.
+     *
+     * @since   2.0.0
+     */
+    private function resolve(TranslationTwigExtension $translation, string $identifier, string $declared): string
+    {
+        $resolved = $translation->translate($identifier);
+
+        return $resolved === $identifier ? $declared : $resolved;
     }
 }

@@ -20,7 +20,7 @@
 {% block content %}
 <div class="kis-access-control" data-kis-surface="core.administrator.access-control" data-kis-component="local-navigation">
   {% embed '@kis/page-header.twig' with {
-    eyebrow: 'Identity',
+    eyebrow: t('core.administrator.access_control.identity'),
     title: t('core.administrator.access_control.users_access'),
     purpose: t('core.administrator.access_control.manage_identities_groups_and_roles_capability')
   } %}
@@ -33,11 +33,11 @@
   <nav class="panel" aria-label="{{ t('core.administrator.access_control.users_and_access_concerns') }}">
     <div class="actions">
       {% for item in [
-        {id: 'users', label: 'Users'},
+        {id: 'users', label: t('core.administrator.access_control.users')},
         {id: 'groups', label: t('core.administrator.access_control.groups_roles')},
-        {id: 'grants', label: 'Grants'},
-        {id: 'assignments', label: 'Assignments'},
-        {id: 'tokens', label: 'Tokens'},
+        {id: 'grants', label: t('core.administrator.access_control.grants_tab')},
+        {id: 'assignments', label: t('core.administrator.access_control.assignments')},
+        {id: 'tokens', label: t('core.administrator.access_control.tokens')},
         {id: 'events', label: t('core.administrator.access_control.security_events')}
       ] %}
         <a class="button{% if section == item.id %} primary{% endif %}" href="/administrator/access?section={{ item.id }}"{% if section == item.id %} aria-current="page"{% endif %}>{{ item.label }}</a>

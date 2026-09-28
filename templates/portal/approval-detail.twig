@@ -19,7 +19,7 @@
             label: t('core.portal.approval_detail.approval_request_concerns'),
             active: view,
             tabs: [
-                {id: 'review', label: 'Review', href: '/portal/approvals/' ~ (approval.id|url_encode) ~ '?view=review'},
+                {id: 'review', label: t('core.portal.approval_detail.review'), href: '/portal/approvals/' ~ (approval.id|url_encode) ~ '?view=review'},
                 {id: 'history', label: t('core.administrator.business_security.decision_history'), href: '/portal/approvals/' ~ (approval.id|url_encode) ~ '?view=history', count: approval.votes|length}
             ]
         } only %}
