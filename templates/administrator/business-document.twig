@@ -1,4 +1,5 @@
 {% extends "layout.twig" %}
+{% import "_business-fields.twig" as business_fields %}
 {% set record_path = business_base_path ~ '/' ~ (definition.handle|url_encode)
   ~ '/' ~ (record.record_id|url_encode) %}
 
@@ -54,7 +55,7 @@
           <p class="kis-business-document-number">{{ document.identity ?: document.title }}</p>
         </div>
         <p class="kis-business-document-state">
-          {{ record.deleted_at ? 'Deleted' : (record.archived_at ? 'Archived' : record.workflow_state|default('Active'))|replace({'_': ' '})|title }}
+          {{ business_fields.state_label(record, definition) }}
         </p>
       </header>
 

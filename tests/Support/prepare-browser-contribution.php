@@ -11,6 +11,7 @@ use Kumwe\Transaction\Contract\TransactionManager;
 use Kumwe\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\App\BusinessRecord\Application\BusinessRecordService;
 use Kumwe\App\BusinessRecord\Application\Command\CreateRecordCommand;
+use Kumwe\App\Content\Application\ContentService;
 use Kumwe\App\BusinessRecord\Application\Command\ExecuteRecordActionCommand;
 use Kumwe\App\BusinessRecord\Application\PostingPeriodService;
 use Kumwe\App\BusinessRecord\Application\Command\RelateRecordsCommand;
@@ -1160,6 +1161,316 @@ try {
         new DateTimeImmutable('4200-01-01T00:00:00Z'),
         new DateTimeImmutable('4200-02-01T00:00:00Z'),
     );
+    $transition = static fn (string $handle, string $from, string $to): array => [
+        'handle' => $handle,
+        'from' => $from,
+        'to' => $to,
+        'capability' => 'business.record.action',
+    ];
+    $administratorAction = static fn (string $handle, string $label): array => [
+        'handle' => $handle,
+        'label' => $label,
+        'capability' => 'business.record.action',
+        'administrator' => true,
+        'portal' => false,
+        'public' => false,
+        'transition' => $handle,
+    ];
+    $ownedLines = static fn (string $handle, string $label, string $target): array => [
+        'handle' => $handle,
+        'label' => $label,
+        'kind' => 'owned_line_collection',
+        'target' => $target,
+        'ordered' => true,
+        'on_delete' => 'cascade',
+    ];
+
+    // P7-E archetype (b): an exact-value document type of owned lines whose total must agree with the sum
+    // of its lines, with a review, approve and post workflow whose approved and posted states are immutable,
+    // and every field exportable. The journey drafts its own thousand-line document out of process through
+    // tests/Support/draft-browser-ledger-document.php, so each project and retry reviews a fresh draft.
+    $ledgerLineDocument = NeutralBusinessFixture::documentLineDocument(
+        'browser',
+        '019b40d9-8dd0-7ca2-a0db-9eae6a150801',
+    );
+    $ledgerLineDocument['singular_label'] = 'Ledger line';
+    $ledgerLineDocument['plural_label'] = 'Ledger lines';
+    $exportable = static fn (array $fields): array => array_map(
+        static fn (array $field): array => $field['handle'] === 'id' ? $field : [...$field, 'exportable' => true],
+        $fields,
+    );
+    $ledgerLineDocument['fields'] = $exportable($ledgerLineDocument['fields']);
+    $ledgerLineDefinition = NeutralBusinessFixture::install($container, $context, $ledgerLineDocument);
+    $ledgerDocument = NeutralBusinessFixture::documentHeaderDocument(
+        'browser',
+        '019b40d9-8dd0-7ca2-a0db-9eae6a150802',
+        $ledgerLineDefinition->handle,
+    );
+    $ledgerDocument['singular_label'] = 'Ledger document';
+    $ledgerDocument['plural_label'] = 'Ledger documents';
+    $ledgerDocument['fields'] = $exportable($ledgerDocument['fields']);
+    $ledgerDocument['views'][] = [
+        'handle' => 'ledger_document',
+        'label' => 'Ledger document',
+        'kind' => 'document',
+        'fields' => ['title', 'total'],
+        'administrator' => true,
+        'portal' => false,
+        'public' => false,
+        'document' => [
+            'identity' => 'title',
+            'groups' => [],
+            'parties' => [],
+            'lines' => 'lines',
+            'totals' => ['total'],
+        ],
+    ];
+    $ledgerDocument['workflow'] = [
+        'initial_state' => 'draft',
+        'states' => ['draft', 'in_review', 'approved', 'posted'],
+        'immutable_states' => ['approved', 'posted'],
+        'transitions' => [
+            $transition('submit', 'draft', 'in_review'),
+            $transition('approve', 'in_review', 'approved'),
+            $transition('post', 'approved', 'posted'),
+        ],
+    ];
+    $ledgerDocument['actions'] = [
+        $administratorAction('submit', 'Submit for review'),
+        $administratorAction('approve', 'Approve document'),
+        $administratorAction('post', 'Post to ledger'),
+    ];
+    NeutralBusinessFixture::install($container, $context, $ledgerDocument);
+
+    // P7-E archetype (d): a mobile assignment job card with ordered parts, labour and measurement lines, a
+    // media reference for the site photograph, and an assigned, in-progress, completed workflow.
+    $jobLine = static fn (string $id, string $handle, string $singular, string $plural, array $fields): array => [
+        'id' => $id,
+        'owner' => ['type' => 'site', 'identifier' => 'default'],
+        'site' => 'default',
+        'handle' => $handle,
+        'singular_label' => $singular,
+        'plural_label' => $plural,
+        'status' => 'draft',
+        'definition_version' => 0,
+        'storage_mode' => 'relational',
+        'identity_strategy' => 'uuid',
+        'scope' => 'site',
+        'audit_enabled' => true,
+        'revisions_enabled' => true,
+        'fields' => [[
+            'handle' => 'id',
+            'label' => 'ID',
+            'type' => 'core.uuid',
+            'required' => true,
+            'nullable' => false,
+            'unique' => true,
+            'indexed' => true,
+            'immutable_after_create' => true,
+            'server_only' => true,
+            'read_only' => true,
+        ], ...$fields],
+        'relationships' => [],
+        'views' => [[
+            'handle' => 'list',
+            'label' => $plural,
+            'kind' => 'list',
+            'fields' => array_map(static fn (array $field): string => $field['handle'], $fields),
+            'filters' => [],
+            'sorts' => [],
+            'administrator' => true,
+            'portal' => false,
+            'public' => false,
+        ]],
+        'actions' => [],
+        'workflow' => null,
+        'compatibility_metadata' => [],
+        'administrator_exposure' => true,
+        'portal_exposure' => false,
+        'public_exposure' => false,
+    ];
+    $text = static fn (string $handle, string $label, int $length = 120): array => [
+        'handle' => $handle,
+        'label' => $label,
+        'type' => 'core.text',
+        'required' => true,
+        'nullable' => false,
+        'length' => $length,
+    ];
+    $decimal = static fn (string $handle, string $label): array => [
+        'handle' => $handle,
+        'label' => $label,
+        'type' => 'core.decimal',
+        'required' => true,
+        'nullable' => false,
+        'precision' => 12,
+        'scale' => 2,
+    ];
+    $partDefinition = NeutralBusinessFixture::install($container, $context, $jobLine(
+        '019b40d9-8dd0-7ca2-a0db-9eae6a150901',
+        'site.default.browser_job_part',
+        'Part used',
+        'Parts used',
+        [
+            $text('part_number', 'Part number', 40),
+            $text('description', 'Part description'),
+            $decimal('quantity', 'Quantity'),
+        ],
+    ));
+    $labourDefinition = NeutralBusinessFixture::install($container, $context, $jobLine(
+        '019b40d9-8dd0-7ca2-a0db-9eae6a150902',
+        'site.default.browser_job_labour',
+        'Labour entry',
+        'Labour',
+        [$text('task', 'Work carried out'), $decimal('hours', 'Hours')],
+    ));
+    $measurementDefinition = NeutralBusinessFixture::install($container, $context, $jobLine(
+        '019b40d9-8dd0-7ca2-a0db-9eae6a150903',
+        'site.default.browser_job_measurement',
+        'Measurement',
+        'Measurements',
+        [$text('metric', 'What was measured'), $decimal('reading', 'Reading'), $text('unit', 'Unit', 20)],
+    ));
+    NeutralBusinessFixture::install($container, $context, [
+        ...$jobLine('019b40d9-8dd0-7ca2-a0db-9eae6a150904', 'site.default.browser_job_card', 'Job card', 'Job cards', [
+            $text('title', 'Job'),
+            $text('site_address', 'Site address', 200),
+            [
+                'handle' => 'site_photo',
+                'label' => 'Site photograph',
+                'type' => 'core.media_reference',
+                'required' => false,
+                'nullable' => true,
+            ],
+        ]),
+        'relationships' => [
+            $ownedLines('parts', 'Parts used', $partDefinition->handle),
+            $ownedLines('labour', 'Labour', $labourDefinition->handle),
+            $ownedLines('measurements', 'Measurements', $measurementDefinition->handle),
+        ],
+        'workflow' => [
+            'initial_state' => 'assigned',
+            'states' => ['assigned', 'in_progress', 'completed'],
+            'immutable_states' => ['completed'],
+            'transitions' => [
+                $transition('start', 'assigned', 'in_progress'),
+                $transition('complete', 'in_progress', 'completed'),
+            ],
+        ],
+        'actions' => [
+            $administratorAction('start', 'Start work'),
+            $administratorAction('complete', 'Complete job'),
+        ],
+    ]);
+
+    // P7-E archetype (e): a portal order placed from a public catalogue page, fulfilled by an administrator,
+    // with its payment status written out of process by an adapter holding a scoped API token.
+    NeutralBusinessFixture::install($container, $context, [
+        ...$jobLine('019b40d9-8dd0-7ca2-a0db-9eae6a150a01', 'site.default.browser_shop_order', 'Order', 'Orders', [
+            $text('product', 'Product'),
+            [
+                'handle' => 'quantity',
+                'label' => 'Quantity',
+                'type' => 'core.integer',
+                'required' => true,
+                'nullable' => false,
+            ],
+            $text('delivery_address', 'Delivery address', 200),
+            [
+                'handle' => 'payment_status',
+                'label' => 'Payment status',
+                'type' => 'core.enum',
+                'required' => true,
+                'nullable' => false,
+                'default' => 'pending',
+                'configuration' => ['options' => ['pending', 'paid', 'failed']],
+                'create_visible' => false,
+            ],
+        ]),
+        'views' => [[
+            'handle' => 'list',
+            'label' => 'Orders',
+            'kind' => 'list',
+            'fields' => ['product', 'quantity', 'payment_status'],
+            'filters' => [],
+            'sorts' => [],
+            'administrator' => true,
+            'portal' => true,
+            'public' => false,
+        ]],
+        'workflow' => [
+            'initial_state' => 'placed',
+            'states' => ['placed', 'fulfilled'],
+            'transitions' => [
+                $transition('fulfil', 'placed', 'fulfilled'),
+            ],
+        ],
+        'actions' => [
+            $administratorAction('fulfil', 'Mark as fulfilled'),
+        ],
+        'portal_exposure' => true,
+        'portal_operations' => ['browse', 'read', 'create'],
+    ]);
+    $catalogue = $container->get(ContentService::class);
+    if (!$catalogue instanceof ContentService) {
+        throw new RuntimeException('The browser catalogue content service is unavailable.');
+    }
+    $cataloguePage = $catalogue->create(
+        $context,
+        'Field service kits',
+        'browser-catalogue',
+        ['body' => "**Site survey kit** — everything a technician needs for one visit.\n\n"
+            . '[Order the site survey kit](/portal/business/site.default.browser_shop_order?new=1)'],
+    );
+    $cataloguePage = $catalogue->transition(
+        $context,
+        $cataloguePage->entry->id(),
+        $cataloguePage->entry->version(),
+        'review',
+    );
+    $catalogue->transition($context, $cataloguePage->entry->id(), $cataloguePage->entry->version(), 'published');
+    // The payment adapter is its own service identity: an organization member whose role may only read and
+    // update records. tests/Support/issue-browser-payment-token.php issues its membership-scoped token at the
+    // moment the journey needs it, so policy changes made by earlier journeys cannot have retired it.
+    $paymentEmail = 'browser-payment-adapter@kumwe.test';
+    $paymentPassword = 'browser payment adapter password';
+    $paymentUser = $access->createUser($context, $paymentEmail, 'Browser Payment Adapter', $paymentPassword);
+    $paymentRole = $access->createRole($context, 'browser-payment-adapter', 'Browser Payment Adapter');
+    foreach (['business.record.read', 'business.record.update'] as $capability) {
+        $access->grant($context, $paymentRole, $capability, 'site', 'default');
+    }
+    $paymentMembershipId = Uuid::uuid7()->toString();
+    $transactions->transactional(function () use (
+        $security,
+        $organizationId,
+        $workspaceId,
+        $paymentMembershipId,
+        $paymentUser,
+        $paymentRole,
+        $context,
+    ): void {
+        $at = new DateTimeImmutable();
+        $security->insertMembership(
+            $paymentMembershipId,
+            $organizationId,
+            'default',
+            $paymentUser,
+            $at->modify('-1 minute'),
+            $at->modify('+1 day'),
+            $context->actorId(),
+            $at,
+        );
+        $security->assignMembershipWorkspace($paymentMembershipId, $workspaceId, 'default', $context->actorId(), $at);
+        $security->assignMembershipRole($paymentMembershipId, $paymentRole, 'default', $context->actorId(), $at);
+    });
+    // Issuing needs `users.manage`, which the adapter identity keeps for the fixture's life: withdrawing the
+    // role would bump its security epoch and retire its tokens. The token carries record read and update
+    // alone, so nothing presenting it can manage users.
+    $paymentIssuerRole = $access->createRole($context, 'browser-payment-issuer', 'Browser Payment Token Issuer');
+    $access->grant($context, $paymentIssuerRole, 'users.manage');
+    $access->assignRole($context, $paymentUser, $paymentRole);
+    $access->assignRole($context, $paymentUser, $paymentIssuerRole);
+
     $transactions->transactional(function () use (
         $security,
         $portalRole,

@@ -121,7 +121,7 @@
       "label": "Read managed public content",
       "actor_ids": ["public-visitor"],
       "primary_outcome": "The visitor reaches the canonical published page and understands where to go next.",
-      "journey_ids": ["journey.public-content"]
+      "journey_ids": ["journey.public-content", "journey.acceptance-catalogue-order"]
     },
     {
       "id": "task.auth.admin",
@@ -149,14 +149,14 @@
       "label": "Create, design, edit and publish content contextually",
       "actor_ids": ["content-operator"],
       "primary_outcome": "From Content New/Edit, the actor uses one resource-bound Studio session to start blank or from a reusable type, arrange layout and typed fields, enter values, save the item or an explicit reusable-type outcome, reopen exact accepted revisions, and progress through the authorized workflow without lost edits.",
-      "journey_ids": ["journey.content-lifecycle"]
+      "journey_ids": ["journey.content-lifecycle", "journey.acceptance-content-publication"]
     },
     {
       "id": "task.media.manage",
       "label": "Manage media",
       "actor_ids": ["content-operator"],
       "primary_outcome": "The actor uploads, identifies and safely removes an authorized media item.",
-      "journey_ids": ["journey.content-lifecycle"]
+      "journey_ids": ["journey.content-lifecycle", "journey.acceptance-content-publication"]
     },
     {
       "id": "task.models.manage",
@@ -170,7 +170,7 @@
       "label": "Manage public navigation",
       "actor_ids": ["structure-manager"],
       "primary_outcome": "The actor maintains a valid, understandable menu tree and canonical target paths.",
-      "journey_ids": ["journey.site-structure"]
+      "journey_ids": ["journey.site-structure", "journey.acceptance-content-publication"]
     },
     {
       "id": "task.wording.manage",
@@ -205,14 +205,14 @@
       "label": "Operate a business record",
       "actor_ids": ["business-operator", "portal-member"],
       "primary_outcome": "The actor browses, reads, creates, edits, reviews history and performs allowed actions consistently.",
-      "journey_ids": ["journey.business-record-lifecycle", "journey.portal-work"]
+      "journey_ids": ["journey.business-record-lifecycle", "journey.portal-work", "journey.acceptance-exact-document"]
     },
     {
       "id": "task.business.relationship",
       "label": "Manage business relationships and choices",
       "actor_ids": ["business-operator", "portal-member"],
       "primary_outcome": "The actor selects only authorized related records and updates the intended relationship.",
-      "journey_ids": ["journey.business-record-lifecycle", "journey.portal-work"]
+      "journey_ids": ["journey.business-record-lifecycle", "journey.portal-work", "journey.acceptance-mobile-assignment"]
     },
     {
       "id": "task.business.custom-view",
@@ -233,7 +233,7 @@
       "label": "Run a report and retrieve an export",
       "actor_ids": ["report-operator", "portal-member"],
       "primary_outcome": "The actor selects a report, supplies parameters, understands results and retrieves only an authorized artifact.",
-      "journey_ids": ["journey.report-export", "journey.portal-work"]
+      "journey_ids": ["journey.report-export", "journey.portal-work", "journey.acceptance-exact-document"]
     },
     {
       "id": "task.identity.manage",
@@ -275,14 +275,14 @@
       "label": "Sign in to the portal",
       "actor_ids": ["portal-candidate"],
       "primary_outcome": "A valid scoped member reaches the portal without receiving administrator authority.",
-      "journey_ids": ["journey.portal-work"]
+      "journey_ids": ["journey.portal-work", "journey.acceptance-catalogue-order"]
     },
     {
       "id": "task.portal.home",
       "label": "Orient in ordinary portal work",
       "actor_ids": ["portal-member"],
       "primary_outcome": "The member sees plain-language permitted work, approvals, reports and account destinations.",
-      "journey_ids": ["journey.portal-work"]
+      "journey_ids": ["journey.portal-work", "journey.acceptance-portal-relationship"]
     },
     {
       "id": "task.portal.security",
@@ -317,7 +317,7 @@
       "label": "Change the current account password",
       "actor_ids": ["portal-member", "content-operator", "security-administrator"],
       "primary_outcome": "An authenticated person proves the current password and replaces it without identity-management privileges; all prior credentials cease to work.",
-      "journey_ids": []
+      "journey_ids": ["journey.acceptance-portal-relationship"]
     }
   ],
   "journeys": [
@@ -425,6 +425,96 @@
       "actor_ids": ["template-author", "system-administrator"],
       "surface_sequence": ["core.administrator.extensions", "core.administrator.settings", "core.administrator.dashboard", "core.portal.home", "core.public.page"],
       "success": "An installed template changes approved tokens and slots, survives upgrade or falls back safely, and can be reset to KIS defaults."
+    },
+    {
+      "id": "journey.acceptance-content-publication",
+      "label": "Author, illustrate, publish and link a page",
+      "actor_ids": ["content-operator", "structure-manager", "public-visitor"],
+      "surface_sequence": ["core.administrator.dashboard", "core.administrator.media", "core.administrator.content-collection", "core.administrator.content-editor", "core.administrator.navigation", "core.public.page"],
+      "success": "An editor finds Media and Content from the navigation, recovers from an empty upload, drafts without raw JSON, moves the page through review to publication, links it from a menu and a visitor reads it with keyboard skip-link focus and no inline style.",
+      "acceptance": {
+        "archetype_package": "P7-E",
+        "evidence": {
+          "spec": "tests/Browser/user-acceptance-journeys.spec.ts",
+          "test": "(a) content authoring, media, navigation, workflow and publication",
+          "projects": ["desktop-chromium", "mobile-chromium", "desktop-firefox", "desktop-webkit"],
+          "local_evidence": "Chromium desktop and mobile",
+          "nightly_evidence": "Firefox and WebKit in CI; WebKit evidence is not native Safari evidence"
+        },
+        "dimensions": ["discoverability", "task-completion", "terminology", "error-recovery", "confirmation", "long-form-navigation", "mobile-ergonomics", "assistive-technology"]
+      }
+    },
+    {
+      "id": "journey.acceptance-exact-document",
+      "label": "Draft, review, approve, post, inspect and export a thousand-line document",
+      "actor_ids": ["business-operator", "report-operator"],
+      "surface_sequence": ["core.administrator.generated-catalog", "core.administrator.generated-definition", "core.administrator.generated-record", "core.administrator.generated-relationship", "core.administrator.generated-operation"],
+      "success": "A freshly drafted document is found through the disclosed title filter, all one thousand exact-value lines render with the exact 5005.00 total, a total that disagrees with the lines is refused with the rule's own message and the typed values kept, each workflow step is confirmed explicitly, the posted document is read-only with the refusal's own wording, history names every step in business terms and the verified CSV export carries the exact total.",
+      "acceptance": {
+        "archetype_package": "P7-E",
+        "evidence": {
+          "spec": "tests/Browser/user-acceptance-journeys.spec.ts",
+          "test": "(b) an exact-value thousand-line document is drafted, reviewed, approved, posted, inspected and exported",
+          "projects": ["desktop-chromium", "mobile-chromium", "desktop-firefox", "desktop-webkit"],
+          "local_evidence": "Chromium desktop and mobile",
+          "nightly_evidence": "Firefox and WebKit in CI; WebKit evidence is not native Safari evidence"
+        },
+        "dimensions": ["discoverability", "task-completion", "terminology", "error-recovery", "confirmation", "policy-denial", "long-form-navigation", "assistive-technology"]
+      }
+    },
+    {
+      "id": "journey.acceptance-portal-relationship",
+      "label": "Sign in, relate and manage one's own account in the portal",
+      "actor_ids": ["portal-candidate", "portal-member"],
+      "surface_sequence": ["core.portal.login", "core.portal.home", "core.portal.generated-catalog", "core.portal.generated-record", "core.portal.generated-relationship", "core.portal.account"],
+      "success": "An anonymous visitor is sent to sign in, a wrong password keeps the address and explains itself, the member reaches business work from the portal home, reviews related records, is refused a wrong current password without change, and cannot enter the administrator.",
+      "acceptance": {
+        "archetype_package": "P7-E",
+        "evidence": {
+          "spec": "tests/Browser/user-acceptance-journeys.spec.ts",
+          "test": "(c) a relationship and self-service portal flow",
+          "projects": ["desktop-chromium", "mobile-chromium", "desktop-firefox", "desktop-webkit"],
+          "local_evidence": "Chromium desktop and mobile",
+          "nightly_evidence": "Firefox and WebKit in CI; WebKit evidence is not native Safari evidence"
+        },
+        "dimensions": ["discoverability", "task-completion", "terminology", "error-recovery", "policy-denial", "assistive-technology"]
+      }
+    },
+    {
+      "id": "journey.acceptance-mobile-assignment",
+      "label": "Complete a mobile job card with parts, labour, measurements and media",
+      "actor_ids": ["business-operator"],
+      "surface_sequence": ["core.administrator.media", "core.administrator.generated-definition", "core.administrator.generated-choices", "core.administrator.generated-record", "core.administrator.generated-relationship", "core.administrator.generated-operation"],
+      "success": "A technician on a phone-sized viewport uploads the site photograph, attaches it to a new assignment through the media chooser, confirms starting work, records grouped parts, labour and measurement lines with touch targets of at least 24 CSS pixels and no overflow, and completing the job leaves it read-only.",
+      "acceptance": {
+        "archetype_package": "P7-E",
+        "evidence": {
+          "spec": "tests/Browser/user-acceptance-journeys.spec.ts",
+          "test": "(d) a mobile assignment with parts, labour, measurements and media",
+          "projects": ["desktop-chromium", "mobile-chromium", "desktop-firefox", "desktop-webkit"],
+          "local_evidence": "Chromium desktop and mobile",
+          "nightly_evidence": "Firefox and WebKit in CI; WebKit evidence is not native Safari evidence"
+        },
+        "dimensions": ["discoverability", "task-completion", "confirmation", "long-form-navigation", "mobile-ergonomics", "assistive-technology"]
+      }
+    },
+    {
+      "id": "journey.acceptance-catalogue-order",
+      "label": "Order from the public catalogue and follow payment and fulfilment",
+      "actor_ids": ["public-visitor", "portal-member", "business-operator"],
+      "surface_sequence": ["core.public.page", "core.portal.login", "core.portal.generated-definition", "core.portal.generated-record", "core.administrator.generated-operation"],
+      "success": "A visitor follows the public catalogue into the portal, recovers from an invalid quantity with typed values kept, is denied the fulfilment action, sees a payment recorded out of process through the REST API where a stale version is refused, and sees the administrator's confirmed fulfilment.",
+      "acceptance": {
+        "archetype_package": "P7-E",
+        "evidence": {
+          "spec": "tests/Browser/user-acceptance-journeys.spec.ts",
+          "test": "(e) a public catalogue to an authenticated order, fulfilment and out-of-process payment",
+          "projects": ["desktop-chromium", "mobile-chromium", "desktop-firefox", "desktop-webkit"],
+          "local_evidence": "Chromium desktop and mobile",
+          "nightly_evidence": "Firefox and WebKit in CI; WebKit evidence is not native Safari evidence"
+        },
+        "dimensions": ["discoverability", "task-completion", "error-recovery", "confirmation", "policy-denial", "concurrency-stale-state", "assistive-technology"]
+      }
     }
   ]
 }

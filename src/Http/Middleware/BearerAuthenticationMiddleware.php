@@ -9,6 +9,7 @@ use Kumwe\Context\Value\AuthenticationStrength;
 use Kumwe\Context\Value\AuthenticatedSurface;
 use Kumwe\Context\Value\ExecutionContext;
 use Kumwe\Context\Value\SiteContext;
+use Kumwe\App\Identity\Application\Authentication\AccessTokenContext;
 use Kumwe\App\Identity\Application\Authentication\AccessTokenVerifier;
 use Kumwe\App\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\App\Identity\Application\Authentication\ScopedAccessTokenVerifier;
@@ -32,7 +33,9 @@ use Kumwe\App\Application\Authorization\ExecutionContextAttribute;
  * handler. For a protected route the presented token is verified against the route's audience and
  * purpose and the site named by `SITE_HEADER`, each required capability is checked, and the resulting
  * `AuthenticatedPrincipal` and `ExecutionContext` are published as request attributes for the handler
- * to authorize against. Rejections are problem documents carrying the matching `WWW-Authenticate`
+ * to authorize against. A route that takes `kumwe-mcp` tokens yields an MCP-surface context, so the
+ * Streamable HTTP server binds tools exactly as the stdio server does; every other route yields the
+ * API surface. Rejections are problem documents carrying the matching `WWW-Authenticate`
  * challenge, and a route configured incorrectly raises `LogicException` instead of silently
  * degrading to a weaker check.
  *
@@ -168,13 +171,16 @@ final readonly class BearerAuthenticationMiddleware implements MiddlewareInterfa
         if ($principal === null) {
             return $this->unauthorized('invalid_token');
         }
+        $surface = $audience === AccessTokenContext::mcp()->audience
+            ? AuthenticatedSurface::Mcp
+            : AuthenticatedSurface::Api;
         $context = $verified !== null
-            ? $verified->context($this->requestId($request), AuthenticatedSurface::Api)
+            ? $verified->context($this->requestId($request), $surface)
             : $principal->context(
                 SiteContext::fromString($siteIdentifier),
                 AuthenticationStrength::BearerToken,
                 $this->requestId($request),
-                surface: AuthenticatedSurface::Api,
+                surface: $surface,
             );
 
         $required = $this->requiredCapabilities($options);

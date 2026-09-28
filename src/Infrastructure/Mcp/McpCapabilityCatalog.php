@@ -136,7 +136,31 @@ final class McpCapabilityCatalog
         'kumwe_user_sessions_terminate' => [McpRiskClass::InstallationGlobal, self::VIA_IDENTITY],
         'kumwe_user_role_revoke' => [McpRiskClass::InstallationGlobal, self::VIA_IDENTITY],
         'kumwe_role_grant_revoke' => [McpRiskClass::InstallationGlobal, self::VIA_IDENTITY],
+        'kumwe_business_approval_list' => [McpRiskClass::Read, self::VIA_APPROVALS],
+        'kumwe_business_approval_get' => [McpRiskClass::Read, self::VIA_APPROVALS],
+        'kumwe_business_approval_cancel' => [McpRiskClass::ScopedWrite, self::VIA_APPROVALS],
+        'kumwe_media_list' => [McpRiskClass::Read, self::VIA_MEDIA],
+        'kumwe_media_get' => [McpRiskClass::Read, self::VIA_MEDIA],
+        'kumwe_media_upload' => [McpRiskClass::ScopedWrite, self::VIA_MEDIA],
+        'kumwe_media_delete' => [McpRiskClass::Destructive, self::VIA_MEDIA],
     ];
+
+    /**
+     * Non-MCP route for the media library tools.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const string VIA_MEDIA = 'Administrator console: Media, /api/v1/media, or bin/kumwe media.';
+
+    /**
+     * Non-MCP route for the approval inbox tools, and the only route to a decision.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const string VIA_APPROVALS = 'The portal or administrator approval screens, the protected REST approval '
+        . 'resources, or bin/kumwe business-record approvals; decisions need browser step-up.';
 
     /**
      * Non-MCP route for the Studio authoring tools.
@@ -1495,6 +1519,166 @@ final class McpCapabilityCatalog
             ),
             ...$this->studioAuthoringTools(),
             ...$this->accessRecoveryTools(),
+            ...$this->businessApprovalTools(),
+            ...$this->mediaTools(),
+        ];
+    }
+
+    /**
+     * Declare the media library tools: the administrator media screen's browse, read, upload and delete.
+     *
+     * An upload carries the file as base64 because a tool argument is JSON; the decoded bytes meet the same
+     * size ceiling, content sniffing and `media.upload` audit event as a browser or REST upload.
+     *
+     * @return  list<array{
+     *            name: string, title: string, description: string, handler: string,
+     *            capability: string|null, capabilityResolver: string|McpDynamicCapabilityResolver,
+     *            mutationGuard: McpMutationGuardMode, readOnly: bool, destructive: bool, idempotent: bool,
+     *            inputSchema: array<string, mixed>, outputSchema: array<string, mixed>
+     *          }>  Tool declarations in registration order.
+     *
+     * @since   2.0.0
+     */
+    private function mediaTools(): array
+    {
+        $media = ['type' => 'string', 'minLength' => 1, 'maxLength' => 191];
+        $asset = ['type' => 'object', 'additionalProperties' => true];
+
+        return [
+            $this->tool(
+                'kumwe_media_list',
+                'List media',
+                'Browse one page of the site media library, optionally filtered by name and kind.',
+                'listMedia',
+                'content.read',
+                true,
+                false,
+                true,
+                [
+                    'query' => ['type' => 'string', 'maxLength' => 200],
+                    'kind' => ['type' => 'string', 'enum' => ['all', 'image', 'document']],
+                    'page' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 100000],
+                    'perPage' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 96],
+                ],
+                $this->closedObject([
+                    'items' => ['type' => 'array', 'maxItems' => 96],
+                    'total' => ['type' => 'integer', 'minimum' => 0],
+                    'page' => ['type' => 'integer', 'minimum' => 1],
+                    'pages' => ['type' => 'integer', 'minimum' => 0],
+                    'per_page' => ['type' => 'integer', 'minimum' => 1],
+                ], ['items', 'total', 'page', 'pages', 'per_page']),
+            ),
+            $this->tool(
+                'kumwe_media_get',
+                'Read a media asset',
+                'Read one media library asset\'s metadata.',
+                'getMedia',
+                'content.read',
+                true,
+                false,
+                true,
+                ['media' => $media],
+                $asset,
+                ['media'],
+            ),
+            $this->tool(
+                'kumwe_media_upload',
+                'Upload a media file',
+                'Store one base64-encoded file in the media library under the given file name.',
+                'uploadMedia',
+                'content.update',
+                false,
+                false,
+                true,
+                [
+                    'operationId' => $this->operationId(),
+                    'filename' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 255],
+                    'content' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 16_777_216],
+                ],
+                $asset,
+                ['operationId', 'filename', 'content'],
+            ),
+            $this->tool(
+                'kumwe_media_delete',
+                'Delete a media asset',
+                'Remove one asset from the media library; an asset already gone is not an error.',
+                'deleteMedia',
+                'content.delete',
+                false,
+                true,
+                true,
+                ['operationId' => $this->operationId(), 'media' => $media],
+                $this->closedObject(
+                    ['id' => ['type' => 'string'], 'deleted' => ['type' => 'boolean']],
+                    ['id', 'deleted'],
+                ),
+                ['operationId', 'media'],
+            ),
+        ];
+    }
+
+    /**
+     * Declare the approval inbox, detail and requester-cancellation tools.
+     *
+     * Reading and withdrawing are published; approving, rejecting and revoking are not, because each needs a fresh
+     * single-use human step-up proof that a bearer credential cannot mint.
+     *
+     * @return  list<array{
+     *            name: string, title: string, description: string, handler: string,
+     *            capability: string|null, capabilityResolver: string|McpDynamicCapabilityResolver,
+     *            mutationGuard: McpMutationGuardMode, readOnly: bool, destructive: bool, idempotent: bool,
+     *            inputSchema: array<string, mixed>, outputSchema: array<string, mixed>
+     *          }>  Tool declarations in registration order.
+     *
+     * @since   2.0.0
+     */
+    private function businessApprovalTools(): array
+    {
+        $approval = ['type' => 'string', 'format' => 'uuid'];
+        $object = ['type' => 'object', 'additionalProperties' => true];
+
+        return [
+            $this->tool(
+                'kumwe_business_approval_list',
+                'List business approvals',
+                'List the generated-business approval requests exposed to MCP that this credential may see.',
+                'listBusinessApprovals',
+                McpDynamicCapabilityResolver::ApprovalInbox,
+                true,
+                false,
+                true,
+                ['limit' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 100]],
+                $this->closedObject(['items' => ['type' => 'array', 'maxItems' => 100]], ['items']),
+            ),
+            $this->tool(
+                'kumwe_business_approval_get',
+                'Read a business approval',
+                'Read one generated-business approval request exposed to MCP with its redacted decisions.',
+                'getBusinessApproval',
+                McpDynamicCapabilityResolver::ApprovalInbox,
+                true,
+                false,
+                true,
+                ['approval' => $approval],
+                $object,
+                ['approval'],
+            ),
+            $this->tool(
+                'kumwe_business_approval_cancel',
+                'Cancel my business approval request',
+                'Withdraw your own pending approval request made on MCP; this never approves or rejects.',
+                'cancelBusinessApproval',
+                'business.approval.request',
+                false,
+                false,
+                true,
+                ['operationId' => $this->operationId(), 'approval' => $approval],
+                $this->closedObject(
+                    ['approval_request_id' => ['type' => 'string'], 'status' => ['type' => 'string']],
+                    ['approval_request_id', 'status'],
+                ),
+                ['operationId', 'approval'],
+            ),
         ];
     }
 

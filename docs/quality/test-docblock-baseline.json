@@ -8,7 +8,7 @@
   "recorded_from": [
     "https://github.com/kumwe/app/actions/runs/32251426675"
   ],
-  "entry_count": 3128,
+  "entry_count": 3121,
   "entries": [
     {
       "file": "tests/Architecture/BusinessDefinitionBoundaryTest.php",
@@ -22024,76 +22024,6 @@
       "file": "tests/Unit/Delivery/Http/Api/Idempotency/PersistentIdempotencyMiddlewareTest.php",
       "line": 42,
       "member": "PersistentIdempotencyMiddlewareTest::testHandlerExceptionImmediatelyReleasesOwnedRecord()",
-      "code": "MISSING_DOC",
-      "owner": "quality-engineering",
-      "finding": "V2-QA-010",
-      "expires": "2027-06-30",
-      "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-    },
-    {
-      "file": "tests/Unit/Delivery/Http/Api/Idempotency/PersistentIdempotencyMiddlewareTest.php",
-      "line": 61,
-      "member": "class@1::handle()",
-      "code": "MISSING_DOC",
-      "owner": "quality-engineering",
-      "finding": "V2-QA-010",
-      "expires": "2027-06-30",
-      "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-    },
-    {
-      "file": "tests/Unit/Delivery/Http/Api/Idempotency/PersistentIdempotencyMiddlewareTest.php",
-      "line": 89,
-      "member": "class@2::handle()",
-      "code": "MISSING_DOC",
-      "owner": "quality-engineering",
-      "finding": "V2-QA-010",
-      "expires": "2027-06-30",
-      "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-    },
-    {
-      "file": "tests/Unit/Delivery/Http/Api/Idempotency/PersistentIdempotencyMiddlewareTest.php",
-      "line": 122,
-      "member": "class@3::handle()",
-      "code": "MISSING_DOC",
-      "owner": "quality-engineering",
-      "finding": "V2-QA-010",
-      "expires": "2027-06-30",
-      "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-    },
-    {
-      "file": "tests/Unit/Delivery/Http/Api/Idempotency/PersistentIdempotencyMiddlewareTest.php",
-      "line": 132,
-      "member": "class@4::now()",
-      "code": "MISSING_DOC",
-      "owner": "quality-engineering",
-      "finding": "V2-QA-010",
-      "expires": "2027-06-30",
-      "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-    },
-    {
-      "file": "tests/Unit/Delivery/Http/Api/Idempotency/PersistentIdempotencyMiddlewareTest.php",
-      "line": 147,
-      "member": "class@5::afterCommit()",
-      "code": "MISSING_DOC",
-      "owner": "quality-engineering",
-      "finding": "V2-QA-010",
-      "expires": "2027-06-30",
-      "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-    },
-    {
-      "file": "tests/Unit/Delivery/Http/Api/Idempotency/PersistentIdempotencyMiddlewareTest.php",
-      "line": 152,
-      "member": "class@5::afterRollback()",
-      "code": "MISSING_DOC",
-      "owner": "quality-engineering",
-      "finding": "V2-QA-010",
-      "expires": "2027-06-30",
-      "justification": "Pre-existing documentation debt under tests/ recorded when the gate was armed; the record only ever shrinks."
-    },
-    {
-      "file": "tests/Unit/Delivery/Http/Api/Idempotency/PersistentIdempotencyMiddlewareTest.php",
-      "line": 142,
-      "member": "class@5::transactional()",
       "code": "MISSING_DOC",
       "owner": "quality-engineering",
       "finding": "V2-QA-010",
