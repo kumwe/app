@@ -1613,6 +1613,59 @@
     --kumwe-focus: 0 0 0 3px rgb(7 143 215 / .28);
   }
 
+  /* The appearance script restates the scheme on the root so WebKit recomputes every consumer live. */
+  :root[data-kumwe-scheme="light"] {
+    color-scheme: light;
+    --kumwe-canvas: #f4f7fb;
+    --kumwe-surface: #fff;
+    --kumwe-surface-elevated: #fff;
+    --kumwe-surface-subtle: #eef3f8;
+    --kumwe-surface-hover: #e7edf5;
+    --kumwe-text: #152238;
+    --kumwe-text-muted: #5e6e82;
+    --kumwe-text-subtle: #5a6a7e;
+    --kumwe-border: var(--kumwe-silver-200);
+    --kumwe-border-strong: #bdc9d7;
+    --kumwe-accent: var(--kumwe-blue-600);
+    --kumwe-accent-strong: var(--kumwe-blue-700);
+    --kumwe-accent-soft: #e5f4fb;
+    --kumwe-info: #2563a8;
+    --kumwe-info-soft: #e8f2ff;
+    --kumwe-warning: #8f5d00;
+    --kumwe-warning-soft: #fff3d1;
+    --kumwe-danger: #b3283d;
+    --kumwe-danger-strong: #8e1f31;
+    --kumwe-danger-soft: #ffeaed;
+    --kumwe-success: #147249;
+    --kumwe-success-soft: #e4f6ed;
+  }
+
+  :root[data-kumwe-scheme="dark"] {
+    color-scheme: dark;
+    --kumwe-canvas: #091321;
+    --kumwe-surface: #101d2c;
+    --kumwe-surface-elevated: #142337;
+    --kumwe-surface-subtle: #1b2b3e;
+    --kumwe-surface-hover: #22354b;
+    --kumwe-text: #eef5fb;
+    --kumwe-text-muted: #aebdca;
+    --kumwe-text-subtle: #8496a7;
+    --kumwe-border: #2a3d52;
+    --kumwe-border-strong: #43596f;
+    --kumwe-accent: var(--kumwe-blue-300);
+    --kumwe-accent-strong: var(--kumwe-blue-200);
+    --kumwe-accent-soft: #17374e;
+    --kumwe-info: #8fc4ff;
+    --kumwe-info-soft: #17304b;
+    --kumwe-warning: #f0be5a;
+    --kumwe-warning-soft: #3b301e;
+    --kumwe-danger: #ff8999;
+    --kumwe-danger-strong: #ffadba;
+    --kumwe-danger-soft: #49242d;
+    --kumwe-success: #6dd6a5;
+    --kumwe-success-soft: #183c30;
+  }
+
   /* Theme colours resolve at each consuming property when the appearance changes. */
   @media (prefers-color-scheme: dark) {
     :root {

@@ -4,7 +4,9 @@ import '../interface-standard/kis-master-detail';
 import '../interface-standard/kis-drawer';
 import { setupCopyValues } from '../interface-standard/copy-value';
 import { setupValidationReveal } from '../interface-standard/reveal-validation';
+import { setupAppearance } from '../interface-standard/appearance';
 
 document.documentElement.classList.add('js');
+setupAppearance();
 setupCopyValues();
 setupValidationReveal();

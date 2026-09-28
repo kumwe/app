@@ -18,8 +18,10 @@ import '../interface-standard/kis-master-detail';
 import '../interface-standard/kis-drawer';
 import { setupCopyValues } from '../interface-standard/copy-value';
 import { setupValidationReveal } from '../interface-standard/reveal-validation';
+import { setupAppearance } from '../interface-standard/appearance';
 
 document.documentElement.classList.add('js');
+setupAppearance();
 
 const focusableSelector = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 

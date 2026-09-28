@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for en-GB, carrying 2417 messages.
+ * Compiled interface message catalogue for en-GB, carrying 2418 messages.
  *
  * Generated from en-GB.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1588,6 +1588,7 @@ return [
     'core.administrator.interface_standard.validation_and_service_failures_retain_a' => 'Validation and service failures retain a recovery path.',
     'core.administrator.interface_standard.wcag_target' => 'WCAG target',
     'core.administrator.interface_standard.work_is_pending_without_blocking_context' => 'Work is pending without blocking context.',
+    'core.administrator.layout.account_group' => 'My account',
     'core.administrator.layout.brand_role' => 'Administrator',
     'core.administrator.layout.close_navigation' => 'Close administrator navigation',
     'core.administrator.layout.context_subtitle' => 'Manage your website with confidence',
