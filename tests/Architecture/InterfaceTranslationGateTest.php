@@ -87,6 +87,36 @@ final class InterfaceTranslationGateTest extends TestCase
         self::assertStringNotContainsString('quiet', $output);
     }
 
+    /**
+     * Confirmation prompts, responsive-table captions and scroll-region names are refused when inline.
+     *
+     * `data-confirm` feeds a confirmation dialog, `data-label` the caption a narrow screen shows beside
+     * each table cell, and `data-scroll-label` a scroll region's accessible name. Eleven prompts, fourteen
+     * captions and four region names shipped in English before these attributes were registered.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTheHardcodedStringGateRefusesInlineConfirmationAndCaptionAttributes(): void
+    {
+        $tree = $this->treeCopy();
+        file_put_contents(
+            $tree . '/templates/administrator/media.twig',
+            "<table><tr><td data-label=\"Status\"><button data-confirm=\"Delete this file?\">"
+                . "{{ t('core.administrator.content_list.trash') }}</button></td></tr></table>"
+                . "<div data-scroll-label=\"Scroll to see more\"></div>\n",
+        );
+
+        [$status, $output] = $this->execute('tools/verify-translated-strings.php', [], $tree);
+
+        self::assertSame(1, $status, $output);
+        self::assertStringContainsString('templates/administrator/media.twig', $output);
+        self::assertStringContainsString('data-label="Status"', $output);
+        self::assertStringContainsString('data-confirm="Delete this file?"', $output);
+        self::assertStringContainsString('data-scroll-label="Scroll to see more"', $output);
+    }
+
     public function testTheHardcodedStringGateEnforcesATemplateNobodyRegistered(): void
     {
         $tree = $this->treeCopy();

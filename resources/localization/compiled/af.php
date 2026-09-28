@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for af, carrying 2519 messages.
+ * Compiled interface message catalogue for af, carrying 2533 messages.
  *
  * Generated from af.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -313,6 +313,7 @@ return [
     'core.administrator.automation.create_schedule' => 'Skep skedule',
     'core.administrator.automation.cron_expression' => 'Cron-uitdrukking',
     'core.administrator.automation.delete' => 'Verwyder',
+    'core.administrator.automation.delete_schedule_confirm' => 'Skrap die {name}-skedule?',
     'core.administrator.automation.delivery_attempts_and_recoverable_failures_acros' => 'Afleweringspogings en herstelbare mislukkings oor geregistreerde toue heen.',
     'core.administrator.automation.field_batch_size' => 'Bondelgrootte',
     'core.administrator.automation.field_content_id' => 'Inhoud-ID',
@@ -544,6 +545,7 @@ return [
     'core.administrator.business_definitions.list' => 'Lys',
     'core.administrator.business_definitions.many_to_many' => 'Baie-tot-baie',
     'core.administrator.business_definitions.many_to_one' => 'Baie-tot-een',
+    'core.administrator.business_definitions.mark_version_confirm' => 'Merk weergawe {version} as {action}?',
     'core.administrator.business_definitions.maximum' => 'Maksimum',
     'core.administrator.business_definitions.minimum' => 'Minimum',
     'core.administrator.business_definitions.model_operational_entities_relationships_views_a' => 'Modelleer operasionele entiteite, verhoudings, aansigte, aksies en werkvloeie voordat rekordstoor ingestel word.',
@@ -579,6 +581,7 @@ return [
     'core.administrator.business_definitions.publication_gate' => 'Publikasiehek',
     'core.administrator.business_definitions.publication_is_immutable' => 'Publikasie is onveranderlik.',
     'core.administrator.business_definitions.publish_version' => 'Publiseer weergawe {to_version}',
+    'core.administrator.business_definitions.publish_version_confirm' => 'Publiseer hierdie onveranderlike definisieweergawe?',
     'core.administrator.business_definitions.published_by' => 'Gepubliseer deur',
     'core.administrator.business_definitions.read_only' => 'Leesalleen',
     'core.administrator.business_definitions.read_only_access' => 'Leesalleen-toegang.',
@@ -882,6 +885,7 @@ return [
     'core.administrator.business_schema_plans.exact_installed_definition_id' => 'Presiese geïnstalleerde definisie-ID',
     'core.administrator.business_schema_plans.exact_plan_checksum' => 'Presiese plankontrolesom',
     'core.administrator.business_schema_plans.execute_approved_plan' => 'Voer goedgekeurde plan uit',
+    'core.administrator.business_schema_plans.execute_confirm' => 'Voer hierdie presiese goedgekeurde fisiese-skemaplan uit?',
     'core.administrator.business_schema_plans.execution' => 'Uitvoering',
     'core.administrator.business_schema_plans.execution_becomes_available_only_after_an' => 'Uitvoering word slegs beskikbaar na ’n presiese goedkeuring, en slegs aan ’n operateur met die uitvoeringsvermoë.',
     'core.administrator.business_schema_plans.execution_gate' => 'Uitvoeringshek',
@@ -928,9 +932,11 @@ return [
     'core.administrator.business_schema_plans.published_definition' => 'Gepubliseerde definisie',
     'core.administrator.business_schema_plans.published_definitions_create_inspectable_plans_w' => 'Gepubliseerde definisies skep ondersoekbare planne sonder om fisiese berging te verander.',
     'core.administrator.business_schema_plans.publishing_a_definition_persists_a_plan' => 'Om ’n definisie te publiseer, stoor slegs ’n plan. Uitvoering bly altyd ’n afsonderlike gemagtigde bewerking.',
+    'core.administrator.business_schema_plans.purge_confirm' => 'Skep ’n vernietigende uitveeplan vir hierdie bewaarde besigheidskema?',
     'core.administrator.business_schema_plans.record_recovery_evidence' => 'Teken herstelbewys aan',
     'core.administrator.business_schema_plans.record_revision_and_audit_checksums_matched' => 'Rekord-, hersienings- en ouditkontrolesomme het ooreengestem',
     'core.administrator.business_schema_plans.record_tested_backup_and_restore_evidence' => 'Teken getoetste rugsteun- en herstelbewys aan',
+    'core.administrator.business_schema_plans.recover_confirm' => 'Herstel hierdie onderbreekte skema-uitvoering uit sy duursame joernaal?',
     'core.administrator.business_schema_plans.recovery' => 'Herstel',
     'core.administrator.business_schema_plans.recovery_drill_reference' => 'Herstel-oefeningsverwysing',
     'core.administrator.business_schema_plans.relations' => 'Relasies',
@@ -1323,6 +1329,7 @@ return [
     'core.administrator.content_list.edit' => 'Wysig {title}',
     'core.administrator.content_list.find_review_and_publish_every_item' => 'Vind, hersien en publiseer elke item op hierdie webwerf.',
     'core.administrator.content_list.items_on_this_page' => '{count, plural, one {# item op hierdie bladsy} other {# items op hierdie bladsy}}',
+    'core.administrator.content_list.move_to_trash_confirm' => 'Skuif ‘{title}’ na die asblik?',
     'core.administrator.content_list.next' => 'Volgende',
     'core.administrator.content_list.no_matching_content' => 'Geen passende inhoud nie',
     'core.administrator.content_list.not_public' => '/{slug} · nie openbaar nie',
@@ -1516,6 +1523,7 @@ return [
     'core.administrator.extensions.this_release_predates_install_time_admission' => 'Hierdie vrystelling dateer van voor installasie-tyd-toelatingsopname, dus is niks geïnventariseer of geskandeer nie. Herinstalleer die pakket om ’n resultaat aan te teken.',
     'core.administrator.extensions.trust' => 'Vertroue',
     'core.administrator.extensions.uninstall' => 'Deïnstalleer {identifier}',
+    'core.administrator.extensions.uninstall_confirm' => 'Deïnstalleer {identifier}?',
     'core.administrator.extensions.uninstall_extension' => 'Deïnstalleer uitbreiding',
     'core.administrator.extensions.uninstalling_removes_this_package_from_the' => 'Deïnstallering verwyder hierdie pakket van die looptyd. Hersien eie data en herstelvereistes voordat jy voortgaan.',
     'core.administrator.extensions.upload_a_verified_package' => 'Laai ’n geverifieerde pakket op',
@@ -1650,6 +1658,7 @@ return [
     'core.administrator.media.all_files' => 'Alle lêers',
     'core.administrator.media.choose_file_first' => 'Kies ’n medialêer om op te laai.',
     'core.administrator.media.copy_url' => 'Kopieer URL',
+    'core.administrator.media.delete_asset_confirm' => 'Skrap {name}? Inhoud wat sy URL gebruik, sal ’n gebreekte skakel wys.',
     'core.administrator.media.discover_media' => 'Ontdek media',
     'core.administrator.media.documents' => 'Dokumente',
     'core.administrator.media.file_count' => '{count, plural, one {# lêer} other {# lêers}}',
@@ -1688,7 +1697,9 @@ return [
     'core.administrator.navigation.create_the_container_first_then_add' => 'Skep eers die houer, en voeg dan bladsy-, afdeling- of eksterne skakels by.',
     'core.administrator.navigation.create_the_main_menu' => 'Skep die hoofkieslys',
     'core.administrator.navigation.custom_url' => 'Pasgemaakte URL',
+    'core.administrator.navigation.delete_item_confirm' => 'Skrap die kieslysitem ‘{title}’?',
     'core.administrator.navigation.delete_menu' => 'Verwyder {title}-kieslys',
+    'core.administrator.navigation.delete_menu_confirm' => 'Skrap ‘{title}’ en al sy skakels?',
     'core.administrator.navigation.deleting' => 'Verwydering',
     'core.administrator.navigation.destination' => '· Bestemming {target_url}',
     'core.administrator.navigation.drag_rows_or_edit_each_numeric' => 'Sleep rye of wysig elke numeriese posisie, en stoor dan.',
@@ -1885,6 +1896,9 @@ return [
     'core.business.refusal.read_only_help' => 'Jy kan dit steeds oopmaak, sy geskiedenis nagaan en die werkvloei-aksies uitvoer wat dit bied.',
     'core.business.refusal.read_only_title' => 'Hierdie rekord is leesalleen',
     'core.business.report.reports' => 'Verslae',
+    'core.business.table.scroll_choice_details' => 'Blaai horisontaal om keusebesonderhede te hersien',
+    'core.business.table.scroll_result_columns' => 'Blaai horisontaal om elke resultaatkolom te hersien',
+    'core.business.table.scroll_selected_columns' => 'Blaai horisontaal om elke gekose kolom te hersien',
     'core.console.access.description' => 'Lys en bestuur gebruikers, rolle en vermoë-toekennings.',
     'core.console.app_health.description' => 'Kontroleer of Kumwe gereed is om verkeer te bedien.',
     'core.console.app_health.kumwe_is_not_ready' => 'Kumwe is nie gereed nie.',

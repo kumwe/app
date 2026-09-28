@@ -201,7 +201,7 @@
         </div>
     {% else %}
         {% if bulk_available %}<form class="portal-business-bulk-form" action="{{ business_base_path }}/{{ definition.handle|url_encode }}" method="get">{% endif %}
-        <div class="portal-table-wrap kis-business-table-region" tabindex="0" role="region" aria-label="{{ t('core.administrator.business_list.results', {plural_label: definition.plural_label}) }}" data-scroll-label="Scroll horizontally to review every selected column">
+        <div class="portal-table-wrap kis-business-table-region" tabindex="0" role="region" aria-label="{{ t('core.administrator.business_list.results', {plural_label: definition.plural_label}) }}" data-scroll-label="{{ t('core.business.table.scroll_selected_columns') }}">
             <table class="portal-table portal-business-table kis-business-table">
                 <thead>
                     <tr>
@@ -217,7 +217,7 @@
                         {% set item_state = item.deleted_at ? 'Deleted' : (item.archived_at ? 'Archived' : item.workflow_state|default('Active')) %}
                         <tr>
                             {% if bulk_available %}
-                                <td data-label="Select">
+                                <td data-label="{{ t('core.administrator.business_choices.select') }}">
                                     <label class="portal-business-checkbox">
                                         <input type="checkbox" name="bulk_records[]" value="{{ {'record_id': item.record_id, 'expected_version': item.version}|json_encode }}">
                                         <span class="portal-sr-only">{{ t('core.administrator.business_list.select_record', {record_id: item.record_id}) }}</span>
@@ -235,7 +235,7 @@
                                     {% endif %}
                                 </td>
                             {% endfor %}
-                            <td data-label="State">{{ item_state|replace({'_': ' '})|title }}{% if definition.workflow|default(null) and item.workflow_state|default(null) in definition.workflow.immutable_states|default([]) %} <span class="status business-record-lock-badge" data-record-lock="business_record.immutable">{{ t('core.business.refusal.read_only_badge') }}</span>{% endif %}</td>
+                            <td data-label="{{ t('core.administrator.business_list.state') }}">{{ item_state|replace({'_': ' '})|title }}{% if definition.workflow|default(null) and item.workflow_state|default(null) in definition.workflow.immutable_states|default([]) %} <span class="status business-record-lock-badge" data-record-lock="business_record.immutable">{{ t('core.business.refusal.read_only_badge') }}</span>{% endif %}</td>
                             <td>
                                 {% if available_operations.read is defined %}
                                     <a href="{{ business_base_path }}/{{ definition.handle|url_encode }}/{{ item.record_id|url_encode }}">{{ t('core.administrator.business_list.view') }}</a>
