@@ -1939,7 +1939,7 @@ return [
     'core.console.audit_export.description' => 'Exporte a trilha de auditoria como um arquivo protegido e com soma de verificação.',
     'core.console.audit_verify.description' => 'Verifique a cadeia de resumos da trilha de auditoria e suas âncoras.',
     'core.console.automation.description' => 'Liste e gerencie agendamentos e tarefas na fila.',
-    'core.console.business_approval.description' => 'Retira sua própria solicitação de aprovação de negócio pendente.',
+    'core.console.business_approval.description' => 'Retire sua própria solicitação de aprovação de negócio pendente.',
     'core.console.business_definition.description' => 'Liste, inspecione, crie rascunhos, valide, publique e desative definições de entidades de negócio.',
     'core.console.business_periods.description' => 'Liste, feche e reabra períodos de lançamento de negócio.',
     'core.console.business_record.description' => 'Descubra, consulte, altere, relacione, solicite aprovações, gere relatórios, exporte e inspecione operações de negócio.',

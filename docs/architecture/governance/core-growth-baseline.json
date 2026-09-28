@@ -422,6 +422,14 @@
             "surface": "b8ec2a21d7080e179616519b",
             "growth": null
         },
+        "Kumwe\\App\\Application\\Automation\\JobOriginLookup": {
+            "kind": "interface",
+            "layer": "application",
+            "surface": "2b8502bc5b0ca993fe188b22",
+            "growth": {
+                "record": "KUMWE-CGR-2026-061"
+            }
+        },
         "Kumwe\\App\\Application\\Automation\\Job\\DrainRetentionStoreHandler": {
             "kind": "class",
             "layer": "application",
@@ -541,8 +549,10 @@
         "Kumwe\\App\\Application\\Automation\\Worker": {
             "kind": "class",
             "layer": "application",
-            "surface": "1a7fd371c80b901af4f2dd6e",
-            "growth": null
+            "surface": "b9ab827307e2c6053e23a157",
+            "growth": {
+                "record": "KUMWE-CGR-2026-061"
+            }
         },
         "Kumwe\\App\\Application\\Operations\\ExpiredMigrationLockRecovery": {
             "kind": "interface",
@@ -1123,7 +1133,7 @@
         "Kumwe\\App\\BusinessIntegration\\Infrastructure\\DoctrineInboxStore": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "1a8557179d6cb776b162517d",
+            "surface": "72bd3848dc4b9bb724d60392",
             "growth": {
                 "classification": "host-infrastructure",
                 "implements": [
@@ -1135,7 +1145,7 @@
         "Kumwe\\App\\BusinessIntegration\\Infrastructure\\DoctrineOutboxStore": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "0a0d8a4cfb9e1dd8cbe333f6",
+            "surface": "2782e034f6298a9a639f535d",
             "growth": {
                 "classification": "host-infrastructure",
                 "implements": [
@@ -1177,7 +1187,7 @@
         "Kumwe\\App\\BusinessIntegration\\Infrastructure\\RuntimeIntegrationReceiptWorker": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "b49f9b5e86dd0767fe5ed206",
+            "surface": "92f688eb5ab2b4fcc044ec97",
             "growth": {
                 "classification": "host-infrastructure",
                 "implements": [
@@ -2195,7 +2205,7 @@
         "Kumwe\\App\\BusinessReporting\\Infrastructure\\DoctrineProjectionEventSequencer": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "234a83ba4ecf91537b495304",
+            "surface": "ee3afc756d303301e5b8c3db",
             "growth": {
                 "classification": "host-infrastructure",
                 "implements": [],
@@ -5024,10 +5034,11 @@
         "Kumwe\\App\\Infrastructure\\Automation\\DoctrineJobQueue": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "83c5c83047e871f479939c23",
+            "surface": "5b42baf0d4bf61a5416d068f",
             "growth": {
                 "classification": "host-infrastructure",
                 "implements": [
+                    "Kumwe\\App\\Application\\Automation\\JobOriginLookup",
                     "Kumwe\\Automation\\JobQueue"
                 ],
                 "extends": null
@@ -5068,7 +5079,7 @@
         "Kumwe\\App\\Infrastructure\\Automation\\DoctrineScheduler": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "8612254bbd0ef9d84848dff9",
+            "surface": "cfb5100354f88408c98e218f",
             "growth": {
                 "classification": "host-infrastructure",
                 "implements": [
@@ -5253,8 +5264,12 @@
         "Kumwe\\App\\Infrastructure\\Observability\\CorrelationContext": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "90b5694b27ab2dff53d193ed",
-            "growth": null
+            "surface": "1a7bc53722bad9744f24e83b",
+            "growth": {
+                "classification": "host-infrastructure",
+                "implements": [],
+                "extends": null
+            }
         },
         "Kumwe\\App\\Infrastructure\\Observability\\InstrumentedTransactionManager": {
             "kind": "class",
@@ -5280,10 +5295,46 @@
             "surface": "67fe661f49f971f956a40e89",
             "growth": null
         },
+        "Kumwe\\App\\Infrastructure\\Observability\\MeteredAccessTokenVerifier": {
+            "kind": "class",
+            "layer": "infrastructure",
+            "surface": "4f70bf20a36826a450d14732",
+            "growth": {
+                "classification": "host-infrastructure",
+                "implements": [
+                    "Kumwe\\App\\Identity\\Application\\Authentication\\ScopedAccessTokenVerifier"
+                ],
+                "extends": null
+            }
+        },
+        "Kumwe\\App\\Infrastructure\\Observability\\MeteredAuthenticationRateLimiter": {
+            "kind": "class",
+            "layer": "infrastructure",
+            "surface": "9ee96332825f627f9d58012f",
+            "growth": {
+                "classification": "host-infrastructure",
+                "implements": [
+                    "Kumwe\\App\\Identity\\Application\\Administration\\AuthenticationRateLimiter"
+                ],
+                "extends": null
+            }
+        },
+        "Kumwe\\App\\Infrastructure\\Observability\\MeteredAuthorizationDecisionRecorder": {
+            "kind": "class",
+            "layer": "infrastructure",
+            "surface": "ea2a8fee539bd2fbe68e160a",
+            "growth": {
+                "classification": "host-infrastructure",
+                "implements": [
+                    "Kumwe\\Access\\AuthorizationDecisionRecorder"
+                ],
+                "extends": null
+            }
+        },
         "Kumwe\\App\\Infrastructure\\Observability\\MetricCatalog": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "518dc27e1059f0d1d6cc54b7",
+            "surface": "c8ed914651d4d4815e162250",
             "growth": {
                 "classification": "host-infrastructure",
                 "implements": [],
@@ -5350,6 +5401,28 @@
             "surface": "1ceffc77dc7327af7261aea1",
             "growth": null
         },
+        "Kumwe\\App\\Infrastructure\\Observability\\OperationalStatusCollector": {
+            "kind": "class",
+            "layer": "infrastructure",
+            "surface": "6aa7ac0ea39fe5f8840cc193",
+            "growth": {
+                "classification": "host-infrastructure",
+                "implements": [
+                    "Kumwe\\App\\Infrastructure\\Observability\\MetricCollector"
+                ],
+                "extends": null
+            }
+        },
+        "Kumwe\\App\\Infrastructure\\Observability\\ProcessRuntime": {
+            "kind": "class",
+            "layer": "infrastructure",
+            "surface": "93b88c5849ac53f03f1ddcf9",
+            "growth": {
+                "classification": "host-infrastructure",
+                "implements": [],
+                "extends": null
+            }
+        },
         "Kumwe\\App\\Infrastructure\\Observability\\PrometheusExposition": {
             "kind": "class",
             "layer": "infrastructure",
@@ -5365,7 +5438,7 @@
         "Kumwe\\App\\Infrastructure\\Observability\\RuntimeMetricCollector": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "76d8d1577acbedd78e378778",
+            "surface": "c4b3cb7e29013b1c1bdd9745",
             "growth": {
                 "classification": "host-infrastructure",
                 "implements": [
@@ -5425,6 +5498,18 @@
             "layer": "infrastructure",
             "surface": "6b61689f308e1b081ded0a01",
             "growth": null
+        },
+        "Kumwe\\App\\Infrastructure\\Persistence\\Migration\\AsyncTraceContextMigration": {
+            "kind": "class",
+            "layer": "infrastructure",
+            "surface": "aef69700def9493c2ac2def9",
+            "growth": {
+                "classification": "host-infrastructure",
+                "implements": [
+                    "Kumwe\\App\\Infrastructure\\Persistence\\Migration\\RepeatableMigration"
+                ],
+                "extends": null
+            }
         },
         "Kumwe\\App\\Infrastructure\\Persistence\\Migration\\AuditTamperEvidenceMigration": {
             "kind": "class",
@@ -5937,7 +6022,7 @@
         "Kumwe\\App\\Infrastructure\\Retention\\DoctrineRetentionDrain": {
             "kind": "class",
             "layer": "infrastructure",
-            "surface": "b17e792a49dad13dd94e1bff",
+            "surface": "1dac1a3653f89a3e44881c6d",
             "growth": {
                 "classification": "host-infrastructure",
                 "implements": [

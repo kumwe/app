@@ -70,6 +70,8 @@ final readonly class RuntimeMetricCollector implements MetricCollector
      * @param  ?RetentionReadiness  $retentionReadiness  Assessment behind `kumwe_retention_readiness`.
      * @param  bool                 $enterprise          Whether the installation declares the enterprise
      *         capacity profile, which turns a missing retention setting into a failed verdict.
+     * @param  ?MetricCollector     $operational         Recovery, storage and extension-trust gauges read from
+     *         outside the durable tables, merged under the same failure accounting; null leaves them out.
      *
      * @since  2.0.0
      */
@@ -83,6 +85,7 @@ final readonly class RuntimeMetricCollector implements MetricCollector
         private ?RetentionObserver $retention = null,
         private ?RetentionReadiness $retentionReadiness = null,
         private bool $enterprise = false,
+        private ?MetricCollector $operational = null,
     ) {
     }
 
@@ -116,6 +119,12 @@ final readonly class RuntimeMetricCollector implements MetricCollector
         try {
             $samples = array_merge($samples, $this->retention());
         } catch (Throwable) {
+            $failed = true;
+        }
+        try {
+            $samples = array_merge($samples, $this->operational?->collect() ?? []);
+        } catch (Throwable) {
+            // The same boundary as the durable gauges: a failed read is published, never raised.
             $failed = true;
         }
         $samples[] = $this->gauge('kumwe_metrics_collection_failed', $failed ? 1.0 : 0.0);

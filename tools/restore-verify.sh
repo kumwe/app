@@ -6,9 +6,10 @@ script_directory="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 source "${script_directory}/recovery-common.sh"
 
 fail() {
-    echo "Kumwe restore verification failed: $*" >&2
-    exit 1
+    recovery_fail "Kumwe restore verification failed: $*"
 }
+
+recovery_begin restore restore_verify 'restore verification'
 
 require_command() {
     command -v "$1" >/dev/null 2>&1 || fail "required command '$1' is unavailable"

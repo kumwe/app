@@ -22,6 +22,7 @@ use Kumwe\Integration\OutboxStore;
 use Kumwe\Integration\RecordedEventEnvelope;
 use Kumwe\Integration\RecordedIntegrationEvent;
 use Kumwe\Integration\IntegrationEvent;
+use Kumwe\App\Infrastructure\Observability\CorrelationContext;
 use Kumwe\App\Infrastructure\Observability\MetricCatalog;
 use Kumwe\App\Infrastructure\Observability\MetricRecorder;
 use Kumwe\App\Infrastructure\Observability\NullMetricRecorder;
@@ -39,6 +40,11 @@ use Throwable;
  * Global sequence allocation happens only in a separate transaction before dispatch.
  * Dispatch operations use their own short
  * transactions and compare worker, token, generation and unexpired lease on every settlement.
+ *
+ * An appended row also records the upstream W3C trace identifier its producing unit of work accepted,
+ * and a claim opens an `outbox` log frame carrying the event's correlation and causation identifiers and
+ * that trace, which the settlement closes; every line written while the event is dispatched joins the
+ * operation that produced it.
  *
  * @since  2.0.0
  */
@@ -68,6 +74,8 @@ final readonly class DoctrineOutboxStore implements OutboxStore
      * @param   DoctrineProjectionEventSequencer  $sequencer         Publishes committed sources before dispatch.
      * @param   int                               $retentionDays     Terminal-row retention window.
      * @param   MetricRecorder                    $metrics           Counts settlements and times delivery age.
+     * @param   ?CorrelationContext               $correlation       Log-context holder a claim opens its `outbox`
+     *          frame on and whose upstream trace identifier an append records; null does neither.
      *
      * @throws  InvalidArgumentException  When retention falls outside 1 to 3650 days.
      *
@@ -83,6 +91,7 @@ final readonly class DoctrineOutboxStore implements OutboxStore
         private DoctrineProjectionEventSequencer $sequencer,
         private int $retentionDays = 90,
         private MetricRecorder $metrics = new NullMetricRecorder(),
+        private ?CorrelationContext $correlation = null,
     ) {
         if ($retentionDays < 1 || $retentionDays > 3_650) {
             throw new InvalidArgumentException('Outbox retention must be between 1 and 3650 days.');
@@ -145,7 +154,7 @@ final readonly class DoctrineOutboxStore implements OutboxStore
                 'replayed_by' => null,
                 'created_at' => $now,
                 'updated_at' => $now,
-            ], [
+            ] + self::trace($this->correlation?->traceId()), [
                 'envelope' => Types::JSON,
                 'available_at' => Types::DATETIME_IMMUTABLE,
                 'retained_until' => Types::DATETIME_IMMUTABLE,
@@ -184,10 +193,12 @@ final readonly class DoctrineOutboxStore implements OutboxStore
     {
         $this->assertLeaseInput($workerId, $runtimeGeneration, $leaseSeconds);
         $this->sequencer->sequence();
-        return $this->transactions->transactional(function () use (
+        $traceId = null;
+        $lease = $this->transactions->transactional(function () use (
             $workerId,
             $runtimeGeneration,
             $leaseSeconds,
+            &$traceId,
         ): ?OutboxLease {
             $now = $this->clock->now();
             $this->buryExhausted($now);
@@ -229,6 +240,7 @@ final readonly class DoctrineOutboxStore implements OutboxStore
                 Types::DATETIME_IMMUTABLE,
             ]);
             $this->assertOne($affected);
+            $traceId = is_string($row['trace_id'] ?? null) && $row['trace_id'] !== '' ? $row['trace_id'] : null;
             return new OutboxLease(
                 $this->event($row),
                 $this->integer($row, 'attempts') + 1,
@@ -238,6 +250,26 @@ final readonly class DoctrineOutboxStore implements OutboxStore
                 $runtimeGeneration,
             );
         });
+        if ($lease === null) {
+            $this->correlation?->leave('outbox');
+
+            return null;
+        }
+        $this->correlation?->enter(
+            'outbox',
+            'outbox-dispatch-' . $lease->event->eventId(),
+            $lease->event->correlationId(),
+            $lease->event->causationId(),
+            $traceId,
+            [
+                'operation' => 'outbox.dispatch',
+                'event_id' => $lease->event->eventId(),
+                'event_type' => $lease->event->eventType(),
+                'attempt' => (string) $lease->attempts,
+            ],
+        );
+
+        return $lease;
     }
 
     /**
@@ -302,6 +334,7 @@ final readonly class DoctrineOutboxStore implements OutboxStore
             ['operation_class' => 'delivery_age'],
             max(0.0, (float) ($now->format('U.u') - $lease->event->occurredAt()->format('U.u'))),
         );
+        $this->correlation?->leave('outbox');
     }
 
     /**
@@ -346,6 +379,7 @@ final readonly class DoctrineOutboxStore implements OutboxStore
             Types::DATETIME_IMMUTABLE, Types::DATETIME_IMMUTABLE, Types::GUID, Types::SMALLINT,
             Types::STRING, Types::GUID, Types::STRING, Types::DATETIME_IMMUTABLE,
         ]));
+        $this->correlation?->leave('outbox');
     }
 
     /**
@@ -389,6 +423,7 @@ final readonly class DoctrineOutboxStore implements OutboxStore
             Types::DATETIME_IMMUTABLE,
         ]));
         $this->metrics->increment(MetricCatalog::DISPATCH_SETTLEMENTS, ['outcome' => $retry ? 'retried' : 'dead']);
+        $this->correlation?->leave('outbox');
     }
 
     /**
@@ -601,6 +636,23 @@ final readonly class DoctrineOutboxStore implements OutboxStore
             throw new RuntimeException(sprintf('Outbox field "%s" is not an integer.', $key));
         }
         return (int) $value;
+    }
+
+    /**
+     * Carry an upstream trace identifier into an insert only when one exists.
+     *
+     * Omitting the column rather than writing null keeps an insert valid against a schema fixture that
+     * predates the trace-context migration, and a row without a trace reads back the same either way.
+     *
+     * @param   ?string  $traceId  Upstream W3C trace identifier of the producing unit of work, or null.
+     *
+     * @return  array<string, string>  The `trace_id` column, or nothing.
+     *
+     * @since   2.0.0
+     */
+    private static function trace(?string $traceId): array
+    {
+        return $traceId === null ? [] : ['trace_id' => $traceId];
     }
 
     /**

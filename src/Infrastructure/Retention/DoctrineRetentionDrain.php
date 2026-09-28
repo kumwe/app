@@ -30,6 +30,8 @@ use Kumwe\Idempotency\IdempotencyPurger;
 use Kumwe\Integration\OutboxStore;
 use Kumwe\Transaction\Contract\TransactionManager;
 use Psr\Clock\ClockInterface;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use RuntimeException;
 
 /**
@@ -73,6 +75,7 @@ final readonly class DoctrineRetentionDrain implements RetentionDrain
      *         to their signed retention.
      * @param  RetentionRunLedger               $runs            Records each run for the observer.
      * @param  MetricRecorder                   $metrics         Counts rows drained per store.
+     * @param  LoggerInterface                  $logger          Receives one structured line per finished run.
      *
      * @since  2.0.0
      */
@@ -90,6 +93,7 @@ final readonly class DoctrineRetentionDrain implements RetentionDrain
         private QueueRuntimePolicyCatalog $queues,
         private RetentionRunLedger $runs,
         private MetricRecorder $metrics = new NullMetricRecorder(),
+        private LoggerInterface $logger = new NullLogger(),
     ) {
     }
 
@@ -173,6 +177,23 @@ final readonly class DoctrineRetentionDrain implements RetentionDrain
                 ['store' => $result->store->value],
                 (float) $result->rowsDrained,
             );
+        }
+        $line = [
+            'operation' => 'retention.drain',
+            'store' => $result->store->value,
+            'rows_drained' => $result->rowsDrained,
+            'batches' => $result->batches,
+            'duration_ms' => round($result->elapsedSeconds * 1_000, 3),
+            'backlog_cleared' => $result->backlogCleared,
+            'budget_exhausted' => $result->budgetExhausted,
+        ];
+        // A run that spent its whole budget without clearing the backlog is falling behind its ingest.
+        if ($result->budgetExhausted && !$result->backlogCleared) {
+            $this->logger->warning('Retention drain exhausted its budget before clearing the backlog.', $line + [
+                'outcome' => 'behind',
+            ]);
+        } else {
+            $this->logger->info('Retention drain run finished.', $line + ['outcome' => 'success']);
         }
 
         return $result;

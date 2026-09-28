@@ -18654,7 +18654,7 @@
       </notes>
       <segment>
         <source>Withdraw your own pending business approval request.</source>
-        <target>يسحب طلب الموافقة التجارية المعلّق الخاص بك.</target>
+        <target>اسحب طلب موافقة الأعمال المعلّق الخاص بك.</target>
       </segment>
     </unit>
     <unit id="core.console.media.description">

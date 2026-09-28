@@ -3,7 +3,7 @@
     "work_package": "P0-A",
     "authority": "docs/roadmap/README.md",
     "note": "Every figure below is derived from the repository at the recorded commit. Nothing is typed by hand, nothing reads the clock or the machine, and running the generator twice at one commit produces the same document. composer baseline:check fails when it drifts.",
-    "commit": "716254e279b40b3eb36268bcd90efcdcdeb74d01",
+    "commit": "0fbc6dbcb0d20ec6d4ae973b55fdc6a9e1ffb379",
     "recorded_at": "2026-09-24",
     "recorded_from": [],
     "toolchain": {
@@ -35,19 +35,19 @@
             "test_methods": 54
         },
         "integration": {
-            "files": 139,
-            "test_methods": 503
+            "files": 144,
+            "test_methods": 519
         },
         "unit": {
-            "files": 466,
-            "test_methods": 2405
+            "files": 478,
+            "test_methods": 2457
         }
     },
     "coverage": {
         "canonical_engine": "mariadb",
         "ratchets": 3,
         "recorded_line_coverage_percent": 55.44,
-        "reasoned_attribution_rules": 18,
+        "reasoned_attribution_rules": 20,
         "tests_owing_attribution": 0
     },
     "surfaces": {
@@ -529,6 +529,7 @@
             "audit:export",
             "audit:verify",
             "automation",
+            "business-approval",
             "business-definition",
             "business-periods",
             "business-record",
@@ -560,6 +561,7 @@
             "integration:manage",
             "integration:work",
             "mcp:serve",
+            "media",
             "navigation",
             "queue:work",
             "schedule:run",
@@ -616,7 +618,8 @@
             "20260924020000_business_record_scale",
             "20260924030000_queue_worker_permits",
             "20260924050000_retention_catalogue",
-            "20260924060000_studio_content_authoring_start"
+            "20260924060000_studio_content_authoring_start",
+            "20260924130000_async_trace_context"
         ]
     },
     "quarantine": {
@@ -651,7 +654,7 @@
         "recorded_exemptions": {
             "dependency-graph": 62,
             "idempotency": 0,
-            "test-documentation": 3128
+            "test-documentation": 3121
         }
     }
 }

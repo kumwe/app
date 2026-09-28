@@ -3,10 +3,14 @@
 set -Eeuo pipefail
 umask 077
 
+script_directory="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+source "${script_directory}/recovery-common.sh"
+
 fail() {
-    echo "Kumwe restore failed: $*" >&2
-    exit 1
+    recovery_fail "Kumwe restore failed: $*"
 }
+
+recovery_begin restore restore
 
 require_command() {
     command -v "$1" >/dev/null 2>&1 || fail "required command '$1' is unavailable"
@@ -81,8 +85,6 @@ case "$KUMWE_RESTORE_PRIVATE_DIR" in
     / | /home | /root | /workspace) fail 'refusing unsafe private-data target' ;;
 esac
 
-script_directory="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
-source "${script_directory}/recovery-common.sh"
 bash "${script_directory}/restore-verify.sh" "$1"
 backup_directory="$(cd -- "$1" && pwd -P)"
 database_backup_directory="$backup_directory"
@@ -195,7 +197,7 @@ reclaim_target() {
 replay_sql=''
 if [[ "$pitr_restore" == true && "$database_driver" != pgsql && $database_imported == 0 ]]; then
     replay_sql="$(mktemp)"
-    trap 'rm -f -- "$replay_sql"' EXIT
+    trap 'recovery_finish $?; rm -f -- "$replay_sql"' EXIT
     bash "$script_directory/recovery-binlog.sh" "$database_backup_directory" "$backup_directory" > "$replay_sql"
 fi
 
@@ -271,7 +273,7 @@ cleanup() {
         rmdir "$extension_assets_staging" 2>/dev/null || true
     fi
 }
-trap cleanup EXIT
+trap 'recovery_finish $?; cleanup' EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
 

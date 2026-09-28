@@ -1939,7 +1939,7 @@ return [
     'core.console.audit_export.description' => 'Exporta el rastro de auditoría como un archivo protegido con suma de comprobación.',
     'core.console.audit_verify.description' => 'Verifica la cadena de resúmenes del rastro de auditoría y sus anclas.',
     'core.console.automation.description' => 'Lista y gestiona programaciones y tareas en cola.',
-    'core.console.business_approval.description' => 'Retira tu propia solicitud de aprobación empresarial pendiente.',
+    'core.console.business_approval.description' => 'Retira tu propia solicitud de aprobación de negocio pendiente.',
     'core.console.business_definition.description' => 'Lista, inspecciona, redacta, valida, publica y retira definiciones de entidades de negocio.',
     'core.console.business_periods.description' => 'Lista, cierra y reabre periodos contables de negocio.',
     'core.console.business_record.description' => 'Descubre, consulta, modifica, relaciona, solicita aprobaciones, informa, exporta e inspecciona operaciones de negocio.',
