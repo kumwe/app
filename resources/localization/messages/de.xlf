@@ -12932,6 +12932,186 @@
         <target>Authentifizierte Vorschau dieses Elements</target>
       </segment>
     </unit>
+    <unit id="core.administrator.content_form.studio_return_destination">
+      <notes>
+        <note category="context">Destination the contextual Studio return control names, inserted into Studio's "Return to {destination}" message on templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>the content editor</source>
+        <target>dem Inhaltseditor</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_item_created">
+      <notes>
+        <note category="context">Save consequence the contextual Studio shows before saving a new item from the Content editor.</note>
+      </notes>
+      <segment>
+        <source>A new content item is created in its initial workflow state.</source>
+        <target>Ein neues Inhaltselement wird in seinem anfänglichen Workflow-Status erstellt.</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_item_revision_advances">
+      <notes>
+        <note category="context">Save consequence the contextual Studio shows before saving an existing item from the Content editor.</note>
+      </notes>
+      <segment>
+        <source>The item receives a new revision; its workflow state does not change.</source>
+        <target>Das Element erhält eine neue Revision; sein Workflow-Status ändert sich nicht.</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_dependent_entries_remain">
+      <notes>
+        <note category="context">Save consequence the contextual Studio shows before saving a new version of a reusable content type.</note>
+      </notes>
+      <segment>
+        <source>Other items of this type keep the current version until they are migrated.</source>
+        <target>Andere Elemente dieses Typs behalten die aktuelle Version, bis sie migriert werden.</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_item_adopts_successor">
+      <notes>
+        <note category="context">Save consequence the contextual Studio shows before the edited item moves to a new version of its content type.</note>
+      </notes>
+      <segment>
+        <source>This item adopts the new type version; its values are kept.</source>
+        <target>Dieses Element übernimmt die neue Typversion; seine Werte bleiben erhalten.</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_breaking_schema_change">
+      <notes>
+        <note category="context">Save consequence the contextual Studio shows when a new content-type version removes or narrows fields.</note>
+      </notes>
+      <segment>
+        <source>The new version removes or narrows fields; stored items may need migration.</source>
+        <target>Die neue Version entfernt Felder oder schränkt sie ein; gespeicherte Elemente müssen möglicherweise migriert werden.</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_new_type_for_new_item">
+      <notes>
+        <note category="context">Save consequence the contextual Studio shows before a not-yet-saved item's design becomes a new reusable content type.</note>
+      </notes>
+      <segment>
+        <source>A new reusable content type is created from this design and this item uses it.</source>
+        <target>Aus diesem Entwurf wird ein neuer wiederverwendbarer Inhaltstyp erstellt, den dieses Element verwendet.</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_new_type_for_item">
+      <notes>
+        <note category="context">Save consequence the contextual Studio shows before a saved item's design becomes a new reusable content type.</note>
+      </notes>
+      <segment>
+        <source>A new reusable content type is created from this design and this item adopts it.</source>
+        <target>Aus diesem Entwurf wird ein neuer wiederverwendbarer Inhaltstyp erstellt, den dieses Element übernimmt.</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_block_text">
+      <notes>
+        <note category="context">Label of an App-owned Content field block in the contextual Studio palette beside templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Text</source>
+        <target>Text</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_block_rich_text">
+      <notes>
+        <note category="context">Label of an App-owned Content field block in the contextual Studio palette beside templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Rich text</source>
+        <target>Formatierter Text</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_block_integer">
+      <notes>
+        <note category="context">Label of an App-owned Content field block in the contextual Studio palette beside templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Integer</source>
+        <target>Ganzzahl</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_block_decimal">
+      <notes>
+        <note category="context">Label of an App-owned Content field block in the contextual Studio palette beside templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Decimal</source>
+        <target>Dezimalzahl</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_block_yes_or_no">
+      <notes>
+        <note category="context">Label of an App-owned Content field block in the contextual Studio palette beside templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Yes or no</source>
+        <target>Ja oder nein</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_block_date">
+      <notes>
+        <note category="context">Label of an App-owned Content field block in the contextual Studio palette beside templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Date</source>
+        <target>Datum</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_block_date_and_time">
+      <notes>
+        <note category="context">Label of an App-owned Content field block in the contextual Studio palette beside templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Date and time</source>
+        <target>Datum und Uhrzeit</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_block_media">
+      <notes>
+        <note category="context">Label of an App-owned Content field block in the contextual Studio palette beside templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Media</source>
+        <target>Medien</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_block_resource">
+      <notes>
+        <note category="context">Label of an App-owned Content field block in the contextual Studio palette beside templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Resource</source>
+        <target>Ressource</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_block_value">
+      <notes>
+        <note category="context">Name of the value port every App-owned Content field block exposes in the contextual Studio inspector.</note>
+      </notes>
+      <segment>
+        <source>Value</source>
+        <target>Wert</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_block_keyboard">
+      <notes>
+        <note category="context">Keyboard guidance the contextual Studio shows for an App-owned Content field block.</note>
+      </notes>
+      <segment>
+        <source>Select the block, then use the inspector to choose its field binding.</source>
+        <target>Wählen Sie den Block aus und legen Sie dann im Inspektor seine Feldbindung fest.</target>
+      </segment>
+    </unit>
+    <unit id="core.administrator.content_form.studio_pattern_empty_section">
+      <notes>
+        <note category="context">Label of the App-owned empty-section pattern in the contextual Studio palette beside templates/administrator/content-form.twig.</note>
+      </notes>
+      <segment>
+        <source>Empty section</source>
+        <target>Leerer Abschnitt</target>
+      </segment>
+    </unit>
     <unit id="core.administrator.content_form.discard_unsaved_studio_changes">
       <notes>
         <note category="context">Confirmation shown when the author leaves Studio with unsaved changes.</note>

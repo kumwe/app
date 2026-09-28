@@ -38,9 +38,12 @@ Studio available from authorized core and extension content create/edit targets,
 type/Model/Blueprint/Entry hydration and explicit item/type-version/new-type save outcomes. App does not add Studio
 as a top-level navigation workspace; a full-screen route remains an expanded state of the originating content
 context. Content New/Edit now mounts that contextual journey for the core Content target, automated end to end in
-`tests/Browser/studio-authoring.spec.ts`; extension-owned targets, standalone dual mounting, the pinned-release
-limitations and human acceptance recorded in [`docs/studio-composition-authoring.md`](../studio-composition-authoring.md)
-remain open, so the component evidence below must not be read as an accepted `STUDIO-PROD-015` claim.
+`tests/Browser/studio-authoring.spec.ts` and `tests/Browser/studio-authoring-right-to-left.spec.ts`; extension-owned
+targets, standalone dual mounting and the pinned-release limitations recorded in
+[`docs/studio-composition-authoring.md`](../studio-composition-authoring.md) remain open, so the component evidence
+below must not be read as an accepted `STUDIO-PROD-015` claim. Acceptance follows
+[ADR 0021](decisions/0021-automated-acceptance-and-sampled-capacity.md): the maintainer's merge after green
+automated checks, with no separate human qualification run.
 
 Studio's programme runs its own two-gate discipline in its repository —
 [`docs/roadmap/`](https://github.com/kumwe/studio/tree/main/docs/roadmap) there — with machine-checked
@@ -507,10 +510,13 @@ and stable reason. Its allowlist excludes canonical draft bytes and digest, HTML
 channel/source identifiers, sequences, markers and marker maps; a test holds that observability boundary.
 
 [ADR 0017](decisions/0017-authenticated-studio-preview.md) records the security and rendering decisions.
-Local SQLite conformance is directly runnable. S-F is not evidence for S-G's built browser surface or for
-the phase-7 human qualification: CI must still prove the migration and replay ledger on MariaDB, MySQL and
-PostgreSQL, the built administrator bundle must exercise the real `PreviewBinding`/iframe sequence in the
-browser matrix, and an independent security run must retain the P7-C artifact before Gate B assessment.
+Local SQLite conformance is directly runnable. S-F alone is not evidence for S-G's built browser surface. The
+Studio integration suite proves the preview migration and replay ledger on MariaDB, MySQL and PostgreSQL in CI;
+the built administrator bundle exercises the authenticated preview channel and its single-use document frame in
+`tests/Browser/studio-authoring.spec.ts` on Chromium desktop and mobile; and the commit-bound
+`security-evidence-${GITHUB_SHA}` artifact retains the P7-C security evidence. Under
+[ADR 0021](decisions/0021-automated-acceptance-and-sampled-capacity.md) those automated results, merged by a
+maintainer, are the acceptance; there is no separate human qualification step.
 
 ### Implemented published Content composition runtime
 

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for en-US, carrying 2572 messages.
+ * Compiled interface message catalogue for en-US, carrying 2592 messages.
  *
  * Generated from en-US.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1284,13 +1284,32 @@ return [
     'core.administrator.content_form.save_changes_again_to_apply_your' => 'Save changes again to apply your entries on top of version {current_version}.',
     'core.administrator.content_form.search_file_names' => 'Search file names',
     'core.administrator.content_form.structured_editor_fallback' => 'Structured editor fallback',
+    'core.administrator.content_form.studio_block_date' => 'Date',
+    'core.administrator.content_form.studio_block_date_and_time' => 'Date and time',
+    'core.administrator.content_form.studio_block_decimal' => 'Decimal',
+    'core.administrator.content_form.studio_block_integer' => 'Integer',
+    'core.administrator.content_form.studio_block_keyboard' => 'Select the block, then use the inspector to choose its field binding.',
+    'core.administrator.content_form.studio_block_media' => 'Media',
+    'core.administrator.content_form.studio_block_resource' => 'Resource',
+    'core.administrator.content_form.studio_block_rich_text' => 'Rich text',
+    'core.administrator.content_form.studio_block_text' => 'Text',
+    'core.administrator.content_form.studio_block_value' => 'Value',
+    'core.administrator.content_form.studio_block_yes_or_no' => 'Yes or no',
+    'core.administrator.content_form.studio_breaking_schema_change' => 'The new version removes or narrows fields; stored items may need migration.',
     'core.administrator.content_form.studio_changes_saved' => 'Studio saved this item.',
+    'core.administrator.content_form.studio_dependent_entries_remain' => 'Other items of this type keep the current version until they are migrated.',
+    'core.administrator.content_form.studio_item_adopts_successor' => 'This item adopts the new type version; its values are kept.',
+    'core.administrator.content_form.studio_item_created' => 'A new content item is created in its initial workflow state.',
+    'core.administrator.content_form.studio_item_revision_advances' => 'The item receives a new revision; its workflow state does not change.',
+    'core.administrator.content_form.studio_new_type_for_item' => 'A new reusable content type is created from this design and this item adopts it.',
+    'core.administrator.content_form.studio_new_type_for_new_item' => 'A new reusable content type is created from this design and this item uses it.',
     'core.administrator.content_form.studio_page_builder' => 'Studio page builder',
     'core.administrator.content_form.studio_page_builder_could_not_start' => 'The Studio page builder could not start; the structured form remains available.',
     'core.administrator.content_form.studio_page_builder_is_loading' => 'The Studio page builder is loading.',
     'core.administrator.content_form.studio_page_builder_is_ready' => 'The Studio page builder is ready.',
     'core.administrator.content_form.studio_page_builder_loads_when_you_switch' => 'The page builder loads when you switch to it.',
     'core.administrator.content_form.studio_page_builder_unavailable_use_the' => 'The Studio page builder is not available for this content context. Use the structured editor below; Kumwe will preserve the exact content type and version when you save.',
+    'core.administrator.content_form.studio_pattern_empty_section' => 'Empty section',
     'core.administrator.content_form.studio_preview' => 'Authenticated preview',
     'core.administrator.content_form.studio_preview_could_not_be_rendered' => 'The preview could not be rendered.',
     'core.administrator.content_form.studio_preview_frame' => 'Authenticated preview of this item',
@@ -1299,6 +1318,7 @@ return [
     'core.administrator.content_form.studio_preview_is_stale' => 'The item changed since this preview; preview it again.',
     'core.administrator.content_form.studio_preview_needs_a_saved_item' => 'Save the item before previewing it; the preview shows accepted revisions only.',
     'core.administrator.content_form.studio_preview_shows_the_last_saved' => 'The preview renders this item\'s last saved composition through the same template and theme path the published page uses.',
+    'core.administrator.content_form.studio_return_destination' => 'the content editor',
     'core.administrator.content_form.the_content_model_refused_these_values' => 'The content model refused these values. Everything you typed is still below; correct the fields named here and save again.',
     'core.administrator.content_form.the_item_could_not_be_saved' => 'The item could not be saved',
     'core.administrator.content_form.title' => 'Title',

@@ -28,6 +28,7 @@ use Kumwe\App\Studio\Domain\Authoring\StudioAuthoringIntent;
 use Kumwe\App\Studio\Domain\Host\StudioResourceKind;
 use Kumwe\Content\Workflow\Domain\WorkflowDefinition;
 use Kumwe\Context\Value\ExecutionContext;
+use Kumwe\Localization\Application\Translator;
 use Kumwe\Producer\Canonical\CanonicalJson;
 use Kumwe\Producer\Schema\StudioDocumentSchemaRegistry;
 use stdClass;
@@ -129,6 +130,8 @@ final readonly class ContentStudioAuthoringService
      * @param  StudioPublishedTheme                    $theme         Exact published public-theme authority.
      * @param  StudioDocumentSchemaRegistry            $schemas       Producer's pinned schema interpreter.
      * @param ContentStudioAuthoringCatalog $catalog The one block catalog sessions lock and saves admit.
+     * @param  Translator                              $translator    Interface-locale text the host hands Studio
+     *         for its own labels and save consequences.
      *
      * @since  2.0.0
      */
@@ -142,6 +145,7 @@ final readonly class ContentStudioAuthoringService
         private StudioPublishedTheme $theme,
         private StudioDocumentSchemaRegistry $schemas,
         private ContentStudioAuthoringCatalog $catalog,
+        private Translator $translator,
     ) {
     }
 
@@ -201,7 +205,7 @@ final readonly class ContentStudioAuthoringService
                 ? ['existing']
                 : ['blank', 'from-type'],
             'initialPresentation' => $presentation,
-            'returnContext' => $session->returnContext(),
+            'returnContext' => $session->returnContext($this->returnLabel()),
         ]);
     }
 
@@ -367,20 +371,16 @@ final readonly class ContentStudioAuthoringService
             default => StudioProducerError::refuse('validation-failed', 'studio.authoring/start-unavailable'),
         };
 
-        try {
-            $held = $this->contexts->rememberStart(
-                $context,
-                $session->host->resourceId,
-                CanonicalJson::stringify($source),
-            );
-        } catch (ContentStudioAuthoringContextRefused) {
-            StudioProducerError::refuse('forbidden', 'studio.authoring/context-refused');
-        }
+        $held = $this->held(fn (): string => $this->contexts->rememberStart(
+            $context,
+            $session->host->resourceId,
+            CanonicalJson::stringify($source),
+        ));
         if ($held !== CanonicalJson::stringify($source)) {
             StudioProducerError::refuse('conflict', 'studio.authoring/start-already-chosen');
         }
 
-        return $this->snapshot($session, $state, $source, $presentation, $session->returnContext());
+        return $this->snapshot($session, $state, $source, $presentation, $session->returnContext($this->returnLabel()));
     }
 
     /**
@@ -426,6 +426,7 @@ final readonly class ContentStudioAuthoringService
         if (($intent->sessionId ?? null) !== $session->sessionId()) {
             StudioProducerError::refuse('validation-failed', 'studio.authoring/session-mismatch');
         }
+        $this->recordedStart($context, $session);
         $draft = $intent->draft ?? null;
         $expected = $intent->expected ?? null;
         if (!$draft instanceof stdClass || !$expected instanceof stdClass) {
@@ -545,7 +546,6 @@ final readonly class ContentStudioAuthoringService
             $this->existingState($context, $advanced),
             $plan,
             'save-item',
-            $state,
         );
     }
 
@@ -634,7 +634,6 @@ final readonly class ContentStudioAuthoringService
             $this->stateFor($context, $advanced, $successor),
             $plan,
             'save-new-type-version',
-            $state,
         );
     }
 
@@ -713,7 +712,6 @@ final readonly class ContentStudioAuthoringService
             $this->stateFor($context, $advanced, $created),
             $plan,
             'save-as-new-type',
-            $state,
         );
     }
 
@@ -739,7 +737,10 @@ final readonly class ContentStudioAuthoringService
             StudioProducerError::refuse('forbidden', 'studio.authoring/session-kind');
         }
         try {
-            $target = $this->contexts->resolve($context, $host->resourceId);
+            $target = $this->held(fn (): ContentStudioAuthoringTarget => $this->contexts->resolve(
+                $context,
+                $host->resourceId,
+            ));
         } catch (ContentStudioAuthoringContextStale $stale) {
             if (!$advanceStale) {
                 StudioProducerError::refuse(
@@ -748,17 +749,52 @@ final readonly class ContentStudioAuthoringService
                     $stale->current->entryRevision,
                 );
             }
-            try {
-                $this->contexts->advance($context, $host->resourceId, $stale->current);
-            } catch (ContentStudioAuthoringContextRefused) {
-                StudioProducerError::refuse('forbidden', 'studio.authoring/context-refused');
-            }
+            $this->held(fn () => $this->contexts->advance($context, $host->resourceId, $stale->current));
             $target = $stale->current;
-        } catch (ContentStudioAuthoringContextRefused) {
-            StudioProducerError::refuse('forbidden', 'studio.authoring/context-refused');
         }
 
         return new ContentStudioAuthoringSession($host, $target, $snapshot->generation, $snapshot->permissions);
+    }
+
+    /**
+     * Run one context-authority call, answering a refused binding with the host's forbidden refusal.
+     *
+     * @template T
+     *
+     * @param   callable(): T  $operation  Call that may find the opaque context absent, foreign or expired.
+     *
+     * @return  T  The call's own result.
+     *
+     * @since   2.0.0
+     */
+    private function held(callable $operation): mixed
+    {
+        try {
+            return $operation();
+        } catch (ContentStudioAuthoringContextRefused) {
+            StudioProducerError::refuse('forbidden', 'studio.authoring/context-refused');
+        }
+    }
+
+    /**
+     * The start source the session recorded when it opened, required before any save is planned.
+     *
+     * @param   ExecutionContext               $context  Authenticated administrator request.
+     * @param   ContentStudioAuthoringSession  $session  Trusted session.
+     *
+     * @return  stdClass  Canonical start source.
+     *
+     * @since   2.0.0
+     */
+    private function recordedStart(ExecutionContext $context, ContentStudioAuthoringSession $session): stdClass
+    {
+        $recorded = $this->held(fn (): ?string => $this->contexts->startOf($context, $session->host->resourceId));
+        $start = $recorded === null ? null : json_decode($recorded, false, 16, JSON_THROW_ON_ERROR);
+        if (!$start instanceof stdClass) {
+            StudioProducerError::refuse('conflict', 'studio.authoring/start-required');
+        }
+
+        return $start;
     }
 
     /**
@@ -1053,8 +1089,8 @@ final readonly class ContentStudioAuthoringService
                     $state->record === null ? 'kumwe.app/item-created' : 'kumwe.app/item-revision-advances',
                     'information',
                     $state->record === null
-                        ? 'A new content item is created in its initial workflow state.'
-                        : 'The item receives a new revision; its workflow state does not change.',
+                        ? $this->translator->translate('core.administrator.content_form.studio_item_created')
+                        : $this->translator->translate('core.administrator.content_form.studio_item_revision_advances'),
                 );
                 break;
             case 'save-new-type-version':
@@ -1068,18 +1104,18 @@ final readonly class ContentStudioAuthoringService
                 $consequences[] = ContentStudioAuthoringDocuments::diagnostic(
                     self::DEPENDENT_ENTRIES,
                     'warning',
-                    'Other items of this type keep the current version until they are migrated.',
+                    $this->translator->translate('core.administrator.content_form.studio_dependent_entries_remain'),
                 );
                 $consequences[] = ContentStudioAuthoringDocuments::diagnostic(
                     self::ITEM_ADOPTS,
                     'information',
-                    'This item adopts the new type version; its values are kept.',
+                    $this->translator->translate('core.administrator.content_form.studio_item_adopts_successor'),
                 );
                 if ($this->breakingChanges($context, $definition, $model) !== []) {
                     $consequences[] = ContentStudioAuthoringDocuments::diagnostic(
                         self::BREAKING_CHANGE,
                         'warning',
-                        'The new version removes or narrows fields; stored items may need migration.',
+                        $this->translator->translate('core.administrator.content_form.studio_breaking_schema_change'),
                     );
                 }
                 break;
@@ -1090,8 +1126,8 @@ final readonly class ContentStudioAuthoringService
                     'kumwe.app/new-content-type',
                     'information',
                     $state->record === null
-                        ? 'A new reusable content type is created from this design and this item uses it.'
-                        : 'A new reusable content type is created from this design and this item adopts it.',
+                        ? $this->translator->translate('core.administrator.content_form.studio_new_type_for_new_item')
+                        : $this->translator->translate('core.administrator.content_form.studio_new_type_for_item'),
                 );
                 break;
         }
@@ -1102,7 +1138,11 @@ final readonly class ContentStudioAuthoringService
             'kind' => 'authoring-save-plan',
             'id' => $id,
             'revision' => 'plan-r1',
-            'successorContext' => ContentStudioAuthoringDocuments::returnContext($session->key(), $id),
+            'successorContext' => ContentStudioAuthoringDocuments::returnContext(
+                $session->key(),
+                $id,
+                $this->returnLabel(),
+            ),
             'sessionId' => $session->sessionId(),
             'outcome' => $outcome,
             'expected' => $state->coordinates,
@@ -1132,6 +1172,7 @@ final readonly class ContentStudioAuthoringService
         stdClass $draft,
         stdClass $request,
     ): stdClass {
+        $this->recordedStart($context, $session);
         $plan = $this->plan($context, $session, $state, $draft);
         $reference = $request->plan ?? null;
         if (
@@ -1192,7 +1233,6 @@ final readonly class ContentStudioAuthoringService
      * @param   ContentStudioAuthoringState    $state    Fresh projection after the effect.
      * @param   stdClass                       $plan     Accepted plan.
      * @param   string                         $outcome  Accepted outcome.
-     * @param   ContentStudioAuthoringState    $prior    Projection the plan was made against.
      *
      * @return  stdClass  Schema-valid `authoring-save` result.
      *
@@ -1204,23 +1244,10 @@ final readonly class ContentStudioAuthoringService
         ContentStudioAuthoringState $state,
         stdClass $plan,
         string $outcome,
-        ContentStudioAuthoringState $prior,
     ): stdClass {
         // Studio reconciles every save against the start the session opened with, so the recorded start
         // is reported unchanged even after the session created its item or adopted a new reusable type.
-        try {
-            $recorded = $this->contexts->startOf($context, $session->host->resourceId);
-        } catch (ContentStudioAuthoringContextRefused) {
-            StudioProducerError::refuse('forbidden', 'studio.authoring/context-refused');
-        }
-        $start = $recorded === null ? null : json_decode($recorded, false, 16, JSON_THROW_ON_ERROR);
-        if (!$start instanceof stdClass) {
-            $start = $session->target->intent === StudioAuthoringIntent::Edit
-                ? (object) ['kind' => 'existing']
-                : ($prior->type === null
-                    ? (object) ['kind' => 'blank']
-                    : (object) ['kind' => 'from-type', 'type' => $prior->coordinates->type]);
-        }
+        $start = $this->recordedStart($context, $session);
         $successorContext = $plan->successorContext;
         if (!$successorContext instanceof stdClass) {
             StudioProducerError::refuse('internal', 'studio.authoring/plan-corrupt');
@@ -1478,12 +1505,17 @@ final readonly class ContentStudioAuthoringService
             StudioProducerError::refuse('validation-failed', 'studio.authoring/invalid-draft');
         }
         // The browser's draft may carry the narrower lock of the Blueprint it started from, so the stored
-        // lock is rebuilt from the session catalog the author composed against.
+        // lock is rebuilt from the session catalog the author composed against. A composed block the catalog
+        // no longer offers (its extension was disabled or removed) cannot be locked, so the type save is
+        // refused rather than storing a layout whose lock does not cover it.
         $used = self::usedBlockTypes(is_array($roots) ? $roots : []);
         $stored->dependencyLock->blocks = array_values(array_filter(
             $this->catalog->blockLocks(),
             static fn (stdClass $lock): bool => is_string($lock->type ?? null) && isset($used[$lock->type]),
         ));
+        if (count($stored->dependencyLock->blocks) !== count($used)) {
+            StudioProducerError::refuse('validation-failed', 'studio.authoring/unlocked-block');
+        }
         try {
             $this->compositions->adopt(
                 $context,
@@ -1512,13 +1544,11 @@ final readonly class ContentStudioAuthoringService
     {
         $types = [];
         foreach ($nodes as $node) {
-            if (!$node instanceof stdClass) {
-                continue;
+            $type = $node instanceof stdClass ? ($node->type ?? null) : null;
+            if (is_string($type)) {
+                $types[$type] = true;
             }
-            if (is_string($node->type ?? null)) {
-                $types[$node->type] = true;
-            }
-            $slots = $node->slots ?? null;
+            $slots = $node instanceof stdClass ? ($node->slots ?? null) : null;
             foreach ($slots instanceof stdClass ? get_object_vars($slots) : [] as $children) {
                 $types += self::usedBlockTypes(is_array($children) ? $children : []);
             }
@@ -1930,6 +1960,24 @@ final readonly class ContentStudioAuthoringService
         return ContentStudioAuthoringDocuments::message(
             'kumwe.content/type-' . substr(hash('sha256', $definition->handle), 0, 32),
             $definition->name,
+        );
+    }
+
+    /**
+     * The destination Studio names on its return control, in the interface locale.
+     *
+     * Studio renders a host message reference by its default text, so the host hands it the text already
+     * resolved in the locale of the request; the key stays stable so the pointer names the same resource.
+     *
+     * @return  stdClass  Schema-valid `messageReference` naming the Content editor.
+     *
+     * @since   2.0.0
+     */
+    private function returnLabel(): stdClass
+    {
+        return ContentStudioAuthoringDocuments::message(
+            'kumwe.app/return-to-content',
+            $this->translator->translate('core.administrator.content_form.studio_return_destination'),
         );
     }
 

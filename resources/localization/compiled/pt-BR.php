@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for pt-BR, carrying 2572 messages.
+ * Compiled interface message catalogue for pt-BR, carrying 2592 messages.
  *
  * Generated from pt-BR.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -1284,13 +1284,32 @@ return [
     'core.administrator.content_form.save_changes_again_to_apply_your' => 'Salve as alterações novamente para aplicar suas entradas sobre a versão {current_version}.',
     'core.administrator.content_form.search_file_names' => 'Pesquisar nomes de arquivo',
     'core.administrator.content_form.structured_editor_fallback' => 'Editor estruturado alternativo',
+    'core.administrator.content_form.studio_block_date' => 'Data',
+    'core.administrator.content_form.studio_block_date_and_time' => 'Data e hora',
+    'core.administrator.content_form.studio_block_decimal' => 'Decimal',
+    'core.administrator.content_form.studio_block_integer' => 'Número inteiro',
+    'core.administrator.content_form.studio_block_keyboard' => 'Selecione o bloco e use o inspetor para escolher o vínculo de campo dele.',
+    'core.administrator.content_form.studio_block_media' => 'Mídia',
+    'core.administrator.content_form.studio_block_resource' => 'Recurso',
+    'core.administrator.content_form.studio_block_rich_text' => 'Texto formatado',
+    'core.administrator.content_form.studio_block_text' => 'Texto',
+    'core.administrator.content_form.studio_block_value' => 'Valor',
+    'core.administrator.content_form.studio_block_yes_or_no' => 'Sim ou não',
+    'core.administrator.content_form.studio_breaking_schema_change' => 'A nova versão remove ou restringe campos; os itens armazenados podem precisar de migração.',
     'core.administrator.content_form.studio_changes_saved' => 'O Studio salvou este item.',
+    'core.administrator.content_form.studio_dependent_entries_remain' => 'Os outros itens deste tipo mantêm a versão atual até serem migrados.',
+    'core.administrator.content_form.studio_item_adopts_successor' => 'Este item adota a nova versão do tipo; seus valores são mantidos.',
+    'core.administrator.content_form.studio_item_created' => 'Um novo item de conteúdo é criado no estado inicial do fluxo de trabalho.',
+    'core.administrator.content_form.studio_item_revision_advances' => 'O item recebe uma nova revisão; o estado do fluxo de trabalho não muda.',
+    'core.administrator.content_form.studio_new_type_for_item' => 'Um novo tipo de conteúdo reutilizável é criado a partir deste design e este item o adota.',
+    'core.administrator.content_form.studio_new_type_for_new_item' => 'Um novo tipo de conteúdo reutilizável é criado a partir deste design e este item o utiliza.',
     'core.administrator.content_form.studio_page_builder' => 'Construtor de páginas do Studio',
     'core.administrator.content_form.studio_page_builder_could_not_start' => 'O construtor de páginas do Studio não pôde iniciar; o formulário estruturado permanece disponível.',
     'core.administrator.content_form.studio_page_builder_is_loading' => 'O construtor de páginas do Studio está carregando.',
     'core.administrator.content_form.studio_page_builder_is_ready' => 'O construtor de páginas do Studio está pronto.',
     'core.administrator.content_form.studio_page_builder_loads_when_you_switch' => 'O construtor de páginas carrega quando você alterna para ele.',
     'core.administrator.content_form.studio_page_builder_unavailable_use_the' => 'O construtor de páginas do Studio não está disponível para este contexto de conteúdo. Use o editor estruturado abaixo; o Kumwe preservará o tipo e a versão exatos do conteúdo ao salvar.',
+    'core.administrator.content_form.studio_pattern_empty_section' => 'Seção vazia',
     'core.administrator.content_form.studio_preview' => 'Prévia autenticada',
     'core.administrator.content_form.studio_preview_could_not_be_rendered' => 'Não foi possível renderizar a prévia.',
     'core.administrator.content_form.studio_preview_frame' => 'Prévia autenticada deste item',
@@ -1299,6 +1318,7 @@ return [
     'core.administrator.content_form.studio_preview_is_stale' => 'O item mudou desde esta prévia; visualize a prévia novamente.',
     'core.administrator.content_form.studio_preview_needs_a_saved_item' => 'Salve o item antes de visualizar a prévia; a prévia mostra apenas revisões aceitas.',
     'core.administrator.content_form.studio_preview_shows_the_last_saved' => 'A prévia renderiza a última composição salva deste item pelo mesmo caminho de modelo e tema usado pela página publicada.',
+    'core.administrator.content_form.studio_return_destination' => 'o editor de conteúdo',
     'core.administrator.content_form.the_content_model_refused_these_values' => 'O modelo de conteúdo recusou estes valores. Tudo o que você digitou ainda está abaixo; corrija os campos indicados aqui e salve novamente.',
     'core.administrator.content_form.the_item_could_not_be_saved' => 'Não foi possível salvar o item',
     'core.administrator.content_form.title' => 'Título',
