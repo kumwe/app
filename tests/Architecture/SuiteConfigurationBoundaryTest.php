@@ -45,6 +45,9 @@ final class SuiteConfigurationBoundaryTest extends TestCase
             => 'Forwards the whole parent environment verbatim to the spawned killable worker, so a '
             . 'deployment that configures by real process variables keeps working in the child process; '
             . 'the relay override comes from ApplicationConfiguration and nothing is read in-process.',
+        'tests/Integration/Extension/RemoteRecordAdapterIntegrationTest.php'
+            => 'Forwards the whole parent environment to the isolated PHP development server while overriding '
+            . 'only its loopback base URL and trusted host; no environment value is read in-process.',
     ];
 
     /**
