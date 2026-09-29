@@ -273,9 +273,7 @@ try {
         }
         $assetDefinitionsById[$definitionId] = $assetDefinition;
     }
-    $installDefinition = static fn (array $definition) => NeutralBusinessFixture::install(
-        $container,
-        $context,
+    $installDefinition = static fn (array $definition) => $installDefinition(
         $definition,
         $adminPassword,
     );
@@ -535,9 +533,7 @@ try {
     );
     $targetDocument['portal_exposure'] = true;
     $targetDocument['portal_operations'] = ['browse', 'read', 'relation', 'reorder'];
-    $targetDefinition = NeutralBusinessFixture::install(
-        $container,
-        $context,
+    $targetDefinition = $installDefinition(
         $targetDocument,
     );
     $lineDocument = NeutralBusinessFixture::ownedLineDocument(
@@ -546,9 +542,7 @@ try {
     );
     $lineDocument['portal_exposure'] = true;
     $lineDocument['portal_operations'] = ['browse', 'create', 'read', 'relation', 'reorder'];
-    $lineDefinition = NeutralBusinessFixture::install(
-        $container,
-        $context,
+    $lineDefinition = $installDefinition(
         $lineDocument,
     );
     $businessDocument = NeutralBusinessFixture::document(
