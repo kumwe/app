@@ -163,6 +163,15 @@ jobs:
       - name: Generate ephemeral application secret
         shell: bash
         run: echo "APP_SECRET=$(openssl rand -base64 48 | tr -d '\n')" >> "$GITHUB_ENV"
+      - name: Allow audit trigger installation on the ephemeral MySQL server
+        if: matrix.database.driver == 'mysql'
+        shell: bash
+        run: |
+          # MySQL binary logging requires this server setting for schema-scoped trigger creators.
+          docker exec '${{ job.services.database.id }}' mysql --user=root --execute='
+            SET GLOBAL log_bin_trust_function_creators = 1;
+            SELECT @@GLOBAL.log_bin, @@GLOBAL.log_bin_trust_function_creators;
+          '
       - name: Prepare test schema
         run: |
           php tests/Support/install-parent-schema.php
