@@ -139,13 +139,13 @@ Generated from [`findings.json`](findings.json) by `composer acceptance:summary`
 
 | State | Count |
 |---|---|
-| `open` | 9 |
+| `open` | 10 |
 | `reproduced` | 1 |
 | `decision_required` | 0 |
 | `accepted_for_implementation` | 1 |
 | `in_progress` | 12 |
 | `verified` | 0 |
-| `conditional` | 2 |
+| `conditional` | 1 |
 | `external` | 0 |
 | `closed` | **not an allowed state** — see [`CHANGELOG.md`](../../CHANGELOG.md) |
 

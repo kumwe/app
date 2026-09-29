@@ -253,21 +253,25 @@
         },
         {
             "id": "GM-AUD-02",
-            "title": "Append-only held only by application discipline",
+            "title": "Audit retention authority does not yet resist a compromised database writer",
             "severity": "high",
-            "state": "conditional",
+            "state": "open",
             "phase": "evidence",
             "origin": "gap-matrix",
             "source_anchors": [
                 {
                     "file": "src/Audit/Infrastructure/Persistence/AuditAppendOnlyGuard.php",
                     "symbol": "AuditAppendOnlyGuard"
+                },
+                {
+                    "file": "docs/security/reviews/2026-09-28-p7c-threat-review.md",
+                    "symbol": "P7C-20260928-01"
                 }
             ],
-            "acceptance_test": "Triggers install where the server grants the privilege; where it refuses, audit:verify exits 2 and reports append_only_enforcement: not_installed, observed from the server catalog on every run.",
-            "owner": "UNASSIGNED",
-            "closure_sha": "ae4b92bbfb64906bb42de08fdbfacbef2464c7cd",
-            "residual": "On a managed service that withholds CREATE TRIGGER there is no database-level prevention of UPDATE or DELETE on audit_events. Tamper evidence, which is what the domain claims, holds unconditionally."
+            "acceptance_test": "A real runtime DML principal cannot authorize audit-event or anchor deletion by setting the retention session flag. Qualified separate retention authority preserves archived-range evidence; independently protected checkpoints detect disappearance or rollback. Exercise legitimate retention and adversarial erasure on MariaDB, MySQL and PostgreSQL. Fresh verification reports missing or invalid enforcement rather than a clean verdict.",
+            "owner": "Kumwe platform agents",
+            "closure_sha": null,
+            "residual": "Independent review P7C-20260928-01 demonstrated full event and anchor erasure through the caller-settable prune flag on MariaDB while the verifier reported intact and active. Database-local hashes do not provide unconditional tamper evidence. The platform owns remediation and regression evidence; deployment operators own the required privilege separation and independent checkpoint/archive custody. The managed-service CREATE TRIGGER limitation remains a separate explicit control condition."
         },
         {
             "id": "GM-SUP-05",

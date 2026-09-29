@@ -14,6 +14,8 @@ use Kumwe\App\Application\Retention\RetentionObserver;
 use Kumwe\App\Application\Retention\RetentionPolicy;
 use Kumwe\App\Application\Retention\RetentionStore;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Infrastructure\Persistence\BoundedStatementExecutor;
+use Kumwe\App\Infrastructure\Persistence\StatementBudget;
 use Psr\Clock\ClockInterface;
 
 /**
@@ -55,6 +57,7 @@ final readonly class DoctrineRetentionObserver implements RetentionObserver
      * @param  ClockInterface      $clock      Instant every window and age is measured against.
      * @param  RetentionCatalogue  $catalogue  Declared windows, budgets and required settings.
      * @param  RetentionRunLedger  $runs       Source of the drain rate.
+     * @param  StatementBudget     $budget     Server timeout and materialized bytes for each probe.
      *
      * @since  2.0.0
      */
@@ -64,6 +67,7 @@ final readonly class DoctrineRetentionObserver implements RetentionObserver
         private ClockInterface $clock,
         private RetentionCatalogue $catalogue,
         private RetentionRunLedger $runs,
+        private StatementBudget $budget = new StatementBudget(1_000, 262_144),
     ) {
     }
 
@@ -383,12 +387,13 @@ final readonly class DoctrineRetentionObserver implements RetentionObserver
      */
     private function boundedCount(string $table, string $predicate, array $parameters, array $types): array
     {
-        $value = $this->database->fetchOne(sprintf(
-            'SELECT COUNT(*) FROM (SELECT 1 AS probe FROM %s WHERE %s LIMIT %d) bounded',
+        $rows = (new BoundedStatementExecutor($this->database))->fetchAll(sprintf(
+            'SELECT COUNT(*) AS measured FROM (SELECT 1 AS probe FROM %s WHERE %s LIMIT %d) bounded',
             $table,
             $predicate,
             self::PROBE_CAP,
-        ), $parameters, $types);
+        ), $parameters, $types, $this->budget);
+        $value = $rows[0]['measured'] ?? null;
         $count = is_int($value) ? $value : (is_string($value) && is_numeric($value) ? (int) $value : 0);
 
         return [$count, $count >= self::PROBE_CAP];
@@ -416,11 +421,13 @@ final readonly class DoctrineRetentionObserver implements RetentionObserver
         array $types,
         DateTimeImmutable $now,
     ): ?float {
-        $value = $this->database->fetchOne(
-            sprintf('SELECT %s FROM %s WHERE %s ORDER BY %s LIMIT 1', $column, $table, $predicate, $column),
+        $rows = (new BoundedStatementExecutor($this->database))->fetchAll(
+            sprintf('SELECT %s AS measured FROM %s WHERE %s ORDER BY %s LIMIT 1', $column, $table, $predicate, $column),
             $parameters,
             $types,
+            $this->budget,
         );
+        $value = $rows[0]['measured'] ?? null;
         $parsed = $value instanceof DateTimeImmutable
             ? $value
             : (is_string($value) && $value !== '' ? date_create_immutable($value) : false);
@@ -451,10 +458,10 @@ final readonly class DoctrineRetentionObserver implements RetentionObserver
         if ($types === []) {
             return [];
         }
-        $rows = $this->database->fetchAllAssociative(sprintf(
+        $rows = (new BoundedStatementExecutor($this->database))->fetchAll(sprintf(
             'SELECT job_type, enabled, payload FROM %s WHERE job_type IN (?)',
             $this->tables->quoted('schedules'),
-        ), [array_keys($types)], [\Doctrine\DBAL\ArrayParameterType::STRING]);
+        ), [array_keys($types)], [\Doctrine\DBAL\ArrayParameterType::STRING], $this->budget);
         $schedules = [];
         foreach ($rows as $row) {
             $payload = $row['payload'] ?? null;

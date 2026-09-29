@@ -371,12 +371,13 @@ final readonly class ContentStudioAuthoringService
             default => StudioProducerError::refuse('validation-failed', 'studio.authoring/start-unavailable'),
         };
 
-        $held = $this->held(fn (): string => $this->contexts->rememberStart(
+        $held = $this->held(fn (): array => $this->contexts->rememberStart(
             $context,
             $session->host->resourceId,
             CanonicalJson::stringify($source),
+            $presentation,
         ));
-        if ($held !== CanonicalJson::stringify($source)) {
+        if ($held !== ['source' => CanonicalJson::stringify($source), 'presentation' => $presentation]) {
             StudioProducerError::refuse('conflict', 'studio.authoring/start-already-chosen');
         }
 
@@ -493,7 +494,7 @@ final readonly class ContentStudioAuthoringService
         if ($definition === null) {
             StudioProducerError::refuse('validation-failed', 'studio.authoring/type-required');
         }
-        [$title, $slug, $data] = $this->contentValues($entry, $definition);
+        [$title, $slug, $data] = $this->contentValues($entry, $state->model);
         try {
             if ($state->record === null) {
                 $record = $this->content->create(
@@ -625,7 +626,7 @@ final readonly class ContentStudioAuthoringService
         }
         $reference = $state->coordinates->blueprint ?? null;
         $predecessor = $reference instanceof stdClass ? ($reference->id ?? null) : null;
-        $this->adoptBlueprint($context, $successor, $blueprint, is_string($predecessor) ? $predecessor : null);
+        $this->adoptBlueprint($context, $successor, $blueprint, $model, is_string($predecessor) ? $predecessor : null);
         $advanced = $this->adoptType($context, $session, $state, $successor);
 
         return $this->saveResult(
@@ -703,7 +704,7 @@ final readonly class ContentStudioAuthoringService
         } catch (ContentModelNotFound) {
             StudioProducerError::refuse('not-found', 'studio.authoring/workflow-not-found');
         }
-        $this->adoptBlueprint($context, $created, $blueprint);
+        $this->adoptBlueprint($context, $created, $blueprint, $model);
         $advanced = $this->adoptType($context, $session, $state, $created);
 
         return $this->saveResult(
@@ -788,8 +789,8 @@ final readonly class ContentStudioAuthoringService
      */
     private function recordedStart(ExecutionContext $context, ContentStudioAuthoringSession $session): stdClass
     {
-        $recorded = $this->held(fn (): ?string => $this->contexts->startOf($context, $session->host->resourceId));
-        $start = $recorded === null ? null : json_decode($recorded, false, 16, JSON_THROW_ON_ERROR);
+        $recorded = $this->held(fn (): ?array => $this->contexts->startOf($context, $session->host->resourceId));
+        $start = $recorded === null ? null : json_decode($recorded['source'], false, 16, JSON_THROW_ON_ERROR);
         if (!$start instanceof stdClass) {
             StudioProducerError::refuse('conflict', 'studio.authoring/start-required');
         }
@@ -913,6 +914,7 @@ final readonly class ContentStudioAuthoringService
                     $definition,
                     $workflow,
                     $this->bindings->overrides($context->site(), $record->entry->id()),
+                    $composition->binding,
                 );
         } catch (StudioProjectionRejected) {
             StudioProducerError::refuse('validation-failed', 'studio.authoring/projection-rejected');
@@ -1252,7 +1254,13 @@ final readonly class ContentStudioAuthoringService
         if (!$successorContext instanceof stdClass) {
             StudioProducerError::refuse('internal', 'studio.authoring/plan-corrupt');
         }
-        $snapshot = $this->snapshot($session, $state, $start, 'inline', $successorContext);
+        // The initial presentation is an accepted base; Studio keeps any newer local presentation.
+        $recorded = $this->held(fn (): ?array => $this->contexts->startOf($context, $session->host->resourceId));
+        $presentation = $recorded['presentation'] ?? null;
+        if (!is_string($presentation) || !in_array($presentation, self::PRESENTATIONS, true)) {
+            StudioProducerError::refuse('conflict', 'studio.authoring/start-required');
+        }
+        $snapshot = $this->snapshot($session, $state, $start, $presentation, $successorContext);
 
         return $this->validated('authoring-save', 'saveResult', (object) [
             'contractVersion' => ContentStudioAuthoringDocuments::CONTRACT_VERSION,
@@ -1482,6 +1490,7 @@ final readonly class ContentStudioAuthoringService
      * @param   stdClass               $blueprint    Authored Blueprint document.
      * @param   ?string                $predecessor  Blueprint identity of the version this one succeeds, or null
      *          for a new reusable type.
+     * @param stdClass $model Authored model whose field identities are persisted with the binding.
      *
      * @return  void
      *
@@ -1491,6 +1500,7 @@ final readonly class ContentStudioAuthoringService
         ExecutionContext $context,
         ContentTypeDefinition $definition,
         stdClass $blueprint,
+        stdClass $model,
         ?string $predecessor = null,
     ): void {
         // A published Blueprint must compose at least one root; an empty layout is stored as the type's
@@ -1525,6 +1535,7 @@ final readonly class ContentStudioAuthoringService
                 $this->catalog->renderableBlockLocks(),
                 $status,
                 $predecessor,
+                array_map(self::fieldIdentity(...), $this->dataFields($model)),
             );
         } catch (StudioCompositionLockMismatch) {
             StudioProducerError::refuse('validation-failed', 'studio.authoring/unlocked-block');
@@ -1655,22 +1666,22 @@ final readonly class ContentStudioAuthoringService
     /**
      * Map a Studio entry document back onto Content identity and data.
      *
-     * @param   stdClass               $entry       Entry document.
-     * @param   ContentTypeDefinition  $definition  Type the values must satisfy.
+     * @param   stdClass  $entry  Entry document.
+     * @param   stdClass  $model  Type the values must satisfy.
      *
      * @return  array{0: string, 1: string, 2: array<string, mixed>}  Title, slug and data.
      *
      * @since   2.0.0
      */
-    private function contentValues(stdClass $entry, ContentTypeDefinition $definition): array
+    private function contentValues(stdClass $entry, stdClass $model): array
     {
         $values = $entry->values ?? null;
         if (!$values instanceof stdClass) {
             StudioProducerError::refuse('validation-failed', 'studio.authoring/invalid-values');
         }
         $known = [];
-        foreach ($definition->fields() as $field) {
-            $known[$field->key] = true;
+        foreach ($this->dataFields($model) as $key => $field) {
+            $known[self::fieldIdentity($field)] = $key;
         }
         $title = $values->title ?? '';
         $slug = $values->slug ?? '';
@@ -1682,11 +1693,11 @@ final readonly class ContentStudioAuthoringService
             if ($member === 'title' || $member === 'slug') {
                 continue;
             }
-            if (!str_starts_with($member, 'data_') || !isset($known[substr($member, 5)])) {
+            if (!isset($known[$member])) {
                 StudioProducerError::refuse('validation-failed', 'studio.authoring/unknown-field');
             }
             $encoded = json_encode($value, JSON_THROW_ON_ERROR);
-            $data[substr($member, 5)] = json_decode($encoded, true, 64, JSON_THROW_ON_ERROR);
+            $data[$known[$member]] = json_decode($encoded, true, 64, JSON_THROW_ON_ERROR);
         }
 
         return [$title, $slug, $data];
@@ -1703,32 +1714,11 @@ final readonly class ContentStudioAuthoringService
      */
     private function schemaFromModel(stdClass $model): array
     {
-        $fields = $model->fields ?? null;
-        if (!is_array($fields)) {
-            StudioProducerError::refuse('validation-failed', 'studio.authoring/unsupported-model');
-        }
         $properties = [];
         $required = [];
-        foreach ($fields as $field) {
-            if (!$field instanceof stdClass) {
-                StudioProducerError::refuse('validation-failed', 'studio.authoring/unsupported-model');
-            }
+        foreach ($this->dataFields($model) as $key => $field) {
             $extensions = $field->extensions ?? null;
             $source = $extensions instanceof stdClass ? ($extensions->{'kumwe.app/source-field'} ?? null) : null;
-            $storage = $source instanceof stdClass ? ($source->storage ?? 'data') : 'data';
-            if ($storage === 'entry') {
-                continue;
-            }
-            $id = $field->id ?? null;
-            if (!is_string($id)) {
-                StudioProducerError::refuse('validation-failed', 'studio.authoring/unsupported-model');
-            }
-            $key = $source instanceof stdClass && is_string($source->key ?? null)
-                ? $source->key
-                : (str_starts_with($id, 'data_') ? substr($id, 5) : $id);
-            if (preg_match('/^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$/D', $key) !== 1 || isset($properties[$key])) {
-                StudioProducerError::refuse('validation-failed', 'studio.authoring/unsupported-model');
-            }
             $properties[$key] = $this->propertySchema($field, $source instanceof stdClass ? $source : null);
             if (($field->required ?? false) === true) {
                 $required[] = $key;
@@ -1742,6 +1732,78 @@ final readonly class ContentStudioAuthoringService
         }
 
         return $schema;
+    }
+
+    /**
+     * Require an exact field identifier before using it as a host storage-map value.
+     *
+     * @param   stdClass  $field  Schema-admitted model field.
+     *
+     * @return  string  Studio field identifier.
+     *
+     * @since   2.0.0
+     */
+    private static function fieldIdentity(stdClass $field): string
+    {
+        $id = $field->id ?? null;
+        if (!is_string($id)) {
+            StudioProducerError::refuse('validation-failed', 'studio.authoring/unsupported-model');
+        }
+
+        return $id;
+    }
+
+    /**
+     * Bind exact authored IDs to Content storage keys without putting host metadata in Content schemas.
+     *
+     * @param   stdClass  $model  Authorized projection or schema-admitted authored model.
+     *
+     * @return  array<string, stdClass>  Data fields indexed by their immutable Content storage key.
+     *
+     * @since   2.0.0
+     */
+    private function dataFields(stdClass $model): array
+    {
+        $fields = $model->fields ?? null;
+        if (!is_array($fields)) {
+            StudioProducerError::refuse('validation-failed', 'studio.authoring/unsupported-model');
+        }
+        $data = [];
+        $seen = [];
+        foreach ($fields as $field) {
+            $id = $field instanceof stdClass ? ($field->id ?? null) : null;
+            if (!is_string($id) || isset($seen[$id])) {
+                StudioProducerError::refuse('validation-failed', 'studio.authoring/unsupported-model');
+            }
+            $seen[$id] = true;
+            $extensions = $field->extensions ?? null;
+            $source = $extensions instanceof stdClass ? ($extensions->{'kumwe.app/source-field'} ?? null) : null;
+            $storage = $source instanceof stdClass ? ($source->storage ?? 'data') : 'data';
+            if ($storage === 'entry') {
+                if (
+                    !in_array($id, ['title', 'slug'], true)
+                    || !$source instanceof stdClass || ($source->key ?? null) !== $id
+                ) {
+                    StudioProducerError::refuse('validation-failed', 'studio.authoring/unsupported-model');
+                }
+                continue;
+            }
+            if ($storage !== 'data' || in_array($id, ['title', 'slug'], true)) {
+                StudioProducerError::refuse('validation-failed', 'studio.authoring/unsupported-model');
+            }
+            $key = $source instanceof stdClass ? ($source->key ?? null) : $id;
+            // Studio local names also allow punctuation and longer IDs than Content storage keys.
+            // The durable binding preserves that exact ID while the host allocates its storage name.
+            if ($source === null && preg_match('/^[a-z][a-z0-9_]{0,62}$/D', $id) !== 1) {
+                $key = 'studio_' . substr(hash('sha256', $id), 0, 56);
+            }
+            if (!is_string($key) || preg_match('/^[a-z][a-z0-9_]{0,62}$/D', $key) !== 1 || isset($data[$key])) {
+                StudioProducerError::refuse('validation-failed', 'studio.authoring/unsupported-model');
+            }
+            $data[$key] = $field;
+        }
+
+        return $data;
     }
 
     /**

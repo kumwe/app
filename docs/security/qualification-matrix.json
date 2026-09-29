@@ -129,7 +129,7 @@
                         {
                             "test": "tests/Functional/Security/CredentialTakeoverCeilingTest.php::testAUserManagerCannotTakeOverAStrongerAccount",
                             "job": ".github/workflows/ci.yml#database",
-                            "proves": "Over REST, a user manager cannot reset the password or second factor of an account stronger than itself."
+                            "proves": "An ordinary user manager with consumed step-up proof cannot reset the password or second factor of an account stronger than itself."
                         },
                         {
                             "test": "tests/Functional/Security/CredentialTakeoverCeilingTest.php::testMembershipRoleAuthorityCountsTowardsTheCeiling",
@@ -137,9 +137,9 @@
                             "proves": "Authority held only through an organization membership, even an inactive one, bounds a credential takeover."
                         },
                         {
-                            "test": "tests/Functional/Security/CredentialTakeoverCeilingTest.php::testBreakGlassRecoveryCurrentlyStopsAtTheCeilingOfAnAccountHoldingGrants",
+                            "test": "tests/Functional/Security/CredentialTakeoverCeilingTest.php::testHostRecoveryRestoresAnAccountHoldingGrants",
                             "job": ".github/workflows/ci.yml#database",
-                            "proves": "Break-glass console recovery is pinned at the ceiling for grant-holding accounts, pending a maintainer decision."
+                            "proves": "The privately issued host recovery command restores grant-holding accounts under ADR 0023 while ordinary principals retain their delegation ceiling."
                         },
                         {
                             "test": "tests/Integration/Identity/IdentityRecoveryMachineEquivalenceIntegrationTest.php::testTheScreensSteppedContextStillReachesTheRecoveryActs",

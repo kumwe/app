@@ -160,3 +160,23 @@ same day for one widened port, `adopt()`: re-pinning a stored entry to an adopte
 own persistence contract, distinct from `update()`, which never rewrites the pinned definition versions.
 `ContentRepository` left the record on 2026-09-23 when `kumwe/content-model` 0.2.0, which carries `adopt()`,
 was adopted under `KUMWE-MIG-2026-034`; the port is now `Kumwe\Content\Application\ContentRepository`.
+
+
+The 2026-09-28 Studio checkpoint extends the same host ownership for STUDIO-PROD-003/005/006/007/015.
+`ContentStudioAuthoringContextAuthority::rememberStart()` and repository `recordStart()` now bind the
+initial source and presentation atomically; `startOf()` and repository `start()` return both. Saves
+return that accepted initial presentation so the released browser can preserve its current local
+presentation. Old persisted contexts without presentation evidence refuse and must be reopened.
+`StudioContentCompositionService::adoptBlueprint()` accepts the exact authored field-ID map and stores
+it with the immutable type/Blueprint binding. The authored identity remains separate from Content's
+storage grammar. KUMWE-CGR-2026-072 and KUMWE-CGR-2026-073 record the associated projection and domain
+surface changes without duplicating the symbols this record already owns.
+
+This supplemental ownership review used capability index
+`ea1e5091c8c846ec8434e6e45cc04a384e43187b1f5aae9d147b9c0814783826`, Producer 0.3.0 and Content-model
+0.2.0. Their public schemas and persistence-independent APIs cannot bind App's opaque session or
+persist its Content/Blueprint association. The Studio implementation agent approves this supplement
+under the standing maintainer mandate; the parent reported source review of `06356426` and `12824b4e`.
+This is not an additional human GitHub approval. The complete Studio unit suite passes 458 tests and
+3,830 assertions; the production-container MariaDB authoring journey passes 10 tests and 686 assertions,
+and maximum-level PHPStan passes. Baseline integration remains the parent's responsibility.

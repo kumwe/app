@@ -32,7 +32,8 @@ use Ramsey\Uuid\Uuid;
  * service with that stepped context and requires both takeover paths to be refused against a
  * stronger account while an account inside the actor's own authority can still be recovered, and authority
  * held only through an organization membership — even one that is inactive today — counts towards it.
- * Break-glass console recovery is pinned at the behaviour the ceiling gives it today, pending a decision.
+ * The privately issued host recovery identity restores grant-holding accounts under ADR 0023;
+ * that exception does not change the ceiling applied to ordinary administrators.
  *
  * @since  2.0.0
  */
@@ -176,19 +177,17 @@ final class CredentialTakeoverCeilingTest extends TestCase
     }
 
     /**
-     * Break-glass console recovery currently stops at the same ceiling for an account holding any grant.
+     * The host recovery command restores credentials of grant-holding and grantless accounts.
      *
-     * The recovery acts as the `system:credential-recovery` identity, and a system identity carries no grants
-     * to draw a delegation ceiling from, so since the ceiling landed the console can reset the password or
-     * retire the second factor only of an account that holds no grant, while ending a stronger account's
-     * sessions still works. Whether break-glass should be exempt is an open maintainer decision; this pins
-     * today's behaviour so that whichever way it is decided, the change is deliberate and visible here.
+     * ADR 0023 authorizes the privately issued `system:credential-recovery` identity to reset a password,
+     * retire second factors and end sessions regardless of the subject's grants. The ordinary actor's
+     * delegation ceiling remains covered separately; machine-surface and provenance refusals are unchanged.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    public function testBreakGlassRecoveryCurrentlyStopsAtTheCeilingOfAnAccountHoldingGrants(): void
+    public function testHostRecoveryRestoresAnAccountHoldingGrants(): void
     {
         $harness = SecurityHttpHarness::boot();
         $stronger = $harness->machineActor(['administrator.access', 'settings.manage']);
@@ -208,20 +207,23 @@ final class CredentialTakeoverCeilingTest extends TestCase
 
         try {
             foreach ([['reset-password', '--password-file=' . $file], ['revoke-step-up']] as $arguments) {
-                $refused = $harness->console(RecoverCredentialsCommand::class, [
+                $recovered = $harness->console(RecoverCredentialsCommand::class, [
                     $arguments[0],
                     '--email=' . $stronger['email'],
                     ...array_slice($arguments, 1),
                 ]);
-                self::assertSame(1, $refused['status'], $arguments[0] . ' stops at the ceiling today.');
-                self::assertStringContainsString('system:credential-recovery is not authorized', $refused['errors']);
+                self::assertSame(0, $recovered['status'], $recovered['errors']);
             }
-            self::assertNull($identities->authenticate($stronger['email'], $chosen, 'security-qualification'));
             self::assertNotNull($identities->authenticate(
+                $stronger['email'],
+                $chosen,
+                'security-qualification',
+            ), 'The recovered account authenticates with its replacement password.');
+            self::assertNull($identities->authenticate(
                 $stronger['email'],
                 'correct horse battery',
                 'security-qualification',
-            ), 'The stronger account keeps its password.');
+            ), 'The previous password no longer authenticates.');
 
             $ended = $harness->console(RecoverCredentialsCommand::class, [
                 'terminate-sessions',

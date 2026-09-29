@@ -11,6 +11,8 @@ use Doctrine\DBAL\Types\Types;
 use Kumwe\App\Application\Retention\RetentionDrainResult;
 use Kumwe\App\Application\Retention\RetentionStore;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Infrastructure\Persistence\BoundedStatementExecutor;
+use Kumwe\App\Infrastructure\Persistence\StatementBudget;
 
 /**
  * Durable record of each store's latest drain run, which is where the drain-rate metric comes from.
@@ -28,13 +30,17 @@ final readonly class RetentionRunLedger
     /**
      * Bind the ledger to the connection and table names.
      *
-     * @param  Connection  $database  Connection the run rows are written and read on.
-     * @param  TableNames  $tables    Resolver for the prefixed `retention_runs` table.
+     * @param  Connection       $database  Connection the run rows are written and read on.
+     * @param  TableNames       $tables    Resolver for the prefixed `retention_runs` table.
+     * @param  StatementBudget  $budget    Server timeout and materialized bytes for the latest-run read.
      *
      * @since  2.0.0
      */
-    public function __construct(private Connection $database, private TableNames $tables)
-    {
+    public function __construct(
+        private Connection $database,
+        private TableNames $tables,
+        private StatementBudget $budget = new StatementBudget(1_000, 262_144),
+    ) {
     }
 
     /**
@@ -88,11 +94,12 @@ final readonly class RetentionRunLedger
      */
     public function latest(RetentionStore $store): ?array
     {
-        $row = $this->database->fetchAssociative(sprintf(
+        $rows = (new BoundedStatementExecutor($this->database))->fetchAll(sprintf(
             'SELECT ran_at, rows_drained, elapsed_ms, backlog_cleared, budget_exhausted FROM %s WHERE store = ?',
             $this->tables->quoted('retention_runs'),
-        ), [$store->value]);
-        if ($row === false) {
+        ), [$store->value], [Types::STRING], $this->budget);
+        $row = $rows[0] ?? null;
+        if ($row === null) {
             return null;
         }
         $ranAt = $row['ran_at'] ?? null;

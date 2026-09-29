@@ -1,0 +1,61 @@
+{
+  "kind": "kumwe-release-documentation",
+  "version": "1.0.0",
+  "verification": [
+    "docs:api", "extension:contract", "extension:independence", "cli:contract", "mcp:contract",
+    "machine:parity", "studio:corpus", "studio:dependencies", "kumwe:capability-index-check",
+    "interface:programme", "observability:rules", "openapi:check"
+  ],
+  "references": [
+    {
+      "id": "extension-manifest-spi-migration",
+      "guides": ["docs/extension-contract/README.md", "docs/extensions.md", "docs/architecture/extensions.md"],
+      "runtime": ["vendor/kumwe/extension-sdk/resources", "src/Extension", "examples/extensions"]
+    },
+    {
+      "id": "capability-surface-risk",
+      "guides": ["docs/architecture/capability-index.md", "docs/machine-contract/README.md"],
+      "runtime": ["composer.lock", "src/Delivery/Console/Contract", "docs/machine-contract/mcp-v2.json", "docs/machine-contract/browser-machine-parity.json"]
+    },
+    {
+      "id": "openapi-routes-and-security",
+      "guides": ["docs/rest-api.md"],
+      "runtime": ["api/openapi", "src/Kernel/ContainerFactory.php"]
+    },
+    {
+      "id": "console-and-machine-tools",
+      "guides": ["docs/mcp.md", "docs/machine-contract/README.md"],
+      "runtime": ["src/Delivery/Console/Contract", "docs/machine-contract/mcp-v2.json", "api/openapi/route-exclusions.json"]
+    },
+    {
+      "id": "interface-patterns",
+      "guides": ["docs/interface-standard/README.md", "docs/interface-standard/pattern-selection.md"],
+      "runtime": ["docs/interface-standard/schemas", "vendor/kumwe/interface-standard/resources"]
+    },
+    {
+      "id": "event-job-schedule-process-report-export-adapter",
+      "guides": ["docs/automation.md", "docs/extensions.md"],
+      "runtime": ["vendor/kumwe/automation/resources", "vendor/kumwe/integration/resources", "vendor/kumwe/reporting/resources", "src/BusinessIntegration", "src/BusinessReporting", "src/Infrastructure/Automation"]
+    },
+    {
+      "id": "database-isolation-capacity-retention-upgrade-recovery",
+      "guides": ["docs/operations/deploy.md", "docs/operations/scale-topology.md", "docs/operations/capacity-estimate.md", "docs/operations/retention.md", "docs/operations/upgrade.md", "docs/operations/backup-restore.md", "docs/operations/recovery-integration.md", "docs/operations/monitoring.md"],
+      "runtime": ["compose.production.yaml", "src/Infrastructure/Persistence/Migration", "resources/native-runtime/source.json", "deploy/observability", "resources/release/qualification-drills.json"]
+    },
+    {
+      "id": "security-trust-secrets-human-proof-operations",
+      "guides": ["SECURITY.md", "docs/business-security.md", "docs/operations/runbooks.md", "docs/operations/incident-response.md", "docs/operations/release-verification.md"],
+      "runtime": ["src/Identity", "src/BusinessSecurity", "src/Extension/Runtime", "src/Kernel/Configuration"]
+    },
+    {
+      "id": "sdk-examples-and-compatibility",
+      "guides": ["docs/extension-contract/README.md"],
+      "runtime": ["examples/extensions", "vendor/kumwe/extension-sdk/resources/fixtures", "api/openapi/compatibility"]
+    },
+    {
+      "id": "supported-envelope-and-residuals",
+      "guides": ["docs/operations/native-runtime.md", "docs/operations/scale-topology.md", "docs/operations/capacity-estimate.md", "docs/operations/upgrade.md", "docs/roadmap/STATUS.md"],
+      "runtime": ["docs/roadmap/findings.json", "docs/roadmap/acceptance-record.json", "docs/roadmap/capacity-contract.json", "resources/release/license-policy.json"]
+    }
+  ]
+}

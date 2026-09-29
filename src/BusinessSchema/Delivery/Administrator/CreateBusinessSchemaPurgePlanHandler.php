@@ -6,7 +6,6 @@ namespace Kumwe\App\BusinessSchema\Delivery\Administrator;
 
 use InvalidArgumentException;
 use Kumwe\App\Administrator\Http\AdministratorRequest;
-use Kumwe\App\Application\Security\HighImpactCredentialGuard;
 use Kumwe\App\BusinessSchema\Application\BusinessSchemaService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -30,17 +29,14 @@ use Psr\Http\Server\RequestHandlerInterface;
 final readonly class CreateBusinessSchemaPurgePlanHandler implements RequestHandlerInterface
 {
     /**
-     * Wire the screen action to the planning facade and the re-authentication guard.
+     * Wire the screen action to the planning facade that enforces re-authentication.
      *
-     * @param  BusinessSchemaService      $schemas      Compiles and persists the drop-table plan.
-     * @param  HighImpactCredentialGuard  $credentials  Re-checks the operator's current password before
-     *         a destructive plan is written.
+     * @param  BusinessSchemaService  $schemas  Compiles and persists the drop-table plan.
      *
      * @since  2.0.0
      */
     public function __construct(
         private BusinessSchemaService $schemas,
-        private HighImpactCredentialGuard $credentials,
     ) {
     }
 
@@ -76,12 +72,11 @@ final readonly class CreateBusinessSchemaPurgePlanHandler implements RequestHand
         if (!hash_equals($definitionId, AdministratorRequest::required($form, 'confirmation'))) {
             throw new InvalidArgumentException('Purge planning requires the exact installed definition ID.');
         }
-        $this->credentials->assertCurrentPassword(
+        $plan = $this->schemas->createPurgePlan(
             $context,
-            'business.schema.purge-plan',
+            $definitionId,
             BusinessSchemaAdministratorRequest::optional($form, 'current_password'),
         );
-        $plan = $this->schemas->createPurgePlan($context, $definitionId);
 
         return BusinessSchemaAdministratorRequest::redirect(
             $plan->id,

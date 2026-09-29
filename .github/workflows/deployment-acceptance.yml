@@ -1024,3 +1024,194 @@ jobs:
         run: >-
           docker compose --file compose.production.yaml --profile automation
           down --volumes --remove-orphans
+
+  release-resilience:
+    name: Artifact resilience / ${{ matrix.database.driver }}
+    if: inputs.release-artifact != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        database:
+        - driver: mariadb
+          image: mariadb:lts
+          port: 3306
+          version: mariadb-12.3.2
+          health: --health-cmd "healthcheck.sh --connect --innodb_initialized" --health-interval 5s --health-timeout
+            5s --health-retries 20
+        - driver: mysql
+          image: mysql:8.4
+          port: 3306
+          version: '8.4'
+          health: --health-cmd "mysqladmin ping -h 127.0.0.1 -ukumwe -pkumwe_test" --health-interval 5s --health-timeout
+            5s --health-retries 20
+        - driver: pgsql
+          image: postgres:17-alpine
+          port: 5432
+          version: '17'
+          health: --health-cmd "pg_isready -U kumwe -d kumwe_test" --health-interval 5s --health-timeout 5s --health-retries
+            20
+    services:
+      database:
+        image: ${{ matrix.database.image }}
+        env:
+          MARIADB_DATABASE: kumwe_test
+          MARIADB_USER: kumwe
+          MARIADB_PASSWORD: kumwe_test
+          MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: 'yes'
+          MYSQL_DATABASE: kumwe_test
+          MYSQL_USER: kumwe
+          MYSQL_PASSWORD: kumwe_test
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+          POSTGRES_DB: kumwe_test
+          POSTGRES_USER: kumwe
+          POSTGRES_PASSWORD: kumwe_test
+        ports:
+        - ${{ matrix.database.port }}:${{ matrix.database.port }}
+        options: ${{ matrix.database.health }}
+      redis:
+        image: redis:8-alpine
+        ports:
+        - 6379:6379
+        options: --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      APP_ENV: testing
+      APP_DEBUG: 'false'
+      APP_BASE_URL: https://kumwe.test
+      APP_TRUSTED_HOSTS: kumwe.test
+      EXTENSIONS_ALLOW_UNSIGNED_LOCAL: 'true'
+      DB_DRIVER: ${{ matrix.database.driver }}
+      DB_HOST: 127.0.0.1
+      DB_PORT: ${{ matrix.database.port }}
+      DB_NAME: kumwe_test
+      DB_USER: kumwe
+      DB_PASSWORD: kumwe_test
+      DB_TABLE_PREFIX: kumwe_
+      DB_SSLMODE: disable
+      DB_SERVER_VERSION: ${{ matrix.database.version }}
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: '6379'
+      REDIS_DATABASE: '0'
+      REDIS_NAMESPACE: kumwe.release.resilience
+      KUMWE_SITE_CONTENT_PROFILE: blank
+      KUMWE_BUSINESS_DEMO: 'false'
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      with:
+        ref: ${{ inputs.ref }}
+    - name: Verify candidate bytes before any installation
+      uses: ./.github/actions/release-candidate
+      with:
+        artifact: ${{ inputs.release-artifact }}
+        manifest: ${{ inputs.release-manifest }}
+        version: ${{ inputs.release-version }}
+        commit: ${{ inputs.ref }}
+    - name: Install qualification PHP and Composer
+      uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240
+      with:
+        php-version: '8.5'
+        extensions: apcu, ctype, fileinfo, filter, intl, json, mbstring, openssl, pcntl, pdo, pdo_mysql, pdo_pgsql,
+          redis, sodium, zip
+        coverage: none
+        tools: composer:v2
+    - name: Provision admitted native runtime
+      uses: ./.github/actions/native-runtime
+    - name: Cache Composer package downloads
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      with:
+        path: ~/.cache/composer/files
+        key: composer-files-${{ hashFiles('composer.lock') }}
+        restore-keys: composer-files-
+    - name: Install a separate test framework and the exact distributions
+      shell: bash
+      run: |
+        set -euo pipefail
+        install -d "$RUNNER_TEMP/release-qa" "$RUNNER_TEMP/qualified-zip"
+        cp composer.json composer.lock "$RUNNER_TEMP/release-qa/"
+        composer config --working-dir="$RUNNER_TEMP/release-qa" autoloader-suffix KumweReleaseQualification
+        composer install --working-dir="$RUNNER_TEMP/release-qa" --no-interaction --prefer-dist --no-scripts
+        unzip -q "dist/kumwe-app-$KUMWE_RELEASE_VERSION.zip" -d "$RUNNER_TEMP/qualified-zip"
+        jq --arg version "$KUMWE_RELEASE_VERSION" \
+          --arg url "file://$PWD/dist/kumwe-composer-$KUMWE_RELEASE_VERSION.zip" \
+          '.packages["kumwe/app"][$version].dist.url = $url' \
+          dist/composer-repository.json > "$RUNNER_TEMP/release-repository.json"
+        repository="$(jq -cn --arg url "file://$RUNNER_TEMP/release-repository.json" '{type:"composer",url:$url}')"
+        composer create-project --no-dev --no-interaction --prefer-dist --no-scripts \
+          --repository="$repository" kumwe/app "$RUNNER_TEMP/qualified-composer" "$KUMWE_RELEASE_VERSION"
+        composer dump-autoload --working-dir="$RUNNER_TEMP/qualified-composer" --no-dev --classmap-authoritative --no-scripts
+        for form in zip composer; do
+          cmp composer.lock "$RUNNER_TEMP/qualified-$form/composer.lock"
+          cp -a tests "$RUNNER_TEMP/qualified-$form/tests"
+          chmod -R a-w "$RUNNER_TEMP/qualified-$form/tests"
+        done
+        echo "APP_SECRET=$(openssl rand -base64 48 | tr -d '\n')" >> "$GITHUB_ENV"
+    - name: Verify the candidate image signature and provenance
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        set -euo pipefail
+        echo "$GH_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+        reference="$(jq -er '.images.application | .reference + "@" + .digest' dist/kumwe-release-manifest.json)"
+        identity="https://github.com/$GITHUB_REPOSITORY/.github/workflows/release.yml@refs/tags/v$KUMWE_RELEASE_VERSION"
+        cosign verify --certificate-identity="$identity" \
+          --certificate-oidc-issuer=https://token.actions.githubusercontent.com "$reference"
+        gh attestation verify "oci://$reference" --repo "$GITHUB_REPOSITORY" \
+          --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release.yml" --source-digest "$KUMWE_RELEASE_COMMIT"
+        docker pull "$reference"
+        echo "QUALIFIED_IMAGE=$reference" >> "$GITHUB_ENV"
+    - name: Qualify migration, faults and backlog in the exact ZIP and Composer installs
+      shell: bash
+      run: |
+        set -euo pipefail
+        for form in zip composer; do
+          DB_TABLE_PREFIX="${form}_" bash tools/qualify-release-runtime.sh \
+            "$RUNNER_TEMP/qualified-$form" "$RUNNER_TEMP/release-qa/vendor" "$PWD/build/resilience/$form"
+        done
+    - name: Qualify the same drills inside the unchanged candidate image
+      shell: bash
+      run: |
+        set -euo pipefail
+        install -d build/resilience/image
+        chmod 0777 build/resilience/image
+        docker run --rm --network host --read-only --tmpfs /tmp:rw,mode=1777 \
+          --tmpfs /var/www/kumwe/storage:rw,uid=82,gid=82,mode=0770 \
+          --tmpfs /var/www/kumwe/extensions:rw,uid=82,gid=82,mode=0770 \
+          --tmpfs /var/www/kumwe/public/assets/extensions:rw,uid=82,gid=82,mode=0770 \
+          --volume "$PWD/tests:/var/www/kumwe/tests:ro" \
+          --volume "$RUNNER_TEMP/release-qa/vendor:/opt/release-qa/vendor:ro" \
+          --volume "$PWD/build/resilience/image:/evidence" \
+          --env APP_ENV --env APP_DEBUG --env APP_BASE_URL --env APP_TRUSTED_HOSTS --env APP_SECRET \
+          --env EXTENSIONS_ALLOW_UNSIGNED_LOCAL --env DB_DRIVER --env DB_HOST --env DB_PORT --env DB_NAME \
+          --env DB_USER --env DB_PASSWORD --env DB_SSLMODE --env DB_SERVER_VERSION --env DB_TABLE_PREFIX=image_ \
+          --env REDIS_HOST --env REDIS_PORT --env REDIS_DATABASE --env REDIS_NAMESPACE \
+          --env KUMWE_SITE_CONTENT_PROFILE --env KUMWE_BUSINESS_DEMO \
+          --entrypoint bash "$QUALIFIED_IMAGE" tools/qualify-release-runtime.sh \
+            /var/www/kumwe /opt/release-qa/vendor /evidence
+    - name: Bind successful resilience evidence to the candidate manifest
+      shell: bash
+      run: |
+        set -euo pipefail
+        cp dist/kumwe-release-manifest.json build/resilience/
+        cp resources/release/qualification-drills.json build/resilience/
+        (cd build/resilience && zip -qr "../../dist/kumwe-resilience-${DB_DRIVER}.zip" .)
+        node tools/release-artifacts.mjs receipt "resilience-$DB_DRIVER"
+    - name: Retain the successful receipt and exact evidence bytes
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      with:
+        name: release-qualification-${{ github.run_id }}-${{ github.run_attempt }}-resilience-${{ matrix.database.driver
+          }}
+        path: |-
+          dist/qualification-resilience-*.json
+          dist/kumwe-resilience-*.zip
+        if-no-files-found: error
+        retention-days: 30
+    - name: Retain failure diagnostics without issuing a receipt
+      if: always()
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      with:
+        name: release-resilience-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.database.driver }}
+        path: build/resilience/
+        if-no-files-found: error
+        retention-days: 30

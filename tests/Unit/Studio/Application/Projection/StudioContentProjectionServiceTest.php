@@ -818,7 +818,7 @@ final class StudioContentProjectionServiceTest extends TestCase
             ->with(self::ENTRY_ID, false)
             ->willReturn($record);
         $bindings = $this->createMock(ContentProjectionBindingRepository::class);
-        $bindings->expects(self::once())
+        $bindings->expects(self::exactly(2))
             ->method('blueprint')
             ->with(self::callback(self::isDefaultSite(...)), self::TYPE_ID, 4)
             ->willReturn($this->binding());
@@ -984,7 +984,7 @@ final class StudioContentProjectionServiceTest extends TestCase
             ->with(self::ENTRY_ID, false)
             ->willReturn($this->record());
         $bindings = $this->createMock(ContentProjectionBindingRepository::class);
-        $bindings->expects(self::exactly(2))
+        $bindings->expects(self::exactly(3))
             ->method('blueprint')
             ->with(self::callback(self::isDefaultSite(...)), self::TYPE_ID, 4)
             ->willReturn($this->binding());

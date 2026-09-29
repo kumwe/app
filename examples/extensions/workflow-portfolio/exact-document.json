@@ -1,0 +1,304 @@
+[
+    {
+        "id": "019b40d9-8dd0-7ca2-a0db-9eae6a150801",
+        "owner": {
+            "type": "site",
+            "identifier": "default"
+        },
+        "site": "default",
+        "handle": "site.default.doc_line_browser",
+        "singular_label": "Ledger line",
+        "plural_label": "Ledger lines",
+        "status": "draft",
+        "definition_version": 0,
+        "storage_mode": "relational",
+        "identity_strategy": "uuid",
+        "scope": "site",
+        "audit_enabled": true,
+        "revisions_enabled": true,
+        "fields": [
+            {
+                "handle": "id",
+                "label": "ID",
+                "type": "core.uuid",
+                "required": true,
+                "nullable": false,
+                "unique": true,
+                "indexed": true,
+                "immutable_after_create": true,
+                "server_only": true,
+                "read_only": true
+            },
+            {
+                "handle": "code",
+                "label": "Code",
+                "type": "core.text",
+                "required": true,
+                "nullable": false,
+                "length": 80,
+                "unique": true,
+                "indexed": true,
+                "filterable": true,
+                "exportable": true
+            },
+            {
+                "handle": "description",
+                "label": "Description",
+                "type": "core.text",
+                "required": true,
+                "nullable": false,
+                "length": 160,
+                "filterable": true,
+                "exportable": true
+            },
+            {
+                "handle": "amount",
+                "label": "Amount",
+                "type": "core.decimal",
+                "required": true,
+                "nullable": false,
+                "precision": 18,
+                "scale": 2,
+                "reportable": true,
+                "exportable": true
+            }
+        ],
+        "relationships": [],
+        "views": [
+            {
+                "handle": "list",
+                "label": "Document lines",
+                "kind": "list",
+                "fields": [
+                    "code",
+                    "description",
+                    "amount"
+                ],
+                "filters": [],
+                "sorts": [],
+                "administrator": true,
+                "portal": false,
+                "public": false
+            }
+        ],
+        "actions": [],
+        "workflow": null,
+        "compatibility_metadata": [],
+        "administrator_exposure": true,
+        "portal_exposure": false,
+        "public_exposure": false
+    },
+    {
+        "id": "019b40d9-8dd0-7ca2-a0db-9eae6a150802",
+        "owner": {
+            "type": "site",
+            "identifier": "default"
+        },
+        "site": "default",
+        "handle": "site.default.doc_header_browser",
+        "singular_label": "Ledger document",
+        "plural_label": "Ledger documents",
+        "status": "draft",
+        "definition_version": 0,
+        "storage_mode": "relational",
+        "identity_strategy": "uuid",
+        "scope": "site",
+        "audit_enabled": true,
+        "revisions_enabled": true,
+        "soft_delete_enabled": false,
+        "fields": [
+            {
+                "handle": "id",
+                "label": "ID",
+                "type": "core.uuid",
+                "required": true,
+                "nullable": false,
+                "unique": true,
+                "indexed": true,
+                "immutable_after_create": true,
+                "server_only": true,
+                "read_only": true
+            },
+            {
+                "handle": "title",
+                "label": "Title",
+                "type": "core.text",
+                "required": true,
+                "nullable": false,
+                "length": 160,
+                "filterable": true,
+                "sortable": true,
+                "exportable": true
+            },
+            {
+                "handle": "total",
+                "label": "Total",
+                "type": "core.decimal",
+                "required": true,
+                "nullable": false,
+                "precision": 18,
+                "scale": 2,
+                "reportable": true,
+                "exportable": true
+            }
+        ],
+        "relationships": [
+            {
+                "handle": "lines",
+                "label": "Lines",
+                "kind": "owned_line_collection",
+                "target": "site.default.doc_line_browser",
+                "ordered": true,
+                "on_delete": "cascade"
+            }
+        ],
+        "views": [
+            {
+                "handle": "list",
+                "label": "Documents",
+                "kind": "list",
+                "fields": [
+                    "title",
+                    "total"
+                ],
+                "filters": [],
+                "sorts": [],
+                "administrator": true,
+                "portal": false,
+                "public": false
+            },
+            {
+                "handle": "ledger_document",
+                "label": "Ledger document",
+                "kind": "document",
+                "fields": [
+                    "title",
+                    "total"
+                ],
+                "administrator": true,
+                "portal": false,
+                "public": false,
+                "document": {
+                    "identity": "title",
+                    "groups": [],
+                    "parties": [],
+                    "lines": "lines",
+                    "totals": [
+                        "total"
+                    ]
+                }
+            }
+        ],
+        "actions": [
+            {
+                "handle": "submit",
+                "label": "Submit for review",
+                "capability": "business.record.action",
+                "administrator": true,
+                "portal": false,
+                "public": false,
+                "transition": "submit"
+            },
+            {
+                "handle": "approve",
+                "label": "Approve document",
+                "capability": "business.record.action",
+                "administrator": true,
+                "portal": false,
+                "public": false,
+                "transition": "approve"
+            },
+            {
+                "handle": "post",
+                "label": "Post to ledger",
+                "capability": "business.record.action",
+                "administrator": true,
+                "portal": false,
+                "public": false,
+                "transition": "post"
+            }
+        ],
+        "workflow": {
+            "initial_state": "draft",
+            "states": [
+                "draft",
+                "in_review",
+                "approved",
+                "posted"
+            ],
+            "immutable_states": [
+                "approved",
+                "posted"
+            ],
+            "transitions": [
+                {
+                    "handle": "submit",
+                    "from": "draft",
+                    "to": "in_review",
+                    "capability": "business.record.action"
+                },
+                {
+                    "handle": "approve",
+                    "from": "in_review",
+                    "to": "approved",
+                    "capability": "business.record.action"
+                },
+                {
+                    "handle": "post",
+                    "from": "approved",
+                    "to": "posted",
+                    "capability": "business.record.action"
+                }
+            ]
+        },
+        "compatibility_metadata": [],
+        "administrator_exposure": true,
+        "portal_exposure": false,
+        "public_exposure": false,
+        "record_invariants": [
+            {
+                "handle": "total_agrees_with_lines",
+                "message": "The document total must equal the sum of its lines.",
+                "condition": {
+                    "op": "eq",
+                    "type": "boolean",
+                    "args": [
+                        {
+                            "op": "field",
+                            "type": "decimal",
+                            "field": "total"
+                        },
+                        {
+                            "op": "line_aggregate",
+                            "type": "decimal",
+                            "lines": "lines",
+                            "field": "amount",
+                            "aggregate": "sum"
+                        }
+                    ]
+                }
+            },
+            {
+                "handle": "line_count_within_bounds",
+                "message": "The document carries more lines than it admits.",
+                "condition": {
+                    "op": "lte",
+                    "type": "boolean",
+                    "args": [
+                        {
+                            "op": "line_aggregate",
+                            "type": "integer",
+                            "lines": "lines",
+                            "aggregate": "count"
+                        },
+                        {
+                            "op": "literal",
+                            "type": "integer",
+                            "value": 1000
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+]

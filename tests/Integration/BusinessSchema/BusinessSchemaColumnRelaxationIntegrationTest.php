@@ -105,6 +105,7 @@ final class BusinessSchemaColumnRelaxationIntegrationTest extends TestCase
             $plan->checksum(),
             $plan->checksum(),
             null,
+            TestKernelFactory::ADMINISTRATOR_PASSWORD,
         );
         self::assertSame(SchemaPlanStatus::Approved, $approved->status);
 

@@ -5,14 +5,18 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Unit\Delivery\Console\Contract;
 
 use JsonException;
+use InvalidArgumentException;
 use Kumwe\App\Delivery\Console\Contract\CliMachineContract;
 use Kumwe\App\Delivery\Console\Contract\CliV1MachineContract;
+use Kumwe\App\Delivery\Console\Contract\CliV2MachineContract;
+use Kumwe\App\Delivery\Console\Contract\CliV3MachineContract;
 use LogicException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(CliMachineContract::class)]
 #[CoversClass(CliV1MachineContract::class)]
+#[CoversClass(CliV3MachineContract::class)]
 /**
  * Proves the retained CLI artifact closes its schema, invocation grammar, and compatibility identity.
  *
@@ -20,6 +24,54 @@ use PHPUnit\Framework\TestCase;
  */
 final class CliMachineContractTest extends TestCase
 {
+    /**
+     * Admit protected re-proof input only on the two schema stages in the successor contract.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testSchemaCredentialInputRequiresGenerationThreeAndTheExactStage(): void
+    {
+        $current = CliV3MachineContract::contract();
+        self::assertSame(3, $current->generation());
+        self::assertSame(CliV2MachineContract::contract()->commandNames(), $current->commandNames());
+        foreach (['purge-plan', 'approve'] as $action) {
+            $arguments = [
+                $action,
+                '--site=default',
+                '--token-file=/tmp/schema-token',
+                '--password-file=/tmp/schema-password',
+                ...($action === 'purge-plan'
+                    ? ['--definition=00000000-0000-7000-8000-000000000001']
+                    : ['--plan=00000000-0000-7000-8000-000000000002', '--expected-checksum=' . str_repeat('a', 64)]),
+            ];
+            self::assertSame($arguments, $current->validateInvocation('business-schema', $arguments));
+            foreach ([CliV1MachineContract::contract(), CliV2MachineContract::contract()] as $retained) {
+                try {
+                    $retained->validateInvocation('business-schema', $arguments);
+                    self::fail('A retained generation accepted a newly introduced credential input.');
+                } catch (InvalidArgumentException $refusal) {
+                    self::assertStringContainsString('password-file', $refusal->getMessage());
+                }
+            }
+        }
+        foreach (['plans', 'execute'] as $action) {
+            try {
+                $current->validateInvocation('business-schema', [
+                    $action,
+                    '--site=default',
+                    '--token-file=/tmp/schema-token',
+                    '--password-file=/tmp/schema-password',
+                    ...($action === 'execute' ? ['--plan=00000000-0000-7000-8000-000000000002'] : []),
+                ]);
+                self::fail('A schema stage outside re-proof accepted credential input.');
+            } catch (InvalidArgumentException $refusal) {
+                self::assertStringContainsString('password-file', $refusal->getMessage());
+            }
+        }
+    }
+
     /**
      * The retained artifact is complete, stable and executable.
      *

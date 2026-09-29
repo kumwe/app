@@ -127,7 +127,7 @@ jobs:
           --file docker/php/Dockerfile
           --target runtime
           --tag kumwe-security:${GITHUB_SHA}
-          --build-arg KUMWE_RELEASE=2.0.0-security-scan
+          --build-arg KUMWE_RELEASE=2.0.0-dev
           --build-context composer-cache="$HOME/.cache/composer/files"
           --load
           .
@@ -157,7 +157,7 @@ jobs:
           --file docker/php/Dockerfile
           --target web
           --tag kumwe-web-security:${GITHUB_SHA}
-          --build-arg KUMWE_RELEASE=2.0.0-security-scan
+          --build-arg KUMWE_RELEASE=2.0.0-dev
           --build-context composer-cache="$HOME/.cache/composer/files"
           --load
           .

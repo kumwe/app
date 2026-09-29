@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\App\Tests\Integration\Studio;
 
 use Doctrine\DBAL\Connection;
+use Kumwe\App\Infrastructure\Persistence\Migration\StudioAuthoringIdentityMigration;
 use Throwable;
 use DateTimeImmutable;
 use Kumwe\App\Studio\Application\Authoring\ContentStudioAuthoringTarget;
@@ -43,6 +44,7 @@ use Kumwe\App\Studio\Application\Preview\StudioPreviewBindingSource;
 use Kumwe\App\Studio\Application\Preview\StudioPreviewHostPort;
 use Kumwe\App\Studio\Application\Preview\StudioPreviewTransportGuard;
 use Kumwe\App\Studio\Application\Projection\ContentStudioProjector;
+use Kumwe\App\Studio\Application\Projection\StudioContentProjectionService;
 use Kumwe\App\Studio\Domain\Authoring\StudioAuthoringIntent;
 use Kumwe\App\Studio\Domain\Preview\StudioPreviewDraft;
 use Kumwe\App\Studio\Domain\Preview\StudioPreviewTransport;
@@ -76,6 +78,7 @@ use stdClass;
  * @since  2.0.0
  */
 #[CoversClass(ContentStudioAuthoringService::class)]
+#[CoversClass(StudioAuthoringIdentityMigration::class)]
 #[CoversClass(StudioAuthoringHostPort::class)]
 #[CoversClass(HostedContentStudioAuthoringConfigurationProvider::class)]
 #[CoversClass(ContentStudioAuthoringTargetResolver::class)]
@@ -301,7 +304,7 @@ final class ContentStudioAuthoringJourneyIntegrationTest extends TestCase
             'targetId' => $deployment->launch->targetId,
             'resourceContext' => $resourceContext,
             'source' => (object) ['kind' => 'blank'],
-            'presentation' => 'inline',
+            'presentation' => 'fullscreen',
         ], true);
         self::assertTrue($registry->validateDefinition('authoring-session', 'snapshot', $snapshot)->valid());
         self::assertObjectNotHasProperty('type', $snapshot);
@@ -384,7 +387,14 @@ final class ContentStudioAuthoringJourneyIntegrationTest extends TestCase
 
         $name = 'Journey type ' . bin2hex(random_bytes(3));
         $model = self::clone($snapshot->state->model);
-        $model->fields[] = self::dataField('summary', 'Summary');
+        $summary = self::dataField('summary', 'Summary');
+        $summary->id = 'summary';
+        unset($summary->extensions);
+        $model->fields[] = $summary;
+        $detail = self::dataField('detail', 'Detail');
+        $detail->id = 'summary.detail';
+        unset($detail->extensions);
+        $model->fields[] = $detail;
         $typeDraft = (object) [
             'outcome' => 'save-as-new-type',
             'label' => (object) ['key' => 'kumwe.app/journey-type', 'defaultMessage' => $name],
@@ -415,6 +425,7 @@ final class ContentStudioAuthoringJourneyIntegrationTest extends TestCase
         ], true);
         self::assertTrue($registry->validateDefinition('authoring-save', 'saveResult', $result)->valid());
         self::assertSame('save-as-new-type', $result->outcome);
+        self::assertSame('fullscreen', $result->session->presentation->current);
         self::assertEquals($snapshot->start, $result->session->start);
         self::assertEquals($snapshot->capabilities, $result->session->capabilities);
         self::assertEquals($plan->successorContext, $result->session->presentation->returnContext);
@@ -425,6 +436,11 @@ final class ContentStudioAuthoringJourneyIntegrationTest extends TestCase
         self::assertSame('published', $createdType->status);
         self::assertNotSame($snapshot->state->model->id, $result->session->state->model->id);
         self::assertSame('published', $result->session->state->model->status);
+        self::assertSame(
+            ['title', 'slug', 'summary.detail', 'summary'],
+            array_column($result->session->state->model->fields, 'id')
+        );
+        self::assertSame('fullscreen', $result->session->presentation->current);
         self::assertContains('save-item', $result->session->capabilities->saveOutcomes);
         self::assertContains('save-new-type-version', $result->session->capabilities->saveOutcomes);
         self::assertEquals($snapshot->state->entry->values, $result->session->state->entry->values);
@@ -439,7 +455,8 @@ final class ContentStudioAuthoringJourneyIntegrationTest extends TestCase
         $itemSlug = 'journey-type-item-' . bin2hex(random_bytes(4));
         $item->values->title = 'Journey type item';
         $item->values->slug = $itemSlug;
-        $item->values->data_summary = 'Summarised through the journey.';
+        $item->values->{'summary.detail'} = 'A dotted field ID remains one field.';
+        $item->values->summary = 'Summarised through the journey.';
         $itemDraft = (object) ['outcome' => 'save-item', 'entry' => $item];
         $itemPlan = $dispatch('authoring/plan-save', 'intent', (object) [
             'contractVersion' => '0.1-draft',
@@ -472,6 +489,11 @@ final class ContentStudioAuthoringJourneyIntegrationTest extends TestCase
         self::assertSame('Journey type item', $stored->entry->title());
         self::assertSame($itemSlug, $stored->entry->slug());
         self::assertSame('Summarised through the journey.', $stored->entry->data()['summary'] ?? null);
+        $projection = self::service($container, StudioContentProjectionService::class);
+        $reopened = $projection->entry($context, ContentStudioProjector::entryId($stored->entry->id()));
+        self::assertSame('Summarised through the journey.', $reopened->values->summary);
+        self::assertSame('A dotted field ID remains one field.', $reopened->values->{'summary.detail'});
+        self::assertObjectNotHasProperty('data_summary', $reopened->values);
 
         $model = self::clone($saved->session->state->model);
         $model->fields[] = self::dataField('teaser', 'Teaser');
@@ -602,7 +624,9 @@ final class ContentStudioAuthoringJourneyIntegrationTest extends TestCase
         self::assertGreaterThan(2, count($offered), 'The canvas offers more blocks than the layout composes.');
 
         $model = self::clone($snapshot->state->model);
-        $model->fields[] = self::dataField('summary', 'Summary');
+        $summary = self::dataField('summary', 'Summary');
+        $summary->id = 'summary';
+        $model->fields[] = $summary;
         $blueprint = self::clone($snapshot->state->blueprint);
         // The text field sits in the section's slot, so the lock must follow the layout into its slots.
         $blueprint->roots = [(object) [
@@ -617,7 +641,7 @@ final class ContentStudioAuthoringJourneyIntegrationTest extends TestCase
                 'version' => $versions['core/field-text'],
                 'properties' => new stdClass(),
                 'bindings' => (object) ['value' => (object) [
-                    'source' => (object) ['kind' => 'entry-field', 'fieldPath' => ['data_summary']],
+                    'source' => (object) ['kind' => 'entry-field', 'fieldPath' => ['summary']],
                     'transforms' => [],
                     'onNull' => 'error',
                     'onError' => 'error',

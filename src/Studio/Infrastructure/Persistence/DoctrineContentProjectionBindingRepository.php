@@ -64,7 +64,7 @@ final readonly class DoctrineContentProjectionBindingRepository implements
         int $contentTypeVersion,
     ): ?ContentBlueprintBinding {
         $row = $this->connection->fetchAssociative(sprintf(
-            'SELECT blueprint_id, blueprint_version, blueprint_revision, binding_revision '
+            'SELECT blueprint_id, blueprint_version, blueprint_revision, binding_revision, field_ids '
             . 'FROM %s WHERE site_identifier = ? AND content_type_id = ? AND content_type_version = ?',
             $this->tables->quoted('studio_content_blueprint_bindings'),
         ), [$site->identifier(), $contentTypeId, $contentTypeVersion], [
@@ -85,6 +85,7 @@ final readonly class DoctrineContentProjectionBindingRepository implements
                 self::string($row, 'blueprint_version'),
                 self::nullableString($row, 'blueprint_revision'),
                 self::integer($row, 'binding_revision'),
+                self::fieldIds($row['field_ids'] ?? null),
             );
         } catch (InvalidArgumentException $exception) {
             throw new RuntimeException('Stored Studio Blueprint binding metadata is invalid.', 0, $exception);
@@ -114,6 +115,10 @@ final readonly class DoctrineContentProjectionBindingRepository implements
                 'blueprint_version' => $binding->blueprintVersion,
                 'blueprint_revision' => $binding->blueprintRevision,
                 'binding_revision' => $binding->revision,
+                'field_ids' => $binding->fieldIds === null ? null : json_encode(
+                    (object) $binding->fieldIds,
+                    JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES
+                ),
             ], ['content_type_id' => Types::GUID]);
         } catch (\Doctrine\DBAL\Exception\UniqueConstraintViolationException $exception) {
             throw new StudioPersistenceRace('A Studio Content binding was concurrently inserted.', 0, $exception);
@@ -165,6 +170,37 @@ final readonly class DoctrineContentProjectionBindingRepository implements
         } catch (CanonicalEncodingException | InvalidArgumentException $exception) {
             throw new RuntimeException('Stored Studio entry override metadata is invalid.', 0, $exception);
         }
+    }
+
+    /**
+     * Decode the persisted host field identity map; its value constructor validates every pair.
+     *
+     * @param   mixed  $value  Nullable database text.
+     *
+     * @return  array<string, string>|null  Exact field identities, or the native Content projection profile.
+     *
+     * @throws  RuntimeException  When stored JSON is not an object of strings.
+     *
+     * @since   2.0.0
+     */
+    private static function fieldIds(mixed $value): ?array
+    {
+        if ($value === null) {
+            return null;
+        }
+        $decoded = is_string($value) ? json_decode($value) : null;
+        if (!$decoded instanceof stdClass) {
+            throw new RuntimeException('The stored Studio Content field map is invalid.');
+        }
+        $map = [];
+        foreach (get_object_vars($decoded) as $key => $id) {
+            if (!is_string($key) || !is_string($id)) {
+                throw new RuntimeException('The stored Studio Content field map is invalid.');
+            }
+            $map[$key] = $id;
+        }
+
+        return $map;
     }
 
     /**

@@ -1,0 +1,126 @@
+[
+    {
+        "id": "019b40d9-8dd0-7ca2-a0db-9eae6a150a01",
+        "owner": {
+            "type": "site",
+            "identifier": "default"
+        },
+        "site": "default",
+        "handle": "site.default.browser_shop_order",
+        "singular_label": "Order",
+        "plural_label": "Orders",
+        "status": "draft",
+        "definition_version": 0,
+        "storage_mode": "relational",
+        "identity_strategy": "uuid",
+        "scope": "site",
+        "audit_enabled": true,
+        "revisions_enabled": true,
+        "fields": [
+            {
+                "handle": "id",
+                "label": "ID",
+                "type": "core.uuid",
+                "required": true,
+                "nullable": false,
+                "unique": true,
+                "indexed": true,
+                "immutable_after_create": true,
+                "server_only": true,
+                "read_only": true
+            },
+            {
+                "handle": "product",
+                "label": "Product",
+                "type": "core.text",
+                "required": true,
+                "nullable": false,
+                "length": 120
+            },
+            {
+                "handle": "quantity",
+                "label": "Quantity",
+                "type": "core.integer",
+                "required": true,
+                "nullable": false
+            },
+            {
+                "handle": "delivery_address",
+                "label": "Delivery address",
+                "type": "core.text",
+                "required": true,
+                "nullable": false,
+                "length": 200
+            },
+            {
+                "handle": "payment_status",
+                "label": "Payment status",
+                "type": "core.enum",
+                "required": true,
+                "nullable": false,
+                "default": "pending",
+                "configuration": {
+                    "options": [
+                        "pending",
+                        "paid",
+                        "failed"
+                    ]
+                },
+                "create_visible": false
+            }
+        ],
+        "relationships": [],
+        "views": [
+            {
+                "handle": "list",
+                "label": "Orders",
+                "kind": "list",
+                "fields": [
+                    "product",
+                    "quantity",
+                    "payment_status"
+                ],
+                "filters": [],
+                "sorts": [],
+                "administrator": true,
+                "portal": true,
+                "public": false
+            }
+        ],
+        "actions": [
+            {
+                "handle": "fulfil",
+                "label": "Mark as fulfilled",
+                "capability": "business.record.action",
+                "administrator": true,
+                "portal": false,
+                "public": false,
+                "transition": "fulfil"
+            }
+        ],
+        "workflow": {
+            "initial_state": "placed",
+            "states": [
+                "placed",
+                "fulfilled"
+            ],
+            "transitions": [
+                {
+                    "handle": "fulfil",
+                    "from": "placed",
+                    "to": "fulfilled",
+                    "capability": "business.record.action"
+                }
+            ]
+        },
+        "compatibility_metadata": [],
+        "administrator_exposure": true,
+        "portal_exposure": true,
+        "public_exposure": false,
+        "portal_operations": [
+            "browse",
+            "read",
+            "create"
+        ]
+    }
+]

@@ -10,7 +10,8 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
-export const lanes = ["distribution", "mariadb", "mysql", "pgsql"];
+export const lanes = ["distribution", "mariadb", "mysql", "pgsql",
+  "resilience-mariadb", "resilience-mysql", "resilience-pgsql"];
 export const digest = (bytes) => createHash("sha256").update(bytes).digest("hex");
 const read = (path) => readFileSync(path);
 const json = (path) => JSON.parse(read(path));
@@ -90,7 +91,8 @@ export function verify(root, expectedCommit, expectedVersion) {
   assert.equal(manifest.authority.commit, expectedCommit);
   assert.equal(manifest.source.repository, "https://github.com/kumwe/app");
   const names = [`kumwe-app-${expectedVersion}.zip`, `kumwe-composer-${expectedVersion}.zip`,
-    "composer-repository.json", "kumwe-app.cdx.json", "kumwe-archive.cdx.json", "kumwe-web.cdx.json",
+    "composer-repository.json", `kumwe-documentation-${expectedVersion}.zip`, "kumwe-documentation-index.json",
+    "kumwe-app.cdx.json", "kumwe-archive.cdx.json", "kumwe-web.cdx.json",
     "kumwe-source.cdx.json", "kumwe-license-policy.json", "kumwe-license-evaluation.json"];
   assert.deepEqual(manifest.artifacts.map((artifact) => artifact.name).sort(), names.sort());
   for (const artifact of manifest.artifacts) {
@@ -113,7 +115,9 @@ export function receipt(root, lane, commit, version, run, attempt) {
   assert.equal(manifest.build.run, run);
   assert.equal(manifest.build.attempt, attempt);
   return { lane, commit, release: version, run, attempt,
-    manifestSha256: digest(read(`${root}/kumwe-release-manifest.json`)), result: "passed" };
+    manifestSha256: digest(read(`${root}/kumwe-release-manifest.json`)), result: "passed",
+    ...(lane.startsWith("resilience-") ? { evidence: { name: `kumwe-${lane}.zip`,
+      sha256: digest(read(`${root}/kumwe-${lane}.zip`)), size: read(`${root}/kumwe-${lane}.zip`).length } } : {}) };
 }
 
 /** Refuse absent, substituted, failed or stale lane evidence rather than implying acceptance. */

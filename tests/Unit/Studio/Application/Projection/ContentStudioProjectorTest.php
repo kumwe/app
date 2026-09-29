@@ -41,6 +41,45 @@ use stdClass;
 final class ContentStudioProjectorTest extends TestCase
 {
     /**
+     * One persisted field map governs model IDs, authorized values and public values, with no partial maps.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAuthoredFieldIdentitySurvivesEveryProjection(): void
+    {
+        $definition = $this->definition(['summary' => ['type' => 'string']]);
+        $record = $this->record(['summary' => 'Exact authored value']);
+        $make = static fn (array $map): ContentBlueprintBinding => new ContentBlueprintBinding(
+            SiteContext::default(),
+            self::TYPE_ID,
+            4,
+            'blueprint/article',
+            '1.0.0',
+            null,
+            1,
+            $map,
+        );
+        $binding = $make(['summary' => 'summary.detail']);
+        $projector = $this->projector();
+        $model = $projector->contentModel($this->context(), $definition, $binding);
+        self::assertSame(['title', 'slug', 'summary.detail'], array_column($model->fields, 'id'));
+        self::assertSame('summary', $model->fields[2]->extensions->{'kumwe.app/source-field'}->key);
+        $entry = $projector->entry($this->context(), $record, $definition, binding: $binding);
+        self::assertSame('Exact authored value', $entry->values->{'summary.detail'});
+        self::assertEquals($entry->values, $projector->publishedValues($record, $definition, $binding));
+        foreach ([[], ['other' => 'summary.detail'], ['summary' => 'summary.detail', 'extra' => 'extra']] as $map) {
+            try {
+                $projector->contentModel($this->context(), $definition, $make($map));
+                self::fail('An incomplete or foreign schema mapping must be refused.');
+            } catch (StudioProjectionRejected) {
+                self::addToAssertionCount(1);
+            }
+        }
+    }
+
+    /**
      * Stable Content type used by every projection coordinate in this test.
      *
      * @var    string

@@ -18,6 +18,7 @@ use Kumwe\App\Studio\Application\Host\StudioArtifactPublicationGuard;
 use Kumwe\App\Studio\Application\Host\StudioProducerError;
 use Kumwe\App\Studio\Application\Preview\StudioPublishedBlockRendererUnavailable;
 use Kumwe\App\Studio\Application\Projection\ContentStudioProjector;
+use Kumwe\App\Studio\Application\Projection\ContentProjectionBindingRepository;
 use Kumwe\App\Studio\Application\Rendering\StudioBlockRendererRuntime;
 use Kumwe\Producer\Error\HostRefusal;
 use Kumwe\Producer\Render\BlockCoordinate;
@@ -41,11 +42,12 @@ final readonly class StudioPublishedCompositionGuard implements StudioArtifactPu
     /**
      * Bind compatibility to exact host schema, Content model, theme, and executable block authorities.
      *
-     * @param  StudioArtifactAdmission           $admission   Pinned schema and active-content admission.
-     * @param  ContentModelRepository            $models      Exact published Content definition store.
-     * @param  StudioPublishedTheme              $theme       Live exact public theme authority.
-     * @param  StudioBlockRendererRuntime        $blocks      Fresh live canonical Producer registry authority.
-     * @param  ExtensionContributionRegistrySet  $registries  Live owner-bound canonical block definitions.
+     * @param  StudioArtifactAdmission             $admission   Pinned schema and active-content admission.
+     * @param  ContentModelRepository              $models      Exact published Content definition store.
+     * @param  StudioPublishedTheme                $theme       Live exact public theme authority.
+     * @param  StudioBlockRendererRuntime          $blocks      Fresh live canonical Producer registry authority.
+     * @param  ExtensionContributionRegistrySet    $registries  Live owner-bound canonical block definitions.
+     * @param  ContentProjectionBindingRepository  $bindings    Exact persisted Content field identities.
      *
      * @since  2.0.0
      */
@@ -55,6 +57,7 @@ final readonly class StudioPublishedCompositionGuard implements StudioArtifactPu
         private StudioPublishedTheme $theme,
         private StudioBlockRendererRuntime $blocks,
         private ExtensionContributionRegistrySet $registries,
+        private ContentProjectionBindingRepository $bindings,
     ) {
     }
 
@@ -158,7 +161,7 @@ final readonly class StudioPublishedCompositionGuard implements StudioArtifactPu
         }
         $identifiers = [];
         $validators = [];
-        $fieldPaths = self::fieldPaths($definition);
+        $fieldPaths = $this->fieldPaths($definition);
         foreach ($roots as $root) {
             $this->assertNode($root, $locks, $definitions, $fieldPaths, $identifiers, $validators);
         }
@@ -531,7 +534,7 @@ final readonly class StudioPublishedCompositionGuard implements StudioArtifactPu
                 }
                 $segments[] = $segment;
             }
-            if (!isset($fieldPaths[implode('.', $segments)])) {
+            if (count($segments) !== 1 || !isset($fieldPaths[$segments[0]])) {
                 throw new StudioPublishedBlueprintMismatch();
             }
         }
@@ -542,15 +545,24 @@ final readonly class StudioPublishedCompositionGuard implements StudioArtifactPu
      *
      * @param   ContentTypeDefinition  $definition  Exact published Content definition.
      *
-     * @return  array<string, true>  Title, slug, and every schema-owned `data_` field path.
+     * @return  array<string, true>  Title, slug, and the exact identity of each schema-owned data field.
      *
      * @since   2.0.0
      */
-    private static function fieldPaths(ContentTypeDefinition $definition): array
+    private function fieldPaths(ContentTypeDefinition $definition): array
     {
+        $binding = $this->bindings->blueprint($definition->site, $definition->id, $definition->version);
+        if ($binding?->fieldIds !== null && count($binding->fieldIds) !== count($definition->fields())) {
+            throw new StudioPublishedModelMismatch();
+        }
         $paths = ['title' => true, 'slug' => true];
         foreach ($definition->fields() as $field) {
-            $paths['data_' . $field->key] = true;
+            try {
+                $id = $binding?->fieldId($field->key) ?? 'data_' . $field->key;
+            } catch (InvalidArgumentException) {
+                throw new StudioPublishedModelMismatch();
+            }
+            $paths[$id] = true;
         }
 
         return $paths;

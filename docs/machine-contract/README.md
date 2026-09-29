@@ -115,13 +115,13 @@ still served unchanged beside it:
 
 | Contract | Current generation | Retained predecessor | Regenerate with |
 |---|---|---|---|
-| CLI | `cli-v2` — 54 commands (`src/Delivery/Console/Contract/cli-v2.json`, mirrored in `docs/machine-contract/cli-v2.json`) | `cli-v1`, 44 commands | `php tools/verify-cli-machine-contract.php --rehash-successor` after adding a reviewed command, then `--write` |
+| CLI | `cli-v3` — 54 commands (`src/Delivery/Console/Contract/cli-v3.json`, mirrored in `docs/machine-contract/cli-v3.json`) | `cli-v1`, 44 commands; `cli-v2`, 54 commands | `php tools/verify-cli-machine-contract.php --rehash-successor` after adding a reviewed command, then `--write` |
 | MCP | `mcp-v2` — 124 tools (`docs/machine-contract/mcp-v2.json`) | `mcp-v1`, 75 tools | `php tools/generate-mcp-machine-contract.php --write` |
 | REST | `1.1.0` — 142 operations (`api/openapi/generations/1.1.0/`) | `1.0.0` (`api/openapi/kumwe-v1.json`) | `composer openapi:accept-generation` from `api/openapi/generations/1.1.0/core.json` |
 
 `composer cli:contract` and `composer mcp:contract` prove every generation-one command, tool, resource, prompt and
 error row is still present unchanged. Until these successors are released, an extension of the same unreleased
-generation regenerates its artifact rather than cutting another: re-digest `cli-v2`; delete `mcp-v2.json` and
+generation regenerates its artifact rather than cutting another: re-digest `cli-v3`; delete `mcp-v2.json` and
 re-establish it; or drop the `1.1.0` ledger row and its three generation-owned files and accept again.
 `StudioAuthoringMachineParityTest` enumerates the browser's authoring operations and fails when one lacks a REST
 route, CLI action or MCP tool.
@@ -152,9 +152,10 @@ machine surface publishes them, and `AccessControlService` refuses them to any h
 step-up proof.
 
 An equivalent operation whose machine surfaces authorize with less assurance than the browser records an
-`assurance_gap`. Fourteen do today: the twelve access-control mutations the released v1 REST, CLI and MCP contracts
-run on a bearer token while the browser demands a payload-bound step-up, and the v1 console's schema purge-plan and
-high-impact approval, which carry no password re-proof. They await a maintainer decision.
+`assurance_gap`. Twelve access-control mutations still run on a bearer token while the browser demands a
+payload-bound step-up. Their correction remains implementation work under the standing agent mandate.
+Schema purge planning and high-impact approval now enforce current-password re-proof in the shared service;
+CLI generation 3 accepts it through a protected password file, and MCP preserves its secret boundary.
 `BrowserMachineParityGateTest` pins the list, so it can only change by a reviewed edit.
 
 `composer machine:parity` (`tools/verify-browser-machine-parity.php`, part of `composer qa` and the CI quality job)

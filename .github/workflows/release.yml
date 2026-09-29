@@ -148,7 +148,7 @@ jobs:
           composer audit --locked --abandoned=fail
           php bin/kumwe database:migrate
           php tools/quality-contract.php --run --cadence=release
-          node --test tools/release-artifacts.test.mjs tools/source-sbom.test.mjs
+          node --test tools/release-artifacts.test.mjs tools/source-sbom.test.mjs tools/release-docs.test.mjs
 
       - name: Stamp the generated tag version into the build inputs
         env:
@@ -263,12 +263,13 @@ jobs:
             image --exit-code 1 --ignore-unfixed --severity HIGH,CRITICAL "$web_ref"
           rm -rf dist/package
           rm -rf dist/archive
+          node tools/release-docs.mjs --build
           bash tools/source-sbom.sh dist
           node tools/create-release-manifest.mjs
           node tools/release-artifacts.mjs verify
           (
               cd dist
-              sha256sum kumwe-*.cdx.json kumwe-*.zip composer-repository.json kumwe-license-*.json kumwe-release-manifest.json > SHA256SUMS
+              sha256sum kumwe-*.cdx.json kumwe-*.zip composer-repository.json kumwe-documentation-index.json kumwe-license-*.json kumwe-release-manifest.json > SHA256SUMS
           )
 
       - name: Install Cosign
@@ -306,6 +307,8 @@ jobs:
             dist/kumwe-app-${{ steps.release.outputs.version }}.zip
             dist/kumwe-composer-${{ steps.release.outputs.version }}.zip
             dist/composer-repository.json
+            dist/kumwe-documentation-${{ steps.release.outputs.version }}.zip
+            dist/kumwe-documentation-index.json
             dist/kumwe-source.cdx.json
             dist/kumwe-license-policy.json
             dist/kumwe-license-evaluation.json
@@ -370,7 +373,7 @@ jobs:
       - name: Sign complete manifest and qualification checksum set
         run: |
           set -euo pipefail
-          (cd dist && sha256sum kumwe-*.cdx.json kumwe-*.zip composer-repository.json kumwe-license-*.json \
+          (cd dist && sha256sum kumwe-*.cdx.json kumwe-*.zip composer-repository.json kumwe-documentation-index.json kumwe-license-*.json \
             kumwe-release-manifest.json kumwe-release-qualification.json > SHA256SUMS)
           cosign sign-blob --yes --bundle dist/SHA256SUMS.cosign.bundle dist/SHA256SUMS
       - name: Attest completed qualification evidence
@@ -398,6 +401,6 @@ jobs:
           fi
           gh release create "v$KUMWE_RELEASE_VERSION" \
             dist/SHA256SUMS dist/SHA256SUMS.cosign.bundle \
-            dist/kumwe-*.cdx.json dist/kumwe-*.zip dist/composer-repository.json dist/kumwe-license-*.json \
+            dist/kumwe-*.cdx.json dist/kumwe-*.zip dist/composer-repository.json dist/kumwe-documentation-index.json dist/kumwe-license-*.json \
             dist/kumwe-release-manifest.json dist/kumwe-release-qualification.json \
             --generate-notes --title "Kumwe App $KUMWE_RELEASE_VERSION" --verify-tag "${channel[@]}"

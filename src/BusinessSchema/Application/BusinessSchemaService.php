@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Kumwe\App\BusinessSchema\Application;
 
 use DateInterval;
+use Kumwe\App\Application\Authorization\SystemIdentity;
+use Kumwe\App\Application\Security\HighImpactCredentialGuard;
 use Kumwe\Access\AuthorizationGateway;
 use Kumwe\Access\AuthorizationResource;
 use Kumwe\Context\Value\ExecutionContext;
@@ -15,6 +17,7 @@ use Kumwe\App\BusinessDefinition\Application\BusinessDefinitionRepository;
 use Kumwe\BusinessSchema\Domain\SchemaInstallation;
 use Kumwe\BusinessSchema\Domain\SchemaPlan;
 use Kumwe\BusinessSchema\Domain\SchemaOperationKind;
+use Kumwe\BusinessSchema\Domain\SchemaOperation;
 use Kumwe\BusinessSchema\Domain\SchemaPlanStep;
 use Kumwe\BusinessSchema\Domain\SchemaPlanStatus;
 use Kumwe\BusinessSchema\Domain\SchemaRecoveryEvidence;
@@ -34,6 +37,10 @@ use Throwable;
  * is paid — the plan's checksum must still match, a destructive plan needs its own capability, any plan
  * above online-safe-additive needs that checksum echoed back as confirmation, and a rebuilding or
  * destructive plan needs a tested clean-target restore bound to the very schema it starts from.
+ * Purge planning and high-impact approval also re-prove the acting operator's current password here,
+ * so a delivery adapter cannot substitute a bearer token alone for this additional assurance.
+ * The purpose-bound profile installer may bootstrap an absent schema using creation-only operations;
+ * it cannot use that provisioning authority to approve changes to an existing schema or a purge.
  * Execution itself belongs to `BusinessSchemaExecutor`; what this service adds around it is the graph
  * bootstrap, driving the connected peers of an initial plan that paused on a foreign key so a set of
  * definitions referring to each other can finish installing.
@@ -72,6 +79,8 @@ final readonly class BusinessSchemaService
      * @param  AuditRecorder                             $audit          Sink approvals and drills are logged to.
      * @param  TransactionManager                        $transactions   Commits a write and its audit as one.
      * @param  ClockInterface                            $clock          Source of every timestamp stamped here.
+     * @param  HighImpactCredentialGuard                 $credentials    Re-proves destructive-stage credentials
+     *         on every surface.
      *
      * @since  2.0.0
      */
@@ -87,6 +96,7 @@ final readonly class BusinessSchemaService
         private AuditRecorder $audit,
         private TransactionManager $transactions,
         private ClockInterface $clock,
+        private HighImpactCredentialGuard $credentials,
     ) {
     }
 
@@ -275,6 +285,7 @@ final readonly class BusinessSchemaService
      *
      * @param   ExecutionContext  $context       Actor and site the purge is planned for.
      * @param   string            $definitionId  UUID of the definition whose tables are to be dropped.
+     * @param   ?string           $credential    Current password, re-entered for this destructive stage.
      *
      * @return  SchemaPlan  A destructive plan awaiting its own approval and recovery evidence.
      *
@@ -282,11 +293,19 @@ final readonly class BusinessSchemaService
      *          `business.schema.destructive` is refused.
      * @throws  BusinessSchemaNotFound  When this site has nothing installed, or no published definition,
      *          under that identifier.
+     * @throws  \Kumwe\App\Application\Security\HighImpactAuthenticationRequired  When the current password
+     *          is absent or invalid.
      *
      * @since   2.0.0
      */
-    public function createPurgePlan(ExecutionContext $context, string $definitionId): SchemaPlan
-    {
+    public function createPurgePlan(
+        ExecutionContext $context,
+        string $definitionId,
+        #[\SensitiveParameter] ?string $credential = null,
+    ): SchemaPlan {
+        $this->authorize($context, 'business.schema.destructive');
+        $this->credentials->assertCurrentPassword($context, 'business.schema.purge-plan', $credential);
+
         return $this->planner->purgePlan($context, $definitionId);
     }
 
@@ -308,6 +327,8 @@ final readonly class BusinessSchemaService
      * @param   string            $expectedChecksum  Checksum of the plan as inspected; refused if it moved.
      * @param   ?string           $confirmation      Repeat of that checksum for a high-impact plan.
      * @param   ?string           $evidenceId        Drill a rebuilding or destructive plan is approved on.
+     * @param   ?string           $credential        Current password for a high-impact plan; unused for
+     *          a low-risk plan.
      *
      * @return  SchemaPlan  The plan in its approved state, at the revision the approval wrote.
      *
@@ -317,6 +338,8 @@ final readonly class BusinessSchemaService
      * @throws  BusinessSchemaConflict  When the plan changed after inspection, the confirmation is
      *          missing, wrong or unwanted, or the recovery evidence is missing, unwanted, bound to
      *          another source schema, foreign to this environment, or stale.
+     * @throws  \Kumwe\App\Application\Security\HighImpactAuthenticationRequired  When a high-impact plan
+     *          has no valid current password.
      *
      * @since   2.0.0
      */
@@ -326,6 +349,7 @@ final readonly class BusinessSchemaService
         string $expectedChecksum,
         ?string $confirmation,
         ?string $evidenceId,
+        #[\SensitiveParameter] ?string $credential = null,
     ): SchemaPlan {
         $this->authorize($context, 'business.schema.approve');
         $plan = $this->plans->find($context->site(), $planId) ?? throw new BusinessSchemaNotFound($planId);
@@ -336,6 +360,21 @@ final readonly class BusinessSchemaService
         if ($plan->risk->requiresHighImpactAuthorization()) {
             if ($confirmation === null || !hash_equals($plan->checksum(), $confirmation)) {
                 throw new BusinessSchemaConflict('High-impact approval requires the exact current plan checksum.');
+            }
+            $profileBootstrap = $context->systemActor() === SystemIdentity::ProfileInstaller
+                && $plan->fromSchemaChecksum === null
+                && $plan->risk === SchemaRisk::BehaviorChanging
+                && array_all($plan->operations(), static fn (SchemaOperation $operation): bool => in_array(
+                    $operation->kind,
+                    [
+                        SchemaOperationKind::CreateTable,
+                        SchemaOperationKind::AddIndex,
+                        SchemaOperationKind::AddForeignKey,
+                    ],
+                    true,
+                ));
+            if (!$profileBootstrap) {
+                $this->credentials->assertCurrentPassword($context, 'business.schema.approve', $credential);
             }
             $confirmationDigest = hash('sha256', implode("\0", [
                 'kumwe:business-schema-confirmation:v1',

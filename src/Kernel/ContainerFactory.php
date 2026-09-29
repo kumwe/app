@@ -754,6 +754,7 @@ use Kumwe\App\Infrastructure\Persistence\Migration\StudioContentProjectionMigrat
 use Kumwe\App\Infrastructure\Persistence\Migration\StudioContentAuthoringContextMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\StudioContentAuthoringContextRetentionMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\StudioContentAuthoringStartMigration;
+use Kumwe\App\Infrastructure\Persistence\Migration\StudioAuthoringIdentityMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\StudioArtifactRecoveryMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\StudioHostSessionMigration;
 use Kumwe\App\Infrastructure\Persistence\Migration\StudioPreviewGrantMigration;
@@ -2316,6 +2317,7 @@ final class ContainerFactory
             self::service($container, StudioPublishedTheme::class),
             self::service($container, StudioBlockRendererRuntime::class),
             self::service($container, ExtensionContributionRegistrySet::class),
+            self::service($container, ContentProjectionBindingRepository::class),
         ), true);
         $container->alias(StudioArtifactPublicationGuard::class, StudioPublishedCompositionGuard::class);
         $container->share(CanonicalStudioPublishedContentRenderer::class, static fn (
@@ -2707,6 +2709,7 @@ final class ContainerFactory
                     new QueueWorkerPermitsMigration(self::service($container, TableNames::class)),
                     new RetentionCatalogueMigration(self::service($container, TableNames::class)),
                     new StudioContentAuthoringStartMigration(self::service($container, TableNames::class)),
+                    new StudioAuthoringIdentityMigration(self::service($container, TableNames::class)),
                     new AsyncTraceContextMigration(self::service($container, TableNames::class)),
                     new ExportSiteByteBudgetMigration(self::service($container, TableNames::class)),
                 ],
@@ -3461,6 +3464,7 @@ final class ContainerFactory
             self::service($container, AuditRecorder::class),
             self::service($container, TransactionManager::class),
             self::service($container, ClockInterface::class),
+            self::service($container, HighImpactCredentialGuard::class),
         ), true);
         $keyRings = new ConfiguredSecretKeyRings(
             $configuration->secret,
@@ -4886,7 +4890,6 @@ final class ContainerFactory
             self::service($container, BusinessSchemaService::class),
             self::service($container, BusinessSchemaApiPresenter::class),
             self::service($container, BusinessApiResponder::class),
-            self::service($container, HighImpactCredentialGuard::class),
             self::service($container, BusinessSchemaRecoveryEvidenceRecorder::class),
         ), true);
         $container->share(BusinessSchemaRecoveryEvidenceRecorder::class, static fn (
@@ -4921,13 +4924,11 @@ final class ContainerFactory
             Container $container,
         ): CreateBusinessSchemaPurgePlanHandler => new CreateBusinessSchemaPurgePlanHandler(
             self::service($container, BusinessSchemaService::class),
-            self::service($container, HighImpactCredentialGuard::class),
         ), true);
         $container->share(ApproveBusinessSchemaPlanHandler::class, static fn (
             Container $container,
         ): ApproveBusinessSchemaPlanHandler => new ApproveBusinessSchemaPlanHandler(
             self::service($container, BusinessSchemaService::class),
-            self::service($container, HighImpactCredentialGuard::class),
         ), true);
         $container->share(ExecuteBusinessSchemaPlanHandler::class, static fn (
             Container $container,

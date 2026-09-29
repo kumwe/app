@@ -44,7 +44,7 @@ order is now:
    existing HTTP/CLI/MCP, extension lifecycle, restart and backup/restore drills. Install the preserved
    ZIP and the preserved Composer source ZIP; compare both installed lockfiles with the source lock.
    Verify image signatures, SBOM attestations and provenance against the exact workflow and commit.
-4. Emit a receipt only after each lane succeeds: `distribution`, `mariadb`, `mysql`, `pgsql`.
+4. Emit receipts only after each lane succeeds: distribution, three production deployments and three resilience lanes.
    Every receipt binds the same manifest digest, commit, version, workflow run and attempt. Missing,
    duplicate, failed, substituted or previous-attempt receipts refuse promotion.
 5. Recheck authority, sign the checksum set including `kumwe-release-qualification.json`, attest the
@@ -57,7 +57,7 @@ aliases, with GitHub `prerelease=true` and `latest=false`. Stable versions may a
 minor, major and `latest` aliases. Deploy signed digests rather than mutable aliases.
 
 The signed manifest is never rewritten after qualification. The separately signed qualification record
-references its digest. Four completed deployment receipts prove these four lanes; they do not by
+references its digest. Four completed installation/deployment receipts and three resilience receipts prove those lanes; they do not by
 themselves assert the independent review, isolation, proof portfolio, chaos programme or Gate B complete.
 A failed attempt is not successful evidence. Re-running only publication with an earlier attempt's
 receipts is refused; a new complete attempt must rebuild and requalify, and cannot replace published bytes.
@@ -77,7 +77,7 @@ sha256sum --strict --check SHA256SUMS
 ```
 
 Inspect the signed manifest's source commit, merged PR, build identity and artifact digests. Check that
-all four qualification receipts name this manifest's SHA-256 and the same run/attempt. The Studio
+all seven qualification receipts name this manifest's SHA-256 and the same run/attempt. The Studio
 `record.release` must match every package in `record.packages`; compare `recordSha256` with the tagged
 `resources/studio-contract/studio-release.json`. Check the compiled asset and input hashes against the
 same source. Refuse a missing artifact, unexpected source or mismatched digest.
@@ -182,3 +182,48 @@ Release builds publish the same three source evidence files as signed manifest s
 subjects: `kumwe-source.cdx.json`, `kumwe-license-policy.json` and `kumwe-license-evaluation.json`. Image and
 archive Syft SBOMs, image vulnerability scans, Cosign signatures and deployment qualification remain required.
 An absent or changed licence evidence file invalidates the candidate digest set.
+
+### Exact-artifact resilience and schema recovery
+
+Each release additionally requires `resilience-mariadb`, `resilience-mysql` and `resilience-pgsql` receipts.
+Every lane consumes the signed candidate once, installs its dependency-complete ZIP and Composer source ZIP,
+and runs the same suite inside the application image by digest. Test code and a separate locked PHPUnit
+installation are supplied as qualification harnesses; the App source and production dependency classmap come
+from the artifact. A distinct Composer autoloader identity prevents the test framework from shadowing the
+installed artifact. The image runs with a read-only root and explicitly writable state mounts.
+
+`resources/release/qualification-drills.json` records each drill's client outcome, retryability, durable
+assertions, related metric/alert, runbook, invariant, recovery action and wall-clock ceiling. Tests fail on
+warnings, notices, deprecations, risky tests and skips. These runs use testing fixture configuration on isolated
+server databases; the existing production topology, web-image, extension lifecycle, probe and backup/restore
+lanes remain separate required evidence. Engine-specific migration tests exercise implicit-DDL forward recovery
+on MariaDB/MySQL and transactional DDL rollback on PostgreSQL, plus the artifact's real migration replay and lock.
+
+Before the preserved worker, database, Redis and replica-fairness faults, the harness creates 1,000 real queued
+jobs and ages their fixture timestamps across 1–90 days. After those faults recover, four actual artifact workers
+must overlap and drain every job exactly once within 180 seconds with no failed process, excess attempt or held
+fence. This is a bounded queue recovery dataset; it does not claim simultaneous fault injection during an entire
+mixed enterprise workload or a long-duration soak. Any observed deadlock or lost job fails qualification.
+
+Each successful lane packages its raw JUnit, worker logs, observed counts/timings, drill catalogue and original
+candidate manifest into `kumwe-resilience-ENGINE.zip`. Its receipt binds that ZIP's digest and size to the candidate
+manifest and exact workflow run/attempt. The signed `kumwe-release-qualification.json` carries these evidence
+subjects, and the final signed checksum set includes every published evidence ZIP. Failed or incomplete runs
+retain diagnostics but cannot issue a success receipt. Local rehearsals are development evidence, never a
+substitute for the post-merge hosted qualification of the published bytes.
+
+### Published runtime reference bundle
+
+`kumwe-documentation-VERSION.zip` ships the API artifacts, schema and package capability/SPI references,
+interface patterns, SDK examples and compatibility fixtures, operator/security procedures, recovery/migration
+and supported-envelope guides, and the exact commit's known residual records. Open `RELEASE-REFERENCE.md`
+in that archive; `reference-index.json` contains the runtime input hashes, guide hashes, live-verified console
+commands, MCP inventory/exclusions and each canonical verifier's result. The same JSON is published separately
+as `kumwe-documentation-index.json`. Both files are subjects of the original candidate manifest, checksum
+signature and build provenance; qualification and publication reuse their original bytes.
+
+`resources/release/documentation.json` maps the P7-H reference groups to their runtime authorities. CI and the
+release builder fail when a mapped input disappears, an operator guide names a removed console command, or
+any existing extension, CLI, MCP, browser/machine, Studio, package-capability, interface, alert/runbook or
+OpenAPI verifier detects drift. Those verifiers remain the contract authorities; the bundle generator does
+not establish a competing contract or turn an outstanding acceptance entry into a delivered claim.

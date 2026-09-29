@@ -125,6 +125,7 @@ final readonly class ContentStudioProjector
             $fields[] = $this->entryPropertyField('slug', 'Slug', 'kumwe.content/slug', 1);
         }
 
+        $this->assertBinding($definition, $binding);
         $definitions = $this->definitionFields($definition);
         usort($definitions, static fn (FieldDefinition $left, FieldDefinition $right): int =>
             strcmp($left->key, $right->key));
@@ -134,7 +135,7 @@ final readonly class ContentStudioProjector
                 continue;
             }
             $fields[] = $this->field(
-                'data_' . $field->key,
+                $binding?->fieldId($field->key) ?? 'data_' . $field->key,
                 $field->key,
                 $field->schema,
                 $field->required,
@@ -207,6 +208,7 @@ final readonly class ContentStudioProjector
      * @param   ContentTypeDefinition       $definition  Exact definition version the record pins.
      * @param   ?WorkflowDefinition         $workflow    Exact custom workflow version, null for the built-in one.
      * @param   ?EntryCompositionOverrides  $overrides   Optional host-owned composition overrides.
+     * @param   ?ContentBlueprintBinding    $binding     Exact type-version field identity mapping.
      *
      * @return  stdClass  Schema-valid Studio `entry` document.
      *
@@ -220,6 +222,7 @@ final readonly class ContentStudioProjector
         ContentTypeDefinition $definition,
         ?WorkflowDefinition $workflow = null,
         ?EntryCompositionOverrides $overrides = null,
+        ?ContentBlueprintBinding $binding = null,
     ): stdClass {
         if (
             $record->siteIdentifier !== $context->site()->identifier()
@@ -247,7 +250,7 @@ final readonly class ContentStudioProjector
         $entry = $record->entry;
         $this->assertValidData($definition, $entry->data());
         $this->contentModel($context, $definition);
-        $values = $this->values($record, $definition, $context, false);
+        $values = $this->values($record, $definition, $context, false, $binding);
         $document = new stdClass();
         $document->contractVersion = self::CONTRACT_VERSION;
         $document->kind = 'entry';
@@ -308,8 +311,9 @@ final readonly class ContentStudioProjector
      * exposes the whole pinned definition rather than fabricating an administrator execution context, while
      * retaining the same exact schema validation and lossless JSON conversion used by {@see entry()}.
      *
-     * @param   ContentRecord          $record      Published record selected by the public Content boundary.
-     * @param   ContentTypeDefinition  $definition  Exact definition version pinned by that record.
+     * @param   ContentRecord             $record      Published record selected by the public Content boundary.
+     * @param   ContentTypeDefinition     $definition  Exact definition version pinned by that record.
+     * @param   ?ContentBlueprintBinding  $binding     Exact type-version field identity mapping.
      *
      * @return  stdClass  Complete Studio field-value object for safe public composition rendering.
      *
@@ -317,8 +321,11 @@ final readonly class ContentStudioProjector
      *
      * @since   2.0.0
      */
-    public function publishedValues(ContentRecord $record, ContentTypeDefinition $definition): stdClass
-    {
+    public function publishedValues(
+        ContentRecord $record,
+        ContentTypeDefinition $definition,
+        ?ContentBlueprintBinding $binding = null,
+    ): stdClass {
         if (
             $record->siteIdentifier !== $definition->site->identifier()
             || $record->contentTypeId !== $definition->id
@@ -329,7 +336,7 @@ final readonly class ContentStudioProjector
             throw new StudioProjectionRejected(StudioProjectionRejection::InvalidDocument, '/model');
         }
 
-        return $this->values($record, $definition, null, true);
+        return $this->values($record, $definition, null, true, $binding);
     }
 
     /**
@@ -474,10 +481,11 @@ final readonly class ContentStudioProjector
      * A null context is reserved for the public publication path, after the public Content boundary has
      * selected a published record. It means "all schema-declared public values", not anonymous authority.
      *
-     * @param   ContentRecord          $record      Record whose values are projected.
-     * @param   ContentTypeDefinition  $definition  Exact schema pinned by the record.
-     * @param   ?ExecutionContext      $context     Authorized actor, or null for public publication.
-     * @param   bool                   $validate    Whether to validate raw data before mapping it.
+     * @param   ContentRecord             $record      Record whose values are projected.
+     * @param   ContentTypeDefinition     $definition  Exact schema pinned by the record.
+     * @param   ?ExecutionContext         $context     Authorized actor, or null for public publication.
+     * @param   bool                      $validate    Whether to validate raw data before mapping it.
+     * @param   ?ContentBlueprintBinding  $binding     Exact type-version field identity mapping.
      *
      * @return  stdClass  Losslessly normalized Studio field values.
      *
@@ -490,7 +498,9 @@ final readonly class ContentStudioProjector
         ContentTypeDefinition $definition,
         ?ExecutionContext $context,
         bool $validate,
+        ?ContentBlueprintBinding $binding,
     ): stdClass {
+        $this->assertBinding($definition, $binding);
         $entry = $record->entry;
         $data = $entry->data();
         if ($validate) {
@@ -540,11 +550,45 @@ final readonly class ContentStudioProjector
             ) {
                 continue;
             }
-            $member = 'data_' . $key;
+            $member = $binding?->fieldId($key) ?? 'data_' . $key;
             $values->{$member} = $this->value($data[$key], $field->schema, '/data/' . self::escapePointer($key));
         }
 
         return $values;
+    }
+
+    /**
+     * Require a supplied field map to cover exactly this site's immutable Content schema.
+     *
+     * @param   ContentTypeDefinition     $definition  Exact Content type version.
+     * @param   ?ContentBlueprintBinding  $binding     Optional host-owned field mapping.
+     *
+     * @return  void
+     *
+     * @throws  StudioProjectionRejected  When coordinates or mapped storage keys differ.
+     *
+     * @since   2.0.0
+     */
+    private function assertBinding(ContentTypeDefinition $definition, ?ContentBlueprintBinding $binding): void
+    {
+        if ($binding === null) {
+            return;
+        }
+        if (
+            $binding->site->identifier() !== $definition->site->identifier()
+            || $binding->contentTypeId !== $definition->id || $binding->contentTypeVersion !== $definition->version
+        ) {
+            throw new StudioProjectionRejected(StudioProjectionRejection::InvalidDocument, '/extensions');
+        }
+        if ($binding->fieldIds !== null) {
+            $keys = array_map(static fn (FieldDefinition $field): string => $field->key, $definition->fields());
+            $mapped = array_keys($binding->fieldIds);
+            sort($keys, SORT_STRING);
+            sort($mapped, SORT_STRING);
+            if ($keys !== $mapped) {
+                throw new StudioProjectionRejected(StudioProjectionRejection::InvalidDocument, '/fields');
+            }
+        }
     }
 
     /**

@@ -1,0 +1,64 @@
+{
+  "kind": "kumwe-release-resilience-drills",
+  "dataset": {
+    "aged_queue_jobs": 1000,
+    "age_days": [
+      1,
+      90
+    ],
+    "workers": 4,
+    "maximum_recovery_seconds": 180,
+    "method": "Timestamp aging after production API enqueue. Fault drills execute with this durable backlog present; four real workers drain it after the faults recover. No claim of simultaneous fault injection during mixed enterprise traffic."
+  },
+  "scope": "Exact application image, dependency-complete ZIP and Composer distribution on each supported engine. Drills run in an isolated database with the production classmap and testing fixture configuration; the separate production deployment lanes exercise production policy and the web image together.",
+  "drills": [
+    {
+      "id": "worker-sigkill",
+      "test": "tests/Integration/Automation/KilledWorkerRecoveryIntegrationTest.php",
+      "maximum_seconds": 180,
+      "client_error": "Terminated worker process; no completed settlement until its replacement owns the fence.",
+      "retryability": "After wall-clock lease expiry; stale lease cannot settle.",
+      "audit_evidence": "JUnit asserts persisted job attempts, lease token and exactly one durable effect.",
+      "metric_alert": "kumwe_workers_registered / KumweNoLiveWorker; queue age also rises while no worker drains.",
+      "runbook": "docs/operations/runbooks.md",
+      "invariant": "One durable effect and one completed settlement under the successor fence.",
+      "recovery": "Supervisor restarts worker after the eight-second lease expires."
+    },
+    {
+      "id": "database-loss",
+      "test": "tests/Integration/Automation/DatabaseLossRecoveryIntegrationTest.php",
+      "maximum_seconds": 360,
+      "client_error": "Permanent connection loss exits nonzero; severed session leaves work pending rather than completed.",
+      "retryability": "At-least-once after connection recovery and five-second lease expiry; no invented settlement.",
+      "audit_evidence": "JUnit asserts reserved/pending/completed transitions, attempt counts and absence of fabricated failed-job rows.",
+      "metric_alert": "Database readiness and queue age / KumweReadinessFailing and KumweJobQueueStalled.",
+      "runbook": "docs/operations/incident-response.md",
+      "invariant": "Lost settlement never records completion; replacement records the actual successful attempt.",
+      "recovery": "Restore the network relay and restart the worker; replace a severed session in place."
+    },
+    {
+      "id": "redis-loss",
+      "test": "tests/Integration/Infrastructure/RedisOutageIntegrationTest.php",
+      "maximum_seconds": 180,
+      "client_error": "Sign-in fails closed with Redis unreachable; the non-authoritative settings cache falls back to SQL.",
+      "retryability": "After Redis path restoration and client/process replacement.",
+      "audit_evidence": "JUnit asserts readiness false, authentication refusal and the cache-degradation warning.",
+      "metric_alert": "Redis readiness / KumweReadinessFailing.",
+      "runbook": "docs/operations/runbooks.md",
+      "invariant": "No uncounted authentication attempt; authoritative settings remain readable.",
+      "recovery": "Restore Redis connectivity and replace the failed connection."
+    },
+    {
+      "id": "replica-backlog",
+      "test": "tests/Integration/Automation/QueuePermitReplicaContentionIntegrationTest.php",
+      "maximum_seconds": 180,
+      "client_error": "Occupied permits refuse excess claims without blocking unrelated replicas or tenants.",
+      "retryability": "After permit release or lease expiry.",
+      "audit_evidence": "JUnit asserts real independent connections, killed-holder recovery, lease counts and fair tenant turns.",
+      "metric_alert": "Queue depth, oldest age and live workers / KumweJobQueueStalled and KumweNoLiveWorker.",
+      "runbook": "docs/operations/runbooks.md",
+      "invariant": "Shared concurrency ceiling holds; a noisy tenant does not starve the remaining backlog.",
+      "recovery": "Other replicas skip busy permits and drain eligible tenants; dead holders expire."
+    }
+  ]
+}

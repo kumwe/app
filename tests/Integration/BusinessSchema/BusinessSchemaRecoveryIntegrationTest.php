@@ -388,6 +388,7 @@ final class BusinessSchemaRecoveryIntegrationTest extends TestCase
                 $plan->checksum(),
                 $plan->risk->requiresHighImpactAuthorization() ? $plan->checksum() : null,
                 null,
+                TestKernelFactory::ADMINISTRATOR_PASSWORD,
             );
         }
 

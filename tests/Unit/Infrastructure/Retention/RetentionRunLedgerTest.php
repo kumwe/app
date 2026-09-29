@@ -10,6 +10,8 @@ use Doctrine\DBAL\DriverManager;
 use Kumwe\App\Application\Retention\RetentionDrainResult;
 use Kumwe\App\Application\Retention\RetentionStore;
 use Kumwe\App\Infrastructure\Persistence\TableNames;
+use Kumwe\App\Infrastructure\Persistence\StatementBudget;
+use Kumwe\App\Infrastructure\Persistence\StatementBudgetExceeded;
 use Kumwe\App\Infrastructure\Retention\RetentionRunLedger;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
@@ -26,6 +28,26 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass(RetentionRunLedger::class)]
 final class RetentionRunLedgerTest extends TestCase
 {
+    /**
+     * Diagnostic callers can refuse an oversized drain observation before it becomes a rate.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testLatestRunHonoursTheMaterializedByteBudget(): void
+    {
+        $database = self::database();
+        $tables = new TableNames($database, 'kumwe_');
+        $ledger = new RetentionRunLedger($database, $tables, new StatementBudget(100, 1));
+        $ledger->record(
+            new RetentionDrainResult(RetentionStore::JobHistory, 40, 2, 0.5, 200, false, true),
+            new DateTimeImmutable('2026-09-24T10:00:00+00:00'),
+        );
+        $this->expectException(StatementBudgetExceeded::class);
+        $ledger->latest(RetentionStore::JobHistory);
+    }
+
     /**
      * A second run replaces the first, and a store that never ran reads as no run at all.
      *

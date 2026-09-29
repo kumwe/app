@@ -134,9 +134,18 @@ final class ContentStudioAuthoringContextAuthorityTest extends TestCase
         );
 
         self::assertNull($authority->startOf($context, $key));
-        self::assertSame('{"kind":"blank"}', $authority->rememberStart($context, $key, '{"kind":"blank"}'));
-        self::assertSame('{"kind":"blank"}', $authority->rememberStart($context, $key, '{"kind":"from-type"}'));
-        self::assertSame('{"kind":"blank"}', $authority->startOf($context, $key));
+        self::assertSame(
+            ['source' => '{"kind":"blank"}', 'presentation' => 'fullscreen'],
+            $authority->rememberStart($context, $key, '{"kind":"blank"}', 'fullscreen'),
+        );
+        self::assertSame(
+            ['source' => '{"kind":"blank"}', 'presentation' => 'fullscreen'],
+            $authority->rememberStart($context, $key, '{"kind":"from-type"}', 'inline'),
+        );
+        self::assertSame(
+            ['source' => '{"kind":"blank"}', 'presentation' => 'fullscreen'],
+            $authority->startOf($context, $key),
+        );
 
         $refusals = [
             'a malformed key' => static fn () => $authority->startOf($context, 'contexts/not-a-key'),
@@ -144,6 +153,7 @@ final class ContentStudioAuthoringContextAuthorityTest extends TestCase
                 self::context(['content.create'], subject: '018f22e2-7c8b-7ab0-8f3a-88e8026bb399'),
                 $key,
                 '{"kind":"blank"}',
+                'inline',
             ),
             'an unknown key' => static fn () => $authority->startOf($context, 'contexts/' . str_repeat('0', 64)),
             'an expired binding' => static fn () => $authority->startOf($context, $key),
@@ -462,22 +472,28 @@ final class ContentStudioAuthoringContextAuthorityTest extends TestCase
         ))->create($context));
 
         self::assertNull($authority->startOf($context, $key), 'An unstarted session has no recorded start.');
-        self::assertSame('{"kind":"blank"}', $authority->rememberStart($context, $key, '{"kind":"blank"}'));
         self::assertSame(
-            '{"kind":"blank"}',
-            $authority->rememberStart($context, $key, '{"kind":"from-type"}'),
+            ['source' => '{"kind":"blank"}', 'presentation' => 'fullscreen'],
+            $authority->rememberStart($context, $key, '{"kind":"blank"}', 'fullscreen'),
+        );
+        self::assertSame(
+            ['source' => '{"kind":"blank"}', 'presentation' => 'fullscreen'],
+            $authority->rememberStart($context, $key, '{"kind":"from-type"}', 'inline'),
             'A second start cannot replace the first.',
         );
-        self::assertSame('{"kind":"blank"}', $authority->startOf($context, $key));
+        self::assertSame(
+            ['source' => '{"kind":"blank"}', 'presentation' => 'fullscreen'],
+            $authority->startOf($context, $key),
+        );
 
         $stranger = self::context(['content.create', 'content.read'], subject: '018f22e2-7c8b-7ab0-8f3a-88e8026bb3ff');
         $refusals = 0;
         foreach (
             [
                 static fn () => $authority->startOf($context, 'contexts/not-a-digest'),
-                static fn () => $authority->rememberStart($context, 'contexts/' . str_repeat('0', 64), '{}'),
+                static fn () => $authority->rememberStart($context, 'contexts/' . str_repeat('0', 64), '{}', 'inline'),
                 static fn () => $authority->startOf($stranger, $key),
-                static fn () => $authority->rememberStart($stranger, $key, '{"kind":"blank"}'),
+                static fn () => $authority->rememberStart($stranger, $key, '{"kind":"blank"}', 'inline'),
             ] as $attempt
         ) {
             try {
@@ -744,7 +760,7 @@ final class ContentStudioAuthoringContextAuthorityTest extends TestCase
             /**
              * Recorded start sources by key.
              *
-             * @var    array<string, string>
+             * @var    array<string, array{source: string, presentation: string}>
              * @since  2.0.0
              */
             private array $starts = [];
@@ -752,19 +768,20 @@ final class ContentStudioAuthoringContextAuthorityTest extends TestCase
             /**
              * Record one start source once.
              *
-             * @param   string  $contextKey   Opaque key.
-             * @param   string  $startSource  Canonical start source.
+             * @param   string  $contextKey    Opaque key.
+             * @param   string  $startSource   Canonical start source.
+             * @param   string  $presentation  Initial Studio presentation.
              *
-             * @return  string|null  Recorded start source, or null when the binding is absent.
+             * @return  array{source: string, presentation: string}|null  Recorded start, or null.
              *
              * @since   2.0.0
              */
-            public function recordStart(string $contextKey, string $startSource): ?string
+            public function recordStart(string $contextKey, string $startSource, string $presentation): ?array
             {
                 if (!isset($this->bindings[$contextKey])) {
                     return null;
                 }
-                $this->starts[$contextKey] ??= $startSource;
+                $this->starts[$contextKey] ??= ['source' => $startSource, 'presentation' => $presentation];
 
                 return $this->starts[$contextKey];
             }
@@ -774,11 +791,11 @@ final class ContentStudioAuthoringContextAuthorityTest extends TestCase
              *
              * @param   string  $contextKey  Opaque key.
              *
-             * @return  string|null  Recorded start source, or null.
+             * @return  array{source: string, presentation: string}|null  Recorded start source, or null.
              *
              * @since   2.0.0
              */
-            public function start(string $contextKey): ?string
+            public function start(string $contextKey): ?array
             {
                 return $this->starts[$contextKey] ?? null;
             }

@@ -1060,7 +1060,14 @@ final class NeutralBusinessFixture
         $plan = $schemas->createPlan($context, $published->definition->id);
         if ($plan->status === SchemaPlanStatus::PendingApproval) {
             $confirmation = $plan->risk->requiresHighImpactAuthorization() ? $plan->checksum() : null;
-            $plan = $schemas->approve($context, $plan->id, $plan->checksum(), $confirmation, null);
+            $plan = $schemas->approve(
+                $context,
+                $plan->id,
+                $plan->checksum(),
+                $confirmation,
+                null,
+                TestKernelFactory::ADMINISTRATOR_PASSWORD,
+            );
         }
         if ($plan->status === SchemaPlanStatus::Approved) {
             $schemas->execute($context, $plan->id);
@@ -1151,6 +1158,7 @@ final class NeutralBusinessFixture
                     $plan->checksum(),
                     $plan->risk->requiresHighImpactAuthorization() ? $plan->checksum() : null,
                     null,
+                    TestKernelFactory::ADMINISTRATOR_PASSWORD,
                 );
             }
             $current = $schemas->plan($context, $plan->id);

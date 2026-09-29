@@ -60,6 +60,8 @@ const artifactNames = [
   `kumwe-app-${release}.zip`,
   `kumwe-composer-${release}.zip`,
   "composer-repository.json",
+  `kumwe-documentation-${release}.zip`,
+  "kumwe-documentation-index.json",
   "kumwe-app.cdx.json",
   "kumwe-archive.cdx.json",
   "kumwe-web.cdx.json",

@@ -239,11 +239,11 @@ final class HostedContentStudioAuthoringConfigurationProviderTest extends TestCa
      * Compose one provider over in-memory context and host-session stores.
      *
      * @return  array{
-     *     HostedContentStudioAuthoringConfigurationProvider,
-     *     ContentStudioAuthoringContextRepository,
-     *     StudioHostSessionRepository,
-     *     ContentStudioAuthoringCatalog
-     * }  Provider, both stores, and the catalog it locks.
+     *              HostedContentStudioAuthoringConfigurationProvider,
+     *              ContentStudioAuthoringContextRepository,
+     *              StudioHostSessionRepository,
+     *              ContentStudioAuthoringCatalog
+     *          }  Provider, both stores, and the catalog it locks.
      *
      * @since   2.0.0
      */
@@ -303,7 +303,7 @@ final class HostedContentStudioAuthoringConfigurationProviderTest extends TestCa
             /**
              * Recorded start sources by key.
              *
-             * @var    array<string, string>
+             * @var    array<string, array{source: string, presentation: string}>
              * @since  2.0.0
              */
             private array $starts = [];
@@ -311,19 +311,20 @@ final class HostedContentStudioAuthoringConfigurationProviderTest extends TestCa
             /**
              * Record one start source once.
              *
-             * @param   string  $contextKey   Opaque key.
-             * @param   string  $startSource  Canonical start source.
+             * @param   string  $contextKey    Opaque key.
+             * @param   string  $startSource   Canonical start source.
+             * @param   string  $presentation  Initial Studio presentation.
              *
-             * @return  string|null  Recorded start source, or null when the binding is absent.
+             * @return  array{source: string, presentation: string}|null  Recorded start, or null.
              *
              * @since   2.0.0
              */
-            public function recordStart(string $contextKey, string $startSource): ?string
+            public function recordStart(string $contextKey, string $startSource, string $presentation): ?array
             {
                 if (!isset($this->bindings[$contextKey])) {
                     return null;
                 }
-                $this->starts[$contextKey] ??= $startSource;
+                $this->starts[$contextKey] ??= ['source' => $startSource, 'presentation' => $presentation];
 
                 return $this->starts[$contextKey];
             }
@@ -333,11 +334,11 @@ final class HostedContentStudioAuthoringConfigurationProviderTest extends TestCa
              *
              * @param   string  $contextKey  Opaque key.
              *
-             * @return  string|null  Recorded start source, or null.
+             * @return  array{source: string, presentation: string}|null  Recorded start source, or null.
              *
              * @since   2.0.0
              */
-            public function start(string $contextKey): ?string
+            public function start(string $contextKey): ?array
             {
                 return $this->starts[$contextKey] ?? null;
             }
