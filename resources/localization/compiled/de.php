@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for de, carrying 2629 messages.
+ * Compiled interface message catalogue for de, carrying 2641 messages.
  *
  * Generated from de.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -2440,6 +2440,10 @@ return [
     'core.studio.contextual.return' => 'Zurück zu {destination}',
     'core.studio.contextual.return-destination' => 'dem Host',
     'core.studio.contextual.save-as-new-type' => 'Als neuen Typ speichern',
+    'core.studio.contextual.save-confirmation-cancel' => 'Abbrechen',
+    'core.studio.contextual.save-confirmation-confirm' => 'Bestätigen und speichern',
+    'core.studio.contextual.save-confirmation-explanation' => 'Der konfigurierte Server erfordert vor dem Speichern eine Bestätigung dieser Folgen.',
+    'core.studio.contextual.save-confirmation-heading' => 'Speichern bestätigen',
     'core.studio.contextual.save-item' => 'Element speichern',
     'core.studio.contextual.save-new-type-version' => 'Neue Typversion speichern',
     'core.studio.contextual.save-outcome' => 'Speicherergebnis',
@@ -2509,6 +2513,7 @@ return [
     'core.studio.shell.canvas-label' => 'Blueprint-Struktur',
     'core.studio.shell.canvas-mode-editing' => 'Blöcke auswählen und verschieben',
     'core.studio.shell.canvas-mode-interacting' => 'mit der gerenderten Vorschau interagieren',
+    'core.studio.shell.canvas-pane' => 'Arbeitsfläche',
     'core.studio.shell.command-apply-pattern' => 'Muster {pattern} anwenden',
     'core.studio.shell.command-clear-selection' => 'Auswahl aufheben',
     'core.studio.shell.command-insert' => '{label} einfügen',
@@ -2532,6 +2537,7 @@ return [
     'core.studio.shell.inspector-add-property' => 'Eigenschaft hinzufügen',
     'core.studio.shell.inspector-add-property-name-label' => 'Name der neuen Eigenschaft',
     'core.studio.shell.inspector-add-property-value-label' => 'Wert der neuen Eigenschaft als JSON',
+    'core.studio.shell.inspector-advanced' => 'Erweiterte Eigenschaften und Bindungen',
     'core.studio.shell.inspector-binding-accepts' => 'Akzeptiert {cardinality} Wert vom Typ {value-type}',
     'core.studio.shell.inspector-binding-control-label' => 'Deklariertes Steuerelement {control} für {field}',
     'core.studio.shell.inspector-binding-control-preview' => 'Vorschau des Steuerelements',
@@ -2592,6 +2598,10 @@ return [
     'core.studio.shell.inspector-type' => 'Typ',
     'core.studio.shell.inspector-unset' => 'Zurücksetzen',
     'core.studio.shell.inspector-unset-label' => '{property} zurücksetzen',
+    'core.studio.shell.library-search' => 'Blöcke und Muster suchen',
+    'core.studio.shell.local-canvas-description' => 'Lokale Darstellung · keine maßgebliche Vorschau des Hosts.',
+    'core.studio.shell.local-canvas-label' => 'Arbeitsfläche der Seite',
+    'core.studio.shell.local-canvas-unavailable' => 'Die lokale Arbeitsfläche konnte diesen Entwurf nicht darstellen. Das Dokument und die Steuerelemente für die Struktur bleiben verfügbar.',
     'core.studio.shell.move-destination-label' => 'Block an eine andere Position oder in einen anderen Slot verschieben',
     'core.studio.shell.move-destination-option' => '{collection}, Position {position} von {count}',
     'core.studio.shell.move-destination-placeholder' => 'Ziel auswählen',
@@ -2626,6 +2636,8 @@ return [
     'core.studio.shell.unresolved-block' => '(nicht aufgelöst)',
     'core.studio.shell.viewport-label' => 'Vorschaubreite',
     'core.studio.shell.visual-drop-target' => '{label} wird nach {destination} verschoben',
+    'core.studio.shell.visual-insert-target' => '{label} wird bei {destination} eingefügt',
+    'core.studio.shell.workspace-panels' => 'Bedienfelder im Arbeitsbereich',
     'core.studio.standalone.change-local' => '{artifact} wurde nur in dieser Browsersitzung geändert.',
     'core.studio.standalone.current-in-memory-draft' => 'Aktueller Entwurf im Arbeitsspeicher',
     'core.studio.standalone.download-project' => 'Projekt-JSON herunterladen',

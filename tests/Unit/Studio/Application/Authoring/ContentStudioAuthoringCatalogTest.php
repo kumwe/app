@@ -227,7 +227,7 @@ final class ContentStudioAuthoringCatalogTest extends TestCase
             new StudioCompositionContributionCatalog($registries, $runtime),
             StudioCoreCatalog::fromFile(
                 $record ?? dirname(__DIR__, 5) . '/resources/studio-contract/core-catalog.json',
-                '0.1.0-beta.3',
+                StudioContractResources::releaseRecord()->release(),
             ),
             $runtime,
             InterfaceTranslation::translator($locale),

@@ -128,9 +128,9 @@ test('the Studio page builder mounts on Content New and swaps with the structure
  * renders publicly once published.
  *
  * The interface locale is a parameter (`KUMWE_STUDIO_JOURNEY_LOCALE`, default `en-GB`): labels come from
- * that locale's catalogue by message identifier. The pinned Studio release renders its create-source chooser
- * and save confirmation without its catalogue overrides, so those two surfaces are addressed by their
- * stable data attributes rather than by wording.
+ * that locale's catalogue by message identifier. App supplies the same catalogue when Studio mounts its
+ * create-source chooser, editor and save confirmation. Stable data attributes identify the chooser and
+ * confirmation controls across locales.
  */
 
 /** The manifest-six extension block the browser fixture admits for the contextual target. */

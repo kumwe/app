@@ -91,7 +91,8 @@ final class HostedContentStudioAuthoringConfigurationProviderTest extends TestCa
         self::assertSame(HostedContentStudioAuthoringConfigurationProvider::MOUNT_ID, $configuration->mountId);
         self::assertSame('https://cdn.jsdelivr.net', $configuration->scriptOrigin);
         self::assertStringStartsWith(
-            'https://cdn.jsdelivr.net/npm/@kumwe/studio@0.1.0-beta.3/dist/browser/assets/studio-browser-',
+            'https://cdn.jsdelivr.net/npm/@kumwe/studio@' . StudioContractResources::releaseRecord()->release()
+                . '/dist/browser/assets/studio-browser-',
             $configuration->moduleUrl,
         );
         self::assertSame(
@@ -105,7 +106,7 @@ final class HostedContentStudioAuthoringConfigurationProviderTest extends TestCa
         self::assertInstanceOf(stdClass::class, $document);
         self::assertTrue($registry->validate('studio-deployment', $document)->valid());
         self::assertSame('#' . HostedContentStudioAuthoringConfigurationProvider::MOUNT_ID, $document->mount);
-        self::assertSame('0.1.0-beta.3', $document->release->version);
+        self::assertSame(StudioContractResources::releaseRecord()->release(), $document->release->version);
         self::assertSame('create', $document->launch->intent);
         self::assertSame('blank', $document->launch->start->kind);
         self::assertEquals($document->launch->resourceContext, $document->session->resourceContext);
@@ -451,7 +452,10 @@ final class HostedContentStudioAuthoringConfigurationProviderTest extends TestCa
         $runtime = new StudioBlockRendererRuntime($registries, new StudioContentFieldBlockRenderer());
         $catalog = new ContentStudioAuthoringCatalog(
             new StudioCompositionContributionCatalog($registries, $runtime),
-            StudioCoreCatalog::fromFile($root . '/resources/studio-contract/core-catalog.json', '0.1.0-beta.3'),
+            StudioCoreCatalog::fromFile(
+                $root . '/resources/studio-contract/core-catalog.json',
+                StudioContractResources::releaseRecord()->release(),
+            ),
             $runtime,
             InterfaceTranslation::translator(),
         );

@@ -1,27 +1,27 @@
-import { c as A$10, d as i$17, l as b$12, s as i$16, u as w$12 } from "./reveal-validation-g1jDnck7.js";
-import { t as __vitePreload } from "./administrator-CwKwOj8g.js";
+import { c as A$10, d as b$13, f as w$13, l as D$11, p as i$18, s as i$19, u as E$13 } from "./reveal-validation-BVQF1cmE.js";
+import { t as __vitePreload } from "./administrator-DJU_br3B.js";
 import { a as createCoreLayoutBlockDefinitions, c as STUDIO_STALE_SESSION_GENERATION_DIAGNOSTIC_CODE, d as canonicalStringify, i as coreLayoutInitialProperties, l as STUDIO_WIRE_PROTOCOL_VERSION, n as CORE_LAYOUT_BLOCK_TYPES, o as isCoreLayoutBlockType, r as CORE_LAYOUT_THEME_CONTROLS, s as STUDIO_CONTRACT_VERSION, t as computePreviewDraftDigest, u as cloneContractValue } from "./preview-identity-Bvgz1vbs.js";
 //#region node_modules/@kumwe/studio-core/dist/binding-projection.js
 function projectBlueprintFieldBindings(t, i, a) {
-	let o = cloneContractValue(t), s = cloneContractValue(i), l = cloneContractValue(a), u = [], d = cloneContractValue(o.model), f = n$7(o, s, u), p = /* @__PURE__ */ new Map();
-	for (let e of l) p.set(g$12(e.type, e.version), e);
+	let o = cloneContractValue(t), s = cloneContractValue(i), l = cloneContractValue(a), u = [], d = cloneContractValue(o.model), f = n$8(o, s, u), p = /* @__PURE__ */ new Map();
+	for (let e of l) p.set(g$13(e.type, e.version), e);
 	let h = {
 		blueprintId: o.id,
 		definitions: p,
 		diagnostics: u,
-		fields: f ? c$9(s.fields) : [],
+		fields: f ? c$10(s.fields) : [],
 		modelCompatible: f,
 		modelReference: d
 	}, _ = [];
-	return m$14(o.roots, (e) => {
-		_.push(r$11(e, h));
+	return m$16(o.roots, (e) => {
+		_.push(r$12(e, h));
 	}), cloneContractValue({
 		diagnostics: u,
 		model: d,
 		nodes: _
 	});
 }
-function n$7(e, t, n) {
+function n$8(e, t, n) {
 	let r = !0;
 	for (let i of [
 		{
@@ -42,23 +42,23 @@ function n$7(e, t, n) {
 			expected: e.model.revision,
 			member: `revision`
 		}
-	]) i.actual !== i.expected && (r = !1, n.push(h$12(i.code, `The projected model ${i.member} {actual} does not match the Blueprint lock {expected}.`, `error`, {
+	]) i.actual !== i.expected && (r = !1, n.push(h$14(i.code, `The projected model ${i.member} {actual} does not match the Blueprint lock {expected}.`, `error`, {
 		actual: i.actual,
 		expected: i.expected,
 		member: i.member
 	}, { artifactId: e.id })));
 	return r;
 }
-function r$11(e, t) {
-	let n = t.definitions.get(g$12(e.type, e.version))?.ports ?? [], r = new Set(n.map((e) => e.id)), o = Object.keys(e.bindings).filter((e) => !r.has(e)).sort(v$13), s = [...n.map((n) => i$15(e, n, t)), ...o.map((n) => a$12(e, n, t))];
+function r$12(e, t) {
+	let n = t.definitions.get(g$13(e.type, e.version))?.ports ?? [], r = new Set(n.map((e) => e.id)), o = Object.keys(e.bindings).filter((e) => !r.has(e)).sort(v$14), s = [...n.map((n) => i$17(e, n, t)), ...o.map((n) => a$16(e, n, t))];
 	return {
 		nodeId: e.id,
 		ports: s
 	};
 }
-function i$15(t, n, r) {
-	let i = r.modelCompatible ? r.fields.filter((e) => e.field.authoring?.hidden !== !0 && u$14(e.field, n)).map(({ field: e, fieldPath: t }) => s$11(e, t)) : [], a = t.bindings[n.id];
-	if (a === void 0) return n.required && r.diagnostics.push(h$12(`studio.binding/required-port-unbound`, `Required block port {port} is not bound to a source.`, `warning`, { port: n.id }, {
+function i$17(t, n, r) {
+	let i = r.modelCompatible ? r.fields.filter((e) => e.field.authoring?.hidden !== !0 && u$15(e.field, n)).map(({ field: e, fieldPath: t }) => s$12(e, t)) : [], a = t.bindings[n.id];
+	if (a === void 0) return n.required && r.diagnostics.push(h$14(`studio.binding/required-port-unbound`, `Required block port {port} is not bound to a source.`, `warning`, { port: n.id }, {
 		artifactId: r.blueprintId,
 		nodeId: t.id
 	})), {
@@ -79,16 +79,16 @@ function i$15(t, n, r) {
 		valueType: n.valueType
 	};
 	let c = [...a.source.fieldPath];
-	if (!r.modelCompatible) return o$9(n, a, c, i);
-	let m = l$14(r.fields, c);
-	return m === void 0 ? (r.diagnostics.push(h$12(`studio.binding/field-missing`, `Binding port {port} addresses field path {fieldPath}, which the locked model no longer declares.`, `error`, {
+	if (!r.modelCompatible) return o$11(n, a, c, i);
+	let m = l$15(r.fields, c);
+	return m === void 0 ? (r.diagnostics.push(h$14(`studio.binding/field-missing`, `Binding port {port} addresses field path {fieldPath}, which the locked model no longer declares.`, `error`, {
 		fieldPath: c.join(`.`),
 		port: n.id
 	}, {
 		artifactId: r.blueprintId,
 		fieldPath: c,
 		nodeId: t.id
-	})), o$9(n, a, c, i)) : d$14(m.field) === n.multiple ? f$15(m.field, n.valueType) ? {
+	})), o$11(n, a, c, i)) : d$15(m.field) === n.multiple ? f$17(m.field, n.valueType) ? {
 		binding: cloneContractValue(a),
 		boundFieldPath: c,
 		candidates: i,
@@ -97,8 +97,8 @@ function i$15(t, n, r) {
 		required: n.required,
 		status: `resolved`,
 		valueType: n.valueType
-	} : (r.diagnostics.push(h$12(`studio.binding/field-kind-incompatible`, `Binding port {port} expects {valueType}, but field {fieldPath} now projects as {fieldKind}.`, `error`, {
-		fieldKind: p$14(m.field),
+	} : (r.diagnostics.push(h$14(`studio.binding/field-kind-incompatible`, `Binding port {port} expects {valueType}, but field {fieldPath} now projects as {fieldKind}.`, `error`, {
+		fieldKind: p$17(m.field),
 		fieldPath: c.join(`.`),
 		port: n.id,
 		valueType: n.valueType
@@ -106,22 +106,22 @@ function i$15(t, n, r) {
 		artifactId: r.blueprintId,
 		fieldPath: c,
 		nodeId: t.id
-	})), o$9(n, a, c, i)) : (r.diagnostics.push(h$12(`studio.binding/field-cardinality-incompatible`, `Binding port {port} and field {fieldPath} no longer have compatible cardinality.`, `error`, {
+	})), o$11(n, a, c, i)) : (r.diagnostics.push(h$14(`studio.binding/field-cardinality-incompatible`, `Binding port {port} and field {fieldPath} no longer have compatible cardinality.`, `error`, {
 		fieldPath: c.join(`.`),
 		port: n.id
 	}, {
 		artifactId: r.blueprintId,
 		fieldPath: c,
 		nodeId: t.id
-	})), o$9(n, a, c, i));
+	})), o$11(n, a, c, i));
 }
-function a$12(t, n, r) {
+function a$16(t, n, r) {
 	let i = t.bindings[n];
 	return i === void 0 ? {
 		candidates: [],
 		port: n,
 		status: `invalid`
-	} : (r.diagnostics.push(h$12(`studio.binding/port-missing`, `Binding port {port} is not declared by the locked block definition.`, `error`, { port: n }, {
+	} : (r.diagnostics.push(h$14(`studio.binding/port-missing`, `Binding port {port} is not declared by the locked block definition.`, `error`, { port: n }, {
 		artifactId: r.blueprintId,
 		nodeId: t.id
 	})), {
@@ -132,7 +132,7 @@ function a$12(t, n, r) {
 		status: `invalid`
 	});
 }
-function o$9(t, n, r, i) {
+function o$11(t, n, r, i) {
 	return {
 		binding: cloneContractValue(n),
 		boundFieldPath: [...r],
@@ -144,7 +144,7 @@ function o$9(t, n, r, i) {
 		valueType: t.valueType
 	};
 }
-function s$11(t, n) {
+function s$12(t, n) {
 	return {
 		cardinality: t.cardinality,
 		...t.authoring?.control === void 0 ? {} : { control: t.authoring.control },
@@ -154,7 +154,7 @@ function s$11(t, n) {
 		label: cloneContractValue(t.label)
 	};
 }
-function c$9(e) {
+function c$10(e) {
 	let t = [], n = (e, r) => {
 		let i = e.map((e, t) => ({
 			field: e,
@@ -170,29 +170,29 @@ function c$9(e) {
 	};
 	return n(e, []), t;
 }
-function l$14(e, t) {
-	return e.find((e) => _$13(e.fieldPath, t));
+function l$15(e, t) {
+	return e.find((e) => _$14(e.fieldPath, t));
 }
-function u$14(e, t) {
-	return d$14(e) === t.multiple && f$15(e, t.valueType);
+function u$15(e, t) {
+	return d$15(e) === t.multiple && f$17(e, t.valueType);
 }
-function d$14(e) {
+function d$15(e) {
 	return e.cardinality === `many`;
 }
-function f$15(e, t) {
-	let n = p$14(e);
+function f$17(e, t) {
+	let n = p$17(e);
 	return n === t ? !0 : t === `text` ? n === `string` || n === `enum` : t === `number` ? n === `decimal` || n === `integer` : !1;
 }
-function p$14(e) {
+function p$17(e) {
 	return e.kind === `collection` ? e.itemKind ?? `object` : e.kind;
 }
-function m$14(e, t) {
+function m$16(e, t) {
 	for (let n of e) {
 		t(n);
-		for (let e of Object.keys(n.slots).sort(v$13)) m$14(n.slots[e] ?? [], t);
+		for (let e of Object.keys(n.slots).sort(v$14)) m$16(n.slots[e] ?? [], t);
 	}
 }
-function h$12(e, t, n, r, i) {
+function h$14(e, t, n, r, i) {
 	return {
 		code: e,
 		...i === void 0 ? {} : { location: i },
@@ -204,22 +204,22 @@ function h$12(e, t, n, r, i) {
 		severity: n
 	};
 }
-function g$12(e, t) {
+function g$13(e, t) {
 	return `${e}@${t}`;
 }
-function _$13(e, t) {
+function _$14(e, t) {
 	return e.length === t.length && e.every((e, n) => e === t[n]);
 }
-function v$13(e, t) {
+function v$14(e, t) {
 	return e < t ? -1 : +(e > t);
 }
 //#endregion
 //#region node_modules/@kumwe/studio-protocol/dist/guards.js
-var n$6 = /^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*\/[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*$/u;
-var r$10 = /^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$/u;
-var i$14 = /^[a-f0-9]{64}$/u;
-var a$11 = /^studio\.preview\/node\/([a-f0-9]{64})\/(0|[1-9][0-9]{0,4})$/u;
-var o$8 = /* @__PURE__ */ new Set([
+var n$7 = /^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*\/[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*$/u;
+var r$11 = /^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$/u;
+var i$16 = /^[a-f0-9]{64}$/u;
+var a$15 = /^studio\.preview\/node\/([a-f0-9]{64})\/(0|[1-9][0-9]{0,4})$/u;
+var o$10 = /* @__PURE__ */ new Set([
 	`cancelled`,
 	`conflict`,
 	`forbidden`,
@@ -234,7 +234,7 @@ var o$8 = /* @__PURE__ */ new Set([
 	`validation-failed`
 ]);
 function isHostPortError(t) {
-	return E$11(t) && T$11(t, [
+	return E$12(t) && T$12(t, [
 		`contractVersion`,
 		`kind`,
 		`category`,
@@ -245,10 +245,10 @@ function isHostPortError(t) {
 		`diagnostics`,
 		`retryAfterMilliseconds`,
 		`revision`
-	]) && t.contractVersion === STUDIO_CONTRACT_VERSION && t.kind === `host-error` && typeof t.category == `string` && o$8.has(t.category) && w$11(t.message) && typeof t.retryable == `boolean` && (t.correlationId === void 0 || N$7(t.correlationId)) && (t.revision === void 0 || t.category === `conflict` && P$7(t.revision)) && (t.retryAfterMilliseconds === void 0 || (t.category === `rate-limited` || t.category === `unavailable`) && t.retryable && D$9(t.retryAfterMilliseconds) && t.retryAfterMilliseconds <= 864e5) && (t.diagnostics === void 0 || I$5(t.diagnostics, S$12, 1e3));
+	]) && t.contractVersion === STUDIO_CONTRACT_VERSION && t.kind === `host-error` && typeof t.category == `string` && o$10.has(t.category) && w$12(t.message) && typeof t.retryable == `boolean` && (t.correlationId === void 0 || N$8(t.correlationId)) && (t.revision === void 0 || t.category === `conflict` && P$8(t.revision)) && (t.retryAfterMilliseconds === void 0 || (t.category === `rate-limited` || t.category === `unavailable`) && t.retryable && D$10(t.retryAfterMilliseconds) && t.retryAfterMilliseconds <= 864e5) && (t.diagnostics === void 0 || I$6(t.diagnostics, S$13, 1e3));
 }
 function isPreviewMessage(t) {
-	if (!E$11(t) || !T$11(t, [
+	if (!E$12(t) || !T$12(t, [
 		`contractVersion`,
 		`kind`,
 		`channelId`,
@@ -256,27 +256,27 @@ function isPreviewMessage(t) {
 		`sequence`,
 		`type`,
 		`payload`
-	]) || t.contractVersion !== STUDIO_CONTRACT_VERSION || t.kind !== `preview-message` || !N$7(t.channelId) || !P$7(t.sessionGeneration) || !D$9(t.sequence) || typeof t.type != `string` || !E$11(t.payload)) return !1;
+	]) || t.contractVersion !== STUDIO_CONTRACT_VERSION || t.kind !== `preview-message` || !N$8(t.channelId) || !P$8(t.sessionGeneration) || !D$10(t.sequence) || typeof t.type != `string` || !E$12(t.payload)) return !1;
 	switch (t.type) {
-		case `studio.preview/ready`: return f$14(t.payload);
-		case `studio.preview/render`: return p$13(t.payload);
+		case `studio.preview/ready`: return f$16(t.payload);
+		case `studio.preview/render`: return p$16(t.payload);
 		case `studio.preview/rendered`: return isPreviewRenderedPayload(t.payload);
-		case `studio.preview/select`: return b$11(t.payload);
-		case `studio.preview/measure`: return h$11(t.payload);
-		case `studio.preview/measurements`: return g$11(t.payload);
-		case `studio.preview/error`: return x$12(t.payload);
+		case `studio.preview/select`: return b$12(t.payload);
+		case `studio.preview/measure`: return h$13(t.payload);
+		case `studio.preview/measurements`: return g$12(t.payload);
+		case `studio.preview/error`: return x$13(t.payload);
 		case `studio.preview/reload`:
-		case `studio.preview/teardown`: return d$13(t.payload);
-		case `studio.preview/activated`: return s$10(t.payload);
-		case `studio.preview/viewport`: return c$8(t.payload);
-		case `studio.preview/dispose`: return u$13(t.payload);
+		case `studio.preview/teardown`: return d$14(t.payload);
+		case `studio.preview/activated`: return s$11(t.payload);
+		case `studio.preview/viewport`: return c$9(t.payload);
+		case `studio.preview/dispose`: return u$14(t.payload);
 		default: return !1;
 	}
 }
-function s$10(e) {
-	return T$11(e, [`interaction`, `marker`]) && isPreviewMarker(e.marker) && (e.interaction === `activate` || e.interaction === `context-menu` || e.interaction === `focus`);
+function s$11(e) {
+	return T$12(e, [`interaction`, `marker`]) && isPreviewMarker(e.marker) && (e.interaction === `activate` || e.interaction === `context-menu` || e.interaction === `focus`);
 }
-function c$8(e) {
+function c$9(e) {
 	let t = Object.keys(e);
 	if (t.length === 0 || t.some((e) => ![
 		`height`,
@@ -284,83 +284,83 @@ function c$8(e) {
 		`width`
 	].includes(e))) return !1;
 	let n = Object.hasOwn(e, `viewport`), r = Object.hasOwn(e, `width`), i = Object.hasOwn(e, `height`);
-	return n === (r || i) ? !1 : n ? M$7(e.viewport) : (!r || l$13(e.width)) && (!i || l$13(e.height));
+	return n === (r || i) ? !1 : n ? M$8(e.viewport) : (!r || l$14(e.width)) && (!i || l$14(e.height));
 }
-function l$13(e) {
+function l$14(e) {
 	return typeof e == `number` && Number.isSafeInteger(e) && e >= 240 && e <= 1e4;
 }
-function u$13(e) {
-	return !j$9(e.reason) || Object.keys(e).some((e) => e !== `draftDigest` && e !== `reason`) ? !1 : e.draftDigest === void 0 || typeof e.draftDigest == `string` && i$14.test(e.draftDigest);
+function u$14(e) {
+	return !j$9(e.reason) || Object.keys(e).some((e) => e !== `draftDigest` && e !== `reason`) ? !1 : e.draftDigest === void 0 || typeof e.draftDigest == `string` && i$16.test(e.draftDigest);
 }
-function d$13(e) {
-	return T$11(e, [`reason`]) && j$9(e.reason);
+function d$14(e) {
+	return T$12(e, [`reason`]) && j$9(e.reason);
 }
-function f$14(e) {
-	return T$11(e, [
+function f$16(e) {
+	return T$12(e, [
 		`protocolVersion`,
 		`renderer`,
 		`viewports`
-	]) && e.protocolVersion === STUDIO_WIRE_PROTOCOL_VERSION && j$9(e.renderer) && F$7(e.viewports, M$7, 20);
+	]) && e.protocolVersion === STUDIO_WIRE_PROTOCOL_VERSION && j$9(e.renderer) && F$8(e.viewports, M$8, 20);
 }
-function p$13(e) {
-	return T$11(e, [
+function p$16(e) {
+	return T$12(e, [
 		`artifactId`,
 		`draftDigest`,
 		`draftRevision`,
 		`requestId`,
 		`viewport`
-	]) && N$7(e.artifactId) && typeof e.draftDigest == `string` && i$14.test(e.draftDigest) && P$7(e.draftRevision) && N$7(e.requestId) && M$7(e.viewport);
+	]) && N$8(e.artifactId) && typeof e.draftDigest == `string` && i$16.test(e.draftDigest) && P$8(e.draftRevision) && N$8(e.requestId) && M$8(e.viewport);
 }
 function isPreviewRenderedPayload(e) {
-	if (!E$11(e) || !T$11(e, [
+	if (!E$12(e) || !T$12(e, [
 		`requestId`,
 		`draftDigest`,
 		`markers`,
 		`markerMap`,
 		`diagnostics`
-	]) || !N$7(e.requestId) || typeof e.draftDigest != `string` || !i$14.test(e.draftDigest) || !F$7(e.markers, isPreviewMarker, 1e5) || new Set(e.markers).size !== e.markers.length || !I$5(e.diagnostics, S$12, 1e4) || !m$13(e.markerMap)) return !1;
+	]) || !N$8(e.requestId) || typeof e.draftDigest != `string` || !i$16.test(e.draftDigest) || !F$8(e.markers, isPreviewMarker, 1e5) || new Set(e.markers).size !== e.markers.length || !I$6(e.diagnostics, S$13, 1e4) || !m$15(e.markerMap)) return !1;
 	let t = e.markerMap;
 	if (Object.keys(t).length !== e.markers.length) return !1;
 	let n = Object.values(t);
 	return new Set(n).size === n.length && e.markers.every((n, r) => {
-		let i = a$11.exec(n);
+		let i = a$15.exec(n);
 		return i !== null && i[1] === e.draftDigest && Number(i[2]) === r && Object.hasOwn(t, n);
 	});
 }
-function m$13(e) {
-	if (!E$11(e)) return !1;
+function m$15(e) {
+	if (!E$12(e)) return !1;
 	let t = Object.entries(e);
-	return t.length <= 1e5 && t.every(([e, t]) => isPreviewMarker(e) && N$7(t));
+	return t.length <= 1e5 && t.every(([e, t]) => isPreviewMarker(e) && N$8(t));
 }
-function h$11(e) {
-	return T$11(e, [`requestId`, `markers`]) && N$7(e.requestId) && F$7(e.markers, isPreviewMarker, 1e3) && e.markers.length >= 1 && new Set(e.markers).size === e.markers.length;
+function h$13(e) {
+	return T$12(e, [`requestId`, `markers`]) && N$8(e.requestId) && F$8(e.markers, isPreviewMarker, 1e3) && e.markers.length >= 1 && new Set(e.markers).size === e.markers.length;
 }
-function g$11(e) {
-	if (!T$11(e, [
+function g$12(e) {
+	if (!T$12(e, [
 		`requestId`,
 		`draftDigest`,
 		`measurements`,
 		`unknown`,
 		`viewport`
-	]) || !N$7(e.requestId) || typeof e.draftDigest != `string` || !i$14.test(e.draftDigest) || !_$12(e.measurements) || !F$7(e.unknown, isPreviewMarker, 1e3) || new Set(e.unknown).size !== e.unknown.length || !y$12(e.viewport)) return !1;
+	]) || !N$8(e.requestId) || typeof e.draftDigest != `string` || !i$16.test(e.draftDigest) || !_$13(e.measurements) || !F$8(e.unknown, isPreviewMarker, 1e3) || new Set(e.unknown).size !== e.unknown.length || !y$13(e.viewport)) return !1;
 	let t = [...Object.keys(e.measurements), ...e.unknown];
-	return new Set(t).size === t.length && t.every((t) => a$11.exec(t)?.[1] === e.draftDigest);
+	return new Set(t).size === t.length && t.every((t) => a$15.exec(t)?.[1] === e.draftDigest);
 }
-function _$12(e) {
-	if (!E$11(e)) return !1;
+function _$13(e) {
+	if (!E$12(e)) return !1;
 	let t = Object.entries(e);
-	return t.length <= 1e3 && t.every(([e, t]) => isPreviewMarker(e) && I$5(t, v$12, 1e3) && t.length >= 1);
+	return t.length <= 1e3 && t.every(([e, t]) => isPreviewMarker(e) && I$6(t, v$13, 1e3) && t.length >= 1);
 }
-function v$12(e) {
-	return E$11(e) && T$11(e, [
+function v$13(e) {
+	return E$12(e) && T$12(e, [
 		`x`,
 		`y`,
 		`width`,
 		`height`
 	]) && k$9(e.x) && k$9(e.y) && A$9(e.width) && A$9(e.height);
 }
-function y$12(e) {
-	return E$11(e) && T$11(e, [
+function y$13(e) {
+	return E$12(e) && T$12(e, [
 		`width`,
 		`height`,
 		`scrollX`,
@@ -368,18 +368,18 @@ function y$12(e) {
 		`devicePixelRatio`
 	]) && A$9(e.width) && A$9(e.height) && k$9(e.scrollX) && k$9(e.scrollY) && typeof e.devicePixelRatio == `number` && Number.isFinite(e.devicePixelRatio) && e.devicePixelRatio > 0 && e.devicePixelRatio <= 100;
 }
-function b$11(e) {
-	return T$11(e, [`nodeId`], [`reveal`]) && N$7(e.nodeId) && (e.reveal === void 0 || typeof e.reveal == `boolean`);
+function b$12(e) {
+	return T$12(e, [`nodeId`], [`reveal`]) && N$8(e.nodeId) && (e.reveal === void 0 || typeof e.reveal == `boolean`);
 }
-function x$12(e) {
-	return T$11(e, [
+function x$13(e) {
+	return T$12(e, [
 		`code`,
 		`message`,
 		`retryable`
-	], [`correlationId`]) && j$9(e.code) && w$11(e.message) && typeof e.retryable == `boolean` && (e.correlationId === void 0 || N$7(e.correlationId));
+	], [`correlationId`]) && j$9(e.code) && w$12(e.message) && typeof e.retryable == `boolean` && (e.correlationId === void 0 || N$8(e.correlationId));
 }
-function S$12(e) {
-	return !E$11(e) || !T$11(e, [
+function S$13(e) {
+	return !E$12(e) || !T$12(e, [
 		`code`,
 		`severity`,
 		`message`
@@ -392,29 +392,29 @@ function S$12(e) {
 		`warning`,
 		`error`,
 		`blocking`
-	].includes(e.severity) || !w$11(e.message) || e.location !== void 0 && !C$12(e.location) || e.parameters !== void 0 && (!E$11(e.parameters) || Object.keys(e.parameters).length > 20 || !Object.keys(e.parameters).every((e) => R$5(e)) || !Object.values(e.parameters).every((e) => e === null || typeof e == `boolean` || typeof e == `string` || typeof e == `number` && Number.isFinite(e))) ? !1 : e.remediations === void 0 || F$7(e.remediations, j$9, 10);
+	].includes(e.severity) || !w$12(e.message) || e.location !== void 0 && !C$13(e.location) || e.parameters !== void 0 && (!E$12(e.parameters) || Object.keys(e.parameters).length > 20 || !Object.keys(e.parameters).every((e) => R$6(e)) || !Object.values(e.parameters).every((e) => e === null || typeof e == `boolean` || typeof e == `string` || typeof e == `number` && Number.isFinite(e))) ? !1 : e.remediations === void 0 || F$8(e.remediations, j$9, 10);
 }
-function C$12(e) {
-	return !E$11(e) || !T$11(e, [], [
+function C$13(e) {
+	return !E$12(e) || !T$12(e, [], [
 		`artifactId`,
 		`nodeId`,
 		`fieldPath`,
 		`jsonPointer`
-	]) ? !1 : (e.artifactId === void 0 || N$7(e.artifactId)) && (e.nodeId === void 0 || N$7(e.nodeId)) && (e.fieldPath === void 0 || F$7(e.fieldPath, M$7, 32)) && (e.jsonPointer === void 0 || typeof e.jsonPointer == `string` && e.jsonPointer.length <= 1e3);
+	]) ? !1 : (e.artifactId === void 0 || N$8(e.artifactId)) && (e.nodeId === void 0 || N$8(e.nodeId)) && (e.fieldPath === void 0 || F$8(e.fieldPath, M$8, 32)) && (e.jsonPointer === void 0 || typeof e.jsonPointer == `string` && e.jsonPointer.length <= 1e3);
 }
-function w$11(e) {
-	return E$11(e) && T$11(e, [`key`], [`defaultMessage`]) && j$9(e.key) && (e.defaultMessage === void 0 || typeof e.defaultMessage == `string` && e.defaultMessage.length > 0 && e.defaultMessage.length <= 500);
+function w$12(e) {
+	return E$12(e) && T$12(e, [`key`], [`defaultMessage`]) && j$9(e.key) && (e.defaultMessage === void 0 || typeof e.defaultMessage == `string` && e.defaultMessage.length > 0 && e.defaultMessage.length <= 500);
 }
-function T$11(e, t, n = []) {
+function T$12(e, t, n = []) {
 	let r = /* @__PURE__ */ new Set([...t, ...n]);
 	return t.every((t) => Object.hasOwn(e, t)) && Object.keys(e).every((e) => r.has(e));
 }
-function E$11(e) {
+function E$12(e) {
 	if (typeof e != `object` || !e || Array.isArray(e)) return !1;
 	let t = Object.getPrototypeOf(e);
 	return t === Object.prototype || t === null;
 }
-function D$9(e) {
+function D$10(e) {
 	return typeof e == `number` && Number.isSafeInteger(e) && e >= 0;
 }
 var O$10 = 1e8;
@@ -425,44 +425,44 @@ function A$9(e) {
 	return typeof e == `number` && Number.isFinite(e) && e >= 0 && e <= O$10;
 }
 function j$9(e) {
-	return typeof e == `string` && e.length <= 160 && n$6.test(e);
+	return typeof e == `string` && e.length <= 160 && n$7.test(e);
 }
-function M$7(e) {
-	return typeof e == `string` && e.length <= 100 && !z$4(e) && r$10.test(e);
+function M$8(e) {
+	return typeof e == `string` && e.length <= 100 && !z$5(e) && r$11.test(e);
 }
-function N$7(e) {
-	return typeof e == `string` && e.length <= 240 && !z$4(e) && /^[A-Za-z0-9][A-Za-z0-9._:/-]*$/u.test(e);
+function N$8(e) {
+	return typeof e == `string` && e.length <= 240 && !z$5(e) && /^[A-Za-z0-9][A-Za-z0-9._:/-]*$/u.test(e);
 }
 function isPreviewMarker(e, t) {
 	if (typeof e != `string`) return !1;
-	let n = a$11.exec(e);
+	let n = a$15.exec(e);
 	return n !== null && (t === void 0 || n[1] === t);
 }
-function P$7(e) {
+function P$8(e) {
 	return typeof e == `string` && e.length >= 1 && e.length <= 200;
 }
-function F$7(e, t, n) {
-	return I$5(e, t, n);
+function F$8(e, t, n) {
+	return I$6(e, t, n);
 }
-function I$5(e, t, n) {
-	if (!Array.isArray(e) || e.length > n || !L$5(e)) return !1;
+function I$6(e, t, n) {
+	if (!Array.isArray(e) || e.length > n || !L$6(e)) return !1;
 	for (let n of e) if (!t(n)) return !1;
 	return !0;
 }
-function L$5(e) {
+function L$6(e) {
 	if (Object.getPrototypeOf(e) !== Array.prototype || Object.getOwnPropertySymbols(e).length) return !1;
 	let t = Object.getOwnPropertyNames(e);
 	return t.length === e.length + 1 && t[e.length] === `length` && t.slice(0, -1).every((e, t) => e === String(t));
 }
-function R$5(e) {
-	if (e.length === 0 || e.length > 200 || z$4(e)) return !1;
+function R$6(e) {
+	if (e.length === 0 || e.length > 200 || z$5(e)) return !1;
 	for (let t = 0; t < e.length; t += 1) {
 		let n = e.charCodeAt(t);
 		if (n <= 31 || n === 127) return !1;
 	}
 	return !0;
 }
-function z$4(e) {
+function z$5(e) {
 	return e === `__proto__` || e === `prototype` || e === `constructor`;
 }
 //#endregion
@@ -9323,11 +9323,11 @@ var StudioCommandError = class extends Error {
 function applyCommand(n, r) {
 	if (r.artifactId !== n.id) throw new StudioCommandError(`node-not-found`, `Command targets ${r.artifactId}, not Blueprint ${n.id}.`);
 	let o = cloneContractValue(n);
-	if (r.type === `studio.command/batch`) for (let e of i$13(r.payload.operations)) applyOperation(o, e);
-	else r.type === `studio.command/apply-pattern` ? _$11(o, r.payload) : r.type === `studio.command/reset-inherited-property` ? y$11(o, r.payload) : applyOperation(o, r);
+	if (r.type === `studio.command/batch`) for (let e of i$15(r.payload.operations)) applyOperation(o, e);
+	else r.type === `studio.command/apply-pattern` ? _$12(o, r.payload) : r.type === `studio.command/reset-inherited-property` ? y$12(o, r.payload) : applyOperation(o, r);
 	return o;
 }
-function i$13(e) {
+function i$15(e) {
 	if (e.length === 0 || e.length > 100) throw new StudioCommandError(`invalid-batch`, `A batch must contain between 1 and 100 operations, not ${e.length}.`);
 	for (let n of e) {
 		let e = n.type;
@@ -9339,34 +9339,34 @@ function applyOperation(n, r) {
 	switch (r.type) {
 		case `studio.command/insert-node`:
 		case `studio.command/restore-node`:
-			h$10(n, r.payload.node), A$8(E$10(n, r.payload.destination), r.payload.destination.position, cloneContractValue(r.payload.node));
+			h$12(n, r.payload.node), A$8(E$11(n, r.payload.destination), r.payload.destination.position, cloneContractValue(r.payload.node));
 			break;
 		case `studio.command/remove-node`: {
 			let e = j$8(n.roots, r.payload.nodeId);
-			if (e === void 0) throw M$6(r.payload.nodeId);
-			e.collection.splice(e.index, 1), x$11(n, e);
+			if (e === void 0) throw M$7(r.payload.nodeId);
+			e.collection.splice(e.index, 1), x$12(n, e);
 			break;
 		}
 		case `studio.command/move-node`: {
 			let e = j$8(n.roots, r.payload.nodeId);
-			if (e === void 0) throw M$6(r.payload.nodeId);
+			if (e === void 0) throw M$7(r.payload.nodeId);
 			let i = r.payload.destination.parentNodeId;
 			if (i === r.payload.nodeId || i !== void 0 && j$8([e.node], i) !== void 0) throw new StudioCommandError(`illegal-move`, `A node cannot be moved into itself.`);
 			let [a] = e.collection.splice(e.index, 1);
-			if (a === void 0) throw M$6(r.payload.nodeId);
-			x$11(n, e), A$8(E$10(n, r.payload.destination), r.payload.destination.position, a);
+			if (a === void 0) throw M$7(r.payload.nodeId);
+			x$12(n, e), A$8(E$11(n, r.payload.destination), r.payload.destination.position, a);
 			break;
 		}
 		case `studio.command/duplicate-node`: {
 			let t = j$8(n.roots, r.payload.nodeId);
-			if (t === void 0) throw M$6(r.payload.nodeId);
-			let i = f$13(n, t.node, r.payload.idMap), a = g$10(cloneContractValue(t.node), i);
-			r.payload.destination === void 0 ? A$8(t.collection, t.index + 1, a) : A$8(E$10(n, r.payload.destination), r.payload.destination.position, a);
+			if (t === void 0) throw M$7(r.payload.nodeId);
+			let i = f$15(n, t.node, r.payload.idMap), a = g$11(cloneContractValue(t.node), i);
+			r.payload.destination === void 0 ? A$8(t.collection, t.index + 1, a) : A$8(E$11(n, r.payload.destination), r.payload.destination.position, a);
 			break;
 		}
 		case `studio.command/reorder-children`: {
-			let e = C$11(n, r.payload.parentNodeId, r.payload.slot);
-			if (!S$11(e.map((e) => e.id), r.payload.order)) throw new StudioCommandError(`invalid-order`, `The requested order is not a permutation of the current children.`);
+			let e = C$12(n, r.payload.parentNodeId, r.payload.slot);
+			if (!S$12(e.map((e) => e.id), r.payload.order)) throw new StudioCommandError(`invalid-order`, `The requested order is not a permutation of the current children.`);
 			let i = new Map(e.map((e) => [e.id, e])), a = r.payload.order.map((e) => {
 				let n = i.get(e);
 				if (n === void 0) throw new StudioCommandError(`invalid-order`, `The requested order is not a permutation of the current children.`);
@@ -9377,84 +9377,84 @@ function applyOperation(n, r) {
 		}
 		case `studio.command/set-property`: {
 			let t = j$8(n.roots, r.payload.nodeId);
-			if (t === void 0) throw M$6(r.payload.nodeId);
+			if (t === void 0) throw M$7(r.payload.nodeId);
 			if (r.payload.viewport === void 0) O$9(t.node.properties, r.payload.property, cloneContractValue(r.payload.value));
 			else {
-				let n = t.node.responsive ??= {}, i = D$8(n, r.payload.property);
+				let n = t.node.responsive ??= {}, i = D$9(n, r.payload.property);
 				i === void 0 && (i = {}, O$9(n, r.payload.property, i)), O$9(i, r.payload.viewport, cloneContractValue(r.payload.value));
 			}
 			break;
 		}
 		case `studio.command/unset-property`: {
 			let e = j$8(n.roots, r.payload.nodeId);
-			if (e === void 0) throw M$6(r.payload.nodeId);
+			if (e === void 0) throw M$7(r.payload.nodeId);
 			if (r.payload.viewport === void 0) {
-				if (D$8(e.node.properties, r.payload.property) === void 0) throw N$6(r.payload.nodeId, r.payload.property);
+				if (D$9(e.node.properties, r.payload.property) === void 0) throw N$7(r.payload.nodeId, r.payload.property);
 				k$8(e.node.properties, r.payload.property);
 			} else {
-				let t = e.node.responsive, n = t === void 0 ? void 0 : D$8(t, r.payload.property);
-				if (t === void 0 || n === void 0 || D$8(n, r.payload.viewport) === void 0) throw N$6(r.payload.nodeId, r.payload.property, r.payload.viewport);
+				let t = e.node.responsive, n = t === void 0 ? void 0 : D$9(t, r.payload.property);
+				if (t === void 0 || n === void 0 || D$9(n, r.payload.viewport) === void 0) throw N$7(r.payload.nodeId, r.payload.property, r.payload.viewport);
 				k$8(n, r.payload.viewport), Object.keys(n).length === 0 && k$8(t, r.payload.property), Object.keys(t).length === 0 && delete e.node.responsive;
 			}
 			break;
 		}
 		case `studio.command/set-size-role`: {
 			let e = j$8(n.roots, r.payload.nodeId);
-			if (e === void 0) throw M$6(r.payload.nodeId);
+			if (e === void 0) throw M$7(r.payload.nodeId);
 			if (r.payload.viewport === void 0) O$9(e.node.sizeRoles ??= {}, r.payload.axis, r.payload.role);
 			else {
-				let t = e.node.responsiveSizeRoles ??= {}, n = D$8(t, r.payload.axis);
+				let t = e.node.responsiveSizeRoles ??= {}, n = D$9(t, r.payload.axis);
 				n === void 0 && (n = {}, O$9(t, r.payload.axis, n)), O$9(n, r.payload.viewport, r.payload.role);
 			}
 			break;
 		}
 		case `studio.command/unset-size-role`: {
 			let e = j$8(n.roots, r.payload.nodeId);
-			if (e === void 0) throw M$6(r.payload.nodeId);
+			if (e === void 0) throw M$7(r.payload.nodeId);
 			if (r.payload.viewport === void 0) {
 				let t = e.node.sizeRoles;
-				if (t === void 0 || D$8(t, r.payload.axis) === void 0) throw P$6(r.payload.nodeId, r.payload.axis);
+				if (t === void 0 || D$9(t, r.payload.axis) === void 0) throw P$7(r.payload.nodeId, r.payload.axis);
 				k$8(t, r.payload.axis), Object.keys(t).length === 0 && delete e.node.sizeRoles;
 			} else {
-				let t = e.node.responsiveSizeRoles, n = t === void 0 ? void 0 : D$8(t, r.payload.axis);
-				if (t === void 0 || n === void 0 || D$8(n, r.payload.viewport) === void 0) throw P$6(r.payload.nodeId, r.payload.axis, r.payload.viewport);
+				let t = e.node.responsiveSizeRoles, n = t === void 0 ? void 0 : D$9(t, r.payload.axis);
+				if (t === void 0 || n === void 0 || D$9(n, r.payload.viewport) === void 0) throw P$7(r.payload.nodeId, r.payload.axis, r.payload.viewport);
 				k$8(n, r.payload.viewport), Object.keys(n).length === 0 && k$8(t, r.payload.axis), Object.keys(t).length === 0 && delete e.node.responsiveSizeRoles;
 			}
 			break;
 		}
 		case `studio.command/set-binding`: {
 			let t = j$8(n.roots, r.payload.nodeId);
-			if (t === void 0) throw M$6(r.payload.nodeId);
+			if (t === void 0) throw M$7(r.payload.nodeId);
 			O$9(t.node.bindings, r.payload.port, cloneContractValue(r.payload.binding));
 			break;
 		}
 		case `studio.command/remove-binding`: {
 			let e = j$8(n.roots, r.payload.nodeId);
-			if (e === void 0) throw M$6(r.payload.nodeId);
-			if (D$8(e.node.bindings, r.payload.port) === void 0) throw F$6(r.payload.nodeId, r.payload.port);
+			if (e === void 0) throw M$7(r.payload.nodeId);
+			if (D$9(e.node.bindings, r.payload.port) === void 0) throw F$7(r.payload.nodeId, r.payload.port);
 			k$8(e.node.bindings, r.payload.port);
 			break;
 		}
-		default: w$10(r);
+		default: w$11(r);
 	}
 }
-function f$13(e, n, r) {
-	let i = m$12(n), a = /* @__PURE__ */ new Map();
+function f$15(e, n, r) {
+	let i = m$14(n), a = /* @__PURE__ */ new Map();
 	for (let [e, t] of Object.entries(r)) a.set(e, t);
-	if (a.size !== i.size) throw p$12();
+	if (a.size !== i.size) throw p$15();
 	let o = /* @__PURE__ */ new Set();
 	for (let n of i) {
 		let r = a.get(n);
-		if (r === void 0) throw p$12();
+		if (r === void 0) throw p$15();
 		if (o.has(r)) throw new StudioCommandError(`invalid-id-map`, `The identifier map assigns ${r} more than once.`);
 		if (o.add(r), j$8(e.roots, r) !== void 0) throw new StudioCommandError(`duplicate-node`, `Node identifier ${r} is already present.`);
 	}
 	return a;
 }
-function p$12() {
+function p$15() {
 	return new StudioCommandError(`invalid-id-map`, `The identifier map must remap every node of the duplicated subtree exactly once.`);
 }
-function m$12(e) {
+function m$14(e) {
 	let t = /* @__PURE__ */ new Set(), n = [e];
 	for (; n.length > 0;) {
 		let e = n.pop();
@@ -9464,37 +9464,37 @@ function m$12(e) {
 	}
 	return t;
 }
-function h$10(e, n) {
-	for (let r of m$12(n)) if (j$8(e.roots, r) !== void 0) throw new StudioCommandError(`duplicate-node`, `Node identifier ${r} is already present.`);
+function h$12(e, n) {
+	for (let r of m$14(n)) if (j$8(e.roots, r) !== void 0) throw new StudioCommandError(`duplicate-node`, `Node identifier ${r} is already present.`);
 }
-function g$10(e, t) {
+function g$11(e, t) {
 	let n = [e];
 	for (; n.length > 0;) {
 		let e = n.pop();
 		if (e === void 0) break;
 		let r = t.get(e.id);
-		if (r === void 0) throw p$12();
+		if (r === void 0) throw p$15();
 		e.id = r;
 		for (let t of Object.values(e.slots)) n.push(...t);
 	}
 	return e;
 }
-function _$11(n, r) {
+function _$12(n, r) {
 	let i = /* @__PURE__ */ new Set();
-	for (let e of r.nodes) for (let t of m$12(e)) i.add(t);
+	for (let e of r.nodes) for (let t of m$14(e)) i.add(t);
 	let a = /* @__PURE__ */ new Map();
 	for (let [e, t] of Object.entries(r.idMap)) a.set(e, t);
-	if (a.size !== i.size) throw p$12();
+	if (a.size !== i.size) throw p$15();
 	let o = /* @__PURE__ */ new Set();
 	for (let e of i) {
 		let r = a.get(e);
-		if (r === void 0) throw p$12();
+		if (r === void 0) throw p$15();
 		if (o.has(r)) throw new StudioCommandError(`invalid-id-map`, `The identifier map assigns ${r} more than once.`);
 		if (o.add(r), j$8(n.roots, r) !== void 0) throw new StudioCommandError(`duplicate-node`, `Node identifier ${r} is already present.`);
 	}
-	let s = E$10(n, r.destination);
+	let s = E$11(n, r.destination);
 	for (let [t, n] of r.nodes.entries()) {
-		let i = g$10(cloneContractValue(n), a);
+		let i = g$11(cloneContractValue(n), a);
 		O$9(i.extensions ??= {}, `studio.pattern/source`, {
 			id: r.pattern.id,
 			revision: r.pattern.revision,
@@ -9502,10 +9502,10 @@ function _$11(n, r) {
 		}), A$8(s, r.destination.position + t, i);
 	}
 }
-function v$11(e, n) {
+function v$12(e, n) {
 	let r = j$8(e.roots, n.nodeId);
-	if (r === void 0) throw M$6(n.nodeId);
-	let i = r.node.responsive, a = i === void 0 ? void 0 : D$8(i, n.property);
+	if (r === void 0) throw M$7(n.nodeId);
+	let i = r.node.responsive, a = i === void 0 ? void 0 : D$9(i, n.property);
 	if (i === void 0 || a === void 0 || Object.keys(a).length === 0) throw new StudioCommandError(`property-not-found`, `Property ${n.property} has no responsive overrides on node ${n.nodeId}.`);
 	return {
 		node: r.node,
@@ -9513,16 +9513,16 @@ function v$11(e, n) {
 		values: a
 	};
 }
-function y$11(e, t) {
-	let { node: n, responsive: r } = v$11(e, t);
+function y$12(e, t) {
+	let { node: n, responsive: r } = v$12(e, t);
 	k$8(r, t.property), Object.keys(r).length === 0 && delete n.responsive;
 }
-function x$11(e, t) {
+function x$12(e, t) {
 	if (t.collection.length > 0 || t.parentNodeId === void 0 || t.slot === void 0) return;
 	let n = j$8(e.roots, t.parentNodeId)?.node;
-	n !== void 0 && D$8(n.slots, t.slot) === t.collection && k$8(n.slots, t.slot);
+	n !== void 0 && D$9(n.slots, t.slot) === t.collection && k$8(n.slots, t.slot);
 }
-function S$11(e, t) {
+function S$12(e, t) {
 	if (e.length !== t.length) return !1;
 	let n = /* @__PURE__ */ new Map();
 	for (let t of e) n.set(t, (n.get(t) ?? 0) + 1);
@@ -9533,30 +9533,30 @@ function S$11(e, t) {
 	}
 	return !0;
 }
-function C$11(e, n, r) {
+function C$12(e, n, r) {
 	if (n === void 0) return e.roots;
 	if (r === void 0) throw new StudioCommandError(`parent-not-found`, `A parent destination requires a named slot.`);
 	let i = j$8(e.roots, n)?.node;
 	if (i === void 0) throw new StudioCommandError(`parent-not-found`, `Parent node ${n} was not found.`);
-	let a = D$8(i.slots, r);
+	let a = D$9(i.slots, r);
 	if (a === void 0) throw new StudioCommandError(`invalid-order`, `Slot ${r} on node ${n} has no children to reorder.`);
 	return a;
 }
-function w$10(e) {
-	throw new StudioCommandError(`unsupported-command`, `Unsupported Blueprint command type: ${T$10(e)}.`);
+function w$11(e) {
+	throw new StudioCommandError(`unsupported-command`, `Unsupported Blueprint command type: ${T$11(e)}.`);
 }
-function T$10(e) {
+function T$11(e) {
 	return typeof e == `object` && e && `type` in e && typeof e.type == `string` && e.type.length <= 160 && /^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*\/[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*$/u.test(e.type) ? e.type : `unknown`;
 }
-function E$10(e, n) {
+function E$11(e, n) {
 	if (n.parentNodeId === void 0) return e.roots;
 	if (n.slot === void 0) throw new StudioCommandError(`parent-not-found`, `A parent destination requires a named slot.`);
 	let r = j$8(e.roots, n.parentNodeId)?.node;
 	if (r === void 0) throw new StudioCommandError(`parent-not-found`, `Parent node ${n.parentNodeId} was not found.`);
-	let i = D$8(r.slots, n.slot);
+	let i = D$9(r.slots, n.slot);
 	return i === void 0 && (i = [], O$9(r.slots, n.slot, i)), i;
 }
-function D$8(e, t) {
+function D$9(e, t) {
 	return Object.hasOwn(e, t) ? e[t] : void 0;
 }
 function O$9(e, t, n) {
@@ -9590,16 +9590,16 @@ function j$8(e, t, n, r) {
 		}
 	}
 }
-function M$6(e) {
+function M$7(e) {
 	return new StudioCommandError(`node-not-found`, `Node ${e} was not found.`);
 }
-function N$6(e, n, r) {
+function N$7(e, n, r) {
 	return new StudioCommandError(`property-not-found`, `Property ${r === void 0 ? n : `${n} for viewport ${r}`} is not set on node ${e}.`);
 }
-function P$6(e, n, r) {
+function P$7(e, n, r) {
 	return new StudioCommandError(`property-not-found`, `No size role is set on node ${e} for ${r === void 0 ? `axis ${n}` : `axis ${n} for viewport ${r}`}.`);
 }
-function F$6(e, n) {
+function F$7(e, n) {
 	return new StudioCommandError(`binding-not-found`, `Binding ${n} is not present on node ${e}.`);
 }
 //#endregion
@@ -9610,7 +9610,7 @@ function applyEntryCommand(n, i) {
 	let a = cloneContractValue(n), o = i.payload.fieldPath, s = a.values;
 	for (let [n, a] of o.entries()) {
 		if (n === o.length - 1) {
-			r$9(s, a, cloneContractValue(i.payload.value));
+			r$10(s, a, cloneContractValue(i.payload.value));
 			break;
 		}
 		let c = Object.hasOwn(s, a) ? s[a] : void 0;
@@ -9619,7 +9619,7 @@ function applyEntryCommand(n, i) {
 	}
 	return a;
 }
-function r$9(e, t, n) {
+function r$10(e, t, n) {
 	Object.defineProperty(e, t, {
 		configurable: !0,
 		enumerable: !0,
@@ -9629,9 +9629,9 @@ function r$9(e, t, n) {
 }
 //#endregion
 //#region node_modules/@kumwe/studio-core/dist/negotiation.js
-var t$5 = [`studio.port/artifact`];
+var t$7 = [`studio.port/artifact`];
 function negotiateCapabilities(n, r = {}) {
-	let i = r.supportedProtocolVersions ?? [STUDIO_WIRE_PROTOCOL_VERSION], a = r.requiredPorts ?? t$5, o = r.optionalPorts ?? [], s = [], c = n.ports.map((e) => e.id), l = new Set(c), u = i.find((e) => n.protocolVersions.includes(e));
+	let i = r.supportedProtocolVersions ?? [STUDIO_WIRE_PROTOCOL_VERSION], a = r.requiredPorts ?? t$7, o = r.optionalPorts ?? [], s = [], c = n.ports.map((e) => e.id), l = new Set(c), u = i.find((e) => n.protocolVersions.includes(e));
 	u === void 0 && s.push({
 		code: `studio.host/no-common-protocol-version`,
 		message: {
@@ -9676,7 +9676,7 @@ Object.freeze([
 	`model`,
 	`read-only`
 ]);
-var r$8 = [
+var r$9 = [
 	`studio.command/apply-pattern`,
 	`studio.command/batch`,
 	`studio.command/duplicate-node`,
@@ -9693,7 +9693,7 @@ var r$8 = [
 	`studio.command/unset-property`,
 	`studio.command/unset-size-role`
 ];
-var i$12 = [
+var i$14 = [
 	`studio.command/duplicate-node`,
 	`studio.command/insert-node`,
 	`studio.command/move-node`,
@@ -9701,20 +9701,20 @@ var i$12 = [
 	`studio.command/reorder-children`,
 	`studio.command/restore-node`
 ];
-var a$10 = Object.freeze({
-	blueprint: m$11(r$8),
-	content: m$11([`studio.command/set-field-value`]),
-	hybrid: m$11([
+var a$14 = Object.freeze({
+	blueprint: m$13(r$9),
+	content: m$13([`studio.command/set-field-value`]),
+	hybrid: m$13([
 		`studio.command/batch`,
-		...i$12,
+		...i$14,
 		`studio.command/set-field-value`
 	]),
-	model: m$11([`studio.command/add-model-field`]),
-	"read-only": m$11([])
+	model: m$13([`studio.command/add-model-field`]),
+	"read-only": m$13([])
 });
-var o$7 = m$11(i$12);
+var o$9 = m$13(i$14);
 function permittedCommandTypes(e) {
-	return a$10[e];
+	return a$14[e];
 }
 function resolveSessionMode(e) {
 	if (e.sessionState === `read-only`) return `read-only`;
@@ -9725,7 +9725,7 @@ function resolveSessionMode(e) {
 	return e.mode;
 }
 function assertModePermitsCommandType(e, n) {
-	if (!a$10[e].has(n)) throw new StudioCommandError(`mode-forbidden`, `Command type ${n} is not permitted in ${e} mode.`);
+	if (!a$14[e].has(n)) throw new StudioCommandError(`mode-forbidden`, `Command type ${n} is not permitted in ${e} mode.`);
 }
 function assertHybridCommandInBounds(n, r) {
 	switch (r.type) {
@@ -9733,8 +9733,8 @@ function assertHybridCommandInBounds(n, r) {
 			for (let i of r.payload.operations) {
 				let r = i.type;
 				if (r === `studio.command/batch` || r === `studio.command/apply-pattern` || r === `studio.command/reset-inherited-property`) return;
-				if (!o$7.has(i.type)) throw new StudioCommandError(`mode-forbidden`, `Batch operation type ${i.type} is not permitted in hybrid mode.`);
-				s$9(n, i);
+				if (!o$9.has(i.type)) throw new StudioCommandError(`mode-forbidden`, `Batch operation type ${i.type} is not permitted in hybrid mode.`);
+				s$10(n, i);
 				try {
 					applyOperation(n, i);
 				} catch {
@@ -9744,41 +9744,41 @@ function assertHybridCommandInBounds(n, r) {
 			return;
 		case `studio.command/apply-pattern`:
 		case `studio.command/reset-inherited-property`: throw new StudioCommandError(`mode-forbidden`, `Command type ${r.type} is not permitted in hybrid mode.`);
-		default: s$9(n, r);
+		default: s$10(n, r);
 	}
 }
-function s$9(e, n) {
+function s$10(e, n) {
 	switch (n.type) {
 		case `studio.command/insert-node`:
 		case `studio.command/restore-node`:
-			f$12(n.payload.node), l$12(e, n.payload.destination, n.payload.node);
+			f$14(n.payload.node), l$13(e, n.payload.destination, n.payload.node);
 			return;
 		case `studio.command/remove-node`: {
-			let t = c$7(e.roots, n.payload.nodeId);
+			let t = c$8(e.roots, n.payload.nodeId);
 			if (t === void 0) return;
-			f$12(t.node), u$12(t.parent, t.slot);
+			f$14(t.node), u$13(t.parent, t.slot);
 			return;
 		}
 		case `studio.command/move-node`: {
-			let t = c$7(e.roots, n.payload.nodeId);
+			let t = c$8(e.roots, n.payload.nodeId);
 			if (t === void 0) return;
-			f$12(t.node), u$12(t.parent, t.slot), l$12(e, n.payload.destination, t.node);
+			f$14(t.node), u$13(t.parent, t.slot), l$13(e, n.payload.destination, t.node);
 			return;
 		}
 		case `studio.command/duplicate-node`: {
-			let t = c$7(e.roots, n.payload.nodeId);
+			let t = c$8(e.roots, n.payload.nodeId);
 			if (t === void 0) return;
-			f$12(t.node), n.payload.destination === void 0 ? (u$12(t.parent, t.slot), t.parent !== void 0 && d$12(t.parent, t.slot, t.node)) : l$12(e, n.payload.destination, t.node);
+			f$14(t.node), n.payload.destination === void 0 ? (u$13(t.parent, t.slot), t.parent !== void 0 && d$13(t.parent, t.slot, t.node)) : l$13(e, n.payload.destination, t.node);
 			return;
 		}
 		case `studio.command/reorder-children`:
-			if (n.payload.parentNodeId === void 0) throw p$11();
-			u$12(c$7(e.roots, n.payload.parentNodeId)?.node, n.payload.slot);
+			if (n.payload.parentNodeId === void 0) throw p$14();
+			u$13(c$8(e.roots, n.payload.parentNodeId)?.node, n.payload.slot);
 			return;
 		default: throw new StudioCommandError(`mode-forbidden`, `Batch operation type ${n.type} is not permitted in hybrid mode.`);
 	}
 }
-function c$7(e, t, n, r) {
+function c$8(e, t, n, r) {
 	for (let i of e) {
 		if (i.id === t) return n === void 0 ? { node: i } : r === void 0 ? {
 			node: i,
@@ -9789,25 +9789,25 @@ function c$7(e, t, n, r) {
 			slot: r
 		};
 		for (let [e, n] of Object.entries(i.slots)) {
-			let r = c$7(n, t, i, e);
+			let r = c$8(n, t, i, e);
 			if (r !== void 0) return r;
 		}
 	}
 }
-function l$12(e, t, n) {
-	if (t.parentNodeId === void 0) throw p$11();
-	let r = c$7(e.roots, t.parentNodeId)?.node;
-	r !== void 0 && (u$12(r, t.slot), d$12(r, t.slot, n));
+function l$13(e, t, n) {
+	if (t.parentNodeId === void 0) throw p$14();
+	let r = c$8(e.roots, t.parentNodeId)?.node;
+	r !== void 0 && (u$13(r, t.slot), d$13(r, t.slot, n));
 }
-function u$12(e, n) {
-	if (e === void 0) throw p$11();
+function u$13(e, n) {
+	if (e === void 0) throw p$14();
 	if (e.authoring.mode !== `structural` && (n === void 0 || e.authoring.slots?.[n]?.composable !== !0)) throw new StudioCommandError(`mode-forbidden`, `Hybrid composition is bounded to structural slots; node ${e.id} declares neither structural authoring nor a composable marker for the affected slot.`);
 }
-function d$12(e, n, r) {
+function d$13(e, n, r) {
 	let i = (n === void 0 ? void 0 : e.authoring.slots?.[n])?.allowedBlocks ?? e.authoring.allowedBlocks;
 	if (i !== void 0 && !i.includes(r.type)) throw new StudioCommandError(`mode-forbidden`, `Block type ${r.type} is not an allowed block inside the composable region of node ${e.id}.`);
 }
-function f$12(e) {
+function f$14(e) {
 	let n = [e];
 	for (; n.length > 0;) {
 		let e = n.pop();
@@ -9816,10 +9816,10 @@ function f$12(e) {
 		for (let t of Object.values(e.slots)) n.push(...t);
 	}
 }
-function p$11() {
+function p$14() {
 	return new StudioCommandError(`mode-forbidden`, `Hybrid composition is bounded to structural slots; the document roots are out of bounds.`);
 }
-function m$11(e) {
+function m$13(e) {
 	let t = new Set(e), n = () => {
 		throw TypeError(`The permitted command-type table is immutable.`);
 	};
@@ -9831,7 +9831,7 @@ function m$11(e) {
 }
 //#endregion
 //#region node_modules/@kumwe/studio-core/dist/profile-validator.js
-var e$5 = /* @__PURE__ */ new Set([
+var e$8 = /* @__PURE__ */ new Set([
 	`array`,
 	`boolean`,
 	`integer`,
@@ -9840,7 +9840,7 @@ var e$5 = /* @__PURE__ */ new Set([
 	`object`,
 	`string`
 ]);
-var t$4 = new Set(`$defs.$id.$ref.$schema.additionalProperties.allOf.anyOf.const.contains.default.dependentRequired.description.else.enum.examples.exclusiveMaximum.exclusiveMinimum.if.items.maxItems.maxContains.maxLength.maxProperties.maximum.minItems.minContains.minLength.minProperties.minimum.multipleOf.not.oneOf.pattern.prefixItems.properties.propertyNames.readOnly.required.then.title.type.uniqueItems.writeOnly`.split(`.`));
+var t$6 = new Set(`$defs.$id.$ref.$schema.additionalProperties.allOf.anyOf.const.contains.default.dependentRequired.description.else.enum.examples.exclusiveMaximum.exclusiveMinimum.if.items.maxItems.maxContains.maxLength.maxProperties.maximum.minItems.minContains.minLength.minProperties.minimum.multipleOf.not.oneOf.pattern.prefixItems.properties.propertyNames.readOnly.required.then.title.type.uniqueItems.writeOnly`.split(`.`));
 var CompiledSchemaValidator = class {
 	errors = null;
 	#program;
@@ -9848,13 +9848,13 @@ var CompiledSchemaValidator = class {
 		this.#program = e;
 	}
 	validate(e) {
-		let t = [], n = u$11(this.#program.root, e, ``, t, this.#program, /* @__PURE__ */ new Set(), /* @__PURE__ */ new WeakMap()), r = x$10(t);
+		let t = [], n = u$12(this.#program.root, e, ``, t, this.#program, /* @__PURE__ */ new Set(), /* @__PURE__ */ new WeakMap()), r = x$11(t);
 		if (n === r.length > 0) throw TypeError(`Schema validation verdict and diagnostics disagree.`);
 		return this.errors = r.length > 0 ? r : null, n;
 	}
 };
 function compileProfileSchema(e, t = {}) {
-	if (!D$7(e)) throw TypeError(`Schema root must be a plain JSON Schema object.`);
+	if (!D$8(e)) throw TypeError(`Schema root must be a plain JSON Schema object.`);
 	let r = [], a = /* @__PURE__ */ new Map(), o = (e, t) => {
 		let n = e.$id;
 		if (n !== void 0 && typeof n != `string`) throw TypeError(`Schema $id must be a string.`);
@@ -9872,27 +9872,27 @@ function compileProfileSchema(e, t = {}) {
 	};
 	o(e, !1);
 	for (let e of t.schemas ?? []) {
-		if (!D$7(e)) throw TypeError(`Registry schema documents must be plain JSON Schema objects.`);
+		if (!D$8(e)) throw TypeError(`Registry schema documents must be plain JSON Schema objects.`);
 		o(e, !0);
 	}
 	let s = /* @__PURE__ */ new WeakMap(), l = /* @__PURE__ */ new WeakMap(), u = [];
-	for (let e of r) i$11(e, s, u);
-	for (let e of u) l.set(e.node, c$6(e, a));
+	for (let e of r) i$13(e, s, u);
+	for (let e of u) l.set(e.node, c$7(e, a));
 	return new CompiledSchemaValidator({
 		patterns: s,
 		references: l,
 		root: e
 	});
 }
-function i$11(e, n, r) {
+function i$13(e, n, r) {
 	let i = /* @__PURE__ */ new WeakSet(), c = (c, f) => {
-		let p = F$5(e, f);
-		if (!D$7(c)) throw TypeError(`${p} must be a plain JSON Schema object.`);
+		let p = F$6(e, f);
+		if (!D$8(c)) throw TypeError(`${p} must be a plain JSON Schema object.`);
 		if (i.has(c)) throw TypeError(`${p} reuses or cycles a schema object.`);
 		i.add(c), e.schemaPointers.add(f);
 		for (let [i, p] of k$7(c)) {
-			let m = F$5(e, M$5(f, i));
-			if (!t$4.has(i)) throw TypeError(`${m} uses keyword ${JSON.stringify(i)}, which the Studio schema interpreter does not support.`);
+			let m = F$6(e, M$6(f, i));
+			if (!t$6.has(i)) throw TypeError(`${m} uses keyword ${JSON.stringify(i)}, which the Studio schema interpreter does not support.`);
 			switch (i) {
 				case `$id`:
 					if (f !== ``) throw TypeError(`${m} may only appear at the document root.`);
@@ -9901,7 +9901,7 @@ function i$11(e, n, r) {
 					if (p !== `https://json-schema.org/draft/2020-12/schema`) throw TypeError(`${m} must declare JSON Schema Draft 2020-12.`);
 					break;
 				case `$ref`:
-					if (typeof p != `string` || T$9(p) > 500) throw TypeError(`${m} must be a string of at most 500 characters.`);
+					if (typeof p != `string` || T$10(p) > 500) throw TypeError(`${m} must be a string of at most 500 characters.`);
 					r.push({
 						document: e,
 						node: c,
@@ -9911,7 +9911,7 @@ function i$11(e, n, r) {
 					break;
 				case `$defs`:
 				case `properties`:
-					u(p, M$5(f, i));
+					u(p, M$6(f, i));
 					break;
 				case `additionalProperties`:
 				case `contains`:
@@ -9921,20 +9921,20 @@ function i$11(e, n, r) {
 				case `not`:
 				case `propertyNames`:
 				case `then`:
-					l(p, M$5(f, i));
+					l(p, M$6(f, i));
 					break;
 				case `allOf`:
 				case `anyOf`:
 				case `oneOf`:
 				case `prefixItems`:
-					d(p, M$5(f, i));
+					d(p, M$6(f, i));
 					break;
 				case `type`:
-					o$6(p, m);
+					o$8(p, m);
 					break;
 				case `enum`:
 					if (!O$8(p) || p.length === 0) throw TypeError(`${m} must be a dense, non-empty JSON array.`);
-					for (let e = 0; e < p.length; e += 1) if (p.slice(0, e).some((t) => w$9(t, p[e]))) throw TypeError(`${m} must contain unique JSON values.`);
+					for (let e = 0; e < p.length; e += 1) if (p.slice(0, e).some((t) => w$10(t, p[e]))) throw TypeError(`${m} must contain unique JSON values.`);
 					break;
 				case `examples`:
 					if (!O$8(p)) throw TypeError(`${m} must be a dense JSON array.`);
@@ -9942,11 +9942,11 @@ function i$11(e, n, r) {
 				case `const`:
 				case `default`: break;
 				case `required`:
-					s$8(p, m);
+					s$9(p, m);
 					break;
 				case `dependentRequired`:
-					if (!D$7(p)) throw TypeError(`${m} must be an object of property-name arrays.`);
-					for (let [e, t] of k$7(p)) s$8(t, `${m}.${e}`);
+					if (!D$8(p)) throw TypeError(`${m} must be an object of property-name arrays.`);
+					for (let [e, t] of k$7(p)) s$9(t, `${m}.${e}`);
 					break;
 				case `maxItems`:
 				case `maxContains`:
@@ -9968,7 +9968,7 @@ function i$11(e, n, r) {
 					if (typeof p != `number` || !Number.isFinite(p) || p <= 0) throw TypeError(`${m} must be a finite number greater than zero.`);
 					break;
 				case `pattern`:
-					n.set(c, a$9(p, m));
+					n.set(c, a$13(p, m));
 					break;
 				case `readOnly`:
 				case `uniqueItems`:
@@ -9991,35 +9991,35 @@ function i$11(e, n, r) {
 		}
 		c(t, n);
 	}, u = (t, n) => {
-		if (!D$7(t)) throw TypeError(`${F$5(e, n)} must be an object of schemas.`);
-		for (let [e, r] of k$7(t)) l(r, M$5(n, e));
+		if (!D$8(t)) throw TypeError(`${F$6(e, n)} must be an object of schemas.`);
+		for (let [e, r] of k$7(t)) l(r, M$6(n, e));
 	}, d = (t, n) => {
-		if (!O$8(t) || t.length === 0) throw TypeError(`${F$5(e, n)} must be a dense, non-empty array of schemas.`);
-		for (let [e, r] of t.entries()) l(r, M$5(n, String(e)));
+		if (!O$8(t) || t.length === 0) throw TypeError(`${F$6(e, n)} must be a dense, non-empty array of schemas.`);
+		for (let [e, r] of t.entries()) l(r, M$6(n, String(e)));
 	};
 	c(e.root, ``);
 }
-function a$9(e, t) {
-	if (typeof e != `string` || T$9(e) > 500) throw TypeError(`${t} must be a lexical pattern of at most 500 characters.`);
+function a$13(e, t) {
+	if (typeof e != `string` || T$10(e) > 500) throw TypeError(`${t} must be a lexical pattern of at most 500 characters.`);
 	try {
 		return new RegExp(e, `u`);
 	} catch (e) {
 		throw TypeError(`${t} is not a valid Unicode regular expression.`, { cause: e });
 	}
 }
-function o$6(t, n) {
+function o$8(t, n) {
 	if (typeof t == `string`) {
-		if (!e$5.has(t)) throw TypeError(`${n} names an unknown JSON Schema type.`);
+		if (!e$8.has(t)) throw TypeError(`${n} names an unknown JSON Schema type.`);
 		return;
 	}
 	if (!O$8(t) || t.length === 0) throw TypeError(`${n} must be a type name or a dense, non-empty array of them.`);
 	let r = /* @__PURE__ */ new Set();
 	for (let i of t) {
-		if (typeof i != `string` || !e$5.has(i) || r.has(i)) throw TypeError(`${n} must list unique, known JSON Schema type names.`);
+		if (typeof i != `string` || !e$8.has(i) || r.has(i)) throw TypeError(`${n} must list unique, known JSON Schema type names.`);
 		r.add(i);
 	}
 }
-function s$8(e, t) {
+function s$9(e, t) {
 	if (!O$8(e)) throw TypeError(`${t} must be a dense array of property names.`);
 	let n = /* @__PURE__ */ new Set();
 	for (let r of e) {
@@ -10027,40 +10027,40 @@ function s$8(e, t) {
 		n.add(r);
 	}
 }
-function c$6(e, t) {
-	let n = `${F$5(e.document, e.pointer)}/$ref`, r = e.reference.indexOf(`#`), i = r === -1 ? e.reference : e.reference.slice(0, r), a = r === -1 ? `` : e.reference.slice(r + 1), o;
+function c$7(e, t) {
+	let n = `${F$6(e.document, e.pointer)}/$ref`, r = e.reference.indexOf(`#`), i = r === -1 ? e.reference : e.reference.slice(0, r), a = r === -1 ? `` : e.reference.slice(r + 1), o;
 	if (i === ``) o = e.document;
 	else {
-		let r = l$11(e.document.baseUri, i, n), a = t.get(r);
+		let r = l$12(e.document.baseUri, i, n), a = t.get(r);
 		if (a === void 0) throw TypeError(`${n} references ${r}, which is not in the registry.`);
 		o = a;
 	}
 	if (a !== `` && !a.startsWith(`/`)) throw TypeError(`${n} must use a JSON Pointer fragment.`);
-	let s = a === `` ? [] : a.slice(1).split(`/`).map((e) => P$5(e, n)), c = s.map((e) => `/${N$5(e)}`).join(``);
+	let s = a === `` ? [] : a.slice(1).split(`/`).map((e) => P$6(e, n)), c = s.map((e) => `/${N$6(e)}`).join(``);
 	if (c !== `` && !o.schemaPointers.has(c)) throw TypeError(`${n} does not reference a schema position.`);
 	let u = o.root;
 	for (let e of s) if (Array.isArray(u)) {
 		let t = Number(e);
 		if (!Number.isInteger(t) || t < 0 || t >= u.length) throw TypeError(`${n} does not resolve to a schema.`);
 		u = u[t];
-	} else if (D$7(u) && Object.hasOwn(u, e)) u = u[e];
+	} else if (D$8(u) && Object.hasOwn(u, e)) u = u[e];
 	else throw TypeError(`${n} does not resolve to a schema.`);
-	if (typeof u == `boolean` || D$7(u)) return u;
+	if (typeof u == `boolean` || D$8(u)) return u;
 	throw TypeError(`${n} does not resolve to a schema.`);
 }
-function l$11(e, t, n) {
+function l$12(e, t, n) {
 	if (/^[A-Za-z][A-Za-z0-9+.-]*:/u.test(t)) return t;
 	if (e === void 0) throw TypeError(`${n} uses a relative reference without a document base URI.`);
 	if (t.startsWith(`/`) || t.split(`/`).some((e) => e === `..` || e === `.`)) throw TypeError(`${n} must stay within the schema registry root.`);
 	return e.slice(0, e.lastIndexOf(`/`) + 1) + t;
 }
-function u$11(e, t, n, r, i, a, o) {
+function u$12(e, t, n, r, i, a, o) {
 	if (typeof e == `boolean`) return e || r.push({
 		instancePath: n,
 		keyword: `false`,
 		message: `boolean schema is false`
 	}), e;
-	let s = y$10(o, e, n, t);
+	let s = y$11(o, e, n, t);
 	if (s !== void 0) {
 		for (let e of s.diagnostics) r.push({ ...e });
 		return s.valid;
@@ -10069,18 +10069,18 @@ function u$11(e, t, n, r, i, a, o) {
 	a.add(e);
 	let c = r.length, l;
 	try {
-		l = d$11(e, t, n, r, i, a, o);
+		l = d$12(e, t, n, r, i, a, o);
 	} finally {
 		a.delete(e);
 	}
-	let u = x$10(r.slice(c));
+	let u = x$11(r.slice(c));
 	if (l === u.length > 0) throw TypeError(`Subschema validation verdict and diagnostics disagree.`);
-	return b$10(o, e, n, t, {
+	return b$11(o, e, n, t, {
 		diagnostics: u,
 		valid: l
 	}), l;
 }
-function d$11(e, t, n, r, i, a, o) {
+function d$12(e, t, n, r, i, a, o) {
 	let s = !0, c = (e, t, i = n) => {
 		s = !1, r.push({
 			instancePath: i,
@@ -10091,14 +10091,14 @@ function d$11(e, t, n, r, i, a, o) {
 	if (e.$ref !== void 0) {
 		let c = i.references.get(e);
 		if (c === void 0) throw TypeError(`Schema reference was not resolved at compile time.`);
-		u$11(c, t, n, r, i, a, o) || (s = !1);
+		u$12(c, t, n, r, i, a, o) || (s = !1);
 	}
 	let l = e.type;
-	return typeof l == `string` ? S$10(l, t) || c(`type`, `must be ${l}`) : Array.isArray(l) && (l.some((e) => typeof e == `string` && S$10(e, t)) || c(`type`, `must be ${l.join(`,`)}`)), e.enum !== void 0 && Array.isArray(e.enum) && (e.enum.some((e) => w$9(e, t)) || c(`enum`, `must be equal to one of the allowed values`)), Object.hasOwn(e, `const`) && !w$9(e.const, t) && c(`const`, `must be equal to constant`), f$11(e, t, n, r, i, a, o, c), typeof t == `string` ? p$10(e, t, c, i) : typeof t == `number` && Number.isFinite(t) ? m$10(e, t, c) : Array.isArray(t) ? _$10(e, t, n, r, i, o, c) || (s = !1) : E$9(t) && (v$10(e, t, n, r, i, o, c) || (s = !1)), s;
+	return typeof l == `string` ? S$11(l, t) || c(`type`, `must be ${l}`) : Array.isArray(l) && (l.some((e) => typeof e == `string` && S$11(e, t)) || c(`type`, `must be ${l.join(`,`)}`)), e.enum !== void 0 && Array.isArray(e.enum) && (e.enum.some((e) => w$10(e, t)) || c(`enum`, `must be equal to one of the allowed values`)), Object.hasOwn(e, `const`) && !w$10(e.const, t) && c(`const`, `must be equal to constant`), f$13(e, t, n, r, i, a, o, c), typeof t == `string` ? p$13(e, t, c, i) : typeof t == `number` && Number.isFinite(t) ? m$12(e, t, c) : Array.isArray(t) ? _$11(e, t, n, r, i, o, c) || (s = !1) : E$10(t) && (v$11(e, t, n, r, i, o, c) || (s = !1)), s;
 }
-function f$11(e, t, n, r, i, a, o, s) {
-	let c = (e) => u$11(e, t, n, [], i, a, o);
-	if (Array.isArray(e.allOf)) for (let c of e.allOf) u$11(c, t, n, r, i, a, o) || s(`allOf`, `must match all schemas in allOf`);
+function f$13(e, t, n, r, i, a, o, s) {
+	let c = (e) => u$12(e, t, n, [], i, a, o);
+	if (Array.isArray(e.allOf)) for (let c of e.allOf) u$12(c, t, n, r, i, a, o) || s(`allOf`, `must match all schemas in allOf`);
 	if (Array.isArray(e.anyOf) && (e.anyOf.some((e) => c(e)) || s(`anyOf`, `must match a schema in anyOf`)), Array.isArray(e.oneOf)) {
 		let t = 0;
 		for (let n of e.oneOf) if (c(n) && (t += 1) > 1) break;
@@ -10106,13 +10106,13 @@ function f$11(e, t, n, r, i, a, o, s) {
 	}
 	if (e.not !== void 0 && c(e.not) && s(`not`, `must NOT be valid`), e.if !== void 0) {
 		let l = c(e.if) ? e.then : e.else;
-		l !== void 0 && !u$11(l, t, n, r, i, a, o) && s(`if`, `must match the conditional schema`);
+		l !== void 0 && !u$12(l, t, n, r, i, a, o) && s(`if`, `must match the conditional schema`);
 	}
 }
-function p$10(e, t, n, r) {
+function p$13(e, t, n, r) {
 	let i = e.minLength, a = e.maxLength;
 	if (typeof i == `number` || typeof a == `number`) {
-		let e = T$9(t);
+		let e = T$10(t);
 		typeof i == `number` && e < i && n(`minLength`, `must NOT have fewer than ${i} characters`), typeof a == `number` && e > a && n(`maxLength`, `must NOT have more than ${a} characters`);
 	}
 	if (typeof e.pattern == `string`) {
@@ -10121,14 +10121,14 @@ function p$10(e, t, n, r) {
 		i.test(t) || n(`pattern`, `must match pattern "${e.pattern}"`);
 	}
 }
-function m$10(e, t, n) {
-	typeof e.minimum == `number` && t < e.minimum && n(`minimum`, `must be >= ${e.minimum}`), typeof e.maximum == `number` && t > e.maximum && n(`maximum`, `must be <= ${e.maximum}`), typeof e.exclusiveMinimum == `number` && t <= e.exclusiveMinimum && n(`exclusiveMinimum`, `must be > ${e.exclusiveMinimum}`), typeof e.exclusiveMaximum == `number` && t >= e.exclusiveMaximum && n(`exclusiveMaximum`, `must be < ${e.exclusiveMaximum}`), typeof e.multipleOf == `number` && (h$9(t, e.multipleOf) || n(`multipleOf`, `must be multiple of ${e.multipleOf}`));
+function m$12(e, t, n) {
+	typeof e.minimum == `number` && t < e.minimum && n(`minimum`, `must be >= ${e.minimum}`), typeof e.maximum == `number` && t > e.maximum && n(`maximum`, `must be <= ${e.maximum}`), typeof e.exclusiveMinimum == `number` && t <= e.exclusiveMinimum && n(`exclusiveMinimum`, `must be > ${e.exclusiveMinimum}`), typeof e.exclusiveMaximum == `number` && t >= e.exclusiveMaximum && n(`exclusiveMaximum`, `must be < ${e.exclusiveMaximum}`), typeof e.multipleOf == `number` && (h$11(t, e.multipleOf) || n(`multipleOf`, `must be multiple of ${e.multipleOf}`));
 }
-function h$9(e, t) {
-	let n = g$9(e), r = g$9(t), i = n.exponent - r.exponent;
+function h$11(e, t) {
+	let n = g$10(e), r = g$10(t), i = n.exponent - r.exponent;
 	return i >= 0 ? n.coefficient * 10n ** BigInt(i) % r.coefficient == 0n : n.coefficient % (r.coefficient * 10n ** BigInt(-i)) == 0n;
 }
-function g$9(e) {
+function g$10(e) {
 	let t = JSON.stringify(Object.is(e, -0) ? 0 : e), n = /^(-?)(\d+)(?:\.(\d+))?(?:e([+-]?\d+))?$/u.exec(t);
 	if (n === null) throw TypeError(`Canonical decimal conversion requires a finite number.`);
 	let r = n[3] ?? ``, i = BigInt(`${n[1] ?? ``}${n[2]}${r}`), a = Number(n[4] ?? 0) - r.length;
@@ -10138,9 +10138,9 @@ function g$9(e) {
 		exponent: a
 	};
 }
-function _$10(e, t, n, r, i, a, o) {
+function _$11(e, t, n, r, i, a, o) {
 	let s = !0, c = (e, o) => {
-		u$11(e, t[o], `${n}/${o}`, r, i, /* @__PURE__ */ new Set(), a) || (s = !1);
+		u$12(e, t[o], `${n}/${o}`, r, i, /* @__PURE__ */ new Set(), a) || (s = !1);
 	}, l = Array.isArray(e.prefixItems) ? e.prefixItems : void 0, d = l?.length ?? 0;
 	if (l !== void 0) for (let e = 0; e < Math.min(d, t.length); e += 1) c(l[e], e);
 	let f = e.items;
@@ -10149,40 +10149,40 @@ function _$10(e, t, n, r, i, a, o) {
 		else if (f !== !0) for (let e = d; e < t.length; e += 1) c(f, e);
 	}
 	if (typeof e.minItems == `number` && t.length < e.minItems && o(`minItems`, `must NOT have fewer than ${e.minItems} items`), typeof e.maxItems == `number` && t.length > e.maxItems && o(`maxItems`, `must NOT have more than ${e.maxItems} items`), e.uniqueItems === !0) {
-		let e = C$10(t);
+		let e = C$11(t);
 		e !== void 0 && o(`uniqueItems`, `must NOT have duplicate items (items ## ${e[0]} and ${e[1]} are identical)`);
 	}
 	if (e.contains !== void 0) {
 		let r = typeof e.minContains == `number` ? e.minContains : 1, s = typeof e.maxContains == `number` ? e.maxContains : 1 / 0, c = 0;
-		for (let r = 0; r < t.length; r += 1) u$11(e.contains, t[r], `${n}/${r}`, [], i, /* @__PURE__ */ new Set(), a) && (c += 1);
+		for (let r = 0; r < t.length; r += 1) u$12(e.contains, t[r], `${n}/${r}`, [], i, /* @__PURE__ */ new Set(), a) && (c += 1);
 		(c < r || c > s) && o(`contains`, `must contain ${Number.isFinite(s) ? `between ${r} and ${s}` : `at least ${r}`} matching items`);
 	}
 	return s;
 }
-function v$10(e, t, n, r, i, a, o) {
-	let s = !0, c = Object.keys(t).filter((e) => t[e] !== void 0).sort(j$7), l = (e) => Object.hasOwn(t, e) && t[e] !== void 0, d = D$7(e.properties) ? e.properties : void 0;
-	if (d !== void 0) for (let [e, o] of k$7(d)) l(e) && !u$11(o, t[e], `${n}/${N$5(e)}`, r, i, /* @__PURE__ */ new Set(), a) && (s = !1);
+function v$11(e, t, n, r, i, a, o) {
+	let s = !0, c = Object.keys(t).filter((e) => t[e] !== void 0).sort(j$7), l = (e) => Object.hasOwn(t, e) && t[e] !== void 0, d = D$8(e.properties) ? e.properties : void 0;
+	if (d !== void 0) for (let [e, o] of k$7(d)) l(e) && !u$12(o, t[e], `${n}/${N$6(e)}`, r, i, /* @__PURE__ */ new Set(), a) && (s = !1);
 	if (Array.isArray(e.required)) for (let t of A$7(e.required)) l(t) || o(`required`, `must have required property '${t}'`);
 	let f = e.additionalProperties;
-	if (f !== void 0) for (let e of c) d !== void 0 && Object.hasOwn(d, e) || (f === !1 ? o(`additionalProperties`, `must NOT have additional properties`) : f !== !0 && !u$11(f, t[e], `${n}/${N$5(e)}`, r, i, /* @__PURE__ */ new Set(), a) && (s = !1));
+	if (f !== void 0) for (let e of c) d !== void 0 && Object.hasOwn(d, e) || (f === !1 ? o(`additionalProperties`, `must NOT have additional properties`) : f !== !0 && !u$12(f, t[e], `${n}/${N$6(e)}`, r, i, /* @__PURE__ */ new Set(), a) && (s = !1));
 	let p = e.propertyNames;
-	if (p !== void 0) for (let e of c) u$11(p, e, n, [], i, /* @__PURE__ */ new Set(), a) || o(`propertyNames`, `property name '${e}' is invalid`);
+	if (p !== void 0) for (let e of c) u$12(p, e, n, [], i, /* @__PURE__ */ new Set(), a) || o(`propertyNames`, `property name '${e}' is invalid`);
 	let m = e.dependentRequired;
-	if (D$7(m)) {
+	if (D$8(m)) {
 		for (let [e, t] of k$7(m)) if (!(!l(e) || !Array.isArray(t))) for (let n of A$7(t)) l(n) || o(`dependentRequired`, `must have property ${n} when property ${e} is present`);
 	}
 	return typeof e.minProperties == `number` && c.length < e.minProperties && o(`minProperties`, `must NOT have fewer than ${e.minProperties} properties`), typeof e.maxProperties == `number` && c.length > e.maxProperties && o(`maxProperties`, `must NOT have more than ${e.maxProperties} properties`), s;
 }
-function y$10(e, t, n, r) {
+function y$11(e, t, n, r) {
 	return (e.get(t)?.get(n))?.get(r);
 }
-function b$10(e, t, n, r, i) {
+function b$11(e, t, n, r, i) {
 	let a = e.get(t);
 	a === void 0 && (a = /* @__PURE__ */ new Map(), e.set(t, a));
 	let o = a.get(n);
 	o === void 0 && (o = /* @__PURE__ */ new Map(), a.set(n, o)), o.set(r, i);
 }
-function x$10(e) {
+function x$11(e) {
 	let t = /* @__PURE__ */ new Set(), n = [];
 	for (let r of e) {
 		let e = JSON.stringify([
@@ -10194,37 +10194,37 @@ function x$10(e) {
 	}
 	return n;
 }
-function S$10(e, t) {
+function S$11(e, t) {
 	switch (e) {
 		case `array`: return Array.isArray(t);
 		case `boolean`: return typeof t == `boolean`;
 		case `integer`: return typeof t == `number` && Number.isFinite(t) && t % 1 == 0;
 		case `null`: return t === null;
 		case `number`: return typeof t == `number` && Number.isFinite(t);
-		case `object`: return E$9(t);
+		case `object`: return E$10(t);
 		case `string`: return typeof t == `string`;
 		default: return !1;
 	}
 }
-function C$10(e) {
-	for (let t = 1; t < e.length; t += 1) for (let n = 0; n < t; n += 1) if (w$9(e[t], e[n])) return [n, t];
+function C$11(e) {
+	for (let t = 1; t < e.length; t += 1) for (let n = 0; n < t; n += 1) if (w$10(e[t], e[n])) return [n, t];
 }
-function w$9(e, t) {
+function w$10(e, t) {
 	if (e === t) return !0;
 	if (Array.isArray(e) && Array.isArray(t)) {
 		if (e.length !== t.length) return !1;
-		for (let n = 0; n < e.length; n += 1) if (!w$9(e[n], t[n])) return !1;
+		for (let n = 0; n < e.length; n += 1) if (!w$10(e[n], t[n])) return !1;
 		return !0;
 	}
 	if (typeof e == `object` && typeof t == `object` && e !== null && t !== null && !Array.isArray(e) && !Array.isArray(t)) {
 		let n = Object.keys(e), r = t;
 		if (n.length !== Object.keys(t).length) return !1;
-		for (let i of n) if (!Object.hasOwn(t, i) || !w$9(e[i], r[i])) return !1;
+		for (let i of n) if (!Object.hasOwn(t, i) || !w$10(e[i], r[i])) return !1;
 		return !0;
 	}
 	return !1;
 }
-function T$9(e) {
+function T$10(e) {
 	let t = 0;
 	for (let n = 0; n < e.length; n += 1) {
 		t += 1;
@@ -10233,10 +10233,10 @@ function T$9(e) {
 	}
 	return t;
 }
-function E$9(e) {
+function E$10(e) {
 	return typeof e == `object` && !!e && !Array.isArray(e);
 }
-function D$7(e) {
+function D$8(e) {
 	return typeof e == `object` && !!e && !Array.isArray(e);
 }
 function O$8(e) {
@@ -10255,17 +10255,17 @@ function A$7(e) {
 function j$7(e, t) {
 	return e < t ? -1 : +(e > t);
 }
-function M$5(e, t) {
-	return `${e}/${N$5(t)}`;
+function M$6(e, t) {
+	return `${e}/${N$6(t)}`;
 }
-function N$5(e) {
+function N$6(e) {
 	return e.replaceAll(`~`, `~0`).replaceAll(`/`, `~1`);
 }
-function P$5(e, t) {
+function P$6(e, t) {
 	if (/(?:~[^01]|~$)/u.test(e)) throw TypeError(`${t} is not a valid JSON Pointer reference.`);
 	return e.replaceAll(`~1`, `/`).replaceAll(`~0`, `~`);
 }
-function F$5(e, t) {
+function F$6(e, t) {
 	return `${e.baseUri ?? `schema`}#${t}`;
 }
 //#endregion
@@ -10281,7 +10281,7 @@ var STUDIO_PROTOCOL_MAXIMUM_COMMAND_POLICY_LIMITS = Object.freeze({
 	maxRichTextDepth: 128,
 	maxSlotsPerNode: 100
 });
-var i$10 = Object.freeze({
+var i$12 = Object.freeze({
 	maxChildrenPerSlot: 0,
 	maxCommandBatch: 1,
 	maxDepth: 1,
@@ -10294,15 +10294,15 @@ var i$10 = Object.freeze({
 });
 function resolveStudioSessionPolicy(e = {}) {
 	let t = e.limits ?? {}, n = {
-		maxChildrenPerSlot: s$7(`maxChildrenPerSlot`, t.maxChildrenPerSlot),
-		maxCommandBatch: s$7(`maxCommandBatch`, t.maxCommandBatch),
-		maxDepth: s$7(`maxDepth`, t.maxDepth),
-		maxExtensionBytes: s$7(`maxExtensionBytes`, t.maxExtensionBytes),
-		maxNodes: s$7(`maxNodes`, t.maxNodes),
-		maxPropertyBytes: s$7(`maxPropertyBytes`, t.maxPropertyBytes),
-		maxRichTextBytes: s$7(`maxRichTextBytes`, t.maxRichTextBytes),
-		maxRichTextDepth: s$7(`maxRichTextDepth`, t.maxRichTextDepth),
-		maxSlotsPerNode: s$7(`maxSlotsPerNode`, t.maxSlotsPerNode)
+		maxChildrenPerSlot: s$8(`maxChildrenPerSlot`, t.maxChildrenPerSlot),
+		maxCommandBatch: s$8(`maxCommandBatch`, t.maxCommandBatch),
+		maxDepth: s$8(`maxDepth`, t.maxDepth),
+		maxExtensionBytes: s$8(`maxExtensionBytes`, t.maxExtensionBytes),
+		maxNodes: s$8(`maxNodes`, t.maxNodes),
+		maxPropertyBytes: s$8(`maxPropertyBytes`, t.maxPropertyBytes),
+		maxRichTextBytes: s$8(`maxRichTextBytes`, t.maxRichTextBytes),
+		maxRichTextDepth: s$8(`maxRichTextDepth`, t.maxRichTextDepth),
+		maxSlotsPerNode: s$8(`maxSlotsPerNode`, t.maxSlotsPerNode)
 	};
 	return Object.freeze({
 		limits: Object.freeze(n),
@@ -10310,12 +10310,12 @@ function resolveStudioSessionPolicy(e = {}) {
 	});
 }
 function assertBlueprintCommandPolicy(e, t, n, r) {
-	if (t.type === `studio.command/batch` && t.payload.operations.length > r.limits.maxCommandBatch) throw C$9(`maxCommandBatch`, t.payload.operations.length, r.limits.maxCommandBatch);
-	c$5(e, t, r.permissions), assertBlueprintWithinSessionPolicy(n, r.limits);
+	if (t.type === `studio.command/batch` && t.payload.operations.length > r.limits.maxCommandBatch) throw C$10(`maxCommandBatch`, t.payload.operations.length, r.limits.maxCommandBatch);
+	c$6(e, t, r.permissions), assertBlueprintWithinSessionPolicy(n, r.limits);
 }
 function assertBlueprintWithinSessionPolicy(e, t) {
-	let n = v$9(e.extensions);
-	if (n > t.maxExtensionBytes) throw C$9(`maxExtensionBytes`, n, t.maxExtensionBytes);
+	let n = v$10(e.extensions);
+	if (n > t.maxExtensionBytes) throw C$10(`maxExtensionBytes`, n, t.maxExtensionBytes);
 	let r = 0, i = 0, a = e.roots.map((e) => ({
 		depth: 1,
 		node: e
@@ -10323,85 +10323,85 @@ function assertBlueprintWithinSessionPolicy(e, t) {
 	for (; a.length > 0;) {
 		let e = a.pop();
 		if (e === void 0) break;
-		if (r += 1, r > t.maxNodes) throw C$9(`maxNodes`, r, t.maxNodes);
-		if (e.depth > t.maxDepth) throw C$9(`maxDepth`, e.depth, t.maxDepth);
+		if (r += 1, r > t.maxNodes) throw C$10(`maxNodes`, r, t.maxNodes);
+		if (e.depth > t.maxDepth) throw C$10(`maxDepth`, e.depth, t.maxDepth);
 		let o = Object.entries(e.node.slots);
-		if (o.length > t.maxSlotsPerNode) throw C$9(`maxSlotsPerNode`, o.length, t.maxSlotsPerNode);
-		if (i += y$9(e.node.properties), i += y$9(e.node.responsive), i > t.maxPropertyBytes) throw C$9(`maxPropertyBytes`, i, t.maxPropertyBytes);
-		if (n += v$9(e.node.extensions), n > t.maxExtensionBytes) throw C$9(`maxExtensionBytes`, n, t.maxExtensionBytes);
+		if (o.length > t.maxSlotsPerNode) throw C$10(`maxSlotsPerNode`, o.length, t.maxSlotsPerNode);
+		if (i += y$10(e.node.properties), i += y$10(e.node.responsive), i > t.maxPropertyBytes) throw C$10(`maxPropertyBytes`, i, t.maxPropertyBytes);
+		if (n += v$10(e.node.extensions), n > t.maxExtensionBytes) throw C$10(`maxExtensionBytes`, n, t.maxExtensionBytes);
 		for (let [, n] of o) {
-			if (n.length > t.maxChildrenPerSlot) throw C$9(`maxChildrenPerSlot`, n.length, t.maxChildrenPerSlot);
+			if (n.length > t.maxChildrenPerSlot) throw C$10(`maxChildrenPerSlot`, n.length, t.maxChildrenPerSlot);
 			for (let t of n) a.push({
 				depth: e.depth + 1,
 				node: t
 			});
 		}
 	}
-	g$8(e, t);
+	g$9(e, t);
 }
 function assertEntryWithinSessionPolicy(e, t) {
-	let n = v$9(e.extensions);
-	if (n > t.maxExtensionBytes) throw C$9(`maxExtensionBytes`, n, t.maxExtensionBytes);
-	g$8(e, t);
+	let n = v$10(e.extensions);
+	if (n > t.maxExtensionBytes) throw C$10(`maxExtensionBytes`, n, t.maxExtensionBytes);
+	g$9(e, t);
 }
 function assertModelWithinSessionPolicy(e, t) {
-	let n = v$9(e.extensions);
-	for (let t of e.relationships) n += v$9(t.extensions);
+	let n = v$10(e.extensions);
+	for (let t of e.relationships) n += v$10(t.extensions);
 	let r = [...e.fields];
 	for (; r.length > 0;) {
 		let e = r.pop();
 		if (e === void 0) break;
-		n += v$9(e.extensions), r.push(...e.fields ?? []);
+		n += v$10(e.extensions), r.push(...e.fields ?? []);
 	}
-	if (n > t.maxExtensionBytes) throw C$9(`maxExtensionBytes`, n, t.maxExtensionBytes);
-	g$8(e, t);
+	if (n > t.maxExtensionBytes) throw C$10(`maxExtensionBytes`, n, t.maxExtensionBytes);
+	g$9(e, t);
 }
-function s$7(e, t) {
+function s$8(e, t) {
 	let n = STUDIO_PROTOCOL_MAXIMUM_COMMAND_POLICY_LIMITS[e], a = t ?? n;
-	if (!Number.isSafeInteger(a) || a < i$10[e] || a > n) throw RangeError(`${e} must be an integer between ${String(i$10[e])} and ${String(n)}.`);
+	if (!Number.isSafeInteger(a) || a < i$12[e] || a > n) throw RangeError(`${e} must be an integer between ${String(i$12[e])} and ${String(n)}.`);
 	return a;
 }
-function c$5(n, r, i) {
+function c$6(n, r, i) {
 	if (r.type === `studio.command/batch`) {
 		let a = cloneContractValue(n);
-		for (let e of r.payload.operations) l$10(a, e, i), applyOperation(a, e);
+		for (let e of r.payload.operations) l$11(a, e, i), applyOperation(a, e);
 		return;
 	}
 	if (r.type === `studio.command/apply-pattern`) {
-		u$10(n, r.payload.destination.parentNodeId, i);
-		for (let e of r.payload.nodes) f$10(e, i);
+		u$11(n, r.payload.destination.parentNodeId, i);
+		for (let e of r.payload.nodes) f$12(e, i);
 		return;
 	}
 	if (r.type === `studio.command/reset-inherited-property`) {
-		d$10(n, r.payload.nodeId, i);
+		d$11(n, r.payload.nodeId, i);
 		return;
 	}
-	l$10(n, r, i);
+	l$11(n, r, i);
 }
-function l$10(e, t, n) {
+function l$11(e, t, n) {
 	switch (t.type) {
 		case `studio.command/insert-node`:
 		case `studio.command/restore-node`:
-			u$10(e, t.payload.destination.parentNodeId, n), f$10(t.payload.node, n);
+			u$11(e, t.payload.destination.parentNodeId, n), f$12(t.payload.node, n);
 			return;
 		case `studio.command/remove-node`: {
-			let r = m$9(e, t.payload.nodeId);
-			p$9(r.parent, n), f$10(r.node, n);
+			let r = m$11(e, t.payload.nodeId);
+			p$12(r.parent, n), f$12(r.node, n);
 			return;
 		}
 		case `studio.command/move-node`: {
-			let r = m$9(e, t.payload.nodeId);
-			p$9(r.parent, n), f$10(r.node, n), u$10(e, t.payload.destination.parentNodeId, n);
+			let r = m$11(e, t.payload.nodeId);
+			p$12(r.parent, n), f$12(r.node, n), u$11(e, t.payload.destination.parentNodeId, n);
 			return;
 		}
 		case `studio.command/duplicate-node`: {
-			let r = m$9(e, t.payload.nodeId);
-			p$9(r.parent, n), f$10(r.node, n), u$10(e, t.payload.destination?.parentNodeId, n);
+			let r = m$11(e, t.payload.nodeId);
+			p$12(r.parent, n), f$12(r.node, n), u$11(e, t.payload.destination?.parentNodeId, n);
 			return;
 		}
 		case `studio.command/reorder-children`:
-			u$10(e, t.payload.parentNodeId, n);
-			for (let r of t.payload.order) d$10(e, r, n);
+			u$11(e, t.payload.parentNodeId, n);
+			for (let r of t.payload.order) d$11(e, r, n);
 			return;
 		case `studio.command/remove-binding`:
 		case `studio.command/set-binding`:
@@ -10409,47 +10409,47 @@ function l$10(e, t, n) {
 		case `studio.command/set-size-role`:
 		case `studio.command/unset-property`:
 		case `studio.command/unset-size-role`:
-			d$10(e, t.payload.nodeId, n);
+			d$11(e, t.payload.nodeId, n);
 			return;
 	}
 }
-function u$10(e, t, n) {
-	t !== void 0 && d$10(e, t, n);
+function u$11(e, t, n) {
+	t !== void 0 && d$11(e, t, n);
 }
-function d$10(e, t, n) {
-	p$9(m$9(e, t).node, n);
+function d$11(e, t, n) {
+	p$12(m$11(e, t).node, n);
 }
-function f$10(e, t) {
+function f$12(e, t) {
 	let n = [e];
 	for (; n.length > 0;) {
 		let e = n.pop();
 		if (e === void 0) break;
-		p$9(e, t);
+		p$12(e, t);
 		for (let t of Object.values(e.slots)) n.push(...t);
 	}
 }
-function p$9(e, t) {
+function p$12(e, t) {
 	let r = e?.authoring.requiredPermission;
 	if (r !== void 0 && !t.has(r)) throw new StudioCommandError(`permission-forbidden`, `Node ${String(e?.id)} requires the ${r} permission for this command.`);
 }
-function m$9(e, t) {
-	let r = h$8(e.roots, t);
+function m$11(e, t) {
+	let r = h$10(e.roots, t);
 	if (r === void 0) throw new StudioCommandError(`node-not-found`, `Node ${t} does not exist.`);
 	return r;
 }
-function h$8(e, t, n) {
+function h$10(e, t, n) {
 	for (let r of e) {
 		if (r.id === t) return n === void 0 ? { node: r } : {
 			node: r,
 			parent: n
 		};
 		for (let e of Object.values(r.slots)) {
-			let n = h$8(e, t, r);
+			let n = h$10(e, t, r);
 			if (n !== void 0) return n;
 		}
 	}
 }
-function g$8(e, t) {
+function g$9(e, t) {
 	let n = [e];
 	for (; n.length > 0;) {
 		let e = n.pop();
@@ -10459,17 +10459,17 @@ function g$8(e, t) {
 				continue;
 			}
 			if (e.type === `doc` && Array.isArray(e.content)) {
-				let n = b$9(e);
-				if (n > t.maxRichTextBytes) throw C$9(`maxRichTextBytes`, n, t.maxRichTextBytes);
-				let r = _$9(e);
-				if (r > t.maxRichTextDepth) throw C$9(`maxRichTextDepth`, r, t.maxRichTextDepth);
+				let n = b$10(e);
+				if (n > t.maxRichTextBytes) throw C$10(`maxRichTextBytes`, n, t.maxRichTextBytes);
+				let r = _$10(e);
+				if (r > t.maxRichTextDepth) throw C$10(`maxRichTextDepth`, r, t.maxRichTextDepth);
 				continue;
 			}
 			for (let t of Object.values(e)) n.push(t);
 		}
 	}
 }
-function _$9(e) {
+function _$10(e) {
 	let t = 1, n = [{
 		depth: 1,
 		node: e
@@ -10479,20 +10479,20 @@ function _$9(e) {
 		if (e === void 0) break;
 		t = Math.max(t, e.depth);
 		let r = e.node.content;
-		if (Array.isArray(r)) for (let t of r) S$9(t) && n.push({
+		if (Array.isArray(r)) for (let t of r) S$10(t) && n.push({
 			depth: e.depth + 1,
 			node: t
 		});
 	}
 	return t;
 }
-function v$9(e) {
-	return y$9(e);
+function v$10(e) {
+	return y$10(e);
 }
-function y$9(e) {
-	return e === void 0 || Object.keys(e).length === 0 ? 0 : Math.max(0, b$9(e) - 2);
+function y$10(e) {
+	return e === void 0 || Object.keys(e).length === 0 ? 0 : Math.max(0, b$10(e) - 2);
 }
-function b$9(e) {
+function b$10(e) {
 	let t;
 	try {
 		let n = JSON.stringify(e);
@@ -10501,9 +10501,9 @@ function b$9(e) {
 	} catch {
 		throw new StudioCommandError(`resource-limit`, `The command value cannot be measured within the finite JSON resource boundary.`);
 	}
-	return x$9(t);
+	return x$10(t);
 }
-function x$9(e) {
+function x$10(e) {
 	let t = 0;
 	for (let n = 0; n < e.length; n += 1) {
 		let r = e.charCodeAt(n);
@@ -10516,10 +10516,10 @@ function x$9(e) {
 	}
 	return t;
 }
-function S$9(e) {
+function S$10(e) {
 	return typeof e == `object` && !!e && !Array.isArray(e);
 }
-function C$9(e, t, r) {
+function C$10(e, t, r) {
 	return new StudioCommandError(`resource-limit`, `${e} permits at most ${String(r)}, but the projected command requires ${String(t)}.`);
 }
 //#endregion
@@ -10593,7 +10593,7 @@ var StudioSession = class {
 		this.#policy = resolveStudioSessionPolicy({
 			...e.limits === void 0 ? {} : { limits: e.limits },
 			...e.permissions === void 0 ? {} : { permissions: e.permissions }
-		}), this.#history = new StudioHistory(e.document, e.maximumHistoryEntries ?? 100, this.#policy), this.#mode = l$9(e), this.#sessionGeneration = e.sessionGeneration, this.#savedRevision = e.document.revision;
+		}), this.#history = new StudioHistory(e.document, e.maximumHistoryEntries ?? 100, this.#policy), this.#mode = l$10(e), this.#sessionGeneration = e.sessionGeneration, this.#savedRevision = e.document.revision;
 	}
 	get canRedo() {
 		return this.#history.canRedo;
@@ -10644,7 +10644,7 @@ var StudioSession = class {
 	select(t) {
 		let n = this.#history.current, r = [];
 		for (let i of t) if (!r.includes(i)) {
-			if (!u$9(n.roots, i)) throw new StudioCommandError(`node-not-found`, `Node ${i} cannot be selected because it is not in the document.`);
+			if (!u$10(n.roots, i)) throw new StudioCommandError(`node-not-found`, `Node ${i} cannot be selected because it is not in the document.`);
 			r.push(i);
 		}
 		return this.#selection = r, this.selection;
@@ -10667,10 +10667,10 @@ var StudioSession = class {
 		if (t.sessionGeneration !== this.#sessionGeneration) throw new StudioCommandError(`stale-generation`, `Command generation ${t.sessionGeneration} does not match the active session generation.`);
 	}
 	#pruneSelection(e) {
-		this.#selection.length > 0 && (this.#selection = this.#selection.filter((t) => u$9(e.roots, t)));
+		this.#selection.length > 0 && (this.#selection = this.#selection.filter((t) => u$10(e.roots, t)));
 	}
 };
-function l$9(e) {
+function l$10(e) {
 	let { mode: t, sessionState: n } = e;
 	if (t === void 0) {
 		if (n === void 0) throw RangeError(`A session requires an explicit mode or session state.`);
@@ -10679,30 +10679,30 @@ function l$9(e) {
 	if (n !== void 0 && n === `read-only` != (t === `read-only`)) throw RangeError(`Session mode ${t} contradicts session state ${n}; mode read-only is the read-only state.`);
 	return t;
 }
-function u$9(e, t) {
+function u$10(e, t) {
 	for (let n of e) {
 		if (n.id === t) return !0;
-		for (let e of Object.values(n.slots)) if (u$9(e, t)) return !0;
+		for (let e of Object.values(n.slots)) if (u$10(e, t)) return !0;
 	}
 	return !1;
 }
 //#endregion
 //#region node_modules/@kumwe/studio-core/dist/host-session.js
-var p$8 = `studio.port/artifact`;
-var m$8 = `studio.port/model`;
-var h$7 = `studio.port/recovery`;
-var g$7 = `studio.port/resource`;
-var _$8 = `studio.operation/artifact.load`;
-var v$8 = `studio.operation/artifact.save`;
-var y$8 = `studio.operation/model.get`;
-var b$8 = `studio.operation/model.list`;
-var x$8 = `studio.operation/recovery.store`;
-var S$8 = `studio.operation/recovery.load`;
-var C$8 = `studio.operation/recovery.discard`;
-var w$8 = `studio.operation/resource.search`;
-var T$8 = /^[A-Za-z0-9][A-Za-z0-9._:/-]*$/u;
-var E$8 = /^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*\/[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*$/u;
-var D$6 = /* @__PURE__ */ new Set([
+var p$11 = `studio.port/artifact`;
+var m$10 = `studio.port/model`;
+var h$9 = `studio.port/recovery`;
+var g$8 = `studio.port/resource`;
+var _$9 = `studio.operation/artifact.load`;
+var v$9 = `studio.operation/artifact.save`;
+var y$9 = `studio.operation/model.get`;
+var b$9 = `studio.operation/model.list`;
+var x$9 = `studio.operation/recovery.store`;
+var S$9 = `studio.operation/recovery.load`;
+var C$9 = `studio.operation/recovery.discard`;
+var w$9 = `studio.operation/resource.search`;
+var T$9 = /^[A-Za-z0-9][A-Za-z0-9._:/-]*$/u;
+var E$9 = /^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*\/[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*$/u;
+var D$7 = /* @__PURE__ */ new Set([
 	`__proto__`,
 	`prototype`,
 	`constructor`
@@ -10726,19 +10726,19 @@ var StudioHostSessionError = class extends Error {
 	}
 };
 async function openStudioSession(e, t) {
-	let n = cloneContractValue(t.configuration), r = N$4(n, t.optionalPorts), i = negotiateCapabilities(n.hostCapabilities, {
+	let n = cloneContractValue(t.configuration), r = N$5(n, t.optionalPorts), i = negotiateCapabilities(n.hostCapabilities, {
 		optionalPorts: r,
-		requiredPorts: [p$8],
+		requiredPorts: [p$11],
 		supportedProtocolVersions: [n.protocolVersion]
 	});
-	n.sessionState === `read-only` && (i.sessionState = `read-only`), M$4(n, i);
-	let a = ee(e, n, i), o = te(e, n, i), u = ne(e, n, i);
+	n.sessionState === `read-only` && (i.sessionState = `read-only`), M$5(n, i);
+	let a = ee(e, n, i), o = te$1(e, n, i), u = ne$1(e, n, i);
 	if (i.diagnostics.some((e) => e.severity === `blocking`)) throw new StudioHostSessionError(`configuration-blocked`, `The resolved Studio configuration cannot open a Blueprint host session.`, i.diagnostics);
 	let m = n.artifacts.blueprint;
 	if (m === void 0) throw new StudioHostSessionError(`configuration-blocked`, `A Blueprint host session requires an explicit locked Blueprint reference.`, i.diagnostics);
-	let h = new SessionIdentifierAllocator(t.identifiers), g = createContext(n, h.requestId(_$8), { operationId: _$8 }), v = await ie(() => e.artifact.load(m, g));
-	if (!F$4(v, m.id)) throw new StudioHostSessionError(`unexpected-artifact`, `The host returned an artifact outside the Blueprint session profile.`, [createDiagnostic(`studio.host/unexpected-artifact`, `The artifact port did not return the configured Blueprint.`, `blocking`, { artifactId: m.id })]);
-	let y = P$4(v.value, v.revision);
+	let h = new SessionIdentifierAllocator(t.identifiers), g = createContext(n, h.requestId(_$9), { operationId: _$9 }), v = await ie$1(() => e.artifact.load(m, g));
+	if (!F$5(v, m.id)) throw new StudioHostSessionError(`unexpected-artifact`, `The host returned an artifact outside the Blueprint session profile.`, [createDiagnostic(`studio.host/unexpected-artifact`, `The artifact port did not return the configured Blueprint.`, `blocking`, { artifactId: m.id })]);
+	let y = P$5(v.value, v.revision);
 	assertBlueprintWithinSessionPolicy(y, n.limits);
 	let b = new StudioSession({
 		document: y,
@@ -10767,7 +10767,7 @@ var A$6 = class {
 	#revision;
 	#saveTail = Promise.resolve();
 	constructor(e, t, n, r, i, a, o, c, l) {
-		this.#adapter = e, this.#configuration = t, this.#identifiers = n, this.negotiation = ae(r), this.diagnostics = cloneContractValue(r.diagnostics), this.session = c, this.#revision = l, this.recovery = i ? Object.freeze({
+		this.#adapter = e, this.#configuration = t, this.#identifiers = n, this.negotiation = ae$1(r), this.diagnostics = cloneContractValue(r.diagnostics), this.session = c, this.#revision = l, this.recovery = i ? Object.freeze({
 			discard: () => this.#discardRecovery(),
 			load: () => this.#loadRecovery(),
 			store: (e) => this.#storeRecovery(e)
@@ -10814,28 +10814,28 @@ var A$6 = class {
 		this.#assertActive();
 		let e = this.#adapter.recovery;
 		if (e === void 0) throw adapterContractFailure(`studio.host/adapter-port-unavailable`, `The negotiated recovery adapter is unavailable.`);
-		let t = mutationFingerprint(null, this.#configuration), n = this.#mutationKey(C$8, t), r = createContext(this.#configuration, this.#identifiers.requestId(C$8), {
+		let t = mutationFingerprint(null, this.#configuration), n = this.#mutationKey(C$9, t), r = createContext(this.#configuration, this.#identifiers.requestId(C$9), {
 			idempotencyKey: n,
-			operationId: C$8
+			operationId: C$9
 		}), i = await this.#invoke(() => e.discard(r));
-		return this.#clearMutationKey(C$8, t), i;
+		return this.#clearMutationKey(C$9, t), i;
 	}
 	async #loadRecovery() {
 		this.#assertActive();
 		let e = this.#adapter.recovery;
 		if (e === void 0) throw adapterContractFailure(`studio.host/adapter-port-unavailable`, `The negotiated recovery adapter is unavailable.`);
-		let t = createContext(this.#configuration, this.#identifiers.requestId(S$8), { operationId: S$8 }), n = await this.#invoke(() => e.load(t));
+		let t = createContext(this.#configuration, this.#identifiers.requestId(S$9), { operationId: S$9 }), n = await this.#invoke(() => e.load(t));
 		return {
 			...n.revision === void 0 ? {} : { revision: n.revision },
 			value: n.value === null ? null : cloneContractValue(n.value)
 		};
 	}
 	async #getModel(e) {
-		if (this.#assertActive(), !Y$1(e)) throw new StudioHostSessionError(`invalid-model-reference`, `A model read requires a canonical artifact identifier and semantic version.`);
+		if (this.#assertActive(), !Y$3(e)) throw new StudioHostSessionError(`invalid-model-reference`, `A model read requires a canonical artifact identifier and semantic version.`);
 		let t = this.#adapter.model;
 		if (t === void 0) throw adapterContractFailure(`studio.host/adapter-port-unavailable`, `The negotiated model adapter is unavailable.`);
-		let n = cloneContractValue(e), r = createContext(this.#configuration, this.#identifiers.requestId(y$8), { operationId: y$8 }), i = await this.#invoke(() => t.get(n, r));
-		if (!I$4(i, n)) throw adapterContractFailure(`studio.host/unexpected-model-result`, `The model port returned a document outside the requested model coordinate.`);
+		let n = cloneContractValue(e), r = createContext(this.#configuration, this.#identifiers.requestId(y$9), { operationId: y$9 }), i = await this.#invoke(() => t.get(n, r));
+		if (!I$5(i, n)) throw adapterContractFailure(`studio.host/unexpected-model-result`, `The model port returned a document outside the requested model coordinate.`);
 		return {
 			...i.revision === void 0 ? {} : { revision: i.revision },
 			value: cloneContractValue(i.value)
@@ -10845,11 +10845,11 @@ var A$6 = class {
 		this.#assertActive();
 		let e = this.#adapter.model;
 		if (e === void 0) throw adapterContractFailure(`studio.host/adapter-port-unavailable`, `The negotiated model adapter is unavailable.`);
-		let t = createContext(this.#configuration, this.#identifiers.requestId(b$8), { operationId: b$8 }), n = await this.#invoke(() => e.list(t));
-		if (!L$4(n)) throw adapterContractFailure(`studio.host/unexpected-model-result`, `The model port returned a malformed or duplicate model collection.`);
+		let t = createContext(this.#configuration, this.#identifiers.requestId(b$9), { operationId: b$9 }), n = await this.#invoke(() => e.list(t));
+		if (!L$5(n)) throw adapterContractFailure(`studio.host/unexpected-model-result`, `The model port returned a malformed or duplicate model collection.`);
 		return {
 			...n.revision === void 0 ? {} : { revision: n.revision },
-			value: cloneContractValue(n.value).sort(re)
+			value: cloneContractValue(n.value).sort(re$1)
 		};
 	}
 	async #saveSnapshot(e, t) {
@@ -10857,23 +10857,23 @@ var A$6 = class {
 		let n = this.#revision, r = {
 			...e,
 			revision: n
-		}, i = mutationFingerprint(r, this.#configuration, n), a = this.#mutationKey(v$8, i), o = createContext(this.#configuration, this.#identifiers.requestId(v$8), {
+		}, i = mutationFingerprint(r, this.#configuration, n), a = this.#mutationKey(v$9, i), o = createContext(this.#configuration, this.#identifiers.requestId(v$9), {
 			expectedRevision: n,
 			idempotencyKey: a,
-			operationId: v$8
+			operationId: v$9
 		}), s = await this.#invoke(() => this.#adapter.artifact.save(r, o));
-		if (s.value !== null || !$(s.revision)) throw adapterContractFailure(`studio.host/missing-accepted-revision`, `The artifact save did not return its accepted revision.`);
-		return this.#revision = s.revision, this.session.markSaved(s.revision, t), this.#clearMutationKey(v$8, i), {
+		if (s.value !== null || !$$1(s.revision)) throw adapterContractFailure(`studio.host/missing-accepted-revision`, `The artifact save did not return its accepted revision.`);
+		return this.#revision = s.revision, this.session.markSaved(s.revision, t), this.#clearMutationKey(v$9, i), {
 			revision: s.revision,
 			value: null
 		};
 	}
 	async #searchResources(e) {
-		if (this.#assertActive(), !R$4(e)) throw new StudioHostSessionError(`invalid-resource-query`, `A resource search requires a canonical resource type, bounded limit, cursor, and search text.`);
+		if (this.#assertActive(), !R$5(e)) throw new StudioHostSessionError(`invalid-resource-query`, `A resource search requires a canonical resource type, bounded limit, cursor, and search text.`);
 		let t = this.#adapter.resource;
 		if (t === void 0) throw adapterContractFailure(`studio.host/adapter-port-unavailable`, `The negotiated resource adapter is unavailable.`);
-		let n = cloneContractValue(e), r = createContext(this.#configuration, this.#identifiers.requestId(w$8), { operationId: w$8 }), i = await this.#invoke(() => t.search(n, r));
-		if (!z$3(i, n)) throw adapterContractFailure(`studio.host/unexpected-resource-result`, `The resource port returned a malformed, mismatched, duplicate, or oversized search page.`);
+		let n = cloneContractValue(e), r = createContext(this.#configuration, this.#identifiers.requestId(w$9), { operationId: w$9 }), i = await this.#invoke(() => t.search(n, r));
+		if (!z$4(i, n)) throw adapterContractFailure(`studio.host/unexpected-resource-result`, `The resource port returned a malformed, mismatched, duplicate, or oversized search page.`);
 		return {
 			...i.revision === void 0 ? {} : { revision: i.revision },
 			value: cloneContractValue(i.value)
@@ -10883,11 +10883,11 @@ var A$6 = class {
 		this.#assertActive();
 		let t = this.#adapter.recovery;
 		if (t === void 0) throw adapterContractFailure(`studio.host/adapter-port-unavailable`, `The negotiated recovery adapter is unavailable.`);
-		let n = cloneContractValue(e), r = mutationFingerprint(n, this.#configuration), i = this.#mutationKey(x$8, r), a = createContext(this.#configuration, this.#identifiers.requestId(x$8), {
+		let n = cloneContractValue(e), r = mutationFingerprint(n, this.#configuration), i = this.#mutationKey(x$9, r), a = createContext(this.#configuration, this.#identifiers.requestId(x$9), {
 			idempotencyKey: i,
-			operationId: x$8
+			operationId: x$9
 		}), o = await this.#invoke(() => t.store(n, a));
-		return this.#clearMutationKey(x$8, r), o;
+		return this.#clearMutationKey(x$9, r), o;
 	}
 	#assertActive() {
 		if (this.#invalidationFailure !== void 0) throw this.#invalidationFailure;
@@ -10943,49 +10943,49 @@ function j$6(e, t, n) {
 	} catch {
 		throw new StudioHostSessionError(`invalid-identifier`, `The ${n}-ID factory failed to allocate an identifier.`);
 	}
-	if (!Q(r)) throw new StudioHostSessionError(`invalid-identifier`, `The ${n}-ID factory returned a non-canonical stable identifier.`);
+	if (!Q$1(r)) throw new StudioHostSessionError(`invalid-identifier`, `The ${n}-ID factory returned a non-canonical stable identifier.`);
 	return r;
 }
 function ee(e, t, n) {
-	let r = t.hostCapabilities.ports.find((e) => e.id === p$8);
+	let r = t.hostCapabilities.ports.find((e) => e.id === p$11);
 	if (r !== void 0) {
-		let e = [_$8];
-		t.sessionState === `editable` && e.push(v$8);
+		let e = [_$9];
+		t.sessionState === `editable` && e.push(v$9);
 		for (let t of e) r.operations.includes(t) || n.diagnostics.push(createDiagnostic(`studio.host/missing-required-operation`, `The host does not advertise the required ${t} operation.`, `blocking`, { operationId: t }));
 	}
 	if (!t.features.offlineRecovery) return !1;
-	let i = t.hostCapabilities.ports.find((e) => e.id === h$7);
+	let i = t.hostCapabilities.ports.find((e) => e.id === h$9);
 	if (i === void 0) return !1;
 	let a = !0;
 	for (let e of [
-		x$8,
-		S$8,
-		C$8
+		x$9,
+		S$9,
+		C$9
 	]) i.operations.includes(e) || (a = !1, n.diagnostics.push(createDiagnostic(`studio.host/missing-optional-operation`, `The optional recovery port omits ${e}; recovery is disabled.`, `information`, { operationId: e })));
-	return e.recovery === void 0 && (a = !1, n.diagnostics.push(createDiagnostic(`studio.host/adapter-port-unavailable`, `The capability document advertises recovery but the adapter does not implement it.`, `information`, { port: h$7 }))), a;
+	return e.recovery === void 0 && (a = !1, n.diagnostics.push(createDiagnostic(`studio.host/adapter-port-unavailable`, `The capability document advertises recovery but the adapter does not implement it.`, `information`, { port: h$9 }))), a;
 }
-function te(e, t, n) {
-	let r = t.hostCapabilities.ports.find((e) => e.id === m$8);
+function te$1(e, t, n) {
+	let r = t.hostCapabilities.ports.find((e) => e.id === m$10);
 	if (r === void 0) return !1;
 	let i = !0;
-	for (let e of [b$8, y$8]) r.operations.includes(e) || (i = !1, n.diagnostics.push(createDiagnostic(`studio.host/missing-optional-operation`, `The model port omits ${e}; model binding is disabled.`, `information`, { operationId: e })));
-	return e.model === void 0 && (i = !1, n.diagnostics.push(createDiagnostic(`studio.host/adapter-port-unavailable`, `The capability document advertises model reads but the adapter does not implement them.`, `information`, { port: m$8 }))), i;
+	for (let e of [b$9, y$9]) r.operations.includes(e) || (i = !1, n.diagnostics.push(createDiagnostic(`studio.host/missing-optional-operation`, `The model port omits ${e}; model binding is disabled.`, `information`, { operationId: e })));
+	return e.model === void 0 && (i = !1, n.diagnostics.push(createDiagnostic(`studio.host/adapter-port-unavailable`, `The capability document advertises model reads but the adapter does not implement them.`, `information`, { port: m$10 }))), i;
 }
-function ne(e, t, n) {
-	let r = t.hostCapabilities.ports.find((e) => e.id === g$7);
+function ne$1(e, t, n) {
+	let r = t.hostCapabilities.ports.find((e) => e.id === g$8);
 	if (r === void 0) return !1;
 	let i = !0;
-	return r.operations.includes(w$8) || (i = !1, n.diagnostics.push(createDiagnostic(`studio.host/missing-optional-operation`, `The resource port omits ${w$8}; resource discovery is disabled.`, `information`, { operationId: w$8 }))), e.resource === void 0 && (i = !1, n.diagnostics.push(createDiagnostic(`studio.host/adapter-port-unavailable`, `The capability document advertises resource discovery but the adapter does not implement it.`, `information`, { port: g$7 }))), i;
+	return r.operations.includes(w$9) || (i = !1, n.diagnostics.push(createDiagnostic(`studio.host/missing-optional-operation`, `The resource port omits ${w$9}; resource discovery is disabled.`, `information`, { operationId: w$9 }))), e.resource === void 0 && (i = !1, n.diagnostics.push(createDiagnostic(`studio.host/adapter-port-unavailable`, `The capability document advertises resource discovery but the adapter does not implement it.`, `information`, { port: g$8 }))), i;
 }
-function M$4(e, t) {
+function M$5(e, t) {
 	e.artifacts.blueprint === void 0 && t.diagnostics.push(createDiagnostic(`studio.host/missing-blueprint-artifact`, `A Blueprint session requires a locked Blueprint artifact reference.`, `blocking`)), (e.mode !== `blueprint` || e.composite !== `single`) && t.diagnostics.push(createDiagnostic(`studio.host/unsupported-session-profile`, `This host-session profile opens only single Blueprint configurations.`, `blocking`, {
 		composite: e.composite,
 		mode: e.mode
 	}));
 }
-function N$4(e, t) {
+function N$5(e, t) {
 	let n = new Set(t ?? []);
-	return n.delete(p$8), e.features.offlineRecovery && n.add(h$7), e.hostCapabilities.ports.some((e) => e.id === m$8) && n.add(m$8), e.hostCapabilities.ports.some((e) => e.id === g$7) && n.add(g$7), [...n];
+	return n.delete(p$11), e.features.offlineRecovery && n.add(h$9), e.hostCapabilities.ports.some((e) => e.id === m$10) && n.add(m$10), e.hostCapabilities.ports.some((e) => e.id === g$8) && n.add(g$8), [...n];
 }
 function createContext(e, t, n) {
 	return {
@@ -11010,92 +11010,92 @@ function createDiagnostic(e, t, n, r) {
 		severity: n
 	};
 }
-function P$4(e, t) {
+function P$5(e, t) {
 	let n = t ?? e.revision;
-	if (!$(n)) throw new StudioHostSessionError(`unexpected-artifact`, `The loaded Blueprint does not carry a valid accepted revision.`, [createDiagnostic(`studio.host/missing-accepted-revision`, `The loaded Blueprint does not carry a valid accepted revision.`, `blocking`)]);
+	if (!$$1(n)) throw new StudioHostSessionError(`unexpected-artifact`, `The loaded Blueprint does not carry a valid accepted revision.`, [createDiagnostic(`studio.host/missing-accepted-revision`, `The loaded Blueprint does not carry a valid accepted revision.`, `blocking`)]);
 	return cloneContractValue({
 		...e,
 		revision: n
 	});
 }
-function F$4(e, t) {
+function F$5(e, t) {
 	if (typeof e != `object` || !e || Array.isArray(e) || !(`value` in e)) return !1;
 	let n = e.value;
 	return typeof n == `object` && !!n && !Array.isArray(n) && `kind` in n && n.kind === `blueprint` && `id` in n && n.id === t;
 }
-function I$4(e, t) {
-	if (!q$1(e) || !J$1(e.value)) return !1;
-	let n = X$1(t);
+function I$5(e, t) {
+	if (!q$3(e) || !J$3(e.value)) return !1;
+	let n = X$3(t);
 	return e.value.id === t.id && e.value.version === t.version && (n === void 0 || e.value.revision === n) && (e.revision === void 0 || e.revision === e.value.revision);
 }
-function L$4(e) {
-	if (!q$1(e) || !Array.isArray(e.value)) return !1;
+function L$5(e) {
+	if (!q$3(e) || !Array.isArray(e.value)) return !1;
 	let t = /* @__PURE__ */ new Set();
 	for (let n of e.value) {
-		if (!J$1(n)) return !1;
+		if (!J$3(n)) return !1;
 		let e = `${n.id}\u0000${n.version}\u0000${n.revision}`;
 		if (t.has(e)) return !1;
 		t.add(e);
 	}
 	return !0;
 }
-function R$4(e) {
-	return !G$3(e) || !K$1(e, [`limit`, `resourceType`], [`cursor`, `search`]) ? !1 : typeof e.limit == `number` && Number.isSafeInteger(e.limit) && e.limit >= STUDIO_RESOURCE_SEARCH_LIMITS.minimumLimit && e.limit <= STUDIO_RESOURCE_SEARCH_LIMITS.maximumLimit && U$3(e.resourceType) && W$3(e.cursor, STUDIO_RESOURCE_SEARCH_LIMITS.maximumCursorLength, !1) && W$3(e.search, STUDIO_RESOURCE_SEARCH_LIMITS.maximumSearchLength, !0);
+function R$5(e) {
+	return !G$4(e) || !K$3(e, [`limit`, `resourceType`], [`cursor`, `search`]) ? !1 : typeof e.limit == `number` && Number.isSafeInteger(e.limit) && e.limit >= STUDIO_RESOURCE_SEARCH_LIMITS.minimumLimit && e.limit <= STUDIO_RESOURCE_SEARCH_LIMITS.maximumLimit && U$4(e.resourceType) && W$4(e.cursor, STUDIO_RESOURCE_SEARCH_LIMITS.maximumCursorLength, !1) && W$4(e.search, STUDIO_RESOURCE_SEARCH_LIMITS.maximumSearchLength, !0);
 }
-function z$3(e, t) {
-	return !(!q$1(e) || !B$4(e.value, t));
+function z$4(e, t) {
+	return !(!q$3(e) || !B$5(e.value, t));
 }
-function B$4(e, t) {
-	if (!G$3(e) || !K$1(e, [`items`], [`nextCursor`]) || !Array.isArray(e.items) || e.items.length > t.limit || !W$3(e.nextCursor, STUDIO_RESOURCE_SEARCH_LIMITS.maximumCursorLength, !1)) return !1;
+function B$5(e, t) {
+	if (!G$4(e) || !K$3(e, [`items`], [`nextCursor`]) || !Array.isArray(e.items) || e.items.length > t.limit || !W$4(e.nextCursor, STUDIO_RESOURCE_SEARCH_LIMITS.maximumCursorLength, !1)) return !1;
 	let n = /* @__PURE__ */ new Set();
 	for (let r of e.items) {
-		if (!V$3(r, t.resourceType) || n.has(r.id)) return !1;
+		if (!V$4(r, t.resourceType) || n.has(r.id)) return !1;
 		n.add(r.id);
 	}
 	return !0;
 }
-function V$3(e, t) {
-	return G$3(e) && K$1(e, [
+function V$4(e, t) {
+	return G$4(e) && K$3(e, [
 		`id`,
 		`label`,
 		`resourceType`
-	]) && Q(e.id) && e.resourceType === t && H$3(e.label);
+	]) && Q$1(e.id) && e.resourceType === t && H$4(e.label);
 }
-function H$3(e) {
-	return G$3(e) && K$1(e, [`key`], [`defaultMessage`]) && U$3(e.key) && (e.defaultMessage === void 0 || typeof e.defaultMessage == `string` && e.defaultMessage.length >= 1 && e.defaultMessage.length <= 500);
+function H$4(e) {
+	return G$4(e) && K$3(e, [`key`], [`defaultMessage`]) && U$4(e.key) && (e.defaultMessage === void 0 || typeof e.defaultMessage == `string` && e.defaultMessage.length >= 1 && e.defaultMessage.length <= 500);
 }
-function U$3(e) {
-	return typeof e == `string` && e.length <= 160 && E$8.test(e);
+function U$4(e) {
+	return typeof e == `string` && e.length <= 160 && E$9.test(e);
 }
-function W$3(e, t, n) {
+function W$4(e, t, n) {
 	return e === void 0 || typeof e == `string` && e.length <= t && (n || e.length >= 1);
 }
-function G$3(e) {
+function G$4(e) {
 	if (typeof e != `object` || !e || Array.isArray(e)) return !1;
 	let t = Object.getPrototypeOf(e);
 	return t === Object.prototype || t === null;
 }
-function K$1(e, t, n = []) {
+function K$3(e, t, n = []) {
 	let r = /* @__PURE__ */ new Set([...t, ...n]);
 	return t.every((t) => Object.hasOwn(e, t)) && Object.keys(e).every((e) => r.has(e));
 }
-function q$1(e) {
-	return typeof e != `object` || !e || Array.isArray(e) || !(`value` in e) ? !1 : !(`revision` in e) || $(e.revision);
+function q$3(e) {
+	return typeof e != `object` || !e || Array.isArray(e) || !(`value` in e) ? !1 : !(`revision` in e) || $$1(e.revision);
 }
-function J$1(e) {
+function J$3(e) {
 	return O$7.validate(e);
 }
-function Y$1(e) {
+function Y$3(e) {
 	return k$6.validate(e);
 }
-function X$1(e) {
+function X$3(e) {
 	let t = e;
-	return $(t.revision) ? t.revision : void 0;
+	return $$1(t.revision) ? t.revision : void 0;
 }
-function re(e, t) {
-	return Z$1(e.id, t.id) || Z$1(e.version, t.version) || Z$1(e.revision, t.revision);
+function re$1(e, t) {
+	return Z$2(e.id, t.id) || Z$2(e.version, t.version) || Z$2(e.revision, t.revision);
 }
-function Z$1(e, t) {
+function Z$2(e, t) {
 	return e < t ? -1 : +(e > t);
 }
 function mutationFingerprint(e, t, n) {
@@ -11108,7 +11108,7 @@ function mutationFingerprint(e, t, n) {
 		}
 	});
 }
-async function ie(e) {
+async function ie$1(e) {
 	try {
 		return await e();
 	} catch (e) {
@@ -11134,7 +11134,7 @@ function adapterContractFailure(n, r) {
 function isStaleGenerationFailure(e) {
 	return e.error.category === `invalid-request` && (e.error.diagnostics?.some((e) => e.code === STUDIO_STALE_SESSION_GENERATION_DIAGNOSTIC_CODE) ?? !1);
 }
-function ae(e) {
+function ae$1(e) {
 	return {
 		availablePorts: [...e.availablePorts],
 		diagnostics: cloneContractValue(e.diagnostics),
@@ -11144,38 +11144,38 @@ function ae(e) {
 		sessionState: e.sessionState
 	};
 }
-function Q(e) {
-	return typeof e == `string` && e.length >= 1 && e.length <= 240 && !D$6.has(e) && T$8.test(e);
+function Q$1(e) {
+	return typeof e == `string` && e.length >= 1 && e.length <= 240 && !D$7.has(e) && T$9.test(e);
 }
-function $(e) {
+function $$1(e) {
 	return typeof e == `string` && e.length >= 1 && e.length <= 200;
 }
 //#endregion
 //#region node_modules/@kumwe/studio-core/dist/schema-profile.js
-var n$5 = 1e4;
-var r$7 = 1024;
-var i$9 = 1e4;
-var a$8 = 1e3;
-var o$5 = 262144;
-var s$6 = 1024;
-var c$4 = 1e3;
+var n$6 = 1e4;
+var r$8 = 1024;
+var i$11 = 1e4;
+var a$12 = 1e3;
+var o$7 = 262144;
+var s$7 = 1024;
+var c$5 = 1e3;
 Object.freeze({
 	maxAlternatives: 64,
-	maxDescriptionLength: n$5,
-	maxEnumMembers: r$7,
+	maxDescriptionLength: n$6,
+	maxEnumMembers: r$8,
 	maxExamples: 100,
 	maxJsonDepth: 64,
-	maxJsonItems: i$9,
-	maxJsonProperties: a$8,
+	maxJsonItems: i$11,
+	maxJsonProperties: a$12,
 	maxObjectKeyLength: 200,
 	maxPropertyNames: 512,
 	maxReferenceLength: 500,
 	maxReferences: 128,
-	maxSchemaBytes: o$5,
+	maxSchemaBytes: o$7,
 	maxSchemaDepth: 32,
 	maxSchemaMapProperties: 512,
-	maxSchemaNodes: s$6,
-	maxTitleLength: c$4
+	maxSchemaNodes: s$7,
+	maxTitleLength: c$5
 });
 Object.freeze([
 	`invalid-root`,
@@ -11193,8 +11193,8 @@ var StudioSchemaProfileError = class extends TypeError {
 		super(n, r), this.name = `StudioSchemaProfileError`, this.code = e, this.schemaPath = t;
 	}
 };
-var d$9 = new Set(`$defs.$ref.$schema.additionalProperties.allOf.anyOf.const.default.dependentRequired.description.else.enum.examples.exclusiveMaximum.exclusiveMinimum.if.items.maxItems.maxLength.maxProperties.maximum.minItems.minLength.minProperties.minimum.multipleOf.not.oneOf.prefixItems.properties.propertyNames.readOnly.required.then.title.type.uniqueItems.writeOnly`.split(`.`));
-var f$9 = /* @__PURE__ */ new Set([
+var d$10 = new Set(`$defs.$ref.$schema.additionalProperties.allOf.anyOf.const.default.dependentRequired.description.else.enum.examples.exclusiveMaximum.exclusiveMinimum.if.items.maxItems.maxLength.maxProperties.maximum.minItems.minLength.minProperties.minimum.multipleOf.not.oneOf.prefixItems.properties.propertyNames.readOnly.required.then.title.type.uniqueItems.writeOnly`.split(`.`));
+var f$11 = /* @__PURE__ */ new Set([
 	`array`,
 	`boolean`,
 	`integer`,
@@ -11203,40 +11203,40 @@ var f$9 = /* @__PURE__ */ new Set([
 	`object`,
 	`string`
 ]);
-var p$7 = class extends RangeError {};
-var m$7 = class extends TypeError {};
+var p$10 = class extends RangeError {};
+var m$9 = class extends TypeError {};
 function compileStudioPropertySchema(e) {
-	Z(e) || z$2(`invalid-root`, ``, `Studio property schema root must be a JSON Schema object.`);
+	Z$1(e) || z$3(`invalid-root`, ``, `Studio property schema root must be a JSON Schema object.`);
 	try {
-		G$2(e);
+		G$3(e);
 	} catch (e) {
-		e instanceof p$7 && z$2(`limit-exceeded`, ``, `Studio property schema exceeds ${o$5} canonical UTF-8 bytes.`), e instanceof m$7 || z$2(`invalid-root`, ``, `Studio property schema must be a bounded canonical JSON document.`, e);
+		e instanceof p$10 && z$3(`limit-exceeded`, ``, `Studio property schema exceeds ${o$7} canonical UTF-8 bytes.`), e instanceof m$9 || z$3(`invalid-root`, ``, `Studio property schema must be a bounded canonical JSON document.`, e);
 	}
 	let n = {
 		references: 0,
 		schemaNodes: 0,
 		seen: /* @__PURE__ */ new WeakSet()
 	}, r = [];
-	j$5(() => h$6(e, ``, 1, n), r), j$5(() => I$3(e), r), j$5(() => A$5(e), r);
-	let i = M$3(e, r);
+	j$5(() => h$8(e, ``, 1, n), r), j$5(() => I$4(e), r), j$5(() => A$5(e), r);
+	let i = M$4(e, r);
 	if (i !== void 0) throw i;
 	try {
 		return compileProfileSchema(e);
 	} catch (e) {
-		z$2(`invalid-keyword-value`, ``, `Studio property schema does not compile under the strict profile.`, e);
+		z$3(`invalid-keyword-value`, ``, `Studio property schema does not compile under the strict profile.`, e);
 	}
 }
 function assertStudioPropertySchema(e) {
 	compileStudioPropertySchema(e);
 }
-function h$6(e, t, r, i) {
-	Z(e) || z$2(`invalid-keyword-value`, t, `${V$2(t)} must be a JSON Schema object.`), X(e, t, i), y$7(t, r, i);
-	for (let [a, o] of q(e)) {
-		let e = B$3(t, a);
-		switch (F$3(a, t), d$9.has(a) || z$2(`unsupported-keyword`, e, `${V$2(e)} uses keyword ${JSON.stringify(a)}, which is not allowed by the Studio Schema Profile.`), a) {
+function h$8(e, t, r, i) {
+	Z$1(e) || z$3(`invalid-keyword-value`, t, `${V$3(t)} must be a JSON Schema object.`), X$2(e, t, i), y$8(t, r, i);
+	for (let [a, o] of q$2(e)) {
+		let e = B$4(t, a);
+		switch (F$4(a, t), d$10.has(a) || z$3(`unsupported-keyword`, e, `${V$3(e)} uses keyword ${JSON.stringify(a)}, which is not allowed by the Studio Schema Profile.`), a) {
 			case `$defs`:
 			case `properties`:
-				g$6(o, e, r + 1, i);
+				g$7(o, e, r + 1, i);
 				break;
 			case `additionalProperties`:
 			case `else`:
@@ -11245,40 +11245,40 @@ function h$6(e, t, r, i) {
 			case `not`:
 			case `propertyNames`:
 			case `then`:
-				v$7(o, e, r + 1, i);
+				v$8(o, e, r + 1, i);
 				break;
 			case `allOf`:
 			case `anyOf`:
 			case `oneOf`:
 			case `prefixItems`:
-				_$7(o, e, r + 1, i);
+				_$8(o, e, r + 1, i);
 				break;
 			case `$ref`:
-				b$7(o, e, i);
+				b$8(o, e, i);
 				break;
 			case `$schema`:
-				o !== `https://json-schema.org/draft/2020-12/schema` && z$2(`invalid-keyword-value`, e, `${V$2(e)} must declare JSON Schema Draft 2020-12.`);
+				o !== `https://json-schema.org/draft/2020-12/schema` && z$3(`invalid-keyword-value`, e, `${V$3(e)} must declare JSON Schema Draft 2020-12.`);
 				break;
 			case `enum`:
-				x$7(o, e, 1, i);
+				x$8(o, e, 1, i);
 				break;
 			case `examples`:
-				S$7(o, e, 1, i);
+				S$8(o, e, 1, i);
 				break;
 			case `dependentRequired`:
-				C$7(o, e, i);
+				C$8(o, e, i);
 				break;
 			case `required`:
-				w$7(o, e, 512, i);
+				w$8(o, e, 512, i);
 				break;
 			case `type`:
-				T$7(o, e, i);
+				T$8(o, e, i);
 				break;
 			case `description`:
-				E$7(o, e, n$5);
+				E$8(o, e, n$6);
 				break;
 			case `title`:
-				E$7(o, e, c$4);
+				E$8(o, e, c$5);
 				break;
 			case `maxItems`:
 			case `maxLength`:
@@ -11286,7 +11286,7 @@ function h$6(e, t, r, i) {
 			case `minItems`:
 			case `minLength`:
 			case `minProperties`:
-				D$5(o, e);
+				D$6(o, e);
 				break;
 			case `exclusiveMaximum`:
 			case `exclusiveMinimum`:
@@ -11295,102 +11295,102 @@ function h$6(e, t, r, i) {
 				O$6(o, e);
 				break;
 			case `multipleOf`:
-				O$6(o, e), o <= 0 && z$2(`invalid-keyword-value`, e, `${V$2(e)} must be greater than zero.`);
+				O$6(o, e), o <= 0 && z$3(`invalid-keyword-value`, e, `${V$3(e)} must be greater than zero.`);
 				break;
 			case `readOnly`:
 			case `uniqueItems`:
 			case `writeOnly`:
-				typeof o != `boolean` && z$2(`invalid-keyword-value`, e, `${V$2(e)} must be a boolean.`);
+				typeof o != `boolean` && z$3(`invalid-keyword-value`, e, `${V$3(e)} must be a boolean.`);
 				break;
 			case `const`:
 			case `default`: k$5(o, e, 1, i);
 		}
 	}
 }
-function g$6(e, t, n, r) {
-	Z(e) || z$2(`invalid-keyword-value`, t, `${V$2(t)} must be an object of schemas.`), X(e, t, r);
+function g$7(e, t, n, r) {
+	Z$1(e) || z$3(`invalid-keyword-value`, t, `${V$3(t)} must be an object of schemas.`), X$2(e, t, r);
 	let i = Object.keys(e);
-	i.length > 512 && z$2(`limit-exceeded`, t, `${V$2(t)} exceeds 512 schema entries.`);
-	for (let a of i.sort(Y)) F$3(a, t), h$6(e[a], B$3(t, a), n, r);
+	i.length > 512 && z$3(`limit-exceeded`, t, `${V$3(t)} exceeds 512 schema entries.`);
+	for (let a of i.sort(Y$2)) F$4(a, t), h$8(e[a], B$4(t, a), n, r);
 }
-function _$7(e, t, n, r) {
-	(!Array.isArray(e) || !J(e)) && z$2(`invalid-keyword-value`, t, `${V$2(t)} must be a dense JSON array of schemas.`), e.length === 0 && z$2(`invalid-keyword-value`, t, `${V$2(t)} must contain at least one schema.`), e.length > 64 && z$2(`limit-exceeded`, t, `${V$2(t)} must contain at most 64 schemas.`), X(e, t, r);
-	for (let [i, a] of e.entries()) v$7(a, B$3(t, String(i)), n, r);
+function _$8(e, t, n, r) {
+	(!Array.isArray(e) || !J$2(e)) && z$3(`invalid-keyword-value`, t, `${V$3(t)} must be a dense JSON array of schemas.`), e.length === 0 && z$3(`invalid-keyword-value`, t, `${V$3(t)} must contain at least one schema.`), e.length > 64 && z$3(`limit-exceeded`, t, `${V$3(t)} must contain at most 64 schemas.`), X$2(e, t, r);
+	for (let [i, a] of e.entries()) v$8(a, B$4(t, String(i)), n, r);
 }
-function v$7(e, t, n, r) {
+function v$8(e, t, n, r) {
 	if (typeof e == `boolean`) {
-		y$7(t, n, r);
+		y$8(t, n, r);
 		return;
 	}
-	h$6(e, t, n, r);
+	h$8(e, t, n, r);
 }
-function y$7(e, t, n) {
-	t > 32 && z$2(`limit-exceeded`, e, `${V$2(e)} exceeds the Studio Schema Profile depth limit.`), n.schemaNodes += 1, n.schemaNodes > s$6 && z$2(`limit-exceeded`, e, `Studio property schema exceeds ${s$6} schema nodes.`);
+function y$8(e, t, n) {
+	t > 32 && z$3(`limit-exceeded`, e, `${V$3(e)} exceeds the Studio Schema Profile depth limit.`), n.schemaNodes += 1, n.schemaNodes > s$7 && z$3(`limit-exceeded`, e, `Studio property schema exceeds ${s$7} schema nodes.`);
 }
-function b$7(e, t, n) {
-	U$2(e) || z$2(`invalid-reference`, t, `${V$2(t)} must be a bounded local JSON Pointer reference.`), n.references += 1, n.references > 128 && z$2(`limit-exceeded`, t, `Studio property schema exceeds 128 references.`);
+function b$8(e, t, n) {
+	U$3(e) || z$3(`invalid-reference`, t, `${V$3(t)} must be a bounded local JSON Pointer reference.`), n.references += 1, n.references > 128 && z$3(`limit-exceeded`, t, `Studio property schema exceeds 128 references.`);
 }
-function x$7(t, n, i, a) {
-	(!Array.isArray(t) || !J(t)) && z$2(`invalid-keyword-value`, n, `${V$2(n)} must be a dense JSON array.`), t.length === 0 && z$2(`invalid-keyword-value`, n, `${V$2(n)} must contain at least one value.`), t.length > r$7 && z$2(`limit-exceeded`, n, `${V$2(n)} exceeds ${r$7} members.`), X(t, n, a);
+function x$8(t, n, i, a) {
+	(!Array.isArray(t) || !J$2(t)) && z$3(`invalid-keyword-value`, n, `${V$3(n)} must be a dense JSON array.`), t.length === 0 && z$3(`invalid-keyword-value`, n, `${V$3(n)} must contain at least one value.`), t.length > r$8 && z$3(`limit-exceeded`, n, `${V$3(n)} exceeds ${r$8} members.`), X$2(t, n, a);
 	let o = /* @__PURE__ */ new Set();
 	for (let [r, s] of t.entries()) {
-		k$5(s, B$3(n, String(r)), i, a);
+		k$5(s, B$4(n, String(r)), i, a);
 		let t = canonicalStringify(s, { maximumDepth: 65 });
-		o.has(t) && z$2(`invalid-keyword-value`, B$3(n, String(r)), `${V$2(n)} must contain unique JSON values.`), o.add(t);
+		o.has(t) && z$3(`invalid-keyword-value`, B$4(n, String(r)), `${V$3(n)} must contain unique JSON values.`), o.add(t);
 	}
 }
-function S$7(e, t, n, r) {
-	(!Array.isArray(e) || !J(e)) && z$2(`invalid-keyword-value`, t, `${V$2(t)} must be a dense JSON array.`), e.length > 100 && z$2(`limit-exceeded`, t, `${V$2(t)} exceeds 100 examples.`), X(e, t, r);
-	for (let [i, a] of e.entries()) k$5(a, B$3(t, String(i)), n, r);
+function S$8(e, t, n, r) {
+	(!Array.isArray(e) || !J$2(e)) && z$3(`invalid-keyword-value`, t, `${V$3(t)} must be a dense JSON array.`), e.length > 100 && z$3(`limit-exceeded`, t, `${V$3(t)} exceeds 100 examples.`), X$2(e, t, r);
+	for (let [i, a] of e.entries()) k$5(a, B$4(t, String(i)), n, r);
 }
-function C$7(e, t, n) {
-	Z(e) || z$2(`invalid-keyword-value`, t, `${V$2(t)} must be an object of property-name arrays.`), X(e, t, n);
+function C$8(e, t, n) {
+	Z$1(e) || z$3(`invalid-keyword-value`, t, `${V$3(t)} must be an object of property-name arrays.`), X$2(e, t, n);
 	let r = Object.keys(e);
-	r.length > 512 && z$2(`limit-exceeded`, t, `${V$2(t)} exceeds 512 dependency entries.`);
-	for (let i of r.sort(Y)) F$3(i, t), w$7(e[i], B$3(t, i), 512, n);
+	r.length > 512 && z$3(`limit-exceeded`, t, `${V$3(t)} exceeds 512 dependency entries.`);
+	for (let i of r.sort(Y$2)) F$4(i, t), w$8(e[i], B$4(t, i), 512, n);
 }
-function w$7(e, t, n, r) {
-	(!Array.isArray(e) || !J(e)) && z$2(`invalid-keyword-value`, t, `${V$2(t)} must be a dense array of property names.`), e.length > n && z$2(`limit-exceeded`, t, `${V$2(t)} exceeds ${n} property names.`), X(e, t, r);
+function w$8(e, t, n, r) {
+	(!Array.isArray(e) || !J$2(e)) && z$3(`invalid-keyword-value`, t, `${V$3(t)} must be a dense array of property names.`), e.length > n && z$3(`limit-exceeded`, t, `${V$3(t)} exceeds ${n} property names.`), X$2(e, t, r);
 	let i = /* @__PURE__ */ new Set();
-	for (let [n, r] of e.entries()) typeof r != `string` && z$2(`invalid-keyword-value`, B$3(t, String(n)), `${V$2(t)} must contain only property-name strings.`), F$3(r, t, B$3(t, String(n))), i.has(r) && z$2(`invalid-keyword-value`, B$3(t, String(n)), `${V$2(t)} must list unique property names.`), i.add(r);
+	for (let [n, r] of e.entries()) typeof r != `string` && z$3(`invalid-keyword-value`, B$4(t, String(n)), `${V$3(t)} must contain only property-name strings.`), F$4(r, t, B$4(t, String(n))), i.has(r) && z$3(`invalid-keyword-value`, B$4(t, String(n)), `${V$3(t)} must list unique property names.`), i.add(r);
 }
-function T$7(e, t, n) {
+function T$8(e, t, n) {
 	if (typeof e == `string`) {
-		f$9.has(e) || z$2(`invalid-keyword-value`, t, `${V$2(t)} names an unknown JSON Schema type.`);
+		f$11.has(e) || z$3(`invalid-keyword-value`, t, `${V$3(t)} names an unknown JSON Schema type.`);
 		return;
 	}
-	(!Array.isArray(e) || !J(e) || e.length === 0 || e.length > 7) && z$2(`invalid-keyword-value`, t, `${V$2(t)} must be a type name or a non-empty array of at most seven names.`), X(e, t, n);
+	(!Array.isArray(e) || !J$2(e) || e.length === 0 || e.length > 7) && z$3(`invalid-keyword-value`, t, `${V$3(t)} must be a type name or a non-empty array of at most seven names.`), X$2(e, t, n);
 	let r = /* @__PURE__ */ new Set();
-	for (let [n, i] of e.entries()) (typeof i != `string` || !f$9.has(i) || r.has(i)) && z$2(`invalid-keyword-value`, B$3(t, String(n)), `${V$2(t)} must list unique, known JSON Schema type names.`), r.add(i);
+	for (let [n, i] of e.entries()) (typeof i != `string` || !f$11.has(i) || r.has(i)) && z$3(`invalid-keyword-value`, B$4(t, String(n)), `${V$3(t)} must list unique, known JSON Schema type names.`), r.add(i);
 }
-function E$7(e, t, n) {
-	typeof e != `string` && z$2(`invalid-keyword-value`, t, `${V$2(t)} must be a string.`), W$2(e) > n && z$2(`limit-exceeded`, t, `${V$2(t)} exceeds ${n} characters.`);
+function E$8(e, t, n) {
+	typeof e != `string` && z$3(`invalid-keyword-value`, t, `${V$3(t)} must be a string.`), W$3(e) > n && z$3(`limit-exceeded`, t, `${V$3(t)} exceeds ${n} characters.`);
 }
-function D$5(e, t) {
-	(typeof e != `number` || !Number.isInteger(e) || e < 0) && z$2(`invalid-keyword-value`, t, `${V$2(t)} must be a non-negative integer.`);
+function D$6(e, t) {
+	(typeof e != `number` || !Number.isInteger(e) || e < 0) && z$3(`invalid-keyword-value`, t, `${V$3(t)} must be a non-negative integer.`);
 }
 function O$6(e, t) {
-	(typeof e != `number` || !Number.isFinite(e)) && z$2(`invalid-keyword-value`, t, `${V$2(t)} must be a finite number.`);
+	(typeof e != `number` || !Number.isFinite(e)) && z$3(`invalid-keyword-value`, t, `${V$3(t)} must be a finite number.`);
 }
 function k$5(e, t, n, r) {
 	if (!(e === null || typeof e == `boolean` || typeof e == `string` || typeof e == `number` && Number.isFinite(e))) {
-		if (n > 64 && z$2(`limit-exceeded`, t, `${V$2(t)} exceeds the Studio Schema Profile JSON depth limit.`), Array.isArray(e)) {
-			J(e) || z$2(`invalid-keyword-value`, t, `${V$2(t)} must be a dense JSON array.`), X(e, t, r), e.length > i$9 && z$2(`limit-exceeded`, t, `${V$2(t)} exceeds ${i$9} JSON items.`);
-			for (let [i, a] of e.entries()) k$5(a, B$3(t, String(i)), n + 1, r);
+		if (n > 64 && z$3(`limit-exceeded`, t, `${V$3(t)} exceeds the Studio Schema Profile JSON depth limit.`), Array.isArray(e)) {
+			J$2(e) || z$3(`invalid-keyword-value`, t, `${V$3(t)} must be a dense JSON array.`), X$2(e, t, r), e.length > i$11 && z$3(`limit-exceeded`, t, `${V$3(t)} exceeds ${i$11} JSON items.`);
+			for (let [i, a] of e.entries()) k$5(a, B$4(t, String(i)), n + 1, r);
 			return;
 		}
-		if (Z(e)) {
-			X(e, t, r);
+		if (Z$1(e)) {
+			X$2(e, t, r);
 			let i = Object.keys(e);
-			i.length > a$8 && z$2(`limit-exceeded`, t, `${V$2(t)} exceeds ${a$8} JSON properties.`);
-			for (let a of i.sort(Y)) F$3(a, t), k$5(e[a], B$3(t, a), n + 1, r);
+			i.length > a$12 && z$3(`limit-exceeded`, t, `${V$3(t)} exceeds ${a$12} JSON properties.`);
+			for (let a of i.sort(Y$2)) F$4(a, t), k$5(e[a], B$4(t, a), n + 1, r);
 			return;
 		}
-		z$2(`invalid-keyword-value`, t, `${V$2(t)} is not JSON-compatible.`);
+		z$3(`invalid-keyword-value`, t, `${V$3(t)} is not JSON-compatible.`);
 	}
 }
 function A$5(e) {
-	e.additionalProperties !== !1 && z$2(`invalid-root`, `/additionalProperties`, `Studio property schema root must declare additionalProperties: false.`), e.type !== `object` && z$2(`invalid-root`, `/type`, `Studio property schema root must declare exactly type "object".`);
+	e.additionalProperties !== !1 && z$3(`invalid-root`, `/additionalProperties`, `Studio property schema root must declare additionalProperties: false.`), e.type !== `object` && z$3(`invalid-root`, `/type`, `Studio property schema root must declare exactly type "object".`);
 }
 function j$5(e, t) {
 	try {
@@ -11403,13 +11403,13 @@ function j$5(e, t) {
 		throw e;
 	}
 }
-function M$3(e, t) {
+function M$4(e, t) {
 	let n;
-	for (let r of t) (n === void 0 || N$3(e, r.schemaPath, n.schemaPath) < 0) && (n = r);
+	for (let r of t) (n === void 0 || N$4(e, r.schemaPath, n.schemaPath) < 0) && (n = r);
 	return n;
 }
-function N$3(e, t, n) {
-	let r = P$3(t), i = P$3(n), a = e, o = Math.min(r.length, i.length);
+function N$4(e, t, n) {
+	let r = P$4(t), i = P$4(n), a = e, o = Math.min(r.length, i.length);
 	for (let e = 0; e < o; e += 1) {
 		let t = r[e], n = i[e];
 		if (t === void 0 || n === void 0) break;
@@ -11418,19 +11418,19 @@ function N$3(e, t, n) {
 				let e = Number(t), r = Number(n);
 				if (Number.isSafeInteger(e) && Number.isSafeInteger(r)) return e - r;
 			}
-			return Y(t, n);
+			return Y$2(t, n);
 		}
-		a = (Z(a) || Array.isArray(a)) && Object.hasOwn(a, t) ? a[t] : void 0;
+		a = (Z$1(a) || Array.isArray(a)) && Object.hasOwn(a, t) ? a[t] : void 0;
 	}
 	return r.length - i.length;
 }
-function P$3(e) {
+function P$4(e) {
 	return e === `` ? [] : e.slice(1).split(`/`).map((e) => e.replaceAll(`~1`, `/`).replaceAll(`~0`, `~`));
 }
-function F$3(e, t, n = B$3(t, e)) {
-	W$2(e) > 200 && z$2(`limit-exceeded`, n, `${V$2(t)} contains an object member name longer than 200 characters.`), (e.length === 0 || e === `__proto__` || e === `constructor` || e === `prototype` || H$2(e)) && z$2(`unsafe-member`, n, `${V$2(t)} contains forbidden object member name ${JSON.stringify(e)}.`);
+function F$4(e, t, n = B$4(t, e)) {
+	W$3(e) > 200 && z$3(`limit-exceeded`, n, `${V$3(t)} contains an object member name longer than 200 characters.`), (e.length === 0 || e === `__proto__` || e === `constructor` || e === `prototype` || H$3(e)) && z$3(`unsafe-member`, n, `${V$3(t)} contains forbidden object member name ${JSON.stringify(e)}.`);
 }
-function I$3(e) {
+function I$4(e) {
 	let t = [], n = /* @__PURE__ */ new Map(), r = [], i = [], a = [], o = /* @__PURE__ */ new WeakSet(), s = 0, c = (e, t) => ({
 		parent: e,
 		token: t
@@ -11440,7 +11440,7 @@ function I$3(e) {
 		let r = ``;
 		for (let e = t.length - 1; e >= 0; --e) {
 			let n = t[e];
-			n !== void 0 && (r = B$3(r, n));
+			n !== void 0 && (r = B$4(r, n));
 		}
 		return r;
 	}, u = (e) => {
@@ -11463,7 +11463,7 @@ function I$3(e) {
 		if (n === void 0 || o.has(n.node)) continue;
 		o.add(n.node);
 		let r = u(n.node), i = [], p = (e, t, a = n.diagnosticsEligible) => {
-			if (!Z(e)) return;
+			if (!Z$1(e)) return;
 			let o = u(e);
 			d(r, o);
 			let s = n.depth + 1;
@@ -11474,24 +11474,24 @@ function I$3(e) {
 				path: t
 			});
 		};
-		for (let [i, o] of q(n.node)) {
+		for (let [i, o] of q$2(n.node)) {
 			let f = c(n.path, i);
 			switch (i) {
 				case `$defs`:
 				case `properties`:
-					if (Z(o)) {
+					if (Z$1(o)) {
 						let e = Object.keys(o), t = e.length <= 512;
-						t && e.sort(Y);
+						t && e.sort(Y$2);
 						for (let r of e) p(o[r], c(f, r), n.diagnosticsEligible && t);
 					}
 					break;
 				case `$ref`:
-					if (U$2(o)) {
+					if (U$3(o)) {
 						let i = n.diagnosticsEligible && (s += 1) <= 128, c = i ? l(f) : ``;
 						try {
-							let n = R$3(e, o, c);
+							let n = R$4(e, o, c);
 							if (!n.schemaPosition) i && t.push(new StudioSchemaProfileError(`invalid-reference`, c, `Local schema reference ${o} does not resolve to a schema position.`));
-							else if (Z(n.value)) {
+							else if (Z$1(n.value)) {
 								let e = u(n.value);
 								d(r, e), i && a.push({
 									path: c,
@@ -11518,7 +11518,7 @@ function I$3(e) {
 				case `anyOf`:
 				case `oneOf`:
 				case `prefixItems`: if (Array.isArray(o)) {
-					let e = o.length > 0 && o.length <= 64 && J(o);
+					let e = o.length > 0 && o.length <= 64 && J$2(o);
 					for (let t = 0; t < o.length; t += 1) Object.hasOwn(o, t) && p(o[t], c(f, String(t)), n.diagnosticsEligible && e);
 				}
 			}
@@ -11528,12 +11528,12 @@ function I$3(e) {
 			t !== void 0 && f.push(t);
 		}
 	}
-	let p = L$3(r, i);
+	let p = L$4(r, i);
 	for (let e of a) p[e.source] === p[e.target] && t.push(new StudioSchemaProfileError(`recursive-schema`, e.path, `Recursive contributed schemas are not admitted by the alpha profile.`));
-	let m = M$3(e, t);
+	let m = M$4(e, t);
 	if (m !== void 0) throw m;
 }
-function L$3(e, t) {
+function L$4(e, t) {
 	let n = new Uint8Array(e.length), r = [];
 	for (let t = 0; t < e.length; t += 1) {
 		if (n[t] !== 0) continue;
@@ -11568,7 +11568,7 @@ function L$3(e, t) {
 	}
 	return i;
 }
-function R$3(e, t, n) {
+function R$4(e, t, n) {
 	if (t === `#`) return {
 		schemaPosition: !0,
 		value: e
@@ -11576,7 +11576,7 @@ function R$3(e, t, n) {
 	let r = e, i = `schema`;
 	for (let e of t.slice(2).split(`/`)) {
 		let a = e.replaceAll(`~1`, `/`).replaceAll(`~0`, `~`), o = `other`;
-		if (i === `schema` && Z(r)) switch (a) {
+		if (i === `schema` && Z$1(r)) switch (a) {
 			case `$defs`:
 			case `properties`:
 				o = `schema-map`;
@@ -11595,34 +11595,34 @@ function R$3(e, t, n) {
 			case `oneOf`:
 			case `prefixItems`: o = `schema-array`;
 		}
-		else (i === `schema-map` && Z(r) || i === `schema-array` && Array.isArray(r)) && (o = `schema`);
-		!Z(r) && !Array.isArray(r) && z$2(`invalid-reference`, n, `Local schema reference ${t} does not resolve to a schema.`), Object.hasOwn(r, a) || z$2(`invalid-reference`, n, `Local schema reference ${t} does not resolve to a schema.`), r = r[a], i = o;
+		else (i === `schema-map` && Z$1(r) || i === `schema-array` && Array.isArray(r)) && (o = `schema`);
+		!Z$1(r) && !Array.isArray(r) && z$3(`invalid-reference`, n, `Local schema reference ${t} does not resolve to a schema.`), Object.hasOwn(r, a) || z$3(`invalid-reference`, n, `Local schema reference ${t} does not resolve to a schema.`), r = r[a], i = o;
 	}
-	return typeof r != `boolean` && !Z(r) && z$2(`invalid-reference`, n, `Local schema reference ${t} does not resolve to a schema.`), {
+	return typeof r != `boolean` && !Z$1(r) && z$3(`invalid-reference`, n, `Local schema reference ${t} does not resolve to a schema.`), {
 		schemaPosition: i === `schema`,
 		value: r
 	};
 }
-function z$2(e, t, n, r) {
+function z$3(e, t, n, r) {
 	throw new StudioSchemaProfileError(e, t, n, r === void 0 ? void 0 : { cause: r });
 }
-function B$3(e, t) {
+function B$4(e, t) {
 	return `${e}/${t.replaceAll(`~`, `~0`).replaceAll(`/`, `~1`)}`;
 }
-function V$2(e) {
+function V$3(e) {
 	return e === `` ? `schema root` : e;
 }
-function H$2(e) {
+function H$3(e) {
 	for (let t = 0; t < e.length; t += 1) {
 		let n = e.charCodeAt(t);
 		if (n <= 31 || n === 127) return !0;
 	}
 	return !1;
 }
-function U$2(e) {
-	return typeof e == `string` && W$2(e) <= 500 && !H$2(e) && /^#(?:\/(?:[A-Za-z0-9._!$&'()*+,;=:@-]|~[01])*)*$/u.test(e);
+function U$3(e) {
+	return typeof e == `string` && W$3(e) <= 500 && !H$3(e) && /^#(?:\/(?:[A-Za-z0-9._!$&'()*+,;=:@-]|~[01])*)*$/u.test(e);
 }
-function W$2(e) {
+function W$3(e) {
 	let t = 0;
 	for (let n = 0; n < e.length; n += 1) {
 		t += 1;
@@ -11631,9 +11631,9 @@ function W$2(e) {
 	}
 	return t;
 }
-function G$2(e) {
+function G$3(e) {
 	let t = [e], n = /* @__PURE__ */ new WeakSet(), r = 0, i = (e) => {
-		if (r += e, r > o$5) throw new p$7();
+		if (r += e, r > o$7) throw new p$10();
 	};
 	for (; t.length > 0;) {
 		let e = t.pop();
@@ -11646,39 +11646,39 @@ function G$2(e) {
 				i(e ? 4 : 5);
 				continue;
 			case `number`:
-				if (!Number.isFinite(e)) throw new m$7();
+				if (!Number.isFinite(e)) throw new m$9();
 				i(JSON.stringify(Object.is(e, -0) ? 0 : e).length);
 				continue;
 			case `string`:
-				K(e, i);
+				K$2(e, i);
 				continue;
 			case `object`: break;
-			default: throw new m$7();
+			default: throw new m$9();
 		}
-		if (n.has(e)) throw new m$7();
+		if (n.has(e)) throw new m$9();
 		if (n.add(e), Array.isArray(e)) {
 			let n = e;
-			if (i(2 + Math.max(0, n.length - 1)), !J(n)) throw new m$7();
+			if (i(2 + Math.max(0, n.length - 1)), !J$2(n)) throw new m$9();
 			for (let e = n.length - 1; e >= 0; --e) {
 				let r = n[e];
-				if (r === void 0) throw new m$7();
+				if (r === void 0) throw new m$9();
 				t.push(r);
 			}
 			continue;
 		}
-		if (!Z(e)) throw new m$7();
+		if (!Z$1(e)) throw new m$9();
 		let r = Object.keys(e);
 		i(2 + Math.max(0, r.length - 1));
 		for (let n = r.length - 1; n >= 0; --n) {
 			let a = r[n];
 			if (a === void 0) continue;
 			let o = e[a];
-			if (o === void 0) throw new m$7();
-			K(a, i), i(1), t.push(o);
+			if (o === void 0) throw new m$9();
+			K$2(a, i), i(1), t.push(o);
 		}
 	}
 }
-function K(e, t) {
+function K$2(e, t) {
 	t(2);
 	for (let n = 0; n < e.length; n += 1) {
 		let r = e.charCodeAt(n);
@@ -11692,24 +11692,24 @@ function K(e, t) {
 		} else t(r >= 56320 && r <= 57343 ? 6 : 3);
 	}
 }
-function q(e) {
+function q$2(e) {
 	let t = Object.keys(e);
-	if (t.length <= d$9.size) return t.sort(Y).map((t) => [t, e[t]]);
+	if (t.length <= d$10.size) return t.sort(Y$2).map((t) => [t, e[t]]);
 	let n = [], r;
-	for (let e of t) d$9.has(e) ? n.push(e) : (r === void 0 || Y(e, r) < 0) && (r = e);
-	return r !== void 0 && n.push(r), n.sort(Y).map((t) => [t, e[t]]);
+	for (let e of t) d$10.has(e) ? n.push(e) : (r === void 0 || Y$2(e, r) < 0) && (r = e);
+	return r !== void 0 && n.push(r), n.sort(Y$2).map((t) => [t, e[t]]);
 }
-function J(e) {
+function J$2(e) {
 	let t = Object.keys(e);
 	return t.length === e.length && t.every((e, t) => e === String(t));
 }
-function Y(e, t) {
+function Y$2(e, t) {
 	return e < t ? -1 : +(e > t);
 }
-function X(e, t, n) {
-	n.seen.has(e) && z$2(`invalid-root`, t, `${V$2(t)} reuses or cycles a JSON object.`), n.seen.add(e);
+function X$2(e, t, n) {
+	n.seen.has(e) && z$3(`invalid-root`, t, `${V$3(t)} reuses or cycles a JSON object.`), n.seen.add(e);
 }
-function Z(e) {
+function Z$1(e) {
 	if (typeof e != `object` || !e || Array.isArray(e)) return !1;
 	let t = Object.getPrototypeOf(e);
 	return t === Object.prototype || t === null;
@@ -11722,7 +11722,7 @@ var BlockRegistry = class {
 		for (let t of e) this.register(t);
 	}
 	register(n, i = {}) {
-		if (assertStudioPropertySchema(n.propertySchema), i.verifiedIntegrity !== void 0 && !r$6(i.verifiedIntegrity)) throw TypeError(`Host-verified block integrity must be a canonical SRI sha256/384/512 value.`);
+		if (assertStudioPropertySchema(n.propertySchema), i.verifiedIntegrity !== void 0 && !r$7(i.verifiedIntegrity)) throw TypeError(`Host-verified block integrity must be a canonical SRI sha256/384/512 value.`);
 		let a = this.#definitions.get(n.type);
 		if (a === void 0 && (a = /* @__PURE__ */ new Map(), this.#definitions.set(n.type, a)), a.has(n.version)) throw Error(`Block ${n.type}@${n.version} is already registered.`);
 		let o = { definition: cloneContractValue(n) };
@@ -11741,14 +11741,14 @@ var BlockRegistry = class {
 		return [...this.#definitions.values()].flatMap((e) => [...e.values()]).map((t) => cloneContractValue(t.definition));
 	}
 };
-function r$6(e) {
+function r$7(e) {
 	return /^(?:sha256-[A-Za-z0-9+/]{42}[AEIMQUYcgkosw048]=|sha384-[A-Za-z0-9+/]{64}|sha512-[A-Za-z0-9+/]{85}[AQgw]==)(?![\s\S])/u.test(e);
 }
 //#endregion
 //#region node_modules/@kumwe/studio-core/dist/semver.js
-var e$4 = /^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/u;
+var e$7 = /^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/u;
 function parseSemanticVersion(t) {
-	let n = t.length <= 100 ? e$4.exec(t) : null;
+	let n = t.length <= 100 ? e$7.exec(t) : null;
 	if (n === null) throw TypeError(`${t} is not a canonical semantic version.`);
 	return {
 		major: Number(n[1]),
@@ -11788,11 +11788,11 @@ function normalizeVersionRange(e) {
 			let n = e.slice(1), r = parseSemanticVersion(n);
 			return `>=${n} <${r.major}.${r.minor + 1}.0-0`;
 		}
-		return a$7(e), e;
+		return a$11(e), e;
 	}).join(` `);
 }
 function satisfiesVersionRange(e, i) {
-	return parseSemanticVersion(e), normalizeVersionRange(i).split(/\s+/u).map(a$7).every((t) => {
+	return parseSemanticVersion(e), normalizeVersionRange(i).split(/\s+/u).map(a$11).every((t) => {
 		let r = compareSemanticVersions(e, t.version);
 		switch (t.operator) {
 			case `<`: return r < 0;
@@ -11803,7 +11803,7 @@ function satisfiesVersionRange(e, i) {
 		}
 	});
 }
-function a$7(e) {
+function a$11(e) {
 	let n = /^(>=|<=|>|<|=)?([^<>=].*)$/u.exec(e);
 	if (n?.[2] === void 0) throw TypeError(`${e} is not a supported version comparator.`);
 	return parseSemanticVersion(n[2]), {
@@ -11819,7 +11819,7 @@ var StudioContributionError = class extends Error {
 		super(e), this.name = `StudioContributionError`, this.diagnostics = t;
 	}
 };
-var _$6 = {
+var _$7 = {
 	"authoring-target": compileProfileSchema(authoringTargetSchema, { schemas: [commonSchema] }),
 	block: compileProfileSchema(blockDefinitionSchema, { schemas: [commonSchema] }),
 	"design-vocabulary": compileProfileSchema(designVocabularySchema, { schemas: [commonSchema] }),
@@ -11834,7 +11834,7 @@ var RegistryGeneration = class {
 	#owners;
 	#registry;
 	constructor(e, t, n, r = []) {
-		this.#contributions = new Map(r.map((e) => [x$6(e.kind, e.id, e.version), cloneContractValue(e.payload)])), this.#generation = e, this.#owners = t, this.#registry = n;
+		this.#contributions = new Map(r.map((e) => [x$7(e.kind, e.id, e.version), cloneContractValue(e.payload)])), this.#generation = e, this.#owners = t, this.#registry = n;
 	}
 	get generation() {
 		return this.#generation;
@@ -11853,7 +11853,7 @@ var RegistryGeneration = class {
 	}
 	resolveContribution(e, t, n) {
 		if (e === `block`) return this.resolveBlock(t, n);
-		let r = this.#contributions.get(x$6(e, t, n));
+		let r = this.#contributions.get(x$7(e, t, n));
 		return r === void 0 ? void 0 : cloneContractValue(r);
 	}
 	contributions(e) {
@@ -11866,7 +11866,7 @@ var RegistryGeneration = class {
 	}
 	resolveAuthoringTarget(e, t) {
 		let n = this.authoringTargets().find((t) => t.id === e.targetId);
-		if (n === void 0 || !T$6(n, e, t)) return;
+		if (n === void 0 || !T$7(n, e, t)) return;
 		let r = [];
 		for (let e of n.contributionDependencies) {
 			let t = this.#resolveDependency(e);
@@ -11882,11 +11882,11 @@ var RegistryGeneration = class {
 		};
 	}
 	#resolveDependency(e) {
-		let t = C$6(e.kind);
-		return w$6(this.#contributions, t, e.id).filter((t) => satisfiesVersionRange(t.version, e.versions)).sort((e, t) => compareSemanticVersions(t.version, e.version))[0]?.payload;
+		let t = C$7(e.kind);
+		return w$7(this.#contributions, t, e.id).filter((t) => satisfiesVersionRange(t.version, e.versions)).sort((e, t) => compareSemanticVersions(t.version, e.version))[0]?.payload;
 	}
 };
-var v$6 = class extends BlockRegistry {
+var v$7 = class extends BlockRegistry {
 	#sealed = !1;
 	seal() {
 		this.#sealed = !0;
@@ -11906,9 +11906,9 @@ var ContributionRuntime = class {
 		return this.#current;
 	}
 	activate(e, t, n) {
-		let r = y$6(t), i = this.#collectActivationDiagnostics(e, r);
+		let r = y$7(t), i = this.#collectActivationDiagnostics(e, r);
 		if (i.length > 0) throw this.#extensions.has(e.id) || this.#extensions.set(e.id, {
-			contributions: y$6({ blocks: [] }),
+			contributions: y$7({ blocks: [] }),
 			diagnostics: i,
 			owner: cloneContractValue(e),
 			state: `rejected`
@@ -11994,7 +11994,7 @@ var ContributionRuntime = class {
 		return [...t.values()];
 	}
 	unresolvedReference(e) {
-		if (!S$6(e.contribution)) return { reason: `not-installed` };
+		if (!S$7(e.contribution)) return { reason: `not-installed` };
 		if (this.#current.resolveContribution(e.contribution, e.id, e.version) === void 0) return this.#unresolvedContributionReason(e.contribution, e.id, e.version);
 	}
 	#unresolvedReason(e, t) {
@@ -12002,7 +12002,7 @@ var ContributionRuntime = class {
 	}
 	#unresolvedContributionReason(e, t, n) {
 		for (let r of this.#extensions.values()) {
-			let i = b$6(r.contributions).filter((n) => n.kind === e && n.id === t).map((e) => e.version);
+			let i = b$7(r.contributions).filter((n) => n.kind === e && n.id === t).map((e) => e.version);
 			if (i.length !== 0) return i.includes(n) ? r.state === `trust-revoked` ? {
 				owner: r.owner,
 				reason: `owner-revoked`
@@ -12018,44 +12018,44 @@ var ContributionRuntime = class {
 	}
 	#collectActivationDiagnostics(e, t) {
 		let n = [], r = /* @__PURE__ */ new Set();
-		for (let i of b$6(t)) {
+		for (let i of b$7(t)) {
 			if (i.owner.id !== e.id || i.owner.version !== e.version) {
-				n.push(E$6(`studio.contribution/owner-mismatch`, `${i.kind} ${i.id} declares owner ${i.owner.id}@${i.owner.version}.`));
+				n.push(E$7(`studio.contribution/owner-mismatch`, `${i.kind} ${i.id} declares owner ${i.owner.id}@${i.owner.version}.`));
 				continue;
 			}
-			let t = x$6(i.kind, i.id, i.version);
+			let t = x$7(i.kind, i.id, i.version);
 			if (r.has(t)) {
-				n.push(E$6(`studio.contribution/duplicate-contribution`, `${i.kind} ${i.id}@${i.version} is contributed twice by ${e.id}.`));
+				n.push(E$7(`studio.contribution/duplicate-contribution`, `${i.kind} ${i.id}@${i.version} is contributed twice by ${e.id}.`));
 				continue;
 			}
 			r.add(t);
 			let a = this.#ownerOfContribution(i.kind, i.id, e.id);
-			a !== void 0 && n.push(E$6(`studio.contribution/cross-owner-collision`, `${i.kind} ${i.id} is owned by ${a}.`));
-			let o = _$6[i.kind];
+			a !== void 0 && n.push(E$7(`studio.contribution/cross-owner-collision`, `${i.kind} ${i.id} is owned by ${a}.`));
+			let o = _$7[i.kind];
 			if (!o.validate(i.payload)) {
 				let e = o.errors?.[0];
-				n.push(E$6(`studio.contribution/invalid-definition`, `${i.kind} ${i.id}@${i.version} ${e?.instancePath ?? `document`} ${e?.message ?? `violates its canonical schema`}.`));
+				n.push(E$7(`studio.contribution/invalid-definition`, `${i.kind} ${i.id}@${i.version} ${e?.instancePath ?? `document`} ${e?.message ?? `violates its canonical schema`}.`));
 			}
 		}
 		if (n.length === 0) try {
-			let n = new v$6();
+			let n = new v$7();
 			for (let t of this.#extensions.values()) if (t.state === `active` && t.owner.id !== e.id) for (let e of t.contributions.blocks) n.register(cloneContractValue(e));
 			for (let e of t.blocks) n.register(cloneContractValue(e));
 			for (let e of t.fieldAdapters) e.optionSchema !== void 0 && assertStudioPropertySchema(e.optionSchema);
 		} catch (e) {
-			n.push(E$6(`studio.contribution/invalid-definition`, e instanceof Error ? e.message : `A contributed definition is invalid.`));
+			n.push(E$7(`studio.contribution/invalid-definition`, e instanceof Error ? e.message : `A contributed definition is invalid.`));
 		}
 		return n;
 	}
 	#ownerOfContribution(e, t, n) {
-		for (let r of this.#extensions.values()) if (r.owner.id !== n && r.state !== `purged` && b$6(r.contributions).some((n) => n.kind === e && n.id === t)) return r.owner.id;
+		for (let r of this.#extensions.values()) if (r.owner.id !== n && r.state !== `purged` && b$7(r.contributions).some((n) => n.kind === e && n.id === t)) return r.owner.id;
 	}
 	#publish(e) {
-		let t = new v$6(), n = [], r = [];
+		let t = new v$7(), n = [], r = [];
 		for (let e of this.#extensions.values()) if (e.state === `active`) {
 			n.push(cloneContractValue(e.owner));
 			for (let n of e.contributions.blocks) t.register(cloneContractValue(n));
-			r.push(...b$6(e.contributions));
+			r.push(...b$7(e.contributions));
 		}
 		return t.seal(), new RegistryGeneration(e, n, t, r);
 	}
@@ -12065,7 +12065,7 @@ var ContributionRuntime = class {
 		return t;
 	}
 };
-function y$6(e) {
+function y$7(e) {
 	return {
 		authoringTargets: cloneContractValue(e.authoringTargets ?? []),
 		blocks: cloneContractValue(e.blocks),
@@ -12076,7 +12076,7 @@ function y$6(e) {
 		patterns: cloneContractValue(e.patterns ?? [])
 	};
 }
-function b$6(e) {
+function b$7(e) {
 	return [
 		...e.authoringTargets.map((e) => ({
 			id: e.id,
@@ -12129,26 +12129,26 @@ function b$6(e) {
 		}))
 	];
 }
-function x$6(e, t, n) {
+function x$7(e, t, n) {
 	return `${e}\u0000${t}\u0000${n}`;
 }
-function S$6(e) {
+function S$7(e) {
 	return e === `authoring-target` || e === `block` || e === `design-vocabulary` || e === `field-adapter` || e === `inspector` || e === `migration` || e === `pattern`;
 }
-function C$6(e) {
+function C$7(e) {
 	return e === `block-definition` ? `block` : e;
 }
-function w$6(e, t, n) {
+function w$7(e, t, n) {
 	let r = `${t}\u0000${n}\u0000`;
 	return [...e.entries()].filter(([e]) => e.startsWith(r)).map(([e, t]) => ({
 		payload: cloneContractValue(t),
 		version: e.slice(r.length)
 	}));
 }
-function T$6(e, t, n) {
+function T$7(e, t, n) {
 	return e.surface !== t.resourceContext.surface || t.resourceContext.resource === void 0 || !e.resourceTypes.includes(t.resourceContext.resource.type) || !e.eligibility.includes(t.intent) || t.requestedPresentation !== void 0 && !e.presentationStates.includes(t.requestedPresentation) || n.mode !== void 0 && !e.modes.includes(n.mode) ? !1 : e.requiredCapabilities.every((e) => n.capabilities.some((t) => t.id === e.id && satisfiesVersionRange(t.version, e.versions)));
 }
-function E$6(e, t) {
+function E$7(e, t) {
 	return {
 		code: e,
 		message: {
@@ -12228,12 +12228,12 @@ Object.freeze([
 	`studio.pattern/product`,
 	`studio.pattern/tabbed-content`
 ]);
-var l$8 = `1.0.0`;
-var u$8 = Object.freeze({
+var l$9 = `1.0.0`;
+var u$9 = Object.freeze({
 	id: `studio.core/blocks`,
-	version: l$8
+	version: l$9
 });
-var d$8 = Object.freeze([{
+var d$9 = Object.freeze([{
 	capability: `studio.renderer/semantic-web`,
 	surface: `preview`,
 	versions: `^1.0.0`
@@ -12242,80 +12242,80 @@ var d$8 = Object.freeze([{
 	surface: `web`,
 	versions: `^1.0.0`
 }]);
-var f$8 = Object.freeze(Object.values(CORE_PRODUCTION_BLOCK_TYPES));
-var p$6 = Object.freeze(f$8.filter((e) => e !== CORE_PRODUCTION_BLOCK_TYPES.accordionItem && e !== CORE_PRODUCTION_BLOCK_TYPES.descriptionItem && e !== CORE_PRODUCTION_BLOCK_TYPES.navigationItem && e !== CORE_PRODUCTION_BLOCK_TYPES.tab));
-var m$6 = (e, t = !1) => ({
+var f$10 = Object.freeze(Object.values(CORE_PRODUCTION_BLOCK_TYPES));
+var p$9 = Object.freeze(f$10.filter((e) => e !== CORE_PRODUCTION_BLOCK_TYPES.accordionItem && e !== CORE_PRODUCTION_BLOCK_TYPES.descriptionItem && e !== CORE_PRODUCTION_BLOCK_TYPES.navigationItem && e !== CORE_PRODUCTION_BLOCK_TYPES.tab));
+var m$8 = (e, t = !1) => ({
 	authoring: { control: `studio.control/single-line-text` },
 	id: e,
-	label: L$2(`port-${e}`, R$2(e)),
+	label: L$3(`port-${e}`, R$3(e)),
 	multiple: !1,
 	required: t,
 	valueType: `text`
 });
-var h$5 = (e, t = !1) => ({
+var h$7 = (e, t = !1) => ({
 	authoring: { control: `studio.control/integer` },
 	id: e,
-	label: L$2(`port-${e}`, R$2(e)),
+	label: L$3(`port-${e}`, R$3(e)),
 	multiple: !1,
 	required: t,
 	valueType: `integer`
 });
-var g$5 = (e = `content`) => ({
+var g$6 = (e = `content`) => ({
 	authoring: {
 		control: CORE_PRODUCTION_CONTROL_IDS.richText,
 		profile: `studio.rich-text/marketing`
 	},
 	id: e,
-	label: L$2(`port-${e}`, R$2(e)),
+	label: L$3(`port-${e}`, R$3(e)),
 	multiple: !1,
 	required: !1,
 	valueType: `rich-text`
 });
-var _$5 = (e, t = !1) => ({
+var _$6 = (e, t = !1) => ({
 	authoring: { control: t ? CORE_PRODUCTION_CONTROL_IDS.mediaCollection : CORE_PRODUCTION_CONTROL_IDS.mediaReference },
 	id: e,
-	label: L$2(`port-${e}`, R$2(e)),
+	label: L$3(`port-${e}`, R$3(e)),
 	multiple: t,
 	required: !1,
 	valueType: `media`
 });
-var v$5 = (e) => ({
+var v$6 = (e) => ({
 	authoring: {
 		control: CORE_PRODUCTION_CONTROL_IDS.source,
 		profile: e
 	},
 	id: `source`,
-	label: L$2(`port-source`, `Source`),
+	label: L$3(`port-source`, `Source`),
 	multiple: !1,
 	required: !0,
 	valueType: `text`
 });
-var y$5 = (e, t) => ({
+var y$6 = (e, t) => ({
 	authoring: { readOnly: !0 },
 	id: e,
-	label: L$2(`port-${e}`, R$2(e)),
+	label: L$3(`port-${e}`, R$3(e)),
 	multiple: t,
 	required: !0,
 	valueType: `resource`
 });
-var b$5 = (e = 2e4) => ({
+var b$6 = (e = 2e4) => ({
 	maxLength: e,
 	type: `string`
 });
-var x$5 = () => ({ type: `boolean` });
-var S$5 = (...e) => ({ enum: e });
-var C$5 = (e, t) => ({
+var x$6 = () => ({ type: `boolean` });
+var S$6 = (...e) => ({ enum: e });
+var C$6 = (e, t) => ({
 	maximum: t,
 	minimum: e,
 	type: `integer`
 });
-var w$5 = O$5();
-var T$5 = Object.freeze({
+var w$6 = O$5();
+var T$6 = Object.freeze({
 	accordion: {
 		accessibility: `composite`,
 		controls: { "allow-multiple": `studio.control/switch` },
 		defaults: { "allow-multiple": !1 },
-		properties: { "allow-multiple": x$5() },
+		properties: { "allow-multiple": x$6() },
 		slots: [{
 			accepts: [CORE_PRODUCTION_BLOCK_TYPES.accordionItem],
 			id: `items`,
@@ -12326,10 +12326,10 @@ var T$5 = Object.freeze({
 		accessibility: `composite`,
 		controls: { expanded: `studio.control/switch` },
 		defaults: { expanded: !1 },
-		ports: [m$6(`title`, !0)],
-		properties: { expanded: x$5() },
+		ports: [m$8(`title`, !0)],
+		properties: { expanded: x$6() },
 		slots: [{
-			accepts: p$6,
+			accepts: p$9,
 			id: `content`,
 			maximum: 100
 		}]
@@ -12337,9 +12337,9 @@ var T$5 = Object.freeze({
 	article: {
 		accessibility: `landmark`,
 		defaults: {},
-		ports: [m$6(`title`)],
+		ports: [m$8(`title`)],
 		slots: [{
-			accepts: p$6,
+			accepts: p$9,
 			id: `content`,
 			maximum: 200
 		}]
@@ -12348,8 +12348,8 @@ var T$5 = Object.freeze({
 		accessibility: `media`,
 		controls: { download: `studio.control/switch` },
 		defaults: { download: !0 },
-		ports: [_$5(`asset`), m$6(`label`)],
-		properties: { download: x$5() }
+		ports: [_$6(`asset`), m$8(`label`)],
+		properties: { download: x$6() }
 	},
 	audio: {
 		accessibility: `media`,
@@ -12361,10 +12361,10 @@ var T$5 = Object.freeze({
 			autoplay: !1,
 			controls: !0
 		},
-		ports: [_$5(`asset`), m$6(`transcript`)],
+		ports: [_$6(`asset`), m$8(`transcript`)],
 		properties: {
-			autoplay: x$5(),
-			controls: x$5()
+			autoplay: x$6(),
+			controls: x$6()
 		}
 	},
 	badge: {
@@ -12377,10 +12377,10 @@ var T$5 = Object.freeze({
 			appearance: `solid`,
 			tone: `neutral`
 		},
-		ports: [m$6(`label`, !0)],
+		ports: [m$8(`label`, !0)],
 		properties: {
-			appearance: S$5(`outline`, `soft`, `solid`),
-			tone: S$5(`error`, `information`, `neutral`, `success`, `warning`)
+			appearance: S$6(`outline`, `soft`, `solid`),
+			tone: S$6(`error`, `information`, `neutral`, `success`, `warning`)
 		}
 	},
 	callToAction: {
@@ -12393,31 +12393,31 @@ var T$5 = Object.freeze({
 			appearance: `primary`,
 			href: ``
 		},
-		ports: [m$6(`label`, !0)],
+		ports: [m$8(`label`, !0)],
 		properties: {
-			appearance: S$5(`primary`, `secondary`, `link`),
-			href: b$5(2048)
+			appearance: S$6(`primary`, `secondary`, `link`),
+			href: b$6(2048)
 		}
 	},
 	callout: {
 		accessibility: `composite`,
 		controls: { tone: `studio.control/select` },
 		defaults: { tone: `information` },
-		ports: [m$6(`title`), g$5()],
-		properties: { tone: S$5(`information`, `success`, `warning`, `danger`) }
+		ports: [m$8(`title`), g$6()],
+		properties: { tone: S$6(`information`, `success`, `warning`, `danger`) }
 	},
 	card: {
 		accessibility: `composite`,
 		controls: { appearance: `studio.control/select` },
 		defaults: { appearance: `plain` },
 		ports: [
-			_$5(`media`),
-			m$6(`title`),
-			g$5(`summary`)
+			_$6(`media`),
+			m$8(`title`),
+			g$6(`summary`)
 		],
-		properties: { appearance: S$5(`plain`, `bordered`, `elevated`) },
+		properties: { appearance: S$6(`plain`, `bordered`, `elevated`) },
 		slots: [{
-			accepts: p$6,
+			accepts: p$9,
 			id: `actions`,
 			maximum: 5
 		}]
@@ -12431,7 +12431,7 @@ var T$5 = Object.freeze({
 				profile: `studio.chart/canonical`
 			},
 			id: `chart`,
-			label: L$2(`port-chart`, `Chart`),
+			label: L$3(`port-chart`, `Chart`),
 			multiple: !1,
 			required: !0,
 			valueType: `studio.value/chart`
@@ -12447,10 +12447,10 @@ var T$5 = Object.freeze({
 			language: `text`,
 			"show-line-numbers": !1
 		},
-		ports: [v$5(`studio.source/code`)],
+		ports: [v$6(`studio.source/code`)],
 		properties: {
-			language: b$5(100),
-			"show-line-numbers": x$5()
+			language: b$6(100),
+			"show-line-numbers": x$6()
 		}
 	},
 	contentCollection: {
@@ -12463,18 +12463,18 @@ var T$5 = Object.freeze({
 			limit: 12,
 			presentation: `cards`
 		},
-		ports: [y$5(`items`, !0)],
+		ports: [y$6(`items`, !0)],
 		properties: {
-			limit: C$5(1, 100),
-			presentation: S$5(`cards`, `grid`, `list`, `slideshow`)
+			limit: C$6(1, 100),
+			presentation: S$6(`cards`, `grid`, `list`, `slideshow`)
 		}
 	},
 	contentReference: {
 		accessibility: `data-display`,
 		controls: { presentation: `studio.control/select` },
 		defaults: { presentation: `summary` },
-		ports: [y$5(`item`, !1)],
-		properties: { presentation: S$5(`full`, `summary`, `title`) }
+		ports: [y$6(`item`, !1)],
+		properties: { presentation: S$6(`full`, `summary`, `title`) }
 	},
 	countdown: {
 		accessibility: `data-display`,
@@ -12486,10 +12486,10 @@ var T$5 = Object.freeze({
 			display: `detailed`,
 			"expired-behavior": `zero`
 		},
-		ports: [m$6(`target`, !0), m$6(`completion-message`)],
+		ports: [m$8(`target`, !0), m$8(`completion-message`)],
 		properties: {
-			display: S$5(`compact`, `detailed`),
-			"expired-behavior": S$5(`hide`, `message`, `zero`)
+			display: S$6(`compact`, `detailed`),
+			"expired-behavior": S$6(`hide`, `message`, `zero`)
 		}
 	},
 	cover: {
@@ -12502,13 +12502,13 @@ var T$5 = Object.freeze({
 			alignment: `center`,
 			overlay: `medium`
 		},
-		ports: [_$5(`background`)],
+		ports: [_$6(`background`)],
 		properties: {
-			alignment: S$5(`center`, `end`, `start`),
-			overlay: S$5(`light`, `medium`, `none`, `strong`)
+			alignment: S$6(`center`, `end`, `start`),
+			overlay: S$6(`light`, `medium`, `none`, `strong`)
 		},
 		slots: [{
-			accepts: p$6,
+			accepts: p$9,
 			id: `content`,
 			maximum: 100
 		}]
@@ -12516,12 +12516,12 @@ var T$5 = Object.freeze({
 	descriptionItem: {
 		accessibility: `text`,
 		defaults: {},
-		ports: [m$6(`term`, !0), g$5(`description`)]
+		ports: [m$8(`term`, !0), g$6(`description`)]
 	},
 	descriptionList: {
 		accessibility: `data-display`,
 		defaults: {},
-		ports: [m$6(`title`)],
+		ports: [m$8(`title`)],
 		slots: [{
 			accepts: [CORE_PRODUCTION_BLOCK_TYPES.descriptionItem],
 			id: `items`,
@@ -12532,8 +12532,8 @@ var T$5 = Object.freeze({
 		accessibility: `data-display`,
 		controls: { theme: `studio.control/select` },
 		defaults: { theme: `neutral` },
-		ports: [v$5(`studio.source/mermaid`)],
-		properties: { theme: S$5(`dark`, `forest`, `neutral`) }
+		ports: [v$6(`studio.source/mermaid`)],
+		properties: { theme: S$6(`dark`, `forest`, `neutral`) }
 	},
 	dialog: {
 		accessibility: `interactive`,
@@ -12545,13 +12545,13 @@ var T$5 = Object.freeze({
 			modal: !0,
 			presentation: `modal`
 		},
-		ports: [m$6(`trigger-label`, !0), m$6(`title`, !0)],
+		ports: [m$8(`trigger-label`, !0), m$8(`title`, !0)],
 		properties: {
-			modal: x$5(),
-			presentation: S$5(`modal`, `offcanvas`, `overlay`)
+			modal: x$6(),
+			presentation: S$6(`modal`, `offcanvas`, `overlay`)
 		},
 		slots: [{
-			accepts: p$6,
+			accepts: p$9,
 			id: `content`,
 			maximum: 100
 		}]
@@ -12560,8 +12560,8 @@ var T$5 = Object.freeze({
 		accessibility: `structural`,
 		controls: { style: `studio.control/select` },
 		defaults: { style: `solid` },
-		ports: [m$6(`label`)],
-		properties: { style: S$5(`dashed`, `dotted`, `solid`) }
+		ports: [m$8(`label`)],
+		properties: { style: S$6(`dashed`, `dotted`, `solid`) }
 	},
 	drawing: {
 		accessibility: `media`,
@@ -12572,7 +12572,7 @@ var T$5 = Object.freeze({
 				profile: `studio.drawing/canonical`
 			},
 			id: `drawing`,
-			label: L$2(`port-drawing`, `Drawing`),
+			label: L$3(`port-drawing`, `Drawing`),
 			multiple: !1,
 			required: !0,
 			valueType: `studio.value/drawing`
@@ -12582,8 +12582,8 @@ var T$5 = Object.freeze({
 		accessibility: `media`,
 		controls: { "aspect-ratio": `studio.control/select` },
 		defaults: { "aspect-ratio": `16:9` },
-		ports: [y$5(`resource`, !1)],
-		properties: { "aspect-ratio": S$5(`1:1`, `4:3`, `16:9`, `21:9`) }
+		ports: [y$6(`resource`, !1)],
+		properties: { "aspect-ratio": S$6(`1:1`, `4:3`, `16:9`, `21:9`) }
 	},
 	gallery: {
 		accessibility: `composite`,
@@ -12599,20 +12599,20 @@ var T$5 = Object.freeze({
 			lightbox: !1,
 			presentation: `grid`
 		},
-		ports: [_$5(`items`, !0)],
+		ports: [_$6(`items`, !0)],
 		properties: {
-			autoplay: x$5(),
-			columns: C$5(1, 12),
-			lightbox: x$5(),
-			presentation: S$5(`grid`, `slideshow`)
+			autoplay: x$6(),
+			columns: C$6(1, 12),
+			lightbox: x$6(),
+			presentation: S$6(`grid`, `slideshow`)
 		}
 	},
 	heading: {
 		accessibility: `text`,
 		controls: { level: `studio.control/select` },
 		defaults: { level: 2 },
-		ports: [m$6(`text`, !0)],
-		properties: { level: C$5(1, 6) }
+		ports: [m$8(`text`, !0)],
+		properties: { level: C$6(1, 6) }
 	},
 	icon: {
 		accessibility: `media`,
@@ -12624,10 +12624,10 @@ var T$5 = Object.freeze({
 			decorative: !0,
 			name: `symbol`
 		},
-		ports: [m$6(`alternative-text`)],
+		ports: [m$8(`alternative-text`)],
 		properties: {
-			decorative: x$5(),
-			name: b$5(200)
+			decorative: x$6(),
+			name: b$6(200)
 		}
 	},
 	image: {
@@ -12640,25 +12640,25 @@ var T$5 = Object.freeze({
 			fit: `cover`,
 			loading: `lazy`
 		},
-		ports: [_$5(`asset`)],
+		ports: [_$6(`asset`)],
 		properties: {
-			fit: S$5(`contain`, `cover`, `fill`, `scale-down`),
-			loading: S$5(`eager`, `lazy`)
+			fit: S$6(`contain`, `cover`, `fill`, `scale-down`),
+			loading: S$6(`eager`, `lazy`)
 		}
 	},
 	label: {
 		accessibility: `text`,
 		controls: { tone: `studio.control/select` },
 		defaults: { tone: `neutral` },
-		ports: [m$6(`text`, !0)],
-		properties: { tone: S$5(`error`, `information`, `neutral`, `success`, `warning`) }
+		ports: [m$8(`text`, !0)],
+		properties: { tone: S$6(`error`, `information`, `neutral`, `success`, `warning`) }
 	},
 	math: {
 		accessibility: `text`,
 		controls: { "display-mode": `studio.control/switch` },
 		defaults: { "display-mode": !0 },
-		ports: [v$5(`studio.source/latex`)],
-		properties: { "display-mode": x$5() }
+		ports: [v$6(`studio.source/latex`)],
+		properties: { "display-mode": x$6() }
 	},
 	money: {
 		accessibility: `data-display`,
@@ -12669,7 +12669,7 @@ var T$5 = Object.freeze({
 				profile: `studio.money/canonical`
 			},
 			id: `amount`,
-			label: L$2(`port-amount`, `Amount`),
+			label: L$3(`port-amount`, `Amount`),
 			multiple: !1,
 			required: !0,
 			valueType: `money`
@@ -12679,8 +12679,8 @@ var T$5 = Object.freeze({
 		accessibility: `landmark`,
 		controls: { presentation: `studio.control/select` },
 		defaults: { presentation: `nav` },
-		ports: [m$6(`label`)],
-		properties: { presentation: S$5(`breadcrumbs`, `dotnav`, `dropnav`, `navbar`, `nav`, `pagination`, `subnav`, `thumbnav`) },
+		ports: [m$8(`label`)],
+		properties: { presentation: S$6(`breadcrumbs`, `dotnav`, `dropnav`, `navbar`, `nav`, `pagination`, `subnav`, `thumbnav`) },
 		slots: [{
 			accepts: [CORE_PRODUCTION_BLOCK_TYPES.navigationItem],
 			id: `items`,
@@ -12697,10 +12697,10 @@ var T$5 = Object.freeze({
 			current: !1,
 			href: ``
 		},
-		ports: [m$6(`label`, !0)],
+		ports: [m$8(`label`, !0)],
 		properties: {
-			current: x$5(),
-			href: b$5(2048)
+			current: x$6(),
+			href: b$6(2048)
 		},
 		slots: [{
 			accepts: [CORE_PRODUCTION_BLOCK_TYPES.navigationItem],
@@ -12718,10 +12718,10 @@ var T$5 = Object.freeze({
 			dismissible: !1,
 			tone: `information`
 		},
-		ports: [m$6(`title`), g$5()],
+		ports: [m$8(`title`), g$6()],
 		properties: {
-			dismissible: x$5(),
-			tone: S$5(`comment`, `error`, `information`, `success`, `warning`)
+			dismissible: x$6(),
+			tone: S$6(`comment`, `error`, `information`, `success`, `warning`)
 		}
 	},
 	popover: {
@@ -12736,14 +12736,14 @@ var T$5 = Object.freeze({
 			placement: `auto`,
 			presentation: `popover`
 		},
-		ports: [m$6(`trigger-label`, !0), m$6(`title`)],
+		ports: [m$8(`trigger-label`, !0), m$8(`title`)],
 		properties: {
-			"dismiss-on-blur": x$5(),
-			placement: S$5(`auto`, `bottom`, `left`, `right`, `top`),
-			presentation: S$5(`dropbar`, `dropdown`, `popover`, `tooltip`)
+			"dismiss-on-blur": x$6(),
+			placement: S$6(`auto`, `bottom`, `left`, `right`, `top`),
+			presentation: S$6(`dropbar`, `dropdown`, `popover`, `tooltip`)
 		},
 		slots: [{
-			accepts: p$6,
+			accepts: p$9,
 			id: `content`,
 			maximum: 100
 		}]
@@ -12752,13 +12752,13 @@ var T$5 = Object.freeze({
 		accessibility: `data-display`,
 		controls: { maximum: `studio.control/integer` },
 		defaults: { maximum: 100 },
-		ports: [m$6(`label`), h$5(`value`, !0)],
-		properties: { maximum: C$5(1, 1e6) }
+		ports: [m$8(`label`), h$7(`value`, !0)],
+		properties: { maximum: C$6(1, 1e6) }
 	},
 	richText: {
 		accessibility: `text`,
 		defaults: {},
-		ports: [g$5()]
+		ports: [g$6()]
 	},
 	search: {
 		accessibility: `interactive`,
@@ -12770,10 +12770,10 @@ var T$5 = Object.freeze({
 			action: ``,
 			"query-parameter": `q`
 		},
-		ports: [m$6(`label`), m$6(`placeholder`)],
+		ports: [m$8(`label`), m$8(`placeholder`)],
 		properties: {
-			action: b$5(2048),
-			"query-parameter": b$5(100)
+			action: b$6(2048),
+			"query-parameter": b$6(100)
 		}
 	},
 	spinner: {
@@ -12786,18 +12786,18 @@ var T$5 = Object.freeze({
 			active: !0,
 			size: `medium`
 		},
-		ports: [m$6(`label`)],
+		ports: [m$8(`label`)],
 		properties: {
-			active: x$5(),
-			size: S$5(`large`, `medium`, `small`)
+			active: x$6(),
+			size: S$6(`large`, `medium`, `small`)
 		}
 	},
 	tab: {
 		accessibility: `composite`,
 		defaults: {},
-		ports: [m$6(`title`, !0)],
+		ports: [m$8(`title`, !0)],
 		slots: [{
-			accepts: p$6,
+			accepts: p$9,
 			id: `content`,
 			maximum: 100
 		}]
@@ -12806,7 +12806,7 @@ var T$5 = Object.freeze({
 		accessibility: `composite`,
 		controls: { activation: `studio.control/select` },
 		defaults: { activation: `automatic` },
-		properties: { activation: S$5(`automatic`, `manual`) },
+		properties: { activation: S$6(`automatic`, `manual`) },
 		slots: [{
 			accepts: [CORE_PRODUCTION_BLOCK_TYPES.tab],
 			id: `items`,
@@ -12822,7 +12822,7 @@ var T$5 = Object.freeze({
 				profile: `studio.table/canonical`
 			},
 			id: `table`,
-			label: L$2(`port-table`, `Table`),
+			label: L$3(`port-table`, `Table`),
 			multiple: !1,
 			required: !0,
 			valueType: `studio.value/table`
@@ -12841,38 +12841,38 @@ var T$5 = Object.freeze({
 			muted: !1
 		},
 		ports: [
-			_$5(`asset`),
-			_$5(`poster`),
-			m$6(`captions`)
+			_$6(`asset`),
+			_$6(`poster`),
+			m$8(`captions`)
 		],
 		properties: {
-			autoplay: x$5(),
-			controls: x$5(),
-			muted: x$5()
+			autoplay: x$6(),
+			controls: x$6(),
+			muted: x$6()
 		}
 	}
 });
 function createCoreProductionBlockDefinitions() {
 	let e = createCoreLayoutBlockDefinitions({
-		acceptedChildTypes: p$6,
-		rendererRequirements: d$8
-	}).map(D$4), t = Object.keys(T$5).map((e) => E$5(e, T$5[e]));
+		acceptedChildTypes: p$9,
+		rendererRequirements: d$9
+	}).map(D$5), t = Object.keys(T$6).map((e) => E$6(e, T$6[e]));
 	return [...e, ...t];
 }
 function coreProductionInitialProperties(e) {
 	if (isCoreLayoutBlockType(e)) return coreLayoutInitialProperties(e);
-	let t = I$2(e);
-	return cloneContractValue(T$5[t].defaults);
+	let t = I$3(e);
+	return cloneContractValue(T$6[t].defaults);
 }
 function isCoreProductionBlockType(e) {
-	return f$8.includes(e);
+	return f$10.includes(e);
 }
 function createCoreProductionPatterns() {
 	return [
-		A$4(`article`, [j$4(`article`, `stack`, {}, [j$4(`article-title`, `heading`, { text: `Article title` }), j$4(`article-body`, `richText`, { content: F$2(`Start writing…`) })])]),
-		A$4(`collection-index`, [j$4(`collection-index`, `section`, {}, [j$4(`collection-heading`, `heading`, { text: `Latest content` }), j$4(`collection`, `contentCollection`, {}, void 0, { items: N$2(`studio.query/content`) })])]),
+		A$4(`article`, [j$4(`article`, `stack`, {}, [j$4(`article-title`, `heading`, { text: `Article title` }), j$4(`article-body`, `richText`, { content: F$3(`Start writing…`) })])]),
+		A$4(`collection-index`, [j$4(`collection-index`, `section`, {}, [j$4(`collection-heading`, `heading`, { text: `Latest content` }), j$4(`collection`, `contentCollection`, {}, void 0, { items: N$3(`studio.query/content`) })])]),
 		A$4(`document-header`, [j$4(`document-header`, `columns`, {}, [j$4(`document-logo`, `image`), j$4(`document-title`, `heading`, { text: `Document title` })])]),
-		A$4(`faq`, [j$4(`faq`, `accordion`, {}, [j$4(`faq-item`, `accordionItem`, { title: `Question` }, [j$4(`faq-answer`, `richText`, { content: F$2(`Answer`) })])])]),
+		A$4(`faq`, [j$4(`faq`, `accordion`, {}, [j$4(`faq-item`, `accordionItem`, { title: `Question` }, [j$4(`faq-answer`, `richText`, { content: F$3(`Answer`) })])])]),
 		A$4(`feature-grid`, [j$4(`features`, `grid`, {}, [
 			j$4(`feature-one`, `card`, { title: `Feature one` }),
 			j$4(`feature-two`, `card`, { title: `Feature two` }),
@@ -12880,7 +12880,7 @@ function createCoreProductionPatterns() {
 		])]),
 		A$4(`hero`, [j$4(`hero`, `section`, {}, [j$4(`hero-stack`, `stack`, {}, [
 			j$4(`hero-title`, `heading`, { text: `Build something meaningful` }),
-			j$4(`hero-copy`, `richText`, { content: F$2(`A portable Studio page.`) }),
+			j$4(`hero-copy`, `richText`, { content: F$3(`A portable Studio page.`) }),
 			j$4(`hero-action`, `callToAction`, { label: `Get started` })
 		])])]),
 		A$4(`media-gallery`, [j$4(`media-gallery`, `gallery`)]),
@@ -12890,19 +12890,19 @@ function createCoreProductionPatterns() {
 		} }), j$4(`price-action`, `callToAction`, { label: `Choose plan` })])]),
 		A$4(`product`, [j$4(`product`, `columns`, {}, [j$4(`product-media`, `gallery`), j$4(`product-copy`, `stack`, {}, [
 			j$4(`product-title`, `heading`, { text: `Product` }),
-			j$4(`product-description`, `richText`, { content: F$2(`Product description`) }),
-			j$4(`product-price`, `money`, {}, void 0, { amount: P$2(`catalog/product-price`, `studio.resource/money`) })
+			j$4(`product-description`, `richText`, { content: F$3(`Product description`) }),
+			j$4(`product-price`, `money`, {}, void 0, { amount: P$3(`catalog/product-price`, `studio.resource/money`) })
 		])])]),
-		A$4(`tabbed-content`, [j$4(`tabbed-content`, `tabs`, {}, [j$4(`tab-one`, `tab`, { title: `First` }, [j$4(`tab-one-copy`, `richText`, { content: F$2(`First panel`) })]), j$4(`tab-two`, `tab`, { title: `Second` }, [j$4(`tab-two-copy`, `richText`, { content: F$2(`Second panel`) })])])])
+		A$4(`tabbed-content`, [j$4(`tabbed-content`, `tabs`, {}, [j$4(`tab-one`, `tab`, { title: `First` }, [j$4(`tab-one-copy`, `richText`, { content: F$3(`First panel`) })]), j$4(`tab-two`, `tab`, { title: `Second` }, [j$4(`tab-two-copy`, `richText`, { content: F$3(`Second panel`) })])])])
 	];
 }
-function E$5(t, r) {
+function E$6(t, r) {
 	let i = CORE_PRODUCTION_BLOCK_TYPES[t];
 	return {
 		accessibility: {
 			accessibleName: r.accessibility === `decorative` || r.accessibility === `structural` ? `not-applicable` : `derived`,
 			category: r.accessibility,
-			keyboard: L$2(`block-keyboard`, `Use Studio controls to edit and reorder this block.`),
+			keyboard: L$3(`block-keyboard`, `Use Studio controls to edit and reorder this block.`),
 			outputChecks: [`studio.check/accessible-name`, `studio.check/reflow`],
 			reducedMotion: [
 				`audio`,
@@ -12910,16 +12910,16 @@ function E$5(t, r) {
 				`video`
 			].includes(t) ? `disable-motion` : `not-applicable`
 		},
-		category: `studio.category/${B$2(r.accessibility)}`,
+		category: `studio.category/${B$3(r.accessibility)}`,
 		contractVersion: STUDIO_CONTRACT_VERSION,
 		editingModes: [`blueprint`, `content`],
 		icon: {
 			kind: `symbol`,
-			value: z$1(t)
+			value: z$2(t)
 		},
 		kind: `block-definition`,
-		label: L$2(`block-${z$1(t)}`, R$2(t)),
-		owner: u$8,
+		label: L$3(`block-${z$2(t)}`, R$3(t)),
+		owner: u$9,
 		ports: cloneContractValue([...r.ports ?? []]),
 		propertyControls: [...Object.entries(r.controls ?? {}).map(([e, t]) => ({
 			control: t,
@@ -12932,27 +12932,27 @@ function E$5(t, r) {
 			additionalProperties: !1,
 			properties: cloneContractValue({
 				...r.properties ?? {},
-				design: w$5
+				design: w$6
 			}),
 			...r.required === void 0 ? {} : { required: [...r.required] },
 			type: `object`
 		},
-		rendererRequirements: cloneContractValue([...d$8]),
-		revision: `production-${z$1(t)}-r1`,
+		rendererRequirements: cloneContractValue([...d$9]),
+		revision: `production-${z$2(t)}-r1`,
 		slots: (r.slots ?? []).map((e) => ({
 			accepts: { types: cloneContractValue([...e.accepts]) },
 			id: e.id,
-			label: L$2(`slot-${e.id}`, R$2(e.id)),
+			label: L$3(`slot-${e.id}`, R$3(e.id)),
 			maximum: e.maximum ?? 100,
 			minimum: e.minimum ?? 0,
 			ordered: !0
 		})),
 		themeControls: [],
 		type: i,
-		version: l$8
+		version: l$9
 	};
 }
-function D$4(e) {
+function D$5(e) {
 	let t = e.propertySchema.properties;
 	if (!k$4(t)) throw TypeError(`${e.type} property schema must declare an object property map.`);
 	return {
@@ -12965,7 +12965,7 @@ function D$4(e) {
 			...e.propertySchema,
 			properties: cloneContractValue({
 				...t,
-				design: w$5
+				design: w$6
 			})
 		}
 	};
@@ -12994,20 +12994,20 @@ function A$4(t, n) {
 		contractVersion: STUDIO_CONTRACT_VERSION,
 		id: `studio.pattern/${t}`,
 		kind: `pattern`,
-		label: L$2(`pattern-${t}`, R$2(t)),
-		owner: u$8,
+		label: L$3(`pattern-${t}`, R$3(t)),
+		owner: u$9,
 		revision: `production-pattern-${t}-r1`,
 		roots: n,
-		version: l$8
+		version: l$9
 	};
 }
 function j$4(e, t, n = {}, r, i = {}) {
 	let a = CORE_PRODUCTION_BLOCK_TYPES[t], s = t === `section` || t === `accordionItem` || t === `dialog` || t === `popover` || t === `tab` ? `content` : t === `card` ? `actions` : `items`, c = {};
-	for (let [e, t] of Object.entries(n)) c[e] = M$2({
+	for (let [e, t] of Object.entries(n)) c[e] = M$3({
 		kind: `static-value`,
 		value: t
 	});
-	for (let [e, t] of Object.entries(i)) c[e] = M$2(t);
+	for (let [e, t] of Object.entries(i)) c[e] = M$3(t);
 	let u = {
 		authoring: { mode: isCoreLayoutBlockType(a) || r !== void 0 ? `structural` : `content` },
 		bindings: c,
@@ -13015,14 +13015,14 @@ function j$4(e, t, n = {}, r, i = {}) {
 		properties: coreProductionInitialProperties(a),
 		slots: r === void 0 ? {} : { [s]: r },
 		type: a,
-		version: l$8
+		version: l$9
 	};
 	return t === `grid` && (u.responsive = { columns: {
 		expanded: 4,
 		medium: 2
 	} }), u;
 }
-function M$2(e) {
+function M$3(e) {
 	return {
 		onError: `error`,
 		onNull: `empty`,
@@ -13030,22 +13030,22 @@ function M$2(e) {
 		transforms: []
 	};
 }
-function N$2(e) {
+function N$3(e) {
 	return {
 		kind: `query-reference`,
 		parameters: {},
 		query: e,
-		version: l$8
+		version: l$9
 	};
 }
-function P$2(e, t) {
+function P$3(e, t) {
 	return {
 		id: e,
 		kind: `resource-reference`,
 		resourceType: t
 	};
 }
-function F$2(e) {
+function F$3(e) {
 	return {
 		content: [{
 			content: [{
@@ -13057,50 +13057,50 @@ function F$2(e) {
 		type: `doc`
 	};
 }
-function I$2(e) {
+function I$3(e) {
 	let t = Object.entries(CORE_PRODUCTION_BLOCK_TYPES).find(([, t]) => t === e);
 	if (t === void 0 || isCoreLayoutBlockType(e)) throw TypeError(`Unsupported production block ${e}.`);
 	return t[0];
 }
-function L$2(e, t) {
+function L$3(e, t) {
 	return {
 		defaultMessage: t,
 		key: `studio.blocks/${e}`
 	};
 }
-function R$2(e) {
+function R$3(e) {
 	return e.replace(/([a-z])([A-Z])/gu, `$1 $2`).replaceAll(`-`, ` `).replace(/^./u, (e) => e.toUpperCase());
 }
-function z$1(e) {
+function z$2(e) {
 	return e.replace(/([a-z])([A-Z])/gu, `$1-$2`).toLowerCase();
 }
-function B$2(e) {
+function B$3(e) {
 	return e === `structural` || e === `landmark` ? `layout` : e;
 }
 //#endregion
 //#region node_modules/@kumwe/studio-core/dist/production-values.js
-var e$3 = /* @__PURE__ */ new Set([
+var e$6 = /* @__PURE__ */ new Set([
 	`bar`,
 	`doughnut`,
 	`line`,
 	`pie`
 ]);
-var t$3 = /^-?(?:0|[1-9][0-9]{0,17})(?:\.[0-9]{1,6})?$/u;
-var n$4 = /^[A-Z]{3}$/u;
-var r$5 = /^(?:#[0-9A-Fa-f]{6}|[a-z][a-z0-9-]{0,62}\/[a-z][a-z0-9-]{0,62})$/u;
+var t$5 = /^-?(?:0|[1-9][0-9]{0,17})(?:\.[0-9]{1,6})?$/u;
+var n$5 = /^[A-Z]{3}$/u;
+var r$6 = /^(?:#[0-9A-Fa-f]{6}|[a-z][a-z0-9-]{0,62}\/[a-z][a-z0-9-]{0,62})$/u;
 function parseStudioChartSpec(t) {
-	let n = l$7(t, [
+	let n = l$8(t, [
 		`datasets`,
 		`labels`,
 		`title`,
 		`type`
 	], `Chart`);
-	if (typeof n.type != `string` || !e$3.has(n.type)) throw TypeError(`Chart type must be bar, doughnut, line, or pie.`);
-	let r = u$7(n.labels, 200, 500, `Chart labels`);
+	if (typeof n.type != `string` || !e$6.has(n.type)) throw TypeError(`Chart type must be bar, doughnut, line, or pie.`);
+	let r = u$8(n.labels, 200, 500, `Chart labels`);
 	if (!Array.isArray(n.datasets) || n.datasets.length < 1 || n.datasets.length > 20) throw RangeError(`Chart datasets must contain between 1 and 20 datasets.`);
 	let i = {
 		datasets: n.datasets.map((e, t) => {
-			let n = l$7(e, [`label`, `values`], `Chart dataset ${t}`);
+			let n = l$8(e, [`label`, `values`], `Chart dataset ${t}`);
 			if (typeof n.label != `string` || n.label.length > 500) throw TypeError(`Chart dataset ${t} label must be a bounded string.`);
 			if (!Array.isArray(n.values) || n.values.length > 200) throw RangeError(`Chart dataset ${t} values exceed the 200-value limit.`);
 			let i = n.values.map((e) => {
@@ -13123,28 +13123,28 @@ function parseStudioChartSpec(t) {
 	return i;
 }
 function parseStudioDrawingDocument(e) {
-	let t = l$7(e, [
+	let t = l$8(e, [
 		`alt`,
 		`height`,
 		`strokes`,
 		`width`
-	], `Drawing`), n = d$7(t.width, 1, 4096, `Drawing width`), i = d$7(t.height, 1, 4096, `Drawing height`);
+	], `Drawing`), n = d$8(t.width, 1, 4096, `Drawing width`), i = d$8(t.height, 1, 4096, `Drawing height`);
 	if (typeof t.alt != `string` || t.alt.length < 1 || t.alt.length > 5e3) throw TypeError(`Drawing alternative text must contain between 1 and 5000 characters.`);
 	if (!Array.isArray(t.strokes) || t.strokes.length > 5e3) throw RangeError(`Drawing strokes exceed the 5000-stroke limit.`);
 	let a = t.strokes.map((e, t) => {
-		let a = l$7(e, [
+		let a = l$8(e, [
 			`color`,
 			`points`,
 			`width`
 		], `Drawing stroke ${t}`);
-		if (typeof a.color != `string` || !r$5.test(a.color)) throw TypeError(`Drawing stroke ${t} uses an invalid color token.`);
+		if (typeof a.color != `string` || !r$6.test(a.color)) throw TypeError(`Drawing stroke ${t} uses an invalid color token.`);
 		if (typeof a.width != `number` || !Number.isFinite(a.width) || a.width < .25 || a.width > 64) throw RangeError(`Drawing stroke ${t} width is outside 0.25 through 64.`);
 		if (!Array.isArray(a.points) || a.points.length < 1 || a.points.length > 1e4) throw RangeError(`Drawing stroke ${t} must contain 1 through 10000 points.`);
 		let o = a.points.map((e, t) => {
-			let r = l$7(e, [`x`, `y`], `Drawing point ${t}`);
+			let r = l$8(e, [`x`, `y`], `Drawing point ${t}`);
 			return {
-				x: f$7(r.x, n, `Drawing point ${t} x`),
-				y: f$7(r.y, i, `Drawing point ${t} y`)
+				x: f$9(r.x, n, `Drawing point ${t} x`),
+				y: f$9(r.y, i, `Drawing point ${t} y`)
 			};
 		});
 		return {
@@ -13161,24 +13161,119 @@ function parseStudioDrawingDocument(e) {
 	};
 }
 function parseStudioMoneyValue(e) {
-	let r = l$7(e, [`amount`, `currency`], `Money`);
-	if (typeof r.amount != `string` || !t$3.test(r.amount)) throw TypeError(`Money amount must be a canonical decimal string with at most six places.`);
-	if (typeof r.currency != `string` || !n$4.test(r.currency)) throw TypeError(`Money currency must be an uppercase ISO-style three-letter code.`);
+	let r = l$8(e, [`amount`, `currency`], `Money`);
+	if (typeof r.amount != `string` || !t$5.test(r.amount)) throw TypeError(`Money amount must be a canonical decimal string with at most six places.`);
+	if (typeof r.currency != `string` || !n$5.test(r.currency)) throw TypeError(`Money currency must be an uppercase ISO-style three-letter code.`);
 	return {
 		amount: r.amount,
 		currency: r.currency
 	};
 }
+function parseStudioPresentationIntent(e) {
+	let t = l$8(e, [
+		`align`,
+		`animation`,
+		`height`,
+		`inverse`,
+		`margin`,
+		`marker`,
+		`padding`,
+		`position`,
+		`print`,
+		`scrolling`,
+		`visibility`,
+		`width`
+	], `Presentation intent`), n = p$8(t.align, [
+		`center`,
+		`end`,
+		`start`,
+		`stretch`
+	], `align`), r = p$8(t.animation, [
+		`fade`,
+		`none`,
+		`parallax`,
+		`scale`,
+		`slide`
+	], `animation`), i = p$8(t.height, [
+		`auto`,
+		`content`,
+		`full`,
+		`viewport`
+	], `height`), a;
+	if (t.inverse !== void 0) {
+		if (typeof t.inverse != `boolean`) throw TypeError(`inverse must be a boolean.`);
+		a = t.inverse;
+	}
+	let o = p$8(t.margin, [
+		`comfortable`,
+		`compact`,
+		`none`,
+		`spacious`
+	], `margin`), s = p$8(t.marker, [
+		`check`,
+		`decimal`,
+		`disc`,
+		`none`
+	], `marker`), c = p$8(t.padding, [
+		`comfortable`,
+		`compact`,
+		`none`,
+		`spacious`
+	], `padding`), u = p$8(t.position, [
+		`flow`,
+		`relative`,
+		`sticky`
+	], `position`), d = p$8(t.print, [
+		`hide`,
+		`only`,
+		`show`
+	], `print`), f = p$8(t.scrolling, [
+		`auto`,
+		`clip`,
+		`snap`,
+		`visible`
+	], `scrolling`), m = p$8(t.width, [
+		`auto`,
+		`content`,
+		`full`
+	], `width`), h;
+	if (t.visibility !== void 0) {
+		let e = l$8(t.visibility, [
+			`compact`,
+			`expanded`,
+			`medium`
+		], `Presentation visibility`), n = p$8(e.compact, [`hidden`, `visible`], `compact visibility`), r = p$8(e.expanded, [`hidden`, `visible`], `expanded visibility`), i = p$8(e.medium, [`hidden`, `visible`], `medium visibility`);
+		h = {
+			...n === void 0 ? {} : { compact: n },
+			...r === void 0 ? {} : { expanded: r },
+			...i === void 0 ? {} : { medium: i }
+		};
+	}
+	return {
+		...n === void 0 ? {} : { align: n },
+		...r === void 0 ? {} : { animation: r },
+		...i === void 0 ? {} : { height: i },
+		...a === void 0 ? {} : { inverse: a },
+		...o === void 0 ? {} : { margin: o },
+		...s === void 0 ? {} : { marker: s },
+		...c === void 0 ? {} : { padding: c },
+		...u === void 0 ? {} : { position: u },
+		...d === void 0 ? {} : { print: d },
+		...f === void 0 ? {} : { scrolling: f },
+		...h === void 0 ? {} : { visibility: h },
+		...m === void 0 ? {} : { width: m }
+	};
+}
 function parseStudioTableDocument(e) {
-	let t = l$7(e, [
+	let t = l$8(e, [
 		`caption`,
 		`columns`,
 		`rows`
-	], `Table`), n = u$7(t.columns, 50, 500, `Table columns`);
+	], `Table`), n = u$8(t.columns, 50, 500, `Table columns`);
 	if (n.length === 0) throw RangeError(`Table must declare at least one column.`);
 	if (!Array.isArray(t.rows) || t.rows.length > 1e3) throw RangeError(`Table rows exceed the 1000-row limit.`);
 	let r = t.rows.map((e, t) => {
-		let r = u$7(e, 50, 5e3, `Table row ${t}`);
+		let r = u$8(e, 50, 5e3, `Table row ${t}`);
 		if (r.length !== n.length) throw RangeError(`Table row ${t} must contain one cell per column.`);
 		return r;
 	}), i;
@@ -13192,26 +13287,32 @@ function parseStudioTableDocument(e) {
 		rows: r
 	};
 }
-function l$7(e, t, n) {
+function l$8(e, t, n) {
 	if (typeof e != `object` || !e || Array.isArray(e) || Object.getPrototypeOf(e) !== Object.prototype) throw TypeError(`${n} must be a plain JSON object.`);
 	let r = e, i = new Set(t), a = Object.keys(r).find((e) => !i.has(e));
 	if (a !== void 0) throw TypeError(`${n} contains unknown member ${a}.`);
 	return r;
 }
-function u$7(e, t, n, r) {
+function u$8(e, t, n, r) {
 	if (!Array.isArray(e) || e.length > t) throw RangeError(`${r} exceed their item limit.`);
 	return e.map((e) => {
 		if (typeof e != `string` || e.length > n) throw TypeError(`${r} must be bounded strings.`);
 		return e;
 	});
 }
-function d$7(e, t, n, r) {
+function d$8(e, t, n, r) {
 	if (typeof e != `number` || !Number.isInteger(e) || e < t || e > n) throw RangeError(`${r} must be an integer from ${t} through ${n}.`);
 	return e;
 }
-function f$7(e, t, n) {
+function f$9(e, t, n) {
 	if (typeof e != `number` || !Number.isFinite(e) || e < 0 || e > t) throw RangeError(`${n} must be a finite coordinate inside the drawing bounds.`);
 	return e;
+}
+function p$8(e, t, n) {
+	if (e !== void 0) {
+		if (typeof e != `string` || !t.some((t) => t === e)) throw TypeError(`${n} is not an allowed presentation value.`);
+		return e;
+	}
 }
 //#endregion
 //#region node_modules/@kumwe/studio-core/dist/recipes.js
@@ -13239,27 +13340,27 @@ function recipeSelectionOperations(t, n, r) {
 }
 //#endregion
 //#region node_modules/@kumwe/studio-core/dist/validation.js
-var r$4 = compileProfileSchema(blueprintSchema, { schemas: [commonSchema] });
-var i$8 = /* @__PURE__ */ new WeakMap();
-var a$6 = 16777216;
-var o$4 = 1e6;
-var s$5 = 1e4;
+var r$5 = compileProfileSchema(blueprintSchema, { schemas: [commonSchema] });
+var i$10 = /* @__PURE__ */ new WeakMap();
+var a$10 = 16777216;
+var o$6 = 1e6;
+var s$6 = 1e4;
 function validateBlueprint(e, t, n = {}) {
-	let i = [], a = h$4(n.maximumDepth, 32, `maximumDepth`), o = h$4(n.maximumNodes, 5e3, `maximumNodes`), s = l$6(e, a, o);
+	let i = [], a = h$6(n.maximumDepth, 32, `maximumDepth`), o = h$6(n.maximumNodes, 5e3, `maximumNodes`), s = l$7(e, a, o);
 	if (s.length > 0) return {
 		diagnostics: s,
 		valid: !1
 	};
-	let c = u$6(e);
+	let c = u$7(e);
 	if (c !== void 0) return {
 		diagnostics: [c],
 		valid: !1
 	};
-	if (!r$4.validate(e)) return i.push(..._$4(r$4.errors)), {
+	if (!r$5.validate(e)) return i.push(..._$5(r$5.errors)), {
 		diagnostics: i,
 		valid: !1
 	};
-	let d = e, f = /* @__PURE__ */ new Set(), p = S$4(d.dependencyLock.blocks, i), m = 0, g = d.roots.map((e) => ({
+	let d = e, f = /* @__PURE__ */ new Set(), p = S$5(d.dependencyLock.blocks, i), m = 0, g = d.roots.map((e) => ({
 		depth: 1,
 		node: e
 	})).reverse();
@@ -13269,12 +13370,12 @@ function validateBlueprint(e, t, n = {}) {
 		let { depth: r, node: s } = e;
 		if (m += 1, m > o) break;
 		if (r > a) {
-			i.push(D$3(`maximum-depth`, `Node depth exceeds the configured limit of ${a}.`, s.id));
+			i.push(D$4(`maximum-depth`, `Node depth exceeds the configured limit of ${a}.`, s.id));
 			continue;
 		}
-		f.has(s.id) && i.push(D$3(`duplicate-node-id`, `Node identifier ${s.id} is not unique.`, s.id)), f.add(s.id);
+		f.has(s.id) && i.push(D$4(`duplicate-node-id`, `Node identifier ${s.id} is not unique.`, s.id)), f.add(s.id);
 		let c = t.resolveRegistration(s.type, s.version);
-		c === void 0 ? i.push(D$3(`block-unavailable`, `Block ${s.type}@${s.version} is not registered.`, s.id)) : (C$4(s, c.definition, c.verifiedIntegrity, p.get(w$4(s.type, s.version)), i), v$4(s, c.definition, t, i), T$4(s, c.definition, i)), E$4(s, n.fieldPaths, i);
+		c === void 0 ? i.push(D$4(`block-unavailable`, `Block ${s.type}@${s.version} is not registered.`, s.id)) : (C$5(s, c.definition, c.verifiedIntegrity, p.get(w$5(s.type, s.version)), i), v$5(s, c.definition, t, i), T$5(s, c.definition, i)), E$5(s, n.fieldPaths, i);
 		let l = Object.values(s.slots);
 		for (let e = l.length - 1; e >= 0; --e) {
 			let t = l[e];
@@ -13287,27 +13388,27 @@ function validateBlueprint(e, t, n = {}) {
 			}
 		}
 	}
-	return m > o && i.push(D$3(`maximum-nodes`, `Blueprint contains more than the configured limit of ${o} nodes.`)), {
+	return m > o && i.push(D$4(`maximum-nodes`, `Blueprint contains more than the configured limit of ${o} nodes.`)), {
 		diagnostics: i,
 		valid: i.every((e) => e.severity !== `blocking` && e.severity !== `error`)
 	};
 }
-function l$6(e, t, n) {
-	if (!g$4(e) || !Array.isArray(e.roots)) return [];
+function l$7(e, t, n) {
+	if (!g$5(e) || !Array.isArray(e.roots)) return [];
 	let r = e.roots;
-	if (r.length > n) return [D$3(`maximum-nodes`, `Blueprint contains more than the configured limit of ${n} nodes.`)];
+	if (r.length > n) return [D$4(`maximum-nodes`, `Blueprint contains more than the configured limit of ${n} nodes.`)];
 	let i = /* @__PURE__ */ new WeakSet(), a = r.length, o = r.map((e) => ({
 		depth: 1,
 		value: e
 	})).reverse();
 	for (; o.length > 0;) {
 		let e = o.pop();
-		if (!(e === void 0 || !g$4(e.value))) {
-			if (i.has(e.value)) return [D$3(`cyclic-blueprint`, `Blueprint nodes must form an acyclic JSON tree.`)];
-			if (i.add(e.value), e.depth > t) return [D$3(`maximum-depth`, `Node depth exceeds the configured limit of ${t}.`, typeof e.value.id == `string` ? e.value.id : void 0)];
-			if (g$4(e.value.slots)) {
+		if (!(e === void 0 || !g$5(e.value))) {
+			if (i.has(e.value)) return [D$4(`cyclic-blueprint`, `Blueprint nodes must form an acyclic JSON tree.`)];
+			if (i.add(e.value), e.depth > t) return [D$4(`maximum-depth`, `Node depth exceeds the configured limit of ${t}.`, typeof e.value.id == `string` ? e.value.id : void 0)];
+			if (g$5(e.value.slots)) {
 				for (let t of Object.values(e.value.slots)) if (Array.isArray(t)) {
-					if (a += t.length, a > n) return [D$3(`maximum-nodes`, `Blueprint contains more than the configured limit of ${n} nodes.`)];
+					if (a += t.length, a > n) return [D$4(`maximum-nodes`, `Blueprint contains more than the configured limit of ${n} nodes.`)];
 					for (let n = t.length - 1; n >= 0; --n) o.push({
 						depth: e.depth + 1,
 						value: t[n]
@@ -13318,7 +13419,7 @@ function l$6(e, t, n) {
 	}
 	return [];
 }
-function u$6(e) {
+function u$7(e) {
 	let t = /* @__PURE__ */ new WeakSet(), n = [{
 		depth: 0,
 		value: e
@@ -13326,53 +13427,53 @@ function u$6(e) {
 	for (; n.length > 0;) {
 		let e = n.pop();
 		if (e === void 0) break;
-		if (i += 1, i > o$4) return D$3(`maximum-json-values`, `Blueprint exceeds the fixed alpha limit of ${o$4} JSON values.`);
-		if (e.depth > 64) return D$3(`maximum-value-depth`, `Blueprint JSON value depth exceeds the fixed alpha limit of 64.`);
+		if (i += 1, i > o$6) return D$4(`maximum-json-values`, `Blueprint exceeds the fixed alpha limit of ${o$6} JSON values.`);
+		if (e.depth > 64) return D$4(`maximum-value-depth`, `Blueprint JSON value depth exceeds the fixed alpha limit of 64.`);
 		let { value: c } = e;
 		if (c === null) r += 4;
 		else if (typeof c == `boolean`) r += c ? 4 : 5;
 		else if (typeof c == `number` && Number.isFinite(c)) r += String(c).length;
-		else if (typeof c == `string`) r += m$5(c);
+		else if (typeof c == `string`) r += m$7(c);
 		else if (Array.isArray(c)) {
-			if (!d$6(c)) return D$3(`non-json-value`, `Blueprint arrays must be dense JSON arrays.`);
-			if (c.length > s$5) return D$3(`maximum-array-items`, `Blueprint arrays cannot exceed ${s$5} items.`);
-			if (t.has(c)) return D$3(`cyclic-blueprint`, `Blueprint must be an acyclic JSON document.`);
+			if (!d$7(c)) return D$4(`non-json-value`, `Blueprint arrays must be dense JSON arrays.`);
+			if (c.length > s$6) return D$4(`maximum-array-items`, `Blueprint arrays cannot exceed ${s$6} items.`);
+			if (t.has(c)) return D$4(`cyclic-blueprint`, `Blueprint must be an acyclic JSON document.`);
 			t.add(c), r += c.length + 2;
 			for (let t = c.length - 1; t >= 0; --t) n.push({
 				depth: e.depth + 1,
 				value: c[t]
 			});
-		} else if (f$6(c)) {
-			if (t.has(c)) return D$3(`cyclic-blueprint`, `Blueprint must be an acyclic JSON document.`);
+		} else if (f$8(c)) {
+			if (t.has(c)) return D$4(`cyclic-blueprint`, `Blueprint must be an acyclic JSON document.`);
 			t.add(c);
 			let i = Object.entries(c);
-			if (i.length > s$5) return D$3(`maximum-object-properties`, `Blueprint objects cannot exceed ${s$5} properties.`);
+			if (i.length > s$6) return D$4(`maximum-object-properties`, `Blueprint objects cannot exceed ${s$6} properties.`);
 			r += i.length + 2;
 			for (let t = i.length - 1; t >= 0; --t) {
 				let a = i[t];
 				if (a === void 0) continue;
 				let [o, s] = a;
-				if (!p$5(o)) return D$3(`unsafe-json-member`, `Blueprint contains an unsafe JSON object member name.`);
-				r += m$5(o) + 1, n.push({
+				if (!p$7(o)) return D$4(`unsafe-json-member`, `Blueprint contains an unsafe JSON object member name.`);
+				r += m$7(o) + 1, n.push({
 					depth: e.depth + 1,
 					value: s
 				});
 			}
-		} else return D$3(`non-json-value`, `Blueprint must contain only JSON-compatible values.`);
-		if (r > a$6) return D$3(`maximum-json-bytes`, `Blueprint exceeds the fixed alpha limit of ${a$6} encoded bytes.`);
+		} else return D$4(`non-json-value`, `Blueprint must contain only JSON-compatible values.`);
+		if (r > a$10) return D$4(`maximum-json-bytes`, `Blueprint exceeds the fixed alpha limit of ${a$10} encoded bytes.`);
 	}
 }
-function d$6(e) {
+function d$7(e) {
 	if (Object.getPrototypeOf(e) !== Array.prototype || Object.getOwnPropertySymbols(e).length) return !1;
 	let t = Object.getOwnPropertyNames(e);
 	return t.length === e.length + 1 && t[e.length] === `length` && t.slice(0, -1).every((e, t) => e === String(t));
 }
-function f$6(e) {
-	if (!g$4(e) || Object.getOwnPropertySymbols(e).length > 0) return !1;
+function f$8(e) {
+	if (!g$5(e) || Object.getOwnPropertySymbols(e).length > 0) return !1;
 	let t = Object.getPrototypeOf(e);
 	return t !== Object.prototype && t !== null ? !1 : Object.getOwnPropertyNames(e).length === Object.keys(e).length;
 }
-function p$5(e) {
+function p$7(e) {
 	if (e.length === 0 || e.length > 200 || e === `__proto__` || e === `prototype` || e === `constructor`) return !1;
 	for (let t = 0; t < e.length; t += 1) {
 		let n = e.charCodeAt(t);
@@ -13380,7 +13481,7 @@ function p$5(e) {
 	}
 	return !0;
 }
-function m$5(e) {
+function m$7(e) {
 	let t = 2;
 	for (let n = 0; n < e.length; n += 1) {
 		let r = e.charCodeAt(n);
@@ -13395,26 +13496,26 @@ function m$5(e) {
 	}
 	return t;
 }
-function h$4(e, t, n) {
+function h$6(e, t, n) {
 	let r = e ?? t;
 	if (!Number.isInteger(r) || r < 1) throw RangeError(`${n} must be a positive integer.`);
 	return r;
 }
-function g$4(e) {
+function g$5(e) {
 	return typeof e == `object` && !!e && !Array.isArray(e);
 }
-function _$4(e) {
-	return (e ?? []).map((e) => D$3(`schema-${e.keyword}`, e.message, void 0, e.instancePath));
+function _$5(e) {
+	return (e ?? []).map((e) => D$4(`schema-${e.keyword}`, e.message, void 0, e.instancePath));
 }
-function v$4(e, t, r, a) {
-	let o = `${t.type}@${t.version}`, s = i$8.get(r);
-	s === void 0 && (s = /* @__PURE__ */ new Map(), i$8.set(r, s));
+function v$5(e, t, r, a) {
+	let o = `${t.type}@${t.version}`, s = i$10.get(r);
+	s === void 0 && (s = /* @__PURE__ */ new Map(), i$10.set(r, s));
 	let c = s.get(o);
 	if (c === void 0) {
 		let e = compileProfileSchema(t.propertySchema);
 		s.set(o, e), c = e;
 	}
-	y$4(e, c, e.properties, void 0, a);
+	y$5(e, c, e.properties, void 0, a);
 	let l = /* @__PURE__ */ new Map();
 	for (let t of Object.keys(e.responsive ?? {}).sort(O$4)) {
 		let n = e.responsive?.[t];
@@ -13427,72 +13528,72 @@ function v$4(e, t, r, a) {
 	}
 	for (let t of [...l.keys()].sort(O$4)) {
 		let n = l.get(t);
-		n !== void 0 && y$4(e, c, n, t, a);
+		n !== void 0 && y$5(e, c, n, t, a);
 	}
 }
-function y$4(e, t, n, r, i) {
-	t.validate(n) || i.push(..._$4(t.errors).map((t) => ({
+function y$5(e, t, n, r, i) {
+	t.validate(n) || i.push(..._$5(t.errors).map((t) => ({
 		...t,
 		code: `studio.validation/block-properties-${t.code.split(`/`).at(-1) ?? `invalid`}`,
 		location: {
 			...t.location,
 			nodeId: e.id,
-			...r === void 0 ? {} : { jsonPointer: b$4(t.location?.jsonPointer, r) }
+			...r === void 0 ? {} : { jsonPointer: b$5(t.location?.jsonPointer, r) }
 		}
 	})));
 }
-function b$4(e, t) {
+function b$5(e, t) {
 	let n = e?.split(`/`).slice(1) ?? [], r = n.shift();
-	return r === void 0 ? `/responsive/${x$4(t)}` : [
+	return r === void 0 ? `/responsive/${x$5(t)}` : [
 		``,
 		`responsive`,
 		r,
-		x$4(t),
+		x$5(t),
 		...n
 	].join(`/`);
 }
-function x$4(e) {
+function x$5(e) {
 	return e.replaceAll(`~`, `~0`).replaceAll(`/`, `~1`);
 }
-function S$4(e, t) {
+function S$5(e, t) {
 	let n = /* @__PURE__ */ new Map();
 	for (let r of e) {
-		let e = w$4(r.type, r.version);
-		n.has(e) ? t.push(D$3(`block-lock-duplicate`, `Blueprint dependency lock repeats block ${r.type}@${r.version}.`)) : n.set(e, r);
+		let e = w$5(r.type, r.version);
+		n.has(e) ? t.push(D$4(`block-lock-duplicate`, `Blueprint dependency lock repeats block ${r.type}@${r.version}.`)) : n.set(e, r);
 	}
 	return n;
 }
-function C$4(e, t, n, r, i) {
+function C$5(e, t, n, r, i) {
 	if (r === void 0) {
-		i.push(D$3(`block-lock-missing`, `Block ${e.type}@${e.version} is absent from the Blueprint dependency lock.`, e.id));
+		i.push(D$4(`block-lock-missing`, `Block ${e.type}@${e.version} is absent from the Blueprint dependency lock.`, e.id));
 		return;
 	}
-	r.revision !== t.revision && i.push(D$3(`block-lock-revision-mismatch`, `Block ${e.type}@${e.version} resolves to revision ${t.revision}, not locked revision ${r.revision}.`, e.id)), r.integrity !== void 0 && n === void 0 ? i.push(D$3(`block-lock-integrity-unverified`, `Block ${e.type}@${e.version} has a locked integrity value that the registry cannot verify.`, e.id)) : r.integrity !== void 0 && r.integrity !== n && i.push(D$3(`block-lock-integrity-mismatch`, `Block ${e.type}@${e.version} does not match its locked integrity value.`, e.id));
+	r.revision !== t.revision && i.push(D$4(`block-lock-revision-mismatch`, `Block ${e.type}@${e.version} resolves to revision ${t.revision}, not locked revision ${r.revision}.`, e.id)), r.integrity !== void 0 && n === void 0 ? i.push(D$4(`block-lock-integrity-unverified`, `Block ${e.type}@${e.version} has a locked integrity value that the registry cannot verify.`, e.id)) : r.integrity !== void 0 && r.integrity !== n && i.push(D$4(`block-lock-integrity-mismatch`, `Block ${e.type}@${e.version} does not match its locked integrity value.`, e.id));
 }
-function w$4(e, t) {
+function w$5(e, t) {
 	return `${e}@${t}`;
 }
-function T$4(e, t, n) {
+function T$5(e, t, n) {
 	let r = new Map(t.slots.map((e) => [e.id, e]));
 	for (let [t, i] of Object.entries(e.slots)) {
 		let a = r.get(t);
 		if (a === void 0) {
-			n.push(D$3(`slot-unknown`, `Slot ${t} is not declared by ${e.type}.`, e.id));
+			n.push(D$4(`slot-unknown`, `Slot ${t} is not declared by ${e.type}.`, e.id));
 			continue;
 		}
-		i.length > a.maximum && n.push(D$3(`slot-maximum`, `Slot ${t} accepts at most ${a.maximum} children.`, e.id));
-		for (let e of i) a.accepts.types !== void 0 && !a.accepts.types.includes(e.type) && n.push(D$3(`slot-rejects-type`, `Slot ${t} does not accept ${e.type}.`, e.id));
+		i.length > a.maximum && n.push(D$4(`slot-maximum`, `Slot ${t} accepts at most ${a.maximum} children.`, e.id));
+		for (let e of i) a.accepts.types !== void 0 && !a.accepts.types.includes(e.type) && n.push(D$4(`slot-rejects-type`, `Slot ${t} does not accept ${e.type}.`, e.id));
 	}
-	for (let t of r.values()) (Object.hasOwn(e.slots, t.id) ? e.slots[t.id]?.length ?? 0 : 0) < t.minimum && n.push(D$3(`slot-minimum`, `Slot ${t.id} requires at least ${t.minimum} children.`, e.id));
+	for (let t of r.values()) (Object.hasOwn(e.slots, t.id) ? e.slots[t.id]?.length ?? 0 : 0) < t.minimum && n.push(D$4(`slot-minimum`, `Slot ${t.id} requires at least ${t.minimum} children.`, e.id));
 }
-function E$4(e, t, n) {
+function E$5(e, t, n) {
 	if (t !== void 0) for (let r of Object.values(e.bindings)) {
 		if (r.source.kind !== `entry-field`) continue;
 		let i = r.source.fieldPath.join(`.`);
-		t.has(i) || n.push(D$3(`field-unavailable`, `Field ${i} is not available to this Studio configuration.`, e.id));
+		t.has(i) || n.push(D$4(`field-unavailable`, `Field ${i} is not available to this Studio configuration.`, e.id));
 	}
 }
-function D$3(e, t, n, r) {
+function D$4(e, t, n, r) {
 	let i = {
 		code: `studio.validation/${e}`,
 		message: {
@@ -13506,84 +13607,66 @@ function D$3(e, t, n, r) {
 function O$4(e, t) {
 	return e < t ? -1 : +(e > t);
 }
-var en_default = {
-	$schema: "https://schemas.kumwe.org/studio/v1/authoring-message-catalog.schema.json",
-	kind: "authoring-message-catalog",
-	contractVersion: "0.1-draft",
-	catalogVersion: "1.7.0",
-	locale: "en",
-	messages: /* @__PURE__ */ JSON.parse("{\"studio.contextual/add-field\":{\"defaultMessage\":\"Add field\",\"parameters\":[]},\"studio.contextual/add-typed-field\":{\"defaultMessage\":\"Add typed field\",\"parameters\":[]},\"studio.contextual/all-saved\":{\"defaultMessage\":\"All local changes saved\",\"parameters\":[]},\"studio.contextual/announce-field-added\":{\"defaultMessage\":\"Field {label} added.\",\"parameters\":[\"label\"]},\"studio.contextual/announce-mode\":{\"defaultMessage\":\"{mode} mode selected.\",\"parameters\":[\"mode\"]},\"studio.contextual/announce-presentation\":{\"defaultMessage\":\"{presentation} presentation selected.\",\"parameters\":[\"presentation\"]},\"studio.contextual/announce-save-requested\":{\"defaultMessage\":\"{outcome} requested. The host must confirm and accept it.\",\"parameters\":[\"outcome\"]},\"studio.contextual/authoring-mode\":{\"defaultMessage\":\"Authoring mode\",\"parameters\":[]},\"studio.contextual/bind-in-blueprint\":{\"defaultMessage\":\"Bind in Blueprint\",\"parameters\":[]},\"studio.contextual/binding-heading\":{\"defaultMessage\":\"Field binding\",\"parameters\":[]},\"studio.contextual/binding-help\":{\"defaultMessage\":\"Choose Blueprint mode, select a block, and bind one of these exact Model fields to a compatible block port. Studio keeps the Model definition, Blueprint binding, and Entry value separate while they remain in this resource session.\",\"parameters\":[]},\"studio.contextual/blueprint-coordinate-mismatch\":{\"defaultMessage\":\"The session coordinates do not identify the supplied exact Blueprint revision.\",\"parameters\":[]},\"studio.contextual/blueprint-model-mismatch\":{\"defaultMessage\":\"The Blueprint does not lock the supplied exact Model revision.\",\"parameters\":[]},\"studio.contextual/cardinality\":{\"defaultMessage\":\"Cardinality\",\"parameters\":[]},\"studio.contextual/cardinality-many\":{\"defaultMessage\":\"Multiple values\",\"parameters\":[]},\"studio.contextual/cardinality-one\":{\"defaultMessage\":\"One value\",\"parameters\":[]},\"studio.contextual/choose-start\":{\"defaultMessage\":\"Choose how to start\",\"parameters\":[]},\"studio.contextual/choose-value\":{\"defaultMessage\":\"Choose a value\",\"parameters\":[]},\"studio.contextual/collection-item-type\":{\"defaultMessage\":\"Collection item type (used only for a collection field)\",\"parameters\":[]},\"studio.contextual/configuration-generation-mismatch\":{\"defaultMessage\":\"The Studio configuration and contextual session generations do not match.\",\"parameters\":[]},\"studio.contextual/control-unavailable\":{\"defaultMessage\":\"This field control is unavailable.\",\"parameters\":[]},\"studio.contextual/diagnostic-count\":{\"defaultMessage\":\"{count} diagnostics\",\"parameters\":[\"count\"]},\"studio.contextual/diagnostic-count-one\":{\"defaultMessage\":\"1 diagnostic\",\"parameters\":[]},\"studio.contextual/dirty-artifacts\":{\"defaultMessage\":\"Model {model} · Blueprint {blueprint} · Content {entry}\",\"parameters\":[\"blueprint\",\"entry\",\"model\"]},\"studio.contextual/entry-coordinate-mismatch\":{\"defaultMessage\":\"The session coordinates do not identify the supplied exact Entry revision.\",\"parameters\":[]},\"studio.contextual/entry-model-mismatch\":{\"defaultMessage\":\"The Entry does not lock the supplied exact Model revision.\",\"parameters\":[]},\"studio.contextual/entry-resource-mismatch\":{\"defaultMessage\":\"The existing-item target does not identify the supplied Entry.\",\"parameters\":[]},\"studio.contextual/enum-values\":{\"defaultMessage\":\"Enum choices (one identifier per line; used only for an enum field)\",\"parameters\":[]},\"studio.contextual/field-identifier\":{\"defaultMessage\":\"Field identifier\",\"parameters\":[]},\"studio.contextual/field-kind-boolean\":{\"defaultMessage\":\"Boolean\",\"parameters\":[]},\"studio.contextual/field-kind-collection\":{\"defaultMessage\":\"Collection\",\"parameters\":[]},\"studio.contextual/field-kind-date\":{\"defaultMessage\":\"Date\",\"parameters\":[]},\"studio.contextual/field-kind-date-time\":{\"defaultMessage\":\"Date and time\",\"parameters\":[]},\"studio.contextual/field-kind-decimal\":{\"defaultMessage\":\"Decimal\",\"parameters\":[]},\"studio.contextual/field-kind-enum\":{\"defaultMessage\":\"Choice\",\"parameters\":[]},\"studio.contextual/field-kind-integer\":{\"defaultMessage\":\"Integer\",\"parameters\":[]},\"studio.contextual/field-kind-media\":{\"defaultMessage\":\"Media\",\"parameters\":[]},\"studio.contextual/field-kind-money\":{\"defaultMessage\":\"Money\",\"parameters\":[]},\"studio.contextual/field-kind-object\":{\"defaultMessage\":\"Object\",\"parameters\":[]},\"studio.contextual/field-kind-resource\":{\"defaultMessage\":\"Resource\",\"parameters\":[]},\"studio.contextual/field-kind-rich-text\":{\"defaultMessage\":\"Rich text\",\"parameters\":[]},\"studio.contextual/field-kind-string\":{\"defaultMessage\":\"Text\",\"parameters\":[]},\"studio.contextual/field-label\":{\"defaultMessage\":\"Label\",\"parameters\":[]},\"studio.contextual/field-optional\":{\"defaultMessage\":\"optional\",\"parameters\":[]},\"studio.contextual/field-required\":{\"defaultMessage\":\"required\",\"parameters\":[]},\"studio.contextual/field-summary\":{\"defaultMessage\":\"{path} · {kind} · {cardinality} · {requirement}\",\"parameters\":[\"cardinality\",\"kind\",\"path\",\"requirement\"]},\"studio.contextual/field-type\":{\"defaultMessage\":\"Field type\",\"parameters\":[]},\"studio.contextual/json-array\":{\"defaultMessage\":\"JSON array\",\"parameters\":[]},\"studio.contextual/json-value\":{\"defaultMessage\":\"Canonical JSON value\",\"parameters\":[]},\"studio.contextual/load-more-types\":{\"defaultMessage\":\"Load more types\",\"parameters\":[]},\"studio.contextual/localized\":{\"defaultMessage\":\"Localized\",\"parameters\":[]},\"studio.contextual/mode-blueprint\":{\"defaultMessage\":\"Blueprint\",\"parameters\":[]},\"studio.contextual/mode-content\":{\"defaultMessage\":\"Content\",\"parameters\":[]},\"studio.contextual/mode-model\":{\"defaultMessage\":\"Model\",\"parameters\":[]},\"studio.contextual/model-coordinate-mismatch\":{\"defaultMessage\":\"The session coordinates do not identify the supplied exact Model revision.\",\"parameters\":[]},\"studio.contextual/model-fields\":{\"defaultMessage\":\"Model fields\",\"parameters\":[]},\"studio.contextual/model-status\":{\"defaultMessage\":\"This Model is {status}. The host must open a draft successor before fields can change.\",\"parameters\":[\"status\"]},\"studio.contextual/no-authorable-fields\":{\"defaultMessage\":\"This Model exposes no authorable fields.\",\"parameters\":[]},\"studio.contextual/no-canonical-value\":{\"defaultMessage\":\"No canonical value is available for this field yet.\",\"parameters\":[]},\"studio.contextual/no-fields\":{\"defaultMessage\":\"No fields have been defined.\",\"parameters\":[]},\"studio.contextual/presentation-fullscreen\":{\"defaultMessage\":\"Fullscreen\",\"parameters\":[]},\"studio.contextual/presentation-inline\":{\"defaultMessage\":\"Inline\",\"parameters\":[]},\"studio.contextual/presentation-maximized\":{\"defaultMessage\":\"Maximized\",\"parameters\":[]},\"studio.contextual/presentation-minimized\":{\"defaultMessage\":\"Minimized\",\"parameters\":[]},\"studio.contextual/presentation-not-authorized\":{\"defaultMessage\":\"The current presentation is not authorized by this contextual session.\",\"parameters\":[]},\"studio.contextual/required\":{\"defaultMessage\":\"Required\",\"parameters\":[]},\"studio.contextual/return\":{\"defaultMessage\":\"Return to {destination}\",\"parameters\":[\"destination\"]},\"studio.contextual/return-destination\":{\"defaultMessage\":\"the host\",\"parameters\":[]},\"studio.contextual/save-as-new-type\":{\"defaultMessage\":\"Save as new type\",\"parameters\":[]},\"studio.contextual/save-item\":{\"defaultMessage\":\"Save item\",\"parameters\":[]},\"studio.contextual/save-new-type-version\":{\"defaultMessage\":\"Save new type version\",\"parameters\":[]},\"studio.contextual/save-outcome\":{\"defaultMessage\":\"Save outcome\",\"parameters\":[]},\"studio.contextual/save-plan-help\":{\"defaultMessage\":\"The authoritative host will plan and show affected artifacts and consequences before confirmation.\",\"parameters\":[]},\"studio.contextual/search\":{\"defaultMessage\":\"Search\",\"parameters\":[]},\"studio.contextual/session-generation-missing\":{\"defaultMessage\":\"The contextual session has no authoritative generation.\",\"parameters\":[]},\"studio.contextual/start\":{\"defaultMessage\":\"Start Studio\",\"parameters\":[]},\"studio.contextual/start-blank\":{\"defaultMessage\":\"Blank start\",\"parameters\":[]},\"studio.contextual/start-blank-help\":{\"defaultMessage\":\"Create a new layout and content structure for this resource.\",\"parameters\":[]},\"studio.contextual/start-existing\":{\"defaultMessage\":\"Existing item\",\"parameters\":[]},\"studio.contextual/start-from-type\":{\"defaultMessage\":\"Reusable type · {type}\",\"parameters\":[\"type\"]},\"studio.contextual/start-source\":{\"defaultMessage\":\"Starting point\",\"parameters\":[]},\"studio.contextual/starting\":{\"defaultMessage\":\"Starting…\",\"parameters\":[]},\"studio.contextual/state-changed\":{\"defaultMessage\":\"changed\",\"parameters\":[]},\"studio.contextual/state-unchanged\":{\"defaultMessage\":\"unchanged\",\"parameters\":[]},\"studio.contextual/type-blueprint-mismatch\":{\"defaultMessage\":\"The reusable type does not identify the supplied exact Blueprint revision.\",\"parameters\":[]},\"studio.contextual/type-coordinate-mismatch\":{\"defaultMessage\":\"The session coordinates do not identify the supplied exact reusable type version.\",\"parameters\":[]},\"studio.contextual/type-model-mismatch\":{\"defaultMessage\":\"The reusable type does not identify the supplied exact Model revision.\",\"parameters\":[]},\"studio.contextual/type-search\":{\"defaultMessage\":\"Find a reusable type\",\"parameters\":[]},\"studio.contextual/types-empty\":{\"defaultMessage\":\"No authorized reusable types match this search.\",\"parameters\":[]},\"studio.contextual/types-loading\":{\"defaultMessage\":\"Loading authorized reusable types…\",\"parameters\":[]},\"studio.contextual/unavailable\":{\"defaultMessage\":\"Load one authorized content resource to open Studio.\",\"parameters\":[]},\"studio.contextual/unsaved\":{\"defaultMessage\":\"Unsaved changes\",\"parameters\":[]},\"studio.contextual/value-coordinate\":{\"defaultMessage\":\"Values belong to {entry}; they are not part of the reusable type.\",\"parameters\":[\"entry\"]},\"studio.contextual/values-heading\":{\"defaultMessage\":\"Content values\",\"parameters\":[]},\"studio.contextual/workspace-size\":{\"defaultMessage\":\"Workspace size\",\"parameters\":[]},\"studio.shell/announce-binding-removed\":{\"defaultMessage\":\"Removed the {port} binding\",\"parameters\":[\"port\"]},\"studio.shell/announce-binding-set\":{\"defaultMessage\":\"Set the {port} binding\",\"parameters\":[\"port\"]},\"studio.shell/announce-canvas-mode\":{\"defaultMessage\":\"Canvas mode: {state}\",\"parameters\":[\"state\"]},\"studio.shell/announce-command-failed\":{\"defaultMessage\":\"Command failed: {message}\",\"parameters\":[\"message\"]},\"studio.shell/announce-conflict\":{\"defaultMessage\":\"The change was rejected: {message} The document is unchanged; refresh the session or undo before retrying.\",\"parameters\":[\"message\"]},\"studio.shell/announce-deleted\":{\"defaultMessage\":\"Deleted {label} block\",\"parameters\":[\"label\"]},\"studio.shell/announce-drag-cancelled\":{\"defaultMessage\":\"Reorder cancelled. {label} kept its position.\",\"parameters\":[\"label\"]},\"studio.shell/announce-dropped\":{\"defaultMessage\":\"Moved {label} to position {position} of {count}\",\"parameters\":[\"count\",\"label\",\"position\"]},\"studio.shell/announce-duplicated\":{\"defaultMessage\":\"Duplicated {label}\",\"parameters\":[\"label\"]},\"studio.shell/announce-edit-cancelled\":{\"defaultMessage\":\"Edit cancelled. {property} kept its value.\",\"parameters\":[\"property\"]},\"studio.shell/announce-field-bound\":{\"defaultMessage\":\"Bound {port} to the {field} model field\",\"parameters\":[\"field\",\"port\"]},\"studio.shell/announce-inheritance-reset\":{\"defaultMessage\":\"Reset every responsive override for {property}; all viewports now inherit the base value\",\"parameters\":[\"property\"]},\"studio.shell/announce-inserted\":{\"defaultMessage\":\"Inserted {label}\",\"parameters\":[\"label\"]},\"studio.shell/announce-invalid-value\":{\"defaultMessage\":\"The {label} value is not valid JSON. Nothing was changed.\",\"parameters\":[\"label\"]},\"studio.shell/announce-moved-down\":{\"defaultMessage\":\"Moved {label} down\",\"parameters\":[\"label\"]},\"studio.shell/announce-moved-to\":{\"defaultMessage\":\"Moved {label} to {destination}\",\"parameters\":[\"destination\",\"label\"]},\"studio.shell/announce-moved-up\":{\"defaultMessage\":\"Moved {label} up\",\"parameters\":[\"label\"]},\"studio.shell/announce-name-required\":{\"defaultMessage\":\"Enter a name before applying the change.\",\"parameters\":[]},\"studio.shell/announce-override-removed\":{\"defaultMessage\":\"Removed the {property} override for the {viewport} viewport\",\"parameters\":[\"property\",\"viewport\"]},\"studio.shell/announce-override-set\":{\"defaultMessage\":\"Set the {property} override for the {viewport} viewport\",\"parameters\":[\"property\",\"viewport\"]},\"studio.shell/announce-pattern-applied\":{\"defaultMessage\":\"Applied the {pattern} pattern\",\"parameters\":[\"pattern\"]},\"studio.shell/announce-preview-reloaded\":{\"defaultMessage\":\"The preview reloaded ({reason}). The document is unchanged.\",\"parameters\":[\"reason\"]},\"studio.shell/announce-preview-torn-down\":{\"defaultMessage\":\"The preview closed ({reason}). The document is unchanged.\",\"parameters\":[\"reason\"]},\"studio.shell/announce-property-set\":{\"defaultMessage\":\"Set {property}\",\"parameters\":[\"property\"]},\"studio.shell/announce-property-unset\":{\"defaultMessage\":\"Unset {property}\",\"parameters\":[\"property\"]},\"studio.shell/announce-recipe-applied\":{\"defaultMessage\":\"Applied the {recipe} recipe\",\"parameters\":[\"recipe\"]},\"studio.shell/announce-redid\":{\"defaultMessage\":\"Redid change\",\"parameters\":[]},\"studio.shell/announce-restored\":{\"defaultMessage\":\"Restored {label} block\",\"parameters\":[\"label\"]},\"studio.shell/announce-selection-cleared\":{\"defaultMessage\":\"Selection cleared\",\"parameters\":[]},\"studio.shell/announce-size-role-invalid\":{\"defaultMessage\":\"The {axis} role must be a lower-case identifier such as half or full-width. Nothing was changed.\",\"parameters\":[\"axis\"]},\"studio.shell/announce-size-role-removed\":{\"defaultMessage\":\"Removed the {axis} role\",\"parameters\":[\"axis\"]},\"studio.shell/announce-size-role-removed-viewport\":{\"defaultMessage\":\"Removed the {axis} role for the {viewport} viewport\",\"parameters\":[\"axis\",\"viewport\"]},\"studio.shell/announce-size-role-set\":{\"defaultMessage\":\"Set the {axis} role to {role}\",\"parameters\":[\"axis\",\"role\"]},\"studio.shell/announce-size-role-set-viewport\":{\"defaultMessage\":\"Set the {axis} role to {role} for the {viewport} viewport\",\"parameters\":[\"axis\",\"role\",\"viewport\"]},\"studio.shell/announce-undid\":{\"defaultMessage\":\"Undid change\",\"parameters\":[]},\"studio.shell/announce-viewport-changed\":{\"defaultMessage\":\"Previewing the {label} viewport\",\"parameters\":[\"label\"]},\"studio.shell/block-actions\":{\"defaultMessage\":\"Block actions\",\"parameters\":[]},\"studio.shell/breadcrumb-label\":{\"defaultMessage\":\"Selection path\",\"parameters\":[]},\"studio.shell/canvas-edit-toggle\":{\"defaultMessage\":\"Select and move rendered blocks\",\"parameters\":[]},\"studio.shell/canvas-empty\":{\"defaultMessage\":\"Choose a block to begin composing.\",\"parameters\":[]},\"studio.shell/canvas-label\":{\"defaultMessage\":\"Blueprint structure\",\"parameters\":[]},\"studio.shell/canvas-mode-editing\":{\"defaultMessage\":\"selecting and moving blocks\",\"parameters\":[]},\"studio.shell/canvas-mode-interacting\":{\"defaultMessage\":\"interacting with the rendered preview\",\"parameters\":[]},\"studio.shell/command-apply-pattern\":{\"defaultMessage\":\"Apply pattern {pattern}\",\"parameters\":[\"pattern\"]},\"studio.shell/command-clear-selection\":{\"defaultMessage\":\"Clear selection\",\"parameters\":[]},\"studio.shell/command-insert\":{\"defaultMessage\":\"Insert {label}\",\"parameters\":[\"label\"]},\"studio.shell/command-move-to\":{\"defaultMessage\":\"Move to {destination}\",\"parameters\":[\"destination\"]},\"studio.shell/command-palette-empty\":{\"defaultMessage\":\"No commands match the filter.\",\"parameters\":[]},\"studio.shell/command-palette-hint\":{\"defaultMessage\":\"Type to filter commands. Arrow Down moves into the results, Arrow Up returns to the filter, Enter runs a command, Escape closes.\",\"parameters\":[]},\"studio.shell/command-palette-input-label\":{\"defaultMessage\":\"Filter commands\",\"parameters\":[]},\"studio.shell/command-palette-label\":{\"defaultMessage\":\"Command palette\",\"parameters\":[]},\"studio.shell/command-palette-results-label\":{\"defaultMessage\":\"Matching commands\",\"parameters\":[]},\"studio.shell/command-palette-toggle\":{\"defaultMessage\":\"Commands\",\"parameters\":[]},\"studio.shell/delete\":{\"defaultMessage\":\"Delete\",\"parameters\":[]},\"studio.shell/diagnostics-empty\":{\"defaultMessage\":\"No issues\",\"parameters\":[]},\"studio.shell/diagnostics-heading\":{\"defaultMessage\":\"Diagnostics\",\"parameters\":[]},\"studio.shell/document-roots\":{\"defaultMessage\":\"document roots\",\"parameters\":[]},\"studio.shell/drag-drop-position\":{\"defaultMessage\":\"Moving {label} to position {position} of {count}\",\"parameters\":[\"count\",\"label\",\"position\"]},\"studio.shell/duplicate\":{\"defaultMessage\":\"Duplicate\",\"parameters\":[]},\"studio.shell/history-label\":{\"defaultMessage\":\"History\",\"parameters\":[]},\"studio.shell/inspector-add-override\":{\"defaultMessage\":\"Add override\",\"parameters\":[]},\"studio.shell/inspector-add-override-name-label\":{\"defaultMessage\":\"Override property name\",\"parameters\":[]},\"studio.shell/inspector-add-override-value-label\":{\"defaultMessage\":\"Override value as JSON\",\"parameters\":[]},\"studio.shell/inspector-add-property\":{\"defaultMessage\":\"Add property\",\"parameters\":[]},\"studio.shell/inspector-add-property-name-label\":{\"defaultMessage\":\"New property name\",\"parameters\":[]},\"studio.shell/inspector-add-property-value-label\":{\"defaultMessage\":\"New property value as JSON\",\"parameters\":[]},\"studio.shell/inspector-binding-accepts\":{\"defaultMessage\":\"Accepts {cardinality} {value-type} value\",\"parameters\":[\"cardinality\",\"value-type\"]},\"studio.shell/inspector-binding-control-label\":{\"defaultMessage\":\"Declared {control} control for {field}\",\"parameters\":[\"control\",\"field\"]},\"studio.shell/inspector-binding-control-preview\":{\"defaultMessage\":\"Control preview\",\"parameters\":[]},\"studio.shell/inspector-binding-control-unavailable\":{\"defaultMessage\":\"The declared {control} control requires a host field-adapter contribution.\",\"parameters\":[\"control\"]},\"studio.shell/inspector-binding-control-undeclared\":{\"defaultMessage\":\"This field declares no authoring control.\",\"parameters\":[]},\"studio.shell/inspector-binding-field-placeholder\":{\"defaultMessage\":\"Choose a model field\",\"parameters\":[]},\"studio.shell/inspector-binding-invalid\":{\"defaultMessage\":\"This binding no longer resolves and requires migration.\",\"parameters\":[]},\"studio.shell/inspector-binding-model\":{\"defaultMessage\":\"Fields from locked model {model}\",\"parameters\":[\"model\"]},\"studio.shell/inspector-binding-model-mismatch\":{\"defaultMessage\":\"The projected model does not match the Blueprint lock. Binding choices are disabled; see diagnostics.\",\"parameters\":[]},\"studio.shell/inspector-binding-model-unavailable\":{\"defaultMessage\":\"The session advertises model reads, but no active model projection is loaded. Binding choices are disabled.\",\"parameters\":[]},\"studio.shell/inspector-binding-no-compatible-fields\":{\"defaultMessage\":\"No compatible model fields\",\"parameters\":[]},\"studio.shell/inspector-binding-non-field-source\":{\"defaultMessage\":\"This port uses a non-field source. Choosing a model field replaces that source explicitly.\",\"parameters\":[]},\"studio.shell/inspector-binding-port-label\":{\"defaultMessage\":\"Binding port name\",\"parameters\":[]},\"studio.shell/inspector-binding-required\":{\"defaultMessage\":\" (required)\",\"parameters\":[]},\"studio.shell/inspector-binding-value-label\":{\"defaultMessage\":\"Binding value as JSON\",\"parameters\":[]},\"studio.shell/inspector-bindings-empty\":{\"defaultMessage\":\"No bindings\",\"parameters\":[]},\"studio.shell/inspector-bindings-heading\":{\"defaultMessage\":\"Bindings\",\"parameters\":[]},\"studio.shell/inspector-design-heading\":{\"defaultMessage\":\"Design\",\"parameters\":[]},\"studio.shell/inspector-design-placeholder\":{\"defaultMessage\":\"Choose a token\",\"parameters\":[]},\"studio.shell/inspector-design-unset\":{\"defaultMessage\":\"Remove\",\"parameters\":[]},\"studio.shell/inspector-empty\":{\"defaultMessage\":\"Select a block to inspect its contract.\",\"parameters\":[]},\"studio.shell/inspector-heading\":{\"defaultMessage\":\"Inspector\",\"parameters\":[]},\"studio.shell/inspector-hint\":{\"defaultMessage\":\"Inputs hold JSON values. Enter applies the edit, Escape reverts it.\",\"parameters\":[]},\"studio.shell/inspector-identifier\":{\"defaultMessage\":\"Identifier\",\"parameters\":[]},\"studio.shell/inspector-layout-axis-block\":{\"defaultMessage\":\"Block size\",\"parameters\":[]},\"studio.shell/inspector-layout-axis-inline\":{\"defaultMessage\":\"Inline size\",\"parameters\":[]},\"studio.shell/inspector-layout-base-none\":{\"defaultMessage\":\"Base: none\",\"parameters\":[]},\"studio.shell/inspector-layout-base-role\":{\"defaultMessage\":\"Base: {role}\",\"parameters\":[\"role\"]},\"studio.shell/inspector-layout-fallback-hint\":{\"defaultMessage\":\"No theme size-role vocabulary is available. Enter a lower-case role identifier; Enter applies it, Escape cancels.\",\"parameters\":[]},\"studio.shell/inspector-layout-heading\":{\"defaultMessage\":\"Layout\",\"parameters\":[]},\"studio.shell/inspector-layout-no-roles\":{\"defaultMessage\":\"The active theme declares no size roles, so none can be assigned.\",\"parameters\":[]},\"studio.shell/inspector-layout-role-label-base\":{\"defaultMessage\":\"{axis} role (base)\",\"parameters\":[\"axis\"]},\"studio.shell/inspector-layout-role-label-viewport\":{\"defaultMessage\":\"{axis} role override for the {viewport} viewport\",\"parameters\":[\"axis\",\"viewport\"]},\"studio.shell/inspector-layout-role-placeholder\":{\"defaultMessage\":\"Choose a role\",\"parameters\":[]},\"studio.shell/inspector-layout-unset\":{\"defaultMessage\":\"Remove\",\"parameters\":[]},\"studio.shell/inspector-layout-unset-label-base\":{\"defaultMessage\":\"Remove the {axis} base role\",\"parameters\":[\"axis\"]},\"studio.shell/inspector-layout-unset-label-viewport\":{\"defaultMessage\":\"Remove the {axis} role override for the {viewport} viewport\",\"parameters\":[\"axis\",\"viewport\"]},\"studio.shell/inspector-override-value-label\":{\"defaultMessage\":\"Override of {property} for the {viewport} viewport as JSON\",\"parameters\":[\"property\",\"viewport\"]},\"studio.shell/inspector-overrides-empty\":{\"defaultMessage\":\"No overrides for the {viewport} viewport\",\"parameters\":[\"viewport\"]},\"studio.shell/inspector-overrides-heading\":{\"defaultMessage\":\"Overrides for the {viewport} viewport\",\"parameters\":[\"viewport\"]},\"studio.shell/inspector-properties\":{\"defaultMessage\":\"Properties\",\"parameters\":[]},\"studio.shell/inspector-properties-empty\":{\"defaultMessage\":\"No properties\",\"parameters\":[]},\"studio.shell/inspector-property-value-label\":{\"defaultMessage\":\"Value of {property} as JSON\",\"parameters\":[\"property\"]},\"studio.shell/inspector-provenance-base\":{\"defaultMessage\":\"Base value\",\"parameters\":[]},\"studio.shell/inspector-provenance-inherited\":{\"defaultMessage\":\"Inherited from base: {value}\",\"parameters\":[\"value\"]},\"studio.shell/inspector-provenance-inherited-none\":{\"defaultMessage\":\"Inherited from base: none\",\"parameters\":[]},\"studio.shell/inspector-provenance-overridden\":{\"defaultMessage\":\"Overridden for the {viewport} viewport: {value}\",\"parameters\":[\"value\",\"viewport\"]},\"studio.shell/inspector-read-only\":{\"defaultMessage\":\"Editing is disabled because this session is read-only.\",\"parameters\":[]},\"studio.shell/inspector-recipe-label\":{\"defaultMessage\":\"Recipe\",\"parameters\":[]},\"studio.shell/inspector-recipe-placeholder\":{\"defaultMessage\":\"Choose a recipe\",\"parameters\":[]},\"studio.shell/inspector-recipes-heading\":{\"defaultMessage\":\"Recipes\",\"parameters\":[]},\"studio.shell/inspector-remove-binding\":{\"defaultMessage\":\"Remove\",\"parameters\":[]},\"studio.shell/inspector-remove-binding-label\":{\"defaultMessage\":\"Remove the {port} binding\",\"parameters\":[\"port\"]},\"studio.shell/inspector-remove-override\":{\"defaultMessage\":\"Remove\",\"parameters\":[]},\"studio.shell/inspector-remove-override-label\":{\"defaultMessage\":\"Remove the {property} override for the {viewport} viewport\",\"parameters\":[\"property\",\"viewport\"]},\"studio.shell/inspector-reset-inheritance\":{\"defaultMessage\":\"Reset all viewport overrides\",\"parameters\":[]},\"studio.shell/inspector-set-binding\":{\"defaultMessage\":\"Set binding\",\"parameters\":[]},\"studio.shell/inspector-type\":{\"defaultMessage\":\"Type\",\"parameters\":[]},\"studio.shell/inspector-unset\":{\"defaultMessage\":\"Unset\",\"parameters\":[]},\"studio.shell/inspector-unset-label\":{\"defaultMessage\":\"Unset {property}\",\"parameters\":[\"property\"]},\"studio.shell/move-destination-label\":{\"defaultMessage\":\"Move block to another position or slot\",\"parameters\":[]},\"studio.shell/move-destination-option\":{\"defaultMessage\":\"{collection}, position {position} of {count}\",\"parameters\":[\"collection\",\"count\",\"position\"]},\"studio.shell/move-destination-placeholder\":{\"defaultMessage\":\"Choose a destination\",\"parameters\":[]},\"studio.shell/move-down\":{\"defaultMessage\":\"Move down\",\"parameters\":[]},\"studio.shell/move-slot-collection\":{\"defaultMessage\":\"{parent}: {slot} slot\",\"parameters\":[\"parent\",\"slot\"]},\"studio.shell/move-up\":{\"defaultMessage\":\"Move up\",\"parameters\":[]},\"studio.shell/outline-empty\":{\"defaultMessage\":\"The outline lists blocks once the document has content.\",\"parameters\":[]},\"studio.shell/outline-heading\":{\"defaultMessage\":\"Outline\",\"parameters\":[]},\"studio.shell/outline-hint\":{\"defaultMessage\":\"Arrow keys move focus. Alt+Arrow moves the block. Delete removes it. Ctrl+D or Cmd+D duplicates it.\",\"parameters\":[]},\"studio.shell/outline-slot\":{\"defaultMessage\":\"Slot: {slot}\",\"parameters\":[\"slot\"]},\"studio.shell/palette-heading\":{\"defaultMessage\":\"Blocks\",\"parameters\":[]},\"studio.shell/palette-label\":{\"defaultMessage\":\"Block palette\",\"parameters\":[]},\"studio.shell/patterns-heading\":{\"defaultMessage\":\"Patterns\",\"parameters\":[]},\"studio.shell/preview-closed\":{\"defaultMessage\":\"Preview is disconnected. Editing remains available.\",\"parameters\":[]},\"studio.shell/preview-connecting\":{\"defaultMessage\":\"Preview is connecting.\",\"parameters\":[]},\"studio.shell/preview-current\":{\"defaultMessage\":\"Preview is current.\",\"parameters\":[]},\"studio.shell/preview-heading\":{\"defaultMessage\":\"Preview\",\"parameters\":[]},\"studio.shell/preview-label\":{\"defaultMessage\":\"Rendered preview\",\"parameters\":[]},\"studio.shell/preview-rendering\":{\"defaultMessage\":\"Preview is updating.\",\"parameters\":[]},\"studio.shell/preview-stale\":{\"defaultMessage\":\"Preview is stale. Editing remains available.\",\"parameters\":[]},\"studio.shell/preview-unavailable\":{\"defaultMessage\":\"Preview is unavailable for this session. Editing remains available.\",\"parameters\":[]},\"studio.shell/redo\":{\"defaultMessage\":\"Redo\",\"parameters\":[]},\"studio.shell/restore-last-deleted\":{\"defaultMessage\":\"Restore last deleted block\",\"parameters\":[]},\"studio.shell/save-state-saved\":{\"defaultMessage\":\"Saved\",\"parameters\":[]},\"studio.shell/save-state-unsaved\":{\"defaultMessage\":\"Unsaved changes\",\"parameters\":[]},\"studio.shell/severity-blocking\":{\"defaultMessage\":\"Blocking\",\"parameters\":[]},\"studio.shell/severity-error\":{\"defaultMessage\":\"Error\",\"parameters\":[]},\"studio.shell/severity-information\":{\"defaultMessage\":\"Information\",\"parameters\":[]},\"studio.shell/severity-warning\":{\"defaultMessage\":\"Warning\",\"parameters\":[]},\"studio.shell/status-label\":{\"defaultMessage\":\"Status\",\"parameters\":[]},\"studio.shell/undo\":{\"defaultMessage\":\"Undo\",\"parameters\":[]},\"studio.shell/unresolved-block\":{\"defaultMessage\":\"(unresolved)\",\"parameters\":[]},\"studio.shell/viewport-label\":{\"defaultMessage\":\"Preview width\",\"parameters\":[]},\"studio.shell/visual-drop-target\":{\"defaultMessage\":\"Moving {label} to {destination}\",\"parameters\":[\"destination\",\"label\"]},\"studio.standalone/change-local\":{\"defaultMessage\":\"{artifact} changed in this browser session only.\",\"parameters\":[\"artifact\"]},\"studio.standalone/current-in-memory-draft\":{\"defaultMessage\":\"Current in-memory draft\",\"parameters\":[]},\"studio.standalone/download-project\":{\"defaultMessage\":\"Download project JSON\",\"parameters\":[]},\"studio.standalone/download-save-intent\":{\"defaultMessage\":\"Download save-intent JSON\",\"parameters\":[]},\"studio.standalone/heading\":{\"defaultMessage\":\"Local Studio workspace\",\"parameters\":[]},\"studio.standalone/import-failed\":{\"defaultMessage\":\"Project import failed: {message}\",\"parameters\":[\"message\"]},\"studio.standalone/import-project\":{\"defaultMessage\":\"Import project JSON\",\"parameters\":[]},\"studio.standalone/imported\":{\"defaultMessage\":\"Project imported into this browser session.\",\"parameters\":[]},\"studio.standalone/json-actions\":{\"defaultMessage\":\"Local project import and download actions\",\"parameters\":[]},\"studio.standalone/no-in-memory-edits\":{\"defaultMessage\":\"No in-memory edits\",\"parameters\":[]},\"studio.standalone/no-persistence\":{\"defaultMessage\":\"Nothing is sent to or saved by a server. Changes live only in this page and are lost when it closes or reloads unless you download project JSON.\",\"parameters\":[]},\"studio.standalone/project-downloaded\":{\"defaultMessage\":\"The complete Studio project JSON was downloaded.\",\"parameters\":[]},\"studio.standalone/save-button-announcement\":{\"defaultMessage\":\"{outcome} intent downloaded. No save occurred.\",\"parameters\":[\"outcome\"]},\"studio.standalone/save-button-help\":{\"defaultMessage\":\"Downloads the selected host save-intent JSON. Nothing is sent or saved.\",\"parameters\":[]},\"studio.standalone/save-intent-downloaded\":{\"defaultMessage\":\"The {outcome} host save-intent JSON was downloaded. No save occurred.\",\"parameters\":[\"outcome\"]},\"studio.standalone/save-intent-outcome\":{\"defaultMessage\":\"Save-intent outcome\",\"parameters\":[]}}")
+//#endregion
+//#region node_modules/lit-html/directive.js
+/**
+* @license
+* Copyright 2017 Google LLC
+* SPDX-License-Identifier: BSD-3-Clause
+*/
+var t$4 = {
+	ATTRIBUTE: 1,
+	CHILD: 2,
+	PROPERTY: 3,
+	BOOLEAN_ATTRIBUTE: 4,
+	EVENT: 5,
+	ELEMENT: 6
+};
+var e$5 = (t) => (...e) => ({
+	_$litDirective$: t,
+	values: e
+});
+var i$9 = class {
+	constructor(t) {}
+	get _$AU() {
+		return this._$AM._$AU;
+	}
+	_$AT(t, e, i) {
+		this._$Ct = t, this._$AM = e, this._$Ci = i;
+	}
+	_$AS(t, e) {
+		return this.update(t, e);
+	}
+	update(t, e) {
+		return this.render(...e);
+	}
 };
 //#endregion
-//#region node_modules/@kumwe/studio/dist/messages.js
-var studioMessages = en_default.messages;
-function messageText(t, r, i) {
-	let a = (r?.[t] ?? studioMessages[t]).defaultMessage;
-	if (i === void 0) return a;
-	for (let n of en_default.messages[t].parameters) {
-		let e = i[n];
-		e !== void 0 && (a = a.replaceAll(`{${n}}`, e));
+//#region node_modules/lit-html/directives/unsafe-html.js
+/**
+* @license
+* Copyright 2017 Google LLC
+* SPDX-License-Identifier: BSD-3-Clause
+*/ var e$4 = class extends i$9 {
+	constructor(i) {
+		if (super(i), this.it = A$10, i.type !== t$4.CHILD) throw Error(this.constructor.directiveName + "() can only be used in child bindings");
 	}
-	return a;
-}
-//#endregion
-//#region node_modules/@kumwe/studio/dist/outline.js
-function findOutlineLocation(e, t) {
-	return i$7(e, t, void 0, void 0);
-}
-function findAncestry(e, n) {
-	for (let r of e) {
-		if (r.id === n) return [r];
-		for (let e of Object.values(r.slots)) {
-			let i = findAncestry(e, n);
-			if (i.length > 0) return [r, ...i];
-		}
+	render(r) {
+		if (r === A$10 || null == r) return this._t = void 0, this.it = r;
+		if (r === E$13) return r;
+		if ("string" != typeof r) throw Error(this.constructor.directiveName + "() called with a non-string value");
+		if (r === this.it) return this._t;
+		this.it = r;
+		const s = [r];
+		return s.raw = s, this._t = {
+			_$litType$: this.constructor.resultType,
+			strings: s,
+			values: []
+		};
 	}
-	return [];
-}
-function collectDocumentIds(e) {
-	let t = /* @__PURE__ */ new Set(), n = [...e];
-	for (; n.length > 0;) {
-		let e = n.pop();
-		if (e === void 0) break;
-		t.add(e.id);
-		for (let t of Object.values(e.slots)) n.push(...t);
-	}
-	return t;
-}
-function allocateDuplicateIdMap(e, t) {
-	let r = collectDocumentIds(e), i = {}, a = [t];
-	for (; a.length > 0;) {
-		let e = a.shift();
-		if (e === void 0) break;
-		let t = 1, n = `${e.id}-copy-${t}`;
-		for (; r.has(n);) t += 1, n = `${e.id}-copy-${t}`;
-		r.add(n), Object.defineProperty(i, e.id, {
-			configurable: !0,
-			enumerable: !0,
-			value: n,
-			writable: !0
-		});
-		for (let t of Object.values(e.slots)) a.push(...t);
-	}
-	return i;
-}
-function i$7(e, t, n, r) {
-	for (let [a, o] of e.entries()) {
-		if (o.id === t) {
-			let t = {
-				collection: e,
-				index: a,
-				node: o
-			};
-			return n !== void 0 && r !== void 0 && (t.parentNodeId = n, t.slot = r), t;
-		}
-		for (let [e, n] of Object.entries(o.slots)) {
-			let r = i$7(n, t, o.id, e);
-			if (r !== void 0) return r;
-		}
-	}
-}
+};
+e$4.directiveName = "unsafeHTML", e$4.resultType = 1;
+var o$5 = e$5(e$4);
 //#endregion
 //#region node_modules/@kumwe/studio-preview/dist/preview-client.js
 var PreviewChannelError = class extends Error {
@@ -13593,7 +13676,7 @@ var PreviewChannelError = class extends Error {
 		super(t), this.name = `PreviewChannelError`, this.code = e, this.retryable = n;
 	}
 };
-function i$6(e) {
+function i$8(e) {
 	try {
 		return structuredClone(e);
 	} catch {
@@ -13664,7 +13747,7 @@ var PreviewClient = class {
 		if (t.signal?.aborted === !0) return Promise.reject(Error(`Preview render was aborted.`, { cause: t.signal.reason }));
 		let a;
 		try {
-			a = i$6(e);
+			a = i$8(e);
 		} catch (e) {
 			return Promise.reject(e instanceof Error ? e : new PreviewChannelError(`studio.preview/invalid-outbound-message`, `Refused an invalid outbound preview message.`));
 		}
@@ -13713,7 +13796,7 @@ var PreviewClient = class {
 		if (a.signal?.aborted === !0) return Promise.reject(Error(`Preview measure was aborted.`, { cause: a.signal.reason }));
 		let o;
 		try {
-			o = i$6(t);
+			o = i$8(t);
 		} catch (e) {
 			return Promise.reject(e instanceof Error ? e : new PreviewChannelError(`studio.preview/invalid-outbound-message`, `Refused an invalid outbound preview message.`));
 		}
@@ -14061,17 +14144,17 @@ var PreviewHost = class {
 		try {
 			o = this.#measureCallback(a, i.controller.signal);
 		} catch {
-			this.#settleMeasureFailure(i, s$4());
+			this.#settleMeasureFailure(i, s$5());
 			return;
 		}
 		Promise.resolve(o).then((e) => {
 			try {
 				this.#settleMeasured(i, a, e);
 			} catch {
-				this.#settleMeasureFailure(i, s$4());
+				this.#settleMeasureFailure(i, s$5());
 			}
 		}, () => {
-			this.#settleMeasureFailure(i, s$4());
+			this.#settleMeasureFailure(i, s$5());
 		});
 	}
 	#handleRender(e) {
@@ -14182,7 +14265,7 @@ var PreviewHost = class {
 			type: `studio.preview/measurements`
 		};
 		if (!isPreviewMessage(c)) {
-			this.#settleMeasureFailure(e, s$4());
+			this.#settleMeasureFailure(e, s$5());
 			return;
 		}
 		this.#activeMeasure = void 0, this.#post(c);
@@ -14232,12 +14315,3297 @@ var PreviewHost = class {
 		return !this.#disposed && this.#activeRender === e && e.generation === this.#renderGeneration;
 	}
 };
-function s$4() {
+function s$5() {
 	return {
 		code: `studio.preview/measure-failed`,
 		defaultMessage: `Preview measurement failed.`,
 		retryable: !0
 	};
+}
+//#endregion
+//#region node_modules/@kumwe/studio-renderer-web/dist/enhance.js
+async function enhanceStudioWeb(e, d, f = {}) {
+	let p = [], m = f.signal;
+	for (let h of d.enhancements) {
+		if (m?.aborted === !0) break;
+		let d = e.querySelector(`[data-studio-scope="${h.scope}"]`);
+		if (d !== null) switch (h.kind) {
+			case `tabs`:
+				p.push(enhanceTabs(d, h));
+				break;
+			case `dialog`:
+				p.push(enhanceDialog(d));
+				break;
+			case `notice`:
+				p.push(enhanceNotice(d));
+				break;
+			case `popover`:
+				p.push(enhancePopover(d, h));
+				break;
+			case `motion`:
+				p.push(a$9(d, h));
+				break;
+			case `countdown`:
+				p.push(enhanceCountdown(d, h));
+				break;
+			case `lightbox`:
+				p.push(enhanceLightbox(d));
+				break;
+			case `navigation`:
+				p.push(enhanceNavigation(d));
+				break;
+			case `slideshow`:
+				p.push(enhanceSlideshow(d, h));
+				break;
+			case `chart`:
+				if (f.adapters?.chart !== void 0) {
+					let e = d.querySelector(`[data-studio-chart-visual]`);
+					if (e !== null) {
+						let t = document.createElement(`canvas`);
+						t.setAttribute(`aria-hidden`, `true`), e.replaceChildren(t), p.push(await f.adapters.chart.enhance(t, h.spec));
+					}
+				}
+				break;
+			case `diagram`:
+				await u$6(d.querySelector(`[data-studio-diagram-source]`), f.adapters, `diagram`, h.source);
+				break;
+			case `math`: await u$6(d.querySelector(`[data-studio-math-source]`), f.adapters, `math`, {
+				displayMode: h.displayMode,
+				source: h.source
+			});
+		}
+	}
+	let g = () => h$5(p);
+	m?.addEventListener(`abort`, g, { once: !0 });
+	let _ = !1;
+	return { dispose() {
+		_ || (_ = !0, m?.removeEventListener(`abort`, g), h$5(p));
+	} };
+}
+function enhanceTabs(e, t) {
+	let n = e.querySelector(`[data-studio-tab-list]`), r = [...n?.querySelectorAll(`[data-studio-tab]`) ?? []], i = [...e.querySelectorAll(`[data-studio-tab-panel]`)];
+	if (n === null || r.length === 0 || r.length !== i.length) return () => void 0;
+	n.hidden = !1, n.setAttribute(`role`, `tablist`);
+	let a = (e, t) => {
+		r.forEach((n, r) => {
+			let a = r === e;
+			n.setAttribute(`aria-selected`, String(a)), n.tabIndex = a ? 0 : -1, i[r]?.toggleAttribute(`hidden`, !a), a && t && n.focus();
+		});
+	}, o = [];
+	return r.forEach((e, n) => {
+		let s = `${t.scope}-tab-${n}`, c = `${t.scope}-panel-${n}`;
+		e.id = s, e.setAttribute(`role`, `tab`), e.setAttribute(`aria-controls`, c);
+		let l = i[n];
+		l?.setAttribute(`role`, `tabpanel`), l?.setAttribute(`aria-labelledby`, s), l !== void 0 && (l.id = c), d$6(o, e, `click`, () => a(n, !1)), d$6(o, e, `keydown`, (e) => {
+			if (!(e instanceof KeyboardEvent)) return;
+			let i = e.key === `Home` ? 0 : e.key === `End` ? r.length - 1 : e.key === `ArrowRight` || e.key === `ArrowDown` ? (n + 1) % r.length : e.key === `ArrowLeft` || e.key === `ArrowUp` ? (n - 1 + r.length) % r.length : void 0;
+			i === void 0 ? (e.key === `Enter` || e.key === ` `) && (e.preventDefault(), a(n, !1)) : (e.preventDefault(), t.activation === `automatic` ? a(i, !0) : r[i]?.focus());
+		});
+	}), a(0, !1), () => {
+		o.forEach(({ listener: e, target: t, type: n }) => t.removeEventListener(n, e)), n.hidden = !0, n.removeAttribute(`role`), r.forEach((e) => {
+			e.removeAttribute(`aria-controls`), e.removeAttribute(`aria-selected`), e.removeAttribute(`id`), e.removeAttribute(`role`), e.removeAttribute(`tabindex`);
+		}), i.forEach((e) => {
+			e.hidden = !1, e.removeAttribute(`aria-labelledby`), e.removeAttribute(`id`), e.removeAttribute(`role`);
+		});
+	};
+}
+function enhanceDialog(e) {
+	let t = e.querySelector(`[data-studio-dialog]`);
+	if (t === null) return () => void 0;
+	let n = t.querySelector(`[data-studio-dialog-trigger]`), r = t.querySelector(`[data-studio-dialog-panel]`), i = t.querySelector(`[data-studio-dialog-close]`);
+	if (n === null || r === null) return () => void 0;
+	let a = [], o, s = () => {
+		t.open = !1, n.setAttribute(`aria-expanded`, `false`), o?.focus();
+	};
+	return d$6(a, t, `toggle`, () => {
+		n.setAttribute(`aria-expanded`, String(t.open)), t.open && (o = n, p$6(r)?.focus());
+	}), i !== null && d$6(a, i, `click`, s), d$6(a, r, `keydown`, (e) => {
+		if (!(e instanceof KeyboardEvent)) return;
+		if (e.key === `Escape`) {
+			e.preventDefault(), s();
+			return;
+		}
+		if (e.key !== `Tab` || t.dataset.studioDialogModal !== `true`) return;
+		let n = m$6(r);
+		if (n.length === 0) {
+			e.preventDefault(), r.focus();
+			return;
+		}
+		let i = n.indexOf(document.activeElement), a = e.shiftKey ? i <= 0 ? n.length - 1 : i - 1 : i < 0 || i === n.length - 1 ? 0 : i + 1;
+		(e.shiftKey && i <= 0 || !e.shiftKey && i === n.length - 1) && (e.preventDefault(), n[a]?.focus());
+	}), n.setAttribute(`aria-expanded`, String(t.open)), () => {
+		a.forEach(({ listener: e, target: t, type: n }) => t.removeEventListener(n, e)), t.open = !1, n.removeAttribute(`aria-expanded`);
+	};
+}
+function enhanceNotice(e) {
+	let t = e.querySelector(`[data-studio-notice]`);
+	if (t === null) return () => void 0;
+	let n = t.querySelector(`[data-studio-notice-dismiss]`);
+	if (n === null) return () => void 0;
+	let r = () => {
+		t.hidden = !0;
+	};
+	return n.addEventListener(`click`, r), () => {
+		n.removeEventListener(`click`, r), t.hidden = !1;
+	};
+}
+function enhancePopover(e, t) {
+	let n = e.querySelector(`[data-studio-popover]`);
+	if (n === null) return () => void 0;
+	let r = n.querySelector(`[data-studio-popover-trigger]`);
+	if (r === null) return () => void 0;
+	let i = [];
+	if (d$6(i, n, `toggle`, () => r.setAttribute(`aria-expanded`, String(n.open))), d$6(i, n, `keydown`, (e) => {
+		e instanceof KeyboardEvent && e.key === `Escape` && (e.preventDefault(), n.open = !1, r.focus());
+	}), t.dismissOnBlur && d$6(i, document, `pointerdown`, (e) => {
+		e.target instanceof Node && !n.contains(e.target) && (n.open = !1);
+	}), t.presentation === `tooltip`) {
+		let e = () => {
+			n.open = !0;
+		}, t = (e) => {
+			let t = e instanceof FocusEvent || e instanceof MouseEvent ? e.relatedTarget : null;
+			(!(t instanceof Node) || !n.contains(t)) && (n.open = !1);
+		};
+		d$6(i, r, `mouseenter`, e), d$6(i, r, `focus`, e), d$6(i, n, `mouseleave`, t), d$6(i, n, `focusout`, t);
+	}
+	return r.setAttribute(`aria-expanded`, String(n.open)), () => {
+		i.forEach(({ listener: e, target: t, type: n }) => t.removeEventListener(n, e)), n.open = !1, r.removeAttribute(`aria-expanded`);
+	};
+}
+function a$9(e, t) {
+	if (f$7()) return () => void 0;
+	if (e.dataset.studioMotion = t.animation, t.animation === `parallax`) {
+		let t = () => {
+			let t = e.getBoundingClientRect().top / Math.max(window.innerHeight, 1) - .5, n = Math.max(-24, Math.min(24, t * 24));
+			e.style.setProperty(`--studio-parallax-offset`, `${n.toFixed(2)}px`);
+		};
+		return window.addEventListener(`scroll`, t, { passive: !0 }), window.addEventListener(`resize`, t), t(), () => {
+			window.removeEventListener(`scroll`, t), window.removeEventListener(`resize`, t), e.style.removeProperty(`--studio-parallax-offset`), delete e.dataset.studioMotion;
+		};
+	}
+	if (typeof IntersectionObserver != `function`) return e.dataset.studioMotionVisible = ``, () => {
+		delete e.dataset.studioMotion, delete e.dataset.studioMotionVisible;
+	};
+	let n = new IntersectionObserver((t) => {
+		t.some((e) => e.isIntersecting) && (e.dataset.studioMotionVisible = ``, n.disconnect());
+	});
+	return n.observe(e), () => {
+		n.disconnect(), delete e.dataset.studioMotion, delete e.dataset.studioMotionVisible;
+	};
+}
+function enhanceCountdown(e, t) {
+	let n = e.querySelector(`[data-studio-countdown]`), r = n?.querySelector(`[data-studio-countdown-value]`), i = n?.querySelector(`[data-studio-countdown-complete]`);
+	if (n == null || r == null) return () => void 0;
+	let a = Date.parse(t.target), o = () => {
+		let n = Math.max(0, a - Date.now()), o = Math.floor(n / 1e3), s = Math.floor(o / 86400), c = Math.floor(o % 86400 / 3600), l = Math.floor(o % 3600 / 60), u = o % 60;
+		r.textContent = t.display === `compact` ? `${String(s)}:${String(c).padStart(2, `0`)}:${String(l).padStart(2, `0`)}:${String(u).padStart(2, `0`)}` : `${String(s)} days ${String(c)} hours ${String(l)} minutes ${String(u)} seconds`, !(n > 0) && (t.expiredBehavior === `hide` && (e.hidden = !0), t.expiredBehavior === `message` && (r.hidden = !0, i != null && (i.textContent = t.completionMessage || `Complete`, i.hidden = !1)));
+	};
+	o();
+	let s = window.setInterval(o, 1e3);
+	return () => {
+		window.clearInterval(s), e.hidden = !1, r.hidden = !1, r.textContent = t.target, i != null && (i.hidden = !0);
+	};
+}
+function enhanceLightbox(e) {
+	let t = [...e.querySelectorAll(`[data-studio-lightbox-open]`)];
+	if (t.length === 0) return () => void 0;
+	let n = document.createElement(`dialog`);
+	n.dataset.studioLightboxDialog = ``, n.setAttribute(`aria-label`, `Media viewer`);
+	let r = document.createElement(`img`);
+	r.dataset.studioPart = `media`;
+	let i = document.createElement(`button`);
+	i.type = `button`, i.textContent = `Close`;
+	let a = document.createElement(`button`);
+	a.type = `button`, a.textContent = `Previous`;
+	let o = document.createElement(`button`);
+	o.type = `button`, o.textContent = `Next`, n.append(r, a, o, i), e.append(n);
+	let s = 0, c, l = (e) => {
+		s = (e + t.length) % t.length;
+		let n = t[s], i = n?.querySelector(`img`);
+		n !== void 0 && i != null && (r.src = n.href, r.alt = i.alt);
+	}, u = (e, t) => {
+		c = t, l(e), typeof n.showModal == `function` ? n.showModal() : n.setAttribute(`open`, ``), i.focus();
+	}, f = () => {
+		typeof n.close == `function` ? n.close() : n.removeAttribute(`open`), c?.focus();
+	}, p = [];
+	return t.forEach((e, t) => d$6(p, e, `click`, (n) => {
+		n.preventDefault(), u(t, e);
+	})), d$6(p, a, `click`, () => l(s - 1)), d$6(p, o, `click`, () => l(s + 1)), d$6(p, i, `click`, f), d$6(p, n, `cancel`, (e) => {
+		e.preventDefault(), f();
+	}), () => {
+		p.forEach(({ listener: e, target: t, type: n }) => t.removeEventListener(n, e)), n.open && f(), n.remove();
+	};
+}
+function enhanceNavigation(e) {
+	let t = [...e.querySelectorAll(`[data-studio-navigation-toggle]`)], n = [];
+	for (let e of t) {
+		let t = e.closest(`[data-studio-navigation-item]`), r = t?.querySelector(`:scope > [data-studio-navigation-children]`);
+		t !== null && r != null && (r.hidden = !0, e.setAttribute(`aria-expanded`, `false`), d$6(n, e, `click`, () => {
+			r.hidden = !r.hidden, e.setAttribute(`aria-expanded`, String(!r.hidden));
+		}), d$6(n, t, `keydown`, (t) => {
+			t instanceof KeyboardEvent && t.key === `Escape` && !r.hidden && (t.preventDefault(), r.hidden = !0, e.setAttribute(`aria-expanded`, `false`), e.focus());
+		}));
+	}
+	return () => {
+		n.forEach(({ listener: e, target: t, type: n }) => t.removeEventListener(n, e));
+		for (let e of t) {
+			e.removeAttribute(`aria-expanded`);
+			let t = e.closest(`[data-studio-navigation-item]`)?.querySelector(`:scope > [data-studio-navigation-children]`);
+			t != null && (t.hidden = !1);
+		}
+	};
+}
+function enhanceSlideshow(e, t) {
+	let n = [...e.querySelectorAll(`[data-studio-slide]`)], r = e.querySelector(`[data-studio-slide-previous]`), i = e.querySelector(`[data-studio-slide-next]`);
+	if (n.length === 0) return () => void 0;
+	let a = 0, o = (e) => {
+		a = (e + n.length) % n.length, n[a]?.scrollIntoView({
+			behavior: f$7() ? `auto` : `smooth`,
+			block: `nearest`,
+			inline: `start`
+		});
+	}, s = [];
+	r !== null && d$6(s, r, `click`, () => o(a - 1)), i !== null && d$6(s, i, `click`, () => o(a + 1));
+	let c = t.autoplay && !f$7() ? window.setInterval(() => o(a + 1), 5e3) : void 0;
+	return () => {
+		s.forEach(({ listener: e, target: t, type: n }) => t.removeEventListener(n, e)), c !== void 0 && window.clearInterval(c);
+	};
+}
+async function u$6(e, t, n, r) {
+	e !== null && (n === `diagram` && typeof r == `string` && t?.diagram !== void 0 && e.replaceWith(await t.diagram.render(r)), n === `math` && typeof r != `string` && t?.math !== void 0 && e.replaceWith(await t.math.render(r)));
+}
+function d$6(e, t, n, r) {
+	t.addEventListener(n, r), e.push({
+		listener: r,
+		target: t,
+		type: n
+	});
+}
+function f$7() {
+	return window.matchMedia(`(prefers-reduced-motion: reduce)`).matches;
+}
+function p$6(e) {
+	return m$6(e)[0] ?? e;
+}
+function m$6(e) {
+	return [...e.querySelectorAll(`a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])`)].filter((e) => !e.hidden);
+}
+function h$5(e) {
+	for (; e.length > 0;) e.pop()?.();
+}
+//#endregion
+//#region node_modules/@kumwe/studio-rich-text/dist/profiles.js
+var e$3 = Object.freeze([
+	`blockquote`,
+	`bulletList`,
+	`callout`,
+	`checklist`,
+	`checklistItem`,
+	`codeBlock`,
+	`doc`,
+	`hardBreak`,
+	`heading`,
+	`horizontalRule`,
+	`listItem`,
+	`orderedList`,
+	`paragraph`,
+	`table`,
+	`tableCell`,
+	`tableRow`,
+	`text`
+]);
+var t$3 = Object.freeze([
+	`bold`,
+	`code`,
+	`highlight`,
+	`italic`,
+	`strike`
+]);
+var n$4 = Object.freeze({
+	maximumDepth: 8,
+	maximumItemsPerArray: 256,
+	maximumPropertiesPerObject: 64,
+	maximumStringLength: 4096,
+	maximumTotalBytes: 65536
+});
+function r$4(r, i) {
+	return Object.freeze({
+		allowedAttributes: Object.freeze({
+			callout: Object.freeze([`tone`]),
+			checklistItem: Object.freeze([`checked`, `level`]),
+			codeBlock: Object.freeze([`language`]),
+			heading: Object.freeze([`level`]),
+			"mark:highlight": Object.freeze([`tone`]),
+			orderedList: Object.freeze([`start`]),
+			table: Object.freeze([`header`])
+		}),
+		allowedMarks: t$3,
+		allowedNodes: e$3,
+		attributeLimits: n$4,
+		headingLevels: Object.freeze([
+			2,
+			3,
+			4
+		]),
+		maximumDepth: 32,
+		maximumDocumentBytes: 1048576,
+		maximumMarks: 2e4,
+		maximumMarksPerNode: t$3.length,
+		maximumNodes: i,
+		maximumTextLength: r
+	});
+}
+var PORTABLE_RICH_TEXT_PROFILE = r$4(25e4, 5e3);
+var MARKETING_RICH_TEXT_PROFILE = r$4(1e5, 2e3);
+var DOCUMENTATION_RICH_TEXT_PROFILE = r$4(5e5, 1e4);
+var a$8 = Object.freeze({
+	"studio.rich-text/documentation": DOCUMENTATION_RICH_TEXT_PROFILE,
+	"studio.rich-text/marketing": MARKETING_RICH_TEXT_PROFILE,
+	"studio.rich-text/portable": PORTABLE_RICH_TEXT_PROFILE
+});
+function resolveRichTextProfile(e = `studio.rich-text/portable`) {
+	let t = a$8[e];
+	if (t === void 0) throw TypeError(`Unknown Studio rich-text profile "${e}".`);
+	return t;
+}
+function resolveContainerRichTextProfile(e) {
+	switch (e) {
+		case `studio.core/accordion-item`:
+		case `studio.core/dialog`:
+		case `studio.core/notice`:
+		case `studio.core/popover`:
+		case `studio.core/tab`: return `studio.rich-text/marketing`;
+		default: throw TypeError(`Unknown Studio rich-text container "${String(e)}".`);
+	}
+}
+//#endregion
+//#region node_modules/@kumwe/studio-rich-text/dist/first-party-tools.js
+var STUDIO_EDITOR_JS_TOOL_NAMES = Object.freeze([
+	`callout`,
+	`checklist`,
+	`code`,
+	`delimiter`,
+	`header`,
+	`list`,
+	`paragraph`,
+	`quote`,
+	`table`
+]);
+function studioEditorJsTools() {
+	return Object.freeze({
+		callout: StudioCalloutTool,
+		checklist: StudioChecklistTool,
+		code: StudioCodeTool,
+		delimiter: StudioDelimiterTool,
+		header: StudioHeaderTool,
+		list: StudioListTool,
+		paragraph: StudioParagraphTool,
+		quote: StudioQuoteTool,
+		table: StudioTableTool
+	});
+}
+function toStudioEditorJsBlocks(e) {
+	return e.content.map((e) => ({
+		data: { node: structuredClone(e) },
+		type: i$7(e)
+	}));
+}
+function fromStudioEditorJsBlocks(t) {
+	if (!A$3(t) || !Array.isArray(t.blocks)) throw TypeError(`Editor surface returned an invalid block collection.`);
+	let n = t.blocks.map((t, n) => {
+		if (!A$3(t) || !STUDIO_EDITOR_JS_TOOL_NAMES.includes(t.type) || !A$3(t.data) || !A$3(t.data.node)) throw TypeError(`Editor block ${n} is not a Studio first-party block.`);
+		let r = structuredClone(t.data.node);
+		if (i$7(r) !== t.type) throw TypeError(`Editor block ${n} has a mismatched Studio node type.`);
+		return r;
+	});
+	return {
+		content: n.length > 0 ? n : [{ type: `paragraph` }],
+		type: `doc`
+	};
+}
+function i$7(e) {
+	switch (e.type) {
+		case `heading`: return `header`;
+		case `blockquote`: return `quote`;
+		case `horizontalRule`: return `delimiter`;
+		case `bulletList`:
+		case `orderedList`: return `list`;
+		case `checklist`: return `checklist`;
+		case `table`: return `table`;
+		case `callout`: return `callout`;
+		case `codeBlock`: return `code`;
+		case `paragraph`: return `paragraph`;
+		default: throw TypeError(`Node type "${e.type}" has no first-party Editor.js tool.`);
+	}
+}
+var a$7 = class {
+	static isReadOnlySupported = !0;
+	node;
+	readOnly;
+	field;
+	constructor(e, t) {
+		this.node = structuredClone(e.data?.node ?? t), this.readOnly = e.readOnly === !0;
+	}
+	renderInline(e, t) {
+		let n = document.createElement(`div`);
+		n.className = `studio-rich-text-field`, n.contentEditable = this.readOnly ? `false` : `true`, n.setAttribute(`aria-label`, e), n.setAttribute(`role`, `textbox`), n.setAttribute(`aria-multiline`, `true`), n.spellcheck = !0;
+		for (let e of t) c$4(n, e);
+		return n.addEventListener(`paste`, m$5), this.field = n, n;
+	}
+	saveInline(e) {
+		return this.field === void 0 ? structuredClone([...e]) : d$5(e, u$5(this.field));
+	}
+};
+var StudioParagraphTool = class extends a$7 {
+	static isReadOnlySupported = !0;
+	static toolbox = {
+		icon: `¶`,
+		title: `Paragraph`
+	};
+	constructor(e) {
+		super(e, { type: `paragraph` });
+	}
+	render() {
+		return this.renderInline(`Paragraph`, this.node.content ?? []);
+	}
+	save() {
+		let e = structuredClone(this.node), t = this.saveInline(e.content ?? []);
+		return w$4(e.content ?? [], t) || (e.content = t), { node: e };
+	}
+};
+var StudioHeaderTool = class extends a$7 {
+	static isReadOnlySupported = !0;
+	static toolbox = {
+		icon: `H`,
+		title: `Heading`
+	};
+	#level;
+	constructor(e) {
+		super(e, {
+			attrs: { level: 2 },
+			type: `heading`
+		});
+	}
+	render() {
+		let e = T$4(`Heading`), t = document.createElement(`select`), n = this.node.attrs?.level === 3 || this.node.attrs?.level === 4 ? this.node.attrs.level : 2;
+		t.setAttribute(`aria-label`, `Heading level`), t.disabled = this.readOnly;
+		for (let e of [
+			2,
+			3,
+			4
+		]) {
+			let r = document.createElement(`option`);
+			r.value = String(e), r.textContent = `Heading ${e}`, r.selected = n === e, t.append(r);
+		}
+		return t.value = String(n), this.#level = t, e.append(t, this.renderInline(`Heading text`, this.node.content ?? [])), e;
+	}
+	save() {
+		let e = structuredClone(this.node), t = Number(this.#level?.value ?? this.node.attrs?.level ?? 2);
+		t !== Number(this.node.attrs?.level ?? 2) && (e.attrs = { level: t });
+		let n = this.saveInline(e.content ?? []);
+		return w$4(e.content ?? [], n) || (e.content = n), { node: e };
+	}
+};
+var StudioQuoteTool = class extends a$7 {
+	static isReadOnlySupported = !0;
+	static toolbox = {
+		icon: `“`,
+		title: `Quote`
+	};
+	constructor(e) {
+		super(e, {
+			content: [{ type: `paragraph` }],
+			type: `blockquote`
+		});
+	}
+	render() {
+		return this.renderInline(`Quotation`, x$4(this.node.content ?? []));
+	}
+	save() {
+		let e = structuredClone(this.node), t = x$4(e.content ?? []);
+		return e.content = S$4(e.content ?? [], this.saveInline(t)), { node: e };
+	}
+};
+var StudioDelimiterTool = class {
+	static isReadOnlySupported = !0;
+	static toolbox = {
+		icon: `—`,
+		title: `Separator`
+	};
+	render() {
+		let e = document.createElement(`hr`);
+		return e.setAttribute(`aria-label`, `Separator`), e;
+	}
+	save() {
+		return { node: { type: `horizontalRule` } };
+	}
+};
+var StudioCalloutTool = class extends a$7 {
+	static isReadOnlySupported = !0;
+	static toolbox = {
+		icon: `!`,
+		title: `Callout`
+	};
+	#tone;
+	constructor(e) {
+		super(e, {
+			attrs: { tone: `info` },
+			content: [{ type: `paragraph` }],
+			type: `callout`
+		});
+	}
+	render() {
+		let e = T$4(`Callout`);
+		return this.#tone = D$3(`Callout tone`, [
+			`info`,
+			`success`,
+			`warning`,
+			`danger`
+		], j$3(this.node.attrs?.tone, `info`), this.readOnly), e.append(this.#tone, this.renderInline(`Callout text`, x$4(this.node.content ?? []))), e;
+	}
+	save() {
+		let e = structuredClone(this.node);
+		e.attrs = { tone: this.#tone?.value ?? `info` };
+		let t = x$4(e.content ?? []);
+		return e.content = S$4(e.content ?? [], this.saveInline(t)), { node: e };
+	}
+};
+var StudioCodeTool = class {
+	static isReadOnlySupported = !0;
+	static toolbox = {
+		icon: `</>`,
+		title: `Code`
+	};
+	#node;
+	#readOnly;
+	#language;
+	#source;
+	constructor(e) {
+		this.#node = structuredClone(e.data?.node ?? {
+			attrs: { language: `text` },
+			text: ``,
+			type: `codeBlock`
+		}), this.#readOnly = e.readOnly === !0;
+	}
+	render() {
+		let e = T$4(`Code sample`);
+		return this.#language = E$4(`Code language`, j$3(this.#node.attrs?.language, `text`), this.#readOnly), this.#language.pattern = `[A-Za-z0-9][A-Za-z0-9+_.#-]{0,63}`, this.#language.maxLength = 64, this.#source = document.createElement(`textarea`), this.#source.setAttribute(`aria-label`, `Inert code source`), this.#source.disabled = this.#readOnly, this.#source.rows = 8, this.#source.value = this.#node.text ?? ``, e.append(this.#language, this.#source), e;
+	}
+	save() {
+		let e = this.#language?.value.trim() ?? `text`;
+		return { node: {
+			attrs: { language: /^[A-Za-z0-9][A-Za-z0-9+_.#-]{0,63}$/u.test(e) ? e : `text` },
+			text: this.#source?.value ?? ``,
+			type: `codeBlock`
+		} };
+	}
+};
+var StudioListTool = class {
+	static isReadOnlySupported = !0;
+	static toolbox = {
+		icon: `•`,
+		title: `List`
+	};
+	#readOnly;
+	#node;
+	#rows;
+	#root;
+	constructor(e) {
+		let t = structuredClone(e.data?.node ?? {
+			content: [{
+				content: [{ type: `paragraph` }],
+				type: `listItem`
+			}],
+			type: `bulletList`
+		});
+		this.#node = t, this.#readOnly = e.readOnly === !0, this.#rows = h$4(t);
+	}
+	render() {
+		return this.#root = T$4(`List`), this.#renderRows(), this.#root;
+	}
+	save() {
+		return this.#syncRows(), { node: structuredClone(this.#node) };
+	}
+	#renderRows() {
+		let e = this.#root;
+		if (e === void 0) return;
+		e.replaceChildren();
+		let t = D$3(`List style`, [`bullet`, `ordered`], this.#node.type === `orderedList` ? `ordered` : `bullet`, this.#readOnly);
+		if (t.addEventListener(`change`, () => {
+			this.#syncRows();
+			let e = t.value === `ordered`, n = g$4(this.#node);
+			this.#node.type = e ? `orderedList` : `bulletList`, e && n !== 1 ? this.#node.attrs = { start: n } : delete this.#node.attrs, this.#renderRows();
+		}), e.append(t), this.#node.type === `orderedList`) {
+			let t = E$4(`Ordered list start`, String(g$4(this.#node)), this.#readOnly);
+			t.type = `number`, t.min = `1`, t.max = `1000000`, t.addEventListener(`change`, () => {
+				let e = Math.max(1, Math.min(1e6, Number(t.value) || 1));
+				e !== g$4(this.#node) && (e === 1 ? delete this.#node.attrs : this.#node.attrs = { start: e });
+			}), e.append(t);
+		}
+		this.#rows = h$4(this.#node);
+		let n = document.createElement(`ol`);
+		n.setAttribute(`aria-label`, `List items`);
+		for (let [e, t] of this.#rows.entries()) {
+			let r = document.createElement(`li`);
+			r.dataset.index = String(e), r.dataset.studioDepth = String(t.depth), r.setAttribute(`aria-level`, String(t.depth + 1));
+			let i = C$4(`List item ${e + 1}`, t.editableBlock.content ?? [], this.#readOnly);
+			i.dataset.listText = String(e), r.append(i), this.#readOnly || r.append(O$3(`Move item up`, () => this.#move(e, -1), !_$4(t, -1)), O$3(`Move item down`, () => this.#move(e, 1), !_$4(t, 1)), O$3(`Indent item`, () => this.#indent(e), !v$4(t)), O$3(`Outdent item`, () => this.#outdent(e), t.ownerItem === void 0), O$3(`Remove item`, () => this.#remove(e), !y$4(t, this.#node))), n.append(r);
+		}
+		e.append(n), this.#readOnly || e.append(O$3(`Add list item`, () => this.#add()));
+	}
+	#syncRows() {
+		for (let e of this.#root?.querySelectorAll(`[data-list-text]`) ?? []) {
+			let t = Number(e.dataset.listText), n = this.#rows[t];
+			if (n === void 0) continue;
+			let r = d$5(n.editableBlock.content ?? [], u$5(e));
+			n.syntheticEditable ? r.length > 0 && (n.editableBlock.content = r, n.item.content = [n.editableBlock, ...n.item.content ?? []], n.syntheticEditable = !1) : w$4(n.editableBlock.content ?? [], r) || (n.editableBlock.content = r);
+		}
+	}
+	#add() {
+		this.#syncRows(), this.#rows.length < 500 && (this.#node.content = [...this.#node.content ?? [], {
+			content: [{ type: `paragraph` }],
+			type: `listItem`
+		}]), this.#renderRows();
+	}
+	#indent(e) {
+		this.#syncRows();
+		let t = this.#rows[e];
+		if (t === void 0 || !v$4(t)) return;
+		let n = t.parentList.content ?? [], r = n.indexOf(t.item), i = n[r - 1];
+		if (i === void 0) return;
+		n.splice(r, 1);
+		let a = i.content?.at(-1), o = a?.type === t.parentList.type ? a : {
+			...t.parentList.type === `orderedList` && t.parentList.attrs !== void 0 ? { attrs: structuredClone(t.parentList.attrs) } : {},
+			content: [],
+			type: t.parentList.type
+		};
+		o !== a && (i.content = [...i.content ?? [], o]), o.content = [...o.content ?? [], t.item], this.#renderRows();
+	}
+	#outdent(e) {
+		this.#syncRows();
+		let t = this.#rows[e];
+		if (t?.ownerItem === void 0 || t.parentListParent === void 0) return;
+		let n = t.parentList.content ?? [], r = n.indexOf(t.item);
+		if (r < 0) return;
+		let i = n.splice(r + 1);
+		n.splice(r, 1), i.length > 0 && (t.item.content = [...t.item.content ?? [], {
+			...t.parentList.type === `orderedList` && t.parentList.attrs !== void 0 ? { attrs: structuredClone(t.parentList.attrs) } : {},
+			content: i,
+			type: t.parentList.type
+		}]), n.length === 0 && b$4(t.ownerItem, t.parentList);
+		let a = t.parentListParent.content ?? [], o = a.indexOf(t.ownerItem);
+		o < 0 || (a.splice(o + 1, 0, t.item), this.#renderRows());
+	}
+	#move(e, t) {
+		this.#syncRows();
+		let n = this.#rows[e];
+		if (n === void 0 || !_$4(n, t)) return;
+		let r = n.parentList.content ?? [], i = r.indexOf(n.item), [a] = r.splice(i, 1);
+		a !== void 0 && r.splice(i + t, 0, a), this.#renderRows();
+	}
+	#remove(e) {
+		this.#syncRows();
+		let t = this.#rows[e];
+		if (t === void 0 || !y$4(t, this.#node)) return;
+		let n = t.parentList.content ?? [], r = n.indexOf(t.item);
+		r < 0 || (n.splice(r, 1), n.length === 0 && t.ownerItem !== void 0 && b$4(t.ownerItem, t.parentList), this.#renderRows());
+	}
+};
+var StudioChecklistTool = class {
+	static isReadOnlySupported = !0;
+	static toolbox = {
+		icon: `☑`,
+		title: `Checklist`
+	};
+	#readOnly;
+	#initialRows;
+	#node;
+	#root;
+	#rows;
+	constructor(e) {
+		this.#readOnly = e.readOnly === !0, this.#node = structuredClone(e.data?.node ?? {
+			content: [{
+				attrs: {
+					checked: !1,
+					level: 0
+				},
+				type: `checklistItem`
+			}],
+			type: `checklist`
+		});
+		let t = this.#node.content ?? [];
+		this.#rows = t.length > 0 ? t.map((e) => ({
+			checked: e.attrs?.checked === !0,
+			content: structuredClone(e.content ?? []),
+			contentPresent: e.content !== void 0,
+			depth: Number(e.attrs?.level ?? 0)
+		})) : [{
+			checked: !1,
+			content: [],
+			contentPresent: !1,
+			depth: 0
+		}], this.#initialRows = structuredClone(this.#rows);
+	}
+	render() {
+		return this.#root = T$4(`Checklist`), this.#renderRows(), this.#root;
+	}
+	save() {
+		return this.#syncRows(), w$4(this.#rows, this.#initialRows) ? { node: structuredClone(this.#node) } : { node: {
+			content: this.#rows.map((e) => ({
+				attrs: {
+					checked: e.checked,
+					level: e.depth
+				},
+				...e.contentPresent || e.content.length > 0 ? { content: structuredClone(e.content) } : {},
+				type: `checklistItem`
+			})),
+			type: `checklist`
+		} };
+	}
+	#renderRows() {
+		let e = this.#root;
+		if (e !== void 0) {
+			e.replaceChildren();
+			for (let [t, n] of this.#rows.entries()) {
+				let r = T$4(`Checklist item ${t + 1}`);
+				r.dataset.studioDepth = String(n.depth), r.setAttribute(`aria-level`, String(n.depth + 1));
+				let i = document.createElement(`input`);
+				i.type = `checkbox`, i.checked = n.checked, i.disabled = this.#readOnly, i.dataset.checkState = String(t), i.setAttribute(`aria-label`, `Checklist item ${t + 1} complete`);
+				let a = C$4(`Checklist item ${t + 1}`, n.content, this.#readOnly);
+				a.dataset.checkText = String(t), a.addEventListener(`input`, () => {
+					n.contentPresent = !0;
+				}), r.append(i, a), this.#readOnly || r.append(O$3(`Move item up`, () => this.#move(t, -1), t === 0), O$3(`Move item down`, () => this.#move(t, 1), t === this.#rows.length - 1), O$3(`Indent item`, () => this.#indent(t, 1), n.depth >= 4 || t === 0), O$3(`Outdent item`, () => this.#indent(t, -1), n.depth === 0), O$3(`Remove item`, () => this.#remove(t), this.#rows.length === 1)), e.append(r);
+			}
+			this.#readOnly || e.append(O$3(`Add checklist item`, () => this.#add()));
+		}
+	}
+	#syncRows() {
+		for (let e of this.#root?.querySelectorAll(`[data-check-text]`) ?? []) {
+			let t = this.#rows[Number(e.dataset.checkText)];
+			t !== void 0 && (t.content = d$5(t.content, u$5(e)));
+		}
+		for (let e of this.#root?.querySelectorAll(`[data-check-state]`) ?? []) {
+			let t = this.#rows[Number(e.dataset.checkState)];
+			t !== void 0 && (t.checked = e.checked);
+		}
+	}
+	#add() {
+		this.#syncRows(), this.#rows.length < 500 && this.#rows.push({
+			checked: !1,
+			content: [],
+			contentPresent: !1,
+			depth: 0
+		}), this.#renderRows();
+	}
+	#indent(e, t) {
+		this.#syncRows();
+		let n = this.#rows[e];
+		n !== void 0 && (n.depth = Math.max(0, Math.min(4, n.depth + t))), this.#renderRows();
+	}
+	#move(e, t) {
+		this.#syncRows();
+		let n = e + t;
+		if (n >= 0 && n < this.#rows.length) {
+			let [t] = this.#rows.splice(e, 1);
+			t !== void 0 && this.#rows.splice(n, 0, t);
+		}
+		this.#renderRows();
+	}
+	#remove(e) {
+		this.#syncRows(), this.#rows.length > 1 && this.#rows.splice(e, 1), this.#renderRows();
+	}
+};
+var StudioTableTool = class {
+	static isReadOnlySupported = !0;
+	static toolbox = {
+		icon: `▦`,
+		title: `Table`
+	};
+	#readOnly;
+	#initialCells;
+	#initialHeader;
+	#node;
+	#cells;
+	#header;
+	#root;
+	constructor(e) {
+		this.#readOnly = e.readOnly === !0, this.#node = structuredClone(e.data?.node ?? {
+			attrs: { header: !1 },
+			content: [{
+				content: [{ type: `tableCell` }, { type: `tableCell` }],
+				type: `tableRow`
+			}, {
+				content: [{ type: `tableCell` }, { type: `tableCell` }],
+				type: `tableRow`
+			}],
+			type: `table`
+		}), this.#header = this.#node.attrs?.header === !0, this.#cells = (this.#node.content ?? []).map((e) => (e.content ?? []).map((e) => ({
+			content: structuredClone(e.content ?? []),
+			contentPresent: e.content !== void 0
+		}))), this.#initialHeader = this.#header, this.#initialCells = structuredClone(this.#cells);
+	}
+	render() {
+		return this.#root = T$4(`Table`), this.#renderTable(), this.#root;
+	}
+	save() {
+		return this.#syncCells(), this.#header === this.#initialHeader && w$4(this.#cells, this.#initialCells) ? { node: structuredClone(this.#node) } : { node: {
+			attrs: { header: this.#header },
+			content: this.#cells.map((e) => ({
+				content: e.map((e) => ({
+					...e.contentPresent || e.content.length > 0 ? { content: structuredClone(e.content) } : {},
+					type: `tableCell`
+				})),
+				type: `tableRow`
+			})),
+			type: `table`
+		} };
+	}
+	#renderTable() {
+		let e = this.#root;
+		if (e === void 0) return;
+		e.replaceChildren();
+		let t = document.createElement(`input`);
+		t.type = `checkbox`, t.checked = this.#header, t.disabled = this.#readOnly, t.setAttribute(`aria-label`, `Use first row as table header`), t.addEventListener(`change`, () => {
+			this.#header = t.checked;
+		}), e.append(t);
+		let n = document.createElement(`table`);
+		n.setAttribute(`aria-label`, `Table data`);
+		for (let [e, t] of this.#cells.entries()) {
+			let r = document.createElement(`tr`);
+			for (let [n, i] of t.entries()) {
+				let t = document.createElement(e === 0 && this.#header ? `th` : `td`), a = C$4(`Row ${e + 1}, column ${n + 1}`, i.content, this.#readOnly);
+				a.dataset.tableCell = `${e}:${n}`, a.addEventListener(`input`, () => {
+					i.contentPresent = !0;
+				}), t.append(a), r.append(t);
+			}
+			n.append(r);
+		}
+		e.append(n), this.#readOnly || e.append(O$3(`Add table row`, () => this.#resize(1, 0), this.#cells.length >= 200), O$3(`Remove table row`, () => this.#resize(-1, 0), this.#cells.length <= 1), O$3(`Add table column`, () => this.#resize(0, 1), (this.#cells[0]?.length ?? 0) >= 50), O$3(`Remove table column`, () => this.#resize(0, -1), (this.#cells[0]?.length ?? 0) <= 1));
+	}
+	#resize(e, t) {
+		if (this.#syncCells(), e > 0 && this.#cells.length < 200 && this.#cells.push(Array.from({ length: this.#cells[0]?.length ?? 1 }, () => ({
+			content: [],
+			contentPresent: !1
+		}))), e < 0 && this.#cells.length > 1 && this.#cells.pop(), t > 0 && (this.#cells[0]?.length ?? 0) < 50) for (let e of this.#cells) e.push({
+			content: [],
+			contentPresent: !1
+		});
+		if (t < 0 && (this.#cells[0]?.length ?? 0) > 1) for (let e of this.#cells) e.pop();
+		this.#renderTable();
+	}
+	#syncCells() {
+		for (let e of this.#root?.querySelectorAll(`[data-table-cell]`) ?? []) {
+			let [t, n] = (e.dataset.tableCell ?? ``).split(`:`).map(Number), r = t === void 0 ? void 0 : this.#cells[t], i = n === void 0 ? void 0 : r?.[n];
+			i !== void 0 && (i.content = d$5(i.content, u$5(e)));
+		}
+	}
+};
+var StudioMarkerTool = class {
+	static isInline = !0;
+	static sanitize = { mark: { "data-studio-tone": !0 } };
+	#button;
+	#tone = `accent`;
+	checkState(e) {
+		let t = k$3(e.anchorNode) !== void 0;
+		return this.#button?.setAttribute(`aria-pressed`, String(t)), t;
+	}
+	render() {
+		let e = document.createElement(`button`);
+		return e.type = `button`, e.textContent = `Highlight`, e.setAttribute(`aria-label`, `Toggle semantic highlight`), e.setAttribute(`aria-pressed`, `false`), this.#button = e, e;
+	}
+	renderActions() {
+		let e = D$3(`Highlight tone`, [
+			`accent`,
+			`info`,
+			`success`,
+			`warning`,
+			`danger`
+		], this.#tone, !1);
+		return e.addEventListener(`change`, () => {
+			this.#tone = e.value;
+		}), e;
+	}
+	surround(e) {
+		let t = k$3(e.commonAncestorContainer);
+		if (t !== void 0) {
+			let e = t.parentNode;
+			for (; t.firstChild !== null;) e?.insertBefore(t.firstChild, t);
+			t.remove();
+			return;
+		}
+		if (e.collapsed) return;
+		let n = document.createElement(`mark`);
+		n.dataset.studioTone = this.#tone, n.append(e.extractContents()), e.insertNode(n);
+	}
+};
+function c$4(e, t) {
+	if (t.type === `hardBreak`) {
+		e.appendChild(document.createElement(`br`));
+		return;
+	}
+	if (t.type !== `text` || (t.text ?? ``).length === 0) return;
+	let n = document.createTextNode(t.text ?? ``);
+	for (let e of [...t.marks ?? []].reverse()) {
+		let t = document.createElement(l$6(e));
+		e.type === `highlight` && (t.dataset.studioTone = j$3(e.attrs?.tone, `accent`)), t.append(n), n = t;
+	}
+	e.appendChild(n);
+}
+function l$6(e) {
+	return e.type === `bold` ? `strong` : e.type === `italic` ? `em` : e.type === `strike` ? `s` : e.type === `code` ? `code` : `mark`;
+}
+function u$5(e) {
+	let t = [], n = (e, r) => {
+		if (e.nodeType === Node.TEXT_NODE) {
+			let n = e.nodeValue ?? ``;
+			n.length > 0 && t.push({
+				...r.length > 0 ? { marks: r } : {},
+				text: n,
+				type: `text`
+			});
+			return;
+		}
+		if (!(e instanceof Element)) return;
+		if (e.localName === `br`) {
+			t.push({ type: `hardBreak` });
+			return;
+		}
+		let i = [...r], a = p$5(e);
+		a !== void 0 && !i.some((e) => e.type === a.type) && (a.type === `code` ? i.splice(0, i.length, a) : i.some((e) => e.type === `code`) || i.push(a));
+		for (let t of e.childNodes) n(t, i);
+	};
+	for (let t of e.childNodes) n(t, []);
+	return t;
+}
+function d$5(e, t) {
+	return w$4(f$6(e), f$6(t)) ? structuredClone([...e]) : t;
+}
+function f$6(e) {
+	let t = [];
+	for (let n of e) {
+		if (n.type === `hardBreak`) {
+			t.push({ kind: `hard-break` });
+			continue;
+		}
+		if (n.type !== `text`) continue;
+		let e = (n.marks ?? []).map((e) => {
+			if (e.type !== `highlight`) return e.type;
+			let t = e.attrs?.tone;
+			return `${e.type}:${typeof t == `string` ? t : ``}`;
+		}).sort(), r = t.at(-1);
+		r?.kind === `text` && w$4(r.marks, e) ? r.text += n.text ?? `` : t.push({
+			kind: `text`,
+			marks: e,
+			text: n.text ?? ``
+		});
+	}
+	return t;
+}
+function p$5(e) {
+	if (e.localName === `strong` || e.localName === `b`) return { type: `bold` };
+	if (e.localName === `em` || e.localName === `i`) return { type: `italic` };
+	if (e.localName === `s` || e.localName === `del`) return { type: `strike` };
+	if (e.localName === `code`) return { type: `code` };
+	if (e.localName === `mark`) {
+		let t = e.getAttribute(`data-studio-tone`);
+		return {
+			attrs: { tone: [
+				`accent`,
+				`danger`,
+				`info`,
+				`success`,
+				`warning`
+			].includes(t ?? ``) ? t ?? `accent` : `accent` },
+			type: `highlight`
+		};
+	}
+}
+function m$5(e) {
+	e.preventDefault();
+	let t = e.clipboardData?.getData(`text/plain`) ?? ``, n = globalThis.getSelection();
+	if (n === null || n.rangeCount === 0) return;
+	let r = n.getRangeAt(0);
+	r.deleteContents(), r.insertNode(document.createTextNode(t.slice(0, 25e4))), r.collapse(!1);
+}
+function h$4(e, t = 0, n, r) {
+	let i = [];
+	for (let a of e.content ?? []) {
+		let o = (a.content ?? []).find((e) => e.type === `paragraph` || e.type === `heading`), s = o ?? { type: `paragraph` };
+		i.push({
+			depth: t,
+			editableBlock: s,
+			item: a,
+			...n === void 0 ? {} : { ownerItem: n },
+			parentList: e,
+			...r === void 0 ? {} : { parentListParent: r },
+			syntheticEditable: o === void 0
+		});
+		for (let n of a.content ?? []) (n.type === `bulletList` || n.type === `orderedList`) && i.push(...h$4(n, t + 1, a, e));
+	}
+	return i;
+}
+function g$4(e) {
+	let t = Number(e.attrs?.start ?? 1);
+	return Number.isSafeInteger(t) && t >= 1 && t <= 1e6 ? t : 1;
+}
+function _$4(e, t) {
+	let n = e.parentList.content ?? [], r = n.indexOf(e.item);
+	return r >= 0 && r + t >= 0 && r + t < n.length;
+}
+function v$4(e) {
+	return e.depth >= 4 ? !1 : (e.parentList.content ?? []).indexOf(e.item) > 0;
+}
+function y$4(e, t) {
+	return e.parentList !== t || (t.content?.length ?? 0) > 1;
+}
+function b$4(e, t) {
+	e.content = (e.content ?? []).filter((e) => e !== t);
+}
+function x$4(e) {
+	return e.find((e) => e.type === `paragraph` || e.type === `heading`)?.content ?? [];
+}
+function S$4(e, t) {
+	let n = structuredClone([...e]), r = n.findIndex((e) => e.type === `paragraph` || e.type === `heading`);
+	if (r < 0) return t.length > 0 && n.unshift({
+		content: structuredClone([...t]),
+		type: `paragraph`
+	}), n;
+	let i = n[r];
+	return i !== void 0 && !w$4(i.content ?? [], t) && (i.content = structuredClone([...t])), n;
+}
+function C$4(e, t, n) {
+	let r = document.createElement(`div`);
+	r.className = `studio-rich-text-field`, r.contentEditable = n ? `false` : `true`, r.setAttribute(`aria-label`, e), r.setAttribute(`aria-multiline`, `true`), r.setAttribute(`role`, `textbox`), r.spellcheck = !0;
+	for (let e of t) c$4(r, e);
+	return r.addEventListener(`paste`, m$5), r;
+}
+function w$4(e, t) {
+	if (Object.is(e, t)) return !0;
+	if (Array.isArray(e) || Array.isArray(t)) return Array.isArray(e) && Array.isArray(t) && e.length === t.length && e.every((e, n) => w$4(e, t[n]));
+	if (!A$3(e) || !A$3(t)) return !1;
+	let n = Object.keys(e).sort(), r = Object.keys(t).sort();
+	return n.length === r.length && n.every((n, i) => n === r[i] && w$4(e[n], t[n]));
+}
+function T$4(e) {
+	let t = document.createElement(`div`);
+	return t.setAttribute(`aria-label`, e), t.setAttribute(`role`, `group`), t;
+}
+function E$4(e, t, n) {
+	let r = document.createElement(`input`);
+	return r.type = `text`, r.setAttribute(`aria-label`, e), r.disabled = n, r.value = t, r;
+}
+function D$3(e, t, n, r) {
+	let i = document.createElement(`select`);
+	i.setAttribute(`aria-label`, e), i.disabled = r;
+	for (let e of t) {
+		let t = document.createElement(`option`);
+		t.value = e, t.textContent = e, t.selected = e === n, i.append(t);
+	}
+	return i.value = n, i;
+}
+function O$3(e, t, n = !1) {
+	let r = document.createElement(`button`);
+	return r.type = `button`, r.textContent = e, r.setAttribute(`aria-label`, e), r.disabled = n, r.addEventListener(`click`, t), r;
+}
+function k$3(e) {
+	let t = e instanceof HTMLElement ? e : e?.parentElement;
+	for (; t != null;) {
+		if (t.localName === `mark`) return t;
+		t = t.parentElement ?? void 0;
+	}
+}
+function A$3(e) {
+	return typeof e == `object` && !!e && !Array.isArray(e);
+}
+function j$3(e, t) {
+	return typeof e == `string` ? e : t;
+}
+//#endregion
+//#region node_modules/@kumwe/studio-rich-text/dist/studio-rich-text-editor.js
+var StudioRichTextEditorFactory = class {
+	#surfaceAdapter;
+	constructor(e = new u$4()) {
+		this.#surfaceAdapter = e;
+	}
+	async create(r) {
+		let a = resolveRichTextProfile(r.profile ?? (r.containerType === void 0 ? `studio.rich-text/portable` : resolveContainerRichTextProfile(r.containerType))), o = parseRichTextDocument(r.value, a), s = r.readOnly === !0 || r.binding !== void 0 && r.binding.source.kind !== `static-value`, c = {}, u = Promise.resolve(), d = async () => {
+			if (c.surface === void 0) return o;
+			return o = parseRichTextDocument(await c.surface.read(), a), o;
+		};
+		return c.surface = await this.#surfaceAdapter.mount({
+			holder: r.holder,
+			initialValue: o,
+			onChange: () => {
+				u = u.then(async () => {
+					try {
+						let e = await d();
+						r.onChange?.({
+							diagnostics: [],
+							valid: !0,
+							value: e
+						});
+					} catch {
+						r.onChange?.({
+							diagnostics: [l$5()],
+							valid: !1,
+							value: o
+						});
+					}
+				});
+			},
+			...r.placeholder === void 0 ? {} : { placeholder: r.placeholder },
+			readOnly: s
+		}), {
+			destroy: () => c.surface?.destroy(),
+			focus: () => c.surface?.focus(),
+			readOnly: s,
+			replace: async (t) => {
+				let n = parseRichTextDocument(t, a);
+				await c.surface?.replace(n), o = n;
+			},
+			save: async () => {
+				await u;
+				try {
+					return await d();
+				} catch {
+					return o;
+				}
+			}
+		};
+	}
+};
+function l$5() {
+	return {
+		code: `studio.rich-text/invalid-editor-state`,
+		message: {
+			defaultMessage: `The latest edit is not valid for this rich-text profile.`,
+			key: `studio.rich-text/invalid-editor-state`
+		},
+		severity: `error`
+	};
+}
+var u$4 = class {
+	async mount(e) {
+		let t = (await __vitePreload(async () => {
+			const { default: __vite_default__ } = await import("./editorjs-BQPU4-8b.js");
+			return { default: __vite_default__ };
+		}, [])).default, n = new t({
+			data: d$4(e.initialValue),
+			holder: e.holder,
+			inlineToolbar: [
+				`bold`,
+				`italic`,
+				`marker`
+			],
+			minHeight: 0,
+			onChange: e.onChange,
+			placeholder: e.placeholder ?? ``,
+			readOnly: e.readOnly,
+			tools: {
+				...studioEditorJsTools(),
+				marker: StudioMarkerTool
+			}
+		});
+		return await n.isReady, {
+			destroy: () => n.destroy(),
+			focus: () => {
+				n.caret?.focus(!0);
+			},
+			read: async () => f$5(await n.save()),
+			replace: async (e) => n.render(d$4(e))
+		};
+	}
+};
+function d$4(e) {
+	return {
+		blocks: toStudioEditorJsBlocks(e),
+		version: `2.31.6`
+	};
+}
+function f$5(e) {
+	return fromStudioEditorJsBlocks(e);
+}
+//#endregion
+//#region node_modules/@kumwe/studio-rich-text/dist/strict-csp-surface.js
+var StudioStrictCspRichTextSurfaceAdapter = class {
+	mount(e) {
+		return Promise.resolve(new i$6(e));
+	}
+};
+var i$6 = class {
+	#blocks = document.createElement(`div`);
+	#options;
+	#root = document.createElement(`section`);
+	#mounted = [];
+	constructor(e) {
+		this.#options = e, this.#root.className = `studio-rich-text-strict-surface`, this.#root.dataset.studioRichTextSurface = `strict-csp`, this.#root.setAttribute(`aria-label`, e.readOnly ? `Rich text preview` : `Rich text editor`), this.#root.setAttribute(`role`, `region`), this.#blocks.className = `studio-rich-text-strict-blocks`, this.#blocks.addEventListener(`change`, this.#notifyChange), this.#blocks.addEventListener(`input`, this.#notifyChange), this.#render(e.initialValue), e.holder.replaceChildren(this.#root);
+	}
+	destroy() {
+		this.#blocks.removeEventListener(`change`, this.#notifyChange), this.#blocks.removeEventListener(`input`, this.#notifyChange), this.#mounted = [], this.#root.remove();
+	}
+	focus() {
+		let e = this.#root.querySelector(`[contenteditable="true"], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), button:not(:disabled)`);
+		if (e !== null) {
+			e.focus();
+			return;
+		}
+		this.#root.tabIndex = -1, this.#root.focus();
+	}
+	read() {
+		return Promise.resolve(structuredClone(this.#snapshot()));
+	}
+	replace(e) {
+		return this.#render(e), Promise.resolve();
+	}
+	#notifyChange = () => {
+		this.#options.onChange();
+	};
+	#add(e) {
+		let t = this.#snapshot();
+		t.content.push(p$4(e)), this.#render(t), this.#options.onChange();
+	}
+	#move(e, t) {
+		let n = this.#snapshot(), r = e + t;
+		if (r < 0 || r >= n.content.length) return;
+		let [i] = n.content.splice(e, 1);
+		i !== void 0 && (n.content.splice(r, 0, i), this.#render(n), this.#options.onChange(), this.#focusBlock(r));
+	}
+	#remove(e) {
+		let t = this.#snapshot();
+		t.content.splice(e, 1), t.content.length === 0 && t.content.push(p$4(`paragraph`)), this.#render(t), this.#options.onChange(), this.#focusBlock(Math.min(e, t.content.length - 1));
+	}
+	#focusBlock(e) {
+		this.#blocks.querySelector(`[data-studio-rich-text-index="${String(e)}"]`)?.querySelector(`[contenteditable="true"], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), button:not(:disabled)`)?.focus();
+	}
+	#render(e) {
+		let r = studioEditorJsTools(), i = toStudioEditorJsBlocks(e);
+		this.#mounted = i.map((e) => {
+			let t = r[e.type];
+			return {
+				tool: new t({
+					data: e.data,
+					readOnly: this.#options.readOnly
+				}),
+				type: e.type
+			};
+		}), this.#root.replaceChildren(), this.#options.readOnly || this.#root.append(this.#createToolbar()), this.#blocks.replaceChildren(...this.#mounted.map((e, t) => this.#renderBlock(e, t))), this.#root.append(this.#blocks);
+	}
+	#renderBlock(e, n) {
+		let r = document.createElement(`section`), i = studioEditorJsTools()[e.type].toolbox.title;
+		if (r.className = `studio-rich-text-strict-block`, r.dataset.studioRichTextIndex = String(n), r.setAttribute(`aria-label`, `${i} block ${String(n + 1)}`), r.setAttribute(`role`, `group`), !this.#options.readOnly) {
+			let e = document.createElement(`div`);
+			e.className = `studio-rich-text-strict-block-controls`, e.setAttribute(`aria-label`, `${i} block actions`), e.setAttribute(`role`, `toolbar`), e.append(a$6(`Move block up`, () => this.#move(n, -1), n === 0), a$6(`Move block down`, () => this.#move(n, 1), n === this.#mounted.length - 1), a$6(`Remove block`, () => this.#remove(n))), r.append(e);
+		}
+		return r.append(e.tool.render()), r;
+	}
+	#createToolbar() {
+		let n = studioEditorJsTools(), r = document.createElement(`div`), i = document.createElement(`select`);
+		i.setAttribute(`aria-label`, `Rich text block type`);
+		for (let t of STUDIO_EDITOR_JS_TOOL_NAMES) {
+			let e = document.createElement(`option`);
+			e.textContent = n[t].toolbox.title, e.value = t, i.append(e);
+		}
+		r.className = `studio-rich-text-strict-toolbar`, r.setAttribute(`aria-label`, `Rich text tools`), r.setAttribute(`role`, `toolbar`), r.append(i, a$6(`Add rich text block`, () => {
+			d$3(i.value) && this.#add(i.value);
+		}));
+		let c = s$4();
+		return r.append(o$4(`Bold selected text`, () => this.#formatInline(`bold`)), o$4(`Italicize selected text`, () => this.#formatInline(`italic`)), o$4(`Strike selected text`, () => this.#formatInline(`strike`)), o$4(`Format selected text as code`, () => this.#formatInline(`code`)), c, o$4(`Highlight selected text`, () => this.#formatInline(`highlight`, f$4(c.value))), o$4(`Insert line break`, () => this.#formatInline(`hard-break`))), r;
+	}
+	#formatInline(e, t = `accent`) {
+		let n = globalThis.getSelection();
+		if (n === null || n.rangeCount === 0) return;
+		let r = n.getRangeAt(0), i = c$3(r.startContainer, this.#root), a = c$3(r.endContainer, this.#root);
+		if (i === void 0 || i !== a) return;
+		if (e === `hard-break`) {
+			r.deleteContents();
+			let e = document.createElement(`br`);
+			r.insertNode(e), r.setStartAfter(e), r.collapse(!0), n.removeAllRanges(), n.addRange(r), this.#options.onChange();
+			return;
+		}
+		if (r.collapsed) return;
+		let o = u$3(e), s = l$4(r.commonAncestorContainer, i, o);
+		if (s !== void 0) {
+			let e = s.parentNode;
+			for (; s.firstChild !== null;) e?.insertBefore(s.firstChild, s);
+			s.remove(), this.#options.onChange();
+			return;
+		}
+		let d = document.createElement(o);
+		e === `highlight` && (d.dataset.studioTone = t), d.append(r.extractContents()), r.insertNode(d), r.selectNodeContents(d), n.removeAllRanges(), n.addRange(r), this.#options.onChange();
+	}
+	#snapshot() {
+		return {
+			content: this.#mounted.map((e) => e.tool.save().node),
+			type: `doc`
+		};
+	}
+};
+function a$6(e, t, n = !1) {
+	let r = document.createElement(`button`);
+	return r.disabled = n, r.textContent = e, r.type = `button`, r.setAttribute(`aria-label`, e), r.addEventListener(`click`, t), r;
+}
+function o$4(e, t) {
+	let n = a$6(e, t);
+	return n.addEventListener(`mousedown`, (e) => e.preventDefault()), n;
+}
+function s$4() {
+	let e = document.createElement(`select`);
+	e.setAttribute(`aria-label`, `Highlight tone`);
+	for (let t of [
+		`accent`,
+		`info`,
+		`success`,
+		`warning`,
+		`danger`
+	]) {
+		let n = document.createElement(`option`);
+		n.textContent = t, n.value = t, e.append(n);
+	}
+	return e;
+}
+function c$3(e, t) {
+	let n = e instanceof HTMLElement ? e : e.parentElement;
+	for (; n !== null;) {
+		if (n.getAttribute(`contenteditable`) === `true`) return n;
+		if (n === t) return;
+		n = n.parentElement;
+	}
+}
+function l$4(e, t, n) {
+	let r = e instanceof HTMLElement ? e : e.parentElement;
+	for (; r !== null && r !== t;) {
+		if (r.localName === n) return r;
+		r = r.parentElement;
+	}
+}
+function u$3(e) {
+	return e === `bold` ? `strong` : e === `italic` ? `em` : e === `strike` ? `s` : e === `code` ? `code` : `mark`;
+}
+function d$3(t) {
+	return STUDIO_EDITOR_JS_TOOL_NAMES.some((e) => e === t);
+}
+function f$4(e) {
+	return [
+		`accent`,
+		`danger`,
+		`info`,
+		`success`,
+		`warning`
+	].includes(e) ? e : `accent`;
+}
+function p$4(e) {
+	switch (e) {
+		case `callout`: return {
+			attrs: { tone: `info` },
+			content: [{ type: `paragraph` }],
+			type: `callout`
+		};
+		case `checklist`: return {
+			content: [{
+				attrs: {
+					checked: !1,
+					level: 0
+				},
+				type: `checklistItem`
+			}],
+			type: `checklist`
+		};
+		case `code`: return {
+			attrs: { language: `text` },
+			type: `codeBlock`
+		};
+		case `delimiter`: return { type: `horizontalRule` };
+		case `header`: return {
+			attrs: { level: 2 },
+			type: `heading`
+		};
+		case `list`: return {
+			content: [{
+				content: [{ type: `paragraph` }],
+				type: `listItem`
+			}],
+			type: `bulletList`
+		};
+		case `paragraph`: return { type: `paragraph` };
+		case `quote`: return {
+			content: [{ type: `paragraph` }],
+			type: `blockquote`
+		};
+		case `table`: return {
+			attrs: { header: !1 },
+			content: [{
+				content: [{ type: `tableCell` }, { type: `tableCell` }],
+				type: `tableRow`
+			}, {
+				content: [{ type: `tableCell` }, { type: `tableCell` }],
+				type: `tableRow`
+			}],
+			type: `table`
+		};
+	}
+}
+//#endregion
+//#region node_modules/@kumwe/studio-rich-text/dist/index.js
+var e$2 = Object.freeze([
+	`bold`,
+	`code`,
+	`highlight`,
+	`italic`,
+	`strike`
+]);
+var t$2 = Object.freeze([
+	`blockquote`,
+	`bulletList`,
+	`callout`,
+	`checklist`,
+	`checklistItem`,
+	`codeBlock`,
+	`doc`,
+	`hardBreak`,
+	`heading`,
+	`horizontalRule`,
+	`listItem`,
+	`orderedList`,
+	`paragraph`,
+	`table`,
+	`tableCell`,
+	`tableRow`,
+	`text`
+]);
+var n$3 = Object.freeze([
+	2,
+	3,
+	4
+]);
+var r$3 = 1048576;
+var i$5 = 2e4;
+var a$5 = e$2.length;
+var o$3 = Object.freeze({
+	maximumDepth: 128,
+	maximumDocumentBytes: 10485760,
+	maximumMarks: 4e5,
+	maximumMarksPerNode: e$2.length,
+	maximumNodes: 1e5,
+	maximumTextLength: 10485760
+});
+var s$3 = Object.freeze({
+	maximumDepth: 32,
+	maximumItemsPerArray: 1e4,
+	maximumPropertiesPerObject: 1e3,
+	maximumStringLength: 1048576,
+	maximumTotalBytes: o$3.maximumDocumentBytes
+});
+var DEFAULT_RICH_TEXT_ATTRIBUTE_LIMITS = Object.freeze({
+	maximumDepth: 8,
+	maximumItemsPerArray: 256,
+	maximumPropertiesPerObject: 64,
+	maximumStringLength: 4096,
+	maximumTotalBytes: 65536
+});
+var DEFAULT_RICH_TEXT_PROFILE = Object.freeze({
+	allowedAttributes: Object.freeze({
+		callout: Object.freeze([`tone`]),
+		checklistItem: Object.freeze([`checked`, `level`]),
+		codeBlock: Object.freeze([`language`]),
+		heading: Object.freeze([`level`]),
+		"mark:highlight": Object.freeze([`tone`]),
+		orderedList: Object.freeze([`start`]),
+		table: Object.freeze([`header`])
+	}),
+	allowedMarks: e$2,
+	allowedNodes: t$2,
+	attributeLimits: DEFAULT_RICH_TEXT_ATTRIBUTE_LIMITS,
+	headingLevels: n$3,
+	maximumDepth: 32,
+	maximumDocumentBytes: r$3,
+	maximumMarks: i$5,
+	maximumMarksPerNode: a$5,
+	maximumNodes: 5e3,
+	maximumTextLength: 25e4
+});
+function parseRichTextDocument(e, t = DEFAULT_RICH_TEXT_PROFILE) {
+	V$2(t);
+	let n = m$4(e, `$`, 1, t, G$2(t), {
+		attributeBytes: 0,
+		markCount: 0,
+		nodeCount: 0,
+		textLength: 0
+	});
+	if (n.type !== `doc`) throw TypeError(`Rich-text document root must have type "doc".`);
+	let r = {
+		...n,
+		content: n.content ?? [],
+		type: `doc`
+	};
+	if (R$2(JSON.stringify(r)) > W$2(t)) throw RangeError(`Rich-text document exceeds its total-byte limit.`);
+	return r;
+}
+function m$4(e, t, n, r, o, s) {
+	if (!B$2(e) || (I$2(e, t, [
+		`attrs`,
+		`content`,
+		`marks`,
+		`text`,
+		`type`
+	]), typeof e.type != `string` || e.type.length === 0)) throw TypeError(`${t} must be a rich-text node with a non-empty type.`);
+	if (!r.allowedNodes.includes(e.type)) throw TypeError(`${t} uses disallowed node type "${e.type}".`);
+	if (n > r.maximumDepth) throw RangeError(`${t} exceeds the rich-text depth limit.`);
+	if (s.nodeCount += 1, s.nodeCount > r.maximumNodes) throw RangeError(`Rich-text document exceeds its node limit.`);
+	let c = { type: e.type };
+	if (e.text !== void 0) {
+		if (typeof e.text != `string`) throw TypeError(`${t}.text must be a string.`);
+		if (c.text = e.text, s.textLength += e.text.length, s.textLength > r.maximumTextLength) throw RangeError(`Rich-text document exceeds its text-length limit.`);
+	}
+	if (e.attrs !== void 0 && (c.attrs = O$2(e.attrs, `${t}.attrs`, e.type, r, o, s)), e.content !== void 0) {
+		if (!Array.isArray(e.content)) throw TypeError(`${t}.content must be an array.`);
+		F$2(e.content, `${t}.content`), c.content = e.content.map((e, i) => m$4(e, `${t}.content[${i}]`, n + 1, r, o, s));
+	}
+	if (e.marks !== void 0) {
+		if (!Array.isArray(e.marks)) throw TypeError(`${t}.marks must be an array.`);
+		F$2(e.marks, `${t}.marks`);
+		let n = r.maximumMarksPerNode ?? a$5, l = r.maximumMarks ?? i$5;
+		if (e.marks.length > n) throw RangeError(`${t}.marks exceeds the per-node mark limit.`);
+		if (s.markCount + e.marks.length > l) throw RangeError(`Rich-text document exceeds its aggregate mark limit.`);
+		s.markCount += e.marks.length, c.marks = e.marks.map((e, n) => h$3(e, `${t}.marks[${n}]`, r, o, s)), _$3(c.marks, `${t}.marks`);
+	}
+	return g$3(c, t, r), c;
+}
+function h$3(e, t, n, r, i) {
+	if (!B$2(e) || (I$2(e, t, [`attrs`, `type`]), typeof e.type != `string` || e.type.length === 0)) throw TypeError(`${t} must be a mark with a non-empty type.`);
+	if (!n.allowedMarks.includes(e.type)) throw TypeError(`${t} uses disallowed mark type "${e.type}".`);
+	let a = { type: e.type };
+	if (e.attrs !== void 0 && (a.attrs = O$2(e.attrs, `${t}.attrs`, `mark:${e.type}`, n, r, i)), a.type === `highlight`) {
+		let e = a.attrs?.tone;
+		if (typeof e != `string` || ![
+			`accent`,
+			`danger`,
+			`info`,
+			`success`,
+			`warning`
+		].includes(e)) throw TypeError(`${t}.attrs.tone must be a configured highlight tone.`);
+	} else if (a.attrs !== void 0) throw TypeError(`${t} cannot carry attributes in the portable rich-text grammar.`);
+	return a;
+}
+function g$3(e, t, r) {
+	switch (e.type) {
+		case `doc`:
+			if (T$3(e, t, [
+				`attrs`,
+				`marks`,
+				`text`
+			]), e.content === void 0 || e.content.length === 0) throw TypeError(`${t}.content must contain at least one block node.`);
+			E$3(e.content, t, v$3);
+			break;
+		case `text`:
+			if (T$3(e, t, [`attrs`, `content`]), e.text === void 0) throw TypeError(`${t}.text is required for a text node.`);
+			if (e.text.length === 0) throw TypeError(`${t}.text cannot be empty.`);
+			break;
+		case `paragraph`:
+			T$3(e, t, [
+				`attrs`,
+				`marks`,
+				`text`
+			]), E$3(e.content ?? [], t, y$3);
+			break;
+		case `heading`: {
+			T$3(e, t, [`marks`, `text`]), E$3(e.content ?? [], t, y$3);
+			let i = e.attrs?.level, a = r.headingLevels ?? n$3;
+			if (typeof i != `number` || !Number.isInteger(i) || !a.includes(i)) throw TypeError(`${t}.attrs.level must be a configured heading level.`);
+			break;
+		}
+		case `orderedList`: {
+			T$3(e, t, [`marks`, `text`]), D$2(e.content, t, b$3);
+			let n = e.attrs?.start;
+			if (n !== void 0 && (!Number.isSafeInteger(n) || Number(n) < 1)) throw TypeError(`${t}.attrs.start must be a positive integer.`);
+			break;
+		}
+		case `bulletList`:
+			T$3(e, t, [
+				`attrs`,
+				`marks`,
+				`text`
+			]), D$2(e.content, t, b$3);
+			break;
+		case `listItem`:
+			if (T$3(e, t, [
+				`attrs`,
+				`marks`,
+				`text`
+			]), D$2(e.content, t, v$3), e.content?.[0]?.type !== `paragraph`) throw TypeError(`${t}.content must begin with a paragraph node.`);
+			break;
+		case `blockquote`:
+			T$3(e, t, [
+				`attrs`,
+				`marks`,
+				`text`
+			]), D$2(e.content, t, v$3);
+			break;
+		case `callout`:
+			if (T$3(e, t, [`marks`, `text`]), D$2(e.content, t, v$3), typeof e.attrs?.tone != `string` || ![
+				`danger`,
+				`info`,
+				`success`,
+				`warning`
+			].includes(e.attrs.tone)) throw TypeError(`${t}.attrs.tone must be a configured callout tone.`);
+			break;
+		case `checklist`:
+			T$3(e, t, [
+				`attrs`,
+				`marks`,
+				`text`
+			]), D$2(e.content, t, x$3);
+			break;
+		case `checklistItem`:
+			if (T$3(e, t, [`marks`, `text`]), E$3(e.content ?? [], t, y$3), typeof e.attrs?.checked != `boolean`) throw TypeError(`${t}.attrs.checked must be a boolean.`);
+			if (!Number.isSafeInteger(e.attrs.level) || Number(e.attrs.level) < 0 || Number(e.attrs.level) > 4) throw TypeError(`${t}.attrs.level must be an integer from zero through four.`);
+			break;
+		case `table`:
+			if (T$3(e, t, [`marks`, `text`]), D$2(e.content, t, S$3), typeof e.attrs?.header != `boolean`) throw TypeError(`${t}.attrs.header must be a boolean.`);
+			w$3(e.content, t);
+			break;
+		case `tableRow`:
+			T$3(e, t, [
+				`attrs`,
+				`marks`,
+				`text`
+			]), D$2(e.content, t, C$3);
+			break;
+		case `tableCell`:
+			T$3(e, t, [
+				`attrs`,
+				`marks`,
+				`text`
+			]), E$3(e.content ?? [], t, y$3);
+			break;
+		case `codeBlock`:
+			if (T$3(e, t, [`content`, `marks`]), e.text === void 0) throw TypeError(`${t}.text is required for a code block.`);
+			if (typeof e.attrs?.language != `string` || !/^[A-Za-z0-9][A-Za-z0-9+_.#-]{0,63}$/u.test(e.attrs.language)) throw TypeError(`${t}.attrs.language must be a bounded language identifier.`);
+			break;
+		case `hardBreak`:
+		case `horizontalRule`:
+			T$3(e, t, [
+				`attrs`,
+				`content`,
+				`marks`,
+				`text`
+			]);
+			break;
+		default: throw TypeError(`${t} uses a node without a portable grammar.`);
+	}
+}
+function _$3(e, t) {
+	let n = /* @__PURE__ */ new Set();
+	for (let r of e) {
+		if (n.has(r.type)) throw TypeError(`${t} cannot contain duplicate ${r.type} marks.`);
+		n.add(r.type);
+	}
+	if (n.has(`code`) && n.size > 1) throw TypeError(`${t} cannot combine code with another mark.`);
+}
+var v$3 = /* @__PURE__ */ new Set([
+	`blockquote`,
+	`bulletList`,
+	`callout`,
+	`checklist`,
+	`codeBlock`,
+	`heading`,
+	`horizontalRule`,
+	`orderedList`,
+	`paragraph`,
+	`table`
+]);
+var y$3 = /* @__PURE__ */ new Set([`hardBreak`, `text`]);
+var b$3 = /* @__PURE__ */ new Set([`listItem`]);
+var x$3 = /* @__PURE__ */ new Set([`checklistItem`]);
+var S$3 = /* @__PURE__ */ new Set([`tableRow`]);
+var C$3 = /* @__PURE__ */ new Set([`tableCell`]);
+function w$3(e, t) {
+	let n = e?.[0]?.content?.length ?? 0, r = e?.findIndex((e) => e.content?.length !== n) ?? -1;
+	if (n < 1 || r >= 0) throw TypeError(`${t}.content must be a non-empty rectangular table.`);
+}
+function T$3(e, t, n) {
+	let r = n.find((t) => e[t] !== void 0);
+	if (r !== void 0) throw TypeError(`${t}.${r} is not valid on a ${e.type} node.`);
+}
+function E$3(e, t, n) {
+	let r = e.findIndex((e) => !n.has(e.type));
+	if (r >= 0) throw TypeError(`${t}.content[${r}] is not valid inside this node.`);
+}
+function D$2(e, t, n) {
+	if (e === void 0 || e.length === 0) throw TypeError(`${t}.content must contain at least one child node.`);
+	E$3(e, t, n);
+}
+function O$2(e, t, n, r, i, a) {
+	let o = k$2(e, t, 1, i, a), s = r.allowedAttributes[n] ?? [];
+	for (let e of Object.keys(o)) if (!s.includes(e)) throw TypeError(`${t}.${e} is not allowed for ${n}.`);
+	return o;
+}
+function k$2(e, t, n, r, i) {
+	if (!B$2(e)) throw TypeError(`${t} must be an object.`);
+	M$2(n, t, r);
+	let a = Object.entries(e);
+	if (a.length > r.maximumPropertiesPerObject) throw RangeError(`${t} exceeds the attribute property limit.`);
+	j$2(i, r, 2);
+	let o = {};
+	for (let [e, [s, c]] of a.entries()) N$2(s, t, r), j$2(i, r, (e === 0 ? 0 : 1) + L$2(s) + 1), o[s] = A$2(c, `${t}.${s}`, n + 1, r, i);
+	return o;
+}
+function A$2(e, t, n, r, i) {
+	if (typeof e == `string`) {
+		if (e.length > r.maximumStringLength) throw RangeError(`${t} exceeds the attribute string limit.`);
+		return j$2(i, r, L$2(e)), e;
+	}
+	if (e === null || typeof e == `boolean` || typeof e == `number` && Number.isFinite(e)) return j$2(i, r, L$2(e)), e;
+	if (Array.isArray(e)) return M$2(n, t, r), P$2(e, t, r), j$2(i, r, 2), e.map((e, a) => (a > 0 && j$2(i, r, 1), A$2(e, `${t}[${a}]`, n + 1, r, i)));
+	if (B$2(e)) return k$2(e, t, n, r, i);
+	throw TypeError(`${t} is not JSON-compatible.`);
+}
+function j$2(e, t, n) {
+	if (e.attributeBytes += n, e.attributeBytes > t.maximumTotalBytes) throw RangeError(`Rich-text attributes exceed the total-byte limit.`);
+}
+function M$2(e, t, n) {
+	if (e > n.maximumDepth) throw RangeError(`${t} exceeds the attribute depth limit.`);
+}
+function N$2(e, t, n) {
+	if (e === `__proto__` || e === `constructor` || e === `prototype`) throw TypeError(`${t}.${e} is a forbidden object key.`);
+	if (e.length > n.maximumStringLength) throw RangeError(`${t} contains an attribute key that exceeds the string limit.`);
+}
+function P$2(e, t, n) {
+	if (e.length > n.maximumItemsPerArray) throw RangeError(`${t} exceeds the attribute item limit.`);
+	let r = Object.keys(e);
+	for (let e of r) if (e === `__proto__` || e === `constructor` || e === `prototype`) throw TypeError(`${t}.${e} is a forbidden object key.`);
+	if (r.length !== e.length || r.some((e, t) => e !== String(t))) throw TypeError(`${t} must be a dense JSON array without extra properties.`);
+}
+function F$2(e, t) {
+	if (Object.getPrototypeOf(e) !== Array.prototype || Object.getOwnPropertySymbols(e).length) throw TypeError(`${t} must be a dense JSON array without extra properties.`);
+	let n = Object.getOwnPropertyNames(e);
+	if (n.length !== e.length + 1 || n[e.length] !== `length` || n.slice(0, -1).some((e, t) => e !== String(t))) throw TypeError(`${t} must be a dense JSON array without extra properties.`);
+}
+function I$2(e, t, n) {
+	let r = new Set(n), i = Object.keys(e).find((e) => !r.has(e));
+	if (i !== void 0) throw TypeError(`${t}.${i} is not a recognized rich-text key.`);
+}
+function L$2(e) {
+	let t = JSON.stringify(e);
+	if (t === void 0) throw TypeError(`Attribute value is not JSON-compatible.`);
+	return R$2(t);
+}
+function R$2(e) {
+	let t = 0;
+	for (let n = 0; n < e.length; n += 1) {
+		let r = e.charCodeAt(n);
+		if (r <= 127) t += 1;
+		else if (r <= 2047) t += 2;
+		else if (r >= 55296 && r <= 56319) {
+			let r = e.charCodeAt(n + 1);
+			r >= 56320 && r <= 57343 ? (t += 4, n += 1) : t += 3;
+		} else t += 3;
+	}
+	return t;
+}
+function B$2(e) {
+	if (typeof e != `object` || !e || Array.isArray(e)) return !1;
+	let t = Object.getPrototypeOf(e);
+	return t === Object.prototype || t === null;
+}
+function V$2(r) {
+	for (let [e, t] of [
+		[`maximumDepth`, r.maximumDepth],
+		[`maximumNodes`, r.maximumNodes],
+		[`maximumTextLength`, r.maximumTextLength]
+	]) H$2(e, t, o$3[e]);
+	for (let [e, t] of [
+		[`maximumDocumentBytes`, W$2(r)],
+		[`maximumMarks`, r.maximumMarks ?? i$5],
+		[`maximumMarksPerNode`, r.maximumMarksPerNode ?? a$5]
+	]) H$2(e, t, o$3[e]);
+	if ((r.maximumMarksPerNode ?? a$5) > (r.maximumMarks ?? i$5)) throw RangeError(`maximumMarksPerNode cannot exceed maximumMarks.`);
+	if (!r.allowedNodes.includes(`doc`) || !r.allowedNodes.includes(`text`)) throw TypeError(`Rich-text profile must allow doc and text nodes.`);
+	if (new Set(r.allowedNodes).size !== r.allowedNodes.length) throw TypeError(`Rich-text profile node names must be unique.`);
+	if (new Set(r.allowedMarks).size !== r.allowedMarks.length) throw TypeError(`Rich-text profile mark names must be unique.`);
+	let s = r.allowedNodes.find((e) => !t$2.includes(e));
+	if (s !== void 0) throw TypeError(`Rich-text profile node "${s}" has no portable grammar.`);
+	let c = r.allowedMarks.find((t) => !e$2.includes(t));
+	if (c !== void 0) throw TypeError(`Rich-text profile mark "${c}" has no portable grammar.`);
+	U$2(r.headingLevels ?? n$3), G$2(r);
+}
+function H$2(e, t, n) {
+	if (!Number.isInteger(t) || t < 1) throw RangeError(`${e} must be a positive integer.`);
+	if (t > n) throw RangeError(`${e} exceeds the immutable safety ceiling of ${n}.`);
+}
+function U$2(e) {
+	if (e.length === 0 || new Set(e).size !== e.length || e.some((e) => !Number.isInteger(e) || e < 1 || e > 6)) throw RangeError(`headingLevels must contain unique integer levels from 1 through 6.`);
+}
+function W$2(e) {
+	return e.maximumDocumentBytes ?? r$3;
+}
+function G$2(e) {
+	let t = {
+		...DEFAULT_RICH_TEXT_ATTRIBUTE_LIMITS,
+		...e.attributeLimits
+	};
+	for (let [e, n] of Object.entries(t)) H$2(e, n, s$3[e]);
+	return t;
+}
+//#endregion
+//#region node_modules/@kumwe/studio-renderer-web/dist/scoped-css.js
+var e$1 = Object.freeze({
+	action: `[data-studio-part="action"]`,
+	content: `[data-studio-part="content"]`,
+	heading: `[data-studio-part="heading"]`,
+	media: `[data-studio-part="media"]`,
+	self: ``
+});
+var t$1 = /* @__PURE__ */ new Set([
+	`background-color`,
+	`border-color`,
+	`border-radius`,
+	`border-style`,
+	`border-width`,
+	`color`,
+	`font-family`,
+	`font-size`,
+	`font-style`,
+	`font-weight`,
+	`gap`,
+	`letter-spacing`,
+	`line-height`,
+	`margin-block`,
+	`margin-inline`,
+	`max-inline-size`,
+	`min-block-size`,
+	`opacity`,
+	`padding-block`,
+	`padding-inline`,
+	`text-align`,
+	`text-decoration`,
+	`text-transform`
+]);
+var n$2 = /^(?:#[0-9A-Fa-f]{3,8}|-?[0-9]+(?:\.[0-9]+)?(?:ch|em|rem|%|px)?|[a-z][a-z0-9 -]{0,126}|var\(--studio-[a-z0-9-]{1,100}\))$/u;
+function compileStudioScopedStyleSheet(r, i) {
+	if (!/^[A-Za-z][A-Za-z0-9_-]{0,511}$/u.test(r)) throw TypeError(`Scoped CSS scope must be a bounded CSS-safe identifier.`);
+	if (i.rules.length > 100) throw RangeError(`Scoped stylesheet exceeds 100 rules.`);
+	let a = `[data-studio-scope=${r}]`;
+	return i.rules.map((r) => {
+		if (!Object.hasOwn(e$1, r.target)) throw TypeError(`Scoped CSS target ${r.target} is not allowed.`);
+		let i = Object.entries(r.declarations);
+		if (i.length > 50) throw RangeError(`Scoped style rule exceeds 50 declarations.`);
+		let o = i.sort(([e], [t]) => e.localeCompare(t)).map(([e, r]) => {
+			if (!t$1.has(e)) throw TypeError(`Scoped CSS property ${e} is not allowed.`);
+			if (r.length > 256 || !n$2.test(r) || /(?:url|expression|javascript|@|[;{}])/iu.test(r)) throw TypeError(`Scoped CSS value for ${e} is not allowed.`);
+			return `${e}:${r}`;
+		}).join(`;`);
+		return `${a}${e$1[r.target]}{${o}}`;
+	}).join(``);
+}
+function assertCspNonce(e) {
+	if (!/^[A-Za-z0-9+/_=-]{8,256}$/u.test(e)) throw TypeError(`CSP nonce must be an 8 through 256 character base64-style token.`);
+}
+//#endregion
+//#region node_modules/@kumwe/studio-renderer-web/dist/safe-markup.js
+var e = new Set(`a.abbr.blockquote.br.code.del.em.h2.h3.h4.h5.h6.hr.li.mark.ol.p.pre.strong.sub.sup.table.tbody.td.th.thead.tr.ul`.split(`.`));
+var t = /* @__PURE__ */ new Set([`br`, `hr`]);
+var n$1 = /* @__PURE__ */ new Set([
+	`aria-label`,
+	`dir`,
+	`lang`,
+	`title`
+]);
+var r$2 = Object.freeze({
+	a: /* @__PURE__ */ new Set([`href`]),
+	ol: /* @__PURE__ */ new Set([`start`]),
+	td: /* @__PURE__ */ new Set([`colspan`, `rowspan`]),
+	th: /* @__PURE__ */ new Set([
+		`colspan`,
+		`rowspan`,
+		`scope`
+	])
+});
+function renderSafeMarkupFragment(e) {
+	if (!/^[a-z][a-z0-9.-]{0,126}\/[a-z][a-z0-9.-]{0,126}$/u.test(e.policy)) throw TypeError(`Safe markup requires a qualified policy identifier.`);
+	return e.nodes.map((e) => a$4(e, 1)).join(``);
+}
+function a$4(e, t) {
+	if (t > 64) throw RangeError(`Safe markup exceeds 64 levels.`);
+	return e.kind === `text` ? escapeHtml(e.value) : o$2(e, t);
+}
+function o$2(i, o) {
+	if (!e.has(i.tag)) throw TypeError(`Safe markup tag ${i.tag} is not allowed.`);
+	if (i.children.length > 1e4) throw RangeError(`Safe markup element exceeds its child limit.`);
+	let c = r$2[i.tag] ?? /* @__PURE__ */ new Set(), l = Object.entries(i.attributes ?? {}).sort(([e], [t]) => e.localeCompare(t)).map(([e, t]) => {
+		if (!n$1.has(e) && !c.has(e)) throw TypeError(`Attribute ${e} is not allowed on ${i.tag}.`);
+		if (e === `href` && !s$2(t)) throw TypeError(`Safe markup link uses a forbidden URL.`);
+		return ` ${e}="${escapeAttribute(t)}"`;
+	}).join(``);
+	if (t.has(i.tag)) {
+		if (i.children.length > 0) throw TypeError(`Void tag ${i.tag} cannot have children.`);
+		return `<${i.tag}${l}>`;
+	}
+	return `<${i.tag}${l}>${i.children.map((e) => a$4(e, o + 1)).join(``)}</${i.tag}>`;
+}
+function s$2(e) {
+	return e.startsWith(`/`) || e.startsWith(`#`) || /^https:\/\/[A-Za-z0-9.-]+(?::[0-9]+)?(?:[/#?]|$)/u.test(e);
+}
+function escapeHtml(e) {
+	return e.replaceAll(`&`, `&amp;`).replaceAll(`<`, `&lt;`).replaceAll(`>`, `&gt;`);
+}
+function escapeAttribute(e) {
+	return escapeHtml(e).replaceAll(`"`, `&quot;`).replaceAll(`'`, `&#39;`);
+}
+//#endregion
+//#region node_modules/@kumwe/studio-renderer-web/dist/renderer.js
+async function renderStudioWeb(e, t = {}) {
+	let n = {
+		context: t,
+		css: [],
+		enhancements: []
+	}, r = (await f$3(e.roots, n)).join(``), i = [`[data-studio-block]{box-sizing:border-box;min-inline-size:0}.studio-visually-hidden{clip-path:inset(50%);white-space:nowrap;block-size:1px;inline-size:1px;position:absolute;overflow:hidden}[data-studio-align=center]{text-align:center}[data-studio-align=end]{text-align:end}[data-studio-align=stretch]{align-self:stretch}[data-studio-height=content]{block-size:fit-content}[data-studio-height=full]{block-size:100%}[data-studio-height=viewport]{min-block-size:100dvb}[data-studio-inverse=true]{background:var(--studio-inverse-background,CanvasText);color:var(--studio-inverse-foreground,Canvas)}[data-studio-margin=none]{margin:0}[data-studio-margin=compact]{margin:.5rem}[data-studio-margin=comfortable]{margin:1rem}[data-studio-margin=spacious]{margin:2rem}[data-studio-padding=none]{padding:0}[data-studio-padding=compact]{padding:.5rem}[data-studio-padding=comfortable]{padding:1rem}[data-studio-padding=spacious]{padding:2rem}[data-studio-marker=none]{list-style:none}[data-studio-marker=disc]{list-style:outside}[data-studio-marker=decimal]{list-style:decimal}[data-studio-marker=check]{list-style:"✓  "}[data-studio-position=relative]{position:relative}[data-studio-position=sticky]{z-index:10;position:sticky;inset-block-start:0}[data-studio-scroll=auto]{overflow:auto}[data-studio-scroll=clip]{overflow:clip}[data-studio-scroll=snap]{scroll-snap-type:block mandatory;overflow:auto}[data-studio-width=content]{inline-size:fit-content;max-inline-size:100%}[data-studio-width=full]{inline-size:100%}[data-studio-print=only],[data-studio-visible-compact=hidden]{display:none}[data-studio-motion]{opacity:0;transition:opacity .25s,transform .25s}[data-studio-motion=scale]{transform:scale(.98)}[data-studio-motion=slide]{transform:translateY(1rem)}[data-studio-motion-visible]{opacity:1;transform:none}[data-studio-motion=parallax]{opacity:1;transform:translateY(var(--studio-parallax-offset,0))}@media (width>=48rem){[data-studio-visible-medium=hidden]{display:none}[data-studio-visible-medium=visible]{display:block}}@media (width>=75rem){[data-studio-visible-expanded=hidden]{display:none}[data-studio-visible-expanded=visible]{display:block}}@media print{[data-studio-print=hide]{display:none!important}[data-studio-print=only]{display:block}}[data-studio-layout=section]{inline-size:100%}[data-studio-layout=stack]{gap:var(--studio-space,1rem);flex-direction:column;display:flex}[data-studio-layout=grid],[data-studio-layout=columns]{gap:var(--studio-space,1rem);grid-template-columns:repeat(var(--studio-columns-compact,1),minmax(0,1fr));display:grid}@media (width>=48rem){[data-studio-layout=grid],[data-studio-layout=columns]{grid-template-columns:repeat(var(--studio-columns-medium,var(--studio-columns-compact,1)),minmax(0,1fr))}}@media (width>=75rem){[data-studio-layout=grid],[data-studio-layout=columns]{grid-template-columns:repeat(var(--studio-columns-expanded,var(--studio-columns-medium,var(--studio-columns-compact,1))),minmax(0,1fr))}}[data-studio-gallery=grid]{grid-template-columns:repeat(var(--studio-gallery-columns,1),minmax(0,1fr));gap:1rem;display:grid}[data-studio-gallery=slideshow] [data-studio-slide]{scroll-snap-align:start}[data-studio-gallery=slideshow] [data-studio-part=content]{scroll-snap-type:x mandatory;display:flex;overflow-x:auto}[data-studio-gallery] figure{margin:0}[data-studio-block=drawing] svg,[data-studio-part=media]{block-size:auto;max-inline-size:100%}[data-studio-block=tabs] [data-studio-tab-list][hidden]{display:none}[data-studio-dialog],[data-studio-popover]{position:relative}[data-studio-dialog] summary,[data-studio-popover] summary{cursor:pointer}[data-studio-dialog-panel],[data-studio-popover-panel]{color:canvastext;background:canvas;border:1px solid;max-block-size:min(80vh,50rem);max-inline-size:min(90vw,50rem);padding:1rem;overflow:auto}[data-studio-dialog][open][data-studio-dialog-modal=true] [data-studio-dialog-panel]{z-index:1000;position:fixed;inset:50% auto auto 50%;transform:translate(-50%,-50%)}[data-studio-dialog-presentation=offcanvas][open] [data-studio-dialog-panel]{z-index:1000;block-size:100dvb;max-block-size:none;max-inline-size:min(90vw,30rem);position:fixed;inset:0 0 0 auto;transform:none}[data-studio-dialog-presentation=overlay][open] [data-studio-dialog-panel]{z-index:1000;max-inline-size:none;position:fixed;inset:auto 1rem 1rem}[data-studio-popover-panel]{z-index:100;position:absolute;inset-block-start:100%;inset-inline-start:0}[data-studio-popover-placement=top] [data-studio-popover-panel]{inset-block:auto 100%}[data-studio-notice]{border-inline-start:.25rem solid;padding:.75rem 1rem}[data-studio-cover]{isolation:isolate;place-items:center;min-block-size:20rem;display:grid;position:relative;overflow:hidden}[data-studio-cover] img{object-fit:cover;z-index:-2;block-size:100%;inline-size:100%;position:absolute;inset:0}[data-studio-cover]:after{background:rgb(0 0 0/var(--studio-cover-overlay,.35));content:"";z-index:-1;position:absolute;inset:0}[data-studio-navigation] ul{flex-wrap:wrap;gap:.75rem;margin:0;padding:0;list-style:none;display:flex}[data-studio-navigation=breadcrumbs] li+li:before{content:"/";margin-inline-end:.75rem}[data-studio-navigation=navbar]{justify-content:space-between;align-items:center;display:flex}[data-studio-badge],[data-studio-label]{border-radius:.25rem;padding:.15em .5em;display:inline-block}[data-studio-badge=soft]{opacity:.85}[data-studio-badge=outline]{border:1px solid}[data-studio-spinner]{border:.2em solid;border-inline-end-color:#0000;border-radius:50%;block-size:1.5em;inline-size:1.5em;animation:1s linear infinite studio-spin;display:inline-block}@keyframes studio-spin{to{transform:rotate(1turn)}}[data-studio-lightbox-dialog]{color:canvastext;background:canvas;max-block-size:90dvb;inline-size:min(90vw,70rem);padding:1rem}[data-studio-lightbox-dialog] img{block-size:auto;max-block-size:75dvb;max-inline-size:100%}[data-studio-chart-table]{border-collapse:collapse;inline-size:100%}[data-studio-chart-table] th,[data-studio-chart-table] td{text-align:end;border:1px solid;padding:.35rem}[data-studio-chart-table] th:first-child{text-align:start}@media (prefers-reduced-motion:reduce){[data-studio-gallery=slideshow] [data-studio-part=content]{scroll-behavior:auto}[data-studio-motion]{opacity:1!important;transition:none!important;transform:none!important}}`, ...n.css].filter((e) => e.length > 0).join(``), a = ``;
+	return t.cspNonce !== void 0 && (assertCspNonce(t.cspNonce), a = ` nonce="${escapeAttribute(t.cspNonce)}"`), {
+		css: i,
+		enhancements: n.enhancements,
+		html: r,
+		styleElement: `<style${a} data-studio-renderer="semantic-web">${i}</style>`
+	};
+}
+async function te(t, n) {
+	let r = Pe(t.id), i = n.context.scopedStyles, a = i !== void 0 && Object.hasOwn(i, t.id) ? i[t.id] : void 0;
+	a !== void 0 && n.css.push(compileStudioScopedStyleSheet(r, a));
+	let o = Fe(t, r, n), s = await ne(t, r, n), u = `data-studio-block="${escapeAttribute(Ne(t.type))}" data-studio-node="${escapeAttribute(t.id)}" data-studio-scope="${r}"${o}`;
+	return t.type === CORE_PRODUCTION_BLOCK_TYPES.descriptionItem ? `<div data-studio-description-item ${u}>${s}</div>` : t.type === CORE_PRODUCTION_BLOCK_TYPES.navigationItem ? `<li data-studio-navigation-item ${u}>${s}</li>` : `<div ${u}>${s}</div>`;
+}
+async function f$3(e, t) {
+	let n = await Promise.all(e.map(async (e) => {
+		let n = {
+			context: t.context,
+			css: [],
+			enhancements: []
+		}, r = await te(e, n);
+		return {
+			css: n.css,
+			enhancements: n.enhancements,
+			html: r
+		};
+	}));
+	for (let e of n) t.css.push(...e.css), t.enhancements.push(...e.enhancements);
+	return n.map((e) => e.html);
+}
+async function ne(t, n, r) {
+	switch (t.type) {
+		case CORE_PRODUCTION_BLOCK_TYPES.section: return p$3(t, `section`, r);
+		case CORE_PRODUCTION_BLOCK_TYPES.stack: return p$3(t, `stack`, r);
+		case CORE_PRODUCTION_BLOCK_TYPES.grid: return m$3(t, `grid`, n, r);
+		case CORE_PRODUCTION_BLOCK_TYPES.columns: return m$3(t, `columns`, n, r);
+		case CORE_PRODUCTION_BLOCK_TYPES.heading: return re(t, r);
+		case CORE_PRODUCTION_BLOCK_TYPES.richText: return ie(t, r);
+		case CORE_PRODUCTION_BLOCK_TYPES.image: return ae(t, r);
+		case CORE_PRODUCTION_BLOCK_TYPES.gallery: return oe(t, n, r);
+		case CORE_PRODUCTION_BLOCK_TYPES.video: return se(t, r);
+		case CORE_PRODUCTION_BLOCK_TYPES.audio: return ce(t, r);
+		case CORE_PRODUCTION_BLOCK_TYPES.attachment: return le(t, r);
+		case CORE_PRODUCTION_BLOCK_TYPES.code: return ue(t, `code`, r);
+		case CORE_PRODUCTION_BLOCK_TYPES.math: return de(t, n, r);
+		case CORE_PRODUCTION_BLOCK_TYPES.diagram: return fe(t, n, r);
+		case CORE_PRODUCTION_BLOCK_TYPES.dialog: return pe(t, n, r);
+		case CORE_PRODUCTION_BLOCK_TYPES.chart: return me(t, n, r);
+		case CORE_PRODUCTION_BLOCK_TYPES.drawing: return he(t, r);
+		case CORE_PRODUCTION_BLOCK_TYPES.embed: return ge(t, r);
+		case CORE_PRODUCTION_BLOCK_TYPES.callToAction: return _e(t, r);
+		case CORE_PRODUCTION_BLOCK_TYPES.card: return ve(t, r);
+		case CORE_PRODUCTION_BLOCK_TYPES.accordion: return P$1(t, `items`, r);
+		case CORE_PRODUCTION_BLOCK_TYPES.accordionItem: return ye(t, r);
+		case CORE_PRODUCTION_BLOCK_TYPES.tabs: return be(t, n, r);
+		case CORE_PRODUCTION_BLOCK_TYPES.tab: return xe(t, r);
+		case CORE_PRODUCTION_BLOCK_TYPES.callout: return h$2(t, r);
+		case CORE_PRODUCTION_BLOCK_TYPES.contentReference: return g$2(t, r);
+		case CORE_PRODUCTION_BLOCK_TYPES.contentCollection: return _$2(t, n, r);
+		case CORE_PRODUCTION_BLOCK_TYPES.money: return v$2(t, r);
+		case CORE_PRODUCTION_BLOCK_TYPES.notice: return y$2(t, n, r);
+		case CORE_PRODUCTION_BLOCK_TYPES.popover: return b$2(t, n, r);
+		case CORE_PRODUCTION_BLOCK_TYPES.article: return x$2(t, r);
+		case CORE_PRODUCTION_BLOCK_TYPES.badge: return S$2(t, r);
+		case CORE_PRODUCTION_BLOCK_TYPES.countdown: return C$2(t, n, r);
+		case CORE_PRODUCTION_BLOCK_TYPES.cover: return w$2(t, n, r);
+		case CORE_PRODUCTION_BLOCK_TYPES.descriptionItem: return T$2(t, r);
+		case CORE_PRODUCTION_BLOCK_TYPES.descriptionList: return E$2(t, r);
+		case CORE_PRODUCTION_BLOCK_TYPES.divider: return D$1(t, r);
+		case CORE_PRODUCTION_BLOCK_TYPES.icon: return O$1(t, r);
+		case CORE_PRODUCTION_BLOCK_TYPES.label: return k$1(t, r);
+		case CORE_PRODUCTION_BLOCK_TYPES.navigation: return A$1(t, n, r);
+		case CORE_PRODUCTION_BLOCK_TYPES.navigationItem: return j$1(t, r);
+		case CORE_PRODUCTION_BLOCK_TYPES.progress: return M$1(t, r);
+		case CORE_PRODUCTION_BLOCK_TYPES.search: return Se(t, r);
+		case CORE_PRODUCTION_BLOCK_TYPES.spinner: return Ce(t, r);
+		case CORE_PRODUCTION_BLOCK_TYPES.table: return N$1(t, r);
+		default: return `<p role="status">Unsupported Studio block ${escapeHtml(t.type)}</p>`;
+	}
+}
+async function p$3(e, t, n) {
+	return `<div data-studio-layout="${t}" data-studio-part="content">${await P$1(e, t === `section` ? `content` : `items`, n)}</div>`;
+}
+async function m$3(e, t, n, r) {
+	let i = J$1(e.properties.columns, 1, 12, 1), a = J$1(e.responsive?.columns?.medium, 1, 12, i), o = J$1(e.responsive?.columns?.expanded, 1, 12, a);
+	return r.css.push(`[data-studio-scope=${n}]{--studio-columns-compact:${i};--studio-columns-medium:${a};--studio-columns-expanded:${o}}`), `<div data-studio-layout="${t}" data-studio-part="content">${await P$1(e, `items`, r)}</div>`;
+}
+async function re(e, t) {
+	let n = J$1(e.properties.level, 1, 6, 2);
+	return `<h${n} data-studio-part="heading">${escapeHtml(Z(await F$1(e, `text`, t)))}</h${n}>`;
+}
+async function ie(e, t) {
+	let n = await F$1(e, `content`, t);
+	if (Me(n)) return `<div data-studio-part="content">${renderSafeMarkupFragment(n)}</div>`;
+	try {
+		return `<div data-studio-part="content">${z$1(parseRichTextDocument(n))}</div>`;
+	} catch {
+		return `<div data-studio-part="content"></div>`;
+	}
+}
+async function ae(e, t) {
+	let n = await I$1(await F$1(e, `asset`, t), t);
+	if (n === void 0) return `<p role="status">Image unavailable</p>`;
+	let r = K$1(n), i = n.caption === void 0 ? `` : `<figcaption>${escapeHtml(n.caption)}</figcaption>`;
+	return `<figure><img data-studio-part="media" src="${escapeAttribute(n.src)}" alt="${escapeAttribute(n.altText)}" loading="${e.properties.loading === `eager` ? `eager` : `lazy`}"${r}>${i}</figure>`;
+}
+async function oe(e, t, n) {
+	let r = await F$1(e, `items`, n), i = Array.isArray(r) ? r : [], a = (await Promise.all(i.map((e) => I$1(e, n)))).filter((e) => e !== void 0), o = e.properties.presentation === `slideshow` ? `slideshow` : `grid`, s = e.properties.lightbox === !0, c = e.properties.autoplay === !0, d = J$1(e.properties.columns, 1, 12, 4);
+	n.css.push(`[data-studio-scope=${t}]{--studio-gallery-columns:${d}}`), o === `slideshow` && a.length > 0 && n.enhancements.push({
+		autoplay: c,
+		kind: `slideshow`,
+		nodeId: e.id,
+		scope: t
+	}), s && a.length > 0 && n.enhancements.push({
+		kind: `lightbox`,
+		nodeId: e.id,
+		scope: t
+	});
+	let ee = a.map((e, t) => `<figure data-studio-slide="${t}">${s ? `<a data-studio-lightbox-open="${t}" href="${escapeAttribute(e.src)}">` : ``}<img data-studio-part="media" src="${escapeAttribute(e.src)}" alt="${escapeAttribute(e.altText)}"${K$1(e)}>${s ? `</a>` : ``}${e.caption === void 0 ? `` : `<figcaption>${escapeHtml(e.caption)}</figcaption>`}</figure>`).join(``);
+	return `<section data-studio-gallery="${o}"${o === `slideshow` ? ` data-studio-slideshow-autoplay="${String(c)}"` : ``} aria-label="Media gallery"><div data-studio-part="content">${ee}</div>${o === `slideshow` && a.length > 0 ? `<p><button type="button" data-studio-slide-previous>Previous</button><button type="button" data-studio-slide-next>Next</button></p>` : ``}</section>`;
+}
+async function se(e, t) {
+	let n = await I$1(await F$1(e, `asset`, t), t);
+	if (n === void 0) return `<p role="status">Video unavailable</p>`;
+	let r = await I$1(await F$1(e, `poster`, t), t), i = `${e.properties.controls === !1 ? `` : ` controls`}${e.properties.autoplay === !0 ? ` autoplay` : ``}${e.properties.muted === !0 ? ` muted` : ``}`;
+	return `<video data-studio-part="media" src="${escapeAttribute(n.src)}"${r === void 0 ? `` : ` poster="${escapeAttribute(r.src)}"`}${i}>${escapeHtml(Z(await F$1(e, `captions`, t)))}</video>`;
+}
+async function ce(e, t) {
+	let n = await I$1(await F$1(e, `asset`, t), t);
+	if (n === void 0) return `<p role="status">Audio unavailable</p>`;
+	let r = `${e.properties.controls === !1 ? `` : ` controls`}${e.properties.autoplay === !0 ? ` autoplay` : ``}`, i = Z(await F$1(e, `transcript`, t));
+	return `<audio data-studio-part="media" src="${escapeAttribute(n.src)}"${r}></audio>${i.length === 0 ? `` : `<details><summary>Transcript</summary><p>${escapeHtml(i)}</p></details>`}`;
+}
+async function le(e, t) {
+	let n = await I$1(await F$1(e, `asset`, t), t);
+	if (n === void 0) return `<p role="status">Attachment unavailable</p>`;
+	let r = Z(await F$1(e, `label`, t)) || `Download attachment`;
+	return `<a data-studio-part="action" href="${escapeAttribute(n.src)}"${e.properties.download === !1 ? `` : ` download`}>${escapeHtml(r)}</a>`;
+}
+async function ue(e, t, n) {
+	let r = Z(await F$1(e, `source`, n));
+	return `<pre data-studio-part="content"><code data-language="${escapeAttribute(Y$1(e.properties.language, t))}">${escapeHtml(r)}</code></pre>`;
+}
+async function de(e, t, n) {
+	let r = Z(await F$1(e, `source`, n)), i = e.properties[`display-mode`] !== !1;
+	return n.enhancements.push({
+		displayMode: i,
+		kind: `math`,
+		nodeId: e.id,
+		scope: t,
+		source: r
+	}), `<code data-studio-math-source>${escapeHtml(r)}</code>`;
+}
+async function fe(e, t, n) {
+	let r = Z(await F$1(e, `source`, n));
+	return n.enhancements.push({
+		kind: `diagram`,
+		nodeId: e.id,
+		scope: t,
+		source: r
+	}), `<pre data-studio-diagram-source><code>${escapeHtml(r)}</code></pre>`;
+}
+async function pe(e, t, n) {
+	let r = Z(await F$1(e, `trigger-label`, n)) || `Open dialog`, i = Z(await F$1(e, `title`, n)) || `Dialog`, a = e.properties.modal !== !1, o = Y$1(e.properties.presentation, ``), s = [
+		`modal`,
+		`offcanvas`,
+		`overlay`
+	].includes(o) ? o : `modal`;
+	return n.enhancements.push({
+		kind: `dialog`,
+		modal: a,
+		nodeId: e.id,
+		scope: t
+	}), `<details data-studio-dialog data-studio-dialog-modal="${String(a)}" data-studio-dialog-presentation="${s}"><summary data-studio-dialog-trigger>${escapeHtml(r)}</summary><section data-studio-dialog-panel role="dialog" aria-modal="${String(a)}" aria-labelledby="${t}-dialog-title" tabindex="-1"><h2 data-studio-part="heading" id="${t}-dialog-title">${escapeHtml(i)}</h2><div data-studio-part="content">${await P$1(e, `content`, n)}</div><button type="button" data-studio-dialog-close>Close</button></section></details>`;
+}
+async function me(e, n, r) {
+	let i;
+	try {
+		i = parseStudioChartSpec(await F$1(e, `chart`, r));
+	} catch {
+		return `<p role="status">Chart data unavailable</p>`;
+	}
+	r.enhancements.push({
+		kind: `chart`,
+		nodeId: e.id,
+		scope: n,
+		spec: i
+	});
+	let a = i.labels.map((e) => `<th scope="col">${escapeHtml(e)}</th>`).join(``), o = i.datasets.map((e) => `<tr><th scope="row">${escapeHtml(e.label)}</th>${e.values.map((e) => `<td>${escapeHtml(String(e))}</td>`).join(``)}</tr>`).join(``);
+	return `${i.title === void 0 ? `` : `<h3 data-studio-part="heading">${escapeHtml(i.title)}</h3>`}<div data-studio-chart-visual aria-hidden="true"></div><table data-studio-chart-table><thead><tr><th scope="col">Series</th>${a}</tr></thead><tbody>${o}</tbody></table>`;
+}
+async function he(e, t) {
+	let r;
+	try {
+		r = parseStudioDrawingDocument(await F$1(e, `drawing`, t));
+	} catch {
+		return `<p role="status">Drawing unavailable</p>`;
+	}
+	let i = r.strokes.map((e) => `<polyline fill="none" stroke="${e.color.startsWith(`#`) ? e.color : `currentColor`}" stroke-width="${e.width}" points="${e.points.map((e) => `${e.x},${e.y}`).join(` `)}"></polyline>`).join(``);
+	return `<svg data-studio-part="media" viewBox="0 0 ${r.width} ${r.height}" role="img" aria-label="${escapeAttribute(r.alt)}" xmlns="http://www.w3.org/2000/svg">${i}</svg>`;
+}
+async function ge(e, t) {
+	let n = L$1(await F$1(e, `resource`, t));
+	return n === void 0 ? `<p role="status">Embedded resource unavailable</p>` : R$1(n, !0);
+}
+async function _e(e, t) {
+	let n = Z(await F$1(e, `label`, t)), r = Q(Y$1(e.properties.href, ``));
+	return r === void 0 ? `<span data-studio-part="action">${escapeHtml(n)}</span>` : `<a data-studio-part="action" href="${escapeAttribute(r)}">${escapeHtml(n)}</a>`;
+}
+async function ve(e, t) {
+	let n = await I$1(await F$1(e, `media`, t), t), r = Z(await F$1(e, `title`, t)), i = await F$1(e, `summary`, t), a;
+	try {
+		a = z$1(parseRichTextDocument(i));
+	} catch {
+		a = escapeHtml(Z(i));
+	}
+	return `<article>${n === void 0 ? `` : `<img data-studio-part="media" src="${escapeAttribute(n.src)}" alt="${escapeAttribute(n.altText)}"${K$1(n)}>`}<h3 data-studio-part="heading">${escapeHtml(r)}</h3><div data-studio-part="content">${a}</div><div data-studio-part="action">${await P$1(e, `actions`, t)}</div></article>`;
+}
+async function ye(e, t) {
+	let n = Z(await F$1(e, `title`, t));
+	return `<details${e.properties.expanded === !0 ? ` open` : ``}><summary>${escapeHtml(n)}</summary><div data-studio-part="content">${await P$1(e, `content`, t)}</div></details>`;
+}
+async function be(e, t, n) {
+	let r = e.properties.activation === `manual` ? `manual` : `automatic`, i = e.slots.items ?? [];
+	return i.length > 0 && n.enhancements.push({
+		activation: r,
+		kind: `tabs`,
+		nodeId: e.id,
+		scope: t
+	}), `<div data-studio-tabs data-studio-tabs-activation="${r}"><div data-studio-tab-list hidden>${(await Promise.all(i.map(async (e, t) => `<button type="button" data-studio-tab="${t}">${escapeHtml(Z(await F$1(e, `title`, n)))}</button>`))).join(``)}</div><div data-studio-part="content">${(await f$3(i, n)).join(``)}</div></div>`;
+}
+async function xe(e, t) {
+	return `<section data-studio-tab-panel><h3 data-studio-part="heading">${escapeHtml(Z(await F$1(e, `title`, t)))}</h3><div data-studio-part="content">${await P$1(e, `content`, t)}</div></section>`;
+}
+async function h$2(e, t) {
+	let n = Z(await F$1(e, `title`, t)), r = await F$1(e, `content`, t), i;
+	try {
+		i = z$1(parseRichTextDocument(r));
+	} catch {
+		i = escapeHtml(Z(r));
+	}
+	let a = typeof e.properties.tone == `string` ? e.properties.tone : ``;
+	return `<aside role="note" data-studio-tone="${[
+		`danger`,
+		`information`,
+		`success`,
+		`warning`
+	].includes(a) ? a : `information`}"><h3 data-studio-part="heading">${escapeHtml(n)}</h3><div data-studio-part="content">${i}</div></aside>`;
+}
+async function g$2(e, t) {
+	let n = L$1(await F$1(e, `item`, t));
+	return n === void 0 ? `<p role="status">Content unavailable</p>` : R$1(n, e.properties.presentation !== `title`);
+}
+async function _$2(e, t, n) {
+	let r = await F$1(e, `items`, n), i = (Array.isArray(r) ? r : []).map(L$1).filter((e) => e !== void 0).slice(0, J$1(e.properties.limit, 1, 100, 12)), a = typeof e.properties.presentation == `string` ? e.properties.presentation : ``, o = [
+		`cards`,
+		`grid`,
+		`list`,
+		`slideshow`
+	].includes(a) ? a : `cards`;
+	return o === `slideshow` && i.length > 0 && n.enhancements.push({
+		autoplay: !1,
+		kind: `slideshow`,
+		nodeId: e.id,
+		scope: t
+	}), `<div data-studio-collection="${o}"${o === `slideshow` ? ` data-studio-slideshow-autoplay="false"` : ``} data-studio-part="content">${i.map((e, t) => `<article${o === `slideshow` ? ` data-studio-slide="${t}"` : ``}>${R$1(e, !0)}</article>`).join(``)}</div>`;
+}
+async function v$2(e, t) {
+	try {
+		let n = parseStudioMoneyValue(await F$1(e, `amount`, t));
+		return `<data value="${escapeAttribute(`${n.currency} ${n.amount}`)}">${escapeHtml(`${n.amount} ${n.currency}`)}</data>`;
+	} catch {
+		return `<span role="status">Amount unavailable</span>`;
+	}
+}
+async function y$2(e, t, n) {
+	let r = Z(await F$1(e, `title`, n)), i = await F$1(e, `content`, n), a = typeof e.properties.tone == `string` ? e.properties.tone : ``, s = [
+		`comment`,
+		`error`,
+		`information`,
+		`success`,
+		`warning`
+	].includes(a) ? a : `information`, c = s === `error` || s === `warning`, l = e.properties.dismissible === !0;
+	l && n.enhancements.push({
+		kind: `notice`,
+		nodeId: e.id,
+		scope: t
+	});
+	let d;
+	try {
+		d = z$1(parseRichTextDocument(i));
+	} catch {
+		d = escapeHtml(Z(i));
+	}
+	return `<aside data-studio-notice data-studio-tone="${s}" role="${c ? `alert` : `status`}" aria-live="${c ? `assertive` : `polite`}">${r.length === 0 ? `` : `<h3 data-studio-part="heading">${escapeHtml(r)}</h3>`}<div data-studio-part="content">${d}</div>${l ? `<button type="button" data-studio-notice-dismiss>Dismiss</button>` : ``}</aside>`;
+}
+async function b$2(e, t, n) {
+	let r = Z(await F$1(e, `trigger-label`, n)) || `Show details`, i = Z(await F$1(e, `title`, n)), a = typeof e.properties.placement == `string` ? e.properties.placement : ``, o = [
+		`auto`,
+		`bottom`,
+		`left`,
+		`right`,
+		`top`
+	].includes(a) ? a : `auto`, s = Y$1(e.properties.presentation, ``), c = s === `dropbar` || s === `dropdown` || s === `tooltip` ? s : `popover`;
+	return n.enhancements.push({
+		dismissOnBlur: e.properties[`dismiss-on-blur`] !== !1,
+		kind: `popover`,
+		nodeId: e.id,
+		presentation: c,
+		scope: t
+	}), `<details data-studio-popover data-studio-popover-placement="${o}" data-studio-popover-presentation="${c}" data-studio-popover-dismiss-on-blur="${String(e.properties[`dismiss-on-blur`] !== !1)}"><summary data-studio-popover-trigger>${escapeHtml(r)}</summary><aside data-studio-popover-panel role="${c === `tooltip` ? `tooltip` : `region`}" aria-labelledby="${t}-popover-title" tabindex="-1">${i.length === 0 ? `<span class="studio-visually-hidden" id="${t}-popover-title">${escapeHtml(r)}</span>` : `<h3 data-studio-part="heading" id="${t}-popover-title">${escapeHtml(i)}</h3>`}<div data-studio-part="content">${await P$1(e, `content`, n)}</div></aside></details>`;
+}
+async function x$2(e, t) {
+	let n = Z(await F$1(e, `title`, t));
+	return `<article>${n.length === 0 ? `` : `<h2 data-studio-part="heading">${escapeHtml(n)}</h2>`}<div data-studio-part="content">${await P$1(e, `content`, t)}</div></article>`;
+}
+async function S$2(e, t) {
+	return `<span data-studio-badge="${[
+		`outline`,
+		`soft`,
+		`solid`
+	].includes(Y$1(e.properties.appearance, ``)) ? Y$1(e.properties.appearance, ``) : `solid`}" data-studio-tone="${X$1(e.properties.tone)}">${escapeHtml(Z(await F$1(e, `label`, t)))}</span>`;
+}
+async function C$2(e, t, n) {
+	let r = Z(await F$1(e, `target`, n)), i = Date.parse(r);
+	if (!Number.isFinite(i)) return `<span role="status">Countdown unavailable</span>`;
+	let a = new Date(i).toISOString(), o = Z(await F$1(e, `completion-message`, n)), s = e.properties.display === `compact` ? `compact` : `detailed`, c = [
+		`hide`,
+		`message`,
+		`zero`
+	].includes(Y$1(e.properties[`expired-behavior`], ``)) ? Y$1(e.properties[`expired-behavior`], ``) : `zero`;
+	return n.enhancements.push({
+		completionMessage: o,
+		display: s,
+		expiredBehavior: c,
+		kind: `countdown`,
+		nodeId: e.id,
+		scope: t,
+		target: a
+	}), `<time data-studio-countdown data-studio-countdown-display="${s}" data-studio-countdown-expired-behavior="${c}" datetime="${a}" aria-live="polite"><span data-studio-countdown-value>${escapeHtml(a)}</span><span data-studio-countdown-complete hidden>${escapeHtml(o)}</span></time>`;
+}
+async function w$2(e, t, n) {
+	let r = await I$1(await F$1(e, `background`, n), n), i = Y$1(e.properties.overlay, `medium`), a = i === `none` ? 0 : i === `light` ? .2 : i === `strong` ? .65 : .4;
+	return n.css.push(`[data-studio-scope=${t}]{--studio-cover-overlay:${a}}`), `<section data-studio-cover data-studio-cover-align="${[
+		`center`,
+		`end`,
+		`start`
+	].includes(Y$1(e.properties.alignment, ``)) ? Y$1(e.properties.alignment, ``) : `center`}">${r === void 0 ? `` : `<img src="${escapeAttribute(r.src)}" alt="" aria-hidden="true"${K$1(r)}>`}<div data-studio-part="content">${await P$1(e, `content`, n)}</div></section>`;
+}
+async function T$2(e, t) {
+	let n = Z(await F$1(e, `term`, t)), r = await F$1(e, `description`, t), i;
+	try {
+		i = z$1(parseRichTextDocument(r));
+	} catch {
+		i = escapeHtml(Z(r));
+	}
+	return `<dt>${escapeHtml(n)}</dt><dd>${i}</dd>`;
+}
+async function E$2(e, t) {
+	let n = Z(await F$1(e, `title`, t)), r = await f$3(e.slots.items ?? [], t);
+	return `${n.length === 0 ? `` : `<h3 data-studio-part="heading">${escapeHtml(n)}</h3>`}<dl>${r.join(``)}</dl>`;
+}
+async function D$1(e, t) {
+	let n = [
+		`dashed`,
+		`dotted`,
+		`solid`
+	].includes(Y$1(e.properties.style, ``)) ? Y$1(e.properties.style, ``) : `solid`, r = Z(await F$1(e, `label`, t));
+	return `<hr data-studio-divider="${n}"${r.length === 0 ? `` : ` aria-label="${escapeAttribute(r)}"`}>`;
+}
+async function O$1(e, t) {
+	let n = Y$1(e.properties.name, `symbol`), r = /^[a-z][a-z0-9-]{0,62}(?:\/[a-z][a-z0-9-]{0,62})?$/u.test(n) ? n : `symbol`, i = e.properties.decorative !== !1, a = Z(await F$1(e, `alternative-text`, t)) || `Icon`;
+	return `<span data-studio-icon="${escapeAttribute(r)}" aria-hidden="true"></span>${i ? `` : `<span class="studio-visually-hidden">${escapeHtml(a)}</span>`}`;
+}
+async function k$1(e, t) {
+	return `<span data-studio-label data-studio-tone="${X$1(e.properties.tone)}">${escapeHtml(Z(await F$1(e, `text`, t)))}</span>`;
+}
+async function A$1(e, t, n) {
+	let r = Y$1(e.properties.presentation, ``), i = [
+		`breadcrumbs`,
+		`dotnav`,
+		`dropnav`,
+		`navbar`,
+		`nav`,
+		`pagination`,
+		`subnav`,
+		`thumbnav`
+	].includes(r) ? r : `nav`, a = Z(await F$1(e, `label`, n)) || `Navigation`;
+	(e.slots.items ?? []).some((e) => (e.slots.children ?? []).length > 0) && n.enhancements.push({
+		kind: `navigation`,
+		nodeId: e.id,
+		scope: t
+	});
+	let o = await f$3(e.slots.items ?? [], n);
+	return `<nav data-studio-navigation="${i}" aria-label="${escapeAttribute(a)}"><ul>${o.join(``)}</ul></nav>`;
+}
+async function j$1(e, t) {
+	let n = Z(await F$1(e, `label`, t)), r = Q(Y$1(e.properties.href, ``)), i = r === void 0 ? `<span>${escapeHtml(n)}</span>` : `<a href="${escapeAttribute(r)}"${e.properties.current === !0 ? ` aria-current="page"` : ``}>${escapeHtml(n)}</a>`, a = await f$3(e.slots.children ?? [], t);
+	return `${i}${a.length === 0 ? `` : `<button type="button" data-studio-navigation-toggle aria-label="Toggle ${escapeAttribute(n)} navigation">Expand</button><ul data-studio-navigation-children>${a.join(``)}</ul>`}`;
+}
+async function M$1(e, t) {
+	let n = J$1(e.properties.maximum, 1, 1e6, 100), r = await F$1(e, `value`, t), i = typeof r == `number` && Number.isFinite(r) ? Math.max(0, Math.min(n, r)) : 0;
+	return `<label>${escapeHtml(Z(await F$1(e, `label`, t)) || `Progress`)} <progress max="${n}" value="${i}">${i} / ${n}</progress></label>`;
+}
+async function Se(e, t) {
+	let n = Q(Y$1(e.properties.action, ``)), r = Y$1(e.properties[`query-parameter`], `q`), i = /^[A-Za-z][A-Za-z0-9_-]{0,99}$/u.test(r) ? r : `q`, a = Z(await F$1(e, `label`, t)) || `Search`, o = Z(await F$1(e, `placeholder`, t));
+	return `<form role="search" method="get"${n === void 0 ? `` : ` action="${escapeAttribute(n)}"`}><label>${escapeHtml(a)} <input type="search" name="${i}"${o.length === 0 ? `` : ` placeholder="${escapeAttribute(o)}"`}></label><button type="submit">Search</button></form>`;
+}
+async function Ce(e, t) {
+	let n = Z(await F$1(e, `label`, t)) || `Loading`;
+	return e.properties.active === !1 ? `<span role="status">${escapeHtml(n)}</span>` : `<span role="status"><span data-studio-spinner data-studio-spinner-size="${[
+		`large`,
+		`medium`,
+		`small`
+	].includes(Y$1(e.properties.size, ``)) ? Y$1(e.properties.size, ``) : `medium`}" aria-hidden="true"></span><span class="studio-visually-hidden">${escapeHtml(n)}</span></span>`;
+}
+async function N$1(e, t) {
+	try {
+		let n = parseStudioTableDocument(await F$1(e, `table`, t)), r = n.columns.map((e) => `<th scope="col">${escapeHtml(e)}</th>`).join(``), i = n.rows.map((e) => `<tr>${e.map((e) => `<td>${escapeHtml(e)}</td>`).join(``)}</tr>`).join(``);
+		return `<table data-studio-table>${n.caption === void 0 ? `` : `<caption>${escapeHtml(n.caption)}</caption>`}<thead><tr>${r}</tr></thead><tbody>${i}</tbody></table>`;
+	} catch {
+		return `<p role="status">Table data unavailable</p>`;
+	}
+}
+async function P$1(e, t, n) {
+	return (await f$3(e.slots[t] ?? [], n)).join(``);
+}
+function F$1(e, t, n) {
+	if (n.context.resolveBinding !== void 0) return n.context.resolveBinding(e, t);
+	let r = e.bindings[t];
+	return r?.source.kind === `static-value` ? r.source.value : void 0;
+}
+async function I$1(e, t) {
+	if (!Te(e) || t.context.resolveMedia === void 0) return;
+	let n = await t.context.resolveMedia(e), r = we(n, t.context.allowBlobMedia === !0);
+	return r === void 0 ? void 0 : {
+		...n,
+		src: r
+	};
+}
+function we(e, t) {
+	let n = Q(e.src);
+	if (n !== void 0) return n;
+	if (!t || !/^blob:https?:\/\/[A-Za-z0-9.-]+(?::[0-9]+)?\/[A-Za-z0-9._~-]+$/u.test(e.src)) return;
+	let r = e.mediaType?.toLowerCase();
+	if (r !== `image/svg+xml` && r !== `text/html` && r !== `application/xhtml+xml`) return e.src;
+}
+function Te(e) {
+	return $(e) && e.kind === `media-reference` && typeof e.assetId == `string`;
+}
+function L$1(e) {
+	if (!$(e) || typeof e.id != `string` || typeof e.label != `string`) return;
+	let t = {
+		id: e.id,
+		label: e.label
+	};
+	if (typeof e.summary == `string` && (t.summary = e.summary), typeof e.url == `string`) {
+		let n = Q(e.url);
+		n !== void 0 && (t.url = n);
+	}
+	return t;
+}
+function R$1(e, t) {
+	let n = `<span>${escapeHtml(e.label)}</span>${t && e.summary !== void 0 ? `<p>${escapeHtml(e.summary)}</p>` : ``}`;
+	return e.url === void 0 ? n : `<a href="${escapeAttribute(e.url)}">${n}</a>`;
+}
+function z$1(e) {
+	return e.content.map(B$1).join(``);
+}
+function B$1(e) {
+	let t = (e.content ?? []).map(B$1).join(``);
+	switch (e.type) {
+		case `doc`: return t;
+		case `paragraph`: return `<p>${t}</p>`;
+		case `heading`: return `<h${G$1(e.attrs?.level)}>${t}</h${G$1(e.attrs?.level)}>`;
+		case `blockquote`: return `<blockquote>${t}</blockquote>`;
+		case `callout`: return `<aside data-studio-rich-text-callout data-studio-tone="${ke(e.attrs?.tone)}">${t}</aside>`;
+		case `bulletList`: return `<ul>${t}</ul>`;
+		case `orderedList`: return `<ol${typeof e.attrs?.start == `number` ? ` start="${e.attrs.start}"` : ``}>${t}</ol>`;
+		case `listItem`: return `<li>${t}</li>`;
+		case `checklist`: return Oe(e);
+		case `checklistItem`: return H$1(e, W$1(e.attrs?.level), []);
+		case `table`: return De(e);
+		case `tableRow`: return `<tr>${t}</tr>`;
+		case `tableCell`: return `<td>${t}</td>`;
+		case `codeBlock`: return `<pre><code data-language="${escapeAttribute(je(e.attrs?.language, `text`))}">${escapeHtml(e.text ?? ``)}</code></pre>`;
+		case `horizontalRule`: return `<hr>`;
+		case `hardBreak`: return `<br>`;
+		case `text`: return Ee(escapeHtml(e.text ?? ``), e.marks ?? []);
+		default: return ``;
+	}
+}
+function Ee(e, t) {
+	let n = e;
+	for (let e of [
+		`bold`,
+		`italic`,
+		`strike`,
+		`code`,
+		`highlight`
+	]) {
+		let r = t.find((t) => t.type === e);
+		if (r === void 0) continue;
+		if (e === `highlight`) {
+			n = `<mark data-studio-tone="${Ae(r.attrs?.tone)}">${n}</mark>`;
+			continue;
+		}
+		let i = e === `bold` ? `strong` : e === `italic` ? `em` : e === `strike` ? `del` : `code`;
+		n = `<${i}>${n}</${i}>`;
+	}
+	return n;
+}
+function De(e) {
+	let t = e.content ?? [], n = (e, t) => `<tr>${(e.content ?? []).map((e) => {
+		let n = (e.content ?? []).map(B$1).join(``);
+		return t ? `<th scope="col">${n}</th>` : `<td>${n}</td>`;
+	}).join(``)}</tr>`;
+	if (e.attrs?.header === !0) {
+		let [e, ...r] = t;
+		return `<table data-studio-rich-text-table>${e === void 0 ? `` : `<thead>${n(e, !0)}</thead>`}${r.length === 0 ? `` : `<tbody>${r.map((e) => n(e, !1)).join(``)}</tbody>`}</table>`;
+	}
+	return `<table data-studio-rich-text-table><tbody>${t.map((e) => n(e, !1)).join(``)}</tbody></table>`;
+}
+function Oe(e) {
+	let t = [], n = [t];
+	for (let t of e.content ?? []) {
+		let e = W$1(t.attrs?.level);
+		for (n.length = Math.min(e + 1, n.length); n.length <= e;) {
+			let e = n.at(-1);
+			if (e === void 0) break;
+			let t = e.at(-1);
+			t === void 0 && (t = {
+				children: [],
+				level: Math.min(4, n.length - 1)
+			}, e.push(t)), n.push(t.children);
+		}
+		n[e]?.push({
+			children: [],
+			level: e,
+			node: t
+		});
+	}
+	return `<ul data-studio-rich-text-checklist>${V$1(t)}</ul>`;
+}
+function V$1(e) {
+	return e.map((e) => {
+		let t = e.children.length === 0 ? `` : `<ul data-studio-rich-text-checklist-level="${e.level + 1}">${V$1(e.children)}</ul>`;
+		return e.node === void 0 ? `<li role="none" data-studio-rich-text-checklist-bridge>${t}</li>` : H$1(e.node, e.level, e.children);
+	}).join(``);
+}
+function H$1(e, t, n) {
+	let r = e.attrs?.checked === !0, i = (e.content ?? []).map(B$1).join(``), a = U$1(e) ? `` : ` aria-label="Checklist item"`, o = n.length === 0 ? `` : `<ul data-studio-rich-text-checklist-level="${t + 1}">${V$1(n)}</ul>`;
+	return `<li data-studio-rich-text-checklist-item data-studio-checked="${String(r)}" data-studio-level="${t}" aria-level="${t + 1}"><label><input type="checkbox" disabled${a}${r ? ` checked` : ``}><span data-studio-rich-text-checklist-content>${i}</span></label>${o}</li>`;
+}
+function U$1(e) {
+	return (e.content ?? []).some((e) => e.type === `text` && (e.text?.length ?? 0) > 0 || U$1(e));
+}
+function ke(e) {
+	return e === `danger` || e === `success` || e === `warning` ? e : `info`;
+}
+function Ae(e) {
+	return e === `danger` || e === `info` || e === `success` || e === `warning` ? e : `accent`;
+}
+function W$1(e) {
+	return e === 1 || e === 2 || e === 3 || e === 4 ? e : 0;
+}
+function je(e, t) {
+	return typeof e == `string` ? e : t;
+}
+function G$1(e) {
+	return e === 3 || e === 4 ? e : 2;
+}
+function Me(e) {
+	return $(e) && e.kind === `safe-markup-fragment` && Array.isArray(e.nodes) && typeof e.policy == `string`;
+}
+function K$1(e) {
+	return `${e.width === void 0 ? `` : ` width="${q$1(e.width)}"`}${e.height === void 0 ? `` : ` height="${q$1(e.height)}"`}`;
+}
+function q$1(e) {
+	return Number.isInteger(e) && e > 0 && e <= 1e5 ? e : 1;
+}
+function J$1(e, t, n, r) {
+	return typeof e == `number` && Number.isInteger(e) && e >= t && e <= n ? e : r;
+}
+function Y$1(e, t) {
+	return typeof e == `string` ? e : t;
+}
+function X$1(e) {
+	let t = Y$1(e, `neutral`);
+	return [
+		`error`,
+		`information`,
+		`neutral`,
+		`success`,
+		`warning`
+	].includes(t) ? t : `neutral`;
+}
+function Z(e) {
+	return typeof e == `string` ? e : ``;
+}
+function Q(e) {
+	return e.startsWith(`/`) || e.startsWith(`#`) || /^https:\/\/[A-Za-z0-9.-]+(?::[0-9]+)?(?:[/#?]|$)/u.test(e) ? e : void 0;
+}
+function Ne(e) {
+	return e.slice(e.indexOf(`/`) + 1);
+}
+function Pe(e) {
+	if (!/^[A-Za-z0-9][A-Za-z0-9._:/-]{0,239}$/u.test(e)) throw TypeError(`Studio node id must be a schema-valid stable identifier.`);
+	let t = `s`;
+	for (let n = 0; n < e.length; n += 1) t += e.charCodeAt(n).toString(16).padStart(2, `0`);
+	return t;
+}
+function Fe(e, t, n) {
+	if (e.properties.design === void 0) return ``;
+	let r;
+	try {
+		r = parseStudioPresentationIntent(e.properties.design);
+	} catch {
+		return ``;
+	}
+	return r.animation !== void 0 && r.animation !== `none` && n.enhancements.push({
+		animation: r.animation,
+		kind: `motion`,
+		nodeId: e.id,
+		scope: t
+	}), [
+		[`align`, r.align],
+		[`animation`, r.animation],
+		[`height`, r.height],
+		[`inverse`, r.inverse],
+		[`margin`, r.margin],
+		[`marker`, r.marker],
+		[`padding`, r.padding],
+		[`position`, r.position],
+		[`print`, r.print],
+		[`scroll`, r.scrolling],
+		[`visible-compact`, r.visibility?.compact],
+		[`visible-medium`, r.visibility?.medium],
+		[`visible-expanded`, r.visibility?.expanded],
+		[`width`, r.width]
+	].filter(([, e]) => e !== void 0).map(([e, t]) => ` data-studio-${e}="${escapeAttribute(String(t))}"`).join(``);
+}
+function $(e) {
+	return typeof e == `object` && !!e && !Array.isArray(e);
+}
+Object.freeze([
+	{
+		base: !0,
+		id: `compact`,
+		label: {
+			key: `studio.local/compact`,
+			defaultMessage: `Mobile`
+		},
+		order: 0,
+		previewWidth: 360
+	},
+	{
+		base: !1,
+		id: `medium`,
+		label: {
+			key: `studio.local/medium`,
+			defaultMessage: `Tablet`
+		},
+		order: 1,
+		previewWidth: 768
+	},
+	{
+		base: !1,
+		id: `expanded`,
+		label: {
+			key: `studio.local/expanded`,
+			defaultMessage: `Desktop`
+		},
+		order: 2,
+		previewWidth: 1440
+	}
+]);
+var StudioLocalCanvas = class {
+	#host;
+	#root;
+	#callbacks;
+	#sheet;
+	#layoutSheet;
+	#resize;
+	#abort;
+	#enhancements;
+	#disposed = !1;
+	#generation = 0;
+	#digest;
+	#nodes = /* @__PURE__ */ new Set();
+	#width = 1440;
+	#layout = ``;
+	#frame;
+	#ready = Promise.resolve();
+	constructor(e, t) {
+		this.#host = e, this.#callbacks = t, this.#root = e.shadowRoot ?? e.attachShadow({ mode: `open` }), this.#sheet = new CSSStyleSheet(), this.#layoutSheet = new CSSStyleSheet(), this.#root.adoptedStyleSheets = [this.#sheet, this.#layoutSheet], this.#root.addEventListener(`click`, this.#onClick), this.#root.addEventListener(`submit`, this.#preventNavigation), this.#root.addEventListener(`load`, this.#requestMeasurement, !0), e.ownerDocument.defaultView?.addEventListener(`resize`, this.#requestMeasurement), e.ownerDocument.defaultView?.addEventListener(`scroll`, this.#requestMeasurement, !0), this.#resize = typeof ResizeObserver > `u` ? void 0 : new ResizeObserver(this.#requestMeasurement), this.#resize?.observe(e), e.ownerDocument.fonts?.ready.then(this.#requestMeasurement);
+	}
+	get ready() {
+		return this.#ready;
+	}
+	update(e, t, n) {
+		if (this.#disposed) return Promise.resolve();
+		this.#generation += 1;
+		let r = this.#generation;
+		this.#abort?.abort();
+		let i = new AbortController();
+		return this.#abort = i, this.#digest = void 0, this.#callbacks.onGeometry(void 0), this.#callbacks.onState(`rendering`), this.#ready = this.#render(e, t, n, r, i), this.#ready;
+	}
+	refreshGeometry() {
+		this.#requestMeasurement();
+	}
+	reveal(e) {
+		for (let t of this.#root.querySelectorAll(`[data-studio-node]`)) if (t.dataset.studioNode === e) {
+			t.scrollIntoView?.({
+				block: `nearest`,
+				inline: `nearest`
+			});
+			break;
+		}
+		this.#requestMeasurement();
+	}
+	dispose() {
+		this.#disposed || (this.#disposed = !0, this.#generation += 1, this.#abort?.abort(), this.#enhancements?.dispose(), this.#resize?.disconnect(), this.#frame !== void 0 && this.#host.ownerDocument.defaultView?.cancelAnimationFrame(this.#frame), this.#root.removeEventListener(`click`, this.#onClick), this.#root.removeEventListener(`submit`, this.#preventNavigation), this.#root.removeEventListener(`load`, this.#requestMeasurement, !0), this.#host.ownerDocument.defaultView?.removeEventListener(`resize`, this.#requestMeasurement), this.#host.ownerDocument.defaultView?.removeEventListener(`scroll`, this.#requestMeasurement, !0), D$11(null, this.#root), this.#root.adoptedStyleSheets = [], this.#callbacks.onGeometry(void 0));
+	}
+	async #render(o, s, u, d, f) {
+		try {
+			if (!Number.isFinite(u) || u < 1 || u > 1e4) throw RangeError(`The canvas width is outside the supported viewport bounds.`);
+			let p = structuredClone(o), m = s.entry === void 0 ? void 0 : structuredClone(s.entry), h = {
+				...s.renderContext,
+				resolveBinding: s.renderContext?.resolveBinding ?? ((e, t) => l$3(e, t, m))
+			}, [g, _] = await Promise.all([renderStudioWeb(p, h), computePreviewDraftDigest(p)]);
+			if (!this.#current(d, f)) return;
+			this.#enhancements?.dispose(), this.#enhancements = void 0, this.#width = u;
+			let v = g.css.replaceAll(/@media\s*\(width\s*>=\s*(48|75)rem\)/gu, `@container studio-local-canvas (width >= $1rem)`);
+			this.#sheet.replaceSync(`
+:host{display:block;min-inline-size:0;color:#18202a;background:white}
+.canvas-frame{position:relative;min-block-size:20rem;overflow:hidden}
+.canvas-viewport{position:absolute;inset-block-start:0;inset-inline-start:0;transform-origin:top left;container-type:inline-size;container-name:studio-local-canvas;font:400 16px/1.5 system-ui,sans-serif}
+.canvas-page{display:flow-root;min-block-size:320px;padding:24px;box-sizing:border-box;overflow-wrap:anywhere}
+.canvas-page :is(h1,h2,h3,h4,h5,h6){line-height:1.2}
+.canvas-page [data-studio-layout]:empty{min-block-size:4rem;outline:1px dashed #c5cad2;outline-offset:-1px}
+.canvas-page :is(h1,h2,h3,h4,h5,h6):empty{min-block-size:1.2em;outline:1px dashed #c5cad2}
+.canvas-page [data-studio-block]{position:relative}
+.canvas-page img{max-inline-size:100%;block-size:auto}
+.canvas-page [data-studio-part=action]{display:inline-block;padding:.7em 1.2em;border:1px solid currentColor;border-radius:.3rem;text-decoration:none}
+` + v), D$11(b$13`<div class="canvas-frame">
+          <div class="canvas-viewport">
+            <div class="canvas-page">${o$5(g.html)}</div>
+          </div>
+        </div>`, this.#root);
+			let y = this.#root.querySelector(`.canvas-page`);
+			if (y === null) throw Error(`The local canvas has no rendered page.`);
+			this.#nodes = c$2(p.roots);
+			let b = [...y.querySelectorAll(`[data-studio-node]`)].map((e) => e.dataset.studioNode ?? ``);
+			if (b.length !== this.#nodes.size || new Set(b).size !== b.length || b.some((e) => !this.#nodes.has(e))) throw Error(`The local canvas renderer did not preserve the exact node inventory.`);
+			let x = await enhanceStudioWeb(y, g, { signal: f.signal });
+			if (!this.#current(d, f)) {
+				x.dispose();
+				return;
+			}
+			this.#enhancements = x, this.#digest = _, this.#resize?.disconnect(), this.#resize?.observe(this.#host), this.#resize?.observe(y), this.#measure(), this.#callbacks.onState(`current`), this.#requestMeasurement();
+		} catch {
+			if (!this.#current(d, f)) return;
+			this.#digest = void 0, this.#enhancements?.dispose(), this.#enhancements = void 0, D$11(null, this.#root), this.#callbacks.onGeometry(void 0), this.#callbacks.onState(`unavailable`);
+		}
+	}
+	#current(e, t) {
+		return !this.#disposed && !t.signal.aborted && e === this.#generation;
+	}
+	#preventNavigation = (e) => {
+		e.preventDefault();
+	};
+	#onClick = (e) => {
+		let t = e.composedPath();
+		t.some((e) => e instanceof Element && e.matches(`a,form`)) && e.preventDefault();
+		let n = t.find((e) => e instanceof HTMLElement && e.dataset.studioNode !== void 0);
+		n instanceof HTMLElement && n.dataset.studioNode !== void 0 && this.#nodes.has(n.dataset.studioNode) && this.#callbacks.onActivated(n.dataset.studioNode);
+	};
+	#requestMeasurement = () => {
+		if (this.#disposed || this.#frame !== void 0) return;
+		let e = this.#host.ownerDocument.defaultView;
+		e !== null && (this.#frame = e.requestAnimationFrame(() => {
+			this.#frame = void 0, this.#measure();
+		}));
+	};
+	#measure() {
+		if (this.#disposed || this.#digest === void 0 || !this.#host.isConnected) return;
+		let e = this.#root.querySelector(`.canvas-page`);
+		if (e === null) return;
+		let t = this.#host.clientWidth, n = t > 0 ? Math.min(1, t / this.#width) : 1, r = Math.max(320, e.scrollHeight, e.offsetHeight), i = `.canvas-viewport{inline-size:${this.#width}px;transform:scale(${n})}.canvas-frame{block-size:${Math.ceil(r * n)}px}`;
+		i !== this.#layout && (this.#layout = i, this.#layoutSheet.replaceSync(i));
+		let a = this.#host.getBoundingClientRect();
+		if (a.width <= 0 || a.height <= 0) return;
+		let o = {}, s = [];
+		for (let t of e.querySelectorAll(`[data-studio-node]`)) {
+			let e = t.dataset.studioNode;
+			if (e === void 0 || !this.#nodes.has(e)) continue;
+			let n = [...t.getClientRects()].filter((e) => e.width > 0 && e.height > 0).map((e) => ({
+				height: e.height,
+				width: e.width,
+				x: e.x - a.x,
+				y: e.y - a.y
+			}));
+			n.length === 0 ? s.push(e) : o[e] = n;
+		}
+		this.#callbacks.onGeometry({
+			draftDigest: this.#digest,
+			measurements: o,
+			unknownNodeIds: s,
+			viewport: {
+				devicePixelRatio: this.#host.ownerDocument.defaultView?.devicePixelRatio ?? 1,
+				height: a.height,
+				scrollX: 0,
+				scrollY: 0,
+				width: a.width
+			}
+		});
+	}
+};
+function c$2(e) {
+	let t = /* @__PURE__ */ new Set(), n = [...e];
+	for (; n.length > 0;) {
+		let e = n.pop();
+		if (e !== void 0) {
+			if (t.has(e.id)) throw TypeError(`The canvas draft contains duplicate node identities.`);
+			t.add(e.id);
+			for (let t of Object.values(e.slots)) n.push(...t);
+		}
+	}
+	return t;
+}
+function l$3(e, t, n) {
+	let r = e.bindings[t];
+	if (r === void 0) return;
+	if (r.transforms.length !== 0) return r.onError === `fallback` ? r.fallback : void 0;
+	if (r.source.kind === `static-value`) return r.source.value;
+	if (r.source.kind !== `entry-field`) return r.onError === `fallback` ? r.fallback : void 0;
+	let i = n?.values;
+	for (let e of r.source.fieldPath) {
+		if (typeof i != `object` || !i || Array.isArray(i) || !Object.hasOwn(i, e)) return r.onNull === `fallback` ? r.fallback : void 0;
+		i = i[e];
+	}
+	return i ?? (r.onNull === `fallback` ? r.fallback : void 0);
+}
+//#endregion
+//#region node_modules/@kumwe/studio/dist/scalar-controls.js
+function isScalarControlSchema(e) {
+	if (typeof e != `object` || !e || Array.isArray(e)) return !1;
+	let t = e;
+	return typeof t.type == `string` && [
+		`string`,
+		`boolean`,
+		`number`,
+		`integer`
+	].includes(t.type) || Array.isArray(t.enum) && t.enum.length > 0 && t.enum.length <= 200 && t.enum.every((e) => e === null || typeof e == `string` || typeof e == `boolean` || typeof e == `number` && Number.isFinite(e));
+}
+function renderScalarControl(n) {
+	let { label: r, key: o, schema: s, value: c, readOnly: l, onChange: u } = n, d = Array.isArray(s.enum) ? s.enum.filter(a$3) : void 0;
+	if (d !== void 0) return b$13`<label class="scalar-control" data-scalar-key=${o}>
+      <span>${r}</span>
+      <select
+        ?disabled=${l}
+        @change=${(e) => {
+		let t = e.currentTarget;
+		if (!(t instanceof HTMLSelectElement) || l) return;
+		let n = d[Number(t.value)];
+		n !== void 0 && u(n);
+	}}
+      >
+        <option value="" disabled .selected=${!d.some((e) => e === c)}>
+          —
+        </option>
+        ${d.map((t, n) => b$13`<option value=${String(n)} .selected=${t === c}>
+              ${String(t)}
+            </option>`)}
+      </select>
+    </label>`;
+	if (s.type === `boolean`) return b$13`<label class="scalar-control scalar-checkbox" data-scalar-key=${o}>
+      <input
+        type="checkbox"
+        .checked=${c === !0}
+        ?disabled=${l}
+        @change=${(e) => {
+		e.currentTarget instanceof HTMLInputElement && !l && u(e.currentTarget.checked);
+	}}
+      />
+      <span>${r}</span>
+    </label>`;
+	let f = (e) => {
+		let t = e.currentTarget;
+		if (l || !(t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement)) return;
+		let n = t.checkValidity();
+		if (t.setAttribute(`aria-invalid`, n ? `false` : `true`), n) {
+			if (s.type === `number` || s.type === `integer`) {
+				if (t.value.trim() === ``) return;
+				let e = Number(t.value);
+				Number.isFinite(e) && (s.type !== `integer` || Number.isSafeInteger(e)) && u(e);
+			} else u(t.value);
+		}
+	};
+	if (n.multiline === !0) return b$13`<label class="scalar-control" data-scalar-key=${o}>
+      <span>${r}</span>
+      <textarea
+        rows="4"
+        .value=${typeof c == `string` ? c : ``}
+        ?disabled=${l}
+        minlength=${i$4(s.minLength)}
+        maxlength=${i$4(s.maxLength)}
+        @input=${f}
+      ></textarea>
+    </label>`;
+	let p = s.type === `integer` || s.type === `number`;
+	return b$13`<label class="scalar-control" data-scalar-key=${o}>
+    <span>${r}</span>
+    <input
+      type=${p ? `number` : `text`}
+      .value=${typeof c == `string` || typeof c == `number` ? String(c) : ``}
+      ?disabled=${l}
+      step=${p ? s.type === `integer` ? `1` : `any` : A$10}
+      min=${i$4(s.minimum)}
+      max=${i$4(s.maximum)}
+      minlength=${i$4(s.minLength)}
+      maxlength=${i$4(s.maxLength)}
+      @input=${f}
+    />
+  </label>`;
+}
+function i$4(e) {
+	return typeof e == `number` && Number.isFinite(e) ? String(e) : A$10;
+}
+function a$3(e) {
+	return e === null || typeof e == `string` || typeof e == `boolean` || typeof e == `number` && Number.isFinite(e);
+}
+//#endregion
+//#region node_modules/@kumwe/studio/dist/workspace-styles.js
+var canvasWorkspaceStyles = i$18`
+  :host {
+    container: studio-workspace / inline-size;
+    min-inline-size: 0;
+    --studio-border: #dfe3eb;
+    --studio-panel: #ffffff;
+    --studio-primary: #3157d5;
+    --studio-muted: #596579;
+  }
+
+  .workspace {
+    background: #eef1f6;
+    block-size: var(--studio-workspace-height, clamp(32rem, 74vh, 62rem));
+    grid-template-columns: minmax(11rem, 14rem) minmax(0, 1fr) minmax(15rem, 19rem);
+    grid-template-rows: minmax(12rem, 1fr) minmax(8rem, 0.7fr) auto auto;
+    min-block-size: 28rem;
+    overflow: hidden;
+  }
+
+  .panel,
+  .canvas {
+    box-sizing: border-box;
+    min-block-size: 0;
+    padding: 0.875rem;
+  }
+
+  .library {
+    grid-column: 1;
+    grid-row: 1;
+    overflow: auto;
+    scrollbar-gutter: stable;
+  }
+
+  .outline {
+    grid-column: 1;
+    grid-row: 2;
+    overflow: auto;
+    scrollbar-gutter: stable;
+  }
+
+  .canvas {
+    background: #eef1f6;
+    grid-column: 2;
+    grid-row: 1 / 3;
+    overflow: auto;
+    padding: 0.75rem 1rem 2rem;
+    scrollbar-gutter: stable;
+  }
+
+  .inspector {
+    grid-column: 3;
+    grid-row: 1 / 3;
+    overflow: auto;
+    scrollbar-gutter: stable;
+  }
+
+  .pane-switcher {
+    display: none;
+  }
+
+  /* The command palette is a workspace-level layer: Ctrl+K reaches it from
+     any pane, and it never depends on the canvas pane being visible. */
+  .command-palette {
+    align-self: start;
+    box-shadow: 0 0.5rem 2rem #18202a26;
+    grid-column: 1 / -1;
+    grid-row: 1 / -1;
+    inline-size: min(100% - 2rem, 36rem);
+    justify-self: center;
+    margin: 3rem 1rem 0;
+    max-block-size: calc(100% - 4rem);
+    overflow: auto;
+    position: relative;
+    z-index: 3;
+  }
+
+  .palette-block {
+    touch-action: none;
+  }
+
+  .library-search {
+    display: grid;
+    font-size: 0.8125rem;
+    gap: 0.375rem;
+    margin-block-end: 0.75rem;
+  }
+
+  .library-search input {
+    border: 1px solid var(--studio-border);
+    border-radius: 0.375rem;
+    box-sizing: border-box;
+    font: inherit;
+    inline-size: 100%;
+    min-inline-size: 0;
+    padding: 0.625rem;
+  }
+
+  .palette {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .palette button {
+    align-items: center;
+    block-size: 100%;
+    display: flex;
+    flex-direction: column;
+    font-size: 0.8125rem;
+    gap: 0.45rem;
+    inline-size: 100%;
+    justify-content: center;
+    min-block-size: 4.5rem;
+    overflow-wrap: anywhere;
+    padding: 0.625rem 0.375rem;
+    text-align: center;
+  }
+
+  .palette button:hover:not(:disabled) {
+    background: #f2f5ff;
+    border-color: var(--studio-primary);
+  }
+
+  .block-symbol {
+    align-items: center;
+    border: 1px solid currentColor;
+    border-radius: 0.2rem;
+    display: inline-flex;
+    font-size: 1rem;
+    font-weight: 600;
+    inline-size: 1.6rem;
+    justify-content: center;
+    line-height: 1.5;
+  }
+
+  .pattern-heading {
+    margin-block-start: 1.25rem;
+  }
+
+  .pattern-palette {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pattern-palette button {
+    align-items: flex-start;
+    min-block-size: 2.5rem;
+    padding-inline: 0.625rem;
+    text-align: start;
+  }
+
+  .canvas-toolbar {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: space-between;
+    margin-block-end: 0.75rem;
+  }
+
+  .canvas-toolbar :is(.toolbar, .viewport-switcher, .command-palette-toggle) {
+    margin: 0;
+  }
+
+  .canvas-toolbar button {
+    font-size: 0.8125rem;
+  }
+
+  .preview-region {
+    background: transparent;
+    border: 0;
+    margin: 0;
+    padding: 0;
+  }
+
+  .preview-region > h2 {
+    font-size: 0.75rem;
+  }
+
+  .preview-status {
+    font-size: 0.75rem;
+  }
+
+  .preview-stage {
+    background: white;
+    border: 1px solid var(--studio-border);
+    box-shadow: 0 0.25rem 1rem #18202a0d;
+    min-block-size: 20rem;
+  }
+
+  .outline .tree {
+    gap: 0.25rem;
+  }
+
+  .outline-entry {
+    font-size: 0.8125rem;
+    inline-size: 100%;
+  }
+
+  .node-children {
+    margin-inline-start: 0.25rem;
+    padding-inline-start: 0.5rem;
+  }
+
+  .outline-slot-label {
+    color: var(--studio-muted);
+    font-size: 0.75rem;
+  }
+
+  .inspector-slot {
+    display: block;
+    min-inline-size: 0;
+  }
+
+  .inspector-default[hidden] {
+    display: none;
+  }
+
+  .scalar-control {
+    display: grid;
+    font-size: 0.8125rem;
+    gap: 0.375rem;
+    margin-block-end: 0.875rem;
+  }
+  .scalar-control :is(input, select, textarea) {
+    box-sizing: border-box;
+    inline-size: 100%;
+    max-inline-size: 100%;
+    min-inline-size: 0;
+  }
+  .scalar-checkbox {
+    display: flex;
+    align-items: center;
+  }
+  .scalar-checkbox input {
+    inline-size: 1.125rem;
+    block-size: 1.125rem;
+    flex: 0 0 auto;
+  }
+  .scalar-control [aria-invalid='true'] {
+    border-color: #a32929;
+  }
+
+  .inspector-selection {
+    font-size: 1rem;
+    margin: 0 0 0.75rem;
+  }
+
+  .inspector-advanced {
+    border-block-start: 1px solid var(--studio-border);
+    margin-block-start: 1rem;
+    padding-block-start: 0.75rem;
+  }
+
+  .inspector-advanced > summary {
+    cursor: pointer;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    margin-block-end: 0.75rem;
+  }
+
+  .diagnostics {
+    grid-row: 3;
+    max-block-size: 8rem;
+    overflow: auto;
+    padding-block: 0.5rem;
+  }
+
+  .diagnostics[data-empty='true'] {
+    display: none;
+  }
+
+  .statusbar {
+    background: white;
+    font-size: 0.75rem;
+    grid-row: 4;
+    min-block-size: 2rem;
+    padding: 0.375rem 0.875rem;
+  }
+
+  .workspace[data-contextual='true'] > .statusbar {
+    display: none;
+  }
+
+  @container studio-workspace (width < 56rem) {
+    .workspace {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: auto minmax(0, 1fr) auto auto;
+      min-block-size: 28rem;
+    }
+
+    .pane-switcher {
+      background: white;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.375rem;
+      grid-column: 1;
+      grid-row: 1;
+      padding: 0.5rem;
+    }
+
+    .command-palette {
+      grid-column: 1;
+      grid-row: 1 / -1;
+      margin-block-start: 3.5rem;
+    }
+
+    .pane-switcher button {
+      flex: 1 1 auto;
+      font-size: 0.8125rem;
+      text-align: center;
+    }
+
+    .library,
+    .outline,
+    .inspector,
+    .canvas {
+      grid-column: 1;
+      grid-row: 2;
+      min-inline-size: 0;
+    }
+
+    .workspace:not([data-pane='library']) > .library,
+    .workspace:not([data-pane='outline']) > .outline,
+    .workspace:not([data-pane='inspector']) > .inspector,
+    .workspace:not([data-pane='canvas']) > .canvas {
+      display: none;
+    }
+
+    .palette {
+      grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+    }
+
+    .pattern-palette {
+      grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+    }
+  }
+`;
+var en_default = {
+	$schema: "https://schemas.kumwe.org/studio/v1/authoring-message-catalog.schema.json",
+	kind: "authoring-message-catalog",
+	contractVersion: "0.1-draft",
+	catalogVersion: "1.8.0",
+	locale: "en",
+	messages: /* @__PURE__ */ JSON.parse("{\"studio.contextual/add-field\":{\"defaultMessage\":\"Add field\",\"parameters\":[]},\"studio.contextual/add-typed-field\":{\"defaultMessage\":\"Add typed field\",\"parameters\":[]},\"studio.contextual/all-saved\":{\"defaultMessage\":\"All local changes saved\",\"parameters\":[]},\"studio.contextual/announce-field-added\":{\"defaultMessage\":\"Field {label} added.\",\"parameters\":[\"label\"]},\"studio.contextual/announce-mode\":{\"defaultMessage\":\"{mode} mode selected.\",\"parameters\":[\"mode\"]},\"studio.contextual/announce-presentation\":{\"defaultMessage\":\"{presentation} presentation selected.\",\"parameters\":[\"presentation\"]},\"studio.contextual/announce-save-requested\":{\"defaultMessage\":\"{outcome} requested. The host must confirm and accept it.\",\"parameters\":[\"outcome\"]},\"studio.contextual/authoring-mode\":{\"defaultMessage\":\"Authoring mode\",\"parameters\":[]},\"studio.contextual/bind-in-blueprint\":{\"defaultMessage\":\"Bind in Blueprint\",\"parameters\":[]},\"studio.contextual/binding-heading\":{\"defaultMessage\":\"Field binding\",\"parameters\":[]},\"studio.contextual/binding-help\":{\"defaultMessage\":\"Choose Blueprint mode, select a block, and bind one of these exact Model fields to a compatible block port. Studio keeps the Model definition, Blueprint binding, and Entry value separate while they remain in this resource session.\",\"parameters\":[]},\"studio.contextual/blueprint-coordinate-mismatch\":{\"defaultMessage\":\"The session coordinates do not identify the supplied exact Blueprint revision.\",\"parameters\":[]},\"studio.contextual/blueprint-model-mismatch\":{\"defaultMessage\":\"The Blueprint does not lock the supplied exact Model revision.\",\"parameters\":[]},\"studio.contextual/cardinality\":{\"defaultMessage\":\"Cardinality\",\"parameters\":[]},\"studio.contextual/cardinality-many\":{\"defaultMessage\":\"Multiple values\",\"parameters\":[]},\"studio.contextual/cardinality-one\":{\"defaultMessage\":\"One value\",\"parameters\":[]},\"studio.contextual/choose-start\":{\"defaultMessage\":\"Choose how to start\",\"parameters\":[]},\"studio.contextual/choose-value\":{\"defaultMessage\":\"Choose a value\",\"parameters\":[]},\"studio.contextual/collection-item-type\":{\"defaultMessage\":\"Collection item type (used only for a collection field)\",\"parameters\":[]},\"studio.contextual/configuration-generation-mismatch\":{\"defaultMessage\":\"The Studio configuration and contextual session generations do not match.\",\"parameters\":[]},\"studio.contextual/control-unavailable\":{\"defaultMessage\":\"This field control is unavailable.\",\"parameters\":[]},\"studio.contextual/diagnostic-count\":{\"defaultMessage\":\"{count} diagnostics\",\"parameters\":[\"count\"]},\"studio.contextual/diagnostic-count-one\":{\"defaultMessage\":\"1 diagnostic\",\"parameters\":[]},\"studio.contextual/dirty-artifacts\":{\"defaultMessage\":\"Model {model} · Blueprint {blueprint} · Content {entry}\",\"parameters\":[\"blueprint\",\"entry\",\"model\"]},\"studio.contextual/entry-coordinate-mismatch\":{\"defaultMessage\":\"The session coordinates do not identify the supplied exact Entry revision.\",\"parameters\":[]},\"studio.contextual/entry-model-mismatch\":{\"defaultMessage\":\"The Entry does not lock the supplied exact Model revision.\",\"parameters\":[]},\"studio.contextual/entry-resource-mismatch\":{\"defaultMessage\":\"The existing-item target does not identify the supplied Entry.\",\"parameters\":[]},\"studio.contextual/enum-values\":{\"defaultMessage\":\"Enum choices (one identifier per line; used only for an enum field)\",\"parameters\":[]},\"studio.contextual/field-identifier\":{\"defaultMessage\":\"Field identifier\",\"parameters\":[]},\"studio.contextual/field-kind-boolean\":{\"defaultMessage\":\"Boolean\",\"parameters\":[]},\"studio.contextual/field-kind-collection\":{\"defaultMessage\":\"Collection\",\"parameters\":[]},\"studio.contextual/field-kind-date\":{\"defaultMessage\":\"Date\",\"parameters\":[]},\"studio.contextual/field-kind-date-time\":{\"defaultMessage\":\"Date and time\",\"parameters\":[]},\"studio.contextual/field-kind-decimal\":{\"defaultMessage\":\"Decimal\",\"parameters\":[]},\"studio.contextual/field-kind-enum\":{\"defaultMessage\":\"Choice\",\"parameters\":[]},\"studio.contextual/field-kind-integer\":{\"defaultMessage\":\"Integer\",\"parameters\":[]},\"studio.contextual/field-kind-media\":{\"defaultMessage\":\"Media\",\"parameters\":[]},\"studio.contextual/field-kind-money\":{\"defaultMessage\":\"Money\",\"parameters\":[]},\"studio.contextual/field-kind-object\":{\"defaultMessage\":\"Object\",\"parameters\":[]},\"studio.contextual/field-kind-resource\":{\"defaultMessage\":\"Resource\",\"parameters\":[]},\"studio.contextual/field-kind-rich-text\":{\"defaultMessage\":\"Rich text\",\"parameters\":[]},\"studio.contextual/field-kind-string\":{\"defaultMessage\":\"Text\",\"parameters\":[]},\"studio.contextual/field-label\":{\"defaultMessage\":\"Label\",\"parameters\":[]},\"studio.contextual/field-optional\":{\"defaultMessage\":\"optional\",\"parameters\":[]},\"studio.contextual/field-required\":{\"defaultMessage\":\"required\",\"parameters\":[]},\"studio.contextual/field-summary\":{\"defaultMessage\":\"{path} · {kind} · {cardinality} · {requirement}\",\"parameters\":[\"cardinality\",\"kind\",\"path\",\"requirement\"]},\"studio.contextual/field-type\":{\"defaultMessage\":\"Field type\",\"parameters\":[]},\"studio.contextual/json-array\":{\"defaultMessage\":\"JSON array\",\"parameters\":[]},\"studio.contextual/json-value\":{\"defaultMessage\":\"Canonical JSON value\",\"parameters\":[]},\"studio.contextual/load-more-types\":{\"defaultMessage\":\"Load more types\",\"parameters\":[]},\"studio.contextual/localized\":{\"defaultMessage\":\"Localized\",\"parameters\":[]},\"studio.contextual/mode-blueprint\":{\"defaultMessage\":\"Blueprint\",\"parameters\":[]},\"studio.contextual/mode-content\":{\"defaultMessage\":\"Content\",\"parameters\":[]},\"studio.contextual/mode-model\":{\"defaultMessage\":\"Model\",\"parameters\":[]},\"studio.contextual/model-coordinate-mismatch\":{\"defaultMessage\":\"The session coordinates do not identify the supplied exact Model revision.\",\"parameters\":[]},\"studio.contextual/model-fields\":{\"defaultMessage\":\"Model fields\",\"parameters\":[]},\"studio.contextual/model-status\":{\"defaultMessage\":\"This Model is {status}. The host must open a draft successor before fields can change.\",\"parameters\":[\"status\"]},\"studio.contextual/no-authorable-fields\":{\"defaultMessage\":\"This Model exposes no authorable fields.\",\"parameters\":[]},\"studio.contextual/no-canonical-value\":{\"defaultMessage\":\"No canonical value is available for this field yet.\",\"parameters\":[]},\"studio.contextual/no-fields\":{\"defaultMessage\":\"No fields have been defined.\",\"parameters\":[]},\"studio.contextual/presentation-fullscreen\":{\"defaultMessage\":\"Fullscreen\",\"parameters\":[]},\"studio.contextual/presentation-inline\":{\"defaultMessage\":\"Inline\",\"parameters\":[]},\"studio.contextual/presentation-maximized\":{\"defaultMessage\":\"Maximized\",\"parameters\":[]},\"studio.contextual/presentation-minimized\":{\"defaultMessage\":\"Minimized\",\"parameters\":[]},\"studio.contextual/presentation-not-authorized\":{\"defaultMessage\":\"The current presentation is not authorized by this contextual session.\",\"parameters\":[]},\"studio.contextual/required\":{\"defaultMessage\":\"Required\",\"parameters\":[]},\"studio.contextual/return\":{\"defaultMessage\":\"Return to {destination}\",\"parameters\":[\"destination\"]},\"studio.contextual/return-destination\":{\"defaultMessage\":\"the host\",\"parameters\":[]},\"studio.contextual/save-as-new-type\":{\"defaultMessage\":\"Save as new type\",\"parameters\":[]},\"studio.contextual/save-confirmation-cancel\":{\"defaultMessage\":\"Cancel\",\"parameters\":[]},\"studio.contextual/save-confirmation-confirm\":{\"defaultMessage\":\"Confirm and save\",\"parameters\":[]},\"studio.contextual/save-confirmation-explanation\":{\"defaultMessage\":\"The configured server requires confirmation of these consequences before saving.\",\"parameters\":[]},\"studio.contextual/save-confirmation-heading\":{\"defaultMessage\":\"Confirm save\",\"parameters\":[]},\"studio.contextual/save-item\":{\"defaultMessage\":\"Save item\",\"parameters\":[]},\"studio.contextual/save-new-type-version\":{\"defaultMessage\":\"Save new type version\",\"parameters\":[]},\"studio.contextual/save-outcome\":{\"defaultMessage\":\"Save outcome\",\"parameters\":[]},\"studio.contextual/save-plan-help\":{\"defaultMessage\":\"The authoritative host will plan and show affected artifacts and consequences before confirmation.\",\"parameters\":[]},\"studio.contextual/search\":{\"defaultMessage\":\"Search\",\"parameters\":[]},\"studio.contextual/session-generation-missing\":{\"defaultMessage\":\"The contextual session has no authoritative generation.\",\"parameters\":[]},\"studio.contextual/start\":{\"defaultMessage\":\"Start Studio\",\"parameters\":[]},\"studio.contextual/start-blank\":{\"defaultMessage\":\"Blank start\",\"parameters\":[]},\"studio.contextual/start-blank-help\":{\"defaultMessage\":\"Create a new layout and content structure for this resource.\",\"parameters\":[]},\"studio.contextual/start-existing\":{\"defaultMessage\":\"Existing item\",\"parameters\":[]},\"studio.contextual/start-from-type\":{\"defaultMessage\":\"Reusable type · {type}\",\"parameters\":[\"type\"]},\"studio.contextual/start-source\":{\"defaultMessage\":\"Starting point\",\"parameters\":[]},\"studio.contextual/starting\":{\"defaultMessage\":\"Starting…\",\"parameters\":[]},\"studio.contextual/state-changed\":{\"defaultMessage\":\"changed\",\"parameters\":[]},\"studio.contextual/state-unchanged\":{\"defaultMessage\":\"unchanged\",\"parameters\":[]},\"studio.contextual/type-blueprint-mismatch\":{\"defaultMessage\":\"The reusable type does not identify the supplied exact Blueprint revision.\",\"parameters\":[]},\"studio.contextual/type-coordinate-mismatch\":{\"defaultMessage\":\"The session coordinates do not identify the supplied exact reusable type version.\",\"parameters\":[]},\"studio.contextual/type-model-mismatch\":{\"defaultMessage\":\"The reusable type does not identify the supplied exact Model revision.\",\"parameters\":[]},\"studio.contextual/type-search\":{\"defaultMessage\":\"Find a reusable type\",\"parameters\":[]},\"studio.contextual/types-empty\":{\"defaultMessage\":\"No authorized reusable types match this search.\",\"parameters\":[]},\"studio.contextual/types-loading\":{\"defaultMessage\":\"Loading authorized reusable types…\",\"parameters\":[]},\"studio.contextual/unavailable\":{\"defaultMessage\":\"Load one authorized content resource to open Studio.\",\"parameters\":[]},\"studio.contextual/unsaved\":{\"defaultMessage\":\"Unsaved changes\",\"parameters\":[]},\"studio.contextual/value-coordinate\":{\"defaultMessage\":\"Values belong to {entry}; they are not part of the reusable type.\",\"parameters\":[\"entry\"]},\"studio.contextual/values-heading\":{\"defaultMessage\":\"Content values\",\"parameters\":[]},\"studio.contextual/workspace-size\":{\"defaultMessage\":\"Workspace size\",\"parameters\":[]},\"studio.shell/announce-binding-removed\":{\"defaultMessage\":\"Removed the {port} binding\",\"parameters\":[\"port\"]},\"studio.shell/announce-binding-set\":{\"defaultMessage\":\"Set the {port} binding\",\"parameters\":[\"port\"]},\"studio.shell/announce-canvas-mode\":{\"defaultMessage\":\"Canvas mode: {state}\",\"parameters\":[\"state\"]},\"studio.shell/announce-command-failed\":{\"defaultMessage\":\"Command failed: {message}\",\"parameters\":[\"message\"]},\"studio.shell/announce-conflict\":{\"defaultMessage\":\"The change was rejected: {message} The document is unchanged; refresh the session or undo before retrying.\",\"parameters\":[\"message\"]},\"studio.shell/announce-deleted\":{\"defaultMessage\":\"Deleted {label} block\",\"parameters\":[\"label\"]},\"studio.shell/announce-drag-cancelled\":{\"defaultMessage\":\"Reorder cancelled. {label} kept its position.\",\"parameters\":[\"label\"]},\"studio.shell/announce-dropped\":{\"defaultMessage\":\"Moved {label} to position {position} of {count}\",\"parameters\":[\"count\",\"label\",\"position\"]},\"studio.shell/announce-duplicated\":{\"defaultMessage\":\"Duplicated {label}\",\"parameters\":[\"label\"]},\"studio.shell/announce-edit-cancelled\":{\"defaultMessage\":\"Edit cancelled. {property} kept its value.\",\"parameters\":[\"property\"]},\"studio.shell/announce-field-bound\":{\"defaultMessage\":\"Bound {port} to the {field} model field\",\"parameters\":[\"field\",\"port\"]},\"studio.shell/announce-inheritance-reset\":{\"defaultMessage\":\"Reset every responsive override for {property}; all viewports now inherit the base value\",\"parameters\":[\"property\"]},\"studio.shell/announce-inserted\":{\"defaultMessage\":\"Inserted {label}\",\"parameters\":[\"label\"]},\"studio.shell/announce-invalid-value\":{\"defaultMessage\":\"The {label} value is not valid JSON. Nothing was changed.\",\"parameters\":[\"label\"]},\"studio.shell/announce-moved-down\":{\"defaultMessage\":\"Moved {label} down\",\"parameters\":[\"label\"]},\"studio.shell/announce-moved-to\":{\"defaultMessage\":\"Moved {label} to {destination}\",\"parameters\":[\"destination\",\"label\"]},\"studio.shell/announce-moved-up\":{\"defaultMessage\":\"Moved {label} up\",\"parameters\":[\"label\"]},\"studio.shell/announce-name-required\":{\"defaultMessage\":\"Enter a name before applying the change.\",\"parameters\":[]},\"studio.shell/announce-override-removed\":{\"defaultMessage\":\"Removed the {property} override for the {viewport} viewport\",\"parameters\":[\"property\",\"viewport\"]},\"studio.shell/announce-override-set\":{\"defaultMessage\":\"Set the {property} override for the {viewport} viewport\",\"parameters\":[\"property\",\"viewport\"]},\"studio.shell/announce-pattern-applied\":{\"defaultMessage\":\"Applied the {pattern} pattern\",\"parameters\":[\"pattern\"]},\"studio.shell/announce-preview-reloaded\":{\"defaultMessage\":\"The preview reloaded ({reason}). The document is unchanged.\",\"parameters\":[\"reason\"]},\"studio.shell/announce-preview-torn-down\":{\"defaultMessage\":\"The preview closed ({reason}). The document is unchanged.\",\"parameters\":[\"reason\"]},\"studio.shell/announce-property-set\":{\"defaultMessage\":\"Set {property}\",\"parameters\":[\"property\"]},\"studio.shell/announce-property-unset\":{\"defaultMessage\":\"Unset {property}\",\"parameters\":[\"property\"]},\"studio.shell/announce-recipe-applied\":{\"defaultMessage\":\"Applied the {recipe} recipe\",\"parameters\":[\"recipe\"]},\"studio.shell/announce-redid\":{\"defaultMessage\":\"Redid change\",\"parameters\":[]},\"studio.shell/announce-restored\":{\"defaultMessage\":\"Restored {label} block\",\"parameters\":[\"label\"]},\"studio.shell/announce-selection-cleared\":{\"defaultMessage\":\"Selection cleared\",\"parameters\":[]},\"studio.shell/announce-size-role-invalid\":{\"defaultMessage\":\"The {axis} role must be a lower-case identifier such as half or full-width. Nothing was changed.\",\"parameters\":[\"axis\"]},\"studio.shell/announce-size-role-removed\":{\"defaultMessage\":\"Removed the {axis} role\",\"parameters\":[\"axis\"]},\"studio.shell/announce-size-role-removed-viewport\":{\"defaultMessage\":\"Removed the {axis} role for the {viewport} viewport\",\"parameters\":[\"axis\",\"viewport\"]},\"studio.shell/announce-size-role-set\":{\"defaultMessage\":\"Set the {axis} role to {role}\",\"parameters\":[\"axis\",\"role\"]},\"studio.shell/announce-size-role-set-viewport\":{\"defaultMessage\":\"Set the {axis} role to {role} for the {viewport} viewport\",\"parameters\":[\"axis\",\"role\",\"viewport\"]},\"studio.shell/announce-undid\":{\"defaultMessage\":\"Undid change\",\"parameters\":[]},\"studio.shell/announce-viewport-changed\":{\"defaultMessage\":\"Previewing the {label} viewport\",\"parameters\":[\"label\"]},\"studio.shell/block-actions\":{\"defaultMessage\":\"Block actions\",\"parameters\":[]},\"studio.shell/breadcrumb-label\":{\"defaultMessage\":\"Selection path\",\"parameters\":[]},\"studio.shell/canvas-edit-toggle\":{\"defaultMessage\":\"Select and move rendered blocks\",\"parameters\":[]},\"studio.shell/canvas-empty\":{\"defaultMessage\":\"Choose a block to begin composing.\",\"parameters\":[]},\"studio.shell/canvas-label\":{\"defaultMessage\":\"Blueprint structure\",\"parameters\":[]},\"studio.shell/canvas-mode-editing\":{\"defaultMessage\":\"selecting and moving blocks\",\"parameters\":[]},\"studio.shell/canvas-mode-interacting\":{\"defaultMessage\":\"interacting with the rendered preview\",\"parameters\":[]},\"studio.shell/canvas-pane\":{\"defaultMessage\":\"Canvas\",\"parameters\":[]},\"studio.shell/command-apply-pattern\":{\"defaultMessage\":\"Apply pattern {pattern}\",\"parameters\":[\"pattern\"]},\"studio.shell/command-clear-selection\":{\"defaultMessage\":\"Clear selection\",\"parameters\":[]},\"studio.shell/command-insert\":{\"defaultMessage\":\"Insert {label}\",\"parameters\":[\"label\"]},\"studio.shell/command-move-to\":{\"defaultMessage\":\"Move to {destination}\",\"parameters\":[\"destination\"]},\"studio.shell/command-palette-empty\":{\"defaultMessage\":\"No commands match the filter.\",\"parameters\":[]},\"studio.shell/command-palette-hint\":{\"defaultMessage\":\"Type to filter commands. Arrow Down moves into the results, Arrow Up returns to the filter, Enter runs a command, Escape closes.\",\"parameters\":[]},\"studio.shell/command-palette-input-label\":{\"defaultMessage\":\"Filter commands\",\"parameters\":[]},\"studio.shell/command-palette-label\":{\"defaultMessage\":\"Command palette\",\"parameters\":[]},\"studio.shell/command-palette-results-label\":{\"defaultMessage\":\"Matching commands\",\"parameters\":[]},\"studio.shell/command-palette-toggle\":{\"defaultMessage\":\"Commands\",\"parameters\":[]},\"studio.shell/delete\":{\"defaultMessage\":\"Delete\",\"parameters\":[]},\"studio.shell/diagnostics-empty\":{\"defaultMessage\":\"No issues\",\"parameters\":[]},\"studio.shell/diagnostics-heading\":{\"defaultMessage\":\"Diagnostics\",\"parameters\":[]},\"studio.shell/document-roots\":{\"defaultMessage\":\"document roots\",\"parameters\":[]},\"studio.shell/drag-drop-position\":{\"defaultMessage\":\"Moving {label} to position {position} of {count}\",\"parameters\":[\"count\",\"label\",\"position\"]},\"studio.shell/duplicate\":{\"defaultMessage\":\"Duplicate\",\"parameters\":[]},\"studio.shell/history-label\":{\"defaultMessage\":\"History\",\"parameters\":[]},\"studio.shell/inspector-add-override\":{\"defaultMessage\":\"Add override\",\"parameters\":[]},\"studio.shell/inspector-add-override-name-label\":{\"defaultMessage\":\"Override property name\",\"parameters\":[]},\"studio.shell/inspector-add-override-value-label\":{\"defaultMessage\":\"Override value as JSON\",\"parameters\":[]},\"studio.shell/inspector-add-property\":{\"defaultMessage\":\"Add property\",\"parameters\":[]},\"studio.shell/inspector-add-property-name-label\":{\"defaultMessage\":\"New property name\",\"parameters\":[]},\"studio.shell/inspector-add-property-value-label\":{\"defaultMessage\":\"New property value as JSON\",\"parameters\":[]},\"studio.shell/inspector-advanced\":{\"defaultMessage\":\"Advanced properties and bindings\",\"parameters\":[]},\"studio.shell/inspector-binding-accepts\":{\"defaultMessage\":\"Accepts {cardinality} {value-type} value\",\"parameters\":[\"cardinality\",\"value-type\"]},\"studio.shell/inspector-binding-control-label\":{\"defaultMessage\":\"Declared {control} control for {field}\",\"parameters\":[\"control\",\"field\"]},\"studio.shell/inspector-binding-control-preview\":{\"defaultMessage\":\"Control preview\",\"parameters\":[]},\"studio.shell/inspector-binding-control-unavailable\":{\"defaultMessage\":\"The declared {control} control requires a host field-adapter contribution.\",\"parameters\":[\"control\"]},\"studio.shell/inspector-binding-control-undeclared\":{\"defaultMessage\":\"This field declares no authoring control.\",\"parameters\":[]},\"studio.shell/inspector-binding-field-placeholder\":{\"defaultMessage\":\"Choose a model field\",\"parameters\":[]},\"studio.shell/inspector-binding-invalid\":{\"defaultMessage\":\"This binding no longer resolves and requires migration.\",\"parameters\":[]},\"studio.shell/inspector-binding-model\":{\"defaultMessage\":\"Fields from locked model {model}\",\"parameters\":[\"model\"]},\"studio.shell/inspector-binding-model-mismatch\":{\"defaultMessage\":\"The projected model does not match the Blueprint lock. Binding choices are disabled; see diagnostics.\",\"parameters\":[]},\"studio.shell/inspector-binding-model-unavailable\":{\"defaultMessage\":\"The session advertises model reads, but no active model projection is loaded. Binding choices are disabled.\",\"parameters\":[]},\"studio.shell/inspector-binding-no-compatible-fields\":{\"defaultMessage\":\"No compatible model fields\",\"parameters\":[]},\"studio.shell/inspector-binding-non-field-source\":{\"defaultMessage\":\"This port uses a non-field source. Choosing a model field replaces that source explicitly.\",\"parameters\":[]},\"studio.shell/inspector-binding-port-label\":{\"defaultMessage\":\"Binding port name\",\"parameters\":[]},\"studio.shell/inspector-binding-required\":{\"defaultMessage\":\" (required)\",\"parameters\":[]},\"studio.shell/inspector-binding-value-label\":{\"defaultMessage\":\"Binding value as JSON\",\"parameters\":[]},\"studio.shell/inspector-bindings-empty\":{\"defaultMessage\":\"No bindings\",\"parameters\":[]},\"studio.shell/inspector-bindings-heading\":{\"defaultMessage\":\"Bindings\",\"parameters\":[]},\"studio.shell/inspector-design-heading\":{\"defaultMessage\":\"Design\",\"parameters\":[]},\"studio.shell/inspector-design-placeholder\":{\"defaultMessage\":\"Choose a token\",\"parameters\":[]},\"studio.shell/inspector-design-unset\":{\"defaultMessage\":\"Remove\",\"parameters\":[]},\"studio.shell/inspector-empty\":{\"defaultMessage\":\"Select a block to inspect its contract.\",\"parameters\":[]},\"studio.shell/inspector-heading\":{\"defaultMessage\":\"Inspector\",\"parameters\":[]},\"studio.shell/inspector-hint\":{\"defaultMessage\":\"Inputs hold JSON values. Enter applies the edit, Escape reverts it.\",\"parameters\":[]},\"studio.shell/inspector-identifier\":{\"defaultMessage\":\"Identifier\",\"parameters\":[]},\"studio.shell/inspector-layout-axis-block\":{\"defaultMessage\":\"Block size\",\"parameters\":[]},\"studio.shell/inspector-layout-axis-inline\":{\"defaultMessage\":\"Inline size\",\"parameters\":[]},\"studio.shell/inspector-layout-base-none\":{\"defaultMessage\":\"Base: none\",\"parameters\":[]},\"studio.shell/inspector-layout-base-role\":{\"defaultMessage\":\"Base: {role}\",\"parameters\":[\"role\"]},\"studio.shell/inspector-layout-fallback-hint\":{\"defaultMessage\":\"No theme size-role vocabulary is available. Enter a lower-case role identifier; Enter applies it, Escape cancels.\",\"parameters\":[]},\"studio.shell/inspector-layout-heading\":{\"defaultMessage\":\"Layout\",\"parameters\":[]},\"studio.shell/inspector-layout-no-roles\":{\"defaultMessage\":\"The active theme declares no size roles, so none can be assigned.\",\"parameters\":[]},\"studio.shell/inspector-layout-role-label-base\":{\"defaultMessage\":\"{axis} role (base)\",\"parameters\":[\"axis\"]},\"studio.shell/inspector-layout-role-label-viewport\":{\"defaultMessage\":\"{axis} role override for the {viewport} viewport\",\"parameters\":[\"axis\",\"viewport\"]},\"studio.shell/inspector-layout-role-placeholder\":{\"defaultMessage\":\"Choose a role\",\"parameters\":[]},\"studio.shell/inspector-layout-unset\":{\"defaultMessage\":\"Remove\",\"parameters\":[]},\"studio.shell/inspector-layout-unset-label-base\":{\"defaultMessage\":\"Remove the {axis} base role\",\"parameters\":[\"axis\"]},\"studio.shell/inspector-layout-unset-label-viewport\":{\"defaultMessage\":\"Remove the {axis} role override for the {viewport} viewport\",\"parameters\":[\"axis\",\"viewport\"]},\"studio.shell/inspector-override-value-label\":{\"defaultMessage\":\"Override of {property} for the {viewport} viewport as JSON\",\"parameters\":[\"property\",\"viewport\"]},\"studio.shell/inspector-overrides-empty\":{\"defaultMessage\":\"No overrides for the {viewport} viewport\",\"parameters\":[\"viewport\"]},\"studio.shell/inspector-overrides-heading\":{\"defaultMessage\":\"Overrides for the {viewport} viewport\",\"parameters\":[\"viewport\"]},\"studio.shell/inspector-properties\":{\"defaultMessage\":\"Properties\",\"parameters\":[]},\"studio.shell/inspector-properties-empty\":{\"defaultMessage\":\"No properties\",\"parameters\":[]},\"studio.shell/inspector-property-value-label\":{\"defaultMessage\":\"Value of {property} as JSON\",\"parameters\":[\"property\"]},\"studio.shell/inspector-provenance-base\":{\"defaultMessage\":\"Base value\",\"parameters\":[]},\"studio.shell/inspector-provenance-inherited\":{\"defaultMessage\":\"Inherited from base: {value}\",\"parameters\":[\"value\"]},\"studio.shell/inspector-provenance-inherited-none\":{\"defaultMessage\":\"Inherited from base: none\",\"parameters\":[]},\"studio.shell/inspector-provenance-overridden\":{\"defaultMessage\":\"Overridden for the {viewport} viewport: {value}\",\"parameters\":[\"value\",\"viewport\"]},\"studio.shell/inspector-read-only\":{\"defaultMessage\":\"Editing is disabled because this session is read-only.\",\"parameters\":[]},\"studio.shell/inspector-recipe-label\":{\"defaultMessage\":\"Recipe\",\"parameters\":[]},\"studio.shell/inspector-recipe-placeholder\":{\"defaultMessage\":\"Choose a recipe\",\"parameters\":[]},\"studio.shell/inspector-recipes-heading\":{\"defaultMessage\":\"Recipes\",\"parameters\":[]},\"studio.shell/inspector-remove-binding\":{\"defaultMessage\":\"Remove\",\"parameters\":[]},\"studio.shell/inspector-remove-binding-label\":{\"defaultMessage\":\"Remove the {port} binding\",\"parameters\":[\"port\"]},\"studio.shell/inspector-remove-override\":{\"defaultMessage\":\"Remove\",\"parameters\":[]},\"studio.shell/inspector-remove-override-label\":{\"defaultMessage\":\"Remove the {property} override for the {viewport} viewport\",\"parameters\":[\"property\",\"viewport\"]},\"studio.shell/inspector-reset-inheritance\":{\"defaultMessage\":\"Reset all viewport overrides\",\"parameters\":[]},\"studio.shell/inspector-set-binding\":{\"defaultMessage\":\"Set binding\",\"parameters\":[]},\"studio.shell/inspector-type\":{\"defaultMessage\":\"Type\",\"parameters\":[]},\"studio.shell/inspector-unset\":{\"defaultMessage\":\"Unset\",\"parameters\":[]},\"studio.shell/inspector-unset-label\":{\"defaultMessage\":\"Unset {property}\",\"parameters\":[\"property\"]},\"studio.shell/library-search\":{\"defaultMessage\":\"Search blocks and patterns\",\"parameters\":[]},\"studio.shell/local-canvas-description\":{\"defaultMessage\":\"Local rendering · not an authoritative host preview.\",\"parameters\":[]},\"studio.shell/local-canvas-label\":{\"defaultMessage\":\"Page canvas\",\"parameters\":[]},\"studio.shell/local-canvas-unavailable\":{\"defaultMessage\":\"The local canvas could not render this draft. The document and structural controls remain available.\",\"parameters\":[]},\"studio.shell/move-destination-label\":{\"defaultMessage\":\"Move block to another position or slot\",\"parameters\":[]},\"studio.shell/move-destination-option\":{\"defaultMessage\":\"{collection}, position {position} of {count}\",\"parameters\":[\"collection\",\"count\",\"position\"]},\"studio.shell/move-destination-placeholder\":{\"defaultMessage\":\"Choose a destination\",\"parameters\":[]},\"studio.shell/move-down\":{\"defaultMessage\":\"Move down\",\"parameters\":[]},\"studio.shell/move-slot-collection\":{\"defaultMessage\":\"{parent}: {slot} slot\",\"parameters\":[\"parent\",\"slot\"]},\"studio.shell/move-up\":{\"defaultMessage\":\"Move up\",\"parameters\":[]},\"studio.shell/outline-empty\":{\"defaultMessage\":\"The outline lists blocks once the document has content.\",\"parameters\":[]},\"studio.shell/outline-heading\":{\"defaultMessage\":\"Outline\",\"parameters\":[]},\"studio.shell/outline-hint\":{\"defaultMessage\":\"Arrow keys move focus. Alt+Arrow moves the block. Delete removes it. Ctrl+D or Cmd+D duplicates it.\",\"parameters\":[]},\"studio.shell/outline-slot\":{\"defaultMessage\":\"Slot: {slot}\",\"parameters\":[\"slot\"]},\"studio.shell/palette-heading\":{\"defaultMessage\":\"Blocks\",\"parameters\":[]},\"studio.shell/palette-label\":{\"defaultMessage\":\"Block palette\",\"parameters\":[]},\"studio.shell/patterns-heading\":{\"defaultMessage\":\"Patterns\",\"parameters\":[]},\"studio.shell/preview-closed\":{\"defaultMessage\":\"Preview is disconnected. Editing remains available.\",\"parameters\":[]},\"studio.shell/preview-connecting\":{\"defaultMessage\":\"Preview is connecting.\",\"parameters\":[]},\"studio.shell/preview-current\":{\"defaultMessage\":\"Preview is current.\",\"parameters\":[]},\"studio.shell/preview-heading\":{\"defaultMessage\":\"Preview\",\"parameters\":[]},\"studio.shell/preview-label\":{\"defaultMessage\":\"Rendered preview\",\"parameters\":[]},\"studio.shell/preview-rendering\":{\"defaultMessage\":\"Preview is updating.\",\"parameters\":[]},\"studio.shell/preview-stale\":{\"defaultMessage\":\"Preview is stale. Editing remains available.\",\"parameters\":[]},\"studio.shell/preview-unavailable\":{\"defaultMessage\":\"Preview is unavailable for this session. Editing remains available.\",\"parameters\":[]},\"studio.shell/redo\":{\"defaultMessage\":\"Redo\",\"parameters\":[]},\"studio.shell/restore-last-deleted\":{\"defaultMessage\":\"Restore last deleted block\",\"parameters\":[]},\"studio.shell/save-state-saved\":{\"defaultMessage\":\"Saved\",\"parameters\":[]},\"studio.shell/save-state-unsaved\":{\"defaultMessage\":\"Unsaved changes\",\"parameters\":[]},\"studio.shell/severity-blocking\":{\"defaultMessage\":\"Blocking\",\"parameters\":[]},\"studio.shell/severity-error\":{\"defaultMessage\":\"Error\",\"parameters\":[]},\"studio.shell/severity-information\":{\"defaultMessage\":\"Information\",\"parameters\":[]},\"studio.shell/severity-warning\":{\"defaultMessage\":\"Warning\",\"parameters\":[]},\"studio.shell/status-label\":{\"defaultMessage\":\"Status\",\"parameters\":[]},\"studio.shell/undo\":{\"defaultMessage\":\"Undo\",\"parameters\":[]},\"studio.shell/unresolved-block\":{\"defaultMessage\":\"(unresolved)\",\"parameters\":[]},\"studio.shell/viewport-label\":{\"defaultMessage\":\"Preview width\",\"parameters\":[]},\"studio.shell/visual-drop-target\":{\"defaultMessage\":\"Moving {label} to {destination}\",\"parameters\":[\"destination\",\"label\"]},\"studio.shell/visual-insert-target\":{\"defaultMessage\":\"Inserting {label} at {destination}\",\"parameters\":[\"destination\",\"label\"]},\"studio.shell/workspace-panels\":{\"defaultMessage\":\"Workspace panels\",\"parameters\":[]},\"studio.standalone/change-local\":{\"defaultMessage\":\"{artifact} changed in this browser session only.\",\"parameters\":[\"artifact\"]},\"studio.standalone/current-in-memory-draft\":{\"defaultMessage\":\"Current in-memory draft\",\"parameters\":[]},\"studio.standalone/download-project\":{\"defaultMessage\":\"Download project JSON\",\"parameters\":[]},\"studio.standalone/download-save-intent\":{\"defaultMessage\":\"Download save-intent JSON\",\"parameters\":[]},\"studio.standalone/heading\":{\"defaultMessage\":\"Local Studio workspace\",\"parameters\":[]},\"studio.standalone/import-failed\":{\"defaultMessage\":\"Project import failed: {message}\",\"parameters\":[\"message\"]},\"studio.standalone/import-project\":{\"defaultMessage\":\"Import project JSON\",\"parameters\":[]},\"studio.standalone/imported\":{\"defaultMessage\":\"Project imported into this browser session.\",\"parameters\":[]},\"studio.standalone/json-actions\":{\"defaultMessage\":\"Local project import and download actions\",\"parameters\":[]},\"studio.standalone/no-in-memory-edits\":{\"defaultMessage\":\"No in-memory edits\",\"parameters\":[]},\"studio.standalone/no-persistence\":{\"defaultMessage\":\"Nothing is sent to or saved by a server. Changes live only in this page and are lost when it closes or reloads unless you download project JSON.\",\"parameters\":[]},\"studio.standalone/project-downloaded\":{\"defaultMessage\":\"The complete Studio project JSON was downloaded.\",\"parameters\":[]},\"studio.standalone/save-button-announcement\":{\"defaultMessage\":\"{outcome} intent downloaded. No save occurred.\",\"parameters\":[\"outcome\"]},\"studio.standalone/save-button-help\":{\"defaultMessage\":\"Downloads the selected host save-intent JSON. Nothing is sent or saved.\",\"parameters\":[]},\"studio.standalone/save-intent-downloaded\":{\"defaultMessage\":\"The {outcome} host save-intent JSON was downloaded. No save occurred.\",\"parameters\":[\"outcome\"]},\"studio.standalone/save-intent-outcome\":{\"defaultMessage\":\"Save-intent outcome\",\"parameters\":[]}}")
+};
+//#endregion
+//#region node_modules/@kumwe/studio/dist/messages.js
+var studioMessages = en_default.messages;
+function messageText(t, r, i) {
+	let a = (r?.[t] ?? studioMessages[t]).defaultMessage;
+	if (i === void 0) return a;
+	for (let n of en_default.messages[t].parameters) {
+		let e = i[n];
+		e !== void 0 && (a = a.replaceAll(`{${n}}`, e));
+	}
+	return a;
+}
+//#endregion
+//#region node_modules/@kumwe/studio/dist/outline.js
+function findOutlineLocation(e, t) {
+	return i$3(e, t, void 0, void 0);
+}
+function findAncestry(e, n) {
+	for (let r of e) {
+		if (r.id === n) return [r];
+		for (let e of Object.values(r.slots)) {
+			let i = findAncestry(e, n);
+			if (i.length > 0) return [r, ...i];
+		}
+	}
+	return [];
+}
+function collectDocumentIds(e) {
+	let t = /* @__PURE__ */ new Set(), n = [...e];
+	for (; n.length > 0;) {
+		let e = n.pop();
+		if (e === void 0) break;
+		t.add(e.id);
+		for (let t of Object.values(e.slots)) n.push(...t);
+	}
+	return t;
+}
+function allocateDuplicateIdMap(e, t) {
+	let r = collectDocumentIds(e), i = {}, a = [t];
+	for (; a.length > 0;) {
+		let e = a.shift();
+		if (e === void 0) break;
+		let t = 1, n = `${e.id}-copy-${t}`;
+		for (; r.has(n);) t += 1, n = `${e.id}-copy-${t}`;
+		r.add(n), Object.defineProperty(i, e.id, {
+			configurable: !0,
+			enumerable: !0,
+			value: n,
+			writable: !0
+		});
+		for (let t of Object.values(e.slots)) a.push(...t);
+	}
+	return i;
+}
+function i$3(e, t, n, r) {
+	for (let [a, o] of e.entries()) {
+		if (o.id === t) {
+			let t = {
+				collection: e,
+				index: a,
+				node: o
+			};
+			return n !== void 0 && r !== void 0 && (t.parentNodeId = n, t.slot = r), t;
+		}
+		for (let [e, n] of Object.entries(o.slots)) {
+			let r = i$3(n, t, o.id, e);
+			if (r !== void 0) return r;
+		}
+	}
 }
 //#endregion
 //#region node_modules/@kumwe/studio/dist/preview-surface.js
@@ -14442,1610 +17810,6 @@ var StudioPreviewSurface = class {
 	}
 };
 //#endregion
-//#region node_modules/@kumwe/studio-rich-text/dist/profiles.js
-var e$2 = Object.freeze([
-	`blockquote`,
-	`bulletList`,
-	`callout`,
-	`checklist`,
-	`checklistItem`,
-	`codeBlock`,
-	`doc`,
-	`hardBreak`,
-	`heading`,
-	`horizontalRule`,
-	`listItem`,
-	`orderedList`,
-	`paragraph`,
-	`table`,
-	`tableCell`,
-	`tableRow`,
-	`text`
-]);
-var t$2 = Object.freeze([
-	`bold`,
-	`code`,
-	`highlight`,
-	`italic`,
-	`strike`
-]);
-var n$3 = Object.freeze({
-	maximumDepth: 8,
-	maximumItemsPerArray: 256,
-	maximumPropertiesPerObject: 64,
-	maximumStringLength: 4096,
-	maximumTotalBytes: 65536
-});
-function r$3(r, i) {
-	return Object.freeze({
-		allowedAttributes: Object.freeze({
-			callout: Object.freeze([`tone`]),
-			checklistItem: Object.freeze([`checked`, `level`]),
-			codeBlock: Object.freeze([`language`]),
-			heading: Object.freeze([`level`]),
-			"mark:highlight": Object.freeze([`tone`]),
-			orderedList: Object.freeze([`start`]),
-			table: Object.freeze([`header`])
-		}),
-		allowedMarks: t$2,
-		allowedNodes: e$2,
-		attributeLimits: n$3,
-		headingLevels: Object.freeze([
-			2,
-			3,
-			4
-		]),
-		maximumDepth: 32,
-		maximumDocumentBytes: 1048576,
-		maximumMarks: 2e4,
-		maximumMarksPerNode: t$2.length,
-		maximumNodes: i,
-		maximumTextLength: r
-	});
-}
-var PORTABLE_RICH_TEXT_PROFILE = r$3(25e4, 5e3);
-var MARKETING_RICH_TEXT_PROFILE = r$3(1e5, 2e3);
-var DOCUMENTATION_RICH_TEXT_PROFILE = r$3(5e5, 1e4);
-var a$5 = Object.freeze({
-	"studio.rich-text/documentation": DOCUMENTATION_RICH_TEXT_PROFILE,
-	"studio.rich-text/marketing": MARKETING_RICH_TEXT_PROFILE,
-	"studio.rich-text/portable": PORTABLE_RICH_TEXT_PROFILE
-});
-function resolveRichTextProfile(e = `studio.rich-text/portable`) {
-	let t = a$5[e];
-	if (t === void 0) throw TypeError(`Unknown Studio rich-text profile "${e}".`);
-	return t;
-}
-function resolveContainerRichTextProfile(e) {
-	switch (e) {
-		case `studio.core/accordion-item`:
-		case `studio.core/dialog`:
-		case `studio.core/notice`:
-		case `studio.core/popover`:
-		case `studio.core/tab`: return `studio.rich-text/marketing`;
-		default: throw TypeError(`Unknown Studio rich-text container "${String(e)}".`);
-	}
-}
-//#endregion
-//#region node_modules/@kumwe/studio-rich-text/dist/first-party-tools.js
-var STUDIO_EDITOR_JS_TOOL_NAMES = Object.freeze([
-	`callout`,
-	`checklist`,
-	`code`,
-	`delimiter`,
-	`header`,
-	`list`,
-	`paragraph`,
-	`quote`,
-	`table`
-]);
-function studioEditorJsTools() {
-	return Object.freeze({
-		callout: StudioCalloutTool,
-		checklist: StudioChecklistTool,
-		code: StudioCodeTool,
-		delimiter: StudioDelimiterTool,
-		header: StudioHeaderTool,
-		list: StudioListTool,
-		paragraph: StudioParagraphTool,
-		quote: StudioQuoteTool,
-		table: StudioTableTool
-	});
-}
-function toStudioEditorJsBlocks(e) {
-	return e.content.map((e) => ({
-		data: { node: structuredClone(e) },
-		type: i$5(e)
-	}));
-}
-function fromStudioEditorJsBlocks(t) {
-	if (!A$3(t) || !Array.isArray(t.blocks)) throw TypeError(`Editor surface returned an invalid block collection.`);
-	let n = t.blocks.map((t, n) => {
-		if (!A$3(t) || !STUDIO_EDITOR_JS_TOOL_NAMES.includes(t.type) || !A$3(t.data) || !A$3(t.data.node)) throw TypeError(`Editor block ${n} is not a Studio first-party block.`);
-		let r = structuredClone(t.data.node);
-		if (i$5(r) !== t.type) throw TypeError(`Editor block ${n} has a mismatched Studio node type.`);
-		return r;
-	});
-	return {
-		content: n.length > 0 ? n : [{ type: `paragraph` }],
-		type: `doc`
-	};
-}
-function i$5(e) {
-	switch (e.type) {
-		case `heading`: return `header`;
-		case `blockquote`: return `quote`;
-		case `horizontalRule`: return `delimiter`;
-		case `bulletList`:
-		case `orderedList`: return `list`;
-		case `checklist`: return `checklist`;
-		case `table`: return `table`;
-		case `callout`: return `callout`;
-		case `codeBlock`: return `code`;
-		case `paragraph`: return `paragraph`;
-		default: throw TypeError(`Node type "${e.type}" has no first-party Editor.js tool.`);
-	}
-}
-var a$4 = class {
-	static isReadOnlySupported = !0;
-	node;
-	readOnly;
-	field;
-	constructor(e, t) {
-		this.node = structuredClone(e.data?.node ?? t), this.readOnly = e.readOnly === !0;
-	}
-	renderInline(e, t) {
-		let n = document.createElement(`div`);
-		n.className = `studio-rich-text-field`, n.contentEditable = this.readOnly ? `false` : `true`, n.setAttribute(`aria-label`, e), n.setAttribute(`role`, `textbox`), n.setAttribute(`aria-multiline`, `true`), n.spellcheck = !0;
-		for (let e of t) c$3(n, e);
-		return n.addEventListener(`paste`, m$4), this.field = n, n;
-	}
-	saveInline(e) {
-		return this.field === void 0 ? structuredClone([...e]) : d$5(e, u$5(this.field));
-	}
-};
-var StudioParagraphTool = class extends a$4 {
-	static isReadOnlySupported = !0;
-	static toolbox = {
-		icon: `¶`,
-		title: `Paragraph`
-	};
-	constructor(e) {
-		super(e, { type: `paragraph` });
-	}
-	render() {
-		return this.renderInline(`Paragraph`, this.node.content ?? []);
-	}
-	save() {
-		let e = structuredClone(this.node), t = this.saveInline(e.content ?? []);
-		return w$3(e.content ?? [], t) || (e.content = t), { node: e };
-	}
-};
-var StudioHeaderTool = class extends a$4 {
-	static isReadOnlySupported = !0;
-	static toolbox = {
-		icon: `H`,
-		title: `Heading`
-	};
-	#level;
-	constructor(e) {
-		super(e, {
-			attrs: { level: 2 },
-			type: `heading`
-		});
-	}
-	render() {
-		let e = T$3(`Heading`), t = document.createElement(`select`), n = this.node.attrs?.level === 3 || this.node.attrs?.level === 4 ? this.node.attrs.level : 2;
-		t.setAttribute(`aria-label`, `Heading level`), t.disabled = this.readOnly;
-		for (let e of [
-			2,
-			3,
-			4
-		]) {
-			let r = document.createElement(`option`);
-			r.value = String(e), r.textContent = `Heading ${e}`, r.selected = n === e, t.append(r);
-		}
-		return t.value = String(n), this.#level = t, e.append(t, this.renderInline(`Heading text`, this.node.content ?? [])), e;
-	}
-	save() {
-		let e = structuredClone(this.node), t = Number(this.#level?.value ?? this.node.attrs?.level ?? 2);
-		t !== Number(this.node.attrs?.level ?? 2) && (e.attrs = { level: t });
-		let n = this.saveInline(e.content ?? []);
-		return w$3(e.content ?? [], n) || (e.content = n), { node: e };
-	}
-};
-var StudioQuoteTool = class extends a$4 {
-	static isReadOnlySupported = !0;
-	static toolbox = {
-		icon: `“`,
-		title: `Quote`
-	};
-	constructor(e) {
-		super(e, {
-			content: [{ type: `paragraph` }],
-			type: `blockquote`
-		});
-	}
-	render() {
-		return this.renderInline(`Quotation`, x$3(this.node.content ?? []));
-	}
-	save() {
-		let e = structuredClone(this.node), t = x$3(e.content ?? []);
-		return e.content = S$3(e.content ?? [], this.saveInline(t)), { node: e };
-	}
-};
-var StudioDelimiterTool = class {
-	static isReadOnlySupported = !0;
-	static toolbox = {
-		icon: `—`,
-		title: `Separator`
-	};
-	render() {
-		let e = document.createElement(`hr`);
-		return e.setAttribute(`aria-label`, `Separator`), e;
-	}
-	save() {
-		return { node: { type: `horizontalRule` } };
-	}
-};
-var StudioCalloutTool = class extends a$4 {
-	static isReadOnlySupported = !0;
-	static toolbox = {
-		icon: `!`,
-		title: `Callout`
-	};
-	#tone;
-	constructor(e) {
-		super(e, {
-			attrs: { tone: `info` },
-			content: [{ type: `paragraph` }],
-			type: `callout`
-		});
-	}
-	render() {
-		let e = T$3(`Callout`);
-		return this.#tone = D$2(`Callout tone`, [
-			`info`,
-			`success`,
-			`warning`,
-			`danger`
-		], j$3(this.node.attrs?.tone, `info`), this.readOnly), e.append(this.#tone, this.renderInline(`Callout text`, x$3(this.node.content ?? []))), e;
-	}
-	save() {
-		let e = structuredClone(this.node);
-		e.attrs = { tone: this.#tone?.value ?? `info` };
-		let t = x$3(e.content ?? []);
-		return e.content = S$3(e.content ?? [], this.saveInline(t)), { node: e };
-	}
-};
-var StudioCodeTool = class {
-	static isReadOnlySupported = !0;
-	static toolbox = {
-		icon: `</>`,
-		title: `Code`
-	};
-	#node;
-	#readOnly;
-	#language;
-	#source;
-	constructor(e) {
-		this.#node = structuredClone(e.data?.node ?? {
-			attrs: { language: `text` },
-			text: ``,
-			type: `codeBlock`
-		}), this.#readOnly = e.readOnly === !0;
-	}
-	render() {
-		let e = T$3(`Code sample`);
-		return this.#language = E$3(`Code language`, j$3(this.#node.attrs?.language, `text`), this.#readOnly), this.#language.pattern = `[A-Za-z0-9][A-Za-z0-9+_.#-]{0,63}`, this.#language.maxLength = 64, this.#source = document.createElement(`textarea`), this.#source.setAttribute(`aria-label`, `Inert code source`), this.#source.disabled = this.#readOnly, this.#source.rows = 8, this.#source.value = this.#node.text ?? ``, e.append(this.#language, this.#source), e;
-	}
-	save() {
-		let e = this.#language?.value.trim() ?? `text`;
-		return { node: {
-			attrs: { language: /^[A-Za-z0-9][A-Za-z0-9+_.#-]{0,63}$/u.test(e) ? e : `text` },
-			text: this.#source?.value ?? ``,
-			type: `codeBlock`
-		} };
-	}
-};
-var StudioListTool = class {
-	static isReadOnlySupported = !0;
-	static toolbox = {
-		icon: `•`,
-		title: `List`
-	};
-	#readOnly;
-	#node;
-	#rows;
-	#root;
-	constructor(e) {
-		let t = structuredClone(e.data?.node ?? {
-			content: [{
-				content: [{ type: `paragraph` }],
-				type: `listItem`
-			}],
-			type: `bulletList`
-		});
-		this.#node = t, this.#readOnly = e.readOnly === !0, this.#rows = h$3(t);
-	}
-	render() {
-		return this.#root = T$3(`List`), this.#renderRows(), this.#root;
-	}
-	save() {
-		return this.#syncRows(), { node: structuredClone(this.#node) };
-	}
-	#renderRows() {
-		let e = this.#root;
-		if (e === void 0) return;
-		e.replaceChildren();
-		let t = D$2(`List style`, [`bullet`, `ordered`], this.#node.type === `orderedList` ? `ordered` : `bullet`, this.#readOnly);
-		if (t.addEventListener(`change`, () => {
-			this.#syncRows();
-			let e = t.value === `ordered`, n = g$3(this.#node);
-			this.#node.type = e ? `orderedList` : `bulletList`, e && n !== 1 ? this.#node.attrs = { start: n } : delete this.#node.attrs, this.#renderRows();
-		}), e.append(t), this.#node.type === `orderedList`) {
-			let t = E$3(`Ordered list start`, String(g$3(this.#node)), this.#readOnly);
-			t.type = `number`, t.min = `1`, t.max = `1000000`, t.addEventListener(`change`, () => {
-				let e = Math.max(1, Math.min(1e6, Number(t.value) || 1));
-				e !== g$3(this.#node) && (e === 1 ? delete this.#node.attrs : this.#node.attrs = { start: e });
-			}), e.append(t);
-		}
-		this.#rows = h$3(this.#node);
-		let n = document.createElement(`ol`);
-		n.setAttribute(`aria-label`, `List items`);
-		for (let [e, t] of this.#rows.entries()) {
-			let r = document.createElement(`li`);
-			r.dataset.index = String(e), r.dataset.studioDepth = String(t.depth), r.setAttribute(`aria-level`, String(t.depth + 1));
-			let i = C$3(`List item ${e + 1}`, t.editableBlock.content ?? [], this.#readOnly);
-			i.dataset.listText = String(e), r.append(i), this.#readOnly || r.append(O$3(`Move item up`, () => this.#move(e, -1), !_$3(t, -1)), O$3(`Move item down`, () => this.#move(e, 1), !_$3(t, 1)), O$3(`Indent item`, () => this.#indent(e), !v$3(t)), O$3(`Outdent item`, () => this.#outdent(e), t.ownerItem === void 0), O$3(`Remove item`, () => this.#remove(e), !y$3(t, this.#node))), n.append(r);
-		}
-		e.append(n), this.#readOnly || e.append(O$3(`Add list item`, () => this.#add()));
-	}
-	#syncRows() {
-		for (let e of this.#root?.querySelectorAll(`[data-list-text]`) ?? []) {
-			let t = Number(e.dataset.listText), n = this.#rows[t];
-			if (n === void 0) continue;
-			let r = d$5(n.editableBlock.content ?? [], u$5(e));
-			n.syntheticEditable ? r.length > 0 && (n.editableBlock.content = r, n.item.content = [n.editableBlock, ...n.item.content ?? []], n.syntheticEditable = !1) : w$3(n.editableBlock.content ?? [], r) || (n.editableBlock.content = r);
-		}
-	}
-	#add() {
-		this.#syncRows(), this.#rows.length < 500 && (this.#node.content = [...this.#node.content ?? [], {
-			content: [{ type: `paragraph` }],
-			type: `listItem`
-		}]), this.#renderRows();
-	}
-	#indent(e) {
-		this.#syncRows();
-		let t = this.#rows[e];
-		if (t === void 0 || !v$3(t)) return;
-		let n = t.parentList.content ?? [], r = n.indexOf(t.item), i = n[r - 1];
-		if (i === void 0) return;
-		n.splice(r, 1);
-		let a = i.content?.at(-1), o = a?.type === t.parentList.type ? a : {
-			...t.parentList.type === `orderedList` && t.parentList.attrs !== void 0 ? { attrs: structuredClone(t.parentList.attrs) } : {},
-			content: [],
-			type: t.parentList.type
-		};
-		o !== a && (i.content = [...i.content ?? [], o]), o.content = [...o.content ?? [], t.item], this.#renderRows();
-	}
-	#outdent(e) {
-		this.#syncRows();
-		let t = this.#rows[e];
-		if (t?.ownerItem === void 0 || t.parentListParent === void 0) return;
-		let n = t.parentList.content ?? [], r = n.indexOf(t.item);
-		if (r < 0) return;
-		let i = n.splice(r + 1);
-		n.splice(r, 1), i.length > 0 && (t.item.content = [...t.item.content ?? [], {
-			...t.parentList.type === `orderedList` && t.parentList.attrs !== void 0 ? { attrs: structuredClone(t.parentList.attrs) } : {},
-			content: i,
-			type: t.parentList.type
-		}]), n.length === 0 && b$3(t.ownerItem, t.parentList);
-		let a = t.parentListParent.content ?? [], o = a.indexOf(t.ownerItem);
-		o < 0 || (a.splice(o + 1, 0, t.item), this.#renderRows());
-	}
-	#move(e, t) {
-		this.#syncRows();
-		let n = this.#rows[e];
-		if (n === void 0 || !_$3(n, t)) return;
-		let r = n.parentList.content ?? [], i = r.indexOf(n.item), [a] = r.splice(i, 1);
-		a !== void 0 && r.splice(i + t, 0, a), this.#renderRows();
-	}
-	#remove(e) {
-		this.#syncRows();
-		let t = this.#rows[e];
-		if (t === void 0 || !y$3(t, this.#node)) return;
-		let n = t.parentList.content ?? [], r = n.indexOf(t.item);
-		r < 0 || (n.splice(r, 1), n.length === 0 && t.ownerItem !== void 0 && b$3(t.ownerItem, t.parentList), this.#renderRows());
-	}
-};
-var StudioChecklistTool = class {
-	static isReadOnlySupported = !0;
-	static toolbox = {
-		icon: `☑`,
-		title: `Checklist`
-	};
-	#readOnly;
-	#initialRows;
-	#node;
-	#root;
-	#rows;
-	constructor(e) {
-		this.#readOnly = e.readOnly === !0, this.#node = structuredClone(e.data?.node ?? {
-			content: [{
-				attrs: {
-					checked: !1,
-					level: 0
-				},
-				type: `checklistItem`
-			}],
-			type: `checklist`
-		});
-		let t = this.#node.content ?? [];
-		this.#rows = t.length > 0 ? t.map((e) => ({
-			checked: e.attrs?.checked === !0,
-			content: structuredClone(e.content ?? []),
-			contentPresent: e.content !== void 0,
-			depth: Number(e.attrs?.level ?? 0)
-		})) : [{
-			checked: !1,
-			content: [],
-			contentPresent: !1,
-			depth: 0
-		}], this.#initialRows = structuredClone(this.#rows);
-	}
-	render() {
-		return this.#root = T$3(`Checklist`), this.#renderRows(), this.#root;
-	}
-	save() {
-		return this.#syncRows(), w$3(this.#rows, this.#initialRows) ? { node: structuredClone(this.#node) } : { node: {
-			content: this.#rows.map((e) => ({
-				attrs: {
-					checked: e.checked,
-					level: e.depth
-				},
-				...e.contentPresent || e.content.length > 0 ? { content: structuredClone(e.content) } : {},
-				type: `checklistItem`
-			})),
-			type: `checklist`
-		} };
-	}
-	#renderRows() {
-		let e = this.#root;
-		if (e !== void 0) {
-			e.replaceChildren();
-			for (let [t, n] of this.#rows.entries()) {
-				let r = T$3(`Checklist item ${t + 1}`);
-				r.dataset.studioDepth = String(n.depth), r.setAttribute(`aria-level`, String(n.depth + 1));
-				let i = document.createElement(`input`);
-				i.type = `checkbox`, i.checked = n.checked, i.disabled = this.#readOnly, i.dataset.checkState = String(t), i.setAttribute(`aria-label`, `Checklist item ${t + 1} complete`);
-				let a = C$3(`Checklist item ${t + 1}`, n.content, this.#readOnly);
-				a.dataset.checkText = String(t), a.addEventListener(`input`, () => {
-					n.contentPresent = !0;
-				}), r.append(i, a), this.#readOnly || r.append(O$3(`Move item up`, () => this.#move(t, -1), t === 0), O$3(`Move item down`, () => this.#move(t, 1), t === this.#rows.length - 1), O$3(`Indent item`, () => this.#indent(t, 1), n.depth >= 4 || t === 0), O$3(`Outdent item`, () => this.#indent(t, -1), n.depth === 0), O$3(`Remove item`, () => this.#remove(t), this.#rows.length === 1)), e.append(r);
-			}
-			this.#readOnly || e.append(O$3(`Add checklist item`, () => this.#add()));
-		}
-	}
-	#syncRows() {
-		for (let e of this.#root?.querySelectorAll(`[data-check-text]`) ?? []) {
-			let t = this.#rows[Number(e.dataset.checkText)];
-			t !== void 0 && (t.content = d$5(t.content, u$5(e)));
-		}
-		for (let e of this.#root?.querySelectorAll(`[data-check-state]`) ?? []) {
-			let t = this.#rows[Number(e.dataset.checkState)];
-			t !== void 0 && (t.checked = e.checked);
-		}
-	}
-	#add() {
-		this.#syncRows(), this.#rows.length < 500 && this.#rows.push({
-			checked: !1,
-			content: [],
-			contentPresent: !1,
-			depth: 0
-		}), this.#renderRows();
-	}
-	#indent(e, t) {
-		this.#syncRows();
-		let n = this.#rows[e];
-		n !== void 0 && (n.depth = Math.max(0, Math.min(4, n.depth + t))), this.#renderRows();
-	}
-	#move(e, t) {
-		this.#syncRows();
-		let n = e + t;
-		if (n >= 0 && n < this.#rows.length) {
-			let [t] = this.#rows.splice(e, 1);
-			t !== void 0 && this.#rows.splice(n, 0, t);
-		}
-		this.#renderRows();
-	}
-	#remove(e) {
-		this.#syncRows(), this.#rows.length > 1 && this.#rows.splice(e, 1), this.#renderRows();
-	}
-};
-var StudioTableTool = class {
-	static isReadOnlySupported = !0;
-	static toolbox = {
-		icon: `▦`,
-		title: `Table`
-	};
-	#readOnly;
-	#initialCells;
-	#initialHeader;
-	#node;
-	#cells;
-	#header;
-	#root;
-	constructor(e) {
-		this.#readOnly = e.readOnly === !0, this.#node = structuredClone(e.data?.node ?? {
-			attrs: { header: !1 },
-			content: [{
-				content: [{ type: `tableCell` }, { type: `tableCell` }],
-				type: `tableRow`
-			}, {
-				content: [{ type: `tableCell` }, { type: `tableCell` }],
-				type: `tableRow`
-			}],
-			type: `table`
-		}), this.#header = this.#node.attrs?.header === !0, this.#cells = (this.#node.content ?? []).map((e) => (e.content ?? []).map((e) => ({
-			content: structuredClone(e.content ?? []),
-			contentPresent: e.content !== void 0
-		}))), this.#initialHeader = this.#header, this.#initialCells = structuredClone(this.#cells);
-	}
-	render() {
-		return this.#root = T$3(`Table`), this.#renderTable(), this.#root;
-	}
-	save() {
-		return this.#syncCells(), this.#header === this.#initialHeader && w$3(this.#cells, this.#initialCells) ? { node: structuredClone(this.#node) } : { node: {
-			attrs: { header: this.#header },
-			content: this.#cells.map((e) => ({
-				content: e.map((e) => ({
-					...e.contentPresent || e.content.length > 0 ? { content: structuredClone(e.content) } : {},
-					type: `tableCell`
-				})),
-				type: `tableRow`
-			})),
-			type: `table`
-		} };
-	}
-	#renderTable() {
-		let e = this.#root;
-		if (e === void 0) return;
-		e.replaceChildren();
-		let t = document.createElement(`input`);
-		t.type = `checkbox`, t.checked = this.#header, t.disabled = this.#readOnly, t.setAttribute(`aria-label`, `Use first row as table header`), t.addEventListener(`change`, () => {
-			this.#header = t.checked;
-		}), e.append(t);
-		let n = document.createElement(`table`);
-		n.setAttribute(`aria-label`, `Table data`);
-		for (let [e, t] of this.#cells.entries()) {
-			let r = document.createElement(`tr`);
-			for (let [n, i] of t.entries()) {
-				let t = document.createElement(e === 0 && this.#header ? `th` : `td`), a = C$3(`Row ${e + 1}, column ${n + 1}`, i.content, this.#readOnly);
-				a.dataset.tableCell = `${e}:${n}`, a.addEventListener(`input`, () => {
-					i.contentPresent = !0;
-				}), t.append(a), r.append(t);
-			}
-			n.append(r);
-		}
-		e.append(n), this.#readOnly || e.append(O$3(`Add table row`, () => this.#resize(1, 0), this.#cells.length >= 200), O$3(`Remove table row`, () => this.#resize(-1, 0), this.#cells.length <= 1), O$3(`Add table column`, () => this.#resize(0, 1), (this.#cells[0]?.length ?? 0) >= 50), O$3(`Remove table column`, () => this.#resize(0, -1), (this.#cells[0]?.length ?? 0) <= 1));
-	}
-	#resize(e, t) {
-		if (this.#syncCells(), e > 0 && this.#cells.length < 200 && this.#cells.push(Array.from({ length: this.#cells[0]?.length ?? 1 }, () => ({
-			content: [],
-			contentPresent: !1
-		}))), e < 0 && this.#cells.length > 1 && this.#cells.pop(), t > 0 && (this.#cells[0]?.length ?? 0) < 50) for (let e of this.#cells) e.push({
-			content: [],
-			contentPresent: !1
-		});
-		if (t < 0 && (this.#cells[0]?.length ?? 0) > 1) for (let e of this.#cells) e.pop();
-		this.#renderTable();
-	}
-	#syncCells() {
-		for (let e of this.#root?.querySelectorAll(`[data-table-cell]`) ?? []) {
-			let [t, n] = (e.dataset.tableCell ?? ``).split(`:`).map(Number), r = t === void 0 ? void 0 : this.#cells[t], i = n === void 0 ? void 0 : r?.[n];
-			i !== void 0 && (i.content = d$5(i.content, u$5(e)));
-		}
-	}
-};
-var StudioMarkerTool = class {
-	static isInline = !0;
-	static sanitize = { mark: { "data-studio-tone": !0 } };
-	#button;
-	#tone = `accent`;
-	checkState(e) {
-		let t = k$3(e.anchorNode) !== void 0;
-		return this.#button?.setAttribute(`aria-pressed`, String(t)), t;
-	}
-	render() {
-		let e = document.createElement(`button`);
-		return e.type = `button`, e.textContent = `Highlight`, e.setAttribute(`aria-label`, `Toggle semantic highlight`), e.setAttribute(`aria-pressed`, `false`), this.#button = e, e;
-	}
-	renderActions() {
-		let e = D$2(`Highlight tone`, [
-			`accent`,
-			`info`,
-			`success`,
-			`warning`,
-			`danger`
-		], this.#tone, !1);
-		return e.addEventListener(`change`, () => {
-			this.#tone = e.value;
-		}), e;
-	}
-	surround(e) {
-		let t = k$3(e.commonAncestorContainer);
-		if (t !== void 0) {
-			let e = t.parentNode;
-			for (; t.firstChild !== null;) e?.insertBefore(t.firstChild, t);
-			t.remove();
-			return;
-		}
-		if (e.collapsed) return;
-		let n = document.createElement(`mark`);
-		n.dataset.studioTone = this.#tone, n.append(e.extractContents()), e.insertNode(n);
-	}
-};
-function c$3(e, t) {
-	if (t.type === `hardBreak`) {
-		e.appendChild(document.createElement(`br`));
-		return;
-	}
-	if (t.type !== `text` || (t.text ?? ``).length === 0) return;
-	let n = document.createTextNode(t.text ?? ``);
-	for (let e of [...t.marks ?? []].reverse()) {
-		let t = document.createElement(l$5(e));
-		e.type === `highlight` && (t.dataset.studioTone = j$3(e.attrs?.tone, `accent`)), t.append(n), n = t;
-	}
-	e.appendChild(n);
-}
-function l$5(e) {
-	return e.type === `bold` ? `strong` : e.type === `italic` ? `em` : e.type === `strike` ? `s` : e.type === `code` ? `code` : `mark`;
-}
-function u$5(e) {
-	let t = [], n = (e, r) => {
-		if (e.nodeType === Node.TEXT_NODE) {
-			let n = e.nodeValue ?? ``;
-			n.length > 0 && t.push({
-				...r.length > 0 ? { marks: r } : {},
-				text: n,
-				type: `text`
-			});
-			return;
-		}
-		if (!(e instanceof Element)) return;
-		if (e.localName === `br`) {
-			t.push({ type: `hardBreak` });
-			return;
-		}
-		let i = [...r], a = p$4(e);
-		a !== void 0 && !i.some((e) => e.type === a.type) && (a.type === `code` ? i.splice(0, i.length, a) : i.some((e) => e.type === `code`) || i.push(a));
-		for (let t of e.childNodes) n(t, i);
-	};
-	for (let t of e.childNodes) n(t, []);
-	return t;
-}
-function d$5(e, t) {
-	return w$3(f$5(e), f$5(t)) ? structuredClone([...e]) : t;
-}
-function f$5(e) {
-	let t = [];
-	for (let n of e) {
-		if (n.type === `hardBreak`) {
-			t.push({ kind: `hard-break` });
-			continue;
-		}
-		if (n.type !== `text`) continue;
-		let e = (n.marks ?? []).map((e) => {
-			if (e.type !== `highlight`) return e.type;
-			let t = e.attrs?.tone;
-			return `${e.type}:${typeof t == `string` ? t : ``}`;
-		}).sort(), r = t.at(-1);
-		r?.kind === `text` && w$3(r.marks, e) ? r.text += n.text ?? `` : t.push({
-			kind: `text`,
-			marks: e,
-			text: n.text ?? ``
-		});
-	}
-	return t;
-}
-function p$4(e) {
-	if (e.localName === `strong` || e.localName === `b`) return { type: `bold` };
-	if (e.localName === `em` || e.localName === `i`) return { type: `italic` };
-	if (e.localName === `s` || e.localName === `del`) return { type: `strike` };
-	if (e.localName === `code`) return { type: `code` };
-	if (e.localName === `mark`) {
-		let t = e.getAttribute(`data-studio-tone`);
-		return {
-			attrs: { tone: [
-				`accent`,
-				`danger`,
-				`info`,
-				`success`,
-				`warning`
-			].includes(t ?? ``) ? t ?? `accent` : `accent` },
-			type: `highlight`
-		};
-	}
-}
-function m$4(e) {
-	e.preventDefault();
-	let t = e.clipboardData?.getData(`text/plain`) ?? ``, n = globalThis.getSelection();
-	if (n === null || n.rangeCount === 0) return;
-	let r = n.getRangeAt(0);
-	r.deleteContents(), r.insertNode(document.createTextNode(t.slice(0, 25e4))), r.collapse(!1);
-}
-function h$3(e, t = 0, n, r) {
-	let i = [];
-	for (let a of e.content ?? []) {
-		let o = (a.content ?? []).find((e) => e.type === `paragraph` || e.type === `heading`), s = o ?? { type: `paragraph` };
-		i.push({
-			depth: t,
-			editableBlock: s,
-			item: a,
-			...n === void 0 ? {} : { ownerItem: n },
-			parentList: e,
-			...r === void 0 ? {} : { parentListParent: r },
-			syntheticEditable: o === void 0
-		});
-		for (let n of a.content ?? []) (n.type === `bulletList` || n.type === `orderedList`) && i.push(...h$3(n, t + 1, a, e));
-	}
-	return i;
-}
-function g$3(e) {
-	let t = Number(e.attrs?.start ?? 1);
-	return Number.isSafeInteger(t) && t >= 1 && t <= 1e6 ? t : 1;
-}
-function _$3(e, t) {
-	let n = e.parentList.content ?? [], r = n.indexOf(e.item);
-	return r >= 0 && r + t >= 0 && r + t < n.length;
-}
-function v$3(e) {
-	return e.depth >= 4 ? !1 : (e.parentList.content ?? []).indexOf(e.item) > 0;
-}
-function y$3(e, t) {
-	return e.parentList !== t || (t.content?.length ?? 0) > 1;
-}
-function b$3(e, t) {
-	e.content = (e.content ?? []).filter((e) => e !== t);
-}
-function x$3(e) {
-	return e.find((e) => e.type === `paragraph` || e.type === `heading`)?.content ?? [];
-}
-function S$3(e, t) {
-	let n = structuredClone([...e]), r = n.findIndex((e) => e.type === `paragraph` || e.type === `heading`);
-	if (r < 0) return t.length > 0 && n.unshift({
-		content: structuredClone([...t]),
-		type: `paragraph`
-	}), n;
-	let i = n[r];
-	return i !== void 0 && !w$3(i.content ?? [], t) && (i.content = structuredClone([...t])), n;
-}
-function C$3(e, t, n) {
-	let r = document.createElement(`div`);
-	r.className = `studio-rich-text-field`, r.contentEditable = n ? `false` : `true`, r.setAttribute(`aria-label`, e), r.setAttribute(`aria-multiline`, `true`), r.setAttribute(`role`, `textbox`), r.spellcheck = !0;
-	for (let e of t) c$3(r, e);
-	return r.addEventListener(`paste`, m$4), r;
-}
-function w$3(e, t) {
-	if (Object.is(e, t)) return !0;
-	if (Array.isArray(e) || Array.isArray(t)) return Array.isArray(e) && Array.isArray(t) && e.length === t.length && e.every((e, n) => w$3(e, t[n]));
-	if (!A$3(e) || !A$3(t)) return !1;
-	let n = Object.keys(e).sort(), r = Object.keys(t).sort();
-	return n.length === r.length && n.every((n, i) => n === r[i] && w$3(e[n], t[n]));
-}
-function T$3(e) {
-	let t = document.createElement(`div`);
-	return t.setAttribute(`aria-label`, e), t.setAttribute(`role`, `group`), t;
-}
-function E$3(e, t, n) {
-	let r = document.createElement(`input`);
-	return r.type = `text`, r.setAttribute(`aria-label`, e), r.disabled = n, r.value = t, r;
-}
-function D$2(e, t, n, r) {
-	let i = document.createElement(`select`);
-	i.setAttribute(`aria-label`, e), i.disabled = r;
-	for (let e of t) {
-		let t = document.createElement(`option`);
-		t.value = e, t.textContent = e, t.selected = e === n, i.append(t);
-	}
-	return i.value = n, i;
-}
-function O$3(e, t, n = !1) {
-	let r = document.createElement(`button`);
-	return r.type = `button`, r.textContent = e, r.setAttribute(`aria-label`, e), r.disabled = n, r.addEventListener(`click`, t), r;
-}
-function k$3(e) {
-	let t = e instanceof HTMLElement ? e : e?.parentElement;
-	for (; t != null;) {
-		if (t.localName === `mark`) return t;
-		t = t.parentElement ?? void 0;
-	}
-}
-function A$3(e) {
-	return typeof e == `object` && !!e && !Array.isArray(e);
-}
-function j$3(e, t) {
-	return typeof e == `string` ? e : t;
-}
-//#endregion
-//#region node_modules/@kumwe/studio-rich-text/dist/studio-rich-text-editor.js
-var StudioRichTextEditorFactory = class {
-	#surfaceAdapter;
-	constructor(e = new u$4()) {
-		this.#surfaceAdapter = e;
-	}
-	async create(r) {
-		let a = resolveRichTextProfile(r.profile ?? (r.containerType === void 0 ? `studio.rich-text/portable` : resolveContainerRichTextProfile(r.containerType))), o = parseRichTextDocument(r.value, a), s = r.readOnly === !0 || r.binding !== void 0 && r.binding.source.kind !== `static-value`, c = {}, u = Promise.resolve(), d = async () => {
-			if (c.surface === void 0) return o;
-			return o = parseRichTextDocument(await c.surface.read(), a), o;
-		};
-		return c.surface = await this.#surfaceAdapter.mount({
-			holder: r.holder,
-			initialValue: o,
-			onChange: () => {
-				u = u.then(async () => {
-					try {
-						let e = await d();
-						r.onChange?.({
-							diagnostics: [],
-							valid: !0,
-							value: e
-						});
-					} catch {
-						r.onChange?.({
-							diagnostics: [l$4()],
-							valid: !1,
-							value: o
-						});
-					}
-				});
-			},
-			...r.placeholder === void 0 ? {} : { placeholder: r.placeholder },
-			readOnly: s
-		}), {
-			destroy: () => c.surface?.destroy(),
-			focus: () => c.surface?.focus(),
-			readOnly: s,
-			replace: async (t) => {
-				let n = parseRichTextDocument(t, a);
-				await c.surface?.replace(n), o = n;
-			},
-			save: async () => {
-				await u;
-				try {
-					return await d();
-				} catch {
-					return o;
-				}
-			}
-		};
-	}
-};
-function l$4() {
-	return {
-		code: `studio.rich-text/invalid-editor-state`,
-		message: {
-			defaultMessage: `The latest edit is not valid for this rich-text profile.`,
-			key: `studio.rich-text/invalid-editor-state`
-		},
-		severity: `error`
-	};
-}
-var u$4 = class {
-	async mount(e) {
-		let t = (await __vitePreload(async () => {
-			const { default: __vite_default__ } = await import("./editorjs-BQPU4-8b.js");
-			return { default: __vite_default__ };
-		}, [])).default, n = new t({
-			data: d$4(e.initialValue),
-			holder: e.holder,
-			inlineToolbar: [
-				`bold`,
-				`italic`,
-				`marker`
-			],
-			minHeight: 0,
-			onChange: e.onChange,
-			placeholder: e.placeholder ?? ``,
-			readOnly: e.readOnly,
-			tools: {
-				...studioEditorJsTools(),
-				marker: StudioMarkerTool
-			}
-		});
-		return await n.isReady, {
-			destroy: () => n.destroy(),
-			focus: () => {
-				n.caret?.focus(!0);
-			},
-			read: async () => f$4(await n.save()),
-			replace: async (e) => n.render(d$4(e))
-		};
-	}
-};
-function d$4(e) {
-	return {
-		blocks: toStudioEditorJsBlocks(e),
-		version: `2.31.6`
-	};
-}
-function f$4(e) {
-	return fromStudioEditorJsBlocks(e);
-}
-//#endregion
-//#region node_modules/@kumwe/studio-rich-text/dist/strict-csp-surface.js
-var StudioStrictCspRichTextSurfaceAdapter = class {
-	mount(e) {
-		return Promise.resolve(new i$4(e));
-	}
-};
-var i$4 = class {
-	#blocks = document.createElement(`div`);
-	#options;
-	#root = document.createElement(`section`);
-	#mounted = [];
-	constructor(e) {
-		this.#options = e, this.#root.className = `studio-rich-text-strict-surface`, this.#root.dataset.studioRichTextSurface = `strict-csp`, this.#root.setAttribute(`aria-label`, e.readOnly ? `Rich text preview` : `Rich text editor`), this.#root.setAttribute(`role`, `region`), this.#blocks.className = `studio-rich-text-strict-blocks`, this.#blocks.addEventListener(`change`, this.#notifyChange), this.#blocks.addEventListener(`input`, this.#notifyChange), this.#render(e.initialValue), e.holder.replaceChildren(this.#root);
-	}
-	destroy() {
-		this.#blocks.removeEventListener(`change`, this.#notifyChange), this.#blocks.removeEventListener(`input`, this.#notifyChange), this.#mounted = [], this.#root.remove();
-	}
-	focus() {
-		let e = this.#root.querySelector(`[contenteditable="true"], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), button:not(:disabled)`);
-		if (e !== null) {
-			e.focus();
-			return;
-		}
-		this.#root.tabIndex = -1, this.#root.focus();
-	}
-	read() {
-		return Promise.resolve(structuredClone(this.#snapshot()));
-	}
-	replace(e) {
-		return this.#render(e), Promise.resolve();
-	}
-	#notifyChange = () => {
-		this.#options.onChange();
-	};
-	#add(e) {
-		let t = this.#snapshot();
-		t.content.push(p$3(e)), this.#render(t), this.#options.onChange();
-	}
-	#move(e, t) {
-		let n = this.#snapshot(), r = e + t;
-		if (r < 0 || r >= n.content.length) return;
-		let [i] = n.content.splice(e, 1);
-		i !== void 0 && (n.content.splice(r, 0, i), this.#render(n), this.#options.onChange(), this.#focusBlock(r));
-	}
-	#remove(e) {
-		let t = this.#snapshot();
-		t.content.splice(e, 1), t.content.length === 0 && t.content.push(p$3(`paragraph`)), this.#render(t), this.#options.onChange(), this.#focusBlock(Math.min(e, t.content.length - 1));
-	}
-	#focusBlock(e) {
-		this.#blocks.querySelector(`[data-studio-rich-text-index="${String(e)}"]`)?.querySelector(`[contenteditable="true"], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), button:not(:disabled)`)?.focus();
-	}
-	#render(e) {
-		let r = studioEditorJsTools(), i = toStudioEditorJsBlocks(e);
-		this.#mounted = i.map((e) => {
-			let t = r[e.type];
-			return {
-				tool: new t({
-					data: e.data,
-					readOnly: this.#options.readOnly
-				}),
-				type: e.type
-			};
-		}), this.#root.replaceChildren(), this.#options.readOnly || this.#root.append(this.#createToolbar()), this.#blocks.replaceChildren(...this.#mounted.map((e, t) => this.#renderBlock(e, t))), this.#root.append(this.#blocks);
-	}
-	#renderBlock(e, n) {
-		let r = document.createElement(`section`), i = studioEditorJsTools()[e.type].toolbox.title;
-		if (r.className = `studio-rich-text-strict-block`, r.dataset.studioRichTextIndex = String(n), r.setAttribute(`aria-label`, `${i} block ${String(n + 1)}`), r.setAttribute(`role`, `group`), !this.#options.readOnly) {
-			let e = document.createElement(`div`);
-			e.className = `studio-rich-text-strict-block-controls`, e.setAttribute(`aria-label`, `${i} block actions`), e.setAttribute(`role`, `toolbar`), e.append(a$3(`Move block up`, () => this.#move(n, -1), n === 0), a$3(`Move block down`, () => this.#move(n, 1), n === this.#mounted.length - 1), a$3(`Remove block`, () => this.#remove(n))), r.append(e);
-		}
-		return r.append(e.tool.render()), r;
-	}
-	#createToolbar() {
-		let n = studioEditorJsTools(), r = document.createElement(`div`), i = document.createElement(`select`);
-		i.setAttribute(`aria-label`, `Rich text block type`);
-		for (let t of STUDIO_EDITOR_JS_TOOL_NAMES) {
-			let e = document.createElement(`option`);
-			e.textContent = n[t].toolbox.title, e.value = t, i.append(e);
-		}
-		r.className = `studio-rich-text-strict-toolbar`, r.setAttribute(`aria-label`, `Rich text tools`), r.setAttribute(`role`, `toolbar`), r.append(i, a$3(`Add rich text block`, () => {
-			d$3(i.value) && this.#add(i.value);
-		}));
-		let c = s$3();
-		return r.append(o$3(`Bold selected text`, () => this.#formatInline(`bold`)), o$3(`Italicize selected text`, () => this.#formatInline(`italic`)), o$3(`Strike selected text`, () => this.#formatInline(`strike`)), o$3(`Format selected text as code`, () => this.#formatInline(`code`)), c, o$3(`Highlight selected text`, () => this.#formatInline(`highlight`, f$3(c.value))), o$3(`Insert line break`, () => this.#formatInline(`hard-break`))), r;
-	}
-	#formatInline(e, t = `accent`) {
-		let n = globalThis.getSelection();
-		if (n === null || n.rangeCount === 0) return;
-		let r = n.getRangeAt(0), i = c$2(r.startContainer, this.#root), a = c$2(r.endContainer, this.#root);
-		if (i === void 0 || i !== a) return;
-		if (e === `hard-break`) {
-			r.deleteContents();
-			let e = document.createElement(`br`);
-			r.insertNode(e), r.setStartAfter(e), r.collapse(!0), n.removeAllRanges(), n.addRange(r), this.#options.onChange();
-			return;
-		}
-		if (r.collapsed) return;
-		let o = u$3(e), s = l$3(r.commonAncestorContainer, i, o);
-		if (s !== void 0) {
-			let e = s.parentNode;
-			for (; s.firstChild !== null;) e?.insertBefore(s.firstChild, s);
-			s.remove(), this.#options.onChange();
-			return;
-		}
-		let d = document.createElement(o);
-		e === `highlight` && (d.dataset.studioTone = t), d.append(r.extractContents()), r.insertNode(d), r.selectNodeContents(d), n.removeAllRanges(), n.addRange(r), this.#options.onChange();
-	}
-	#snapshot() {
-		return {
-			content: this.#mounted.map((e) => e.tool.save().node),
-			type: `doc`
-		};
-	}
-};
-function a$3(e, t, n = !1) {
-	let r = document.createElement(`button`);
-	return r.disabled = n, r.textContent = e, r.type = `button`, r.setAttribute(`aria-label`, e), r.addEventListener(`click`, t), r;
-}
-function o$3(e, t) {
-	let n = a$3(e, t);
-	return n.addEventListener(`mousedown`, (e) => e.preventDefault()), n;
-}
-function s$3() {
-	let e = document.createElement(`select`);
-	e.setAttribute(`aria-label`, `Highlight tone`);
-	for (let t of [
-		`accent`,
-		`info`,
-		`success`,
-		`warning`,
-		`danger`
-	]) {
-		let n = document.createElement(`option`);
-		n.textContent = t, n.value = t, e.append(n);
-	}
-	return e;
-}
-function c$2(e, t) {
-	let n = e instanceof HTMLElement ? e : e.parentElement;
-	for (; n !== null;) {
-		if (n.getAttribute(`contenteditable`) === `true`) return n;
-		if (n === t) return;
-		n = n.parentElement;
-	}
-}
-function l$3(e, t, n) {
-	let r = e instanceof HTMLElement ? e : e.parentElement;
-	for (; r !== null && r !== t;) {
-		if (r.localName === n) return r;
-		r = r.parentElement;
-	}
-}
-function u$3(e) {
-	return e === `bold` ? `strong` : e === `italic` ? `em` : e === `strike` ? `s` : e === `code` ? `code` : `mark`;
-}
-function d$3(t) {
-	return STUDIO_EDITOR_JS_TOOL_NAMES.some((e) => e === t);
-}
-function f$3(e) {
-	return [
-		`accent`,
-		`danger`,
-		`info`,
-		`success`,
-		`warning`
-	].includes(e) ? e : `accent`;
-}
-function p$3(e) {
-	switch (e) {
-		case `callout`: return {
-			attrs: { tone: `info` },
-			content: [{ type: `paragraph` }],
-			type: `callout`
-		};
-		case `checklist`: return {
-			content: [{
-				attrs: {
-					checked: !1,
-					level: 0
-				},
-				type: `checklistItem`
-			}],
-			type: `checklist`
-		};
-		case `code`: return {
-			attrs: { language: `text` },
-			type: `codeBlock`
-		};
-		case `delimiter`: return { type: `horizontalRule` };
-		case `header`: return {
-			attrs: { level: 2 },
-			type: `heading`
-		};
-		case `list`: return {
-			content: [{
-				content: [{ type: `paragraph` }],
-				type: `listItem`
-			}],
-			type: `bulletList`
-		};
-		case `paragraph`: return { type: `paragraph` };
-		case `quote`: return {
-			content: [{ type: `paragraph` }],
-			type: `blockquote`
-		};
-		case `table`: return {
-			attrs: { header: !1 },
-			content: [{
-				content: [{ type: `tableCell` }, { type: `tableCell` }],
-				type: `tableRow`
-			}, {
-				content: [{ type: `tableCell` }, { type: `tableCell` }],
-				type: `tableRow`
-			}],
-			type: `table`
-		};
-	}
-}
-//#endregion
-//#region node_modules/@kumwe/studio-rich-text/dist/index.js
-var e$1 = Object.freeze([
-	`bold`,
-	`code`,
-	`highlight`,
-	`italic`,
-	`strike`
-]);
-var t$1 = Object.freeze([
-	`blockquote`,
-	`bulletList`,
-	`callout`,
-	`checklist`,
-	`checklistItem`,
-	`codeBlock`,
-	`doc`,
-	`hardBreak`,
-	`heading`,
-	`horizontalRule`,
-	`listItem`,
-	`orderedList`,
-	`paragraph`,
-	`table`,
-	`tableCell`,
-	`tableRow`,
-	`text`
-]);
-var n$2 = Object.freeze([
-	2,
-	3,
-	4
-]);
-var r$2 = 1048576;
-var i$3 = 2e4;
-var a$2 = e$1.length;
-var o$2 = Object.freeze({
-	maximumDepth: 128,
-	maximumDocumentBytes: 10485760,
-	maximumMarks: 4e5,
-	maximumMarksPerNode: e$1.length,
-	maximumNodes: 1e5,
-	maximumTextLength: 10485760
-});
-var s$2 = Object.freeze({
-	maximumDepth: 32,
-	maximumItemsPerArray: 1e4,
-	maximumPropertiesPerObject: 1e3,
-	maximumStringLength: 1048576,
-	maximumTotalBytes: o$2.maximumDocumentBytes
-});
-var DEFAULT_RICH_TEXT_ATTRIBUTE_LIMITS = Object.freeze({
-	maximumDepth: 8,
-	maximumItemsPerArray: 256,
-	maximumPropertiesPerObject: 64,
-	maximumStringLength: 4096,
-	maximumTotalBytes: 65536
-});
-var DEFAULT_RICH_TEXT_PROFILE = Object.freeze({
-	allowedAttributes: Object.freeze({
-		callout: Object.freeze([`tone`]),
-		checklistItem: Object.freeze([`checked`, `level`]),
-		codeBlock: Object.freeze([`language`]),
-		heading: Object.freeze([`level`]),
-		"mark:highlight": Object.freeze([`tone`]),
-		orderedList: Object.freeze([`start`]),
-		table: Object.freeze([`header`])
-	}),
-	allowedMarks: e$1,
-	allowedNodes: t$1,
-	attributeLimits: DEFAULT_RICH_TEXT_ATTRIBUTE_LIMITS,
-	headingLevels: n$2,
-	maximumDepth: 32,
-	maximumDocumentBytes: r$2,
-	maximumMarks: i$3,
-	maximumMarksPerNode: a$2,
-	maximumNodes: 5e3,
-	maximumTextLength: 25e4
-});
-function parseRichTextDocument(e, t = DEFAULT_RICH_TEXT_PROFILE) {
-	V$1(t);
-	let n = m$3(e, `$`, 1, t, G$1(t), {
-		attributeBytes: 0,
-		markCount: 0,
-		nodeCount: 0,
-		textLength: 0
-	});
-	if (n.type !== `doc`) throw TypeError(`Rich-text document root must have type "doc".`);
-	let r = {
-		...n,
-		content: n.content ?? [],
-		type: `doc`
-	};
-	if (R$1(JSON.stringify(r)) > W$1(t)) throw RangeError(`Rich-text document exceeds its total-byte limit.`);
-	return r;
-}
-function m$3(e, t, n, r, o, s) {
-	if (!B$1(e) || (I$1(e, t, [
-		`attrs`,
-		`content`,
-		`marks`,
-		`text`,
-		`type`
-	]), typeof e.type != `string` || e.type.length === 0)) throw TypeError(`${t} must be a rich-text node with a non-empty type.`);
-	if (!r.allowedNodes.includes(e.type)) throw TypeError(`${t} uses disallowed node type "${e.type}".`);
-	if (n > r.maximumDepth) throw RangeError(`${t} exceeds the rich-text depth limit.`);
-	if (s.nodeCount += 1, s.nodeCount > r.maximumNodes) throw RangeError(`Rich-text document exceeds its node limit.`);
-	let c = { type: e.type };
-	if (e.text !== void 0) {
-		if (typeof e.text != `string`) throw TypeError(`${t}.text must be a string.`);
-		if (c.text = e.text, s.textLength += e.text.length, s.textLength > r.maximumTextLength) throw RangeError(`Rich-text document exceeds its text-length limit.`);
-	}
-	if (e.attrs !== void 0 && (c.attrs = O$2(e.attrs, `${t}.attrs`, e.type, r, o, s)), e.content !== void 0) {
-		if (!Array.isArray(e.content)) throw TypeError(`${t}.content must be an array.`);
-		F$1(e.content, `${t}.content`), c.content = e.content.map((e, i) => m$3(e, `${t}.content[${i}]`, n + 1, r, o, s));
-	}
-	if (e.marks !== void 0) {
-		if (!Array.isArray(e.marks)) throw TypeError(`${t}.marks must be an array.`);
-		F$1(e.marks, `${t}.marks`);
-		let n = r.maximumMarksPerNode ?? a$2, l = r.maximumMarks ?? i$3;
-		if (e.marks.length > n) throw RangeError(`${t}.marks exceeds the per-node mark limit.`);
-		if (s.markCount + e.marks.length > l) throw RangeError(`Rich-text document exceeds its aggregate mark limit.`);
-		s.markCount += e.marks.length, c.marks = e.marks.map((e, n) => h$2(e, `${t}.marks[${n}]`, r, o, s)), _$2(c.marks, `${t}.marks`);
-	}
-	return g$2(c, t, r), c;
-}
-function h$2(e, t, n, r, i) {
-	if (!B$1(e) || (I$1(e, t, [`attrs`, `type`]), typeof e.type != `string` || e.type.length === 0)) throw TypeError(`${t} must be a mark with a non-empty type.`);
-	if (!n.allowedMarks.includes(e.type)) throw TypeError(`${t} uses disallowed mark type "${e.type}".`);
-	let a = { type: e.type };
-	if (e.attrs !== void 0 && (a.attrs = O$2(e.attrs, `${t}.attrs`, `mark:${e.type}`, n, r, i)), a.type === `highlight`) {
-		let e = a.attrs?.tone;
-		if (typeof e != `string` || ![
-			`accent`,
-			`danger`,
-			`info`,
-			`success`,
-			`warning`
-		].includes(e)) throw TypeError(`${t}.attrs.tone must be a configured highlight tone.`);
-	} else if (a.attrs !== void 0) throw TypeError(`${t} cannot carry attributes in the portable rich-text grammar.`);
-	return a;
-}
-function g$2(e, t, r) {
-	switch (e.type) {
-		case `doc`:
-			if (T$2(e, t, [
-				`attrs`,
-				`marks`,
-				`text`
-			]), e.content === void 0 || e.content.length === 0) throw TypeError(`${t}.content must contain at least one block node.`);
-			E$2(e.content, t, v$2);
-			break;
-		case `text`:
-			if (T$2(e, t, [`attrs`, `content`]), e.text === void 0) throw TypeError(`${t}.text is required for a text node.`);
-			if (e.text.length === 0) throw TypeError(`${t}.text cannot be empty.`);
-			break;
-		case `paragraph`:
-			T$2(e, t, [
-				`attrs`,
-				`marks`,
-				`text`
-			]), E$2(e.content ?? [], t, y$2);
-			break;
-		case `heading`: {
-			T$2(e, t, [`marks`, `text`]), E$2(e.content ?? [], t, y$2);
-			let i = e.attrs?.level, a = r.headingLevels ?? n$2;
-			if (typeof i != `number` || !Number.isInteger(i) || !a.includes(i)) throw TypeError(`${t}.attrs.level must be a configured heading level.`);
-			break;
-		}
-		case `orderedList`: {
-			T$2(e, t, [`marks`, `text`]), D$1(e.content, t, b$2);
-			let n = e.attrs?.start;
-			if (n !== void 0 && (!Number.isSafeInteger(n) || Number(n) < 1)) throw TypeError(`${t}.attrs.start must be a positive integer.`);
-			break;
-		}
-		case `bulletList`:
-			T$2(e, t, [
-				`attrs`,
-				`marks`,
-				`text`
-			]), D$1(e.content, t, b$2);
-			break;
-		case `listItem`:
-			if (T$2(e, t, [
-				`attrs`,
-				`marks`,
-				`text`
-			]), D$1(e.content, t, v$2), e.content?.[0]?.type !== `paragraph`) throw TypeError(`${t}.content must begin with a paragraph node.`);
-			break;
-		case `blockquote`:
-			T$2(e, t, [
-				`attrs`,
-				`marks`,
-				`text`
-			]), D$1(e.content, t, v$2);
-			break;
-		case `callout`:
-			if (T$2(e, t, [`marks`, `text`]), D$1(e.content, t, v$2), typeof e.attrs?.tone != `string` || ![
-				`danger`,
-				`info`,
-				`success`,
-				`warning`
-			].includes(e.attrs.tone)) throw TypeError(`${t}.attrs.tone must be a configured callout tone.`);
-			break;
-		case `checklist`:
-			T$2(e, t, [
-				`attrs`,
-				`marks`,
-				`text`
-			]), D$1(e.content, t, x$2);
-			break;
-		case `checklistItem`:
-			if (T$2(e, t, [`marks`, `text`]), E$2(e.content ?? [], t, y$2), typeof e.attrs?.checked != `boolean`) throw TypeError(`${t}.attrs.checked must be a boolean.`);
-			if (!Number.isSafeInteger(e.attrs.level) || Number(e.attrs.level) < 0 || Number(e.attrs.level) > 4) throw TypeError(`${t}.attrs.level must be an integer from zero through four.`);
-			break;
-		case `table`:
-			if (T$2(e, t, [`marks`, `text`]), D$1(e.content, t, S$2), typeof e.attrs?.header != `boolean`) throw TypeError(`${t}.attrs.header must be a boolean.`);
-			w$2(e.content, t);
-			break;
-		case `tableRow`:
-			T$2(e, t, [
-				`attrs`,
-				`marks`,
-				`text`
-			]), D$1(e.content, t, C$2);
-			break;
-		case `tableCell`:
-			T$2(e, t, [
-				`attrs`,
-				`marks`,
-				`text`
-			]), E$2(e.content ?? [], t, y$2);
-			break;
-		case `codeBlock`:
-			if (T$2(e, t, [`content`, `marks`]), e.text === void 0) throw TypeError(`${t}.text is required for a code block.`);
-			if (typeof e.attrs?.language != `string` || !/^[A-Za-z0-9][A-Za-z0-9+_.#-]{0,63}$/u.test(e.attrs.language)) throw TypeError(`${t}.attrs.language must be a bounded language identifier.`);
-			break;
-		case `hardBreak`:
-		case `horizontalRule`:
-			T$2(e, t, [
-				`attrs`,
-				`content`,
-				`marks`,
-				`text`
-			]);
-			break;
-		default: throw TypeError(`${t} uses a node without a portable grammar.`);
-	}
-}
-function _$2(e, t) {
-	let n = /* @__PURE__ */ new Set();
-	for (let r of e) {
-		if (n.has(r.type)) throw TypeError(`${t} cannot contain duplicate ${r.type} marks.`);
-		n.add(r.type);
-	}
-	if (n.has(`code`) && n.size > 1) throw TypeError(`${t} cannot combine code with another mark.`);
-}
-var v$2 = /* @__PURE__ */ new Set([
-	`blockquote`,
-	`bulletList`,
-	`callout`,
-	`checklist`,
-	`codeBlock`,
-	`heading`,
-	`horizontalRule`,
-	`orderedList`,
-	`paragraph`,
-	`table`
-]);
-var y$2 = /* @__PURE__ */ new Set([`hardBreak`, `text`]);
-var b$2 = /* @__PURE__ */ new Set([`listItem`]);
-var x$2 = /* @__PURE__ */ new Set([`checklistItem`]);
-var S$2 = /* @__PURE__ */ new Set([`tableRow`]);
-var C$2 = /* @__PURE__ */ new Set([`tableCell`]);
-function w$2(e, t) {
-	let n = e?.[0]?.content?.length ?? 0, r = e?.findIndex((e) => e.content?.length !== n) ?? -1;
-	if (n < 1 || r >= 0) throw TypeError(`${t}.content must be a non-empty rectangular table.`);
-}
-function T$2(e, t, n) {
-	let r = n.find((t) => e[t] !== void 0);
-	if (r !== void 0) throw TypeError(`${t}.${r} is not valid on a ${e.type} node.`);
-}
-function E$2(e, t, n) {
-	let r = e.findIndex((e) => !n.has(e.type));
-	if (r >= 0) throw TypeError(`${t}.content[${r}] is not valid inside this node.`);
-}
-function D$1(e, t, n) {
-	if (e === void 0 || e.length === 0) throw TypeError(`${t}.content must contain at least one child node.`);
-	E$2(e, t, n);
-}
-function O$2(e, t, n, r, i, a) {
-	let o = k$2(e, t, 1, i, a), s = r.allowedAttributes[n] ?? [];
-	for (let e of Object.keys(o)) if (!s.includes(e)) throw TypeError(`${t}.${e} is not allowed for ${n}.`);
-	return o;
-}
-function k$2(e, t, n, r, i) {
-	if (!B$1(e)) throw TypeError(`${t} must be an object.`);
-	M$1(n, t, r);
-	let a = Object.entries(e);
-	if (a.length > r.maximumPropertiesPerObject) throw RangeError(`${t} exceeds the attribute property limit.`);
-	j$2(i, r, 2);
-	let o = {};
-	for (let [e, [s, c]] of a.entries()) N$1(s, t, r), j$2(i, r, (e === 0 ? 0 : 1) + L$1(s) + 1), o[s] = A$2(c, `${t}.${s}`, n + 1, r, i);
-	return o;
-}
-function A$2(e, t, n, r, i) {
-	if (typeof e == `string`) {
-		if (e.length > r.maximumStringLength) throw RangeError(`${t} exceeds the attribute string limit.`);
-		return j$2(i, r, L$1(e)), e;
-	}
-	if (e === null || typeof e == `boolean` || typeof e == `number` && Number.isFinite(e)) return j$2(i, r, L$1(e)), e;
-	if (Array.isArray(e)) return M$1(n, t, r), P$1(e, t, r), j$2(i, r, 2), e.map((e, a) => (a > 0 && j$2(i, r, 1), A$2(e, `${t}[${a}]`, n + 1, r, i)));
-	if (B$1(e)) return k$2(e, t, n, r, i);
-	throw TypeError(`${t} is not JSON-compatible.`);
-}
-function j$2(e, t, n) {
-	if (e.attributeBytes += n, e.attributeBytes > t.maximumTotalBytes) throw RangeError(`Rich-text attributes exceed the total-byte limit.`);
-}
-function M$1(e, t, n) {
-	if (e > n.maximumDepth) throw RangeError(`${t} exceeds the attribute depth limit.`);
-}
-function N$1(e, t, n) {
-	if (e === `__proto__` || e === `constructor` || e === `prototype`) throw TypeError(`${t}.${e} is a forbidden object key.`);
-	if (e.length > n.maximumStringLength) throw RangeError(`${t} contains an attribute key that exceeds the string limit.`);
-}
-function P$1(e, t, n) {
-	if (e.length > n.maximumItemsPerArray) throw RangeError(`${t} exceeds the attribute item limit.`);
-	let r = Object.keys(e);
-	for (let e of r) if (e === `__proto__` || e === `constructor` || e === `prototype`) throw TypeError(`${t}.${e} is a forbidden object key.`);
-	if (r.length !== e.length || r.some((e, t) => e !== String(t))) throw TypeError(`${t} must be a dense JSON array without extra properties.`);
-}
-function F$1(e, t) {
-	if (Object.getPrototypeOf(e) !== Array.prototype || Object.getOwnPropertySymbols(e).length) throw TypeError(`${t} must be a dense JSON array without extra properties.`);
-	let n = Object.getOwnPropertyNames(e);
-	if (n.length !== e.length + 1 || n[e.length] !== `length` || n.slice(0, -1).some((e, t) => e !== String(t))) throw TypeError(`${t} must be a dense JSON array without extra properties.`);
-}
-function I$1(e, t, n) {
-	let r = new Set(n), i = Object.keys(e).find((e) => !r.has(e));
-	if (i !== void 0) throw TypeError(`${t}.${i} is not a recognized rich-text key.`);
-}
-function L$1(e) {
-	let t = JSON.stringify(e);
-	if (t === void 0) throw TypeError(`Attribute value is not JSON-compatible.`);
-	return R$1(t);
-}
-function R$1(e) {
-	let t = 0;
-	for (let n = 0; n < e.length; n += 1) {
-		let r = e.charCodeAt(n);
-		if (r <= 127) t += 1;
-		else if (r <= 2047) t += 2;
-		else if (r >= 55296 && r <= 56319) {
-			let r = e.charCodeAt(n + 1);
-			r >= 56320 && r <= 57343 ? (t += 4, n += 1) : t += 3;
-		} else t += 3;
-	}
-	return t;
-}
-function B$1(e) {
-	if (typeof e != `object` || !e || Array.isArray(e)) return !1;
-	let t = Object.getPrototypeOf(e);
-	return t === Object.prototype || t === null;
-}
-function V$1(r) {
-	for (let [e, t] of [
-		[`maximumDepth`, r.maximumDepth],
-		[`maximumNodes`, r.maximumNodes],
-		[`maximumTextLength`, r.maximumTextLength]
-	]) H$1(e, t, o$2[e]);
-	for (let [e, t] of [
-		[`maximumDocumentBytes`, W$1(r)],
-		[`maximumMarks`, r.maximumMarks ?? i$3],
-		[`maximumMarksPerNode`, r.maximumMarksPerNode ?? a$2]
-	]) H$1(e, t, o$2[e]);
-	if ((r.maximumMarksPerNode ?? a$2) > (r.maximumMarks ?? i$3)) throw RangeError(`maximumMarksPerNode cannot exceed maximumMarks.`);
-	if (!r.allowedNodes.includes(`doc`) || !r.allowedNodes.includes(`text`)) throw TypeError(`Rich-text profile must allow doc and text nodes.`);
-	if (new Set(r.allowedNodes).size !== r.allowedNodes.length) throw TypeError(`Rich-text profile node names must be unique.`);
-	if (new Set(r.allowedMarks).size !== r.allowedMarks.length) throw TypeError(`Rich-text profile mark names must be unique.`);
-	let s = r.allowedNodes.find((e) => !t$1.includes(e));
-	if (s !== void 0) throw TypeError(`Rich-text profile node "${s}" has no portable grammar.`);
-	let c = r.allowedMarks.find((t) => !e$1.includes(t));
-	if (c !== void 0) throw TypeError(`Rich-text profile mark "${c}" has no portable grammar.`);
-	U$1(r.headingLevels ?? n$2), G$1(r);
-}
-function H$1(e, t, n) {
-	if (!Number.isInteger(t) || t < 1) throw RangeError(`${e} must be a positive integer.`);
-	if (t > n) throw RangeError(`${e} exceeds the immutable safety ceiling of ${n}.`);
-}
-function U$1(e) {
-	if (e.length === 0 || new Set(e).size !== e.length || e.some((e) => !Number.isInteger(e) || e < 1 || e > 6)) throw RangeError(`headingLevels must contain unique integer levels from 1 through 6.`);
-}
-function W$1(e) {
-	return e.maximumDocumentBytes ?? r$2;
-}
-function G$1(e) {
-	let t = {
-		...DEFAULT_RICH_TEXT_ATTRIBUTE_LIMITS,
-		...e.attributeLimits
-	};
-	for (let [e, n] of Object.entries(t)) H$1(e, n, s$2[e]);
-	return t;
-}
-//#endregion
-//#region node_modules/@kumwe/studio-renderer-web/dist/scoped-css.js
-var e = Object.freeze({
-	action: `[data-studio-part="action"]`,
-	content: `[data-studio-part="content"]`,
-	heading: `[data-studio-part="heading"]`,
-	media: `[data-studio-part="media"]`,
-	self: ``
-});
-var t = /* @__PURE__ */ new Set([
-	`background-color`,
-	`border-color`,
-	`border-radius`,
-	`border-style`,
-	`border-width`,
-	`color`,
-	`font-family`,
-	`font-size`,
-	`font-style`,
-	`font-weight`,
-	`gap`,
-	`letter-spacing`,
-	`line-height`,
-	`margin-block`,
-	`margin-inline`,
-	`max-inline-size`,
-	`min-block-size`,
-	`opacity`,
-	`padding-block`,
-	`padding-inline`,
-	`text-align`,
-	`text-decoration`,
-	`text-transform`
-]);
-var n$1 = /^(?:#[0-9A-Fa-f]{3,8}|-?[0-9]+(?:\.[0-9]+)?(?:ch|em|rem|%|px)?|[a-z][a-z0-9 -]{0,126}|var\(--studio-[a-z0-9-]{1,100}\))$/u;
-function compileStudioScopedStyleSheet(r, i) {
-	if (!/^[A-Za-z][A-Za-z0-9_-]{0,511}$/u.test(r)) throw TypeError(`Scoped CSS scope must be a bounded CSS-safe identifier.`);
-	if (i.rules.length > 100) throw RangeError(`Scoped stylesheet exceeds 100 rules.`);
-	let a = `[data-studio-scope=${r}]`;
-	return i.rules.map((r) => {
-		if (!Object.hasOwn(e, r.target)) throw TypeError(`Scoped CSS target ${r.target} is not allowed.`);
-		let i = Object.entries(r.declarations);
-		if (i.length > 50) throw RangeError(`Scoped style rule exceeds 50 declarations.`);
-		let o = i.sort(([e], [t]) => e.localeCompare(t)).map(([e, r]) => {
-			if (!t.has(e)) throw TypeError(`Scoped CSS property ${e} is not allowed.`);
-			if (r.length > 256 || !n$1.test(r) || /(?:url|expression|javascript|@|[;{}])/iu.test(r)) throw TypeError(`Scoped CSS value for ${e} is not allowed.`);
-			return `${e}:${r}`;
-		}).join(`;`);
-		return `${a}${e[r.target]}{${o}}`;
-	}).join(``);
-}
-//#endregion
 //#region node_modules/@kumwe/studio-media/dist/media-library.js
 var MEDIA_PROVIDER_FAILURE = Object.freeze({
 	defaultMessage: `The media library could not be loaded.`,
@@ -16194,16 +17958,16 @@ var MediaUploadController = class {
 	async #run(t, r) {
 		let i = new AbortController();
 		this.#abortController = i;
-		let a = r.byteSize, o = {
+		let o = r.byteSize, s = {
 			contractVersion: STUDIO_CONTRACT_VERSION,
 			id: this.#sessionId(r),
 			kind: `media-upload-session`,
 			request: r
 		};
 		this.#setSession({
-			...o,
+			...s,
 			progress: {
-				totalBytes: a,
+				totalBytes: o,
 				transferredBytes: 0
 			},
 			state: `requested`
@@ -16211,77 +17975,78 @@ var MediaUploadController = class {
 		try {
 			let e = await this.#transport.authorize(r, i.signal);
 			if (i.signal.aborted) return this.session;
-			if (a > e.maximumBytes) return this.#setSession({
-				...o,
+			let c = a$2(e);
+			if (o > c.maximumBytes) return this.#setSession({
+				...s,
 				failure: {
 					code: `studio.media/upload-too-large`,
 					message: { ...MEDIA_UPLOAD_TOO_LARGE },
 					parameters: {
-						byteSize: a,
-						maximumBytes: e.maximumBytes
+						byteSize: o,
+						maximumBytes: c.maximumBytes
 					},
 					severity: `error`
 				},
-				plan: e,
+				plan: c,
 				progress: {
-					totalBytes: a,
+					totalBytes: o,
 					transferredBytes: 0
 				},
 				state: `failed`
 			}), this.session;
 			this.#setSession({
-				...o,
-				plan: e,
+				...s,
+				plan: c,
 				progress: {
-					totalBytes: a,
+					totalBytes: o,
 					transferredBytes: 0
 				},
 				state: `authorized`
 			}), this.#setSession({
-				...o,
-				plan: e,
+				...s,
+				plan: c,
 				progress: {
-					totalBytes: a,
+					totalBytes: o,
 					transferredBytes: 0
 				},
 				state: `transferring`
 			});
-			let s = Math.max(1, e.chunkBytes ?? a), c = 0;
-			for (; c < a;) {
-				let n = t.slice(c, Math.min(c + s, a));
+			let l = c.chunkBytes ?? o, u = 0;
+			for (; u < o;) {
+				let e = t.slice(u, Math.min(u + l, o));
 				if (await this.#transport.transfer({
-					data: n,
-					offset: c,
-					sessionId: o.id
+					data: e,
+					offset: u,
+					sessionId: s.id
 				}, i.signal), i.signal.aborted) return this.session;
-				c = Math.min(c + n.size, a), this.#setSession({
-					...o,
-					plan: e,
+				u = Math.min(u + e.size, o), this.#setSession({
+					...s,
+					plan: c,
 					progress: {
-						totalBytes: a,
-						transferredBytes: c
+						totalBytes: o,
+						transferredBytes: u
 					},
 					state: `transferring`
 				});
 			}
 			this.#setSession({
-				...o,
-				plan: e,
+				...s,
+				plan: c,
 				progress: {
-					totalBytes: a,
-					transferredBytes: a
+					totalBytes: o,
+					transferredBytes: o
 				},
 				state: `verifying`
 			});
-			let l = await this.#transport.finalize(o.id, i.signal);
+			let d = await this.#transport.finalize(s.id, i.signal);
 			if (i.signal.aborted) return this.session;
 			this.#setSession({
-				...o,
-				asset: l,
-				plan: e,
+				...s,
+				asset: d,
+				plan: c,
 				progress: {
-					totalBytes: a,
-					transferredBytes: a
+					totalBytes: o,
+					transferredBytes: o
 				},
 				state: `complete`
 			});
@@ -16295,6 +18060,24 @@ var MediaUploadController = class {
 		for (let e of this.#listeners) e(this.session);
 	}
 };
+function a$2(e) {
+	if (typeof e != `object` || !e || Array.isArray(e)) throw TypeError(`The host returned an invalid bounded upload plan.`);
+	let t = Object.getPrototypeOf(e);
+	if (t !== Object.prototype && t !== null || Object.getOwnPropertySymbols(e).length !== 0) throw TypeError(`The host returned an invalid bounded upload plan.`);
+	let n = Object.getOwnPropertyDescriptors(e);
+	if (!Object.hasOwn(n, `maximumBytes`) || !Object.hasOwn(n, `resumable`) || Object.keys(n).some((e) => ![
+		`chunkBytes`,
+		`maximumBytes`,
+		`resumable`
+	].includes(e)) || Object.values(n).some((e) => !(`value` in e) || !e.enumerable)) throw TypeError(`The host returned an invalid bounded upload plan.`);
+	let r = n.maximumBytes?.value, i = n.resumable?.value, a = Object.hasOwn(n, `chunkBytes`) ? n.chunkBytes?.value : void 0;
+	if (typeof r != `number` || !Number.isInteger(r) || r < 1 || r > 1099511627776 || typeof i != `boolean` || Object.hasOwn(n, `chunkBytes`) && (typeof a != `number` || !Number.isInteger(a) || a < 1024 || a > 1073741824)) throw TypeError(`The host returned an invalid bounded upload plan.`);
+	return {
+		maximumBytes: r,
+		resumable: i,
+		...typeof a == `number` ? { chunkBytes: a } : {}
+	};
+}
 //#endregion
 //#region node_modules/@kumwe/studio-media/dist/validate-media-reference.js
 function validateMediaReference(e) {
@@ -16991,7 +18774,7 @@ var StudioAuthoringControlRegistry = class StudioAuthoringControlRegistry {
 		}
 	}
 	async #mountRichText(e) {
-		if (!j$1(e.value) || e.value.type !== `doc`) throw TypeError(`Rich-text control requires a canonical Studio document.`);
+		if (!j(e.value) || e.value.type !== `doc`) throw TypeError(`Rich-text control requires a canonical Studio document.`);
 		let t = C(e.profile), n = structuredClone(e.value), r = await this.#richTextFactory.create({
 			...e.binding === void 0 ? {} : { binding: e.binding },
 			holder: e.holder,
@@ -17041,7 +18824,7 @@ var d$1 = class {
 	#lastValid;
 	constructor(e, t, n) {
 		this.readOnly = S(e), this.#onChange = e.onChange, this.#preview = n, this.#lastValid = y(e.value), this.#language = b(e.profile);
-		let r = w(e.holder, `Source editor`), i = document.createElement(`div`), a = k$1(`Preview source`, () => void this.#renderPreview());
+		let r = w(e.holder, `Source editor`), i = document.createElement(`div`), a = k(`Preview source`, () => void this.#renderPreview());
 		a.disabled = n === void 0, this.#previewRegion = document.createElement(`div`), this.#previewRegion.setAttribute(`aria-live`, `polite`), this.#previewRegion.setAttribute(`aria-label`, `Trusted source preview`), r.append(i, a, this.#previewRegion), this.#code = t.mount({
 			holder: i,
 			language: this.#language,
@@ -17138,9 +18921,9 @@ var f$1 = class {
 		let n = document.createElement(`table`);
 		n.setAttribute(`aria-label`, `Chart data`);
 		let r = document.createElement(`tr`);
-		r.append(O$1(`Label`));
+		r.append(O(`Label`));
 		for (let [e, t] of this.#working.datasets.entries()) {
-			let n = O$1(`Dataset ${e + 1}`), i = T(`Dataset ${e + 1} label`, t.label, this.readOnly);
+			let n = O(`Dataset ${e + 1}`), i = T(`Dataset ${e + 1} label`, t.label, this.readOnly);
 			i.addEventListener(`input`, () => {
 				t.label = i.value.slice(0, 500), this.#commit();
 			}), n.replaceChildren(i), r.append(n);
@@ -17167,7 +18950,7 @@ var f$1 = class {
 			}
 			n.append(r);
 		}
-		this.#holder.append(n), this.readOnly || this.#holder.append(k$1(`Add chart row`, () => this.#addRow(), this.#working.labels.length >= 200), k$1(`Remove chart row`, () => this.#removeRow(), this.#working.labels.length <= 1), k$1(`Add chart dataset`, () => this.#addDataset(), this.#working.datasets.length >= 20), k$1(`Remove chart dataset`, () => this.#removeDataset(), this.#working.datasets.length <= 1));
+		this.#holder.append(n), this.readOnly || this.#holder.append(k(`Add chart row`, () => this.#addRow(), this.#working.labels.length >= 200), k(`Remove chart row`, () => this.#removeRow(), this.#working.labels.length <= 1), k(`Add chart dataset`, () => this.#addDataset(), this.#working.datasets.length >= 20), k(`Remove chart dataset`, () => this.#removeDataset(), this.#working.datasets.length <= 1));
 	}
 	#addRow() {
 		if (!(this.#working.labels.length >= 200)) {
@@ -17218,11 +19001,11 @@ var m$1 = class {
 		n.textContent = this.readOnly ? `Drawing is read-only.` : `Draw with a pointer, or enter a point and use Add point. Arrow keys move the point; Space adds it and Enter commits the stroke.`, this.#alt = document.createElement(`textarea`), this.#alt.setAttribute(`aria-label`, `Drawing alternative text`), this.#alt.disabled = this.readOnly, this.#alt.maxLength = 5e3, this.#alt.rows = 3, this.#alt.value = this.#lastValid.alt, this.#alt.addEventListener(`input`, () => {
 			this.#working.alt = this.#alt.value, this.#commitWorking();
 		}), this.#width = E(`Drawing width`, this.#lastValid.width, this.readOnly, 1, 4096, 1), this.#height = E(`Drawing height`, this.#lastValid.height, this.readOnly, 1, 4096, 1), this.#width.addEventListener(`input`, () => this.#changeDimensions()), this.#height.addEventListener(`input`, () => this.#changeDimensions()), this.#color = T(`Drawing color token`, `#000000`, this.readOnly), this.#color.maxLength = 127, this.#color.spellcheck = !1, this.#color.addEventListener(`input`, () => this.#validateStrokeSettings()), this.#strokeWidth = E(`Drawing stroke width`, 2, this.readOnly, .25, 64, .25), this.#strokeWidth.addEventListener(`input`, () => this.#validateStrokeSettings()), this.#svg = document.createElementNS(p$1, `svg`), this.#svg.classList.add(`studio-drawing-canvas`), this.#svg.setAttribute(`role`, `img`), this.#svg.setAttribute(`aria-label`, this.#lastValid.alt), this.#svg.setAttribute(`aria-description`, `Arrow keys move the drawing point. Space adds a point. Enter commits and Escape discards the current stroke.`), this.#svg.setAttribute(`aria-keyshortcuts`, `ArrowUp ArrowDown ArrowLeft ArrowRight Space Enter Escape`), this.#svg.setAttribute(`preserveAspectRatio`, `xMidYMid meet`), this.#svg.tabIndex = this.readOnly ? -1 : 0, this.#svg.addEventListener(`pointerdown`, (e) => this.#beginPointerStroke(e)), this.#svg.addEventListener(`pointermove`, (e) => this.#continuePointerStroke(e)), this.#svg.addEventListener(`pointerup`, (e) => this.#finishPointerStroke(e)), this.#svg.addEventListener(`pointercancel`, (e) => this.#cancelPointerStroke(e)), this.#svg.addEventListener(`keydown`, (e) => this.#handleCanvasKey(e)), this.#pointX = E(`Drawing point x`, 0, this.readOnly, 0, this.#lastValid.width, 1), this.#pointY = E(`Drawing point y`, 0, this.readOnly, 0, this.#lastValid.height, 1);
-		let r = k$1(`Add drawing point`, () => this.#addKeyboardPoint());
-		this.#commitStroke = k$1(`Commit drawing stroke`, () => this.#completeStroke(), !0);
-		let i = k$1(`Discard current drawing stroke`, () => {
+		let r = k(`Add drawing point`, () => this.#addKeyboardPoint());
+		this.#commitStroke = k(`Commit drawing stroke`, () => this.#completeStroke(), !0);
+		let i = k(`Discard current drawing stroke`, () => {
 			this.#pendingPoints = [], this.#renderDrawing();
-		}), a = k$1(`Remove last drawing stroke`, () => this.#removeLastStroke(), this.#lastValid.strokes.length === 0);
+		}), a = k(`Remove last drawing stroke`, () => this.#removeLastStroke(), this.#lastValid.strokes.length === 0);
 		for (let e of [
 			r,
 			this.#commitStroke,
@@ -17273,7 +19056,7 @@ var m$1 = class {
 		e.pointerId === this.#activePointerId && (this.#activePointerId = void 0, this.#pendingPoints = [], this.#renderDrawing());
 	}
 	#changeDimensions() {
-		this.readOnly || (this.#working.width = Number(this.#width.value), this.#working.height = Number(this.#height.value), this.#commitWorking() && (this.#pointX.max = String(this.#lastValid.width), this.#pointY.max = String(this.#lastValid.height), this.#pointX.value = String(A$1(Number(this.#pointX.value), 0, this.#lastValid.width)), this.#pointY.value = String(A$1(Number(this.#pointY.value), 0, this.#lastValid.height)), this.#renderDrawing()));
+		this.readOnly || (this.#working.width = Number(this.#width.value), this.#working.height = Number(this.#height.value), this.#commitWorking() && (this.#pointX.max = String(this.#lastValid.width), this.#pointY.max = String(this.#lastValid.height), this.#pointX.value = String(A(Number(this.#pointX.value), 0, this.#lastValid.width)), this.#pointY.value = String(A(Number(this.#pointY.value), 0, this.#lastValid.height)), this.#renderDrawing()));
 	}
 	#commitWorking() {
 		if (this.readOnly) return !1;
@@ -17328,7 +19111,7 @@ var m$1 = class {
 				return;
 			default: return;
 		}
-		e.preventDefault(), this.#pointX.value = String(A$1(n, 0, this.#lastValid.width)), this.#pointY.value = String(A$1(r, 0, this.#lastValid.height));
+		e.preventDefault(), this.#pointX.value = String(A(n, 0, this.#lastValid.width)), this.#pointY.value = String(A(r, 0, this.#lastValid.height));
 	}
 	#invalid() {
 		this.#onChange?.({
@@ -17353,8 +19136,8 @@ var m$1 = class {
 	#pointFromPointer(e) {
 		let t = this.#svg.getBoundingClientRect(), n = t.width > 0 ? (e.clientX - t.left) / t.width * this.#lastValid.width : e.offsetX, r = t.height > 0 ? (e.clientY - t.top) / t.height * this.#lastValid.height : e.offsetY;
 		return {
-			x: A$1(Number.isFinite(n) ? n : 0, 0, this.#lastValid.width),
-			y: A$1(Number.isFinite(r) ? r : 0, 0, this.#lastValid.height)
+			x: A(Number.isFinite(n) ? n : 0, 0, this.#lastValid.width),
+			y: A(Number.isFinite(r) ? r : 0, 0, this.#lastValid.height)
 		};
 	}
 	#removeLastStroke() {
@@ -17458,9 +19241,9 @@ var h = class {
 		let n = document.createElement(`table`);
 		n.setAttribute(`aria-label`, `Table data`);
 		let r = document.createElement(`thead`), i = document.createElement(`tr`);
-		i.append(O$1(`Row`));
+		i.append(O(`Row`));
 		for (let [e, t] of this.#working.columns.entries()) {
-			let n = O$1(`Column ${String(e + 1)}`), r = T(`Table column ${String(e + 1)} heading`, t, this.readOnly);
+			let n = O(`Column ${String(e + 1)}`), r = T(`Table column ${String(e + 1)} heading`, t, this.readOnly);
 			r.maxLength = 500, r.addEventListener(`input`, () => {
 				this.#working.columns[e] = r.value, this.#commit();
 			}), n.replaceChildren(r), i.append(n);
@@ -17481,7 +19264,7 @@ var h = class {
 		}
 		if (n.append(a), this.#holder.append(n), !this.readOnly) {
 			let e = document.createElement(`div`);
-			e.className = `studio-authoring-actions`, e.append(k$1(`Add table row`, () => this.#addRow(), this.#working.rows.length >= 1e3), k$1(`Remove last table row`, () => this.#removeRow(), this.#working.rows.length === 0), k$1(`Add table column`, () => this.#addColumn(), this.#working.columns.length >= 50), k$1(`Remove last table column`, () => this.#removeColumn(), this.#working.columns.length <= 1)), this.#holder.append(e);
+			e.className = `studio-authoring-actions`, e.append(k(`Add table row`, () => this.#addRow(), this.#working.rows.length >= 1e3), k(`Remove last table row`, () => this.#removeRow(), this.#working.rows.length === 0), k(`Add table column`, () => this.#addColumn(), this.#working.columns.length >= 50), k(`Remove last table column`, () => this.#removeColumn(), this.#working.columns.length <= 1)), this.#holder.append(e);
 		}
 	}
 };
@@ -17590,7 +19373,7 @@ function serializeScopedCss(e) {
 `);
 }
 function v(e) {
-	if (!j$1(e) || !Array.isArray(e.rules)) throw TypeError(`Scoped styles require a structured rule collection.`);
+	if (!j(e) || !Array.isArray(e.rules)) throw TypeError(`Scoped styles require a structured rule collection.`);
 	let t = structuredClone(e);
 	return compileStudioScopedStyleSheet(`authoring-preview`, t), t;
 }
@@ -17639,18 +19422,18 @@ function D(e, t, n, r) {
 	}
 	return i;
 }
-function O$1(e) {
+function O(e) {
 	let t = document.createElement(`th`);
 	return t.scope = `col`, t.textContent = e, t;
 }
-function k$1(e, t, n = !1) {
+function k(e, t, n = !1) {
 	let r = document.createElement(`button`);
 	return r.type = `button`, r.textContent = e, r.setAttribute(`aria-label`, e), r.disabled = n, r.addEventListener(`click`, t), r;
 }
-function A$1(e, t, n) {
+function A(e, t, n) {
 	return Math.min(n, Math.max(t, e));
 }
-function j$1(e) {
+function j(e) {
 	return typeof e == `object` && !!e && !Array.isArray(e);
 }
 //#endregion
@@ -17856,7 +19639,7 @@ function m(e) {
 }
 //#endregion
 //#region node_modules/@kumwe/studio/dist/kumwe-studio.js
-var KumweStudioElement = class extends i$16 {
+var KumweStudioElement = class extends i$19 {
 	static properties = {
 		announcement: {
 			attribute: !1,
@@ -17876,6 +19659,21 @@ var KumweStudioElement = class extends i$16 {
 		contentModel: { attribute: !1 },
 		designControls: { attribute: !1 },
 		document: { attribute: !1 },
+		inspectorMode: { attribute: !1 },
+		entryValues: { attribute: !1 },
+		libraryQuery: {
+			attribute: !1,
+			state: !0
+		},
+		activePane: {
+			attribute: !1,
+			state: !0
+		},
+		localCanvasContext: { attribute: !1 },
+		localCanvasState: {
+			attribute: !1,
+			state: !0
+		},
 		messages: { attribute: !1 },
 		patterns: { attribute: !1 },
 		paletteFilter: {
@@ -17899,7 +19697,7 @@ var KumweStudioElement = class extends i$16 {
 		theme: { attribute: !1 },
 		viewports: { attribute: !1 }
 	};
-	static styles = i$17`
+	static styles = i$18`
     :host {
       --studio-border: #d7dce2;
       --studio-panel: #f7f8fa;
@@ -18491,6 +20289,8 @@ var KumweStudioElement = class extends i$16 {
       }
     }
 
+    ${canvasWorkspaceStyles}
+
     /* SR-019: no chrome motion is essential, so a reduced-motion preference
        zeroes every animation and transition the shell declares now or later. */
     @media (prefers-reduced-motion: reduce) {
@@ -18507,6 +20307,10 @@ var KumweStudioElement = class extends i$16 {
       }
     }
   `;
+	#lastEmittedSelection;
+	#localCanvas;
+	#localCanvasHolder;
+	#localCanvasViewport;
 	#activeViewportId;
 	#authoringControls = /* @__PURE__ */ new Map();
 	#authoringControlsReady = Promise.resolve();
@@ -18526,18 +20330,23 @@ var KumweStudioElement = class extends i$16 {
 	#pendingFocusNodeId;
 	#pendingPaletteFocus = !1;
 	#onDocumentKeydown = (e) => {
-		e.key === `Escape` && (this.#drag !== void 0 || this.#previewDrag !== void 0) && this.#cancelDrag() && (e.preventDefault(), e.stopPropagation());
+		e.key === `Escape` && (this.#drag !== void 0 || this.#previewDrag !== void 0 || this.#paletteDrag !== void 0) && this.#cancelDrag() && (e.preventDefault(), e.stopPropagation());
 	};
 	#pendingPreviewAnnouncements = [];
 	#activePreviewBinding;
 	#previewBindingGeneration;
 	#previewSurface;
 	#previewDrag;
+	#paletteDrag;
+	#suppressPaletteClick = !1;
 	#removedNodes = [];
 	#registry;
 	#resourceBindingControls = /* @__PURE__ */ new Map();
 	#session;
 	#sessionGeneration = ``;
+	constructor() {
+		super(), this.libraryQuery = ``, this.activePane = `canvas`;
+	}
 	get activeViewport() {
 		let e = this.#orderedViewports();
 		if (e.length === 0) return;
@@ -18559,6 +20368,9 @@ var KumweStudioElement = class extends i$16 {
 	get authoringReady() {
 		return this.#authoringControlsReady;
 	}
+	get canvasReady() {
+		return this.#localCanvas?.ready ?? Promise.resolve();
+	}
 	get sessionMode() {
 		return this.#session?.mode;
 	}
@@ -18573,13 +20385,16 @@ var KumweStudioElement = class extends i$16 {
 		try {
 			n = t.execute(e);
 		} catch (e) {
-			throw e instanceof StudioCommandError && O.has(e.code) ? this.#announce(`studio.shell/announce-conflict`, { message: e.message }) : this.#announce(`studio.shell/announce-command-failed`, { message: e instanceof Error ? e.message : String(e) }), e;
+			throw e instanceof StudioCommandError && M.has(e.code) ? this.#announce(`studio.shell/announce-conflict`, { message: e.message }) : this.#announce(`studio.shell/announce-command-failed`, { message: e instanceof Error ? e.message : String(e) }), e;
 		}
 		return this.#assignInternalDocument(n), this.selectedNodeId = t.selection[0], this.#emitDocumentChange({
 			command: e,
 			document: n,
 			source: `command`
 		}), this.#syncDirty(), n;
+	}
+	revealInspector() {
+		this.activePane = `inspector`;
 	}
 	selectNode(e) {
 		let t = this.#session;
@@ -18595,16 +20410,16 @@ var KumweStudioElement = class extends i$16 {
 		n !== void 0 && (n.markSaved(e ?? n.savedRevision, t), this.#assignInternalDocument(n.document), this.#syncDirty());
 	}
 	refreshPreviewGeometry() {
-		this.#previewSurface?.refreshGeometry();
+		this.#previewSurface?.refreshGeometry(), this.#localCanvas?.refreshGeometry();
 	}
 	teardownPreview(e) {
 		this.#previewSurface !== void 0 && (this.#queuePreviewAnnouncement(`studio.shell/announce-preview-torn-down`, { reason: e }), this.#previewSurface.teardown(e));
 	}
 	disconnectedCallback() {
-		this.#destroyAuthoringControls(), this.#destroyResourceBindingControls(), this.ownerDocument.removeEventListener(`keydown`, this.#onDocumentKeydown, !0), this.teardownPreview(`studio.preview/surface-disconnected`), super.disconnectedCallback();
+		this.#disposeLocalCanvas(), this.#destroyAuthoringControls(), this.#destroyResourceBindingControls(), this.ownerDocument.removeEventListener(`keydown`, this.#onDocumentKeydown, !0), this.teardownPreview(`studio.preview/surface-disconnected`), super.disconnectedCallback();
 	}
 	connectedCallback() {
-		super.connectedCallback(), this.ownerDocument.addEventListener(`keydown`, this.#onDocumentKeydown, !0);
+		super.connectedCallback(), this.ownerDocument.addEventListener(`keydown`, this.#onDocumentKeydown, !0), this.requestUpdate();
 	}
 	notifyPreviewMessage(e) {
 		e.type === `studio.preview/reload` ? this.#queuePreviewAnnouncement(`studio.shell/announce-preview-reloaded`, { reason: e.payload.reason }) : e.type === `studio.preview/teardown` && this.#queuePreviewAnnouncement(`studio.shell/announce-preview-torn-down`, { reason: e.payload.reason });
@@ -18632,10 +20447,14 @@ var KumweStudioElement = class extends i$16 {
 		}), this.#syncDirty(), this.#announce(`studio.shell/announce-undid`), t;
 	}
 	willUpdate(e) {
-		(e.has(`viewports`) || e.has(`theme`)) && (this.#activeViewportId = void 0), e.has(`configuration`) && this.#rebuildRegistry(), (e.has(`configuration`) || e.has(`previewBinding`)) && this.#synchronizePreviewSurface(), (e.has(`document`) || e.has(`configuration`) || e.has(`commandSession`)) && (this.#internalDocumentUpdate ? this.#internalDocumentUpdate = !1 : this.#rebuildSession()), (e.has(`document`) || e.has(`configuration`) || e.has(`contentModel`)) && this.#revalidate();
+		(e.has(`viewports`) || e.has(`theme`)) && (this.#activeViewportId = void 0), e.has(`inspectorMode`) && this.inspectorMode !== void 0 && (this.activePane = this.inspectorMode === `blueprint` ? `canvas` : `inspector`), e.has(`configuration`) && this.#rebuildRegistry(), (e.has(`configuration`) || e.has(`previewBinding`)) && this.#synchronizePreviewSurface(), (e.has(`document`) || e.has(`configuration`) || e.has(`commandSession`)) && (this.#internalDocumentUpdate ? this.#internalDocumentUpdate = !1 : this.#rebuildSession()), (e.has(`document`) || e.has(`configuration`) || e.has(`contentModel`)) && this.#revalidate();
 	}
 	updated(e) {
-		e.has(`authoringControlRegistry`) && this.#destroyAuthoringControls(), e.has(`resourceSearchService`) && this.#destroyResourceBindingControls();
+		this.#synchronizeLocalCanvas(e), this.selectedNodeId !== this.#lastEmittedSelection && (this.#lastEmittedSelection = this.selectedNodeId, this.dispatchEvent(new CustomEvent(`studio-selection-change`, {
+			bubbles: !0,
+			composed: !0,
+			detail: { nodeId: this.selectedNodeId }
+		}))), e.has(`authoringControlRegistry`) && this.#destroyAuthoringControls(), e.has(`resourceSearchService`) && this.#destroyResourceBindingControls();
 		for (let e of this.shadowRoot?.querySelectorAll(`select[data-current-value]`) ?? []) {
 			let t = e.dataset.currentValue;
 			t !== void 0 && e.value !== t && (e.value = t);
@@ -18651,47 +20470,93 @@ var KumweStudioElement = class extends i$16 {
 		n !== void 0 && (this.#pendingFocusNodeId = void 0, this.#focusOutlineEntry(n));
 	}
 	render() {
-		let e = this.#session, n = this.#isReadOnly(), i = this.document?.roots ?? [], a = this.document === void 0 || this.selectedNodeId === void 0 ? void 0 : findOutlineLocation(this.document.roots, this.selectedNodeId)?.node, o = [...this.#diagnostics, ...this.#authoringDiagnostics.values()].sort((e, t) => P[e.severity] - P[t.severity]);
-		return b$12`
+		let e = this.#session, n = this.#isReadOnly(), i = this.document?.roots ?? [], a = this.document === void 0 || this.selectedNodeId === void 0 ? void 0 : findOutlineLocation(this.document.roots, this.selectedNodeId)?.node, o = [...this.#diagnostics, ...this.#authoringDiagnostics.values()].sort((e, t) => R[e.severity] - R[t.severity]);
+		return b$13`
       <div
         class="workspace"
+        data-pane=${this.activePane}
+        data-contextual=${this.inspectorMode === void 0 ? `false` : `true`}
         @keydown=${(e) => {
 			this.#onWorkspaceKeydown(e);
 		}}
       >
-        <aside class="panel" aria-label=${this.#text(`studio.shell/palette-label`)}>
+        <nav class="pane-switcher" aria-label=${this.#text(`studio.shell/workspace-panels`)}>
+          ${[
+			`canvas`,
+			`library`,
+			`outline`,
+			`inspector`
+		].map((e) => b$13` <button
+                type="button"
+                aria-pressed=${this.activePane === e ? `true` : `false`}
+                @click=${() => {
+			this.activePane = e;
+		}}
+              >
+                ${this.#text(X[e])}
+              </button>`)}
+        </nav>
+        ${this.#renderCommandPalette()}
+        <aside class="panel library" aria-label=${this.#text(`studio.shell/palette-label`)}>
           <h2>${this.#text(`studio.shell/palette-heading`)}</h2>
+          <label class="library-search">
+            ${this.#text(`studio.shell/library-search`)}
+            <input
+              type="search"
+              .value=${this.libraryQuery}
+              @input=${(e) => {
+			e.currentTarget instanceof HTMLInputElement && (this.libraryQuery = e.currentTarget.value);
+		}}
+            />
+          </label>
           <ul class="palette">
-            ${this.#activeDefinitions().map((e) => b$12`
-                <li>
-                  <button
-                    type="button"
-                    ?disabled=${!this.#canInsertDefinition(e)}
-                    @click=${() => this.#requestInsert(e)}
-                  >
-                    ${G(e.label)}
-                  </button>
-                </li>
-              `)}
+            ${this.#activeDefinitions().filter((e) => this.#matchesLibrary(Y(e.label))).map((e) => b$13`
+                  <li>
+                    <button
+                      type="button"
+                      class="palette-block"
+                      data-block-type=${e.type}
+                      ?disabled=${!this.#canInsertDefinition(e)}
+                      @click=${() => this.#requestInsert(e)}
+                      @pointerdown=${(t) => {
+			this.#onPaletteBlockPointerDown(t, e);
+		}}
+                      @pointermove=${(e) => {
+			this.#onPaletteBlockPointerMove(e);
+		}}
+                      @pointerup=${(e) => {
+			this.#onPaletteBlockPointerUp(e);
+		}}
+                      @pointercancel=${(e) => {
+			this.#onPaletteBlockPointerCancel(e);
+		}}
+                    >
+                      <span class="block-symbol" aria-hidden="true"
+                        >${e.slots.length > 0 ? `⊞` : Y(e.label).slice(0, 1)}</span
+                      >
+                      ${Y(e.label)}
+                    </button>
+                  </li>
+                `)}
           </ul>
-          ${this.#activePatterns().length === 0 ? A$10 : b$12`
+          ${this.#activePatterns().length === 0 ? A$10 : b$13`
                   <h2 class="pattern-heading">${this.#text(`studio.shell/patterns-heading`)}</h2>
                   <ul class="palette pattern-palette">
-                    ${this.#activePatterns().map((e) => b$12`
-                        <li>
-                          <button
-                            type="button"
-                            class="pattern-apply"
-                            data-pattern-id=${e.id}
-                            ?disabled=${this.#patternDestination(e) === void 0}
-                            @click=${() => {
+                    ${this.#activePatterns().filter((e) => this.#matchesLibrary(Y(e.label))).map((e) => b$13`
+                          <li>
+                            <button
+                              type="button"
+                              class="pattern-apply"
+                              data-pattern-id=${e.id}
+                              ?disabled=${this.#patternDestination(e) === void 0}
+                              @click=${() => {
 			this.#applyPattern(e);
 		}}
-                          >
-                            ${G(e.label)}
-                          </button>
-                        </li>
-                      `)}
+                            >
+                              ${Y(e.label)}
+                            </button>
+                          </li>
+                        `)}
                   </ul>
                 `}
         </aside>
@@ -18710,40 +20575,45 @@ var KumweStudioElement = class extends i$16 {
 			this.#onCanvasPointerCancel(e);
 		}}
         >
-          ${this.#renderViewportSwitcher()} ${this.#renderBreadcrumb()} ${this.#renderPreview()}
-          <button
-            type="button"
-            class="command-palette-toggle"
-            aria-expanded=${this.paletteOpen === !0 ? `true` : `false`}
-            @click=${(e) => {
+          <div class="canvas-toolbar">
+            ${this.#renderViewportSwitcher()}
+            <button
+              type="button"
+              class="command-palette-toggle"
+              aria-expanded=${this.paletteOpen === !0 ? `true` : `false`}
+              @click=${(e) => {
 			this.#togglePalette(e);
 		}}
-          >
-            ${this.#text(`studio.shell/command-palette-toggle`)}
-          </button>
-          ${this.#renderCommandPalette()}
-          <div class="toolbar" role="group" aria-label=${this.#text(`studio.shell/history-label`)}>
-            <button
-              type="button"
-              ?disabled=${e?.canUndo !== !0 || n}
-              @click=${() => {
+            >
+              ${this.#text(`studio.shell/command-palette-toggle`)}
+            </button>
+            <div
+              class="toolbar"
+              role="group"
+              aria-label=${this.#text(`studio.shell/history-label`)}
+            >
+              <button
+                type="button"
+                ?disabled=${e?.canUndo !== !0 || n}
+                @click=${() => {
 			this.undo();
 		}}
-            >
-              ${this.#text(`studio.shell/undo`)}
-            </button>
-            <button
-              type="button"
-              ?disabled=${e?.canRedo !== !0 || n}
-              @click=${() => {
+              >
+                ${this.#text(`studio.shell/undo`)}
+              </button>
+              <button
+                type="button"
+                ?disabled=${e?.canRedo !== !0 || n}
+                @click=${() => {
 			this.redo();
 		}}
-            >
-              ${this.#text(`studio.shell/redo`)}
-            </button>
+              >
+                ${this.#text(`studio.shell/redo`)}
+              </button>
+            </div>
           </div>
-          ${this.#renderDropIndicator()}
-          ${i.length === 0 ? b$12`<p class="empty">${this.#text(`studio.shell/canvas-empty`)}</p>` : this.#previewCapabilityAvailable() && this.previewBinding !== void 0 ? A$10 : b$12`<ul class="tree structural-canvas-fallback">
+          ${this.#renderBreadcrumb()} ${this.#renderPreview()} ${this.#renderDropIndicator()}
+          ${i.length === 0 ? b$13`<p class="empty">${this.#text(`studio.shell/canvas-empty`)}</p>` : this.#usesLocalCanvas() || this.#previewCapabilityAvailable() && this.previewBinding !== void 0 ? A$10 : b$13`<ul class="tree structural-canvas-fallback">
                     ${i.map((e) => this.#renderCanvasNode(e))}
                   </ul>`}
         </main>
@@ -18751,36 +20621,46 @@ var KumweStudioElement = class extends i$16 {
         <aside class="panel outline" aria-label=${this.#text(`studio.shell/outline-heading`)}>
           <h2>${this.#text(`studio.shell/outline-heading`)}</h2>
           <p class="hint">${this.#text(`studio.shell/outline-hint`)}</p>
-          ${i.length === 0 ? b$12`<p class="empty">${this.#text(`studio.shell/outline-empty`)}</p>` : b$12`<ul class="tree">
+          ${i.length === 0 ? b$13`<p class="empty">${this.#text(`studio.shell/outline-empty`)}</p>` : b$13`<ul class="tree">
                   ${i.map((e) => this.#renderOutlineNode(e))}
                 </ul>`}
         </aside>
 
         <aside class="panel inspector" aria-label=${this.#text(`studio.shell/inspector-heading`)}>
           <h2>${this.#text(`studio.shell/inspector-heading`)}</h2>
-          ${a === void 0 ? b$12`<p>${this.#text(`studio.shell/inspector-empty`)}</p>` : this.#renderInspector(a)}
+          <slot class="inspector-slot" name="contextual-inspector"></slot>
+          <div
+            class="inspector-default"
+            ?hidden=${this.inspectorMode !== void 0 && this.inspectorMode !== `blueprint`}
+          >
+            ${a === void 0 ? b$13`<p>${this.#text(`studio.shell/inspector-empty`)}</p>` : this.#renderInspector(a)}
+          </div>
         </aside>
 
         <section
           class="panel diagnostics"
+          data-empty=${o.length === 0 ? `true` : `false`}
           aria-label=${this.#text(`studio.shell/diagnostics-heading`)}
         >
           <h2>${this.#text(`studio.shell/diagnostics-heading`)}</h2>
-          ${o.length === 0 ? b$12`<p class="diagnostics-empty">
+          ${o.length === 0 ? b$13`<p class="diagnostics-empty">
                   ${this.#text(`studio.shell/diagnostics-empty`)}
-                </p>` : b$12`<ul class="diagnostics-list">
+                </p>` : b$13`<ul class="diagnostics-list">
                   ${o.map((e) => this.#renderDiagnostic(e))}
                 </ul>`}
         </section>
 
         <footer class="statusbar" aria-label=${this.#text(`studio.shell/status-label`)}>
-          ${e === void 0 ? A$10 : b$12`<span class="save-state" data-dirty=${e.dirty ? `true` : `false`}>
+          ${e === void 0 ? A$10 : b$13`<span class="save-state" data-dirty=${e.dirty ? `true` : `false`}>
                   ${this.#text(e.dirty ? `studio.shell/save-state-unsaved` : `studio.shell/save-state-saved`)}
                 </span>`}
           <p class="assistive" aria-live="polite">${this.announcement ?? ``}</p>
         </footer>
       </div>
     `;
+	}
+	#matchesLibrary(e) {
+		return e.toLocaleLowerCase().includes(this.libraryQuery.trim().toLocaleLowerCase());
 	}
 	#addOverride(e, t) {
 		let n = this.shadowRoot?.querySelector(`input.inspector-add-override-name`) ?? null, r = this.shadowRoot?.querySelector(`input.inspector-add-override-value`) ?? null;
@@ -18814,13 +20694,15 @@ var KumweStudioElement = class extends i$16 {
 		return n === void 0 ? e.sizeRoles?.[t] : e.responsiveSizeRoles?.[t]?.[n.id];
 	}
 	#axisText(e) {
-		return this.#text(k[e]);
+		return this.#text(N[e]);
 	}
 	#cancelDrag() {
 		let e = this.#previewDrag;
 		if (e !== void 0) return this.#previewDrag = void 0, this.#releasePreviewDragCapture(e), e.active && this.#announce(`studio.shell/announce-drag-cancelled`, { label: e.label }), this.requestUpdate(), !0;
-		let t = this.#drag;
-		return t !== void 0 && (this.#drag = void 0, this.#releaseDragCapture(t), t.active && this.#announce(`studio.shell/announce-drag-cancelled`, { label: t.label }), this.requestUpdate(), !0);
+		let t = this.#paletteDrag;
+		if (t !== void 0 && !t.cancelled) return t.cancelled = !0, delete t.target, this.#releasePaletteDragCapture(t), t.active && this.#announce(`studio.shell/announce-drag-cancelled`, { label: t.label }), this.requestUpdate(), !0;
+		let n = this.#drag;
+		return n !== void 0 && (this.#drag = void 0, this.#releaseDragCapture(n), n.active && this.#announce(`studio.shell/announce-drag-cancelled`, { label: n.label }), this.requestUpdate(), !0);
 	}
 	#captureOutlineFocus() {
 		let e = this.shadowRoot?.activeElement;
@@ -18954,28 +20836,28 @@ var KumweStudioElement = class extends i$16 {
 			}
 		}
 	}
-	#insertDefinition(e) {
-		let t = this.#session, n = this.document, r = this.#insertionDestination(e);
-		if (t === void 0 || n === void 0 || r === void 0) return;
-		let i = collectDocumentIds(n.roots), a = e.type.slice(e.type.indexOf(`/`) + 1), o = 1, c = `${a}-${o}`;
-		for (; i.has(c);) o += 1, c = `${a}-${o}`;
-		let l = {
+	#insertDefinition(e, t) {
+		let n = this.#session, r = this.document, i = t ?? this.#insertionDestination(e);
+		if (n === void 0 || r === void 0 || i === void 0) return;
+		let a = collectDocumentIds(r.roots), o = e.type.slice(e.type.indexOf(`/`) + 1), c = 1, l = `${o}-${c}`;
+		for (; a.has(l);) c += 1, l = `${o}-${c}`;
+		let d = {
 			authoring: { mode: isCoreProductionBlockType(e.type) && e.slots.length > 0 ? `structural` : `content` },
 			bindings: {},
-			id: c,
+			id: l,
 			properties: isCoreProductionBlockType(e.type) ? coreProductionInitialProperties(e.type) : {},
 			slots: Object.fromEntries(e.slots.map((e) => [e.id, []])),
 			type: e.type,
 			version: e.version
-		}, d = {
-			...this.#commandEnvelope(n, t),
+		}, f = {
+			...this.#commandEnvelope(r, n),
 			payload: {
-				destination: r,
-				node: l
+				destination: i,
+				node: d
 			},
 			type: `studio.command/insert-node`
 		};
-		this.#runShellCommand(d) && (this.#selectNode(c), this.#pendingFocusNodeId = c, this.#announce(`studio.shell/announce-inserted`, { label: G(e.label) }));
+		this.#runShellCommand(f) && (this.#selectNode(l), this.activePane = `canvas`, this.#pendingFocusNodeId = l, this.#announce(`studio.shell/announce-inserted`, { label: Y(e.label) }));
 	}
 	#isReadOnly() {
 		return this.configuration?.session.sessionState === `read-only` || this.#session?.sessionState === `read-only`;
@@ -19091,7 +20973,7 @@ var KumweStudioElement = class extends i$16 {
 				collection: i.slots[t.id] ?? [],
 				label: this.#text(`studio.shell/move-slot-collection`, {
 					parent: `${this.#nodeLabel(i)} (${i.id})`,
-					slot: G(t.label)
+					slot: Y(t.label)
 				}),
 				parentNodeId: i.id,
 				slot: t.id,
@@ -19155,7 +21037,7 @@ var KumweStudioElement = class extends i$16 {
 	}
 	#nodeLabel(e) {
 		let t = this.#findDefinition(e);
-		return t === void 0 ? e.type : G(t.label);
+		return t === void 0 ? e.type : Y(t.label);
 	}
 	#onCanvasPointerCancel(e) {
 		this.#drag?.pointerId === e.pointerId && this.#cancelDrag();
@@ -19251,7 +21133,7 @@ var KumweStudioElement = class extends i$16 {
 		if (e.key === `Enter`) {
 			e.preventDefault();
 			let a = r.value.trim();
-			if (!W(a)) {
+			if (!J(a)) {
 				this.#announce(`studio.shell/announce-size-role-invalid`, { axis: this.#axisText(n) });
 				return;
 			}
@@ -19349,7 +21231,7 @@ var KumweStudioElement = class extends i$16 {
 		};
 		if (!this.#runShellCommand(o)) return;
 		let s = i.recipes.find((e) => e.id === t);
-		this.#announce(`studio.shell/announce-recipe-applied`, { recipe: s === void 0 ? t : G(s.label) });
+		this.#announce(`studio.shell/announce-recipe-applied`, { recipe: s === void 0 ? t : Y(s.label) });
 	}
 	#applyPattern(e) {
 		let t = this.#session, n = this.document, r = this.#patternDestination(e);
@@ -19370,7 +21252,7 @@ var KumweStudioElement = class extends i$16 {
 		};
 		if (this.#runShellCommand(i)) {
 			let t = i.payload.idMap[e.roots[0]?.id ?? ``];
-			t !== void 0 && (this.#selectNode(t), this.#pendingFocusNodeId = t), this.#announce(`studio.shell/announce-pattern-applied`, { pattern: G(e.label) });
+			t !== void 0 && (this.#selectNode(t), this.#pendingFocusNodeId = t), this.#announce(`studio.shell/announce-pattern-applied`, { pattern: Y(e.label) });
 		}
 	}
 	#allocatePatternIdMap(e) {
@@ -19485,7 +21367,7 @@ var KumweStudioElement = class extends i$16 {
 		for (let e of this.#activeDefinitions()) r.push({
 			disabled: !this.#canInsertDefinition(e),
 			id: `insert-${e.type}@${e.version}`,
-			label: this.#text(`studio.shell/command-insert`, { label: G(e.label) }),
+			label: this.#text(`studio.shell/command-insert`, { label: Y(e.label) }),
 			run: () => {
 				this.#insertDefinition(e);
 			}
@@ -19493,7 +21375,7 @@ var KumweStudioElement = class extends i$16 {
 		for (let e of this.#activePatterns()) r.push({
 			disabled: this.#patternDestination(e) === void 0,
 			id: `apply-pattern-${e.id}`,
-			label: this.#text(`studio.shell/command-apply-pattern`, { pattern: G(e.label) }),
+			label: this.#text(`studio.shell/command-apply-pattern`, { pattern: Y(e.label) }),
 			run: () => {
 				this.#applyPattern(e);
 			}
@@ -19579,14 +21461,14 @@ var KumweStudioElement = class extends i$16 {
 		let e = this.document?.roots;
 		if (e === void 0 || this.selectedNodeId === void 0) return A$10;
 		let n = findAncestry(e, this.selectedNodeId);
-		return n.length === 0 ? A$10 : b$12`
+		return n.length === 0 ? A$10 : b$13`
       <nav class="breadcrumb" aria-label=${this.#text(`studio.shell/breadcrumb-label`)}>
         <ol>
-          ${n.map((e, r) => r === n.length - 1 ? b$12`<li>
+          ${n.map((e, r) => r === n.length - 1 ? b$13`<li>
                   <span class="breadcrumb-current" aria-current="true">
                     ${this.#nodeLabel(e)}
                   </span>
-                </li>` : b$12`<li>
+                </li>` : b$13`<li>
                   <button
                     type="button"
                     class="breadcrumb-entry"
@@ -19604,7 +21486,7 @@ var KumweStudioElement = class extends i$16 {
 	}
 	#renderCanvasNode(e) {
 		let n = this.#findDefinition(e), r = Object.entries(e.slots);
-		return b$12`
+		return b$13`
       <li>
         <button
           type="button"
@@ -19618,9 +21500,9 @@ var KumweStudioElement = class extends i$16 {
 			this.#onChipPointerDown(t, e);
 		}}
         >
-          ${n === void 0 ? e.type : G(n.label)}
+          ${n === void 0 ? e.type : Y(n.label)}
         </button>
-        ${r.map(([e, n]) => b$12`
+        ${r.map(([e, n]) => b$13`
             <section class="node-children" aria-label=${e}>
               <ul class="tree">
                 ${n.map((e) => this.#renderCanvasNode(e))}
@@ -19633,7 +21515,7 @@ var KumweStudioElement = class extends i$16 {
 	#renderCommandPalette() {
 		if (this.paletteOpen !== !0) return A$10;
 		let e = this.#filteredPaletteEntries();
-		return b$12`
+		return b$13`
       <section
         class="command-palette"
         aria-label=${this.#text(`studio.shell/command-palette-label`)}
@@ -19651,12 +21533,12 @@ var KumweStudioElement = class extends i$16 {
 		}}
         />
         <p class="hint">${this.#text(`studio.shell/command-palette-hint`)}</p>
-        ${e.length === 0 ? b$12`<p class="command-empty">${this.#text(`studio.shell/command-palette-empty`)}</p>` : b$12`
+        ${e.length === 0 ? b$13`<p class="command-empty">${this.#text(`studio.shell/command-palette-empty`)}</p>` : b$13`
                 <ul
                   class="command-results"
                   aria-label=${this.#text(`studio.shell/command-palette-results-label`)}
                 >
-                  ${e.map((e) => b$12`
+                  ${e.map((e) => b$13`
                       <li>
                         <button
                           type="button"
@@ -19680,12 +21562,12 @@ var KumweStudioElement = class extends i$16 {
     `;
 	}
 	#renderDiagnostic(e) {
-		let n = b$12`<span class="diagnostic-severity">
-      ${this.#text(N[e.severity])}
-    </span>`, r = V(e), i = e.location?.nodeId;
-		return b$12`
+		let n = b$13`<span class="diagnostic-severity">
+      ${this.#text(L[e.severity])}
+    </span>`, r = G(e), i = e.location?.nodeId;
+		return b$13`
       <li data-diagnostic-code=${e.code}>
-        ${i === void 0 ? b$12`<span class="diagnostic-text">${n} ${r}</span>` : b$12`
+        ${i === void 0 ? b$13`<span class="diagnostic-text">${n} ${r}</span>` : b$13`
                 <button
                   type="button"
                   class="diagnostic-entry"
@@ -19702,7 +21584,7 @@ var KumweStudioElement = class extends i$16 {
 	}
 	#renderDropIndicator() {
 		let e = this.#drag;
-		return e?.active === !0 ? b$12`
+		return e?.active === !0 ? b$13`
       <p class="drop-indicator">
         ${this.#text(`studio.shell/drag-drop-position`, {
 			count: String(e.order.length),
@@ -19714,37 +21596,97 @@ var KumweStudioElement = class extends i$16 {
 	}
 	#renderInspector(e) {
 		let n = this.#isReadOnly();
-		return b$12`
-      <dl>
-        <div>
-          <dt>${this.#text(`studio.shell/inspector-identifier`)}</dt>
-          <dd>${e.id}</dd>
-        </div>
-        <div>
-          <dt>${this.#text(`studio.shell/inspector-type`)}</dt>
-          <dd>${e.type}@${e.version}</dd>
-        </div>
-      </dl>
-      ${n ? b$12`<p class="hint inspector-read-only">
-              ${this.#text(`studio.shell/inspector-read-only`)}
-            </p>` : b$12`<p class="hint">${this.#text(`studio.shell/inspector-hint`)}</p>`}
+		return b$13`
+      <h3 class="inspector-selection">${this.#nodeLabel(e)}</h3>
+      ${n ? b$13`<p class="hint inspector-read-only">${this.#text(`studio.shell/inspector-read-only`)}</p>` : A$10}
+      ${this.#renderScalarPorts(e, n)}
+      ${this.#renderInspectorAuthoringControls(e, n)}
+      ${this.#renderScalarProperties(e, !this.#permits(`studio.command/set-property`))}
       ${this.#renderInspectorRecipes(e, !this.#permits(`studio.command/batch`))}
       ${this.#renderInspectorDesign(e, !this.#permits(`studio.command/set-property`))}
-      ${this.#renderInspectorProperties(e, !this.#permits(`studio.command/set-property`))}
-      ${this.#renderInspectorAuthoringControls(e, n)}
-      ${this.#renderInspectorResourceBindings(e, !this.#permits(`studio.command/set-binding`))}
-      ${this.#renderInspectorBindings(e, !this.#permits(`studio.command/set-binding`))}
-      ${this.#renderInspectorOverrides(e, !this.#permits(`studio.command/set-property`))}
       ${this.#renderInspectorLayout(e, !this.#permits(`studio.command/set-size-role`))}
+      ${this.#renderInspectorResourceBindings(e, !this.#permits(`studio.command/set-binding`))}
+      <details class="inspector-advanced">
+        <summary>${this.#text(`studio.shell/inspector-advanced`)}</summary>
+        <p class="hint">${this.#text(`studio.shell/inspector-hint`)}</p>
+        <dl>
+          <div>
+            <dt>${this.#text(`studio.shell/inspector-identifier`)}</dt>
+            <dd>${e.id}</dd>
+          </div>
+          <div>
+            <dt>${this.#text(`studio.shell/inspector-type`)}</dt>
+            <dd>${e.type}@${e.version}</dd>
+          </div>
+        </dl>
+        ${this.#renderInspectorProperties(e, !this.#permits(`studio.command/set-property`))}
+        ${this.#renderInspectorBindings(e, !this.#permits(`studio.command/set-binding`))}
+        ${this.#renderInspectorOverrides(e, !this.#permits(`studio.command/set-property`))}
+      </details>
     `;
+	}
+	#renderScalarProperties(e, n) {
+		let i = this.#findDefinition(e), a = i?.propertySchema.properties, o = this.authoringControlRegistry ?? this.#defaultAuthoringControlRegistry, s = typeof a == `object` && a && !Array.isArray(a) ? a : {};
+		return b$13`<section class="scalar-properties">
+      ${(i?.propertyControls ?? []).filter((e) => !o.supports(e.control)).map((t) => {
+			let i = s[t.property];
+			if (!isScalarControlSchema(i)) return A$10;
+			let a = this.#propertyTargetViewport(), o = a === void 0 ? e.properties[t.property] : e.responsive?.[t.property]?.[a.id] ?? e.properties[t.property];
+			return renderScalarControl({
+				key: `property:` + t.property,
+				label: t.label === void 0 ? t.property.replaceAll(`-`, ` `) : Y(t.label),
+				schema: i,
+				value: o,
+				readOnly: n,
+				onChange: (n) => {
+					this.#setNodeProperty(e, t.property, n, a);
+				}
+			});
+		})}
+    </section>`;
+	}
+	#renderScalarPorts(e, n) {
+		return b$13`<section class="scalar-ports">
+      ${(this.#findDefinition(e)?.ports ?? []).map((t) => {
+			let i = t.authoring?.control;
+			if (t.multiple || ![
+				`studio.control/single-line-text`,
+				`studio.control/multi-line-text`,
+				`studio.control/switch`,
+				`studio.control/number`,
+				`studio.control/integer`
+			].includes(i ?? ``)) return A$10;
+			let a = e.bindings[t.id], o = a?.source.kind === `entry-field` ? a.source : void 0, s = o !== void 0 && this.#canEditEntryField(o.fieldPath), c = o ? this.entryValues?.read(o.fieldPath) : a?.source.kind === `static-value` ? a.source.value : void 0, l = { type: t.valueType === `boolean` ? `boolean` : t.valueType === `integer` ? `integer` : t.valueType === `number` ? `number` : `string` };
+			return renderScalarControl({
+				key: `port:` + t.id,
+				label: Y(t.label),
+				schema: l,
+				value: c,
+				multiline: i === `studio.control/multi-line-text`,
+				readOnly: n || t.authoring?.readOnly === !0 || a !== void 0 && a.source.kind !== `static-value` && !s || !o && !this.#permits(`studio.command/set-binding`),
+				onChange: (n) => {
+					this.#setAuthoringPortValue(e, t.id, n);
+				}
+			});
+		})}
+    </section>`;
+	}
+	#canEditEntryField(e) {
+		if (this.entryValues === void 0 || this.#isReadOnly()) return !1;
+		let t = this.contentModel?.fields, n;
+		for (let r of e) {
+			if (n = t?.find((e) => e.id === r), n === void 0 || n.authoring?.readOnly === !0 || n.authoring?.hidden === !0) return !1;
+			t = n.fields;
+		}
+		return n !== void 0;
 	}
 	#renderInspectorAuthoringControls(e, n) {
 		let i = this.#inspectorAuthoringTargets(e, n);
-		return i.length === 0 ? A$10 : b$12`
+		return i.length === 0 ? A$10 : b$13`
       <section class="inspector-section inspector-authoring" aria-label="Studio authoring controls">
         <h3>Authoring</h3>
         <ul class="inspector-rows">
-          ${i.map((e) => b$12`
+          ${i.map((e) => b$13`
               <li
                 class="inspector-authoring-row"
                 data-authoring-kind=${e.kind}
@@ -19768,12 +21710,12 @@ var KumweStudioElement = class extends i$16 {
 		let r = this.authoringControlRegistry ?? this.#defaultAuthoringControlRegistry, i = [];
 		for (let a of n.propertyControls ?? []) {
 			if (!r.supports(a.control)) continue;
-			let n = a.control === STUDIO_AUTHORING_CONTROL_IDS.scopedCss ? L(a.control) : e.properties[a.property] ?? (I(a.control) ? L(a.control) : void 0);
+			let n = a.control === STUDIO_AUTHORING_CONTROL_IDS.scopedCss ? V(a.control) : e.properties[a.property] ?? (B(a.control) ? V(a.control) : void 0);
 			i.push({
 				control: a.control,
 				key: `${e.id}:property:${a.property}`,
 				kind: `property`,
-				label: a.label === void 0 ? a.help === void 0 ? a.property : G(a.help) : G(a.label),
+				label: a.label === void 0 ? a.help === void 0 ? a.property : Y(a.help) : Y(a.label),
 				name: a.property,
 				nodeId: e.id,
 				readOnly: t,
@@ -19783,17 +21725,17 @@ var KumweStudioElement = class extends i$16 {
 		for (let a of n.ports) {
 			let n = a.authoring;
 			if (n?.control === void 0 || !r.supports(n.control)) continue;
-			let o = e.bindings[a.id], s = o?.source.kind === `static-value` ? o.source.value : I(n.control) ? L(n.control) : void 0;
+			let o = e.bindings[a.id], s = o?.source.kind === `entry-field` && this.entryValues !== void 0 ? this.entryValues.read(o.source.fieldPath) : o?.source.kind === `static-value` ? o.source.value : B(n.control) ? V(n.control) : void 0;
 			i.push({
 				...o === void 0 ? {} : { binding: o },
 				control: n.control,
 				key: `${e.id}:port:${a.id}`,
 				kind: `port`,
-				label: G(a.label) || a.id,
+				label: Y(a.label) || a.id,
 				name: a.id,
 				nodeId: e.id,
 				...n.profile === void 0 ? {} : { profile: n.profile },
-				readOnly: t || n.readOnly === !0 || o !== void 0 && o.source.kind !== `static-value`,
+				readOnly: t || n.readOnly === !0 || o !== void 0 && o.source.kind !== `static-value` && !(o.source.kind === `entry-field` && this.#canEditEntryField(o.source.fieldPath)),
 				value: s
 			});
 		}
@@ -19816,7 +21758,7 @@ var KumweStudioElement = class extends i$16 {
 		for (let e of t) {
 			let t = n.get(e.key);
 			if (t === void 0) continue;
-			let r = R(e), a = this.#authoringControls.get(e.key);
+			let r = H(e), a = this.#authoringControls.get(e.key);
 			if (a?.holder === t && a.signature === r) continue;
 			let o = a !== void 0 && this.shadowRoot.activeElement !== null && a.holder.contains(this.shadowRoot.activeElement);
 			a !== void 0 && this.#destroyAuthoringControl(e.key, a), t.replaceChildren();
@@ -19832,7 +21774,7 @@ var KumweStudioElement = class extends i$16 {
 					usage: `studio.media/content`,
 					value: structuredClone(e.value)
 				}, a = await i.mount(e.control, n), s = this.#currentInspectorNode(e.nodeId), c = s ? this.#inspectorAuthoringTargets(s, this.#isReadOnly()).find((t) => t.key === e.key) : void 0;
-				if (!t.isConnected || c === void 0 || R(c) !== r) {
+				if (!t.isConnected || c === void 0 || H(c) !== r) {
 					a.destroy();
 					continue;
 				}
@@ -19879,7 +21821,7 @@ var KumweStudioElement = class extends i$16 {
 		}
 		let r;
 		if (e.kind === `property`) {
-			let i = B(t.value);
+			let i = W(t.value);
 			if (i === void 0) {
 				this.#setAuthoringValueDiagnostic(e, n.id);
 				return;
@@ -19896,13 +21838,22 @@ var KumweStudioElement = class extends i$16 {
 		if (!r) return;
 		this.#setAuthoringDiagnostic(e.key, void 0);
 		let i = this.#currentInspectorNode(n.id), a = i ? this.#inspectorAuthoringTargets(i, this.#isReadOnly()).find((t) => t.key === e.key) : void 0, o = this.#authoringControls.get(e.key);
-		o !== void 0 && a !== void 0 && (o.signature = R(a));
+		o !== void 0 && a !== void 0 && (o.signature = H(a));
 	}
 	#setAuthoringPortValue(e, t, n) {
 		let r = e.bindings[t];
+		if (r?.source.kind === `entry-field`) {
+			let e = W(n);
+			if (e === void 0 || !this.#canEditEntryField(r.source.fieldPath)) return !1;
+			try {
+				return this.entryValues?.write(r.source.fieldPath, e), !0;
+			} catch (e) {
+				return this.#announce(`studio.shell/announce-command-failed`, { message: e instanceof Error ? e.message : String(e) }), !1;
+			}
+		}
 		if (r !== void 0 && r.source.kind !== `static-value`) return !1;
 		if (n === void 0) return r === void 0 || (this.#removeBinding(e, t), this.#currentInspectorNode(e.id)?.bindings[t] === void 0);
-		let i = B(n);
+		let i = W(n);
 		if (i === void 0) return !1;
 		let a = this.#session, o = this.document;
 		if (a === void 0 || o === void 0 || !this.#permits(`studio.command/set-binding`)) return !1;
@@ -19969,17 +21920,17 @@ var KumweStudioElement = class extends i$16 {
 		let i = this.#inspectorResourceBindingTargets(e, n);
 		if (i.length === 0) return A$10;
 		let a = this.resourceSearchService !== void 0 && this.#resourcePortAdvertised();
-		return b$12`
+		return b$13`
       <section class="inspector-section inspector-resource-bindings" aria-label="Resource bindings">
         <h3>Resources</h3>
         <ul class="inspector-rows">
-          ${i.map((e) => b$12`
+          ${i.map((e) => b$13`
               <li class="inspector-row" data-resource-port=${e.port}>
                 <span class="inspector-name">${e.label}</span>
-                ${a ? b$12`<div
+                ${a ? b$13`<div
                         class="inspector-resource-control"
                         data-resource-authoring-key=${e.key}
-                      ></div>` : b$12`<p class="inspector-binding-status resource-browser-unavailable">
+                      ></div>` : b$13`<p class="inspector-binding-status resource-browser-unavailable">
                         Resource browsing is unavailable in this
                         session.${e.binding === void 0 ? `` : ` The stored ${e.binding.source.kind} binding remains unchanged.`}
                       </p>`}
@@ -19996,7 +21947,7 @@ var KumweStudioElement = class extends i$16 {
 			return {
 				...r === void 0 ? {} : { binding: r },
 				key: `resource:${e.id}:${n.id}`,
-				label: G(n.label) || n.id,
+				label: Y(n.label) || n.id,
 				multiple: n.multiple,
 				nodeId: e.id,
 				port: n.id,
@@ -20023,7 +21974,7 @@ var KumweStudioElement = class extends i$16 {
 		for (let t of n) {
 			let n = r.get(t.key);
 			if (n === void 0) continue;
-			let i = z(t), a = this.#resourceBindingControls.get(t.key);
+			let i = U(t), a = this.#resourceBindingControls.get(t.key);
 			if (a?.holder === n && a.signature === i) continue;
 			let o = a !== void 0 && this.shadowRoot.activeElement !== null && a.holder.contains(this.shadowRoot.activeElement);
 			a !== void 0 && this.#destroyResourceBindingControl(t.key, a), n.replaceChildren();
@@ -20037,7 +21988,7 @@ var KumweStudioElement = class extends i$16 {
 					readOnly: t.readOnly,
 					service: e
 				}), a = this.#currentInspectorNode(t.nodeId), s = a ? this.#inspectorResourceBindingTargets(a, this.#isReadOnly()).find((e) => e.key === t.key) : void 0;
-				if (!n.isConnected || s === void 0 || z(s) !== i) {
+				if (!n.isConnected || s === void 0 || U(s) !== i) {
 					r.destroy();
 					continue;
 				}
@@ -20073,7 +22024,7 @@ var KumweStudioElement = class extends i$16 {
 		if (!i) return;
 		this.#setAuthoringDiagnostic(e.key, void 0);
 		let a = this.#currentInspectorNode(n.id), o = a ? this.#inspectorResourceBindingTargets(a, this.#isReadOnly()).find((t) => t.key === e.key) : void 0, s = this.#resourceBindingControls.get(e.key);
-		s !== void 0 && o !== void 0 && (s.signature = z(o));
+		s !== void 0 && o !== void 0 && (s.signature = U(o));
 	}
 	#setResourceReferenceBinding(e, t, n) {
 		if (!isStudioResourceReference(n)) return !1;
@@ -20115,7 +22066,7 @@ var KumweStudioElement = class extends i$16 {
 		let a = i.recipes.filter((t) => t.blockType === e.type);
 		if (a.length === 0) return A$10;
 		let s = e.properties[RECIPE_MARKER_PROPERTY];
-		return b$12`
+		return b$13`
       <section
         class="inspector-section inspector-recipes"
         aria-label=${this.#text(`studio.shell/inspector-recipes-heading`)}
@@ -20135,9 +22086,9 @@ var KumweStudioElement = class extends i$16 {
             <option value="" disabled .selected=${typeof s != `string`}>
               ${this.#text(`studio.shell/inspector-recipe-placeholder`)}
             </option>
-            ${a.map((e) => b$12`
+            ${a.map((e) => b$13`
                 <option value=${e.id} .selected=${s === e.id}>
-                  ${G(e.label)}
+                  ${Y(e.label)}
                 </option>
               `)}
           </select>
@@ -20151,7 +22102,7 @@ var KumweStudioElement = class extends i$16 {
 		let o = i.themeControls.map((e) => a.find((t) => t.id === e)).filter((e) => e !== void 0);
 		if (o.length === 0) return A$10;
 		let s = this.#propertyTargetViewport();
-		return b$12`
+		return b$13`
       <section
         class="inspector-section inspector-design"
         aria-label=${this.#text(`studio.shell/inspector-design-heading`)}
@@ -20160,15 +22111,15 @@ var KumweStudioElement = class extends i$16 {
         <ul class="inspector-rows">
           ${o.map((r) => {
 			let a = this.#designControlProperty(i, r), o = e.properties[a], c = s === void 0 ? void 0 : e.responsive?.[a]?.[s.id], l = c ?? o;
-			return b$12`
+			return b$13`
               <li class="inspector-row" data-control=${r.id}>
                 <label class="inspector-name" for=${`design-${e.id}-${r.id}`}>
-                  ${G(r.label)}
+                  ${Y(r.label)}
                 </label>
                 <span class="inspector-provenance">
                   ${s === void 0 ? this.#text(`studio.shell/inspector-provenance-base`) : c === void 0 ? this.#text(`studio.shell/inspector-provenance-inherited`, { value: JSON.stringify(o) }) : this.#text(`studio.shell/inspector-provenance-overridden`, {
 				value: JSON.stringify(c),
-				viewport: G(s.label)
+				viewport: Y(s.label)
 			})}
                 </span>
                 <select
@@ -20185,9 +22136,9 @@ var KumweStudioElement = class extends i$16 {
                   <option value="" disabled .selected=${typeof l != `string`}>
                     ${this.#text(`studio.shell/inspector-design-placeholder`)}
                   </option>
-                  ${r.choices.map((e) => b$12`
+                  ${r.choices.map((e) => b$13`
                       <option value=${e.id} .selected=${l === e.id}>
-                        ${G(e.label)}
+                        ${Y(e.label)}
                       </option>
                     `)}
                 </select>
@@ -20211,7 +22162,7 @@ var KumweStudioElement = class extends i$16 {
 	}
 	#renderInspectorBindings(e, n) {
 		let r = this.#bindingProjection?.nodes.find((t) => t.nodeId === e.id);
-		if (r === void 0) return this.#modelPortAdvertised() ? b$12`
+		if (r === void 0) return this.#modelPortAdvertised() ? b$13`
           <section
             class="inspector-section inspector-bindings"
             aria-label=${this.#text(`studio.shell/inspector-bindings-heading`)}
@@ -20223,7 +22174,7 @@ var KumweStudioElement = class extends i$16 {
           </section>
         ` : this.#renderLegacyInspectorBindings(e, n);
 		let i = !this.#bindingProjection?.diagnostics.some((e) => e.code.startsWith(`studio.binding/model-`)), a = new Set((this.#findDefinition(e)?.ports ?? []).filter((e) => e.valueType === `resource`).map((e) => e.id)), o = r.ports.filter((e) => !a.has(e.port));
-		return b$12`
+		return b$13`
       <section
         class="inspector-section inspector-bindings"
         aria-label=${this.#text(`studio.shell/inspector-bindings-heading`)}
@@ -20232,33 +22183,33 @@ var KumweStudioElement = class extends i$16 {
         <p class="hint inspector-binding-model">
           ${this.#text(`studio.shell/inspector-binding-model`, { model: `${this.contentModel?.id ?? ``}@${this.contentModel?.version ?? ``}#${this.contentModel?.revision ?? ``}` })}
         </p>
-        ${i ? o.length === 0 ? b$12`<p class="inspector-empty">
+        ${i ? o.length === 0 ? b$13`<p class="inspector-empty">
                   ${this.#text(`studio.shell/inspector-bindings-empty`)}
-                </p>` : b$12`<ul class="inspector-rows">
+                </p>` : b$13`<ul class="inspector-rows">
                   ${o.map((t) => this.#renderProjectedBindingPort(e, t, n))}
-                </ul>` : b$12`<p class="inspector-empty inspector-binding-model-mismatch">
+                </ul>` : b$13`<p class="inspector-empty inspector-binding-model-mismatch">
                 ${this.#text(`studio.shell/inspector-binding-model-mismatch`)}
               </p>`}
       </section>
     `;
 	}
 	#renderProjectedBindingPort(e, n, i) {
-		let a = this.#findDefinition(e)?.ports.find((e) => e.id === n.port), o = n.boundFieldPath, s = o === void 0 ? `` : JSON.stringify(o), c = n.candidates.find((e) => JSON.stringify(e.fieldPath) === s), l = a === void 0 ? n.port : G(a.label);
-		return b$12`
+		let a = this.#findDefinition(e)?.ports.find((e) => e.id === n.port), o = n.boundFieldPath, s = o === void 0 ? `` : JSON.stringify(o), c = n.candidates.find((e) => JSON.stringify(e.fieldPath) === s), l = a === void 0 ? n.port : Y(a.label);
+		return b$13`
       <li class="inspector-row inspector-binding-model" data-port=${n.port}>
         <label class="inspector-name" for=${`binding-${e.id}-${n.port}`}>
           ${l}
           ${n.required === !0 ? this.#text(`studio.shell/inspector-binding-required`) : A$10}
         </label>
-        ${n.valueType === void 0 ? A$10 : b$12`<span class="inspector-binding-status">
+        ${n.valueType === void 0 ? A$10 : b$13`<span class="inspector-binding-status">
                 ${this.#text(`studio.shell/inspector-binding-accepts`, {
 			cardinality: n.multiple === !0 ? `many` : `one`,
 			"value-type": n.valueType
 		})}
               </span>`}
-        ${n.status === `non-field-source` ? b$12`<span class="inspector-binding-status">
+        ${n.status === `non-field-source` ? b$13`<span class="inspector-binding-status">
                 ${this.#text(`studio.shell/inspector-binding-non-field-source`)}
-              </span>` : n.status === `invalid` ? b$12`<span class="inspector-binding-status">
+              </span>` : n.status === `invalid` ? b$13`<span class="inspector-binding-status">
                   ${this.#text(`studio.shell/inspector-binding-invalid`)}
                 </span>` : A$10}
         <select
@@ -20278,19 +22229,19 @@ var KumweStudioElement = class extends i$16 {
           <option value="" .selected=${c === void 0}>
             ${n.candidates.length === 0 ? this.#text(`studio.shell/inspector-binding-no-compatible-fields`) : this.#text(`studio.shell/inspector-binding-field-placeholder`)}
           </option>
-          ${n.candidates.map((e) => b$12`
+          ${n.candidates.map((e) => b$13`
               <option
                 value=${JSON.stringify(e.fieldPath)}
                 data-authoring-control=${e.control ?? A$10}
                 .selected=${JSON.stringify(e.fieldPath) === s}
               >
-                ${G(e.label)} (${e.fieldPath.join(`.`)})
+                ${Y(e.label)} (${e.fieldPath.join(`.`)})
               </option>
             `)}
         </select>
-        ${o === void 0 ? A$10 : b$12`<code class="inspector-binding-path">${o.join(`.`)}</code>`}
+        ${o === void 0 ? A$10 : b$13`<code class="inspector-binding-path">${o.join(`.`)}</code>`}
         ${c === void 0 ? A$10 : this.#renderDeclaredFieldControl(c)}
-        ${n.binding === void 0 ? A$10 : b$12`<button
+        ${n.binding === void 0 ? A$10 : b$13`<button
                 type="button"
                 class="inspector-binding-remove"
                 data-port=${n.port}
@@ -20307,50 +22258,50 @@ var KumweStudioElement = class extends i$16 {
 	}
 	#renderDeclaredFieldControl(e) {
 		let n = this.#fieldAtPath(e.fieldPath), i = e.control;
-		if (n === void 0 || i === void 0) return b$12`<div class="inspector-binding-control">
+		if (n === void 0 || i === void 0) return b$13`<div class="inspector-binding-control">
         <span class="inspector-binding-status">
           ${this.#text(`studio.shell/inspector-binding-control-undeclared`)}
         </span>
       </div>`;
-		let a = G(n.label), o = this.#text(`studio.shell/inspector-binding-control-label`, {
+		let a = Y(n.label), o = this.#text(`studio.shell/inspector-binding-control-label`, {
 			control: i,
 			field: a
 		}), s;
 		switch (i) {
 			case `studio.control/date`:
-				s = b$12`<input type="date" aria-label=${o} disabled />`;
+				s = b$13`<input type="date" aria-label=${o} disabled />`;
 				break;
 			case `studio.control/date-time`:
-				s = b$12`<input type="datetime-local" aria-label=${o} disabled />`;
+				s = b$13`<input type="datetime-local" aria-label=${o} disabled />`;
 				break;
 			case `studio.control/number`:
-				s = b$12`<input type="number" aria-label=${o} disabled />`;
+				s = b$13`<input type="number" aria-label=${o} disabled />`;
 				break;
 			case `studio.control/select`:
-				s = b$12`<select aria-label=${o} disabled>
+				s = b$13`<select aria-label=${o} disabled>
           <option>${this.#text(`studio.shell/inspector-binding-control-preview`)}</option>
-          ${(n.enumValues ?? []).map((e) => b$12`<option value=${e.value}>${G(e.label)}</option>`)}
+          ${(n.enumValues ?? []).map((e) => b$13`<option value=${e.value}>${Y(e.label)}</option>`)}
         </select>`;
 				break;
 			case `studio.control/switch`:
-				s = b$12`<input type="checkbox" aria-label=${o} disabled />`;
+				s = b$13`<input type="checkbox" aria-label=${o} disabled />`;
 				break;
 			case `studio.control/multi-line-text`:
-				s = b$12`<textarea aria-label=${o} disabled></textarea>`;
+				s = b$13`<textarea aria-label=${o} disabled></textarea>`;
 				break;
 			case `studio.control/single-line-text`:
-				s = b$12`<input
+				s = b$13`<input
           type="text"
           aria-label=${o}
-          placeholder=${n.authoring?.placeholder === void 0 ? A$10 : G(n.authoring.placeholder)}
+          placeholder=${n.authoring?.placeholder === void 0 ? A$10 : Y(n.authoring.placeholder)}
           disabled
         />`;
 				break;
-			default: s = b$12`<span class="inspector-binding-status">
+			default: s = b$13`<span class="inspector-binding-status">
           ${this.#text(`studio.shell/inspector-binding-control-unavailable`, { control: i })}
         </span>`;
 		}
-		return b$12`<div
+		return b$13`<div
       class="inspector-binding-control"
       data-authoring-control=${i}
       aria-label=${o}
@@ -20361,17 +22312,17 @@ var KumweStudioElement = class extends i$16 {
 	}
 	#renderLegacyInspectorBindings(e, n) {
 		let i = this.#findDefinition(e)?.ports ?? [], a = new Set(i.filter((e) => e.valueType === `resource`).map((e) => e.id)), o = Object.entries(e.bindings).filter(([e]) => !a.has(e)), s = i.length === 0 || i.some((e) => e.valueType !== `resource`);
-		return b$12`
+		return b$13`
       <section
         class="inspector-section inspector-bindings"
         aria-label=${this.#text(`studio.shell/inspector-bindings-heading`)}
       >
         <h3>${this.#text(`studio.shell/inspector-bindings-heading`)}</h3>
-        ${o.length === 0 ? b$12`<p class="inspector-empty">
+        ${o.length === 0 ? b$13`<p class="inspector-empty">
                 ${this.#text(`studio.shell/inspector-bindings-empty`)}
-              </p>` : b$12`
+              </p>` : b$13`
                 <ul class="inspector-rows">
-                  ${o.map(([r, i]) => b$12`
+                  ${o.map(([r, i]) => b$13`
                       <li class="inspector-row">
                         <span class="inspector-name">${r}</span>
                         <code class="inspector-binding-value">${JSON.stringify(i)}</code>
@@ -20391,7 +22342,7 @@ var KumweStudioElement = class extends i$16 {
                     `)}
                 </ul>
               `}
-        ${s ? b$12`<div class="inspector-row inspector-set-binding-form">
+        ${s ? b$13`<div class="inspector-row inspector-set-binding-form">
                 <input
                   type="text"
                   class="inspector-binding-port"
@@ -20420,20 +22371,20 @@ var KumweStudioElement = class extends i$16 {
 	}
 	#renderInspectorLayout(e, n) {
 		let i = this.#sizeRoleVocabulary();
-		return b$12`
+		return b$13`
       <section
         class="inspector-section inspector-layout"
         aria-label=${this.#text(`studio.shell/inspector-layout-heading`)}
       >
         <h3>${this.#text(`studio.shell/inspector-layout-heading`)}</h3>
-        ${i?.length === 0 ? b$12`<p class="inspector-empty layout-no-roles">
+        ${i?.length === 0 ? b$13`<p class="inspector-empty layout-no-roles">
                 ${this.#text(`studio.shell/inspector-layout-no-roles`)}
-              </p>` : b$12`
-                ${i === void 0 ? b$12`<p class="hint layout-fallback-hint">
+              </p>` : b$13`
+                ${i === void 0 ? b$13`<p class="hint layout-fallback-hint">
                         ${this.#text(`studio.shell/inspector-layout-fallback-hint`)}
                       </p>` : A$10}
                 <ul class="inspector-rows">
-                  ${A.map((t) => this.#renderLayoutAxis(e, t, i, n))}
+                  ${P.map((t) => this.#renderLayoutAxis(e, t, i, n))}
                 </ul>
               `}
       </section>
@@ -20442,7 +22393,7 @@ var KumweStudioElement = class extends i$16 {
 	#renderInspectorOverrides(e, n) {
 		let i = this.activeViewport;
 		if (i === void 0) return A$10;
-		let a = G(i.label), o = [];
+		let a = Y(i.label), o = [];
 		for (let [t, n] of Object.entries(e.properties)) o.push({
 			base: n,
 			override: e.responsive?.[t]?.[i.id],
@@ -20457,7 +22408,7 @@ var KumweStudioElement = class extends i$16 {
 				property: t
 			});
 		}
-		return b$12`
+		return b$13`
       <section
         class="inspector-section inspector-overrides"
         aria-label=${this.#text(`studio.shell/inspector-overrides-heading`, { viewport: a })}
@@ -20465,11 +22416,11 @@ var KumweStudioElement = class extends i$16 {
         <h3>
           ${this.#text(`studio.shell/inspector-overrides-heading`, { viewport: a })}
         </h3>
-        ${o.length === 0 ? b$12`<p class="inspector-empty">
+        ${o.length === 0 ? b$13`<p class="inspector-empty">
                 ${this.#text(`studio.shell/inspector-overrides-empty`, { viewport: a })}
-              </p>` : b$12`
+              </p>` : b$13`
                 <ul class="inspector-rows">
-                  ${o.map(({ base: r, override: o, property: s }) => o === void 0 ? b$12`
+                  ${o.map(({ base: r, override: o, property: s }) => o === void 0 ? b$13`
                           <li class="inspector-row inspector-inherited" data-property=${s}>
                             <span class="inspector-name">${s}</span>
                             <span class="inspector-provenance">
@@ -20487,7 +22438,7 @@ var KumweStudioElement = class extends i$16 {
                               ${this.#text(`studio.shell/inspector-reset-inheritance`)}
                             </button>
                           </li>
-                        ` : b$12`
+                        ` : b$13`
                           <li class="inspector-row">
                             <span class="inspector-name">${s}</span>
                             <span class="inspector-provenance">
@@ -20569,17 +22520,17 @@ var KumweStudioElement = class extends i$16 {
 	}
 	#renderInspectorProperties(e, n) {
 		let r = this.authoringControlRegistry ?? this.#defaultAuthoringControlRegistry, i = new Set((this.#findDefinition(e)?.propertyControls ?? []).filter((e) => r.supports(e.control)).map((e) => e.property)), a = Object.entries(e.properties).filter(([e]) => !i.has(e));
-		return b$12`
+		return b$13`
       <section
         class="inspector-section inspector-properties"
         aria-label=${this.#text(`studio.shell/inspector-properties`)}
       >
         <h3>${this.#text(`studio.shell/inspector-properties`)}</h3>
-        ${a.length === 0 ? b$12`<p class="inspector-empty">
+        ${a.length === 0 ? b$13`<p class="inspector-empty">
                 ${this.#text(`studio.shell/inspector-properties-empty`)}
-              </p>` : b$12`
+              </p>` : b$13`
                 <ul class="inspector-rows">
-                  ${a.map(([r, i]) => b$12`
+                  ${a.map(([r, i]) => b$13`
                       <li class="inspector-row">
                         <span class="inspector-name">${r}</span>
                         <span class="inspector-provenance">
@@ -20640,20 +22591,20 @@ var KumweStudioElement = class extends i$16 {
     `;
 	}
 	#renderLayoutAxis(e, n, i, a) {
-		let o = this.#axisText(n), s = e.sizeRoles?.[n], c = this.#sizeRoleTargetViewport(), l = this.#assignedSizeRole(e, n, c), u = c === void 0 ? void 0 : G(c.label), d = u === void 0 ? this.#text(`studio.shell/inspector-layout-role-label-base`, { axis: o }) : this.#text(`studio.shell/inspector-layout-role-label-viewport`, {
+		let o = this.#axisText(n), s = e.sizeRoles?.[n], c = this.#sizeRoleTargetViewport(), l = this.#assignedSizeRole(e, n, c), u = c === void 0 ? void 0 : Y(c.label), d = u === void 0 ? this.#text(`studio.shell/inspector-layout-role-label-base`, { axis: o }) : this.#text(`studio.shell/inspector-layout-role-label-viewport`, {
 			axis: o,
 			viewport: u
 		}), f = u === void 0 ? this.#text(`studio.shell/inspector-layout-unset-label-base`, { axis: o }) : this.#text(`studio.shell/inspector-layout-unset-label-viewport`, {
 			axis: o,
 			viewport: u
 		});
-		return b$12`
+		return b$13`
       <li class="inspector-row layout-axis" data-axis=${n}>
         <span class="inspector-name">${o}</span>
         <span class="inspector-provenance layout-base-state" data-axis=${n}>
           ${s === void 0 ? this.#text(`studio.shell/inspector-layout-base-none`) : this.#text(`studio.shell/inspector-layout-base-role`, { role: s })}
         </span>
-        ${u === void 0 ? A$10 : b$12`
+        ${u === void 0 ? A$10 : b$13`
                 <span class="inspector-provenance layout-viewport-state" data-axis=${n}>
                   ${l === void 0 ? s === void 0 ? this.#text(`studio.shell/inspector-provenance-inherited-none`) : this.#text(`studio.shell/inspector-provenance-inherited`, { value: s }) : this.#text(`studio.shell/inspector-provenance-overridden`, {
 			value: l,
@@ -20661,7 +22612,7 @@ var KumweStudioElement = class extends i$16 {
 		})}
                 </span>
               `}
-        ${i === void 0 ? b$12`
+        ${i === void 0 ? b$13`
                 <input
                   type="text"
                   class="layout-role-input"
@@ -20673,7 +22624,7 @@ var KumweStudioElement = class extends i$16 {
 			this.#onLayoutRoleInputKeydown(t, e, n);
 		}}
                 />
-              ` : b$12`
+              ` : b$13`
                 <select
                   class="layout-role-select"
                   data-axis=${n}
@@ -20687,9 +22638,9 @@ var KumweStudioElement = class extends i$16 {
                   <option value="" disabled ?selected=${l === void 0}>
                     ${this.#text(`studio.shell/inspector-layout-role-placeholder`)}
                   </option>
-                  ${i.map((e) => b$12`
+                  ${i.map((e) => b$13`
                       <option value=${e.id} ?selected=${l === e.id}>
-                        ${G(e.label)}
+                        ${Y(e.label)}
                       </option>
                     `)}
                 </select>
@@ -20711,7 +22662,7 @@ var KumweStudioElement = class extends i$16 {
 	}
 	#renderOutlineControls(e) {
 		let n = this.document === void 0 ? void 0 : findOutlineLocation(this.document.roots, e.id), r = !this.#canMutateNode(e, `studio.command/reorder-children`), i = n === void 0 || n.index === 0, a = n === void 0 || n.index === n.collection.length - 1, o = this.#moveDestinations(e);
-		return b$12`
+		return b$13`
       <div
         class="outline-controls"
         role="group"
@@ -20772,7 +22723,7 @@ var KumweStudioElement = class extends i$16 {
             <option value="" selected disabled>
               ${this.#text(`studio.shell/move-destination-placeholder`)}
             </option>
-            ${o.map((e) => b$12`
+            ${o.map((e) => b$13`
                 <option value=${e.id}>${e.label}</option>
               `)}
           </select>
@@ -20782,7 +22733,7 @@ var KumweStudioElement = class extends i$16 {
 	}
 	#renderOutlineNode(e) {
 		let n = this.#findDefinition(e), i = this.selectedNodeId === e.id, a = Object.entries(e.slots);
-		return b$12`
+		return b$13`
       <li>
         <button
           type="button"
@@ -20796,14 +22747,14 @@ var KumweStudioElement = class extends i$16 {
 			this.#onOutlineKeydown(t, e);
 		}}
         >
-          ${n === void 0 ? b$12`${e.type}
-                  <span class="unresolved">${this.#text(`studio.shell/unresolved-block`)}</span>` : G(n.label)}
+          ${n === void 0 ? b$13`${e.type}
+                  <span class="unresolved">${this.#text(`studio.shell/unresolved-block`)}</span>` : Y(n.label)}
         </button>
         ${i ? this.#renderOutlineControls(e) : A$10}
         ${a.map(([n, i]) => {
 			if (i.length === 0) return A$10;
 			let a = this.#slotLabel(e, n);
-			return b$12`
+			return b$13`
             <section class="node-children" aria-label=${a}>
               <span class="outline-slot-label">${a}</span>
               <ul class="tree">
@@ -20816,8 +22767,9 @@ var KumweStudioElement = class extends i$16 {
     `;
 	}
 	#renderPreview() {
+		if (this.#usesLocalCanvas()) return this.#renderLocalCanvas();
 		let e = this.#previewCapabilityAvailable() && this.previewBinding !== void 0, n = e ? this.previewState ?? `connecting` : `unavailable`, i = n === `closed` ? `studio.shell/preview-closed` : n === `connecting` ? `studio.shell/preview-connecting` : n === `current` ? `studio.shell/preview-current` : n === `rendering` ? `studio.shell/preview-rendering` : n === `stale` ? `studio.shell/preview-stale` : `studio.shell/preview-unavailable`;
-		return b$12`
+		return b$13`
       <section
         class="preview-region"
         data-preview-state=${n}
@@ -20825,7 +22777,7 @@ var KumweStudioElement = class extends i$16 {
       >
         <h2>${this.#text(`studio.shell/preview-heading`)}</h2>
         <p class="preview-status">${this.#text(i)}</p>
-        ${e && n === `current` && this.canvasGeometry !== void 0 ? b$12`
+        ${e && n === `current` && this.canvasGeometry !== void 0 ? b$13`
                 <button
                   type="button"
                   class="canvas-edit-toggle"
@@ -20837,8 +22789,14 @@ var KumweStudioElement = class extends i$16 {
                   ${this.#text(`studio.shell/canvas-edit-toggle`)}
                 </button>
               ` : A$10}
-        ${e && n !== `closed` ? b$12`
-                <div class="preview-stage" tabindex="0">
+        ${e && n !== `closed` ? b$13`
+                <div
+                  class="preview-stage"
+                  tabindex="0"
+                  @keydown=${(e) => {
+			this.#onPreviewStageKeydown(e);
+		}}
+                >
                   <slot
                     class="preview-surface-slot"
                     name="preview"
@@ -20858,8 +22816,11 @@ var KumweStudioElement = class extends i$16 {
 	#renderPreviewCanvasOverlay() {
 		let e = this.canvasGeometry;
 		if (e === void 0 || e.viewport.width <= 0 || e.viewport.height <= 0) return A$10;
-		let n = this.#previewDrag?.active === !0 ? this.#previewDrag.target?.indicator : void 0, a = Object.entries(e.measurements).sort(([e], [t]) => (e === this.selectedNodeId) - +(t === this.selectedNodeId));
-		return b$12`
+		let n = this.#previewDrag?.active === !0 ? this.#previewDrag.target?.indicator : this.#paletteDrag?.active === !0 && !this.#paletteDrag.cancelled ? this.#paletteDrag.target?.indicator : void 0, a = Object.entries(e.measurements).sort(([e], [t]) => {
+			let n = this.document?.roots ?? [];
+			return findAncestry(n, e).length - findAncestry(n, t).length;
+		});
+		return b$13`
       <svg
         class="preview-canvas-overlay"
         data-interactive=${this.canvasDirectManipulation === !0 ? `true` : `false`}
@@ -20878,7 +22839,7 @@ var KumweStudioElement = class extends i$16 {
 			this.#onPreviewCanvasPointerCancel(e);
 		}}
       >
-        ${a.flatMap(([e, t]) => t.map((t, n) => w$12`
+        ${a.flatMap(([e, t]) => t.map((t, n) => w$13`
               <rect
                 class="preview-canvas-region"
                 data-node-id=${e}
@@ -20898,9 +22859,12 @@ var KumweStudioElement = class extends i$16 {
                 @pointerdown=${(t) => {
 			this.#onPreviewCanvasPointerDown(t, e);
 		}}
+                @dblclick=${(t) => {
+			t.preventDefault(), this.#activateNodeEditing(e);
+		}}
               ></rect>
             `))}
-        ${n === void 0 ? A$10 : w$12`
+        ${n === void 0 ? A$10 : w$13`
                 <rect
                   class="preview-canvas-drop-indicator"
                   x=${String(n.x)}
@@ -20914,11 +22878,20 @@ var KumweStudioElement = class extends i$16 {
 	}
 	#renderPreviewCanvasStatus() {
 		let e = this.#previewDrag;
-		return e?.active !== !0 || e.target === void 0 ? A$10 : b$12`
-      <p class="preview-canvas-status">
-        ${this.#text(`studio.shell/visual-drop-target`, {
+		if (e?.active === !0 && e.target !== void 0) return b$13`
+        <p class="preview-canvas-status">
+          ${this.#text(`studio.shell/visual-drop-target`, {
 			destination: e.target.label,
 			label: e.label
+		})}
+        </p>
+      `;
+		let n = this.#paletteDrag;
+		return n?.active !== !0 || n.cancelled || n.target === void 0 ? A$10 : b$13`
+      <p class="preview-canvas-status">
+        ${this.#text(`studio.shell/visual-insert-target`, {
+			destination: n.target.label,
+			label: n.label
 		})}
       </p>
     `;
@@ -20991,58 +22964,207 @@ var KumweStudioElement = class extends i$16 {
 		};
 	}
 	#resolvePreviewDropTarget(e, t, n) {
-		let r = this.#previewDropTargets(e), i, a = 1 / 0;
-		for (let e of r) {
-			let r = Math.hypot(e.distanceX - t, e.distanceY - n);
-			(r < a || r === a && (i === void 0 || e.specificity > i.specificity)) && (i = e, a = r);
+		return this.#rankDropTarget(this.#previewDropTargets(e), t, n);
+	}
+	#rankDropTarget(e, t, n) {
+		let r, i = 1 / 0;
+		for (let a of e) {
+			let e = Math.hypot(a.distanceX - t, a.distanceY - n);
+			(e < i || e === i && (r === void 0 || a.specificity > r.specificity)) && (r = a, i = e);
 		}
-		return i;
+		return r;
 	}
 	#previewDropTargets(e) {
-		let t = this.canvasGeometry, n = this.document;
-		if (t === void 0 || n === void 0) return [];
-		let r = this.#moveDestinations(e), i = this.#moveCollections(e), a = [];
-		for (let o of r) {
-			let r = i.find((e) => e.parentNodeId === o.destination.parentNodeId && e.slot === o.destination.slot);
-			if (r === void 0) continue;
-			let s = r.collection.filter((t) => t.id !== e.id), c = s.map((e) => H(t.measurements[e.id] ?? []));
-			if (c.every((e) => e !== void 0) && c.length > 0) {
-				let e = U(c, o.destination.position);
-				a.push({
-					...o,
-					distanceX: e.x + e.width / 2,
-					distanceY: e.y + e.height / 2,
-					indicator: e,
-					specificity: r.specificity
+		return this.#dropTargetsFor(this.#moveDestinations(e), this.#moveCollections(e), e.type, e.id);
+	}
+	#insertCollections(e) {
+		let t = this.document;
+		if (t === void 0 || !this.#permits(`studio.command/insert-node`)) return [];
+		let n = this.#session?.mode === `hybrid`, r = [];
+		n || r.push({
+			collection: t.roots,
+			label: this.#text(`studio.shell/document-roots`),
+			specificity: 0
+		});
+		let i = t.roots.map((e) => ({
+			node: e,
+			specificity: 1
+		}));
+		for (; i.length > 0;) {
+			let t = i.shift();
+			if (t === void 0) break;
+			let { node: a, specificity: o } = t, s = this.#findDefinition(a);
+			for (let e of Object.values(a.slots)) i.push(...e.map((e) => ({
+				node: e,
+				specificity: o + 1
+			})));
+			for (let t of s?.slots ?? []) {
+				if (!t.accepts.types.includes(e.type) || n && (!this.#isComposableSlot(a, t.id) || (a.authoring.slots?.[t.id]?.allowedBlocks ?? a.authoring.allowedBlocks)?.includes(e.type) === !1)) continue;
+				let i = a.slots[t.id] ?? [];
+				typeof t.maximum == `number` && i.length >= t.maximum || r.push({
+					collection: i,
+					label: this.#text(`studio.shell/move-slot-collection`, {
+						parent: `${this.#nodeLabel(a)} (${a.id})`,
+						slot: Y(t.label)
+					}),
+					parentNodeId: a.id,
+					slot: t.id,
+					specificity: o
+				});
+			}
+		}
+		return r;
+	}
+	#insertDestinations(e) {
+		let t = [];
+		for (let n of this.#insertCollections(e)) for (let e = 0; e <= n.collection.length; e += 1) {
+			let r = { position: e };
+			n.parentNodeId !== void 0 && n.slot !== void 0 && (r.parentNodeId = n.parentNodeId, r.slot = n.slot), t.push({
+				destination: r,
+				id: `${n.parentNodeId ?? `document`}--${n.slot ?? `roots`}--${e}`,
+				label: this.#text(`studio.shell/move-destination-option`, {
+					collection: n.label,
+					count: String(n.collection.length + 1),
+					position: String(e + 1)
+				})
+			});
+		}
+		return t;
+	}
+	#insertDropTargets(e) {
+		return this.#dropTargetsFor(this.#insertDestinations(e), this.#insertCollections(e), e.type, void 0);
+	}
+	#dropTargetsFor(e, t, n, r) {
+		let i = this.canvasGeometry, a = this.document;
+		if (i === void 0 || a === void 0) return [];
+		let o = [];
+		for (let s of e) {
+			let e = t.find((e) => e.parentNodeId === s.destination.parentNodeId && e.slot === s.destination.slot);
+			if (e === void 0) continue;
+			let c = e.collection.filter((e) => e.id !== r), l = c.map((e) => K(i.measurements[e.id] ?? []));
+			if (l.every((e) => e !== void 0) && l.length > 0) {
+				let t = q(l, s.destination.position);
+				o.push({
+					...s,
+					distanceX: t.x + t.width / 2,
+					distanceY: t.y + t.height / 2,
+					indicator: t,
+					specificity: e.specificity
 				});
 				continue;
 			}
-			if (s.length !== 0 || r.parentNodeId === void 0) continue;
-			let l = H(t.measurements[r.parentNodeId] ?? []);
-			if (l === void 0) continue;
-			let u = findOutlineLocation(n.roots, r.parentNodeId)?.node, d = this.#findDefinition(u ?? e)?.slots.filter((t) => (u?.slots[t.id] ?? []).length === 0 && t.accepts.types.includes(e.type)) ?? [], f = Math.max(0, d.findIndex((e) => e.id === r.slot)), p = l.height / Math.max(1, d.length), m = {
-				height: Math.max(4, p - 8),
-				width: Math.max(4, l.width - 8),
-				x: l.x + 4,
-				y: l.y + f * p + 4
+			if (c.length !== 0) continue;
+			if (e.parentNodeId === void 0) {
+				if (r !== void 0) continue;
+				let t = {
+					height: Math.max(4, i.viewport.height - 8),
+					width: Math.max(4, i.viewport.width - 8),
+					x: 4,
+					y: 4
+				};
+				o.push({
+					...s,
+					distanceX: t.x + t.width / 2,
+					distanceY: t.y + t.height / 2,
+					indicator: t,
+					specificity: e.specificity
+				});
+				continue;
+			}
+			let u = K(i.measurements[e.parentNodeId] ?? []), d = findOutlineLocation(a.roots, e.parentNodeId)?.node;
+			if (u === void 0 || d === void 0) continue;
+			let f = this.#findDefinition(d)?.slots.filter((e) => (d.slots[e.id] ?? []).length === 0 && e.accepts.types.includes(n)) ?? [], p = Math.max(0, f.findIndex((t) => t.id === e.slot)), m = u.height / Math.max(1, f.length), h = {
+				height: Math.max(4, m - 8),
+				width: Math.max(4, u.width - 8),
+				x: u.x + 4,
+				y: u.y + p * m + 4
 			};
-			a.push({
-				...o,
-				distanceX: m.x + m.width / 2,
-				distanceY: m.y + m.height / 2,
-				indicator: m,
-				specificity: r.specificity
+			o.push({
+				...s,
+				distanceX: h.x + h.width / 2,
+				distanceY: h.y + h.height / 2,
+				indicator: h,
+				specificity: e.specificity
 			});
 		}
-		return a;
+		return o;
+	}
+	#onPaletteBlockPointerDown(e, t) {
+		if (e.button !== 0 || this.#previewDrag !== void 0 || this.#paletteDrag !== void 0 && !this.#paletteDrag.cancelled || this.canvasGeometry === void 0 || !this.#permits(`studio.command/insert-node`)) return;
+		let n = {
+			active: !1,
+			cancelled: !1,
+			definition: t,
+			label: Y(t.label),
+			originX: e.clientX,
+			originY: e.clientY,
+			pointerId: e.pointerId
+		}, r = e.currentTarget;
+		if (r instanceof Element) try {
+			r.setPointerCapture(e.pointerId), n.capture = r;
+		} catch {}
+		this.#paletteDrag = n;
+	}
+	#onPaletteBlockPointerMove(e) {
+		let t = this.#paletteDrag;
+		if (t?.pointerId !== e.pointerId || t.cancelled || !t.active && Math.hypot(e.clientX - t.originX, e.clientY - t.originY) < 4) return;
+		t.active = !0;
+		let n = this.#paletteCanvasPoint(e), r = n === void 0 ? void 0 : this.#rankDropTarget(this.#insertDropTargets(t.definition), n.x, n.y);
+		r === void 0 ? delete t.target : t.target = r, this.requestUpdate();
+	}
+	#onPaletteBlockPointerUp(e) {
+		let t = this.#paletteDrag;
+		if (t?.pointerId === e.pointerId && (this.#paletteDrag = void 0, this.#releasePaletteDragCapture(t), this.requestUpdate(), !(!t.active && !t.cancelled) && (this.#suppressFollowingPaletteClick(), !t.cancelled))) {
+			if (t.target === void 0) {
+				this.#announce(`studio.shell/announce-drag-cancelled`, { label: t.label });
+				return;
+			}
+			this.#insertDefinition(t.definition, t.target.destination);
+		}
+	}
+	#onPaletteBlockPointerCancel(e) {
+		this.#paletteDrag?.pointerId === e.pointerId && this.#cancelDrag();
+	}
+	#suppressFollowingPaletteClick() {
+		this.#suppressPaletteClick = !0, this.ownerDocument.defaultView?.setTimeout(() => {
+			this.#suppressPaletteClick = !1;
+		}, 0);
+	}
+	#releasePaletteDragCapture(e) {
+		try {
+			e.capture?.hasPointerCapture(e.pointerId) === !0 && e.capture.releasePointerCapture(e.pointerId);
+		} catch {}
+	}
+	#paletteCanvasPoint(e) {
+		let t = this.canvasGeometry, n = this.shadowRoot?.querySelector(`.preview-canvas-overlay`);
+		if (t === void 0 || n == null) return;
+		let r = n.getBoundingClientRect();
+		if (r.width <= 0 || r.height <= 0) return this.activePane === `canvas` ? {
+			x: e.clientX,
+			y: e.clientY
+		} : void 0;
+		if (!(e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom)) return {
+			x: (e.clientX - r.left) / r.width * t.viewport.width,
+			y: (e.clientY - r.top) / r.height * t.viewport.height
+		};
+	}
+	#activateNodeEditing(e) {
+		this.document !== void 0 && findOutlineLocation(this.document.roots, e) !== void 0 && (this.#selectNode(e), this.activePane = `inspector`, this.updateComplete.then(() => {
+			if (this.selectedNodeId !== e) return;
+			let t = `:is(input, select, textarea):not(:disabled)`, n = this.shadowRoot?.querySelector(`.inspector-default`);
+			((n?.hasAttribute(`hidden`) === !1 ? n.querySelector(`.scalar-control ${t}`) : null) ?? this.querySelector(`[slot="contextual-inspector"] ${t}`) ?? this.shadowRoot?.querySelector(`.inspector-default:not([hidden]) ${t}`) ?? null)?.focus();
+		}));
+	}
+	#onPreviewStageKeydown(e) {
+		(e.key === `Enter` || e.key === `F2`) && e.currentTarget === e.target && this.selectedNodeId !== void 0 && (e.preventDefault(), this.#activateNodeEditing(this.selectedNodeId));
 	}
 	#renderViewportSwitcher() {
 		let e = this.#orderedViewports();
 		if (e.length === 0) return A$10;
 		let n = this.activeViewport;
-		return b$12`
+		return b$13`
       <section class="viewport-switcher" aria-label=${this.#text(`studio.shell/viewport-label`)}>
-        ${e.map((e) => b$12`
+        ${e.map((e) => b$13`
             <button
               type="button"
               class="viewport-option"
@@ -21052,24 +23174,31 @@ var KumweStudioElement = class extends i$16 {
 			this.#selectViewport(e);
 		}}
             >
-              ${G(e.label)}
+              ${Y(e.label)}
             </button>
           `)}
       </section>
     `;
 	}
 	#requestInsert(e) {
+		if (this.#suppressPaletteClick) {
+			this.#suppressPaletteClick = !1;
+			return;
+		}
 		let t = this.#insertionDestination(e);
 		if (t === void 0) return;
 		let n = {
 			definition: e,
 			parentId: t.parentNodeId ?? null
 		};
-		t.slot !== void 0 && (n.slot = t.slot), this.dispatchEvent(new CustomEvent(`studio-insert-request`, {
+		t.slot !== void 0 && (n.slot = t.slot);
+		let r = this.#session, i = r?.stateVersion, a = new CustomEvent(`studio-insert-request`, {
 			bubbles: !0,
+			cancelable: !0,
 			composed: !0,
 			detail: n
-		}));
+		});
+		this.dispatchEvent(a), this.#session === r && r?.stateVersion !== i && (this.activePane = `canvas`), !a.defaultPrevented && this.#session === r && r?.stateVersion === i && this.#insertDefinition(e);
 	}
 	#resolveDragIndex(e, t) {
 		let n = [...this.shadowRoot?.querySelectorAll(`button.canvas-chip`) ?? []].filter((e) => {
@@ -21097,7 +23226,7 @@ var KumweStudioElement = class extends i$16 {
 			return;
 		}
 		let e = this.#registry ?? new BlockRegistry(), t = validateBlueprint(this.document, e);
-		this.#bindingProjection = this.contentModel === void 0 ? void 0 : projectBlueprintFieldBindings(this.document, this.contentModel, this.#activeDefinitions()), this.#diagnostics = [...t.diagnostics, ...this.#bindingProjection?.diagnostics ?? []].sort((e, t) => P[e.severity] - P[t.severity]);
+		this.#bindingProjection = this.contentModel === void 0 ? void 0 : projectBlueprintFieldBindings(this.document, this.contentModel, this.#activeDefinitions()), this.#diagnostics = [...t.diagnostics, ...this.#bindingProjection?.diagnostics ?? []].sort((e, t) => R[e.severity] - R[t.severity]);
 	}
 	#revealDiagnosticNode(e) {
 		this.#selectNode(e), this.#pendingFocusNodeId = e, this.requestUpdate();
@@ -21130,7 +23259,60 @@ var KumweStudioElement = class extends i$16 {
 			bubbles: !0,
 			composed: !0,
 			detail: { viewport: e }
-		})), this.#announce(`studio.shell/announce-viewport-changed`, { label: G(e.label) }), this.#schedulePreview(), this.requestUpdate());
+		})), this.#announce(`studio.shell/announce-viewport-changed`, { label: Y(e.label) }), this.#schedulePreview(), this.requestUpdate());
+	}
+	#usesLocalCanvas() {
+		return this.localCanvasContext !== void 0 && this.previewBinding === void 0 && this.configuration?.session.preview.enabled !== !0;
+	}
+	#renderLocalCanvas() {
+		let e = this.localCanvasState ?? `rendering`;
+		return b$13`
+      <section
+        class="preview-region local-canvas-region"
+        data-local-canvas-state=${e}
+        aria-label=${this.#text(`studio.shell/local-canvas-label`)}
+      >
+        <h2>${this.#text(`studio.shell/local-canvas-label`)}</h2>
+        <p class="preview-status">
+          ${this.#text(e === `unavailable` ? `studio.shell/local-canvas-unavailable` : `studio.shell/local-canvas-description`)}
+        </p>
+        <div
+          class="preview-stage"
+          tabindex="0"
+          @keydown=${(e) => {
+			this.#onPreviewStageKeydown(e);
+		}}
+        >
+          <div class="local-canvas-host"></div>
+          ${this.#renderPreviewCanvasOverlay()}
+        </div>
+        ${this.#renderPreviewCanvasStatus()}
+      </section>
+    `;
+	}
+	#synchronizeLocalCanvas(e) {
+		let t = this.#usesLocalCanvas() ? this.shadowRoot?.querySelector(`.local-canvas-host`) : void 0, n = this.document, r = this.localCanvasContext;
+		if (t == null || n === void 0 || r === void 0) {
+			this.#disposeLocalCanvas();
+			return;
+		}
+		let i = !1;
+		(this.#localCanvasHolder !== t || this.#localCanvas === void 0) && (this.#disposeLocalCanvas(), this.#localCanvasHolder = t, this.#localCanvas = new StudioLocalCanvas(t, {
+			onActivated: (e) => {
+				this.#selectNode(e, !1);
+			},
+			onGeometry: (e) => {
+				this.canvasGeometry = e, e === void 0 && (this.#hoveredPreviewNodeId = void 0, this.#cancelDrag());
+			},
+			onState: (e) => {
+				this.localCanvasState = e;
+			}
+		}), this.canvasDirectManipulation = !0, i = !0);
+		let a = this.activeViewport;
+		(i || e.has(`document`) || e.has(`localCanvasContext`) || this.#localCanvasViewport !== a?.id) && (this.#localCanvasViewport = a?.id, this.#localCanvas.update(n, r, a?.previewWidth ?? 1440));
+	}
+	#disposeLocalCanvas() {
+		this.#localCanvas?.dispose(), this.#localCanvas = void 0, this.#localCanvasHolder = void 0, this.#localCanvasViewport = void 0;
 	}
 	#previewCapabilityAvailable() {
 		let e = this.configuration?.session;
@@ -21256,7 +23438,7 @@ var KumweStudioElement = class extends i$16 {
 		};
 		return this.#runShellCommand(s) ? (r === void 0 ? this.#announce(`studio.shell/announce-property-set`, { property: t }) : this.#announce(`studio.shell/announce-override-set`, {
 			property: t,
-			viewport: G(r.label)
+			viewport: Y(r.label)
 		}), !0) : !1;
 	}
 	#setSizeRole(e, t, n) {
@@ -21279,7 +23461,7 @@ var KumweStudioElement = class extends i$16 {
 		}) : this.#announce(`studio.shell/announce-size-role-set-viewport`, {
 			axis: this.#axisText(t),
 			role: n,
-			viewport: G(a.label)
+			viewport: Y(a.label)
 		}), !0) : !1;
 	}
 	#sizeRoleTargetViewport() {
@@ -21295,7 +23477,7 @@ var KumweStudioElement = class extends i$16 {
 	}
 	#slotLabel(e, t) {
 		let n = this.#findDefinition(e)?.slots.find((e) => e.id === t);
-		return this.#text(`studio.shell/outline-slot`, { slot: n === void 0 ? t : G(n.label) });
+		return this.#text(`studio.shell/outline-slot`, { slot: n === void 0 ? t : Y(n.label) });
 	}
 	#syncDirty() {
 		let e = this.#session?.dirty ?? !1;
@@ -21331,7 +23513,7 @@ var KumweStudioElement = class extends i$16 {
 		};
 		this.#runShellCommand(o) && (n === void 0 ? this.#announce(`studio.shell/announce-property-unset`, { property: t }) : this.#announce(`studio.shell/announce-override-removed`, {
 			property: t,
-			viewport: G(n.label)
+			viewport: Y(n.label)
 		}));
 	}
 	#unsetSizeRole(e, t) {
@@ -21349,43 +23531,43 @@ var KumweStudioElement = class extends i$16 {
 		};
 		this.#runShellCommand(o) && (i === void 0 ? this.#announce(`studio.shell/announce-size-role-removed`, { axis: this.#axisText(t) }) : this.#announce(`studio.shell/announce-size-role-removed-viewport`, {
 			axis: this.#axisText(t),
-			viewport: G(i.label)
+			viewport: Y(i.label)
 		}));
 	}
 };
-var O = /* @__PURE__ */ new Set([
+var M = /* @__PURE__ */ new Set([
 	`read-only-session`,
 	`stale-generation`,
 	`stale-state`
 ]);
-var k = {
+var N = {
 	block: `studio.shell/inspector-layout-axis-block`,
 	inline: `studio.shell/inspector-layout-axis-inline`
 };
-var A = [`inline`, `block`];
-var j = /^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$/;
-var M = /* @__PURE__ */ new Set([
+var P = [`inline`, `block`];
+var F = /^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$/;
+var I = /* @__PURE__ */ new Set([
 	`__proto__`,
 	`constructor`,
 	`prototype`
 ]);
-var N = {
+var L = {
 	blocking: `studio.shell/severity-blocking`,
 	error: `studio.shell/severity-error`,
 	information: `studio.shell/severity-information`,
 	warning: `studio.shell/severity-warning`
 };
-var P = {
+var R = {
 	blocking: 0,
 	error: 1,
 	information: 3,
 	warning: 2
 };
-var F = new Set(Object.values(STUDIO_AUTHORING_CONTROL_IDS));
-function I(e) {
-	return F.has(e);
+var z = new Set(Object.values(STUDIO_AUTHORING_CONTROL_IDS));
+function B(e) {
+	return z.has(e);
 }
-function L(e) {
+function V(e) {
 	switch (e) {
 		case `studio.control/rich-text`: return {
 			content: [],
@@ -21419,7 +23601,7 @@ function L(e) {
 		};
 	}
 }
-function R(e) {
+function H(e) {
 	return JSON.stringify({
 		bindingKind: e.binding?.source.kind,
 		control: e.control,
@@ -21430,14 +23612,14 @@ function R(e) {
 		value: e.value
 	});
 }
-function z(e) {
+function U(e) {
 	return JSON.stringify({
 		binding: e.binding,
 		multiple: e.multiple,
 		readOnly: e.readOnly
 	});
 }
-function B(e, t = 0) {
+function W(e, t = 0) {
 	if (t > 32) return;
 	if (e === null || typeof e == `boolean`) return e;
 	if (typeof e == `number`) return Number.isFinite(e) ? e : void 0;
@@ -21446,7 +23628,7 @@ function B(e, t = 0) {
 		if (e.length > 1e4) return;
 		let n = [];
 		for (let r of e) {
-			let e = B(r, t + 1);
+			let e = W(r, t + 1);
 			if (e === void 0) return;
 			n.push(e);
 		}
@@ -21460,20 +23642,20 @@ function B(e, t = 0) {
 	let i = {};
 	for (let [e, n] of r) {
 		if (e === `__proto__` || e === `constructor` || e === `prototype`) return;
-		let r = B(n, t + 1);
+		let r = W(n, t + 1);
 		if (r === void 0) return;
 		i[e] = r;
 	}
 	return i;
 }
-function V(e) {
-	let t = G(e.message);
+function G(e) {
+	let t = Y(e.message);
 	if (e.parameters === void 0) return t;
 	let n = t;
 	for (let [t, r] of Object.entries(e.parameters)) n = n.replaceAll(`{${t}}`, String(r));
 	return n;
 }
-function H(e) {
+function K(e) {
 	let t = e.filter((e) => e.width > 0 && e.height > 0), n = t[0];
 	if (n === void 0) return;
 	let r = n.x, i = n.y, a = n.x + n.width, o = n.y + n.height;
@@ -21485,7 +23667,7 @@ function H(e) {
 		y: i
 	};
 }
-function U(e, t) {
+function q(e, t) {
 	let n = e[0], r = e.at(-1);
 	if (n === void 0 || r === void 0) return {
 		height: 4,
@@ -21493,7 +23675,7 @@ function U(e, t) {
 		x: 0,
 		y: 0
 	};
-	let i = H(e) ?? n, a = Math.abs(r.x + r.width / 2 - (n.x + n.width / 2)), o = Math.abs(r.y + r.height / 2 - (n.y + n.height / 2)), s = e[Math.max(0, t - 1)] ?? n, c = e[Math.min(e.length - 1, t)] ?? r;
+	let i = K(e) ?? n, a = Math.abs(r.x + r.width / 2 - (n.x + n.width / 2)), o = Math.abs(r.y + r.height / 2 - (n.y + n.height / 2)), s = e[Math.max(0, t - 1)] ?? n, c = e[Math.min(e.length - 1, t)] ?? r;
 	if (a > o) {
 		let a = t === 0 ? n.x : t >= e.length ? r.x + r.width : (s.x + s.width + c.x) / 2;
 		return {
@@ -21511,12 +23693,18 @@ function U(e, t) {
 		y: l - 2
 	};
 }
-function W(e) {
-	return e.length > 0 && e.length <= 100 && j.test(e) && !M.has(e);
+function J(e) {
+	return e.length > 0 && e.length <= 100 && F.test(e) && !I.has(e);
 }
-function G(e) {
+function Y(e) {
 	return e.defaultMessage ?? e.key;
 }
+var X = {
+	canvas: `studio.shell/canvas-pane`,
+	library: `studio.shell/palette-heading`,
+	outline: `studio.shell/outline-heading`,
+	inspector: `studio.shell/inspector-heading`
+};
 //#endregion
 //#region node_modules/@kumwe/studio/dist/index.js
 function defineKumweStudio(t = `kumwe-studio`) {
@@ -21840,7 +24028,7 @@ async function setupStudioComposition() {
 	if (shell === null) return;
 	try {
 		const boot = JSON.parse(encoded.textContent ?? "");
-		if (boot.release !== "0.1.0-beta.3") throw new Error("Studio release binding mismatch.");
+		if (boot.release !== "0.1.0-beta.7") throw new Error("Studio release binding mismatch.");
 		const opened = await openHostSession(boot);
 		const advertised = new Set(opened.hostCapabilities);
 		const adapter = createStudioHttpHostAdapter(boot.endpoints.ports, {

@@ -1,4 +1,4 @@
-import { t as __vitePreload } from "./administrator-CwKwOj8g.js";
+import { t as __vitePreload } from "./administrator-DJU_br3B.js";
 import { i as coreLayoutInitialProperties, o as isCoreLayoutBlockType, t as computePreviewDraftDigest } from "./preview-identity-Bvgz1vbs.js";
 //#region assets/administrator/components/studio-launch.ts
 /**
@@ -150,7 +150,7 @@ var HostPortClient = class {
 * Fetch the interface-locale Studio catalogue the localization port serves.
 *
 * The request starts with the launch, alongside the module import, so the catalogue is at hand the moment
-* Studio hands over the shell and its labels never show in the source language first.
+* Studio creates the start chooser, shell and save confirmation with the same localized labels.
 */
 async function shellMessages(client) {
 	const result = await client.call("localization/messages", {
@@ -429,15 +429,17 @@ async function setupStudioLaunch() {
 			const configuration = imported.parseStudioDeploymentConfiguration(configurationElement);
 			if (configuration.transport?.kind !== "http") throw new TypeError("The Content target requires a hosted deployment.");
 			const registry = new imported.StudioAuthoringControlRegistry({ strictContentSecurityPolicy: true });
+			const messages = await localized;
 			attached.observe(mount, { childList: true });
 			const handle = await imported.mountStudio(mount, configuration, {
 				root: region,
-				hosted: () => ({ authoringControlRegistry: registry })
+				hosted: () => ({
+					authoringControlRegistry: registry,
+					messages
+				})
 			});
 			attached.disconnect();
 			shell = handle.element;
-			const messages = await localized;
-			if (messages !== void 0) shell.messages = messages;
 			if (focusInMount && focusedElement() === null) focusRegionHeading(region);
 			if (client !== void 0 && deployment !== void 0) preview = setupPreview(region, shell, client, previewChannelOf(deployment));
 			reveal();

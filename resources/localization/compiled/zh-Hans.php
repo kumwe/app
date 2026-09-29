@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for zh-Hans, carrying 2629 messages.
+ * Compiled interface message catalogue for zh-Hans, carrying 2641 messages.
  *
  * Generated from zh-Hans.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -2440,6 +2440,10 @@ return [
     'core.studio.contextual.return' => '返回 {destination}',
     'core.studio.contextual.return-destination' => '宿主',
     'core.studio.contextual.save-as-new-type' => '另存为新类型',
+    'core.studio.contextual.save-confirmation-cancel' => '取消',
+    'core.studio.contextual.save-confirmation-confirm' => '确认并保存',
+    'core.studio.contextual.save-confirmation-explanation' => '所配置的服务器要求先确认这些后果，才能保存。',
+    'core.studio.contextual.save-confirmation-heading' => '确认保存',
     'core.studio.contextual.save-item' => '保存条目',
     'core.studio.contextual.save-new-type-version' => '保存新类型版本',
     'core.studio.contextual.save-outcome' => '保存结果',
@@ -2509,6 +2513,7 @@ return [
     'core.studio.shell.canvas-label' => 'Blueprint 结构',
     'core.studio.shell.canvas-mode-editing' => '选择并移动区块',
     'core.studio.shell.canvas-mode-interacting' => '与已渲染的预览进行交互',
+    'core.studio.shell.canvas-pane' => '画布',
     'core.studio.shell.command-apply-pattern' => '应用模式 {pattern}',
     'core.studio.shell.command-clear-selection' => '清除选择',
     'core.studio.shell.command-insert' => '插入 {label}',
@@ -2532,6 +2537,7 @@ return [
     'core.studio.shell.inspector-add-property' => '添加属性',
     'core.studio.shell.inspector-add-property-name-label' => '新属性名称',
     'core.studio.shell.inspector-add-property-value-label' => '以 JSON 形式表示的新属性值',
+    'core.studio.shell.inspector-advanced' => '高级属性和绑定',
     'core.studio.shell.inspector-binding-accepts' => '可接受 {cardinality} {value-type} 值',
     'core.studio.shell.inspector-binding-control-label' => '为 {field} 声明的 {control} 控件',
     'core.studio.shell.inspector-binding-control-preview' => '控件预览',
@@ -2592,6 +2598,10 @@ return [
     'core.studio.shell.inspector-type' => '类型',
     'core.studio.shell.inspector-unset' => '取消设置',
     'core.studio.shell.inspector-unset-label' => '取消设置 {property}',
+    'core.studio.shell.library-search' => '搜索区块和模式',
+    'core.studio.shell.local-canvas-description' => '本地渲染 · 并非宿主提供的权威预览。',
+    'core.studio.shell.local-canvas-label' => '页面画布',
+    'core.studio.shell.local-canvas-unavailable' => '本地画布无法渲染此草稿。文档和结构控件仍然可用。',
     'core.studio.shell.move-destination-label' => '将区块移动到另一个位置或插槽',
     'core.studio.shell.move-destination-option' => '{collection}，第 {position} 个位置（共 {count} 个）',
     'core.studio.shell.move-destination-placeholder' => '选择一个目的地',
@@ -2626,6 +2636,8 @@ return [
     'core.studio.shell.unresolved-block' => '（未解析）',
     'core.studio.shell.viewport-label' => '预览宽度',
     'core.studio.shell.visual-drop-target' => '正在将 {label} 移动到 {destination}',
+    'core.studio.shell.visual-insert-target' => '正在 {destination} 插入 {label}',
+    'core.studio.shell.workspace-panels' => '工作区面板',
     'core.studio.standalone.change-local' => '{artifact} 的更改仅存在于此浏览器会话中。',
     'core.studio.standalone.current-in-memory-draft' => '当前内存中的草稿',
     'core.studio.standalone.download-project' => '下载项目 JSON',
