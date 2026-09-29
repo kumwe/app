@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for he, carrying 2629 messages.
+ * Compiled interface message catalogue for he, carrying 2641 messages.
  *
  * Generated from he.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -2440,6 +2440,10 @@ return [
     'core.studio.contextual.return' => 'חזרה אל {destination}',
     'core.studio.contextual.return-destination' => 'המארח',
     'core.studio.contextual.save-as-new-type' => 'שמירה כסוג חדש',
+    'core.studio.contextual.save-confirmation-cancel' => 'ביטול',
+    'core.studio.contextual.save-confirmation-confirm' => 'אישור ושמירה',
+    'core.studio.contextual.save-confirmation-explanation' => 'השרת שהוגדר דורש אישור של ההשלכות האלה לפני השמירה.',
+    'core.studio.contextual.save-confirmation-heading' => 'אישור השמירה',
     'core.studio.contextual.save-item' => 'שמירת הפריט',
     'core.studio.contextual.save-new-type-version' => 'שמירת גרסת סוג חדשה',
     'core.studio.contextual.save-outcome' => 'תוצאת השמירה',
@@ -2509,6 +2513,7 @@ return [
     'core.studio.shell.canvas-label' => 'מבנה השרטוט',
     'core.studio.shell.canvas-mode-editing' => 'בחירה והזזה של בלוקים',
     'core.studio.shell.canvas-mode-interacting' => 'אינטראקציה עם התצוגה המקדימה המוצגת',
+    'core.studio.shell.canvas-pane' => 'קנבס',
     'core.studio.shell.command-apply-pattern' => 'החלת התבנית {pattern}',
     'core.studio.shell.command-clear-selection' => 'ניקוי הבחירה',
     'core.studio.shell.command-insert' => 'הוספת {label}',
@@ -2532,6 +2537,7 @@ return [
     'core.studio.shell.inspector-add-property' => 'הוספת מאפיין',
     'core.studio.shell.inspector-add-property-name-label' => 'שם המאפיין החדש',
     'core.studio.shell.inspector-add-property-value-label' => 'ערך המאפיין החדש בתור JSON',
+    'core.studio.shell.inspector-advanced' => 'מאפיינים וקישורים מתקדמים',
     'core.studio.shell.inspector-binding-accepts' => 'מקבל ערך {cardinality} מסוג {value-type}',
     'core.studio.shell.inspector-binding-control-label' => 'פקד {control} מוצהר עבור {field}',
     'core.studio.shell.inspector-binding-control-preview' => 'תצוגה מקדימה של הפקד',
@@ -2592,6 +2598,10 @@ return [
     'core.studio.shell.inspector-type' => 'סוג',
     'core.studio.shell.inspector-unset' => 'ביטול',
     'core.studio.shell.inspector-unset-label' => 'ביטול {property}',
+    'core.studio.shell.library-search' => 'חיפוש בלוקים ותבניות',
+    'core.studio.shell.local-canvas-description' => 'רינדור מקומי · אינו תצוגה מקדימה מחייבת של המארח.',
+    'core.studio.shell.local-canvas-label' => 'קנבס העמוד',
+    'core.studio.shell.local-canvas-unavailable' => 'לא ניתן להציג את הטיוטה הזו בקנבס המקומי. המסמך ופקדי המבנה נשארים זמינים.',
     'core.studio.shell.move-destination-label' => 'העברת הבלוק למיקום או לחריץ אחר',
     'core.studio.shell.move-destination-option' => '{collection}, מיקום {position} מתוך {count}',
     'core.studio.shell.move-destination-placeholder' => 'בחירת יעד',
@@ -2626,6 +2636,8 @@ return [
     'core.studio.shell.unresolved-block' => '(לא נפתר)',
     'core.studio.shell.viewport-label' => 'רוחב התצוגה המקדימה',
     'core.studio.shell.visual-drop-target' => 'מעביר את {label} אל {destination}',
+    'core.studio.shell.visual-insert-target' => 'מוסיף את {label} במיקום {destination}',
+    'core.studio.shell.workspace-panels' => 'חלוניות סביבת העבודה',
     'core.studio.standalone.change-local' => '{artifact} השתנה רק בהפעלת הדפדפן הזו.',
     'core.studio.standalone.current-in-memory-draft' => 'טיוטה נוכחית בזיכרון',
     'core.studio.standalone.download-project' => 'הורדת JSON של הפרויקט',

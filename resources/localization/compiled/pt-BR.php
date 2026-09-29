@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for pt-BR, carrying 2629 messages.
+ * Compiled interface message catalogue for pt-BR, carrying 2641 messages.
  *
  * Generated from pt-BR.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -2440,6 +2440,10 @@ return [
     'core.studio.contextual.return' => 'Retornar para {destination}',
     'core.studio.contextual.return-destination' => 'o host',
     'core.studio.contextual.save-as-new-type' => 'Salvar como novo tipo',
+    'core.studio.contextual.save-confirmation-cancel' => 'Cancelar',
+    'core.studio.contextual.save-confirmation-confirm' => 'Confirmar e salvar',
+    'core.studio.contextual.save-confirmation-explanation' => 'O servidor configurado exige a confirmação destas consequências antes de salvar.',
+    'core.studio.contextual.save-confirmation-heading' => 'Confirmar salvamento',
     'core.studio.contextual.save-item' => 'Salvar item',
     'core.studio.contextual.save-new-type-version' => 'Salvar nova versão do tipo',
     'core.studio.contextual.save-outcome' => 'Resultado do salvamento',
@@ -2509,6 +2513,7 @@ return [
     'core.studio.shell.canvas-label' => 'Estrutura do Blueprint',
     'core.studio.shell.canvas-mode-editing' => 'selecionando e movendo blocos',
     'core.studio.shell.canvas-mode-interacting' => 'interagindo com a prévia renderizada',
+    'core.studio.shell.canvas-pane' => 'Tela',
     'core.studio.shell.command-apply-pattern' => 'Aplicar padrão {pattern}',
     'core.studio.shell.command-clear-selection' => 'Limpar seleção',
     'core.studio.shell.command-insert' => 'Inserir {label}',
@@ -2532,6 +2537,7 @@ return [
     'core.studio.shell.inspector-add-property' => 'Adicionar propriedade',
     'core.studio.shell.inspector-add-property-name-label' => 'Nome da nova propriedade',
     'core.studio.shell.inspector-add-property-value-label' => 'Valor da nova propriedade como JSON',
+    'core.studio.shell.inspector-advanced' => 'Propriedades e vinculações avançadas',
     'core.studio.shell.inspector-binding-accepts' => 'Aceita valor {cardinality} {value-type}',
     'core.studio.shell.inspector-binding-control-label' => 'Controle {control} declarado para {field}',
     'core.studio.shell.inspector-binding-control-preview' => 'Prévia do controle',
@@ -2592,6 +2598,10 @@ return [
     'core.studio.shell.inspector-type' => 'Tipo',
     'core.studio.shell.inspector-unset' => 'Remover',
     'core.studio.shell.inspector-unset-label' => 'Remover {property}',
+    'core.studio.shell.library-search' => 'Pesquisar blocos e padrões',
+    'core.studio.shell.local-canvas-description' => 'Renderização local · não é uma prévia oficial do host.',
+    'core.studio.shell.local-canvas-label' => 'Tela da página',
+    'core.studio.shell.local-canvas-unavailable' => 'A tela local não conseguiu renderizar este rascunho. O documento e os controles de estrutura continuam disponíveis.',
     'core.studio.shell.move-destination-label' => 'Mover bloco para outra posição ou slot',
     'core.studio.shell.move-destination-option' => '{collection}, posição {position} de {count}',
     'core.studio.shell.move-destination-placeholder' => 'Escolha um destino',
@@ -2626,6 +2636,8 @@ return [
     'core.studio.shell.unresolved-block' => '(não resolvido)',
     'core.studio.shell.viewport-label' => 'Largura da prévia',
     'core.studio.shell.visual-drop-target' => 'Movendo {label} para {destination}',
+    'core.studio.shell.visual-insert-target' => 'Inserindo {label} em {destination}',
+    'core.studio.shell.workspace-panels' => 'Painéis do espaço de trabalho',
     'core.studio.standalone.change-local' => '{artifact} alterado somente nesta sessão do navegador.',
     'core.studio.standalone.current-in-memory-draft' => 'Rascunho atual em memória',
     'core.studio.standalone.download-project' => 'Baixar JSON do projeto',

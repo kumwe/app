@@ -39,7 +39,7 @@ configuration, or HTML is not an App contract and does not cross the host bounda
 
 ## Current App truth
 
-The pinned coordinated Studio family is `0.1.0-beta.3`; exact package and corpus bytes are recorded by
+The pinned coordinated Studio family is `0.1.0-beta.7`; exact package and corpus bytes are recorded by
 [`resources/studio-contract/PIN.json`](../resources/studio-contract/PIN.json). The beta label describes that
 coordinated Studio package family; it does **not** by itself prove Kumwe App's integrated journey.
 
@@ -82,7 +82,7 @@ The Content launcher uses Studio's public `parseStudioDeploymentConfiguration()`
 resolution to its Content region. It does not discover, claim, or use the handle of a neighboring standalone or
 hosted instance. Missing, standalone, or differently targeted configuration leaves the labelled Content fallback;
 a configured host refusal remains a refusal. `tests/Browser/studio-mount-isolation.spec.ts` runs the committed App
-bundle and official beta.3 browser module in ordinary HTML, verifies 401 and 403 isolation, and exercises local
+bundle and pinned official Studio browser module in ordinary HTML, verifies 401 and 403 isolation, and exercises local
 canonical project and save-intent downloads plus lossless import into a fresh instance without host requests.
 This is host mount-boundary evidence for `STUDIO-PROD-010`, `011`, `012` and `015`, not a new App standalone product
 or evidence that the complete acceptance journey has passed.
@@ -95,7 +95,8 @@ focus stop, touch on the mobile project, reflow at 320 CSS pixels and the WCAG 2
 and mobile with localized names, right-to-left order and no overflow. `tests/Architecture/StudioProductionRuntimeTest.php`
 refuses any production Node.js, npm or Vite requirement.
 [`tests/Fixtures/Studio/composition-acceptance-journey.json`](../tests/Fixtures/Studio/composition-acceptance-journey.json)
-records, step by step, the test that proves it or why it is open. Acceptance follows
+records the historical beta.3 assessment. The existing behavioral tests above establish current integration
+results; the inventory is not an additional release gate. Acceptance follows
 [ADR 0021](roadmap/decisions/0021-automated-acceptance-and-sampled-capacity.md): the maintainer's merge after every
 automated check is green is the acceptance, and no separate human qualification run exists.
 
@@ -112,14 +113,10 @@ What remains open, and why:
   Standalone behavior remains Studio-owned, and Content never turns a configured refusal into local mode.
 - **Authoring from a clean packaged start.** The deployed-artifact lane runs without a database by design, and the
   production-topology deployment-acceptance job does not yet drive a Studio session.
-- **Pinned-release limitations.** The hosted in-shell preview cannot stage a live draft, so the App preview shows
-  accepted revisions only; the create-source chooser and save confirmation render without catalogue overrides.
-  These require Studio changes followed by a matching Producer release. The earlier claim that beta.3 universally
-  requires an echoed live Entry or forbids saving after a presentation change was incorrect: its coordinator accepts
-  the last accepted Entry/presentation and reconciles the excluded local draft. App's remaining new-field identity
-  issue is separate: `schemaFromModel()` accepts a field named `summary`, while `ContentStudioProjector` later emits
-  `data_summary`; local values and bindings using the former name need an explicit host identity mapping. It must not
-  be reported as a missing Studio save-payload capability. See the exact ownership and release report below.
+- **Live-draft preview.** The hosted in-shell preview cannot stage a live draft, so the App preview shows accepted
+  revisions only. Studio beta.7 fixes repeated-save continuity and accepts localized messages for the chooser and
+  save confirmation; App supplies those messages at mount time. App also preserves authored field identities across
+  its model/projector boundary. These fixes do not add live-draft preview support.
 - **Extension field adapters, patterns and block migration in the contextual shell.** An admitted extension block
   is used, saved, previewed and rendered, and on every engine a disabled extension withdraws its block from the
   contextual catalogue while an item composing it still opens with the unresolved block preserved, its values
@@ -154,7 +151,11 @@ surface and is not the authoring entry point.
 
 `Partial` and `Implemented with pinned-release limits` never mean the end-to-end requirement is accepted.
 
-### Dependency and ownership verification — 2026-09-28
+### Historical dependency and ownership assessment — 2026-09-28
+
+This assessment describes the beta.3 integration before the beta.7 adoption. Its package versions and findings
+about field identities, repeated saves and localization are historical; they do not describe the current pins or
+add release prerequisites. The current preview limitation and extension boundaries are described above.
 
 The GitHub release collections, exact npm packages, Composer lock and corresponding tag sources were inspected.
 The latest published SDK is `v0.3.3` (`3d91050261bc26a5d89966250f88b11705b4923b`), already locked by App;

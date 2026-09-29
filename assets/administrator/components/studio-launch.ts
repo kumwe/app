@@ -116,7 +116,6 @@ interface ContextualShell extends HTMLElement {
       readonly blueprint: BlueprintDocument;
     };
   };
-  messages?: Record<string, { defaultMessage: string }>;
 }
 
 interface HostResult {
@@ -276,7 +275,7 @@ type ShellMessages = Record<string, { defaultMessage: string }>;
  * Fetch the interface-locale Studio catalogue the localization port serves.
  *
  * The request starts with the launch, alongside the module import, so the catalogue is at hand the moment
- * Studio hands over the shell and its labels never show in the source language first.
+ * Studio creates the start chooser, shell and save confirmation with the same localized labels.
  */
 async function shellMessages(client: HostPortClient): Promise<ShellMessages | undefined> {
   const result = await client.call('localization/messages', {
@@ -614,17 +613,16 @@ export async function setupStudioLaunch(): Promise<void> {
         throw new TypeError('The Content target requires a hosted deployment.');
       }
       const registry = new imported.StudioAuthoringControlRegistry({ strictContentSecurityPolicy: true });
+      const messages = await localized;
       attached.observe(mount, { childList: true });
       // The public mount API checks that configuration.mount resolves to this exact element. A document-wide
       // discovery pass would also claim neighboring local/hosted instances and couple their failures and handles.
       const handle = await imported.mountStudio(mount, configuration, {
         root: region,
-        hosted: () => ({ authoringControlRegistry: registry }),
+        hosted: () => ({ authoringControlRegistry: registry, messages }),
       });
       attached.disconnect();
       shell = handle.element as ContextualShell;
-      const messages = await localized;
-      if (messages !== undefined) shell.messages = messages;
       if (focusInMount && focusedElement() === null) focusRegionHeading(region);
       if (client !== undefined && deployment !== undefined) {
         preview = setupPreview(region, shell, client, previewChannelOf(deployment));

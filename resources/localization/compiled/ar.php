@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for ar, carrying 2629 messages.
+ * Compiled interface message catalogue for ar, carrying 2641 messages.
  *
  * Generated from ar.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -2440,6 +2440,10 @@ return [
     'core.studio.contextual.return' => 'العودة إلى {destination}',
     'core.studio.contextual.return-destination' => 'المضيف',
     'core.studio.contextual.save-as-new-type' => 'الحفظ كنوع جديد',
+    'core.studio.contextual.save-confirmation-cancel' => 'إلغاء',
+    'core.studio.contextual.save-confirmation-confirm' => 'تأكيد وحفظ',
+    'core.studio.contextual.save-confirmation-explanation' => 'يتطلب الخادم المُهيّأ تأكيد هذه العواقب قبل الحفظ.',
+    'core.studio.contextual.save-confirmation-heading' => 'تأكيد الحفظ',
     'core.studio.contextual.save-item' => 'حفظ العنصر',
     'core.studio.contextual.save-new-type-version' => 'حفظ إصدار نوع جديد',
     'core.studio.contextual.save-outcome' => 'نتيجة الحفظ',
@@ -2509,6 +2513,7 @@ return [
     'core.studio.shell.canvas-label' => 'بنية Blueprint',
     'core.studio.shell.canvas-mode-editing' => 'تحديد الكتل ونقلها',
     'core.studio.shell.canvas-mode-interacting' => 'التفاعل مع المعاينة المعروضة',
+    'core.studio.shell.canvas-pane' => 'اللوحة',
     'core.studio.shell.command-apply-pattern' => 'تطبيق نمط {pattern}',
     'core.studio.shell.command-clear-selection' => 'إلغاء التحديد',
     'core.studio.shell.command-insert' => 'إدراج {label}',
@@ -2532,6 +2537,7 @@ return [
     'core.studio.shell.inspector-add-property' => 'إضافة خاصية',
     'core.studio.shell.inspector-add-property-name-label' => 'اسم الخاصية الجديدة',
     'core.studio.shell.inspector-add-property-value-label' => 'قيمة الخاصية الجديدة كـ JSON',
+    'core.studio.shell.inspector-advanced' => 'الخصائص والارتباطات المتقدمة',
     'core.studio.shell.inspector-binding-accepts' => 'يقبل قيمة {cardinality} من نوع {value-type}',
     'core.studio.shell.inspector-binding-control-label' => 'عنصر التحكم المُعلَن {control} للحقل {field}',
     'core.studio.shell.inspector-binding-control-preview' => 'معاينة عنصر التحكم',
@@ -2592,6 +2598,10 @@ return [
     'core.studio.shell.inspector-type' => 'النوع',
     'core.studio.shell.inspector-unset' => 'إلغاء الضبط',
     'core.studio.shell.inspector-unset-label' => 'إلغاء ضبط {property}',
+    'core.studio.shell.library-search' => 'البحث في الكتل والأنماط',
+    'core.studio.shell.local-canvas-description' => 'عرض محلي · لا يُعدّ معاينة معتمدة من المضيف.',
+    'core.studio.shell.local-canvas-label' => 'لوحة الصفحة',
+    'core.studio.shell.local-canvas-unavailable' => 'تعذّر على اللوحة المحلية عرض هذه المسودة. يبقى المستند وعناصر التحكم في البنية متاحين.',
     'core.studio.shell.move-destination-label' => 'نقل الكتلة إلى موضع أو فتحة أخرى',
     'core.studio.shell.move-destination-option' => '{collection}، الموضع {position} من {count}',
     'core.studio.shell.move-destination-placeholder' => 'اختر وجهة',
@@ -2626,6 +2636,8 @@ return [
     'core.studio.shell.unresolved-block' => '(غير محلول)',
     'core.studio.shell.viewport-label' => 'عرض المعاينة',
     'core.studio.shell.visual-drop-target' => 'نقل {label} إلى {destination}',
+    'core.studio.shell.visual-insert-target' => 'إدراج {label} في {destination}',
+    'core.studio.shell.workspace-panels' => 'لوحات مساحة العمل',
     'core.studio.standalone.change-local' => 'تغيّر {artifact} في جلسة المتصفح هذه فقط.',
     'core.studio.standalone.current-in-memory-draft' => 'المسودة الحالية في الذاكرة',
     'core.studio.standalone.download-project' => 'تنزيل JSON للمشروع',

@@ -22304,6 +22304,114 @@
         <target>نتيجة نية الحفظ</target>
       </segment>
     </unit>
+    <unit id="core.studio.contextual.save-confirmation-cancel">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.7 authoring message studio.contextual/save-confirmation-cancel.</note>
+      </notes>
+      <segment>
+        <source>Cancel</source>
+        <target>إلغاء</target>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.save-confirmation-confirm">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.7 authoring message studio.contextual/save-confirmation-confirm.</note>
+      </notes>
+      <segment>
+        <source>Confirm and save</source>
+        <target>تأكيد وحفظ</target>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.save-confirmation-explanation">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.7 authoring message studio.contextual/save-confirmation-explanation.</note>
+      </notes>
+      <segment>
+        <source>The configured server requires confirmation of these consequences before saving.</source>
+        <target>يتطلب الخادم المُهيّأ تأكيد هذه العواقب قبل الحفظ.</target>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.save-confirmation-heading">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.7 authoring message studio.contextual/save-confirmation-heading.</note>
+      </notes>
+      <segment>
+        <source>Confirm save</source>
+        <target>تأكيد الحفظ</target>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.canvas-pane">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.7 authoring message studio.shell/canvas-pane.</note>
+      </notes>
+      <segment>
+        <source>Canvas</source>
+        <target>اللوحة</target>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-advanced">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.7 authoring message studio.shell/inspector-advanced.</note>
+      </notes>
+      <segment>
+        <source>Advanced properties and bindings</source>
+        <target>الخصائص والارتباطات المتقدمة</target>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.library-search">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.7 authoring message studio.shell/library-search.</note>
+      </notes>
+      <segment>
+        <source>Search blocks and patterns</source>
+        <target>البحث في الكتل والأنماط</target>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.local-canvas-description">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.7 authoring message studio.shell/local-canvas-description.</note>
+      </notes>
+      <segment>
+        <source>Local rendering · not an authoritative host preview.</source>
+        <target>عرض محلي · لا يُعدّ معاينة معتمدة من المضيف.</target>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.local-canvas-label">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.7 authoring message studio.shell/local-canvas-label.</note>
+      </notes>
+      <segment>
+        <source>Page canvas</source>
+        <target>لوحة الصفحة</target>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.local-canvas-unavailable">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.7 authoring message studio.shell/local-canvas-unavailable.</note>
+      </notes>
+      <segment>
+        <source>The local canvas could not render this draft. The document and structural controls remain available.</source>
+        <target>تعذّر على اللوحة المحلية عرض هذه المسودة. يبقى المستند وعناصر التحكم في البنية متاحين.</target>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.visual-insert-target">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.7 authoring message studio.shell/visual-insert-target.</note>
+      </notes>
+      <segment>
+        <source>Inserting {label} at {destination}</source>
+        <target>إدراج {label} في {destination}</target>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.workspace-panels">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.7 authoring message studio.shell/workspace-panels.</note>
+      </notes>
+      <segment>
+        <source>Workspace panels</source>
+        <target>لوحات مساحة العمل</target>
+      </segment>
+    </unit>
   </file>
   <file id="core-identity">
     <unit id="core.identity.password.confirmation_mismatch">

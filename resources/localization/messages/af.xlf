@@ -22304,6 +22304,114 @@
         <target>Stoor-voorneme-uitkoms</target>
       </segment>
     </unit>
+    <unit id="core.studio.contextual.save-confirmation-cancel">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.7 authoring message studio.contextual/save-confirmation-cancel.</note>
+      </notes>
+      <segment>
+        <source>Cancel</source>
+        <target>Kanselleer</target>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.save-confirmation-confirm">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.7 authoring message studio.contextual/save-confirmation-confirm.</note>
+      </notes>
+      <segment>
+        <source>Confirm and save</source>
+        <target>Bevestig en stoor</target>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.save-confirmation-explanation">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.7 authoring message studio.contextual/save-confirmation-explanation.</note>
+      </notes>
+      <segment>
+        <source>The configured server requires confirmation of these consequences before saving.</source>
+        <target>Die ingestelde bediener vereis bevestiging van hierdie gevolge voordat daar gestoor kan word.</target>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.save-confirmation-heading">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.7 authoring message studio.contextual/save-confirmation-heading.</note>
+      </notes>
+      <segment>
+        <source>Confirm save</source>
+        <target>Bevestig stoor</target>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.canvas-pane">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.7 authoring message studio.shell/canvas-pane.</note>
+      </notes>
+      <segment>
+        <source>Canvas</source>
+        <target>Kanvas</target>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-advanced">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.7 authoring message studio.shell/inspector-advanced.</note>
+      </notes>
+      <segment>
+        <source>Advanced properties and bindings</source>
+        <target>Gevorderde eienskappe en bindings</target>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.library-search">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.7 authoring message studio.shell/library-search.</note>
+      </notes>
+      <segment>
+        <source>Search blocks and patterns</source>
+        <target>Soek blokke en patrone</target>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.local-canvas-description">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.7 authoring message studio.shell/local-canvas-description.</note>
+      </notes>
+      <segment>
+        <source>Local rendering · not an authoritative host preview.</source>
+        <target>Plaaslike vertoning · nie ’n gesaghebbende voorskou van die gasheer nie.</target>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.local-canvas-label">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.7 authoring message studio.shell/local-canvas-label.</note>
+      </notes>
+      <segment>
+        <source>Page canvas</source>
+        <target>Bladsykanvas</target>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.local-canvas-unavailable">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.7 authoring message studio.shell/local-canvas-unavailable.</note>
+      </notes>
+      <segment>
+        <source>The local canvas could not render this draft. The document and structural controls remain available.</source>
+        <target>Die plaaslike kanvas kon nie hierdie konsep vertoon nie. Die dokument en strukturele kontroles bly beskikbaar.</target>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.visual-insert-target">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.7 authoring message studio.shell/visual-insert-target.</note>
+      </notes>
+      <segment>
+        <source>Inserting {label} at {destination}</source>
+        <target>{label} word by {destination} ingevoeg</target>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.workspace-panels">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.7 authoring message studio.shell/workspace-panels.</note>
+      </notes>
+      <segment>
+        <source>Workspace panels</source>
+        <target>Werkspasiepanele</target>
+      </segment>
+    </unit>
   </file>
   <file id="core-identity">
     <unit id="core.identity.password.confirmation_mismatch">

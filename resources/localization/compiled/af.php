@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for af, carrying 2629 messages.
+ * Compiled interface message catalogue for af, carrying 2641 messages.
  *
  * Generated from af.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -2440,6 +2440,10 @@ return [
     'core.studio.contextual.return' => 'Keer terug na {destination}',
     'core.studio.contextual.return-destination' => 'die gasheer',
     'core.studio.contextual.save-as-new-type' => 'Stoor as nuwe tipe',
+    'core.studio.contextual.save-confirmation-cancel' => 'Kanselleer',
+    'core.studio.contextual.save-confirmation-confirm' => 'Bevestig en stoor',
+    'core.studio.contextual.save-confirmation-explanation' => 'Die ingestelde bediener vereis bevestiging van hierdie gevolge voordat daar gestoor kan word.',
+    'core.studio.contextual.save-confirmation-heading' => 'Bevestig stoor',
     'core.studio.contextual.save-item' => 'Stoor item',
     'core.studio.contextual.save-new-type-version' => 'Stoor nuwe tipe-weergawe',
     'core.studio.contextual.save-outcome' => 'Stoorresultaat',
@@ -2509,6 +2513,7 @@ return [
     'core.studio.shell.canvas-label' => 'Blueprint-struktuur',
     'core.studio.shell.canvas-mode-editing' => 'blokke word gekies en geskuif',
     'core.studio.shell.canvas-mode-interacting' => 'interaksie met die vertoonde voorskou',
+    'core.studio.shell.canvas-pane' => 'Kanvas',
     'core.studio.shell.command-apply-pattern' => 'Pas patroon {pattern} toe',
     'core.studio.shell.command-clear-selection' => 'Maak keuse skoon',
     'core.studio.shell.command-insert' => 'Voeg {label} in',
@@ -2532,6 +2537,7 @@ return [
     'core.studio.shell.inspector-add-property' => 'Voeg eienskap by',
     'core.studio.shell.inspector-add-property-name-label' => 'Nuwe eienskapnaam',
     'core.studio.shell.inspector-add-property-value-label' => 'Nuwe eienskapwaarde as JSON',
+    'core.studio.shell.inspector-advanced' => 'Gevorderde eienskappe en bindings',
     'core.studio.shell.inspector-binding-accepts' => 'Aanvaar {cardinality} {value-type}-waarde',
     'core.studio.shell.inspector-binding-control-label' => 'Verklaarde {control}-kontrole vir {field}',
     'core.studio.shell.inspector-binding-control-preview' => 'Kontrolevoorskou',
@@ -2592,6 +2598,10 @@ return [
     'core.studio.shell.inspector-type' => 'Tipe',
     'core.studio.shell.inspector-unset' => 'Ontstel',
     'core.studio.shell.inspector-unset-label' => 'Ontstel {property}',
+    'core.studio.shell.library-search' => 'Soek blokke en patrone',
+    'core.studio.shell.local-canvas-description' => 'Plaaslike vertoning · nie ’n gesaghebbende voorskou van die gasheer nie.',
+    'core.studio.shell.local-canvas-label' => 'Bladsykanvas',
+    'core.studio.shell.local-canvas-unavailable' => 'Die plaaslike kanvas kon nie hierdie konsep vertoon nie. Die dokument en strukturele kontroles bly beskikbaar.',
     'core.studio.shell.move-destination-label' => 'Skuif blok na ’n ander posisie of gleuf',
     'core.studio.shell.move-destination-option' => '{collection}, posisie {position} van {count}',
     'core.studio.shell.move-destination-placeholder' => 'Kies ’n bestemming',
@@ -2626,6 +2636,8 @@ return [
     'core.studio.shell.unresolved-block' => '(onopgelos)',
     'core.studio.shell.viewport-label' => 'Voorskoubreedte',
     'core.studio.shell.visual-drop-target' => '{label} word na {destination} geskuif',
+    'core.studio.shell.visual-insert-target' => '{label} word by {destination} ingevoeg',
+    'core.studio.shell.workspace-panels' => 'Werkspasiepanele',
     'core.studio.standalone.change-local' => '{artifact} is slegs in hierdie blaaiersessie verander.',
     'core.studio.standalone.current-in-memory-draft' => 'Huidige in-geheue-konsep',
     'core.studio.standalone.download-project' => 'Laai projek-JSON af',

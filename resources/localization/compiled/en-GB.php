@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for en-GB, carrying 2629 messages.
+ * Compiled interface message catalogue for en-GB, carrying 2641 messages.
  *
  * Generated from en-GB.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -2440,6 +2440,10 @@ return [
     'core.studio.contextual.return' => 'Return to {destination}',
     'core.studio.contextual.return-destination' => 'the host',
     'core.studio.contextual.save-as-new-type' => 'Save as new type',
+    'core.studio.contextual.save-confirmation-cancel' => 'Cancel',
+    'core.studio.contextual.save-confirmation-confirm' => 'Confirm and save',
+    'core.studio.contextual.save-confirmation-explanation' => 'The configured server requires confirmation of these consequences before saving.',
+    'core.studio.contextual.save-confirmation-heading' => 'Confirm save',
     'core.studio.contextual.save-item' => 'Save item',
     'core.studio.contextual.save-new-type-version' => 'Save new type version',
     'core.studio.contextual.save-outcome' => 'Save outcome',
@@ -2509,6 +2513,7 @@ return [
     'core.studio.shell.canvas-label' => 'Blueprint structure',
     'core.studio.shell.canvas-mode-editing' => 'selecting and moving blocks',
     'core.studio.shell.canvas-mode-interacting' => 'interacting with the rendered preview',
+    'core.studio.shell.canvas-pane' => 'Canvas',
     'core.studio.shell.command-apply-pattern' => 'Apply pattern {pattern}',
     'core.studio.shell.command-clear-selection' => 'Clear selection',
     'core.studio.shell.command-insert' => 'Insert {label}',
@@ -2532,6 +2537,7 @@ return [
     'core.studio.shell.inspector-add-property' => 'Add property',
     'core.studio.shell.inspector-add-property-name-label' => 'New property name',
     'core.studio.shell.inspector-add-property-value-label' => 'New property value as JSON',
+    'core.studio.shell.inspector-advanced' => 'Advanced properties and bindings',
     'core.studio.shell.inspector-binding-accepts' => 'Accepts {cardinality} {value-type} value',
     'core.studio.shell.inspector-binding-control-label' => 'Declared {control} control for {field}',
     'core.studio.shell.inspector-binding-control-preview' => 'Control preview',
@@ -2592,6 +2598,10 @@ return [
     'core.studio.shell.inspector-type' => 'Type',
     'core.studio.shell.inspector-unset' => 'Unset',
     'core.studio.shell.inspector-unset-label' => 'Unset {property}',
+    'core.studio.shell.library-search' => 'Search blocks and patterns',
+    'core.studio.shell.local-canvas-description' => 'Local rendering · not an authoritative host preview.',
+    'core.studio.shell.local-canvas-label' => 'Page canvas',
+    'core.studio.shell.local-canvas-unavailable' => 'The local canvas could not render this draft. The document and structural controls remain available.',
     'core.studio.shell.move-destination-label' => 'Move block to another position or slot',
     'core.studio.shell.move-destination-option' => '{collection}, position {position} of {count}',
     'core.studio.shell.move-destination-placeholder' => 'Choose a destination',
@@ -2626,6 +2636,8 @@ return [
     'core.studio.shell.unresolved-block' => '(unresolved)',
     'core.studio.shell.viewport-label' => 'Preview width',
     'core.studio.shell.visual-drop-target' => 'Moving {label} to {destination}',
+    'core.studio.shell.visual-insert-target' => 'Inserting {label} at {destination}',
+    'core.studio.shell.workspace-panels' => 'Workspace panels',
     'core.studio.standalone.change-local' => '{artifact} changed in this browser session only.',
     'core.studio.standalone.current-in-memory-draft' => 'Current in-memory draft',
     'core.studio.standalone.download-project' => 'Download project JSON',

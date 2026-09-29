@@ -22304,6 +22304,114 @@
         <target>Resultado da intenção de salvamento</target>
       </segment>
     </unit>
+    <unit id="core.studio.contextual.save-confirmation-cancel">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.7 authoring message studio.contextual/save-confirmation-cancel.</note>
+      </notes>
+      <segment>
+        <source>Cancel</source>
+        <target>Cancelar</target>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.save-confirmation-confirm">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.7 authoring message studio.contextual/save-confirmation-confirm.</note>
+      </notes>
+      <segment>
+        <source>Confirm and save</source>
+        <target>Confirmar e salvar</target>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.save-confirmation-explanation">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.7 authoring message studio.contextual/save-confirmation-explanation.</note>
+      </notes>
+      <segment>
+        <source>The configured server requires confirmation of these consequences before saving.</source>
+        <target>O servidor configurado exige a confirmação destas consequências antes de salvar.</target>
+      </segment>
+    </unit>
+    <unit id="core.studio.contextual.save-confirmation-heading">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.7 authoring message studio.contextual/save-confirmation-heading.</note>
+      </notes>
+      <segment>
+        <source>Confirm save</source>
+        <target>Confirmar salvamento</target>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.canvas-pane">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.7 authoring message studio.shell/canvas-pane.</note>
+      </notes>
+      <segment>
+        <source>Canvas</source>
+        <target>Tela</target>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.inspector-advanced">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.7 authoring message studio.shell/inspector-advanced.</note>
+      </notes>
+      <segment>
+        <source>Advanced properties and bindings</source>
+        <target>Propriedades e vinculações avançadas</target>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.library-search">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.7 authoring message studio.shell/library-search.</note>
+      </notes>
+      <segment>
+        <source>Search blocks and patterns</source>
+        <target>Pesquisar blocos e padrões</target>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.local-canvas-description">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.7 authoring message studio.shell/local-canvas-description.</note>
+      </notes>
+      <segment>
+        <source>Local rendering · not an authoritative host preview.</source>
+        <target>Renderização local · não é uma prévia oficial do host.</target>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.local-canvas-label">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.7 authoring message studio.shell/local-canvas-label.</note>
+      </notes>
+      <segment>
+        <source>Page canvas</source>
+        <target>Tela da página</target>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.local-canvas-unavailable">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.7 authoring message studio.shell/local-canvas-unavailable.</note>
+      </notes>
+      <segment>
+        <source>The local canvas could not render this draft. The document and structural controls remain available.</source>
+        <target>A tela local não conseguiu renderizar este rascunho. O documento e os controles de estrutura continuam disponíveis.</target>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.visual-insert-target">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.7 authoring message studio.shell/visual-insert-target.</note>
+      </notes>
+      <segment>
+        <source>Inserting {label} at {destination}</source>
+        <target>Inserindo {label} em {destination}</target>
+      </segment>
+    </unit>
+    <unit id="core.studio.shell.workspace-panels">
+      <notes>
+        <note category="context">Exact @kumwe/studio 0.1.0-beta.7 authoring message studio.shell/workspace-panels.</note>
+      </notes>
+      <segment>
+        <source>Workspace panels</source>
+        <target>Painéis do espaço de trabalho</target>
+      </segment>
+    </unit>
   </file>
   <file id="core-identity">
     <unit id="core.identity.password.confirmation_mismatch">

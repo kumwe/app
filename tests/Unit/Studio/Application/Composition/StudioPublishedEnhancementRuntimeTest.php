@@ -48,7 +48,8 @@ final class StudioPublishedEnhancementRuntimeTest extends TestCase
         self::assertSame('enhancement-runtime', $location->role());
         self::assertSame('https://cdn.jsdelivr.net', $location->origin());
         self::assertStringStartsWith(
-            'https://cdn.jsdelivr.net/npm/@kumwe/studio-renderer-web@0.1.0-beta.3/dist/browser/assets/'
+            'https://cdn.jsdelivr.net/npm/@kumwe/studio-renderer-web@'
+                . StudioContractResources::releaseRecord()->release() . '/dist/browser/assets/'
                 . 'studio-enhancements-',
             $location->url(),
         );

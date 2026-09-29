@@ -1,16 +1,16 @@
 {
   "contractVersion": "0.1-draft",
   "kind": "studio-release",
-  "release": "0.1.0-beta.3",
+  "release": "0.1.0-beta.7",
   "packages": {
-    "@kumwe/studio-core": "0.1.0-beta.3",
-    "@kumwe/studio-media": "0.1.0-beta.3",
-    "@kumwe/studio-preview": "0.1.0-beta.3",
-    "@kumwe/studio-protocol": "0.1.0-beta.3",
-    "@kumwe/studio-renderer-web": "0.1.0-beta.3",
-    "@kumwe/studio-rich-text": "0.1.0-beta.3",
-    "@kumwe/studio": "0.1.0-beta.3",
-    "@kumwe/studio-testkit": "0.1.0-beta.3"
+    "@kumwe/studio-core": "0.1.0-beta.7",
+    "@kumwe/studio-media": "0.1.0-beta.7",
+    "@kumwe/studio-preview": "0.1.0-beta.7",
+    "@kumwe/studio-protocol": "0.1.0-beta.7",
+    "@kumwe/studio-renderer-web": "0.1.0-beta.7",
+    "@kumwe/studio-rich-text": "0.1.0-beta.7",
+    "@kumwe/studio": "0.1.0-beta.7",
+    "@kumwe/studio-testkit": "0.1.0-beta.7"
   },
   "browserArtifacts": {
     "manifest": {
@@ -18,7 +18,7 @@
       "schema": "https://schemas.kumwe.org/studio/v1/studio-browser-assets.schema.json"
     },
     "authoringArchive": {
-      "archiveStem": "studio-browser-0.1.0-beta.3",
+      "archiveStem": "studio-browser-0.1.0-beta.7",
       "assetRole": "browser-module",
       "loading": "module"
     },
@@ -30,6 +30,6 @@
     }
   },
   "protocolVersion": "0.1.0-draft.2",
-  "corpusManifestDigest": "sha256-PupdZVv+htI0wd7bnFtwVdFzhYVB7DxTXh+viiBClNM=",
+  "corpusManifestDigest": "sha256-l5TJ0MFYM3eGqZ++pkhN4V8GCUzNcFwPG6ogEW/o8Yw=",
   "claimedProfiles": []
 }

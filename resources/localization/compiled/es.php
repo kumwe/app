@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Compiled interface message catalogue for es, carrying 2629 messages.
+ * Compiled interface message catalogue for es, carrying 2641 messages.
  *
  * Generated from es.xlf by `composer translation:compile`. Do not edit: the build
  * compares these bytes against a fresh compilation and fails when they differ. Author the
@@ -2440,6 +2440,10 @@ return [
     'core.studio.contextual.return' => 'Volver a {destination}',
     'core.studio.contextual.return-destination' => 'el host',
     'core.studio.contextual.save-as-new-type' => 'Guardar como tipo nuevo',
+    'core.studio.contextual.save-confirmation-cancel' => 'Cancelar',
+    'core.studio.contextual.save-confirmation-confirm' => 'Confirmar y guardar',
+    'core.studio.contextual.save-confirmation-explanation' => 'El servidor configurado requiere que se confirmen estas consecuencias antes de guardar.',
+    'core.studio.contextual.save-confirmation-heading' => 'Confirmar guardado',
     'core.studio.contextual.save-item' => 'Guardar elemento',
     'core.studio.contextual.save-new-type-version' => 'Guardar nueva versión del tipo',
     'core.studio.contextual.save-outcome' => 'Resultado del guardado',
@@ -2509,6 +2513,7 @@ return [
     'core.studio.shell.canvas-label' => 'Estructura del Blueprint',
     'core.studio.shell.canvas-mode-editing' => 'seleccionando y moviendo bloques',
     'core.studio.shell.canvas-mode-interacting' => 'interactuando con la vista previa representada',
+    'core.studio.shell.canvas-pane' => 'Lienzo',
     'core.studio.shell.command-apply-pattern' => 'Aplicar el patrón {pattern}',
     'core.studio.shell.command-clear-selection' => 'Borrar selección',
     'core.studio.shell.command-insert' => 'Insertar {label}',
@@ -2532,6 +2537,7 @@ return [
     'core.studio.shell.inspector-add-property' => 'Añadir propiedad',
     'core.studio.shell.inspector-add-property-name-label' => 'Nombre de la propiedad nueva',
     'core.studio.shell.inspector-add-property-value-label' => 'Valor de la propiedad nueva en JSON',
+    'core.studio.shell.inspector-advanced' => 'Propiedades y vinculaciones avanzadas',
     'core.studio.shell.inspector-binding-accepts' => 'Acepta un valor {value-type} {cardinality}',
     'core.studio.shell.inspector-binding-control-label' => 'Control {control} declarado para {field}',
     'core.studio.shell.inspector-binding-control-preview' => 'Vista previa del control',
@@ -2592,6 +2598,10 @@ return [
     'core.studio.shell.inspector-type' => 'Tipo',
     'core.studio.shell.inspector-unset' => 'Anular',
     'core.studio.shell.inspector-unset-label' => 'Anular {property}',
+    'core.studio.shell.library-search' => 'Buscar bloques y patrones',
+    'core.studio.shell.local-canvas-description' => 'Representación local · no es la vista previa definitiva del host.',
+    'core.studio.shell.local-canvas-label' => 'Lienzo de la página',
+    'core.studio.shell.local-canvas-unavailable' => 'El lienzo local no pudo representar este borrador. El documento y los controles de estructura siguen disponibles.',
     'core.studio.shell.move-destination-label' => 'Mover el bloque a otra posición o ranura',
     'core.studio.shell.move-destination-option' => '{collection}, posición {position} de {count}',
     'core.studio.shell.move-destination-placeholder' => 'Elige un destino',
@@ -2626,6 +2636,8 @@ return [
     'core.studio.shell.unresolved-block' => '(sin resolver)',
     'core.studio.shell.viewport-label' => 'Ancho de la vista previa',
     'core.studio.shell.visual-drop-target' => 'Moviendo {label} a {destination}',
+    'core.studio.shell.visual-insert-target' => 'Insertando {label} en {destination}',
+    'core.studio.shell.workspace-panels' => 'Paneles del espacio de trabajo',
     'core.studio.standalone.change-local' => '{artifact} cambió solo en esta sesión del navegador.',
     'core.studio.standalone.current-in-memory-draft' => 'Borrador actual en memoria',
     'core.studio.standalone.download-project' => 'Descargar JSON del proyecto',
