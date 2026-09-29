@@ -88,6 +88,7 @@ final class BusinessRuntimeBoundaryTest extends TestCase
         $purge = $this->contents(
             'src/BusinessSchema/Delivery/Administrator/CreateBusinessSchemaPurgePlanHandler.php',
         );
+        $schemaService = $this->contents('src/BusinessSchema/Application/BusinessSchemaService.php');
         // The screen, REST and the console file drills through one use case, so its source carries the rules.
         $evidence = $this->contents('src/BusinessSchema/Application/BusinessSchemaRecoveryEvidenceRecorder.php');
         $evidenceScreen = 'src/BusinessSchema/Delivery/Administrator/RecordBusinessSchemaRecoveryEvidenceHandler.php';
@@ -113,10 +114,12 @@ final class BusinessRuntimeBoundaryTest extends TestCase
             self::assertStringContainsString("'" . $capability . "'", $snippet);
         }
 
-        self::assertStringContainsString('HighImpactCredentialGuard', $approval);
+        self::assertStringContainsString('->approve(', $approval);
         self::assertStringContainsString('hash_equals($plan->checksum(), $confirmation)', $approval);
-        self::assertStringContainsString('HighImpactCredentialGuard', $purge);
-        self::assertStringContainsString("'business.schema.purge-plan'", $purge);
+        self::assertStringContainsString('->createPurgePlan(', $purge);
+        self::assertStringContainsString('HighImpactCredentialGuard', $schemaService);
+        self::assertStringContainsString("'business.schema.approve'", $schemaService);
+        self::assertStringContainsString("'business.schema.purge-plan'", $schemaService);
         self::assertStringContainsString('BusinessSchemaEnvironment', $evidence);
         self::assertStringContainsString('HighImpactCredentialGuard', $evidence);
         self::assertStringContainsString("'business.schema.recovery-evidence'", $evidence);
