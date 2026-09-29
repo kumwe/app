@@ -968,8 +968,11 @@ test('private target authority hides and refuses publication despite the shared 
 });
 
 test('published lifecycle control sends the symmetric canonical unpublish envelope', async ({ page }) => {
-  await openComposition(page);
+  const shell = await openComposition(page);
   if (await page.getByRole('button', { name: 'Publish composition' }).isVisible()) {
+    if ((await rootNodeIds(shell)).length === 0) {
+      await persistCompositionChange(page, () => insertRoot(shell, 'Section'));
+    }
     await changeCompositionLifecycle(page, 'published');
   }
   const boot = await page.locator('#studio-composition-boot').evaluate((element) =>
