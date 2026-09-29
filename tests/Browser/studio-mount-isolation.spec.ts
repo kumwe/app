@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
 import type { KumweStudioStandaloneElement } from '@kumwe/studio';
 import type { StudioHostedDeploymentConfiguration } from '@kumwe/studio-protocol';
+import { openStudioPanel } from './support/studio-navigation';
 
 const root = resolve(import.meta.dirname, '../..');
 const manifest = JSON.parse(readFileSync(resolve(root, 'public/assets/build/.vite/manifest.json'), 'utf8')) as
@@ -108,6 +109,7 @@ for (const status of [401, 403]) {
     const beforeLocalWork = [...requests];
     expect(await local.evaluate((element) => (element as KumweStudioStandaloneElement).project.state.blueprint.roots))
       .toEqual([]);
+    await openStudioPanel(local, 'blocks');
     await local.getByRole('complementary', { name: 'Block palette' })
       .getByRole('button', { name: 'Section', exact: true }).click();
     const project = await local.evaluate((element) => (element as KumweStudioStandaloneElement).exportProjectJson());
@@ -137,6 +139,7 @@ for (const status of [401, 403]) {
     expect(await restored.evaluate((element) => (element as KumweStudioStandaloneElement).exportProjectJson()))
       .toBe(project);
     // Further local edits do not change the fresh import or retry the refused hosted transport.
+    await openStudioPanel(local, 'blocks');
     await local.getByRole('complementary', { name: 'Block palette' })
       .getByRole('button', { name: 'Section', exact: true }).click();
     expect(await restored.evaluate((element) => (element as KumweStudioStandaloneElement).exportProjectJson()))
