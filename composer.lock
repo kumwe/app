@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "eb63a260c90cc4454eb95457c2664cc5",
+    "content-hash": "5076b4d27971801a92d83436158006d4",
     "packages": [
         {
             "name": "brick/math",
@@ -684,16 +684,16 @@
         },
         {
             "name": "kumwe/business-schema",
-            "version": "v0.1.3",
+            "version": "v0.1.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/kumwe/business-schema.git",
-                "reference": "5c442a147e98c702a50cf5dc2b7d8faf6499d8ef"
+                "reference": "0be7b140aa2c0f3b95434bb248309cd03003e1ad"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/kumwe/business-schema/zipball/5c442a147e98c702a50cf5dc2b7d8faf6499d8ef",
-                "reference": "5c442a147e98c702a50cf5dc2b7d8faf6499d8ef",
+                "url": "https://api.github.com/repos/kumwe/business-schema/zipball/0be7b140aa2c0f3b95434bb248309cd03003e1ad",
+                "reference": "0be7b140aa2c0f3b95434bb248309cd03003e1ad",
                 "shasum": ""
             },
             "require": {
@@ -727,9 +727,9 @@
             "homepage": "https://github.com/kumwe/business-schema",
             "support": {
                 "issues": "https://github.com/kumwe/business-schema/issues",
-                "source": "https://github.com/kumwe/business-schema/tree/v0.1.3"
+                "source": "https://github.com/kumwe/business-schema/tree/v0.1.4"
             },
-            "time": "2026-09-10T18:45:51+00:00"
+            "time": "2026-09-29T12:00:06+00:00"
         },
         {
             "name": "kumwe/business-surface-contract",
@@ -7103,5 +7103,5 @@
         "ext-zip": "*"
     },
     "platform-dev": {},
-    "plugin-api-version": "2.6.0"
+    "plugin-api-version": "2.9.0"
 }

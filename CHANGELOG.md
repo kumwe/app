@@ -34,7 +34,9 @@ Entries cite the commits that carried them. Version 2.0.0 is not released, so ev
   The protection applies to database DML access, not database or filesystem administration.
 
 - Keep record pagination aligned with the requested sort direction and use native null ordering when
-  it matches the query. Preserve safe bounded execution for queries that cannot use an index.
+  it matches the query. Adopt business-schema 0.1.4 for scoped browse and sortable-field indexes;
+  existing definitions receive those indexes through their next normal definition/schema plan.
+  Preserve safe bounded execution for queries that cannot use an index.
 
 - Document the schema fixture's acting-administrator password and remove its resolved documentation
   exemptions, unblocking the pre-flight and PHP quality gates without changing fixture behavior (#152).
