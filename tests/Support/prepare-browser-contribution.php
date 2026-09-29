@@ -273,6 +273,13 @@ try {
         }
         $assetDefinitionsById[$definitionId] = $assetDefinition;
     }
+    $installDefinition = static fn (array $definition) => NeutralBusinessFixture::install(
+        $container,
+        $context,
+        $definition,
+        $adminPassword,
+    );
+
     // Inspection owns ordered junctions whose finding and measurement targets must already be installed.
     $assetSchemaOrder = [
         '019bc200-0000-7000-8000-000000000001',
@@ -289,7 +296,7 @@ try {
         if (!is_array($assetDefinition)) {
             throw new RuntimeException('A browser report fixture schema dependency is unavailable.');
         }
-        NeutralBusinessFixture::install($container, $context, $assetDefinition);
+        $installDefinition($assetDefinition);
     }
 
     $administratorRole = null;
@@ -619,7 +626,7 @@ try {
         $action['high_impact'] = true;
     }
     unset($action);
-    $businessDefinition = NeutralBusinessFixture::install($container, $context, $businessDocument);
+    $businessDefinition = $installDefinition($businessDocument);
     foreach (
         [
             'business.approval.request',
@@ -812,7 +819,7 @@ try {
             recordId: $recordId,
         ));
     }
-    $invoiceLineDefinition = NeutralBusinessFixture::install($container, $context, [
+    $invoiceLineDefinition = $installDefinition([
         'id' => '019b40d9-8dd0-7ca2-a0db-9eae6a150601',
         'owner' => ['type' => 'site', 'identifier' => 'default'],
         'site' => 'default',
@@ -896,7 +903,7 @@ try {
         'portal_operations' => ['read', 'relation'],
         'public_exposure' => false,
     ]);
-    $invoiceDefinition = NeutralBusinessFixture::install($container, $context, [
+    $invoiceDefinition = $installDefinition([
         'id' => '019b40d9-8dd0-7ca2-a0db-9eae6a150602',
         'owner' => ['type' => 'site', 'identifier' => 'default'],
         'site' => 'default',
@@ -1041,7 +1048,7 @@ try {
     // V2-UX-003: a posting-dated document with an immutable `approved` state. One record stays open, one
     // is approved into the immutable state, and one is dated inside a closed posting period, so both
     // generated surfaces can prove their read-only affordances and the refusal's own wording.
-    $lockDefinition = NeutralBusinessFixture::install($container, $context, [
+    $lockDefinition = $installDefinition([
         'id' => '019b40d9-8dd0-7ca2-a0db-9eae6a150702',
         'owner' => ['type' => 'site', 'identifier' => 'default'],
         'site' => 'default',
@@ -1200,7 +1207,7 @@ try {
         $fields,
     );
     $ledgerLineDocument['fields'] = $exportable($ledgerLineDocument['fields']);
-    $ledgerLineDefinition = NeutralBusinessFixture::install($container, $context, $ledgerLineDocument);
+    $ledgerLineDefinition = $installDefinition($ledgerLineDocument);
     $ledgerDocument = NeutralBusinessFixture::documentHeaderDocument(
         'browser',
         '019b40d9-8dd0-7ca2-a0db-9eae6a150802',
@@ -1240,7 +1247,7 @@ try {
         $administratorAction('approve', 'Approve document'),
         $administratorAction('post', 'Post to ledger'),
     ];
-    NeutralBusinessFixture::install($container, $context, $ledgerDocument);
+    $installDefinition($ledgerDocument);
 
     // P7-E archetype (d): a mobile assignment job card with ordered parts, labour and measurement lines, a
     // media reference for the site photograph, and an assigned, in-progress, completed workflow.
@@ -1306,7 +1313,7 @@ try {
         'precision' => 12,
         'scale' => 2,
     ];
-    $partDefinition = NeutralBusinessFixture::install($container, $context, $jobLine(
+    $partDefinition = $installDefinition($jobLine(
         '019b40d9-8dd0-7ca2-a0db-9eae6a150901',
         'site.default.browser_job_part',
         'Part used',
@@ -1317,21 +1324,21 @@ try {
             $decimal('quantity', 'Quantity'),
         ],
     ));
-    $labourDefinition = NeutralBusinessFixture::install($container, $context, $jobLine(
+    $labourDefinition = $installDefinition($jobLine(
         '019b40d9-8dd0-7ca2-a0db-9eae6a150902',
         'site.default.browser_job_labour',
         'Labour entry',
         'Labour',
         [$text('task', 'Work carried out'), $decimal('hours', 'Hours')],
     ));
-    $measurementDefinition = NeutralBusinessFixture::install($container, $context, $jobLine(
+    $measurementDefinition = $installDefinition($jobLine(
         '019b40d9-8dd0-7ca2-a0db-9eae6a150903',
         'site.default.browser_job_measurement',
         'Measurement',
         'Measurements',
         [$text('metric', 'What was measured'), $decimal('reading', 'Reading'), $text('unit', 'Unit', 20)],
     ));
-    NeutralBusinessFixture::install($container, $context, [
+    $installDefinition([
         ...$jobLine('019b40d9-8dd0-7ca2-a0db-9eae6a150904', 'site.default.browser_job_card', 'Job card', 'Job cards', [
             $text('title', 'Job'),
             $text('site_address', 'Site address', 200),
@@ -1365,7 +1372,7 @@ try {
 
     // P7-E archetype (e): a portal order placed from a public catalogue page, fulfilled by an administrator,
     // with its payment status written out of process by an adapter holding a scoped API token.
-    NeutralBusinessFixture::install($container, $context, [
+    $installDefinition([
         ...$jobLine('019b40d9-8dd0-7ca2-a0db-9eae6a150a01', 'site.default.browser_shop_order', 'Order', 'Orders', [
             $text('product', 'Product'),
             [
